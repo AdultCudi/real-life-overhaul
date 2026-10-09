@@ -32,7 +32,7 @@ The upload is done from inside the game. Everything else is prepared here. What 
    | `Bundles\reallife_character` | 44,520,019 bytes |
    | `Bundles\reallife_props` | 11,053,441 bytes |
 
-   The whole folder is uploaded as it stands (about 66 MB), so delete anything else you find in it. There must be exactly one `.dll` in the folder's root, and `thumbnail.jpg` must be the only picture there: the game takes the first `.png`, `.jpg` or `.jpeg` in the root that is within its size limit (1 MB) as the thumbnail, whatever it is called.
+   The whole folder is uploaded as it stands (about 66 MB), so delete anything else you find in it. There must be exactly one `.dll` in the folder's root, and `thumbnail.jpg` must be the only picture there: the game takes the first `.jpg`, `.jpg` or `.jpeg` in the root that is within its size limit (1 MB) as the thumbnail, whatever it is called.
 4. Play once from this folder with a save you care about and one new game. The welcome panel should appear once, "Show test tools" and "Developer diagnostics" should be off, and `Player.log` should have one line "Real Life Overhaul 0.1.0 initialised." and otherwise only warnings, if any.
 
 ## The upload
@@ -66,13 +66,13 @@ Two more things follow from the mod now having a different id (its Workshop numb
 
    | File | Shows |
    | --- | --- |
-   | `01_accident_ambulance.png` | an accident: the ambulance, a casualty on the stretcher, paramedics, an officer, the cordon (the thumbnail's source) |
-   | `02_pedestrian_down_cordon.png` | a pedestrian hit by a van: cones, police tape, the barrier, paramedics at work |
-   | `03_bus_stop.png` | a bus stop with its shelter, route sign and the timetable panel |
-   | `04_coffee_cart.png` | buying a coffee at the cart, with the notices for it |
-   | `05_street_chess.png` | the chess player at a table on the pavement |
-   | `06_police_incident_night.png` | a police incident at night: a patrol car at the kerb and officers on foot |
-   | `07_city_bicycle.png` | a bicycle taken from a rack |
+   | `01_accident_ambulance.jpg` | an accident: the ambulance, a casualty on the stretcher, paramedics, an officer, the cordon (the thumbnail's source) |
+   | `02_pedestrian_down_cordon.jpg` | a pedestrian hit by a van: cones, police tape, the barrier, paramedics at work |
+   | `03_bus_stop.jpg` | a bus stop with its shelter, route sign and the timetable panel |
+   | `04_coffee_cart.jpg` | buying a coffee at the cart, with the notices for it |
+   | `05_street_chess.jpg` | the chess player at a table on the pavement |
+   | `06_police_incident_night.jpg` | a police incident at night: a patrol car at the kerb and officers on foot |
+   | `07_city_bicycle.jpg` | a bicycle taken from a rack |
 
    They are your own screenshots, uncropped, with the game's interface on them.
 2. Check the description's formatting (headings and lists).
