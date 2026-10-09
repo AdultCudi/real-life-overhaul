@@ -40,10 +40,7 @@ Blender (GPL; what is made with it is not covered by its licence), Unity 2022.3.
 
 ## Licence of the mod
 
-TODO (the author's decision; nothing is granted until this line is filled in): state the licence under which the mod's own code, texts, models and animations may be used by others, or state "All rights reserved".
+The mod's own code, texts, models and animations are published under the MIT licence (see LICENSE in the repository root).
 
-Three things to settle with it:
 
-1. The `LICENSE` file at the root of the repository is the MIT licence of Hovgaard Games' modding SDK template. It covers the template (the Unity project and its editor tools), not this mod.
-2. `CharacterAssets/CREDITS.md` and `PropAssets/CREDITS.md` already mark the generated models and textures "made for this mod; CC0 1.0". If that is the intention, say so here; if not, correct those two files.
-3. `CityAssets/CREDITS.md` gives the animations' licence as "the repository's own (see `LICENSE`)", which today points at the SDK's MIT licence under Hovgaard Games' name. That is almost certainly not what was meant: once the mod's licence is decided, correct that line.
+The `LICENSE` file at the root of the repository carries two copyright lines: Hovgaard Games for the mod SDK template and its example mods, and the Real Life Overhaul contributors for the mod. Both are MIT. The asset folders (`CharacterAssets`, `PropAssets`, `CityAssets`) say the same in their own credits files. The one third-party item in the bundles is the lettering drawn with the font Aileron Regular, which is CC0 1.0.

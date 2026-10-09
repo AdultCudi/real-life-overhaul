@@ -1,141 +1,74 @@
-# Big Ambitions Modding SDK
+# Real Life Overhaul
 
-Create, build, install, and upload mods for **Big Ambitions** using Unity.
+A mod for [Big Ambitions](https://store.steampowered.com/app/1331550/Big_Ambitions/) that adds everyday life to the city: a camera behind your character, traffic accidents with police and ambulance, crime, courts, driving licences, jobs, health, friends, a family and public transport. Every part can be switched off by itself.
 
----
+**To play it, subscribe on the Steam Workshop:**
+https://steamcommunity.com/sharedfiles/filedetails/?id=3816536560
 
-# Requirements
+This repository is the source. You only need it if you want to read the code, report a problem in detail, or contribute.
 
-- Unity Hub
-- Unity **2022.3.62f2**
-- macOS Build Support module installed through Unity Hub
-- A C# IDE:
-  - Visual Studio
-  - Rider
-  - VS Code
-- Big Ambitions installed through Steam
-- Git client
+## Status
 
----
+Version 0.1.0 is the first public release. Much of it has had little play from start to finish. The in-game Guide has a "Known limits" page, and [the Workshop description](RealLifeOverhaul.Build/Workshop/description.txt) carries the short version.
 
-# Getting Started
+Windows and English only.
 
-## 1. Clone the Repository
+## What is in the repository
 
-Clone the repository from the `main` branch.
-We assume you already know how to clone a Git repository.
-If not, there are plenty of sources out there to learn how to do this.
+| Path | What it is |
+| --- | --- |
+| `Assets/Mods/RealLifeOverhaul/Scripts` | The mod's code, one folder per feature |
+| `Assets/Mods/RealLifeOverhaul/Locales/en.json` | Every text the player reads |
+| `Assets/Mods/RealLifeOverhaul/Bundles` | The built models, animations and clothes the game loads |
+| `PropAssets`, `CityAssets`, `CharacterAssets` | The scripts that build those bundles with Blender and Unity |
+| `RealLifeOverhaul.Build` | The command-line build, the text checker and the developer documentation |
+| `RealLifeOverhaul.Build/Workshop` | The Workshop page texts, the writing rules and the upload steps |
+| `docs/SDK.md` and the other folders under `Assets/Mods` | Hovgaard Games' mod SDK template and its example mods, which this repository started from |
 
----
+The developer documentation is [RealLifeOverhaul.Build/README.md](RealLifeOverhaul.Build/README.md). It is long. It describes how each feature works, the rules the code follows, and what has and has not been checked in the game.
 
-## 2. Open the Project in Unity
+## Building
 
-Open the project using:
-```text
-Unity 2022.3.62f2
+You need:
+
+- Big Ambitions installed through Steam. The build compiles against the game's own DLLs, which are not in this repository and must not be added to it.
+- The [.NET SDK](https://dotnet.microsoft.com/download), version 10 or later.
+
+Build and install into the game's local mods folder:
+
+```
+dotnet build RealLifeOverhaul.Build/RealLifeOverhaul.csproj -c Release "-p:GameManaged=<Steam>\steamapps\common\Big Ambitions\Big Ambitions_Data\Managed"
 ```
 
-When the project opens, a welcome message will appear with additional setup instructions.
-Follow the instructions shown in Unity before continuing.
-This includes importing the required game DLLs from your Big Ambitions installation.
+The build must end with `0 Warning(s)` and `0 Error(s)`. It copies the mod to `%USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions\ModsLocal\RealLifeOverhaul`. To build without installing, add `"-p:ModsLocal=<some other folder>"`.
 
-<img width="506" height="538" alt="{8601F8E0-E93E-492E-8BD7-88B268C61257}" src="https://github.com/user-attachments/assets/29ca51e0-09c4-4aaa-a7fb-c58e96f41ca7" />
+If you are also subscribed on the Workshop, untick the Workshop item under Mods in the game's main menu while you test a local build. With both switched on, every feature runs twice.
 
----
+Check the texts:
 
-## 3. Create Your Mod
-
-Create your mod inside Unity.
-The project includes example mods that demonstrate the expected structure, workflows, and APIs.
-Make sure you have the mod manifest scriptable object filled with the information of your mod including localization, dependencies, asset bundles and more.
-
----
-
-## 4. Build and Install
-
-Use the **Build & Install** option in the **Mod builder** tool.
-You can find the tool through the welcome page or the **Big Ambitions/Mod Builder** in the top level menu. 
-
-<img width="529" height="80" alt="{1856093D-0BF5-4DE1-8CCB-64BC33F861DB}" src="https://github.com/user-attachments/assets/60120e95-a767-45d2-8e77-135c6d9145fe" />
-
-
-This will:
-1. Validate the mod and let you know if any problems are found
-2. Compile your mod
-3. Automatically install it into your local Big Ambitions mod folder
-
-Your mod will be installed into:
-```text
-ModsLocal
+```
+dotnet build RealLifeOverhaul.Build/CatalogueCheck -c Release
+dotnet RealLifeOverhaul.Build/CatalogueCheck/bin/Release/net10.0/CatalogueCheck.dll
 ```
 
-This is the same folder that opens when clicking **Browse mod folder** inside the in-game Mod Creator window.
+It must end with `ALL CHECKS PASSED`.
 
-<img width="505" height="120" alt="{3F475614-FE72-44F2-9CA5-94F4325912C4}" src="https://github.com/user-attachments/assets/ada42456-44ca-43cf-b78d-811725ec8e1b" />
+You do not need Unity or Blender unless you change a model, an animation or a piece of clothing. The built bundles are in the repository.
 
----
+## Reporting a problem
 
-## 5. Upload Your Mod In Game
+Open an issue. What helps most:
 
-Launch **Big Ambitions** through Steam.
+1. On the mod's options page, under Diagnostics, switch on "Developer diagnostics" and make the problem happen again.
+2. Attach `Player.log` from that session. It is in `%USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions` and is overwritten when the game starts again.
+3. Add a screenshot, what you were doing, what you expected, the mod version and which other mods are on.
 
-From the main menu:
-```text
-Mods > Mod Creator > Create new mod (or "Edit mod" on one of your uploaded mods)
-```
+## Contributing
 
-Then:
-1. Click **Browse mod folder**
-2. Confirm your mod exists inside the `ModsLocal` folder
-3. Select your local mod in the dropdown, make sure your thumbnail is inside the root of your mod folder
-4. Fill out the mod information form
-5. Upload your mod
+Pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first. Nothing is merged into `main` without the maintainer's review and approval.
 
-<img width="332" height="322" alt="{082D5850-90DB-4814-A14F-134C1AADD750}" src="https://github.com/user-attachments/assets/8c7ffa98-fce3-4981-8c6f-1f70427f7d97" />
+## Licence
 
----
+MIT. See [LICENSE](LICENSE). The mod SDK template and its example mods are by Hovgaard Games, also under MIT.
 
-# Troubleshooting
-
-## Scripts fail to compile
-
-Make sure you completed the DLL import steps from the Unity welcome message.
-The required Big Ambitions DLLs must be imported before the project can compile successfully.
-After updating Big Ambitions on Steam, you'll have to reimport the DLLs to get the new versions of the lastest update.
-
----
-
-## The mod does not appear in the game
-
-Verify that the mod was installed into the `ModsLocal` folder.
-You can open this folder from inside the game:
-```text
-Mods > Mod Creator > Browse mod folder
-```
-
----
-
-## Upload fails
-
-Make sure:
-- Your mod exists inside `ModsLocal`
-- All required fields in the Mod Creator form are filled out
-- The build completed successfully
-- The thumbnail isn't too big (max 1MB due to Steam limitation)
-
-# Notes
-This is a public community repository. Custom Unity tools that are helpful to the creation of mods are welcomed through pull requests.
-
-## Links
-
-[![Steam](https://img.shields.io/badge/Steam-Big%20Ambitions-000000?style=for-the-badge&logo=steam&logoColor=white)](https://store.steampowered.com/app/1331550/Big_Ambitions/)
-
-[![Discord](https://img.shields.io/badge/Discord-Join%20Community-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/44aGAt4Sv4)
-
-[![Forum](https://img.shields.io/badge/Forum-Community-2ea44f?style=for-the-badge)](https://community.bigambitionsgame.com/)
-
-[![Reddit](https://img.shields.io/badge/Reddit-r%2Fbigambitions-FF4500?style=for-the-badge&logo=reddit&logoColor=white)](https://www.reddit.com/r/bigambitions/)
-
-[![YouTube](https://img.shields.io/badge/YouTube-Hovgaard%20Games-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/channel/UCw5PR6gdYaWfZ0-d0WNJu1g)
-
-[![X](https://img.shields.io/badge/X-Hovgaard%20Games-000000?style=for-the-badge&logo=x&logoColor=white)](https://twitter.com/hovgaardgames)
+Big Ambitions is made by Hovgaard Games. This mod is not made or endorsed by them.
