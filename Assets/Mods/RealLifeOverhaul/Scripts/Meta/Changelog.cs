@@ -1,0 +1,134 @@
+using System;
+using System.Globalization;
+using System.Text;
+using Localizor;
+
+namespace RealLifeOverhaul.Meta
+{
+    /// <summary>
+    /// What changed in each version, for the guide's "What's new" page and the welcome panel's "since last time"
+    /// line. One row per released version, newest first. 0.1.0 is the first public release; the numbers the mod
+    /// carried while it was being developed (0.13 to 0.46) were never released and are not listed.
+    ///
+    /// A NEW VERSION is four edits, and the build fails if the first three disagree (the CheckVersion target of
+    /// the csproj): &lt;Version&gt; in RealLifeOverhaul.Build/RealLifeOverhaul.csproj (the assembly's version, which
+    /// is what the running mod reports), <see cref="Latest"/> below, Version in ModManifest.asset, and one row at
+    /// the top of <see cref="All"/> with its two texts at the end of en.json (reallife_changes_ and three digits,
+    /// major then two of minor, and the same with _title: 0.2 is "002", order 20). Work merged before it has a
+    /// number goes in a row of order <see cref="Unnumbered"/>, which takes the new number when the version is set.
+    /// </summary>
+    public static class Changelog
+    {
+        /// <summary>The version this table was last brought up to; used when the assembly carries no version of its own.</summary>
+        public const string Latest = "0.1.0";
+
+        /// <summary>Order of a row for work merged after the last numbered version: above the newest numbered row, below the next one.</summary>
+        public const int Unnumbered = 15;   // OrderOf(Latest) + 5: it moves up with Latest
+
+        public sealed class Entry
+        {
+            public readonly int Order;          // OrderOf its version: 0.1 is 10, 0.12 is 120, 1.0 is 1000
+            public readonly string TitleKey;
+            public readonly string TextKey;
+
+            public Entry(int order, string titleKey, string textKey)
+            {
+                Order = order;
+                TitleKey = titleKey;
+                TextKey = textKey;
+            }
+        }
+
+        public static readonly Entry[] All =
+        {
+            new Entry(10, "reallife_changes_001_title", "reallife_changes_001")
+        };
+
+        private static string _version;
+
+        /// <summary>The running mod's version: the assembly's when it was built with one (the dotnet build), otherwise <see cref="Latest"/>.</summary>
+        public static string Version
+        {
+            get
+            {
+                if (_version == null)
+                {
+                    _version = Latest;
+                    try
+                    {
+                        Version built = typeof(Changelog).Assembly.GetName().Version;
+                        if (built != null && (built.Major > 0 || built.Minor > 0))
+                        {
+                            _version = built.Major + "." + built.Minor + "." + Math.Max(0, built.Build);
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        // The table's own number stands.
+                    }
+                }
+                return _version;
+            }
+        }
+
+        /// <summary>"0.1.0" is 10, "0.12.3" is 120, "1.0.0" is 1000; anything that is not a version is 0.</summary>
+        public static int OrderOf(string version)
+        {
+            if (string.IsNullOrEmpty(version))
+            {
+                return 0;
+            }
+            string[] parts = version.Split('.');
+            if (parts.Length < 2 || !int.TryParse(parts[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out int major)
+                || !int.TryParse(parts[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int minor))
+            {
+                return 0;
+            }
+            return (major * 100 + minor) * 10;
+        }
+
+        /// <summary>Compares two versions number by number; a missing part counts as 0.</summary>
+        public static int Compare(string a, string b)
+        {
+            string[] left = (a ?? string.Empty).Split('.');
+            string[] right = (b ?? string.Empty).Split('.');
+            for (int i = 0; i < Math.Max(left.Length, right.Length); i++)
+            {
+                int.TryParse(i < left.Length ? left[i] : "0", NumberStyles.Integer, CultureInfo.InvariantCulture, out int x);
+                int.TryParse(i < right.Length ? right[i] : "0", NumberStyles.Integer, CultureInfo.InvariantCulture, out int y);
+                if (x != y)
+                {
+                    return x < y ? -1 : 1;
+                }
+            }
+            return 0;
+        }
+
+        /// <summary>The whole table as the guide prints it.</summary>
+        public static string Page()
+        {
+            var text = new StringBuilder();
+            foreach (Entry entry in All)
+            {
+                text.Append("# ").Append(entry.TitleKey.GetLocalization()).Append('\n').Append(entry.TextKey.GetLocalization()).Append("\n\n");
+            }
+            return text.ToString();
+        }
+
+        /// <summary>What came after the version the player last saw, newest first; empty if nothing did.</summary>
+        public static string Since(string seenVersion)
+        {
+            int seen = OrderOf(seenVersion);
+            int now = OrderOf(Version);
+            var text = new StringBuilder();
+            foreach (Entry entry in All)
+            {
+                if (entry.Order > seen && entry.Order <= Math.Max(now, seen))
+                {
+                    text.Append("<b>").Append(entry.TitleKey.GetLocalization()).Append("</b>: ").Append(entry.TextKey.GetLocalization()).Append('\n');
+                }
+            }
+            return text.ToString();
+        }
+    }
+}

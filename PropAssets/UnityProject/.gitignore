@@ -1,0 +1,16 @@
+# Everything Unity generates. Only Assets/Editor, Packages/manifest.json and ProjectVersion.txt are source.
+/Library/
+/Temp/
+/Logs/
+/UserSettings/
+/obj/
+/BundleOutput/
+/Assets/Generated/
+/Assets/Generated.meta
+/Assets/*.meta
+/Assets/Editor/*.meta
+/Packages/packages-lock.json
+/ProjectSettings/*
+!/ProjectSettings/ProjectVersion.txt
+*.csproj
+*.sln

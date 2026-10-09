@@ -1,0 +1,69 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <AssemblyName>RealLifeOverhaul</AssemblyName>
+    <RootNamespace>RealLifeOverhaul</RootNamespace>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <DebugType>none</DebugType>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Version>0.1.0</Version>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- Single source of truth: the mod lives in the Unity SDK project; this project only compiles it from the command line. -->
+    <ModSource>$(MSBuildThisFileDirectory)..\Assets\Mods\RealLifeOverhaul</ModSource>
+    <GameManaged Condition="'$(GameManaged)' == ''">G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\Managed</GameManaged>
+    <ModsLocal Condition="'$(ModsLocal)' == ''">$(USERPROFILE)\AppData\LocalLow\Hovgaard Games\Big Ambitions\ModsLocal</ModsLocal>
+  </PropertyGroup>
+
+  <!-- Game assemblies: compile against them, never ship them. -->
+  <ItemGroup>
+    <Reference Include="$(GameManaged)\BigAmbitions*.dll" Private="false" />
+    <Reference Include="$(GameManaged)\DayNightCycle.dll" Private="false" />
+    <Reference Include="$(GameManaged)\HGExtensions.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Newtonsoft.Json.dll" Private="false" />
+    <Reference Include="$(GameManaged)\HGPlugins.dll" Private="false" />
+    <Reference Include="$(GameManaged)\ExternalPlugins.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Cinemachine.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Unity.InputSystem.dll" Private="false" />
+    <Reference Include="$(GameManaged)\UnityEngine.dll" Private="false" />
+    <Reference Include="$(GameManaged)\UnityEngine.UI.dll" Private="false" />
+    <Reference Include="$(GameManaged)\UnityEngine.*Module.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Unity.RenderPipelines.Core.Runtime.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Unity.RenderPipelines.HighDefinition.Runtime.dll" Private="false" />
+    <Reference Include="$(GameManaged)\Unity.TextMeshPro.dll" Private="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="$(ModSource)\Scripts\**\*.cs" />
+  </ItemGroup>
+
+  <!-- The version is written in three places (see Scripts\Meta\Changelog.cs): this file's <Version> is the one the
+       running mod reports, and the build stops if either of the other two says something else. -->
+  <Target Name="CheckVersion" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <ChangelogText>$([System.IO.File]::ReadAllText('$(ModSource)\Scripts\Meta\Changelog.cs'))</ChangelogText>
+      <ManifestText>$([System.IO.File]::ReadAllText('$(ModSource)\ModManifest.asset'))</ManifestText>
+    </PropertyGroup>
+    <Error Condition="!$(ChangelogText.Contains('Latest = &quot;$(Version)&quot;'))" Text="Changelog.Latest in Scripts\Meta\Changelog.cs is not $(Version)." />
+    <Error Condition="!$(ManifestText.Contains('Version: $(Version)'))" Text="Version in ModManifest.asset is not $(Version)." />
+  </Target>
+
+  <!-- What is installed is the whole package, as the game's Mod Creator uploads it: exactly one DLL in the mod's root
+       folder (the game requires that), the locales, the three asset bundles, and the Workshop thumbnail. The uploader
+       takes the first .png/.jpg/.jpeg in the root as the thumbnail, so there must be no other picture there. -->
+  <Target Name="InstallMod" AfterTargets="Build">
+    <ItemGroup>
+      <LocaleFiles Include="$(ModSource)\Locales\**\*.json" />
+      <!-- Asset bundles built by CharacterAssets\build_bundle.ps1 (Unity's .meta and .manifest files are not shipped). -->
+      <BundleFiles Include="$(ModSource)\Bundles\**\*" Exclude="$(ModSource)\Bundles\**\*.meta;$(ModSource)\Bundles\**\*.manifest" />
+    </ItemGroup>
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModsLocal)\$(AssemblyName)" />
+    <Copy SourceFiles="$(ModSource)\thumbnail.jpg" DestinationFolder="$(ModsLocal)\$(AssemblyName)" SkipUnchangedFiles="true" />
+    <Copy SourceFiles="@(LocaleFiles)" DestinationFolder="$(ModsLocal)\$(AssemblyName)\Locales\%(RecursiveDir)" />
+    <Copy SourceFiles="@(BundleFiles)" DestinationFolder="$(ModsLocal)\$(AssemblyName)\Bundles\%(RecursiveDir)" SkipUnchangedFiles="true" />
+    <Message Importance="high" Text="Installed to $(ModsLocal)\$(AssemblyName)" />
+  </Target>
+
+</Project>

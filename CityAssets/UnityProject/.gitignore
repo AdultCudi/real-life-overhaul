@@ -1,0 +1,19 @@
+# Everything Unity generates. Only Assets/Editor (Assets/Shared is copied in from the mod by build_bundle.ps1), Packages/manifest.json and ProjectVersion.txt are source.
+/Library/
+/Temp/
+/Logs/
+/UserSettings/
+/obj/
+/BundleOutput/
+/Assets/Generated/
+/Assets/Shared/
+/Assets/Shared.meta
+/Assets/Generated.meta
+/Assets/*.meta
+/Assets/Editor/*.meta
+/Assets/Test/*.meta
+/Packages/packages-lock.json
+/ProjectSettings/*
+!/ProjectSettings/ProjectVersion.txt
+*.csproj
+*.sln

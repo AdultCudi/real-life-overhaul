@@ -1,0 +1,12 @@
+# Generated on first run (HDRP asset and global settings) or copied in by preview.ps1
+/Assets/Generated/
+/Assets/Generated.meta
+/Assets/HDRPDefaultResources/
+/Assets/HDRPDefaultResources.meta
+/Assets/Editor/Shared/
+/Assets/Editor/Shared.meta
+/Packages/packages-lock.json
+/ProjectSettings/*
+!/ProjectSettings/ProjectVersion.txt
+!/ProjectSettings/ProjectSettings.asset
+!/ProjectSettings/HDRPProjectSettings.asset

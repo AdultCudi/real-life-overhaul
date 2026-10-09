@@ -1,0 +1,119 @@
+[h1]Real Life Overhaul[/h1]
+Real Life Overhaul adds everyday life to the city of Big Ambitions: things happen in the street, to other people and to you, and you can take part in them. Every part can be switched off by itself, and four presets set how much of it happens to you.
+
+[h1]What it adds[/h1]
+
+[b]Driving[/b]
+[list]
+[*]A camera behind your character on foot and behind the car when you drive.
+[*]Each car gets the acceleration and top speed of its kind, an eased throttle and a speedometer.
+[*]Car ownership: fuel, servicing, wear, breakdowns, insurance, registration and roadside help.
+[*]A custom shop in any repair bay: paint, lamps, underglow, fitted parts and performance parts.
+[*]Bicycles and motorbikes to hire or buy.
+[/list]
+
+[b]Accidents and emergency services[/b]
+[list]
+[*]Traffic accidents near you, with police, an ambulance, paramedics, a stretcher and a taped-off road.
+[*]People hit by a car fall and can be hurt or killed. So can you, short of dying: the worst is a trip to hospital.
+[*]Fires in cars, bins and shopfronts, with a fire engine and crew.
+[*]A 911 contact on your phone for accidents, crimes and fires.
+[/list]
+
+[b]Police and courts[/b]
+[list]
+[*]Street crime near you, and pickpockets, muggers, break-ins and scam calls against you.
+[*]Police stops for red lights, speeding and reckless driving, pursuits, and officers on the beat.
+[*]A police station in each district, arrest, a holding cell and a record that follows you.
+[*]Courts: bail, a lawyer, a hearing, fines, community service, prison and civil claims.
+[*]Driving licences: a driving school, a theory test, a driven test, penalty points and roadside checks.
+[/list]
+
+[b]City life[/b]
+[list]
+[*]People at work and about their day on the pavements, and a coffee cart you can buy from.
+[*]Markets, parades, protests, fun runs, film shoots and fireworks on closed roads.
+[*]Weather that changes grip, traffic, accidents and energy.
+[*]A mayor, elections, city policies and building sites that progress over days.
+[*]Chess, fishing, a night out, sights to see, clothes to buy, city sounds and a photo mode.
+[/list]
+
+[b]Home and family[/b]
+[list]
+[*]Hygiene, stress, a tidy flat, cooking, sleep, fitness, illness and a doctor.
+[*]Small things that happen to you, more than 300 of them, without repeats until all have been seen.
+[*]People to get to know, things to do together, and a morning paper about your city.
+[*]A partner who moves in, an engagement, a wedding, children and relatives.
+[/list]
+
+[b]Work and business[/b]
+[list]
+[*]Seven jobs you do yourself: flyers, courier, ride-hail, cleaner, shelf stocker, drinks cart and busker.
+[*]Careers with six employers: a rota, reviews, promotion and a CV.
+[*]Pressure on the businesses you run: rivals, a protection racket, inspections, staff, suppliers and an audit.
+[/list]
+
+[b]Getting around[/b]
+[list]
+[*]Bus stops, bus routes and fares, and the subway as a journey with a wait.
+[*]Hotels to stay in, and holidays booked at the travel agencies.
+[*]The mod's places on the city map, each with its own filter.
+[/list]
+
+[b]The mod's own tools[/b]
+[list]
+[*]An in-game Guide with a page for every feature: what it is, how to start it, what it costs and which keys it uses.
+[*]Four presets (Relaxed, Standard, Realistic, Hardcore), settings export and import, and every key rebindable.
+[*]A tool that takes the mod out of a save, with a backup first.
+[/list]
+
+[h1]How to start[/h1]
+[list]
+[*]Subscribe, start the game and load a save or begin a new one. A welcome panel appears once.
+[*]The mod's page is in the game's Options, on the Mods tab. It starts with a search box, the Guide and the presets. The mod starts on Standard.
+[*]The Guide also opens from the phone contact "Real Life Overhaul Guide".
+[/list]
+
+[h1]Performance[/h1]
+No frame-rate figures are claimed. Apart from the cameras, the mod's features do their work on timers (most of them once a second), not every frame. The mod also has a few optional switches for the base game's own drawing work; each says on its line what changes on screen, and none promises a gain.
+
+[h1]Compatibility[/h1]
+[list]
+[*]Built against the Steam version of Big Ambitions as of October 2026 (Steam build 25482473, Unity 2022.3.62f2).
+[*]Windows. The mod's models and animations are built for Windows only.
+[*]English only.
+[*]One DLL, one text file and three asset files. No game files are replaced.
+[*]It cannot run together with another camera mod such as "Immersion - RPG Camera" unless one of the two has its cameras switched off.
+[*]It can be added to an existing save.
+[/list]
+
+[h1]Removing the mod[/h1]
+[olist]
+[*]In each save you want to keep, open the mod's options page, then Save tools, and press "Prepare this save for removing the mod". It backs the save up, removes what the mod put in it and saves.
+[*]Quit to the main menu and unsubscribe, or switch the mod off under Mods.
+[*]Restart the game.
+[/olist]
+
+[h1]Known limits[/h1]
+This is the first public release.
+[list]
+[*]Courts and prison, the family, buses and two-wheelers have had little or no play from start to finish.
+[*]The bus ride and the subway journey are a fade to black while time passes. There is no bus or train interior.
+[*]A hotel is a prompt at its door and a panel of choices. Most holidays are told as messages.
+[*]On an outing your companion goes in at the door and the screen fades. Nobody sits at a table.
+[*]A court hearing and prison are pages of text with choices.
+[*]Children are never seen as characters, and a partner at home stands and walks but never sits.
+[*]One incident at a time: no crime starts while an accident, a fire or a street event is on.
+[*]A job or activity in progress is not saved.
+[/list]
+The Guide's "Known limits" page has the full list.
+
+[h1]Reporting a problem[/h1]
+[list]
+[*]On the options page, under Diagnostics, switch on "Developer diagnostics" and make the problem happen again.
+[*]Attach Player.log from that session. It is in %USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions and is overwritten when the game starts again.
+[*]Add a screenshot, what you were doing, what you expected, the mod version (0.1.0) and which other mods are on.
+[/list]
+
+[h1]Credits[/h1]
+The models, clothes and animations were made for this mod; nothing of the game's own files is included. Big Ambitions is made by Hovgaard Games; this mod is not made or endorsed by them.

@@ -1,0 +1,1269 @@
+using System;
+using System.Collections.Generic;
+using System.Text;
+using BAModAPI;
+using Entities;
+using Helpers;
+using NWH.VehiclePhysics2.Damage;
+using PlayerActivity;
+using UI;
+using UI.Guiders;
+using UI.Load;
+using UI.Notification;
+using UI.Overlays;
+using UnityEngine;
+
+namespace RealLifeOverhaul
+{
+    /// <summary>
+    /// Jobs the player takes themselves: one at a time, found on the phone (<see cref="JobPhone"/>),
+    /// played on the street. The director owns the job that is on: starts it, ticks it five
+    /// times a second, draws what it asks for (<see cref="JobHud"/>), pays through the game's
+    /// own transactions, and ends it cleanly whatever happens to the player meanwhile (hospital,
+    /// custody, sleep, a time skip, going indoors, a vanilla mission, a load). It keeps the
+    /// experience, strikes and daily limits (<see cref="JobState"/>) in the save's modData.
+    ///
+    /// With no job on, Update is two comparisons; once a second it looks at the day and the save
+    /// hook. With one on, the per-frame work is the marker (one projection) and one key test;
+    /// everything else is on the 0.2 s tick. Anything unexpected is logged once, the job is
+    /// ended with everything given back, and jobs stay off for the session.
+    /// </summary>
+    public class JobDirector : MonoBehaviour
+    {
+        private const float TickInterval = 0.2f;
+        private const float SlipSeconds = 9f;
+        private const float CrashSpeed = 3f;         // m/s of closing speed that counts as a crash on the job
+        private const float CrashGap = 2.5f;         // seconds between two crashes that both count
+        private const float EnergyFloor = 12f;       // work never takes the player below this (the game faints them at zero)
+        private const float WorstEnergyMultiplier = 1.9f;
+        private const string SalaryCategory = "ba:transactioncategory_salaryincome";
+        private static readonly Color GuideColour = new Color(0.20f, 0.62f, 0.95f, 1f);
+
+        public static IModLogger Logger;
+        public static JobDirector Instance { get; private set; }
+
+        /// <summary>True while a job's key prompt is on screen: the mod's own E/F (enter a door, get in a car) stands aside.</summary>
+        public static bool TakesInteractKey =>
+            Instance != null && (Instance._interactFrame == Time.frameCount
+                                 || (Instance._job != null && (Instance._job.Prompt != null || Instance._job.OwnsInteractKey))
+                                 || (Instance._job == null && Instance._boards != null && Instance._boards.InReach)
+                                 || (Instance._job == null && Instance._career != null && Instance._career.Near >= 0));
+
+        /// <summary>
+        /// True while any job is on. Going indoors ends a shift, so the mod's own key never takes the
+        /// player through a door meanwhile (the game's own click on a building still does).
+        /// </summary>
+        public static bool OnShift => Instance != null && Instance._job != null;
+
+        // ---- for the rest of the mod (life events, crime): read-only, never null-dangerous
+        /// <summary>The id of the job in progress, or null.</summary>
+        public static string ActiveJobId => Instance != null && Instance._job != null ? Instance._job.Def.Id : null;
+        /// <summary>The id of the last job the player worked this session, or null.</summary>
+        public static string LastJobId { get; private set; }
+        /// <summary>What the player has earned from jobs today.</summary>
+        public static int EarnedToday => JobState.Loaded ? JobState.EarnedToday : 0;
+
+        private readonly JobContext _context = new JobContext();
+        private readonly StringBuilder _text = new StringBuilder(256);
+        private JobCast _cast;
+        private JobProps _props;
+        private JobBody _body;
+        private JobRental _rental;
+        private JobBoards _boards;
+        private CareerDirector _career;
+        private float _lastInside = -100f;   // when the player was last inside the building the job works in
+        private float _guidedTime;
+        private Job _job;
+        private string _title;
+        private float _nextTick;
+        private float _nextSlow;
+        private float _slipUntil;
+        private bool _broken;
+        private bool _wasPulledOver;
+        private float _momentAt = -1f;   // Time.time at which the job is owed its Moment; negative: none
+        private CarController _hookedCar;
+        private float _lastCrash = -100f;
+        private bool _guided;            // the game's own job guider (arrow, city map) points at the job's marker
+        private Vector3 _guidedAt;
+        private bool _guiderBroken;
+        private int _interactFrame = -1;   // the frame in which a job took the key, whichever component runs first
+
+        private void Awake()
+        {
+            Instance = this;
+            JobState.Reset();
+            _cast = new JobCast(this, Logger);
+            _context.Director = this;
+            _context.Cast = _cast;
+            _props = new JobProps(transform);
+            _body = new JobBody(_props, Logger);
+            _rental = new JobRental(Logger);
+            _boards = new JobBoards(_props, Logger);
+            _career = new CareerDirector(this, Logger);
+            CareerState.Reset();
+            _context.Props = _props;
+            _context.Self = _body;
+            _context.Rental = _rental;
+            _context.Animations = new ClipJobAnimations();   // the mod's own clips where the bundle has them, the game's gestures where not
+            _context.Logger = Logger;
+        }
+
+        private void OnDestroy()
+        {
+            SaveHook.Drop(_onSave);
+            try
+            {
+                if (_job != null)
+                {
+                    Job job = _job;
+                    _job = null;
+                    job.End(JobEnd.Interrupted);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+            Unhook();
+            _body.Release();
+            _rental.Dispose();
+            _boards.Dispose();
+            _career.Dispose();
+            CareerState.Reset();
+            _cast.Dispose();
+            _props.Dispose();
+            JobState.Reset();
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+        }
+
+        private void Update()
+        {
+            if (_broken)
+            {
+                // Jobs are off for the session, but a van that was out on hire is still seen back.
+                if (Time.unscaledTime >= _nextSlow)
+                {
+                    _nextSlow = Time.unscaledTime + 1f;
+                    _rental.Tick();
+                }
+                return;
+            }
+            try
+            {
+                float now = Time.unscaledTime;
+                if (now >= _nextSlow)
+                {
+                    _nextSlow = now + 1f;
+                    Slow(now);
+                }
+                if (_job == null)
+                {
+                    if ((_boards.InReach || _career.Near >= 0) && JobKeys.InteractDown() && !UiOpen())
+                    {
+                        _interactFrame = Time.frameCount;
+                        OpenBoard();
+                    }
+                    return;
+                }
+                if (_job.Choices != null)
+                {
+                    int choice = JobKeys.ChoiceDown();
+                    if (choice >= 0 && !UiOpen())
+                    {
+                        _job.Choose(choice, Time.time);
+                    }
+                }
+                if ((_job.Prompt != null || _job.OwnsInteractKey) && InteractPressed())
+                {
+                    _interactFrame = Time.frameCount;
+                    _job.Interact(Time.time);
+                }
+                if (_momentAt >= 0f && Time.time >= _momentAt)
+                {
+                    _momentAt = -1f;
+                    _job.Moment(Time.time);   // the instant something changes hands: to the frame, not to the tick
+                }
+                if (Time.time >= _nextTick)
+                {
+                    _nextTick = Time.time + TickInterval;
+                    Tick(Time.time);
+                }
+                if (_job != null)
+                {
+                    Draw();
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                Logger?.Warn("Jobs: switched off for this session after the error above; whatever was on the street was taken back.");
+                _broken = true;
+                EndJob(JobEnd.Fault, null);
+                if (JobHud.Exists)
+                {
+                    JobHud.Instance.HideAll(true);
+                }
+            }
+        }
+
+        // ---------------------------------------------------------------- once a second
+
+        private void Slow(float now)
+        {
+            var gm = InstanceBehavior<GameManager>.Instance;
+            if (gm == null || gm.playerController == null || SaveGameManager.Current == null || LoadScene.isLoading)
+            {
+                return;
+            }
+            if (!JobState.Loaded)
+            {
+                if (!ModState.Loaded)
+                {
+                    return;   // LifeEvents makes the save's modData ready first
+                }
+                JobState.Load(SaveGameManager.Current.modData, TimeHelper.CurrentDay);
+                _rental.Load(SaveGameManager.Current.modData);
+                JobPhone.Setup();
+                CareerState.Load(SaveGameManager.Current.modData);
+                CareerPhone.Setup();
+                CourierJob.ClearLeftovers(Logger);   // a parcel that was in the player's hands when the game was saved
+                Logger?.Info("Jobs: ready. Reference letter: " + JobState.HasReference + ", earned this week: " + JobState.EarnedThisWeek + ".");
+            }
+
+            // The game clears its event hub on every load, so the save hook is kept attached.
+            SaveHook.Keep(_onSave ?? (_onSave = OnSaveGame));   // the mod's one relay in the game's save event (Core/SaveHook): nothing is allocated while that event has not changed
+
+            if (JobState.NewDay(TimeHelper.CurrentDay, out int weekEarned, out int weekShifts) && Settings.Jobs)
+            {
+                var data = new Dictionary<string, string>(2)
+                {
+                    { "amount", JobText.Money(weekEarned) }, { "shifts", weekShifts.ToString() }
+                };
+                Notifications.Show(NotificationType.Info, "reallife_job_week_summary", data, 12f);
+            }
+
+            _rental.Tick();
+            if (_job == null)
+            {
+                Boards(gm);
+            }
+            else
+            {
+                _career.Slow(gm.playerController.transform.position, false, true);   // the rota goes on while a job is worked
+            }
+
+            if (_slipUntil > 0f && now >= _slipUntil)
+            {
+                _slipUntil = 0f;
+                if (JobHud.Exists)
+                {
+                    JobHud.Instance.HideSlip();
+                }
+            }
+        }
+
+        private System.Action _onSave;   // made once: Core/SaveHook compares it, it is never built again
+
+        private void OnSaveGame()
+        {
+            try
+            {
+                if (JobState.Loaded && SaveGameManager.Current != null)
+                {
+                    if (SaveGameManager.Current.modData == null)
+                    {
+                        SaveGameManager.Current.modData = new Dictionary<string, string>();
+                    }
+                    JobState.Save(SaveGameManager.Current.modData);
+                    CareerState.Save(SaveGameManager.Current.modData);
+                    _rental.Save(SaveGameManager.Current.modData);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
+        // ---------------------------------------------------------------- finding and starting work
+
+        /// <summary>The jobs there are, for the phone. Never null.</summary>
+        public static JobDef[] Offers => JobCatalogue.All;
+
+        /// <summary>
+        /// Whether a job can be taken right now. If not, the reason is a key the phone can say.
+        /// </summary>
+        public bool Available(JobDef def, out string reasonKey)
+        {
+            reasonKey = null;
+            if (_broken || !Settings.Jobs || !JobState.Loaded)
+            {
+                reasonKey = "reallife_job_no_off";
+            }
+            else if (_job != null)
+            {
+                reasonKey = "reallife_job_no_busy";
+            }
+            else if (!Free(out reasonKey))
+            {
+            }
+            else if (JobState.Sacked(def, TimeHelper.CurrentDay))
+            {
+                reasonKey = "reallife_job_no_sacked";
+            }
+            else if (JobState.LeftToday(def) <= 0)
+            {
+                reasonKey = "reallife_job_no_daily";
+            }
+            else if (SaveGameManager.Current.Energy < JobCatalogue.MinEnergy)
+            {
+                reasonKey = "reallife_job_no_energy";
+            }
+            else if (def.Id == JobCatalogue.Taxi && !Licences.Driving.Has(LicenceClass.Taxi))   // ride-hail needs the taxi endorsement (Scripts/Licences)
+            {
+                reasonKey = "reallife_job_no_taxi_licence";
+            }
+            else if ((def.Needs & JobNeed.Reference) != 0 && !JobState.HasReference)
+            {
+                reasonKey = "reallife_job_no_reference";
+            }
+            else if ((def.Needs & JobNeed.CleanRecord) != 0 && !JobState.CleanRecord(TimeHelper.CurrentDay))
+            {
+                reasonKey = "reallife_job_no_record";
+            }
+            else if ((def.Needs & JobNeed.Car) != 0 && NearestCar(60f) == null)
+            {
+                _rental.CanHire(false, out reasonKey);   // no car of their own near: a van can be hired, if they can pay for it
+            }
+            return reasonKey == null;
+        }
+
+        // What must hold for any job, test buttons included: the player is on the street and nothing else has them.
+        private static bool Free(out string reasonKey)
+        {
+            reasonKey = null;
+            var uis = InstanceBehavior<UIs>.Instance;
+            GameInstance save = SaveGameManager.Current;
+            if (uis == null || save == null || LoadScene.isLoading || FuneralHelper.PlayerDead || EnergyHelper.goingToHospital
+                || uis.timeMachine.isRunning || PlayerActivityUI.IsPanelOpen || CasinoBoatManager.IsOnCasinoBoat || SubwaySystem.IsRiding)
+            {
+                reasonKey = "reallife_job_no_now";
+            }
+            else if (save.currentPlayerMission != null)
+            {
+                reasonKey = "reallife_job_no_mission";   // the game's own delivery jobs come first, always
+            }
+            else if (BuildingManager.IsInsideBuilding)
+            {
+                reasonKey = "reallife_job_no_indoors";
+            }
+            else if (!TrafficTools.Ready)
+            {
+                reasonKey = "reallife_test_refused_traffic_off";   // out of doors, but the street is not running yet (a menu, fast-forward)
+            }
+            return reasonKey == null;
+        }
+
+        /// <summary>Starts a job from the phone. False with the reason if it cannot be started.</summary>
+        public bool Take(JobDef def, out string reasonKey)
+        {
+            return Available(def, out reasonKey) && StartJob(def, false, out reasonKey);
+        }
+
+        /// <summary>Options-page test button: starts a job where the player stands, whatever their level, record or day.</summary>
+        public void TestStart(string id)
+        {
+            JobDef def = JobCatalogue.Find(id);
+            if (def == null || _broken || !JobState.Loaded)
+            {
+                return;
+            }
+            if (_job != null)
+            {
+                EndJob(JobEnd.Interrupted, null);
+            }
+            if (!Free(out string reason) || !StartJob(def, true, out reason))
+            {
+                Logger?.Info("Jobs: test of '" + id + "' could not start (" + reason + ").");
+                JobText.Toast(NotificationType.Warning, reason ?? "reallife_job_no_now");
+            }
+        }
+
+        /// <summary>The player stops the job themselves (phone, or the test button).</summary>
+        public void Quit()
+        {
+            if (_job != null)
+            {
+                EndJob(JobEnd.Quit, null);
+            }
+        }
+
+        public bool HasJob => _job != null;
+        public JobDef Current => _job != null ? _job.Def : null;
+        public int ShiftTotal => _job != null ? _job.Shift.Total : 0;
+
+        /// <summary>One line per job in the catalogue: the only place a job's class is named.</summary>
+        private static Job Create(string id)
+        {
+            switch (id)
+            {
+                case JobCatalogue.Flyers: return new FlyerJob();
+                case JobCatalogue.Courier: return new CourierJob();
+                case JobCatalogue.Taxi: return new TaxiJob();
+                case JobCatalogue.Cleaner: return new CleanerJob();
+                case JobCatalogue.Stocker: return new StockerJob();
+                case JobCatalogue.Vendor: return new VendorJob();
+                case JobCatalogue.Busker: return new BuskerJob();
+                case JobCatalogue.Dispatch: return new DispatchJob();
+                case JobCatalogue.Lead: return new LeadJob();
+                default: return null;
+            }
+        }
+
+        private bool StartJob(JobDef def, bool test, out string reasonKey, CareerShift shift = null, BookedGig gig = null)
+        {
+            reasonKey = "reallife_job_no_now";
+            Job job = Create(def.Id);
+            if (job == null)
+            {
+                return false;
+            }
+            RefreshContext();
+            _context.Test = test;
+            _context.Shift = shift;
+            _context.Gig = gig;
+            // Employers and clients pay less to someone who runs businesses of their own (CareerCatalogue.OwnerFactor).
+            float owner = CareerCatalogue.OwnerFactor(BusinessGame.RevenueBusinesses());
+            float option = Mathf.Clamp(Settings.JobPay, 25, 300) / 100f;
+            _context.Level = JobState.Level(def);
+            _context.Rate = JobCatalogue.PayFactor(_context.Level) * option * owner * (shift != null ? shift.Rank.Piece : 1f);
+            if (shift != null)
+            {
+                shift.Hourly *= option * owner;
+            }
+            bool begun;
+            try
+            {
+                begun = job.Begin(_context);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                begun = false;
+            }
+            if (!begun)
+            {
+                reasonKey = job.Refusal ?? "reallife_job_no_here";
+                SafeEnd(job, JobEnd.Interrupted);
+                Unhook();
+                _context.Car = null;
+                _context.Body = null;
+                _context.Shift = null;
+                _context.Gig = null;
+                return false;
+            }
+            _job = job;
+            _boards.Away();
+            LastJobId = def.Id;
+            _title = shift != null
+                ? JobText.T("reallife_career_shift_title", "title", JobText.T(shift.Rank.TitleKey), "employer", JobText.T(shift.Employer.NameKey))
+                : JobText.T("reallife_job_title", "job", JobText.T(def.NameKey), "level", _context.Level.ToString());
+            _wasPulledOver = PoliceAttention.PulledOver;
+            _momentAt = -1f;
+            _nextTick = 0f;
+            _slipUntil = 0f;
+            JobHud.Instance.HideSlip();
+            Logger?.Info("Jobs: '" + def.Id + "' started" + (test ? " by the test button" : string.Empty) + ", level " + _context.Level + ", rate " + _context.Rate.ToString("F2") + ".");
+            reasonKey = null;
+            return true;
+        }
+
+        // ---------------------------------------------------------------- while one is on
+
+        /// <summary>The job that is on is called (Job.Moment) in the frame this time comes. One at a time; negative cancels.</summary>
+        public void MomentAt(float time)
+        {
+            _momentAt = _job != null ? time : -1f;
+        }
+
+        private void Tick(float now)
+        {
+            if (Interrupted(now, out string reasonKey))
+            {
+                EndJob(JobEnd.Interrupted, reasonKey);
+                return;
+            }
+            var premises = InstanceBehavior<BuildingManager>.Instance;
+            if (premises != null && (premises.enteringBuilding || premises.exitingBuilding))
+            {
+                return;   // being taken through a door: nothing is asked of anyone until they are through
+            }
+            RefreshContext();
+            _body.Tick(now);
+
+            // Signalled to pull over for something they did: not a patrol car still on its way, and not the wait after
+            // a crash to see whether the driver stops (that already cost the job a crash).
+            bool pulledOver = PoliceAttention.PulledOver;
+            if (pulledOver && !_wasPulledOver)
+            {
+                if (!_context.Test)
+                {
+                    JobState.PoliceStop(TimeHelper.CurrentDay);
+                    if (_context.Shift != null && _context.Shift.Counts)
+                    {
+                        CareerState.PoliceStop();
+                    }
+                }
+                Logger?.Info("Jobs: the player was signalled to pull over during '" + _job.Def.Id + "'.");
+                _job.OnPoliceStop();
+            }
+            _wasPulledOver = pulledOver;
+
+            _job.Tick(now);
+            Guide();
+            if (_cast.AnyOut)
+            {
+                _cast.Cull();
+            }
+            if (_job.Over)
+            {
+                EndJob(_job.Outcome, null);
+            }
+        }
+
+        // Anything that takes the player off the street or out of their own hands ends the job; what was done is paid.
+        private bool Interrupted(float now, out string reasonKey)
+        {
+            reasonKey = null;
+            var uis = InstanceBehavior<UIs>.Instance;
+            GameInstance save = SaveGameManager.Current;
+            if (uis == null || save == null || LoadScene.isLoading)
+            {
+                return true;
+            }
+            if (FuneralHelper.PlayerDead || EnergyHelper.goingToHospital)
+            {
+                reasonKey = "reallife_job_end_hospital";
+            }
+            else if (uis.timeMachine.isRunning)
+            {
+                reasonKey = "reallife_job_end_time";    // custody, sleep, a taxi ride, the game's own work
+            }
+            else if (save.currentPlayerMission != null)
+            {
+                reasonKey = "reallife_job_end_mission";
+            }
+            else if (BuildingManager.IsInsideBuilding)
+            {
+                // Indoors ends a shift, except in the one building a job says it works in (a client's shop).
+                if (_job.WorksInside(InstanceBehavior<BuildingManager>.Instance.building))
+                {
+                    _lastInside = now;
+                }
+                else
+                {
+                    reasonKey = "reallife_job_end_indoors";
+                }
+            }
+            else if (!TrafficTools.Ready && now - _lastInside > 6f)   // the street takes a moment to start up again outside a door
+            {
+                reasonKey = "reallife_job_end_indoors";
+            }
+            else if (save.Energy <= 1f)
+            {
+                reasonKey = "reallife_job_end_exhausted";
+            }
+            else if (!Settings.Jobs)
+            {
+                reasonKey = "reallife_job_end_off";
+            }
+            return reasonKey != null;
+        }
+
+        private void RefreshContext()
+        {
+            var gm = InstanceBehavior<GameManager>.Instance;
+            _context.Player = gm.playerController;
+            _context.Indoors = BuildingManager.IsInsideBuilding;
+            _body.Bind(gm.playerController);
+            var car = gm.selectedVehicle as CarController;
+            _context.PlayerPosition = car != null ? car.transform.position : gm.playerController.transform.position;
+            if (car != _context.Car)
+            {
+                _context.Car = car;
+                _context.Body = car != null ? car.GetComponent<Rigidbody>() : null;   // looked up once per vehicle
+                Hook(car);
+            }
+            _context.Velocity = _context.Body != null ? _context.Body.velocity : Vector3.zero;
+            _context.Speed = _context.Velocity.magnitude;
+        }
+
+        private void Draw()
+        {
+            JobHud hud = JobHud.Instance;
+            if (ThirdPersonCamera.IsUiOpen())
+            {
+                hud.HideAll(false);
+                return;
+            }
+            hud.ShowObjective(_title, _job.Objective);
+            if (_job.ClockSeconds >= 0)
+            {
+                hud.ShowClock(_job.ClockSeconds);
+            }
+            else
+            {
+                hud.ShowStatus(_job.Status);
+            }
+            if (_job.HasMarker && !_guided)   // the game's own guider is pointing at it otherwise
+            {
+                hud.ShowMarkerAt(_job.MarkerLabel, _job.MarkerAt, _context.Car != null ? _context.Car.transform.position : _context.Player.transform.position);
+            }
+            else
+            {
+                hud.HideMarker();
+            }
+            if (_job.Choices != null)
+            {
+                hud.ShowChoices(_job.Choices, _job.ChoiceLit);
+            }
+            else
+            {
+                hud.HideChoices();
+            }
+            if (_job.Prompt != null)
+            {
+                hud.ShowPrompt(_job.Prompt);
+                Transform over = _job.PromptOver;
+                if (over != null)
+                {
+                    hud.ShowTarget(over.position + Vector3.up * _job.PromptLift);   // one more projection, only while somebody is in reach
+                }
+                else
+                {
+                    hud.HideTarget();
+                }
+            }
+            else
+            {
+                hud.HidePrompt();
+                hud.HideTarget();
+            }
+        }
+
+        // The game's own destination guider, the one its delivery jobs use: the place also shows on the city map.
+        // Moved only when the job's marker moves. If the game refuses it once, the mod's own marker is all there is.
+        private void Guide()
+        {
+            if (_guiderBroken || _job == null)
+            {
+                return;
+            }
+            try
+            {
+                if (!_job.HasMarker || _context.Indoors)   // indoors the mod's own marker points the way: the game's arrow is for streets
+                {
+                    Unguide();
+                }
+                else if (!_guided || (_job.MarkerAt - _guidedAt).sqrMagnitude > 1f
+                         || (_guidedTime < _rental.SpawnedAt + 1f && Time.time > _rental.SpawnedAt + 1f))   // a van just hired resets the game's guider a frame after it appears
+                {
+                    _guidedTime = Time.time;
+                    GuidersManager.SetGuiderTarget(_job.MarkerAt, _job.MarkerLabel, JobPhone.Icon, GuideColour, DirectionGuiderType.JobDestination);
+                    _guided = true;
+                    _guidedAt = _job.MarkerAt;
+                }
+            }
+            catch (Exception e)
+            {
+                _guiderBroken = true;
+                _guided = false;
+                Logger?.Error(e);
+                Logger?.Warn("Jobs: the game's destination guider could not be used; only the mod's own marker is shown.");
+            }
+        }
+
+        private void Unguide()
+        {
+            if (!_guided)
+            {
+                return;
+            }
+            _guided = false;
+            try
+            {
+                // Only ours to clear while no delivery of the game's own is using it.
+                if (SaveGameManager.Current == null || SaveGameManager.Current.currentPlayerMission == null)
+                {
+                    GuidersManager.ResetGuider(DirectionGuiderType.JobDestination);
+                }
+            }
+            catch (Exception e)
+            {
+                _guiderBroken = true;
+                Logger?.Error(e);
+            }
+        }
+
+        // The interaction key (JobKeys), never while a screen of the game's is open.
+        private static bool InteractPressed()
+        {
+            return JobKeys.InteractDown() && !UiOpen();
+        }
+
+        // A screen of the game's has the keys: its menus, and the face-to-face dialogue a board opens.
+        private static bool UiOpen()
+        {
+            if (ThirdPersonCamera.IsUiOpen())
+            {
+                return true;
+            }
+            var uis = InstanceBehavior<UIs>.Instance;
+            return uis != null && uis.playerHUD != null && uis.playerHUD.dialogUI != null && uis.playerHUD.dialogUI.isPanelOpen;
+        }
+
+        // ---------------------------------------------------------------- crashes on the job
+
+        private void Hook(CarController car)
+        {
+            Unhook();
+            if (car != null && car.vehicleController != null)
+            {
+                car.vehicleController.onCollision.AddListener(OnCollision);
+                _hookedCar = car;
+            }
+        }
+
+        private void Unhook()
+        {
+            if (_hookedCar != null && _hookedCar.vehicleController != null)
+            {
+                _hookedCar.vehicleController.onCollision.RemoveListener(OnCollision);
+            }
+            _hookedCar = null;
+        }
+
+        private void OnCollision(Collision collision)
+        {
+            if (_job == null || _broken || Time.time - _lastCrash < CrashGap)
+            {
+                return;
+            }
+            try
+            {
+                float speed = collision.relativeVelocity.magnitude;
+                if (speed < CrashSpeed || !DamageHandler.IsCollisionValid(collision))
+                {
+                    return;
+                }
+                _lastCrash = Time.time;
+                _job.OnCrash(speed);
+                if (_context.Shift != null && _context.Shift.Counts)
+                {
+                    CareerState.Crash();   // what the boss reads out at the next review
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
+        // ---------------------------------------------------------------- pay
+
+        /// <summary>
+        /// Pays a slip: the game's own transaction under the job's name, the units counted
+        /// towards the level and the day, energy and skill through the game's own systems,
+        /// and the slip on screen. A slip that comes to nothing is still shown, so the player
+        /// sees why.
+        /// </summary>
+        public void Pay(Job job, in PaySlip slip, string titleKey)
+        {
+            JobDef def = job.Def;
+            int total = slip.Total;
+            job.Shift.Add(slip);
+            if (total > 0)
+            {
+                GameManager.ChangeMoneySafe(total, new TransactionInfo(def.TransactionKey, SalaryCategory), null, null, force: true);
+            }
+            if (slip.Units > 0)
+            {
+                SpendEnergy(def.UnitEnergy * slip.Units);
+                // A shift in charge trains what the employer's line of work calls for (logistics at a depot, people elsewhere).
+                string skill = def.Id == JobCatalogue.Lead && _context.Shift != null && _context.Shift.Employer.LeadSkill != null
+                    ? _context.Shift.Employer.LeadSkill : def.Skill;
+                if (skill != null && def.UnitSkill > 0f)
+                {
+                    EmployeeInstance self = PlayerHelper.GetPlayerEmployeeInstance();
+                    if (self != null)
+                    {
+                        self.IncreaseSkill(skill, def.UnitSkill * slip.Units);
+                    }
+                }
+                // Work done by a test button is paid (so the slip can be seen) but earns no experience.
+                if (!_context.Test && JobState.Worked(def, slip.Units, total))
+                {
+                    int level = JobState.Level(def);
+                    JobText.Toast(NotificationType.Success,
+                        level == JobCatalogue.ReferenceLevel ? "reallife_job_level_reference" : "reallife_job_level_up", "level", level.ToString(), 10f);
+                }
+            }
+            ShowSlip(JobText.T(titleKey), slip);
+            Logger?.Info("Jobs: '" + def.Id + "' paid " + total + " (base " + slip.Base + ", distance " + slip.Distance + ", tips " + slip.Tips
+                         + ", bonus " + slip.Bonus + ", penalties " + slip.Penalty + ") for " + slip.Units + " unit(s).");
+        }
+
+        // Tiring, never dangerous: work stops short of the energy at which the game takes over.
+        private static void SpendEnergy(float amount)
+        {
+            float room = (SaveGameManager.Current.Energy - EnergyFloor) / WorstEnergyMultiplier;
+            amount = Mathf.Min(amount, room);
+            if (amount > 0f)
+            {
+                EnergyHelper.SpentEnergyOnce(amount);
+            }
+        }
+
+        private void ShowSlip(string title, in PaySlip slip)
+        {
+            _text.Length = 0;
+            Line("reallife_job_slip_base", slip.Base, false);
+            Line("reallife_job_slip_distance", slip.Distance, false);
+            Line("reallife_job_slip_tips", slip.Tips, false);
+            Line("reallife_job_slip_bonus", slip.Bonus, false);
+            Line("reallife_job_slip_penalty", slip.Penalty, true);
+            _text.Append('\n').Append(JobText.T("reallife_job_slip_total")).Append("   <b><color=#7CE08A>").Append(JobText.Money(slip.Total)).Append("</color></b>");
+            JobHud.Instance.ShowSlip(title, _text.ToString());
+            _slipUntil = Time.unscaledTime + SlipSeconds;
+        }
+
+        private void Line(string key, int amount, bool minus)
+        {
+            if (amount == 0)
+            {
+                return;
+            }
+            _text.Append(JobText.T(key)).Append("   ");
+            if (minus)
+            {
+                _text.Append("<color=#FF8A70>-").Append(JobText.Money(amount)).Append("</color>");
+            }
+            else
+            {
+                _text.Append("<color=#FFFFFF>").Append(JobText.Money(amount)).Append("</color>");
+            }
+            _text.Append('\n');
+        }
+
+        // ---------------------------------------------------------------- ending
+
+        private void EndJob(JobEnd why, string reasonKey)
+        {
+            Job job = _job;
+            if (job == null)
+            {
+                return;
+            }
+            _job = null;
+            Unhook();
+            Unguide();
+            _context.Car = null;
+            _context.Body = null;
+            bool failed = why == JobEnd.Failed || (why == JobEnd.Quit && job.QuitIsFailure);
+            if (failed && HomeHealth.SickNoteActive)
+            {
+                failed = false;   // a doctor's sick note (Home/DoctorVisit): a shift lost while it runs is no strike
+                JobText.Toast(NotificationType.Info, "reallife_doctor_note_used");
+            }
+            SafeEnd(job, why);
+            _cast.ReleaseAll();   // whoever a job forgot
+            _body.Release();      // the player is their own again, whatever the job was doing with them
+            _rental.Return();     // a hired van goes back once the player is out of it
+            CareerShift shift = _context.Shift;
+            _context.Shift = null;
+            _context.Gig = null;
+            if (JobHud.Exists)
+            {
+                JobHud.Instance.HideAll(false);
+            }
+            if (shift != null)
+            {
+                _career.ShiftEnded(job, shift, why, failed);   // the basic wage and the payslip, after the work's own slip
+            }
+            try
+            {
+                JobDef def = job.Def;
+                Logger?.Info("Jobs: '" + def.Id + "' ended (" + why + (reasonKey != null ? ", " + reasonKey : string.Empty) + "), " + job.Shift.Units
+                             + " unit(s), " + job.Shift.Total + " earned this shift.");
+                if (reasonKey != null)
+                {
+                    JobText.Toast(NotificationType.Warning, reasonKey, "amount", JobText.Money(job.Shift.Total), 9f);
+                }
+                if (why == JobEnd.Fault || _context.Test || !JobState.Loaded)
+                {
+                    return;   // a test or a fault never counts for or against the player
+                }
+                if ((job.Shift.Units > 0 || failed) && JobCatalogue.IndexOf(def.Id) >= 0)   // the two career-only kinds keep no strikes: the employer keeps marks
+                {
+                    if (JobState.ShiftEnded(def, failed, TimeHelper.CurrentDay))
+                    {
+                        JobText.Toast(NotificationType.Error, "reallife_job_sacked", "days", JobCatalogue.SackedDays.ToString(), 12f);
+                        ModState.AddModifier(ModState.MoodDownBig);
+                    }
+                    else if (failed)
+                    {
+                        JobText.Toast(NotificationType.Warning, "reallife_job_strike", "left",
+                            (JobCatalogue.StrikesToSack - JobState.Of(def).Strikes).ToString(), 10f);
+                        ModState.AddModifier(ModState.MoodDown);
+                    }
+                    else if (job.Shift.Tips > 0 || why == JobEnd.Done)
+                    {
+                        ModState.AddModifier(ModState.MoodUp);   // a good shift: tipped, or seen through to the end
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
+        private void SafeEnd(Job job, JobEnd why)
+        {
+            try
+            {
+                job.End(why);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
+        // ---------------------------------------------------------------- shared lookups
+
+        // One of the game's job vans is nobody's car for a job, except the one hired for this shift.
+        private static bool Usable(CarController car)
+        {
+            return !(car.vehicleInstance is Vehicles.DeliveryDriverJob.DeliveryVehicleInstance)
+                   || (Instance != null && ReferenceEquals(Instance._rental.Car, car));
+        }
+
+        /// <summary>
+        /// The car a driving job is worked with: the player's own if one is near, else a hired
+        /// van put at the roadside near them (the day's fee is charged the first time). Null if neither.
+        /// </summary>
+        public CarController CarFor(bool test, out string reasonKey)
+        {
+            reasonKey = null;
+            CarController own = NearestCar(60f);
+            if (own != null)
+            {
+                return own;
+            }
+            var gm = InstanceBehavior<GameManager>.Instance;
+            if (gm == null || gm.playerController == null)
+            {
+                reasonKey = "reallife_job_no_car";
+                return null;
+            }
+            return _rental.Hire(gm.playerController.transform.position, test, out reasonKey);
+        }
+
+        // ---------------------------------------------------------------- help-wanted boards
+
+        // Once a second while no job is on: where the boards stand, and whether the player is at one.
+        private void Boards(GameManager gm)
+        {
+            bool onFoot = Settings.Jobs && JobState.Loaded && !BuildingManager.IsInsideBuilding && gm.selectedVehicle == null && TrafficTools.Ready;
+            if (!onFoot)
+            {
+                _boards.Away();
+            }
+            else
+            {
+                _boards.Tick(gm.playerController.transform.position);
+            }
+            _career.Slow(gm.playerController.transform.position, onFoot, false);   // the employers behind the boards: their bosses, the rota
+            // At an employer's office the key speaks to its boss; at any other board it reads the board.
+            string prompt = _career.Near >= 0 ? _career.Prompt : _boards.InReach ? _boards.Prompt : null;
+            if (!JobHud.Exists && prompt == null)
+            {
+                return;
+            }
+            if (prompt != null && !UiOpen())
+            {
+                JobHud.Instance.ShowPrompt(prompt);
+            }
+            else
+            {
+                JobHud.Instance.HidePrompt();
+            }
+        }
+
+        // ---------------------------------------------------------------- careers (Jobs/Career*)
+
+        public CareerDirector Career => _career;
+        public JobBoards HelpBoards => _boards;
+        public IJobAnimations Animations => _context.Animations;
+
+        /// <summary>True while the job that is on is a rota shift for an employer.</summary>
+        public bool OnRotaShift => _job != null && _context.Shift != null;
+
+        /// <summary>
+        /// Starts a rota shift's work for an employer where the player stands. A test ends whatever job is on first
+        /// and waives energy; otherwise the same conditions as any job taken from the phone.
+        /// </summary>
+        public bool StartShift(JobDef def, CareerShift shift, bool test, out string reasonKey)
+        {
+            reasonKey = null;
+            if (_broken || !Settings.Jobs || !JobState.Loaded)
+            {
+                reasonKey = "reallife_job_no_off";
+                return false;
+            }
+            if (_job != null)
+            {
+                if (!test)
+                {
+                    reasonKey = "reallife_job_no_busy";
+                    return false;
+                }
+                EndJob(JobEnd.Interrupted, null);
+            }
+            if (!Free(out reasonKey))
+            {
+                return false;
+            }
+            if (!test && SaveGameManager.Current.Energy < JobCatalogue.MinEnergy)
+            {
+                reasonKey = "reallife_job_no_energy";
+                return false;
+            }
+            return StartJob(def, test, out reasonKey, shift, null);
+        }
+
+        /// <summary>Starts a set the agency booked, at its venue.</summary>
+        public bool StartGig(BookedGig gig, out string reasonKey)
+        {
+            reasonKey = null;
+            JobDef def = JobCatalogue.Find(JobCatalogue.Busker);
+            if (_broken || !Settings.Jobs || !JobState.Loaded || _job != null || def == null)
+            {
+                reasonKey = "reallife_job_no_busy";
+                return false;
+            }
+            return Free(out reasonKey) && StartJob(def, false, out reasonKey, null, gig);
+        }
+
+        /// <summary>The employer's payslip, in the place of the job's own slip and for a little longer.</summary>
+        public void ShowCareerSlip(string title, string body)
+        {
+            JobHud.Instance.ShowSlip(title, body);
+            _slipUntil = Time.unscaledTime + SlipSeconds + 4f;
+        }
+
+        // ---------------------------------------------------------------- test buttons for careers
+
+        private int _testEmployer = -1;
+
+        /// <summary>Options page: signs on with the next employer in turn (leaving the current one with no mark), on a rota that works today.</summary>
+        public void TestSignOn()
+        {
+            if (!CareerTestReady())
+            {
+                return;
+            }
+            _testEmployer = (_testEmployer + 1) % CareerCatalogue.All.Length;
+            int day = TimeHelper.CurrentDay;
+            CareerRota rota = CareerCatalogue.Rotas[0];
+            for (int i = 0; i < CareerCatalogue.Rotas.Length; i++)
+            {
+                if (CareerCatalogue.RotaDay(CareerCatalogue.Rotas[i].Days, day + 1))
+                {
+                    rota = CareerCatalogue.Rotas[i];   // the first shift is tomorrow
+                }
+            }
+            _career.SignOn(_testEmployer, rota, true);
+        }
+
+        /// <summary>Options page: the review is due now; it is held with the boss (or by phone where the employer has no office).</summary>
+        public void TestReview()
+        {
+            if (!CareerTestReady())
+            {
+                return;
+            }
+            if (!CareerState.Employed)
+            {
+                TestRefusals.Tell(Logger, "Career review", TestRefusal.NothingFits, 0, "not employed: sign on first");
+                JobText.Toast(NotificationType.Warning, "reallife_career_no_employer", 8f);
+                return;
+            }
+            CareerState.ForceReview();
+            Employer employer = CareerState.Employer;
+            var data = new Dictionary<string, string>(2) { { "boss", JobText.T(employer.BossKey) }, { "employer", JobText.T(employer.NameKey) } };
+            Notifications.Show(NotificationType.Info, "reallife_career_review_due", data, 10f);
+            if (!BuildingManager.IsInsideBuilding && !UiOpen() && Free(out _))
+            {
+                CareerPhone.OpenInPerson(CareerState.EmployerIndex);   // the tester need not walk to the office
+            }
+        }
+
+        /// <summary>Options page: up one rank at the current employer.</summary>
+        public void TestPromote()
+        {
+            if (!CareerTestReady())
+            {
+                return;
+            }
+            if (!CareerState.Employed || !CareerState.Promote())
+            {
+                TestRefusals.Tell(Logger, "Career promotion", TestRefusal.NothingFits, 0, CareerState.Employed ? "already at the top rank" : "not employed");
+                JobText.Toast(NotificationType.Warning, CareerState.Employed ? "reallife_career_test_top" : "reallife_career_no_employer", 8f);
+                return;
+            }
+            JobText.Toast(NotificationType.Success, "reallife_career_test_promoted", "title", JobText.T(CareerState.CurrentRank.TitleKey), 9f);
+        }
+
+        /// <summary>
+        /// Options page: a shift at a given kind of work here and now, on no record. The dispatcher's desk is the
+        /// courier firm's; a lead shift is the current employer's if it has one, else the retail chain's; a rota
+        /// shift is whatever the current rank works.
+        /// </summary>
+        public void TestShift(CareerWork work, bool current)
+        {
+            if (!CareerTestReady())
+            {
+                return;
+            }
+            Employer employer;
+            CareerRank rank;
+            if (current)
+            {
+                if (!CareerState.Employed)
+                {
+                    TestRefusals.Tell(Logger, "Career shift", TestRefusal.NothingFits, 0, "not employed: sign on first");
+                    JobText.Toast(NotificationType.Warning, "reallife_career_no_employer", 8f);
+                    return;
+                }
+                employer = CareerState.Employer;
+                rank = CareerState.CurrentRank;
+            }
+            else
+            {
+                employer = CareerCatalogue.Find(work == CareerWork.Dispatch ? CareerCatalogue.Courier : CareerCatalogue.Retail);
+                if (CareerState.Employed && CareerState.CurrentRank.Work == work)
+                {
+                    employer = CareerState.Employer;
+                }
+                rank = null;
+                for (int i = 0; i < employer.Ranks.Length && rank == null; i++)
+                {
+                    rank = employer.Ranks[i].Work == work ? employer.Ranks[i] : null;
+                }
+            }
+            string reason = null;
+            if (rank == null || !_career.TestShift(employer, rank, out reason))
+            {
+                Logger?.Info("Careers: test shift could not start (" + reason + ").");
+                JobText.Toast(NotificationType.Warning, reason ?? "reallife_job_no_now", 8f);
+            }
+        }
+
+        /// <summary>Options page: the agency books a set at a venue close by.</summary>
+        public void TestGig()
+        {
+            if (!CareerTestReady())
+            {
+                return;
+            }
+            if (_career.GigPending || !_career.BookGig(true))
+            {
+                TestRefusals.Tell(Logger, "Booked set", TestRefusal.NothingFits, 0, _career.GigPending ? "a set is already booked" : "no open business with a clear front within 160 m");
+                return;
+            }
+            Notifications.Show(NotificationType.Info, "reallife_career_gig_booked_toast",
+                new Dictionary<string, string>(2) { { "venue", _career.GigVenue }, { "fee", JobText.Money(_career.GigFee) } }, 10f);
+        }
+
+        private bool CareerTestReady()
+        {
+            TestRefusal why = _broken || !JobState.Loaded || !CareerState.Loaded ? TestRefusal.NotLoaded
+                : !CareerDirector.On ? TestRefusal.FeatureOff : TestRefusal.None;
+            if (why != TestRefusal.None)
+            {
+                TestRefusals.Tell(Logger, "Career", why);
+                return false;
+            }
+            return true;
+        }
+
+        // The same list the Gig Line reads out, face to face with the board.
+        private void OpenBoard()
+        {
+            try
+            {
+                if (!Free(out string reason))
+                {
+                    JobText.Toast(NotificationType.Warning, reason ?? "reallife_job_no_now");
+                    return;
+                }
+                JobHud.Instance.HidePrompt();
+                int employer = CareerDirector.On ? _career.Near : -1;
+                _boards.Away();
+                if (employer >= 0)
+                {
+                    CareerPhone.OpenInPerson(employer);   // the office behind the board: its boss, and through them the board's own list
+                }
+                else
+                {
+                    JobPhone.OpenInPerson();
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
+        /// <summary>
+        /// The player's car for a job: the one being driven, else the nearest of their own cars
+        /// within a distance. Scooters, hand trucks and the game's job van do not count; a van
+        /// hired for the shift does. Null if none.
+        /// </summary>
+        public static CarController NearestCar(float within)
+        {
+            var gm = InstanceBehavior<GameManager>.Instance;
+            if (gm == null || gm.playerController == null)
+            {
+                return null;
+            }
+            if (gm.selectedVehicle is CarController driven && Usable(driven))
+            {
+                return driven;
+            }
+            Vector3 from = gm.playerController.transform.position;
+            CarController best = null;
+            float bestSqr = within * within;
+            List<VehicleController> own = VehicleHelper.AllPlayerVehicles;
+            for (int i = 0; i < own.Count; i++)
+            {
+                if (!(own[i] is CarController car) || !car.isActiveAndEnabled || car.vehicleInstance == null || !Usable(car))
+                {
+                    continue;
+                }
+                float sqr = (car.transform.position - from).sqrMagnitude;
+                if (sqr < bestSqr)
+                {
+                    bestSqr = sqr;
+                    best = car;
+                }
+            }
+            return best;
+        }
+    }
+}

@@ -1,0 +1,3933 @@
+# Real Life Overhaul
+
+A mod for Big Ambitions: third-person cameras, traffic accidents with emergency response,
+people on the street (drivers, paramedics, officers, street incidents), crash consequences,
+random life events, and extra phone contacts.
+
+## Layout
+
+```
+Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
+  ModManifest.asset                id, version, what the Mod Builder packages
+  RealLifeOverhaul.asmdef          assembly definition and references
+  Locales/en.json                  every player-facing string, flat keys prefixed reallife_
+  Bundles/reallife_character       meshes and textures for the player's new looks (built by CharacterAssets, see below)
+  Bundles/reallife_props           the modelled street props and their texture atlas (built by PropAssets, see below)
+  Bundles/reallife_anim            the mod's own Humanoid animation clips and how each tool sits in the hand (built by CityAssets, see below)
+  Scripts/
+    Core/      entry points, settings, per-save state, shared HUD, shared shapes for props (Shapes), modelled props by id (PropLibrary; plain shapes are the fallback)
+    Core/      entry points, settings, per-save state, shared HUD, the modelled props (PropLibrary) and the plain shapes they fall back to (Shapes)
+    Camera/    on-foot third-person camera, driving chase camera; the game's place markers put right when their target is behind the camera (PoiDirection)
+    World/     enter buildings and vehicles with a key, visual grading; every feature's places on the city map (MapLinks)
+    Life/      random life events (catalogue, no-repeat deck, runner), sickness, hospital
+    Traffic/   staged traffic accidents with ambulance and police response, hit-and-run chases, player crash consequences
+      TrafficAccidents  the orchestrator: what happens and when; owns the scene and clears it on every exit
+      ResponseUnit      one ambulance or patrol car taken from traffic (always the real ambulance, always the police body)
+      EmergencyDriver   drives a unit along the road points: closes up and stops short of vehicles and people, never leaves the road or forces through; says what holds it up
+      SceneParking      the free-space tests (what a pose touches; a unit's whole body against every solid layer; a strip of road), and where a unit pulls up when a scene has no lane for it to stand in
+      SceneCordon       closes the road round a scene (the traffic system's own switch) with an apron for the response vehicles, says where they stand; tape and barriers with a wall along each, an opening wherever the ambulance crew's way crosses it and nothing standing on that way (SetCorridor), the cone taper, the gate (its hold line 24 m before the scene; held shut for a leaving unit, and for the crew), debris and evidence markers at the point of impact
+      TrafficWatch      self-check: stops a vehicle that bounces on the spot, and reports and removes a response vehicle left standing with its crew aboard or after its scene
+      SceneObstacles    cuts the vehicles standing at a scene out of the navigation mesh, so people on foot go round them
+      TrafficEffects    lights, sirens, the police body, fire, smoke, debris
+      PursuitSight      whether a patrol car still has the player in sight: shared by both pursuits
+      PursuitPace       how fast a patrol car after the player may go (0.95 of their car's top speed, 130 to 200 km/h) and how long it keeps at it
+      PursuitBackup     the second patrol car that joins a pursuit of the player after 45 s, if traffic has a car to give
+      TrafficTools      what all of these need from the traffic system; a vehicle's real footprint from its colliders
+    People/    the mod's street characters and the scenes they play
+      ActorPool      the twelve characters every scene shares: created once, reused in the same outfit, hidden when out of view; four may be out only to be seen and give way to any scene
+      Uniforms       the one outfit every officer wears and the one every paramedic wears: named garments, fixed colours; the hi-vis shirt
+      ServiceKit     what is worn with a uniform, on the bones: badge, belt, radio, cap, POLICE / PARAMEDIC panels, the medic bag; fitted to the measured body, the cap to the measured head (band above the brow, peak above the eyes)
+      Stature        how tall a character stands, from its joints and measured crown; the scale that makes officers 1.86 m (women 1.76 m) and no paramedic short
+      BonePose       aim a bone, reach a hand to a place: shared by KneelPose, SupinePose and Crime/CuffPose
+      StreetActor    one character: walk, stand, pose, kneel, gesture
+      KneelPose      down on one knee, set on the bones by hand (the game has no such animation); costs nothing to hold
+      SupinePose     flat on the back along a bed, for an animated character or a ragdoll at rest: what the stretcher lays its passenger in
+      ActorRole      one person's part in a scene; safe to use when nobody could be had
+      StreetSpots    where people can stand: beside car doors, on stretches of pavement
+      StreetPeople   who counts as a person on the street besides the walking pedestrians: the game's standing and sitting people, from its pools' parents (once a second, only while asked)
+      AccidentCast   drivers, paramedics and officers at a traffic accident (run by Traffic/TrafficAccidents)
+      CrewWay        the ambulance crew's one way from the rear doors to the casualty and back, planned and tested pose by pose before anyone sets off, and the fixed layout beside the casualty (stretcher, who kneels where)
+      CrewPath       that way as plain geometry (no engine types; checked outside the game): a line with rounded corners laid out by distance, the crew's pose at any distance along it, what it sweeps over, how near that comes to a point, a box or a length of tape
+      SceneWitness   an unhurt driver or bystander at a scene: checks the casualty, phones, looks for help; out to the kerb the moment the tape is up or the paramedics are out, and gives their account there
+      SceneOfficer   one officer's jobs at a scene: one on traffic at the barrier (stepping out of the open lane to wave the ambulance through when it leaves that way); the other at the casualty, setting out evidence markers, taking the witness's account, at the cordon's opening
+      Stretcher      the ambulance crew's wheeled stretcher: one, built once; wheeled along a CrewPath, moving its crew with it frame by frame (no navigation agent finds a way), swung where a corner will not do; its passenger laid straight (SupinePose) under a blanket, or a covered form
+      PeopleAhead    the people a mod-driven vehicle must brake for whom physics cannot see
+      RoadsideStop   the crew of a patrol car at a stopped car: a ticket at the window, or an arrest (Crime/ArrestSequence)
+      StreetCrime    the old name for street incidents; forwards to Crime/CrimeDirector
+      BeatPatrol     a pair of officers walking a beat near the player, most of the time
+      PolicePresence a patrol car parked at the kerb with its officers by it, and an officer at a junction
+      ICasualty      someone lying at a scene who is not one of its cast (a person hit by a car)
+    Crime/     crime near the player, by the player and against the player
+      CrimeCatalogue   every crime: where and when it can happen, weight, endings with odds, its lines; fines and odds (CrimeLaw)
+      CrimeDeck        deals crimes, endings and lines without repeats (game-free, like LifeEventDeck)
+      CrimeDirector    one scene at a time: when, which, ticking it, the marker, 911, the test buttons
+      CrimeScene       ICrimeScene and the base every scene shares: cast of four, steps, arrests, clearing up
+      CrimeScenes      which scene plays which catalogue entry: one line per crime
+      Scenes/          the scenes: FootChase, Questioning, Disturbance, Snatch, Mugging, Assault, DrugDeal,
+                       LoneOffender (graffiti, car break-in, drunk, vendor, panhandler, fare dodger),
+                       CarPursuit (traffic stop, reckless driver, car theft), ParkingTicket,
+                       OwnShopTheft, ShopIncident (shoplifter, hold-up), PlayerPickpocket, PlayerMugging
+      ArrestSequence   the one arrest every scene uses: hands up, cuffed, to the kerb, into a patrol car, away
+      CuffPose         hands behind the back, re-aimed after the animator each frame while (and only while) someone is cuffed
+      Crime            money, toasts and small helpers shared by all of the above
+      CrimeCars        finds a parked car to stand beside or an ordinary traffic car to take over
+      Knockdown        one of a scene's people knocked off their feet (RagdollSystem) and up again
+      ShopFloor        what indoor scenes read from the shop: doors, shelves, camera cover, the guard
+      OffscreenCrimes  overnight break-in, parked car broken into, scam call: rolled once a day, all capped
+      PoliceAttention  the player's own offences: seen or not, pulled over, ticket, pursuit, escape, custody
+      PlayerOffences   notices red lights, speeding, pavement and wrong-side driving, jaywalking (timed, player only)
+      RoadMap          stop lines and lanes from the traffic system in a grid, built once per city load
+    Ragdoll/   people hit by cars: ragdoll physics, pedestrian collisions, the player knocked down
+      RagdollRig          builds a ragdoll on a character's bones (bodies, colliders, joints) and strips it again
+      Ragdoll             one character as a ragdoll: animated to physical, frozen at rest, restored completely
+      RagdollSystem       the six ragdolls there are, for full characters and the game's plain standing figures alike, and up to eight bodies that lie on without physics when a seventh person goes down (removed out of view); the only per-frame work, and only while someone is down
+      PedestrianTakeover  borrows one of the game's pooled pedestrians and gives it back (walking, or through the pool)
+      Casualty            one person who was hit: lies, gets up angry and walks off, or stays until taken away
+      PedestrianIncidents rolls what a hit does by speed, looks after the casualties, stages traffic hitting someone
+      CarStrikes          notices the player's car running into people (positions, not collisions): walkers, standing figures (StreetPeople) and the mod's own, everyone in the sweep, one log line per batch
+      PlayerKnockdown     the player on foot hit by traffic: brief ragdoll, then shaken, injured or hospital
+    Phone/     callable contacts and their conversations
+    Character/ character quality: detailed player in the city, a scalp under its hair, character-screen lighting
+      CharacterQuality  entry points (city, character creation); hair, looks and textures on every change of look, options
+      CharacterCatalogue the new looks on offer (one row each); the picks, which belong to one character (the one being created, or the loaded save's: never PlayerPrefs) and give way, per kind, to a piece picked in the game's own screens
+      CreatorLooks      the mod's starter garments as entries of the game's own creator grids (Torso, Legs, Feet) with their colourways in its colour row
+      ModAssets         the asset bundle: read once in the background, bind poses taken from the game's head mesh
+      ModLooks          puts the scalp underlay (and any picked look) on the characters that show the player; undoes itself
+      PlayerDouble      the player drawn with the game's detailed character set, posed from the player's skeleton
+      HairLook          puts the hair finish on the hair and beard of the characters that show the player; undoes itself
+      HairFinish        what a finished hair layer is (depth prepass, strand maps, gloss from the colour); game-free, the HDRP preview compiles it too
+      CharacterLighting fill and rim light for character creation and the shop preview; undoes itself
+      CharacterTools    telling the two character sets apart, copying one inertly, sharper textures
+    CityLife/  the living city: people at work and about their day on the pavements near the player
+      CityLifeDirector  what is out and where: three sites and eight people at most, set up and taken away only out of view; the test buttons and why each refused
+      CityCatalogue     every activity: who, when, how often, in the rain or not, the activity that plays it (one entry each)
+      CityActivity      ICityActivity (find room, begin, tick, end) and the base every activity shares: people who walk in (Arrive) and walk off (Depart)
+      Activities/       SoloActivity (one person, data only: sweeper, window cleaner, painter on a ladder, tai chi, newspaper, doorman...),
+                        RoadCrewActivity, ChatActivity, BuskerAudienceActivity, JoggerActivity,
+                        StallActivity (coffee and hot-dog carts with a queue that walks up, is served and walks off),
+                        CourierActivity (sack truck, parcel to a shopfront), WalkingActivities (the mail round; pushchair; umbrellas in the rain),
+                        StandingScenes (chess table, a driver leaning on a parked car, a door with a queue, a gardener at a street tree)
+      CityPeople        the pool of eight (not the accident pool's six): made a person at a time, hidden when out of view, knocked down by the player's car
+      CityPerson        one of them: stand, walk, play a clip with its tool, drop it when hit
+      CityOutfits       work clothes from the game's own garments by name, in hi-vis and council colours
+      CitySpots         where people may stand: pavement at street level, clear, away from doors; a shopfront at a measured distance
+      CityProps         the prop objects, made once and reused
+      ClipLibrary       the mod's animation clips by name, from Bundles/reallife_anim
+      Animation/        the clip player any feature can use (no game types in here: the asset pipeline tests these very files)
+        ActivityAnimator   plays a clip on one character over the game's controller: cross-fade in, hold, hand back; a masked layer (arms, one arm, upper body) over walking; speed matched to the ground
+        ActivityAnimators  steps the players that are fading and the hands on tools; switched off when there are none
+        HeldTool           a tool on a hand bone at the grip its clip was made with
+        TwoBoneReach       puts the second hand on the tool after the animation
+    Jobs/      jobs the player takes themselves, from the Gig Line contact on the phone
+      JobCatalogue   every job: needs, pay per unit and per metre, energy, skill, daily amount, levels (game-free)
+      JobState       per-save experience, strikes, sackings, today's and this week's totals: one line in modData (game-free)
+      JobDirector    the one job that is on: start, 0.2 s tick, interruptions (indoors only in the one building a job names), pay, the test buttons
+      Job            the base every job derives from, the pay slip, what a job is handed each tick, text helpers
+      JobHud         objective panel (placed under the game's top bar, measured), the job's own marker, key prompt, a row of three choices, pay slip
+      JobKeys        every key test and key name the jobs use: the two lines to change for rebindable keys; fills {key} in texts
+      JobPhone       the Gig Line contact and its conversation, on the phone or face to face at a board
+      JobBoards      help-wanted boards outside a few service buildings: the same list as the Gig Line
+      JobCast        the two characters jobs put on the street (never the accident pool's)
+      JobSpots       door fronts and the ground beside the player's car, tested before anyone is put there
+      JobAnimations  IJobAnimations and JobClip: the one door to a person's body; today played with the game's gestures
+      JobProps       what a job puts in the player's hand that is not a game item (the flyer stack)
+      Kinds/         the jobs: FlyerJob, CourierJob, TaxiJob
+    Driving/   the car the player drives: performance by kind of car, the eased throttle, speedometer, towing
+      CarCatalogue   every vehicle type's targets (0-100 km/h time, top speed) and kind, and the rule for unknown types (game-free)
+      CarModel       a car in a straight line as the game's physics moves it; finds the power, gearing and drag that meet a target (game-free)
+      CarTuning      reads the driven car, applies what CarModel found, puts every value back; the eased pedal
+      CarDrag        air drag on the driven car, one force per physics step, only while a tuned car is driven
+      CarMeasure     the "Measure this car" button: times a full-throttle run, off otherwise
+    Garage/    the custom shop for cars, and bicycles and motorbikes (see "Garage" below)
+      GarageDirector   the one component that ticks: builds onto spawned cars, underglow after dark, prompts, the test buttons; GarageSummary ("My vehicles")
+      GarageCatalogue  paint chart, finishes, performance parts with effects and trade-offs, every price; GarageBuild (one car's build, one line of text) (game-free)
+      GarageState      the save's part: builds by vehicle id, which scooters are two-wheelers; GarageBridges (what other features may set or ask)
+      GarageFit        every car body as measured (roof, boot deck, nose) and which fitted part goes on which car
+      GarageCar        one car wearing its build: paint through the game's own property blocks, lamps, underglow, fitted parts, brakes, tyres, springs, weight; puts all of it back
+      GarageTuning     power, gearing and drag for a build through CarModel; the hook for Driving/CarTuning; the shop's before-and-after figures
+      GarageShop       the repair bays, the turntable camera, the panel, the bill
+      GarageUi         the Garage's own canvas: plates, buttons, sliders, the key prompt; the drag surface of the turntable view
+      TwoWheelers      bicycles and motorbikes as re-bodied scooters: making, removing, hiring, buying, energy, helmet, falls
+      BikeMount        one scooter as a bicycle or motorbike: body, numbers, the rider's seat, hands and feet; LegIk
+      BikeBody         the four models (BikeCatalogue) and their stand-in bodies built from tubes and rings (MeshMaker)
+      BikePlaces       bike-share docks, bicycle racks, motorbike stands: where they go and what stands there
+      JobSites       a client's premises: which businesses will do, clear floor and shelves inside that the player can walk to
+      JobAnimations  IJobAnimations and JobClip: the one door to another person's body; the mod's clip where the bundle has one, the game's gesture where not
+      JobBody        the player's own body at work: held on the spot, a clip with its tool, or the game's own animation and hand object
+      JobProps       the jobs' props, pooled (modelled, or the prop that stands in, or a plain shape); HeldProp: one in a hand at its clip's grip
+      JobCarry       a box in the player's arms with the game's own carry
+      JobRental      a van hired for the day: the game's own job van, made and removed the game's own way
+      Kinds/         the jobs: FlyerJob, CourierJob, TaxiJob, CleanerJob, StockerJob, VendorJob, BuskerJob
+    Law/       police precincts, being arrested and held, the criminal record and reputation
+      LawBook        the offence table and its sums: hours per charge, the two-day cap, repeat offenders, bail, the lawyer (game-free)
+      Record         Record (the criminal record), Reputation (police and public, scrutiny) and LawState: their four lines in modData
+      Precincts      which buildings are the precincts (one per district, fixed by address), their map markers, the dressed frontage
+      Custody        one arrest: the scene on the street, the ride, the cell as a time skip, bail and lawyer, release, resume after a load
+      CustodyPanel   the holding cell on screen: charge sheet, release clock, three buttons
+      LawDirector    the one tick a second: load and save, dressing, the daily step, thanks from passers-by, the watchdog, test buttons;
+                     Arrests: the one call each for whoever catches the player
+      RecordPhone    the Police Records Desk contact: record, reputation, time since the last offence, nearest precinct
+    Transport/ bus stops and buses, the subway as a journey, car ownership (see "Transport" below)
+      TransitMap       the bus network: six routes between subway stations along the road graph, stops by rule; built once per city load, in memory only
+      TransitDirector  what of it is on the street: three dressed stops, the stop that is served, its people, the bus, the player's ride; the test buttons
+      BusStopDressing  one stop's pole, flag, shelter and bench (modelled props when the bundle has them, plain shapes to the same size until then); on the city map every stop is a place of the "Bus stops" row (World/MapLinks)
+      TransitBus       one bus: a van from the traffic pool with a route board, driven by the traffic system on a scripted route, stopped "in point" at the stop
+      TransitRide      the ride itself (fade, the game's time machine, put down at the far end), for bus and subway; TransitState: day pass and ride counts in modData
+      SubwayJourney    the prompt at each subway entrance, service by the clock (frequency, delays, a night closure), the City Transit contact
+      TransportHud     the information panel, the key prompt, the fuel gauge beside the speedometer
+      CarGarage        CarRecord (per owned car, in modData by vehicle id), CarRules (every price, interval and chance; game-free)
+      CarOwnership     the driven car: distance, wear felt through grip and brake torque, thirst, breakdowns, the garage bay, insurance payouts, the daily round
+      CarRoadside      a mechanic who walks up, kneels at the car and walks off: breakdowns and fuel brought to the roadside
+      CarPhone         the Garage page and Roadside Assistance contacts
+    Leisure/   things to do for fun at real places, the mod's clothes as something bought, night life, the sound bed, photo mode (see "Leisure")
+    Events/    city events: fires and the fire service, weather that matters, street events (see "City events" below)
+      EventDirector     the one scene that is on (a fire or a street event), yielding to accidents and crimes; calendar announcements, the City Bulletin contact, 911, the test buttons, one line in modData
+      FireScene         one fire from first smoke to the engine leaving (car, bin, shopfront); HoseHold (hands on the nozzle); FireDamage (the player's own business: closure and repair bill)
+      EventRoad         the adapter over Scripts/Traffic (public surface only): lanes, the stretch to close, bringing a pooled vehicle; EngineLivery and FireEngine
+      FireEffects       flames, smoke, steam, water jet and firelight: seven pooled particle systems copied from the game's smoke; Fireworks (four pooled mesh-particle systems)
+      Hose              sixteen pooled segments laid along the ground from the engine to the nozzle, clear of vehicles and street furniture
+      EventPeople       the event pool of eight (a second CityPeople): people on a closed carriageway, things worn on a bone, a staff in the hand, walking in and off
+      EventProps        the props by id: the modelled one if the bundle has it, else a plain-shape stand-in to the wish-list's size and pivot
+      FireOutfit        turnout gear from the game's garments by name
+      Weather           the static factors other features read (accidents, crime, sight, street life, grip, traffic speed); WeatherEffects applies tyres, traffic pace, energy, forecast
+      EventCalendar     what is on which day: fixed days placed by how far through the year they fall, the rest by a roll that depends on the day and the save
+      StreetEventScene  market, farmers' market, parade, protest, fun run, film shoot, fireworks: one class, one closed stretch of road
+    Social/    the people in the player's life, outings with them, and the morning paper
+      SocialModel     the cast's records, the plan, the rules (stages, what things are worth, neglect), the save: game-free
+      SocialCatalogue names, jobs, traits, outings, every line anybody says: game-free
+      SocialLife      what happens between the player and a person, with its consequences in the game; the optional links (ISocialLaw, ISocialWellbeing)
+      SocialDirector  load and save, the hour and the day, who gets in touch, the plan, the one scene, the test buttons; SocialHooks
+      SocialScene     the base of a scene (talking face to face, walking off) and MeetScene (somebody walks up)
+      OutingScene     a plan kept: the eight outings, a lift, helping them move
+      SocialDialogs   the call to a person, the People page, the Ledger read out, the conversation in the street; SocialTalk (topics from what happened)
+      SocialPhone     contacts, icons, the paper delivered, ringing
+      SocialCast      the two characters, wearing the look of whoever they stand for
+      SocialBody      the player's own body in a scene: held, a gesture, a cup, a box
+      SocialPlaces    venues by business type, streets, places to wait, walk in from and walk off to
+      SocialHud       the plan panel, marker, prompt and card
+      News            the log any feature reports to (News.Report), and the desk that writes the paper
+    Travel/    hotels to stay in and holidays to take: see "Travel and lodging" below
+      Kinds/         the jobs: FlyerJob, CourierJob, TaxiJob, CleanerJob, StockerJob, VendorJob, BuskerJob;
+                     and the two an employer's rank gives: DispatchJob (the planning desk), LeadJob (a shift in charge)
+      CareerCatalogue  employers, ranks, rotas and every figure of the career ladder (game-free)
+      CareerState      per-save employer, rank, rota, marks, review figures, employment history: one line in modData (game-free)
+      CareerDirector   where each employer is (a help-wanted board), its boss by the board, the rota, clocking on, payslip, reviews, booked sets
+      CareerPhone      the Work contact and the same conversation face to face with a boss: sign on, rota, clock on, sick, notice, CV
+      CareerLinks      the optional doors to other features: acquaintances (offered), law record and sick notes (asked for)
+      DispatchBoard    the dispatcher's planning map: drawn only when an assignment changes
+    Business/  pressure on the businesses the player runs: rivals, a racket, inspections, staff, suppliers, customers, audit, opportunities
+      BusinessCatalogue  every kind of issue and every number that bounds it (game-free)
+      BusinessState      open issues, running footfall changes and closures with their end, the racket: one line in modData (game-free)
+      BusinessGame       the only code that reads or changes the game's business fields; each change bounded and logged
+      BusinessIssues     what each kind is: when it can start, what it says, the choices, what each does, the default at the deadline
+      BusinessDirector   the hourly clock, the one roll a morning, the off switch that puts everything back, the test buttons
+      BusinessDesk       the phone contact that lists open issues with deadlines and choices; its messages are the record
+      BusinessVisit      a collector, an inspector or a police sting played in the player's own shop while they stand in it
+    Justice/   courts and prison: cases, bail, lawyers, the courthouse, hearings, sentences, the Legal file (see "Justice" below)
+      JusticeLaw       every charge, cap, fee and formula: evidence, verdict, bail, sentence, appeals (game-free)
+      JusticeState     what a save remembers of it: one line in modData (game-free)
+      JusticeBridges   Justice (the door for the rest of the mod), Justice.Bridges (Law, Licences, Social, Transport; each with a default), JusticeReports
+      JusticeDirector  the clock and the switchboard: hourly business, what waits for the player, the watchdog, the test buttons
+      JusticePanel     the one full-screen panel (courtroom, cell, Legal file); JusticeHud: prompt, marker, status line
+      Courthouse       which building it is, the sign on its frontage, where one stands to go in
+      LegalCounsel     the law firms, rating and fee, motions and plea deals; the Legal contact and its conversation
+      CourtHearing     one hearing: charges, plea, the rounds of a trial, the verdict and its sum, the sentence and its reasons
+      PrisonStay       custody (hours) and prison (days) as time passing, day by day; JusticeHold: what is changed on the game meanwhile
+      CommunityService a played litter-picking shift
+      LegalFile        the Legal file page and what can be done from it
+    Licences/  driving licences (school, theory and driven tests, points, enforcement): see "Driving licences" below
+    Civic/     a city government with elections and policies, and construction sites that progress over days (see "Civic life")
+    Family/    a partner who moves in, engagement and wedding, children, relatives, hard times (see "Family" below)
+      FamilyDirector  the one component: a tick a second, the key prompt, questions, sequences (fade, time skip), scenes, the test buttons; FamilyModifiers
+      FamilyState     per-save state as one JSON string in modData; FamilyBalance: every cost, threshold and time scale
+      FamilyBridges   ISocialBridge, IHomeBridge, ITravelBridge, ILeisureBridge, ILawBridge and FamilyApi: what other features implement, call and may read
+      Partner         who the partner is: Social's person when its bridge is set, else the one record the default keeps
+      FamilyCast      the family's own three characters (seeded looks, formal or day wear) and FamilyProps (wish-list props with plain-shape stand-ins)
+      FamilyPlaces    the city's own buildings by kind of business (jeweller, planner, florist, hospital, school, theatre, restaurant...), the home, floor spots indoors
+      HomeLife        the timetable, the partner shown at home, moving in, routines, their share of the rent, chores, support, evenings out
+      Errands         somewhere to be on a day (a scan, a dinner, the wedding, a school play) or to shop: marker, objective line, prompt at the door, what a miss does
+      Courtship       the ring at the jeweller, the answer and its odds; ProposalScene
+      Wedding         WeddingPlanner (venue, size, extras, date, deposit, invitations, postponing, cold feet), WeddingDay, WeddingScene
+      Children        deciding, pregnancy and adoption, the nursery, birth, growing up, school, birthdays, costs; WalkScene (the pushchair walk)
+      Relatives       Mom and the in-laws, the four family dinners of the game's year, next of kin
+      HardTimes       arguments (a no-repeat pool with two answers), counselling, time apart, coming home, divorce and custody
+      FamilyPhone     the Family, Someone special and in-laws contacts, everything that can be done from a conversation; FamilyPage (the five pages)
+      FamilyTalk / FamilyText / FamilyHud / FamilyCalendar  conversations and menus, text and its fillers, the prompt and objective, what happens by the hour and the day
+    Diagnostics/ temporary F9 character report (remove before release)
+    Performance/ fixes for the base game's frame rate, and the measuring that decides them
+      PerfDirector   switches the tweaks as the options ask, gives each its timer tick; F7 probe, Shift+F7 benchmark
+      PerfTweak      one optimisation: Apply records what it changes, Restore puts it back; a fault switches it off
+      PerfTweaks     the list of tweaks (options page, saved choices, benchmark rows all follow from it)
+      Tweaks/        the tweaks themselves, one small class each
+      PerfSampler    frame times, main/render/GPU split, engine counters over a window; off unless measuring
+      PerfLoop       where the main thread's frame goes: a timestamp in front of each of the engine's frame steps, and per camera; off unless measuring
+      PerfProbe      F7: ten seconds measured, then RealLifeOverhaul_perf_HHmmss.txt with the step table and a census of the scene
+      PerfCensus     what is in the scene and how the engine is set up (report time only)
+      PerfBench      Shift+F7: every tweak, trial (one render-pipeline feature off) and reference measured off/ON/off/ON in one-second windows, paired so drift cancels; RealLifeOverhaul_bench_HHmmss.txt
+      PerfGame       what the above need from the game (pedestrians, traffic, lamps, trees)
+    Meta/      the mod about itself: the feature registry, the in-game guide and welcome panel, realism presets,
+               the options page in sections, the save tools (see "Meta" below)
+CharacterAssets/                   asset pipeline for the new looks (outside Assets, Unity ignores it)
+  scripts/                         Blender scripts: make the meshes and textures, write them to build/
+  PreviewProject/, preview.ps1     the game's character rebuilt under HDRP: a look is judged here before it ships
+  UnityProject/                    small Unity project that only turns build/ into the asset bundle
+  build_bundle.ps1                 runs it in batch mode: build/ -> Assets/Mods/RealLifeOverhaul/Bundles, then a load check
+PropAssets/                        asset pipeline for the street props (outside Assets, Unity ignores it)
+  scripts/                         Blender scripts: paint the atlas, model every prop, render previews
+  UnityProject/                    small Unity project that only turns build/ into the asset bundle
+  build.ps1                        everything: atlas, props, previews, Bundles/reallife_props, load check
+CityAssets/                        asset pipeline for the animation clips (outside Assets, Unity ignores it)
+  scripts/                         Blender scripts: the authoring rig, THE CLIPS, contact sheets, FBX
+  UnityProject/                    small Unity project: Humanoid import, the bundle, and the tests that prove the clips play
+  build.ps1                        everything: clips, Bundles/reallife_anim, every clip measured on the game's skeleton, play-mode proof
+GarageAssets/                      read-only extraction of the game's vehicle data (outside Assets, Unity ignores it)
+  scripts/extract_vehicles.py      every vehicle prefab: hierarchy, meshes, materials, shader properties (how cars are painted)
+  scripts/extract_fit.py           every car body measured from its triangles: the rows of Scripts/Garage/GarageFit.cs
+  scripts/check_locale.py          the by-hand locale check, for when the CatalogueCheck executable is blocked
+RealLifeOverhaul.Build/            command-line build and checks (outside Assets, Unity ignores it)
+  RealLifeOverhaul.csproj          compiles the same scripts with dotnet and installs to ModsLocal
+  CatalogueCheck/                  verifies the event and crime catalogues, their dealing, and locale keys
+```
+
+## Setup on a new machine
+
+1. Install Big Ambitions through Steam, Unity 2022.3.62f2 (must match the game) and the .NET SDK.
+2. Open this repository's root folder in Unity. In **Big Ambitions > Welcome**, import the game DLLs.
+3. If the game is not at `G:\Steam\steamapps\common\Big Ambitions`, pass
+   `-p:GameManaged="<game>\Big Ambitions_Data\Managed"` to the dotnet commands below.
+
+## Build
+
+Two ways, same source:
+
+- **Fast iteration (code only):**
+  `dotnet build RealLifeOverhaul.Build/RealLifeOverhaul.csproj -c Release`
+  compiles the mod and copies the DLL, the locales and `Bundles/` to the game's `ModsLocal/RealLifeOverhaul`.
+- **Asset bundle (only after changing the looks):** `CharacterAssets/build.ps1` (or only the last step, `build_bundle.ps1`)
+  rebuilds `Assets/Mods/RealLifeOverhaul/Bundles/reallife_character` from `CharacterAssets/build`
+  with Unity in batch mode and checks that it loads; the bundle is committed, so a code-only
+  build needs neither Unity nor Blender. See `CharacterAssets/README.md`.
+- **Prop bundle (only after changing a prop):** `PropAssets/build.ps1` rebuilds
+  `Assets/Mods/RealLifeOverhaul/Bundles/reallife_props` the same way; it is committed too.
+  See `PropAssets/README.md`, which also lists every prop with its size, pivot and how to use it.
+- **Clip bundle (only after changing a clip):** `CityAssets/build.ps1` rebuilds
+  `Assets/Mods/RealLifeOverhaul/Bundles/reallife_anim`, measures every clip on a stand-in with the game's
+  skeleton and proves in play mode that clips cross-fade over an Animator Controller; it is committed too.
+  See `CityAssets/README.md`, which lists every clip, what it is for and how to use one from any feature.
+What the dotnet build installs is the whole package, exactly as it is uploaded: `RealLifeOverhaul.dll`, `Locales/en.json`,
+the three files in `Bundles/` and `thumbnail.jpg` (the Workshop picture). The Unity **Mod Builder** is not used for this
+mod: its manifest (`ModManifest.asset`) names no asset bundle, because the bundles are built by the three scripts above.
+
+Restart the game to load a new build. Publishing to the Workshop is done from inside the game
+(Mods > Mod Creator); the texts for its form, the thumbnail script, the gallery pictures and the steps are in
+`RealLifeOverhaul.Build/Workshop` (start with `UPLOAD.md`).
+
+### Version
+
+The version is written in three places and the build stops if they disagree (the `CheckVersion` target):
+`<Version>` in `RealLifeOverhaul.csproj` (the assembly version, which is what the running mod reports),
+`Changelog.Latest` in `Scripts/Meta/Changelog.cs`, and `Version` in `ModManifest.asset`. A new version also gets one
+row at the top of `Changelog.All` and its two texts in `en.json`. 0.1.0 is the first public release; the numbers the
+development builds carried (0.13 to 0.46) appear in this file's history notes and in the git log only. A save or an
+options store written by one of those builds is treated as written before 0.1.0 (`SaveTools.DevelopmentVersionKey`,
+`Welcome.DevelopmentSeenId`).
+
+### Release defaults
+
+"Show test tools" and "Developer diagnostics" are off as shipped. With diagnostics off the mod writes only warnings and
+errors to `Player.log` (every logger in the mod is the one gate, `Meta.Dev.Gated`), and the four diagnostic keys (F7,
+Shift+F7, F8, F9) do nothing. To work on the mod, switch both on under Diagnostics on the options page.
+
+## Checks
+
+`dotnet run --project RealLifeOverhaul.Build/CatalogueCheck -c Release`
+fails if an event id is duplicated, a locale key is missing, or the no-repeat deck repeats early.
+If Windows blocks the unsigned check executable ("An Application Control policy has blocked this
+file"), build it and run the DLL through the dotnet host instead:
+`dotnet build RealLifeOverhaul.Build/CatalogueCheck -c Release`, then
+`dotnet RealLifeOverhaul.Build/CatalogueCheck/bin/Release/net10.0/CatalogueCheck.dll`.
+Run it after any change to the event catalogue or `en.json`.
+
+## Adding a crime
+
+1. **Catalogue entry** in `Scripts/Crime/CrimeCatalogue.cs`: an id, its family, where it can happen
+   (`Place`), what it needs (`Needs`: night, traffic, patrol cars...), how many people it must be able
+   to take from the pool (`Cast`), its `Weight` in the deal, what a 911 call about it is called
+   (`Report`), and its lines: `Starts`, `Near` (the player walks up), `Extra`, and one `CrimeEnding`
+   per way it can end, with odds. An ending with odds 0 is never rolled; a scene reaches it by what
+   happens in it. Every key is written out in full and added at the end of `Locales/en.json`.
+2. **Scene**: either one more line in `Scripts/Crime/CrimeScenes.cs` reusing an existing class (a lone
+   offender on the pavement is `new LoneOffenderScene("my_id", OffenderStyle.Pitch)`: its endings are
+   picked from the ones that class knows, listed at the top of the file), or a new class in
+   `Scripts/Crime/Scenes/` deriving from `CrimeScene`:
+   - `Id` returns the catalogue id;
+   - `Stage` puts the cast out through the four `ActorRole`s (`First`, `Second`, `Third`, `Cop`) and
+     sets the first step with `Go(step, now, seconds)`; return false if it cannot be staged here;
+   - `Run` is a switch over the scene's own steps, called four times a second. Ask `Is("ending")`
+     for what was rolled, `Conclude()` to announce it, `Arrest(role, now)` to hand someone to the
+     officer (cuffs, kerb, patrol car and driving away follow by themselves), `RunFor(role, from)`
+     when somebody runs for it (the player can then stop them by getting within reach: the base
+     class plays the citizen's arrest, the wait for an officer and the thanks), `Leave(now, player)`
+     to wind down;
+   - `Release` gives back anything that is not one of the four roles or the two shared cars.
+   The base class ends the scene after two minutes, when the player leaves, and on every fault.
+3. `dotnet run --project RealLifeOverhaul.Build/CatalogueCheck -c Release` checks that every entry has
+   a scene, every line exists, every ending a scene names is in the catalogue, and the deal never
+   repeats early.
+
+Fines, the odds of being seen and custody hours are constants in `CrimeLaw` at the top of the catalogue.
+
+## Adding an activity to the living city
+
+Somebody working alone on the pavement is **one catalogue entry and nothing else**. In
+`Scripts/CityLife/CityCatalogue.cs`:
+
+```csharp
+new CityEntry
+{
+    Id = "window_cleaner", Name = "reallife_city_name_window_cleaner", Family = CityFamily.Workers, Weight = 12, From = 6, To = 12,
+    Activity = new SoloActivity(new SoloSpec
+    {
+        Look = CityLook.Cleaner, Place = SoloPlace.Shopfront, Wall = 0.50f, Room = 0.45f,       // facing a real wall, half a metre from it
+        Work = "squeegee_wipe", Rest = "squeegee_rest",                                           // two clips made for the same tool
+        Props = new[] { new SoloProp("bucket", 0.62f, 0.05f, 0f) }                                // stood on the ground beside them
+    })
+},
+```
+
+plus its name at the end of `Locales/en.json` (written out in full). The clip brings its tool; `Carry` puts a second
+tool in the other hand, `Greet` is a one-off played when someone on foot comes by in front, `Now` a one-off every
+so often, `UsesGamePose` one of the game's own poses instead. If it needs a new motion, that is one clip
+(`CityAssets/README.md`, "Add a clip") and, for a new tool, one prop (`PropAssets/README.md`, "Add a prop").
+
+More than one person, or anything a table cannot say, is a class in `Scripts/CityLife/Activities/` deriving from
+`CityActivity` (copy `ChatActivity`, 70 lines) and an entry that names it:
+
+- `Find(site)` looks for a place for every person and prop near `site.Anchor` with `CitySpots` (`Stand` = on the
+  pavement with room, `Shopfront` = at a measured distance from a real wall, `Along` = which way the pavement
+  runs) and remembers them. It puts nothing on the street, and returns false if anything has no room.
+- `Begin(site)` calls `Start(site)`, then `Add(look, spot, face)` for each person, `Put(prop, spot, heading)` for
+  each prop and `person.Work(clip, Props)` for what they do. If any of it fails it calls `End()` and returns false.
+- `Tick(now)`, once a second, changes clips on timers and returns `Lasting()`.
+- `End()` is inherited: everyone and everything goes back.
+
+- **People who come and go** are never put down in view. `Arrive(site, look, goal)` takes somebody from the pool,
+  puts them on the pavement out of view 24 to 46 m away and sets them walking to `goal` (null, with the reason in
+  `site.Refusal`, if nobody is free or there is no way in); test `person.Arrived && person.Near(goal, 0.5f)` in
+  `Tick`, then `person.Stand()` and `person.Face(point)` (a turn over a third of a second). `Depart(person)` walks
+  them off to pavement out of view, and `TickDepartures()` at the top of `Tick` takes them back into the pool once
+  they are there.
+- **Carrying while walking** is a masked clip over the game's own walk: `person.WorkOver("carry_box_hold", Props)`
+  (arms), `"cup_hold"` with `BodyMask.RightArm`, `"umbrella_hold"`; `person.Bring(prop, null, position, rotation)`
+  for what is pushed in front (pushchair, sack truck) or worn on a bone (satchel). Nothing of the legs is ours, so
+  nothing slides.
+- **The instant something changes hands** is asked for with `CityLifeDirector.After(clip.Mark("release"), this,
+  what, person)` and arrives in `Moment(what, who, now)`: there `person.Release(true)` gives the prop back to the
+  activity (stand it where it is and add it to `Dressing`), or `person.Take(prop, clip, Props)` puts a prop that is
+  already out into a hand. A clip whose tool is picked up part of the way through is started with `tool: false`.
+- An activity that turns a place down for a reason of its own says so: `site.Refusal = CityRefusal.NoParkedCar`.
+
+The director does the rest: when and where, out of view, never the same thing twice running, taken away out of
+view, the test button (each press of a family's button puts its next activity just ahead of the player, and a
+press that starts nothing says which activity and exactly why: one sentence per `CityRefusal`). In the rain
+everything is taken in except entries marked `Rain`; `RainOnly` entries (people under umbrellas) start only then.
+## Jobs
+
+The game has its own work: employer jobs (stand at a station in someone's shop while time is skipped,
+paid by the hour), the delivery van (a company van, a hand truck, boxes of stock to three shops, 100 a
+drop) and food delivery (accepted at a restaurant's till, 25 plus 0.05 a metre). The jobs here sit beside
+those and never touch them: a job cannot start while one of the game's missions is on, and ends if one
+is taken. They are found on the phone (the Gig Line) and at the help-wanted boards.
+
+| job | needs | a unit is | pays | a day |
+|---|---|---|---|---|
+| Flyers | nothing | a flyer taken | 2.50, +40 % on a busy street, +10 % for the whole bundle | 48 (two bundles of 24) |
+| Cleaner | a business near that is open | a spill mopped, inside the client's premises | 7, +10 % for the whole floor | 24 (three floors of 8) |
+| Shelf stocker | a shop near that is open | a box carried in from the kerb and shelved | 12, +10 % for the whole delivery | 18 (three deliveries of 6) |
+| Drinks cart | a pavement with room for the cart | a customer served the drink they asked for | 6.50, tips of 1 to 3.50 for quick, +10 % if nobody walked off | 36 (three shifts of 12) |
+| Busker | a pavement | a song | tips only: about 6 a song, times 0.5 to 1.5 for how many are about, 0.4 to 1.4 for the hour, 0.85 to 1.25 for the song, by how it was played; 1 to 3 from each listener | 16 (two sets of 8) |
+| Courier | a car (own, or a van hired for 45 a day) | a parcel delivered | 18 + 0.03 a metre of the round, +15 % for beating the clock, tips | 15 (three rounds of 5) |
+| Ride-hail | a car (own or hired), a reference (level 2 in any job), no police stop on a job for 2 days | a fare | 8 + 0.07 a metre, tip up to 30 % by comfort | 14 |
+
+Every figure is in `JobCatalogue`, set against what the game itself pays (read from its data files by
+`JobAssets/scripts/extract_wages.py`: the one employer job, cashier, is 25 an hour; the game's own staff
+start at 12 an hour for cleaning, 16 for customer service, 18 for delivery driving; the van job is 100 a
+drop). Pay is multiplied by 1 + 0.08 per level above the first (a level every 40 flyers, 30 patches, 20
+boxes, 30 customers, 20 songs, 15 parcels, 12 fares; four levels) and by the "Job pay" option. Deductions only ever reduce what
+a job pays; a slip never goes below zero. Three failed shifts in a job and it lets the player go for three
+days; a good shift takes a strike off. Work spends energy and trains a skill through the game's own
+systems, and never takes energy below 12.
+
+### Adding a job
+
+1. A row in `JobCatalogue.All` (and its id as a constant): needs, pay, energy, skill, daily units.
+2. A class in `Scripts/Jobs/Kinds` deriving from `Job`:
+   - `OnBegin` sets it up where the player stands and returns false with `Refusal` (a locale key the
+     phone can say) if it cannot be done here;
+   - `Tick` runs five times a second and is a switch over the job's own steps. It says what to show by
+     setting `Objective` (through `Show`), `Status` or `ClockSeconds`, the marker (`Mark` / `Unmark`) and
+     `Prompt`, and only when they change: these are strings, and nothing may build one per tick;
+   - `Interact` is the interaction key (`JobKeys`), called only while `Prompt` is set (or always, for a
+     job that `OwnsInteractKey`); `Choices` (three labels) puts a row of three on screen and `Choose`
+     is called with 0, 1 or 2. Texts never name a key: they carry `{key}`, which `JobText.T` fills in;
+   - `WorksInside(building)` says yes for the one building the job goes on in (a client's shop, picked
+     with `JobSites`); the director then lets the shift continue in there and nowhere else indoors;
+   - the player's own body is moved only through `Ctx.Self` (`JobBody`): `Hold` first, then `Clip` or
+     `Pose`; the director undoes all of it on every way out;
+   - `OnCrash` and `OnPoliceStop` if driving matters to it;
+   - `End` is called exactly once on every way out. It gives back every person (`Ctx.Cast.Release`),
+     anything in the player's hands, and pays for work done and not yet paid (`Ctx.Pay`);
+   - `Finish(JobEnd.Done / Failed)` when the shift is over.
+3. One line in `JobDirector.Create`, a test button in `Core/RealLifeOverhaulMod.cs`, its strings at the
+   end of `Locales/en.json` (several lines for anything said more than once, picked with `JobText.Pick`).
+
+People come from `Ctx.Cast` (two at most; `Put` only at a point that came from `JobSpots`, `StreetSpots` or
+`CitySpots`, out of the player's sight where the job can choose, and cope with null), or are the game's own
+pedestrians borrowed through `Ragdoll/PedestrianTakeover` and handed back with nothing of ours on them. They
+move only by walking. Nobody gets into or out of a car except at a spot `JobSpots.BesideCar` found clear:
+with `job_car_enter` / `job_car_exit` in the bundle they are seen to, otherwise it is the sound of the door
+(the game has no such animation, and none is faked). The cast is not used indoors.
+
+### The hired van
+
+A driving job taken with no car of the player's own within 60 m is given a hired van (`JobRental`, 45 once a
+day). It is the game's own job van made exactly as its delivery job makes one (`DeliveryVehicleInstance`,
+`VehicleHelper.CreateAndSpawnVehicle`), with no mission. The van's prefab carries the game's
+`DeliveryJobVehicle`, which takes the van off the save's vehicle list when the object goes and, once an
+hour, destroys any van that has no mission, is not driven and is not in view. A save made in the middle of
+a hire therefore holds only a vehicle the base game made and removes by itself; with the mod loaded the van
+is also remembered by id in modData and taken back once the player is out of it. During a hire that hourly
+check is unhooked for the one van. If the prefab ever comes without the component the hire is refused.
+
+For the rest of the mod: `JobDirector.ActiveJobId`, `LastJobId` and `EarnedToday` are safe to read at any
+time (a life event can ask whether the player drove a taxi today). A good shift adds `ModState.MoodUp`,
+a failed one `MoodDown`, a sacking `MoodDownBig`.
+
+### Job clips
+
+Job code never names one of the game's animations. It asks `IJobAnimations.Play(character, JobClip.X)`,
+which returns how long the beat lasts, or 0 if that character cannot do it. `ClipJobAnimations` plays the
+mod's own clip for it when the bundle has one (its table lists the clips that will do, best first: `job_*`
+when they arrive, and until then the living city's `leaflet_offer`, `wave_hello` and `serve` where they fit)
+and otherwise hands over to `GameJobAnimations`, the nearest gesture the game's characters have. A gesture
+(hail, hand over, receive, refuse, thank, knock, annoyed) is played on the masked layer with `BodyMask.Upper`:
+the legs stay the game's, so whoever makes it may be walking. What moves the whole body by its nature (into and
+out of a car, to a boot, a shelf, a counter) is played whole, and the player is held still for it (`JobBody.Hold`).
+`Moment(JobClip, "release" / "grip")` says when in the beat a hand lets go or closes; a job asks for that instant
+with `Ctx.At(time)` and gets it in `Job.Moment`, to the frame (the tick is five a second): that is when a flyer, a
+parcel or a cup changes hands. `job_hail` is a loop and goes on until `Stop(person)`.
+Also asked for by JobClip: `HandOverLeft` (`job_hand_over_l`), `ReceiveBox` (`job_receive_box`), `CarEnter`,
+`CarExit`, `LoadBoot`, `Stock` (`stock_shelf`), `Serve` (`serve_counter`). On the player, by name through
+`JobBody.Clip`: `mop_floor` (else the game's `Cleaning` with its `Mop`), `guitar_strum` (else the game's own
+guitar performance from `StreetPerformerDataHelper`, with its music). Whoever takes a parcel carries it in
+`carry_box_hold` (arms only, over the game's own walk and idle); only a bundle without it falls back to the
+whole-body `carry_box_walk`, kept in step with `MatchSpeed`. `job_flyer_hold` is on the player's left arm for the
+whole flyer shift (`JobBody.Over`, `BodyMask.LeftArm`), walking included, and is taken up again after each offer.
+`CarEnterLeft` / `CarExitLeft` are the `_l` clips for a door on the car's left: `JobSpots.AtDoor` gives the place
+the four are made for (square to the car, 0.75 m out from the middle of the rear seat, which is an estimate: the
+game's vehicles say nothing of their seats) and the side; the clip is played only within 0.35 m of that place.
+The clips first asked for, as designed (Humanoid, in place, starting and ending in the standing idle):
+
+| JobClip | played today by | wanted clip | length | hand | prop socket |
+|---|---|---|---|---|---|
+| `Hail` | `DJEncouraging` | `job_hail`: right arm up and out towards the road, hand open, two small waves, lean forward on the toes | 1.6 s, loops cleanly | right | none |
+| `HandOver` | `PressAction` | `job_hand_over`: holds an object out at chest height to someone 0.8 m in front, releases, arm returns | 1.2 s, release at 0.55 s | right (a mirrored `job_hand_over_l` for the flyer hand) | right hand: the object leaves the hand at the release |
+| `Receive` | `PressAction` | `job_receive`: reaches forward, closes the hand on an object at chest height, draws it in to the body, small nod | 1.3 s, grip at 0.5 s | right; a two-handed `job_receive_box` for a parcel 0.4 m wide | right hand (or both, 0.4 m apart) from the grip on |
+| `Refuse` | `IDontThinkSo` | `job_refuse`: palm up and out at shoulder height, head turns away, a half step back | 1.2 s | right | none |
+| `Thank` | `DJEncouraging` | `job_thank`: a nod and a short open-hand wave at head height | 1.2 s | right | none |
+| `Knock` | `PressAction` | `job_knock`: three raps with the knuckles at head height, 0.5 m in front, then a step back | 1.6 s | right | none |
+| `Annoyed` | `IDontThinkSo` | `job_annoyed`: both hands thrown up, head shake, turns away | 1.4 s | both | none |
+
+**All of these are now in `Bundles/reallife_anim`** under exactly those ids, with `job_car_enter` / `job_car_exit`
+(and `_l` for a door on the car's left side), `job_load_boot`, `job_flyer_hold`, `carry_box_hold`, and for jobs to
+come `mop_floor`, `stock_shelf`, `serve_counter`, `till_tap`, `carry_box_walk`, `guitar_strum`. The table in
+`CityAssets/README.md` ("Jobs") has each one's length, the moment of its grip or release (`CityClip.Mark`), the hand,
+the prop it holds and where the character must stand. They are made for the upper body and are meant to be played
+with `ActivityAnimator.PlayOver(clip, BodyMask.Upper)` (the legs stay the game's own) and `job_flyer_hold` with
+`BodyMask.LeftArm` over walking; `ClipLibrary.Has(id)` says whether a clip is there, so an `IJobAnimations` that
+plays them can fall back to `GameJobAnimations` beat by beat. `ClipJobAnimations` and the jobs use them so.
+
+### Job props
+
+The parcel in the player's arms is the game's own sealed cardboard box, carried with the game's own
+two-handed carry (`JobCarry`). Everything else comes from `JobProps.Take(id)`: the modelled prop of that id;
+failing that the one it is listed against in `JobProps.Alias` (`flyer` -> `leaflet`, `flyer_stack` ->
+`leaflet_stack`, `parcel_s/m/l` and `shelf_box` -> `parcel`, `mop_bucket` -> `bucket`, `vendor_cart` ->
+`coffee_cart`); failing that a plain shape for the few that pass as one (parcels, `taxi_sign`, `guitar_case`,
+`mop_bucket`, the cleaner's `floor_patch`, which is only ever a shape). No cart and no help-wanted board is
+made of plain shapes: without the prop there is none. A prop goes in a hand only through `HeldProp`, at the
+grip of a clip made for it and with the prop that clip names (`ClipLibrary` carries both); the last resort for
+the flyer stack alone, when no clip can be had at all, is `HandProp`'s plain shapes fitted from the forearm.
+
+## Leisure
+
+Everything under `Scripts/Leisure` (namespace `RealLifeOverhaul.Leisure`): things the player does for fun at real
+places in the game's city, the mod's clothes as something bought, a little night life, a sound bed and photo mode.
+One component, `LeisureDirector`, owns all of it except sound and photo mode, which are two small components it adds.
+
+```
+Leisure/
+  LeisureDirector   the one activity that is on, what is on offer where the player stands (one look a second),
+                    interruptions, the result card, the test buttons, the film programme, drink at the wheel
+  LeisureActivity   the base every activity derives from; Sweep, the one timing interaction they share
+  LeisureApi        Activities.Start / Stop / Finished for the rest of the mod; LeisureMoney
+  LeisureState      this save's records, landmarks, catch, clothes bought, outfits, drinks: plain strings in modData
+  LeisureHud        objective (two lines), key prompt, three choices, the meter, a list, the result card, a marker
+  LeisureBody       the player's body at play: held, a clip with its tool (HeldTool), an arm loop, one of the game's dances
+  LeisureProps      pooled props: from PropLibrary by id, else a stand-in of plain shapes (see the wish-list)
+  LeisureVenues     what the game's city has: the items of the building the player is in, landmarks, the water's edge
+  Activities/       ChessGame (+ ChessCorner, the chess player on the pavement), Fishing, NightOut (DanceFloor, BarDrinks, Sightseeing)
+  Shops/            ClothesShop (prices, what is owned, the rule), ClothesRack (the prop in a store), ClothesBrowser (rack and wardrobe)
+  Night/            NightLife (two people outside an open venue in the evening), TipsyDriving
+  Sound/            LeisureSound (the four ambient loops, the cue tones, the radio's name on the HUD)
+  Photo/            PhotoMode
+```
+
+### What the game's city has, and what is built on it
+
+Found by reading the game's code (`BuildingRegistration.businessTypeName`, the item names of an interior, the
+scene's MonoBehaviours); nothing is guessed at run time beyond what is listed under "Unverified".
+
+| the game has | leisure uses it for |
+|---|---|
+| nightclubs (`ba:businesstype_nightclub`) with dance floor items, cocktail bar items (`ba:itemname_*cocktailbar*`) and nine player dances (`BaseHuman.SetDance`) | the dance floor (a rhythm game on the game's own dances) and drinks at the bar |
+| clothing stores (`ba:businesstype_clothingstore`) with `ba:itemname_clothingrack*`; no way to buy clothes to wear (clothing is retail stock; the wardrobe changes outfits for free) | the Real Life Overhaul rack: the mod's garments, tried on and bought |
+| wardrobe and dresser furniture (`ba:itemname_wardrobe*`, `ba:itemname_dresser*`) in homes | the mod's own clothes and three saved outfits, at the same furniture |
+| cinemas and theatres where the game itself seats the player and passes the time ("watch show", with its own mood) | only what was missing: a programme (what is on today) and a verdict on what was watched |
+| the pier's big wheel and rides, the casino boat's pier, golf course, tennis courts, swimming pool, bridges, twenty named subway stations, the hospital | landmarks to see and tick off; the waterside ones also say where a line can be cast |
+| pavements (through `CitySpots`) and the mod's own `chess_table` prop and `chess_sit` clip | the chess player on the pavement |
+| a car radio with four stations (`RadioPlayer`), footsteps by surface (`StepTrigger`), rain loops (`RainAudio`) | left alone; the radio's station and song are named on the HUD |
+
+**Not in the game, so not built** (the brief said to skip these if the city has no such place): basketball hoops,
+bars as a business of their own (hence no pool or darts: a nightclub's bar is the only bar), bowling. The game's own
+arcade machines, golf, tennis, gym machines, swimming, carnival rides and casino are already playable by the
+player through the game and are not touched.
+
+### The activities
+
+Each is started by the prompt that appears where it can be played (the interaction key), by its test button, or by
+`Leisure.Activities.Start(kind, place, companion)`. One at a time, never during a job, a police stop, a mission
+screen or in a vehicle. Every way out (played to the end, walked away, a load, hospital, time skipped, knocked
+down, the option switched off, an error) goes through `LeisureDirector.EndActivity`: the body is released first
+(`LeisureBody.Release`: clip disposed, hands emptied, dance stopped, the hold let go), then the activity's `End`
+gives back whatever else it put out. A best score is kept per save for chess, fishing, dancing and sightseeing.
+
+| activity | where | how it plays | costs | pays / mood | record |
+|---|---|---|---|---|---|
+| Street chess | at the mod's chess table, where a chess player sits by day in the dry (put out of view 30 to 70 m off, one at a time, never while the living city has its own chess table out) | walk to the free stool (marked), sit (`chess_sit`); five positions, three moves each on a 22 s clock: 2 points for the move, 1 for a sound one, 0 for a blunder; the hand makes the move chosen (`chess_move_player`, from and back to the sitting loop); he answers each in a line | stake 10 | 7+ of 10 wins the stake (MoodUp), 5 or 6 draws it (Social), under 5 loses it | points |
+| Fishing | standing still at the water's edge within 320 m of a waterside landmark, facing open water | the rod in the hand at the grip the four rod clips share: `fish_wait` between casts and while the float is out, `cast_rod` for the cast (the float and line leave the tip at its `release` mark, 0.9 s), `reel_in` while a fish is on, `fish_land` when it comes out; they cross-fade with the rod in the hand and turn it themselves. Five casts: stop the cursor in the zone to cast (a better cast: shorter wait, better fish), wait for the bite, strike inside the fish's window (a strike at nothing scares it; three and the cast is over), then three timed pulls (the zone narrower the heavier the fish; two misses and it is off). Key 3 packs up early | bait 6 | the catch is sold by weight (0 to about 110 a fish); MoodUp for a catch, MoodUpBig for a new kind or 3 kg | heaviest fish; kinds caught (8) |
+| Dancing | in a nightclub, on or beside a dance floor item | the player dances one of the game's nine dances; a cursor crosses the meter once a beat (0.86 s), 24 beats: the key in the zone scores 1, in the bright middle 3; every sixth in a row changes the dance | free (the club's own entrance fee is the game's) | MoodUp from 12 on the beat, MoodUpBig from 18 | points + 2 x longest run |
+| Drinks | in a nightclub, within 2.8 m of a cocktail bar item | beer 8, cocktail 14, soft drink 4; the glass is stood on the bar and the player steps up to it and drinks with `drink_bar` (the glass on the bar before the clip's `grip` mark and after its `release`, in the right hand between) where the bar measures as one that clip fits; anywhere else drunk where they stand (`sip` with a glass). See "The bar" below | the price | MoodUp; from two drinks in the blood the Tipsy mood (+3, 3 h) instead, and the car wanders | none |
+| Sightseeing | within a landmark's radius (35 to 70 m), on foot | the player stops and takes a picture (`take_photo` with its phone); the place is ticked off | free | MoodUp for a first sight, MoodUpBig for the last one on the list | landmarks seen |
+| Film programme | inside a cinema or theatre | nothing to play: the house names today's film on the way in; a show watched (the game's own seat) for 45 game minutes or more gets a verdict | the game's own | MoodUpBig, MoodUp or nothing, by the film | shows watched |
+
+Why chess is a reading game and not a board: a whole game of chess with an engine and a board interface would be a
+mod of its own, and is not what anybody stops on the pavement for. Five positions with three candidate moves keep
+what is chess about it (seeing the fork, not moving the pinned piece, swapping when ahead) and take two minutes.
+The clock is only there so that it is not a quiz. The eight positions are dealt in a different order each game.
+
+Drink: each drink is 0.8 (beer) or 1.2 (cocktail) and wears off at one per ninety game minutes
+(`LeisureState.DrinksAt`). The bar stops serving alcohol at four. From two, `LeisureDirector.Tipsy` is true and
+`TipsyDriving` (switched on by the director only while the player is at the wheel and tipsy) adds a slow uneven
+turning pull to the driven car, stronger the more was drunk: one `AddTorque` per physics step, nothing changed on
+the car. **It is an offence**: `LeisureDirector.Wander` calls `PoliceAttention.Report(Offence.DrunkDriving)` while the
+player drives tipsy, and any stop finds it (see "Wiring": fine 900, 6 points, a court case the second time).
+
+The bar (`BarDrinks.Serve`): `drink_bar` is made for a bar top 1.05 m up with the glass on it 0.35 m ahead of the
+drinker and 0.06 m to their right. The game's bar is an item of unknown shape, so it is measured when a drink is
+ordered, on the bar item's own colliders: a ray from the player at 1.02 m finds the face they would stand at (it
+must be square to them within 60 degrees), a ray down where the glass would stand must find a level top 1.05 m up
+(5 cm either way), and the place to stand (toes 0.25 m from the edge) must be on the floor's navigation mesh. If
+all of that holds the glass is stood on the bar (`drink_glass`), the place is marked, and once the player is within
+half a metre of it (nine seconds are allowed) they are held, brought the last step (`LeisureBody.Settle`), turned
+square to the bar and the clip is played with empty hands: `LeisureBody.PickUp` puts the glass in the hand at the
+clip's grip at its `grip` mark, `SetDown` stands it back on the bar at `release` (two comparisons a frame while a
+drink is being drunk, nothing otherwise). If any of it fails, or the player does not step up, the drink is drunk
+where they stand with `sip`, as before.
+
+### For the rest of the mod
+
+```csharp
+bool started = Leisure.Activities.Start(Leisure.LeisureKind.Chess, null, friend);       // or with: out string refusalKey
+Leisure.Activities.Finished += (kind, score, played) => { ... };                         // once per activity
+Leisure.LeisureKind now = Leisure.Activities.Current;  bool tipsy = Leisure.LeisureDirector.Tipsy;
+```
+
+`Start` plays the activity where the player stands if it can be played there (the same test the test buttons
+make) and answers false with a locale key otherwise; it never throws. `place`, when given, must be within 6 m of
+the player: bring them there first. `companion` is somebody who came along: the player gets the Social mood at
+the end; the companion is never moved, animated or released by leisure (whoever brought them keeps them).
+Chess needs the chess player to be out; `Start` does not conjure a table.
+
+`Leisure.Shopping.Buy(itemId)` (also with `out string refusalKey` and `free: true` for a gift), `Price(itemId)` and
+`Owns(itemId)` sell the one thing there is to sell today: the mod's garments and shoes, by their catalogue id.
+Groceries and gifts were to be added only when another feature needs them; none does yet, and there is no
+second inventory.
+
+### Clothes
+
+The mod's garments and shoes (`Character/CharacterCatalogue`: tees, jeans, bomber, summer dress, three shoes, in
+their colourways) are bought at the **Real Life Overhaul rack** in any clothing store: a prop of the mod's own
+stood on a tested piece of shop floor while the player is inside (clear of the walkable area's edges by 1.1 m,
+nothing of the shop's inside its footprint, walkable to from the door; a carving obstacle on the prop itself, gone
+with it), or, in a store with no such floor, the nearest of the store's own racks. The game has no shoe shop:
+shoes are on the same rack.
+
+Browsing is a list (keys 1 and 2 up and down, 3 the next section: tops, trousers, shoes, and dresses for a woman)
+and the interaction key: once to **try on** (on the player themselves, through the catalogue, exactly as the
+options page would put it on: the game's shop preview character is a uniform editor and is not used), again to
+**buy**. Walking away closes the list and whatever was tried and not bought comes off, back to what they came in
+wearing. The catalogue has no tier field, so the price goes by the garment:
+
+| garment | tier | price |
+|---|---|---|
+| T-shirt | Everyday | 35 |
+| Jeans | Everyday | 60 |
+| Court shoes | Everyday | 70 |
+| Runners | Smart | 95 |
+| Summer dress | Smart | 120 |
+| Bomber jacket | Smart | 140 |
+| Derby shoes | Premium | 220 |
+| anything new without a line in `ClothesShop.Price` | by its tier | 50 / 110 / 200 |
+
+**"Clothes must be bought"** is kept per save (`LeisureState.MustBuy`, with the ids owned): on for a game begun
+with this version (which owns whatever was picked during character creation: the creator offers the Everyday tier
+only, `CharacterCatalogue.Starter`, as entries of its own grids; see `CharacterAssets/README.md`, "Whose picks"),
+off for a save that was already going, so nobody loses what they wear. The tier of a garment is the catalogue's
+(`CharacterCatalogue.TierOf`); `ClothesShop.Tier` only passes it on. The options toggle speaks for the save that is loaded. While it is on,
+anything picked on the options page that is not owned is taken off again with a toast, and the dropdowns name
+unowned entries "(not bought yet)": the game builds a dropdown from the array it was given at start, so entries
+cannot be removed from it, only renamed.
+
+At home, a **wardrobe or dresser** offers the same list with what is owned, plus "Outfits": three slots, each
+saved from what is worn now (saving again over a slot gives it the next of six names: Everyday, Work, Night out,
+Smart, Weekend, Sport) and put on in one go. There is no text entry in the game's HUD for a mod to use, so the
+names are picked, not typed.
+
+### Night life
+
+Between 20:00 and 03:00, in the dry, two people of the living city's pool stand talking outside the nearest open
+nightclub, cinema, theatre or casino door within 75 m (`talk_a` / `talk_b`, both or neither), put there and taken
+away only out of view, for five minutes or until the player is 120 m off. Never while the living city has its own
+door scene out (`door_queue`, `doorman`) or fewer than four of its eight people free.
+
+Deliberately not done, and why: **brighter signs** (each sign has its own material instance that the game colours
+and switches itself, `BuildingSignController.ToggleLight`; a property block over that cannot be checked without
+running the game), **more taxis at closing time** (the traffic pool is filled once at start and has no knob for
+one kind of car; the hourly group percentages are overwritten by the game), **fewer walkers late** (the game sets
+pedestrian numbers by the hour itself), **street musicians** (the game spawns its own performers; the living city
+already gives them an audience).
+
+### Sound
+
+Checked first, and left to the game: footsteps already differ by surface, rain has its own loops, the car has a
+radio, and the mod's sirens are already positional (`TrafficEffects.AddSiren`: 3D, logarithmic roll-off from 4 to
+95 m, Doppler 0.5, pitched low), so there was nothing to fix there. The game has no birds, crickets, crowd or
+far-traffic clips in its code, so the four loops are made from arithmetic once per session (one per quarter
+second after the city loads, a few milliseconds each): birds (06:00 to 19:00, more before 09:00), crickets
+(21:00 to 05:00), a low hum (always out of doors, less at night) and a murmur that follows how many of the game's
+pedestrians are within 18 m (counted every two seconds). Four looping 2D sources and one for cues; volumes are
+moved on a quarter-second timer, a layer at nothing is stopped, indoors and in the rain they fade out, in a
+vehicle they drop to 40 %. All are routed to the game's city mixer group (master and effects volume apply) and
+stop with the game's pause. One slider per layer.
+
+### Photo mode
+
+`KeyAction.PhotoMode` (F10: the game binds nothing to it). The game is paused through its own
+`GameSpeedController.SetPause` (the frame goes on being drawn) and its pause key is locked out; the Cinemachine
+brain is switched off and the main camera moved directly; the game's interface is hidden with the game's own
+`ScreenshotController.ToggleUIVisibility`, the mod's three HUD canvases switched off. Mouse: look. W A S D: fly.
+X / Z: up / down. Shift / Ctrl: fast / slow. Wheel: zoom (field of view 8 to 100). J / L: roll. , / .: exposure.
+K: filter (none, warm, cool, black and white, vivid, faded). G: depth of field, Y / U: its focus distance.
+1: hide the player. 2: hide the help. 3: reset. Enter: save a PNG at the screen's resolution to
+`<persistentDataPath>/RealLifeOverhaul/Shots`. Exposure, filters and depth of field are a Volume (priority 1100)
+that exists only while the mode is on. Everything is recorded on the way in and put back on every way out (the
+key, a menu opening, the game unpaused by anything else, the city unloading, an error). The camera stays within
+150 m of the player. The fixed keys live in `Core/Keys.cs` (`PhotoKeys`) and were chosen from keys the game does
+nothing with while paused (not Space, Q, E or F).
+
+### Performance
+
+Idle: `LeisureDirector` one timer test a frame and a look round once a second (the offers are a handful of
+distance tests; the pass over a building's items happens once per building entered, the scene search for
+landmarks once per city load; the water test, three rays, only while the player stands still near the water);
+`LeisureSound` one timer test a frame and four volume comparisons a quarter second; `PhotoMode` one key test a
+frame; `TipsyDriving` switched off. Per frame only while an activity is on: the keys, the meter's cursor, the HUD's
+fields compared by reference, for fishing the float and the line (the rod is turned by its clips; only the stand-in for a bundle without them aims it), and for a drink at the bar two timed moments. Strings are built when something
+changes (a key press, a new step), never on a timer. Each of the three components catches what its `Update`
+throws, logs once, puts back what it changed and stays off for the session.
+
+### Unverified (the game could not be run)
+
+- **The water's edge** is measured, not known: the game has no water object, layer or height. Fishing is offered
+  where the walkable ground ends within 3 m and 5.75 and 7.5 m ahead there is something named water, nothing at
+  all under the sky, or a surface 0.8 m or more below that nobody can walk or drive on, and only within 320 m of a
+  waterside landmark. It may be offered at a drop that is not water, or refused at water the rays read as ground.
+  The float is shown only where a surface was hit.
+- **The fishing clips** (`fish_wait`, `cast_rod`, `reel_in`, `fish_land`) are played whole-body on the held player with
+  `fishing_rod` at their shared grip, each held on its last pose (which is `fish_wait`'s first) until the next: seen
+  only on the clip pipeline's sheets, not in the game. `fish_wait` holds the rod 22 degrees to the left of straight
+  ahead, so the tip is not over the float's line; the line is drawn from wherever the tip really is. A bundle that
+  lacks any of the four gets the old stand-in (`umbrella_hold` on the right arm and the rod aimed each frame).
+- **The bar** is measured, not known (see "The bar"): whether the game's cocktail bar item has colliders that give a
+  level top at 1.05 m has not been seen; if it does not, every drink is the standing `sip`.
+- **Landmarks**: found by type in the scene; which of several bridges (the most westerly) and whether every
+  listed subway station exists in the scene is not known. A missing one is simply not on the list.
+- **The rack's floor test** may find no clear floor in a store whose interior has a large collider round it; the
+  store's own racks are then used and no prop is stood.
+- **The film verdict** needs the game's temporary mood for watching a show to be named `...watching_show` (it is
+  in the game's legacy map under that name); if it is called something else, the programme is named but no
+  verdict follows.
+- **Depth of field** in photo mode needs the camera's frame settings to allow it; if they do not, G does nothing.
+  Hiding the game's interface relies on `ScreenshotController` (the game's own F7 debug toggle).
+- **The dance** relies on `BaseHuman.SetDance` holding while the player is under a navigation blocker.
+- **Mixer routing**: whether the city mixer group is silenced by the game's pause snapshot is asset data; the
+  layers are also paused directly whenever time stands still.
+- The sound of the four synthesised loops has not been heard by anybody.
+
+### Wish-list for the asset pass
+
+All drop in by id with no code change (`LeisureProps.Take` prefers `PropLibrary`; `ClipLibrary.Has` gates each
+clip), except where a line says what to change. **Delivered and played:** `cast_rod`, `fish_wait`, `reel_in`,
+`fish_land`, `drink_bar`, `chess_move_player`, and the props `fishing_rod`, `fishing_float`, `fishing_line`,
+`drink_glass`, `clothes_rack`. **Delivered, not played yet:** `browse_rack` and `try_on_turn` (browsing is a list on
+the HUD while the player is free to walk: there is no moment at the rail to play them in), `throw_ball`,
+`cocktail_glass`, `beer_bottle` and `shopping_bag`.
+
+| clip | length | loop | what it is |
+|---|---|---|---|
+| `cast_rod` | 1.6 s | once | right arm back over the shoulder and forward, `fishing_rod` in the right hand; mark `release` at 0.9 s (the line goes out) |
+| `fish_wait` | 8 s | loop | standing, rod held out low in both hands (right at the grip, left 0.3 m up), a small shift of weight; replaces `umbrella_hold` in `Fishing.Begin` |
+| `reel_in` | 1.2 s | loop | rod tip up, right hand winding at the reel (0.40 m up the rod, below it), leaning back a little |
+| `fish_land` | 2.0 s | once | rod lifted high, a step back, a look at the catch |
+| `dance_loop` | not needed | | the game's nine dances are used |
+| `drink_bar` | 3.6 s | once | at a bar 1.05 m high: lifts a glass from 0.35 m ahead, drinks, sets it down; mark `grip` 0.5, `release` 3.0; replaces `sip` in `BarDrinks` |
+| `browse_rack` | 4.0 s | loop | upper body: right hand moves along a rail 1.55 m up, 0.5 m ahead, pushing hangers apart |
+| `try_on_turn` | 3.0 s | once | a slow quarter turn each way with the arms a little out, looking down at oneself |
+| `sit_cinema` | not needed | | the game seats the player itself |
+| `chess_move_player` | 2.4 s | once | seated as `chess_sit`: reaches to the board 0.45 m ahead, moves a piece, sits back (played when a move is chosen) |
+| `throw_ball` | 1.4 s | once | only if a basketball court is ever added to the city: a free throw, release at 0.8 s |
+
+| prop | size (m) | pivot | notes |
+|---|---|---|---|
+| `fishing_rod` | 0.07 x 0.10 x 2.10 | the butt of the handle; **the rod runs along +Z**, reel under it at z 0.40 | stand-in exists (three round lengths and a reel) |
+| `fishing_float` | 0.045 x 0.11 x 0.045 | the waterline (red above, white below) | stand-in exists |
+| `fishing_line` | unit length along +Z | one end | scaled along Z to the span each frame; stand-in exists (a 4 mm thread) |
+| `drink_glass` | 0.075 x 0.12 x 0.075 | ground centre | held at the `coffee_cup` grip; stand-in exists. Also wanted: `beer_bottle` (0.065 x 0.23), `cocktail_glass` (0.11 x 0.16) |
+| `clothes_rack` | 1.44 x 1.76 x 0.56 | ground centre; rail along X at 1.55 m, **browsed from +Z**; a small sign on top | stand-in exists (rail, two feet, seven hanging blocks of colour, a green sign) |
+| `shopping_bag` | 0.32 x 0.38 x 0.12 | top centre of the handles | not used yet: for carrying out what was bought |
+| `basketball`, `pool_cue`, `dartboard` | | | only if the city ever gets a court or a bar |
+| `radio` | | | not needed: the car radio is the game's |
+
+| sound | what it should be (a seamless loop unless said) |
+|---|---|
+| `RealLifeOverhaul Ambience Birds` | 20 to 30 s of small city birds (sparrows, a pigeon), sparse, no wind |
+| `RealLifeOverhaul Ambience Crickets` | 10 s of night insects, even, quiet |
+| `RealLifeOverhaul Ambience City` | 20 s of far traffic: a low rumble, no horns, no close cars |
+| `RealLifeOverhaul Ambience Crowd` | 20 s of a pavement crowd's murmur, no words that can be made out |
+| cue tones (`Cue Tick`, `Good`, `Bad`, `Bite`, `Shutter`) | one-shots: a soft click, a rising two-note, a low two-note, a small bell, a camera shutter |
+
+The loops are made in `LeisureSound.Build`; to use recorded clips, load them by those names there instead of
+calling the four generator functions.
+## Social life
+
+People the player knows, things to do with them, and a morning paper (`Scripts/Social`). Everything is on the
+street or on the phone: the cast is never put indoors (the game loads an interior as a place of its own), so an
+outing at a business is played to its door and from its door, and the time inside passes with the game's own
+time machine.
+
+### The cast
+
+Eight people per save, rolled once from a seed and then stored whole (name, look, traits, job, district, free
+hours, birthday), so a later change to the name lists renames nobody. One per way of meeting:
+
+| who | met | how |
+|---|---|---|
+| Mom | known from the start (the contact `reallife-mom` the mod always had) | family: never less than a friend |
+| Alex | known from the start (`reallife-friend`) | an old friend |
+| six others | walking up to the player in the street | after leaving a gym (35 %), after a job shift that paid (30 %), after the second coffee bought at a cart (50 %), outside the player's home (15 %) or own shop (20 %), after a `ModState.Helped` moment (60 %); or brought along by a friend |
+
+A new face comes at most every other day. Whoever comes walks in from pavement out of view, stops in front of the
+player, waves and waits to be spoken to (45 s; they follow a little if the player moves on, then give up). The
+conversation is the game's own dialogue panel with both of them facing and talking (`talk_a` / `talk_b` in turn);
+"Swap numbers" puts them in the phone as a contact whose id is their name. A look is the game's own appearance
+system run from the person's seed (`AppearanceSetter.RandomizeElements(gender, skin, casual, seed)`), so Dana
+looks like Dana every time; `SocialCast` has two bodies at most and rebuilds one only when it is needed for
+somebody else.
+
+### The relationship model (`SocialRules`)
+
+Per person: familiarity, affection, trust (0 to 100), today's mood, last contact, up to six memories, what they
+would like to do. The People page (`reallife-people`, a contact that is called) shows all of it.
+
+| stage | reached when | lost when |
+|---|---|---|
+| acquaintance | numbers were swapped | (drifts: familiarity under 8 and ten days without a word; a call brings them back) |
+| friend | familiarity 30, affection 30, trust 20, two things done together | any of the three 10 below that |
+| close friend | 60 / 60 / 55, five things done together, known ten days | any of the three 10 below that |
+| dating | asked on the phone; they say yes at affection 60 and trust 45, only people marked compatible (half of the six, never fewer than two), one at a time | affection under 35 or trust under 25: they end it |
+| partner | asked; yes at affection 80, trust 70, fourteen days of dating and four dates | as above |
+| living together | asked; yes at trust 85 and twenty-one days as partners. Text and state only: a daily mood, their texts | with the break-up |
+
+Worth: a first chat of the day +3 familiarity, +2 affection (half as much again face to face; +1 more if they texted since yesterday and the player is getting back to them); a warm answer +1.5
+affection, a curt one -2; an outing +6 to +8 familiarity, affection by how much it is their kind of thing (0.7 to
+1.4), +2 to +5 trust; on time +2 trust; over 20 game minutes late -3 trust, -2 affection (twice that for somebody
+punctual, nothing for somebody who runs late themselves); not turning up within 75 minutes -12 trust, -10
+affection and a text; calling a plan off -1 / -1, at under an hour's notice -4 / -3; a favour done +8 trust, +4
+affection; a birthday remembered +8 affection, +3 trust, forgotten -4; being arrested -4 trust with everybody
+(family -2, the supportive -1); a favour asked -2 trust, a third within a week -5 and a refusal; borrowed money not
+returned in ten days -10 trust. Neglect: after 3 (partner), 4, 7 (friend), 10 (close friend) or 6 (Mom) days
+without a word, -1 familiarity, -1 affection, -0.5 trust a day. With "Relationships fade..." off nothing is ever
+lost. The Law feature is asked only through `ISocialLaw` (`SocialLinks.Law`, null until somebody sets it): with a
+record and a reputation under 60, people who are punctual, careful or reliable lose 0.3 trust a day. The Home and
+health feature is told through `ISocialWellbeing` (`SocialLinks.Wellbeing`, null likewise): stress down after a
+good outing, a meal eaten.
+
+### Things to do together (`OutingScene`)
+
+A plan is agreed on the phone (they offer what they would like first, then the rest; a place within 1.8 km is
+found then and named; two times are offered from their free hours and the place's): one plan at a time, saved.
+An hour before, a reminder and the plan on screen with a marker (the game's own guider, so it is on the city map
+too). They may cancel by text beforehand (5 % plus traits, mood and rain; never the reliable) and would still like
+to another day. They arrive on their own time (the punctual early, the late late: `SocialPlan.Arrives`, a time of
+its own a few minutes before or after the one agreed) and, if the player is there first or would see them appear,
+walk in from out of view; otherwise they are waiting. See "Arriving, and what holds a scene up" below.
+
+| outing | where (the game's business types) | a head | inside | needs |
+|---|---|---|---|---|
+| coffee | coffee shop | 6 | 25 min; both come out with a cup (`cup_hold`, `sip`) | |
+| a meal | fast food restaurant | 24 | 70 min | |
+| drinks | nightclub | 32 | 110 min; outside again, if it went well, a toast (`cheers`, a `wine_glass` each) | friend |
+| the cinema | cinema, theater | 18 | 130 min | |
+| a workout | gym | 15 | 60 min, -14 energy | |
+| a look round your business | a business the player rents | | 30 min | friend |
+| a walk | outside any business | | 160 m walked with them beside the player; twice on the way they talk as they walk (`walk_talk` / `walk_talk_l` by the side they are on, upper body over the game's walk) | |
+| a drive | outside any business | | 650 m driven with them in the back, then pull over | friend, a car |
+| a lift (favour) | from one address to another | | to the door they name; petrol money | |
+| helping them move (favour) | between two doors 22 to 75 m apart | | three boxes carried (`carry_box_hold`; the box is `moving_box` when the bundle has it, else `parcel_m`) | friend |
+
+Greeting: the greeting clips are made for two people facing 0.80 m apart, so on hello the player is held where they
+stand and whoever is met walks the last steps up to them (`CityPerson.StepTo`: to 0.80 m on the line between the two,
+the agent's own stopping distance allowed for; four and a half seconds at most), both turn to each other, and then
+both halves start at the same moment: `social_cheek_kiss` for a partner (dating or married), a real hug for close
+friends and family (`social_hug_a` on the player, `social_hug_b` on the other, whole body, its full 2.6 s: they finish
+0.35 m apart with their arms round each other), `social_handshake` for everybody else (upper body). A whole-body
+greeting is played only if the two really ended 0.70 to 0.90 m apart; otherwise the upper body's `social_hug` /
+`social_handshake` at 0.65 to 1.0 m as before, and failing that `wave_hello` on both. Then the dialogue panel: a chat about something
+that really happened (see below) and who pays (my treat, split, or theirs if it was their idea or they are
+generous). A place found shut becomes a walk. Afterwards: what they thought, a card with what it cost and did,
+a word and a wave, and they walk off out of view (after a good outing with a wave over the shoulder as they go:
+`goodbye_wave_walk`, the right arm over the game's walk). The toast after drinks (`OutingScene.RaiseToast`): `cheers`
+is made for two facing 1.05 m apart (at that distance the two bowls meet at its `clink` mark, 0.8 s; at 0.80 m they
+pass each other), so the player is held, the other steps to 1.05 m, both turn, and both start it together with the
+glass at the clip's grip; only if they really stand 0.97 to 1.13 m apart, otherwise a word (`talk_a`) as after any
+other outing. The glasses stay in the hands (the clip ends holding one) until the goodbye. Walking out on it costs; being taken away from it (a time
+skip, hospital) does not.
+
+#### Arriving, and what holds a scene up
+
+Whoever is met is put out when the player is within 130 m of the place and their own time has come. Where they
+stand is found and tested (`SocialPlaces.Standing`: pavement within 1.5 m of the front of the door with room, else
+a ring of 1.2 to 5 m; from the third try any pavement within 6 m). If the player would see them appear (there
+first, or looking that way from under 60 m) they walk in instead: from pavement out of view 14 to 40 m off
+(`SocialPlaces.WalkIn`), by a route that was measured (`NavMesh.CalculatePath`, complete, 45 m at most: a point 30 m
+away across the road can be a block's walk) and then confirmed by their own agent (`SocialCast.Walk`). "Here comes
+Mom" is shown only once she exists and is walking. The walk is bounded: if the route ends short, or 40 s have gone,
+they are put at the place (nobody looking at them or at it), or put nearer out of view and walk again (twice at
+most, 25 s each), or stop where they are. Wherever they stand, that is where they are met: the mod's marker
+(`SocialScene.MarkPerson`: their first name and the distance) is on them from the moment they are out until hello
+is said, they wave at 11 m and the prompt comes at 3.4 m. With no way in to be found in four tries they appear by
+the door as soon as the player looks another way (after six seconds more, regardless). One log line per person put
+out: position, distance to the player, distance to the navigation mesh, the route's length and whether it is whole.
+
+The director asks once a tick what, if anything, has the player (`SceneBreak`, one value per condition); every
+ending is logged with that value and what the scene was doing, and whatever the player had been told about is
+called off with one notification saying why and what becomes of the plan.
+
+| what happens | before hello | after hello |
+|---|---|---|
+| the player goes into the venue, or any other building (`Indoors`) | held, not ended: they wait where it was agreed. If they are due and the player is within 130 m (by the door of the building they are in) they are put by the venue's door facing the street while nobody can see, and a notification says "Mom is here, waiting outside Five Cups"; the marker is on them when the player comes out | held: they wait outside. A text after 40 s ("I'm still outside"), gone after 100 s (as being left behind: -4 affection, -3 trust). Timers do not run meanwhile |
+| the street is not running for 6 s (`StreetNotReady`: an activity fast-forwarding) | held, as above (nobody is put out meanwhile) | held, as above |
+| time is skipped by something else (`TimeSkip`) | held; on the way out the usual clock applies (stood up after 75 game minutes) | ended: cut short, no blame, part of the credit, said with the reason |
+| a shift of the mod's jobs (`JobShift`) | ended, the plan kept and said so ("still on: outside Five Cups at 09:00"); the scene comes back when the shift is over | ended: cut short, said with the reason |
+| hospital, death (`Hospital`, `PlayerDead`) | ended, the plan kept and said so | ended: cut short, said with the reason |
+| a load, the game going (`Loading`, `NoGame`, `Shutdown`) | ended, logged; the plan is in the save | ended, logged |
+| the option switched off (`OutingsOff`, `SocialOff`) | the plan is dropped and said so, nobody is stood up | ended: cut short |
+| a delivery job of the game's own (`currentPlayerMission`) | nothing: the player is free on the street. Only the game's destination guider is left to the job; the mod's marker shows the way | nothing |
+| the game's standing objectives ("pay off your bank loans") | nothing: they are not missions (`currentPlayerMission` is only ever a delivery or food-delivery job) | nothing |
+| driving up | they wave at 11 m; "Park up and walk over" within 40 m (a drive or a lift: pull up beside them) | |
+| arriving early | "You are early. Mom will be here about 08:57"; she comes at her own time, walking in | |
+| arriving late | a text 20 game minutes after the time ("I'm outside Five Cups. Are you far?"), over 20 late costs trust, stood up at 75 with a text | |
+| rain | may make them cancel beforehand (by text; a walk more than the rest); once somebody is out the scene plays as it is | a walk goes on |
+| met a little way from the door (they had stopped short, or the player went to meet them) | hello is said there | they walk to the door from there (up to 30 s), or the walk starts there |
+
+Somebody walking up to the player (`MeetScene`: a stranger, an introduction, a friend dropping by) is put out the
+same way (measured route, one log line, the marker on them, sent on again if their route ends short of the player),
+waits outside a door the player went through for as long as they would have waited to be spoken to (45 s), and
+whenever they give up or are cut off the player is told ("Dana saw you were busy and went on their way").
+
+There is no "bar", "restaurant" or "park" in the game's business types: drinks are at a nightclub, a meal at a
+fast food restaurant, and a walk is along the pavement wherever the player leads. Nobody sits: the game's chairs
+are indoors, where the cast does not go (so `sit_chat_a` / `_b`, which are delivered, have nowhere to be played).
+
+### Talking, texts and calls
+
+A chat (`SocialTalk`) picks one of twenty topics that fit right now, never the one that person talked about last:
+the player's crash, arrest or knock-down and the street it was on, an accident or crime of the last day (from the
+news log), the best shop's takings or loss yesterday (the game's own `FinancialSummary`), the shift worked today
+(`JobDirector.EarnedToday`), being ill (`ModState.IsSick`), a break-in, the weather, their own day, job and
+district, the last thing done together, their birthday coming. Each has two answers and a reaction to each.
+
+They get in touch themselves (`SocialDirector.Hourly`: each waking hour a chance of 9 % plus 2 % per person known): an invitation, a
+favour (a lift, a loan repaid or excused in five to nine days, help moving), news of their day, an introduction,
+or a reaction to the player's crash, break-in, arrest or wealth (10 k, 50 k, 250 k, 1 M, 5 M: the supportive are
+pleased, the envious are not). Texts are the game's own: a `TextMessage` in that contact's thread, with the game's
+"new message" notification. Never more than "Most texts in a day" (3) from everybody together, one a person a day,
+none from 22:00 to 08:00, none at all with the switch off (what must be said, such as a plan called off, is then a
+notification). Somebody close may ring instead: a prompt for 22 s, the interaction key answers, and the call opens
+in the contacts app with what they rang about. An invitation or favour is answered by calling them.
+
+### The City Ledger (`News`)
+
+`News.Report(NewsKind kind, Vector3 where, string detail = null, int amount = 0)` from any feature: a slot in a
+fixed array of 48, no allocation, no lookup, a return at once when neither the paper nor the social life is on.
+Call sites today: `TrafficAccidents` (accident staged with its severity, pedestrian down, hit-and-run),
+`CrimeDirector` (a crime staged, by catalogue id), `CrimeScene.Conclude` (an arrest), `OffscreenCrimes` (break-in,
+car break-in), `CrashConsequences` (the player's crash), `PlayerKnockdown`, `PoliceAttention.BeginCustody`.
+Each morning after six the paper is written once (`News.Compose`): the worst two things of the last day with the
+street (the nearest building's address) and hour (on a day of four or more, the worst one and a count of the rest), the weather, a business piece from
+the player's own books, a piece about somebody the player knows, and one or two of forty fillers that do not
+repeat until all have run. It arrives as messages from the `reallife-ledger` contact (one notification) and is
+read out when that contact is called. The log, the paper and the fillers seen are in modData.
+
+### Rules kept
+
+- Nothing in the save the game cannot load: `reallife:social*` strings in modData, and contacts made exactly as
+  `Phone/PhoneContacts` makes its own (id, description key, the call dialog set again on every load).
+- Idle cost: three comparisons a frame; once a second a few more. A scene ticks five times a second; per frame
+  only its marker, its key and (via the living city's service) a turn on the spot. No per-frame allocation.
+- Two characters at most, the social life's own; placed only where `SocialPlaces.Standing` / `JobSpots` /
+  `CitySpots` found and tested room; they move only by their navigation agent; everything is given back in
+  `End`, which the director calls once on every way out, and again by `Cast.ReleaseAll` / `Body.Release`.
+- A fault is logged once, the scene is ended with everything given back, and the social life is off for the session.
+- A scene that is held up costs one question a tick (`Holding`); the street is asked about only every second and a
+  half, and only before hello with the player indoors.
+
+### Test buttons (Social)
+
+All say why when they cannot (indoors, the street not running, a scene on, a shift, nothing near). The outing ones
+play the real thing (walk-in, marker, hello, the activity) and record nothing. `SocialDirector.TestOutingWithMom()`
+is "an outing with Mom, here, now": a walk agreed for the pavement where the player stands (`SocialPlaces.Here`, any
+pavement within 8 m, no business needed), on foot or from a car. Its label is `reallife_social_test_mom`; its row
+is still to be added to the chain in `RealLifeOverhaulMod.cs` (outside this folder):
+`.AddButton("reallife_social_test_mom", () => SocialDirector.Instance?.TestOutingWithMom())`. Until then "Test: a
+walk with the chosen person, here" does the same thing (the chosen person is Mom until another is chosen): it is
+agreed for the pavement where the player stands, and looks for a business only if there is no pavement within 8 m.
+
+### Not verified in the game (Social)
+
+The game could not be run for the changes of 0.36: that a character can be put on the street and walks while the
+player is inside a building; what `GlobalReferences.walkingSpeedWalk` is (the 40 s and 45 m bounds assume about
+1.2 m/s); that the navigation agent's own route agrees with the pedestrians' filter (it is asked, and refused if
+not); how the marker on somebody looks beside an incident's marker (they are separate plates; the social one keeps
+85 px lower at the top edge); the wording and length of the new notifications on screen.
+
+### Wish-list (drop in by id, no code change)
+
+**Delivered and played:** `social_handshake`, `social_hug`, `social_hug_a` / `_b`, `social_cheek_kiss`, `cheers`
+(with `wine_glass`), `walk_talk` / `walk_talk_l`, `goodbye_wave_walk`, and the prop `moving_box`. **Delivered, not
+played yet** (each needs a scene or a placement that does not exist): `sit_chat_a` / `_b` (nobody sits),
+`eat_standing` with `takeaway_box` (a meal is eaten inside, under the time skip), `point_show` (the look round a
+business happens indoors), `phone_answer` (a call is answered in the contacts app, with the game's own phone pose),
+`box_lift_with` / `_b` (the boxes of a move are carried one each), and the props `beer_bottle`, `popcorn_tub`,
+`gift_box`, `flowers_bunch`, `gym_bag`, `newspaper_ledger`.
+
+Clips (Humanoid, in place, from and back to the standing idle unless said):
+
+| id | length | loop | what |
+|---|---|---|---|
+| `social_handshake` | 1.8 s | once | right hand out to a hand 0.80 m ahead at 1.05 m, two shakes, back. Made for two people facing 0.80 m apart; marks `grip` 0.5, `release` 1.3. Played on both, upper body |
+| `social_hug` | 2.6 s | once | a step in, arms round somebody 0.80 m ahead (finishing 0.35 m apart), a pat, a step back. Played on both, upper body today: as a whole-body clip it needs the root to stay put |
+| `social_cheek_kiss` | 1.6 s | once | for a partner: lean in from 0.80 m, back |
+| `sit_chat_a`, `sit_chat_b` | 6 s | loop | seated on a seat 0.45 m up, talking / listening: for when benches can be used |
+| `cheers` | 1.8 s | once | right hand lifts a glass from 1.05 m to shoulder height, a small forward tap, back; prop `wine_glass`; mark `clink` 0.8 |
+| `eat_standing` | 3.4 s | once | a bite from something held in the right hand; prop `takeaway_box` in the left |
+| `walk_talk` | 5 s | loop, upper body | head turned 25 degrees to the left, small right-hand gestures: over the game's walk, for the one on the right (a mirrored `walk_talk_l`) |
+| `point_show` | 2.2 s | once, upper body | an open hand sweeping from the left to straight ahead: "this is my place" |
+| `phone_answer` | 1.6 s | once, upper body | phone from the pocket to the right ear; then the game's `TalkingPhone` |
+| `box_lift_with` | 2.2 s | once | one of two lifting a long box together, mirrored pair |
+| `goodbye_wave_walk` | 1.4 s | once, right arm | a wave over the shoulder while walking away |
+
+Props (pivot at the grip unless said): `wine_glass` 0.07 x 0.20 x 0.07, pivot the middle of the stem;
+`beer_bottle` 0.07 x 0.24 x 0.07, pivot 0.08 m up; `takeaway_box` 0.14 x 0.09 x 0.11, pivot the middle of the
+underside; `popcorn_tub` 0.16 x 0.20 x 0.16, pivot the middle of the underside; `gift_box` 0.20 x 0.14 x 0.20 with a
+ribbon, ground centre; `flowers_bunch` 0.22 x 0.42 x 0.22, pivot the wrapped stems 0.10 m up; `gym_bag` 0.50 x
+0.26 x 0.24, pivot the middle of the handles; `moving_box` 0.45 x 0.35 x 0.35 printed "FRAGILE" (until then
+`parcel_m`), ground centre; `newspaper_ledger` (the `newspaper` prop with the Ledger's masthead), as `newspaper`.
+### Careers
+
+Six employers stand behind the help-wanted boards: each board's building is one employer's office (matched by
+the kind of service building, best fit first: `CareerCatalogue.Premises`; the boards are the same in every game,
+so the employers are too). Walking up to a board that is an office, the key speaks to its boss, who stands by it
+(the careers' own cast of two: `JobCast` with a seeded look, so the same face every time; put out only when it
+cannot be seen from close by, shelved when the player is 100 m off). On a day the player is on the rota there,
+whoever is on the same shift waits on the other side of the board and waves when the player walks up. With no
+board in the bundle, or fewer than six, the employers without an office are spoken to through the **Work**
+contact on the phone.
+
+| employer | grows out of | references needed | ranks (what the shift is) |
+|---|---|---|---|
+| Brightline Promotions (Tasha Greene) | flyers | 0 | Leafleter (the flyer round) -> Street team lead (a shift in charge) |
+| Brightside Contract Cleaning (Dolores Whitlock) | cleaner | 0 | Cleaner -> Crew lead (in charge) |
+| Uncle Lou's Street Eats (Lou Ferrante) | drinks cart | 0 | Cart vendor -> Licensed cart owner (the cart is rented by the day, 60, and the takings are kept: 11 a customer less 3.50 stock) |
+| Fairway Markets (Anand Rao) | shelf stocker | 1 | Stockroom assistant -> Shift lead -> Assistant manager (both in charge) |
+| Hudson Parcel Co. (Marge Kowalski) | courier | 1 | Courier -> Senior courier (7 parcels, the firm's van free, +10 %) -> Dispatcher (the planning desk) -> Depot supervisor (in charge) |
+| Five Borough Cabs (Sal DeMarco) | ride-hail | 2 | Cab driver (4 fares a shift) -> Premium driver (a Luxury-kind car by `Driving/CarCatalogue`, passengers mind 30 % sooner, fares +25 %, tips x2) -> Owner-operator (fares +45 %) |
+
+The game has no taxi business type (taxis are transport the player buys), so the cab ladder ends at
+owner-operator and has no hook into a business. The game's one employer job (the cashier) is left exactly as it
+is: an hour worked at it is counted, read-only, once an hour (`JobHelper.IsPlayerWorking` outside the player's
+own shops), shown on the CV, and every eight such hours count as one shift of experience when signing on with
+the retail chain.
+
+- **Signing on** is face to face. The boss says what the work is in their own manner, then offers the three rotas
+  in turn (Mon/Wed/Fri 08:00, Tue/Thu/Sat 13:00, Sat/Sun 10:00). References are counted as: +1 for the Gig Line's
+  reference letter, +1 for each employer left on good terms, -1 for each left with a marked-down reference.
+  Experience carries over: levels in the employer's own gig (two shifts each above the first) and in a related
+  gig (one each) are credited towards the first review, never the whole of it.
+- **The rota.** A shift is one run of the rank's work, clocked on to from the phone (Work) or at the office, from
+  two hours before its hour. Up to an hour after is on time; up to three hours after is late (a mark, and an
+  hour's basic docked); after that it is a no-show (a mark). The phone reminds three hours before. Three marks
+  and the employer lets the player go with the reference marked down and a week's ban. Desk and lead shifts are
+  clocked on to within 45 m of the office.
+- **Sick.** "I'm not well today" is accepted, and a missed shift is excused, if `CareerLinks.Health` says a sick
+  note covers the day, or with no health feature if the mod's own sickness (`ModState.IsSick`) is on.
+- **Pay.** What the work itself pays (piece pay, by the rank's factor) plus the rank's basic wage for each game
+  hour of the shift, four at most, paid when the shift ends well. The payslip lists both and a tax line that
+  reads zero: the game takes no tax from wages (its cashier job pays hours x rate in full; `TaxHelper` taxes
+  business sales and property only).
+- **Reviews** are due every three rota shifts and are held with the boss. The numbers read out are the ones the
+  outcome is decided from (`CareerCatalogue.ReviewScore`): 20 + 60 x the share of shifts on time (late counts
+  0.4), -12 a complaint (a failed shift), -6 a crash, -10 a police stop on the job, plus a point per dollar of
+  tips a shift up to 20. 70 or more is a promotion, 55 a raise (+1 an hour, three at most per rank), under 35 a
+  mark.
+- **Leaving.** Notice is two more shifts (or seven days) and ends with a good reference if three shifts were
+  worked and fewer than two marks stand; walking out marks the reference down and bans for a week.
+- **The CV** is two pages of the Work contact's call: employer and rank, employment history (eight spells kept)
+  with references, shifts and earnings; then gig levels, the reference letter, cashier hours and the record
+  (police stops on a job; a law feature's line if `CareerLinks.Law` is set).
+- **Booked sets.** From busker level 2 the Work contact books one set a day at an open business nearby: it is
+  marked on the map, begins when the player walks up to its front, pays 45 from the venue on top of the hat for
+  a set at least half played, and tips are 30 % better.
+
+| rank | basic / h | the work pays | about, per game hour |
+|---|---|---|---|
+| Leafleter, Cleaner | 4 | as the gig | 14 to 19 |
+| Stockroom assistant, Cart vendor | 5 | as the gig | 21 to 24 |
+| Courier | 6 | as the gig | 50 to 66 |
+| Senior courier | 9 | 7 parcels, firm's van, +10 % | 65 to 80 |
+| Dispatcher | 20 | 14 a plan x (0.25 + 0.75 x quality), 3 plans | 27 to 31 |
+| Street team lead, Crew lead | 18 | 12 a call made well, 4 calls | 24 to 30 |
+| Shift lead | 20 | the same | 26 to 32 |
+| Assistant manager | 26 | the same, +20 % | 32 to 38 |
+| Depot supervisor | 30 | the same, +20 % | 36 to 42 |
+| Cab driver | 5 | 4 fares, as the gig | 55 to 85 |
+| Premium driver | 8 | fares +25 %, tips x2 | 80 to 120 (needs a Luxury car) |
+| Owner-operator | 0 | fares +45 %, tips x2 | 90 to 130 |
+| Licensed cart owner | 0 | 7.50 a customer, less 60 a day for the cart | 30 to 45 |
+
+Set against the game: cashier 25 an hour, its own staff 12 to 18, the van job about 100. Everything but the two
+top cab ranks (which need a car costing tens of thousands) stays under the van job. The per-hour column is worked
+out from the catalogue's figures, not measured in play. **Owners are paid less:** every job's pay, freelance or
+employed, is multiplied by `CareerCatalogue.OwnerFactor`: 1 with no business, 0.85 with one, 0.70 with two, 0.55
+from three on.
+
+**The dispatcher's desk** (`DispatchJob`, `DispatchBoard`): three batches of six parcels round the depot; each
+parcel goes on one of three vans (three a van) with the choice keys, 55 s a batch, the interaction key takes one
+back. The board draws every van's round as it grows. A plan's cost is the driving (nearest parcel first, then
+home) plus a fixed amount per van sent out; the best and worst of the 729 possible loadings are found by trying
+them all, and the plan is paid by where it falls between them. Two poor plans (under 0.4) are a bad shift.
+
+**A shift in charge** (`LeadJob`): two of the team stand near the office doing what they are doing: writing up
+(`take_notes`), smoking (`smoke`) or stuck (`arms_crossed`). The lead walks up to each and makes the call that
+fits (praise, a word, a hand), then decides two incidents from a deck of six, each a choice of three with one
+good, one passable and one bad answer. Calls made well are the units paid and counted.
+
+**Optional doors** (`Jobs/CareerLinks.cs`; each a static that is null until somebody sets it, every use wrapped):
+
+| the career offers / asks | interface | used for |
+|---|---|---|
+| offers | `ICareerAcquaintances.Met(personId, nameKey, employerNameKey, isBoss)` via `CareerLinks.Social` | a social feature picking up the boss and the two colleagues as acquaintances |
+| asks | `ICareerRecord { bool Clean; string Summary; }` via `CareerLinks.Law` | the record line on the CV |
+| asks | `ICareerSickNote.Covers(day)` via `CareerLinks.Health` | sick notes; without it `ModState.IsSick` |
+| offers | `CareerLinks.EmployerId`, `TitleKey`, `ShiftDueToday(day)` | anybody who wants to know where the player works |
+
+State: one line, `reallife:career`, in modData (`CareerState`); a shift in progress is not saved.
+
+Test buttons (options, Jobs): sign on with the next employer (cycles all six, on a rota that works tomorrow);
+work a shift at my current rank now; my review is due now (opens the review face to face); promote me one rank;
+start a dispatcher shift; start a shift in charge; book a set near here. Test shifts go on no record.
+
+Wish-list for the asset agent. The clips are already asked for by id, before today's stand-in, so they drop in with no code change; the props would each need a line of placement code and are listed as wishes only:
+
+| id | what | used by |
+|---|---|---|
+| clip `desk_plan` | standing at a waist-high desk, moving markers on a board, 6 s loop, upper body | `DispatchJob` (today `clipboard_write` over the upper body) |
+
+| clip `staff_struggle` | hands on hips, a shake of the head, looking down at something, 6 s loop | `LeadJob`'s "stuck" (today `arms_crossed`) |
+| prop `dispatch_desk` | a lectern-height desk with a wall map, 1.2 x 1.4 x 0.5 m, read from +Z | (needs placement code) stood by the board on a dispatcher shift |
+| prop `employer_sign` | a small wall plaque (0.6 x 0.3 m), six variants, one per employer name | (needs placement code) above each office's board |
+
+## Business pressure
+
+**What the game's rivals already do.** `BigAmbitions.Rivals` is a real simulation: 19 rivals own businesses and
+buildings; a "special rival" per neighbourhood sends a message once the player has one revenue business there
+and becomes active at three, after which its timeline fires three attacks (`RivalDefenseHelper`): price cuts of
+45 to 65 % on the player's best sellers for 5 to 8 days, 3 to 7 competitor businesses opened to push demand
+down, and 10 to 24 of the player's best employees poached at once (`EmployeeInstance.PoachByRival`: the
+employee texts the offer with accept and decline buttons). `CompetitionHelper` opens and shuts AI businesses
+daily, and `RealEstateHelper` has competitors buying buildings. Rent never changes after signing and there is no
+landlord behaviour, so "a rival buys your building" is not added. The mod's rival moves therefore fill the
+early game: they are not started in a neighbourhood whose special rival is active, and the mod's one poaching
+*is* the game's own offer, made to a single employee at +12 %.
+
+Everything is in `Scripts/Business`: `BusinessCatalogue` (every kind, every number; game-free), `BusinessState`
+(one line, `reallife:business`, in modData; game-free), `BusinessGame` (the only code that touches the game's
+business fields), `BusinessIssues` (what each kind does), `BusinessDirector` (the clock, the morning roll, the
+off switch, the tests), `BusinessDesk` (the phone contact), `BusinessVisit` (somebody who comes into the shop).
+
+**Rules for all of it** (`BusinessCatalogue`):
+- nothing in the first 7 days after the mod first sees a save; never on a business known for less than 7 days;
+- one open issue per business, two overall; a business is left alone for 3 days after one ends; each kind has
+  its own rest (8 to 30 days); one roll a morning at 09:00: 8 % at frequency 1 to 30.5 % at 10;
+- a charge is a share of what that business itself took a day (the game's order history, last seven days)
+  between a floor and a ceiling. One the player did not choose (a fine, a repair, an adjustment) is also never
+  more than 6 % of the cash in hand; nothing is ever forced, and a charge that cannot be paid falls back to the
+  issue's other outcome;
+- footfall changes are -12 % to +10 % of customers, one per business, with an end day, and only on businesses whose
+  promotion figure the game itself recomputes and can carry the change in full (not within a few points of 0 or 100);
+- a closure is 12 game hours at most;
+- an employee's satisfaction is never pushed below 20 (the game makes them resign under 10); a wage only goes up;
+- **the off switch** closes every open issue without its outcome, puts every promotion figure back and reopens
+  every business the mod closed; each group has its own switch; "easy business" leaves the opportunities only.
+
+**How the effects reach the game** (all in `BusinessGame`, each logged with before and after):
+- *Money*: `GameManager.ChangeMoneySafe` at the business's address, never forced. Marketing answers are booked
+  under the game's marketing category, fines and licences under licensing fees, bonuses and the lunch under
+  salary expenses, so they appear in that business's own income statement.
+- *Footfall*: the game computes customers from `0.5 + 0.75 x promotion / 100`. The mod recomputes the game's own
+  figure (`BusinessHelper.UpdatePromotion`), sets `promotion.total` to the value that gives the wanted percent
+  (`BusinessCatalogue.PromotionFor`), and has the game redraw the customers still to come today
+  (`CustomerEntriesHelper.UpdateCustomerEntriesForPlayerBusiness`, which the game itself calls when a business
+  opens or closes). It is put back on top each game hour and redrawn after midnight. The game recomputes the
+  figure daily, on entering the building and when marketing changes, so a save loaded without the mod heals by
+  itself the next day. The player sees it: the promotion figure on the business's page moves.
+- *Closure*: `BuildingRegistration.TemporarilyClose`, the switch on the business's own page; the reopening hour
+  is remembered and done by the mod. Removing the mod mid-closure leaves the business closed until the player
+  unticks it.
+- *Theft by an employee*: added to `stolenItemsCost`, which the game books as Theft in the statement and clears
+  each night. No cash moves.
+- *Wages*: `EmployeeInstance.hourlyWage`, as the game's own poach counter-offer writes it. *Leaving*: the
+  game's own resignation path (what an ignored complaint does). *Deliveries*: `DeliveryContract.nextDeliveryDay`.
+
+| kind | when | what it does | choices | caps |
+|---|---|---|---|---|
+| Competitor undercuts | has a promotion figure; no active game rival | -10 % customers, 5 days | marketing push (0.6 of a day, 80 to 1200: +4 % for 3 days) / match prices (0.3, 40 to 600: dip halved) / quality (cleanliness 80 and satisfaction 60: over in 2 days) / ride it out | -10 % |
+| A rival wants your staff | a poachable employee, a rival with businesses | the game's own offer, +12 %, 3 days | answered in the employee's messages: match or let go | one employee |
+| Smear in the paper | has a promotion figure | -6 %, 4 days | right of reply (0.4, 60 to 800: ends) / lawyer (0.25, 50 to 500: 55 % ends it and +3 % for 2 days) / ignore | -6 % |
+| Protection racket | takes 150 a day or more | see below | pay / refuse / police / security | weekly 60 to 600; repair 80 to 900; closed 4 h |
+| Health inspection | food business | tomorrow 10:00, on the game's cleanliness figure | book a contract clean (0.2, 40 to 400: dirt to a third) or clean it yourself | 75 passes (+4 % for 3 days); 50 to 74 a warning and a second visit in 2 days; under 50 a fine (0.5, 100 to 1500); under 30 or unpaid: closed 6 h |
+| Fire-safety inspection | any | tomorrow 10:00: cleanliness 55 and the facility score 40 | book a contractor's check (0.25, 50 to 500: certain pass) | fine 0.4, 80 to 1000; both failed or unpaid: closed 4 h; pass +4 % for 3 days |
+| Licence renewal | any | a fee (0.5, 60 to 900) due in 3 days | pay now | late: x1.5; unpayable: closed 6 h |
+| Strike threat | 2+ staff, wages 12 % under the game's formula on average | 3 days to answer | agree (each wage to 95 % of the formula, +15 % at most) / bonus of 8 hours' wages each / refuse (half the time a walkout) | closed 8 h; satisfaction -8 |
+| Theft by an employee | stock to steal, security level 10+, staff | a loss (0.15 of a day, 20 to 300) booked as theft | dismiss / final warning (30 % repaid) / let it go | 300 |
+| Argument | 2+ staff | two fall out | side with either (+5 / -12 satisfaction) / lunch (0.05, 20 to 120: +6 both) | unanswered: -6 both |
+| Late delivery | a wholesale delivery within 2 days | a day late unless | express (15 % of the delivery, 20 to 400) / take the delay | one day |
+| Supplier's surcharge | the same | 8 % of the delivery, 15 to 500 | pay / haggle (30 % + half the negotiation skill, to 80 %; trains it) / switch haulier (a third, a day late) | 500 |
+| Complaint that spreads | satisfaction under 50 or cleanliness under 55 | -6 %, 3 days, naming the weakest of the game's four figures | apologise and voucher (0.15, 20 to 300: ends) / ignore | -6 % |
+| Praise that spreads | satisfaction 70+ | +6 %, 3 days | share it (5 days) | +6 % |
+| Tax audit | a week of books | 3 days to answer | accountant (0.07 of a day, 100 to 800: 70 % clean, else a third of the adjustment) / alone (40 % clean, 45 % an adjustment of 0.14 of a day, 100 to 1500, 15 % a refund to 500) | adjustment also at most 6 % of cash |
+| Bulk order | takes 100 a day | 0.4 of a day (120 to 2000) if the shop is open tomorrow at 12:00 | take it / decline | one every 8 days |
+| Feature in the paper | has a promotion figure | | give the interview: +8 % for 3 days | +8 % |
+| Award | satisfaction 75+, cleanliness 70+ | a prize (0.3, 100 to 1000), +5 % for 4 days | accept | every 30 days |
+
+**The racket.** A collector asks for a weekly sum; if the player is standing in that shop he walks in and says so
+himself, and the desk opens on it when he reaches them. *Pay*: collected every seven days, creeping 10 % a week
+to 1.5 times the first demand; the desk can stop it or go to the police at any time. *Refuse* (also the default
+after 3 days): in 2 to 4 days, with odds of 0.7 x (1 - security / 150), a brick through the window (a repair,
+and the shop shut 4 hours); then nothing for 14 days. *Police*: three days, then odds of 0.35 + security / 200
+(0.85 at most) of a case; with one, the collector is caught at the shop next day at 14:00 (played in the shop
+through `Crime/ArrestSequence` if the player is in it, otherwise told) and **the racket is over for good in that
+save**; without one it counts as a refusal. *Security*: three days to get the game's security level to 50 (the
+game's own guards and cameras); then he gives up for 28 days, otherwise it counts as a refusal.
+
+The crime system has no public entry for staging a scene by name (`CrimeDirector.StageNow` takes a family, for
+its test buttons), so the vandalism is told, not played; the arrest uses `ArrestSequence.BeginIndoors` directly.
+
+**In the shop** (`BusinessVisit`): the collector, an inspector (walks in, looks the place over with a clipboard
+at two spots, comes to the player, leaves; the verdict follows an hour later) and the sting are played by the
+street scenes' own pool through `ActorRole`: in at the real door, on the shop's navigation mesh, out by the door,
+110 s at most, ended with everybody back in the pool the moment the player leaves or a crime scene starts.
+Nothing of the shop is touched. Nobody free in the pool: no visit, and the issue goes on by phone.
+
+**The Business desk** is a phone contact (the game gives a mod no way to add a phone page): its call goes
+through the open issues with their deadlines, reads each choice out with its cost before it is taken, and its
+messages are the record of everything that happened.
+
+Test buttons (options, Business): one per group (each press starts the next kind of that group on the business
+the player is standing in, or their first; the grace periods, rests and odds are waived, and a kind that cannot
+exist here says exactly why), open the Business desk here, and resolve all (also forgets the racket, ended or
+not).
+
+Wish-list for the asset agent (the two clips are already asked for by id before today's stand-in; the props need placement code):
+
+| id | what | used by |
+|---|---|---|
+| clip `collector_lean` | leaning in, one hand flat on a counter, the other gesturing low, 5 s loop | **delivered, deliberately not played by `BusinessVisit`**: it is made for a counter 0.975 m up with its near edge 0.32 to 0.36 m ahead and reads as a man bent over nothing anywhere else. A visit is played 1.7 m from wherever the player stands, and the game's shop furniture says nothing of a counter top's height or edge, so no such place can be found. The collector (and the man of a sting) talks with `talk_a` and, once the desk is open on his issue, waits with `arms_crossed`; the game's `IDontThinkSo` gesture only without the clip bundle. One line in `BusinessVisit` (`TalkClip`) if a measured counter ever exists |
+| clip `inspect_look` | clipboard in the left hand, looking up at a ceiling and down at a floor, 6 s loop | the inspector between spots (today `clipboard_write`) |
+
+| prop `window_boarded` | a plywood sheet 1.2 x 1.5 m to stand against a shopfront | (needs placement code) after the vandalism, for the hours the shop is shut |
+| prop `closed_notice` | an A3 notice on a stand, "CLOSED BY ORDER" | (needs placement code) a business closed by an inspector |
+## Justice
+
+Courts and prison (`Scripts/Justice`). Tickets stay tickets; an arrest, or a charge for something serious, opens a
+**case**. A case has charges (each with its own evidence strength), a bail decision, a court date two to four days
+ahead, a hearing that has to be attended, and an outcome. Everything is one line in the save's `modData`
+(`reallife:justice`); a save made at any moment loads without the mod with the player standing in the street,
+because the player is never put anywhere the base game does not know.
+
+| file | what it is |
+|---|---|
+| `JusticeLaw` | every charge, cap, fee and formula: evidence, the case against the accused, bail, the sentence, appeals (game-free) |
+| `JusticeState` | what a save remembers, and its one line of text (game-free) |
+| `JusticeBridges` | `Justice` (the door for the rest of the mod), `Justice.Bridges` (Law, Licences, Social, Transport, each with a default), `JusticeReports` |
+| `JusticeDirector` | the clock and the switchboard: hourly business, what is waiting for the player, the watchdog, the test buttons |
+| `JusticePanel` | the one full-screen panel: courtroom, cell and Legal file are pages of it (plain shapes, portrait frames, three answers by click or keys 1 to 3) |
+| `JusticeHud` | key prompt, marker with distance, one status line |
+| `Courthouse` | which building it is, the sign on its frontage, where one stands to go in |
+| `LegalCounsel` | the law firms, their rating and fee, what counsel can do before the hearing; the Legal contact and its conversation |
+| `CourtHearing` | one hearing, page by page |
+| `PrisonStay` | custody (hours) and prison (days) as time passing; `JusticeHold`: everything changed on the game while the player is held |
+| `CommunityService` | a played litter-picking shift |
+| `LegalFile` | the Legal file page and what can be done from it |
+
+### What happens, in order
+
+1. **A case is opened** by `Justice.Arrest(report)` (taken in) or `Justice.Summon(report)` (charged by post). What is
+   reported on the same day joins the same case; never more than three cases are open. Evidence, 0.05 to 0.97:
+   0.30 for the accusation alone, +0.12 a witness (three at most), +0.22 filmed, +0.25 caught at it, +0.06 for having
+   run, and a few hundredths either way per charge. A case opened on probation carries a breach charge as well.
+2. **Bail**, put to the player on the panel as soon as nothing else has them: released on their own promise (a
+   misdemeanour, no record, did not run); bail of a quarter of the charges' fines, at least 200 and at most a fifth of
+   cash, returned on appearing (or a bondsman for a tenth, not returned; or stay in custody and be heard when the
+   court next sits); or refused (a grave charge with flight or two convictions, or a warrant) and held until then.
+3. **Review**, the day after: the prosecutor drops any charge whose evidence is under 0.34. A case left with nothing
+   is dismissed: an apology, and compensation of 400 + 150 for each hour held + any roadside fine (the wrongful
+   arrest).
+4. **A lawyer** (the Legal contact, or the key at a law firm's desk): the public defender (free, quality 0.25),
+   yourself (0.10 to 0.60 by the game's own Lawyer skill), or one of the game's law firm businesses
+   (`ba:businesstype_lawfirm`, read from the save's building registrations; the player's own firm acts for free).
+   The game keeps a satisfaction score per business but leaves it at 50 for those it runs itself, so a firm's rating
+   is two to five stars fixed by its address, moved a star for every 25 points of that score from 50; quality 0.35
+   to 0.83, 0.05 more for a case prepared at the office. A city with no law firm gets three sets of chambers in its
+   office buildings. Fee: 600 / 1 800 / 3 500 by the gravest open charge, times 0.8 (one star) to 2.0 (five), never
+   more than 30 % of cash; a quarter down, the rest over six days. Counsel says what the odds really are, can make
+   one motion to dismiss (every charge under 0.34 + 0.12 x quality goes) and can put a plea deal on the table.
+5. **The court date**: a text when it is set, another the evening before, another and a toast that morning (and the
+   courthouse becomes the map destination if the player had none), a toast in the last hour. The court sits 9:00 to
+   17:00. Missing it: a bench warrant, bail forfeit, a charge of failure to appear; the next police stop
+   (`Justice.PoliceContact`) takes the player in, as do officers at their door after three days; or they hand
+   themselves in at the courthouse. Someone who could not have come (in prison, in hospital) has the date moved.
+6. **The hearing** (`CourtHearing`): called; charges read; plea. Guilty: a quarter off. The deal: weak side charges
+   dropped, the main charge reduced where it has a lesser form, 40 % off and no prison unless what is left is
+   grave. Not guilty: three or four rounds (the officer, a witness, the footage, the flight; the closing), each
+   with a choice: testify (once: -8 if the evidence is thin, +6 if it is strong, and the hint says which), stay
+   silent and let counsel cross-examine (-6 x quality), object (sustained as often as counsel is good: -4, else
+   +1), call a friend as character witness (Social bridge: -8), put in your own business's footage and receipts
+   (a business of the player's with security: -10, nothing if caught at it); at the close speak (remorse: -2 and a
+   tenth off the sentence if the evidence is strong, +3 if it is thin), let counsel close (-8 x quality) or say
+   nothing. **Verdict**, per charge: case against = evidence + 4 a prior conviction (12 at most) - (quality - 0.2)
+   x 30 + the choices; guilty if that is more than the court's doubt, a number fixed by the case's seed when it
+   was opened. Every term of that sum is on the verdict page. Nothing in a hearing is a fresh roll of dice: a
+   reload replays it the same way for the same choices.
+7. **The sentence**, with the reason for each part on the page (table below).
+8. **Afterwards**: one appeal within three days (fee a tenth of the fine, at least 300, at most 15 % of cash;
+   chance 5 to 60 % by how thin the evidence was and how good counsel was, shown before paying; won: the fine back
+   or struck off, the conviction off the record, 600 a prison day and 150 a custody hour paid). Civil suits (a
+   crash that hurt someone: one in two; damages of 800 or more: one in five; one suit at a time, a week apart;
+   claim at most a fifth of cash): settle for 60 %, contest (10 to 70 % by counsel; lost: claim + 15 %), or
+   ignore (the claim, by default). The record is sealed after 30 days with no new conviction, no open case and
+   no probation.
+
+### Charges and sentences
+
+Nominal values, for a first offence convicted after a trial. `Lesser` is what a deal can reduce it to.
+
+| id (`JusticeLaw.`) | charge | class | fine | community | custody | prison (cap 7) | probation | licence | lesser |
+|---|---|---|---|---|---|---|---|---|---|
+| `Evading` | Evading the police | misdemeanour | 1 500 | 8 h | 12 h | | 5 d | 3 d | |
+| `Reckless` | Dangerous driving | misdemeanour | 1 200 | 6 h | | | 4 d | 3 d | |
+| `HitRun` | Leaving the scene of a crash | misdemeanour | 2 500 | 8 h | 24 h | | 6 d | 5 d | |
+| `HitRunInjury` | ...with injury | felony | 8 000 | 16 h | 48 h | 3 d | 10 d | 10 d | `HitRun` |
+| `HitRunDeath` | Leaving the scene of a fatal crash | grave | 25 000 | | 48 h | 7 d | 14 d | 21 d | `Manslaughter` |
+| `InjuryDriving` | Causing injury by dangerous driving | felony | 4 000 | 12 h | 24 h | | 7 d | 7 d | `Reckless` |
+| `Manslaughter` | Causing death by driving | grave | 15 000 | | 48 h | 5 d | 14 d | 14 d | `InjuryDriving` |
+| `Unlicensed` | Driving while suspended | misdemeanour | 1 500 | 8 h | | | 5 d | 5 d | |
+| `Assault` | Assault | felony | 3 000 | 12 h | 24 h | 2 d | 7 d | | `Resisting` |
+| `Theft` | Theft | misdemeanour | 1 000 | 8 h | | | 5 d | | |
+| `Robbery` | Robbery | felony | 8 000 | | 48 h | 4 d | 10 d | | `Theft` |
+| `Vandalism` | Criminal damage | misdemeanour | 800 | 6 h | | | 3 d | | |
+| `Resisting` | Resisting arrest | misdemeanour | 1 200 | 6 h | 12 h | | 4 d | | |
+| `NoShow` | Failure to appear | misdemeanour | 1 000 | 4 h | 12 h | | 3 d | | |
+| `Violation` | Breach of probation | misdemeanour | 1 500 | | 24 h | | 5 d | | |
+
+How a sentence is put together (`JusticeLaw.Sentence`):
+
+- **Fine**: the charges' fines added, times the plea (1, 0.75 guilty, 0.6 deal), less 15 % for having complied with
+  the police and 10 % for remorse the court believed, plus a quarter for each prior conviction (three at most),
+  half as much again on probation. Then **bounded**: never more than 35 % of the cash in hand (but never under 250)
+  and never more than 60 000; what was fined at the roadside for the same thing is taken off. Up to 15 % of cash
+  it is paid at once; above that it is seven daily instalments.
+- **Prison**: the gravest charge's term, a day more for each further felony, a quarter more per prior, scaled to the
+  cap option (default 7, 3 to 14) and never over it, never under 2. A repeat offender (two convictions) gets 2 days
+  for any felony. A deal on anything short of grave turns it into custody. With "No prison: fines and custody
+  only" it becomes 48 hours of custody and 500 a day on the fine.
+- **Custody** (no prison): the longest among the charges, 12 h more per prior, never over 48 (the station's cap).
+  A first misdemeanour conviction has it turned into community service, an hour for every three.
+- **Community service**: the charges' hours added, 24 at most, due in 7 days. A shift is 8 pieces of litter for 4
+  hours (half an hour a piece if given up). Not done in time: 100 an hour as a fine (at most a tenth of cash) and two
+  days more probation. With the option off the hours are 60 each on the fine instead.
+- **Probation**: the longest among the charges + 2 days per prior, 21 at most; after prison at least 5, from the
+  release, plus twice any days not served on parole. On probation a new conviction costs half as much again and
+  carries a breach charge.
+- **Licence**: the longest among the charges, half as much again per prior, 30 days at most. Driving in that time and
+  being stopped is a new charge.
+
+**Money never spirals.** Every amount is bounded against cash when it is set (fines 35 %, fees 30 %, bail and civil
+claims 20 %, appeals 15 %, impound storage 10 %). Instalments carry no interest and no penalty; one is only taken if
+it leaves the player 50; a debt that could not be collected five days running is written off (a fine into community
+service, an hour per 150, twelve at most; anything else simply ends).
+
+### The courthouse
+
+One of the game's own buildings, the same in every game: the tax office (the one government building the game has),
+else a bank, else a school, the largest of its kind, ties by address; a city with none of those: its largest office.
+One sign on its frontage, against the wall 4.6 or 6.2 m from the door (the help-wanted boards stand at 2.4), where
+`CitySpots.Shopfront` found wall, pavement and room: the modelled `courthouse_sign` when the prop bundle has it,
+otherwise a navy board on two posts lettered in the game's font. **Localisation:** the model carries its lettering in
+the mesh (COURTHOUSE, "EQUAL JUSTICE UNDER LAW": English only) and the code adds none to it (`Courthouse.Build`
+returns as soon as the model is in place); only the stand-in is lettered from `reallife_justice_sign`, so a
+translated game shows the translated word only without the prop bundle. A translated sign needs the model's board
+left plain (as `precinct_sign`'s name strip is) and the code's lettering put on it at (0, 1.52, 0.027). On a court day a brass marker points at it; the
+interaction key in front of the sign goes in. No room for a sign: the pavement at the door serves. No pavement
+either, or the option off: hearings are held by video link from the Legal file.
+
+### Prison
+
+Presented as time passing, with the game's own time skip (the one its hospital uses): fade, the player out of their
+car and out of any building and put down on the pavement outside the courthouse (or wherever the Law bridge says),
+and then a day at a time. Each morning the panel: the **parole board** on the morning after two thirds are served
+(behaviour - prior convictions + what is said to it, against the days served), then **how to spend the day**: the
+work detail (40 on the prison account, behaviour +1), the yard (released with full energy and a mood lift; the game
+has no fitness figure for the player, so that is what fitness is), or the library (+1 to the game's own
+`ba:skill_lawyer`, which is also what representing oneself runs on); then **association**: keep to yourself
+(behaviour +1) or mix (55 % a favour and +1, 25 % nothing, 20 % trouble and -2); then, seven days in ten,
+**something happens**, dealt from twelve without a repeat in a term, with two answers each. A friend (Social
+bridge) visits on day 2 and rings every third day after. **Good behaviour**: a day off for every four points, a
+third of the term at most. Energy and hunger are held at 55 or more while the clock runs and set to at least
+75 / 85 at the gate. On release: the summary, what was earned, probation from that day, and the car the player was
+taken from brought to them (Transport bridge, else `VehicleTow` with 25 a day storage, 300 and a tenth of cash at
+most).
+
+Businesses: **no efficiency penalty.** The game runs them through `GameManager.RunMainGameTick` during the skip
+exactly as during any other; no safe hook for an owner's absence was found in it, so none is applied. Rent, loans
+and wages are the game's own and carry on.
+
+### Safety
+
+- The player is held only by the panel (game paused with the game's own `GameSpeedController`, the game's own
+  navigation blocker) or by a time skip behind the game's own fade. All four are remembered by `JusticeHold` and put
+  back together. The director's watchdog, once a second: a panel open with nothing behind it, a routine that has not
+  shown a sign of life for 25 seconds of running game, or a hold with neither panel nor routine, and the player is
+  released (a prison term cut short that way is treated as served). A fault anywhere does the same; three and the
+  feature stays off for the session, with the cases kept.
+- Idle cost: one time comparison a frame; once a second a handful of integer tests; the day's business once per
+  in-game hour. Per frame work only while the panel is open (two key tests), a shift of community service is on, a
+  prompt is in reach, or it is a court day (one marker). Nothing allocates per frame.
+
+### For other features
+
+They call us (all safe at any time, with the feature off or no save loaded):
+
+```csharp
+// arrested for something serious (police / custody code); tickets are never reported
+Justice.Arrest(new JusticeReport(JusticeLaw.HitRun) { Witnesses = 1, InTheAct = true, Complied = true, PaidAtScene = fine, HeldHours = hours });
+// charged without being taken in
+Justice.Summon(new JusticeReport(JusticeLaw.HitRunInjury) { Cameras = true, Fled = true });
+// the police have the player in front of them (a stop, a station desk): a bench warrant is served, a suspended licence charged
+Justice.PoliceContact(driving: true);
+// somebody else paid for the player's driving: now and then they sue
+Justice.CrashVictim(damages, injured, killed);
+```
+
+and may read `Justice.Wanted`, `Justice.OnProbation`, `Justice.DrivingSuspended`, `Justice.InPrison`,
+`Justice.Priors`. We call them through `Justice.Bridges`, each with a default that works alone:
+
+| bridge | set by | what it is asked | default |
+|---|---|---|---|
+| `Law` (`ILawBridge`) | `Scripts/Law` | `PriorConvictions`; told `Convicted`, `Cleared`, `RecordSealed`; `Custody(hours, released)`; `ReleaseSpot(out spot)` | the justice system's own record; a plain time skip; the courthouse front |
+| `Licences` (`ILicenceBridge`) | `Scripts/Licences` | `SuspendDriving(untilDay)` (0 lifts it); `DrivingSuspended` | the date kept in `JusticeState` |
+| `Social` (`ISocialBridge`) | `Scripts/Social` | `CloseFriend(out name)`; told `Stood(name, visit)` | the mod's friend contact, if rung within the last 7 days |
+| `Transport` (`ITransportBridge`) | whoever keeps the cars | `ReturnCar(car, near, daysAway)` | `VehicleTow.BringNear` and a storage charge |
+
+```csharp
+Justice.Bridges.Law = new MyLawBridge();   // once, when the feature starts
+Justice.Bridges.Law = null;                // when it is destroyed: the default comes back
+```
+
+Hooks in the mod's own code today (one line each): `PoliceAttention.Bust` and `PolicePursuit.Catch` arrest;
+`PolicePursuit.ChargeForPeople` and `BillLater` summon (a death, or leaving the scene); `PoliceAttention.Ticket`
+is a police contact; `CrashConsequences.ChargeLiability` and the two pursuit settlements report a crash victim;
+`NearbyInteraction` leaves the interaction key alone while `Justice.TakesInteractKey`.
+
+### Wish-list (assets; nothing waits on them: a prop or a clip of these ids is picked up with no code change, a sound or a sprite needs one line)
+
+| kind | id | what | used |
+|---|---|---|---|
+| prop | `courthouse_sign` | free-standing sign about 1.4 x 1.9 x 0.45 m, ground centre, **read from +Z**, "COURTHOUSE" on a dark board between two posts or a stone plinth | `Courthouse`: replaces the plain board with no code change |
+| prop | `litter_pile` | a small heap of street litter (a can, a carton, crumpled paper) within 0.4 m, ground centre | `CommunityService`: replaces the three plain shapes |
+| prop | `litter_grabber`, `litter_bag` | a pick-up tool for the right hand (0.9 m) and a refuse sack for the left | not made: `litter_pick` as delivered picks with the bare hand |
+| clip | `litter_pick` | **delivered**: 1.8 s, a step and a squat, the right hand closing on the ground 0.55 m ahead and 0.05 m right of the middle at its "grip" mark (1.1 s) | `CommunityService`: on the key the game walks the player (`PlayerController.SetGoal`) to the place the clip is measured from, they are turned so that the pile is under that hand, held, and the clip is played; the litter is switched off at the clip's own "grip" mark and they are let go at its end. A step that has not arrived within 0.10 m after 2.5 s gives the prompt back; after two such in a shift the litter is picked from where they stand (one log line). `kneel_work` from where they stand without the clip |
+| clip | `court_stand`, `court_swear` | standing at a rail, hands on it; right hand raised | a 3D courtroom, if one is ever built. `oath_hand` (delivered) is the raised hand: **not wired**, a hearing is a dialogue panel and nobody is played in it |
+| sound | `gavel` | two raps | the first and the verdict page of a hearing |
+| sound | `cell_door` | a steel door closing | the prison fade and lights out |
+| sprite | portraits | judge, prosecutor, counsel, officer, inmate, visitor, clerk: 178 x 196 busts | `JusticePanel.Dress`, in place of the plain-shape busts |
+
+### Not verified in the game
+
+Nothing here has been run in the game. Verified against the decompiled code and by the compiler: the time skip,
+the pause, the navigation blocker, the fade, leaving a vehicle and a building, the warp of the player's navigation
+agent, the skill increase, contacts and messages, the dialogue panel, building registrations, the destination
+guider. Not verified, and to be looked at first in a play test: the panel's place in the draw order (its canvas is
+at sorting order 30 000) and whether the cursor is free while it is up (it keeps an element of its own selected,
+which `GameManager.ShouldBlockKeyboardShortcuts` and the mod's cameras take for an open screen; keys 1 to 3 work
+either way); whether the city has law firm businesses at all (else the chambers stand in); which building the
+courthouse turns out to be and how the sign sits on it; warping the player across the city out of doors; the look
+of the portraits and scenes; the length of a 24-hour time skip in real seconds.
+
+## Cars
+
+The game's cars are all 1400 kg (the Vord Pony 1200), share one four-speed gearbox and one engine curve, have
+no air drag, and are stopped by a speed limiter at the "max speed" of their vehicle type (50 to 100 km/h).
+`Driving/CarTuning` gives the car being driven (never traffic) the performance of its kind instead: each
+vehicle type has a target in `CarCatalogue`, and `CarModel` works out from the car's own mass, wheels, grip,
+clutch and power curve the engine power, gear ratios and drag that meet it. Top speed is where the engine's
+power in top gear equals drag plus rolling resistance (the limiter is switched off), so a car pulls hard to
+50, steadily to 100 and builds slowly to its top speed. Everything changed is recorded and put back when the
+player gets out, changes car, switches the option off or the mod unloads.
+
+| vehicle type (`ba:vehicletype_`) | in game | kind | game: kW / final drive / limiter | target 0-100, top | applied: kW / final drive / drag (N per (m/s)²) | first gear ends | model: 0-50, 0-100, after 20 s |
+|---|---|---|---|---|---|---|---|
+| `honzamimic` | Honza Mimic | Economy | 45 / 8.51 / 60 | 12.5 s, 170 | 76 / 3.05 / 0.541 | 45 km/h | 4.2 s, 12.5 s, 124 km/h |
+| `vordtiaravic` | Vord Tiara Vic | Saloon | 80 / 6.42 / 70 | 10.0 s, 190 | 107 / 2.73 / 0.587 | 45 | 4.4, 10.0, 143 |
+| `bima320` | BIMA 320 | Saloon | 100 / 7.08 / 70 | 8.5 s, 210 | 125 / 2.75 / 0.525 | 45 | 3.8, 8.5, 158 |
+| `mersaidis500` | Mersaidi S500 | Luxury | 175 / 6.76 / 80 | 6.5 s, 240 | 169 / 2.61 / 0.497 | 48 | 3.0, 6.5, 185 |
+| `missamvillian` | Lytte L6 | Luxury | 175 / 8.51 / 80 | 6.2 s, 240 | 152 / 2.61 / 0.438 | 48 | 2.3, 6.2, 180 |
+| `petrollsfanton` | Petrolls Fanton | Luxury | 175 / 7.61 / 80 | 6.8 s, 240 | 160 / 2.83 / 0.473 | 48 | 3.2, 6.8, 182 |
+| `limo` | Petrolls Executive Limousine | Luxury | 75 / 8.00 / 80 | 10.5 s, 180 | 102 / 3.41 / 0.685 | 45 | 4.6, 10.5, 139 |
+| `vordpony` | Vord Pony | Sports | 100 / 6.33 / 80 | 5.8 s, 240 | 163 / 2.36 / 0.468 | 48 | 2.8, 5.8, 194 |
+| `ferdinand112` | Ferdinand 112 | Sports | 150 / 5.15 / 90 | 5.0 s, 265 | 217 / 2.14 / 0.477 | 53 | 2.3, 5.0, 212 |
+| `mersaidimgagt` | Mersaidi MGA GT | Sports | 200 / 4.80 / 100 | 4.7 s, 280 | 234 / 2.02 / 0.438 | 56 | 2.2, 4.7, 222 |
+| `anselmoaf90` | Anselmo AF90 | Sports | 200 / 4.80 / 100 | 4.5 s, 290 | 247 / 2.05 / 0.419 | 58 | 2.2, 4.5, 229 |
+| `umcnunavut` | UMC Nunavut | Utility | 150 / 7.92 / 80 | 9.0 s, 190 | 119 / 3.60 / 0.705 | 45 | 4.0, 9.0, 150 |
+| `vordv150` | Vord V150 | Utility | 130 / 7.62 / 80 | 10.0 s, 180 | 107 / 3.80 / 0.740 | 45 | 4.4, 10.0, 142 |
+| `umcdesert`, `umcdesertdeliveryjob` | UMC Desert, Delivery Van | Van | 55 / 11.14 / 50 | 16.0 s, 140 | 66 / 4.89 / 0.924 | 45 | 4.9, 16.0, 110 |
+| `mersaididash` | Mersaidi Dash | Van | 55 / 11.14 / 65 | 14.5 s, 150 | 71 / 4.56 / 0.804 | 45 | 4.6, 14.5, 116 |
+| `deliverytruck` | Vord Courier D500 | Truck | 46 / 15.25 / 55 | 18.0 s, 135 | 57 / 5.41 / 1.106 | 45 | 6.7, 18.0, 105 |
+| `freighttruckt1` | Freight Truck T1 | Truck | 35 / 15.25 / 50 | 20.0 s, 130 | 52 / 7.09 / 1.146 | 45 | 7.3, 20.0, 100 |
+| `electricscooter`, `handtruck`, `flatbed` | | Untouched | | as the game made them | | | |
+
+The "applied" and "model" columns are what `CarModel` gives for the game's own vehicle data (read from the
+game's files with a small command-line check, at both sliders 100 % and with the eased throttle); the mod
+works the same sums out again from the live car each time the player gets in, and writes them to the log
+once per car ("Car tuning: ..."). They are a model of the physics, not a measurement: the options button
+"Measure this car" times a real run for comparison.
+
+- **A type the table does not know** (a car from another mod) is placed by `CarCatalogue.Guess`: no fuel
+  tank, carried in the hands or under 600 kg: untouched; the game's own max speed up to 55: truck (18 s, 135);
+  up to 65: van (15 s, 145) with cargo room for 14 or more, else economy (12 s, 170); cargo 16 or more: utility
+  (10 s, 180); max speed 95 or more: sports (4.8 s, 270), 85 or more: sports (5.5 s, 250); otherwise luxury
+  (6.5 s, 240) if flagged so, else saloon (9 s, 200). To give it its own figures, add one `case` to `CarCatalogue.For`.
+- **The two sliders** (70 to 150 %) scale the top speed and divide the 0-100 time. Top speed is never taken
+  past 350 km/h; with a top speed turned down below 125 km/h the power is found as if for 125 and the car is
+  then geared and dragged down to what was asked.
+- **Gearing**: top gear turns the engine at 95 % of its limit at top speed; first gear runs out at a fifth of
+  top speed (45 to 58 km/h), never so short that the engine's best torque spins the tyres; the gears between
+  are evenly spaced. Driven gently the box changes up at 45 to 58 % of the rev limit by kind, with the pedal
+  down at 95 %; a change takes 0.12 s (sports) to 0.45 s (trucks).
+- **The eased throttle** ("Smooth throttle"): the car's own input handler calls `CarTuning.EasePedal` once a
+  frame, which moves the pedal towards what the key asks: 0 to full in 0.7 s, slowly at first, and back in
+  0.15 s. A tap gives a gentle pull-away; an analogue trigger keeps its own feel. The brakes come on over
+  0.25 s through the physics' own `brakes.actuationTime`. In reverse the game swaps the pedals, and the one
+  that drives is the one eased.
+- **Brakes** are left alone: with the game's tyres they stop a car from 100 km/h in 19 to 56 m and from its
+  new top speed in 66 to 122 m.
+- A car the sums cannot be done for (no combustion engine, no automatic gearbox, missing wheels or curve) is
+  left exactly as the game made it, with one line in the log saying why.
+
+## Law
+
+Police precincts, custody that is served at one, and a record that follows the player. Options group "Law":
+six toggles (precincts, custody, arrests for serious offences, effects of record and reputation, walk-in
+stations, police stations on the map) and seven test buttons.
+
+### Precincts
+
+The game has no police station: no building type, no model, only the parked police car prop
+(`Vehicles/ParkedVehicles/PoliceCar`). So one existing building in each of the six city districts is
+designated (never the Hamptons, never one of the game's own service buildings, never a home, never the
+player's own premises). Since players walk in, it has to be **a unit that stands empty and to let**
+(`AvailableForRent`, business type empty, no layout, no items, its DLC owned): the game loads the bare interior
+of such a unit through its own door, and nothing of the game's lives in it. Of the district's empty offices,
+large shop units, warehouses and shops, the likeliest fourteen (by kind, then nearest the middle of the
+district) have their frontage measured once per city load, and the best score wins (`Precincts.Measure`):
+a sign band of its own over the shopfront 25, flat wall either side of the door at chest height 3 a place
+(eight places) and above head height 2 a place (four), pavement depth 5 a metre (three), a kerb with the road
+beyond it 10, and a little for the kind of building. The result is written into the save by address
+(`reallife:law_precincts`) and stays, with two exceptions that are both said to the player:
+
+- a save from before stations could be entered is looked over once (`reallife:law_station`, first field): a
+  precinct in a unit that cannot be walked into moves to one that can, and one whose frontage scores 30 less
+  than the best gives way to it;
+- a precinct whose unit has since been let (to the player or to a rival) moves to another empty one in its
+  district (`Precincts.Keep`, every five seconds; never while the player is inside it or being held).
+
+A district with no empty unit keeps a precinct that cannot be walked into: its front desk answers at the door
+(the same panel, with the front office drawn behind it). The log names all six once per load, with each
+one's score and whether it is walk-in.
+
+- **Map**: the precincts are the first user of `Core/MapPlaces` (see "Map places" under the rules): a
+  "Police stations" row in the map's filter list under Special buildings, a shield marker per precinct with its
+  name on it (on the map while the row is ticked, and in the street within 100 m), a click on a marker for a
+  destination, and the game's own card for the building reading the precinct's name, "Police station" and
+  "Open day and night", with the game's own "set destination" button. The option "Police stations on the map"
+  takes all of it away.
+- **Frontage** (`PrecinctFrontage`), for the one precinct the player is within 260 m of (one set of objects,
+  built once and moved; taken in beyond 330 m). Every piece is measured against that building before it goes
+  up; one that does not fit is left off and the log says why (one line per visit, `Law: frontage: ...`):
+  - the *fascia*: the building's own wide sign over the shopfront (which would read "for rent") is switched
+    off, with its hanging logo signs, and a police-blue board of exactly its measured box put in its place,
+    lettered POLICE and the precinct's name. The game's own `UpdateSign` puts the signs back when the frontage
+    is taken in;
+  - the standing `precinct_sign` with the precinct's name, against a flat stretch of wall beside the door
+    (`CitySpots.Shopfront`, then the board and both posts tested against everything solid);
+  - a `station_awning` over the door, only on flat wall above it, with its whole volume clear, pavement
+    under it, and never across the fascia;
+  - twin `blue_lamp`s on brackets either side of the door, 2.2 m up, the same distance out on both sides
+    where the wall allows (their glass changes to a brighter paint when the street lights come on);
+  - a `police_shield_emblem` and a `notice_board` on flat wall (a list of places either side of the door,
+    tried in turn);
+  - POLICE lettered on the door, where rays find the door's own face flat;
+  - up to six `bollard`s on the kerb strip either side of the way in (never straight in front of the door)
+    and a `flag_pole` further along: just beyond the edge of where people walk, only where the road is the
+    other side of that edge, on level ground, touching nothing; each cut out of the navigation mesh;
+  - up to three patrol cars at the kerb within 48 m (the game's police car prop, placed by the tests
+    `PolicePresence` parks by, and clear of the bollards);
+  - two officers either side of the door (`guard_stand`, or `officer_guard_idle` once it exists), and one
+    thing at a time on a slow timer: an officer comes out of the door, walks to the nearest patrol car, talks
+    on the radio and goes back in; an officer walks in off the street from out of view; and now and then,
+    with the player within 75 m, a suspect in handcuffs (`cuffed_walk`, `CuffPose`) is walked in with an
+    officer a pace behind. Whoever goes in is gone at the door, as the game's own shoppers are. All but the
+    suspect are people the pool may take back at any moment.
+  A wall piece needs a flat patch its own size (five rays square on to the wall that agree to 6 cm), a clear
+  box in front of it, and no other piece on that patch. Nothing is put out or taken in where the camera is
+  looking, except under a dark screen. **Not done**: tinted windows (the game clears every property block on a
+  building's renderers whenever its map outline changes, so a tint could not be kept or safely put back).
+
+### Inside a station
+
+How the player gets in: the precinct's doors are given the game's own `alwaysOpen` flag (remembered and put
+back), so clicking the building and walking to the door enters it as any open business; and within 5 m of the
+door the interaction key is the station's (`LawDirector.TakesInteractKey`; the prompt says so) and calls the
+game's own `BuildingManager.EnterBuilding`. Nothing about the unit is changed: it is still to let, its
+registration, rent and ownership are untouched, and a save made inside one loads without the mod as the
+player standing in an empty unit. If the game does not get the player in within seven seconds, its half-done
+entry is put right and that precinct's front desk answers at the door for the rest of the session.
+
+The room (`StationInterior`) is furnished the moment the game's "entered building" event fires, with the
+screen still dark, and cleared on its "left building" event. Every unit is a different size and shape, so the
+room is **measured**, on the navigation mesh the game walks its customers on: how far the floor runs straight
+in from the door, how far to either side at each depth, whether a wall runs straight where something stands
+against it. Each piece needs its whole footprint walkable; wall pieces go up only where a ray finds the
+wall's real surface; what does not fit is left out and named in the log (`Law: <precinct>: inside: ...`):
+
+- the **front desk** (`precinct_desk`) across the room 3 to 6.5 m in, in the middle where the room is wide,
+  always with a way round one end; the precinct's name on its face; the desk sergeant behind it;
+- a **waiting bench** (`precinct_bench`) along a side wall by the entrance with somebody waiting
+  (`queue_wait`), and a `notice_board` on the wall opposite;
+- one or two **office desks** along the side walls behind the counter, an officer at each (`take_notes`);
+- the **holding cell** at the back: a square, clear back corner closed with two `holding_cell_bars` panels
+  (the side one shortened to the depth there is), or the whole back of a room no wider than one panel; a bench
+  inside; and a closed **evidence-room door** in the back wall beside it.
+
+Furniture and bars are cut out of the navigation mesh. The sergeant is a pool character of the scene's own;
+the other three are presence characters. A room too small for any of it keeps the front desk service where
+the player stands.
+
+**The front desk** (`StationDesk`; the interaction key within 2.3 m of the counter): report a crime or an
+accident (exactly what a 911 call would do about what is going on nearby, +2 police reputation for coming
+in, and never a "wasted call"); pay outstanding fines (`ModState.PendingFine`, +1); the record (both
+reputations, then line by line); collect a car from the pound (see custody; 250, brought to the kerb when the
+player steps outside); apply for a licence (only if `Law.Bridges.Licensing` is set); a police report after a
+break-in or a car break-in in the last seven days (15; reference `PR-<precinct>-<day>-<number>`; handed to
+`Law.Bridges.PoliceReport` if set); hand yourself in (see below); visiting hours.
+
+```csharp
+Law.Bridges.Licensing = () => ...;                    // the desk then offers "Apply for a licence or permit"
+Law.Bridges.LicensingLabelKey = "...";                // optional: its button's text
+Law.Bridges.PoliceReport = (kind, reference) => ...;  // kind: Bridges.BreakIn / CarBreakIn / Accident
+Law.Bridges.NoteIncident(Law.Bridges.Accident);       // something a report can be asked for has happened
+Law.LawDirector.Inside                                // the precinct the player is standing in, or null
+```
+
+### Arrest and custody
+
+| charge (`Law.Charge`) | when | hours | bail |
+|---|---|---|---|
+| `WastedCalls` wasting police time | the fifth 911 call about nothing in one day | 2 to 4 | 300 |
+| `FledStop` fleeing a traffic stop | told to pull over, drove on, caught (`PoliceAttention`) | 4 to 8 | 1,500 |
+| `HitAndRun` reckless driving causing a crash, leaving the scene | hit a car and drove off, caught (`PolicePursuit`); or crashed while fleeing a stop | 8 to 16 | 3,000 |
+| `InjuryFled` injuring a pedestrian and leaving the scene | caught after driving off | 18 to 30 | 8,000 |
+| `DeathStayed` causing the death of a pedestrian | stopped and waited: arrested on the spot | 24 to 36 | none |
+| `DeathFled` causing a death and leaving the scene | caught after driving off | 36 to 48 | none |
+
+Several charges: the longest in full plus a quarter of each of the others. A repeat offender (held before
+in the last 14 game days) serves 15 % longer per time, at most 60 %; bail goes up the same way. **Nothing
+is ever longer than 48 hours.** The fines are not in this table: whoever stops the player charges them,
+once, exactly as before (`CrimeLaw`, `PolicePursuit`'s constants) and passes the sum to the charge sheet,
+which shows it and charges nothing. Every figure is in `LawBook`.
+
+What happens, in order (`Custody`):
+
+1. The charge, the sentence and the precinct are announced, and the record gets its line.
+2. Out of doors, with the car stopped: the player is taken out of it and held where they stand; an officer
+   walks up behind them (from the patrol car that made the stop, otherwise from pavement out of view), the
+   player's hands go up (`hands_up`, `hands_up_hold`), then the handcuffs: the officer comes to stand 0.9 m
+   from them, the player is turned on the spot to have their back to the officer, and the pair of clips made
+   for exactly that is started in one frame (`arrest_cuffed` on the player, `officer_cuff` whole-body on the
+   officer with its last pose held; the officer's half only from 0.9 m give or take 0.25, the reach otherwise).
+   At their `click` the handcuffs leave the officer's hand and `CuffPose`'s pair is on the wrists: one pair is
+   ever seen. Then `cuffed_stand` (on the player's own body the way `JobBody` plays clips on it). Indoors, still rolling, knocked down, or with
+   nobody to be had from the pool, this step is skipped: nothing is faked.
+3. The screen goes dark. The player is taken out of any vehicle, building or car park and put on the
+   pavement in front of the nearest precinct's door, facing the street, and that precinct is dressed.
+4. The cell: a panel over the dark screen with the precinct's name, the charge sheet, the fines already
+   paid and a clock that counts game time, while the game's own time skip runs to the release time (the
+   same call its hospital and taxi use, so businesses, rent and everything else go on). Energy comes back
+   as on the game's own benches and hunger is topped up when low. Three choices, by button or number key:
+   sit it out; **pay bail** (not for a death), which ends it at once; **call a lawyer** (750, or 600 for
+   somebody the public thinks well of), once, which strikes off a third of what is left.
+5. Release outside the door: energy at least 45, hunger at least 50, a summary, a bad mood for a while,
+   and the car that was left at the scene brought to a kerb space near the precinct for a 250 impound fee
+   (`VehicleTow.BringNear`; a repair shop if there is no space; a message if it could not be moved).
+
+**At a precinct that can be walked into** (and with "Walk-in police stations" on), steps 3 to 5 go on
+inside: from the pavement the player is taken through the door by the game's own way in and put in the
+holding cell before the screen clears, facing the bars and kept there. The charge sheet is then a smaller
+plate at the right of the screen with the cell in view beside it, and the time skip runs without the game's
+blur. On release the screen goes dark for a moment, the player is at the front desk, is signed out by the
+sergeant and walks to the door, which the game takes them out of in the usual way: release is from the front
+door. The car left at the scene is then **at the pound** (`reallife:law_station`): any front desk has it
+brought to the kerb for the impound fee. A room with no cell (too small, an odd shape) holds the player at
+the desk behind the full-screen panel; if the game's way in fails, everything is as it was (the pavement, the
+full-screen panel, the car brought round at once).
+
+**Handing oneself in**: after getting away from hurting somebody the player is wanted
+(`LawState.WantedCharges`: the charge they ran from). For seven game days the front desk offers "hand yourself
+in": that charge for half the hours and half the bail, served in the cell like any other stay. Any arrest
+settles it.
+
+Safety, inside: the bars are solid, so on every way out of custody (release, the watchdog, a fault) the
+player is put at the front desk, and if that cannot be done the bars are taken away; the room is cleared when
+the player leaves it for any reason. A save made in the cell loads, without the mod, as the player standing
+in an empty unit; with the mod they walk out and the rest of the stay is resumed (the precincts are only
+designated once the player is out of doors).
+
+Safety: the stay is one line in modData (`reallife:law_custody`). A save made in the middle has the
+player standing on the pavement outside the precinct, which is all the base game sees if the mod is
+removed. With the mod, a load resumes what is left, or releases at once if the time has passed, the option
+was switched off or anything about it does not add up. `LawDirector` ends custody (everything put back,
+the player free where they stand) if the routine shows no sign of life for 25 real seconds, if the save
+says held and nothing is running, or on any fault; a stay never takes more than seven real minutes on
+screen. If the player cannot be moved (the hospital has them, no way to the door) the arrest is dropped:
+the fines stand, the record keeps the line.
+
+With "Custody" off, the two old routes fall back to what they did before (a 2 to 5 hour time skip where
+caught). With "Arrests for serious offences" off, a death is only an arrest if the player drove off, and
+911 calls about nothing only cost the fine.
+
+Not wired, because the player cannot do them: stealing and violence on foot. `Law.Arrests` and
+`Law.Custody.Arrest(charges, paid, patrol)` are there for whoever adds them: one row in `LawBook`, one call.
+
+### Record and reputation
+
+- **Record** (`reallife:law_record`, at most 40 lines): every ticket, every stay in a cell (with its
+  hours, fines and how it ended) and every time the player got away after hurting somebody.
+- **Police reputation** (0 to 100, starts at 55): falls with each line by the amount in `LawBook` (a
+  ticket 3, a fatal hit-and-run 25), rises 2 for every game day with nothing new on the record (up to 75)
+  and with calls that led to an arrest.
+- **Scrutiny**: two lines in the last five days and traffic offences are 15 % more likely to be seen;
+  three, 30 %, and an officer on foot no longer warns before a jaywalking ticket; four or more, 50 %. A
+  message says when it starts and when a clean spell has ended it.
+- **Wanted**: after getting away from a hit-and-run the car is known for the rest of the day (the flag
+  `PoliceAttention` already kept for fleeing a stop: every other offence is seen, fines half as much again).
+- **Public reputation** (0 to 100, starts at 55): rises 4 with everything that earns the "helped" mood
+  (staying with a casualty, reporting an accident, stopping a thief; three a day count), falls when the
+  player hurts somebody, drifts back up to 55. From 70 a passer-by says thanks about once a day (a real
+  pedestrian within six metres, a smile over their head) and the lawyer charges less; from 85 they press
+  a few dollars into the player's hand.
+- **The Record page**: the Police Records Desk contact on the phone reads out both reputations, how long
+  since the last offence, whether patrols are watching, then the record line by line, newest first.
+
+For other features (all safe to read at any time; empty or neutral until the save has loaded):
+
+```csharp
+Law.Reputation.Police            // 0..100
+Law.Reputation.Public            // 0..100
+Law.Reputation.Liked             // Public >= 70
+Law.Reputation.Scrutiny          // 1 .. 1.5, a field read
+Law.Reputation.GoodDeed()        // what ModState.AddModifier(ModState.Helped) already calls
+Law.Record.Clean                 // nothing at all on it
+Law.Record.Has(Law.Charge.DeathFled)            // ever
+Law.Record.Has(Law.Charge.FledStop, 7)          // in the last 7 game days
+Law.Record.CleanFor(14)          // nothing new in 14 game days (a job that wants a clean record)
+Law.Record.DaysSinceLastOffence  // -1 if none
+Law.Record.TimesHeld(30)         // stays in a cell in the last 30 game days
+Law.Record.Count, Law.Record.Entry(i)           // day, charges (bits), hours, fines, outcome
+Law.Custody.Active               // being arrested or held right now
+Law.LawDirector.NearestPrecinct(position)       // its Name, Door, Building; null before the city is ready
+Law.Arrests.FledStop / HitAndRun / StayedAtScene / WastedCall / Escaped / Cited   // the ways in
+```
+
+### Test buttons
+
+"Arrest me now" (minor: fled a stop; serious: hit-and-run with an injury; fatal hit-and-run) runs everything
+from where the player stands, in a car or on foot, indoors too; it charges no fines (in play those are charged
+by whoever stops the player), so the charge sheet has no "paid" line. The arrest begins when the options
+menu is closed (it waits up to 40 seconds for whatever has the screen). "Show the nearest precinct" marks it as the destination and says how far it is. "Open the front desk here" opens the nearest precinct's desk wherever the player stands (the one they are in, if they are in one). "Dress the nearest precinct again and log what fitted" takes the frontage in and puts it out at once, in view, and writes the frontage line (every piece: up, or left off and why) and the room's line to the log; it wants the precinct within 250 m and the player out of doors. "Clear my record"
+wipes the record and resets both reputations. Each says why if it cannot run (`TestRefusal`, with
+`NoPrecinct` and `ScreenBusy` added for these).
+
+### Wish-list for the asset pipelines
+
+Everything below drops in by id with no code change: the code already asks `PropLibrary` / `ClipLibrary` for each and uses its stand-in (or does without) until it is there. The one exception is marked.
+
+| prop id | size (m) | pivot and layout |
+|---|---|---|
+| `precinct_sign` | 1.80 x 2.90 x 0.08 | ground centre, read from +Z, nothing behind z -0.04 (it stands 0.12 m off a wall). Two posts 0.07 square at x +-0.86. A police-blue board 1.65 wide from 2.05 to 2.85 m up (over everybody's head) with POLICE in white, centred 2.56 m up; a white rule at 2.27 m; **a blank blue strip 1.50 x 0.17 centred 2.15 m up** where the code letters the precinct's name (z +0.027). The right-hand post top (0.86, 2.90, 0) carries the lamp |
+| `blue_lamp` | 0.20 x 0.27 x 0.20 | centre of its base (it sits on a post top, and on the wall brackets either side of the door); glow material: a blue glass cylinder 0.17 across and 0.24 high under a dark cap |
+
+The pieces below are placed by their **bounds**, not their pivot (`StationProps.Holder`): a floor piece is stood on the
+lowest point of its mesh with its footprint centred, a wall piece is hung by the middle of its back face (its lowest z).
+So only the facing matters, and the size is read from the mesh (the cell is made as wide as the panel really is).
+
+| prop id | size (m) | facing and layout |
+|---|---|---|
+| `precinct_desk` | 2.4 x 1.1 x 0.8 | floor. The public stand at +Z, staff at -Z. The code letters the precinct's name on the +Z face, centred 0.55 m up, in a strip 1.9 x 0.14: leave it plain |
+| `precinct_bench` | 1.8 x 0.85 x 0.5 | floor. Back at -Z (against a wall), sat on from +Z; seat 0.45 m up |
+| `holding_cell_bars` | 3.0 x 2.4 x 0.06 | floor. A flat panel in the XY plane with a door in it; seen from both sides. It is stretched along X by up to +-12 % to meet a wall, and the side panel of a corner cell shortened to as little as 77 % |
+| `notice_board` | 1.2 x 0.9 x 0.05 | wall. Read from +Z; hung with its middle 1.55 m up, indoors and out |
+| `police_shield_emblem` | 0.8 x 0.8 x 0.05 | wall. Read from +Z; hung 2.0 m up beside the door (or higher, over it) |
+| `station_awning` | 2.4 x 0.5 x 1.1 | wall. Projects towards +Z from its back face; hung with its middle 2.75 m up (underside 2.5 m) over the door |
+| `flag_pole` | 1.3 x 5.1 x 0.3 | placed by its own pivot: the foot of the pole at the origin, on the ground. The flag flies towards +X from the top (the code clears a box 1.4 long there) |
+| `bollard` | 0.16 x 0.9 x 0.16 | floor |
+| `office_desk` | 1.4 x 0.75 x 0.7 | floor. Whoever works at it stands at +Z; its back (-Z) goes against a wall. **New id**: a plain desk with a screen, built from shapes until it exists |
+| `evidence_door` | 1.04 x 2.12 x 0.05 | wall, standing on the floor: a closed steel door in its frame, read from +Z. **Delivered.** The model has EVIDENCE on its plate in the mesh (English only) and the code letters only the stand-in (`reallife_law_station_evidence`): **for localisation** the model's plate would have to be left plain and lettered by the code at (0, 1.62) as the stand-in is. Likewise `precinct_desk` carries POLICE on its fascia in the mesh: the code's precinct name now goes in the plain strip under that word (0.34 m up, on the panel), where it used to be lettered across it |
+
+| clip id | length, loop | what |
+|---|---|---|
+| `arrest_cuffed` | 2.4 s, once | **delivered and played** on whoever is arrested (`Crime/ArrestSequence`, so every crime scene, the roadside stop and the sting; `Law/Custody` for the player): straight out of `hands_up_hold` and on into `cuffed_stand` (`ActorRole.LeadInto`); mark `click` at 1.5 s |
+| `officer_cuff` | 2.4 s, once | **delivered and played**, whole body (it steps in), its last pose held (`ActorRole.Act(clip, ClipEnd.Hold)`) until the suspect is walked off. The officer walks to the place it is measured from, 0.9 m STRAIGHT BEHIND the suspect and facing the same way (`ActorRole.GoExactly`; the suspect has turned their back first), and both clips start in the same tick; the last centimetres (0.25 m at most) are closed under the cross-fade, and from further off it is the old reach and the cut. The right hand holds `handcuffs` until the `click`, when they are put away and `CuffPose` shows its pair on the wrists: one pair is ever seen |
+| `officer_guard_idle` | 8 s, loops | standing easy by a door: thumbs on the belt, weight from one foot to the other, a slow look left and right. For the officers at a precinct door, who only stand today |
+| `cuffed_car_enter`, `cuffed_car_enter_l` | 2.0 s, once | **delivered and played** by `Crime/ArrestSequence` at the patrol car: the suspect walks to the place `job_car_enter` is made for (`StreetSpots.AtRearDoor`: square to the car through the seat, feet 0.75 m out from its middle; the `_l` clip on the car's left), turns square, and gets in in the clip, taken off the street at its `seated` mark. Only where their own agent has a whole route to that place and stops within 0.2 m of it; otherwise gone with the sound of the door as before. The door does not open (the game's traffic cars have none that does), as for the taxi's passenger. The player's own ride to the precinct is still a fade |
+## Transport
+
+What the game already has, and is left exactly as it is: **the subway** (twenty `SubwayStation` entrances in the
+street; click one, pay 3, the map opens in subway mode, pick a station, a camera flies there in seconds with no
+time passing), **taxis** (0.15 a metre, 0.04 game minutes a metre, a fade and the time machine), a private driver,
+**fuel** (a tank per vehicle type, 1.30 a litre at a filling station, a 10-litre can for 30, a to-do at 10 %, the
+engine stops when dry), **bodywork damage** (repaired in a station's repair bay for damage x half the car's price;
+at 100 % the car will not drive), **dirt** (washed in the same bay for 50), **parking tickets and towing** (to
+`ba:towdestination_autorepairshop`). The game has no bus, no bus stop and no vehicle interiors.
+
+### Buses
+
+**Why the bus of 0.43.0 never came, read from the traffic system's code.** It was a van handed to the traffic AI
+with a scripted route (`VehicleComponent.presetPath`), "the way the game drives its private-driver car". Three
+things in that:
+
+- *A scripted route does not obey lights or give-way points, and is crippled by the first one it meets.* A vehicle
+  with a scripted route is given its next point as soon as it is within 5 m of the last (`TrafficManager.FixedUpdate`
+  calls `DrivingAI.WaypointRequested`, which returns right after `SetNextWaypoint(presetPath[0])`), before the code
+  that holds a vehicle at a red light (`activeActions` has `StopInPoint`: return) or asks a junction whether it may
+  enter (`GiveWay`) is ever reached. The stop order a red light puts on a vehicle is lifted only for vehicles whose
+  target is still the light's own point (`WaypointManager.TrafficLightChanged`); the scripted vehicle's target has
+  moved on, so its order is never lifted, and a give-way order is lifted only in the code it never reaches. From its
+  first red light or unsignalled junction on it drives in `DriveJob.StopInPoint`: braking for every lane point in
+  turn, and the first time it is slower than one brake step within 10 m of its next point (behind a queue, say) it
+  is stopped for good. After 100 s the mod let it go as traffic. (The game's own private driver has the same flaw;
+  its routes are at most fifty points long.)
+- *It needed an idle van by luck.* Only a van of the pool that was switched off would do, and the place it started
+  from had to be free of traffic two car lengths each way, at one fixed lane point; every refusal was answered by
+  trying exactly the same again ten seconds later.
+- *The figure jumped because it was not a measurement.* It was a countdown to "due", put back up to 34 s at every
+  refusal (and the refusals were logged only when a counter happened to line up: one chance in eight), counted down
+  to nothing while the bus crept, and turned into game minutes with a clock rate measured over two seconds.
+
+What cannot be told from the one log there is: its last transit line is the only bus that was ever put on the road
+that session, and the log ends before either "stands at its stop" or the 100 s "did not reach its stop" line, so
+that one bus was either still crawling when the game was closed or its vehicle was taken (which was not logged).
+
+- **The network** (`TransitMap`, `RouteSearch`) is laid out by rule in the first seconds out of doors after a city
+  load and kept in memory only. The ends of the routes are the game's subway stations in the order of
+  `SubwayStationName`: up to six times over, the first station not yet used, and the unused station furthest from it
+  (500 m to 2.8 km) that can be driven to **and back from**. A line's end is any plain lane point within 150 m of
+  its station (0.43.0 took the one nearest point, which is often on a lane that only leads away: that, and never
+  changing lane, is why six directions had "no way along the road graph"); the way is the shortest along the lanes
+  (A* from all of one end's points to any of the other's), with a change of lane allowed where the road graph offers
+  one between two plain lanes running the same way, at the price of 30 m. A failed search says how far it got and
+  whether it ran out of road or hit its limit, and every partner it never got near is dropped without a search of
+  its own. Only a station with no partner both ways gets a line one way. `Transit check (network)` is the summary.
+  A stop is looked for every 260 m in the 140 m after that, at the first lane point that is on a road proper, has no
+  junction, give-way or lane beside it on the kerb side within 26 m of line either way, is straight (under 9 degrees
+  over six points), at street level, and has pavement 1.3 to 5.6 m to its right that is 1.5 m deep with nothing
+  static and no door within 2.4 m where the pole and the waiting people stand. Where the pavement is also bare and
+  deep 3.2 m further on there is room for a shelter. A stop is named after the nearest building's address.
+- **A stop is solid** (`BusStopDressing`). The three nearest stops within 135 m are dressed, out of view (175 m to
+  be taken in), from the modelled `bus_stop_sign` and `bus_shelter` (plain shapes of the same size without the
+  bundle). Everyone on foot is moved on the navigation mesh, so the pole, the shelter's back, its end panel, the
+  screen at its other end and the bench each have a carving `NavMeshObstacle` (the cordon's mechanism): children of
+  the dressing, laid out while it is switched off, cut once when it is switched on, gone with it. A cut is wider
+  than its box by the walker's radius (asked of the player's navigation agent type), so the boxes are the solid
+  things themselves and the bench's is that much smaller than the bench: the open side stays open, the place in
+  front of each seat stays on the mesh, and the 1.69 m of pavement between the shelter's posts and the kerb stays a
+  way past. That way past is tested on the mesh before the shelter is shown; where it is not one strip, the stop is
+  a pole only. `Transit check (stop dressed)` says, 1.6 s later, what the mesh says was really cut.
+  (This is the one place the mod cuts the mesh on a pavement: the rule against it below is about closing a
+  pavement, and this leaves it open.)
+- **The bench** has two seats (never one for two), the sitter's feet 0.30 m in front of the seat's middle line,
+  facing the road: what `sit_bench`, `sit_wait` and `sit_bench_up` are made for (seat 0.46 m up, as the model's).
+  The player is offered "sit down" within 1.5 m of a free seat (`TransitSeat`): held by the game's own navigation
+  blocker, moved the last step and turned over a third of a second, then the three clips on the animator the way
+  leisure plays its clips; any key or click gets them up, and so does the bus arriving. The game's own seating is
+  not used: it exists only inside its rest and entertainment activities, which run the clock. Somebody waiting may
+  take the other seat (walks to it, sits, gets up when the bus stands); those standing wait by the pole, outside
+  the shelter.
+- **Service**: the nearest dressed stop within 80 m that has stops after it is served: up to two people walk up from
+  out of view, and a bus comes every 150 s by day, 100 s in the weekday rush (7 to 9, 16 to 19), 210 s in the
+  evening, 220 s early, 360 s at night, a third longer in the rain. In the rush one bus in four is full.
+- **The bus** (`TransitBus`) is a vehicle of the traffic pool wearing the modelled `minibus` (hidden under it
+  wholly; without the bundle, a van with a lit route board). The body is made to the Mersaidi Dash (6.66 m, axles
+  4.02 m apart) and is put with its axles on the vehicle's own, read from its wheel meshes (`TrafficTools.Axles`),
+  so on a Dash its wheels are exactly where the van's are; a Dash is taken before a van with another wheelbase, and
+  that before any other vehicle (the log's `chassis` says which, and how far the axles are off). It is held the way a response unit is (ignored by the
+  traffic AI, an empty scripted route as the mark that keeps the game from taking it off the road) and **driven by
+  the mod** with `EmergencyDriver` along the line's own lane points: 40 km/h, 25 through junctions, stopping behind
+  whatever is ahead, never out of its lane (`PullOver` with next to nothing: a bus passes nobody), to within a
+  metre of the end of its route. What that driver does not know of this class adds: it pulls up at a red light
+  (the light's own lane point, `Waypoint.stop`, within 170 m of the player; the game only runs the lights near the
+  player, so a light further off, or one out of view that has not changed in 45 s, is not waited at) and two points
+  before any lane point a scene has closed (`temporaryDisabled`: the cordon, a lane closed for roadworks), frozen
+  while it stands, and goes on when they open. Which vehicle is not luck: an idle van; else a van driving out of
+  sight (taken off the road there); else, under the modelled body only, any ordinary car or truck of 4.2 to 7.5 m
+  in the same two ways; never an ambulance, a taxi, a limousine, a private driver or a vehicle with a scripted
+  route or held by a scene. Where it starts: a plain lane point of its line about 170 m before the stop and out of
+  view, then others further back (to 330 m) and nearer (to 60 m), 14 m apart, up to eight tried for one free of
+  traffic, none before a closed road.
+- **It comes** (`TransitDirector`). When the timetable's wait is down to 30 s a bus is put on the road; a refusal is
+  tried again every 2 s (from the third on it may start in view, more than 60 m from the player), logged at the
+  first and every fifteenth, and the panel says DELAYED after six seconds of it. On the road it is watched: with no
+  metre of progress for 40 s while out of view and more than 110 m off it is moved up its line, past what holds it
+  (`Transit check (re-plan)`); with none for 150 s, or after 300 s out, it is given up with a notice and the next
+  is sent; if the game takes its vehicle another is sent at once.
+- **The figure** (`TransitEta`, run in a console test) only goes down. Before a bus is on the road it is the
+  timetable's wait ("next bus in about N min"); with one on the road it is that bus's metres of route still to
+  drive over the speed it has made while moving ("the bus is 120 m away, about 1 min"), never more than was shown
+  before. When that cannot be kept (it stands more than 12 s, is 12 s behind for 6 s, was lost, none could set out)
+  the panel says DELAYED and why, with no figure; when the bus has been moving again for two seconds one new
+  figure is given from where it is. The game minutes shown are that figure at the measured rate of the game's
+  clock, and are not allowed to rise for the rate's wobble either.
+- **At the stop** it stands in its lane with the middle of its body (its door) beside the pole, door side to the
+  kerb, frozen, for 9 to 34 s. `Transit check (arrival)` gives metres along and aside and degrees off; `(doors)`
+  the place somebody steps in from (0.30 m outside the body at the door 0.76 m ahead of its middle, as the model
+  documents and `board_step` wants: the step's edge 0.30 to 0.35 m ahead of the feet; up to 0.9 m further out if the mesh does not come that close) and whether anything stands between it
+  and the kerb. Somebody may get out and walk off; those waiting get up, walk to the door one at a time and step
+  in (`board_step`; the van: `job_car_enter`); `(departure)` counts them. It follows the next 240 m of its line and
+  is then taken off the road if nobody is looking, or handed back to the traffic AI as it is.
+- **Riding**: at the stop the panel shows the line and where it goes, the next bus and the next stops; the
+  interaction key boards while the bus stands (else sits on the bench, else buys a day pass: 7.50, buses and subway
+  until midnight): stops further along the line are listed three to a page (keys 1 to 3, the interaction key for
+  more; the bus waits up to 30 s), the fare (2.75 flat) is paid with `pay_tap`, and the ride is a fade with the
+  game's time machine exactly as the game's taxi does it (`TaxiSystem.TravelCoroutine`): 0.06 game minutes a metre
+  of line plus a minute a stop, times the game-speed setting. `Transit check (ride)` names the stops called at;
+  `(put-down)` how far from the far stop's waiting place the player stands and whether that is pavement. A bus
+  pulls away there. Walking off cancels; a bus that leaves first is a missed bus. A line's last stop is only got
+  off at. `strap_hang` is not used: there is no interior to stand in.
+- **Test buttons**: "dress the nearest bus stop" (in view; its check line follows), "send a bus to the nearest stop
+  now" (a stop within 100 m; out of view if it can, else in view far off; says exactly what stopped it otherwise),
+  the ride, the subway journey.
+
+**Lines to judge a run by** (`Player.log`, one each): `Transit check (network)`, `(stop dressed)`, `(seat)`,
+`(bus assigned)`, `(en route)` each minute, `(re-plan)`, `(arrival)`, `(doors)`, `(departure)`, `(ride)`,
+`(put-down)`; and `Transit: no bus could be put on the road ... yet (try N): <why>`.
+
+**Not verified in the game** (it could not be run): that a cut in the mesh is wider than its box by the walker's
+radius (if it is not, the bench's box is smaller than the bench by that much: `(stop dressed)` says "bench no");
+that the navigation blocker also holds the player against the mod's own direct controls (any movement key gets
+them up anyway); where on the vehicle its origin is (the body is stood on the lowest point of what the vehicle
+shows; `(bus assigned)` gives the height and how far the body reaches beyond the vehicle's colliders); the van's
+own size (the model's notes assume 6.8 x 2.26 m with a 4.02 m wheelbase; the log line gives the real figures);
+whether the lanes the road graph offers as "other lanes" are always same-way lanes (they are only used where
+their directions agree within 45 degrees); how long the game's lights stay red; whether Industry City can be
+reached by lanes at all (if not, its stations simply get no line, and the pairing lines say so).
+
+### Subway
+
+Standing at an entrance on foot, the interaction key offers the trip as a journey (the game's own click still opens
+its map). Service follows the game's clock, the same on every load of the same day: a train every 3 minutes in the
+weekday rush, 5 by day, 7 from 20:00, 8 from 05:00, 12 at night; in one three-hour window in eight there are delays
+of 6 to 14 minutes; from 23:00 to 05:00 one station (a different one each night) is closed for track work. Delays
+and closures arrive as texts from the City Transit contact, which can also be called for the state of the service
+and a day pass. Stations are listed nearest first with stops (one per 650 m, at least one) and minutes; the fare is
+the game's own 3 under the game's own transaction; the journey is the wait (a part of the interval, plus delays)
+and 2 minutes a stop, as a fade with the time machine, and ends at the destination's own entrance with the game's
+subway mood. No late-night crime is tied in: the crime system has no call for staging something on the player
+other than its test button.
+
+### Car ownership
+
+Per car in the save's own list of the player's vehicles, a record in modData (`reallife:garage`, by vehicle
+instance id; dropped at load, at save and daily for cars the save no longer has). All figures are in `CarRules`.
+Prices are shares of the car's list price (`VehicleType.price`) between a floor and a ceiling. The game's own
+figures, read from its data files: cars cost 2,500 (Honza Mimic), 8,000 (UMC Desert), 11,000 (Vord Tiara Vic),
+44,000 to 65,000 (V150, BIMA 320, Mersaidi Dash, Nunavut), 72,500 to 98,000 (the trucks, S500), 130,000 to 250,000
+(Ferdinand, Lytte, Pony, MGA GT, limousine), 520,000 (Anselmo) and 720,000 (Petrolls Fanton); tanks hold 55 to 80
+litres (cars), 110 to 185 (SUVs, vans) and 250 to 378 (trucks) at 1.30 a litre; repairing a wreck is half the
+list price. So a Honza is 120 to service, 180 for tyres, 90 for brakes, 40 a period to insure and 65 to register;
+a BIMA 320 is 575, 770, 385, 290 and 155; anything from 120,000 up is 900, 1,400, 700 and 300, with insurance
+from 780 (Ferdinand) to the ceiling of 2,500 (above 417,000).
+
+| what | rule | cost |
+|---|---|---|
+| service | every 40 km (sports), 50 (luxury, trucks), 60 (others), 70 (economy) | 1.2 % of list price, 120 to 900 |
+| tyres | last 120 km (sports), 200 (vans, trucks), 180 (others); below 30 % grip falls, to 88 % when bald | 1.6 %, 180 to 1,400 |
+| brakes | last 110 km (sports), 120 (trucks), 150 (others); below 30 % brake torque falls, to 80 % | 0.8 %, 90 to 700 |
+| breakdown | none until the service is overdue; then 0.4 % a km rising to 3 % a km a whole interval late; +1 % a km with 70 % damage | mechanic 95 (half if insured), or a tow 180 |
+| fuel | the game's, used at 0.8 (economy) to 1.6 (truck) of its one rate; ten litres brought to the roadside | 34 + 10 x 2.60 = 60 |
+| insurance | per car, 28 days, renews itself; pays 80 % of a repair bill over the first 100 | 0.6 % of list price, 40 to 2,500, +25 % per claim (a claim is forgotten after 56 days) |
+| registration and inspection | once a game year (`daysPerYear`), renewable from 30 days before | 60 + 0.2 % (300 at most), 75 more when late |
+
+A service is asked for standing in a filling station's repair bay (the game's own bay, trucks in the truck bay): the
+panel lists what is due, one key has it all done behind a fade while 40 to 85 minutes pass, and tyres and brakes
+under 35 % are changed with it. Worn tyres and brakes act through the wheels' own grip figures and the brakes' own
+torque; thirst through the fuel system's own multiplier; a breakdown through the car's own input hook (no pedal;
+the brakes work; hazard lights on). Each is recorded before it is touched and put back when the player gets out,
+changes car, switches the option off, or the mod unloads. "Easy car ownership" stops fuel use, wear and breakdowns.
+The gauge beside the speedometer shows the tank and one word for what needs attention.
+
+### Asset wish-list (drops in by id, no code change)
+
+Props (`PropAssets`, metres, standing on their origin):
+
+| id | size | pivot and facing | notes |
+|---|---|---|---|
+| `bus_stop_sign` | 0.60 x 2.85 x 0.07 | ground centre of the pole; the flag hangs to +X (away from the road), its faces to +Z and -Z | pole 0.07, flag 0.50 x 0.62 with its middle 2.42 up, a timetable case at 1.45; the route number is lettered by code at (0.30, 2.53) on both faces in a box 0.44 x 0.34 (the model's plain blue field is from 2.33 m up): leave the upper half of the flag plain |
+| `bus_shelter` | 1.70 x 2.50 x 3.76 | ground centre of the floor (1.4 deep, 3.6 long); length along Z, open to -X, back at +X | bench seat 0.46 up along the back from z -1.3 to +0.6, end panel (route map, advert) at +Z; glass may be opaque |
+| `minibus` | 2.10 x 2.75 x 6.66 | ground centre under the middle of the body, nose to +Z | **delivered, and rebuilt to the van it hides**: a shuttle bus body the length of the Mersaidi Dash (measured: 2.33 x 2.60 x 6.66, axles at z +2.40 and -1.62 from its middle) with its own wheels on those axles; door on the +X (kerb) side 0.76 m ahead of the middle; the route board is added by code on the flat of the roof 2.22 m ahead of the middle, the line number on the pod 2.95 m behind it (`PropAssets\README.md`, "Service vehicles") |
+| `city_bus` | 2.55 x 3.10 x 12.0 | as `minibus` | not used: needs a chassis the game does not have |
+| `turnstile` | 0.30 x 1.00 x 1.20 | ground centre, reader on top at 0.975 | for a subway entrance, if entrances are ever dressed |
+| `fuel_pump`, `jerry_can` | 0.5 x 1.6 x 0.4; 0.35 x 0.45 x 0.18 | ground centre; can: handle on top | the mechanic's can for fuel brought to the roadside |
+| `warning_triangle` | 0.45 x 0.42 x 0.05 | ground centre, faces +Z, glow | stood behind a broken-down car |
+| `car_wash_arch` | 3.6 x 3.2 x 1.0 | ground centre, drive through along Z | the game already washes cars in its repair bays |
+
+Clips (`CityAssets`, Humanoid, in place, starting and ending in the standing idle):
+
+| id | length | loop | what |
+|---|---|---|---|
+| `board_step` | 1.4 s | once | a step up through a bus door 0.35 m ahead, hand to a rail at shoulder height; for a `minibus` with a step |
+| `strap_hang` | 6 s | loop | standing, one hand up on a strap, swaying: only if a ride is ever shown |
+| `sit_bench` / `sit_bench_up` | 1.6 s each | once | onto and off a seat 0.46 m up, 0.30 m behind the feet; with a seated loop `sit_wait` (8 s) for the shelter's bench |
+| `refuel_hold` | 5 s | loop | bent at the waist holding a jerry can to a filler 0.9 m up, 0.4 m ahead |
+| `bonnet_check` | 6 s | loop | leaning over an open bonnet 0.9 m up, hands working 0.5 m ahead |
+
+Also wanted: a mechanic's overalls in `CityOutfits`/`Uniforms` (the roadside mechanic is in ordinary clothes today).
+## City events
+
+`Scripts/Events`, namespace `RealLifeOverhaul.Events`, one component (`EventDirector`). Options group "City events":
+a toggle and a frequency slider each for fires, weather and street events, and the test buttons.
+
+**One large scene at a time.** The director runs one fire or one street event, and starts none while
+`TrafficAccidents.IsActive`, `CrimeDirector.IsActive` or `PoliceAttention.IsBusy`. Others ask
+`Events.EventDirector.IsActive` (the crime director does; see "Hooks" for the accident director).
+
+**Budgets.** People: 8 of the event pool's own (made one every two seconds, and only once a scene or a due event
+needs them; none exist before that) and at most 2 officers from `People/ActorPool`. Vehicles: at most 3 (fire
+engine, patrol car, the burning car). Particles: 418 for a fire (3 flames x 36, 2 smoke columns x 96, steam 48,
+water jet 70) in seven systems and one unshadowed point light; 240 for fireworks (4 x 60) in four systems; never
+both. Idle cost: one comparison a frame; once a second two flags and the hour; every twenty seconds a roll.
+With a scene on: the marker per frame, the scene four times a second (most of it once a second), and while a
+nozzle is held two two-bone reaches in LateUpdate. Savegame: one line of plain text in `modData`
+(`reallife:events`): the calendar's number, the days already announced, and the business a fire closed.
+
+### Fires
+
+A car (a private car in traffic pulls in, stops, its driver gets out and away), a bin (one of the street's, or
+the mod's own `street_bin` stood on clear pavement), or a shopfront (`CitySpots.Shopfront`: flames at the
+frontage and at the wall 4.3 m up, if there is wall there). The lane beside it is closed through a `SceneCordon`
+of the director's own. Twenty seconds after the flames, or at once on a 911 call, a fire engine is sent: a
+pooled truck dressed by `EngineLivery` (with the modelled `fire_engine` in the bundle a Delivery Truck, which the
+body is made to: the same 7.43 m, the same axles, so it wears the body with its wheels on the truck's own; any other
+truck, or a van, and every truck without the bundle, is repainted red with a light bar instead), driven by
+`EmergencyDriver` to `SceneCordon.Stand` 12 m short of the fire in its lane. Three firefighters get out one a
+second: the first takes the nozzle to 3.6 to 5.5 m from the fire, the hose is laid behind them and the jet
+arcs on to the fire; the second works the pump panel (on the modelled engine: 0.50 m off the panel of the fire's side, square to it, which is where `pump_panel` has its hands; the first gets out at the front door, the third at the crew door); the third stands between the fire and the street. The
+fire is knocked down in three stages of eight seconds (flames to 60 %, to 25 % with white smoke and steam,
+out), damped down for eleven, the hose is rolled up, the crew walk back and board, tape and cones come in,
+the burnt car is taken away out of view, the road opens and the engine leaves. With the police option on a
+patrol car stands behind the engine and its officer works the traffic. Up to three bystanders walk in to a
+line 13 to 19 m away and film. If no engine can come the fire burns out by itself. Hard limit 250 s.
+
+*The player's own business.* Only through the game's own mechanisms: `BuildingRegistration.TemporarilyClose`
+(the switch the player has on the business screen) for 2 to 10 hours, reopened by the same switch; and a repair
+bill of 350 to 1 800 as an ordinary transaction. Both scale with the seconds from first smoke to water (30 s is
+best, 120 s worst) and are reduced by the business's security level (up to 40 %), by warning the occupants at
+the door (15 %) and by calling 911 (10 %). Stock is never touched. A save's only business is spared in its
+first ten days. A business the player had already closed is not reopened by the mod.
+
+*Not done:* the extinguisher (the game has no such item); a fire engine attending a crashed car (see Hooks:
+`CrashFire` gives the wreck flames that die down by themselves).
+
+### Weather
+
+The game has rain and nothing else: no snow, fog, wind, temperature or forecast. `Weather` derives:
+
+| | from | accidents | crime | sight | street life | grip | traffic speed |
+|---|---|---|---|---|---|---|---|
+| mist | the game's dry spell before and after a shower (its own murk) | x1.3 | | x0.6 | | x0.95 | x0.92 |
+| rain | drops falling | x1.5 | x0.85 | x0.85 | x0.6 | x0.82 | x0.88 |
+| storm | a shower whose top intensity is 0.8 or more (read by reflection; if unreadable, never) | x1.9 | x0.7 | x0.7 | 0, `TakeCover` | x0.72 | x0.8 |
+| heat wave | a summer day, by the day's roll | | x1.3 | | x0.85 | | |
+| cold snap | a winter day, by the day's roll | | x0.85 | | x0.8 | | |
+| ice | one cold-snap day in three | x1.4 | | | x0.7 | x0.75 | x0.9 |
+
+Seasons are quarters of the game's year (`gameVariables.daysPerYear`, 60 by default), starting in midwinter.
+`WeatherEffects` applies grip to the driven car's `LateralFrictionGrip` and `LongitudinalFrictionGrip` (the
+values `Driving/CarTuning` reads; recorded per wheel and written back exactly), narrows each pooled traffic
+vehicle's `minPossibleSpeed`/`maxPossibleSpeed` (the traffic system has no speed factor; it takes effect as
+cars are put on the road; originals written back), spends 1 to 2 energy an hour out of doors in heat (11 to
+19 h) and cold (never below 15; `Weather.Wardrobe`, if anybody sets it, says whether a coat is worn), gives the
+morning forecast (toast and City Bulletin) and a warning when the weather turns. *Not done, by design:* slipping
+on ice (nothing tasteful to be had from the knockdown system without editing it); a power cut is a notification
+only (the game has no safe way to switch a district's shops off); sight is exposed, not applied (see Hooks).
+
+### Street events
+
+On the calendar (`EventCalendar`): fireworks 21 to 24 h on the last day of the year and on the day 50.7 %
+through it; a farmers' market 8 to 13 h every Saturday; otherwise a day has an event if its roll is under
+0.08 x the slider: market 10 to 16, parade 12 to 15, protest 11 to 15, fun run 8 to 11, film shoot 9 to 17.
+Announced at 18 h the day before and at 7 h on the day (toast and City Bulletin). It is held once, on a plain
+stretch of road 55 to 110 m from wherever the player is when it is due and they are out of doors, out of view;
+20 to 32 m of road is closed with the cordon's tape and barriers; staff walk in, then the crowd. At closing time
+(or in a thunderstorm) the crowd leaves, the staff pack and walk off, the tape comes down, and the props go once
+nobody is looking.
+
+| event | on the closed road | the player can |
+|---|---|---|
+| market, farmers' market | up to three stalls (`vendor_cart`, `fruit_stand`, `coffee_cart`, a parasol), a vendor behind each, up to four customers who walk in, wait, pay and leave with a cup, a marshal | buy a snack for 6 (energy +6, mood) |
+| parade | four marchers with banners and placards who form up and march end to end and back, two marshals, two onlookers on the pavement who clap as it passes | cheer (mood) |
+| protest | five with placards, an organiser with a clipboard, two officers watching from one end | sign the petition (mood). Always peaceful: the crime system has no public way to arrest a bystander |
+| fun run | runners with numbers who jog in, through and off, two marshals, onlookers | cheer (mood; the nearest runner waves) |
+| film shoot | camera, two lamps, a chair; operator, director, assistant on the radio, two actors who play a take of about twenty seconds and wait between takes, a marshal | watch a take (mood); "Quiet on set" within 32 m |
+| fireworks | a rack, a marshal, up to six people who walk in and watch; bursts 58 m up, 85 m off to one side | watch for twenty seconds (mood) |
+
+Footfall for nearby businesses is not changed: the game rebuilds a business's promotion every day and its
+traffic index is not saved, so there is no safe mechanism; attending gives a mood instead.
+
+### Hooks other features need (one line each)
+
+- `Traffic/TrafficAccidents.Tick` (read-only to this work, so not made): the roll becomes
+  `Random.value < Settings.AccidentFrequency * 0.02f * Events.Weather.AccidentFactor`, and its start condition
+  gains `&& !Events.EventDirector.IsActive`.
+- `Traffic/TrafficAccidents`, where a severe crash is staged: `Events.EventDirector.CrashFire(wreck)` sets that
+  wreck alight for 50 s (flames, smoke, firelight; no engine).
+- `Traffic/PursuitSight` and `Crime/PoliceAttention`: multiply their sight distances by `Events.Weather.SightFactor`.
+- A wardrobe feature: `Events.Weather.Wardrobe = <IWardrobe>`.
+- Made already: `Crime/CrimeDirector` (`* Events.Weather.CrimeFactor`, `&& !Events.EventDirector.IsActive`),
+  `CityLife/CityLifeDirector` (`&& !Events.Weather.TakeCover`), `Phone/PhoneContacts` (the 911 dialog offers
+  "Report a fire" and calls `Events.EventDirector.Report911()`).
+
+### Asset wish-list
+
+Everything below is asked for by id through `ClipLibrary.Has/TryGet` or `PropLibrary.TryGet`; when the bundle
+has it, it is used with no code change. Until then: the fallback named.
+
+Clips (Humanoid, in place, starting and ending in the standing idle unless said):
+
+| id | length, loop | what | until then |
+|---|---|---|---|
+| `hose_hold` | 4 s loop, whole body | braced: feet apart, left foot forward, knees bent, leaning into it; right hand at the right hip, left hand 0.24 m ahead of it, both on a bar pointing forward and 12 degrees up, 1.02 m above the ground and 0.17 m right of centre; small recoil sway | **delivered** (palms on the nozzle 0.06 and 0.30 m along it). `HoseHold` keeps the wrists where the clip's own grip has them on the nozzle (`CityClip.Grip`: the nozzle on the right hand bone, the left wrist on the nozzle), so at the clip's aim nothing is corrected and at any other (3 to 45 degrees up) the palms stay on the grips; it used to put the wrists on the palms' points, 0.08 m too far along. Without the clip: `carry_box_hold` on the arms, both wrists put on those two points by `TwoBoneReach` |
+| `pump_panel` | 4 s loop | standing square to a panel 0.5 m ahead: turning a valve at 1.1 m, reading a gauge at 1.4 m | `counter_wipe` |
+| `keep_back` | 3 s loop | both palms out at chest height, a step forward, a look over the shoulder | `direct_traffic` |
+| `crowd_look_up` | 6 s loop | head back, looking 50 degrees up, a hand shading the eyes now and then, pointing once | `watch_nod`, `take_photo`, `clap` |
+| `placard_hold` | 4 s loop, right arm mask and a whole-body variant | a staff held upright in the right fist at 1.10 m, pumped up 0.15 m twice a loop | `paddle_hold` (its grip; the stop paddle's) |
+| `camera_operate` | 6 s loop | at a tripod camera: right eye to an eyepiece 1.50 m up and 0.16 m ahead, right hand on a pan bar, left on the lens | **delivered**, for somebody 0.75 m behind `film_camera`'s pivot on the lens's line. `StreetEventScene.FilmSet` takes that place from where the camera really stands, `Arrivals` walks the operator's last steps on to it (within 0.08 m, the agent sent as far past it as it stops short) and the clip is played only there; anywhere else, and without the clip: `guard_stand` with `till_tap` |
+
+Props (metres, X x Y x Z, pivot as said; all "lit" unless said):
+
+| id | size | pivot and facing | until then |
+|---|---|---|---|
+| `fire_engine` | 2.72 x 3.20 x 7.43 | ground centre under the middle of the body, nose at +Z; axles at z +2.756 and -1.362 | **delivered, and rebuilt to the Delivery Truck** (2.72 x 3.01 x 7.43, wheelbase 4.118; the Freight Truck is 10.98 m, too long for a pumper): `EngineLivery` puts its axles on the truck's (the game's trucks have their origin under the rear axle, not their middle). On any other vehicle: the truck repainted red through property blocks, a light bar on its roof |
+| `fire_bar_lens` | 0.60 x 0.13 x 0.30, glow | the middle of the underside of the engine's light bar; the lens at +X | **delivered**: a lit copy of one end of the modelled engine's light bar, shown over each end in turn by `BarFlash` in step with the two flashing lights (only while an engine is out) |
+| `fire_light_bar` | 1.30 x 0.17 x 0.28, glow | centre of its underside; lies along X | shapes |
+| `fire_helmet` | 0.30 x 0.19 x 0.40 | centre of the rim's lower edge, peak at +Z: put 0.085 m above the head bone | shapes |
+| `fire_air_pack` | 0.34 x 0.75 x 0.40 | the upper-chest bone: cylinder on the back, harness, reflective bands front and back (as `mail_satchel` is modelled as worn) | shapes |
+| `hose_nozzle` | 0.07 x 0.09 x 0.47 | the coupling at its back end; points along +Z; gripped 0.06 and 0.30 m along it | shapes |
+| `street_bin` | 0.54 x 0.90 x 0.54 | ground centre | shapes |
+| `placard` | 0.56 x 2.19 x 0.03 | the stop paddle's: the hand is 1.10 m above the pivot; the staff runs from 0.70 to 1.75 m (it is carried clear of the ground), the board above it faces +Z | shapes |
+| `banner_pole` | 0.72 x 2.20 x 0.03 | as `placard`; a cloth 0.70 x 0.48 to +X of the staff | shapes |
+| `runner_bib` | 0.22 x 0.17 x 0.01 | the upper-chest bone; on the chest 0.134 m ahead of it, 0.07 m below | shapes |
+| `film_camera` | 0.9 x 1.7 x 0.9 | ground centre of the tripod; the lens looks along +Z, 1.47 m up | shapes |
+| `light_stand` | 0.9 x 2.5 x 0.9, lamp glow | ground centre; the lamp 2.32 m up shines along +Z | shapes |
+| `directors_chair` | 0.55 x 1.10 x 0.45 | ground centre; faces +Z | shapes |
+| `firework_rack` | 1.2 x 0.55 x 0.5 | ground centre | shapes |
+## Garage
+
+Car customisation and two-wheelers, in `Scripts/Garage`. Everything is kept in the save's modData, keyed by the
+vehicle's own id; the vehicles in the save stay exactly what the base game made, so a save loaded without the mod
+shows stock cars and ordinary scooters.
+
+### How the game paints a car (read from its files with `GarageAssets/scripts/extract_vehicles.py`)
+
+- Every player vehicle is **one body mesh on one material** of the shader `Shader Graphs/SH_Vehicle` (18 materials,
+  one per model; the scooter too). Paint, glass, lamps, trim, number plate and the wheels all share that material's
+  one texture; a mask in the texture says where the paint is. The wheels are separate renderers on the same material.
+- `CarFeatures.SetColor(VehicleColor)` writes three properties into a `MaterialPropertyBlock` on each of
+  `CarFeatures.bodyMeshes`: **Tint** (`Color_3d0f0cdbe6b74be28a1a5be5bab71dea`), **FresnelColor**
+  (`Color_f78fac473bac467092fb27521e9f71ea`, the colour the paint turns at a glancing angle) and **FresnelPower**
+  (`Vector1_481fa2a8a5e94165a039319bfd512b76`). It is called once, from `VehicleController.SetVehicleInstance`, with
+  the `VehicleColor` whose name is in `VehicleInstance.vehicleColorName` (chosen at the dealership). Dirt is a
+  fourth property, `_Dirtiness`, written the same way (get block, set, set block), so ours survive it.
+- The shader has **no metallic, clear-coat or per-part property**. What else it has: `SmoothnessBoost`
+  (`Vector1_41991b689ccf4932ad504975ac34399a`, one gloss factor for the whole material), `_EmissionColor` (the
+  colour of every lamp), and the lamp and indicator strengths the game drives itself.
+
+So: **paint** is Tint in any colour, a **finish** is FresnelColor + FresnelPower + SmoothnessBoost, **lamp tint**
+is `_EmissionColor` and the colour of the car's own headlamp `Light`. All through the same property blocks, once
+per change. And these cannot be done on the game's cars, and are not offered: **window tint** (the glass has no
+material or property of its own), **wheel colour** (the rims are in the shared texture, outside the paint mask),
+**number plate text** (the plate is painted into the body texture), **two-tone roofs, stripes and liveries** (one
+material and one UV atlas per car; a flat stripe laid over a curved bonnet either floats or cuts into it, on every
+car differently). A matte finish dulls the glass and trim too, because SmoothnessBoost is material-wide; the shop
+says so.
+
+### The custom shop
+
+At every repair bay the game has (the `GasStationTrigger`s its `GasStationController`s list as repair stations:
+auto repair shops and truck garages). Drive a car of your own into a bay, stop, press the Garage key (K). The
+car is held where it stands (its pedals taken off the keys, its body frozen the way the car wash freezes it), the
+mod's own camera goes onto a turntable round it (drag on the free part of the screen to turn, wheel to move in
+and out), and a panel offers five tabs. Every choice is on the car at once; the bottom of the panel shows the
+bill and the car's figures before and after. **Pay** keeps the build, **Leave** (or getting out, or walking away)
+puts the car back as it came in, **All stock** takes everything off. Work is instant: the game has no notion of
+a car that is away being worked on, and a car hidden or taken out of the save's vehicle list for a few hours
+would be a save the base game cannot account for.
+
+| tab | what | price |
+|---|---|---|
+| Paint | 42 chart colours, the colour it was bought in, or any colour mixed with three sliders (hue, strength, brightness) | 600 chart, 900 mixed, times the body factor |
+| Finish | gloss, satin, matte, metallic, pearl | 150 / 300 / 500 / 700 / 1 200, times the body factor |
+| Lights | lamp tint: standard, warm white, ice blue, rally yellow; underglow kit in seven colours | 150; 400 (another colour later 100) |
+| Body | boot spoiler, roof bars, bull bar: each only on the bodies it fits; other wheels when the prop bundle has them | 450, 350, 600; wheels 1 200 |
+| Parts | one part in each of eight slots (below) | a multiple of the part base |
+
+Body factor: economy 1, saloon 1.2, utility 1.4, van 1.5, luxury, sports and trucks 2. Taking a fitted thing off
+costs 50. Half of everything spent on a car counts as value added (`GarageBridges.ValueAdded`).
+
+**Fitted parts are placed from each body's measured shape**, not its bounding box:
+`GarageAssets/scripts/extract_fit.py` reads every triangle of every car body and writes one row per car into
+`GarageFit.cs` (roof: where it is level, its height at the bars, its half width, the height under the feet; boot
+deck: height, slope, half width; nose: its low and high edge, half width, bonnet height). A **spoiler** is offered
+where the boot deck slopes under 25 degrees and is at least 0.25 m below the roof (AF90, 112, Mimic, limousine,
+MGA GT, S500, Fanton, Pony), **roof bars** where the roof is level for 0.9 m (everything but the sports cars and the trucks), a **bull bar** on SUVs, pickups and vans (Nunavut, V150, Desert), as tall as the upright part of the nose allows. The
+Mersaidi Dash has no measured body (its prefab is built differently) and gets none; neither does a car from
+another mod. Stand-ins are plain black shapes from `Core/Shapes`; the modelled parts replace them without a code
+change when the prop bundle has them (wish-list below).
+
+### Performance parts
+
+Layered on the per-car model of "Cars" above: a build **divides the 0-100 km/h time and multiplies the top
+speed**, and `CarModel.Solve` finds the power, gearing and drag for the new targets. Brakes, tyres, springs,
+weight and the engine's note are changed on the car itself (NWH: `brakes.maxTorque`, the wheels' friction grip,
+spring force and length, damper rates, the axles' anti-roll force, the body's mass, the engine sound's pitch
+and volume), recorded first and put back exactly.
+
+Part base by kind: economy 1 000, saloon 1 800, utility 2 500, van 2 000, truck 3 500, luxury 4 500, sports 6 000.
+
+| slot | part | x base | effect | cost in use |
+|---|---|---|---|---|
+| Engine | Stage 1 / 2 / 3 | 1.0 / 2.2 / 4.0 | acceleration +6 / +12 / +20 %, top speed +2 / +4 / +7 % | wears 5 / 12 / 25 % faster; stage 3 insurance +10 % |
+| Exhaust | Sports / Straight-through | 0.5 / 0.9 | acceleration +3 / +5 %, top +1 / +2 %, higher and louder note | straight-through is not street legal |
+| Turbo | Turbocharger / Big turbo | 2.5 / 4.5 | acceleration +10 / +18 %, top +5 / +8 % | wears 10 / 22 % faster; big turbo insurance +10 % |
+| Gearing | Short / Long final drive | 1.2 | acceleration +7 %, top -8 % / acceleration -6 %, top +6 % | |
+| Brakes | Sports / Race | 0.8 / 1.8 | brake torque +25 / +50 % | race: wears 5 % faster |
+| Tyres | All-weather / Sports / Semi-slick | 0.7 / 0.6 / 1.2 | wet grip +15 % / dry +10 %, wet -10 % / dry +20 %, wet -25 % | semi-slick: wears 8 % faster |
+| Suspension | Sports springs / Coilovers / Lift kit (SUVs, pickups, vans) | 0.9 / 1.8 / 1.0 | stiffness and anti-roll +25 % and 2 cm lower / +50 % and 4 cm lower / +10 % and 4 cm higher | |
+| Weight | Lightened interior / Stripped out | 1.0 / 2.5 | weight -5 / -10 % (as much quicker) | stripped out: insurance +5 % |
+
+However the parts stack, a build is never asked for more than 1.6 times the acceleration or 1.25 times the top
+speed. A car is lowered only inside the travel its own suspension already uses (at most a quarter of what is
+left of the spring at rest, never more than 5 cm). "Wet" is the game's rain unless a Weather feature sets
+`GarageBridges.RoadIsWet`. The shop shows 0-100 and top speed from the model (when the player sits in the car
+and car tuning is on) and the stopping distance from 100 km/h from the brakes, tyres and weight; what is applied
+is logged once per car and build ("Garage: ..."), and "Measure this car" times the real thing.
+
+**The hook for `Driving/CarTuning`** (two lines; until they are there, `GarageTuning` does the same work itself
+after CarTuning has run: an engine power modifier, the gear ratios, and the difference in drag as its own force,
+each put back exactly; with car tuning off it falls back to the power modifier and the game's speed limiter):
+
+```csharp
+// CarTuning.Update, the end of the "options" expression: a build that changes is a change of options
+    | (Mathf.Clamp(Settings.CarAcceleration, 70, 150) << 10) | (GarageTuning.Stamp << 18);
+// CarTuning.Apply, after "float topKmh = ..." and before CarModel.Solve
+GarageModifiers garage = GarageTuning.Claim(car.vehicleInstance); seconds /= garage.Acceleration; topKmh = Mathf.Min(topKmh * garage.TopSpeed, MaxTopKmh);
+```
+
+The first call of `Claim` makes `GarageTuning` stand down for good, so the two never both apply.
+
+A straight-through exhaust driven above 36 km/h is noticed by the police now and then (a look every 30 s, 8 %,
+once a day at most): `GarageBridges.PoliceNotice("exhaust", 120)` if a Crime feature has set it, otherwise a fine
+of 120 through `Crime.Fine`. For a Transport feature: `GarageBridges.WearOf(id)`, `InsuranceOf(id)`,
+`ValueAdded(id)`, `LoudnessOf(id)`, `IsTwoWheeler(id)`, and `GarageSummary.Lines` for a garage page of its own.
+
+### Two-wheelers
+
+The game's electric scooter is an NWH vehicle with a motorcycle module (lean, steering), a 45 kW engine, one
+forward gear, 250 kg, a 45 km/h limiter, and a rider the game attaches to it in a standing pose with the hands
+on its bar. **A bicycle or motorbike here is one of those scooters**: made with
+`VehicleHelper.CreateAndSpawnVehicle(new VehicleInstance("ba:vehicletype_electricscooter"), ...)`, ridden with
+`ScooterController` untouched, saved in the save's own vehicle list. modData says which ids are what
+(`reallife:garage_bikes`). `BikeMount` then, on the spawned object only:
+
+- **body**: the scooter's renderers are set not to draw (`forceRenderingOff`; nothing is removed) and a body is
+  built under it (`BikeBody.Build`): the modelled bike when the bundle has it, else a stand-in of tubes, rings and
+  boxes in three shared meshes per part (a diamond frame, spoked wheels, bars, saddle, cranks and pedals; or tank,
+  seat, engine, forks, exhaust, fat tyres). Either way wheels turn with the speed, the fork and front wheel steer,
+  the cranks go round with level pedals while the rider pedals. The modelled bike is put together from its parts
+  (`<id>_frame`, `_fork`, `_wheel` or `_wheel_front` / `_wheel_rear`, `_crank`, `_pedal`: at most nine renderers,
+  all shared meshes), each on the object `BikeMount` turns; nothing turns while nobody rides.
+- **colour**: what is painted (frame tubes, mudguards, tank, tail, fairing) is a part of its own on a neutral
+  swatch (`<id>_frame_paint`, `<id>_fork_paint`) drawn with `PropLibrary.Tinted(colour)`: the atlas material with
+  its base colour multiplied, ONE shared instanced material per colour (never per bike, no property blocks), gone
+  with the library's other materials when the city unloads. The colour is `BikeRecord.Colour`, else
+  `BikeDef.Colour`, which is the colour the whole model is painted in the atlas (city 0x124D70, road and sport
+  0x9E090A, roadster 0x090F2B). A bike that only stands on show in that colour (`Build(..., still: true)`: the
+  shops' racks) is the whole model as one mesh, one draw call; the docks' bicycles are in the share scheme's
+  blue, so they are parts.
+- **grips**: `BikeDef.Grip` is per model and measured on its bar by `PropAssets\scripts\checks_garage.py`: the town
+  bar's rubber grips, the TOPS of the road bicycle's drop bar (0.13 either side of the stem: the one part of a drop
+  bar that lies along X, which is what the game's hand rig holds), the roadster's bar, the sport bike's clip-ons
+  under the top yoke.
+- **numbers**: a bicycle gets a small "engine" behind the pedals (1.2 or 1.6 kW for the scooter's 250 kg), almost
+  no engine braking, a bicycle's rolling resistance, air drag sized so that steady pedalling holds 24 or 32 km/h,
+  and no engine sound. A motorbike gets power, final drive and drag from `CarModel.Solve` for its targets, the
+  limiter off and 1.6 times the brakes. Logged once per kind ("Two-wheelers: ...").
+- **rider**: the game's own riding pose, moved so that the hips are over and just above the seat (fitted to the
+  character's own hip height), the hands on our grips through the game's own hand rig, and after the animation
+  each frame the legs put on the pedals (following the cranks) or the footpegs (`LegIk`, knee forwards). A helmet
+  follows the head on a motorbike once the player owns one, turning with it (`BikeMount.HeadSquare` reads from
+  the avatar's T-pose how the Head bone's own axes stand to the character; if the avatar does not say, the helmet
+  keeps the player's heading as before). With the clip bundle the mod's own loops are played instead, chosen by
+  what the rider is doing (`BikeDef.Ride`, `Coast`, `Stand`; `BikeMount.Pose`: three comparisons a frame while
+  ridden, the engine told only on a change that has lasted 0.3 s, 0.1 s to set off):
+
+  | | riding (a bicycle: pedalling) | freewheeling | stopped (under 0.35 m/s, no throttle; riding again over 0.8 m/s) |
+  |---|---|---|---|
+  | city bicycle | `cycle_ride` | `cycle_coast` | `cycle_stand` |
+  | road bicycle | `cycle_ride_road` | `cycle_coast_road` | `cycle_stand_road` |
+  | roadster | `moto_ride` | | `moto_stand` |
+  | sport bike | `moto_ride_sport` | | `moto_stand_sport` |
+
+  A model's own clip missing, the town bicycle's or the roadster's is used; none at all, the game's pose. On a
+  bicycle the feet stay on the pedals through `LegIk` while riding and freewheeling; stopped, the clip has the
+  left foot on the ground, so `LegIk` is faded out over 0.3 s and the cranks are brought round (backwards, as on
+  a freewheel) to the right pedal forward, where the clip's right foot is. The bike itself stays upright (the
+  game's scooter physics): the stopped clips lean the rider, not the machine.
+
+| model | at | price | goes |
+|---|---|---|---|
+| City bicycle | bike-share docks (hire 15, back to any dock by the end of the next day, else collected with a 25 late fee); racks outside supermarkets | 350 | about 24 km/h, 0.06 energy a second of pedalling |
+| Road bicycle | racks outside supermarkets | 900 | about 32 km/h, 0.08 energy a second |
+| Motorbike | stands outside car dealerships (at repair garages if the city has no dealership open) | 7 500 | 0-100 in 6.0 s, 150 km/h |
+| Sport motorbike | the same stands | 18 000 | 0-100 in 4.5 s, 190 km/h |
+| Helmet | the same stands | 120 | riding without one: a look every 30 s above 18 km/h, 10 %, once a day, fine 60 |
+
+Docks stand beside every other one of the game's scooter stands (eight at most), racks outside up to five
+supermarkets, stands outside up to four dealerships: found once per city load, in a fixed order, each on pavement
+with room for the whole thing. The Garage key hires, returns, or opens the stand's panel (buy, sell an owned one
+standing by for half its price). Holding the throttle is pedalling: it costs energy through the game's own
+`EnergyHelper`, never below 14; a worn-out rider has half the push; letting go coasts. A motorbike asks
+`GarageBridges.HasMotorcycleLicence` (null: allowed). Coming off (most of the speed lost in one physics step, or
+the bike on its side while moving) calls `GarageBridges.RiderFalls(speed)` if a Ragdoll feature has set it,
+otherwise the bike stops and the rider is on their feet. Traffic sees a ridden two-wheeler as it sees a ridden
+scooter: the game puts its collider on the vehicles layer.
+
+**Where one is put, and finding it.** A place faces along its pavement, so "beside it" is the shopfront on one
+side and the kerb on the other. A bike handed over is therefore stood **along the pavement** from the place
+(2.6 m, 3.4 m, then the corners, the sides last), and a spot must pass four tests: ground under it
+(`BikePlaces.StandHeight`: the ground ray, or the pavement's own surface where that is higher), pavement
+(only if no pavement spot is free is level ground in sight accepted), room for the whole bike (`Fits`), and
+**a clear line from the place to it** (`BikePlaces.Seen`). The last one matters: `Fits` asks whether a box
+touches anything, a wall is a skin of triangles, and a box wholly behind a shopfront touches nothing, so a spot
+indoors "fits" (v0.35.0 tried the sides first, without the line: a motorbike bought at a stand a step out from
+a dealership wall could be made behind that wall, the likeliest reason the first one bought was never seen). The test buttons and "Bring it here" use
+`BikePlaces.SpotAhead`: 2.2 m in front of the player on the ground under that point, side on, in their sight.
+
+- The game marks the player's cars on the map and, within 100 m, on the street (`CityMap.AddPoi`, set on
+  `VehicleController.poi`); it leaves scooters out on purpose. `BikeMount.Mark` gives ours that same marker
+  under their own name; the game hides it while it is ridden and destroys it with the vehicle.
+- On buying, hiring, a test button, "Show me" and "Bring it here" the mod's own marker (`Hud.ShowMarkerAt`)
+  points at the bike for 20 s (30 s for "Show me"), until the player is within 3 m, on it, or indoors; the
+  toast says how far and which way. The incidents come first: while an accident, crime or street event
+  is on, ours is not drawn. Per frame only while pointing.
+- "My vehicles" gives every two-wheeler its address, district and distance, with **Show me** and **Bring it
+  here** (on foot, out of doors; free from within 25 m, otherwise 20; one the game no longer has in the world
+  is made again, the same sort and colour).
+- An owned one found behind a building's wall when a save loads (`BikePlaces.Walled`: pavement near it, a wall
+  between) is said once, with the way out.
+- Parking: a two-wheeler's `parkingState` is `Undefined`, so the game's hourly public-parking charge and its
+  parking tickets ("electric scooter") skip it.
+- The log says everything about one that is made, and again two seconds on ("Two-wheelers: made ...", "two
+  seconds on ..."): position, heading, tilt, the ground found under it, pavement or not, how many of the
+  body's renderers are drawn, forced off or without a material, their bounds, how many of the scooter's own
+  are hidden or still drawn, active state, layer, scale, collider layer, rigidbody, physics, map marker. One
+  that is no longer where it was put (fallen, flown, on its side) is stood back once and held as the game
+  holds a parked scooter.
+
+**Saving.** The game removes a scooter four hours after it was last looked at (`AutoDestroyVehicle`); on ours that
+component is switched off, and they are saved with `lastSeen` empty, so with the mod they stay. Without the mod
+they are scooters, and the game clears them away by its own rule once they have been seen and left. An owned one
+that went that way is stood back where it was last left, the next time the save is loaded with the mod. A build
+is dropped from modData when its car is no longer in the save (sold).
+
+Not done: carrying a bicycle; a phone entry of its own for "My vehicles" (it is a panel of the Garage, from the
+shop and the options page, and `GarageSummary.Lines` for another feature's page). The item panel still calls
+a two-wheeler an electric scooter, because to the game it is one. Not verified in the game (it could not be
+run): that the v0.35.0 motorbike was behind the wall (the code allows it and nothing else found does; the log
+line above settles it), whether the pavement's ground collider is on a layer the ground ray sees (hence
+`StandHeight`), and how the scooter's physics settles one that is made with nobody on it.
+
+### Wish-list (assets that replace a stand-in with no code change)
+
+Props, in `Bundles/reallife_props` under these ids (metres; +Z forwards, +Y up):
+
+| id | size | pivot | notes |
+|---|---|---|---|
+| `car_spoiler` | 1.40 wide x 0.18 high x 0.26 deep | on the boot deck under the middle of its two feet (feet at x = +-0.42) | scaled in X to the deck; dark, satin |
+| `car_roof_bar` | 1.20 wide x 0.11 high x 0.06 deep | on the roof under the middle, feet at x = +-0.52 | one bar; two are fitted; scaled in X |
+| `car_bull_bar` | 1.00 wide x 0.60 high x 0.14 deep | bottom centre of the hoop; the mounts reach 0.12 m behind it | scaled in X and Y |
+| `wheel_5spoke`, `wheel_mesh`, `wheel_steel` | radius 0.34, 0.22 wide | centre of the wheel, axle along X, outer face at -X | a whole wheel, tyre included: it replaces the car's own; scaled to each car's wheel |
+| `bicycle_city`, `bicycle_road` | 1.78 long x 1.14 high x 0.56 wide | ground under the middle; wheels (radius 0.34) at z = -0.52 / +0.58 (road -0.49 / +0.55); saddle top 0.93 at z -0.30 (road 0.95, -0.29); grips at (+-0.26, 1.14, 0.16) (road: the tops of its drop bar, +-0.13, 1.00, 0.42); bottom bracket (0.29, -0.08) (road 0.28, -0.07) | delivered whole and in parts (`_frame`, `_frame_paint`, `_fork`, `_fork_paint`, `_wheel`, `_crank`, `_pedal`): see `PropAssets\README.md`, "Garage" |
+| `motorbike_standard`, `motorbike_sport` | 2.05 long x 1.10 high x 0.75 wide | ground under the middle; wheels (radius 0.33) at z = -0.651 / +0.723 (the scooter's own); seat top 0.83 at z -0.20 (sport 0.84, -0.22); grips (+-0.31, 1.075, 0.30) (sport: clip-ons, +-0.27, 0.915, 0.42); pegs (+-0.24, 0.34, -0.10) (sport +-0.24, 0.38, -0.16) | whole and in parts (`_frame`, `_frame_paint`, `_fork`, `_fork_paint`, `_wheel_front`, `_wheel_rear`) |
+| `helmet` | 0.27 x 0.29 x 0.30 | the base of the skull (the Head bone), +Z the face | full-face |
+| `bike_dock` | 2.6 wide x 1.25 high x 0.2 deep | ground centre, 0.80 m behind the hoops' line (the bikes stand at the pivot, front wheels in the hoops) | three hoops 0.8 m apart, a pay post at +X |
+
+Clips, in `Bundles/reallife_anim` (Humanoid, in place, loops; the table under "rider" above, the numbers in
+`CityAssets\README.md`, "Garage"): `cycle_ride` (seated upright, the ground of the clip 0.93 m below the saddle
+surface, hands forward at 1.14 m, legs anything: they are placed on the pedals afterwards), `moto_ride` (seated,
+seat 0.83 m up, feet on pegs 0.34 m up and 0.24 m out, hands on bars at 1.075 m and 0.50 m ahead of the hips),
+and for each model its freewheeling and stopped loops and the road bicycle's and sport bike's own riding loops. Sounds: a freewheel tick and a bell for bicycles, an air tool for the shop.
+
+### Testing
+
+Options, "Custom shop and two-wheelers": open the custom shop on the current or nearest car wherever it stands;
+a random full build (free); restore to stock; "My vehicles"; a city bicycle, road bicycle, motorbike or sport
+motorbike 2.2 m ahead, side on, with the marker on it. A button that cannot do it says why (`Core/TestRefusal`: not loaded, option off, no
+car of yours within 20 m, not a car, a job's or hire company's vehicle, shop already open, in a vehicle, no clear
+ground, indoors, traffic not running). `Player.log` has one line for each thing applied.
+## Meta: the guide, presets, the options page, save tools
+
+`Scripts/Meta` is the mod's part about itself. It names no feature outside one file, `FeatureList.cs`: everything
+else reads the registry that file fills, so a feature that registers appears in all of it.
+
+```
+Meta/
+  Features        the registry: Feature (fluent), Features.Add / Find / OwnerOf...; [DescribesFeature] for self-registration
+  FeatureList     every feature, one statement each; the place for features merged later
+  SettingsTable   every saved option, found by itself: Settings' "XId" + "X" fields (id, kind, shipped default,
+                  captured at the top of the first Settings.Load), the rows of the options page (label, range),
+                  and what a feature declares for options kept elsewhere (performance tweaks, looks)
+  Presets         Relaxed / Standard / Realistic / Hardcore / Custom, reset everything, the settings file
+  OptionsLayout   puts the finished options page in order: sections, test tools, the buttons at the top; the set-up check
+  OptionsSearch   the other half of that class: the search box under the page's first header, and the words features are also found by
+  MetaUi          the mod's own canvas (above the menus, off unless a panel is open) and its controls; messages and confirmations
+  Guide           the in-game guide (topics, facts, search) and its phone contact
+  Welcome         the first-run / after-update panel
+  Changelog       what changed per version (guide page, "since last time")
+  SaveTools       prepare a save for removing the mod, reset the mod's data, repair, the check after each load
+  MetaCity        Meta's part of a city load; Dev: the "Developer diagnostics" switch
+```
+
+### Registering a feature (one statement)
+
+At the marked place at the end of `FeatureList.RegisterAll` (or the same statement in a `static void DescribeFeature()`
+of a class of the feature's own marked `[Meta.DescribesFeature]`):
+
+```csharp
+Features.Add("fuel", "reallife_fuel_title")              // id (plain English: it sorts the page), title key
+    .Group("reallife_fuel_header")                       // the AddHeader key of its group in RealLifeOverhaulMod.cs
+    .About("reallife_fuel_about")                        // one sentence
+    .Help("reallife_fuel_help")                          // its guide page: "# " heading, "- " bullet, {fact}
+    .Preset(Settings.FuelId, 0, 1, 1)                    // toggle at Relaxed, Realistic, Hardcore (Standard = its default)
+    .Preset(Settings.FuelPriceId, 50, 120, 160)          // slider likewise
+    .NeedsReload(Settings.FuelId)                        // only if it is read once per load
+    .Data("reallife:fuel")                               // modData keys ("reallife:fuel_*" = prefix)
+    .Contact("reallife-garage")                          // phone contacts it adds
+    .Objects("RealLifeOverhaul Fuel HUD")                // objects of its own outside the mod's root object
+    .Fact("fuel_price", () => Guide.Money(FuelLaw.PricePerLitre))
+    .Cleanup(() => FuelDirector.Instance?.StopAll())     // off the street and stop; safe when idle
+    .ResetData(() => FuelState.Reset())                  // forget this save (its modData was just removed)
+    .Repair(() => FuelPhone.Setup());                    // put back what it adds to a save
+```
+
+Only `Add` is required. The feature's rows stay where they are added today (the chain in `RealLifeOverhaulMod.cs`),
+its options stay fields of `Settings` with a `Settings.Load` line each. What happens without any registration: its
+header becomes a section of its own, its options are in the settings file and "reset everything", its buttons with
+`_test_` in the label move to "Test tools", its `reallife:` modData keys and `reallife-` contacts are still removed
+by the save tools, and its `Logger` is reached by the diagnostics switch. What it does not get: a guide page, a
+place in the presets, a clean-up call. "Check the mod's set-up" (options page, Diagnostics) lists every such gap.
+
+Rules that make this work: option ids are `public const string XId` beside `public static bool|int X` in `Settings`;
+modData keys start with `reallife:`; contact ids with `reallife-`; a class that logs has a static `IModLogger Logger`.
+
+### What the mod API allows on the options page
+
+One flat page for all mods (`ModOptionsViewController`), built from `ModOptions`: header, toggle, slider, dropdown,
+button, splitter, and `AddCustom` (a row that draws itself under the page's content object). There is no text
+block, no sub-page and no way to scroll to a row. Toggles, sliders and dropdowns call their callback with the saved
+value every time the page is drawn, which is why the presets are buttons and not a dropdown. `OptionsLayout`
+therefore rearranges the finished list: sections are a button followed by the feature's rows, and a row that draws
+nothing (`RowTap`) on either side tells it which of the game's row objects are that section's, to switch on and
+off. Open/closed is kept per section in PlayerPrefs (`m:<mod>:ui_open_<feature id>`). Every row is re-made with the
+shipped value as its default, so the game's own "reset" resets (the chain passes the loaded values).
+
+"Test tools" is a section of sections: one group per feature that has test buttons, in the order of the sections,
+each a button ("Tests:  Crime and police stops   (14)") that opens and closes like a section and is closed until
+asked for (`m:<mod>:ui_open_tests_<feature id>`). A feature that is not registered is named by its header without
+"Real Life Overhaul - " in front. "Open or close every section" leaves the groups as they are.
+
+A section's button says what is in it after the name, through the label's `Suffix` (written when the page is drawn
+and when it changes, never per frame): "Garage   (9 options, on)   [+]". "on"/"off" is there only for a section
+with a row that switches the whole feature, which is the toggle whose label key ends in `_enabled`; the game calls
+a toggle's callback with the saved value when it draws the row and on every click, and that is where the button
+hears of it.
+
+### Search
+
+The row under the page's first header is a text field (`OptionsSearch.cs`). The page has no text field of the
+game's to copy, so it is a `TMP_InputField` built in code that takes its width from the header above it and its
+height, font, letter size and button shape from the "Open the Guide" button below it.
+
+- **Matching.** From two letters on. Not case-sensitive; the words typed may be in any order and each must be
+  somewhere in the row's label, or in its section's text: the section's name, the feature's `About` sentence, and
+  the other words for it in the `SearchWords` table. So a word that names a feature shows all of its rows, and a
+  word only in a label shows that row ("bus" shows the whole of the transport section and its tests; "timetable"
+  shows the rows that say timetable).
+- **What is shown.** While a search is on, sections count as open, rows that do not match are switched off,
+  a section's button is there only if one of its rows is, and the test tools are searched whether or not "Show
+  test tools" is on or their section is open. The buttons at the top (guide, presets, export) are found by their
+  labels; the headers between the parts are hidden. A line under the box says how many rows were found. Clicking a
+  section's button does nothing meanwhile. Emptying the box (the x, Backspace, or Esc while typing) puts everything
+  back as it was left: the search never writes what is open and closed.
+- **Cost.** No `Update`. The field's value-changed event does the work: the lower-case texts are made on the first
+  letters typed after each drawing of the page (the page is drawn again after a preset, and the language may have
+  changed), a keystroke is one pass of `IndexOf` over them and `SetActive` only on the rows whose state changes,
+  and the page lays itself out once. The scroll view is put to the top of the mod's part by a component that is
+  enabled for two frames after a new search.
+- **Keys.** While the field is selected `Keys.Suspended` is on (released on deselect and when the row is disabled
+  or destroyed), and the game leaves its own shortcuts alone because a UI object is selected
+  (`GameManager.HasInputSelected`). In the city Esc is the game's `CancelButtonHandler`: with the field selected it
+  only takes the selection away, and the box is emptied in the same press; the next Esc closes the page. On the
+  main menu `Options.Update` closes the page on Esc whatever is selected, so there one press does both.
+- **Failing.** Anything thrown hides the box for the session, logs once ("Meta: the search box ... is hidden") and
+  shows the page as the sections have it.
+- **Not kept.** The box starts empty every time the page is drawn.
+
+Other words for a feature are one line of `SearchWords` at the top of `OptionsSearch.cs`: who (the feature's id, or
+the header key of its group while it is not registered; both may be given) and the words, lower case:
+
+```csharp
+new[] { "fuel reallife_fuel_header", "petrol gas station tank litre" },
+```
+
+Only words that mean the whole feature: each one shows every row of it.
+
+The game's own help (F1) draws any page whose text is the locale key `help_<slug>_content`
+(`HelpPageRenderer.RenderPage(slug)`), but lists only the pages of its `helpstructure.json`, and that key cannot
+carry the mod's prefix; the guide is therefore a panel of the mod's own.
+
+### Presets
+
+Standard is always an option's default; the other three are declared with `Feature.Preset`. Today:
+
+| option | Relaxed | Standard | Realistic | Hardcore |
+|---|---|---|---|---|
+| `crime_against_player` | off | on | on | on |
+| `player_offences` | off | on | on | on |
+| `crime_frequency` | 1 | 2 | 3 | 5 |
+| `job_pay` | 125 | 100 | 100 | 80 |
+| `life_frequency` | 4 | 5 | 6 | 8 |
+| `police_presence` | 4 | 5 | 6 | 8 |
+| `patrol_frequency` | 2 | 3 | 4 | 6 |
+| `player_knockdown` | off | on | on | on |
+| `ped_incidents` | off | on | on | on |
+| `accident_frequency` | 1 | 2 | 3 | 4 |
+| `crash_consequences` | off | on | on | on |
+| `police_pursuit` | off | on | on | on |
+
+A preset writes the PlayerPrefs keys the options page writes, calls `Settings.Reload()` (which is `Load` and then the
+`Settings.Changed` event) and has the page drawn again. The settings as they were go to
+`<persistentDataPath>/RealLifeOverhaul/settings_before_preset.txt` first; "Export" writes `settings.txt` there and
+"Import" reads it (`id=value` lines, key bindings included).
+
+### Save tools: what is removed, and how that was checked against the game
+
+Read in the decompiled game: `GameInstance` (the save), `SaveGameManager.Save` (fires `GlobalEvents.onSaveGame`, then
+serialises on the calling thread), `SaveGamePathHelper` (`SaveGames/<version>/<characterId>/<name>.hsg|.json`, `.meta`,
+`.jpg`; the list of saves reads the files of each character folder and never a folder inside one), `Contact`
+(`GameInstance.Contacts`; a contact's messages are its own `messagesQueue`), `HappinessHelper`.
+
+| in the save | the mod's | prepare for removal | reset data |
+|---|---|---|---|
+| `modData` | keys starting `reallife:` (and any a feature declares) | removed | removed |
+| `happinessModifiers` | types starting `reallife_happinessmodifier_` | removed (also stripped by `ModState` on every save) | removed |
+| `Contacts` | ids starting `reallife-` | removed with their messages | kept |
+| `notifications` | keys starting `reallife_` | removed | kept |
+| `Transactions` | types starting `reallife_transaction_` | kept and counted | kept |
+| `VehicleInstances` | the hired job van | taken back by Jobs' own clean-up; reported if still there | same |
+| `PlayerDefaults.contactsLastName` | the game's note of the contact last opened | set to none if it names a removed contact (the Contacts app lists nothing otherwise) | untouched |
+
+"Prepare" backs up first, twice (`RealLifeOverhaul_backup_<time>` inside the character folder, and
+`<persistentDataPath>/RealLifeOverhaul/backups/<character>/<time>`, because the load menu deletes a character folder
+whole with the character or its last save; either copy failing means no change), runs
+every `Cleanup`, destroys the mod's root object and the objects features name (their `OnDestroy` restores what
+they changed, as on unload), removes the above, attaches a handler at the end of `onSaveGame` that removes it again
+inside the save event (so nothing a feature writes there reaches the file; the moods come out and the handler goes
+on in the very frame the features are destroyed, before any autosave can run), saves under the same name and shows and
+writes a report. It refuses in a vehicle and during a hospital trip, custody, sleep or an activity. There is no
+"all saves" variant.
+
+### Test paths
+
+- Guide: options page "Open the Guide"; the phone contact "Real Life Overhaul Guide"; "Check the mod's set-up" renders every page and lists unfilled `{facts}` and missing texts.
+- Welcome: "Show the welcome panel again"; or delete `m:<mod>:meta_seen_version` from PlayerPrefs.
+- Presets: the four buttons, then the guide's Presets page (the "Now" column) and the header "Preset in use".
+- Options page: open and close sections; "Show test tools" off hides the last section. Each section's button ends in its count ("(5 options, on)"); switch a feature's first toggle and the "on" becomes "off" at once. Open "Test tools": one closed group per feature; open one, close and reopen the page: it is still open.
+- Search (main menu and in a city, both): with "Test tools" closed, click the box under "Real Life Overhaul: Start here" and type `bus`: the page jumps to the top, only the transport section and its group of tests are left, the line under the box counts them; type on to `bus stop`: the rows that say so are left, and pressing a button among them works. `stop bus` (two words, any order) finds them too. `zzzz` says "Nothing found for 'zzzz'". Try `police`, `fps`, `bike`. A toggle and a slider among the results still work. While typing `v`, `f`, `b`, `x`, the camera, interaction and garage keys must do nothing, and nor must the game's own (Space, M, Tab). Empty the box with the x: every section is as it was before. In the city, Esc while typing empties the box and leaves the page open; on the main menu it also closes the page. Switch "Show test tools" off and search `test`: the tests are still found. `Player.log` must have no "Meta: the search box" line.
+- Save tools: the three buttons on a save you do not need; `Player.log` lines start `Meta:`; the report is also in `<persistentDataPath>/RealLifeOverhaul/`.
+- Diagnostics: switch "Developer diagnostics" off: F8/F9 do nothing and only warnings and errors of the features reach the log.
+
+When the version is bumped: `Changelog.Latest`, and the row `Changelog.Unnumbered` takes the new number.
+## Civic life
+
+`Scripts/Civic/`: a city government with elections, and a construction programme. Everything is data that
+moves once per in-game hour; the street only shows what is near the player. Options group "Civic life":
+a master switch, "Elections and the mayor" and "Construction sites", and eleven test buttons.
+
+```
+CivicDirector     the clock, the save (two lines in modData), the toggles, faults, key prompts, the test buttons
+CivicCatalogue    the thirteen levers and every number a policy changes; name pools; election and site constants (game-free)
+CivicState        GovState, SiteState, WorksState and their one-line text form (game-free)
+CivicGovernment   mayor, council, campaign, polls, the count, policies phased in, approval, petitions, council votes, recall
+CivicEffects      what policies do: multipliers the mod owns, labelled transactions, moods; all undone by Revert
+CivicBridges      CivicPolicy (what other features read) and CivicBridges (what civic life asks of features not in this tree)
+CivicCity         districts (the game's neighbourhoods), electorates, polling places, the player's buildings
+CivicWorks        the construction programme as data: six sites, working hours, rain, complaints, inspections, handover
+SiteDresser       the three sites nearest the player as props, a closed lane, one crew
+RoadClosure       one lane closed for roadworks through the traffic system's switch (a small copy of SceneCordon's part)
+CampaignWorld     posters, boards, the canvasser, rallies, the polling place's sign; VolunteerShift (the player canvassing)
+CivicCast         civic life's own five people (a second instance of CityPeople), CivicCrew (walk in, work, walk off), CivicHud
+CivicProps        pooled props by id: the bundle's model if it has one, else a plain stand-in built to the same size
+CityHallPhone     the City Hall contact (four topics), the ballot and the site notice in the game's conversation panel
+```
+
+### What the game lets a mod change, and what is done instead
+
+| | in the game | what a policy does |
+|---|---|---|
+| income tax | `gameVariables.taxPercentage`: a whole-percent int that is part of the save, read once a year when the bill is made, and reported by the options screen as a changed game rule | never touched. Each midnight `rate x yesterday's sales x 20 %` runs up on the weekly account, charged or paid back as "City business tax adjustment (policy)" |
+| sales tax | none exists | "trade levy": 0.5 % of sales charged, or 0.3 % paid back, weekly |
+| rent | `BuildingRegistration.RentPerDay`: fixed per lease, saved; no global multiplier; the formula's inputs also move sale prices and property tax | never touched. 6 % of the week's rents charged or returned as "City rent rules adjustment"; landlords get or lose 4 % of rent collected |
+| wages | `EmployeeInstance.hourlyWage`: per employee, saved. `employeeHourlySalaryMultiplier` is saved and only affects new candidates | never touched. A floor of 16 an hour is billed as the difference x rota hours; or 5 % of the wage bill is paid back |
+| footfall | `baseCustomerPromotionMultiplier` is saved; `Building.trafficIndex` also feeds rent and price; `promotion` is rebuilt nightly | not changed. A site next door is a notification and a mood, not fewer customers |
+| street parking | `NeighborhoodData.parkingPrice`: a field of a data asset, in memory only | scaled x1.5 / x0.6 while the policy stands, the value found put back exactly |
+| parking tickets, subway fare | constants compiled into the call sites (125, 3) | each ticket or ride found in the day's transactions is topped up or part-refunded under its own label |
+| this mod's fines | `CrimeLaw` constants | each fine found in the day's transactions is topped up 50 % or refunded 30 % ("Traffic fine adjustment"); or Law multiplies by `CivicPolicy.FineScale` and sets `CivicBridges.FinesScaledAtSource` |
+| police, crime, accidents | the mod's own options (`Settings.PolicePresence`, `PatrolFrequency`, `CrimeFrequency`, `AccidentFrequency`) | scaled in memory (dithered by the hour so that 2 x 1.25 is 2.5 on average), never written to the options file, put back on revert; if the player moves the slider meanwhile, that becomes the new base |
+| sweepers | `CityCatalogue` entry `sweeper`, public `Weight` | x2.5 / x0.3, put back |
+
+Nothing the game saves is written by a policy. `CivicEffects.Revert` (option off, city unload, fault) puts
+back every value it changed.
+
+### The policy catalogue
+
+| lever | +1 | -1 |
+|---|---|---|
+| Policing | officers and patrols x1.4, street crime x0.8, levy +70 a week | officers x0.6, crime x1.25, 50 a week returned |
+| Traffic enforcement | fines x1.5, traffic accidents x0.7 | fines x0.7, accidents x1.3 |
+| Business tax | +20 % of the income tax sales run up | 20 % of it paid back |
+| Trade levy | 0.5 % of sales charged; 40 a week off the levy | 0.3 % of sales paid back |
+| Grants | 150 a week per business (three at most) | licence fee 60 a week per business (three at most) |
+| Rent | +6 % on rent paid; +4 % on rent collected | 6 % of rent paid returned; -4 % on rent collected |
+| Parking | street parking x1.5, each ticket +60 | x0.6, each ticket -40 |
+| Transit | subway +1 a ride; buses x1.3 as often, fares x1.25 (Transport bridge) | subway -1; buses x0.75, fares x0.75 |
+| Cleaning | sweepers x2.5, mood +3, levy +30 | sweepers x0.3, mood -3, 25 returned |
+| Night life | licensed until 04:00 (bridge), crime x1.1 | until midnight (bridge), crime x0.92 |
+| Permits | sites x1.35 and until 19:00; complaints only noted | sites x0.75, 08:00 to 16:00; one complaint brings quiet hours |
+| Events | street events x1.5 (bridge), mood +2, levy +40 | x0.5, 30 returned |
+| Wages | floor of 16 an hour, billed as a top-up | the city pays 5 % of the wage bill |
+
+Money by the week is one settlement every seven days, a transaction per line; the phone shows the account
+as it stands. The texts in `en.json` state the same numbers: change `CivicCatalogue` and the `_fx` strings together.
+
+### Elections
+
+A mayor and a council of five. An election every 8 weeks (56 days); the first 14 days after the mod first
+sees a save. Three or four candidates drawn from pools (20 x 20 names, 8 invented parties, 18 slogans), each
+leading on one of six issues with a platform of three or four policies on different levers. The campaign is
+the 7 days before: polls move a third of the way each day towards where the city stands (platform fit weighted
+by what matters now: crime scenes and accidents in this save, dirty streets, rent rules; a sitting mayor carries
+their approval), plus the player's part: donations (500 a time, 2,500 at most; if that candidate wins, a
+fast-tracked permit per 1,000, two at most, with one chance in four of a "pay to play" story when called in),
+one endorsement (worth more with every business they run; a scandal with a criminal record, through the Law
+bridge), an afternoon's canvassing, standing through a rally. The debate is 3 days before at 19:00. On the day
+the polls are open 07:00 to 20:00 at one designated building per district (a school if there is one, else a
+bank, an agency, a clinic, else the first building by address); the count is at 21:00, by district, from an
+electorate derived from the district's floor space (the game keeps no population). The winner takes office the
+next morning and their policies come in one a day at 09:00, each with a notice. Between elections: approval
+follows crime, accidents, late sites and promises kept; petitions (2 % of the electorate in 14 days force a
+council vote; the city starts some, the player can start or sign one); a council vote on one policy about every
+12 days; a recall election after 7 days under 25 %.
+
+Standing for a council seat is not implemented.
+
+### Construction sites
+
+Six sites in progress at once, two started within 60 to 320 m of wherever the player was that day. Working
+hours needed: roadworks 50, scaffolding 120, refit 90, utility 30 (x0.8 to 1.3); ten a weekday, 07:00 to 17:00,
+as the city came. Five stages each. Rain stops outdoor work for the hour. Thirty in a hundred are left unsafe
+for a stretch (missing cones or netting, a barrier flat in the road): reported, they stop for a day.
+The game's city has no empty lots and nothing is ever built or demolished, so there is no new building:
+the refit of an empty retail unit (hoarding, "opening soon", hoarding down) takes its place.
+
+Placement and budgets are at the top of `SiteDresser`. Nothing is cut out of the navigation mesh. A lane is
+closed only by `RoadClosure`, only for a stretch with no junction, and only if every way into it can be shut
+where traffic has another way to go; it is opened on every path out.
+
+### For other features
+
+```csharp
+// read at any time (1, or the stock value, when civic life is off):
+CivicPolicy.FineScale  CivicPolicy.EnforcementScale  CivicPolicy.PoliceScale  CivicPolicy.CrimeScale
+CivicPolicy.AccidentScale  CivicPolicy.FareScale  CivicPolicy.ServiceScale  CivicPolicy.EventScale
+CivicPolicy.ClosingHour  CivicPolicy.SiteSpeed  CivicPolicy.Position(Lever.X)  CivicPolicy.Changed += ...
+
+// set once at start-up by the feature that has the answer:
+CivicBridges.CriminalRecord = () => ...;      // Law: an endorsement becomes a scandal
+CivicBridges.Reputation = () => ...;          // Law: -100 to 100, weighs an endorsement
+CivicBridges.LargeScene = () => ...;          // Events: no rally or site crew beside a street event
+CivicBridges.WeatherStopsWork = () => ...;    // Events: storms as well as the game's rain
+CivicBridges.News = (headlineKey, bodyKey) => ...;   // Social: stories (result, recall, scandal, pay to play)
+CivicBridges.Labouring = site => ...;         // Jobs: starts a labouring shift at a place; offered on a site's page only when set
+CivicBridges.CityPeopleOut = () => ...;       // City life: civic life makes no more people while seven of the eight are out
+CivicBridges.FinesScaledAtSource = true;      // Law, if it multiplies its own fines by CivicPolicy.FineScale
+CivicBridges.FaresScaledAtSource = true;      // Transport, likewise for fares
+CivicBridges.NoteCrime();  CivicBridges.NoteAccident();   // anything that happens out of the player's sight
+```
+
+### Wish-list (assets)
+
+Each is drawn today as a plain stand-in of the same size and pivot, built in `CivicProps.CivicStandIns`. A
+model added to the prop bundle under the same id is used with no code change.
+
+| id | size (m) and pivot | note |
+|---|---|---|
+| `campaign_poster_0` .. `_3` | 0.60 x 0.85, 0.012 thick; pivot the centre of its back; face +Z | four colourways (amber, teal, plum, olive): a portrait block, a name band, a slogan band |
+| `campaign_board_0` .. `_3` | as `sandwich_board` (0.60 x 0.93 x 0.46) | the same four colourways |
+| `polling_sign` | as `sandwich_board` | white, "POLLING PLACE" and an arrow |
+| `soapbox` | 0.60 x 0.30 x 0.45; ground centre | a crate to stand on; the top is 0.30 up |
+| `scaffold_bay` | 2.40 (X) x 2.40 x 1.80 (Z); pivot the ground at the middle of the wall side, standing out towards +Z | first lift: four standards (outer row 1.74 from the pivot), ledgers, boarded deck with its top 2.40 up; open underneath |
+| `scaffold_bay_upper` | 2.40 x 2.00 x 1.80; same pivot | a lift above: toe board and guard rail on the outer face |
+| `scaffold_net` | 2.38 x 1.96 at z 1.80; same pivot | debris netting for one upper bay |
+| `scaffold_fan` | 2.40 wide, 0.90 out from z 1.75 at 2.6 up, sloping up 28 degrees; same pivot | the protection fan over the walkway |
+| `skip_bin` | 3.40 (X) x 1.25 x 1.70; ground centre | builder's skip |
+| `site_hoarding`, `site_hoarding_notice` | 2.40 x 2.40 x 0.10; ground centre; public face +Z | painted timber panel; the second carries an "opening soon" board 1.2 x 0.8 centred 1.5 up |
+| `site_notice_board` | 0.90 x 1.80 x 0.45; ground centre; read from +Z | board 0.9 x 0.65 centred 1.45 up, on two posts |
+| `road_sign_works` | 0.75 x 1.55 x 0.60; ground centre; face +Z | "road work ahead" on an A-frame |
+| `trench_cover`, `asphalt_patch` | 1.00 / 1.20 x 0.02 x 2.00, lying along Z | broken surface with an open trench; fresh surfacing. Tiled four in a row |
+| `road_marking` | 0.10 x 0.004 x 2.00 along Z | sprayed setting-out line |
+| `spoil_heap` | 0.9 x 0.35 x 0.9; ground centre | |
+| `works_tent` | 1.5 x 1.9 x 1.5; ground centre; open at +Z | frame shelter over an open cover |
+| `manhole_open`, `manhole_lid` | 0.9 x 0.06 x 0.9; 0.66 x 0.05 x 0.66; ground centre | |
+| clips | `speech_gesture` (a speaker to a crowd, standing), `hammer_nail` and `carry_plank_hold` (scaffolders), `rake_asphalt` | `speech_gesture` is **delivered and played** by the rally's speaker once somebody is listening (`CampaignWorld.SpeechClip`; `talk_a` without it), on `soapbox`: the stage is the one the clip is made for (feet within 0.36 x 0.26 m on a box 0.30 m high, listeners 2.3 m ahead and 1.15 m apart). The others today: `kneel_work`, `shovel_dig`. `podium_speak` (delivered) is not wired: it rests its hands on a lectern 1.10 m high that nobody has made |
+| vehicle | a works van or flatbed that can be parked at the kerb | none is placed: nothing in the traffic or vehicle code is touched |
+
+`tower_crane`, `structure_floor` and `structure_cladding` are not wanted: the city has no empty lot to build on.
+
+## Wiring: how the features meet (`Scripts/Wiring`)
+
+Every feature works alone and talks to the others only through optional bridges with a default. `Scripts/Wiring` is
+the one folder that fills those bridges in: a `partial static class Wiring` with one nested class per pairing, one
+small file each. `Wiring.Connect(logger, root)` runs once per city load after every director has been added
+(`RealLifeOverhaulCity.OnLoadAsync`), `Wiring.Disconnect()` on unload puts every bridge back to its default. Nothing in
+the folder has an `Update`: an adapter runs when the feature that owns the bridge asks. An adapter never throws into
+its caller: a fault is logged once per place (`Wiring.Fault`) and the default answer is given.
+
+| file | what it connects |
+|---|---|
+| `Wiring.cs` | `Connect` / `Disconnect`, the list of pairings, `Fault` |
+| `Standing.cs` | `Wiring.Standing`: the one answer to "has the player a record" (`HasRecord`, `Arrested(days)`, `CleanFor(days)`, `Convictions`, `Charged`) and to what the city thinks of them (`Public`, `PublicSigned`), from Law's police record and Justice's convictions together |
+| `LawJustice.cs` | `Wiring.Arrests`: Law's cell and Justice's case for the same arrest; `Justice.Bridges.Law` |
+| `LicenceLinks.cs` | `Licences.Law`, `Justice.Bridges.Licences`, and what Licences reports to the courts instead of fining |
+| `Scenes.cs` | `Wiring.Scenes`: the one question every street scene asks before it starts; `PlayerHeld` for panels |
+| `CivicLinks.cs` | `CivicBridges` (record, reputation, scenes, weather, news, city people); `Wiring.Paper.Print`: a finished story for the City Ledger |
+| `LifeLinks.cs` | `SocialLinks`, `CareerLinks`, `TravelBridges`, `Justice.Bridges.Social`, `GarageBridges.RoadIsWet` |
+
+### Who does what at an arrest
+
+One path, each step done by one feature, nothing charged or served twice:
+
+| step | who | what |
+|---|---|---|
+| 1. caught | `Crime/PoliceAttention` (`Bust`, `Ticket`), `Traffic/PolicePursuit` (`Catch`, `Settle`), `Crime/CrimeDirector` (wasted 911 calls), `Licences/Driving` (a stop without a licence) | detects it and charges the **roadside fines once** (traffic fines, damages, the fines for people hurt, the licence fines) |
+| 2. held | `Law.Arrests.*` -> `Law.Custody` | cuffed where they stand, the cell at the nearest precinct (never more than 48 h), the line on the **police record**, both reputations. With "Custody" off: the old 2 to 5 h roadside time skip (`PoliceAttention.BeginCustody`) |
+| 3. charged | `Justice.Arrest` / `Justice.Summon` | the **case**: charges, evidence, court date, verdict, sentence. The roadside fine is credited (`PaidAtScene`); the hours in the cell are **time served** (`HeldHours`) and come off any custody the court gives, shown on the sentence page |
+| 4. told | `Wiring.Arrests` (listens to `Law.Record.Changed`, nothing polled) | cell door shut: the case opened that day gets the precinct's real hours, the paper and the player's friends hear of it. Cell door open: the hours really served replace them; **bail paid at the precinct is the case's bail** (returned on appearing, forfeit on a warrant) and the court asks for no second one; sat it out: straight to a court date. Only a case in which bail would be refused still goes before the magistrate (remand) |
+| 5. licence | `Licences` from the same police events (`PoliceAttention.Stopped`, `PolicePursuit.CaughtAfterFleeing`, `PeopleCharged`) | points, and the suspension at twelve. A court's suspension goes the other way through `Justice.Bridges.Licences` into the same date, so "suspended" has one answer (`Licences.Driving.Suspended` = `Justice.DrivingSuspended`) |
+| 6. the record | `Wiring.Standing` | everybody who asks "a record?" (city hall, employers, friends, a licensing desk) asks here: Law's police record and Justice's convictions, read together |
+
+What was doubled before the wiring, and how each is now single:
+
+- **Custody twice** (the precinct's hours, then the court's custody for the same thing): the cell is time served
+  (`CourtHearing.Sentence`, one line on the sentence page).
+- **Bail twice** (the precinct's, then the court's): the precinct's is the case's (`Justice.ReleasedByPolice`).
+- **The wrong hours** told to the court (`Bust` passed the old roadside custody's 2 to 5 h even when a precinct held
+  the player for 4 to 48; `Catch` passed 0): `Bust` passes 0 when a precinct will hold them, and `Wiring.Arrests`
+  adds the precinct's own figure.
+- **Driving while suspended fined twice** (1 500 at the window by Licences, and the same charge in court by
+  `Justice.PoliceContact`): what was paid at the window is credited to that case (`LicenceLinks.SuspendedAtStop`).
+- **An arrest by Licences** (third time without a licence, second time suspended): served through the courts' custody
+  when they are on (`Justice.Hold`: put down outside the nearest precinct, counted as time served), through the old
+  roadside time skip when they are off. Never both.
+- A death on the way to a ticket (`PoliceAttention.Ticket`) arrested but never charged: it now opens the same case a
+  death after a pursuit does.
+- With a precinct holding the player, nobody told the paper or the player's friends (`News`, `SocialHooks.PlayerArrested`
+  were only in the old roadside custody): `Wiring.Arrests` tells them.
+
+Panels queue, they never stack: the precinct's cell runs behind the game's time skip, and everything else waits for
+`LifeEvents.IsSafeForEvent` (no dialog, no time skip, not paused: the courts' panel pauses the game, so nothing starts
+behind it). The courts' own panel also waits for `Wiring.Scenes.PlayerHeld` (a test paper or driven test, a panel of the mod's own that needs the cursor).
+
+**For Scripts/Law (not edited here; three calls it would need for more):** `Record.Convict(day, name, caseNumber)` and
+`Record.Remove(caseNumber)` so that a conviction and an acquittal can be lines of the police record (today
+`Convicted` / `Cleared` / `RecordSealed` do nothing there: a second line for the conviction would move the reputation
+twice for one offence, and there is no way to take one line off), and `Custody.Hold(hours, reasonKey, released)` so that
+a court's custody sentence and an arrest by Licences can be served in the precinct's cell with its panel (today they
+are the courts' own time skip, with the player put down outside the nearest precinct through `ReleaseSpot`).
+
+### One street scene at a time (`Wiring.Scenes`)
+
+Every large scene is staged around the player, so two of them would always stand beside each other. Each director
+keeps its own flag; `Wiring.Scenes` puts them side by side and every start test asks the one question:
+
+| scene (`Wiring.Scene`) | its flag | its start test asks |
+|---|---|---|
+| `Accident` | `TrafficAccidents.IsActive` | `!Scenes.Near(player, Scenes.Beside, Scene.Accident)` (also: no building site within 90 m) |
+| `Crime` | `CrimeDirector.IsActive` | `!Scenes.AnyBut(Scene.Crime)` in `CrimeDirector.CanStage` |
+| `Event` (fire, street event) | `Events.EventDirector.IsActive` | `!Scenes.AnyBut(Scene.Event)` in `EventDirector.CanStage` |
+| `Rally` | `CivicDirector.RallyOn` | `CivicBridges.LargeScene = () => Scenes.AnyBut(Scene.Rally)`: rallies and site crews (`CampaignWorld`, `SiteDresser`) |
+| a pedestrian hit by traffic | part of `Accident` once it has happened | `!Scenes.AnyLargeSceneActive` in `PedestrianIncidents` |
+| the routine roadside check | `PoliceAttention.IsBusy` | `!Scenes.AnyLargeSceneActive` in `DrivingEnforcement.Wanted` |
+
+A building site stands for days where it stands, so it is asked about by place (`CivicDirector.SiteNear`). A scene
+added later is a value in `Wiring.Scene`, a line in `Scenes.Active`, and `AnyBut(its own value)` in its start test.
+`Scenes.PlayerHeld` is the same idea for panels (see above).
+
+**Road closures have one owner per road point.** Two things switch `temporaryDisabled`: `SceneCordon` (accidents,
+and the Events director's own instance) and `Civic/RoadClosure`. Each shuts only points that are open
+when it looks, remembers exactly those, and opens exactly those again; none opens a point it did not shut. With one
+scene at a time and no accident or event beside a building site, two owners can no longer want the same stretch. The
+one theoretical overlap left is `SceneCordon.Recheck`, which looks at its own list once more on the tick after a scene
+has cleared: a roadworks crew would have to close one of those very points in that tick, and its start test
+(`CivicBridges.SceneOn`) is false only from the tick after.
+
+### Every bridge, and who answers it
+
+| bridge | answered by | with |
+|---|---|---|
+| `Justice.Bridges.Law` | `Wiring.Arrests` | `ReleaseSpot`: the pavement outside the nearest precinct. `PriorConvictions` -1, `Custody` false, the three record calls empty (see "For Scripts/Law") |
+| `Justice.Bridges.Licences` | `Wiring.LicenceLinks` | the licence's own suspension date |
+| `Justice.Bridges.Social` | `Wiring.LifeLinks` | the closest person at "close friend" or above; standing by the player is remembered. The Friend contact with the social life off |
+| `Justice.Bridges.Transport` | nobody | Transport keeps no pound for cars; the default tow and storage charge stand |
+| `Licences.Law` | `Wiring.LicenceLinks` | `CleanRecord`: `Standing.CleanFor` and Licences' own memory; `Custody`: the courts' custody, else the old time skip; `Precinct`: Law's door; `Record`: Licences' own memory (Law's record has no line for it) |
+| `Licences.Listen` | nobody | nothing in the mod reacts to points yet (insurance could: `CarRules.Premium`) |
+| `CivicBridges.CriminalRecord`, `Reputation` | `Wiring.CivicLinks` | `Standing.HasRecord`, `Standing.PublicSigned` |
+| `CivicBridges.LargeScene`, `WeatherStopsWork` | `Wiring.CivicLinks` | `Scenes.AnyBut(Rally)`; the game's rain or a thunderstorm |
+| `CivicBridges.News` | `Wiring.CivicLinks` | the headline at once, the story in tomorrow's paper (`Wiring.Paper.Print`) |
+| `CivicBridges.CityPeopleOut` | `Wiring.CivicLinks` | the living city's people that are out |
+| `CivicBridges.NoteCrime` | `Crime/OffscreenCrimes` | break-ins out of the player's sight (city hall counts staged crimes and accidents itself) |
+| `CivicBridges.Labouring` | nobody | Jobs has no labouring shift |
+| `CivicBridges.FinesScaledAtSource`, `FaresScaledAtSource` | left false | civic life applies both policies itself after each charge; nothing is scaled twice |
+| `CivicPolicy.EnforcementScale`, `ServiceScale`, `EventScale` | applied at the source | `PoliceAttention.Seen`, `TransitDirector.Headway`, `EventCalendar` (one line each; 1 with civic life off) |
+| `CivicPolicy.ClosingHour` | nobody | civic life's stock hour is 2, the bar's is 4 and night life's 3: applying it would change Leisure with no policy enacted. To be decided, not wired |
+| `SocialLinks.Law`, `Wellbeing` | `Wiring.LifeLinks` | `Standing`; Home's stress and meals |
+| `CareerLinks.Law`, `Health` | `Wiring.LifeLinks` | the CV line from `Standing`; Home's sick note or the mod's own sickness |
+| `CareerLinks.Social` | nobody | the social cast is a fixed eight: there is no way to add a colleague to it |
+| `TravelBridges.Justice` | `Wiring.LifeLinks` | no trip with a warrant out, an undecided bail or a court date inside it |
+| `TravelBridges.Home` | `Wiring.LifeLinks` | a hotel shower is hygiene, rest and holidays take stress off (`Laundry`: nothing to act on) |
+| `TravelBridges.Social` | `Wiring.LifeLinks`, only with the social life on at city load | partner and close friends as companions, a trip together, souvenirs for friends |
+| `TravelBridges.Transport`, `Leisure` | nobody | there is no coach and no staged golf or dinner |
+| `GarageBridges.RoadIsWet` | `Wiring.LifeLinks` | the game's rain or `Events.Weather.Sky` |
+| `GarageBridges.WearOf`, `InsuranceOf` | `Transport/CarOwnership`, `CarPhone` | tyres and brakes wear `1 + WearOf` times as fast; the premium is `1 + InsuranceOf` times `CarRules.Premium`, on the bill and on the Garage page |
+| `GarageBridges.ValueAdded`, `GarageSummary.Lines` | nobody | Transport has no resale; `Lines` lists every car at once, the Garage page shows one (it needs a one-car form) |
+| `GarageBridges.HasMotorcycleLicence` | nobody | Licences has three classes (car, commercial, taxi), no motorcycle class |
+| `GarageBridges.PoliceNotice` | nobody | the Garage's own fine works alone; a stop for it would be new police behaviour |
+| `GarageBridges.RiderFalls` | nobody | `PlayerKnockdown` has no door for "down now", and a ragdoll on a rider leaving a scooter in the same frame cannot be judged without a run |
+| `Events.EventDirector.CrashFire` | nobody, on purpose | a severe crash already burns with the accident's own fire (`TrafficEffects.CreateFire`, 6 in 10 severe crashes, put out with the scene); `CrashFire` would be a second fire on the same bonnet |
+| `Events.Weather.SightFactor` | `Traffic/PursuitSight.Lost`, `Crime/PoliceAttention.Seen` | how far a patrol car keeps sight (150 m in fair weather) and how far an officer on foot notices driving (60 m) |
+| `Events.Weather.Wardrobe` | nobody | the wardrobe catalogue keeps what is worn private and has no coat |
+| `News` (the City Ledger) | `Wiring.Paper.Print(key)` | a finished story: verdicts (`JusticeDirector`), fires (`EventDirector.Begin`), election results and scandals (civic life) |
+
+**Drink at the wheel** is now an offence of the police's own (`Offence.DrunkDriving`, `CrimeLaw.DrunkDrivingFine` 900):
+`PoliceAttention.Report(Offence.DrunkDriving)` is called by `LeisureDirector.Wander` while the player drives tipsy
+(one look every 25 s at most, seen with the odds of driving on the pavement), and at any stop the officer at the
+window books it with whatever the stop was for (`Breathalyse`). Licences adds 6 points (`PointCode.DrunkDriving`); the
+second time inside the three weeks points count for it is a case as well (`JusticeLaw.Reckless`, the roadside fine
+credited), unless the player was caught after running, which is before the court already.
+
+**Clothes prices after wardrobe batch two.** The shop priced by text in the id; the catalogue now has garments the
+text did not know (chinos, suit trousers, pencil skirt, evening dress, boots, loafers) and a tier of its own.
+`ClothesShop.Tier` now reads `CharacterCatalogue.Garments` (shoes: derby Premium, runner, boot and loafer Smart, court
+Everyday), so the tier on the rack is the tier in the label. The evening dress was caught by the summer dress's
+`dress_` price (120); it now goes by its tier (Premium, 200). The seven first prices are unchanged.
+
+### What the merged whole costs per frame
+
+Read through after the merge: 67 `Update` / `LateUpdate` / `FixedUpdate` methods, no `OnGUI`, no `InvokeRepeating`, and no
+`Find*` or allocation on any idle per-frame path. "Idle" is in the city with no scene and no panel, walking or driving.
+
+| component | idle, per frame | changed here |
+|---|---|---|
+| the thirteen feature directors (Jobs, Home, Transport x2, Leisure, Events, Social, Travel, Business, Justice, Licences, Civic, Garage) and `LifeEvents` | a timer comparison and two to eight flag tests; their work is on a 1 s (some 0.25 s) tick | **before: each took itself off the game's save event and put itself back every 1 to 2 s (a dozen features, two to four new delegates each, every second). After: one relay for the whole mod (`Core/SaveHook`), re-hooked only when the game's event is not the one last seen: nothing allocated while idle.** Home's game-event hook is made once |
+| `ThirdPersonCamera.Update` | the heaviest always-on method: both of the game's cameras are written every frame | **before: a sphere cast every frame for the indoor camera even out of doors. After: only while that camera is live** (`CinemachineCore.IsLive`) |
+| `ChaseCamera.LateUpdate` (driving) | pose of the chase camera | **before: the lens written every frame. After: only when the field-of-view option has changed** |
+| `CityPeople.FixedUpdate` (people out, driving) | every other step: the car against eight people | **before: `GetComponent<Rigidbody>` twice a second. After: when the car changes** |
+| `CrimeDirector`, `EventDirector`, `BusinessDirector`, `SocialDirector`, `CarOwnership`, `LeisureSound`, `PoliceAttention`, `PolicePursuit`, `BeatPatrol`, `PolicePresence`, `PedestrianIncidents`, `PlayerKnockdown`, `Law.LawDirector` | one to three comparisons | nothing to do |
+| `MetaUi`, `CuffPose`, `JusticePanel`, `HoseHold`, `CarMeasure`, `CarDrag`, `ActivityAnimators`, `RagdollSystem`, `Stretcher`, `EmergencyDriver`, `BikeMount`, `TipsyDriving`, `PerfSampler`, `PerfLoop` | disabled while idle | nothing to do |
+| `CityPeople.Update`, `ActorPool.Update` | off with nobody out; with people out, a distance and a dot product each to hide those out of view | left: it is what keeps unseen characters from being drawn |
+| `PlayerDouble.LateUpdate` | off by default; on: every bone copied | left: an option that says what it costs |
+| `CarStrikes.FixedUpdate` (driving above 5 km/h) | every other step: the car against walkers, standing figures and the mod's people | left: it is the hit test itself |
+| `NearbyInteraction.Update` | the option, ten `TakesInteractKey` flags, two key tests | left for whoever next touches that line: test the two keys first and the ten flags only on a press |
+| `TrafficAccidents.Update` -> `TrafficWatch` | 5 times a second: every pooled traffic car's body looked at | left: the bounce watchdog's whole purpose; it is the largest timed cost while idle |
+| `Wiring` | nothing: no component, no tick | adapters run when asked; `Wiring.Scenes` is four flag reads on a director's own roll timer |
+
+Not shared, on purpose: every director reads the player, the hour and "in a vehicle" for itself, but on its own slow
+tick, so a common ticker would save a few property reads a second and couple thirteen features to one clock.
+
+## Keys
+
+Every key the mod acts on is an action in `Core/Keys.cs` (`KeyAction`): an id, a default key and an optional
+Shift/Ctrl/Alt. Saved bindings are read at game start from PlayerPrefs (`m:<mod id>:key_<action id>`), and
+changed under "Controls" on the options page: a button per action that takes the next key pressed (hold a
+modifier with it for a combination; Esc cancels; the left mouse button and gamepads are not offered), and a
+reset button. A key the game itself has bound is allowed and named beside the button (read from the game's
+live bindings, its defaults if those cannot be read).
+
+| action | default | where it is used |
+|---|---|---|
+| `CameraToggle` | V | `Camera/ThirdPersonCamera` |
+| `Interact` | F | `World/NearbyInteraction`, `Jobs/JobDirector`, `Crime/CrimeDirector`, `CityLife/CityLifeDirector`, `Civic/CivicDirector` (vote, take a leaflet, read a site notice, offer a leaflet) |
+| `InteractAlt` | E | the same, and only while the game shows no interaction of its own |
+| `FreeCursor` | Left Alt | `Camera/ThirdPersonCamera` |
+| `LookBehind` | Right mouse (held) | `Camera/ThirdPersonCamera` |
+| `GentleThrottle` | G (held) | `Driving/CarTuning`: the pedal goes no further than half |
+| `PerfProbe`, `PerfBench` | F7, Shift+F7 | `Performance/PerfDirector` |
+| `PhoneDump`, `CharacterReport` | F8, F9 | the two development aids |
+| `PhotoMode` | F10 | `Leisure/Photo/PhotoMode`: into and out of photo mode (its other keys are fixed: `PhotoKeys`) |
+| `Garage` | K | `Garage/GarageDirector`: the custom shop in a repair bay; hire, return and buy at a dock, rack or stand |
+
+## Family
+
+A partner who moves in, an engagement and a wedding, children, the wider family, and the hard times
+(`Scripts/Family`). Everything is optional: the group "Family" on the options page has a switch for the
+whole of it and one each for the partner being shown at home, engagement and wedding, children,
+relatives, and hard times (chores, arguments, separation, divorce: off, and none of them ever happen).
+Nothing depends on who anybody is: the partner is whoever the player is seeing, in any pairing, and the
+default introduction follows the "introduces you to" choice (anyone / women / men).
+
+State is one JSON string in the save's modData (`reallife:family`, `FamilyState`); the moods are happiness
+modifiers with the mod's prefix, so `Core/ModState` takes them out of the save like the rest. A save made
+with the mod loads without it. What the save proper does keep is what the mod's other contacts already
+keep: three phone contacts (Family, Someone special, The in-laws) and transaction lines.
+
+### What can be shown, and what is state
+
+**Children are never shown as walking characters.** The game's people are adults: `AppearanceAgeHelper`
+clamps age to 18..80 and age only fades the wrinkles of the head material in (`_Fade`, 18 to 60); there is
+no height or proportion value in `CharacterData` (gender, colour, strength, fatness, age, elements), no child
+mesh under either gender model, and the only way to make somebody small is to scale the whole rig, which
+gives a small adult (adult head-to-body proportions, adult face, adult clothes) and looks wrong. So:
+
+- a baby or toddler is a **pushchair** on a walk (the modelled prop, pushed by the player with `push_cart`
+  on the arms over the game's own walk), a **cot** and a **high chair** standing at home (modelled; clean
+  plain-shape stand-ins without the bundle), with the swaddled `baby_bundle` lying in the modelled cot while a
+  child is under one (`FamilyProps.Tuck`: a piece of the cot object, pooled with it), and a **sound** now and
+  then as a notice;
+- a school-age child is a name and an age on the Family page, school reports, drawings on the fridge
+  (messages), a school play at a real theatre and a parents' evening at a real school to go to, birthdays;
+- no scaled-down adult is used anywhere.
+
+**The partner is shown** at home (while the player is in that home and the timetable says they are in) and
+in three scenes: the proposal, the wedding, the pushchair walk. They stand and walk; they never sit or lie:
+the game's chairs are driven by its customers' behaviour trees and its beds by its own sleep activity,
+neither of which one of our characters can use reliably, so "asleep" and "in bed" are state and a notice.
+
+The family's own pool is **three characters** (`FamilyCast`: the partner, and for a wedding the officiant
+and one guest of the family's). A wedding borrows up to four more from the living city's pool when it has
+them free, as guests in the clothes they stand in. Everybody is the living city's kind of person
+(`CityPerson`): moved only by the navigation agent, standing only on spots found and tested for room
+(`CitySpots` out of doors; `FamilyPlaces.Floor` on the home's own navigation mesh, with room to the nearest
+edge and a complete path from the player). Out of doors people walk in from out of view and are taken away
+out of view; a wedding is set out and struck under a cut to black. At home they are there when the player
+walks in, or come in at the door when it is not being looked at.
+
+### Living together
+
+- **Moving in** needs the two of you close enough for long enough (default bridge: affection 60 and seven
+  days together; Social: its own "partner" stage) and a home of the player's own (a rented residential
+  building) with floor for the household: 30 m2 for two and 15 more per child (`Building.totalSqm`; a home
+  whose size the game does not give counts as big enough).
+- **Timetable** by what the partner does for a living (`HomeLife.Where`): office hours for most, earlies
+  and lates for a nurse or a paramedic, evenings for a chef, mornings for a barista; an evening out of
+  their own about one day in five; asleep 23:00 to 06:00; at home for three days after a child arrives;
+  short days if they are the one looking after small children.
+- **At home**: they stand by what the game calls a cooker, fridge, coffee machine (a cup held, a sip now
+  and then), a sofa, television, armchair or bookshelf (reading the paper, or watching), or failing all
+  furniture on clear floor; every minute or so they walk to another of those places. They wave and greet
+  the player at the door (lines by the hour and by how the player is), and within reach, facing them, the
+  interaction key opens a conversation: both stand, face each other and animate (`talk_a` / `talk_b`).
+- **Conversation**: a chat about what has really happened (the player ill, a shift worked today and what
+  it paid, the baby, rain, a low mood, the wedding or the birth being days away), cooking together and an
+  evening in front of the television (Home bridge; default a few lines, a meal and a mood), an evening out.
+- **Money**: every evening at 18:00 their share comes in as its own income line: the smaller of half the
+  day's rent and 35 % of their day's pay, never more than 600 (in a home with no rent: a fifth of their
+  pay, at most 60). Halved while they work short days for the children.
+- **Chores** (about three days in ten, a question with two answers), **neglect** (four days with not a
+  word and the home cools, with a text every third day), **broken promises** (standing them up, missing an
+  appointment), and **arrests** (`FamilyApi.PlayerArrested`, or the Law bridge's count going up) all move
+  "harmony", the one figure for how things are at home (0..100, shown on the Family page in words).
+- **Support**: ill and at home in the evening, they look after the player (Home bridge; default eight
+  hours off the illness and a mood); after a bad day (happiness under 35) they say something that helps.
+- **Evenings out**: Leisure bridge, else Social's outing, else dinner at the nearest real restaurant: the
+  game's destination marker, a key prompt at its door, the bill (90), two hours skipped, and a line.
+  Not turning up is noticed.
+
+### Engagement and wedding
+
+- **The ring** is bought inside a real jeweller (`ba:businesstype_jewelrystore`): a key prompt opens the
+  counter conversation with four rings (1,200 / 4,500 / 12,000 / 30,000).
+- **The proposal** is wherever the player chooses: "ask them to come" from the Family contact brings the
+  partner walking in from out of view to the player; at home they are already there. The player goes down
+  on one knee when they choose to: `propose_kneel_down` once (2.8 s, held on its last pose), then the
+  `propose_kneel` loop the moment that is over (`JobBody.Chain`, stepped by the director's tick of the body),
+  with `ring_box` open on the right palm at the clips' grip from the first frame; the question is asked when
+  the box has come up (the clip's `present` mark). After the answer they get up with `propose_kneel_up`,
+  the box still in the hand, and it is put away when they stand. (A bundle without the way down fades into
+  the loop from standing; one without the loop uses the mod's `kneel_work`, empty-handed.) The partner steps
+  round to 1.25 m in front of them first (where the clips look for a face) and has stopped before the knee
+  goes down, so the two face each other; their answer is `propose_react_yes` or `propose_react_unsure`. The answer is theirs:
+  base odds from how close the two are and how things are at home, plus the ring (up to +0.22), plus the
+  moment: an evening +0.08, a weekend +0.04, a dry sky out of doors +0.04 (rain -0.08), the end of a night
+  out the same day +0.10, the player dressed in clothes the game calls formal +0.05, the small hours
+  -0.15, an argument in the last two days -0.20. Too soon (under 14 days, or not close enough) is always
+  "not yet". A "not yet" says what would have helped and costs nothing but a week before asking again.
+- **Planning** at a real event planning agency's counter (they add 15 %, send the invitations and order
+  the flowers) or by the two of you from the phone (the invitations are then yours to send from the Family
+  contact, the flowers yours to order inside a real florist). Venue: a registry wedding at the city offices
+  (the tax office stands in for a town hall, which the city does not have) 500, an open-air wedding on the
+  spot where the player stands when they choose it 1,500, a restaurant 6,000, a theatre 12,000. Size:
+  simple x1, classic x1.8, grand x3.2. Flowers 800, music 1,200, catering 85 a guest. A day 7, 14 or 21
+  days ahead. A quarter is paid as a deposit, the rest on the day.
+- **Guests**: Social's close people, or by default Mom, the old friend (Alex) and the in-laws, plus a crowd
+  by the size (4 / 14 / 30). Without invitations only the family comes.
+- **Outfits**: the partner, the officiant and the family's guest wear what the game tags Formal (their own
+  face and hair, from the same seed as every day). The mod's wardrobe (`Character/CharacterCatalogue`) has
+  no formal wear yet; the player wears what they choose, and being dressed formally counts at the proposal.
+- **The day** (11:00 to 20:00): the destination marker, and at the venue a key prompt. Under a cut to black
+  the ceremony is set out on the pavement outside the venue's doors (every place tested for room; if the
+  essentials do not fit it says so, and after two such failures the next press holds a small ceremony told
+  rather than shown): officiant at the front, guests in rows, and by what was paid for an arch (classic and up), flower
+  stands (flowers), a runner down the aisle (grand). The partner walks up the aisle; so does the player;
+  vows with a choice of two, their vow, rings (`ring_present` on the player and `ring_receive` on the partner,
+  started together: they are made for a pair facing 1.10 m apart, so during the officiant's welcome the partner
+  takes the step that makes it so, `CityPerson.StepTo`; if the two do not end 0.98 to 1.22 m apart the player's
+  half plays alone, as before), the pronouncement, applause (the officiant and the family's guest clap, the
+  borrowed guests clap and `cheer_loop` by turns, each starting a little later than the last; the partner's
+  `cheer`), a photograph (the HUD hidden
+  for two frames; saved under `RealLifeOverhaul_shots` in the game's data folder), then the screen goes
+  dark for the reception (four hours) and everybody is taken away unseen. Then the bill is settled, the
+  gifts counted (about 140 a guest times the root of the size), and the story of the party told.
+- **Married**: a lasting mood (+10, renewed daily while home is not unhappy), next of kin, and the offer
+  of a honeymoon: Travel bridge, else three days skipped (a day at a time) for 2,500 and a four-day mood.
+- **No dead ends**: the day can be put back a week (10 %), called off (the deposit is kept; still engaged),
+  the engagement broken off (still together, badly hurt). A missed day moves itself three days once and is
+  forgiven; missed twice, the booking is lost. Cold feet the night before: the player's own (talk it
+  through, or sleep on it) or theirs (reassure them at the venue, or give them a week at no charge).
+  Walking away mid-ceremony strikes the set under a cut; the day can be begun again while it lasts.
+- A kind of place the city does not have at the time (its businesses change hands) never blocks anything:
+  rings and flowers are then ordered by telephone from the Family contact, an appointment whose building
+  cannot be found is kept from home, and a wedding whose venue has gone is held wherever the player stands.
+- The casino boat is not offered as a venue: boarding it is a sequence of the game's own with its own
+  time skip, and nothing of ours can be set out on it.
+
+### Children
+
+- **Deciding** is a talk at home: both must want it. The partner may not be sure (about one in five); they
+  need time, not persuading, and have come round by a second talk ten days later in a happy home. Then: a
+  baby (carried by either of you: it is asked) or adoption (a baby, a toddler, or a child of school age).
+- **Pregnancy**: three quarters of a child's year (21 days at the default scale). A scan at a fifth and at
+  half way (120 each), a birth class at three quarters, each an appointment at a real hospital or clinic
+  with the marker, a prompt and an hour or two skipped. **The nursery**: a cot (450, inside a furniture
+  store), a pushchair (380, a gift or clothing shop), supplies (220, a supermarket), each a prompt inside
+  a real shop of that kind. **The birth** (1,800): "it is time", seven hours to reach the hospital, a long
+  night there, then a name (as many second thoughts as wanted). Missed, the child is born all the same and
+  the player is told to come home; if the player is the one carrying, it cannot be missed.
+- **Adoption**: papers filed in person (1,500; a law firm, else the tax office), a home visit a third of
+  the way through (be at home that day), the call, the day to meet. A missed day is simply moved.
+- **Then**: three days at home (a mood, and the partner there all day); broken nights for the first half
+  year unless there is a nanny, every other night when the partner lives in (Home bridge; default a mood);
+  who looks after children under five: you (energy every day, closest to them), the partner (short days,
+  half their share of the rent), a nursery (900 a month a child), a nanny (2,200 a month); check-ups at a
+  quarter, one, two and four years (80); pushchair walks until three; milestones kept as dated memories
+  (first smile, sat up, first word, first steps, first sentence, out of the pushchair, first day at school,
+  lost tooth, rode a bike, ten, thirteen, a first job); school from five: public (free) or private (1,500
+  a month, better reports); the school run some weekday mornings for whoever wants it; a report every third
+  of a year; drawings on the fridge between three and nine; a school play a year from six to eleven and a
+  parents' evening a year, both to attend; birthdays (cake at home, a party at home for 150, or at a
+  restaurant for 600) with a present from Grandma; pocket money from six (0 / 10 / 25 / 50 a week); a
+  college fund (500 a time; 40,000 pays for all of it); grown up at eighteen. Monthly figures are charged
+  a quarter each week. Up to three children.
+- **A pushchair walk** (from the Family contact, out of doors): 220 m wherever the player likes, the
+  pushchair in front of them, the partner alongside when they are home and free; small sights on the way;
+  the key ends it early (half way counts). Good for the mood, the child and the two of you.
+- **Time scale**: one year of a child's age per four in-game weeks by default (options: 1 to 12 weeks).
+  The game's own year (`gameVariables.daysPerYear`, 60 days) is used only for the holiday calendar.
+
+### Wider family, hard times
+
+- Mom texts at every milestone, sends small presents (250 for a new grandchild, 40 a birthday), and drops
+  by on some Sundays. The in-laws arrive with the engagement as a contact of their own: a chat, advice that
+  reads the household as it is, and now and then a favour asked (a lift, a hand with a move, a loan of 300
+  repaid in a week).
+- Four family dinners a year on the game's own calendar (at 22, 47, 72 and 97 % of its year): Mom writes
+  the day before; with a household it is at home (120 for the food, three hours), otherwise at Mom's (four
+  hours, from the Family contact). Missing one costs nothing but the dinner.
+- Next of kin is a line on the Family page (the partner once married, Mom otherwise; it can be changed)
+  and nothing else.
+- Arguments are questions with two answers from a pool of ten that never repeats until all have come up;
+  which answer is the better one differs. Counselling (180 a session at a clinic, an hour) mends the most
+  the first times. Harmony under 15 for five days and they move out; time apart can also be asked for. A
+  call a day, counselling and a little time bring harmony back, and at 55 they can be asked home. After a
+  week apart either may end it: married, that is a divorce with a settlement of a fifth of the cash in
+  hand, at most 250,000, never a business; unmarried, a parting with nothing to settle. The children stay
+  with the player and spend every other weekend, or every weekend, with the other parent, who then pays
+  half of what the children cost. Nothing in any of this harms a child.
+
+### The phone
+
+- **Family**: five short pages (household, the family, coming up, memories, budget) and "things to do",
+  one at a time with "do it", "something else" and leaving, which is every decision above.
+- **Someone special** (only while Social does not keep the partner): ask a friend to introduce you to
+  someone, and from then on ring them: a chat a day, an evening out, and the same things to do.
+- **The in-laws**: a chat, advice, or the favour they asked.
+With the phone contacts option off, "Test: open the Family page" opens the same page face to face.
+
+### The bridges (`FamilyBridges`, `FamilyApi`)
+
+Each is null until its owner sets it (`FamilyBridges.Social = mine;` when its own state is loaded, back to
+null when it unloads); until then Family uses its own default. All calls are from the main thread.
+
+| bridge | its owner implements | Family's default without it |
+|---|---|---|
+| `ISocialBridge` | `TryGetPartner(out PersonInfo)`: the one person the player is dating or partnered with (Stage 4 or 5: name, look seed, sex, affection and trust 0..100, days together); `Changed(FamilyEvent, affection, trust)`: what happened to the two (moved in, engaged, married, argued, shared time, broken promise, separated, divorced...), with a suggested change in points; `StartOuting(kind, done)`: "dinner" (true if it started; `done(true)` when it went well); `ClosePeople(list, most)`: who would come to a wedding. It calls `FamilyApi.PartnerChanged()` when the partner changes outside Family's flows and may call `FamilyApi.SharedTime(points)` | one partner record in the family state (a name, a look seed, affection), met and rung through "Someone special" |
+| `IHomeBridge` | `CookTogether`, `WatchTogether`, `CareWhenSick(partner)`, `BrokenNight(wakings)`, `HealthVisit(reasonKey)`: true if Home did it its own way | a few lines, a meal, a mood; eight hours off the illness; the "up in the night" mood |
+| `ITravelBridge` | `Honeymoon(partner, days, done)` | 2,500, three days skipped, a mood |
+| `ILeisureBridge` | `DateNight(partner, done)`, `FamilyOuting("school_play" or "birthday", child, done)` | dinner at a restaurant's door; the play and the party as an errand and a skip |
+| `ILawBridge` | `Arrests` (a count that goes up), `InCustody` | nothing is known; `FamilyApi.PlayerArrested(severity 1..3)` can be called instead |
+
+`FamilyApi` is safe to read at any time: `HasPartner`, `LivesTogether`, `Engaged`, `Married`, `Children`,
+`PartnerName`, `WeddingToday`. `FamilyDirector.TakesInteractKey` is true while one of its key prompts is up
+(the mod's own E/F on doors stands aside, as it does for a job's prompt).
+
+### Cost
+
+Nothing per frame while nobody of the family's is out and no prompt is up beyond a few comparisons. One
+tick a second (five a second during a staged scene): the hour and the day compared, the home looked at only
+while the player is inside a building, the errand list only while it has entries. The home's furniture is
+read once on walking in. Looking for the nearest building of a kind is one pass over the city's buildings
+when a conversation asks or an errand becomes due. A fault in any tick is logged once and switches family
+life off for the session; the save is left as it was.
+
+### Test buttons
+
+Partner moves in now (needs a rented home; with Social absent a partner is made up on the spot) - propose
+here (a ring is supplied; the answer is a real roll at 90 % or better) - start wedding planning (engaged at
+once if need be) - hold the wedding here, now (a classic wedding with everything, out of doors) - start a
+pregnancy / move it on a step (scan, scan, class, birth) - start an adoption / move it on a step - add a year
+to the children's ages - pushchair walk now (needs a child under three) - open the Family page - clear all
+family state. A button that does nothing says why.
+
+### Wish-list for the asset pipeline (no code change needed)
+
+Clips (played by name when the bundle has them, the fallback in brackets until then): `propose_kneel`
+(the mod's `kneel_work`): down on the right knee, right hand held up and forward at chest height with a
+small box, head up, held as a loop; `propose_react_yes` (`clap`): hands to the mouth, a step back, a nod,
+2.2 s once; `propose_react_unsure` (`talk_a`): a hand to the chest, a small shake of the head, 2.2 s once;
+`ring_present` (`job_hand_over`): takes the other's left hand and slides a ring on at 1.05 m, 3 s once;
+`cheer` (`wave_hello`): both arms up, once. **All five are delivered and played, and so are**
+`propose_kneel_down`, `propose_kneel_up`, `ring_receive` and `cheer_loop` (see "Engagement and wedding").
+**Delivered, not played yet:** `slow_dance_a` / `_b` (the reception passes under a dark screen: there is
+nobody to be seen dancing), `hold_baby` and `rock_cot` (the partner at home stands at places found for an
+adult to stand at; the cot is put down elsewhere, and bringing them to its long side, a quarter turn and
+0.68 m from its middle, needs a placement that has not been written), `cheer_once`. Still wanted: `sit_sofa`
+(only if seats are solved).
+
+Props (drawn from the prop bundle by these ids when present; plain shapes from `FamilyProps` until then,
+origin on the floor, facing +z, metres): `wedding_arch` (2.1 wide, 2.4 high, 0.3 deep, flowers along the
+top), `flower_stand` (a pedestal 0.95 high with an arrangement, 0.4 across), `aisle_runner` (a strip 1.1
+wide by 1.0 long, laid end to end), `cot` (0.72 x 0.9 x 1.26), `high_chair` (0.48 x 1.05 x 0.5). Not used
+yet: `bouquet` (no clip holds it), `birthday_cake` (a birthday is told, not shown). `ring_box` comes with
+the kneeling clips and `baby_bundle` lies in the cot (both delivered and used). Still wanted: `toy_box`.
+
+### Not verified in the game
+
+Written against the decompiled code and never run: whether a home's interior has a navigation mesh for the
+game's NPC agent type (the player's is tried second; with neither the partner is not shown and it says so
+in the log); how the game's Formal clothes look on a seeded face; that the sizes of real apartments make 30
+m2 for two a sensible bar; the look of every clip on the partner indoors; turning the player's body to face
+the partner at the altar (set once on the character's transform while they are held); the three-day time
+skip of the default honeymoon; the photograph with the game's HUD objects switched off for two frames; the
+plain-shape stand-ins' materials indoors; which of the game's business types a given save actually has (a
+kind the city lacks is said so, and the conversation offers what there is).
+### Clashes looked for, and what was done
+
+The game's own bindings are the JSON in its `BigAmbitions.InputSystem.PlayerInput` (one asset, always enabled; which
+code polls an action decides where it counts) plus a few hard-coded keys. Its driving keys beyond these (throttle,
+brake, gears, handbrake) are in an NWH asset that is not in the decompiled code, so that column is not complete.
+
+| key | the game | the mod | verdict |
+|---|---|---|---|
+| B | BizMan, on foot and at the wheel | `Garage` (was the default) | **clash: the Garage default is now K** (a saved binding is kept) |
+| K | nothing | `Garage`; photo mode's filter key | never together: the Garage key is not read in photo mode |
+| F | Interact | `Interact` | by design: the mod's prompts stand aside while the game shows its own (`TakesInteractKey`, and the game's overlay) |
+| E | rotate the camera right (the game's own pedestrian camera) | `InteractAlt` | only while the game shows no interaction of its own (`JobKeys.InteractDown`); the Events prompt lacked that test and has it now |
+| V, G | nothing | `CameraToggle`, `GentleThrottle` | free |
+| Left Alt | snap in placement and the interior designer | `FreeCursor` | different screens |
+| Right mouse | right click | `LookBehind` (driving) | the mod feeds the game's own right-button state, as before |
+| F7, F8 | hide the interface / free camera, in the game's debug builds or with `-console` only | `PerfProbe`, `PerfBench` (Shift), `PhoneDump` | no clash in a normal game |
+| F9, F10 | nothing | `CharacterReport`, `PhotoMode` | free |
+| 1, 2, 3 | tools in the interior designer | a row of three choices (`JobKeys.ChoiceDown`: jobs, leisure, transit, the theory paper, the cell, the courts' panel); photo mode | one at a time: a choice row is on screen only while its owner has the player, and none of them with the designer open |
+| Space, Enter, Tab, Esc, N, M, T, P, O, I, Q, C, H, [ ], F1, F2, F5, F12, Backspace, Left Shift | the game's | nothing of the mod's outside photo mode (paused) | free of the mod |
+
+Free in both for a future action: F3, F4, F6, F11, the digits 4 to 0, and ; ' / \ - =. The letters L, U, Y, Z, J and X
+are used only inside photo mode, R only in the game's placement.
+
+## Rules for new code
+
+Performance is a requirement, not a nice-to-have.
+
+- No `KeyCode` outside `Core/Keys.cs`: test a key with `Keys.Down(action)` or `Keys.Held(action)` (one engine
+  call each), and build any text that names a key with `Keys.Label(action)` (cache it; `Keys.Version` goes up
+  when a binding changes). A new key is one `KeyAction`, one row in `Keys.All` and its name in `en.json`.
+
+- Nothing allocates per frame. No `OnGUI`, no LINQ or string building in `Update`, no
+  `FindObjectsOfType` outside a one-off setup. Use the shared `Hud` for on-screen elements.
+- Push values to the engine only when they change; poll game state at the slowest rate that works
+  (per in-game hour, or a timer), not every frame.
+- Visual options that cost frames are off by default and say so in their label.
+- A feature is one component under `Scripts/<Feature>/`, registered in `Core/RealLifeOverhaulMod.cs`,
+  with a toggle in `Core/Settings.cs` and its strings in `Locales/en.json`.
+- Anything added to a pooled game object (traffic cars) must be removed again.
+- People come from `People/ActorPool` only, through an `ActorRole`, and never more than twelve at
+  once, of whom at most four are only there to be seen (`ActorRole.EnterPresence`: officers on the
+  beat, by a parked car, at a junction). Those are taken back without warning the moment a scene
+  needs a character, so whoever owns one must cope with finding nobody behind the role. A scene must work when the pool gives it nobody, tick its people on a timer (not per
+  frame), and release every one of them in every way it can end.
+- Anything changed on a game object (materials, renderer flags, lights, textures) is recorded and put
+  back when the option is switched off and when the scene ends. A feature that meets something
+  unexpected logs once, restores the game's own state and stays off; it never throws per frame.
+- The stretcher and its crew never go anywhere by a navigation agent. It is wheeled along a line worked out
+  beforehand (`People/CrewPath`), and it is the stretcher that moves its crew (`Stretcher.Wheel`): every frame
+  it puts whoever pushes on the line, itself an arm's length ahead pointing from them to its own place on the
+  line, the second of a pair beside its leading end (the near hand on that rail), all on the ground height the
+  line was given. Agents are only told the speed, for the walk to play to (`StreetActor.Convey`). So nothing on
+  the navigation mesh (a wall's cut, a vehicle's, an edge) can turn the crew aside, hold it up or stop it short,
+  and there is no "own route" to fall back on. The few steps between the places they work at beside it are
+  walked the same way (`Stretcher.Walk`: round the bed's corner, round the casualty's head or feet). With
+  `stretcher_push_bar` in the bundle the hands are on its grips (0.225 m either side, 0.95 m up, 1.11 m from the
+  middle: where `push_cart` holds a rail for someone 1.55 m from the middle), and the crew kneel to lift 0.10 m
+  further out than that, clear of the bar. Nobody at the stretcher has anything else in a hand: the medic bag
+  rides on the bed (`ServiceKit.Stow`) and is in a hand only while its owner walks without the stretcher.
+- The ambulance crew has one way out and back (`People/CrewWay`), planned once when the ambulance has stopped,
+  and everything else agrees with it. Corners are rounded to 1.2 m and the last stretch is straight for the
+  stretcher's own reach, so it ends exactly on its place pointing exactly along it. Every pose on the way (the
+  bed, whoever pushes, whoever walks beside it) is tested before anyone sets off against vehicles and
+  fixtures (0.3 m to spare), the tape (never run along, crossed in one opening), and the casualty's own body
+  (0.2 m). It tries both sides of the ambulance and of the casualty, straight, square through an end of the
+  tape, or by a place to one side; on the carriageway and out of any lane traffic is let past in first, and
+  only then over a pavement or through that lane (held shut meanwhile: `SceneCordon.HoldForCrew`). Two last
+  moves: a run-in round a corner onto the body's own line; or, where the casualty lies across a road too
+  narrow for that, a swing-in (straight at their side to 2.1 m off their line, then a quarter turn into place
+  with the crew at the bed's ends). Back by the same places, round behind the ambulance and up to the rear
+  doors square, leading end 0.25 m from them (swung square on the spot where there is no room to turn). The
+  layout at the casualty is fixed from the body's axis (`CrewWay.Lay`): the stretcher parallel, head to head,
+  0.55 m away; whoever treats at the chest on the other side; the second at the head or hips.
+- The cordon stands clear of that way (`SceneCordon.SetCorridor`): no post, cone or barrier within 0.3 m of
+  anything of the crew on it, no tape across it, an opening at least 2.6 m wide wherever it crosses a side, the
+  near end's own opening where it crosses that end. Tape that already stands clear is not touched. When tape
+  is run again, a place is never judged by a navigation mesh that the tape's own walls are still cut out of
+  (that moved every post in off its line, onto the crew). Traffic let past a scene waits at a hold line 24 m
+  before it, behind where the ambulance stands, never beside its rear doors.
+- A crew's step ends when it has been done, never on a clock: the stretcher at the end of its line, both at
+  their places, the lift played. The ambulance does not drive off from under its crew (only the scene's hard
+  limit ends that). A step that is well overdue may be finished at once only when both of the crew are out of
+  the player's sight. Each step writes one `People: crew check (...)` line with what was measured, what is
+  allowed, and PASS or FAIL: set off, through the opening, parked beside, lifted, set off back, back through
+  the opening, loaded; the cordon adds its own `Cordon: run round the ambulance crew's way ... PASS/FAIL`.
+- Nobody but the crews and the casualty is inside the tape: a witness or passer-by goes out to the kerb the
+  moment the tape is up or the paramedics are out (`SceneWitness`), and gives their account there; the place
+  they wait is never on the crew's way.
+- A fine for people struck is taken at the roadside only up to the share of the cash in hand a court's fines
+  are bounded to (`PolicePursuit.Roadside`: 35 %, never bounded below 250, `JusticeLaw.Bound`); the rest is
+  left to the court case, which credits what was paid, and the toast says so.
+- Ragdolls come from `Ragdoll/RagdollSystem` only (six at once: 11 bodies each while falling, nothing simulated
+  at rest; when all are in use the one who has lain longest gives up their place) and are ended through it on
+  every path. A character must never be moved, shown, hidden or animated while it is one
+  (`StreetActor.Limp`, `RagdollSystem.Holds`), and a pedestrian borrowed from the game goes back
+  through `PedestrianTakeover` with nothing of ours left on it.
+- A look is accepted in the HDRP preview (`CharacterAssets/preview.ps1`), next to the game's own, at play
+  distance and close up, never in Blender; code that decides how a look is drawn is kept game-free and listed in
+  `CharacterAssets/PreviewProject/shared_sources.txt`, so the preview runs it too.
+- New looks are meshes and textures only, in the one asset bundle, loaded once per session in the
+  background. Materials are always copies of materials the game is already drawing with (never
+  change shader keywords on them), only for the characters that show the player, and with a row
+  in `Character/CharacterCatalogue`. The player's picks are kept by id in the save's modData, per save; a pick
+  never outranks a piece the player then picks in one of the game's own screens (`CharacterCatalogue.Observe`).
+- Never leave data in the savegame that the base game cannot load without this mod
+  (see the comment on `Core/ModState.cs`).
+- Props the mod builds itself (cordon, stretcher) are made once, kept switched off and reused.
+  Nothing is built or destroyed per scene. Their meshes and materials come from
+  `Core/PropLibrary.TryGet` (modelled props from the bundle: shared meshes, two shared instanced
+  materials on one atlas, no colliders) with `Core/Shapes` as the fallback when it says no (shared
+  plain meshes, one material per colour). Never a material or a property block per instance.
+- A vehicle driven by the mod (`EmergencyDriver`) never touches anything: it brakes for vehicles and
+  for people (`PeopleAhead` covers those without a collider), moves over only into another lane of
+  the road graph, never steers off its road points and never forces through. The one exception is a
+  car being stopped at the roadside, which pulls in to the kerb side of its own lane first
+  (`EmergencyDriver.PullOver`), and only where `SceneParking.KerbRoom` found that strip to be
+  carriageway, nobody's lane and free of everything. Held up near its goal
+  it stops in lane and its crew walks. A response vehicle parks on its own route, where
+  `SceneCordon.Stand` puts it: in a lane the wrecks block, on the scene's own carriageway, the
+  ambulance nearest the casualty and outside the tape, nose to the scene. Never at a kerb, on a parking
+  strip or across a crossing: the place is tested before it sets off with its whole body and 0.3 m all
+  round against every solid layer (`SceneParking.Standing`: vehicles, sign posts, hydrants, poles, a sign
+  overhanging the road), and one that fails is moved back along the unit's own lane only
+  (`TrafficAccidents.SettleStand`). Distances to a place are measured along the
+  route, never as the crow flies. Traffic standing in a unit's way is what gets moved
+  (`TrafficAccidents.ClearTheWay`), not the place.
+- A unit with its crew aboard leaves, forwards, within seconds. The loaded ambulance
+  goes at once, siren on: the tape is taken in (`SceneCordon.Lower`), bystanders are sent to the kerb, the
+  officers are called back, and it drives on along its own lane: straight through where the scene is if
+  that lane is clear, round the wrecks by a lane beside them if that is (the gate held shut for it:
+  `SceneCordon.HoldGateShut`, given back on every path), and otherwise the wrecks standing in its lane
+  are taken off the road first (out of view at once, in view after five seconds). The patrol car is the
+  last to go: when the ambulance is past the scene and the patrol car's own lane through it is clear, it
+  drives off while the road is still closed, and the road is given back when both are away; with a wreck
+  still in its lane it waits for the scene to clear and drives off through it. No unit is ever handed back
+  to the traffic system standing: it is driven until it is clear of the scene and moving along a lane (which
+  may be after the scene has ended: `TrafficAccidents.TickDepartures`), or taken off the road out of view.
+- A departure is a plan, not a hope, and the two units never wait on each other. Where the patrol car
+  stands is settled against the ambulance's way out when the units are scheduled
+  (`TrafficAccidents.PlanDeparture`): at the far end only if it stands clear of that line by both half
+  widths and 0.4 m, else behind the ambulance in its own lane. A unit leaving through the scene by a lane
+  checked for it does not pull out to pass (`EmergencyDriver.MayPass`): the lane beside is the other
+  unit's. A driver that is out of its lane and held up goes back to its own lane when that is clear. A
+  leaving ambulance held up by the patrol car has it moved at once (`GiveWay`): officers called aboard,
+  driven off ahead of it, or backed along its own lane when the two are nose to nose (the one case in
+  which a unit reverses). "Could not be moved" does not exist for the mod's own vehicles.
+- No response vehicle is taken off the road where somebody may see it (in the camera's view, or within
+  45 m of it): one that cannot get away stays, says so once (`departure check (... held up): FAIL`), keeps
+  trying to drive off, and is removed only out of sight. `TrafficWatch` (`Guard`) still reports any
+  response vehicle that does not move for 25 s. An ordinary ambulance from the traffic pool that comes
+  within 90 m of a scene is taken off the road out of view, so that only the scene's own stands there.
+  Each step of a departure writes one `Accident: departure check (...)` line with what was measured and
+  PASS or FAIL: planned, units parked, ambulance set off, ambulance past the scene, patrol car set off,
+  patrol car past the scene, road reopened.
+- The traffic system's springs have no damper: what steadies a car is the traffic system replacing its velocity every
+  physics step, which stops the moment the car is ignored (`SetVehicleIgnored`). A vehicle the mod holds is therefore
+  always either driven (`EmergencyDriver` bleeds off its vertical speed) or kinematic (`Pin`, `ResponseUnit.Park`),
+  never left standing unparked; it goes back only through `TrafficTools.ReturnToTraffic` / `Remove`, which put its
+  body right and log its state. Nothing solid and immovable is left where traffic can end up on top of it (a body at
+  rest gives way to a vehicle over it: `Ragdoll.YieldToVehicles`). `TrafficWatch` reports and stops whatever bounces anyway.
+- The game moves everyone on foot (the player included) on the navigation mesh; colliders stop
+  nobody. Anything that must be solid for people is cut out of the mesh with a carving
+  `NavMeshObstacle` on an object of the mod's own (`SceneObstacles` for vehicles, the cordon's
+  walls), pooled, switched off on every exit path, never put on a pooled car, never where the
+  game's pedestrians walk (pavements, crossings), and always with a way out left open. A cordon wall
+  runs exactly along tape that went up (and takes the barriers of an end in with it), so what looks
+  closed is closed; the cordon says in the log whether each wall really cut the mesh.
+- Tape, posts, barriers and cones stand on the carriageway only: never on a pavement or a kerb, never
+  through anything solid (vehicles, street furniture, buildings, steps). Cones are a taper upstream
+  of an end, beyond the response vehicles, laid when those are in and taken in when one leaves.
+- A vehicle that shows its driver in the cab (the delivery truck) has that figure hidden while the
+  driver is on the road as one of the scene's people, and shown again when the car is let go
+  (`TrafficAccidents.EmptySeat` / `Unpin`). So has any further vehicle of a crash the road was closed
+  for (the third car, whose driver nobody plays): nobody sits at the wheel of a wreck through the scene. Only cars and SUVs are rolled; a rolled car is frozen flat
+  on its side, roof or wheels, never leaning.
+- Nobody is laid down where the whole length of a body is not clear of every vehicle
+  (`AccidentCast.BodyClear`); a casualty on the stretcher lies along it on their back (`SupinePose`).
+- A scene says in the log, once per transition and never per frame, what each unit and crew is
+  doing (dispatched, held up, parked at N m, crew out, stretcher up, loaded, left), so that a run can
+  be diagnosed from `Player.log` alone. A scene is planned to clear inside three minutes; only a
+  casualty still being seen to can take it past that, and never past five.
+- A test button that cannot do what was asked says why: `Core/TestRefusal` (one enum value, one sentence in
+  `en.json`, one log line with what was measured). Never one sentence for several causes.
+- A scene leaves the road and the traffic as it found them on every way out, traffic shut down included: a car
+  the mod holds is handed back or taken off the road (the game's own clearing skips cars with a scripted route),
+  and `TrafficAccidents.Recheck` looks again on the next tick out of doors and says so if anything was left.
+- Nobody gestures at nobody: conversational gestures play only while the person spoken to is
+  standing with them. A scene is worded as what it is (one car is never "two drivers").
+- Roads are closed only through `SceneCordon`, which remembers exactly which road points it
+  switched off and opens those again on every exit path (`TrafficAccidents.Clear`). Nothing else
+  may touch `temporaryDisabled`, with one exception: `Civic/RoadClosure` closes one lane beside
+  roadworks by the same switch and the same discipline (only points that were open, never one
+  somebody else has shut, only a stretch with no junction and with every way in shuttable where
+  traffic has another way to go; exactly those points opened again on every path out).
+- Civic life (`Scripts/Civic`) has a cast of five of its own (`CivicCast`: a second instance of
+  `CityPeople`, made a person at a time when first needed). At most one construction crew of three
+  and one canvasser are out together, or one rally of four; they walk in from out of view and walk
+  off, like city life's people. It cuts nothing out of the navigation mesh.
+- Officers and paramedics wear `People/Uniforms` and the equipment of `People/ServiceKit` (pieces on
+  bones: no component, collider or shadow, hidden with the body, removed when the character is
+  dressed as anyone else) and nothing else; civilians stay random. An
+  ambulance is only ever a response vehicle (`TrafficTools.IsAmbulance`): never a wreck, a
+  runner or a suspect, and no other vehicle stands in for one.
+- The living city (`Scripts/CityLife`) has its own pool of eight (`CityPeople`) and never takes from
+  `People/ActorPool`. Its people are placed only where `CitySpots` found and tested room, only out of view
+  (the test buttons are the one exception; and even then whoever comes later walks in from out of view), and
+  move only by their navigation agent with the game's walk. Its budget is fixed: eight people, three sites, one
+  tick a second per site, a path per walker per stretch; per frame only a turn on the spot or a timed moment,
+  and only while there is one. A prop is always exactly one thing's: in a hand, brought along, standing in an
+  activity's dressing, or fallen; `End` gives all of them back in every state. A
+  tool is in a hand only at the grip the clip being played was made with (`CityPerson.Work`); an activity whose
+  clip or prop cannot be had does not start. Nobody gestures at nobody: a greeting plays only when someone on
+  foot is in front, and a conversation always has both people animating at each other.
+- New motion is a Humanoid clip from `CityAssets`, played through `ActivityAnimator`; never a pose set on
+  bones by hand. Somebody who is walking keeps the game's own walk and carries with a masked clip (`PlayOver`);
+  a whole-body walking clip is only for where the game's walk will not do, and then its speed is matched to the
+  ground (`MatchSpeed`) from a timer, never per frame. A character that is about to become a ragdoll has its clip player disposed first.
+- People stand and walk at street level: positions come from `StreetSpots` (which refuses any
+  walkable point that is not at the height of the ground beneath it) and they travel only by
+  their navigation agent. Poses use animations the characters have (`StreetActor.Knows`) or
+  `KneelPose`; a pose the animator lacks is skipped, never substituted blindly.
+
+### Map places (`Core/MapPlaces.cs`)
+
+**Every place a feature adds to the city must be registered here**, and nothing else in the mod touches the
+map's markers or filters. One statement makes a kind of place, one more gives it its places:
+
+```csharp
+MapPlaces.Category stations = MapPlaces.Register("police", "reallife_law_map_stations", blue, MapIcon.Shield, onByDefault: true);
+stations.Set(places);   // IReadOnlyList<MapPlace>; or Add / Remove / Clear / Changed(place) whenever they change
+```
+
+A `MapPlace` is a world position and a name, and optionally the `CityBuildingController` it is (and two locale
+keys for that building's card). `Register` is called once per city load from the feature's own start-up; the same
+id gives the same category back. Optional: `custom:` a sprite of the feature's own (with `MapIcon.Custom`),
+`inStreet: true` to show the markers in the street within 100 m as well (as the game does for the player's own
+buildings; police stations use it), and `category.Available = () => Settings.X` to hide the row and the markers
+while the feature's option is off (call `MapPlaces.Refresh()` when that option changes).
+
+Built-in glyphs (`MapIcon`, drawn in code, 64 px, white on nothing: the marker supplies the colour): `Shield`,
+`Target`, `Bus`, `Bed`, `Scales`, `Wheel`, `Bicycle`, `Wrench`, `Briefcase`, `Ballot`, `Cone`, `Cross`, `Star`, `Flag`.
+
+One option is over all of it: "The mod's places on the map" (`Settings.MapPlacesShown`, with the camera options;
+off hides every row and marker, Law's police stations included, which also keep their own option).
+
+**The other features' places: `World/MapLinks.cs`.** Apart from Law (which registers its precincts itself) no
+feature calls `MapPlaces`: one component, added last at city load, reads each feature's places through members
+the feature already has (or a read-only accessor) and registers them. No feature knows of it, so one whose
+places cannot be read is left off the map with one log line ("Map links: the places of '...' could not be
+read") and nothing else changes. A new kind of place is one `Link` in `MapLinks.Declare`: an id, a title key,
+a colour, a glyph, `Enabled` (the feature's options), `Stamp` (a few integer operations that change when the
+places do: a count, ids, a position) and `Fill` (the places, read only when the stamp has changed).
+
+| row (id) | places | glyph | ticked by default | in the street | changes |
+|---|---|---|---|---|---|
+| Bus stops (`bus_stops`) | every stop of the network (`TransitMap.Stops`), "Bus stop M1 to (end): (address)" | Bus | only with 40 stops or fewer (usually over a hundred: unticked) | no | once, when the network is laid out |
+| Hotels (`hotels`) | `Hotels.Sites`; a hotel that is a building has the game's card under its name | Bed | yes | yes | once |
+| Courthouse (`courthouse`) | `Courthouse.Front`, if hearings can be attended there | Scales | yes | yes | once |
+| Driving schools (`driving_schools`) | the learner-plate boards (`LicenceDesks`) | Wheel | yes | yes | as they are found |
+| Bike hire and two-wheeler shops (`two_wheelers`) | docks ("Bike hire"), racks ("Bicycle shop"), stands ("Motorbike dealer") | Bicycle | yes | no | once |
+| Custom shops (`custom_shops`) | one per repair station (bays within 45 m of one another are one station), at its first bay | Wrench | yes | no | once |
+| Help wanted and employers (`help_wanted`) | the help-wanted boards; one that is an employer's office is named after the employer | Briefcase | yes | no | as boards are found, and when the employers are matched to them |
+| Polling places (`polling_places`) | one per district, from the start of a campaign until the count | Ballot | yes | no | with the campaign |
+| Construction sites (`construction`) | the sites not yet finished, "(project): (address)" | Cone | yes | no | with the programme |
+| Sights and fishing spots (`sights`) | the landmarks: "(seen)" once ticked off, "(fishing nearby)" at the waterside ones | Star | yes | no | when one is seen, or either option changes |
+| What's on (`whats_on`) | the street event that is on (never a fire), a rally while it is held, the chess player's table while it is out, the place of a plan until the outing begins (the game's guider marks it from then) | Flag | yes | no | as they come and go |
+
+A row is made the first time its kind has a place, and is offered only while it has one and the feature's option
+is on (so "Polling places" and "What's on" are in the list only while there is something to show; with the option
+off the markers are removed, not hidden). It looks once every three seconds of real time; markers are made six at
+a time a fifth of a second apart. Grouped to keep the list to a dozen rows with Law's: docks, racks and stands in
+one row; boards and employers in one (they are the same places); sights and fishing spots in one (the fishing
+spots are the waterside landmarks); the four passing things in "What's on". Not registered, because they are the
+game's own buildings with the game's own map filters: law firms, cinemas, theatres, nightclubs, clothing stores,
+travel agencies, filling stations and repair garages as such. Not registered because the game's own destination
+guider already marks them when they matter: Family's appointments and wedding venue. A stop that is dressed and a
+hotel no longer add a marker of their own (`BusStopDressing`, `Hotels` did until 0.39.0).
+
+Unverified (the game could not be run): everything in the table as seen on the map; that a hundred-odd unticked
+markers cost nothing while the map is shut (they are inactive objects); how the list reads with twelve rows.
+
+What the game's map allowed, and what a category therefore gets:
+
+- **A real filter row.** The map's filter list is not data: it is built in code at start-up from one template
+  row (`CityMapFilters.InitializeFilters` -> private `CreateFilter(name, icon, data, category, ...)`). That
+  method is called by reflection, so the row is the game's own: icon, label (the title key), tick box, found by
+  the search box, switched by its category's switch and by "toggle all", and its arrow button flies the map to
+  the category's place nearest the player. Rows go under the game's "Special buildings" (with the subway
+  stations, the bank, the hospital), moved up from the end of the list to the end of that category; if that
+  category cannot be found they get a category line of their own (`reallife_map_category`).
+- **Nothing in the save.** A game row writes its name into the save's `SelectedCitymapFilters` when ticked. The
+  mod's rows are taken out of the game's table of rows and set up again with the game's own "not in the
+  selection" flag, so the save never sees them; whether a row is ticked is kept in PlayerPrefs
+  (`rlo_map_<id>`), per machine, and put back each time the map opens.
+- **Markers** are the game's own (`CityMap.AddPoi`), shown on the open map while the row is ticked. The game's
+  filters only ever switch *buildings* on and off (by type, business or address), so the markers are switched by
+  the facility itself, on the map's own events (opened, closed, a row ticked): nothing per frame.
+- **Names.** A game marker has a name plate that the game shows only for directions (destination, delivery).
+  It is switched on for the mod's places (its "dismiss" button hidden), so every marker carries its name.
+- **Set destination.** The game offers "set destination" only on a *building's* card. A place that is a building
+  gets exactly that, with the place's name on the card instead of "for rent" (the card is rewritten the moment
+  the game writes it: one reference comparison per frame, and only while some place is a building). Every
+  marker, building or not, can also be clicked on the open map: the place becomes the destination (the game's
+  own destination marker, with name and distance) and the map closes.
+- Works however the map is opened (phone or key: both end in `CityMap.Toggle`, which raises the event used).
+  Everything is removed when the city unloads. If the game's code is not as expected (a private member renamed)
+  it is logged once and that part is left out: no row means the markers are always on the map; no name plate
+  means markers without names.
+
+Unverified (the game could not be run): how the name plate looks beside a marker; that a click on a marker's
+blob reaches the button added to it rather than the building under it; the row's place in the list.
+
+## Home life and health (`Scripts/Home`)
+
+```
+Scripts/Home/
+  HomeState      per-save state: the three needs, fitness, sleep debt, five days of meals, the illness, a few dates: one line in modData (game-free)
+  HomeBalance    every number (rates per game hour, thresholds, fees, odds, the recipes) (game-free)
+  HomeDirector   the one component: reads what the player is doing once a second, moves the needs, offers the routines, the test buttons
+  HomeHealth     the rules: needs by activity, mood modifiers, fitness, sleep quality, the body, falling ill and getting over it
+  HomePlace      HomeTidy (the flat's tidiness = the game's own floor dirt) and HomePlace (cookers, coffee machines, fridges, a clear piece of floor)
+  HomeActivity   the mod's routines as activities on the game's own panel: cook, coffee, tidy, floor exercises, the doctor's waiting room
+  JogRun         going for a run: a loop of six checkpoints
+  HomePhone      the "Wellbeing" contact and its page (HomeReport), the doctor's consultation (DoctorVisit, ClinicDialog)
+  HomeHud        the needs strip
+```
+
+### What the game already does (and the mod leaves alone)
+
+The base game has a whole activity system (`PlayerActivity`): a panel with a start button, a duration slider, a progress
+bar, fast-forward and a time skip, and behind it
+
+- **sleep** in a bed, a car or a boat (`SleepActivity`: energy by the hour, more in a better bed, a happiness modifier);
+- **shower, bath, sink and toilet** (`HygieneActivity`: only a happiness modifier, `ba:happinessmodifier_hygiene`; there is no hygiene need);
+- **television, computer games, reading a book, a DJ booth** (`EntertainActivity`, seated on the nearest sofa or chair);
+- **resting** on chairs, benches, loungers (`RestActivity`);
+- **workouts** on fifteen kinds of machine, at home or in a gym (`WorkoutActivity`: treadmill, bench, squat station,
+  pull-up bar, boxing bag, kettlebells, gym mat, fit ball, trampoline, outdoor calisthenics), with the sport-clothes
+  rule in other people's gyms, a trainer's workout plan, and the gym's entrance fee (there is no membership);
+- **swimming, tennis, golf, studying, employer jobs**;
+- eating and drinking any item (from the hands, a bag or a fridge: `ItemHelper.TryToConsume`), energy, hunger, happiness
+  with timed modifiers, a "wet" modifier in the rain, a "walk in the park" modifier;
+- floor dirt and mopping, for businesses (`BuildingCleanliness`, `MopController`);
+- the hospital only as where the player wakes after collapsing (2000), and plastic surgery.
+
+It has **no** hygiene, stress or tidiness need, no illness, no fitness or diet, no cooking, no sleep quality, no doctor,
+no running, no washing machine and no medicine items. Working out changes nothing on the body.
+The player's animator has: `Sitting`, `Laying`, `Showering`, `Bathing`, `UsingSink`, `ReadingABook`, `ConsumingFoodSitting`,
+`Cleaning`/`CleaningIdle`, `Squats`, `Crunches`, `CrunchesOnFitBall`, `Boxing`, `Press`, `Running`, `PushUpIdle`,
+`KettlebellPull`, `Deadlift`, the calisthenics set (loops); `ConsumeFood`, `ConsumeDrink`, `Drink`, `UsingProducer`,
+`StretchArms`, `SweatRemove`, `SquatAction`, `PushUpJump`, `PressAction`, `BoxingPunch`, `Faint` (one-offs).
+
+### What the mod adds
+
+Nothing above is replaced. The director looks at the game's own panel once a second (`ReadDoing`) and takes what the
+player is doing from the activity that is on it; the game minutes that went by (the time skip included) move the needs.
+
+- **Needs** (0 to 100, per game hour): *hygiene* -3.3 awake, -1.2 asleep, -30 on a workout machine, -28 running; a
+  shower or bath restores it in ten minutes, a sink as far as 70. *Stress* +0.5 awake, +3 on one of the mod's jobs, +2.5
+  at an employer job, +1.5 studying, more when ill, starving, short of sleep or in a messy flat; -14 at the television,
+  -12 reading, -10 in the shower, -6 resting, -5 asleep, -8 to -14 exercising. *Home*: the tidiness of the player's home,
+  which is **the game's own floor dirt** where the home has floor cells (living there puts a little on a third of the
+  cells, never more than 60 a cell; the game's own mop takes it off; tidying up takes it off everywhere) and a figure in
+  the mod's state where it has none. -1.6 an hour at home awake. The strip shows the three at home, while hygiene is
+  under 35 or stress over 65, and while ill. "Easy needs" halves what wears a need down and every chance of illness.
+- **Consequences** are mood only, each one of the mod's happiness modifiers held on while its cause lasts: Unwashed -6
+  (under 25), Stressed -8 (over 75), Relaxed +4 (under 15), The flat is a mess -5 / A tidy home +4 (at home), Short of
+  sleep -8 (more than 8 h owed), In good shape +4 (fitness 70), Eating well +4 / Living on junk food -5. Under hygiene
+  12, in somebody else's premises, people are said to keep their distance (once in six hours, a small mood loss).
+- **Sleep**: quality 0 to 100 from the bed's quality, a car (-25), going to bed between 1 and 6 (-15) or in the daytime
+  (-10), a messy flat, stress, hunger, illness, and the hours (7 or more +10, under 5 -20). 68 and up is Well rested
+  (+6, 10 h), under 45 Groggy (-5, 6 h). Sleep debt: 7.5 h a day is owed, an hour asleep pays off 0.7 to 1.3 h by quality.
+  A morning summary once a day after three hours or more.
+- **Routines on the game's panel** (`HomeActivity`: the player walks there, a short watched sequence, then the game's
+  own time skip indoors for anything longer than 14 minutes; the stop button, running out of energy and a click
+  elsewhere on the way all end it cleanly): *cook* at a stove, grill or pizza oven at home from the food in the home's
+  fridges (reheated leftovers 8 min; quick fry-up 1 portion, 20 min, 1.4 times as filling; proper dinner 2, 45 min, 1.7;
+  big pot of stew 3, 80 min, 1.5 and two portions of leftovers; burns 5 to 12 % of the time, more when stressed or
+  exhausted, and is then 0.6 as filling); *coffee* at a coffee machine (10 min, 8 energy inside the game's daily limit
+  for food and drink, three a day); *tidy up* (10 to 90 min, 1.1 points a minute); *stretching, push-ups, sit-ups*
+  anywhere with 0.9 m of clear floor all round (1.0 m for push-ups; 10 to 60 min). The mod's floor clips are centred
+  on the character and lie along the way they face (`pushup`: toes 0.79 m behind, crown 0.90 m ahead; `situp`: head
+  0.70 m behind, feet 0.60 m ahead), so the player is walked to the middle of that circle of floor and whichever way
+  they face the body stays inside it.
+- **Diet**: every meal of the last five days is cooked at home, from the fridge at home, bought and eaten out, or
+  skipped (fewer than two meals in a day). What a meal was is told from where it was eaten: the game says only that
+  something was.
+- **Fitness** (0 to 100): 9 an hour on a machine, 11 running, 6 for floor exercises and sports, with the second hour
+  of a day worth half the first; -0.7 a day from the third day without exercise. It is stamina: an energy spender of
+  +0.006 a game minute at 0 to -0.010 at 100 (the game's own "living" drain is 0.04). **The body** follows on waking,
+  0.02 a night at most and 0.35 in all from the body the player made: strength +0.012 an hour of weights or floor
+  exercise, fatness -0.008 an active hour, +0.004 a day of bad food and no exercise, -0.003 a day of good food.
+- **Illness** (one at a time, none for three days after any; `HomeHealth.Catch`): a cold (36 to 60 h: an hour in the
+  rain without an umbrella 30 %, short of sleep 6 % a day, unwashed 5 % a day), the flu (72 to 108 h: 1.5 % a day,
+  doubled by a poor diet and again by sleep debt), food poisoning (16 to 30 h: a burnt meal 12 %, cooking in a filthy
+  flat 8 %), back pain (40 to 64 h: an hour's exercise in a day at fitness under 20, 15 %; a night in the car 12 %),
+  burnout (72 to 120 h: stress at 90 for thirty hours on end). The first three are Life's own sickness
+  (`LifeEvents.MakeSick`: its modifier, its drain, its doctor on the phone, the hospital) with a name and a course, and a
+  sickness a life event gives is taken up as a cold. A night of six hours or more takes six hours off; stretching eases
+  a bad back; a prescription halves what is left and the extra drain.
+- **The doctor**: inside a hospital or clinic the key prompt offers a consultation (80): a wait of 20 to 35 minutes
+  on the game's panel, then the conversation: the diagnosis, a prescription (45), a sick note (20: for 48 h a failed job
+  shift is no strike, `HomeHealth.SickNoteActive`), or a check-up with advice for someone well.
+- **A run**: from the Wellbeing contact, out of doors on foot: six checkpoints 55 m apart on the pavement in a loop
+  back to the start (34 m and a quarter more gain where the game marks a park), a marker and a ring at the next one.
+  Only the minutes spent actually running count. Rain: a fifth less, and soaked.
+- **The Wellbeing contact**: "How am I doing" (needs, illness, fitness and its trend, diet, sleep, one tip), and from
+  it tidying, the exercises and the run.
+
+Left out on purpose: laundry (the game has no machine), pharmacy items (it has none), a gym membership (the game
+charges an entrance fee), a timing game on the game's workout machines (the game's own activity runs them).
+
+### Asset wish-list
+
+`cook_stir` (with `pan`), `pushup`, `situp`, `stretch` and `run_checkpoint` are **delivered and played** by id; without the bundle the game's own animation (or the plain shape) is used. `eat_sit` and `drink_stand` are not asked for yet: eating and drinking are the game's own gestures, played standing once the routine has let go of the player.
+
+| clip id | length | loop | what | played today by |
+|---|---|---|---|---|
+| `cook_stir` | 3.0 s | loop | standing at a hob 0.45 m ahead, 0.92 m up: left hand on a pan handle, right stirring; holds `pan` (right + other hand) | the game's `UsingProducer` every 4 s |
+| `pushup` | 2.0 s | loop | push-ups, hands under the shoulders, body straight; **as delivered the body is centred on the root** (toes 0.79 m behind, crown 0.90 m ahead), which is what the clear floor is measured round | the game's `PushUpIdle` + `PushUpJump` |
+| `situp` | 2.4 s | loop | sit-ups, knees bent, hands at the temples | the game's `Crunches` |
+| `stretch` | 10 s | loop | standing stretches: arms overhead, side bends, a forward fold; needs 0.8 m either side | `tai_chi`, else the game's `StretchArms` |
+| `eat_sit` | 4.0 s | loop | seated at a table 0.75 m high, fork to mouth from a `plate` 0.35 m ahead | the game's `ConsumeFood` standing |
+| `drink_stand` | 3.0 s | once | a mug lifted to the mouth and lowered; holds `mug` (right) | the game's `ConsumeDrink` |
+| `shower` , `sofa_sit_tv`, `read_sit`, `treadmill_run`, `weights_curl` | | | not needed: the game's own `Showering`, `Sitting`, `ReadingABook`, `Running`, `KettlebellPull` are what its activities play | |
+
+| prop id | size | pivot | for |
+|---|---|---|---|
+| `pan` | 0.26 across, 0.05 deep, handle 0.18 | centre of the base; handle along +X | `cook_stir` |
+| `plate` | 0.26 across | centre of the base | `eat_sit` |
+| `mug` | 0.08 x 0.10 | centre of the base; handle at +X | `drink_stand` |
+| `run_checkpoint` | 1.6 across, 1.4 high | ground centre | the run's marker (a plain disc and post today) |
+## Travel and lodging
+
+`Scripts/Travel/`: hotels the player can stay in, and holidays bought from the game's travel agencies.
+
+```
+TravelCatalogue  every number and name: rooms, the eight hotel slots, trips, events, prices (game-free)
+TravelState      what a save remembers, one line in modData under "reallife:travel"; the no-repeat dealing (game-free)
+TravelBridges    the doors to Home, Social, Law, Transport and Leisure, each with a working default
+TravelEffects    money, hunger, energy and travel's own happiness modifiers, through the game's systems
+TravelText       lines from en.json with their {names} filled
+TravelUi         the full-screen panel (picture of plain shapes, text, buttons), the door prompt, the hotel marker
+Hotels           which buildings are hotels; sign, awning, luggage cart, the one doorman, the city-map icons
+HotelStay        reception (the game's dialogue panel), the room as a panel, sleep through the game's time skip, checkout
+Holidays         agencies, the agent, tickets, the trip in cards, the Hamptons weekend, burnout, the trade fair
+TravelPhone      the "Trips" contact (the page) and the agency's own number
+TravelDirector   the component: save and load, ticks, the key at a door, the watchdog, the test buttons
+```
+
+### What the game has
+
+- **No hotels.** Residential buildings cannot be entered unless rented (`cantenterunlessrented`); pressing the door of
+  one opens the rent screen or says "private property".
+- **Travel agencies** are an office business type (`ba:businesstype_travelagency`, skill `ba:skill_travelagent`) that
+  the player or the AI can run. Its one product is `ba:itemname_hourlytravelconsultantfee`, sold to simulated customers
+  only (`spawnCustomers` is off): the player can never buy anything there. The mod's agent is met at such a building's
+  door, whoever owns it, while it is open.
+- **The Hamptons** (`ba:neighborhood_thehamptons`) is part of the one city scene, reached by road and by its own
+  subway station (`TheHamptonsStation`). Its houses are size `t` plots that rent for 4,768 a day; its shops are on
+  its own Seventh Avenue; there is a theater at Ocean Crest Road 1 and a cinema at Harbor Street 1. There is an
+  Airport Avenue (one warehouse) but no airport building, no flights and no terminal anywhere.
+- **The casino boat** (`CasinoBoatManager`, the building at Pier 5) is in harbour on Fridays from 18:00 to 22:00. A
+  ticket from the ticket house plays the game's own boarding sequence, skips to midnight and puts the player in the
+  casino interior; at 05:00 on Saturday they are put ashore. So the player already rides it, on the game's terms
+  and timetable only. Travel does not touch it: the mod's cruise is a different ship, played in cards.
+- **Being away.** Nothing in the game needs the player present except their own two hands: businesses trade through
+  their employees' shifts, and every tick of the time skip (`TimeMachine` runs `GameManager.RunMainGameTick`) is a
+  full tick of the simulation. Stock that runs out stays out unless a delivery contract or a logistics manager
+  refills it, to-do tasks pile up (`BuildingRegistration.Alerts`), rent and wages are charged daily. The daily
+  accounts are `GameInstance.financialSummaries` (`totalBusinessProfit` and one statement per business).
+- **Sleep** is `EnergyHelper.SetCurrentEnergyRegen` (bed 0.35 energy a minute, car 0.30, bench 0.25) times
+  `energyRegenMultiplier` (the default plus a bed's quality / 100), run by the time skip.
+
+### Prices
+
+Set against the game's own figures, read from its data files: the smallest apartment (54 m2) rents for 31 a day in
+Industry City, 34-39 in Lower Manhattan, 40-48 in the Garment District, 55-63 in Murray Hill, 79-95 in Hell's
+Kitchen and 134-138 in Midtown; 96 m2 for 54-261; 204 m2 for 115-529; 589 m2 for 364-1,455. The cashier job pays 25
+an hour; staff start at 12 to 18.
+
+| room | a night | sleep | rough night | refund of unused prepaid nights |
+|---|---|---|---|---|
+| hostel: bed in a dorm | 45 | bench rate, multiplier -0.1 | 45 % | none |
+| hostel: private single | 75 | car-seat rate | 25 % | none |
+| mid-range: standard double | 150 | bed rate | 5 % | 50 % |
+| mid-range: deluxe | 230 | bed rate, +0.2 | never | 50 % |
+| luxury: king room | 480 | bed rate, +0.4, comfort modifier (+6 for 24 h) | never | 70 % |
+| luxury: corner suite | 900 | bed rate, +0.6, comfort modifier | never | 70 % |
+| cottages: bedroom / whole cottage | 210 / 380 | bed rate, +0.15 / +0.35 | never | 50 % |
+
+Times the hotel's own factor (Industry City and Lower Manhattan 0.85, Murray Hill 0.95, Midtown 1.2), times 1.2 on
+Friday and Saturday nights, times the season (the game counts days only, so travel gives the year four seasons of 28
+days starting in spring: city hotels 1.15 in summer and 0.9 in winter, the cottages 1.4 and 0.75), times the Leisure
+bridge's demand for the day. Seven nights or more cost 0.8 of that every night, fourteen or more 0.72. On deposit the
+first night is paid at the desk and the rest, 5 % dearer, at checkout. Late checkout (16:00 instead of 11:00) is 30 %
+of a night, free in a luxury room. Eight stamps (one a night) are a free night worth up to 250. A hostel bed costs
+what the cheapest apartment rents for and sleeps worse, so it is a stopgap, never the better deal.
+
+Extras: vending sandwich 8 (+25 hunger), room service 32 (+60) or 65 in a luxury room (full), cottage hamper 28,
+minibar 12 or 18 (+12 hunger, +3 energy, four a day), laundry 8 / 25 / free, dinner through the concierge 85, dinner
+in the village 60. Nothing pays the player anything, and every effect is capped (hunger at full, one mood a day).
+
+| trip | days | economy | first class | splurge a day | dear / cheap season |
+|---|---|---|---|---|---|
+| Weekend in the Hamptons (real) | 2 nights | 520 | 910 | - | summer / winter |
+| Coast cruise | 3 | 1,500 | 2,850 | 160 | summer / autumn |
+| Ski trip | 4 | 2,900 | 5,220 | 220 | winter / summer |
+| Miami beach week | 5 | 2,400 | 4,320 | 180 | winter / summer |
+| Europe tour (jet lag) | 7 | 5,600 | 9,800 | 300 | summer / winter |
+| Trade fair (by invitation) | 2 | 900 | 1,440 | 140 | autumn / summer |
+
+Dear season x1.25, cheap x0.85. A companion adds 70 %, insurance 8 %. A suitcase is 120. A trip falls through at the
+gate 6 % of the time: all of it back with insurance, 40 % without. A ticket is good for seven days; handed back or
+expired it returns everything with insurance and half without.
+
+### Hotels
+
+Eight places (`TravelCatalogue.Hotels`). A city hotel is the residential building of its district, of the sizes its
+slot names, with the highest traffic index (ties by street name, then number) that the player neither rents nor owns:
+static data only, so it is the same building in every session, and a booking remembers the slot, not the address.
+With the game's data as shipped: the Bobbin Hostel at Fourth Avenue 1 (Garment District), Dockside Bunks at
+Twenty-first Street 23 (Industry City), Hudson Court Hotel at Second Avenue 8 (Hell's Kitchen), the Battery Row at
+Fourth Avenue 45 (Lower Manhattan), Murray Hill Arms at Sixth Avenue 18, the Broadway Grand at Broadway 13 (Midtown),
+the Meridian Tower at Second Avenue 14 (Hell's Kitchen). Seabreeze Cottages is a board by the Hamptons theater
+(Ocean Crest Road 1; failing that the cinema, then Seventh Avenue 5). The log line "Travel: hotels:" lists what was
+picked.
+
+At the door the interaction key opens reception (the door's own key stands aside there; clicking the building still
+does what the game does). With a room it goes straight up. The room is the travel panel: sleep until the wake-up
+call or nap, shower, room service or the vending machine, minibar, laundry, stay in and rest, check messages, the
+concierge (luxury), a beach walk and dinner in the village (cottages), extend, late checkout, check out, go out.
+The player never moves: they stand at the door behind the panel, held by a navigation block of the game's own.
+
+### Holidays
+
+At an open travel agency's door, or by phone once one has been visited (from the start in a city with no agency).
+The Hamptons weekend is real: setting off books the cottage from that night and the player travels there themselves;
+a night slept there makes it a holiday. The others are played in the panel: departure, a card a day (take it easy,
+explore, splurge; each with an event from a pool of 72 that does not repeat), a day of game time skipped after each,
+and a return card that reads what the businesses made from the game's accounts. Before booking the agent says what
+is being left: how many businesses, what they made a day over the last week, open problems, the rent that carries on.
+
+Burnout: every day with a business to run or a job taken counts; after 18 a friend says so, after 24 a mild
+modifier (-6) stays until a holiday is taken (an afternoon's rest in a hotel room takes three days off the count).
+
+### Bridges
+
+Everything other features do for travel goes through `TravelBridges`; each is taken over with one line and handed back
+by setting null:
+
+```csharp
+TravelBridges.Home = new MyHome();            // ITravelHome: Freshen, Laundry, Rest, Holiday, HighStressDays, HasBed
+TravelBridges.Social = new MySocial();        // ITravelSocial: Companions, TripTogether, Souvenirs, TableBooked, MissedWhileAway
+TravelBridges.Justice = new MyJustice();      // ITravelJustice: MayLeaveTown, MissedWhileAway
+TravelBridges.Transport = new MyTransport();  // ITravelTransport: CoachToHamptons, RideCoachToHamptons, CallCar
+TravelBridges.Leisure = new MyLeisure();      // ITravelLeisure: PlayGolf, DinnerOut, DemandToday
+TravelDirector.SuggestHotel("reallife_travel_suggest_locked_out");   // locked out, evicted: where the nearest bed is
+```
+
+Without them: freshening up and laundry are a small mood once a day, rest is the relaxed modifier, the one companion
+is the mod's Friend contact, souvenirs go to Friend and Mom (a thank-you text and a mood each), nobody is refused
+travel, there is no coach, and the concierge's car and the golf button are not shown.
+
+### Wish-list for the asset pipeline
+
+Plain shapes stand in until these ids are in `Bundles/reallife_props`; the code asks `PropLibrary` first, so no code
+changes when they arrive.
+
+| id | size (w x h x d) | pivot | notes |
+|---|---|---|---|
+| `hotel_sign` | 0.70 x 1.90 x 0.16 | ground centre, face to +Z | pavement sign against a wall; leave a plain plate 0.60 x 0.34 centred 1.50 m up on the +Z face (0.085 m in front of the pivot plane): the hotel's name is lettered there in code. As built the plate's face is at z 0.080 with nothing in front of it, so the lettering at 0.085 is 5 mm proud and does not flicker; its box is 0.56 x 0.30, 2 cm inside the plate all round |
+| `hotel_awning` | 2.40 x 0.45 x 1.40 | the middle of its wall edge, at its underside | reaches out along +Z; hung 2.75 m up on a wall measured flat; one neutral colour (four tiers share it) or light canvas |
+| `luggage_cart` | 1.10 x 1.75 x 0.60 | ground centre, long side along X | brass birdcage trolley with two cases and a bag on it |
+| `suitcase` | 0.45 x 0.65 x 0.25 | ground centre, handle up | hard-shell case; and a grip for `carry_bag_walk` (right hand) so it can be carried: not used by code yet |
+
+### Not done
+
+- The suitcase is bought and changes what trips bring home, but is never seen: no prop in the hand on the way to the
+  cab (`HeldTool` with `carry_bag_walk` needs the modelled case and its grip).
+- No postcards or photographs are saved.
+- The trade fair gives a mood only (+4 for 48 h): no supplier discount or marketing boost, because no mechanism of the
+  game's was found that could be given one safely.
+- Golf in the Hamptons and a coach there exist only through the Leisure and Transport bridges.
+- The Trips page is a phone contact with pages, not an app icon on the home screen.
+## Driving licences
+
+Everything is under `Scripts/Licences/` (and its `Driving/`). Nothing unknown to the base game goes into a
+save: licences and points live in the save's `modData` as one plain line (`reallife:licences`), and the driving
+school's car is taken off the save's vehicle list for the length of each serialisation (`TestCar.BeforeSave`).
+
+```
+Licences/
+  Licences          the one door for the rest of the mod: Licences.Driving.Has(LicenceClass), Licences.Law (ILawBridge), listeners
+  LicenceState      classes, validity, points, suspension, retests: game-free rules and the modData line (LicenceLaw has every figure)
+  LicenceDirector   loads/saves, the first-run grant, the desks' prompt, the one test that is on, enforcement's tick, the test buttons
+  LicenceHud        objective panel, checkpoint marker, key prompt, the sheet (test paper, result, licence card)
+  LicenceProps      the things stood in the world, by id: the modelled prop if the bundle has it, else a plain-shape stand-in
+  TheoryTest        a written test on the sheet: no repeats, a question from every subject, 1/2/3 to answer
+  Driving/
+    DrivingSchool      what the school offers and when (DrivingSchool), the desks at the school buildings (LicenceDesks),
+                       the Licensing Office contact (LicencePhone) and the conversation both use (DrivingSchoolDialog)
+    DrivingQuestions   the 66 theory questions in seven subjects
+    PracticalTest      a lesson or test, driven: examiner, checkpoints, what is marked, the bay, the result sheet
+    TestRoute          five to seven checkpoints along real lanes and a marked bay at the kerb
+    TestCar            the school's car: made the game's way, never in a save, taken back with the game's own delete
+    DrivingEnforcement penalty points, the licence asked for at a stop, impound, arrest, the routine roadside check
+```
+
+### Driving licence: the rules
+
+| class | covers | how it is got |
+|---|---|---|
+| Car | every car, SUV and pickup (`CarKind` Economy, Saloon, Luxury, Sports, Utility) | theory test (60; 10 of 66 questions, 8 to pass, a pass counts 30 days), one lesson (90), the driven test (220) |
+| Commercial | vans and trucks (`CarKind.Van`, `CarKind.Truck`) | a valid car licence, one van lesson (90), the driven test in the school's van with the bay reversed into (380) |
+| Taxi endorsement | carrying passengers for hire | a car licence held 7 days with at most 5 points, 180 |
+| none needed | electric scooter, hand truck, flatbed trolley, anything without an engine (`CarKind.Untouched`) | |
+
+A licence runs 120 days; it can be renewed (90 each, at a desk or by phone) from 14 days before it runs out until 30
+days after, and after that it is the tests again. A failed driven test can be sat again from the next day for 120.
+The first time the rules run on a save, a player who owns a car is given a car licence (and a commercial one if
+they own a van or truck); a save that owns nothing starts without one unless "Start with a driving licence" is on.
+With "Driving needs a licence" off, `Licences.Driving.Has` is always true and nothing is policed.
+
+Driving unlicensed is possible and is never discovered by magic: only when police actually stop the player
+(`PoliceAttention.Stopped`, `PolicePursuit.CaughtAfterFleeing`, or the routine roadside check: about once in forty
+minutes at the wheel, never within two days of the last, by a patrol car that comes up behind with its lights on;
+driving on from one is not chased but costs 400 and 3 points at the next stop).
+
+| found at a stop | fine | vehicle | further |
+|---|---|---|---|
+| no licence | 800 | impounded: towed to a repair-shop bay by the game's own tow, 350 | the third time in 30 days: arrest (6 h, `ILawBridge.Custody`) |
+| car licence, commercial vehicle | 500 | impounded | as above |
+| expired, still renewable | 250 | stays | |
+| suspended | 1500 | impounded | the second time: arrest |
+
+A hired or job van is not impounded (it is not the player's): it "goes back to its owner". The school's car on a
+lesson or test is lawful and is never checked.
+
+| booked offence | points | | booked offence | points |
+|---|---|---|---|---|
+| red light | 3 | | failing to stop (fleeing) | 6 |
+| speeding | 3 | | caught after leaving a collision | 8 |
+| driving on the pavement | 4 | | a person injured (each, up to three) | 4 |
+| against the traffic | 4 | | a death | 9 |
+| drove on from a roadside check | 3 | | | |
+
+Points count for 21 days. Twelve suspend every licence for 7 days, after which the record starts from zero.
+
+### The driven test
+
+The school's car (a Honza Mimic; a Mersaidi Dash for the commercial class) is put at the roadside near the desk, the
+examiner walks out from the desk and gets in when the player is at the wheel, and the route is driven to a marked bay.
+Marked ten times a second from the car's body against `Crime/RoadMap`: crossing a stop line on red (serious),
+stopping past it (minor), more than 10 km/h over the lane's limit for two seconds (minor) or 30 over (serious),
+out of the lane for three seconds (minor), on the pavement or against the traffic (serious), a stop harder than
+9 m/s² from speed (minor), a touch (minor) or a collision of 2.5 m/s or more (serious), and the parking: inside
+the box and within 12 degrees (else minor; more than 0.6 m over or 25 degrees off is serious), reversed into for
+the commercial class. Pass: no serious fault and at most six minor ones. A lesson is the same drive with each
+fault said as it happens. Where no kerb within 150 m has room for a bay the test ends with a stop at a marker.
+Signalling and stop signs are not modelled (the road data has traffic lights only).
+
+### Bridges and hooks
+
+- `Licences.Law` (`ILicenceLawBridge`): `Record(offenceId, arrested)`, `Custody(hours)`. `DefaultLaw` remembers
+  the last arrest in `LicenceState` and uses `PoliceAttention.TakeIntoCustody`. A law feature sets
+  `Licences.Law = itsBridge`.
+- `Licences.Listen(ILicenceListener)`: `PointsAdded`, `DrivingChanged` (insurance, employers).
+- **For Jobs (not applied, Jobs is not ours to edit):** in `JobDirector.Available`, for the ride-hail job,
+  `if (!Licences.Driving.Has(LicenceClass.Taxi)) { reasonKey = "reallife_job_no_taxi_licence"; return false; }`
+  and for any driving job `Licences.Driving.MayDrive(car)`.
+- Added elsewhere, all additive: `PoliceAttention.Stopped` (event, raised in `Ticket` and `Bust`) and
+  `PoliceAttention.TakeIntoCustody(hours)`; `PolicePursuit.PeopleCharged` (event, raised in `ChargeForPeople`);
+  `NearbyInteraction` stands aside while `LicenceDirector.TakesInteractKey`; two `TestRefusal` values (`OnJob`,
+  `NotOnFoot`); settings, options and registration in `Core`.
+
+### Asset wish-list (drops in by id, no code change)
+
+| id | what | size, pivot |
+|---|---|---|
+| prop `driving_school_sign` | a sandwich board with a learner plate (white square, red L) on both faces | 0.62 wide, 1.05 tall, 0.30 deep; origin on the ground at its middle, faces along +Z |
+| prop `test_checkpoint_beacon` | a slim marker post with a small flag | 0.22 across, 2.9 tall; origin on the ground |
+
+Both are in the prop bundle now, and the code fits them as built:
+
+- `driving_school_sign` came out 0.52 deep (feet at z +-0.26), not 0.30. Its middle stands 0.55 m from the wall
+  (`DrivingSchool.FromWall`), so it reaches from 0.29 to 0.81 m out; the spot is tested clear to 1.6 m out, and
+  the desk's place is 0.6 m beyond that. Nothing to change.
+- `test_checkpoint_beacon` flies its flag to its own +X and shows it along +Z and -Z. `PracticalTest.Beacon` turns
+  it so that a face looks back down the lane at the driver and the flag points in at the checkpoint (it stood
+  unturned, the flag to wherever the world's +X was).
+- `parking_box_marker` and `parking_box_posts` are in the bundle and deliberately not used: they are one fixed bay
+  of 2.40 x 5.50 m, and the bay that is judged is sized to each route and vehicle (`TestRoute.BayHalfWidth`,
+  `BayHalfLength`; `LicenceProps.SizeBay`). Drawing a box of another size than the one that is marked would be a
+  lie, and scaling the posts' mesh makes their poles oval. The code-drawn bay stays.
+
+### Firearms (removed in 0.37)
+
+Firearms (licences, gun shops, a range, carrying, shootouts) were part of the mod until 0.37 and were removed.
+What remains is `LicenceDirector.ForgetFirearms`, which once, on loading an old save, clears its firearms line
+(`reallife:firearms` in `modData`) and the two phone contacts `reallife-firearms-unit` and `reallife-gunshop`,
+and the two locale keys of those names that it needs; plus the three `reallife_transaction_gun*` labels, kept so
+that old bank entries still have a name.

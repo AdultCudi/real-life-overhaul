@@ -1,0 +1,3 @@
+# Regenerable. The contact sheets drawn in Unity (previews/unity_*.jpg) are committed; Blender's (previews/*.png) are a working aid.
+/build/
+/previews/*.png

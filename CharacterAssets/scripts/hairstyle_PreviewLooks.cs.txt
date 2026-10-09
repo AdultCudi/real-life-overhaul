@@ -1,0 +1,542 @@
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using Newtonsoft.Json.Linq;
+using RealLifeOverhaul;
+using UnityEngine;
+
+namespace CharacterPreview
+{
+    /// <summary>
+    /// Puts a candidate look on the preview character: the hook between a shot's "finish" list and the code
+    /// that does the same in the game (Character/HairFinish.cs and friends are compiled into this project from
+    /// the mod's own folder by preview.ps1). With no finish, the character is the game's own.
+    ///
+    /// Finish entries:  "wear:top_m_knit"   a garment of the build folder in place of the game's piece of its slot
+    ///                  "hair"              finished hair layers with the default settings
+    ///                  "hair:core=0.95,gain=3,edge=0.04,tile=3,normal=0.6,calm=1,maps=0"   the same, with overrides
+    /// </summary>
+    internal static class PreviewLooks
+    {
+        /// <summary>CharacterAssets\build: the meshes and textures a look would ship with.</summary>
+        public static string Folder;
+
+        // The alpha-tested hair material whose keyword set finished layers borrow; in the game it is found on the character.
+        private const string TemplateName = "M_FemHair_01";
+
+        private static readonly List<Material> Made = new List<Material>();
+        private static readonly Dictionary<string, Texture2D> Textures = new Dictionary<string, Texture2D>();
+        private static Material _template;
+
+        public static void Apply(GameCharacter character, JToken shot, Color hair, Color skin)
+        {
+            foreach (JToken entry in (JArray)shot["finish"] ?? new JArray())
+            {
+                string text = (string)entry;
+                string kind = text.Split(':')[0];
+                Dictionary<string, float> options = Options(text);
+                if (kind == "hair")
+                {
+                    FinishHair(character, options, hair);
+                }
+                else if (kind == "wear")
+                {
+                    Wear(character, text.Substring(text.IndexOf(':') + 1), shot);
+                }
+                else if (kind == "hairstyle")
+                {
+                    // "hairstyle:<id>" or "hairstyle:<id>;core=0.5,normal=0.6": a mod hair mesh with real HDRP/Hair layers.
+                    string rest = text.Substring(text.IndexOf(':') + 1);
+                    int semi = rest.IndexOf(';');
+                    WearHair(character, semi < 0 ? rest : rest.Substring(0, semi), Options(semi < 0 ? "" : ":" + rest.Substring(semi + 1)), shot, hair);
+                }
+                else
+                {
+                    Debug.LogWarning("[CharacterPreview] unknown finish '" + text + "'");
+                }
+            }
+        }
+
+        public static void Undo()
+        {
+            foreach (Material material in Made)
+            {
+                Object.DestroyImmediate(material);
+            }
+            Made.Clear();
+        }
+
+        private static void FinishHair(GameCharacter character, Dictionary<string, float> options, Color colour)
+        {
+            HairFinish.Settings settings = HairFinish.Settings.Default;
+            settings.CoreAlpha = Option(options, "core", settings.CoreAlpha);
+            settings.EdgeAlpha = Option(options, "edge", settings.EdgeAlpha);
+            settings.NormalStrength = Option(options, "normal", settings.NormalStrength);
+            settings.Calm = Option(options, "calm", settings.Calm);
+            float tile = Option(options, "tile", settings.StrandTiling.x);
+            settings.StrandTiling = new Vector2(tile, Option(options, "tilev", settings.StrandTiling.y));
+            settings.AlphaGain = Option(options, "gain", settings.AlphaGain);
+            bool maps = Option(options, "maps", 1f) > 0.5f;
+            Texture2D mask = maps ? Texture("hair_strand_mask", true) : null;
+            Texture2D normal = maps ? Texture("hair_strand_normal", true) : null;
+            if (_template == null)
+            {
+                _template = character.Materials.Make(TemplateName);
+            }
+
+            foreach (string slot in new[] { "Hair", "Beard" })
+            {
+                SkinnedMeshRenderer renderer = character.Find(slot);
+                if (renderer == null)
+                {
+                    continue;
+                }
+                // The preview's shared materials are the game's; a shot gets its own copies and puts nothing back.
+                Material[] materials = renderer.sharedMaterials;
+                bool changed = false;
+                for (int i = 0; i < materials.Length; i++)
+                {
+                    Material finished = HairFinish.Make(materials[i], _template, mask, normal, settings);
+                    if (finished != null)
+                    {
+                        if (settings.AlphaGain > 0f)
+                        {
+                            Texture source = finished.GetTexture("_BaseColorMap");
+                            string key = source.name + settings.AlphaGain;
+                            if (!Textures.TryGetValue(key, out Texture2D denser))
+                            {
+                                denser = HairFinish.Denser(source, settings.AlphaGain);
+                                Textures.Add(key, denser);
+                            }
+                            finished.SetTexture("_BaseColorMap", denser);
+                        }
+                        HairFinish.Colour(finished, materials[i], colour, mask != null, settings.Calm);
+                        Made.Add(finished);
+                        _originals[finished] = materials[i];
+                        materials[i] = finished;
+                        changed = true;
+                    }
+                }
+                if (changed)
+                {
+                    _swapped.Add(new KeyValuePair<SkinnedMeshRenderer, Material[]>(renderer, renderer.sharedMaterials));
+                    renderer.sharedMaterials = materials;
+                }
+            }
+        }
+
+        // ---------------------------------------------------------------- garments
+
+        private static readonly string[] Slots = { "hair", "Hair", "beard", "Beard", "top", "Torso", "legs", "Legs", "feet", "Feet" };
+        private static readonly List<GameObject> Worn = new List<GameObject>();
+        private static readonly List<KeyValuePair<SkinnedMeshRenderer, Mesh>> Bared = new List<KeyValuePair<SkinnedMeshRenderer, Mesh>>();
+
+        /// <summary>
+        /// Wears a garment of the build folder the way the mod does: its mesh on the character's bones with the head
+        /// mesh's bind poses, in place of the game's piece of that slot, of which only the skin parts stay.
+        /// The cloth material is the same HDRP/Lit stand-in as the game's clothes get here.
+        /// </summary>
+        private static void Wear(GameCharacter character, string id, JToken shot)
+        {
+            JToken item = null;
+            foreach (string catalogue in Directory.GetFiles(Folder, "*catalogue_*.json"))
+            {
+                foreach (JToken candidate in (JArray)JObject.Parse(File.ReadAllText(catalogue))["items"])
+                {
+                    if ((string)candidate["id"] == id)
+                    {
+                        item = candidate;
+                    }
+                }
+            }
+            if (item == null)
+            {
+                Debug.LogWarning("[CharacterPreview] no garment '" + id + "' in " + Folder);
+                return;
+            }
+            string slot = Slots[System.Array.IndexOf(Slots, (string)item["kind"]) + 1];
+            SkinnedMeshRenderer head = character.Find("MaleHead") ?? character.Find("FemaleHead");
+            SkinnedMeshRenderer game = character.Find(slot);
+
+            JObject file = JObject.Parse(File.ReadAllText(Path.Combine(Folder, "meshes", (string)item["mesh"] + ".json")));
+            float[] v = file["vertices"].ToObject<float[]>(), n = file["normals"].ToObject<float[]>(), uv = file["uv"].ToObject<float[]>();
+            int[] bi = file["boneIndices"].ToObject<int[]>();
+            float[] bw = file["boneWeights"].ToObject<float[]>();
+            int count = v.Length / 3;
+            var vertices = new Vector3[count];
+            var normals = new Vector3[count];
+            var uvs = new Vector2[count];
+            var weights = new BoneWeight[count];
+            for (int i = 0; i < count; i++)
+            {
+                vertices[i] = new Vector3(v[i * 3], v[i * 3 + 1], v[i * 3 + 2]);
+                normals[i] = new Vector3(n[i * 3], n[i * 3 + 1], n[i * 3 + 2]);
+                uvs[i] = new Vector2(uv[i * 2], uv[i * 2 + 1]);
+                weights[i] = new BoneWeight
+                {
+                    boneIndex0 = bi[i * 4], boneIndex1 = bi[i * 4 + 1], boneIndex2 = bi[i * 4 + 2], boneIndex3 = bi[i * 4 + 3],
+                    weight0 = bw[i * 4], weight1 = bw[i * 4 + 1], weight2 = bw[i * 4 + 2], weight3 = bw[i * 4 + 3]
+                };
+            }
+            var mesh = new Mesh { name = id, indexFormat = UnityEngine.Rendering.IndexFormat.UInt32, vertices = vertices, normals = normals, uv = uvs, boneWeights = weights };
+            var submeshes = (JArray)file["submeshes"];
+            mesh.subMeshCount = submeshes.Count;
+            for (int i = 0; i < submeshes.Count; i++)
+            {
+                mesh.SetTriangles(submeshes[i]["triangles"].ToObject<int[]>(), i);
+            }
+            mesh.bindposes = head.sharedMesh.bindposes;
+            mesh.RecalculateTangents();
+            // The body shapes, as the bundle has them: the game's sliders move the garment with the body.
+            foreach (JToken shape in (JArray)file["shapes"] ?? new JArray())
+            {
+                float[] d = shape["deltas"].ToObject<float[]>();
+                var deltas = new Vector3[count];
+                for (int i = 0; i < count; i++)
+                {
+                    deltas[i] = new Vector3(d[i * 3], d[i * 3 + 1], d[i * 3 + 2]);
+                }
+                mesh.AddBlendShapeFrame((string)shape["name"], 100f, deltas, null, null);
+            }
+            mesh.RecalculateBounds();
+
+            var layers = (JArray)item["layers"];
+            var materials = new Material[layers.Count];
+            Color tint = Color.white;   // as in the game (ModLooks.FinishCloth): the mod's cloth takes its colour from its texture alone
+            for (int i = 0; i < materials.Length; i++)
+            {
+                var material = new Material(Shader.Find("HDRP/Lit")) { name = id + " cloth" };
+                Texture2D colourMap = Texture((string)layers[i]["texture"], false);
+                if (layers[i]["tintMask"] != null && layers[i]["tintMask"].Type != JTokenType.Null)
+                {
+                    colourMap = Tinted(id, colourMap, Texture((string)layers[i]["tintMask"], true), (JArray)layers[i]["tints"]);
+                }
+                material.SetTexture("_BaseColorMap", colourMap);
+                material.SetColor("_BaseColor", tint);
+                if (layers[i]["normal"] != null)
+                {
+                    material.SetTexture("_NormalMap", Texture((string)layers[i]["normal"], true));
+                }
+                material.SetFloat("_Smoothness", 0.25f);
+                UnityEngine.Rendering.HighDefinition.HDMaterial.ValidateMaterial(material);
+                materials[i] = material;
+                Made.Add(material);
+            }
+            var holder = new GameObject("RealLifeOverhaul " + id);
+            holder.transform.SetParent(head.transform.parent, false);
+            var renderer = holder.AddComponent<SkinnedMeshRenderer>();
+            renderer.sharedMesh = mesh;
+            renderer.bones = head.bones;
+            renderer.rootBone = head.rootBone;
+            renderer.updateWhenOffscreen = true;
+            renderer.sharedMaterials = materials;
+            foreach (JProperty shape in ((JObject)shot["shapes"] ?? new JObject()).Properties())
+            {
+                for (int i = 0; i < mesh.blendShapeCount; i++)
+                {
+                    if (string.Equals(mesh.GetBlendShapeName(i), shape.Name, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        renderer.SetBlendShapeWeight(i, (float)shape.Value);
+                    }
+                }
+            }
+            Worn.Add(holder);
+
+            // Of the game's piece, only the skin stays (hands, neck): the mod's skinFrom path.
+            if (game != null)
+            {
+                Mesh bare = Object.Instantiate(game.sharedMesh);
+                Material[] own = game.sharedMaterials;
+                for (int i = 0; i < bare.subMeshCount && i < own.Length; i++)
+                {
+                    if (own[i] == null || !GameMaterials.IsSkin(own[i]))
+                    {
+                        bare.SetTriangles(new int[0], i);
+                    }
+                }
+                Bared.Add(new KeyValuePair<SkinnedMeshRenderer, Mesh>(game, game.sharedMesh));
+                game.sharedMesh = bare;
+            }
+        }
+
+        // ---------------------------------------------------------------- mod hairstyles (build_hair)
+
+        /// <summary>
+        /// Wears a hairstyle of the looks folder as the mod would with finished layers: its mesh on the head's bones, one
+        /// HDRP/Hair material per layer, each a copy of a see-through alpha-tested hair material of the game's
+        /// (the template every finished layer borrows its keyword set from) run through HairFinish.Make:
+        ///   scalp  soft, no depth, seen from outside only, drawn first
+        ///   bulk   depth prepass where the strands are solid, seen from both sides
+        ///   wisps  soft, no depth, seen from both sides, drawn last
+        /// Only numbers, textures and the render queue differ from the game's material; no keyword is touched.
+        /// </summary>
+        private static void WearHair(GameCharacter character, string id, Dictionary<string, float> options, JToken shot, Color colour)
+        {
+            JToken item = null;
+            foreach (string catalogue in Directory.GetFiles(Folder, "*catalogue_*.json"))
+            {
+                foreach (JToken candidate in (JArray)JObject.Parse(File.ReadAllText(catalogue))["items"])
+                {
+                    if ((string)candidate["id"] == id)
+                    {
+                        item = candidate;
+                    }
+                }
+            }
+            if (item == null)
+            {
+                Debug.LogWarning("[CharacterPreview] no hairstyle '" + id + "' in " + Folder);
+                return;
+            }
+            SkinnedMeshRenderer head = character.Find("MaleHead") ?? character.Find("FemaleHead");
+            JObject file = JObject.Parse(File.ReadAllText(Path.Combine(Folder, "meshes", (string)item["mesh"] + ".json")));
+            float[] v = file["vertices"].ToObject<float[]>(), n = file["normals"].ToObject<float[]>(), uv = file["uv"].ToObject<float[]>();
+            int[] bi = file["boneIndices"].ToObject<int[]>();
+            float[] bw = file["boneWeights"].ToObject<float[]>();
+            int count = v.Length / 3;
+            var vertices = new Vector3[count];
+            var normals = new Vector3[count];
+            var uvs = new Vector2[count];
+            var weights = new BoneWeight[count];
+            for (int i = 0; i < count; i++)
+            {
+                vertices[i] = new Vector3(v[i * 3], v[i * 3 + 1], v[i * 3 + 2]);
+                normals[i] = new Vector3(n[i * 3], n[i * 3 + 1], n[i * 3 + 2]).normalized;
+                uvs[i] = new Vector2(uv[i * 2], uv[i * 2 + 1]);
+                weights[i] = new BoneWeight
+                {
+                    boneIndex0 = bi[i * 4], boneIndex1 = bi[i * 4 + 1], boneIndex2 = bi[i * 4 + 2], boneIndex3 = bi[i * 4 + 3],
+                    weight0 = bw[i * 4], weight1 = bw[i * 4 + 1], weight2 = bw[i * 4 + 2], weight3 = bw[i * 4 + 3]
+                };
+            }
+            var mesh = new Mesh { name = id, indexFormat = UnityEngine.Rendering.IndexFormat.UInt32, vertices = vertices, normals = normals, uv = uvs, boneWeights = weights };
+            var submeshes = (JArray)file["submeshes"];
+            mesh.subMeshCount = submeshes.Count;
+            for (int i = 0; i < submeshes.Count; i++)
+            {
+                mesh.SetTriangles(submeshes[i]["triangles"].ToObject<int[]>(), i);
+            }
+            mesh.bindposes = head.sharedMesh.bindposes;
+            foreach (JToken shape in (JArray)file["shapes"] ?? new JArray())
+            {
+                float[] d = shape["deltas"].ToObject<float[]>();
+                var deltas = new Vector3[count];
+                for (int i = 0; i < count; i++)
+                {
+                    deltas[i] = new Vector3(d[i * 3], d[i * 3 + 1], d[i * 3 + 2]);
+                }
+                mesh.AddBlendShapeFrame((string)shape["name"], 100f, deltas, null, null);
+            }
+            mesh.RecalculateTangents();   // as the bundle builder does: tangent along U, so the strands run along V
+            mesh.RecalculateBounds();
+
+            if (_template == null)
+            {
+                _template = character.Materials.Make(TemplateName);
+            }
+            bool maps = Option(options, "maps", 1f) > 0.5f;
+            Texture2D mask = maps ? Texture("hair_strand_mask", true) : null;
+            Texture2D strandNormal = maps ? Texture("hair_strand_normal", true) : null;
+            var layers = (JArray)item["layers"];
+            var materials = new Material[layers.Count];
+            for (int i = 0; i < materials.Length; i++)
+            {
+                string role = (string)layers[i]["role"];
+                Material source = character.Materials.Make(TemplateName);
+                source.name = "RealLifeOverhaul " + id + " " + role;
+                source.SetTexture("_BaseColorMap", Texture((string)layers[i]["texture"], false));
+                string own = layers[i]["normal"] != null && layers[i]["normal"].Type != JTokenType.Null ? (string)layers[i]["normal"] : null;
+                if (own != null)
+                {
+                    source.SetTexture("_NormalMap", Texture(own, true));
+                    source.SetFloat("_NormalScale", Option(options, "normal", 0.6f));
+                }
+                HairFinish.Settings settings = HairFinish.Settings.Default;
+                settings.AlphaGain = 0f;   // our strand textures are painted solid where they should be
+                settings.CoreAlpha = role == "bulk" ? Option(options, "core", 0.97f) : 0f;
+                settings.EdgeAlpha = Option(options, "edge", role == "scalp" ? 0.02f : 0.06f);
+                settings.NormalStrength = role == "scalp" ? 0f : Option(options, "normal", settings.NormalStrength);
+                settings.Calm = Option(options, "calm", settings.Calm);
+                settings.StrandTiling = new Vector2(Option(options, "tile", settings.StrandTiling.x), Option(options, "tilev", settings.StrandTiling.y));
+                Material finished = HairFinish.Make(source, _template, role == "scalp" ? null : mask, role == "scalp" ? null : strandNormal, settings);
+                HairFinish.Colour(finished, source, colour, mask != null && role != "scalp", settings.Calm);
+                int order = role == "scalp" ? 0 : role == "bulk" ? 1 : 2;
+                finished.renderQueue = 3000 + order;
+                finished.SetFloat("_TransparentSortPriority", order);
+                bool twoSided = role != "scalp";
+                foreach (string cull in new[] { "_CullMode", "_CullModeForward", "_TransparentCullMode" })
+                {
+                    finished.SetFloat(cull, twoSided ? 0f : Option(options, "scalpcull", 2f));
+                }
+                finished.SetFloat("_DoubleSidedEnable", twoSided ? 1f : 0f);
+                // The back-light term lights whatever faces away from the viewer: on a solid base with smooth normals
+                // that is a pale wash over the whole far side of the head (seen in the preview). Off.
+                finished.SetFloat("_TransmissionRim", Option(options, "rim", 0f));
+                if (role == "scalp")
+                {
+                    // A surface, not strands: matt (ModLooks.TuneUnderlay's numbers).
+                    finished.SetFloat("_Specular", Mathf.Min(finished.GetFloat("_Specular"), 0.04f));
+                    finished.SetFloat("_SecondarySpecular", Mathf.Min(finished.GetFloat("_SecondarySpecular"), 0.04f));
+                    finished.SetFloat("_SmoothnessMax", Mathf.Min(finished.GetFloat("_SmoothnessMax"), 0.25f));
+                    finished.SetFloat("_SmoothnessMin", Mathf.Min(finished.GetFloat("_SmoothnessMin"), 0.15f));
+                    if (options.ContainsKey("scalpqueue"))
+                    {
+                        finished.renderQueue = (int)options["scalpqueue"];
+                        finished.SetFloat("_TransparentSortPriority", options["scalpqueue"] - 3000f);
+                    }
+                    if (options.ContainsKey("scalptest"))
+                    {
+                        finished.SetTexture("_BaseColorMap", null);   // a plain cap: is it there at all?
+                    }
+                    float shade = Option(options, "scalpshade", 0.8f);
+                    finished.SetColor("_BaseColor", new Color(colour.r * shade, colour.g * shade, colour.b * shade, 1f));
+                }
+                foreach (KeyValuePair<string, float> option in options)
+                {
+                    // "_Specular=0.2" and the like: any float of the shader, for trying numbers out.
+                    if (option.Key.StartsWith("_") && finished.HasProperty(option.Key) && role != "scalp")
+                    {
+                        finished.SetFloat(option.Key, option.Value);
+                    }
+                }
+                Object.DestroyImmediate(source);
+                materials[i] = finished;
+                Made.Add(finished);
+            }
+            var holder = new GameObject("RealLifeOverhaul " + id);
+            holder.transform.SetParent(head.transform.parent, false);
+            var renderer = holder.AddComponent<SkinnedMeshRenderer>();
+            renderer.sharedMesh = mesh;
+            renderer.bones = head.bones;
+            renderer.rootBone = head.rootBone;
+            renderer.updateWhenOffscreen = true;
+            renderer.quality = SkinQuality.Bone4;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;   // as the game's hair
+            renderer.sharedMaterials = materials;
+            foreach (JProperty shape in ((JObject)shot["shapes"] ?? new JObject()).Properties())
+            {
+                int index = mesh.GetBlendShapeIndex(shape.Name);
+                if (index >= 0)
+                {
+                    renderer.SetBlendShapeWeight(index, (float)shape.Value);
+                }
+            }
+            Worn.Add(holder);
+        }
+
+        // A tint mask as the game's cloth graph is taken to use it (and as GameCharacter stands in for the game's own
+        // clothes): the base map times one colour per mask channel. Done once per colourway on the CPU.
+        private static Texture2D Tinted(string id, Texture2D colourMap, Texture2D mask, JArray tints)
+        {
+            if (Textures.TryGetValue("tinted " + id, out Texture2D made))
+            {
+                return made;
+            }
+            int width = colourMap.width, height = colourMap.height;
+            if (mask.width > width)
+            {
+                width = mask.width;
+                height = mask.height;
+            }
+            var colours = new Color[3];
+            for (int c = 0; c < 3; c++)
+            {
+                colours[c] = c < tints.Count ? new Color((float)tints[c][0], (float)tints[c][1], (float)tints[c][2]) : Color.white;
+            }
+            var pixels = new Color[width * height];
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    float u = (x + 0.5f) / width, v = (y + 0.5f) / height;
+                    Color p = colourMap.GetPixelBilinear(u, v);
+                    Color m = mask.GetPixelBilinear(u, v);
+                    for (int c = 0; c < 3; c++)
+                    {
+                        p.r *= Mathf.Lerp(1f, colours[c].r, m[c]);
+                        p.g *= Mathf.Lerp(1f, colours[c].g, m[c]);
+                        p.b *= Mathf.Lerp(1f, colours[c].b, m[c]);
+                    }
+                    p.a = 1f;
+                    pixels[y * width + x] = p;
+                }
+            }
+            made = new Texture2D(width, height, TextureFormat.RGBA32, true, false) { name = id + " tinted", filterMode = FilterMode.Trilinear, anisoLevel = 8 };
+            made.SetPixels(pixels);
+            made.Apply(true);
+            Textures.Add("tinted " + id, made);
+            return made;
+        }
+
+        private static readonly Dictionary<Material, Material> _originals = new Dictionary<Material, Material>();
+        private static readonly List<KeyValuePair<SkinnedMeshRenderer, Material[]>> _swapped = new List<KeyValuePair<SkinnedMeshRenderer, Material[]>>();
+
+        /// <summary>Gives every renderer its game materials back (before the next shot dresses the character).</summary>
+        public static void Restore()
+        {
+            foreach (KeyValuePair<SkinnedMeshRenderer, Material[]> pair in _swapped)
+            {
+                if (pair.Key != null)
+                {
+                    pair.Key.sharedMaterials = pair.Value;
+                }
+            }
+            _swapped.Clear();
+            _originals.Clear();
+            foreach (KeyValuePair<SkinnedMeshRenderer, Mesh> pair in Bared)
+            {
+                Object.DestroyImmediate(pair.Key.sharedMesh);
+                pair.Key.sharedMesh = pair.Value;
+            }
+            Bared.Clear();
+            foreach (GameObject worn in Worn)
+            {
+                Object.DestroyImmediate(worn);
+            }
+            Worn.Clear();
+        }
+
+        private static Texture2D Texture(string name, bool linear)
+        {
+            if (!Textures.TryGetValue(name, out Texture2D texture))
+            {
+                string file = Path.Combine(Folder ?? "", "textures", name + ".png");
+                if (!File.Exists(file))
+                {
+                    Debug.LogWarning("[CharacterPreview] look texture missing: " + file);
+                    return null;
+                }
+                texture = new Texture2D(4, 4, TextureFormat.RGBA32, true, linear) { name = name };
+                texture.LoadImage(File.ReadAllBytes(file));
+                texture.wrapMode = TextureWrapMode.Repeat;
+                texture.filterMode = FilterMode.Trilinear;
+                texture.anisoLevel = 8;
+                Textures.Add(name, texture);
+            }
+            return texture;
+        }
+
+        private static Dictionary<string, float> Options(string text)
+        {
+            var options = new Dictionary<string, float>();
+            int colon = text.IndexOf(':');
+            if (colon >= 0)
+            {
+                foreach (string pair in text.Substring(colon + 1).Split(','))
+                {
+                    string[] sides = pair.Split('=');
+                    if (sides.Length == 2)
+                    {
+                        options[sides[0].Trim()] = float.Parse(sides[1], CultureInfo.InvariantCulture);
+                    }
+                }
+            }
+            return options;
+        }
+
+        private static float Option(Dictionary<string, float> options, string name, float fallback)
+        {
+            return options.TryGetValue(name, out float value) ? value : fallback;
+        }
+    }
+}

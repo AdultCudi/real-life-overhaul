@@ -1,0 +1,2 @@
+The game's uploader sets one tag itself, "mod", and has no field for others (SteamModUploader: WithTag("mod")).
+Nothing to choose here. Do not remove that tag on the Steam page: the game lists a subscribed item as a mod by it.

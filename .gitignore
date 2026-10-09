@@ -1,0 +1,63 @@
+[Bb]in/
+[Oo]bj/
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.csproj.user
+*.DotSettings.user
+TestResults/
+
+# Mod Builder packaged outputs
+Output/
+
+# Unity generated
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Game DLLs are user-sourced from the local Big Ambitions install
+# via the Welcome window importer. Ignore the imported binaries and generated metas.
+Assets/_BaDependencies/GameDlls/**/*.dll
+Assets/_BaDependencies/GameDlls/**/*.dll.meta
+# Character asset pipeline: generated or local-only (see CharacterAssets/README.md)
+CharacterAssets/_reference/
+CharacterAssets/_tools/
+CharacterAssets/_downloads/
+CharacterAssets/build/
+CharacterAssets/previews/
+__pycache__/
+# Prop asset pipeline: generated or local-only (see PropAssets/README.md); the preview renders are committed
+PropAssets/_reference/
+PropAssets/_tools/
+PropAssets/build/
+# City life asset pipeline: generated or local-only (see CityAssets/README.md); the contact sheets are committed
+CityAssets/_reference/
+
+CharacterAssets/PreviewProject_hair/
+CharacterAssets/build_hair/
+
+# Asset agents' working folders (PROPS_BUILD)
+PropAssets/build_*/

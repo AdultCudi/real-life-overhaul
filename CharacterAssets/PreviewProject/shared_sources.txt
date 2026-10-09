@@ -1,0 +1,4 @@
+# Game-free sources of the mod that the preview compiles too (paths from the repository root),
+# so a look is judged with the code that ships. preview.ps1 copies them into Assets\Editor\Shared.
+Assets\Mods\RealLifeOverhaul\Scripts\Character\HairFinish.cs
+Assets\Mods\RealLifeOverhaul\Scripts\Character\SkinFinish.cs

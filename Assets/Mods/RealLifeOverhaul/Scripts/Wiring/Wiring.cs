@@ -1,0 +1,91 @@
+using System;
+using System.Collections.Generic;
+using BAModAPI;
+using UnityEngine;
+
+namespace RealLifeOverhaul
+{
+    /// <summary>
+    /// Where the features meet. Every feature of the mod was built to work alone and talks to
+    /// the others only through optional bridges with a default; this folder is the one place
+    /// that fills those bridges in, one small file per pairing:
+    ///
+    ///     Standing        the one answer to "has the player a record, and what does the city think of them"
+    ///     LawJustice      an arrest from the street to the court: who holds, who charges, who is told
+    ///     LicenceLinks    driving licences with the law and the courts
+    ///     Scenes          the one question every street scene asks before it starts
+    ///     CivicLinks      city hall with the record, the weather, the paper and the scenes; Paper, a story for the City Ledger
+    ///     LifeLinks       careers, social life, travel, the garage and the weather with each other
+    ///
+    /// <see cref="Connect"/> is called once per city load, after every director has been added;
+    /// <see cref="Disconnect"/> on unload puts every bridge back to its default. Nothing here
+    /// has an Update: an adapter is called when the feature that owns the bridge asks, and
+    /// answers from what the other feature already keeps. An adapter never throws into the
+    /// feature that called it: a fault is logged once (<see cref="Fault"/>) and the default
+    /// answer is given.
+    ///
+    /// ADDING A PAIRING: a file here with a nested static class and an internal Connect() /
+    /// Disconnect(), one line for each in the two lists below.
+    /// </summary>
+    public static partial class Wiring
+    {
+        private static readonly HashSet<string> Reported = new HashSet<string>();
+
+        public static IModLogger Logger;
+
+        /// <summary>True between Connect and Disconnect.</summary>
+        public static bool Connected { get; private set; }
+
+        public static void Connect(IModLogger logger, GameObject root)
+        {
+            Logger = logger;
+            SaveHook.Logger = logger;
+            if (Connected)
+            {
+                Disconnect();
+            }
+            Connected = true;
+            Reported.Clear();
+            Step("law and justice", Arrests.Connect);
+            Step("licences", LicenceLinks.Connect);
+            Step("civic life", CivicLinks.Connect);
+            Step("everyday life", LifeLinks.Connect);
+            Logger?.Info("Wiring: the features are connected.");
+        }
+
+        public static void Disconnect()
+        {
+            if (!Connected)
+            {
+                return;
+            }
+            Connected = false;
+            Step("everyday life", LifeLinks.Disconnect);
+            Step("civic life", CivicLinks.Disconnect);
+            Step("licences", LicenceLinks.Disconnect);
+            Step("law and justice", Arrests.Disconnect);
+        }
+
+        // One pairing failing to connect must not cost the others theirs.
+        private static void Step(string name, Action what)
+        {
+            try
+            {
+                what();
+            }
+            catch (Exception e)
+            {
+                Fault(name, e);
+            }
+        }
+
+        /// <summary>A bridge threw: said once per place and session, never per call.</summary>
+        internal static void Fault(string where, Exception e)
+        {
+            if (Reported.Add(where))
+            {
+                Logger?.Warn("Wiring: " + where + " failed; the default answer is used from here on. " + e);
+            }
+        }
+    }
+}
