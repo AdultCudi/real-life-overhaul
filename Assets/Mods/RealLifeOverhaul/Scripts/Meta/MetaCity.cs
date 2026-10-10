@@ -160,6 +160,13 @@ namespace RealLifeOverhaul.Meta
         private static bool _verbose;
 
         /// <summary>
+        /// True while "Developer diagnostics" is on. For the few places where a diagnostic line costs something to
+        /// work out (a self-check that asks the navigation mesh, a text put together on a timer): they test this
+        /// first, since the text handed to a logger is built before the logger can drop it.
+        /// </summary>
+        public static bool Verbose => _verbose;
+
+        /// <summary>
         /// The context the game hands a mod entry, with its logger behind the switch. Both entries call this first
         /// and pass the result on, so every logger in the mod, whoever keeps it and wherever, is this one.
         /// </summary>
@@ -176,6 +183,7 @@ namespace RealLifeOverhaul.Meta
             {
                 bool on = Settings.DevDiagnostics;
                 _verbose = on;
+                SessionWatch.Apply(on);   // the once-a-minute line and the long-frame line (Diagnostics/SessionWatch): a disabled component while off
                 foreach (Feature feature in Features.All)
                 {
                     foreach (KeyAction action in feature.DiagnosticKeys)

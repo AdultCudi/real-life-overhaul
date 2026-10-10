@@ -396,6 +396,7 @@ namespace RealLifeOverhaul
 
         private CityPerson Create(Vector3 position)
         {
+            SessionWatch.Mark("people: a character being made");
             var character = PrefabHelper.CreatePrefab<ThirdPersonCharacter>(CharacterPrefab, position, Quaternion.identity, _host.transform);
             character.name = "RealLifeOverhaul Friend";
             // Idle fidgets would play over what a scene asks of them (a wave, a cup).

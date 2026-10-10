@@ -264,6 +264,7 @@ namespace RealLifeOverhaul
 
         private StreetActor Create(Vector3 position, int seed = 0, bool female = false, bool formal = true)
         {
+            SessionWatch.Mark("people: a character being made");
             var character = PrefabHelper.CreatePrefab<ThirdPersonCharacter>(CharacterPrefab, position, Quaternion.identity, _host.transform);
             character.name = "RealLifeOverhaul Job Person";
             // Idle fidgets would play over what a job asks of them (waving, taking a parcel).

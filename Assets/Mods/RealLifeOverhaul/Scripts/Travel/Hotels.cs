@@ -619,6 +619,7 @@ namespace RealLifeOverhaul
             {
                 _props = new CityProps(_root);
             }
+            SessionWatch.Mark("people: a character being made");
             var character = PrefabHelper.CreatePrefab<ThirdPersonCharacter>(CharacterPrefab, near + Vector3.down * 40f, Quaternion.identity, _root);
             character.name = "RealLifeOverhaul Hotel Doorman";
             var fidgets = character.GetComponentInChildren<BoredAnimations>(true);

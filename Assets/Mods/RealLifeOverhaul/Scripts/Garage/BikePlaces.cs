@@ -465,6 +465,7 @@ namespace RealLifeOverhaul
 
         private void Dress(BikePlace place)
         {
+            SessionWatch.Mark("garage: a two-wheeler stand being put out");
             if (!Shapes.Available)
             {
                 return;

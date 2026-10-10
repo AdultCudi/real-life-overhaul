@@ -224,6 +224,7 @@ namespace RealLifeOverhaul.Events
 
         private void Begin(IEventScene scene, float markerSeconds)
         {
+            SessionWatch.Mark("events: a fire or street event starting");
             _scene = scene;
             if (ReferenceEquals(scene, _fire))
             {

@@ -19,6 +19,27 @@ namespace RealLifeOverhaul
     /// the handler is new or the game's event has changed. A handler that throws is logged and
     /// does not cost the others their save.
     /// </summary>
+    /// <summary>
+    /// The same idea for any other of the game's event fields a feature must stay on (entering and leaving a
+    /// building, the city map, the game's own events): the handler is taken off and put back only when the field
+    /// is not the one last seen, so asking every second allocates nothing while nothing has changed. The handler
+    /// ends up last in line, as it did when it was put back every time.
+    ///
+    ///     EventHold.Keep(ref GlobalEvents.onEnterBuilding, _onEnter, ref _enterSeen);
+    /// </summary>
+    public static class EventHold
+    {
+        public static void Keep<T>(ref T field, T handler, ref T seen) where T : Delegate
+        {
+            if (handler == null || (seen != null && ReferenceEquals(field, seen)))
+            {
+                return;
+            }
+            field = (T)Delegate.Combine(Delegate.Remove(field, handler), handler);
+            seen = field;
+        }
+    }
+
     public static class SaveHook
     {
         private static readonly List<Action> Handlers = new List<Action>(16);
@@ -56,6 +77,9 @@ namespace RealLifeOverhaul
 
         private static void Run()
         {
+            SessionWatch.Mark("the game is saving (the mod writes its state into the save first)");
+            bool timed = Meta.Dev.Verbose;
+            float began = timed ? UnityEngine.Time.realtimeSinceStartup : 0f;
             for (int i = 0; i < Handlers.Count; i++)
             {
                 try
@@ -66,6 +90,10 @@ namespace RealLifeOverhaul
                 {
                     Logger?.Error(e);
                 }
+            }
+            if (timed)
+            {
+                Logger?.Info("Session: the mod wrote its state into the save in " + ((UnityEngine.Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms (" + Handlers.Count + " features); the rest of the save is the game's.");
             }
         }
     }

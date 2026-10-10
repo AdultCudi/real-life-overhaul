@@ -1074,6 +1074,7 @@ namespace RealLifeOverhaul
             }
 
             News.Report(NewsKind.Accident, _scene, null, (int)_severity);
+            SessionWatch.Mark("traffic: an accident being staged");
             Logger?.Info($"Accident staged: {_severity}, {_wrecks.Count} car(s){(alone ? " (single vehicle)" : "")}, clears within {total:F0} s{(planned ? ", hit-and-run planned" : "")}.");
         }
 

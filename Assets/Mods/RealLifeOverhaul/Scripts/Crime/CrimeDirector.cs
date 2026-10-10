@@ -316,6 +316,7 @@ namespace RealLifeOverhaul
 
         private bool Begin(CrimeEntry entry, CrimePlace place, float now, bool forced, float amount)
         {
+            SessionWatch.Mark("crime: a scene starting");
             if (!_scenes.TryGetValue(entry.Id, out ICrimeScene scene))
             {
                 return false;

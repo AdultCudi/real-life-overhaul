@@ -96,6 +96,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
+            SessionWatch.Mark("people: a character being made");
             var character = PrefabHelper.CreatePrefab<ThirdPersonCharacter>(CharacterPrefab, near, Quaternion.identity, transform);
             character.name = "RealLifeOverhaul Citizen";
             // Idle fidgets would play over the poses activities set.
@@ -388,6 +389,7 @@ namespace RealLifeOverhaul
         // Who they are (age, build, face, hair) is rolled for everyone; workers then get their work clothes.
         private static void Dress(CityPerson person, CityLook look)
         {
+            SessionWatch.Mark("city life: a character's look being built (a mesh merge)");   // (named for the long-frame line of the session record: two static writes)
             person.Look = look;
             person.Stale = false;
             AppearanceSetter appearance = person.Character.appearanceSetter;

@@ -560,12 +560,26 @@ namespace RealLifeOverhaul
     [ModEntryOnCityLoad]
     public class RealLifeOverhaulCity : IModBigAmbitions
     {
+        private const string RootName = "RealLifeOverhaul";
         private GameObject _root;
 
         public string[] RelativeAssetBundlePaths => Array.Empty<string>();
 
+        // One set of city features per city, whatever loaded them. The game itself refuses two mods with the same
+        // assembly name (both of them: ModDiscoveryRegistry), so the Workshop copy and a local build cannot run side by
+        // side as they are; this is for a copy under another assembly name. Such a copy is a different assembly with
+        // statics of its own, so what is looked for is the one thing both would make: the root object, by its name.
+        // A root that went with its scene is not found, so a load that was never followed by an unload cannot lock the mod out.
+        private bool _second;
+
         public Task OnLoadAsync(ModContext context)
         {
+            if (GameObject.Find(RootName) != null)
+            {
+                _second = true;
+                context.Logger.Warn("Real Life Overhaul is already running in this city (two copies of the mod are switched on). This copy does nothing; switch one of them off under Mods in the main menu.");
+                return Task.CompletedTask;
+            }
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on; warnings and errors always
             ThirdPersonCamera.Logger = context.Logger;
             VisualEnhancer.Logger = context.Logger;
@@ -615,7 +629,9 @@ namespace RealLifeOverhaul
             CivicDirector.Logger = context.Logger;
             Family.FamilyDirector.Logger = context.Logger;
 
-            _root = new GameObject("RealLifeOverhaul");
+            _root = new GameObject(RootName);
+            SessionWatch.Logger = context.Logger;
+            _root.AddComponent<SessionWatch>();   // the record of the session for "it stutters after a while": disabled unless "Developer diagnostics" is on
             _root.AddComponent<ThirdPersonCamera>();
             _root.AddComponent<VisualEnhancer>();
             _root.AddComponent<NearbyInteraction>();
@@ -687,10 +703,16 @@ namespace RealLifeOverhaul
 
         public Task OnUnloadAsync()
         {
+            if (_second)
+            {
+                _second = false;
+                return Task.CompletedTask;   // this copy started nothing
+            }
             Meta.MetaCity.End();
             Wiring.Disconnect();   // every bridge back to its stand-alone default
             if (_root != null)
             {
+                _root.name = RootName + " (closing)";   // it is gone at the end of the frame: a city loaded before then must not take it for a second copy
                 UnityEngine.Object.Destroy(_root);
                 _root = null;
             }

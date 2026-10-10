@@ -443,6 +443,7 @@ namespace RealLifeOverhaul
 
         private bool Open(CityEntry entry, Vector3 anchor, Vector3 origin, float now, bool raining, bool test)
         {
+            SessionWatch.Mark("city life: a site being set up");
             ICityActivity activity = entry.Activity;
             _site.Anchor = anchor;
             _site.Test = test;

@@ -450,6 +450,7 @@ namespace RealLifeOverhaul
                 // created, and off its own mesh (the place asked for is often on the road) the engine warns that it
                 // "is not close enough to the NavMesh". Place moves the character to where it is wanted, in the same frame.
                 Vector3 birth = StreetSpots.OnPavement(position, 25f, out Vector3 pavement) ? pavement : position;
+                SessionWatch.Mark("people: a character being made");
                 var character = PrefabHelper.CreatePrefab<ThirdPersonCharacter>(CharacterPrefab, birth, Quaternion.identity, transform);
                 character.name = "RealLifeOverhaul Actor";
                 // Idle fidgets would play over the poses scenes set (lying down, on the phone).
@@ -496,6 +497,7 @@ namespace RealLifeOverhaul
         // and the equipment that goes with it.
         private static void Dress(StreetActor actor, ActorLook look)
         {
+            SessionWatch.Mark("people: a street character's look being built (a mesh merge)");   // (named for the long-frame line of the session record: two static writes)
             actor.Look = look;
             actor.Stale = false;
             actor.Resize(1f);   // every look is put on, and measured, at the size the game builds it
