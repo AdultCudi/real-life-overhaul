@@ -192,6 +192,7 @@ namespace RealLifeOverhaul
         private static FieldInfo _buttonField;
         private static FieldInfo _blobField;
         private static Action<bool> _onMap;
+        private static Action<bool> _mapSeen;
         private static bool _mapOpen;
 
         /// <summary>True once the map's filter list has taken the mod's rows (false: every category's markers are simply always on the map).</summary>
@@ -782,8 +783,7 @@ namespace RealLifeOverhaul
                     {
                         _onMap = OnMap;
                     }
-                    GlobalEvents.onCityMapToggle -= _onMap;
-                    GlobalEvents.onCityMapToggle += _onMap;
+                    EventHold.Keep(ref GlobalEvents.onCityMapToggle, _onMap, ref _mapSeen);   // put back only when the game's event is not the one last seen
                 }
                 UIs uis = InstanceBehavior<UIs>.Instance;
                 _card = uis != null ? uis.buildingResume : null;

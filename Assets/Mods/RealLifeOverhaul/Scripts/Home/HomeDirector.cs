@@ -245,9 +245,8 @@ namespace RealLifeOverhaul
 
             // The game clears its event hubs on every load, so the hooks are kept attached.
             SaveHook.Keep(_onSave ?? (_onSave = OnSaveGame));   // the mod's one relay in the game's save event (Core/SaveHook): nothing is allocated while that event has not changed
-            _onGameEvent = _onGameEvent ?? OnGameEvent;   // made once: taking it off and putting it back builds no new delegate of ours
-            GameEvent.onGameEventTriggered -= _onGameEvent;
-            GameEvent.onGameEventTriggered += _onGameEvent;
+            _onGameEvent = _onGameEvent ?? OnGameEvent;   // made once, and put back only when the game's event is not the one last seen
+            EventHold.Keep(ref GameEvent.onGameEventTriggered, _onGameEvent, ref _gameEventSeen);
 
             float minutesNow = TimeHelper.NowInMinutes();
             float minutes = minutesNow - _lastMinutes;
@@ -538,6 +537,7 @@ namespace RealLifeOverhaul
 
         // The game says "food eaten" for anything that fills: what it was is told from where it was eaten.
         private System.Action<string> _onGameEvent;
+        private System.Action<string> _gameEventSeen;
 
         private void OnGameEvent(string gameEvent)
         {

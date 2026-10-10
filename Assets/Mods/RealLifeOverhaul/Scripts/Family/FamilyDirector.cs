@@ -64,6 +64,7 @@ namespace RealLifeOverhaul.Family
         private JobProps _bodyProps;
         private float _nextTick;
         private float _nextHook;
+        private Action _onSave;   // made once: Core/SaveHook compares it, it is never built again
         private int _lastHour = -1;
         private bool _started;
         private bool _failed;
@@ -96,7 +97,7 @@ namespace RealLifeOverhaul.Family
 
         private void OnDestroy()
         {
-            GlobalEvents.onSaveGame -= OnSaveGame;
+            SaveHook.Drop(_onSave);
             Stop(true);
             try
             {
@@ -157,8 +158,7 @@ namespace RealLifeOverhaul.Family
                 if (Time.unscaledTime >= _nextHook)
                 {
                     _nextHook = Time.unscaledTime + 2f;
-                    GlobalEvents.onSaveGame -= OnSaveGame;
-                    GlobalEvents.onSaveGame += OnSaveGame;
+                    SaveHook.Keep(_onSave ?? (_onSave = OnSaveGame));   // the mod's one relay in the game's save event (Core/SaveHook): nothing is allocated while that event has not changed
                 }
 
                 if (Cast.AnyOut)

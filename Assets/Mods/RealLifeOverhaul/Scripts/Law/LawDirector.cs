@@ -61,7 +61,8 @@ namespace RealLifeOverhaul.Law
         private bool _resumed;
         private int _lastThanks = -1;
         private Action _onSave;
-        private int _hookIn;
+        private Action<Address> _enterSeen;   // the game's two building events as they were when the hooks were last put on them
+        private Action<Address> _exitSeen;
 
         /// <summary>How many precincts the city has (0 until they have been designated).</summary>
         public static int PrecinctCount => Instance != null && Instance._precincts != null ? Instance._precincts.Count : 0;
@@ -81,7 +82,7 @@ namespace RealLifeOverhaul.Law
         private void Awake()
         {
             Instance = this;
-            _onSave = OnSaveGame;   // one delegate for the session: it is taken off and put back on the game's event every second
+            _onSave = OnSaveGame;   // one delegate for the session, in the mod's one relay on the game's save event (Core/SaveHook)
             _onEnter = _ => _entered = true;
             _onExit = _ => _exited = true;
             LawState.Logger = Logger;
@@ -96,7 +97,7 @@ namespace RealLifeOverhaul.Law
 
         private void OnDestroy()
         {
-            GlobalEvents.onSaveGame -= _onSave;
+            SaveHook.Drop(_onSave);
             GlobalEvents.onEnterBuilding -= _onEnter;
             GlobalEvents.onExitBuilding -= _onExit;
             try
@@ -390,17 +391,11 @@ namespace RealLifeOverhaul.Law
                 RecordPhone.Setup(_precincts.Icon);
             }
 
-            // The game clears its event hub on every load, so the save hook is kept attached (as Life/LifeEvents does): every few seconds.
-            if (--_hookIn <= 0)
-            {
-                _hookIn = 3;
-                GlobalEvents.onSaveGame -= _onSave;
-                GlobalEvents.onSaveGame += _onSave;
-                GlobalEvents.onEnterBuilding -= _onEnter;
-                GlobalEvents.onEnterBuilding += _onEnter;
-                GlobalEvents.onExitBuilding -= _onExit;
-                GlobalEvents.onExitBuilding += _onExit;
-            }
+            // The game clears its event hub on every load, so the hooks are kept attached: looked at every second, and put
+            // back only when the game's event is not the one last seen (nothing is allocated while nothing has changed).
+            SaveHook.Keep(_onSave);
+            EventHold.Keep(ref GlobalEvents.onEnterBuilding, _onEnter, ref _enterSeen);
+            EventHold.Keep(ref GlobalEvents.onExitBuilding, _onExit, ref _exitSeen);
 
             bool outdoors = !BuildingManager.IsInsideBuilding;
 
