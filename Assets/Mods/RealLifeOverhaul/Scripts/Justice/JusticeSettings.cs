@@ -57,7 +57,7 @@ namespace RealLifeOverhaul
                 .AddToggle(CourthouseId, "reallife_justice_courthouse", Courthouse, v => Courthouse = v)
                 .AddToggle(NoPrisonId, "reallife_justice_no_prison", NoPrison, v => NoPrison = v)
                 .AddSlider(PrisonCapId, "reallife_justice_prison_cap", JusticeLaw.PrisonCapMin, JusticeLaw.PrisonCapMax, PrisonCap,
-                    v => PrisonCap = JusticeLaw.ClampCap(v))
+                    v => PrisonCap = JusticeLaw.ClampCap(v), Meta.SettingsTable.SliderValue)
                 .AddToggle(CommunityId, "reallife_justice_community", Community, v => Community = v)
                 .AddToggle(CivilId, "reallife_justice_civil", Civil, v => Civil = v)
                 .AddToggle(AftermathId, "reallife_justice_aftermath", Aftermath, v => Aftermath = v)

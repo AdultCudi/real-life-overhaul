@@ -42,12 +42,13 @@ namespace RealLifeOverhaul.Meta
             public readonly List<ModOption> Rows = new List<ModOption>();
             public GameObject Header;
             public TextLocalizationComponent HeaderText;
+            public Caption Caption;                // the word on its button: "Open" or "Close"
             public int Start;
             public readonly List<GameObject> Objects = new List<GameObject>();
 
-            // What stands after the name on its button: how much is in it, then open or closed. Made when the page is drawn.
-            public string Closed = "   [+]";
-            public string Opened = "   [-]";
+            // What stands after the name beside its button: how much is in it. Made when the page is drawn.
+            public string Closed = string.Empty;
+            public string Opened = string.Empty;
             public string Found = string.Empty;
             public string Shown;                   // the one of the three that is on the button now
             public bool HasMaster;                 // one of its rows switches the whole feature
@@ -86,7 +87,6 @@ namespace RealLifeOverhaul.Meta
         private static string _modId;
         private static bool _hooked;
         private static TextLocalizationComponent _presetText;
-        private static TextLocalizationComponent _allText;
 
         // ---------------------------------------------------------------- order
 
@@ -147,6 +147,7 @@ namespace RealLifeOverhaul.Meta
                 {
                     _hooked = true;
                     OptionsService.OnReset += GameReset;
+                    LocalizorManager.OnLanguageChanged += CaptionsLanguage;
                     Settings.Changed += Dev.Apply;
                 }
                 Dev.Apply();
@@ -157,7 +158,7 @@ namespace RealLifeOverhaul.Meta
                 MetaLog.Error(e);
                 MetaLog.Warn("the options page could not be put in order and is shown as it was built.");
                 _built = null;
-                return original;
+                return AsBuilt(original);
             }
         }
 
@@ -168,6 +169,7 @@ namespace RealLifeOverhaul.Meta
             {
                 _hooked = false;
                 OptionsService.OnReset -= GameReset;
+                LocalizorManager.OnLanguageChanged -= CaptionsLanguage;
                 Settings.Changed -= Dev.Apply;
             }
             _built = null;
@@ -294,8 +296,8 @@ namespace RealLifeOverhaul.Meta
                     section.Shown = null;
                     section.Objects.Clear();
                 }
-                _allText = null;
                 _presetText = null;
+                CaptionsBegin(parent);
                 SearchDrawn(parent);
             }));
             page.AddCustom(new SearchRow());
@@ -326,7 +328,7 @@ namespace RealLifeOverhaul.Meta
             AddLoose(page, new ButtonOption("reallife_meta_sections_button", ToggleAll), false);
             page.AddCustom(new RowTap(parent =>
             {
-                _allText = TextOf(Last(parent));
+                CaptionAll(Last(parent));
                 UpdateLabels();
             }));
 
@@ -378,6 +380,7 @@ namespace RealLifeOverhaul.Meta
                 }
             }
             AddLoose(page, new SplitterOption(), false);
+            page.AddCustom(new RowTap(CaptionsEnd));   // every button of the page has been made: the word on each
             MetaLog.Info("options page in order: " + Sections.Count + " sections (" + (tests != null ? tests.Children.Count : 0)
                          + " of them groups of test tools), " + SettingsTable.All.Count + " saved options, " + testRows + " test tools.");
             return page;
@@ -392,6 +395,7 @@ namespace RealLifeOverhaul.Meta
             {
                 tests.Header = Last(parent);
                 tests.HeaderText = TextOf(tests.Header);
+                CaptionSection(tests);
                 tests.Objects.Clear();
                 Describe(tests);
                 Apply(tests);
@@ -415,6 +419,7 @@ namespace RealLifeOverhaul.Meta
             {
                 section.Header = Last(parent);
                 section.HeaderText = TextOf(section.Header);
+                CaptionSection(section);
                 section.Start = parent.childCount;
                 section.Objects.Clear();
                 Describe(section);
@@ -533,8 +538,8 @@ namespace RealLifeOverhaul.Meta
                 about = "   (" + what + state + ")";
             }
             section.Found = about;
-            section.Closed = about + "   [+]";
-            section.Opened = about + "   [-]";
+            section.Closed = about;
+            section.Opened = about;
         }
 
         private static string Counted(int count, string oneKey, string manyKey)
@@ -654,6 +659,7 @@ namespace RealLifeOverhaul.Meta
             bool open = visible && IsOpen(section);
             Show(section.Header, visible);
             Label(section, open ? section.Opened : section.Closed);
+            CaptionState(section, open ? CaptionClose : CaptionOpen);
             foreach (GameObject row in section.Objects)
             {
                 Show(row, open);
@@ -689,14 +695,14 @@ namespace RealLifeOverhaul.Meta
                 {
                     _presetText.Suffix = ": " + Presets.CurrentName();
                 }
-                if (_allText != null)
+                if (_allCaption != null)
                 {
                     bool anyOpen = false;
                     foreach (Section section in Sections)
                     {
                         anyOpen |= section.Parent == null && IsOpen(section);
                     }
-                    _allText.Suffix = anyOpen ? "   [-]" : "   [+]";
+                    _allCaption.Set(anyOpen ? CaptionCloseAll : CaptionOpenAll);
                 }
             }
             catch (Exception e)

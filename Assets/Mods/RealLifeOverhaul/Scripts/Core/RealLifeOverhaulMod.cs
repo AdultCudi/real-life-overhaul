@@ -47,36 +47,36 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.MouseLookId, "reallife_camera_mouselook_keys", Settings.MouseLook,
                     v => Settings.MouseLook = v)
                 .AddSlider(Settings.MouseSensitivityId, "reallife_camera_sensitivity", 1, 20, Settings.MouseSensitivity,
-                    v => Settings.MouseSensitivity = v)
+                    v => Settings.MouseSensitivity = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.EnterWithKeyId, "reallife_enter_with_keys", Settings.EnterWithKey,
                     v => Settings.EnterWithKey = v)
                 .AddToggle(Settings.CameraIndoorsId, "reallife_camera_indoors", Settings.CameraIndoors,
                     v => Settings.CameraIndoors = v)
                 .AddSlider(Settings.CameraPitchId, "reallife_camera_pitch", 5, 70, Settings.CameraPitch,
-                    v => Settings.CameraPitch = v)
+                    v => Settings.CameraPitch = v, Meta.SettingsTable.SliderValue)
                 .AddSlider(Settings.CameraDistanceId, "reallife_camera_distance", 3, 20, Settings.CameraDistance,
-                    v => Settings.CameraDistance = v)
+                    v => Settings.CameraDistance = v, Meta.SettingsTable.SliderValue)
                 .AddSlider(Settings.CameraFovId, "reallife_camera_fov", 30, 90, Settings.CameraFov,
-                    v => Settings.CameraFov = v)
+                    v => Settings.CameraFov = v, Meta.SettingsTable.SliderValue)
                 .AddSlider(Settings.CameraHeightId, "reallife_camera_height", 5, 25, Settings.CameraHeight,
-                    v => Settings.CameraHeight = v)
+                    v => Settings.CameraHeight = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.CarCameraId, "reallife_car_camera", Settings.CarCamera,
                     v => Settings.CarCamera = v)
                 .AddSlider(Settings.CarCameraDistanceId, "reallife_car_camera_distance", 4, 20, Settings.CarCameraDistance,
-                    v => Settings.CarCameraDistance = v)
+                    v => Settings.CarCameraDistance = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.CarTuningId, "reallife_car_tuning", Settings.CarTuning,
                     v => Settings.CarTuning = v)
                 .AddSlider(Settings.CarTopSpeedId, "reallife_car_top_speed", 70, 150, Settings.CarTopSpeed,
-                    v => Settings.CarTopSpeed = v)
+                    v => Settings.CarTopSpeed = v, Meta.SettingsTable.SliderPercent)
                 .AddSlider(Settings.CarAccelerationId, "reallife_car_acceleration", 70, 150, Settings.CarAcceleration,
-                    v => Settings.CarAcceleration = v)
+                    v => Settings.CarAcceleration = v, Meta.SettingsTable.SliderPercent)
                 .AddToggle(Settings.SmoothThrottleId, "reallife_car_smooth_throttle", Settings.SmoothThrottle,
                     v => Settings.SmoothThrottle = v)
                 .AddButton("reallife_car_measure", CarMeasure.Arm)
                 .AddToggle(Settings.SpeedometerId, "reallife_speedometer", Settings.Speedometer,
                     v => Settings.Speedometer = v)
                 .AddSlider(Settings.CameraFollowId, "reallife_camera_follow", 0, 10, Settings.CameraFollow,
-                    v => Settings.CameraFollow = v)
+                    v => Settings.CameraFollow = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.MapPlacesShownId, "reallife_map_places_shown", Settings.MapPlacesShown,
                     v => Settings.MapPlacesShown = v)
                 .AddSplitter()
@@ -84,13 +84,13 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.VisualsEnabledId, "reallife_visuals_enabled", Settings.VisualsEnabled,
                     v => Settings.VisualsEnabled = v)
                 .AddSlider(Settings.SaturationId, "reallife_visuals_saturation", -50, 50, Settings.Saturation,
-                    v => Settings.Saturation = v)
+                    v => Settings.Saturation = v, Meta.SettingsTable.SliderValue)
                 .AddSlider(Settings.ContrastId, "reallife_visuals_contrast", -50, 50, Settings.Contrast,
-                    v => Settings.Contrast = v)
+                    v => Settings.Contrast = v, Meta.SettingsTable.SliderValue)
                 .AddSlider(Settings.BloomId, "reallife_visuals_bloom", 0, 100, Settings.Bloom,
-                    v => Settings.Bloom = v)
+                    v => Settings.Bloom = v, Meta.SettingsTable.SliderPercent)
                 .AddSlider(Settings.DetailId, "reallife_visuals_detail", 100, 300, Settings.Detail,
-                    v => Settings.Detail = v)
+                    v => Settings.Detail = v, Meta.SettingsTable.SliderPercent)
                 .AddToggle(Settings.CharacterHighDetailId, "reallife_character_high_detail", Settings.CharacterHighDetail,
                     v => Settings.CharacterHighDetail = v)
                 .AddToggle(Settings.CharacterHairId, "reallife_character_hair", Settings.CharacterHair,
@@ -109,17 +109,17 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.LifeEventsId, "reallife_life_events", Settings.LifeEvents,
                     v => Settings.LifeEvents = v)
                 .AddSlider(Settings.EventFrequencyId, "reallife_life_frequency", 1, 20, Settings.EventFrequency,
-                    v => Settings.EventFrequency = v)
+                    v => Settings.EventFrequency = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.CrashConsequencesId, "reallife_crash_consequences", Settings.CrashConsequences,
                     v => Settings.CrashConsequences = v)
                 .AddToggle(Settings.TrafficAccidentsId, "reallife_traffic_accidents", Settings.TrafficAccidents,
                     v => Settings.TrafficAccidents = v)
                 .AddSlider(Settings.AccidentFrequencyId, "reallife_accident_frequency", 1, 10, Settings.AccidentFrequency,
-                    v => Settings.AccidentFrequency = v)
+                    v => Settings.AccidentFrequency = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.PoliceId, "reallife_police", Settings.Police,
                     v => Settings.Police = v)
                 .AddSlider(Settings.PolicePresenceId, "reallife_police_presence", 0, 10, Settings.PolicePresence,
-                    v => Settings.PolicePresence = v)
+                    v => Settings.PolicePresence = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.PolicePursuitId, "reallife_police_pursuit", Settings.PolicePursuit,
                     v => Settings.PolicePursuit = v)
                 .AddToggle(Settings.SirenId, "reallife_siren", Settings.Siren,
@@ -129,7 +129,7 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.OfficersOnPatrolId, "reallife_patrol_officers", Settings.OfficersOnPatrol,
                     v => Settings.OfficersOnPatrol = v)
                 .AddSlider(Settings.PatrolFrequencyId, "reallife_patrol_frequency", 1, 10, Settings.PatrolFrequency,
-                    v => Settings.PatrolFrequency = v)
+                    v => Settings.PatrolFrequency = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.RagdollsId, "reallife_ragdolls", Settings.Ragdolls,
                     v => Settings.Ragdolls = v)
                 .AddToggle(Settings.PlayerKnockdownId, "reallife_player_knockdown", Settings.PlayerKnockdown,
@@ -152,7 +152,7 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.StreetCrimeId, "reallife_crime_enabled", Settings.StreetCrime,
                     v => Settings.StreetCrime = v)
                 .AddSlider(Settings.CrimeFrequencyId, "reallife_crime_frequency_all", 1, 10, Settings.CrimeFrequency,
-                    v => Settings.CrimeFrequency = v)
+                    v => Settings.CrimeFrequency = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.CrimeAgainstPlayerId, "reallife_crime_against_player", Settings.CrimeAgainstPlayer,
                     v => Settings.CrimeAgainstPlayer = v)
                 .AddToggle(Settings.PlayerOffencesId, "reallife_player_offences", Settings.PlayerOffences,
@@ -168,7 +168,7 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.CityLifeId, "reallife_city_enabled", Settings.CityLife,
                     v => Settings.CityLife = v)
                 .AddSlider(Settings.CityDensityId, "reallife_city_density", 1, 10, Settings.CityDensity,
-                    v => Settings.CityDensity = v)
+                    v => Settings.CityDensity = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.CityWorkersId, "reallife_city_workers", Settings.CityWorkers,
                     v => Settings.CityWorkers = v)
                 .AddToggle(Settings.CityEverydayId, "reallife_city_everyday", Settings.CityEveryday,
@@ -186,7 +186,7 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.JobsId, "reallife_jobs_enabled", Settings.Jobs,
                     v => Settings.Jobs = v)
                 .AddSlider(Settings.JobPayId, "reallife_jobs_pay", 50, 200, Settings.JobPay,
-                    v => Settings.JobPay = v)
+                    v => Settings.JobPay = v, Meta.SettingsTable.SliderPercent)
                 .AddButton("reallife_test_job_flyers", () => JobDirector.Instance?.TestStart(JobCatalogue.Flyers))
                 .AddButton("reallife_test_job_courier", () => JobDirector.Instance?.TestStart(JobCatalogue.Courier))
                 .AddButton("reallife_test_job_taxi",() => JobDirector.Instance?.TestStart(JobCatalogue.Taxi))
@@ -209,7 +209,7 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.BusinessId, "reallife_business_enabled", Settings.Business,
                     v => Settings.Business = v)
                 .AddSlider(Settings.BusinessFrequencyId, "reallife_business_frequency", 1, 10, Settings.BusinessFrequency,
-                    v => Settings.BusinessFrequency = v)
+                    v => Settings.BusinessFrequency = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.BusinessEasyId, "reallife_business_easy", Settings.BusinessEasy,
                     v => Settings.BusinessEasy = v)
                 .AddToggle(Settings.BusinessRivalsId, "reallife_business_rivals", Settings.BusinessRivals,
@@ -345,13 +345,13 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.AmbientSoundId, "reallife_leisure_opt_ambient", Settings.AmbientSound,
                     v => Settings.AmbientSound = v)
                 .AddSlider(Settings.AmbientBirdsId, "reallife_leisure_opt_ambient_birds", 0, 100, Settings.AmbientBirds,
-                    v => Settings.AmbientBirds = v)
+                    v => Settings.AmbientBirds = v, Meta.SettingsTable.SliderPercent)
                 .AddSlider(Settings.AmbientNightId, "reallife_leisure_opt_ambient_night", 0, 100, Settings.AmbientNight,
-                    v => Settings.AmbientNight = v)
+                    v => Settings.AmbientNight = v, Meta.SettingsTable.SliderPercent)
                 .AddSlider(Settings.AmbientCityId, "reallife_leisure_opt_ambient_city", 0, 100, Settings.AmbientCity,
-                    v => Settings.AmbientCity = v)
+                    v => Settings.AmbientCity = v, Meta.SettingsTable.SliderPercent)
                 .AddSlider(Settings.AmbientCrowdId, "reallife_leisure_opt_ambient_crowd", 0, 100, Settings.AmbientCrowd,
-                    v => Settings.AmbientCrowd = v)
+                    v => Settings.AmbientCrowd = v, Meta.SettingsTable.SliderPercent)
                 .AddToggle(Settings.RadioHudId, "reallife_leisure_opt_radio_hud", Settings.RadioHud,
                     v => Settings.RadioHud = v)
                 .AddToggle(Settings.PhotoModeId, "reallife_leisure_opt_photo", Settings.PhotoMode,
@@ -373,15 +373,15 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.CityFiresId, "reallife_events_fires", Settings.CityFires,
                     v => Settings.CityFires = v)
                 .AddSlider(Settings.FireFrequencyId, "reallife_events_fire_frequency", 1, 10, Settings.FireFrequency,
-                    v => Settings.FireFrequency = v)
+                    v => Settings.FireFrequency = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.WeatherMattersId, "reallife_events_weather", Settings.WeatherMatters,
                     v => Settings.WeatherMatters = v)
                 .AddSlider(Settings.WeatherFrequencyId, "reallife_events_weather_frequency", 1, 10, Settings.WeatherFrequency,
-                    v => Settings.WeatherFrequency = v)
+                    v => Settings.WeatherFrequency = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.StreetEventsId, "reallife_events_street", Settings.StreetEvents,
                     v => Settings.StreetEvents = v)
                 .AddSlider(Settings.StreetEventFrequencyId, "reallife_events_street_frequency", 1, 10, Settings.StreetEventFrequency,
-                    v => Settings.StreetEventFrequency = v)
+                    v => Settings.StreetEventFrequency = v, Meta.SettingsTable.SliderValue)
                 .AddButton("reallife_events_test_fire_car", () => Events.EventDirector.Instance?.TestFire(Events.FireKind.Car))
                 .AddButton("reallife_events_test_fire_bin", () => Events.EventDirector.Instance?.TestFire(Events.FireKind.Bin))
                 .AddButton("reallife_events_test_fire_building", () => Events.EventDirector.Instance?.TestFire(Events.FireKind.Building))
@@ -414,7 +414,7 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.SocialTextsId, "reallife_social_texts", Settings.SocialTexts,
                     v => Settings.SocialTexts = v)
                 .AddSlider(Settings.SocialTextsMaxId, "reallife_social_texts_max", 1, 6, Settings.SocialTextsMax,
-                    v => Settings.SocialTextsMax = v)
+                    v => Settings.SocialTextsMax = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.SocialNewspaperId, "reallife_social_newspaper", Settings.SocialNewspaper,
                     v => Settings.SocialNewspaper = v)
                 .AddButton("reallife_social_test_meet", () => SocialDirector.Instance?.TestMeet())
@@ -539,7 +539,7 @@ namespace RealLifeOverhaul
                     new[] { "reallife_family_interest_anyone", "reallife_family_interest_women", "reallife_family_interest_men" }, Settings.FamilyInterest,
                     v => Settings.FamilyInterest = v)
                 .AddSlider(Settings.FamilyYearWeeksId, "reallife_family_year_weeks", 1, 12, Settings.FamilyYearWeeks,
-                    v => Settings.FamilyYearWeeks = v)
+                    v => Settings.FamilyYearWeeks = v, Meta.SettingsTable.SliderValue)
                 .AddButton("reallife_family_test_move_in", () => Family.FamilyDirector.Instance?.TestMoveIn())
                 .AddButton("reallife_family_test_propose", () => Family.FamilyDirector.Instance?.TestPropose())
                 .AddButton("reallife_family_test_plan", () => Family.FamilyDirector.Instance?.TestPlanWedding())

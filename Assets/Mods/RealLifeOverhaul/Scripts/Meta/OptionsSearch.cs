@@ -316,6 +316,7 @@ namespace RealLifeOverhaul.Meta
                 found += Filter(group);
             }
             Show(section.Header, found > 0);
+            CaptionState(section, CaptionFound);
             Label(section, section.Found);
             return found;
         }

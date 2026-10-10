@@ -128,6 +128,22 @@ namespace RealLifeOverhaul
             return All[(int)action].LabelKey;
         }
 
+        /// <summary>Is this the en.json key of one of the actions: the label of a row that changes a key.</summary>
+        public static bool IsActionLabel(string key)
+        {
+            if (!string.IsNullOrEmpty(key))
+            {
+                for (int i = 0; i < All.Length; i++)
+                {
+                    if (All[i].LabelKey == key)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         /// <summary>The option id an action's binding is saved under ("key_interact"), for the settings file.</summary>
         public static string PrefsId(KeyAction action)
         {

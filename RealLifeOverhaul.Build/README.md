@@ -2573,6 +2573,7 @@ Meta/
   Presets         Relaxed / Standard / Realistic / Hardcore / Custom, reset everything, the settings file
   OptionsLayout   puts the finished options page in order: sections, test tools, the buttons at the top; the set-up check
   OptionsSearch   the other half of that class: the search box under the page's first header, and the words features are also found by
+  OptionsCaptions a third part of it: the word on each button of the page ("Open", "Close", "Run", "Apply")
   MetaUi          the mod's own canvas (above the menus, off unless a panel is open) and its controls; messages and confirmations
   Guide           the in-game guide (topics, facts, search) and its phone contact
   Welcome         the first-run / after-update panel
@@ -2630,10 +2631,26 @@ asked for (`m:<mod>:ui_open_tests_<feature id>`). A feature that is not register
 "Real Life Overhaul - " in front. "Open or close every section" leaves the groups as they are.
 
 A section's button says what is in it after the name, through the label's `Suffix` (written when the page is drawn
-and when it changes, never per frame): "Garage   (9 options, on)   [+]". "on"/"off" is there only for a section
+and when it changes, never per frame): "Garage   (9 options, on)". "on"/"off" is there only for a section
 with a row that switches the whole feature, which is the toggle whose label key ends in `_enabled`; the game calls
 a toggle's callback with the saved value when it draws the row and on every click, and that is where the button
 hears of it.
+
+The game's button row has two texts: the label beside the button, which `ModOptionsButtonControl.Initialize` fills
+from the row, and one on the button itself, which it never fills, so the button shows what its template was saved
+with ("Your text here"). `OptionsCaptions.cs` writes that second text. A row that draws nothing stands after the
+mod's last row and goes once through the rows of this drawing: a section's button says "Open" or "Close" (and
+"Found" while a search is on, when clicking it does nothing), "Open or close every section" says "Open all" or
+"Close all", a row that changes a key says "Change", and every other button says "Run" unless the table
+`CaptionByLabel` names another word for its label key ("Apply" for a preset, "Reset", "Export", "Import", "Check").
+The text is the first `TMP_Text` under the row's `Button` that is not the label: if it has a
+`TextLocalizationComponent` its `Key` is set, and if not the translated word is written and written again when the
+language changes. If no such text is found the buttons are left as the game draws them and one line is logged.
+
+A slider shows its number only if it was given a `valueLabelKey` (`ModOptionsSliderControl.Initialize` hides the
+value otherwise; the text gets the number as `{value}`). Every `AddSlider` passes `SettingsTable.SliderValue`
+("{value}") or `SliderPercent` ("{value}%"), and a slider re-made without one gets `SliderValue`. If the page cannot
+be put in order it is registered as built, with the same numbers and words (`OptionsLayout.AsBuilt`).
 
 ### Search
 
@@ -2735,7 +2752,7 @@ writes a report. It refuses in a vehicle and during a hospital trip, custody, sl
 - Guide: options page "Open the Guide"; the phone contact "Real Life Overhaul Guide"; "Check the mod's set-up" renders every page and lists unfilled `{facts}` and missing texts.
 - Welcome: "Show the welcome panel again"; or delete `m:<mod>:meta_seen_version` from PlayerPrefs.
 - Presets: the four buttons, then the guide's Presets page (the "Now" column) and the header "Preset in use".
-- Options page: open and close sections; "Show test tools" off hides the last section. Each section's button ends in its count ("(5 options, on)"); switch a feature's first toggle and the "on" becomes "off" at once. Open "Test tools": one closed group per feature; open one, close and reopen the page: it is still open.
+- Options page: open and close sections; "Show test tools" off hides the last section. Every button has a word on it ("Open", "Close", "Run", "Apply"), never "Your text here", and every slider its number beside it. Each section's label ends in its count ("(5 options, on)"); switch a feature's first toggle and the "on" becomes "off" at once. Open "Test tools": one closed group per feature; open one, close and reopen the page: it is still open.
 - Search (main menu and in a city, both): with "Test tools" closed, click the box under "Real Life Overhaul: Start here" and type `bus`: the page jumps to the top, only the transport section and its group of tests are left, the line under the box counts them; type on to `bus stop`: the rows that say so are left, and pressing a button among them works. `stop bus` (two words, any order) finds them too. `zzzz` says "Nothing found for 'zzzz'". Try `police`, `fps`, `bike`. A toggle and a slider among the results still work. While typing `v`, `f`, `b`, `x`, the camera, interaction and garage keys must do nothing, and nor must the game's own (Space, M, Tab). Empty the box with the x: every section is as it was before. In the city, Esc while typing empties the box and leaves the page open; on the main menu it also closes the page. Switch "Show test tools" off and search `test`: the tests are still found. `Player.log` must have no "Meta: the search box" line.
 - Save tools: the three buttons on a save you do not need; `Player.log` lines start `Meta:`; the report is also in `<persistentDataPath>/RealLifeOverhaul/`.
 - Diagnostics: switch "Developer diagnostics" off: F8/F9 do nothing and only warnings and errors of the features reach the log.

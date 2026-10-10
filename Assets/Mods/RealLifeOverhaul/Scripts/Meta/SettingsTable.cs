@@ -73,6 +73,10 @@ namespace RealLifeOverhaul.Meta
     /// </summary>
     public static class SettingsTable
     {
+        /// <summary>What a slider shows beside itself: the number, or the number as a per cent. The game shows nothing for a slider without one.</summary>
+        public const string SliderValue = "reallife_opt_value";
+        public const string SliderPercent = "reallife_opt_value_percent";
+
         private static readonly Dictionary<string, OptionInfo> ById = new Dictionary<string, OptionInfo>();
         private static readonly List<OptionInfo> Ordered = new List<OptionInfo>();
         private static bool _captured;
@@ -225,7 +229,7 @@ namespace RealLifeOverhaul.Meta
             if (option is SliderOption slider)
             {
                 return new SliderOption(slider.Id, slider.Label, slider.Min, slider.Max, Math.Max(slider.Min, Math.Min(slider.Max, info.Default)),
-                    slider.OnValueChanged, slider.ValueLabelKey);
+                    slider.OnValueChanged, string.IsNullOrEmpty(slider.ValueLabelKey) ? SliderValue : slider.ValueLabelKey);
             }
             if (option is DropdownOption dropdown)
             {
