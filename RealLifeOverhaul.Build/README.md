@@ -2810,7 +2810,7 @@ back every value it changed.
 | Grants | 150 a week per business (three at most) | licence fee 60 a week per business (three at most) |
 | Rent | +6 % on rent paid; +4 % on rent collected | 6 % of rent paid returned; -4 % on rent collected |
 | Parking | street parking x1.5, each ticket +60 | x0.6, each ticket -40 |
-| Transit | subway +1 a ride; buses x1.3 as often, fares x1.25 (Transport bridge) | subway -1; buses x0.75, fares x0.75 |
+| Transit | subway +1 a ride; buses x1.3 as often (bus fares do not change) | subway -1; buses x0.75 as often |
 | Cleaning | sweepers x2.5, mood +3, levy +30 | sweepers x0.3, mood -3, 25 returned |
 | Night life | licensed until 04:00 (bridge), crime x1.1 | until midnight (bridge), crime x0.92 |
 | Permits | sites x1.35 and until 19:00; complaints only noted | sites x0.75, 08:00 to 16:00; one complaint brings quiet hours |
@@ -2859,7 +2859,7 @@ where traffic has another way to go; it is opened on every path out.
 ```csharp
 // read at any time (1, or the stock value, when civic life is off):
 CivicPolicy.FineScale  CivicPolicy.EnforcementScale  CivicPolicy.PoliceScale  CivicPolicy.CrimeScale
-CivicPolicy.AccidentScale  CivicPolicy.FareScale  CivicPolicy.ServiceScale  CivicPolicy.EventScale
+CivicPolicy.AccidentScale  CivicPolicy.ServiceScale  CivicPolicy.EventScale
 CivicPolicy.ClosingHour  CivicPolicy.SiteSpeed  CivicPolicy.Position(Lever.X)  CivicPolicy.Changed += ...
 
 // set once at start-up by the feature that has the answer:
@@ -2916,7 +2916,7 @@ its caller: a fault is logged once per place (`Wiring.Fault`) and the default an
 | file | what it connects |
 |---|---|
 | `Wiring.cs` | `Connect` / `Disconnect`, the list of pairings, `Fault` |
-| `Standing.cs` | `Wiring.Standing`: the one answer to "has the player a record" (`HasRecord`, `Arrested(days)`, `CleanFor(days)`, `Convictions`, `Charged`) and to what the city thinks of them (`Public`, `PublicSigned`), from Law's police record and Justice's convictions together |
+| `Standing.cs` | `Wiring.Standing`: the one answer to "has the player a record" (`HasRecord`, `Arrested(days)`, `Convictions`, `Charged`) and to what the city thinks of them (`Public`, `PublicSigned`), from Law's police record and Justice's convictions together |
 | `LawJustice.cs` | `Wiring.Arrests`: Law's cell and Justice's case for the same arrest; `Justice.Bridges.Law` |
 | `LicenceLinks.cs` | `Licences.Law`, `Justice.Bridges.Licences`, and what Licences reports to the courts instead of fining |
 | `Scenes.cs` | `Wiring.Scenes`: the one question every street scene asks before it starts; `PlayerHeld` for panels |
@@ -2999,8 +2999,7 @@ has cleared: a roadworks crew would have to close one of those very points in th
 | `Justice.Bridges.Licences` | `Wiring.LicenceLinks` | the licence's own suspension date |
 | `Justice.Bridges.Social` | `Wiring.LifeLinks` | the closest person at "close friend" or above; standing by the player is remembered. The Friend contact with the social life off |
 | `Justice.Bridges.Transport` | nobody | Transport keeps no pound for cars; the default tow and storage charge stand |
-| `Licences.Law` | `Wiring.LicenceLinks` | `CleanRecord`: `Standing.CleanFor` and Licences' own memory; `Custody`: the courts' custody, else the old time skip; `Precinct`: Law's door; `Record`: Licences' own memory (Law's record has no line for it) |
-| `Licences.Listen` | nobody | nothing in the mod reacts to points yet (insurance could: `CarRules.Premium`) |
+| `Licences.Law` | `Wiring.LicenceLinks` | `Custody`: the courts' custody, else the old time skip; `Record`: nothing (Law's record has no line for a licence offence) |
 | `CivicBridges.CriminalRecord`, `Reputation` | `Wiring.CivicLinks` | `Standing.HasRecord`, `Standing.PublicSigned` |
 | `CivicBridges.LargeScene`, `WeatherStopsWork` | `Wiring.CivicLinks` | `Scenes.AnyBut(Rally)`; the game's rain or a thunderstorm |
 | `CivicBridges.News` | `Wiring.CivicLinks` | the headline at once, the story in tomorrow's paper (`Wiring.Paper.Print`) |
@@ -4028,10 +4027,9 @@ Signalling and stop signs are not modelled (the road data has traffic lights onl
 
 ### Bridges and hooks
 
-- `Licences.Law` (`ILicenceLawBridge`): `Record(offenceId, arrested)`, `Custody(hours)`. `DefaultLaw` remembers
-  the last arrest in `LicenceState` and uses `PoliceAttention.TakeIntoCustody`. A law feature sets
+- `Licences.Law` (`ILicenceLawBridge`): `Record(offenceId, arrested)`, `Custody(hours)`. `DefaultLaw` records
+  nothing and uses `PoliceAttention.TakeIntoCustody`. A law feature sets
   `Licences.Law = itsBridge`.
-- `Licences.Listen(ILicenceListener)`: `PointsAdded`, `DrivingChanged` (insurance, employers).
 - **For Jobs (not applied, Jobs is not ours to edit):** in `JobDirector.Available`, for the ride-hail job,
   `if (!Licences.Driving.Has(LicenceClass.Taxi)) { reasonKey = "reallife_job_no_taxi_licence"; return false; }`
   and for any driving job `Licences.Driving.MayDrive(car)`.

@@ -94,12 +94,11 @@ namespace RealLifeOverhaul
             /// <summary>Licences asks the law.</summary>
             private sealed class LawForLicences : ILicenceLawBridge
             {
-                // Licences' own short memory is kept as well: it knows of arrests it made that are on nobody else's record.
-                private readonly DefaultLaw _own = new DefaultLaw();
+                private readonly DefaultLaw _own = new DefaultLaw();   // the old roadside time skip, for when the courts are off
 
                 public void Record(string offenceId, bool arrested)
                 {
-                    _own.Record(offenceId, arrested);
+                    // Law's record has no line for a licence offence (it is the police's own, of tickets and cells): nothing to add here.
                 }
 
                 public bool Custody(int hours)
@@ -139,7 +138,6 @@ namespace RealLifeOverhaul
                     if (_court > LicenceState.SuspendedUntil)
                     {
                         LicenceState.SuspendedUntil = _court;
-                        Licences.TellDriving(LicenceClass.Car);
                     }
                 }
 
@@ -167,7 +165,6 @@ namespace RealLifeOverhaul
                         }
                         _court = 0;
                     }
-                    Licences.TellDriving(LicenceClass.Car);
                     return true;
                 }
 

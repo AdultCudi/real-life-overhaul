@@ -139,7 +139,6 @@ namespace RealLifeOverhaul
         public static int LastCaughtDay;         // ...the last of them on this day
         public static int EvadedChecks;          // roadside checks driven on from, not yet answered for
         public static int LastCheckDay;          // the last roadside check
-        public static int LastArrestDay;         // the last arrest or violent offence this feature knows of (what DefaultLaw calls a record)
         public static readonly int[] TheoryPassedDay = new int[2];      // by class (car, commercial)
         public static readonly int[] RetestDay = new int[2];            // the first day a failed practical may be sat again
         public static readonly bool[] RetestDue = new bool[2];          // the last practical was failed: the retest fee applies
@@ -165,7 +164,6 @@ namespace RealLifeOverhaul
             LastCaughtDay = 0;
             EvadedChecks = 0;
             LastCheckDay = 0;
-            LastArrestDay = 0;
             TheoryRetryDay = 0;
             TestsPassed = 0;
             TestsFailed = 0;
@@ -330,7 +328,7 @@ namespace RealLifeOverhaul
                     case "first": FirstDay = Int(v, 0); break;
                     case "susp": SuspendedUntil = Int(v, 0); break;
                     case "caught": Caught = Int(v, 0); LastCaughtDay = Int(v, 1); break;
-                    case "check": EvadedChecks = Int(v, 0); LastCheckDay = Int(v, 1); LastArrestDay = Int(v, 2); break;
+                    case "check": EvadedChecks = Int(v, 0); LastCheckDay = Int(v, 1); break;
                     case "theory": TheoryPassedDay[0] = Int(v, 0); TheoryPassedDay[1] = Int(v, 1); TheoryRetryDay = Int(v, 2); break;
                     case "retest": RetestDay[0] = Int(v, 0); RetestDay[1] = Int(v, 1); RetestDue[0] = Int(v, 2) != 0; RetestDue[1] = Int(v, 3) != 0; break;
                     case "lessons": Lessons[0] = Int(v, 0); Lessons[1] = Int(v, 1); break;
@@ -365,7 +363,7 @@ namespace RealLifeOverhaul
             Pair(text, "first", FirstDay);
             Pair(text, "susp", SuspendedUntil);
             Pair(text, "caught", Caught, LastCaughtDay);
-            Pair(text, "check", EvadedChecks, LastCheckDay, LastArrestDay);
+            Pair(text, "check", EvadedChecks, LastCheckDay);
             Pair(text, "theory", TheoryPassedDay[0], TheoryPassedDay[1], TheoryRetryDay);
             Pair(text, "retest", RetestDay[0], RetestDay[1], RetestDue[0] ? 1 : 0, RetestDue[1] ? 1 : 0);
             Pair(text, "lessons", Lessons[0], Lessons[1]);

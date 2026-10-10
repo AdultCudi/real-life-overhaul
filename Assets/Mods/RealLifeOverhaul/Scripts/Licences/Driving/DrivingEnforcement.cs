@@ -193,13 +193,11 @@ namespace RealLifeOverhaul
             bool suspended = LicenceState.AddPoints(code, day);
             int total = LicenceState.PointsOn(day);
             Licences.Toast(NotificationType.Warning, "reallife_lic_points_added", "points", LicenceLaw.Points(code).ToString(), "total", total.ToString(), 9f);
-            Licences.TellPoints(code, total);
             _logger?.Info("Licences: " + LicenceLaw.Points(code) + " points for " + code + "; " + total + " on the record.");
             if (suspended)
             {
                 Licences.Toast(NotificationType.Error, "reallife_lic_suspended", "days", LicenceLaw.SuspensionDays.ToString(), 12f);
                 ModState.AddModifier(ModState.MoodDownBig);
-                Licences.TellDriving(LicenceClass.Car);
                 _logger?.Info("Licences: twelve points: suspended until day " + LicenceState.SuspendedUntil + ".");
             }
         }
@@ -359,10 +357,6 @@ namespace RealLifeOverhaul
                     if (!Licences.Law.Custody(LicenceLaw.ArrestHours))
                     {
                         _logger?.Info("Licences: the arrest could not be made into custody just now; it stays at the fine.");
-                    }
-                    else
-                    {
-                        LicenceState.LastArrestDay = TimeHelper.CurrentDay;
                     }
                 }
             }

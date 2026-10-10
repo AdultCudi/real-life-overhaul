@@ -77,16 +77,6 @@ namespace RealLifeOverhaul
                 return false;
             }
 
-            /// <summary>No arrest, no conviction and no open case in the last so many days: what a licensing unit or an employer means by clean.</summary>
-            public static bool CleanFor(int days)
-            {
-                if (Arrested(days) || Charged)
-                {
-                    return false;
-                }
-                return !JusticeState.Loaded || JusticeState.LastConvictionDay <= 0 || TimeHelper.CurrentDay - JusticeState.LastConvictionDay >= days;
-            }
-
             /// <summary>What the city thinks of the player, 0 (notorious) to 100 (spotless); 55 for a newcomer.</summary>
             public static int Public => Reputation.Public;
 

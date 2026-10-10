@@ -473,7 +473,6 @@ namespace RealLifeOverhaul
             if (LicenceState.NewDay(day))
             {
                 Licences.Toast(NotificationType.Success, "reallife_lic_suspension_over", 10f);
-                Licences.TellDriving(LicenceClass.Car);
             }
             if (!Settings.DrivingLicence)
             {
@@ -495,7 +494,6 @@ namespace RealLifeOverhaul
                 else if (left == -1)
                 {
                     Licences.Toast(NotificationType.Error, "reallife_lic_expired", "class", Licences.ClassName(kind), "days", LicenceLaw.LapsedAfterDays.ToString(), 12f);
-                    Licences.TellDriving(kind);
                 }
             }
         }
@@ -551,7 +549,6 @@ namespace RealLifeOverhaul
                         if (LicenceState.Renewable((LicenceClass)i, day))
                         {
                             LicenceState.Renew((LicenceClass)i, day);
-                            Licences.TellDriving((LicenceClass)i);
                         }
                     }
                     Logger?.Info("Licences: renewed for " + fee + ".");
@@ -559,13 +556,11 @@ namespace RealLifeOverhaul
 
                 case SchoolService.Taxi:
                     LicenceState.Grant(LicenceClass.Taxi, day);
-                    Licences.TellDriving(LicenceClass.Taxi);
                     Logger?.Info("Licences: taxi endorsement issued.");
                     return "reallife_school_done_taxi";
 
                 case SchoolService.Motorcycle:
                     LicenceState.Grant(LicenceClass.Motorcycle, day);   // the ride assessment is recorded at the desk: the school has no motorbike to lend
-                    Licences.TellDriving(LicenceClass.Motorcycle);
                     ModState.AddModifier(ModState.MoodUp);
                     Logger?.Info("Licences: motorcycle licence issued after the desk assessment.");
                     return "reallife_school_done_motorcycle";
@@ -696,7 +691,6 @@ namespace RealLifeOverhaul
                 LicenceState.Grant(kind, day);
                 Licences.Toast(NotificationType.Success, "reallife_lic_test_granted", "class", Licences.ClassName(kind), 6f);
             }
-            Licences.TellDriving(kind);
         }
 
         /// <summary>Test button: the written test, here and now, with nothing charged. A pass counts.</summary>

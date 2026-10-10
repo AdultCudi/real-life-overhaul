@@ -22,13 +22,6 @@ namespace RealLifeOverhaul
         bool Custody(int hours);
     }
 
-    /// <summary>Told when something about the player's licences changes: for insurance, employers, anything that cares. All optional.</summary>
-    public interface ILicenceListener
-    {
-        void PointsAdded(PointCode code, int total);
-        void DrivingChanged(LicenceClass kind, LicenceStanding standing);
-    }
-
     /// <summary>The offence ids this feature reports to a law bridge.</summary>
     public static class LicenceOffences
     {
@@ -36,15 +29,11 @@ namespace RealLifeOverhaul
         public const string Suspended = "driving_suspended";
     }
 
-    /// <summary>Today's behaviour without a law feature: the mod's own short memory of arrests, and its time-skip custody.</summary>
+    /// <summary>Today's behaviour without a law feature: nothing is recorded, and custody is the mod's own time skip.</summary>
     public sealed class DefaultLaw : ILicenceLawBridge
     {
         public void Record(string offenceId, bool arrested)
         {
-            if (arrested)
-            {
-                LicenceState.LastArrestDay = TimeHelper.CurrentDay;
-            }
         }
 
         public bool Custody(int hours)
@@ -62,7 +51,6 @@ namespace RealLifeOverhaul
     {
         private const string FeeCategory = "ba:transactioncategory_licensingfees";
 
-        private static readonly List<ILicenceListener> Listeners = new List<ILicenceListener>(2);
         private static readonly DefaultLaw Fallback = new DefaultLaw();
         private static ILicenceLawBridge _law;
 
@@ -73,19 +61,6 @@ namespace RealLifeOverhaul
         {
             get => _law ?? Fallback;
             set => _law = value;
-        }
-
-        public static void Listen(ILicenceListener listener)
-        {
-            if (listener != null && !Listeners.Contains(listener))
-            {
-                Listeners.Add(listener);
-            }
-        }
-
-        public static void Unlisten(ILicenceListener listener)
-        {
-            Listeners.Remove(listener);
         }
 
         public static class Driving
@@ -166,39 +141,6 @@ namespace RealLifeOverhaul
             public static bool MayDrive(VehicleController vehicle)
             {
                 return !ClassOf(vehicle, out LicenceClass kind) || Has(kind);
-            }
-        }
-
-        // ---------------------------------------------------------------- telling whoever listens
-
-        internal static void TellPoints(PointCode code, int total)
-        {
-            for (int i = 0; i < Listeners.Count; i++)
-            {
-                try
-                {
-                    Listeners[i].PointsAdded(code, total);
-                }
-                catch (Exception e)
-                {
-                    Logger?.Error(e);
-                }
-            }
-        }
-
-        internal static void TellDriving(LicenceClass kind)
-        {
-            LicenceStanding standing = Driving.Standing(kind);
-            for (int i = 0; i < Listeners.Count; i++)
-            {
-                try
-                {
-                    Listeners[i].DrivingChanged(kind, standing);
-                }
-                catch (Exception e)
-                {
-                    Logger?.Error(e);
-                }
             }
         }
 
