@@ -156,12 +156,13 @@ namespace RealLifeOverhaul.Planner
         private void Install()
         {
             var view = new PlannerApp(this);
+            PlannerText.WantIcons();   // named before the one look through the game's pictures
             bool tryAgain;
             _app = PhoneApp.Install(new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_planner_app",
-                Icon = like => AppIconPainter.Paint(like, GameSprites.Get("Icon-Calendar"), new Color32(255, 122, 138, 255), new Color32(226, 61, 108, 255), 0.42f, "AppIcon-Planner"),
+                Icon = like => AppIconPainter.Paint(like, PlannerText.First(PlannerText.AppGlyphs), new Color32(255, 122, 138, 255), new Color32(226, 61, 108, 255), 0.42f, "AppIcon-Planner"),
                 Build = view.Build,
                 Opened = view.Opened,
                 Closed = view.Closed

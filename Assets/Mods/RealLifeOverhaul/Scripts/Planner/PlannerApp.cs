@@ -516,7 +516,7 @@ namespace RealLifeOverhaul.Planner
             else
             {
                 name = !string.IsNullOrEmpty(e.Where) ? e.Where : e.Title;
-                Sprite icon = PlannerText.Icon(e.Category) ?? GameSprites.Get("Icon-Calendar");
+                Sprite icon = PlannerText.Icon(e.Category) ?? GameSprites.Get("Icon-SetDestination");
                 GuidersManager.SetGuiderTarget(new Vector3(e.X, e.Y, e.Z), name, icon, GuidersManager.GetGuiderColor(DirectionGuiderType.Destination), DirectionGuiderType.Destination);
             }
             Notifications.Show(NotificationType.Success, "notification_destination_set", new Dictionary<string, string> { { "address", name } });

@@ -4157,3 +4157,66 @@ What remains is `LicenceDirector.ForgetFirearms`, which once, on loading an old 
 (`reallife:firearms` in `modData`) and the two phone contacts `reallife-firearms-unit` and `reallife-gunshop`,
 and the two locale keys of those names that it needs; plus the three `reallife_transaction_gun*` labels, kept so
 that old bank entries still have a name.
+
+## The Planner (`Scripts/Planner`) and the game's own interface (`Scripts/Core/GameUi`)
+
+The Planner is an app on the game's phone: what the player has to do today and in the next seven days, from the
+mod's features and from the game, with reminders and the player's own notes. Every object it shows is a copy of one
+of the game's, made while the game runs. How the game's phone, tables, dialogs and click actions are built, which
+objects are copied, and what is proven and what inferred is in [docs/game-ui.md](docs/game-ui.md): read it before
+adding anything to the interface. **New interface is built this way, not on a canvas of the mod's own.**
+
+```
+Core/GameUi/
+  UiClone         copies of live game objects made asleep (no script of the game's wakes in a copy), the game's
+                  scripts taken off, texts written through the game's own component; one log line per fallback
+  PhoneApps       PhoneApp.Install: a button on the HUD phone, a button in the full menu's bar and a panel among the
+                  game's app panels; opening as the game opens its own; the badge
+  PhoneGridPager  pages of eight on the HUD phone's home screen (the game's eight apps fill it); steps aside for
+                  good when another mod pages the grid
+  AppShell        the frame of an app, copied from the game's MyEmployees: headline, white box, two tabs, table
+  InfoBox         the white box as a page: title, lines, headlines, switches, previous/next selectors, buttons
+  GameSprites     the game's pictures by name, found in memory
+  AppIconPainter  an app icon in the game's manner, painted from one of the game's own
+Planner/
+  PlannerModel    game-free: the clock as the game counts it, entries, order, clashes, states, "next", the badge
+  PlannerStore    game-free: notes, reminders and settings; the save's three lines ("reallife:planner",
+                  "reallife:planner_notes", "reallife:planner_reminders")
+  PlannerText     IPlannerSource; words, days and times as the game writes them; icons by category
+  PlannerTable    the table (the game's BaTable) and its row
+  PlannerApp      the two tabs and the white box's four pages: the day at a glance, an entry, a note, settings
+  PlannerDirector installs the app, loads and saves, asks the sources, sends reminders on the game's hour event
+  Sources/        one class per source: notes, samples (test), the game's tax bill, careers, justice, custody,
+                  licences, family, social plans, hotel checkout, city events, elections, business deadlines, sick note
+```
+
+- **Cost.** The director's `Update` is a timer comparison. Once a second it holds its two event handlers and, until
+  the app is on the phone, tries to put it there. Everything else happens on `GlobalEvents.onNewHour` (reminders and
+  the badge: integers only, no text unless a reminder is due), on the save event, and when the app is opened. The
+  app's panel is inactive while closed, and the game is paused while it is open.
+- **Sources.** `IPlannerSource`: an id (kept in the save with a reminder, never changed), `Available`, and
+  `Collect(fromDay, toDay, list)`. A source reads its feature's state and changes nothing. A feature that is off or
+  not loaded is not asked. A source that throws is logged once and left out for the session. To add one: a class in
+  `Sources/` and one entry in `PlannerDirector._sources`.
+- **Entries.** Who an entry is (`EntryId`: source, two numbers) must be the same every time it is collected, or its
+  reminder is dropped as "gone". Texts are filled only when the list asks (`WantText`).
+- **Reminders.** One per entry: at the time, 1 hour before, or 18:00 the day before. The clock is looked at once a
+  game hour, so a reminder goes out at the start of the hour it falls in (never late in ordinary play, at most 59
+  minutes early). It is taken out of the list before it is shown, checked against its source (gone, done, missed or
+  over: not sent; moved later: moved with it), and one that fell inside a time skip or before a load goes out once,
+  as a warning marked late.
+- **The badge** counts what begins within two hours and is still to do. It goes when the app is opened and comes
+  back only when what is due has changed (`PlannerLogic.DueStamp`).
+- **If the game changes.** Every object the app is made of is looked up by name; if one is missing, one line says
+  which, the app is left off the phone (or the part is left out: a switch, a selector, an icon), and reminders
+  already set still go out. Nothing is thrown into the game's interface.
+- **Checks.** `RealLifeOverhaul.Build/PlannerCheck` compiles `PlannerModel.cs` and `PlannerStore.cs` as they are and
+  checks the calendar, order, clashes, states, the badge, reminders across a save and a time skip, round trips and
+  damaged saves: `dotnet build RealLifeOverhaul.Build/PlannerCheck -c Release`, then
+  `dotnet RealLifeOverhaul.Build/PlannerCheck/bin/Release/net10.0/PlannerCheck.dll` ends with `ALL CHECKS PASSED`.
+- **Not run in the game.** The build machine cannot start the game: the first play session should follow the list
+  in the pull request, with "Developer diagnostics" on.
+
+Cooking at home is offered the same native way: "Click to cook" on a cooker is one of the game's own click actions
+(`Home/HomeCookOffer`, and section 7 of game-ui.md). The key prompt remains only in a home that has a fridge and no
+cooker.

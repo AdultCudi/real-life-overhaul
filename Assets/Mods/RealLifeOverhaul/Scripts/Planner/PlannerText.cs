@@ -26,12 +26,19 @@ namespace RealLifeOverhaul.Planner
     /// <summary>The Planner's words: every text is a key of en.json or one of the game's own keys; times and days are written as the game writes them.</summary>
     public static class PlannerText
     {
-        // The game's own icons, by category (GameUi.GameSprites finds them in memory; a missing one leaves the row without a picture).
-        private static readonly string[] IconNames =
+        // The game's own icons, by category: the one that fits best, then one that the phone's own scene uses and
+        // that is therefore certainly in memory (docs/game-ui.md lists which are). GameUi.GameSprites finds them by
+        // name; if neither is there the row has no picture.
+        private static readonly string[][] IconNames =
         {
-            "Icon-PersonEngineer", "Icon-Security", "Icon-Traffic", "Icon-People", "Icon-Chat", "Icon-Route",
-            "Icon-Neighborhood", "Icon-Shop", "Icon-Condition", "Icon-Money", "Icon-Edit"
+            new[] { "Icon-PersonEngineer", "Icon-PersonManage" }, new[] { "Icon-Security" }, new[] { "Icon-Traffic", "Icon-Parking" },
+            new[] { "Icon-People", "Icon-PersonManage" }, new[] { "Icon-Chat", "Icon-Info" }, new[] { "Icon-Route" },
+            new[] { "Icon-Neighborhood", "Icon-Building" }, new[] { "Icon-Shop" }, new[] { "Icon-Condition" },
+            new[] { "Icon-Money", "Icon-Coin" }, new[] { "Icon-Edit" }
         };
+
+        /// <summary>The glyph on the app's own icon: a calendar, or the clock face the game's opening hours use.</summary>
+        public static readonly string[] AppGlyphs = { "Icon-Calendar", "Icon-OpeningHours" };
 
         private static readonly string[] CategoryKeys =
         {
@@ -42,14 +49,30 @@ namespace RealLifeOverhaul.Planner
 
         public static void WantIcons()
         {
-            GameUi.GameSprites.Want(IconNames);
-            GameUi.GameSprites.Want("Icon-Calendar");
+            for (int i = 0; i < IconNames.Length; i++)
+            {
+                GameUi.GameSprites.Want(IconNames[i]);
+            }
+            GameUi.GameSprites.Want(AppGlyphs);
         }
 
         public static Sprite Icon(PlannerCategory category)
         {
             int index = (int)category;
-            return index >= 0 && index < IconNames.Length ? GameUi.GameSprites.Get(IconNames[index]) : null;
+            return index >= 0 && index < IconNames.Length ? First(IconNames[index]) : null;
+        }
+
+        public static Sprite First(string[] names)
+        {
+            for (int i = 0; i < names.Length; i++)
+            {
+                Sprite sprite = GameUi.GameSprites.Get(names[i]);
+                if (sprite != null)
+                {
+                    return sprite;
+                }
+            }
+            return null;
         }
 
         public static string CategoryKey(PlannerCategory category)
