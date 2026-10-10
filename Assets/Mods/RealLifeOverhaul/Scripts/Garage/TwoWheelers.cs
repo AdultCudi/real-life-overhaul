@@ -281,7 +281,6 @@ namespace RealLifeOverhaul
         /// </summary>
         public void BringHere(string id)
         {
-            const string test = "Bring it here";
             BikeRecord record = GarageState.Bike(id);
             TestRefusal why = TestRefusals.Street();
             var gm = InstanceBehavior<GameManager>.Instance;
@@ -295,13 +294,13 @@ namespace RealLifeOverhaul
             }
             if (why != TestRefusal.None)
             {
-                TestRefusals.Tell(Logger, test, why);
+                Cannot(why, null);
                 return;
             }
             Transform player = gm.playerController.transform;
             if (!BikePlaces.SpotAhead(player, out Vector3 spot, out Quaternion facing))
             {
-                TestRefusals.Tell(Logger, test, TestRefusal.NoRoom);
+                Cannot(TestRefusal.NoRoom, null);
                 return;
             }
             BikeDef def = BikeCatalogue.Of(record.Kind);
@@ -341,7 +340,7 @@ namespace RealLifeOverhaul
                     {
                         Crime.Give(fee, "reallife_transaction_bike");
                     }
-                    TestRefusals.Tell(Logger, test, TestRefusal.NothingFits, 0, "the scooter could not be made or dressed");
+                    Cannot(TestRefusal.NothingFits, "the scooter could not be made or dressed");
                     return;
                 }
                 mount.Record.Day = record.Day;
@@ -350,6 +349,24 @@ namespace RealLifeOverhaul
             }
             PointTo(mount, spot, def);
             SayWhere(NotificationType.Success, "reallife_bike_brought", def, spot);
+        }
+
+        // "Bring it here" is something the player asks for, not a test button: its refusals are said in its own words.
+        private static void Cannot(TestRefusal why, string detail)
+        {
+            Logger?.Info("Two-wheelers: \"Bring it here\" was not done (" + why + (detail != null ? "; " + detail : string.Empty) + ").");
+            string key;
+            switch (why)
+            {
+                case TestRefusal.Indoors: key = "reallife_bike_bring_indoors"; break;
+                case TestRefusal.TrafficOff: key = "reallife_bike_bring_paused"; break;
+                case TestRefusal.FeatureOff: key = "reallife_bike_bring_off"; break;
+                case TestRefusal.InVehicle: key = "reallife_bike_bring_in_vehicle"; break;
+                case TestRefusal.NoRoom: key = "reallife_bike_bring_no_room"; break;
+                case TestRefusal.NotLoaded: key = "reallife_bike_bring_loading"; break;
+                default: key = "reallife_bike_bring_failed"; break;
+            }
+            Notifications.Show(NotificationType.Warning, key, null, 8f);
         }
 
         /// <summary>What "Bring it here" costs from where a two-wheeler stands.</summary>

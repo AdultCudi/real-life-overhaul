@@ -652,7 +652,7 @@ namespace RealLifeOverhaul.Meta
                        .Replace("{count}", removed.Contacts.Count.ToString(CultureInfo.InvariantCulture))
                        .Replace("{messages}", removed.Messages.ToString(CultureInfo.InvariantCulture)) + ContactNames(removed.Contacts));
             report.Add("- " + "reallife_meta_report_data".GetLocalization().Replace("{count}", removed.DataKeys.Count.ToString(CultureInfo.InvariantCulture))
-                       + Names(removed.DataKeys, null));
+                       + DataNames(removed.DataKeys));
             report.Add("- " + "reallife_meta_report_notifications".GetLocalization().Replace("{count}", removed.Notifications.ToString(CultureInfo.InvariantCulture)));
             if (removed.Transactions > 0)
             {
@@ -675,6 +675,38 @@ namespace RealLifeOverhaul.Meta
                     name = name.Substring(strip.Length);
                 }
                 text.Append(i == 0 ? string.Empty : ", ").Append(name);
+            }
+            return text.ToString();
+        }
+
+        // The mod's data entries by the feature they belong to, in the names the guide uses, each with how many: not the raw keys.
+        private static string DataNames(List<string> keys)
+        {
+            if (keys.Count == 0)
+            {
+                return string.Empty;
+            }
+            var titles = new List<string>(8);
+            var counts = new List<int>(8);
+            for (int i = 0; i < keys.Count; i++)
+            {
+                Feature owner = Features.DeclaredData(keys[i]);
+                string title = (owner != null ? owner.TitleKey : "reallife_meta_report_data_other").GetLocalization();
+                int at = titles.IndexOf(title);
+                if (at < 0)
+                {
+                    titles.Add(title);
+                    counts.Add(1);
+                }
+                else
+                {
+                    counts[at]++;
+                }
+            }
+            var text = new StringBuilder(": ");
+            for (int i = 0; i < titles.Count; i++)
+            {
+                text.Append(i == 0 ? string.Empty : ", ").Append(titles[i]).Append(" (").Append(counts[i].ToString(CultureInfo.InvariantCulture)).Append(')');
             }
             return text.ToString();
         }

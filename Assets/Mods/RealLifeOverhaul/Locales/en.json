@@ -7185,5 +7185,13 @@
   "reallife_school_done_motorcycle": "Your riding is recorded as assessed and your motorcycle licence is issued. Wear the helmet.",
   "reallife_lic_grandfather_motorcycle": "Riding now needs a motorcycle licence. You already own a motorbike, so a motorcycle licence has been issued to you, valid for {days} days. The Licensing Office is in your phone contacts.",
   "reallife_justice_place_station": "at {name}",
-  "reallife_justice_place_station_plain": "the police station"
+  "reallife_justice_place_station_plain": "the police station",
+  "reallife_meta_report_data_other": "General",
+  "reallife_bike_bring_indoors": "Your bike cannot be brought indoors. Go out on to the street, on foot, first.",
+  "reallife_bike_bring_paused": "Your bike cannot be brought while a menu is open or time is being skipped.",
+  "reallife_bike_bring_off": "Bicycles and motorbikes are switched off on the options page.",
+  "reallife_bike_bring_in_vehicle": "Get out of the vehicle first: your bike is brought to you on foot.",
+  "reallife_bike_bring_no_room": "There is no clear ground in front of you to stand your bike on. Move to an open stretch of pavement.",
+  "reallife_bike_bring_loading": "Your bike cannot be brought yet: the save is still loading. Try again in a few seconds.",
+  "reallife_bike_bring_failed": "Your bike could not be brought just now."
 }
