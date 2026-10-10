@@ -1579,7 +1579,7 @@ and may read `Justice.Wanted`, `Justice.OnProbation`, `Justice.DrivingSuspended`
 
 | bridge | set by | what it is asked | default |
 |---|---|---|---|
-| `Law` (`ILawBridge`) | `Scripts/Law` | `PriorConvictions`; told `Convicted`, `Cleared`, `RecordSealed`; `Custody(hours, released)`; `ReleaseSpot(out spot)` | the justice system's own record; a plain time skip; the courthouse front |
+| `Law` (`ILawBridge`) | `Scripts/Law` | `PriorConvictions`; told `Convicted`, `Cleared`, `RecordSealed`; `Custody(hours, released)`; `ReleaseSpot(out spot, out name)` (the spot, and the station's name that the release text uses: "at Midtown Precinct", else "at the courthouse") | the justice system's own record; a plain time skip; the courthouse front |
 | `Licences` (`ILicenceBridge`) | `Scripts/Licences` | `SuspendDriving(untilDay)` (0 lifts it); `DrivingSuspended` | the date kept in `JusticeState` |
 | `Social` (`ISocialBridge`) | `Scripts/Social` | `CloseFriend(out name)`; told `Stood(name, visit)` | the mod's friend contact, if rung within the last 7 days |
 | `Transport` (`ITransportBridge`) | whoever keeps the cars | `ReturnCar(car, near, daysAway)` | `VehicleTow.BringNear` and a storage charge |
@@ -2995,7 +2995,7 @@ has cleared: a roadworks crew would have to close one of those very points in th
 
 | bridge | answered by | with |
 |---|---|---|
-| `Justice.Bridges.Law` | `Wiring.Arrests` | `ReleaseSpot`: the pavement outside the nearest precinct. `PriorConvictions` -1, `Custody` false, the three record calls empty (see "For Scripts/Law") |
+| `Justice.Bridges.Law` | `Wiring.Arrests` | `ReleaseSpot`: the pavement outside the nearest precinct, and its name. `PriorConvictions` -1, `Custody` false, the three record calls empty (see "For Scripts/Law") |
 | `Justice.Bridges.Licences` | `Wiring.LicenceLinks` | the licence's own suspension date |
 | `Justice.Bridges.Social` | `Wiring.LifeLinks` | the closest person at "close friend" or above; standing by the player is remembered. The Friend contact with the social life off |
 | `Justice.Bridges.Transport` | nobody | Transport keeps no pound for cars; the default tow and storage charge stand |

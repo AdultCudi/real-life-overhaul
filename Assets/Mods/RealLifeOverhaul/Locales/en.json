@@ -7183,5 +7183,7 @@
   "reallife_lic_class_motorcycle": "Motorcycle licence",
   "reallife_school_pitch_motorcycle": "Motorcycle licence: after the theory test, the ride assessment. The school has no motorbike to lend, so you give your account of your riding at the desk and it is recorded as passed. Fee {amount}. {status}",
   "reallife_school_done_motorcycle": "Your riding is recorded as assessed and your motorcycle licence is issued. Wear the helmet.",
-  "reallife_lic_grandfather_motorcycle": "Riding now needs a motorcycle licence. You already own a motorbike, so a motorcycle licence has been issued to you, valid for {days} days. The Licensing Office is in your phone contacts."
+  "reallife_lic_grandfather_motorcycle": "Riding now needs a motorcycle licence. You already own a motorbike, so a motorcycle licence has been issued to you, valid for {days} days. The Licensing Office is in your phone contacts.",
+  "reallife_justice_place_station": "at {name}",
+  "reallife_justice_place_station_plain": "the police station"
 }

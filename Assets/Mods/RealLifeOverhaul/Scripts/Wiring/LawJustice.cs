@@ -185,9 +185,10 @@ namespace RealLifeOverhaul
 
                 public bool Custody(int hours, Action released) => false;
 
-                public bool ReleaseSpot(out Vector3 spot)
+                public bool ReleaseSpot(out Vector3 spot, out string name)
                 {
                     spot = default;
+                    name = null;
                     try
                     {
                         Precinct precinct = Settings.LawPrecincts ? LawDirector.NearestPrecinct(PlayerHelper.GetCityPosition()) : null;
@@ -199,6 +200,7 @@ namespace RealLifeOverhaul
                         {
                             spot = precinct.Door;
                         }
+                        name = precinct.Name;
                         return true;
                     }
                     catch (Exception e)

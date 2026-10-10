@@ -1264,10 +1264,18 @@ namespace RealLifeOverhaul
         /// <summary>Where somebody let out is put down: the Law bridge's precinct, else the courthouse front. False if neither.</summary>
         public bool ReleaseSpot(out Vector3 spot)
         {
+            return ReleaseSpot(out spot, out _);
+        }
+
+        // The one decision of where somebody is put down, and the words for it: the station when the Law bridge gives one, else the courthouse, else nowhere.
+        private bool ReleaseSpot(out Vector3 spot, out string place)
+        {
+            place = null;
             try
             {
-                if (Justice.Bridges.Law.ReleaseSpot(out spot))
+                if (Justice.Bridges.Law.ReleaseSpot(out spot, out string name))
                 {
+                    place = JusticeText.T("reallife_justice_place_station", "name", string.IsNullOrEmpty(name) ? JusticeText.T("reallife_justice_place_station_plain") : name);
                     return true;
                 }
             }
@@ -1276,12 +1284,18 @@ namespace RealLifeOverhaul
                 Logger?.Error(e);
             }
             spot = _court.Front;
+            if (_court.Usable)
+            {
+                place = JusticeText.T("reallife_justice_place_courthouse", "address", _court.Name);
+            }
             return _court.Usable;
         }
 
+        /// <summary>Where they are let out, in words: always the place ReleaseSpot puts them down at.</summary>
         public string ReleasePlaceName()
         {
-            return _court.Usable ? JusticeText.T("reallife_justice_place_courthouse", "address", _court.Name) : JusticeText.T("reallife_justice_place_street");
+            ReleaseSpot(out _, out string place);
+            return place ?? JusticeText.T("reallife_justice_place_street");
         }
 
         // ---------------------------------------------------------------- prompts
