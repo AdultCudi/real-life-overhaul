@@ -1194,7 +1194,7 @@ is: an hour worked at it is counted, read-only, once an hour (`JobHelper.IsPlaye
 own shops), shown on the CV, and every eight such hours count as one shift of experience when signing on with
 the retail chain.
 
-- **Signing on** is face to face. The boss says what the work is in their own manner, then offers the three rotas
+- **Signing on** is face to face at the office or by phone (Work contact, "Apply for a job": the six employers in turn, the same page as the boss at the office, so the same checks and sign-on). The boss says what the work is in their own manner, then offers the three rotas
   in turn (Mon/Wed/Fri 08:00, Tue/Thu/Sat 13:00, Sat/Sun 10:00). References are counted as: +1 for the Gig Line's
   reference letter, +1 for each employer left on good terms, -1 for each left with a marked-down reference.
   Experience carries over: levels in the employer's own gig (two shifts each above the first) and in a related

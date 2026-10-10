@@ -390,6 +390,21 @@ namespace RealLifeOverhaul
                 OnConfirm = G(() => Cv(0)),
                 OnCancel = PhoneContacts.HangUp
             };
+            entry.SecondOptionTextOverride = "reallife_career_more";
+            entry.OnSecondOption = G(() => Other3());
+            return entry;
+        }
+
+        // Last page of "something else": a job with another employer, and leaving the one the player has.
+        private static DialogEntry Other3()
+        {
+            var entry = new DialogEntry
+            {
+                messageData = "reallife_career_other_3".Localize(),
+                ConfirmTextOverride = "reallife_career_apply".Localize(),
+                OnConfirm = G(() => Apply(0)),
+                OnCancel = PhoneContacts.HangUp
+            };
             if (CareerState.Employed)
             {
                 entry.SecondOptionTextOverride = "reallife_career_leaving";
@@ -534,10 +549,34 @@ namespace RealLifeOverhaul
                 {
                     references = CareerState.ReferenceScore(JobState.HasReference).ToString()
                 }),
-                ConfirmTextOverride = "reallife_career_gig_ask".Localize(),
-                OnConfirm = G(Gig),
-                SecondOptionTextOverride = "reallife_career_cv",
-                OnSecondOption = G(() => Cv(0)),
+                ConfirmTextOverride = "reallife_career_apply".Localize(),
+                OnConfirm = G(() => Apply(0)),
+                SecondOptionTextOverride = "reallife_career_more",
+                OnSecondOption = G(() => Other(false)),
+                OnCancel = PhoneContacts.HangUp
+            };
+        }
+
+        // Applying by phone: the six employers in turn, whatever the city has for offices. Asking one for work goes to the same
+        // page as speaking to the boss at the office (Hire), so the checks, the rota and the sign-on are the same code.
+        private static DialogEntry Apply(int index)
+        {
+            Employer[] all = CareerCatalogue.All;
+            int at = ((index % all.Length) + all.Length) % all.Length;
+            Employer employer = all[at];
+            return new DialogEntry
+            {
+                messageData = "reallife_career_apply_pick".Localize(new
+                {
+                    employer = employer.NameKey.GetLocalization(),
+                    boss = employer.BossKey.GetLocalization(),
+                    number = (at + 1).ToString(),
+                    count = all.Length.ToString()
+                }),
+                ConfirmTextOverride = "reallife_career_apply_ask".Localize(),
+                OnConfirm = G(() => Hire(at)),
+                SecondOptionTextOverride = "reallife_career_apply_next",
+                OnSecondOption = G(() => Apply(at + 1)),
                 OnCancel = PhoneContacts.HangUp
             };
         }
