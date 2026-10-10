@@ -64,6 +64,12 @@ namespace RealLifeOverhaul.Family
                     PartnerContact = Register(PartnerId, "reallife_contact_partner_desc", "reallife_partner_calldialogtype", () => new PartnerDialog(),
                         "reallife_text_partner_welcome", new Color(0.86f, 0.22f, 0.30f));
                 }
+                else if (SaveGameManager.Current != null && SaveGameManager.Current.Contacts.Exists(c => c != null && c.id == PartnerId))
+                {
+                    // The stand-in contact of an earlier session is not made again, but it still answers and says where the partner is now.
+                    Register(PartnerId, "reallife_contact_partner_desc", "reallife_partner_calldialogtype", () => new PartnerDialog(),
+                        "reallife_text_partner_welcome", new Color(0.86f, 0.22f, 0.30f));
+                }
                 SetupInLaws();
             }
             catch (Exception e)
@@ -177,7 +183,7 @@ namespace RealLifeOverhaul.Family
             {
                 return FamilyTalk.Close("reallife_family_menu_off");
             }
-            if (Partner.UsesSocial)
+            if (Partner.UsesSocial && (Partner.Kept(out _) || !FamilyState.HasPartner))
             {
                 return FamilyTalk.Close(FamilyState.HasPartner ? "reallife_family_partner_in_people" : "reallife_family_partner_none_people");
             }

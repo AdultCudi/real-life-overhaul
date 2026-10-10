@@ -48,7 +48,7 @@ namespace RealLifeOverhaul.Family
         public static int Guests(WeddingPlan plan)
         {
             int named = 0;
-            if (Partner.UsesSocial)
+            if (Partner.UsesSocial && FamilyBridges.Social.Ready)
             {
                 Close.Clear();
                 named = Mathf.Clamp(FamilyBridges.Social.ClosePeople(Close, 8), 0, 8);

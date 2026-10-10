@@ -181,7 +181,7 @@ namespace RealLifeOverhaul.Family
         /// <summary>Close enough, for long enough, to share a home.</summary>
         public static bool Ready()
         {
-            if (Partner.UsesSocial && FamilyBridges.Social.TryGetPartner(out PersonInfo p))
+            if (Partner.Kept(out PersonInfo p))
             {
                 return p.Stage >= 5 || (p.Affection >= FamilyBalance.MoveInAffection && Partner.DaysTogether >= FamilyBalance.MoveInDaysTogether);
             }
@@ -787,7 +787,7 @@ namespace RealLifeOverhaul.Family
             {
                 return FamilyTalk.Close("reallife_family_date_leisure");
             }
-            if (Partner.UsesSocial && FamilyBridges.Social.StartOuting("dinner", DateDone))
+            if (Partner.Kept(out _) && FamilyBridges.Social.StartOuting("dinner", DateDone))
             {
                 return FamilyTalk.Close("reallife_family_date_leisure");
             }

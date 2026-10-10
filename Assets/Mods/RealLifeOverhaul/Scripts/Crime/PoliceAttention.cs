@@ -882,6 +882,7 @@ namespace RealLifeOverhaul
             _custodyRunning = true;
             News.Report(NewsKind.PlayerArrested, PlayerHelper.GetPosition());
             SocialHooks.PlayerArrested();   // word gets round (Scripts/Social)
+            Wiring.Arrests.FamilyHears(0);   // and at home (this is the way it is told when the Law feature does not hold the player)
             StartCoroutine(CustodyRoutine(hours));
         }
 

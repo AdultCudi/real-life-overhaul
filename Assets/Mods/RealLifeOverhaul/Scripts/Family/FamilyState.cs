@@ -179,7 +179,6 @@ namespace RealLifeOverhaul.Family
         public int LastCustodyDay;
         public string ExName;
         public int FreeDay;          // the day the last relationship ended
-        public int LawSeen = -1;     // arrests already reacted to; -1 until the record has been read once
         public int Interest;         // who the player asked to meet: 0 anyone, 1 women, 2 men (the options page sets the default)
     }
 

@@ -1208,6 +1208,7 @@ namespace RealLifeOverhaul
                 JusticeState.ClearPrison();
                 JusticeState.PrisonTotal = JusticeState.PrisonOriginal = s.PrisonDays;
                 JusticeState.PrisonCase = c.Number;   // served from the next second (Attend)
+                Wiring.Arrests.FamilyHears(3);   // the family is told of the sentence
             }
             else if (s.JailHours > 0)
             {

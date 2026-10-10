@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Family
         /// <summary>Whether the two are close enough, for long enough, for the question to be welcome at all.</summary>
         public static bool Ready()
         {
-            if (Partner.UsesSocial && FamilyBridges.Social.TryGetPartner(out PersonInfo p) && p.Stage >= 5)
+            if (Partner.Kept(out PersonInfo p) && p.Stage >= 5)
             {
                 return Partner.DaysTogether >= FamilyBalance.ProposeDaysTogether;
             }

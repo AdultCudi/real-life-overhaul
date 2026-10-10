@@ -3013,6 +3013,8 @@ has cleared: a roadworks crew would have to close one of those very points in th
 | `SocialLinks.Law`, `Wellbeing` | `Wiring.LifeLinks` | `Standing`; Home's stress and meals |
 | `CareerLinks.Law`, `Health` | `Wiring.LifeLinks` | the CV line from `Standing`; Home's sick note or the mod's own sickness |
 | `CareerLinks.Social` | nobody | the social cast is a fixed eight: there is no way to add a colleague to it |
+| `FamilyBridges.Social`, `Home`, `Law`; `SocialLinks.PartnerChanged` | `Wiring.FamilyLinks` | the partner is Social's person; sleep debt and illness; whether the player is locked up; a break-up in Social reaches Family at once (`Wiring.Arrests.FamilyHears` tells it of arrests) |
+| `FamilyBridges.Travel`, `Leisure` | nobody | a trip is bought at the travel agent's desk, and a leisure activity is the player's own at a venue; neither can be run for a named partner |
 | `TravelBridges.Justice` | `Wiring.LifeLinks` | no trip with a warrant out, an undecided bail or a court date inside it |
 | `TravelBridges.Home` | `Wiring.LifeLinks` | a hotel shower is hygiene, rest and holidays take stress off (`Laundry`: nothing to act on) |
 | `TravelBridges.Social` | `Wiring.LifeLinks`, only with the social life on at city load | partner and close friends as companions, a trip together, souvenirs for friends |
@@ -3156,7 +3158,7 @@ walks in, or come in at the door when it is not being looked at.
   pay, at most 60). Halved while they work short days for the children.
 - **Chores** (about three days in ten, a question with two answers), **neglect** (four days with not a
   word and the home cools, with a text every third day), **broken promises** (standing them up, missing an
-  appointment), and **arrests** (`FamilyApi.PlayerArrested`, or the Law bridge's count going up) all move
+  appointment), and **arrests** (`FamilyApi.PlayerArrested`, told by `Wiring.Arrests.FamilyHears` once as it happens; only with a partner) all move
   "harmony", the one figure for how things are at home (0..100, shown on the Family page in words).
 - **Support**: ill and at home in the evening, they look after the player (Home bridge; default eight
   hours off the illness and a mood); after a bad day (happiness under 35) they say something that helps.
@@ -3291,11 +3293,13 @@ null when it unloads); until then Family uses its own default. All calls are fro
 
 | bridge | its owner implements | Family's default without it |
 |---|---|---|
-| `ISocialBridge` | `TryGetPartner(out PersonInfo)`: the one person the player is dating or partnered with (Stage 4 or 5: name, look seed, sex, affection and trust 0..100, days together); `Changed(FamilyEvent, affection, trust)`: what happened to the two (moved in, engaged, married, argued, shared time, broken promise, separated, divorced...), with a suggested change in points; `StartOuting(kind, done)`: "dinner" (true if it started; `done(true)` when it went well); `ClosePeople(list, most)`: who would come to a wedding. It calls `FamilyApi.PartnerChanged()` when the partner changes outside Family's flows and may call `FamilyApi.SharedTime(points)` | one partner record in the family state (a name, a look seed, affection), met and rung through "Someone special" |
+| `ISocialBridge` | `Active`, `Ready`, `TryGetPartner(out PersonInfo)`: the one person the player is dating or partnered with (Stage 4 or 5: name, look seed, sex, affection and trust 0..100, days together); `Changed(FamilyEvent, affection, trust)`: what happened to the two (moved in, engaged, married, argued, shared time, broken promise, separated, divorced...), with a suggested change in points; `StartOuting(kind, done)`: "dinner" (true if it started; `done(true)` when it went well); `ClosePeople(list, most)`: who would come to a wedding. It calls `FamilyApi.PartnerChanged()` when the partner changes outside Family's flows and may call `FamilyApi.SharedTime(points)` | one partner record in the family state (a name, a look seed, affection), met and rung through "Someone special" |
 | `IHomeBridge` | `CookTogether`, `WatchTogether`, `CareWhenSick(partner)`, `BrokenNight(wakings)`, `HealthVisit(reasonKey)`: true if Home did it its own way | a few lines, a meal, a mood; eight hours off the illness; the "up in the night" mood |
 | `ITravelBridge` | `Honeymoon(partner, days, done)` | 2,500, three days skipped, a mood |
 | `ILeisureBridge` | `DateNight(partner, done)`, `FamilyOuting("school_play" or "birthday", child, done)` | dinner at a restaurant's door; the play and the party as an errand and a skip |
-| `ILawBridge` | `Arrests` (a count that goes up), `InCustody` | nothing is known; `FamilyApi.PlayerArrested(severity 1..3)` can be called instead |
+| `ILawBridge` | `InCustody` (a cell or a prison term; family life waits) | nothing is known; arrests are told with `FamilyApi.PlayerArrested(severity 1..3)`, which `Wiring.Arrests.FamilyHears` calls once for each arrest (1 a night in the cells, 2 when a case is open for it) and each prison sentence (3), only with a partner |
+
+`Wiring/FamilyLinks.cs` fills in Social, Home and Law. Social: the partner is Social's person who is dating or with the player; `Active` is Social's option, `Ready` is "its people are read" (Family waits for that before reading who the partner is); `StartOuting` answers false, so Family runs its own evening, because Social's outings are planned with a venue and a time by its people. Home: `CareWhenSick` shortens Home's illness by eight hours, `BrokenNight` adds half an hour of sleep debt for each waking; Home has no routine for cooking or television for two, or for recording a health visit, so those keep Family's default. `ITravelBridge` and `ILeisureBridge` have no matching door (a trip is bought at the travel agent's desk, and a leisure activity is the player's own at a venue), so they stay at their defaults. A partner who is engaged, married or living in and is not Social's person stays on Family's own record (`Partner.Kept`); a dating stand-in with nobody from Social to replace them ends when Social is on, and the "Someone special" contact is not made again (an existing one answers and says where the partner is).
 
 `FamilyApi` is safe to read at any time: `HasPartner`, `LivesTogether`, `Engaged`, `Married`, `Children`,
 `PartnerName`, `WeddingToday`. `FamilyDirector.TakesInteractKey` is true while one of its key prompts is up

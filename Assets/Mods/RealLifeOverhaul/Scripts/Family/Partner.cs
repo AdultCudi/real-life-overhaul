@@ -30,7 +30,18 @@ namespace RealLifeOverhaul.Family
 
         private static readonly int[] JobIncome = { 210, 180, 170, 230, 190, 260, 140, 200, 280, 110 };
 
-        public static bool UsesSocial => FamilyBridges.Social != null;
+        public static bool UsesSocial => FamilyBridges.Social != null && FamilyBridges.Social.Active;
+
+        /// <summary>
+        /// Social's person, if they are the partner Family keeps (or Family keeps none yet). A partner from before Social supplied them
+        /// (engaged, married or living in with somebody else) stays on Family's own record until that is settled.
+        /// </summary>
+        public static bool Kept(out PersonInfo person)
+        {
+            person = default;
+            return UsesSocial && FamilyBridges.Social.Ready && FamilyBridges.Social.TryGetPartner(out person)
+                   && (string.IsNullOrEmpty(FamilyState.S.PName) || FamilyState.S.PName == person.Name);
+        }
 
         public static string Name => string.IsNullOrEmpty(FamilyState.S.PName) ? FamilyText.T("reallife_family_someone") : FamilyState.S.PName;
         public static int Seed => FamilyState.S.PSeed;
@@ -43,7 +54,7 @@ namespace RealLifeOverhaul.Family
         {
             get
             {
-                if (UsesSocial && FamilyBridges.Social.TryGetPartner(out PersonInfo p))
+                if (Kept(out PersonInfo p))
                 {
                     return Mathf.Clamp(p.Affection, 0f, 100f);
                 }
@@ -56,7 +67,7 @@ namespace RealLifeOverhaul.Family
         {
             get
             {
-                if (UsesSocial && FamilyBridges.Social.TryGetPartner(out PersonInfo p) && p.DaysTogether > 0)
+                if (Kept(out PersonInfo p) && p.DaysTogether > 0)
                 {
                     return p.DaysTogether;
                 }
@@ -99,9 +110,9 @@ namespace RealLifeOverhaul.Family
         /// </summary>
         public static void Resync()
         {
-            if (!UsesSocial)
+            if (!UsesSocial || !FamilyBridges.Social.Ready)
             {
-                return;
+                return;   // (Social has not read its people yet: nobody is dropped for being unread)
             }
             FamilySave s = FamilyState.S;
             if (FamilyBridges.Social.TryGetPartner(out PersonInfo p) && !string.IsNullOrEmpty(p.Name))
@@ -114,6 +125,7 @@ namespace RealLifeOverhaul.Family
                 s.PName = p.Name;
                 s.PSeed = p.LookSeed != 0 ? p.LookSeed : (p.Name.GetHashCode() & 0x7fffffff) | 1;
                 s.PFemale = p.Female;
+                s.PAffection = Mathf.Clamp(p.Affection, 0f, 100f);   // kept in step, so that the record carries on if Social loses them
                 if (other || FamilyState.Bond == Bond.Single || FamilyState.Bond == Bond.Divorced)
                 {
                     s.PJob = (s.PSeed & 0x7fffffff) % Trades.Length;
@@ -138,7 +150,7 @@ namespace RealLifeOverhaul.Family
         /// </summary>
         public static void Tell(FamilyEvent what, float affection, float trust = 0f)
         {
-            if (UsesSocial)
+            if (Kept(out _))
             {
                 try
                 {

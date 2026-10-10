@@ -1,6 +1,7 @@
 using System;
 using Helpers;
 using RealLifeOverhaul.Law;
+using FamilyApi = RealLifeOverhaul.Family.FamilyApi;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -97,6 +98,7 @@ namespace RealLifeOverhaul
                 }
                 News.Report(NewsKind.PlayerArrested, PlayerHelper.GetPosition());
                 SocialHooks.PlayerArrested();
+                FamilyHears(0);
                 Logger?.Info("Wiring: held at a precinct for " + entry.Hours + " h" + (_case != null ? "; case " + _case.Number + " is told." : "; no case is open for it."));
             }
 
@@ -122,6 +124,26 @@ namespace RealLifeOverhaul
                 }
                 Justice.ReleasedByPolice(c, entry.Outcome == Law.Outcome.Bailed ? bail : 0);
                 Logger?.Info("Wiring: out of the precinct after " + entry.Hours + " h (" + entry.Outcome + "); case " + c.Number + " goes on from there.");
+            }
+
+            /// <summary>
+            /// The family hears of an arrest, once, as it happens (only if the player has a partner and family life is on): 1 a night in the cells,
+            /// 2 when a case has been opened for it, 3 a prison term (pass 0 to have it worked out). Never called for a test button, and not
+            /// when a save is loaded, so an arrest that was under way at the save was told when it happened.
+            /// </summary>
+            internal static void FamilyHears(int severity)
+            {
+                try
+                {
+                    if (FamilyApi.HasPartner)
+                    {
+                        FamilyApi.PlayerArrested(severity > 0 ? severity : CaseOf(TimeHelper.CurrentDay) != null ? 2 : 1);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("Arrests.FamilyHears", e);
+                }
             }
 
             // The open case an arrest on this day belongs to: one incident is one case, so it is the one opened that day.
