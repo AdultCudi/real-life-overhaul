@@ -471,6 +471,8 @@ namespace RealLifeOverhaul.Meta
                 .Fact("family_ring_least", () => Guide.Money(Family.FamilyBalance.RingPrice[1]))
                 .Fact("family_ring_most", () => Guide.Money(Family.FamilyBalance.RingPrice[Family.FamilyBalance.RingPrice.Length - 1]))
                 .Fact("family_propose_days", () => Family.FamilyBalance.ProposeDaysTogether.ToString(CultureInfo.InvariantCulture))
+                .Fact("family_honeymoon", () => Guide.Money(Family.FamilyBalance.HoneymoonCost))
+                .Fact("family_honeymoon_days", () => Family.FamilyBalance.HoneymoonWindowDays.ToString(CultureInfo.InvariantCulture))
                 .Fact("family_planner_fee", () => Guide.Percent(Family.FamilyBalance.PlannerFee))
                 .Fact("family_venue_least", () => Guide.Money(Family.FamilyBalance.VenuePrice[0]))
                 .Fact("family_venue_most", () => Guide.Money(Family.FamilyBalance.VenuePrice[Family.FamilyBalance.VenuePrice.Length - 1]))

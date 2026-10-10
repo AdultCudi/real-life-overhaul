@@ -476,6 +476,8 @@ namespace RealLifeOverhaul.Family
 
             FamilyState.Bond = Bond.Married;
             s.MarriedDay = TimeHelper.CurrentDay;
+            s.HoneymoonAsked = false;   // a new wedding, a new honeymoon
+            s.HoneymoonTaken = false;
             s.SinceDay = TimeHelper.CurrentDay;
             s.NextOfKin = Partner.Name;
             s.Wedding = new WeddingPlan();
@@ -518,7 +520,7 @@ namespace RealLifeOverhaul.Family
         private static void AskHoneymoon()
         {
             FamilySave s = FamilyState.S;
-            if (s.HoneymoonAsked || FamilyState.Bond != Bond.Married)
+            if (!HoneymoonOpen)
             {
                 return;
             }
@@ -528,13 +530,18 @@ namespace RealLifeOverhaul.Family
                 "reallife_family_honeymoon_yes", "reallife_family_honeymoon_no",
                 () =>
                 {
+                    if (!HoneymoonOpen)
+                    {
+                        return;   // taken while the question was up
+                    }
+                    s.HoneymoonTaken = true;   // from here on it is not offered again; a trip that is called off gives it back (HoneymoonOver)
                     if (FamilyBridges.Travel != null && FamilyBridges.Travel.Honeymoon(Partner.Name, FamilyBalance.HoneymoonDays, went => director.Guarded(() => HoneymoonOver(went))))
                     {
                         return;   // Travel runs the trip its own way and says when it is over
                     }
                     if (!FamilyTalk.Pay(FamilyBalance.HoneymoonCost, "reallife_transaction_family_honeymoon"))
                     {
-                        s.HoneymoonAsked = false;   // offered again from the phone when there is money for it
+                        s.HoneymoonTaken = false;   // still on offer from the Family contact
                         return;
                     }
                     FamilyState.MoneyOut(FamilyBalance.HoneymoonCost, 4);
@@ -543,8 +550,9 @@ namespace RealLifeOverhaul.Family
                 () => FamilyText.Toast(NotificationType.Info, "reallife_family_honeymoon_later", Args.Us));
         }
 
-        /// <summary>Offered again from the phone, if it was put off.</summary>
-        public static bool HoneymoonOpen => FamilyState.Bond == Bond.Married && !FamilyState.S.HoneymoonAsked;
+        /// <summary>On offer from the Family contact: married, not yet taken, and the wedding not longer ago than the window.</summary>
+        public static bool HoneymoonOpen => FamilyState.Bond == Bond.Married && !FamilyState.S.HoneymoonTaken
+                                            && TimeHelper.CurrentDay - FamilyState.S.MarriedDay <= FamilyBalance.HoneymoonWindowDays;
 
         public static void OfferHoneymoon()
         {
@@ -555,9 +563,10 @@ namespace RealLifeOverhaul.Family
         {
             if (!went)
             {
-                FamilyState.S.HoneymoonAsked = false;
+                FamilyState.S.HoneymoonTaken = false;
                 return;
             }
+            FamilyState.S.HoneymoonTaken = true;
             FamilyState.Harmony(12f);
             FamilyState.S.LastSharedDay = TimeHelper.CurrentDay;
             FamilyModifiers.Add(FamilyModifiers.Honeymoon);

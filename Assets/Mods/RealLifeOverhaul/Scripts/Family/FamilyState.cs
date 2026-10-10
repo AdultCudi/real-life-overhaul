@@ -128,6 +128,7 @@ namespace RealLifeOverhaul.Family
         public WeddingPlan Wedding = new WeddingPlan();
         public int MarriedDay;
         public bool HoneymoonAsked;
+        public bool HoneymoonTaken;      // the trip was made: it is never offered again
 
         public List<ChildRecord> Children = new List<ChildRecord>();
         public int PKind;
@@ -243,6 +244,11 @@ namespace RealLifeOverhaul.Family
             S.Children.RemoveAll(c => c == null);
             S.Memories.RemoveAll(m => m == null || string.IsNullOrEmpty(m.Key));
             S.Errands.RemoveAll(e => e == null || string.IsNullOrEmpty(e.Kind));
+            // A save from before the honeymoon had its own flag: "asked" then meant taken or put off. The trip is in the memories if it was made.
+            if (S.HoneymoonAsked && !S.HoneymoonTaken && S.Memories.Exists(m => m.Key == "reallife_family_memory_honeymoon"))
+            {
+                S.HoneymoonTaken = true;
+            }
             while (S.Children.Count > FamilyBalance.MaxChildren)
             {
                 S.Children.RemoveAt(S.Children.Count - 1);

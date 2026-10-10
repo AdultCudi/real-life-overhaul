@@ -3212,7 +3212,7 @@ walks in, or come in at the door when it is not being looked at.
   dark for the reception (four hours) and everybody is taken away unseen. Then the bill is settled, the
   gifts counted (about 140 a guest times the root of the size), and the story of the party told.
 - **Married**: a lasting mood (+10, renewed daily while home is not unhappy), next of kin, and the offer
-  of a honeymoon: Travel bridge, else three days skipped (a day at a time) for 2,500 and a four-day mood.
+  of a honeymoon: Travel bridge, else three days skipped (a day at a time) for 2,500 and a four-day mood. Put off, it stays in the Family contact's "Things to do" until it is taken or `HoneymoonWindowDays` (60) days after the wedding (`HoneymoonOpen`); `HoneymoonTaken` is set when it is paid for and given back if the trip is called off, and is cleared by the next wedding. A save from before the flag counts as taken if its memories hold the trip.
 - **No dead ends**: the day can be put back a week (10 %), called off (the deposit is kept; still engaged),
   the engagement broken off (still together, badly hurt). A missed day moves itself three days once and is
   forgiven; missed twice, the booking is lost. Cold feet the night before: the player's own (talk it

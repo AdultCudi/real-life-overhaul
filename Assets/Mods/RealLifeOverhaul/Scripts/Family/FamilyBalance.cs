@@ -65,6 +65,7 @@ namespace RealLifeOverhaul.Family
         public const int GiftPerGuest = 140;            // on average, times the tier
         public const int HoneymoonCost = 2500;
         public const int HoneymoonDays = 3;
+        public const int HoneymoonWindowDays = 60;      // after the wedding, for as long as the honeymoon is not taken it can be asked for from the Family contact
 
         // ---------------------------------------------------------------- children
         public const int MaxChildren = 3;
