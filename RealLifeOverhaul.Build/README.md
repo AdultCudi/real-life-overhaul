@@ -2480,7 +2480,7 @@ supermarkets, stands outside up to four dealerships: found once per city load, i
 with room for the whole thing. The Garage key hires, returns, or opens the stand's panel (buy, sell an owned one
 standing by for half its price). Holding the throttle is pedalling: it costs energy through the game's own
 `EnergyHelper`, never below 14; a worn-out rider has half the push; letting go coasts. A motorbike asks
-`GarageBridges.HasMotorcycleLicence` (null: allowed). Coming off (most of the speed lost in one physics step, or
+`GarageBridges.HasMotorcycleLicence` (null: yes) only at the sale: the dealer warns in a sentence if it is no and sells all the same. Riding unlicensed is policed by Licences (the warning on getting on, the roadside check: fine, tow, arrest the third time). Coming off (most of the speed lost in one physics step, or
 the bike on its side while moving) calls `GarageBridges.RiderFalls(speed)` if a Ragdoll feature has set it,
 otherwise the bike stops and the rider is on their feet. Traffic sees a ridden two-wheeler as it sees a ridden
 scooter: the game puts its collider on the vehicles layer.
@@ -3022,7 +3022,7 @@ has cleared: a roadworks crew would have to close one of those very points in th
 | `GarageBridges.RoadIsWet` | `Wiring.LifeLinks` | the game's rain or `Events.Weather.Sky` |
 | `GarageBridges.WearOf`, `InsuranceOf` | `Transport/CarOwnership`, `CarPhone` | tyres and brakes wear `1 + WearOf` times as fast; the premium is `1 + InsuranceOf` times `CarRules.Premium`, on the bill and on the Garage page |
 | `GarageBridges.ValueAdded`, `GarageSummary.Lines` | nobody | Transport has no resale; `Lines` lists every car at once, the Garage page shows one (it needs a one-car form) |
-| `GarageBridges.HasMotorcycleLicence` | nobody | Licences has three classes (car, commercial, taxi), no motorcycle class |
+| `GarageBridges.HasMotorcycleLicence`; `Licences.Driving.TwoWheelerOf`, `OwnsMotorbike` | `Wiring.LicenceLinks` | the motorcycle class: held or not at the sale; a motorbike is the class and a bicycle none; a save that owns one is given the licence once |
 | `GarageBridges.PoliceNotice` | nobody | the Garage's own fine works alone; a stop for it would be new police behaviour |
 | `GarageBridges.RiderFalls` | nobody | `PlayerKnockdown` has no door for "down now", and a ragdoll on a rider leaving a scooter in the same frame cannot be judged without a run |
 | `Events.EventDirector.CrashFire` | nobody, on purpose | a severe crash already burns with the accident's own fire (`TrafficEffects.CreateFire`, 6 in 10 severe crashes, put out with the scene); `CrashFire` would be a second fire on the same bonnet |
@@ -3979,12 +3979,13 @@ Licences/
 | Car | every car, SUV and pickup (`CarKind` Economy, Saloon, Luxury, Sports, Utility) | theory test (60; 10 of 66 questions, 8 to pass, a pass counts 30 days), one lesson (90), the driven test (220) |
 | Commercial | vans and trucks (`CarKind.Van`, `CarKind.Truck`) | a valid car licence, one van lesson (90), the driven test in the school's van with the bay reversed into (380) |
 | Taxi endorsement | carrying passengers for hire | a car licence held 7 days with at most 5 points, 180 |
-| none needed | electric scooter, hand truck, flatbed trolley, anything without an engine (`CarKind.Untouched`) | |
+| Motorcycle | every motorbike of the Garage (`Licences.Driving.TwoWheelerOf` says what a vehicle of the save is; a bicycle is none) | stands alone: the theory test, then 180 at the desk for the ride assessment. The school has no motorbike to lend, so nothing is driven: the assessment is recorded as passed at the desk (`SchoolService.Motorcycle`) |
+| none needed | bicycle, electric scooter, hand truck, flatbed trolley, anything without an engine (`CarKind.Untouched`) | |
 
 A licence runs 120 days; it can be renewed (90 each, at a desk or by phone) from 14 days before it runs out until 30
 days after, and after that it is the tests again. A failed driven test can be sat again from the next day for 120.
 The first time the rules run on a save, a player who owns a car is given a car licence (and a commercial one if
-they own a van or truck); a save that owns nothing starts without one unless "Start with a driving licence" is on.
+they own a van or truck, and a motorcycle one if the Garage lists a motorbike they own: `MotorcycleDecided` is saved with the line `moto=issued,expires,decided`, absent in an older save, and asked of `Licences.Driving.OwnsMotorbike` once a second until the Garage has read its list); a save that owns nothing starts without one unless "Start with a driving licence" is on.
 With "Driving needs a licence" off, `Licences.Driving.Has` is always true and nothing is policed.
 
 Driving unlicensed is possible and is never discovered by magic: only when police actually stop the player
@@ -3995,7 +3996,7 @@ driving on from one is not chased but costs 400 and 3 points at the next stop).
 | found at a stop | fine | vehicle | further |
 |---|---|---|---|
 | no licence | 800 | impounded: towed to a repair-shop bay by the game's own tow, 350 | the third time in 30 days: arrest (6 h, `ILawBridge.Custody`) |
-| car licence, commercial vehicle | 500 | impounded | as above |
+| a licence for another class (a car licence on a motorbike or a van, a motorcycle licence in a car) | 500 | impounded | as above |
 | expired, still renewable | 250 | stays | |
 | suspended | 1500 | impounded | the second time: arrest |
 

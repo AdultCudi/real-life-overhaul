@@ -11,6 +11,7 @@ namespace RealLifeOverhaul
         ///                           (counted as time served) and the old roadside time skip when they are not;
         ///   Justice.Bridges.Licences a sentence that suspends the licence suspends the real one, and "suspended" is one
         ///                           answer whether twelve points or a court did it;
+        ///   Licences.Driving.TwoWheelerOf, OwnsMotorbike, GarageBridges.HasMotorcycleLicence   the Garage's motorbikes are the motorcycle class
         ///   SuspendedAtStop, DrunkDrivingBooked   what a stop found that is the courts' business too: credited, never owed twice.
         /// </summary>
         public static class LicenceLinks
@@ -23,12 +24,18 @@ namespace RealLifeOverhaul
                 Court.Forget();
                 Licences.Law = Law;
                 Justice.Bridges.Licences = Court;
+                Licences.Driving.TwoWheelerOf = GarageBridges.TwoWheelerKind;       // a motorbike is the motorcycle class; a bicycle needs no licence
+                Licences.Driving.OwnsMotorbike = GarageBridges.OwnsMotorbike;       // a save that already owns one is given the class once
+                GarageBridges.HasMotorcycleLicence = () => Licences.Driving.Has(LicenceClass.Motorcycle);   // the dealer says so at the sale; riding is policed like driving
             }
 
             internal static void Disconnect()
             {
                 Licences.Law = null;
                 Justice.Bridges.Licences = null;
+                Licences.Driving.TwoWheelerOf = null;
+                Licences.Driving.OwnsMotorbike = null;
+                GarageBridges.HasMotorcycleLicence = null;
                 Court.Forget();
             }
 

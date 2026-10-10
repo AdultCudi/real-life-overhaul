@@ -22,7 +22,7 @@ namespace RealLifeOverhaul
         ///
         /// Left at their defaults, each because the other side has nothing to answer with (see the README's list):
         /// CareerLinks.Social, TravelBridges.Transport and Leisure, Justice.Bridges.Transport,
-        /// GarageBridges.HasMotorcycleLicence, PoliceNotice and RiderFalls, Events.Weather.Wardrobe.
+        /// GarageBridges.PoliceNotice and RiderFalls, Events.Weather.Wardrobe.
         /// </summary>
         public static class LifeLinks
         {

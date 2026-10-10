@@ -270,6 +270,11 @@ namespace RealLifeOverhaul
             // The game clears its event hub on every load, so the save hook is kept attached.
             SaveHook.Keep(_onSave ?? (_onSave = OnSaveGame));   // the mod's one relay in the game's save event (Core/SaveHook): nothing is allocated while that event has not changed
 
+            if (!LicenceState.MotorcycleDecided)
+            {
+                GrandfatherMotorbike();
+            }
+
             int day = TimeHelper.CurrentDay;
             if (day != _lastDay)
             {
@@ -415,6 +420,41 @@ namespace RealLifeOverhaul
             }
         }
 
+        // A save from before the motorcycle class (or a new one): whoever already owns a motorbike already rides, and keeps doing so
+        // lawfully, once. The Garage reads its list a little after this feature is ready, so this is asked once a second until it answers.
+        private void GrandfatherMotorbike()
+        {
+            int owns;
+            try
+            {
+                owns = Licences.Driving.OwnsMotorbike != null ? Licences.Driving.OwnsMotorbike() : -1;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                owns = 0;
+            }
+            if (owns < 0)
+            {
+                return;
+            }
+            LicenceState.MotorcycleDecided = true;
+            if (owns == 0)
+            {
+                return;
+            }
+            int day = TimeHelper.CurrentDay;
+            if (!LicenceState.Of(LicenceClass.Motorcycle).Held)
+            {
+                LicenceState.Grant(LicenceClass.Motorcycle, day);
+                if (Settings.DrivingLicence)
+                {
+                    Licences.Toast(NotificationType.Success, "reallife_lic_grandfather_motorcycle", "days", LicenceLaw.ValidDays.ToString(), 14f);
+                }
+                Logger?.Info("Licences: the save owns a motorbike: motorcycle licence granted.");
+            }
+        }
+
         // A vehicle type the game no longer knows (a removed mod's car) must not stop the first run.
         private static VehicleType SafeType(string name)
         {
@@ -439,7 +479,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < DrivingSchool.Classes; i++)
             {
                 var kind = (LicenceClass)i;
                 LicenceState.Card card = LicenceState.Of(kind);
@@ -506,7 +546,7 @@ namespace RealLifeOverhaul
             switch (service)
             {
                 case SchoolService.Renew:
-                    for (int i = 0; i < 3; i++)
+                    for (int i = 0; i < DrivingSchool.Classes; i++)
                     {
                         if (LicenceState.Renewable((LicenceClass)i, day))
                         {
@@ -522,6 +562,13 @@ namespace RealLifeOverhaul
                     Licences.TellDriving(LicenceClass.Taxi);
                     Logger?.Info("Licences: taxi endorsement issued.");
                     return "reallife_school_done_taxi";
+
+                case SchoolService.Motorcycle:
+                    LicenceState.Grant(LicenceClass.Motorcycle, day);   // the ride assessment is recorded at the desk: the school has no motorbike to lend
+                    Licences.TellDriving(LicenceClass.Motorcycle);
+                    ModState.AddModifier(ModState.MoodUp);
+                    Logger?.Info("Licences: motorcycle licence issued after the desk assessment.");
+                    return "reallife_school_done_motorcycle";
 
                 default:
                     _pending = true;
@@ -641,9 +688,9 @@ namespace RealLifeOverhaul
             }
             else
             {
-                if (kind != LicenceClass.Car && !LicenceState.Valid(LicenceClass.Car, day))
+                if ((kind == LicenceClass.Commercial || kind == LicenceClass.Taxi) && !LicenceState.Valid(LicenceClass.Car, day))
                 {
-                    LicenceState.Grant(LicenceClass.Car, day);   // both of the others stand on a car licence
+                    LicenceState.Grant(LicenceClass.Car, day);   // the van and the taxi stand on a car licence
                 }
                 LicenceState.SuspendedUntil = 0;
                 LicenceState.Grant(kind, day);

@@ -109,12 +109,31 @@ namespace RealLifeOverhaul
             public static bool Suspended => LicenceState.Loaded && LicenceState.SuspendedUntil > TimeHelper.CurrentDay;
 
             /// <summary>
-            /// Which licence a vehicle needs. False for what needs none: scooters, hand trucks, flatbed
-            /// trolleys, anything without an engine. Vans and trucks are commercial, every other car is a car.
+            /// The Garage's two-wheelers, set by Wiring: what a vehicle of the save is, 0 neither, 1 a bicycle, 2 a motorbike.
+            /// Left null, no vehicle is taken for one (a two-wheeler is then an electric scooter, which needs no licence).
+            /// </summary>
+            public static Func<VehicleController, int> TwoWheelerOf;
+
+            /// <summary>
+            /// Set by Wiring: whether the save owns a motorbike. 1 yes, 0 no, -1 not known yet (the Garage has not read its list).
+            /// Left null, nobody is taken to own one.
+            /// </summary>
+            public static Func<int> OwnsMotorbike;
+
+            /// <summary>
+            /// Which licence a vehicle needs. False for what needs none: bicycles, scooters, hand trucks, flatbed
+            /// trolleys, anything without an engine. Motorbikes are the motorcycle class, vans and trucks are
+            /// commercial, every other car is a car.
             /// </summary>
             public static bool ClassOf(VehicleController vehicle, out LicenceClass kind)
             {
                 kind = LicenceClass.Car;
+                int wheels = TwoWheeler(vehicle);
+                if (wheels != 0)
+                {
+                    kind = LicenceClass.Motorcycle;
+                    return wheels == 2;
+                }
                 Vehicles.VehicleTypes.VehicleType type = vehicle != null ? vehicle.vehicleType : null;
                 if (type == null || !type.IsMotorVehicle || type.spawnInPlayerObject)
                 {
@@ -129,6 +148,19 @@ namespace RealLifeOverhaul
                 }
                 kind = car == CarKind.Van || car == CarKind.Truck ? LicenceClass.Commercial : LicenceClass.Car;
                 return true;
+            }
+
+            private static int TwoWheeler(VehicleController vehicle)
+            {
+                try
+                {
+                    return vehicle != null && TwoWheelerOf != null ? TwoWheelerOf(vehicle) : 0;
+                }
+                catch (Exception e)
+                {
+                    Logger?.Error(e);
+                    return 0;
+                }
             }
 
             public static bool MayDrive(VehicleController vehicle)
@@ -237,6 +269,7 @@ namespace RealLifeOverhaul
             {
                 case LicenceClass.Commercial: return "reallife_lic_class_commercial".GetLocalization();
                 case LicenceClass.Taxi: return "reallife_lic_class_taxi".GetLocalization();
+                case LicenceClass.Motorcycle: return "reallife_lic_class_motorcycle".GetLocalization();
                 default: return "reallife_lic_class_car".GetLocalization();
             }
         }

@@ -436,6 +436,8 @@ namespace RealLifeOverhaul.Meta
                 .Fact("lic_theory_fee", () => Guide.Money(LicenceLaw.TheoryFee))
                 .Fact("lic_lesson_fee", () => Guide.Money(LicenceLaw.LessonFee))
                 .Fact("lic_test_fee", () => Guide.Money(LicenceLaw.CarTestFee))
+                .Fact("lic_motorcycle_fee", () => Guide.Money(LicenceLaw.MotorcycleFee))
+                .Fact("lic_wrong_class_fine", () => Guide.Money(LicenceLaw.WrongClassFine))
                 .Fact("lic_valid_days", () => LicenceLaw.ValidDays.ToString(CultureInfo.InvariantCulture))
                 .Fact("lic_points_limit", () => LicenceLaw.PointsLimit.ToString(CultureInfo.InvariantCulture))
                 .Fact("lic_suspension_days", () => LicenceLaw.SuspensionDays.ToString(CultureInfo.InvariantCulture))

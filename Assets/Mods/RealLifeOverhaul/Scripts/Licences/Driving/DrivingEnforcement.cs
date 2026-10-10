@@ -271,7 +271,7 @@ namespace RealLifeOverhaul
                 offence = LicenceOffences.Suspended;
                 arrest = LicenceState.CountCaught(day) >= 2;
             }
-            else if (kind == LicenceClass.Commercial && LicenceState.Valid(LicenceClass.Car, day))
+            else if (HoldsAnother(kind, day))
             {
                 fine += LicenceLaw.WrongClassFine;
                 key = "reallife_lic_stop_wrong_class";
@@ -300,6 +300,15 @@ namespace RealLifeOverhaul
                 _host.StartCoroutine(Settle(vehicle, impound, own, arrest && !custodyFollows, custodyFollows ? 1.5f : 7f));
             }
             return false;
+        }
+
+        // A licence for something else is in order (a car licence on a motorbike or a van, a motorcycle licence at the wheel of a car):
+        // the wrong class, not none at all.
+        private static bool HoldsAnother(LicenceClass kind, int day)
+        {
+            return (kind != LicenceClass.Car && LicenceState.Valid(LicenceClass.Car, day))
+                   || (kind != LicenceClass.Commercial && LicenceState.Valid(LicenceClass.Commercial, day))
+                   || (kind != LicenceClass.Motorcycle && LicenceState.Valid(LicenceClass.Motorcycle, day));
         }
 
         // The officer has had time to reach the window: out of the car, the car away, and for a repeat offender the cuffs.
