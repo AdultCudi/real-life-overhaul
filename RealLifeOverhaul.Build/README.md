@@ -3318,7 +3318,7 @@ life off for the session; the save is left as it was.
 
 Partner moves in now (needs a rented home; with Social absent a partner is made up on the spot) - propose
 here (a ring is supplied; the answer is a real roll at 90 % or better) - start wedding planning (engaged at
-once if need be) - hold the wedding here, now (a classic wedding with everything, out of doors) - start a
+once if need be) - hold the wedding here, now (a classic wedding with everything, out of doors; free: no bill is charged and no presents come in, `WeddingScene.Free`) - start a
 pregnancy / move it on a step (scan, scan, class, birth) - start an adoption / move it on a step - add a year
 to the children's ages - pushchair walk now (needs a child under three) - open the Family page - clear all
 family state. A button that does nothing says why.

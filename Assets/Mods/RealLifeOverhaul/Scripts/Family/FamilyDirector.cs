@@ -831,7 +831,7 @@ namespace RealLifeOverhaul.Family
                 plan.Z = here.z;
                 plan.Day = TimeHelper.CurrentDay;
                 plan.TheirColdFeet = false;
-                if (!StartScene(new WeddingScene(), out string refusal))
+                if (!StartScene(new WeddingScene { Free = true }, out string refusal))   // (free: no bill, no presents)
                 {
                     Refuse("Family wedding", refusal);
                 }

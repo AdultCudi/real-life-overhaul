@@ -453,8 +453,8 @@ namespace RealLifeOverhaul.Family
             FamilyText.Message(FamilyPhone.PartnerContact, "reallife_family_wedding_missed_twice", Args.Us);
         }
 
-        /// <summary>Married. The bill is settled, the presents counted, the families told; then the honeymoon is offered.</summary>
-        public static void Complete(bool staged)
+        /// <summary>Married. The bill is settled, the presents counted, the families told; then the honeymoon is offered. With <paramref name="free"/> (the test button) no money moves at all: no bill, no presents.</summary>
+        public static void Complete(bool staged, bool free = false)
         {
             FamilySave s = FamilyState.S;
             WeddingPlan plan = s.Wedding;
@@ -465,12 +465,19 @@ namespace RealLifeOverhaul.Family
             _stagingFailed = 0;
             int guests = WeddingPlanner.Guests(plan);
             int total = WeddingPlanner.Total(plan);
-            int balance = Mathf.Max(0, total - plan.Paid);
+            int balance = free ? 0 : Mathf.Max(0, total - plan.Paid);
             int gifts = Mathf.RoundToInt(guests * FamilyBalance.GiftPerGuest * Mathf.Sqrt(FamilyBalance.TierFactor[Mathf.Clamp(plan.Tier, 0, 2)]) * Random.Range(0.8f, 1.2f) / 10f) * 10;
-            FamilyTalk.Move(-balance, "reallife_transaction_family_wedding");
-            FamilyState.MoneyOut(balance, 4);
-            FamilyTalk.Move(gifts, "reallife_transaction_family_gifts");
-            FamilyState.MoneyIn(gifts);
+            if (free)
+            {
+                gifts = 0;
+            }
+            else
+            {
+                FamilyTalk.Move(-balance, "reallife_transaction_family_wedding");
+                FamilyState.MoneyOut(balance, 4);
+                FamilyTalk.Move(gifts, "reallife_transaction_family_gifts");
+                FamilyState.MoneyIn(gifts);
+            }
             int tier = Mathf.Clamp(plan.Tier, 0, 2);
             bool music = plan.Music, catering = plan.Catering, flowers = plan.Flowers;
 
@@ -506,7 +513,7 @@ namespace RealLifeOverhaul.Family
                            + " " + FamilyText.T(music ? "reallife_family_reception_music" : "reallife_family_reception_no_music", Args.Us)
                            + " " + FamilyText.T(catering ? "reallife_family_reception_catering" : "reallife_family_reception_no_catering", Args.Us)
                            + (flowers ? " " + FamilyText.T("reallife_family_reception_flowers", Args.Us) : string.Empty)
-                           + "\n" + FamilyText.T("reallife_family_reception_money", new Args { Amount = FamilyText.Money(total), Text = FamilyText.Money(gifts), N = guests.ToString() });
+                           + (free ? string.Empty : "\n" + FamilyText.T("reallife_family_reception_money", new Args { Amount = FamilyText.Money(total), Text = FamilyText.Money(gifts), N = guests.ToString() }));
             FamilyDirector director = FamilyDirector.Instance;
             director.WhenFree(() =>
             {
@@ -586,6 +593,9 @@ namespace RealLifeOverhaul.Family
     /// </summary>
     internal sealed class WeddingScene : FamilyScene
     {
+        /// <summary>The test button's wedding: it costs nothing and brings in nothing.</summary>
+        public bool Free;
+
         private enum Step { Gathering, Aisle, Welcome, Vows, TheirVow, Rings, Pronounce, Applause, Photo, Leaving, Cut }
 
         private const int MaxGuestSpots = 6;
@@ -1024,10 +1034,10 @@ namespace RealLifeOverhaul.Family
                     if (now >= _until && !_d.Busy)
                     {
                         _step = Step.Cut;
-                        if (!_d.Run(_d.Passage("reallife_family_passage_reception", 4, () => { Release(); WeddingDay.Feast(); }, () => WeddingDay.Complete(true))))
+                        if (!_d.Run(_d.Passage("reallife_family_passage_reception", 4, () => { Release(); WeddingDay.Feast(); }, () => WeddingDay.Complete(true, Free))))
                         {
                             Release();
-                            WeddingDay.Complete(true);
+                            WeddingDay.Complete(true, Free);
                             Done = true;
                         }
                     }
@@ -1044,10 +1054,10 @@ namespace RealLifeOverhaul.Family
             if (_married)
             {
                 // Vows said, rings on: married all the same, with the party skipped.
-                if (!_d.Run(_d.Passage("reallife_family_passage_reception", 0, Release, () => WeddingDay.Complete(true))))
+                if (!_d.Run(_d.Passage("reallife_family_passage_reception", 0, Release, () => WeddingDay.Complete(true, Free))))
                 {
                     Release();
-                    WeddingDay.Complete(true);
+                    WeddingDay.Complete(true, Free);
                     Done = true;
                 }
                 return;
