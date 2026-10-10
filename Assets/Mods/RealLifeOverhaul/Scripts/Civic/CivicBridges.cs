@@ -13,8 +13,8 @@ namespace RealLifeOverhaul
     ///   Law / Crime     fine = Mathf.RoundToInt(fine * CivicPolicy.FineScale);          and once at start-up: CivicBridges.FinesScaledAtSource = true;
     ///                   chanceSeen *= CivicPolicy.EnforcementScale;
     ///   Police presence nothing: Settings.PolicePresence and Settings.PatrolFrequency are already scaled (and put back).
-    ///   Transport       fare = Mathf.RoundToInt(fare * CivicPolicy.FareScale);          and once: CivicBridges.FaresScaledAtSource = true;
-    ///                   headway /= CivicPolicy.ServiceScale;
+    ///   Transport       headway /= CivicPolicy.ServiceScale;   (bus fares are not touched: the policy changes the subway fare only, which civic life charges itself;
+    ///                   a feature that applied the subway fare change itself would set CivicBridges.FaresScaledAtSource = true)
     ///   Events          chance *= CivicPolicy.EventScale;
     ///   Night life      if (hour >= CivicPolicy.ClosingHour &amp;&amp; hour &lt; 6) { closed }
     ///   Business        nothing to call; read CivicPolicy.Position(Lever.Grants) if it wants to mention it.
@@ -39,7 +39,6 @@ namespace RealLifeOverhaul
         /// <summary>How much more (or less) likely a traffic offence is to be noticed.</summary>
         public static float EnforcementScale => Position(Lever.Traffic) > 0 ? 1.3f : Position(Lever.Traffic) < 0 ? 0.75f : 1f;
         public static float AccidentScale => CivicCatalogue.AccidentScale(Position(Lever.Traffic));
-        public static float FareScale => CivicCatalogue.FareScale(Position(Lever.Transit));
         public static float ServiceScale => CivicCatalogue.ServiceScale(Position(Lever.Transit));
         public static float EventScale => CivicCatalogue.EventScale(Position(Lever.Events));
         public static int ClosingHour => CivicCatalogue.ClosingHour(Position(Lever.NightLife));
@@ -100,7 +99,7 @@ namespace RealLifeOverhaul
         /// <summary>Set by a feature that multiplies its own fines by CivicPolicy.FineScale: civic life then leaves fines alone.</summary>
         public static bool FinesScaledAtSource;
 
-        /// <summary>Set by a feature that multiplies its own fares by CivicPolicy.FareScale: civic life then leaves subway fares alone.</summary>
+        /// <summary>Set by a feature that applies the subway fare change itself: civic life then leaves subway fares alone.</summary>
         public static bool FaresScaledAtSource;
 
         /// <summary>Crimes and accidents other features have told civic life about since it last looked.</summary>

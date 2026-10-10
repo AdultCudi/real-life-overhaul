@@ -42,8 +42,8 @@ namespace RealLifeOverhaul
     ///                -1  6 % of the rent you pay comes back; 4 % less on rent you collect
     ///   Parking      +1  street parking x1.5, each parking ticket +60
     ///                -1  street parking x0.6, each parking ticket -40
-    ///   Transit      +1  subway fare +1 a ride (and buses x1.3 as often, fares x1.25: Transport bridge)
-    ///                -1  subway fare -1 a ride (and buses x0.75 as often, fares x0.75)
+    ///   Transit      +1  subway fare +1 a ride, buses x1.3 as often (Transport: TransitDirector.Headway); bus fares do not change
+    ///                -1  subway fare -1 a ride, buses x0.75 as often
     ///   Cleaning     +1  sweepers x2.5 as common, "clean streets" mood +3, levy 30 a week
     ///                -1  sweepers x0.3, "litter" mood -3, 25 a week returned
     ///   NightLife    +1  licensed until 04:00 (bridge), street crime x1.1
@@ -157,8 +157,6 @@ namespace RealLifeOverhaul
 
         /// <summary>Dollars added to (or taken off) each subway ride.</summary>
         public static int FareExtra(int transit) => transit > 0 ? 1 : transit < 0 ? -1 : 0;
-
-        public static float FareScale(int transit) => Pick(transit, 1.25f, 0.75f);
 
         public static float ServiceScale(int transit) => Pick(transit, 1.3f, 0.75f);
 
