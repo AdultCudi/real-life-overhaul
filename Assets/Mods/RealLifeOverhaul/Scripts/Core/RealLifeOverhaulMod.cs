@@ -263,7 +263,8 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.HomeJogId, "reallife_home_jog", Settings.HomeJog,
                     v => Settings.HomeJog = v)
                 .AddButton("reallife_test_home_page", () => HomeDirector.Instance?.TestPage())
-                .AddButton("reallife_test_home_cook", () => HomeDirector.Instance?.TestRoutine(HomeWish.Cook))
+                .AddButton("reallife_home_test_cook_panel", () => HomeDirector.Instance?.TestRoutine(HomeWish.Cook))
+                .AddButton("reallife_test_home_cook", () => HomeDirector.Instance?.TestRoutine(HomeWish.CookFirst))
                 .AddButton("reallife_test_home_coffee", () => HomeDirector.Instance?.TestRoutine(HomeWish.Coffee))
                 .AddButton("reallife_test_home_tidy", () => HomeDirector.Instance?.TestRoutine(HomeWish.Tidy))
                 .AddButton("reallife_test_home_stretch", () => HomeDirector.Instance?.TestRoutine(HomeWish.Stretch))
