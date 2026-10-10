@@ -7249,5 +7249,7 @@
   "reallife_home_refused_called_off": "That was called off before you set off: try again.",
   "reallife_home_refused_cannot_walk": "You cannot walk there just now: finish what you are doing and try again.",
   "reallife_home_refused_not_reached": "You stopped before you got there: let go of the movement keys and try again.",
-  "reallife_home_refused_no_fridge": "There is no fridge in this home."
+  "reallife_home_refused_no_fridge": "There is no fridge in this home.",
+  "reallife_changes_001_3_title": "0.1.3",
+  "reallife_changes_001_3": "Cooking works, and is chosen from a list of the dishes your fridge can make. Coffee, tidying and exercises at home now start when you press Start. Every employer can be applied to by phone. A motorbike needs its own licence. Your partner is someone you have met, and hears when you are arrested. A honeymoon you turned down stays on offer for a while."
 }
