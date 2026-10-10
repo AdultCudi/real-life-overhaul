@@ -37,6 +37,7 @@ namespace RealLifeOverhaul.GameUi
         private int _page;
         private bool _aside;        // someone else pages this grid
         private bool _working;      // our own changes must not start another pass
+        private bool _ready;        // the template and the dot's picture are known
         private float _lastTurn;
 
         public int Pages { get; private set; } = 1;
@@ -49,9 +50,14 @@ namespace RealLifeOverhaul.GameUi
             {
                 return null;
             }
-            PhoneGridPager pager = grid.GetComponent<PhoneGridPager>() ?? grid.gameObject.AddComponent<PhoneGridPager>();
+            PhoneGridPager pager = grid.GetComponent<PhoneGridPager>();
+            if (pager == null)
+            {
+                pager = grid.gameObject.AddComponent<PhoneGridPager>();   // its OnEnable runs here, before it knows the template: it waits
+            }
             pager._template = template;
             pager._dotSprite = dot;
+            pager._ready = true;
             pager.Refresh();
             return pager;
         }
@@ -123,7 +129,7 @@ namespace RealLifeOverhaul.GameUi
 
         public void Refresh()
         {
-            if (_working || this == null)
+            if (_working || !_ready || this == null)
             {
                 return;
             }

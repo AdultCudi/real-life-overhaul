@@ -85,6 +85,7 @@ namespace RealLifeOverhaul.Planner
         public GameObject Build(FullMenu menu, Transform dormant)
         {
             _menu = menu;
+            SessionWatch.Mark("planner: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
             _shell = AppShell.Make(menu, dormant, PlannerDirector.AppId);
             if (_shell == null || !PrepareRow(_shell.RowPrefab))
             {
