@@ -247,6 +247,20 @@ namespace RealLifeOverhaul.Planner
 
         private static readonly Comparison<PlannerEntry> ByTime = Compare;
 
+        /// <summary>A number for a word that is the same in every session and every version of the runtime: part of who an entry is, kept in the save with its reminder.</summary>
+        public static int Stable(string text)
+        {
+            unchecked
+            {
+                int hash = (int)2166136261;
+                for (int i = 0; text != null && i < text.Length; i++)
+                {
+                    hash = (hash ^ text[i]) * 16777619;
+                }
+                return hash;
+            }
+        }
+
         private static int Compare(PlannerEntry a, PlannerEntry b)
         {
             if (a.Day != b.Day)

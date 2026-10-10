@@ -80,6 +80,8 @@ namespace RealLifeOverhaul
         public const string StartWithLicenceId = "licence_start_with";
         public const string DrivingSchoolId = "driving_school";
         public const string LicencePointsId = "licence_points";
+        public const string PlannerId = "planner";
+        public const string PlannerRemindersId = "planner_reminders";
         public const string RoadsideChecksId = "roadside_checks";
         public const string ShowTestToolsId = "show_test_tools";       // Meta: the "Test tools" section of the options page
         public const string DevDiagnosticsId = "dev_diagnostics";      // Meta: the diagnostic keys (F7, Shift+F7, F8, F9) and the Info lines in the log
@@ -228,6 +230,8 @@ namespace RealLifeOverhaul
         public static bool StartWithLicence = false;     // a save that owns no vehicle the first time the rule runs is given a car licence anyway
         public static bool DrivingSchool = true;         // the desks at the school buildings, the written test, lessons and the driven test
         public static bool LicencePoints = true;         // booked offences put penalty points on the licence; twelve suspend it
+        public static bool Planner = true;               // the Planner app on the phone: everything to do in one agenda (Scripts/Planner)
+        public static bool PlannerReminders = true;      // ...and its reminders, sent as the game's own notifications
         public static bool RoadsideChecks = true;        // now and then a patrol car pulls the player over only to see the licence
         public static bool ShowTestTools = false;        // the test buttons are on the options page
         public static bool DevDiagnostics = false;       // the diagnostic keys work and Info lines go to the log
@@ -418,6 +422,8 @@ namespace RealLifeOverhaul
             StartWithLicence = Bool(modId, StartWithLicenceId, StartWithLicence);
             DrivingSchool = Bool(modId, DrivingSchoolId, DrivingSchool);
             LicencePoints = Bool(modId, LicencePointsId, LicencePoints);
+            Planner = Bool(modId, PlannerId, Planner);
+            PlannerReminders = Bool(modId, PlannerRemindersId, PlannerReminders);
             RoadsideChecks = Bool(modId, RoadsideChecksId, RoadsideChecks);
             ShowTestTools = Bool(modId, ShowTestToolsId, ShowTestTools);
             DevDiagnostics = Bool(modId, DevDiagnosticsId, DevDiagnostics);

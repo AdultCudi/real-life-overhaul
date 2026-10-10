@@ -319,6 +319,14 @@ namespace RealLifeOverhaul.GameUi
             {
                 row.transform.GetChild(i).gameObject.SetActive(false);
             }
+            // The buttons that show share the row between them, as in the game: a button has no width of its own
+            // (its picture stretches to it), so the row has to hand the width out.
+            var layout = row.GetComponent<HorizontalLayoutGroup>();
+            if (layout != null)
+            {
+                layout.childControlWidth = true;
+                layout.childForceExpandWidth = true;
+            }
             return row.transform;
         }
 

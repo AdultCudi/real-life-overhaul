@@ -504,6 +504,14 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_lic_check", () => LicenceDirector.Instance?.TestCheck())
                 .AddButton("reallife_test_lic_points", () => LicenceDirector.Instance?.TestPoints())
                 .AddSplitter()
+                .AddHeader("reallife_planner_header")
+                .AddToggle(Settings.PlannerId, "reallife_planner_enabled", Settings.Planner,
+                    v => Settings.Planner = v)
+                .AddToggle(Settings.PlannerRemindersId, "reallife_planner_reminders", Settings.PlannerReminders,
+                    v => Settings.PlannerReminders = v)
+                .AddButton("reallife_planner_test_fill", () => Planner.PlannerDirector.Instance?.TestFill())
+                .AddButton("reallife_planner_test_clear", () => Planner.PlannerDirector.Instance?.TestClear())
+                .AddSplitter()
                 .AddHeader("reallife_civic_header")
                 .AddToggle(Settings.CivicId, "reallife_civic_enabled", Settings.Civic,
                     v => Settings.Civic = v)
@@ -681,6 +689,7 @@ namespace RealLifeOverhaul
             _root.AddComponent<CityLifeDirector>();   // people at work and about their day: its own pool of eight
             _root.AddComponent<JobDirector>();   // jobs the player takes themselves (Scripts/Jobs)
             HomeDirector.Logger = context.Logger;
+            HomeCookOffer.Logger = context.Logger;
             _root.AddComponent<HomeDirector>();   // home life and health (Scripts/Home); after LifeEvents and the city life director, whose clip player it shares
             _root.AddComponent<Law.LawDirector>();   // precincts, custody, the record and reputation (Scripts/Law)
             _root.AddComponent<TransitDirector>();   // bus stops, buses and the subway journey (Scripts/Transport)
@@ -694,6 +703,16 @@ namespace RealLifeOverhaul
             _root.AddComponent<BusinessDirector>();   // pressure on the player's businesses (Scripts/Business)
             _root.AddComponent<JusticeDirector>();   // courts, lawyers, sentences and prison (Scripts/Justice)
             _root.AddComponent<LicenceDirector>();   // driving licences: the school, the tests, points and what a stop finds (Scripts/Licences)
+            GameUi.UiClone.Logger = context.Logger;
+            GameUi.GameSprites.Logger = context.Logger;
+            GameUi.AppIconPainter.Logger = context.Logger;
+            GameUi.PhoneApp.Logger = context.Logger;
+            GameUi.PhoneGridPager.Logger = context.Logger;
+            GameUi.AppShell.Logger = context.Logger;
+            GameUi.InfoBox.Logger = context.Logger;
+            Planner.PlannerApp.Logger = context.Logger;
+            Planner.PlannerDirector.Logger = context.Logger;
+            _root.AddComponent<Planner.PlannerDirector>();   // the Planner: an app on the game's phone with everything to do, reminders and notes (Scripts/Planner)
             _root.AddComponent<CivicDirector>();   // city government, elections and construction sites (Scripts/Civic): its own cast of five
             _root.AddComponent<Family.FamilyDirector>();   // a partner at home, engagement and wedding, children, relatives (Scripts/Family)
             CarTuning.Logger = context.Logger;

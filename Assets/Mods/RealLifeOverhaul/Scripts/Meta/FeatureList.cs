@@ -443,6 +443,18 @@ namespace RealLifeOverhaul.Meta
                 .ResetData(LicenceState.Reset)   // the director reads the (now empty) save again on its next second
                 .Repair(LicencePhone.Setup);
 
+            // The Planner reads the other features and changes none: off, its app is not on the phone and no reminder goes out.
+            Features.Add("planner", "reallife_meta_title_planner")
+                .Group("reallife_planner_header")
+                .About("reallife_guide_planner_about").Help("reallife_guide_planner")
+                .Owns(Settings.PlannerId, Settings.PlannerRemindersId)
+                .Data(Planner.PlannerStore.Key, Planner.PlannerStore.NotesKey, Planner.PlannerStore.RemindersKey)
+                .Fact("planner_days", () => Planner.PlannerApp.UpcomingDays.ToString(CultureInfo.InvariantCulture))
+                .Fact("planner_notes", () => Planner.PlannerStore.MostNotes.ToString(CultureInfo.InvariantCulture))
+                .Fact("planner_evening", () => Planner.PlannerStore.EveningHour.ToString(CultureInfo.InvariantCulture) + ":00")
+                .Cleanup(() => Planner.PlannerDirector.Instance?.StopAll())
+                .ResetData(Planner.PlannerStore.Reset);   // the director reads the (now empty) save again on its next second
+
             // Civic life keeps its state on its director and puts its policies back itself when it is switched off or the city unloads.
             Features.Add("civic", "reallife_meta_title_civic")
                 .Group("reallife_civic_header")

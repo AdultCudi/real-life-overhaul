@@ -104,13 +104,7 @@ namespace RealLifeOverhaul.GameUi
                     var rect = (RectTransform)topButtons;
                     rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(1f, 1f);
                     rect.anchoredPosition = new Vector2(-127.5f, -224.1f);
-                    rect.sizeDelta = new Vector2(900f, 80f);
-                    var row = topButtons.GetComponent<HorizontalLayoutGroup>();
-                    if (row != null)
-                    {
-                        row.childAlignment = TextAnchor.MiddleRight;
-                        row.childForceExpandWidth = false;
-                    }
+                    rect.sizeDelta = new Vector2(760f, 80f);   // room for two buttons side by side
                     topButtons.name = "TopButtons";
                     shell.TopButtons = topButtons;
                 }
