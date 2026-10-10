@@ -210,7 +210,7 @@ namespace RealLifeOverhaul
             Employer employer = CareerCatalogue.All[at];
             CareerRank first = employer.Ranks[0];
             bool can = Career.CanSignOn(at, out string reason, out string value);
-            float rate = Mathf.Clamp(Settings.JobPay, 25, 300) / 100f;
+            float rate = JobDirector.PayScale();   // the wage as it will really be paid, owners' cut included
             var entry = new DialogEntry
             {
                 headerKey = employer.BossKey,
@@ -302,7 +302,7 @@ namespace RealLifeOverhaul
         {
             Employer employer = CareerState.Employer;
             CareerDirector career = Career;
-            float rate = Mathf.Clamp(Settings.JobPay, 25, 300) / 100f;
+            float rate = JobDirector.PayScale();   // the wage as it will really be paid, owners' cut included
             string note = CareerState.ReviewDue
                 ? (career.CanReview(inPerson) ? "reallife_career_note_review_here" : "reallife_career_note_review").GetLocalization()
                 : CareerState.OnNotice
@@ -518,7 +518,7 @@ namespace RealLifeOverhaul
                 return PhoneContacts.Closing("reallife_career_no_off");
             }
             ReviewOutcome outcome = career.HoldReview(out float score, out _, out _, out _, out _, out _, out _);
-            float rate = Mathf.Clamp(Settings.JobPay, 25, 300) / 100f;
+            float rate = JobDirector.PayScale();   // the wage as it will really be paid, owners' cut included
             string key;
             switch (outcome)
             {

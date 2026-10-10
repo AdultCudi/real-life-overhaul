@@ -167,7 +167,7 @@ namespace RealLifeOverhaul
             string reason = null;
             bool available = director != null && director.Available(def, out reason);
             int level = JobState.Level(def);
-            float rate = JobCatalogue.PayFactor(level) * Mathf.Clamp(Settings.JobPay, 25, 300) / 100f;
+            float rate = JobCatalogue.PayFactor(level) * JobDirector.PayScale();   // what the work will really pay, owners' cut included
             var entry = new DialogEntry
             {
                 messageData = def.PitchKey.Localize(new
