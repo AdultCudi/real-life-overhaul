@@ -20,17 +20,39 @@ namespace RealLifeOverhaul
         Jogging
     }
 
-    /// <summary>One thing that can be cooked: what it takes and what it gives. The order is the order on the panel's slider.</summary>
-    public sealed class Recipe
+    /// <summary>What kind of food one of the game's items is, as far as cooking goes. None: not something to cook with.</summary>
+    public enum FoodKind
     {
+        None,
+        Meat,
+        Vegetable,
+        Dairy,
+        Grain,
+        Fruit,
+        Fresh,         // the game's "Fresh Food": a bag of groceries, a meal's worth
+        Frozen,        // its "Frozen Food"
+        Ready,         // bought ready to eat: a burger, a pizza
+        Snack,         // sweets and pastries: eaten as they are
+        Drink          // drunk as they are
+    }
+
+    /// <summary>
+    /// One thing that can be made at home: what it takes out of the fridges and what it gives. The order is
+    /// the order on the cooking panel. A dish's number is what the save keeps for leftovers: never change one.
+    /// </summary>
+    public sealed class Dish
+    {
+        public int Number;
         public string Name;          // locale key
-        public int Portions;         // units of food taken from the fridge (0: yesterday's leftovers)
-        public int Minutes;
-        public float Yield;          // the ingredients' saturation times this
+        public FoodKind[] Needs;     // one entry per unit of food for one batch
+        public bool Cooker;          // made at a stove, a grill or a pizza oven; false: put together at the fridge
+        public int Portions;         // from one batch: one is eaten, the rest are leftovers
+        public int Minutes;          // for one batch
+        public float Yield;          // the ingredients' saturation times this, shared between the portions
         public float Burn;           // chance of burning it, 0..1
-        public int Leftovers;        // portions put by for another day
         public float Calm;           // stress taken off
         public float Mess;           // tidiness it costs the flat
+        public int Tile;             // the colour of its tile on the panel, 0xRRGGBB
     }
 
     /// <summary>
@@ -171,17 +193,80 @@ namespace RealLifeOverhaul
         public const int ImmuneDays = 3;                // nothing new for this long after anything
         public const int RestCure = 6;                  // hours a good night's sleep takes off an illness
 
-        public static readonly Recipe[] Recipes =
+        // ---- cooking
+
+        /// <summary>
+        /// The game's own food items by kind (read from its item catalogue: every item with a saturation that is
+        /// food). Anything not listed is not cooked with, whatever the fridge will hold: the game gives every
+        /// goods item a saturation, batteries included.
+        /// </summary>
+        public static readonly System.Collections.Generic.Dictionary<string, FoodKind> Foods =
+            new System.Collections.Generic.Dictionary<string, FoodKind>(System.StringComparer.Ordinal)
         {
-            new Recipe { Name = "reallife_home_recipe_leftovers", Portions = 0, Minutes = 8, Yield = 0f, Burn = 0f, Leftovers = -1, Calm = 0f, Mess = 0f },
-            new Recipe { Name = "reallife_home_recipe_quick", Portions = 1, Minutes = 20, Yield = 1.4f, Burn = 0.05f, Leftovers = 0, Calm = 2f, Mess = 2f },
-            new Recipe { Name = "reallife_home_recipe_dinner", Portions = 2, Minutes = 45, Yield = 1.7f, Burn = 0.09f, Leftovers = 0, Calm = 6f, Mess = 4f },
-            new Recipe { Name = "reallife_home_recipe_stew", Portions = 3, Minutes = 80, Yield = 1.5f, Burn = 0.12f, Leftovers = 2, Calm = 8f, Mess = 5f }
+            { "ba:itemname_groundbeef", FoodKind.Meat }, { "ba:itemname_chickenbreast", FoodKind.Meat }, { "ba:itemname_rawsausage", FoodKind.Meat },
+            { "ba:itemname_carrot", FoodKind.Vegetable }, { "ba:itemname_lettuce", FoodKind.Vegetable }, { "ba:itemname_tomato", FoodKind.Vegetable },
+            { "ba:itemname_onion", FoodKind.Vegetable }, { "ba:itemname_slicedonions", FoodKind.Vegetable }, { "ba:itemname_russetpotatoes", FoodKind.Vegetable },
+            { "ba:itemname_milk", FoodKind.Dairy }, { "ba:itemname_butter", FoodKind.Dairy }, { "ba:itemname_cheese", FoodKind.Dairy },
+            { "ba:itemname_dough", FoodKind.Grain }, { "ba:itemname_bakingmix", FoodKind.Grain }, { "ba:itemname_barley", FoodKind.Grain },
+            { "ba:itemname_apple", FoodKind.Fruit }, { "ba:itemname_banana", FoodKind.Fruit }, { "ba:itemname_pear", FoodKind.Fruit },
+            { "ba:itemname_grapes", FoodKind.Fruit },
+            { "ba:itemname_freshfood", FoodKind.Fresh },
+            { "ba:itemname_frozenfood", FoodKind.Frozen },
+            { "ba:itemname_burger", FoodKind.Ready }, { "ba:itemname_hotdog", FoodKind.Ready }, { "ba:itemname_kabob", FoodKind.Ready },
+            { "ba:itemname_pizza", FoodKind.Ready }, { "ba:itemname_frenchfries", FoodKind.Ready }, { "ba:itemname_salad", FoodKind.Ready },
+            { "ba:itemname_cheeseplatter", FoodKind.Ready },
+            { "ba:itemname_croissant", FoodKind.Snack }, { "ba:itemname_cupcake", FoodKind.Snack }, { "ba:itemname_donut", FoodKind.Snack },
+            { "ba:itemname_cottoncandy", FoodKind.Snack }, { "ba:itemname_popcorn", FoodKind.Snack }, { "ba:itemname_icecream", FoodKind.Snack },
+            { "ba:itemname_beer", FoodKind.Drink }, { "ba:itemname_bottleofwine", FoodKind.Drink }, { "ba:itemname_margarita", FoodKind.Drink },
+            { "ba:itemname_martini", FoodKind.Drink }, { "ba:itemname_whisky", FoodKind.Drink }, { "ba:itemname_cupofcoffee", FoodKind.Drink },
+            { "ba:itemname_cupoftea", FoodKind.Drink }, { "ba:itemname_energydrink", FoodKind.Drink }, { "ba:itemname_slushi", FoodKind.Drink },
+            { "ba:itemname_sodacan", FoodKind.Drink }
         };
 
-        public const int LeftoverSaturation = 35;
-        public const int LeftoversMost = 4;
+        public static readonly Dish[] Dishes =
+        {
+            new Dish { Number = 1, Name = "reallife_home_dish_fruit_bowl", Needs = new[] { FoodKind.Fruit, FoodKind.Fruit },
+                Cooker = false, Portions = 1, Minutes = 5, Yield = 1.2f, Burn = 0f, Calm = 1f, Mess = 1f, Tile = 0xD9A441 },
+            new Dish { Number = 2, Name = "reallife_home_dish_salad", Needs = new[] { FoodKind.Vegetable, FoodKind.Vegetable },
+                Cooker = false, Portions = 1, Minutes = 10, Yield = 1.4f, Burn = 0f, Calm = 1f, Mess = 1f, Tile = 0x5E9E4A },
+            new Dish { Number = 3, Name = "reallife_home_dish_cheese_fruit", Needs = new[] { FoodKind.Dairy, FoodKind.Fruit },
+                Cooker = false, Portions = 1, Minutes = 5, Yield = 1.3f, Burn = 0f, Calm = 1f, Mess = 1f, Tile = 0xC9B458 },
+            new Dish { Number = 4, Name = "reallife_home_dish_heated", Needs = new[] { FoodKind.Ready },
+                Cooker = true, Portions = 1, Minutes = 10, Yield = 1.25f, Burn = 0.03f, Calm = 0f, Mess = 1f, Tile = 0xB8693A },
+            new Dish { Number = 5, Name = "reallife_home_dish_frozen", Needs = new[] { FoodKind.Frozen },
+                Cooker = true, Portions = 1, Minutes = 20, Yield = 2.6f, Burn = 0.05f, Calm = 0f, Mess = 1f, Tile = 0x5B8FB9 },
+            new Dish { Number = 6, Name = "reallife_home_dish_fryup", Needs = new[] { FoodKind.Meat, FoodKind.Vegetable },
+                Cooker = true, Portions = 1, Minutes = 20, Yield = 1.5f, Burn = 0.06f, Calm = 2f, Mess = 2f, Tile = 0xA8552F },
+            new Dish { Number = 7, Name = "reallife_home_dish_pancakes", Needs = new[] { FoodKind.Grain, FoodKind.Dairy },
+                Cooker = true, Portions = 1, Minutes = 15, Yield = 1.4f, Burn = 0.07f, Calm = 2f, Mess = 2f, Tile = 0xD8B36A },
+            new Dish { Number = 8, Name = "reallife_home_dish_dinner", Needs = new[] { FoodKind.Fresh },
+                Cooker = true, Portions = 2, Minutes = 45, Yield = 1.5f, Burn = 0.08f, Calm = 6f, Mess = 4f, Tile = 0x8C6BB1 },
+            new Dish { Number = 9, Name = "reallife_home_dish_soup", Needs = new[] { FoodKind.Vegetable, FoodKind.Vegetable, FoodKind.Vegetable },
+                Cooker = true, Portions = 2, Minutes = 35, Yield = 1.7f, Burn = 0.05f, Calm = 4f, Mess = 3f, Tile = 0xC8742C },
+            new Dish { Number = 10, Name = "reallife_home_dish_pizza", Needs = new[] { FoodKind.Grain, FoodKind.Dairy, FoodKind.Vegetable },
+                Cooker = true, Portions = 2, Minutes = 40, Yield = 1.8f, Burn = 0.09f, Calm = 5f, Mess = 4f, Tile = 0xC0453A },
+            new Dish { Number = 11, Name = "reallife_home_dish_roast", Needs = new[] { FoodKind.Fresh, FoodKind.Meat, FoodKind.Vegetable },
+                Cooker = true, Portions = 3, Minutes = 70, Yield = 1.5f, Burn = 0.10f, Calm = 8f, Mess = 5f, Tile = 0x7A4B2A },
+            new Dish { Number = 12, Name = "reallife_home_dish_stew", Needs = new[] { FoodKind.Meat, FoodKind.Meat, FoodKind.Vegetable, FoodKind.Vegetable, FoodKind.Vegetable },
+                Cooker = true, Portions = 3, Minutes = 80, Yield = 1.6f, Burn = 0.12f, Calm = 8f, Mess = 5f, Tile = 0x6B3F2A }
+        };
+
+        /// <summary>How many batches at once: the panel's "Normal", "Double" and "Family size".</summary>
+        public static readonly int[] Batches = { 1, 2, 4 };
+        /// <summary>A bigger pot takes longer, though not as long as cooking it twice.</summary>
+        public static readonly float[] BatchMinutes = { 1f, 1.25f, 1.6f };
+        /// <summary>It is a little easier to burn.</summary>
+        public static readonly float[] BatchBurn = { 0f, 0.01f, 0.03f };
+        /// <summary>And it makes more of a mess.</summary>
+        public static readonly float[] BatchMess = { 1f, 1.2f, 1.5f };
+
+        public const float BurnWhenWorn = 0.08f;        // added to a dish's chance when stressed (over StressHigh) or exhausted
+        public const float WornEnergy = 20f;            // "exhausted": energy under this
+        public const int ReheatMinutes = 8;
+        public const int LeftoverSaturation = 35;       // a portion put by before the mod knew what dish it was
+        public const int LeftoversMost = 8;
         public const float BurntYield = 0.6f;
+        public const float CookReach = 2.4f;            // how near a cooker or a fridge the "cook" prompt is offered, metres
 
         /// <summary>How much of a need or a risk is left on "easy needs".</summary>
         public const float Easy = 0.5f;
