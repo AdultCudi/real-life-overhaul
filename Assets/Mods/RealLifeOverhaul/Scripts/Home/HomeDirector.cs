@@ -106,6 +106,7 @@ namespace RealLifeOverhaul
         {
             SaveHook.Drop(_onSave);
             GameEvent.onGameEventTriggered -= OnGameEvent;
+            HomeCookOffer.Remove();
             TakeBack();
             _run.Dispose();
             _props.Dispose();
@@ -128,6 +129,17 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>Asks for a routine as soon as nothing is in the way (the phone put down, the conversation over).</summary>
+        /// <summary>The game's "Click to cook" on a cooker was clicked: the same as the key was.</summary>
+        public void CookClicked()
+        {
+            if (_broken || ThirdPersonCamera.IsUiOpen())
+            {
+                return;
+            }
+            HidePrompt();
+            Act(HomeWish.Cook, false);
+        }
+
         public void Wish(HomeWish wish)
         {
             _wish = wish;
@@ -206,6 +218,7 @@ namespace RealLifeOverhaul
         {
             try
             {
+                HomeCookOffer.Remove();
                 Body?.Release();
                 _run?.End("reallife_home_run_ended_left");
                 HidePrompt();
@@ -440,7 +453,11 @@ namespace RealLifeOverhaul
             {
                 HomePlace.Scan();
                 Vector3 at = player.transform.position;
-                if (HomePlace.Nearest(HomePlace.Cookers, at, HomeBalance.CookReach) != null || HomePlace.NearestFridge(at, HomeBalance.CookReach) != null)
+                // Where the home has a cooker, cooking is offered by the game itself: "Click to cook" on the cooker
+                // (HomeCookOffer). The key prompt is left for the one case that has no such object: a home with a
+                // fridge and no cooker, where the fridge's own click belongs to the game's panel of what is in it.
+                bool clickCooks = HomeCookOffer.Mark(HomePlace.Cookers);
+                if (!clickCooks && HomePlace.NearestFridge(at, HomeBalance.CookReach) != null)
                 {
                     offer = HomeWish.Cook;
                 }
