@@ -60,6 +60,7 @@ namespace RealLifeOverhaul
         private readonly NavMeshObstacle[] _blocks = new NavMeshObstacle[5];   // pole, back, end panel, screen, bench
         private readonly byte[] _taken = new byte[Seats];                      // 0 free, 1 the player, 2 somebody waiting
         private bool _modelled;
+        private bool _solid;       // the boxes are cutting the navigation mesh (only while the player is on foot near the stop)
         private bool _checkDue;
         private float _checkAt;
         private float _radius = 0.5f;
@@ -68,6 +69,33 @@ namespace RealLifeOverhaul
 
         public TransitStop Stop { get; private set; }
         public Transform Sign => _sign;
+
+        /// <summary>True while the stop's boxes cut the navigation mesh.</summary>
+        public bool IsSolid => _solid;
+
+        /// <summary>
+        /// Makes the stop solid to people on foot, or lets the mesh close again. Cutting the navigation mesh is work
+        /// for the engine every time it changes, so a stop is only cut while the player is on foot near it (the
+        /// director decides): driving through the city, stops come and go as things to look at and the mesh is
+        /// left alone. All of a stop's boxes change in the same frame, on purpose: the engine re-cuts the piece of
+        /// mesh they stand on once for the lot, where one box a frame would have it cut five times.
+        /// While a stop is not solid the game's pedestrians may walk through its pole and panels.
+        /// </summary>
+        public void Solid(bool on, float now)
+        {
+            if (on == _solid || Stop == null)
+            {
+                return;
+            }
+            _solid = on;
+            SessionWatch.Mark(on ? "transit: a bus stop made solid (the navigation mesh is cut round it)" : "transit: a bus stop no longer solid (the navigation mesh closes)");
+            for (int i = 0; i < _blocks.Length; i++)
+            {
+                _blocks[i].enabled = on;
+            }
+            _checkDue = on;
+            _checkAt = now + 1.6f;   // the cut is made once the boxes have stood still for half a second
+        }
 
         /// <summary>The shelter stands at this stop (the stop has room for one and the way past it is there).</summary>
         public bool Sheltered => Stop != null && _shelter.gameObject.activeSelf;
@@ -94,7 +122,7 @@ namespace RealLifeOverhaul
         /// <param name="walkerRadius">The radius the navigation mesh was made for (the player's kind of walker).</param>
         public void Put(TransitStop stop, string numbers, string mapText, float walkerRadius)
         {
-            SessionWatch.Mark("transit: a bus stop being put out (the navigation mesh is cut round it)");
+            SessionWatch.Mark("transit: a bus stop being put out");
             _root.SetActive(false);   // moved while off, so the mesh is cut once, in the right place
             Stop = stop;
             _radius = Mathf.Clamp(walkerRadius, 0.15f, 0.6f);
@@ -120,14 +148,20 @@ namespace RealLifeOverhaul
                     _labels[i].text = numbers;
                 }
             }
+            // Not solid yet: nothing is cut out of the mesh for a stop that is only driven past (see Solid).
+            _solid = false;
+            for (int i = 0; i < _blocks.Length; i++)
+            {
+                _blocks[i].enabled = false;
+            }
+            _checkDue = false;
             _root.SetActive(true);
-            _checkDue = true;
-            _checkAt = Time.time + 1.6f;   // the cut is made once the boxes have stood still for half a second
         }
 
         public void Clear()
         {
             Stop = null;
+            _solid = false;
             _checkDue = false;
             for (int i = 0; i < Seats; i++)
             {

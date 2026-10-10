@@ -72,6 +72,8 @@ namespace RealLifeOverhaul
         private const float TickInterval = 0.25f;
         private const float DressRange = 135f;
         private const float UndressRange = 175f;
+        private const float SolidWithin = 60f;      // metres: on foot this near, a dressed stop's boxes cut the navigation mesh
+        private const float SolidKeep = 90f;        // ...and stay cut until this far off
         private const float ServeRange = 80f;
         private const float ServeKeep = 105f;
         private const float PanelRange = 13f;
@@ -333,7 +335,15 @@ namespace RealLifeOverhaul
                 for (int i = 0; i < Dressings; i++)
                 {
                     BusStopDressing dressing = _dressings[i];
-                    if (dressing != null && dressing.Stop != null && dressing.CheckDue)
+                    if (dressing == null || dressing.Stop == null)
+                    {
+                        continue;
+                    }
+                    // Solid (the navigation mesh cut round it) only while the player is on foot near it: nearer to
+                    // become so than to stay so, so that it does not flicker at the edge. Never while driving past.
+                    float reach = dressing.IsSolid ? SolidKeep : SolidWithin;
+                    dressing.Solid(onFoot && !_ride.Riding && CitySpots.Flat(dressing.Stop.Sign - at) < reach * reach, now);
+                    if (dressing.CheckDue)
                     {
                         // Once after each dressing, and only for the log: with diagnostics off nothing is asked of the mesh and no text is made.
                         dressing.Check(Meta.Dev.Verbose ? Logger : null, now, Meta.Dev.Verbose ? StopLabel(dressing.Stop) : null);
