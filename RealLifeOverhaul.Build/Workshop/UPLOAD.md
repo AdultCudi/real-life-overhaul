@@ -50,7 +50,7 @@ If it fails, the game shows which of these it was: not connected to Steam, the f
 
 ## Straight afterwards: remove the local copy
 
-The game loads every folder in `ModsLocal` as well as every Workshop item that is switched on. After the upload you have both. They are the same DLL, so the game loads the assembly once, but it registers each folder as a mod of its own and starts the mod's classes twice: two copies of every feature run at once. To avoid that:
+The game loads every folder in `ModsLocal` as well as every Workshop item that is switched on. After the upload you have both. They are the same DLL, so the game loads the assembly once, but it registers each folder as a mod of its own and starts the mod's classes twice (it only looks for two mods with one assembly name among the Workshop items and among the `ModsLocal` folders separately). Up to 0.1.0 that meant two copies of every feature running at once. From 0.1.1 the second copy to start writes one warning to `Player.log` ("switched on twice", "already running in this city") and does nothing; which copy is the one running, and so whose options and key choices are in use, is then whichever the game started first. Keep one:
 
 - Quit the game and move `ModsLocal\RealLifeOverhaul` somewhere outside `ModsLocal` (or delete it: the build puts it back).
 - While you work on the mod again, do the opposite: keep the `ModsLocal` copy and untick the Workshop item under **Mods** in the main menu.
@@ -83,7 +83,7 @@ Two more things follow from the mod now having a different id (its Workshop numb
 
 1. With `ModsLocal\RealLifeOverhaul` moved away, start the game. Under **Mods** the item is listed and ticked.
 2. Start a new game. The welcome panel appears; the options page (Options, Mods tab) starts with the search box, the Guide and the presets; the preset in use is Standard.
-3. `Player.log` has "[Mod:Real Life Overhaul] Real Life Overhaul 0.1.0 initialised." and no error from the mod.
+3. `Player.log` has "[Mod:Real Life Overhaul] Real Life Overhaul 0.1.1 initialised." and no error from the mod.
 4. Best of all, ask someone else to subscribe on a computer that never had the mod.
 
 ## Updating later

@@ -9,7 +9,7 @@ This repository is the source. You only need it if you want to read the code, re
 
 ## Status
 
-Version 0.1.0 is the first public release. Much of it has had little play from start to finish. The in-game Guide has a "Known limits" page, and [the Workshop description](RealLifeOverhaul.Build/Workshop/description.txt) carries the short version.
+Version 0.1.0 was the first public release; 0.1.1 is the current one. Much of it has had little play from start to finish. The in-game Guide has a "Known limits" page, and [the Workshop description](RealLifeOverhaul.Build/Workshop/description.txt) carries the short version.
 
 Windows and English only.
 
@@ -42,7 +42,7 @@ dotnet build RealLifeOverhaul.Build/RealLifeOverhaul.csproj -c Release "-p:GameM
 
 The build must end with `0 Warning(s)` and `0 Error(s)`. It copies the mod to `%USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions\ModsLocal\RealLifeOverhaul`. To build without installing, add `"-p:ModsLocal=<some other folder>"`.
 
-If you are also subscribed on the Workshop, untick the Workshop item under Mods in the game's main menu while you test a local build. The game refuses two mods with the same assembly name, so with both switched on neither copy loads. A copy built under another assembly name would load next to the first; the second one to start in a city then logs a warning and does nothing.
+If you are also subscribed on the Workshop, untick the Workshop item under Mods in the game's main menu while you test a local build. With both switched on the game starts the mod twice. From 0.1.1 the second copy to start writes a warning to `Player.log` and does nothing, so nothing runs twice, but which of the two copies is the one running is then up to the game: keep only one switched on.
 
 Check the texts:
 
@@ -68,7 +68,7 @@ Open an issue. What helps most:
 With "Developer diagnostics" on, the mod writes one line to `Player.log` for every minute of play, and one for every frame that took longer than 80 ms:
 
 ```
-[Mod:Real Life Overhaul] Session 12 min: frames 5210, average 11.5 ms, worst 61 ms, over 33 ms: 4, over 50 ms: 1; managed heap 412 MB of 610 MB, collections in the minute 3; engine memory 2950 MB; mod objects 345 (118 shown) under 6 roots; people 2 out, 5 made of 12; city people 3 out, 8 made of 8, city props made 14; on foot in the street, game hour 9.
+[Mod:Real Life Overhaul] Session 12 min: frames 5210, average 11.5 ms, worst 61 ms, over 33 ms: 4, over 50 ms: 1; managed heap 412 MB of 610 MB, collections in the minute 3; engine memory 2950 MB; mod objects 345 (118 shown) under 6 roots; people 2 out, 12 made of 12; city people 3 out, 8 made of 8, city props made 14; looks built in the minute 1 (0 while playing), since the city loaded 23 (2 while playing); on foot in the street, game hour 9.
 [Mod:Real Life Overhaul] Session: a frame of 96 ms; the mod was at: city life: a character's look being built (a mesh merge); a garbage collection ran in it; on foot in the street, game hour 9.
 ```
 
