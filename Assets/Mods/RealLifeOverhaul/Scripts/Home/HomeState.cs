@@ -61,6 +61,8 @@ namespace RealLifeOverhaul
         // ---- dates and counters
         public static int Day;              // the day the counters below belong to
         public static int Leftovers;        // cooked portions put by
+        public static int LeftoverDish;     // which dish they are (Dish.Number); 0: not known
+        public static int LeftoverFill;     // what one of them fills when reheated; 0: HomeBalance.LeftoverSaturation
         public static int CoffeesToday;
         public static float StressHighHours; // hours on end with stress at the top
         public static int LastWorkoutDay;
@@ -102,6 +104,8 @@ namespace RealLifeOverhaul
             ImmuneUntilDay = 0;
             Day = 0;
             Leftovers = 0;
+            LeftoverDish = 0;
+            LeftoverFill = 0;
             CoffeesToday = 0;
             StressHighHours = 0f;
             LastWorkoutDay = 0;
@@ -279,6 +283,8 @@ namespace RealLifeOverhaul
             Put(text, "imm", ImmuneUntilDay);
             Put(text, "day", Day);
             Put(text, "gro", Leftovers);
+            Put(text, "grd", LeftoverDish);
+            Put(text, "grf", LeftoverFill);
             Put(text, "cf", CoffeesToday);
             Put(text, "shh", StressHighHours);
             Put(text, "lw", LastWorkoutDay);
@@ -325,6 +331,8 @@ namespace RealLifeOverhaul
                 case "imm": ImmuneUntilDay = (int)v; break;
                 case "day": Day = (int)v; break;
                 case "gro": Leftovers = (int)v; break;
+                case "grd": LeftoverDish = (int)v; break;
+                case "grf": LeftoverFill = (int)v; break;
                 case "cf": CoffeesToday = (int)v; break;
                 case "shh": StressHighHours = v; break;
                 case "lw": LastWorkoutDay = (int)v; break;
@@ -344,6 +352,26 @@ namespace RealLifeOverhaul
         private static void Put(StringBuilder text, string name, float value)
         {
             text.Append(';').Append(name).Append('=').Append(value.ToString("0.###", CultureInfo.InvariantCulture));
+        }
+
+        /// <summary>
+        /// Puts cooked portions by, as far as there is room for them. Returns how many were kept. The leftovers are
+        /// one lot: they take the name of the dish that came last, and a portion fills the average of what is there.
+        /// </summary>
+        public static int PutBy(int portions, int dish, int fill)
+        {
+            int had = Leftovers < 0 ? 0 : Leftovers;
+            int room = HomeBalance.LeftoversMost - had;
+            int kept = portions < room ? portions : room;
+            if (kept <= 0)
+            {
+                return 0;
+            }
+            int hadFill = LeftoverFill > 0 ? LeftoverFill : HomeBalance.LeftoverSaturation;
+            LeftoverFill = (had * hadFill + kept * fill) / (had + kept);
+            LeftoverDish = dish;
+            Leftovers = had + kept;
+            return kept;
         }
 
         public static float Clamp(float value, float low, float high)

@@ -33,6 +33,8 @@ namespace RealLifeOverhaul
         protected int Total;
         protected int Done;
         private bool _begun;
+        private bool _again;                     // offered a second time after the game's panel dropped it as it set off
+        private Vector3 _goal;                   // where the walk is to end; zero when there was none
 
         /// <summary>When (unscaled time) the director starts the game's time skip for this routine; negative for never.</summary>
         public float SkipAt = -1f;
@@ -54,6 +56,9 @@ namespace RealLifeOverhaul
 
         /// <summary>Last look before setting off: false (having said why) keeps the panel open.</summary>
         protected virtual bool Ready(PlayerController player) => true;
+
+        /// <summary>On arrival, before anything is seen: false (having said why) calls the routine off.</summary>
+        protected virtual bool Prepare(PlayerController player) => true;
 
         protected abstract void Begin(PlayerController player);
         protected virtual void Minute(PlayerController player, int minutes) { }
@@ -127,6 +132,28 @@ namespace RealLifeOverhaul
             State = PlayerActivityState.Finished;
         }
 
+        /// <summary>
+        /// Starts the routine without the player pressing the panel's start button: for one that was chosen
+        /// on a panel of the mod's own. Only once the game's panel has shown the routine for a frame or two
+        /// (HomeDirector sees to that): its panel must have seen it waiting before it sees it under way.
+        /// </summary>
+        public void StartNow()
+        {
+            if (State == PlayerActivityState.NotStarted)
+            {
+                Start();
+            }
+        }
+
+        /// <summary>Takes a routine that is still waiting on the game's panel off it again, as its cancel button does.</summary>
+        public void CallOff()
+        {
+            if (State == PlayerActivityState.NotStarted)
+            {
+                Cancel();
+            }
+        }
+
         private void Start()
         {
             PlayerController player = PlayerHelper.PlayerController;
@@ -135,8 +162,40 @@ namespace RealLifeOverhaul
                 return;
             }
             State = PlayerActivityState.MovingTowardsActivity;
-            // Two frames on, as the game's own activities wait one: its panel has let the clock run again by then.
-            Host.Later(SetOff, 2);
+            // The walk order is given at the end of this frame, which is when the game's own activities give theirs.
+            // Never later: from the end of the frame in which the game's panel sees a routine on its way, the panel
+            // takes any new walk order for a click somewhere else and drops the routine without a word
+            // (PlayerActivityUI.CancelActivityMovement, on PlayerController.PlayerChangedNavigation), and the routine's
+            // own walk order is one. Two frames on, as this was up to and including 0.1.1, every routine that had a step to walk
+            // called itself off.
+            if (_again)
+            {
+                // The second go, after the panel dropped the first: at once. Its panel has not seen the routine on its
+                // way yet (it sees that in its next Update), so nothing can take this order for a click elsewhere.
+                SetOff();
+                return;
+            }
+            Host.StartCoroutine(SetOffAtFrameEnd());
+        }
+
+        private static readonly WaitForEndOfFrame FrameEnd = new WaitForEndOfFrame();
+
+        private System.Collections.IEnumerator SetOffAtFrameEnd()
+        {
+            yield return FrameEnd;
+            try
+            {
+                SetOff();
+            }
+            catch (System.Exception e)
+            {
+                HomeDirector.Logger?.Error(e);
+                HomeDirector.Refuse("reallife_home_refused_called_off", Title, "error while setting off");
+                if (State == PlayerActivityState.MovingTowardsActivity)
+                {
+                    Cancel();
+                }
+            }
         }
 
         private void SetOff()
@@ -152,6 +211,8 @@ namespace RealLifeOverhaul
             {
                 if (!player.ExistsRoute(furniture, showErrorNotification: true))
                 {
+                    // The game has said so itself ("cannot reach").
+                    HomeDirector.Logger?.Info("Home: '" + Title + "' not started (no way to the furniture on foot).");
                     Cancel();
                     return;
                 }
@@ -167,12 +228,34 @@ namespace RealLifeOverhaul
             gap.y = 0f;
             if (target == Vector3.zero || gap.sqrMagnitude < 0.2f * 0.2f)
             {
+                _goal = Vector3.zero;
                 player.ResetWalkingAnimation();
                 Arrived();
+                return;
             }
-            else
+            _goal = target;
+            player.SetGoal(target, Arrived);
+            if (State == PlayerActivityState.NotStarted)
             {
-                player.SetGoal(target, Arrived);
+                // The game's panel took the order for a click elsewhere after all and has dropped the routine and closed.
+                // Once more from the start, with its panel shown again; a second time, the player is told.
+                player.RemoveGoal();
+                if (!_again)
+                {
+                    _again = true;
+                    HomeDirector.Logger?.Info("Home: '" + Title + "' was called off by the game's panel as it set off; offered again.");
+                    Host.Again(this);
+                }
+                else
+                {
+                    HomeDirector.Refuse("reallife_home_refused_called_off", Title);
+                }
+            }
+            else if (State == PlayerActivityState.MovingTowardsActivity && !player.hasOnGoalReachedAction)
+            {
+                // The game would not take a walk order at all (something of its own holds the player where they stand).
+                HomeDirector.Refuse("reallife_home_refused_cannot_walk", Title);
+                Cancel();
             }
         }
 
@@ -182,6 +265,18 @@ namespace RealLifeOverhaul
             if (State != PlayerActivityState.MovingTowardsActivity || player == null || player.Character == null)
             {
                 return;
+            }
+            if (_goal != Vector3.zero)
+            {
+                // The game also says "arrived" when the walk never began (a movement key was held down).
+                Vector3 off = _goal - player.transform.position;
+                off.y = 0f;
+                if (off.sqrMagnitude > 1.5f * 1.5f)
+                {
+                    HomeDirector.Refuse("reallife_home_refused_not_reached", Title);
+                    Cancel();
+                    return;
+                }
             }
             EntityController furniture = Furniture;
             if (furniture != null)
@@ -199,6 +294,11 @@ namespace RealLifeOverhaul
                     player.Character.ForceToRotation(Quaternion.LookRotation(look.normalized));
                 }
             }
+            if (!Prepare(player))
+            {
+                Cancel();   // it has said why
+                return;
+            }
             State = PlayerActivityState.Started;   // the game's panel makes it Running on its next frame
             Done = 0;
             _begun = true;
@@ -211,6 +311,12 @@ namespace RealLifeOverhaul
         }
 
         public LabelInfo GetHeadlineLabel()
+        {
+            return Headline();
+        }
+
+        /// <summary>The line at the top of the game's panel: the routine's name unless it has a better one.</summary>
+        protected virtual LabelInfo Headline()
         {
             return new LabelInfo(Title, InstanceBehavior<GlobalReferences>.Instance.colors.white);
         }
@@ -302,52 +408,35 @@ namespace RealLifeOverhaul
     // ==================================================================== cooking
 
     /// <summary>
-    /// A meal cooked at a cooker in the player's home from what is in their fridge, and eaten.
-    /// The slider picks the recipe. The food leaves the fridge when the cooking starts; taking
-    /// the pan off early wastes it. More filling than its ingredients eaten cold, counted as a
-    /// home-cooked meal for the diet, and it can burn.
+    /// One dish chosen on the cooking panel, made and eaten: at a cooker, or at the fridge for what needs no
+    /// cooking. What it takes leaves the fridges when the player gets there and starts (so a walk called off
+    /// costs nothing); stopping early wastes it. One portion is eaten when it is done, through the game's own
+    /// hunger, and the others are put by as leftovers. Counted as a home-cooked meal for the diet; it can burn.
     /// </summary>
     public sealed class CookActivity : HomeActivity
     {
-        private readonly ItemController _cooker;
-        private int _recipe;
-        private int _saturation;
+        private readonly ItemController _at;
+        private readonly CookPlan _plan;
+        private readonly string _name;
         private float _nextStir;
         private bool _clip;
 
-        public CookActivity(HomeDirector host, ItemController cooker) : base(host)
+        public CookActivity(HomeDirector host, ItemController at, CookPlan plan) : base(host)
         {
-            _cooker = cooker;
-            int portions = HomePlace.Portions();
-            _recipe = portions >= 2 ? 2 : portions >= 1 ? 1 : 0;
-            Total = HomeBalance.Recipes[_recipe].Minutes;
+            _at = at;
+            _plan = plan;
+            _name = JobText.T(plan.NameKey);
+            Total = plan.Minutes;
         }
 
         public override Doing Kind => Doing.HomeRoutine;
         protected override string Title => "reallife_home_cook_title";
         protected override string StartKey => "reallife_home_cook_start";
-        protected override EntityController Furniture => _cooker;
-        protected override int SliderLow => HomeState.Leftovers > 0 ? 0 : 1;
-        protected override int SliderHigh => HomeBalance.Recipes.Length - 1;
-        protected override int SliderNow => _recipe;
+        protected override EntityController Furniture => _at;
 
-        protected override void Slide(int value)
+        protected override LabelInfo Headline()
         {
-            _recipe = value;
-            Total = HomeBalance.Recipes[_recipe].Minutes;
-        }
-
-        protected override (string, object) SliderText()
-        {
-            Recipe recipe = HomeBalance.Recipes[_recipe];
-            return ("reallife_home_cook_slider", new
-            {
-                recipe = JobText.T(recipe.Name),
-                minutes = recipe.Minutes,
-                portions = recipe.Portions,
-                have = HomePlace.Portions(),
-                leftovers = HomeState.Leftovers
-            });
+            return new LabelInfo(_name, InstanceBehavior<GlobalReferences>.Instance.colors.white, false);
         }
 
         protected override LabelInfo[] Labels()
@@ -355,12 +444,34 @@ namespace RealLifeOverhaul
             return new[] { Line("reallife_home_cook_info") };
         }
 
+        private bool StillThere => _plan.Reheat ? HomeState.Leftovers > 0 : HomePlace.Holds(_plan);
+
         protected override bool Ready(PlayerController player)
         {
-            Recipe recipe = HomeBalance.Recipes[_recipe];
-            if (recipe.Portions == 0 ? HomeState.Leftovers <= 0 : HomePlace.Portions() < recipe.Portions)
+            if (!StillThere)
             {
-                HomeDirector.Refuse("reallife_home_refused_no_food", Title);
+                HomeDirector.Refuse("reallife_home_refused_food_gone", Title, _plan.NameKey);
+                return false;
+            }
+            return true;
+        }
+
+        // At the cooker: the food leaves the fridges now.
+        protected override bool Prepare(PlayerController player)
+        {
+            if (_plan.Reheat)
+            {
+                if (HomeState.Leftovers <= 0)
+                {
+                    HomeDirector.Refuse("reallife_home_refused_food_gone", Title, _plan.NameKey);
+                    return false;
+                }
+                HomeState.Leftovers--;
+                return true;
+            }
+            if (!HomePlace.Take(_plan))
+            {
+                HomeDirector.Refuse("reallife_home_refused_food_gone", Title, _plan.NameKey);
                 return false;
             }
             return true;
@@ -368,17 +479,7 @@ namespace RealLifeOverhaul
 
         protected override void Begin(PlayerController player)
         {
-            Recipe recipe = HomeBalance.Recipes[_recipe];
-            if (recipe.Portions == 0)
-            {
-                HomeState.Leftovers = Mathf.Max(0, HomeState.Leftovers - 1);
-                _saturation = HomeBalance.LeftoverSaturation;
-            }
-            else
-            {
-                _saturation = Mathf.RoundToInt(HomePlace.Take(recipe.Portions) * recipe.Yield);
-            }
-            _clip = Clip("cook_stir");
+            _clip = _plan.Cooker && Clip("cook_stir");
             if (!_clip)
             {
                 Gesture(player, AnimationType.UsingProducer);
@@ -397,38 +498,55 @@ namespace RealLifeOverhaul
 
         protected override void End(PlayerController player, bool completed, int minutes)
         {
-            Recipe recipe = HomeBalance.Recipes[_recipe];
-            string meal = JobText.T(recipe.Name);
-            HomeTidy.Change(-recipe.Mess * (completed ? 1f : 0.5f));
-            if (!completed || _saturation <= 0)
+            Dish dish = _plan.Dish;
+            float mess = dish != null ? dish.Mess * HomeBalance.BatchMess[_plan.Size] : 0f;
+            HomeTidy.Change(-mess * (completed ? 1f : 0.5f));
+            if (!completed)
             {
-                Toast(NotificationType.Warning, "reallife_home_cook_wasted", "meal", meal);
+                Toast(NotificationType.Warning, "reallife_home_cook_stopped", "meal", _name);
                 return;
             }
             GameInstance save = SaveGameManager.Current;
-            float burn = recipe.Burn + (HomeState.Stress > HomeBalance.StressHigh || save.Energy < 20f ? 0.08f : 0f);
-            bool burnt = Random.value < burn * (Settings.HomeEasy ? HomeBalance.Easy : 1f);
-            int saturation = burnt ? Mathf.RoundToInt(_saturation * HomeBalance.BurntYield) : _saturation;
-            Host.OwnMeal = burnt ? Meal.Plain : Meal.Home;   // the game's "food eaten" event comes straight back to the director
-            Gesture(player, AnimationType.ConsumeFood);
-            InstanceBehavior<GameManager>.Instance.ChangeHunger(saturation);
+            float easy = Settings.HomeEasy ? HomeBalance.Easy : 1f;
+            bool worn = HomeState.Stress > HomeBalance.StressHigh || save.Energy < HomeBalance.WornEnergy;
+            bool burnt = Random.value < Cooking.BurnChance(_plan, worn) * easy;
+            bool full = Mathf.RoundToInt(save.Hunger) >= 100;   // where the game's own eating says "too stuffed"
+            int fill = burnt ? Mathf.RoundToInt(_plan.Fill * HomeBalance.BurntYield) : _plan.Fill;
+            if (!full)
+            {
+                Host.OwnMeal = burnt ? Meal.Plain : Meal.Home;   // the game's "food eaten" event comes straight back to the director
+                Gesture(player, AnimationType.ConsumeFood);
+                InstanceBehavior<GameManager>.Instance.ChangeHunger(fill);
+            }
+            // What was not eaten is put by: nothing of a burnt meal, everything when the player could not eat.
+            int extra = burnt ? 0 : full ? _plan.Portions : _plan.Portions - 1;
+            int kept = extra > 0 ? HomeState.PutBy(extra, dish != null ? dish.Number : HomeState.LeftoverDish, _plan.Fill) : 0;
+            HomeDirector.Logger?.Info("Home: " + _plan.NameKey + " done: " + (burnt ? "burnt, " : string.Empty) + (full ? "not eaten (full), " : "filled " + fill + ", ")
+                                      + kept + " of " + extra + " portion(s) put by, leftovers now " + HomeState.Leftovers + ".");
             if (burnt)
             {
                 ModState.AddModifier(ModState.MoodDown);
-                Toast(NotificationType.Warning, "reallife_home_cook_burnt", "meal", meal);
+                Toast(NotificationType.Warning, full ? "reallife_home_cook_burnt_full" : "reallife_home_cook_burnt", "meal", _name);
             }
             else
             {
-                HomeState.Stress = HomeState.Clamp(HomeState.Stress - recipe.Calm, 0f, 100f);
-                HomeState.Leftovers = Mathf.Min(HomeBalance.LeftoversMost, HomeState.Leftovers + Mathf.Max(0, recipe.Leftovers));
-                if (recipe.Portions > 0)
+                if (dish != null)
                 {
-                    ModState.AddModifier(ModState.HomeCooked);
+                    HomeState.Stress = HomeState.Clamp(HomeState.Stress - dish.Calm, 0f, 100f);
+                    if (!full)
+                    {
+                        ModState.AddModifier(ModState.HomeCooked);
+                    }
                 }
-                Toast(NotificationType.Success, recipe.Leftovers > 0 ? "reallife_home_cook_done_leftovers" : "reallife_home_cook_done", "meal", meal);
+                string key = full ? "reallife_home_cook_served_full" : kept > 0 ? "reallife_home_cook_served_leftovers" : "reallife_home_cook_served";
+                Toast(NotificationType.Success, key, "meal", _name, "count", kept.ToString());
+            }
+            if (full)
+            {
+                return;
             }
             float poison = (burnt ? HomeBalance.PoisonFromBurnt : 0f) + (HomeState.Tidy < HomeBalance.MessLow ? HomeBalance.PoisonFromFilth : 0f);
-            if (poison > 0f && Random.value < poison * (Settings.HomeEasy ? HomeBalance.Easy : 1f))
+            if (poison > 0f && Random.value < poison * easy)
             {
                 HomeHealth.Catch(Illness.FoodPoisoning, burnt ? "reallife_health_cause_burnt" : "reallife_health_cause_dirty_kitchen", false);
             }

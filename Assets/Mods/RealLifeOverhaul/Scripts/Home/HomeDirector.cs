@@ -17,7 +17,8 @@ namespace RealLifeOverhaul
     public enum HomeWish
     {
         None,
-        Cook,
+        Cook,          // opens the cooking panel
+        CookFirst,     // a test: the first dish the fridges allow, without the panel
         Coffee,
         Tidy,
         Stretch,
@@ -42,7 +43,6 @@ namespace RealLifeOverhaul
     /// </summary>
     public class HomeDirector : MonoBehaviour
     {
-        private const float CookerReach = 2.4f;
         private const string ReadingParameter = "ReadingABook";
 
         public static IModLogger Logger;
@@ -59,6 +59,10 @@ namespace RealLifeOverhaul
         private JobProps _props;
         private JogRun _run;
         private HomeActivity _activity;
+        private HomeActivity _starting;      // chosen on the cooking panel: started for the player once the game's panel has shown it
+        private CookPlan _plan;              // chosen on the cooking panel and waiting for the player to be free
+        private float _planUntil;
+        private readonly System.Collections.Generic.List<PantryItem> _pantry = new System.Collections.Generic.List<PantryItem>(16);
         private Action _later;
         private int _laterFrame;
         private HomeWish _wish;
@@ -145,6 +149,10 @@ namespace RealLifeOverhaul
                     _later = null;
                     what();
                 }
+                if (_plan != null)
+                {
+                    TryCook(now);
+                }
                 if (_prompt != HomeWish.None && JobKeys.InteractDown() && !ThirdPersonCamera.IsUiOpen())
                 {
                     HomeWish wanted = _prompt;
@@ -208,6 +216,9 @@ namespace RealLifeOverhaul
                 _activity = null;
                 _later = null;
                 _wish = HomeWish.None;
+                _starting = null;
+                _plan = null;
+                HomeCookPanel.CloseIfOpen();
             }
             catch (Exception e)
             {
@@ -313,6 +324,7 @@ namespace RealLifeOverhaul
                 }
                 else if (now > _wishUntil)
                 {
+                    Refuse("reallife_home_refused_busy", _wish.ToString(), "waited 20 s");
                     _wish = HomeWish.None;
                 }
             }
@@ -420,7 +432,7 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- prompts and the strip
 
-        // The key prompt at a cooker or a coffee machine at home, and anywhere in a hospital.
+        // The key prompt at a cooker, a fridge or a coffee machine at home, and anywhere in a hospital.
         private void Offer(PlayerController player, bool free, bool atHome)
         {
             HomeWish offer = HomeWish.None;
@@ -428,11 +440,11 @@ namespace RealLifeOverhaul
             {
                 HomePlace.Scan();
                 Vector3 at = player.transform.position;
-                if (HomePlace.Nearest(HomePlace.Cookers, at, CookerReach) != null)
+                if (HomePlace.Nearest(HomePlace.Cookers, at, HomeBalance.CookReach) != null || HomePlace.NearestFridge(at, HomeBalance.CookReach) != null)
                 {
                     offer = HomeWish.Cook;
                 }
-                else if (HomePlace.Nearest(HomePlace.CoffeeMachines, at, CookerReach) != null)
+                else if (HomePlace.Nearest(HomePlace.CoffeeMachines, at, HomeBalance.CookReach) != null)
                 {
                     offer = HomeWish.Coffee;
                 }
@@ -624,6 +636,45 @@ namespace RealLifeOverhaul
             switch (wish)
             {
                 case HomeWish.Cook:
+                case HomeWish.CookFirst:
+                {
+                    if (!Settings.HomeRoutines)
+                    {
+                        TestRefusals.Tell(Logger, "Home " + what, TestRefusal.FeatureOff);
+                        return;
+                    }
+                    if (!HomeTidy.AtHome())
+                    {
+                        Refuse("reallife_home_refused_not_home", what);
+                        return;
+                    }
+                    HomePlace.Scan(true);
+                    if (wish == HomeWish.Cook)
+                    {
+                        // The panel says for itself what is missing: no fridge, nothing in it, no cooker.
+                        HidePrompt();
+                        string found = HomeCookPanel.Open(this);
+                        Logger?.Info("Home: cooking panel opened: " + found);
+                        return;
+                    }
+                    HomePlace.ReadPantry(_pantry);
+                    bool cooker = HomePlace.Cookers.Count > 0;
+                    CookPlan first = cooker ? Cooking.Reheat(HomeState.Leftovers, HomeState.LeftoverDish, HomeState.LeftoverFill) : null;
+                    for (int d = 0; first == null && d < HomeBalance.Dishes.Length; d++)
+                    {
+                        if (cooker || !HomeBalance.Dishes[d].Cooker)
+                        {
+                            first = Cooking.Plan(HomeBalance.Dishes[d], 0, _pantry);
+                        }
+                    }
+                    if (first == null)
+                    {
+                        Refuse("reallife_home_refused_no_food", what, HomePlace.Fridges.Count + " fridge(s), " + HomePlace.Cookers.Count + " cooker(s)");
+                        return;
+                    }
+                    Cook(first);
+                    return;
+                }
                 case HomeWish.Coffee:
                 {
                     if (!Settings.HomeRoutines)
@@ -637,19 +688,13 @@ namespace RealLifeOverhaul
                         return;
                     }
                     HomePlace.Scan(true);
-                    bool cook = wish == HomeWish.Cook;
-                    ItemController item = HomePlace.Nearest(cook ? HomePlace.Cookers : HomePlace.CoffeeMachines, at, 200f);
+                    ItemController item = HomePlace.Nearest(HomePlace.CoffeeMachines, at, 200f);
                     if (item == null)
                     {
-                        Refuse(cook ? "reallife_home_refused_no_cooker" : "reallife_home_refused_no_coffee_machine", what);
+                        Refuse("reallife_home_refused_no_coffee_machine", what);
                         return;
                     }
-                    if (cook && HomePlace.Portions() <= 0 && HomeState.Leftovers <= 0)
-                    {
-                        Refuse("reallife_home_refused_no_food", what, HomePlace.Fridges.Count + " fridge(s)");
-                        return;
-                    }
-                    Show(cook ? (HomeActivity)new CookActivity(this, item) : new CoffeeActivity(this, item));
+                    Show(new CoffeeActivity(this, item));
                     return;
                 }
                 case HomeWish.Tidy:
@@ -766,13 +811,123 @@ namespace RealLifeOverhaul
         }
 
         // Puts a routine on the game's own activity panel. The game may still say no (no energy for an exercise): then nothing is on.
-        private void Show(HomeActivity activity)
+        private void Show(HomeActivity activity, bool startForThePlayer = false)
         {
             HidePrompt();
+            bool panelBusy = PlayerActivityUI.IsPanelOpen;   // the game's Show then does nothing and says nothing
             PlayerActivityUI.Show(activity);
             var uis = InstanceBehavior<UIs>.Instance;
             _activity = uis != null && ReferenceEquals(uis.playerActivityUI.GetCurrentActivity, activity) ? activity : null;
-            Logger?.Info("Home: " + activity.GetType().Name + (_activity != null ? " offered." : " was turned down by the game."));
+            Logger?.Info("Home: " + activity.GetType().Name + (_activity == null ? " was turned down by the game."
+                : startForThePlayer ? " on the game's panel; it starts by itself." : " offered."));
+            if (_activity == null)
+            {
+                if (panelBusy)
+                {
+                    Refuse("reallife_home_refused_busy", activity.GetType().Name, "the game's activity panel was open");
+                }
+                return;   // otherwise the game has said why itself (no energy, in a vehicle)
+            }
+            if (startForThePlayer)
+            {
+                // Two frames on: the game's panel must have seen the routine waiting once before it sees it under
+                // way, or it neither hides itself nor lets the clock run (it compares with the state it saw last).
+                _starting = activity;
+                Later(StartChosen, 2);
+            }
+        }
+
+        private void StartChosen()
+        {
+            HomeActivity activity = _starting;
+            _starting = null;
+            var uis = InstanceBehavior<UIs>.Instance;
+            if (activity != null && uis != null && ReferenceEquals(uis.playerActivityUI.GetCurrentActivity, activity))
+            {
+                activity.StartNow();
+                activity.CallOff();   // it could not start after all and has said why: its panel is not left standing
+            }
+        }
+
+        private HomeActivity _dropped;
+
+        /// <summary>
+        /// A routine the game's panel dropped as it set off (see HomeActivity.SetOff) is put on the panel again
+        /// and started for the player, who has already said yes once.
+        /// </summary>
+        public void Again(HomeActivity activity)
+        {
+            _dropped = activity;
+            Later(ShowAgain, 1);
+        }
+
+        private void ShowAgain()
+        {
+            HomeActivity activity = _dropped;
+            _dropped = null;
+            if (activity != null)
+            {
+                activity.ChangeState(PlayerActivityState.NotStarted);
+                Show(activity, true);
+            }
+        }
+
+        // ---------------------------------------------------------------- cooking
+
+        /// <summary>
+        /// A dish was chosen on the cooking panel. It starts as soon as the player is free (the panel has just
+        /// closed; from the options page, when the menus are closed): within 20 seconds, or they are told why not.
+        /// </summary>
+        public void Cook(CookPlan plan)
+        {
+            if (plan == null || _broken)
+            {
+                return;
+            }
+            _plan = plan;
+            _planUntil = Time.unscaledTime + 20f;
+        }
+
+        // Per frame only while a dish is waiting to be started.
+        private void TryCook(float now)
+        {
+            var gm = InstanceBehavior<GameManager>.Instance;
+            PlayerController player = gm != null ? gm.playerController : null;
+            string what = _plan.NameKey;
+            if (player == null || !Settings.HomeLife || !Settings.HomeRoutines)
+            {
+                _plan = null;
+                return;
+            }
+            if (!Free(player) || _run.Active || _later != null)
+            {
+                if (now > _planUntil)
+                {
+                    _plan = null;
+                    Refuse(_run.Active ? "reallife_home_refused_running" : "reallife_home_refused_busy", what, "waited 20 s");
+                }
+                return;
+            }
+            CookPlan plan = _plan;
+            _plan = null;
+            if (!HomeTidy.AtHome())
+            {
+                Refuse("reallife_home_refused_not_home", what);
+                return;
+            }
+            HomePlace.Scan(true);
+            Vector3 at = player.transform.position;
+            ItemController where = HomePlace.Nearest(HomePlace.Cookers, at, 200f);
+            if (!plan.Cooker)
+            {
+                where = HomePlace.NearestFridge(at, 200f) ?? where;   // put together at the fridge
+            }
+            if (where == null)
+            {
+                Refuse(plan.Cooker ? "reallife_home_refused_no_cooker" : "reallife_home_refused_no_fridge", what);
+                return;
+            }
+            Show(new CookActivity(this, where, plan), true);
         }
 
         // ---------------------------------------------------------------- the options page
@@ -781,6 +936,16 @@ namespace RealLifeOverhaul
         {
             try
             {
+                // The cooking tests are pressed on the options page, where nothing can start: they wait for the
+                // menus to be closed, as what is asked for on the phone does, and say so.
+                PlayerController player = PlayerHelper.PlayerController;
+                if ((wish == HomeWish.Cook || wish == HomeWish.CookFirst) && HomeState.Loaded && Settings.HomeLife && !_broken
+                    && player != null && !Free(player) && !JobDirector.OnShift && !PlayerHelper.IsUsingVehicle && !_run.Active)
+                {
+                    Wish(wish);
+                    Notifications.Show(NotificationType.Info, "reallife_home_test_waits", null, 8f);
+                    return;
+                }
                 Act(wish, true);
             }
             catch (Exception e)

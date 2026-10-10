@@ -147,7 +147,7 @@ namespace RealLifeOverhaul
     /// The furniture the mod's routines use in the building the player is in: cookers, coffee
     /// machines and fridges, found by what the game calls them, once when the player comes in
     /// and again every quarter of a minute. Also the food in the fridges, which is the game's
-    /// own cargo, and a clear piece of floor to tidy or exercise on.
+    /// own cargo, read by kind of food for the cooking panel, and a clear piece of floor to tidy or exercise on.
     /// </summary>
     public static class HomePlace
     {
@@ -208,7 +208,7 @@ namespace RealLifeOverhaul
                     CoffeeMachines.Add(item);
                 }
                 else if (name.IndexOf("stove", StringComparison.Ordinal) >= 0 || name.IndexOf("pizzaoven", StringComparison.Ordinal) >= 0
-                         || name.IndexOf("barbequegrill", StringComparison.Ordinal) >= 0)
+                         || name.IndexOf("grill", StringComparison.Ordinal) >= 0)
                 {
                     Cookers.Add(item);
                 }
@@ -239,8 +239,93 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- food
 
-        /// <summary>How many units of anything edible the fridges hold.</summary>
-        public static int Portions()
+        /// <summary>
+        /// What the fridges of this home hold that can be cooked with or eaten, all fridges together, one entry
+        /// per kind of item. The game's own cargo is read, nothing is copied out of it but names and counts.
+        /// </summary>
+        public static void ReadPantry(List<PantryItem> into)
+        {
+            into.Clear();
+            for (int f = 0; f < Fridges.Count; f++)
+            {
+                List<CargoInstance> cargo = Cargo(Fridges[f]);
+                for (int i = 0; cargo != null && i < cargo.Count; i++)
+                {
+                    CargoInstance stack = cargo[i];
+                    if (stack == null || stack.IsSealed || stack.amount <= 0 || stack.ItemCached == null)
+                    {
+                        continue;
+                    }
+                    FoodKind kind = Cooking.KindOf(stack.itemName);
+                    if (kind == FoodKind.None)
+                    {
+                        continue;
+                    }
+                    PantryItem item = null;
+                    for (int k = 0; k < into.Count; k++)
+                    {
+                        if (into[k].Id == stack.itemName)
+                        {
+                            item = into[k];
+                            break;
+                        }
+                    }
+                    if (item == null)
+                    {
+                        item = new PantryItem { Id = stack.itemName, Kind = kind, Saturation = stack.ItemCached.saturation };
+                        into.Add(item);
+                    }
+                    item.Amount += stack.amount;
+                }
+            }
+        }
+
+        /// <summary>True if the fridges still hold everything the plan takes.</summary>
+        public static bool Holds(CookPlan plan)
+        {
+            for (int u = 0; u < plan.Uses.Count; u++)
+            {
+                if (Stock(plan.Uses[u].Id) < plan.Uses[u].Amount)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Takes what the plan uses out of the fridges, the way the game takes a unit when it is eaten. All of
+        /// it or nothing: false, and nothing taken, if something is no longer there.
+        /// </summary>
+        public static bool Take(CookPlan plan)
+        {
+            if (!Holds(plan))
+            {
+                return false;
+            }
+            for (int u = 0; u < plan.Uses.Count; u++)
+            {
+                int left = plan.Uses[u].Amount;
+                for (int f = 0; f < Fridges.Count && left > 0; f++)
+                {
+                    List<CargoInstance> cargo = Cargo(Fridges[f]);
+                    for (int i = cargo != null ? cargo.Count - 1 : -1; i >= 0 && left > 0; i--)
+                    {
+                        CargoInstance stack = cargo[i];
+                        if (stack == null || stack.IsSealed || stack.amount <= 0 || stack.itemName != plan.Uses[u].Id)
+                        {
+                            continue;
+                        }
+                        int take = Mathf.Min(left, stack.amount);
+                        Fridges[f].ItemInstance.ReduceFromCargo(stack, take);   // an emptied stack leaves the list: hence backwards
+                        left -= take;
+                    }
+                }
+            }
+            return true;
+        }
+
+        private static int Stock(string itemName)
         {
             int count = 0;
             for (int f = 0; f < Fridges.Count; f++)
@@ -248,50 +333,13 @@ namespace RealLifeOverhaul
                 List<CargoInstance> cargo = Cargo(Fridges[f]);
                 for (int i = 0; cargo != null && i < cargo.Count; i++)
                 {
-                    if (Edible(cargo[i]))
+                    if (cargo[i] != null && !cargo[i].IsSealed && cargo[i].amount > 0 && cargo[i].itemName == itemName)
                     {
-                        count += Mathf.Max(0, (int)cargo[i].amount);
+                        count += cargo[i].amount;
                     }
                 }
             }
             return count;
-        }
-
-        /// <summary>
-        /// Takes so many units out of the fridges, the most filling first, the way the game takes one when it
-        /// is eaten. Returns what they would have filled between them; 0 and nothing taken if there are too few.
-        /// </summary>
-        public static int Take(int portions)
-        {
-            if (portions <= 0 || Portions() < portions)
-            {
-                return 0;
-            }
-            int saturation = 0;
-            for (int taken = 0; taken < portions; taken++)
-            {
-                FridgeController from = null;
-                CargoInstance best = null;
-                for (int f = 0; f < Fridges.Count; f++)
-                {
-                    List<CargoInstance> cargo = Cargo(Fridges[f]);
-                    for (int i = 0; cargo != null && i < cargo.Count; i++)
-                    {
-                        if (Edible(cargo[i]) && cargo[i].amount >= 1 && (best == null || cargo[i].ItemCached.saturation > best.ItemCached.saturation))
-                        {
-                            best = cargo[i];
-                            from = Fridges[f];
-                        }
-                    }
-                }
-                if (best == null)
-                {
-                    break;
-                }
-                saturation += best.ItemCached.saturation;
-                from.ItemInstance.ReduceFromCargo(best, 1);
-            }
-            return saturation;
         }
 
         private static List<CargoInstance> Cargo(FridgeController fridge)
@@ -299,9 +347,26 @@ namespace RealLifeOverhaul
             return fridge != null && fridge.ItemInstance != null ? fridge.ItemInstance.cargoInstances : null;
         }
 
-        private static bool Edible(CargoInstance cargo)
+        /// <summary>The nearest fridge to a point, within a distance; null if none.</summary>
+        public static FridgeController NearestFridge(Vector3 from, float within)
         {
-            return cargo != null && !cargo.IsSealed && cargo.ItemCached != null && cargo.ItemCached.saturation > 0;
+            FridgeController best = null;
+            float bestSqr = within * within;
+            for (int i = 0; i < Fridges.Count; i++)
+            {
+                FridgeController fridge = Fridges[i];
+                if (fridge == null || !fridge.isActiveAndEnabled)
+                {
+                    continue;
+                }
+                float sqr = (fridge.transform.position - from).sqrMagnitude;
+                if (sqr < bestSqr)
+                {
+                    bestSqr = sqr;
+                    best = fridge;
+                }
+            }
+            return best;
         }
 
         // ---------------------------------------------------------------- floor

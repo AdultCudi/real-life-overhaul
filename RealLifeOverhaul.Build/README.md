@@ -3679,11 +3679,13 @@ blob reaches the button added to it rather than the building under it; the row's
 ```
 Scripts/Home/
   HomeState      per-save state: the three needs, fitness, sleep debt, five days of meals, the illness, a few dates: one line in modData (game-free)
-  HomeBalance    every number (rates per game hour, thresholds, fees, odds, the recipes) (game-free)
+  HomeBalance    every number (rates per game hour, thresholds, fees, odds), the game's food items by kind, the dishes (game-free)
+  HomeCooking    what can be made from a list of what the fridges hold: a plan per dish, what is one unit short (game-free)
+  HomeCookPanel  the cooking panel: the dishes that can be made now, the leftovers, what is one ingredient short
   HomeDirector   the one component: reads what the player is doing once a second, moves the needs, offers the routines, the test buttons
   HomeHealth     the rules: needs by activity, mood modifiers, fitness, sleep quality, the body, falling ill and getting over it
-  HomePlace      HomeTidy (the flat's tidiness = the game's own floor dirt) and HomePlace (cookers, coffee machines, fridges, a clear piece of floor)
-  HomeActivity   the mod's routines as activities on the game's own panel: cook, coffee, tidy, floor exercises, the doctor's waiting room
+  HomePlace      HomeTidy (the flat's tidiness = the game's own floor dirt) and HomePlace (cookers, coffee machines, fridges and the food in them, a clear piece of floor)
+  HomeActivity   the mod's routines as activities on the game's own panel: a dish from the cooking panel, coffee, tidy, floor exercises, the doctor's waiting room
   JogRun         going for a run: a loop of six checkpoints
   HomePhone      the "Wellbeing" contact and its page (HomeReport), the doctor's consultation (DoctorVisit, ClinicDialog)
   HomeHud        the needs strip
@@ -3737,10 +3739,8 @@ player is doing from the activity that is on it; the game minutes that went by (
   A morning summary once a day after three hours or more.
 - **Routines on the game's panel** (`HomeActivity`: the player walks there, a short watched sequence, then the game's
   own time skip indoors for anything longer than 14 minutes; the stop button, running out of energy and a click
-  elsewhere on the way all end it cleanly): *cook* at a stove, grill or pizza oven at home from the food in the home's
-  fridges (reheated leftovers 8 min; quick fry-up 1 portion, 20 min, 1.4 times as filling; proper dinner 2, 45 min, 1.7;
-  big pot of stew 3, 80 min, 1.5 and two portions of leftovers; burns 5 to 12 % of the time, more when stressed or
-  exhausted, and is then 0.6 as filling); *coffee* at a coffee machine (10 min, 8 energy inside the game's daily limit
+  elsewhere on the way all end it cleanly): *a dish* chosen on the cooking panel, from the food in the home's
+  fridges (see "Cooking" below); *coffee* at a coffee machine (10 min, 8 energy inside the game's daily limit
   for food and drink, three a day); *tidy up* (10 to 90 min, 1.1 points a minute); *stretching, push-ups, sit-ups*
   anywhere with 0.9 m of clear floor all round (1.0 m for push-ups; 10 to 60 min). The mod's floor clips are centred
   on the character and lie along the way they face (`pushup`: toes 0.79 m behind, crown 0.90 m ahead; `situp`: head
@@ -3773,6 +3773,101 @@ player is doing from the activity that is on it; the game minutes that went by (
 
 Left out on purpose: laundry (the game has no machine), pharmacy items (it has none), a gym membership (the game
 charges an entrance fee), a timing game on the game's workout machines (the game's own activity runs them).
+
+### Cooking
+
+**Why a routine "offered" in 0.1.0 and 0.1.1 never ran.** A routine is one of the game's activities on the game's own
+panel. When its start button is pressed the routine is "moving towards the activity", and the game's panel then
+listens for any new walk order: `PlayerActivityUI.CancelActivityMovement` hangs on
+`PlayerController.PlayerChangedNavigation` and, once `_allowCancelMoveTowards` is set, takes a walk order for the
+player clicking somewhere else: it stops the walk, puts the activity back to "not started", forgets it and closes,
+without a message. That flag is set at the end of the frame in which the panel first sees the routine on its way
+(`CoroutineUtility.RunAfterFrameDelay(..., 1)` is one `WaitForEndOfFrame`), which is the frame of the press or the one
+after. The game's own activities give their walk order at the end of the frame of the press, before the flag. The
+mod gave its own (`player.SetGoal`, which ends in `SetNewDestination` and `PlayerChangedNavigation.Invoke()`) two
+frames after the press, so its own first step was taken for a click elsewhere and every routine with a step to walk
+called itself off: cooking and coffee always (the furniture's standing place is never where the player stands),
+tidying and the floor exercises whenever the clear floor was not under their feet. In `Player.log` that is
+"Home: CookActivity offered." and then nothing.
+
+Now (`HomeActivity.Start` / `SetOff`): the walk order is given at the end of the frame of the start, as the game's
+are. If the panel drops the routine all the same, the routine is put on the panel once more and its walk order is
+given at once, before the panel can have seen it on its way; a second failure is a toast. Every other way a start
+can come to nothing says so in one sentence: no way there on foot (the game's own "cannot reach"), the game would
+not take a walk order, the walk never began (a movement key held down), the furniture in use, the food gone from
+the fridge meanwhile, the game's panel busy, 20 seconds without the player being free.
+
+**The game's food** (read from its item bundle, `defaultlocalgroup_assets_items`: 791 items; every goods item has
+`saturation`, 30 unless set, batteries and glass included, and the fridge takes anything with a saturation, so
+food is a list of ids, `HomeBalance.Foods`; anything else in a fridge is ignored):
+
+| kind | the game's items (`ba:itemname_...`), saturation |
+|---|---|
+| meat | `groundbeef` 30, `chickenbreast` 30, `rawsausage` 30 |
+| vegetables | `carrot` 20, `lettuce` 15, `tomato` 20, `onion` 30, `slicedonions` 30, `russetpotatoes` 30 |
+| dairy | `milk` 30, `butter` 30, `cheese` 30 |
+| grain | `dough` 30, `bakingmix` 30, `barley` 30 |
+| fruit | `apple` 30, `banana` 40, `pear` 30, `grapes` 30 |
+| fresh | `freshfood` 100 |
+| frozen | `frozenfood` 25 |
+| ready meals | `burger` 70, `hotdog` 60, `kabob` 90, `pizza` 100, `frenchfries` 50, `salad` 60, `cheeseplatter` 30 |
+| snacks (never cooked) | `croissant` 25, `cupcake` 25, `donut` 25, `cottoncandy` 30, `popcorn` 30, `icecream` 50 |
+| drinks (never cooked) | `beer`, `bottleofwine`, `margarita`, `martini`, `whisky` 25; `cupofcoffee`, `cupoftea`, `slushi` 10; `energydrink` 10; `sodacan` 5 |
+
+**The dishes** (`HomeBalance.Dishes`; one batch; a portion fills the saturation of the items used, times the yield,
+shared between the portions, 100 at most):
+
+| dish | takes | cooker | portions | minutes | yield | burns |
+|---|---|---|---|---|---|---|
+| Fruit bowl | 2 fruit | no | 1 | 5 | 1.2 | never |
+| Salad | 2 vegetables | no | 1 | 10 | 1.4 | never |
+| Cheese and fruit plate | 1 dairy, 1 fruit | no | 1 | 5 | 1.3 | never |
+| Heated-up meal | 1 ready meal | yes | 1 | 10 | 1.25 | 3 % |
+| Frozen meal, cooked | 1 frozen | yes | 1 | 20 | 2.6 | 5 % |
+| Fry-up | 1 meat, 1 vegetable | yes | 1 | 20 | 1.5 | 6 % |
+| Pancakes | 1 grain, 1 dairy | yes | 1 | 15 | 1.4 | 7 % |
+| Home-cooked dinner | 1 fresh | yes | 2 | 45 | 1.5 | 8 % |
+| Vegetable soup | 3 vegetables | yes | 2 | 35 | 1.7 | 5 % |
+| Home-made pizza | 1 grain, 1 dairy, 1 vegetable | yes | 2 | 40 | 1.8 | 9 % |
+| Roast dinner | 1 fresh, 1 meat, 1 vegetable | yes | 3 | 70 | 1.5 | 10 % |
+| Stew | 2 meat, 3 vegetables | yes | 3 | 80 | 1.6 | 12 % |
+
+Sizes: normal, double, family size are 1, 2 and 4 batches; the time is 1, 1.25 and 1.6 times (to the nearest 5
+minutes), the chance of burning +0, +1 and +3 points, the mess 1, 1.2 and 1.5 times. Stressed (over 75) or
+exhausted (energy under 20) adds 8 points to the chance of burning; "easy needs" halves it. Burnt: the portion
+eaten fills 0.6 as much, nothing is put by, a mood loss, and food poisoning 12 %. Leftovers: at most 8 portions,
+one lot that carries the name of the dish cooked last and the average of what its portions fill
+(`HomeState.PutBy`; `gro`, `grd`, `grf` in the save's line); reheating one takes 8 minutes at a cooker and never burns.
+
+**What the player does.** At home, the interact key within 2.4 m of a cooker (an item whose name has `stove`,
+`pizzaoven` or `grill` in it) or a fridge (`FridgeController`) opens the cooking panel (`HomeCookPanel`, one of
+Meta's panels: `MetaUi` frees the cursor, closes on Esc, scrolls with the arrow keys and keeps the game's shortcuts
+off). The fridge's own use (the game's overlay on a click) is not touched. The panel reads the fridges once
+(`HomePlace.ReadPantry`) and lists: the leftovers; "Can be made now", one row per dish in the largest of the
+chosen size the fridges allow, with its items by the game's own names and counts (the most filling of a kind
+first); "One ingredient short", greyed, for a dish of two or more items that lacks one unit; and a note when there
+is no fridge, nothing in the fridges, nothing that makes a dish, or no cooker (then only what needs no cooking is
+listed). Keys 1, 2 and 3 choose the size. Choosing a dish closes the panel; as soon as the player is free the dish
+goes on the game's activity panel and is started for them two frames later (the game's panel has to see it waiting
+once), they walk to the nearest cooker (to the nearest fridge for what needs no cooking), the items leave the
+fridges on arrival (`HomePlace.Take`, all or nothing), `cook_stir` with `pan` plays at a cooker (the game's
+`UsingProducer` otherwise), the game's time skip takes anything over 14 minutes, and at the end one portion is eaten
+through `GameManager.ChangeHunger` and the rest are put by. With hunger at 100 nothing is eaten and every portion
+is put by. Stopping early wastes the food.
+
+`IHomeBridge.CookTogether` has no implementation in Home (`FamilyBridges.Home` is never set), so Family's "cook
+together" is its own short scene, as before.
+
+Test buttons: "Test: open the cooking panel" and "Test: cook the first dish the fridges allow". Pressed on the
+options page, both wait up to 20 seconds for the menus to be closed. With diagnostics on, `Player.log` gets
+"Home: cooking panel opened: 1 fridge(s), 1 cooker(s); food by kind: Meat 2 Vegetable 3; 3 dish(es) possible, 1 one
+short, 0 wanting a cooker, leftovers 0." and a line when a dish is done.
+
+Not verified in the game (it could not be run): that the panel's layout reads well at every resolution; that a
+routine now always sets off (the order of two end-of-frame coroutines started in the same frame is assumed to be
+the order they were started in, which the game's own activities rely on too; the second attempt does not depend on
+it); the look of `cook_stir` at each kind of cooker; that a fridge's standing place suits a routine; that raw
+ingredients (meat, dough, milk) can be bought by the player in every save, since they are wholesale goods.
 
 ### Asset wish-list
 
