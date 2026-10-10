@@ -7151,5 +7151,6 @@
   "reallife_transaction_family_counselling_label": "Couples counselling",
   "reallife_transaction_family_loan_label": "Loan to the in-laws (and its return)",
   "reallife_transaction_family_settlement_label": "Divorce settlement",
-  "reallife_transaction_police_report_label": "Police report fee"
+  "reallife_transaction_police_report_label": "Police report fee",
+  "reallife_guide_trouble_stutter": "# It stutters after a while\n- Switch on 'Developer diagnostics' (options page, Diagnostics) and play until it stutters, for ten minutes at least. Once a minute of play the mod then writes a line to Player.log that begins 'Session': how long the frames took, how many took longer than 33 ms and 50 ms, how much memory is in use, and how many things of the mod's are in the city. A frame longer than 80 ms gets a line of its own (12 a minute at most), which says what the mod was doing at the time and where you were (on foot, driving or indoors).\n- Send Player.log from that session. Say how long you had played when it began, your processor, graphics card and memory, and which other mods were on.\n- To see what the mod adds, play the same save for the same time with the mod switched off under Mods, and say whether it still stutters."
 }

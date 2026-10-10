@@ -254,6 +254,7 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       FamilyPhone     the Family, Someone special and in-laws contacts, everything that can be done from a conversation; FamilyPage (the five pages)
       FamilyTalk / FamilyText / FamilyHud / FamilyCalendar  conversations and menus, text and its fillers, the prompt and objective, what happens by the hour and the day
     Diagnostics/ temporary F9 character report (remove before release)
+      SessionWatch   the session record: with "Developer diagnostics" on, one line a minute (frame times, memory, the mod's objects) and one for every frame over 80 ms, naming what the mod was at (see "The session record")
     Performance/ fixes for the base game's frame rate, and the measuring that decides them
       PerfDirector   switches the tweaks as the options ask, gives each its timer tick; F7 probe, Shift+F7 benchmark
       PerfTweak      one optimisation: Apply records what it changes, Restore puts it back; a fault switches it off
@@ -337,6 +338,53 @@ options store written by one of those builds is treated as written before 0.1.0 
 "Show test tools" and "Developer diagnostics" are off as shipped. With diagnostics off the mod writes only warnings and
 errors to `Player.log` (every logger in the mod is the one gate, `Meta.Dev.Gated`), and the four diagnostic keys (F7,
 Shift+F7, F8, F9) do nothing. To work on the mod, switch both on under Diagnostics on the options page.
+
+The gate drops the line, not the work of making it: the text handed to `Info` is put together before the logger sees
+it. That is fine for a line written when something happens (a scene starts, a bus is sent). A line on a timer, or one
+that needs a question asked of the game first (a self-check on the navigation mesh), tests `Meta.Dev.Verbose` and does
+neither while diagnostics are off.
+
+### The session record
+
+For reports of the kind "it stutters after a few minutes, or hours". `Diagnostics/SessionWatch` is a component on the
+mod's root object that is disabled unless "Developer diagnostics" is on (`Meta.Dev.Apply` switches it), so it costs
+nothing as shipped. On, it costs a few comparisons a frame and, once a minute, a walk over the mod's own objects.
+
+One line for every minute of play (loading screens, pauses and time with the window in the background are left out):
+
+```
+Session 12 min: frames 5210, average 11.5 ms, worst 61 ms, over 33 ms: 4, over 50 ms: 1; managed heap 412 MB of 610 MB,
+collections in the minute 3; engine memory 2950 MB; mod objects 345 (118 shown) under 6 roots; people 2 out, 5 made of 12;
+city people 3 out, 8 made of 8, city props made 14; on foot in the street, game hour 9.
+```
+
+| part | what it is | what to look for over a session |
+|---|---|---|
+| frames, average, worst | the minute's frame times | the average is the frame rate; the worst is the minute's longest stall |
+| over 33 ms, over 50 ms | frames longer than that in the minute | these are the stutters: how many a minute, and whether the number grows |
+| managed heap A of B | `GC.GetTotalMemory(false)` and the size the heap has grown to (`Profiler.GetMonoHeapSizeLong`) | B only ever grows; if it grows minute after minute something allocates on a timer (the game's code and every mod share this heap) |
+| collections in the minute | `GC.CollectionCount(0)` since the last line | more collections a minute at the same place and speed means more garbage a second; a long frame with a collection in it is that collection |
+| engine memory | `Profiler.GetTotalAllocatedMemoryLong`: meshes, textures, materials, audio | a steady climb between two midnights is normal for the game (it frees unused assets once a game day, at midnight); a climb across days is a leak |
+| mod objects (shown) under N roots | every object under a root object named `RealLifeOverhaul...`, and how many of them are switched on | everything of the mod's is pooled: the count rises while each kind of scene is met for the first time and then stands still. If it climbs all session, something is made per use and never put away |
+| people, city people, city props | the two pools of characters (12 and 8) and the living city's prop shelf | "made" stops at 12 and 8; "out" goes up and down |
+
+One line for a frame longer than 80 ms (12 a minute at most; the rest are in the minute's count):
+
+```
+Session: a frame of 96 ms; the mod was at: city life: a character's look being built (a mesh merge); a garbage collection ran in it; on foot in the street, game hour 9.
+Session: a frame of 140 ms; none of the mod's large pieces of work was under way; in a vehicle, game hour 14.
+```
+
+"The mod was at" is the last piece of work named with `SessionWatch.Mark("...")` in the three frames before. `Mark` is
+two writes to static fields with a constant text (the same cost with diagnostics on or off). It is called where the mod
+does something large in one go: a character made or given a look (`ActorPool.Dress`, `CityPeople.Dress`, the casts), a
+living-city site set up, a bus stop, a precinct front or a two-wheeler stand put out, an accident, a crime, a fire or a
+street event starting, the game saving (the mod's own share of the save is timed and written as its own `Session:`
+line), the performance tweaks listing the loaded materials. New code that builds something in one frame names it the
+same way; `Mark` is never called per frame and never with a text put together for the call.
+
+What the lines cannot say: which script a long frame was spent in when no work was named (the F7 probe splits a frame
+by engine step, not by script), and anything about the graphics card.
 
 ## Checks
 
@@ -2931,7 +2979,9 @@ Read through after the merge: 67 `Update` / `LateUpdate` / `FixedUpdate` methods
 | `ThirdPersonCamera.Update` | the heaviest always-on method: both of the game's cameras are written every frame | **before: a sphere cast every frame for the indoor camera even out of doors. After: only while that camera is live** (`CinemachineCore.IsLive`) |
 | `ChaseCamera.LateUpdate` (driving) | pose of the chase camera | **before: the lens written every frame. After: only when the field-of-view option has changed** |
 | `CityPeople.FixedUpdate` (people out, driving) | every other step: the car against eight people | **before: `GetComponent<Rigidbody>` twice a second. After: when the car changes** |
-| `CrimeDirector`, `EventDirector`, `BusinessDirector`, `SocialDirector`, `CarOwnership`, `LeisureSound`, `PoliceAttention`, `PolicePursuit`, `BeatPatrol`, `PolicePresence`, `PedestrianIncidents`, `PlayerKnockdown`, `Law.LawDirector` | one to three comparisons | nothing to do |
+| `CrimeDirector`, `EventDirector`, `BusinessDirector`, `SocialDirector`, `CarOwnership`, `LeisureSound`, `PoliceAttention`, `PolicePursuit`, `BeatPatrol`, `PolicePresence`, `PedestrianIncidents`, `PlayerKnockdown`, `Law.LawDirector` | one to three comparisons | nothing to do per frame. **On their timers, found later: `Law.LawDirector` (the save and the two building events, every three seconds), `HomeDirector` (the game's event, every second), `Family.FamilyDirector` (the save, every two seconds) and `MapPlaces` (the map event, every three seconds) still took themselves off the game's events and put themselves back. Now `SaveHook.Keep` and `EventHold.Keep`: nothing allocated while the game's event has not changed** |
+| `PerfDirector` and the tweaks that are on by default | one time comparison; the tweaks tick every 2 to 5 s | **before: every scene loaded or unloaded made `RefractionOff` look through every material in memory in that frame (`Resources.FindObjectsOfTypeAll<Material>`, seven engine calls a material) and, on the next tick, `StaleLampLights` through all 3,038 street lamps (three reflected fields each). After: unloads are ignored, a load asks for one look four seconds after the last scene arrived, and both looks go through their list 300 and 250 at a time, 20 times a second. The first look after the city loads is sliced the same way; refraction stays as the game has it until that look is finished** |
+| `TransitDirector` (4 times a second) | the stops in reach, the bus | **before: every second the label of each dressed stop was put together for a self-check that had already been made; and the self-check itself (a dozen questions to the navigation mesh, once per dressing) ran with diagnostics off, when nobody reads its line. After: neither** |
 | `MetaUi`, `CuffPose`, `JusticePanel`, `HoseHold`, `CarMeasure`, `CarDrag`, `ActivityAnimators`, `RagdollSystem`, `Stretcher`, `EmergencyDriver`, `BikeMount`, `TipsyDriving`, `PerfSampler`, `PerfLoop` | disabled while idle | nothing to do |
 | `CityPeople.Update`, `ActorPool.Update` | off with nobody out; with people out, a distance and a dot product each to hide those out of view | left: it is what keeps unseen characters from being drawn |
 | `PlayerDouble.LateUpdate` | off by default; on: every bone copied | left: an option that says what it costs |
@@ -3261,6 +3311,14 @@ Performance is a requirement, not a nice-to-have.
 
 - Nothing allocates per frame. No `OnGUI`, no LINQ or string building in `Update`, no
   `FindObjectsOfType` outside a one-off setup. Use the shared `Hud` for on-screen elements.
+- A handler on one of the game's event fields is kept there with `SaveHook.Keep` (the save) or `EventHold.Keep`
+  (any other field: entering and leaving a building, the map, the game's events), never by taking it off and putting it
+  back on a timer: each of those builds a new list of the game's handlers.
+- A look over everything of a kind in the scene (every material, every lamp, every building) is never done in the
+  frame that asked for it once the city is running: the list is taken once and gone through a few hundred at a time
+  on a timer (`RefractionOff`, `StaleLampLights`). A performance tweak is told of a scene loaded or unloaded with
+  `WorldChanged(bool loaded)` and only notes it.
+- Anything large done in one frame is named with `SessionWatch.Mark` (see "The session record").
 - Push values to the engine only when they change; poll game state at the slowest rate that works
   (per in-game hour, or a timer), not every frame.
 - Visual options that cost frames are off by default and say so in their label.

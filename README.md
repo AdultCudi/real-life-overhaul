@@ -42,7 +42,7 @@ dotnet build RealLifeOverhaul.Build/RealLifeOverhaul.csproj -c Release "-p:GameM
 
 The build must end with `0 Warning(s)` and `0 Error(s)`. It copies the mod to `%USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions\ModsLocal\RealLifeOverhaul`. To build without installing, add `"-p:ModsLocal=<some other folder>"`.
 
-If you are also subscribed on the Workshop, untick the Workshop item under Mods in the game's main menu while you test a local build. With both switched on, every feature runs twice.
+If you are also subscribed on the Workshop, untick the Workshop item under Mods in the game's main menu while you test a local build. The game refuses two mods with the same assembly name, so with both switched on neither copy loads. A copy built under another assembly name would load next to the first; the second one to start in a city then logs a warning and does nothing.
 
 Check the texts:
 
@@ -62,6 +62,25 @@ Open an issue. What helps most:
 1. On the mod's options page, under Diagnostics, switch on "Developer diagnostics" and make the problem happen again.
 2. Attach `Player.log` from that session. It is in `%USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions` and is overwritten when the game starts again.
 3. Add a screenshot, what you were doing, what you expected, the mod version and which other mods are on.
+
+### Stutter, or a frame rate that gets worse the longer you play
+
+With "Developer diagnostics" on, the mod writes one line to `Player.log` for every minute of play, and one for every frame that took longer than 80 ms:
+
+```
+[Mod:Real Life Overhaul] Session 12 min: frames 5210, average 11.5 ms, worst 61 ms, over 33 ms: 4, over 50 ms: 1; managed heap 412 MB of 610 MB, collections in the minute 3; engine memory 2950 MB; mod objects 345 (118 shown) under 6 roots; people 2 out, 5 made of 12; city people 3 out, 8 made of 8, city props made 14; on foot in the street, game hour 9.
+[Mod:Real Life Overhaul] Session: a frame of 96 ms; the mod was at: city life: a character's look being built (a mesh merge); a garbage collection ran in it; on foot in the street, game hour 9.
+```
+
+Please send:
+
+1. `Player.log` from a session of ten minutes or more in which it stuttered, with "Developer diagnostics" on from the start.
+2. How long you had played when it began, and what you were doing (on foot, driving, indoors, the map).
+3. Your processor, graphics card, memory, and whether the game is on a hard disk or an SSD.
+4. Which other mods were on.
+5. If you can: whether the same save stutters after the same time with this mod switched off.
+
+How to read the lines is in [the developer documentation](RealLifeOverhaul.Build/README.md), under "The session record".
 
 ## Contributing
 

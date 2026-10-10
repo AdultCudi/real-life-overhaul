@@ -99,7 +99,7 @@ namespace RealLifeOverhaul.Meta
                 Feature captured = feature;
                 topics.Add(new GuideTopic("feature_" + feature.Id, feature.TitleKey, () => FeaturePage(captured)));
             }
-            topics.Add(new GuideTopic("trouble", "reallife_guide_trouble_title", () => "reallife_guide_trouble".GetLocalization()));
+            topics.Add(new GuideTopic("trouble", "reallife_guide_trouble_title", () => "reallife_guide_trouble".GetLocalization() + "\n\n" + "reallife_guide_trouble_stutter".GetLocalization()));
             topics.Add(new GuideTopic("limits", "reallife_guide_limits_title", () => "reallife_guide_limits".GetLocalization()));
             topics.Add(new GuideTopic("credits", "reallife_guide_credits_title", () => "reallife_guide_credits".GetLocalization()));
             topics.Add(new GuideTopic("whatsnew", "reallife_guide_whatsnew_title", () => "reallife_guide_whatsnew".GetLocalization() + "\n\n" + Changelog.Page()));
