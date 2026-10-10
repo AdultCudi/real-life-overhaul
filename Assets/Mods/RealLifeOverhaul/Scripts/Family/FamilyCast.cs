@@ -345,6 +345,7 @@ namespace RealLifeOverhaul.Family
                     }
                 }
                 appearance.data.fatness = Mathf.Min(appearance.data.fatness, MaxBuild);
+                Looks.Count("family: a relative's look being built (a mesh merge)");
                 appearance.UpdateVisuals();
             }
             finally

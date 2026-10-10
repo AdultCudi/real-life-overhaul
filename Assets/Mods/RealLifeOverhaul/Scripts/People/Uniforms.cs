@@ -181,6 +181,7 @@ namespace RealLifeOverhaul
                 _mergeLogged = true;
                 ActorPool.Logger?.Info("People: the drawn character does not share its shirt's material; a hi-vis shirt costs one rebuild of the look each way. (Logged once.)");
             }
+            Looks.Count("people: a look being built again for a hi-vis shirt (a mesh merge)");
             appearance.UpdateVisuals();
         }
 

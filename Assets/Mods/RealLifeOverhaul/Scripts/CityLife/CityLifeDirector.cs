@@ -85,6 +85,7 @@ namespace RealLifeOverhaul
         private readonly List<Facing> _facing = new List<Facing>(8);
         private CityPeople _people;
         private CityProps _props;
+        private CityEntry _retry;      // the site that last could not start for want of a look: tried again first
         private StallActivity _cart;   // the cart that is out, while the player stands at its counter; else null
         private float _nextTick;
         private float _nextSpawn;
@@ -117,6 +118,7 @@ namespace RealLifeOverhaul
             _props = new CityProps(transform);
             _people = gameObject.AddComponent<CityPeople>();
             _people.Setup(_props);
+            _people.Thrifty = true;   // no look is built in the frame a site is set up (CityPeople.Thrifty, People/Looks)
             gameObject.AddComponent<ActivityAnimators>();
             ActivityAnimators.Fault = error =>
             {
@@ -125,6 +127,32 @@ namespace RealLifeOverhaul
             };
             _nextSpawn = Time.time + 20f;   // the city settles first
             _nextWarm = Time.time + 8f;
+        }
+
+        /// <summary>
+        /// Called once while the city loads (the loading screen is up): the pool's eight are made now, dressed as
+        /// civilians, so that none of it is paid for while the game is played. If it cannot be done here they are
+        /// made a person at a time once the city runs, as before.
+        /// </summary>
+        public void Prewarm()
+        {
+            if (!Settings.CityLife || _failed)
+            {
+                return;
+            }
+            try
+            {
+                var gm = InstanceBehavior<GameManager>.Instance;
+                Vector3 near = gm != null && gm.playerController != null ? gm.playerController.transform.position : Vector3.zero;
+                while (_people.Warm(near + Vector3.down * 40f))
+                {
+                }
+                _warm = true;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
         }
 
         private void OnDestroy()
@@ -396,7 +424,15 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            CityEntry entry = Deal(TimeHelper.CurrentHour, raining);
+            // A site that could not start because nobody on the shelf was dressed for it is tried once more, first:
+            // the look has been made ready meanwhile.
+            CityEntry entry = _retry;
+            _retry = null;
+            int hour = TimeHelper.CurrentHour;
+            if (entry == null || entry.Cast > _people.Free || !entry.OpenAt(hour) || (raining ? !entry.Rain : entry.RainOnly) || !CityCatalogue.Enabled(entry.Family) || Out(entry))
+            {
+                entry = Deal(hour, raining);
+            }
             if (entry == null)
             {
                 return;
@@ -469,8 +505,16 @@ namespace RealLifeOverhaul
                     return false;
                 }
             }
-            if (!activity.Begin(_site))
+            _people.AtNeed = test;   // a test button cannot wait for a look to be made ready
+            _people.Refused = false;
+            bool begun = activity.Begin(_site);
+            _people.AtNeed = false;
+            if (!begun)
             {
+                if (_people.Refused && !test)
+                {
+                    _retry = entry;
+                }
                 if (_site.Refusal == CityRefusal.None)
                 {
                     _site.Refusal = _people.Free < entry.Cast ? CityRefusal.NoPeople : CityRefusal.NoProp;

@@ -291,6 +291,7 @@ namespace RealLifeOverhaul
             appearance.SetRandomAge();
             Gender gender = Random.value < 0.5f ? Gender.Male : Gender.Female;
             appearance.RandomizeElements(gender, SkinColorHelper.GetRandom(), CasualWear);
+            Looks.Count("jobs: a character's look being built (a mesh merge)");
             appearance.UpdateVisuals();
         }
 
@@ -316,6 +317,7 @@ namespace RealLifeOverhaul
             {
                 Random.state = kept;
             }
+            Looks.Count("jobs: a character's look being built (a mesh merge)");
             appearance.UpdateVisuals();
         }
 

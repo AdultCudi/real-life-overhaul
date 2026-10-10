@@ -54,6 +54,7 @@ namespace RealLifeOverhaul.Events
             Put(appearance, AppearanceElementType.TorsoAccessory, Nothing, default, default, default, null);
             Put(appearance, AppearanceElementType.LegsAccessory, Nothing, default, default, default, null);
             Put(appearance, AppearanceElementType.FeetAccessory, Nothing, default, default, default, null);
+            Looks.Count("events: a firefighter's look being built (a mesh merge)");
             appearance.UpdateVisuals();
         }
 

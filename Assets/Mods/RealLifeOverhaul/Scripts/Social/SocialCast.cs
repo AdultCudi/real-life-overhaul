@@ -423,6 +423,7 @@ namespace RealLifeOverhaul
             appearance.data.ageInDays = Mathf.Clamp(who.Age, 18, 85) * SocialPlaces.DaysPerYear;
             appearance.RandomizeElements(who.Female ? Gender.Female : Gender.Male, SkinColorHelper.GetRandom(who.Seed), CasualWear, who.Seed);
             appearance.data.fatness = Mathf.Min(appearance.data.fatness, MaxBuild);
+            Looks.Count("social: a friend's look being built (a mesh merge)");
             appearance.UpdateVisuals();
         }
     }

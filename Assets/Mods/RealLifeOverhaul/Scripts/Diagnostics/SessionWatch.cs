@@ -17,8 +17,8 @@ namespace RealLifeOverhaul
     ///
     ///   Session 12 min: frames 5210, average 11.5 ms, worst 61 ms, over 33 ms: 4, over 50 ms: 1; managed heap
     ///   412 MB of 610 MB, collections in the minute 3; engine memory 2950 MB; mod objects 345 (118 shown) under 6
-    ///   roots; people 2 out, 5 made of 12; city people 3 out, 8 made of 8, city props made 14; on foot in the
-    ///   street, game hour 9.
+    ///   roots; people 2 out, 12 made of 12; city people 3 out, 8 made of 8, city props made 14; looks built in
+    ///   the minute 1 (1 while playing), since the city loaded 23 (3 while playing); on foot in the street, game hour 9.
     ///
     /// How to read it over a session: a managed heap that climbs minute after minute with collections coming
     /// more often is memory being used up on a timer; engine memory that climbs is meshes, textures or materials
@@ -59,6 +59,8 @@ namespace RealLifeOverhaul
         private int _longSaid;
         private int _collections;
         private int _collectionsLastFrame;
+        private int _looks;
+        private int _looksInPlay;
         private bool _resumed = true;   // the next frame's time is not a frame of play (the record has just started, or a loading screen or a pause has just ended)
 
         /// <summary>
@@ -97,6 +99,8 @@ namespace RealLifeOverhaul
             Clear();
             _collections = GC.CollectionCount(0);
             _collectionsLastFrame = _collections;
+            _looks = Looks.Built;
+            _looksInPlay = Looks.BuiltInPlay;
             Logger?.Info("Session: recording. One line a minute, and one for every frame over " + (LongFrame * 1000f).ToString("F0") + " ms.");
         }
 
@@ -206,6 +210,11 @@ namespace RealLifeOverhaul
                 .Append("; engine memory ").Append(Megabytes(Profiler.GetTotalAllocatedMemoryLong()))
                 .Append(" MB; mod objects ").Append(objects).Append(" (").Append(shown).Append(" shown) under ").Append(roots).Append(" roots");
             People(_line);
+            // Characters' looks built (a mesh merge each: People/Looks): "while playing" are the ones that could be felt.
+            _line.Append("; looks built in the minute ").Append(Looks.Built - _looks).Append(" (").Append(Looks.BuiltInPlay - _looksInPlay)
+                .Append(" while playing), since the city loaded ").Append(Looks.Built).Append(" (").Append(Looks.BuiltInPlay).Append(" while playing)");
+            _looks = Looks.Built;
+            _looksInPlay = Looks.BuiltInPlay;
             _line.Append("; ").Append(Where()).Append('.');
             Logger?.Info(_line.ToString());
             _collections = collections;

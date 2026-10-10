@@ -113,8 +113,13 @@ namespace RealLifeOverhaul
         /// </summary>
         public bool Yields { get; internal set; }
 
-        /// <summary>A civilian who has been seen in this look: the pool gives them a new one before they are seen again.</summary>
+        /// <summary>A civilian whose look has been out often enough, or long enough: the pool gives them a new one quietly, on the shelf (People/Looks).</summary>
         internal bool Stale { get; set; }
+
+        /// <summary>How many times they have been out in the look they have, when it was put on and when they last came back (unscaled seconds).</summary>
+        internal int Uses;
+        internal float DressedAt;
+        internal float ReleasedAt;
 
         public bool IsValid => Character != null;
         public Vector3 Position => Character.transform.position;

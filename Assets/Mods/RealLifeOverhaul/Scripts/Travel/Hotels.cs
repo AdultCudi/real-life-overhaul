@@ -638,6 +638,7 @@ namespace RealLifeOverhaul
             appearance.RandomizeElements(Random.value < 0.7f ? Gender.Male : Gender.Female, SkinColorHelper.GetRandom(), CasualWear);
             appearance.data.fatness = Mathf.Min(appearance.data.fatness, 0.55f);
             CityOutfits.Wear(appearance, CityLook.Doorman, person.Dyes);
+            Looks.Count("travel: the hotel doorman's look being built (a mesh merge)");
             appearance.UpdateVisuals();
             character.gameObject.SetActive(false);
             return person;

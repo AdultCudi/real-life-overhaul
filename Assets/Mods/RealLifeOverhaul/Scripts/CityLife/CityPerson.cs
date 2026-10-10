@@ -56,8 +56,13 @@ namespace RealLifeOverhaul
         public CityLook Look { get; internal set; }
         public bool InUse { get; internal set; }
 
-        /// <summary>A civilian who has been seen in this look: the pool gives them a new one before they are used again.</summary>
+        /// <summary>A civilian who has been seen in this look: the pool gives them a new one before they are used again (a thrifty pool: once the look is worn, quietly, on the shelf).</summary>
         internal bool Stale { get; set; }
+
+        /// <summary>How many times they have been out in the look they have, when it was put on and when they last came back (unscaled seconds).</summary>
+        internal int Uses;
+        internal float DressedAt;
+        internal float ReleasedAt;
 
         public bool Valid => Character != null;
         public Vector3 Position => Character.transform.position;

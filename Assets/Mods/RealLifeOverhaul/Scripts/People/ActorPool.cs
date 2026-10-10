@@ -33,6 +33,15 @@ namespace RealLifeOverhaul
     /// free, one of them is taken off the street that instant and handed over. The pool also switches off the animation and rendering of people who are
     /// far away or behind the camera: a handful of comparisons per frame, and only while
     /// somebody is out on the street. With nobody out, nothing here runs.
+    ///
+    /// When looks are built (People/Looks has the rule): six civilians while the city loads, behind
+    /// the loading screen; four officers and two paramedics as soon as the modelled props have loaded
+    /// (their kit is made of them), one at a time. So all twelve exist before the first scene, each
+    /// dressed for a part, and a scene is handed people who are ready. A civilian keeps a look for
+    /// three outings or ten minutes and is then given a new one on the shelf, one at a time with
+    /// seconds between; whoever came back longest ago goes out first, so the same face is not seen
+    /// twice running. Only when a scene needs a part nobody on the shelf is dressed for is a look
+    /// built on the spot (whoever there are most of on the shelf is the one re-dressed).
     /// </summary>
     public class ActorPool : MonoBehaviour
     {
@@ -47,7 +56,10 @@ namespace RealLifeOverhaul
         private const string CharacterPrefab = "Characters/HumanDefinitionLow";
         private const float HideDistance = 170f;   // metres from the camera
         private const float HideBehind = 6f;       // metres behind the camera's own plane
-        private const float RefreshGap = 0.75f;    // seconds between giving two shelved civilians a new look
+        private const int ReadyCivilians = 6;      // made while the city loads
+        private const int ReadyOfficers = 4;       // made once the modelled props are there (or have failed), one at a time
+        private const int ReadyParamedics = 2;
+        private const float PropsPatience = 25f;   // seconds the uniformed wait for the props before they are made with plain shapes
 
         private static readonly AppearanceTag[] CasualWear = { AppearanceTag.Casual };
 
@@ -57,7 +69,9 @@ namespace RealLifeOverhaul
         private readonly List<StreetActor> _actors = new List<StreetActor>(MaxActors);
         private bool _hidingFailed;   // hiding people threw once; it stays off for the rest of the session
         private bool _placeWarned;
-        private Coroutine _refresh;   // giving civilians who have left the street a new look; null when there is nothing to do
+        private Coroutine _refresh;   // looking after the shelf (making the uniformed, new looks for civilians); null when there is nothing to do
+        private bool _uniformsDue;    // the officers and paramedics of the ready pool are still to be made
+        private float _uniformsSince;
 
         /// <summary>How many more people a scene could put on the street right now. Whoever is only there to be seen counts as free: they give way.</summary>
         public int Free => MaxActors - Count(yielding: false);
@@ -247,35 +261,153 @@ namespace RealLifeOverhaul
             actor.InUse = false;
             actor.Yields = false;
             Shelve(actor);
+            actor.ReleasedAt = Time.unscaledTime;
             if (actor.Look == ActorLook.Civilian)
             {
-                // The same face must not be the driver in the next scene too. A new look means merging
-                // the character's meshes again, which is the expensive part: it is done here, while they
-                // are hidden and nothing is going on, one person at a time.
-                actor.Stale = true;
-                if (_refresh == null && gameObject.activeInHierarchy)
+                // A look is kept for a few outings (whoever came back longest ago goes out first, so it is not the
+                // same face twice running), then changed on the shelf, quietly: People/Looks.
+                actor.Uses++;
+                actor.Stale = Looks.Worn(actor.Uses, actor.DressedAt);
+            }
+            Tend();
+        }
+
+        /// <summary>
+        /// Called once while the city loads (the loading screen is up): the civilians of the ready pool are made
+        /// now, and the uniformed are left to the shelf's own timer, which waits for the modelled props.
+        /// </summary>
+        public void Prewarm()
+        {
+            if (!Settings.People)
+            {
+                return;   // nobody is put on the street: nothing is made until something asks after all
+            }
+            try
+            {
+                for (int i = 0; i < ReadyCivilians && _actors.Count < MaxActors; i++)
                 {
-                    _refresh = StartCoroutine(RefreshCivilians());
+                    Make(ActorLook.Civilian);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);   // they are made on first need instead, as before
+            }
+            _uniformsDue = true;
+            _uniformsSince = Time.unscaledTime;
+            Tend();
+        }
+
+        private void Tend()
+        {
+            if (_refresh == null && gameObject.activeInHierarchy && (_uniformsDue || AnyStale()))
+            {
+                _refresh = StartCoroutine(Tending());
+            }
+        }
+
+        private bool AnyStale()
+        {
+            for (int i = 0; i < _actors.Count; i++)
+            {
+                if (_actors[i].Stale && !_actors[i].InUse)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Runs only while the shelf has something to see to: one look at a time, when People/Looks says one may be built.
+        private IEnumerator Tending()
+        {
+            while (_uniformsDue || AnyStale())
+            {
+                yield return null;
+                if (!Looks.Free)
+                {
+                    continue;
+                }
+                try
+                {
+                    TendOne();
+                }
+                catch (Exception e)
+                {
+                    Logger?.Error(e);
+                    _uniformsDue = false;
+                    for (int i = 0; i < _actors.Count; i++)
+                    {
+                        _actors[i].Stale = false;   // not tried again: they keep the look they have
+                    }
+                }
+            }
+            _refresh = null;
+        }
+
+        private void TendOne()
+        {
+            if (_uniformsDue)
+            {
+                if (!PropLibrary.Ready && Time.unscaledTime - _uniformsSince < PropsPatience)
+                {
+                    return;   // their kit is made of the modelled props: a little longer
+                }
+                if (_actors.Count < MaxActors && Have(ActorLook.Officer) < ReadyOfficers)
+                {
+                    Make(ActorLook.Officer);
+                    return;
+                }
+                if (_actors.Count < MaxActors && Have(ActorLook.Paramedic) < ReadyParamedics)
+                {
+                    Make(ActorLook.Paramedic);
+                    return;
+                }
+                _uniformsDue = false;
+            }
+            for (int i = 0; i < _actors.Count; i++)
+            {
+                StreetActor actor = _actors[i];
+                if (actor.Stale && !actor.InUse && actor.IsValid && actor.Look == ActorLook.Civilian)
+                {
+                    Redress(actor);
+                    return;
+                }
+                if (actor.Stale && !actor.InUse)
+                {
+                    actor.Stale = false;
                 }
             }
         }
 
-        // Runs for a second or two after civilians have left the street, then ends.
-        private IEnumerator RefreshCivilians()
+        private int Have(ActorLook look)
         {
-            var wait = new WaitForSeconds(RefreshGap);
-            yield return wait;
+            int have = 0;
             for (int i = 0; i < _actors.Count; i++)
             {
-                StreetActor actor = _actors[i];
-                if (!actor.Stale || actor.InUse || !actor.IsValid || actor.Look != ActorLook.Civilian)
+                if (_actors[i].IsValid && _actors[i].Look == look)
                 {
-                    continue;
+                    have++;
                 }
-                Redress(actor);
-                yield return wait;
             }
-            _refresh = null;
+            return have;
+        }
+
+        // One more character, dressed and put on the shelf.
+        private void Make(ActorLook look)
+        {
+            Vector3 near = Vector3.down * 40f;   // under the street, out of sight
+            var gm = InstanceBehavior<GameManager>.Instance;
+            if (gm != null && gm.playerController != null)
+            {
+                Vector3 player = gm.playerController.transform.position;
+                near = StreetSpots.OnPavement(player, 25f, out Vector3 pavement) ? pavement : player + Vector3.down * 40f;
+            }
+            StreetActor made = Create(near);
+            Dress(made, look);
+            made.Character.gameObject.SetActive(false);
+            made.ReleasedAt = Time.unscaledTime;
+            Logger?.Info($"People: character {_actors.Count} of {MaxActors} made ready as {look}.");
         }
 
         // A new look for someone on the shelf: awake only while it is put on, and never drawn in between.
@@ -393,12 +525,13 @@ namespace RealLifeOverhaul
             }
         }
 
-        // An idle character already dressed this way, else a new one, else an idle one re-dressed, else
-        // (for a scene) one of those who are only out to be seen, taken off the street this instant.
+        // An idle character already dressed this way (whoever came back longest ago), else a new one, else an idle
+        // one re-dressed, else (for a scene) one of those who are only out to be seen, taken off the street this instant.
         private StreetActor Take(ActorLook look, Vector3 position, bool mayReclaim)
         {
-            StreetActor spare = null;
+            StreetActor ready = null;
             StreetActor yielding = null;
+            int idleCivilians = 0, idleOfficers = 0, idleParamedics = 0;
             for (int i = _actors.Count - 1; i >= 0; i--)
             {
                 StreetActor actor = _actors[i];
@@ -417,61 +550,68 @@ namespace RealLifeOverhaul
                     }
                     continue;
                 }
-                if (actor.Look == look)
+                if (actor.Look == ActorLook.Civilian)
                 {
-                    if (actor.Stale)
-                    {
-                        // Wanted again before the pool got round to them: the new look is put on now.
-                        actor.Character.gameObject.SetActive(true);
-                        Dress(actor, look);
-                    }
-                    else if (actor.Kit != null && !actor.Kit.Modelled && PropLibrary.Ready)
-                    {
-                        // Fitted out before the modelled props had loaded: once, fitted again with them
-                        // (an officer from scratch, since the cap replaces the game's hat).
-                        actor.Character.gameObject.SetActive(true);
-                        if (look == ActorLook.Officer)
-                        {
-                            Dress(actor, look);
-                        }
-                        else
-                        {
-                            Equip(actor, look, false);
-                        }
-                    }
-                    return actor;
+                    idleCivilians++;
                 }
-                spare = actor;
+                else if (actor.Look == ActorLook.Officer)
+                {
+                    idleOfficers++;
+                }
+                else
+                {
+                    idleParamedics++;
+                }
+                // Dressed for the part: sooner one whose look is not yet due a change, then whoever came back longest ago.
+                if (actor.Look == look && (ready == null || (ready.Stale && !actor.Stale) || (ready.Stale == actor.Stale && actor.ReleasedAt < ready.ReleasedAt)))
+                {
+                    ready = actor;
+                }
+            }
+            if (ready != null)
+            {
+                if (ready.Kit != null && !ready.Kit.Modelled && PropLibrary.Ready)
+                {
+                    // Fitted out before the modelled props had loaded: once, fitted again with them
+                    // (an officer from scratch, since the cap replaces the game's hat).
+                    ready.Character.gameObject.SetActive(true);
+                    if (look == ActorLook.Officer)
+                    {
+                        Dress(ready, look);
+                    }
+                    else
+                    {
+                        Equip(ready, look, false);
+                    }
+                }
+                return ready;
             }
 
             if (_actors.Count < MaxActors)
             {
-                // Born on the pavement: the prefab's navigation agent is the pavement kind and switches itself on as it is
-                // created, and off its own mesh (the place asked for is often on the road) the engine warns that it
-                // "is not close enough to the NavMesh". Place moves the character to where it is wanted, in the same frame.
-                Vector3 birth = StreetSpots.OnPavement(position, 25f, out Vector3 pavement) ? pavement : position;
-                SessionWatch.Mark("people: a character being made");
-                var character = PrefabHelper.CreatePrefab<ThirdPersonCharacter>(CharacterPrefab, birth, Quaternion.identity, transform);
-                character.name = "RealLifeOverhaul Actor";
-                // Idle fidgets would play over the poses scenes set (lying down, on the phone).
-                var fidgets = character.GetComponentInChildren<BoredAnimations>(true);
-                if (fidgets != null)
-                {
-                    fidgets.pauseBoredAnimations = true;
-                }
-                // These people go where their route takes them. Left to physics, the body is shoved up
-                // and over whatever it brushes against between two cars, and stays there.
-                if (character.characterRigidbody != null)
-                {
-                    character.characterRigidbody.isKinematic = true;
-                }
-                var created = new StreetActor(character);
-                _actors.Add(created);
+                StreetActor created = Create(StreetSpots.OnPavement(position, 25f, out Vector3 pavement) ? pavement : position);
                 Dress(created, look);
                 Logger?.Info($"People: character {_actors.Count} of {MaxActors} created as {look}.");
                 return created;
             }
 
+            // Nobody on the shelf is dressed for it: one of the part there are most of on the shelf is re-dressed, here
+            // and now (a scene cannot wait for its person). Sooner one whose look is due a change, then the longest back.
+            StreetActor spare = null;
+            ActorLook plenty = idleCivilians >= idleOfficers && idleCivilians >= idleParamedics ? ActorLook.Civilian
+                : idleOfficers >= idleParamedics ? ActorLook.Officer : ActorLook.Paramedic;
+            for (int i = 0; i < _actors.Count; i++)
+            {
+                StreetActor actor = _actors[i];
+                if (actor.InUse || actor.Look != plenty)
+                {
+                    continue;
+                }
+                if (spare == null || (actor.Stale && !spare.Stale) || (actor.Stale == spare.Stale && actor.ReleasedAt < spare.ReleasedAt))
+                {
+                    spare = actor;
+                }
+            }
             if (spare == null && mayReclaim && yielding != null)
             {
                 // Everyone is out, and a scene needs somebody: whoever was only there to be seen gives way.
@@ -492,14 +632,42 @@ namespace RealLifeOverhaul
             return spare;
         }
 
+        // A new character, not yet dressed. Born on the pavement where it can be: the prefab's navigation agent is the
+        // pavement kind and switches itself on as it is created, and off its own mesh (the place asked for is often on the
+        // road) the engine warns that it "is not close enough to the NavMesh". Place moves the character to where it is
+        // wanted, in the same frame.
+        private StreetActor Create(Vector3 birth)
+        {
+            SessionWatch.Mark("people: a character being made");
+            var character = PrefabHelper.CreatePrefab<ThirdPersonCharacter>(CharacterPrefab, birth, Quaternion.identity, transform);
+            character.name = "RealLifeOverhaul Actor";
+            // Idle fidgets would play over the poses scenes set (lying down, on the phone).
+            var fidgets = character.GetComponentInChildren<BoredAnimations>(true);
+            if (fidgets != null)
+            {
+                fidgets.pauseBoredAnimations = true;
+            }
+            // These people go where their route takes them. Left to physics, the body is shoved up
+            // and over whatever it brushes against between two cars, and stays there.
+            if (character.characterRigidbody != null)
+            {
+                character.characterRigidbody.isKinematic = true;
+            }
+            var created = new StreetActor(character);
+            _actors.Add(created);
+            return created;
+        }
+
         // Who they are (age, build, face, hair) is rolled for everyone. Civilians wear whatever casual
         // clothes come up; officers and paramedics then get their uniform, the same one every time,
         // and the equipment that goes with it.
         private static void Dress(StreetActor actor, ActorLook look)
         {
-            SessionWatch.Mark("people: a street character's look being built (a mesh merge)");   // (named for the long-frame line of the session record: two static writes)
+            Looks.Count("people: a street character's look being built (a mesh merge)");   // counted, and named for the long-frame line of the session record
             actor.Look = look;
             actor.Stale = false;
+            actor.Uses = 0;
+            actor.DressedAt = Time.unscaledTime;
             actor.Resize(1f);   // every look is put on, and measured, at the size the game builds it
             AppearanceSetter appearance = actor.Character.appearanceSetter;
             Uniforms.Restore(actor.Dyes);   // the colours of whatever uniform this character wore before
@@ -526,6 +694,7 @@ namespace RealLifeOverhaul
                 // flattens the hair under it). A second merge, for this one officer, this once.
                 Uniforms.Restore(actor.Dyes);
                 Uniforms.Wear(appearance, look, actor.Dyes, false, ref actor.Shirt);
+                Looks.Count("people: an officer's look being built again (the cap did not fit)");
                 appearance.UpdateVisuals();
                 Equip(actor, look, false);
             }
