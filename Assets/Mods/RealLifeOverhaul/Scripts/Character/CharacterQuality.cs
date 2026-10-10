@@ -14,12 +14,18 @@ namespace RealLifeOverhaul
     [ModEntryOnCityLoad]
     public class CharacterQualityCity : IModBigAmbitions
     {
+        private const string RootName = "RealLifeOverhaul Character";
+        private static string _running;   // the id of the copy that made the root
         private GameObject _root;
 
         public string[] RelativeAssetBundlePaths => Array.Empty<string>();
 
         public Task OnLoadAsync(ModContext context)
         {
+            if (_running != context.ModId && GameObject.Find(RootName) != null)
+            {
+                return Task.CompletedTask;   // a second copy of the mod is switched on: the first one's character work stands (Core/RealLifeOverhaulMod says so in the log)
+            }
             CharacterQuality.Logger = context.Logger;
             HairLook.Logger = context.Logger;
             PlayerDouble.Logger = context.Logger;
@@ -28,7 +34,8 @@ namespace RealLifeOverhaul
             CharacterCatalogue.Logger = context.Logger;
             ModAssets.Begin(context);
 
-            _root = new GameObject("RealLifeOverhaul Character");
+            _running = context.ModId;
+            _root = new GameObject(RootName);
             _root.AddComponent<CharacterQuality>();   // first: the double hands its character to it
             _root.AddComponent<PlayerDouble>();
             return Task.CompletedTask;
@@ -38,8 +45,10 @@ namespace RealLifeOverhaul
         {
             if (_root != null)
             {
+                _root.name = RootName + " (closing)";   // gone at the end of the frame: a city loaded before then must not take it for a second copy
                 UnityEngine.Object.Destroy(_root);
                 _root = null;
+                _running = null;
             }
             return Task.CompletedTask;
         }

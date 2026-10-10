@@ -16,10 +16,23 @@ namespace RealLifeOverhaul
     {
         private ModContext _context;
 
+        // Two copies switched on (the Workshop item and a ModsLocal folder) are one assembly started twice: the second
+        // to start says so and registers nothing, so there is one options page and one set of saved choices in use.
+        // (Told apart by the id the game gives each copy: the same copy started again is not a second one.)
+        private static string _started;
+        private bool _second;
+
         public string[] RelativeAssetBundlePaths => Array.Empty<string>();
 
         public Task OnLoadAsync(ModContext context)
         {
+            if (_started != null && _started != context.ModId)
+            {
+                _second = true;
+                context.Logger.Warn("Real Life Overhaul is switched on twice (the Workshop item and a copy in the ModsLocal folder?). This copy does nothing; switch one of them off under Mods in the main menu.");
+                return Task.CompletedTask;
+            }
+            _started = context.ModId;
             IModLogger log = context.Logger;
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on (read below; OptionsLayout.Organise applies it)
             _context = context;
@@ -549,6 +562,16 @@ namespace RealLifeOverhaul
 
         public Task OnUnloadAsync()
         {
+            if (_second)
+            {
+                _second = false;
+                return Task.CompletedTask;   // this copy started nothing
+            }
+            _started = null;
+            if (_context == null)
+            {
+                return Task.CompletedTask;   // the load did not get as far as registering anything
+            }
             Meta.OptionsLayout.Dispose();
             OptionsService.RemoveModOptions(_context.ModId);
             Keys.Dispose();
@@ -565,21 +588,24 @@ namespace RealLifeOverhaul
 
         public string[] RelativeAssetBundlePaths => Array.Empty<string>();
 
-        // One set of city features per city, whatever loaded them. The game itself refuses two mods with the same
-        // assembly name (both of them: ModDiscoveryRegistry), so the Workshop copy and a local build cannot run side by
-        // side as they are; this is for a copy under another assembly name. Such a copy is a different assembly with
-        // statics of its own, so what is looked for is the one thing both would make: the root object, by its name.
+        // One set of city features per city, whatever loaded them. The game looks for two mods with one assembly name
+        // among the Workshop items and among the ModsLocal folders separately (ModDiscoveryRegistry), so the Workshop
+        // copy and a local build are both started when both are switched on: this class is then made twice and every
+        // feature would run twice. What is looked for is the one thing both would make: the root object, by its
+        // name (that also holds for a copy built under another assembly name, which has statics of its own).
         // A root that went with its scene is not found, so a load that was never followed by an unload cannot lock the mod out.
+        private static string _running;   // the id of the copy whose features are running (null in a copy that is another assembly)
         private bool _second;
 
         public Task OnLoadAsync(ModContext context)
         {
-            if (GameObject.Find(RootName) != null)
+            if (_running != context.ModId && GameObject.Find(RootName) != null)
             {
                 _second = true;
                 context.Logger.Warn("Real Life Overhaul is already running in this city (two copies of the mod are switched on). This copy does nothing; switch one of them off under Mods in the main menu.");
                 return Task.CompletedTask;
             }
+            _running = context.ModId;
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on; warnings and errors always
             ThirdPersonCamera.Logger = context.Logger;
             VisualEnhancer.Logger = context.Logger;
@@ -696,6 +722,11 @@ namespace RealLifeOverhaul
                 }
             }
             Wiring.Connect(context.Logger, _root);   // every director is there: the bridges between the features are filled in (Scripts/Wiring)
+            // The loading screen is still up: the people of the two street pools are made and dressed now, where the time
+            // it takes is not seen (People/Looks). Each catches its own faults and falls back to making them as they are needed.
+            Looks.Reset();
+            CityLifeDirector.Instance?.Prewarm();
+            ActorPool.Instance?.Prewarm();
             Meta.MetaCity.Begin(context, _root);   // the check for leftovers, the guide's contact, the welcome panel
             context.Logger.Info("City features started.");
             return Task.CompletedTask;
@@ -708,6 +739,7 @@ namespace RealLifeOverhaul
                 _second = false;
                 return Task.CompletedTask;   // this copy started nothing
             }
+            _running = null;
             Meta.MetaCity.End();
             Wiring.Disconnect();   // every bridge back to its stand-alone default
             if (_root != null)
