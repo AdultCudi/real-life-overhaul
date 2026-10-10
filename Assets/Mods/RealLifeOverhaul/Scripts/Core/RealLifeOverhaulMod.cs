@@ -498,6 +498,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_lic_car", () => LicenceDirector.Instance?.TestToggle(LicenceClass.Car))
                 .AddButton("reallife_test_lic_commercial", () => LicenceDirector.Instance?.TestToggle(LicenceClass.Commercial))
                 .AddButton("reallife_test_lic_taxi", () => LicenceDirector.Instance?.TestToggle(LicenceClass.Taxi))
+                .AddButton("reallife_test_lic_motorcycle", () => LicenceDirector.Instance?.TestToggle(LicenceClass.Motorcycle))
                 .AddButton("reallife_test_lic_theory", () => LicenceDirector.Instance?.TestTheory())
                 .AddButton("reallife_test_lic_practical", () => LicenceDirector.Instance?.TestPractical(LicenceClass.Car))
                 .AddButton("reallife_test_lic_practical_van", () => LicenceDirector.Instance?.TestPractical(LicenceClass.Commercial))

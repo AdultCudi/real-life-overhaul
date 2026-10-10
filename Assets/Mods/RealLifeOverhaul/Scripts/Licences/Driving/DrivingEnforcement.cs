@@ -193,13 +193,11 @@ namespace RealLifeOverhaul
             bool suspended = LicenceState.AddPoints(code, day);
             int total = LicenceState.PointsOn(day);
             Licences.Toast(NotificationType.Warning, "reallife_lic_points_added", "points", LicenceLaw.Points(code).ToString(), "total", total.ToString(), 9f);
-            Licences.TellPoints(code, total);
             _logger?.Info("Licences: " + LicenceLaw.Points(code) + " points for " + code + "; " + total + " on the record.");
             if (suspended)
             {
                 Licences.Toast(NotificationType.Error, "reallife_lic_suspended", "days", LicenceLaw.SuspensionDays.ToString(), 12f);
                 ModState.AddModifier(ModState.MoodDownBig);
-                Licences.TellDriving(LicenceClass.Car);
                 _logger?.Info("Licences: twelve points: suspended until day " + LicenceState.SuspendedUntil + ".");
             }
         }
@@ -271,7 +269,7 @@ namespace RealLifeOverhaul
                 offence = LicenceOffences.Suspended;
                 arrest = LicenceState.CountCaught(day) >= 2;
             }
-            else if (kind == LicenceClass.Commercial && LicenceState.Valid(LicenceClass.Car, day))
+            else if (HoldsAnother(kind, day))
             {
                 fine += LicenceLaw.WrongClassFine;
                 key = "reallife_lic_stop_wrong_class";
@@ -300,6 +298,15 @@ namespace RealLifeOverhaul
                 _host.StartCoroutine(Settle(vehicle, impound, own, arrest && !custodyFollows, custodyFollows ? 1.5f : 7f));
             }
             return false;
+        }
+
+        // A licence for something else is in order (a car licence on a motorbike or a van, a motorcycle licence at the wheel of a car):
+        // the wrong class, not none at all.
+        private static bool HoldsAnother(LicenceClass kind, int day)
+        {
+            return (kind != LicenceClass.Car && LicenceState.Valid(LicenceClass.Car, day))
+                   || (kind != LicenceClass.Commercial && LicenceState.Valid(LicenceClass.Commercial, day))
+                   || (kind != LicenceClass.Motorcycle && LicenceState.Valid(LicenceClass.Motorcycle, day));
         }
 
         // The officer has had time to reach the window: out of the car, the car away, and for a repeat offender the cuffs.
@@ -350,10 +357,6 @@ namespace RealLifeOverhaul
                     if (!Licences.Law.Custody(LicenceLaw.ArrestHours))
                     {
                         _logger?.Info("Licences: the arrest could not be made into custody just now; it stays at the fine.");
-                    }
-                    else
-                    {
-                        LicenceState.LastArrestDay = TimeHelper.CurrentDay;
                     }
                 }
             }

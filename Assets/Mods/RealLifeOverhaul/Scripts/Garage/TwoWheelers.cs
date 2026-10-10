@@ -21,8 +21,9 @@ namespace RealLifeOverhaul
     /// Bicycles are hired at bike-share docks and bought at racks outside supermarkets; motorbikes and
     /// helmets are bought at stands outside car dealerships (<see cref="BikePlaces"/>). A bicycle is
     /// pedalled: holding the throttle costs energy through the game's own energy system, a tired rider
-    /// has half the push, letting go coasts. A motorbike needs a licence if a Licences feature says so
-    /// (<see cref="GarageBridges.HasMotorcycleLicence"/>; by default it does not) and a helmet by law.
+    /// has half the push, letting go coasts. A motorbike needs a motorcycle licence and a helmet by law: the dealer
+    /// says so at the sale if there is no licence (<see cref="GarageBridges.HasMotorcycleLicence"/>), and riding
+    /// without one is for the roadside checks of Licences to find, as with a car.
     /// </summary>
     public sealed class TwoWheelers
     {
@@ -36,7 +37,6 @@ namespace RealLifeOverhaul
 
         private VehicleController _selected;
         private BikeMount _riding;
-        private bool _kick;                // the rider may not ride this: off again on the next frame
         private bool _restored;
         private bool _tired;
         private int _day = -1;
@@ -100,16 +100,8 @@ namespace RealLifeOverhaul
                 _tired = false;
                 if (_riding != null)
                 {
-                    if (_riding.Def.Motor && !GarageBridges.Licensed())
-                    {
-                        _kick = true;
-                        Notifications.Show(NotificationType.Warning, "reallife_bike_no_licence", null, 8f);
-                    }
-                    else
-                    {
-                        _riding.Effort = 1f;
-                        _riding.Mounted(gm.playerController);
-                    }
+                    _riding.Effort = 1f;
+                    _riding.Mounted(gm.playerController);
                 }
                 return;
             }
@@ -117,12 +109,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            if (_kick)
-            {
-                _kick = false;
-                _riding.Scooter.ExitVehicle();
-            }
-            else if (_riding.Fell > 0f)
+            if (_riding.Fell > 0f)
             {
                 Fall(_riding);
             }
@@ -294,7 +281,6 @@ namespace RealLifeOverhaul
         /// </summary>
         public void BringHere(string id)
         {
-            const string test = "Bring it here";
             BikeRecord record = GarageState.Bike(id);
             TestRefusal why = TestRefusals.Street();
             var gm = InstanceBehavior<GameManager>.Instance;
@@ -308,13 +294,13 @@ namespace RealLifeOverhaul
             }
             if (why != TestRefusal.None)
             {
-                TestRefusals.Tell(Logger, test, why);
+                Cannot(why, null);
                 return;
             }
             Transform player = gm.playerController.transform;
             if (!BikePlaces.SpotAhead(player, out Vector3 spot, out Quaternion facing))
             {
-                TestRefusals.Tell(Logger, test, TestRefusal.NoRoom);
+                Cannot(TestRefusal.NoRoom, null);
                 return;
             }
             BikeDef def = BikeCatalogue.Of(record.Kind);
@@ -354,7 +340,7 @@ namespace RealLifeOverhaul
                     {
                         Crime.Give(fee, "reallife_transaction_bike");
                     }
-                    TestRefusals.Tell(Logger, test, TestRefusal.NothingFits, 0, "the scooter could not be made or dressed");
+                    Cannot(TestRefusal.NothingFits, "the scooter could not be made or dressed");
                     return;
                 }
                 mount.Record.Day = record.Day;
@@ -363,6 +349,24 @@ namespace RealLifeOverhaul
             }
             PointTo(mount, spot, def);
             SayWhere(NotificationType.Success, "reallife_bike_brought", def, spot);
+        }
+
+        // "Bring it here" is something the player asks for, not a test button: its refusals are said in its own words.
+        private static void Cannot(TestRefusal why, string detail)
+        {
+            Logger?.Info("Two-wheelers: \"Bring it here\" was not done (" + why + (detail != null ? "; " + detail : string.Empty) + ").");
+            string key;
+            switch (why)
+            {
+                case TestRefusal.Indoors: key = "reallife_bike_bring_indoors"; break;
+                case TestRefusal.TrafficOff: key = "reallife_bike_bring_paused"; break;
+                case TestRefusal.FeatureOff: key = "reallife_bike_bring_off"; break;
+                case TestRefusal.InVehicle: key = "reallife_bike_bring_in_vehicle"; break;
+                case TestRefusal.NoRoom: key = "reallife_bike_bring_no_room"; break;
+                case TestRefusal.NotLoaded: key = "reallife_bike_bring_loading"; break;
+                default: key = "reallife_bike_bring_failed"; break;
+            }
+            Notifications.Show(NotificationType.Warning, key, null, 8f);
         }
 
         /// <summary>What "Bring it here" costs from where a two-wheeler stands.</summary>
@@ -964,6 +968,10 @@ namespace RealLifeOverhaul
             ClosePanel();   // first: the marker is not drawn under an open panel
             PointTo(mount, spot, def);
             SayWhere(NotificationType.Success, def.Motor && !GarageState.Helmet ? "reallife_bike_bought_where_no_helmet" : "reallife_bike_bought_where", def, spot, 12f);
+            if (def.Motor && !GarageBridges.Licensed())
+            {
+                Notifications.Show(NotificationType.Warning, "reallife_bike_no_licence", null, 12f);   // the sale is made; the dealer says what riding it needs
+            }
         }
 
         private void BuyHelmet()

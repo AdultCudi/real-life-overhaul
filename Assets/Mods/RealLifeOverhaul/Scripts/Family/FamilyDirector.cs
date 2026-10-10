@@ -68,6 +68,7 @@ namespace RealLifeOverhaul.Family
         private int _lastHour = -1;
         private bool _started;
         private bool _failed;
+        private bool _social;     // whether the partner came from Social when the phone contacts were last set up
 
         private bool _promptOn;
         private bool _promptWanted;
@@ -142,8 +143,13 @@ namespace RealLifeOverhaul.Family
             {
                 if (!FamilyState.Loaded)
                 {
+                    if (Partner.UsesSocial && !FamilyBridges.Social.Ready)
+                    {
+                        return;   // who the partner is can only be read once Social has read its people
+                    }
                     FamilyState.Load();
                     FamilyModifiers.Register();
+                    _social = Partner.UsesSocial;
                     FamilyPhone.Setup();
                     Partner.Resync();
                     _lastHour = TimeHelper.CurrentHour;
@@ -153,6 +159,14 @@ namespace RealLifeOverhaul.Family
                     }
                 }
                 _started = true;
+
+                // The social life was switched on or off: who the partner is, and the contact that stands in for them, follow.
+                if (Partner.UsesSocial != _social)
+                {
+                    _social = Partner.UsesSocial;
+                    FamilyPhone.Setup();
+                    Partner.Resync();
+                }
 
                 // The game clears its event hub on every load, so the save hook is kept attached.
                 if (Time.unscaledTime >= _nextHook)
@@ -817,7 +831,7 @@ namespace RealLifeOverhaul.Family
                 plan.Z = here.z;
                 plan.Day = TimeHelper.CurrentDay;
                 plan.TheirColdFeet = false;
-                if (!StartScene(new WeddingScene(), out string refusal))
+                if (!StartScene(new WeddingScene { Free = true }, out string refusal))   // (free: no bill, no presents)
                 {
                     Refuse("Family wedding", refusal);
                 }

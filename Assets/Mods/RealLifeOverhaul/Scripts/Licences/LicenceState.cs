@@ -7,12 +7,13 @@ namespace RealLifeOverhaul
 {
     // Game-free: nothing in this file touches the game or the engine, so the rules can be read (and checked) on their own.
 
-    /// <summary>What a driving licence covers. Taxi is an endorsement on a car licence.</summary>
+    /// <summary>What a driving licence covers. Taxi is an endorsement on a car licence; the motorcycle licence stands on its own.</summary>
     public enum LicenceClass
     {
         Car = 0,          // cars, SUVs, pickups
         Commercial = 1,   // vans and trucks
-        Taxi = 2          // carrying passengers for hire
+        Taxi = 2,         // carrying passengers for hire
+        Motorcycle = 3    // motorbikes (bicycles need no licence)
     }
 
     public enum LicenceStanding
@@ -50,6 +51,7 @@ namespace RealLifeOverhaul
         public const int LessonFee = 90;
         public const int CarTestFee = 220;
         public const int CommercialTestFee = 380;
+        public const int MotorcycleFee = 180;        // the ride assessment, recorded at the desk (the school has no motorbike to lend)
         public const int RetestFee = 120;            // after a failed practical test (either class)
         public const int TaxiFee = 180;
         public const int TaxiHeldDays = 7;           // a car licence held this long...
@@ -119,19 +121,24 @@ namespace RealLifeOverhaul
             public PointCode Code;
         }
 
-        private static readonly Card[] Cards = new Card[3];
+        private static readonly Card[] Cards = new Card[4];
         private static readonly List<Entry> Record = new List<Entry>(16);
 
         public static bool Loaded { get; private set; }
 
         /// <summary>The day the licence rules first ran on this save; 0 until then.</summary>
         public static int FirstDay;
-        public static int SuspendedUntil;        // day on which a suspension ends; 0 = not suspended
+
+        /// <summary>
+        /// Whether it has been looked at once if the save already owns a motorbike (which then gets the motorcycle licence, as a car
+        /// owner got the car licence). False for a save from before the class; the answer is kept, so it is asked only once.
+        /// </summary>
+        public static bool MotorcycleDecided;
+        public static int SuspendedUntil;       // day on which a suspension ends; 0 = not suspended
         public static int Caught;                // times caught driving without entitlement...
         public static int LastCaughtDay;         // ...the last of them on this day
         public static int EvadedChecks;          // roadside checks driven on from, not yet answered for
         public static int LastCheckDay;          // the last roadside check
-        public static int LastArrestDay;         // the last arrest or violent offence this feature knows of (what DefaultLaw calls a record)
         public static readonly int[] TheoryPassedDay = new int[2];      // by class (car, commercial)
         public static readonly int[] RetestDay = new int[2];            // the first day a failed practical may be sat again
         public static readonly bool[] RetestDue = new bool[2];          // the last practical was failed: the retest fee applies
@@ -151,12 +158,12 @@ namespace RealLifeOverhaul
             }
             Record.Clear();
             FirstDay = 0;
+            MotorcycleDecided = false;
             SuspendedUntil = 0;
             Caught = 0;
             LastCaughtDay = 0;
             EvadedChecks = 0;
             LastCheckDay = 0;
-            LastArrestDay = 0;
             TheoryRetryDay = 0;
             TestsPassed = 0;
             TestsFailed = 0;
@@ -317,10 +324,11 @@ namespace RealLifeOverhaul
                     case "car": Cards[0] = new Card { Issued = Int(v, 0), Expires = Int(v, 1) }; break;
                     case "com": Cards[1] = new Card { Issued = Int(v, 0), Expires = Int(v, 1) }; break;
                     case "taxi": Cards[2] = new Card { Issued = Int(v, 0), Expires = Int(v, 1) }; break;
+                    case "moto": Cards[3] = new Card { Issued = Int(v, 0), Expires = Int(v, 1) }; MotorcycleDecided = Int(v, 2) != 0; break;
                     case "first": FirstDay = Int(v, 0); break;
                     case "susp": SuspendedUntil = Int(v, 0); break;
                     case "caught": Caught = Int(v, 0); LastCaughtDay = Int(v, 1); break;
-                    case "check": EvadedChecks = Int(v, 0); LastCheckDay = Int(v, 1); LastArrestDay = Int(v, 2); break;
+                    case "check": EvadedChecks = Int(v, 0); LastCheckDay = Int(v, 1); break;
                     case "theory": TheoryPassedDay[0] = Int(v, 0); TheoryPassedDay[1] = Int(v, 1); TheoryRetryDay = Int(v, 2); break;
                     case "retest": RetestDay[0] = Int(v, 0); RetestDay[1] = Int(v, 1); RetestDue[0] = Int(v, 2) != 0; RetestDue[1] = Int(v, 3) != 0; break;
                     case "lessons": Lessons[0] = Int(v, 0); Lessons[1] = Int(v, 1); break;
@@ -351,10 +359,11 @@ namespace RealLifeOverhaul
             Pair(text, "car", Cards[0].Issued, Cards[0].Expires);
             Pair(text, "com", Cards[1].Issued, Cards[1].Expires);
             Pair(text, "taxi", Cards[2].Issued, Cards[2].Expires);
+            Pair(text, "moto", Cards[3].Issued, Cards[3].Expires, MotorcycleDecided ? 1 : 0);
             Pair(text, "first", FirstDay);
             Pair(text, "susp", SuspendedUntil);
             Pair(text, "caught", Caught, LastCaughtDay);
-            Pair(text, "check", EvadedChecks, LastCheckDay, LastArrestDay);
+            Pair(text, "check", EvadedChecks, LastCheckDay);
             Pair(text, "theory", TheoryPassedDay[0], TheoryPassedDay[1], TheoryRetryDay);
             Pair(text, "retest", RetestDay[0], RetestDay[1], RetestDue[0] ? 1 : 0, RetestDue[1] ? 1 : 0);
             Pair(text, "lessons", Lessons[0], Lessons[1]);

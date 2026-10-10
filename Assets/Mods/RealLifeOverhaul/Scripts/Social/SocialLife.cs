@@ -41,6 +41,8 @@ namespace RealLifeOverhaul
     {
         public static ISocialLaw Law;
         public static ISocialWellbeing Wellbeing;
+        /// <summary>Who the player is with has changed (somebody new, or it ended): whoever keeps the family life is told. Set by Wiring.</summary>
+        public static Action PartnerChanged;
     }
 
     /// <summary>
@@ -241,6 +243,19 @@ namespace RealLifeOverhaul
             Toast(NotificationType.Success, "reallife_social_stage_up", Data(person, "stage", StageName(person)), 10f);
             ModState.AddModifier(ModState.MoodUpBig);
             Logger?.Info("Social: " + person.Name + " is now " + stage + ".");
+            TellPartnerChanged();
+        }
+
+        private static void TellPartnerChanged()
+        {
+            try
+            {
+                SocialLinks.PartnerChanged?.Invoke();
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
         }
 
         public static void BreakUp(SocialPerson person)
@@ -257,6 +272,7 @@ namespace RealLifeOverhaul
             SendText(person, SocialLines.Pick(SocialCatalogue.TextBreakUp), Data(person), true);
             Toast(NotificationType.Error, "reallife_social_broke_up", Data(person), 12f);
             ModState.AddModifier(ModState.MoodDownBig);
+            TellPartnerChanged();
             if (SocialState.Plan.Active && SocialState.Plan.Person == person.Index)
             {
                 SocialState.Plan.Clear();

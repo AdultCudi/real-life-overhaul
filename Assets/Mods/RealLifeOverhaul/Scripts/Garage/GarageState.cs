@@ -248,8 +248,37 @@ namespace RealLifeOverhaul
     /// </summary>
     public static class GarageBridges
     {
-        /// <summary>Licences: may the player ride a motorbike? Null: allowed.</summary>
+        /// <summary>
+        /// Licences: does the player hold a motorcycle licence? Null: yes. Buying a motorbike is never refused; the dealer says so in
+        /// a sentence if the answer is no. Riding without one is policed by Licences like driving a car without a licence.
+        /// </summary>
         public static Func<bool> HasMotorcycleLicence;
+
+        /// <summary>
+        /// For Licences: what a vehicle of the save is. 0 neither, 1 a bicycle (no licence), 2 a motorbike.
+        /// </summary>
+        public static int TwoWheelerKind(VehicleController vehicle)
+        {
+            BikeRecord bike = vehicle != null && vehicle.vehicleInstance != null ? GarageState.Bike(vehicle.vehicleInstance.id) : null;
+            return bike == null ? 0 : BikeCatalogue.Of(bike.Kind).Motor ? 2 : 1;
+        }
+
+        /// <summary>For Licences: does the save own a motorbike? 1 yes, 0 no, -1 the Garage has not read its list yet.</summary>
+        public static int OwnsMotorbike()
+        {
+            if (!GarageState.Loaded)
+            {
+                return -1;
+            }
+            foreach (KeyValuePair<string, BikeRecord> pair in GarageState.Bikes)
+            {
+                if (pair.Value.Owned && BikeCatalogue.Of(pair.Value.Kind).Motor)
+                {
+                    return 1;
+                }
+            }
+            return 0;
+        }
 
         /// <summary>Weather: is the road wet? Null: wet while the game's rain is falling.</summary>
         public static Func<bool> RoadIsWet;

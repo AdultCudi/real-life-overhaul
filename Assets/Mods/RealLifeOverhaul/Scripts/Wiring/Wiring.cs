@@ -16,6 +16,7 @@ namespace RealLifeOverhaul
     ///     Scenes          the one question every street scene asks before it starts
     ///     CivicLinks      city hall with the record, the weather, the paper and the scenes; Paper, a story for the City Ledger
     ///     LifeLinks       careers, social life, travel, the garage and the weather with each other
+    ///     FamilyLinks     family life with social life, home life and the law
     ///
     /// <see cref="Connect"/> is called once per city load, after every director has been added;
     /// <see cref="Disconnect"/> on unload puts every bridge back to its default. Nothing here
@@ -50,6 +51,7 @@ namespace RealLifeOverhaul
             Step("licences", LicenceLinks.Connect);
             Step("civic life", CivicLinks.Connect);
             Step("everyday life", LifeLinks.Connect);
+            Step("family life", FamilyLinks.Connect);
             Logger?.Info("Wiring: the features are connected.");
         }
 
@@ -60,6 +62,7 @@ namespace RealLifeOverhaul
                 return;
             }
             Connected = false;
+            Step("family life", FamilyLinks.Disconnect);
             Step("everyday life", LifeLinks.Disconnect);
             Step("civic life", CivicLinks.Disconnect);
             Step("licences", LicenceLinks.Disconnect);

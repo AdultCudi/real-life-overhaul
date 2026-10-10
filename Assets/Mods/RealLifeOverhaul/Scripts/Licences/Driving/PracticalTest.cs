@@ -919,7 +919,6 @@ namespace RealLifeOverhaul
                 LicenceState.RetestDue[index] = false;
                 LicenceState.RetestDay[index] = 0;
                 LicenceState.TestsPassed++;
-                Licences.TellDriving(_class);
                 ModState.AddModifier(ModState.MoodUpBig);
             }
             else

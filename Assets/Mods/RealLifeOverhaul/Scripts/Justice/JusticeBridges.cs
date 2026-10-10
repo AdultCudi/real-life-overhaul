@@ -69,8 +69,8 @@ namespace RealLifeOverhaul
         /// </summary>
         bool Custody(int hours, Action released);
 
-        /// <summary>Where somebody let out of custody or prison is put down: the pavement outside a precinct. False to use the courthouse.</summary>
-        bool ReleaseSpot(out Vector3 spot);
+        /// <summary>Where somebody let out of custody or prison is put down: the pavement outside a police station, and that station's name (what the player is told). False to use the courthouse.</summary>
+        bool ReleaseSpot(out Vector3 spot, out string name);
     }
 
     /// <summary>Scripts\Licences: the driving licence.</summary>
@@ -111,9 +111,10 @@ namespace RealLifeOverhaul
         public void RecordSealed() { }
         public bool Custody(int hours, Action released) => false;
 
-        public bool ReleaseSpot(out Vector3 spot)
+        public bool ReleaseSpot(out Vector3 spot, out string name)
         {
             spot = default;
+            name = null;
             return false;
         }
     }

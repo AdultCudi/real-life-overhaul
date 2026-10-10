@@ -22,13 +22,6 @@ namespace RealLifeOverhaul
         bool Custody(int hours);
     }
 
-    /// <summary>Told when something about the player's licences changes: for insurance, employers, anything that cares. All optional.</summary>
-    public interface ILicenceListener
-    {
-        void PointsAdded(PointCode code, int total);
-        void DrivingChanged(LicenceClass kind, LicenceStanding standing);
-    }
-
     /// <summary>The offence ids this feature reports to a law bridge.</summary>
     public static class LicenceOffences
     {
@@ -36,15 +29,11 @@ namespace RealLifeOverhaul
         public const string Suspended = "driving_suspended";
     }
 
-    /// <summary>Today's behaviour without a law feature: the mod's own short memory of arrests, and its time-skip custody.</summary>
+    /// <summary>Today's behaviour without a law feature: nothing is recorded, and custody is the mod's own time skip.</summary>
     public sealed class DefaultLaw : ILicenceLawBridge
     {
         public void Record(string offenceId, bool arrested)
         {
-            if (arrested)
-            {
-                LicenceState.LastArrestDay = TimeHelper.CurrentDay;
-            }
         }
 
         public bool Custody(int hours)
@@ -62,7 +51,6 @@ namespace RealLifeOverhaul
     {
         private const string FeeCategory = "ba:transactioncategory_licensingfees";
 
-        private static readonly List<ILicenceListener> Listeners = new List<ILicenceListener>(2);
         private static readonly DefaultLaw Fallback = new DefaultLaw();
         private static ILicenceLawBridge _law;
 
@@ -73,19 +61,6 @@ namespace RealLifeOverhaul
         {
             get => _law ?? Fallback;
             set => _law = value;
-        }
-
-        public static void Listen(ILicenceListener listener)
-        {
-            if (listener != null && !Listeners.Contains(listener))
-            {
-                Listeners.Add(listener);
-            }
-        }
-
-        public static void Unlisten(ILicenceListener listener)
-        {
-            Listeners.Remove(listener);
         }
 
         public static class Driving
@@ -109,12 +84,31 @@ namespace RealLifeOverhaul
             public static bool Suspended => LicenceState.Loaded && LicenceState.SuspendedUntil > TimeHelper.CurrentDay;
 
             /// <summary>
-            /// Which licence a vehicle needs. False for what needs none: scooters, hand trucks, flatbed
-            /// trolleys, anything without an engine. Vans and trucks are commercial, every other car is a car.
+            /// The Garage's two-wheelers, set by Wiring: what a vehicle of the save is, 0 neither, 1 a bicycle, 2 a motorbike.
+            /// Left null, no vehicle is taken for one (a two-wheeler is then an electric scooter, which needs no licence).
+            /// </summary>
+            public static Func<VehicleController, int> TwoWheelerOf;
+
+            /// <summary>
+            /// Set by Wiring: whether the save owns a motorbike. 1 yes, 0 no, -1 not known yet (the Garage has not read its list).
+            /// Left null, nobody is taken to own one.
+            /// </summary>
+            public static Func<int> OwnsMotorbike;
+
+            /// <summary>
+            /// Which licence a vehicle needs. False for what needs none: bicycles, scooters, hand trucks, flatbed
+            /// trolleys, anything without an engine. Motorbikes are the motorcycle class, vans and trucks are
+            /// commercial, every other car is a car.
             /// </summary>
             public static bool ClassOf(VehicleController vehicle, out LicenceClass kind)
             {
                 kind = LicenceClass.Car;
+                int wheels = TwoWheeler(vehicle);
+                if (wheels != 0)
+                {
+                    kind = LicenceClass.Motorcycle;
+                    return wheels == 2;
+                }
                 Vehicles.VehicleTypes.VehicleType type = vehicle != null ? vehicle.vehicleType : null;
                 if (type == null || !type.IsMotorVehicle || type.spawnInPlayerObject)
                 {
@@ -131,42 +125,22 @@ namespace RealLifeOverhaul
                 return true;
             }
 
+            private static int TwoWheeler(VehicleController vehicle)
+            {
+                try
+                {
+                    return vehicle != null && TwoWheelerOf != null ? TwoWheelerOf(vehicle) : 0;
+                }
+                catch (Exception e)
+                {
+                    Logger?.Error(e);
+                    return 0;
+                }
+            }
+
             public static bool MayDrive(VehicleController vehicle)
             {
                 return !ClassOf(vehicle, out LicenceClass kind) || Has(kind);
-            }
-        }
-
-        // ---------------------------------------------------------------- telling whoever listens
-
-        internal static void TellPoints(PointCode code, int total)
-        {
-            for (int i = 0; i < Listeners.Count; i++)
-            {
-                try
-                {
-                    Listeners[i].PointsAdded(code, total);
-                }
-                catch (Exception e)
-                {
-                    Logger?.Error(e);
-                }
-            }
-        }
-
-        internal static void TellDriving(LicenceClass kind)
-        {
-            LicenceStanding standing = Driving.Standing(kind);
-            for (int i = 0; i < Listeners.Count; i++)
-            {
-                try
-                {
-                    Listeners[i].DrivingChanged(kind, standing);
-                }
-                catch (Exception e)
-                {
-                    Logger?.Error(e);
-                }
             }
         }
 
@@ -237,6 +211,7 @@ namespace RealLifeOverhaul
             {
                 case LicenceClass.Commercial: return "reallife_lic_class_commercial".GetLocalization();
                 case LicenceClass.Taxi: return "reallife_lic_class_taxi".GetLocalization();
+                case LicenceClass.Motorcycle: return "reallife_lic_class_motorcycle".GetLocalization();
                 default: return "reallife_lic_class_car".GetLocalization();
             }
         }

@@ -21,7 +21,8 @@ namespace RealLifeOverhaul
         LessonVan,
         TestVan,
         Taxi,
-        Renew
+        Renew,
+        Motorcycle     // the ride assessment, recorded at the desk
     }
 
     /// <summary>
@@ -33,11 +34,12 @@ namespace RealLifeOverhaul
     {
         public const int OpensAt = 7;
         public const int ClosesAt = 20;
+        public const int Classes = 4;       // LicenceClass: car, commercial, taxi, motorcycle
 
         public static readonly SchoolService[] Order =
         {
             SchoolService.Card, SchoolService.Theory, SchoolService.LessonCar, SchoolService.TestCar,
-            SchoolService.LessonVan, SchoolService.TestVan, SchoolService.Taxi, SchoolService.Renew
+            SchoolService.LessonVan, SchoolService.TestVan, SchoolService.Motorcycle, SchoolService.Taxi, SchoolService.Renew
         };
 
         public static int Fee(SchoolService service)
@@ -50,16 +52,17 @@ namespace RealLifeOverhaul
                 case SchoolService.TestCar: return LicenceState.RetestDue[0] ? LicenceLaw.RetestFee : LicenceLaw.CarTestFee;
                 case SchoolService.TestVan: return LicenceState.RetestDue[1] ? LicenceLaw.RetestFee : LicenceLaw.CommercialTestFee;
                 case SchoolService.Taxi: return LicenceLaw.TaxiFee;
+                case SchoolService.Motorcycle: return LicenceLaw.MotorcycleFee;
                 case SchoolService.Renew: return LicenceLaw.RenewalFee * Mathf.Max(1, Renewable(TimeHelper.CurrentDay));
                 default: return 0;
             }
         }
 
-        /// <summary>How many of the three licences could be renewed today.</summary>
+        /// <summary>How many of the licences (car, commercial, taxi, motorcycle) could be renewed today.</summary>
         public static int Renewable(int day)
         {
             int count = 0;
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < Classes; i++)
             {
                 count += LicenceState.Renewable((LicenceClass)i, day) ? 1 : 0;
             }
@@ -78,6 +81,7 @@ namespace RealLifeOverhaul
             int day = TimeHelper.CurrentDay;
             LicenceStanding car = LicenceState.Standing(LicenceClass.Car, day);
             LicenceStanding van = LicenceState.Standing(LicenceClass.Commercial, day);
+            LicenceStanding bike = LicenceState.Standing(LicenceClass.Motorcycle, day);
             bool needsDesk = service != SchoolService.Card && service != SchoolService.Renew && service != SchoolService.Taxi;
             if (service == SchoolService.Card)
             {
@@ -104,7 +108,7 @@ namespace RealLifeOverhaul
                 switch (service)
                 {
                     case SchoolService.Theory:
-                        reasonKey = car == LicenceStanding.Valid || car == LicenceStanding.Expired ? "reallife_school_no_have"
+                        reasonKey = Holds(car) && Holds(bike) ? "reallife_school_no_have"   // (the paper is for whichever of the car and the motorbike is still to get)
                             : TheoryInDate(day) ? "reallife_school_no_theory_passed"
                             : day < LicenceState.TheoryRetryDay ? "reallife_school_no_wait"
                             : null;
@@ -140,6 +144,11 @@ namespace RealLifeOverhaul
                     case SchoolService.Renew:
                         reasonKey = Renewable(day) == 0 ? "reallife_school_no_renew" : null;
                         break;
+                    case SchoolService.Motorcycle:
+                        reasonKey = Holds(bike) ? "reallife_school_no_have"
+                            : !TheoryInDate(day) ? "reallife_school_no_need_theory"
+                            : null;
+                        break;
                 }
             }
             if (reasonKey == null && !Licences.Affords(Fee(service)))
@@ -149,10 +158,16 @@ namespace RealLifeOverhaul
             return reasonKey == null;
         }
 
+        private static bool Holds(LicenceStanding standing)
+        {
+            return standing == LicenceStanding.Valid || standing == LicenceStanding.Expired;
+        }
+
         public static string PitchKey(SchoolService service)
         {
             switch (service)
             {
+                case SchoolService.Motorcycle: return "reallife_school_pitch_motorcycle";
                 case SchoolService.Theory: return "reallife_school_pitch_theory";
                 case SchoolService.LessonCar: return "reallife_school_pitch_lesson_car";
                 case SchoolService.TestCar: return "reallife_school_pitch_test_car";
@@ -169,7 +184,7 @@ namespace RealLifeOverhaul
         {
             int day = TimeHelper.CurrentDay;
             var text = new StringBuilder(256);
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < Classes; i++)
             {
                 var kind = (LicenceClass)i;
                 LicenceState.Card card = LicenceState.Of(kind);

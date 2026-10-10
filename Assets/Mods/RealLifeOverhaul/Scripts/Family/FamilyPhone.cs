@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Family
 
         private static readonly Dictionary<string, Sprite> Icons = new Dictionary<string, Sprite>(3);   // kept for the session: the game caches contact icons by sprite name
         private static List<Choice> _choices;
-        private static int _chatAt, _cookAt, _pageAt;
+        private static int _chatAt, _cookAt;
 
         private static readonly string[] Topics =
         {
@@ -62,6 +62,12 @@ namespace RealLifeOverhaul.Family
                 if (!Partner.UsesSocial)
                 {
                     PartnerContact = Register(PartnerId, "reallife_contact_partner_desc", "reallife_partner_calldialogtype", () => new PartnerDialog(),
+                        "reallife_text_partner_welcome", new Color(0.86f, 0.22f, 0.30f));
+                }
+                else if (SaveGameManager.Current != null && SaveGameManager.Current.Contacts.Exists(c => c != null && c.id == PartnerId))
+                {
+                    // The stand-in contact of an earlier session is not made again, but it still answers and says where the partner is now.
+                    Register(PartnerId, "reallife_contact_partner_desc", "reallife_partner_calldialogtype", () => new PartnerDialog(),
                         "reallife_text_partner_welcome", new Color(0.86f, 0.22f, 0.30f));
                 }
                 SetupInLaws();
@@ -157,10 +163,10 @@ namespace RealLifeOverhaul.Family
 
         // ---------------------------------------------------------------- what can be done
 
-        /// <summary>Everything that can be done from a family conversation, from the page's "things to do" on.</summary>
+        /// <summary>Everything that can be done from a family conversation, starting with the entry at <paramref name="from"/> (0 is the first; the last is the way back to the page).</summary>
         internal static DialogEntry FamilyMenu(int from)
         {
-            return FamilyTalk.Menu(Choices(), _pageAt + from);
+            return FamilyTalk.Menu(Choices(), from);
         }
 
         /// <summary>The same things, starting with what one says to the partner: on the phone a chat, face to face at home the evening's routines.</summary>
@@ -177,7 +183,7 @@ namespace RealLifeOverhaul.Family
             {
                 return FamilyTalk.Close("reallife_family_menu_off");
             }
-            if (Partner.UsesSocial)
+            if (Partner.UsesSocial && (Partner.Kept(out _) || !FamilyState.HasPartner))
             {
                 return FamilyTalk.Close(FamilyState.HasPartner ? "reallife_family_partner_in_people" : "reallife_family_partner_none_people");
             }
@@ -342,7 +348,6 @@ namespace RealLifeOverhaul.Family
             list.Add(new Choice(() => HardTimes.CanEnd, () => FamilyText.Say((Bond)s().BondBefore == Bond.Married ? "reallife_family_do_divorce" : "reallife_family_do_part"), "reallife_family_do_end_yes", HardTimes.EndAsk));
 
             // ---- and back to the page
-            _pageAt = list.Count;
             list.Add(new Choice(null, () => FamilyText.Say("reallife_family_do_page"), "reallife_family_do_page_yes", () => FamilyPage.Page(0)));
             _choices = list;
             return _choices;

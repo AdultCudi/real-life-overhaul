@@ -55,16 +55,6 @@ namespace RealLifeOverhaul.Family
         public static void Daily(int day)
         {
             FamilySave s = FamilyState.S;
-            // What the law says about the player, the family hears.
-            if (FamilyBridges.Law != null)
-            {
-                int arrests = Mathf.Max(0, FamilyBridges.Law.Arrests);
-                if (s.LawSeen >= 0 && arrests > s.LawSeen)
-                {
-                    Arrest(1);   // (what was on the record before the family first read it is not news)
-                }
-                s.LawSeen = arrests;
-            }
             if (FamilyState.Bond == Bond.Separated)
             {
                 // Long silence, and they draw their own conclusion.

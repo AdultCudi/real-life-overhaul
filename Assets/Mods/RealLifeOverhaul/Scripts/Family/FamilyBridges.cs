@@ -47,6 +47,10 @@ namespace RealLifeOverhaul.Family
     /// </summary>
     public interface ISocialBridge
     {
+        /// <summary>True while Social supplies the partner (its option is on). When it is false, Family keeps its own stand-in as if there were no bridge.</summary>
+        bool Active { get; }
+        /// <summary>True once Social has read its people from the save. Until then Family waits to read who the partner is.</summary>
+        bool Ready { get; }
         bool TryGetPartner(out PersonInfo partner);
         void Changed(FamilyEvent what, float affection, float trust);
         bool StartOuting(string kind, Action<bool> done);
@@ -86,11 +90,12 @@ namespace RealLifeOverhaul.Family
         bool FamilyOuting(string kind, string child, Action<bool> done);
     }
 
-    /// <summary>What Law / Justice implements: the player's record as the family sees it.</summary>
+    /// <summary>
+    /// What Law / Justice implements: whether the player is locked up. An arrest itself is told with
+    /// <see cref="FamilyApi.PlayerArrested"/>, once, when it happens, so that its weight comes with it.
+    /// </summary>
     public interface ILawBridge
     {
-        /// <summary>How many times the player has been arrested in this save. Family reacts when it goes up.</summary>
-        int Arrests { get; }
         /// <summary>True while the player is held (custody, prison): family life waits.</summary>
         bool InCustody { get; }
     }
@@ -138,7 +143,7 @@ namespace RealLifeOverhaul.Family
         /// <summary>
         /// Law / Justice: the player has been arrested (or convicted). severity 1 a night in the
         /// cells, 2 charged, 3 prison. The partner takes it hard; it never ends things by itself.
-        /// Either call this, or set <see cref="FamilyBridges.Law"/> and Family notices by itself.
+        /// Call it once for each arrest or sentence, when it happens (Wiring.Arrests does).
         /// </summary>
         public static void PlayerArrested(int severity)
         {

@@ -1194,7 +1194,7 @@ is: an hour worked at it is counted, read-only, once an hour (`JobHelper.IsPlaye
 own shops), shown on the CV, and every eight such hours count as one shift of experience when signing on with
 the retail chain.
 
-- **Signing on** is face to face. The boss says what the work is in their own manner, then offers the three rotas
+- **Signing on** is face to face at the office or by phone (Work contact, "Apply for a job": the six employers in turn, the same page as the boss at the office, so the same checks and sign-on). The boss says what the work is in their own manner, then offers the three rotas
   in turn (Mon/Wed/Fri 08:00, Tue/Thu/Sat 13:00, Sat/Sun 10:00). References are counted as: +1 for the Gig Line's
   reference letter, +1 for each employer left on good terms, -1 for each left with a marked-down reference.
   Experience carries over: levels in the employer's own gig (two shifts each above the first) and in a related
@@ -1579,7 +1579,7 @@ and may read `Justice.Wanted`, `Justice.OnProbation`, `Justice.DrivingSuspended`
 
 | bridge | set by | what it is asked | default |
 |---|---|---|---|
-| `Law` (`ILawBridge`) | `Scripts/Law` | `PriorConvictions`; told `Convicted`, `Cleared`, `RecordSealed`; `Custody(hours, released)`; `ReleaseSpot(out spot)` | the justice system's own record; a plain time skip; the courthouse front |
+| `Law` (`ILawBridge`) | `Scripts/Law` | `PriorConvictions`; told `Convicted`, `Cleared`, `RecordSealed`; `Custody(hours, released)`; `ReleaseSpot(out spot, out name)` (the spot, and the station's name that the release text uses: "at Midtown Precinct", else "at the courthouse") | the justice system's own record; a plain time skip; the courthouse front |
 | `Licences` (`ILicenceBridge`) | `Scripts/Licences` | `SuspendDriving(untilDay)` (0 lifts it); `DrivingSuspended` | the date kept in `JusticeState` |
 | `Social` (`ISocialBridge`) | `Scripts/Social` | `CloseFriend(out name)`; told `Stood(name, visit)` | the mod's friend contact, if rung within the last 7 days |
 | `Transport` (`ITransportBridge`) | whoever keeps the cars | `ReturnCar(car, near, daysAway)` | `VehicleTow.BringNear` and a storage charge |
@@ -2480,7 +2480,7 @@ supermarkets, stands outside up to four dealerships: found once per city load, i
 with room for the whole thing. The Garage key hires, returns, or opens the stand's panel (buy, sell an owned one
 standing by for half its price). Holding the throttle is pedalling: it costs energy through the game's own
 `EnergyHelper`, never below 14; a worn-out rider has half the push; letting go coasts. A motorbike asks
-`GarageBridges.HasMotorcycleLicence` (null: allowed). Coming off (most of the speed lost in one physics step, or
+`GarageBridges.HasMotorcycleLicence` (null: yes) only at the sale: the dealer warns in a sentence if it is no and sells all the same. Riding unlicensed is policed by Licences (the warning on getting on, the roadside check: fine, tow, arrest the third time). Coming off (most of the speed lost in one physics step, or
 the bike on its side while moving) calls `GarageBridges.RiderFalls(speed)` if a Ragdoll feature has set it,
 otherwise the bike stops and the rider is on their feet. Traffic sees a ridden two-wheeler as it sees a ridden
 scooter: the game puts its collider on the vehicles layer.
@@ -2810,7 +2810,7 @@ back every value it changed.
 | Grants | 150 a week per business (three at most) | licence fee 60 a week per business (three at most) |
 | Rent | +6 % on rent paid; +4 % on rent collected | 6 % of rent paid returned; -4 % on rent collected |
 | Parking | street parking x1.5, each ticket +60 | x0.6, each ticket -40 |
-| Transit | subway +1 a ride; buses x1.3 as often, fares x1.25 (Transport bridge) | subway -1; buses x0.75, fares x0.75 |
+| Transit | subway +1 a ride; buses x1.3 as often (bus fares do not change) | subway -1; buses x0.75 as often |
 | Cleaning | sweepers x2.5, mood +3, levy +30 | sweepers x0.3, mood -3, 25 returned |
 | Night life | licensed until 04:00 (bridge), crime x1.1 | until midnight (bridge), crime x0.92 |
 | Permits | sites x1.35 and until 19:00; complaints only noted | sites x0.75, 08:00 to 16:00; one complaint brings quiet hours |
@@ -2859,7 +2859,7 @@ where traffic has another way to go; it is opened on every path out.
 ```csharp
 // read at any time (1, or the stock value, when civic life is off):
 CivicPolicy.FineScale  CivicPolicy.EnforcementScale  CivicPolicy.PoliceScale  CivicPolicy.CrimeScale
-CivicPolicy.AccidentScale  CivicPolicy.FareScale  CivicPolicy.ServiceScale  CivicPolicy.EventScale
+CivicPolicy.AccidentScale  CivicPolicy.ServiceScale  CivicPolicy.EventScale
 CivicPolicy.ClosingHour  CivicPolicy.SiteSpeed  CivicPolicy.Position(Lever.X)  CivicPolicy.Changed += ...
 
 // set once at start-up by the feature that has the answer:
@@ -2916,7 +2916,7 @@ its caller: a fault is logged once per place (`Wiring.Fault`) and the default an
 | file | what it connects |
 |---|---|
 | `Wiring.cs` | `Connect` / `Disconnect`, the list of pairings, `Fault` |
-| `Standing.cs` | `Wiring.Standing`: the one answer to "has the player a record" (`HasRecord`, `Arrested(days)`, `CleanFor(days)`, `Convictions`, `Charged`) and to what the city thinks of them (`Public`, `PublicSigned`), from Law's police record and Justice's convictions together |
+| `Standing.cs` | `Wiring.Standing`: the one answer to "has the player a record" (`HasRecord`, `Arrested(days)`, `Convictions`, `Charged`) and to what the city thinks of them (`Public`, `PublicSigned`), from Law's police record and Justice's convictions together |
 | `LawJustice.cs` | `Wiring.Arrests`: Law's cell and Justice's case for the same arrest; `Justice.Bridges.Law` |
 | `LicenceLinks.cs` | `Licences.Law`, `Justice.Bridges.Licences`, and what Licences reports to the courts instead of fining |
 | `Scenes.cs` | `Wiring.Scenes`: the one question every street scene asks before it starts; `PlayerHeld` for panels |
@@ -2995,12 +2995,11 @@ has cleared: a roadworks crew would have to close one of those very points in th
 
 | bridge | answered by | with |
 |---|---|---|
-| `Justice.Bridges.Law` | `Wiring.Arrests` | `ReleaseSpot`: the pavement outside the nearest precinct. `PriorConvictions` -1, `Custody` false, the three record calls empty (see "For Scripts/Law") |
+| `Justice.Bridges.Law` | `Wiring.Arrests` | `ReleaseSpot`: the pavement outside the nearest precinct, and its name. `PriorConvictions` -1, `Custody` false, the three record calls empty (see "For Scripts/Law") |
 | `Justice.Bridges.Licences` | `Wiring.LicenceLinks` | the licence's own suspension date |
 | `Justice.Bridges.Social` | `Wiring.LifeLinks` | the closest person at "close friend" or above; standing by the player is remembered. The Friend contact with the social life off |
 | `Justice.Bridges.Transport` | nobody | Transport keeps no pound for cars; the default tow and storage charge stand |
-| `Licences.Law` | `Wiring.LicenceLinks` | `CleanRecord`: `Standing.CleanFor` and Licences' own memory; `Custody`: the courts' custody, else the old time skip; `Precinct`: Law's door; `Record`: Licences' own memory (Law's record has no line for it) |
-| `Licences.Listen` | nobody | nothing in the mod reacts to points yet (insurance could: `CarRules.Premium`) |
+| `Licences.Law` | `Wiring.LicenceLinks` | `Custody`: the courts' custody, else the old time skip; `Record`: nothing (Law's record has no line for a licence offence) |
 | `CivicBridges.CriminalRecord`, `Reputation` | `Wiring.CivicLinks` | `Standing.HasRecord`, `Standing.PublicSigned` |
 | `CivicBridges.LargeScene`, `WeatherStopsWork` | `Wiring.CivicLinks` | `Scenes.AnyBut(Rally)`; the game's rain or a thunderstorm |
 | `CivicBridges.News` | `Wiring.CivicLinks` | the headline at once, the story in tomorrow's paper (`Wiring.Paper.Print`) |
@@ -3013,6 +3012,8 @@ has cleared: a roadworks crew would have to close one of those very points in th
 | `SocialLinks.Law`, `Wellbeing` | `Wiring.LifeLinks` | `Standing`; Home's stress and meals |
 | `CareerLinks.Law`, `Health` | `Wiring.LifeLinks` | the CV line from `Standing`; Home's sick note or the mod's own sickness |
 | `CareerLinks.Social` | nobody | the social cast is a fixed eight: there is no way to add a colleague to it |
+| `FamilyBridges.Social`, `Home`, `Law`; `SocialLinks.PartnerChanged` | `Wiring.FamilyLinks` | the partner is Social's person; sleep debt and illness; whether the player is locked up; a break-up in Social reaches Family at once (`Wiring.Arrests.FamilyHears` tells it of arrests) |
+| `FamilyBridges.Travel`, `Leisure` | nobody | a trip is bought at the travel agent's desk, and a leisure activity is the player's own at a venue; neither can be run for a named partner |
 | `TravelBridges.Justice` | `Wiring.LifeLinks` | no trip with a warrant out, an undecided bail or a court date inside it |
 | `TravelBridges.Home` | `Wiring.LifeLinks` | a hotel shower is hygiene, rest and holidays take stress off (`Laundry`: nothing to act on) |
 | `TravelBridges.Social` | `Wiring.LifeLinks`, only with the social life on at city load | partner and close friends as companions, a trip together, souvenirs for friends |
@@ -3020,7 +3021,7 @@ has cleared: a roadworks crew would have to close one of those very points in th
 | `GarageBridges.RoadIsWet` | `Wiring.LifeLinks` | the game's rain or `Events.Weather.Sky` |
 | `GarageBridges.WearOf`, `InsuranceOf` | `Transport/CarOwnership`, `CarPhone` | tyres and brakes wear `1 + WearOf` times as fast; the premium is `1 + InsuranceOf` times `CarRules.Premium`, on the bill and on the Garage page |
 | `GarageBridges.ValueAdded`, `GarageSummary.Lines` | nobody | Transport has no resale; `Lines` lists every car at once, the Garage page shows one (it needs a one-car form) |
-| `GarageBridges.HasMotorcycleLicence` | nobody | Licences has three classes (car, commercial, taxi), no motorcycle class |
+| `GarageBridges.HasMotorcycleLicence`; `Licences.Driving.TwoWheelerOf`, `OwnsMotorbike` | `Wiring.LicenceLinks` | the motorcycle class: held or not at the sale; a motorbike is the class and a bicycle none; a save that owns one is given the licence once |
 | `GarageBridges.PoliceNotice` | nobody | the Garage's own fine works alone; a stop for it would be new police behaviour |
 | `GarageBridges.RiderFalls` | nobody | `PlayerKnockdown` has no door for "down now", and a ragdoll on a rider leaving a scooter in the same frame cannot be judged without a run |
 | `Events.EventDirector.CrashFire` | nobody, on purpose | a severe crash already burns with the accident's own fire (`TrafficEffects.CreateFire`, 6 in 10 severe crashes, put out with the scene); `CrashFire` would be a second fire on the same bonnet |
@@ -3156,7 +3157,7 @@ walks in, or come in at the door when it is not being looked at.
   pay, at most 60). Halved while they work short days for the children.
 - **Chores** (about three days in ten, a question with two answers), **neglect** (four days with not a
   word and the home cools, with a text every third day), **broken promises** (standing them up, missing an
-  appointment), and **arrests** (`FamilyApi.PlayerArrested`, or the Law bridge's count going up) all move
+  appointment), and **arrests** (`FamilyApi.PlayerArrested`, told by `Wiring.Arrests.FamilyHears` once as it happens; only with a partner) all move
   "harmony", the one figure for how things are at home (0..100, shown on the Family page in words).
 - **Support**: ill and at home in the evening, they look after the player (Home bridge; default eight
   hours off the illness and a mood); after a bad day (happiness under 35) they say something that helps.
@@ -3210,7 +3211,7 @@ walks in, or come in at the door when it is not being looked at.
   dark for the reception (four hours) and everybody is taken away unseen. Then the bill is settled, the
   gifts counted (about 140 a guest times the root of the size), and the story of the party told.
 - **Married**: a lasting mood (+10, renewed daily while home is not unhappy), next of kin, and the offer
-  of a honeymoon: Travel bridge, else three days skipped (a day at a time) for 2,500 and a four-day mood.
+  of a honeymoon: Travel bridge, else three days skipped (a day at a time) for 2,500 and a four-day mood. Put off, it stays in the Family contact's "Things to do" until it is taken or `HoneymoonWindowDays` (60) days after the wedding (`HoneymoonOpen`); `HoneymoonTaken` is set when it is paid for and given back if the trip is called off, and is cleared by the next wedding. A save from before the flag counts as taken if its memories hold the trip.
 - **No dead ends**: the day can be put back a week (10 %), called off (the deposit is kept; still engaged),
   the engagement broken off (still together, badly hurt). A missed day moves itself three days once and is
   forgiven; missed twice, the booking is lost. Cold feet the night before: the player's own (talk it
@@ -3291,11 +3292,13 @@ null when it unloads); until then Family uses its own default. All calls are fro
 
 | bridge | its owner implements | Family's default without it |
 |---|---|---|
-| `ISocialBridge` | `TryGetPartner(out PersonInfo)`: the one person the player is dating or partnered with (Stage 4 or 5: name, look seed, sex, affection and trust 0..100, days together); `Changed(FamilyEvent, affection, trust)`: what happened to the two (moved in, engaged, married, argued, shared time, broken promise, separated, divorced...), with a suggested change in points; `StartOuting(kind, done)`: "dinner" (true if it started; `done(true)` when it went well); `ClosePeople(list, most)`: who would come to a wedding. It calls `FamilyApi.PartnerChanged()` when the partner changes outside Family's flows and may call `FamilyApi.SharedTime(points)` | one partner record in the family state (a name, a look seed, affection), met and rung through "Someone special" |
+| `ISocialBridge` | `Active`, `Ready`, `TryGetPartner(out PersonInfo)`: the one person the player is dating or partnered with (Stage 4 or 5: name, look seed, sex, affection and trust 0..100, days together); `Changed(FamilyEvent, affection, trust)`: what happened to the two (moved in, engaged, married, argued, shared time, broken promise, separated, divorced...), with a suggested change in points; `StartOuting(kind, done)`: "dinner" (true if it started; `done(true)` when it went well); `ClosePeople(list, most)`: who would come to a wedding. It calls `FamilyApi.PartnerChanged()` when the partner changes outside Family's flows and may call `FamilyApi.SharedTime(points)` | one partner record in the family state (a name, a look seed, affection), met and rung through "Someone special" |
 | `IHomeBridge` | `CookTogether`, `WatchTogether`, `CareWhenSick(partner)`, `BrokenNight(wakings)`, `HealthVisit(reasonKey)`: true if Home did it its own way | a few lines, a meal, a mood; eight hours off the illness; the "up in the night" mood |
 | `ITravelBridge` | `Honeymoon(partner, days, done)` | 2,500, three days skipped, a mood |
 | `ILeisureBridge` | `DateNight(partner, done)`, `FamilyOuting("school_play" or "birthday", child, done)` | dinner at a restaurant's door; the play and the party as an errand and a skip |
-| `ILawBridge` | `Arrests` (a count that goes up), `InCustody` | nothing is known; `FamilyApi.PlayerArrested(severity 1..3)` can be called instead |
+| `ILawBridge` | `InCustody` (a cell or a prison term; family life waits) | nothing is known; arrests are told with `FamilyApi.PlayerArrested(severity 1..3)`, which `Wiring.Arrests.FamilyHears` calls once for each arrest (1 a night in the cells, 2 when a case is open for it) and each prison sentence (3), only with a partner |
+
+`Wiring/FamilyLinks.cs` fills in Social, Home and Law. Social: the partner is Social's person who is dating or with the player; `Active` is Social's option, `Ready` is "its people are read" (Family waits for that before reading who the partner is); `StartOuting` answers false, so Family runs its own evening, because Social's outings are planned with a venue and a time by its people. Home: `CareWhenSick` shortens Home's illness by eight hours, `BrokenNight` adds half an hour of sleep debt for each waking; Home has no routine for cooking or television for two, or for recording a health visit, so those keep Family's default. `ITravelBridge` and `ILeisureBridge` have no matching door (a trip is bought at the travel agent's desk, and a leisure activity is the player's own at a venue), so they stay at their defaults. A partner who is engaged, married or living in and is not Social's person stays on Family's own record (`Partner.Kept`); a dating stand-in with nobody from Social to replace them ends when Social is on, and the "Someone special" contact is not made again (an existing one answers and says where the partner is).
 
 `FamilyApi` is safe to read at any time: `HasPartner`, `LivesTogether`, `Engaged`, `Married`, `Children`,
 `PartnerName`, `WeddingToday`. `FamilyDirector.TakesInteractKey` is true while one of its key prompts is up
@@ -3314,7 +3317,7 @@ life off for the session; the save is left as it was.
 
 Partner moves in now (needs a rented home; with Social absent a partner is made up on the spot) - propose
 here (a ring is supplied; the answer is a real roll at 90 % or better) - start wedding planning (engaged at
-once if need be) - hold the wedding here, now (a classic wedding with everything, out of doors) - start a
+once if need be) - hold the wedding here, now (a classic wedding with everything, out of doors; free: no bill is charged and no presents come in, `WeddingScene.Free`) - start a
 pregnancy / move it on a step (scan, scan, class, birth) - start an adoption / move it on a step - add a year
 to the children's ages - pushchair walk now (needs a child under three) - open the Family page - clear all
 family state. A button that does nothing says why.
@@ -4070,12 +4073,13 @@ Licences/
 | Car | every car, SUV and pickup (`CarKind` Economy, Saloon, Luxury, Sports, Utility) | theory test (60; 10 of 66 questions, 8 to pass, a pass counts 30 days), one lesson (90), the driven test (220) |
 | Commercial | vans and trucks (`CarKind.Van`, `CarKind.Truck`) | a valid car licence, one van lesson (90), the driven test in the school's van with the bay reversed into (380) |
 | Taxi endorsement | carrying passengers for hire | a car licence held 7 days with at most 5 points, 180 |
-| none needed | electric scooter, hand truck, flatbed trolley, anything without an engine (`CarKind.Untouched`) | |
+| Motorcycle | every motorbike of the Garage (`Licences.Driving.TwoWheelerOf` says what a vehicle of the save is; a bicycle is none) | stands alone: the theory test, then 180 at the desk for the ride assessment. The school has no motorbike to lend, so nothing is driven: the assessment is recorded as passed at the desk (`SchoolService.Motorcycle`) |
+| none needed | bicycle, electric scooter, hand truck, flatbed trolley, anything without an engine (`CarKind.Untouched`) | |
 
 A licence runs 120 days; it can be renewed (90 each, at a desk or by phone) from 14 days before it runs out until 30
 days after, and after that it is the tests again. A failed driven test can be sat again from the next day for 120.
 The first time the rules run on a save, a player who owns a car is given a car licence (and a commercial one if
-they own a van or truck); a save that owns nothing starts without one unless "Start with a driving licence" is on.
+they own a van or truck, and a motorcycle one if the Garage lists a motorbike they own: `MotorcycleDecided` is saved with the line `moto=issued,expires,decided`, absent in an older save, and asked of `Licences.Driving.OwnsMotorbike` once a second until the Garage has read its list); a save that owns nothing starts without one unless "Start with a driving licence" is on.
 With "Driving needs a licence" off, `Licences.Driving.Has` is always true and nothing is policed.
 
 Driving unlicensed is possible and is never discovered by magic: only when police actually stop the player
@@ -4086,7 +4090,7 @@ driving on from one is not chased but costs 400 and 3 points at the next stop).
 | found at a stop | fine | vehicle | further |
 |---|---|---|---|
 | no licence | 800 | impounded: towed to a repair-shop bay by the game's own tow, 350 | the third time in 30 days: arrest (6 h, `ILawBridge.Custody`) |
-| car licence, commercial vehicle | 500 | impounded | as above |
+| a licence for another class (a car licence on a motorbike or a van, a motorcycle licence in a car) | 500 | impounded | as above |
 | expired, still renewable | 250 | stays | |
 | suspended | 1500 | impounded | the second time: arrest |
 
@@ -4118,10 +4122,9 @@ Signalling and stop signs are not modelled (the road data has traffic lights onl
 
 ### Bridges and hooks
 
-- `Licences.Law` (`ILicenceLawBridge`): `Record(offenceId, arrested)`, `Custody(hours)`. `DefaultLaw` remembers
-  the last arrest in `LicenceState` and uses `PoliceAttention.TakeIntoCustody`. A law feature sets
+- `Licences.Law` (`ILicenceLawBridge`): `Record(offenceId, arrested)`, `Custody(hours)`. `DefaultLaw` records
+  nothing and uses `PoliceAttention.TakeIntoCustody`. A law feature sets
   `Licences.Law = itsBridge`.
-- `Licences.Listen(ILicenceListener)`: `PointsAdded`, `DrivingChanged` (insurance, employers).
 - **For Jobs (not applied, Jobs is not ours to edit):** in `JobDirector.Available`, for the ride-hail job,
   `if (!Licences.Driving.Has(LicenceClass.Taxi)) { reasonKey = "reallife_job_no_taxi_licence"; return false; }`
   and for any driving job `Licences.Driving.MayDrive(car)`.

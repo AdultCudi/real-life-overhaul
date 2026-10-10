@@ -294,6 +294,15 @@ namespace RealLifeOverhaul
         public static JobDef[] Offers => JobCatalogue.All;
 
         /// <summary>
+        /// What every pay is multiplied by for this player: the options page's pay slider, and less for somebody who runs businesses of their own
+        /// (<see cref="CareerCatalogue.OwnerFactor"/>). The one place it is worked out: the work is paid by it and every quote of pay is made with it.
+        /// </summary>
+        public static float PayScale()
+        {
+            return Mathf.Clamp(Settings.JobPay, 25, 300) / 100f * CareerCatalogue.OwnerFactor(BusinessGame.RevenueBusinesses());
+        }
+
+        /// <summary>
         /// Whether a job can be taken right now. If not, the reason is a key the phone can say.
         /// </summary>
         public bool Available(JobDef def, out string reasonKey)
@@ -435,14 +444,12 @@ namespace RealLifeOverhaul
             _context.Test = test;
             _context.Shift = shift;
             _context.Gig = gig;
-            // Employers and clients pay less to someone who runs businesses of their own (CareerCatalogue.OwnerFactor).
-            float owner = CareerCatalogue.OwnerFactor(BusinessGame.RevenueBusinesses());
-            float option = Mathf.Clamp(Settings.JobPay, 25, 300) / 100f;
+            float scale = PayScale();   // the pay option, and less for somebody who runs businesses of their own
             _context.Level = JobState.Level(def);
-            _context.Rate = JobCatalogue.PayFactor(_context.Level) * option * owner * (shift != null ? shift.Rank.Piece : 1f);
+            _context.Rate = JobCatalogue.PayFactor(_context.Level) * scale * (shift != null ? shift.Rank.Piece : 1f);
             if (shift != null)
             {
-                shift.Hourly *= option * owner;
+                shift.Hourly *= scale;
             }
             bool begun;
             try
