@@ -94,6 +94,7 @@ namespace RealLifeOverhaul
         /// <param name="walkerRadius">The radius the navigation mesh was made for (the player's kind of walker).</param>
         public void Put(TransitStop stop, string numbers, string mapText, float walkerRadius)
         {
+            SessionWatch.Mark("transit: a bus stop being put out (the navigation mesh is cut round it)");
             _root.SetActive(false);   // moved while off, so the mesh is cut once, in the right place
             Stop = stop;
             _radius = Mathf.Clamp(walkerRadius, 0.15f, 0.6f);
@@ -209,6 +210,9 @@ namespace RealLifeOverhaul
         /// A second after the stop was dressed: what the navigation mesh says was cut, and whether the seats and the way
         /// past are still on it. One line, once per dressing. Call from the director's timer; a no-op otherwise.
         /// </summary>
+        /// <summary>True from a dressing until its self-check has been made (or dropped).</summary>
+        public bool CheckDue => _checkDue;
+
         public void Check(IModLogger logger, float now, string name)
         {
             if (!_checkDue || Stop == null || now < _checkAt)
@@ -216,6 +220,10 @@ namespace RealLifeOverhaul
                 return;
             }
             _checkDue = false;
+            if (logger == null)
+            {
+                return;   // the check only writes a line: nobody is reading
+            }
             bool pole = !OnMesh(_sign.position);
             if (!_shelter.gameObject.activeSelf)
             {

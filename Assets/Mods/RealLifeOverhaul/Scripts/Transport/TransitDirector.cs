@@ -333,9 +333,10 @@ namespace RealLifeOverhaul
                 for (int i = 0; i < Dressings; i++)
                 {
                     BusStopDressing dressing = _dressings[i];
-                    if (dressing != null && dressing.Stop != null)
+                    if (dressing != null && dressing.Stop != null && dressing.CheckDue)
                     {
-                        dressing.Check(Logger, now, StopLabel(dressing.Stop));   // a field read, but once after each dressing
+                        // Once after each dressing, and only for the log: with diagnostics off nothing is asked of the mesh and no text is made.
+                        dressing.Check(Meta.Dev.Verbose ? Logger : null, now, Meta.Dev.Verbose ? StopLabel(dressing.Stop) : null);
                     }
                 }
             }
