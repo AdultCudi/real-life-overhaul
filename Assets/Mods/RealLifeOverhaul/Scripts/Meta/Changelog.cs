@@ -14,20 +14,21 @@ namespace RealLifeOverhaul.Meta
     /// the csproj): &lt;Version&gt; in RealLifeOverhaul.Build/RealLifeOverhaul.csproj (the assembly's version, which
     /// is what the running mod reports), <see cref="Latest"/> below, Version in ModManifest.asset, and one row at
     /// the top of <see cref="All"/> with its two texts at the end of en.json (reallife_changes_ and three digits,
-    /// major then two of minor, and the same with _title: 0.2 is "002", order 20). Work merged before it has a
+    /// major then two of minor, and the same with _title: 0.2.0 is "002", order 2000; a third number is added after
+    /// an underscore: 0.1.1 is "001_1", order 1010). Work merged before it has a
     /// number goes in a row of order <see cref="Unnumbered"/>, which takes the new number when the version is set.
     /// </summary>
     public static class Changelog
     {
         /// <summary>The version this table was last brought up to; used when the assembly carries no version of its own.</summary>
-        public const string Latest = "0.1.0";
+        public const string Latest = "0.1.1";
 
         /// <summary>Order of a row for work merged after the last numbered version: above the newest numbered row, below the next one.</summary>
-        public const int Unnumbered = 15;   // OrderOf(Latest) + 5: it moves up with Latest
+        public const int Unnumbered = 1015;   // OrderOf(Latest) + 5: it moves up with Latest
 
         public sealed class Entry
         {
-            public readonly int Order;          // OrderOf its version: 0.1 is 10, 0.12 is 120, 1.0 is 1000
+            public readonly int Order;          // OrderOf its version: 0.1.0 is 1000, 0.1.1 is 1010, 0.12.0 is 12000, 1.0.0 is 100000
             public readonly string TitleKey;
             public readonly string TextKey;
 
@@ -41,7 +42,8 @@ namespace RealLifeOverhaul.Meta
 
         public static readonly Entry[] All =
         {
-            new Entry(10, "reallife_changes_001_title", "reallife_changes_001")
+            new Entry(1010, "reallife_changes_001_1_title", "reallife_changes_001_1"),
+            new Entry(1000, "reallife_changes_001_title", "reallife_changes_001")
         };
 
         private static string _version;
@@ -71,7 +73,7 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        /// <summary>"0.1.0" is 10, "0.12.3" is 120, "1.0.0" is 1000; anything that is not a version is 0.</summary>
+        /// <summary>"0.1.0" is 1000, "0.1.1" is 1010, "0.12.3" is 12030, "1.0.0" is 100000 (a third number above 9 counts as 9); anything that is not a version is 0.</summary>
         public static int OrderOf(string version)
         {
             if (string.IsNullOrEmpty(version))
@@ -84,7 +86,12 @@ namespace RealLifeOverhaul.Meta
             {
                 return 0;
             }
-            return (major * 100 + minor) * 10;
+            int patch = 0;
+            if (parts.Length > 2)
+            {
+                int.TryParse(parts[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out patch);
+            }
+            return (major * 100 + minor) * 100 + Math.Min(9, Math.Max(0, patch)) * 10;
         }
 
         /// <summary>Compares two versions number by number; a missing part counts as 0.</summary>
