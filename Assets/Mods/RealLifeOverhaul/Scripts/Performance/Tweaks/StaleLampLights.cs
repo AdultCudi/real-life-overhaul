@@ -24,14 +24,22 @@ namespace RealLifeOverhaul
             public GameObject Glow;
         }
 
+        private const int Slice = 250;          // lamps looked at per tick while a sweep is under way (three thousand in the city: a quarter of a second in all)
+        private const float SliceEvery = 0.05f;
+        private const float SweepAfter = 4f;    // seconds after the last scene arrived before the lamps are looked through again
+
         private readonly List<Entry> _entries = new List<Entry>(256);
+        private StreetLamp[] _sweeping;         // the lamps being gone through; null when no sweep is under way
+        private int _cursor;
         private bool _stale;
+        private float _staleAt;
         private int _parts;
 
         public override string Id => "stale_lights";
         public override string LabelKey => "reallife_perf_stale_lights";
         public override bool DefaultOn => true;   // third benchmark: +0.10 ms, all three pairs the same way; the game's own off state, nothing to see
-        public override float Interval => 5f;
+        public override float Interval => _sweeping != null ? SliceEvery : 5f;
+        public override bool Busy => _sweeping != null;
 
         protected override void Apply()
         {
@@ -39,13 +47,26 @@ namespace RealLifeOverhaul
             {
                 throw new InvalidOperationException("this version of the game keeps a street lamp's lights somewhere else");
             }
-            Sweep();
+            Begin();
         }
 
-        internal override void WorldChanged() => _stale = true;
+        // A scene that has gone took its lamps with it (the timer drops those); only one that has arrived can bring new ones.
+        internal override void WorldChanged(bool loaded)
+        {
+            if (loaded)
+            {
+                _stale = true;
+                _staleAt = Time.unscaledTime + SweepAfter;
+            }
+        }
 
         protected override void Tick(float now)
         {
+            if (_sweeping != null)
+            {
+                Sweep();
+                return;
+            }
             // A lamp the game has lit since is the game's again: from then on it switches the lights itself, both ways.
             for (int i = _entries.Count - 1; i >= 0; i--)
             {
@@ -56,20 +77,28 @@ namespace RealLifeOverhaul
                     _entries.RemoveAt(i);
                 }
             }
-            if (_stale)
+            if (_stale && now >= _staleAt)
             {
-                Sweep();
+                Begin();
             }
         }
 
-        // Every lamp in the loaded scenes, once when the tweak comes on and once after scenes change.
-        private void Sweep()
+        // Every lamp in the loaded scenes, when the tweak comes on and after a scene has arrived: the list is one engine
+        // call, the lamps are then gone through a slice per tick (three private fields read of each).
+        private void Begin()
         {
             _stale = false;
-            StreetLamp[] lamps = UnityEngine.Object.FindObjectsByType<StreetLamp>(FindObjectsSortMode.None);
-            foreach (StreetLamp lamp in lamps)
+            _sweeping = UnityEngine.Object.FindObjectsByType<StreetLamp>(FindObjectsSortMode.None);
+            _cursor = 0;
+        }
+
+        private void Sweep()
+        {
+            int end = Mathf.Min(_cursor + Slice, _sweeping.Length);
+            for (; _cursor < end; _cursor++)
             {
-                if (PerfGame.IsOn(lamp))
+                StreetLamp lamp = _sweeping[_cursor];
+                if (lamp == null || PerfGame.IsOn(lamp))
                 {
                     continue;
                 }
@@ -89,7 +118,13 @@ namespace RealLifeOverhaul
                 _entries.Add(entry);
                 _parts += entry.Disabled.Count;
             }
+            if (_cursor >= _sweeping.Length)
+            {
+                _sweeping = null;
+            }
         }
+
+        // (A lamp this already holds has no enabled light left, so a later sweep makes no second entry for it.)
 
         private static void Disable(StreetLamp lamp, Behaviour[] parts, ref Entry entry)
         {
@@ -131,6 +166,7 @@ namespace RealLifeOverhaul
             _entries.Clear();
             _parts = 0;
             _stale = false;
+            _sweeping = null;
         }
 
         public override string Describe() => "lamps the game has off whose lights were still enabled: " + _entries.Count + " lamps, " + _parts + " light components disabled";

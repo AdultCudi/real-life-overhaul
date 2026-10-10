@@ -15,12 +15,30 @@ namespace RealLifeOverhaul
     /// player's camera while the player is outdoors, and hands them back the moment a building is entered. As
     /// a second check it looks through the loaded materials when it comes on: if one has refraction or
     /// distortion switched on after all, it does nothing and says which.
+    ///
+    /// That look is over every material in memory (tens of thousands, and more the longer the game has run), so
+    /// it is never done in one frame: the list is taken once and gone through a few hundred at a time on a fast
+    /// timer, and refraction stays as the game has it until the look is finished. A scene that is loaded later
+    /// asks for one more look, a few seconds after the last scene has arrived; a scene that is unloaded for none.
     /// </summary>
     public sealed class RefractionOff : PerfTweak
     {
         private static readonly FrameSettingsField[] Fields = { FrameSettingsField.Refraction, FrameSettingsField.Distortion, FrameSettingsField.RoughDistortion };
         private static readonly string[] Keywords = { "_REFRACTION_PLANE", "_REFRACTION_SPHERE", "_REFRACTION_THIN" };
 
+        private static readonly int DistortionEnable = Shader.PropertyToID("_DistortionEnable");
+        private static readonly int SurfaceType = Shader.PropertyToID("_SurfaceType");
+
+        private const int Slice = 300;          // materials looked at per tick while a look is under way: well under a millisecond
+        private const float SliceEvery = 0.05f;
+        private const float LookAfter = 4f;     // seconds after the last scene arrived before the materials are looked through again
+
+        private readonly List<string> _found = new List<string>(6);
+        private Material[] _looking;            // the list being gone through; null when no look is under way
+        private int _cursor;
+        private bool _looked;                   // one whole look has been finished since the tweak came on
+        private bool _again;                    // a scene has been loaded since the last look began
+        private float _againAt;
         private bool _hooked, _off;
         private int _materials;
         private string _users = string.Empty;
@@ -28,49 +46,69 @@ namespace RealLifeOverhaul
         public override string Id => "refraction";
         public override string LabelKey => "reallife_perf_refraction";
         public override bool DefaultOn => true;
-        public override float Interval => 2f;
+        public override float Interval => _looking != null ? SliceEvery : 2f;
+        public override bool Busy => _looking != null || !_looked;
 
         protected override void Apply()
         {
-            Scan();
+            _looked = false;
+            _again = false;
+            _users = string.Empty;
+            Begin();
             GlobalEvents.onEnterBuilding += OnBuilding;
             GlobalEvents.onExitBuilding += OnBuilding;
             _hooked = true;
             Reconcile();
         }
 
-        internal override void WorldChanged()
+        internal override void WorldChanged(bool loaded)
         {
-            if (_users.Length == 0)
+            if (loaded && _users.Length == 0)
             {
-                Scan();   // a scene brought new materials: look once more
+                _again = true;   // a scene brought new materials: one more look, once the scenes have stopped arriving
+                _againAt = Time.unscaledTime + LookAfter;
             }
         }
 
-        // Every material in memory, used or not: once when the tweak comes on and once per scene loaded.
-        private void Scan()
+        // Every material in memory, used or not. Taking the list is one engine call; going through it is done in slices.
+        private void Begin()
         {
-            Material[] all = Resources.FindObjectsOfTypeAll<Material>();
-            _materials = all.Length;
-            var users = new List<string>(4);
-            foreach (Material material in all)
+            SessionWatch.Mark("performance: listing the loaded materials (refraction check)");
+            _looking = Resources.FindObjectsOfTypeAll<Material>();
+            _materials = _looking.Length;
+            _cursor = 0;
+            _found.Clear();
+            _again = false;
+        }
+
+        private void Look()
+        {
+            int end = Mathf.Min(_cursor + Slice, _looking.Length);
+            for (; _cursor < end; _cursor++)
             {
+                Material material = _looking[_cursor];
                 if (material == null || material.shader == null)
                 {
                     continue;
                 }
                 bool uses = false;
-                foreach (string keyword in Keywords)
+                for (int k = 0; k < Keywords.Length; k++)
                 {
-                    uses |= material.IsKeywordEnabled(keyword);
+                    uses |= material.IsKeywordEnabled(Keywords[k]);
                 }
-                uses |= material.HasProperty("_DistortionEnable") && material.GetFloat("_DistortionEnable") > 0.5f && material.HasProperty("_SurfaceType") && material.GetFloat("_SurfaceType") > 0.5f;
-                if (uses && users.Count < 6)
+                uses |= material.HasProperty(DistortionEnable) && material.GetFloat(DistortionEnable) > 0.5f && material.HasProperty(SurfaceType) && material.GetFloat(SurfaceType) > 0.5f;
+                if (uses && _found.Count < 6)
                 {
-                    users.Add(material.name + " [" + material.shader.name + "]");
+                    _found.Add(material.name + " [" + material.shader.name + "]");
                 }
             }
-            _users = string.Join(", ", users);
+            if (_cursor >= _looking.Length)
+            {
+                _looking = null;
+                _looked = true;
+                _users = string.Join(", ", _found);
+                _found.Clear();
+            }
         }
 
         private void OnBuilding(Address address) => Reconcile();
@@ -78,6 +116,19 @@ namespace RealLifeOverhaul
         // On the timer too: the building flag is the game's, and this follows it whatever changed it.
         protected override void Tick(float now)
         {
+            if (_looking != null)
+            {
+                Look();
+                if (_looking != null)
+                {
+                    return;   // more to go through on the next slice
+                }
+            }
+            else if (_again && now >= _againAt && _users.Length == 0)
+            {
+                Begin();
+                return;
+            }
             Reconcile();
             if (_off)
             {
@@ -87,7 +138,8 @@ namespace RealLifeOverhaul
 
         private void Reconcile()
         {
-            bool want = _users.Length == 0 && !BuildingManager.IsInsideBuilding;
+            // Not before the first look is finished: until then nobody has said that nothing refracts.
+            bool want = _looked && _users.Length == 0 && !BuildingManager.IsInsideBuilding;
             if (want == _off)
             {
                 return;
@@ -116,10 +168,15 @@ namespace RealLifeOverhaul
                 _off = false;
                 PerfFrameSettings.Release(Fields);
             }
+            _looking = null;
+            _looked = false;
+            _again = false;
+            _found.Clear();
         }
 
         public override string Describe() => _users.Length > 0
             ? "left alone: these materials refract or distort: " + _users
+            : !_looked ? "looking through the loaded materials (" + _cursor + " of " + _materials + ")"
             : (_off ? "refraction and distortion off for the player's camera" : "handed back (inside a building)") + "; " + _materials + " materials looked through, none refracts or distorts";
     }
 

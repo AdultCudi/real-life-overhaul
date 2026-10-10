@@ -57,8 +57,12 @@ namespace RealLifeOverhaul
         /// <summary>Upkeep on the tweak's timer, never per frame over everything.</summary>
         protected virtual void Tick(float now) { }
 
-        /// <summary>Scenes were loaded or unloaded. Only note it here; look again on the next tick.</summary>
-        internal virtual void WorldChanged() { }
+        /// <summary>
+        /// A scene was loaded (true) or unloaded (false). Only note it here and look again on the timer, a slice at a
+        /// time: this is called in the frame the scene arrives or goes, and scenes come and go while the game is
+        /// played, not only behind the loading screen.
+        /// </summary>
+        internal virtual void WorldChanged(bool loaded) { }
 
         /// <summary>One line for the reports: what the tweak holds changed right now.</summary>
         public virtual string Describe() => string.Empty;

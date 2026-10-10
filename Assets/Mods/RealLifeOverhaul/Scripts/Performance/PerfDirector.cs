@@ -189,9 +189,10 @@ namespace RealLifeOverhaul
             }
         }
 
-        private static void OnSceneLoaded(Scene scene, LoadSceneMode mode) => PerfTweaks.WorldChanged();
+        // The tweaks only note it: they look again on their own timers, a slice at a time, never in this frame.
+        private static void OnSceneLoaded(Scene scene, LoadSceneMode mode) => PerfTweaks.WorldChanged(true);
 
-        private static void OnSceneUnloaded(Scene scene) => PerfTweaks.WorldChanged();
+        private static void OnSceneUnloaded(Scene scene) => PerfTweaks.WorldChanged(false);
 
         /// <summary>A toast from the performance tools; never kept in the savegame.</summary>
         public static void Notify(string key, float seconds)

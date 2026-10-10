@@ -49,7 +49,7 @@ namespace RealLifeOverhaul
             Sweep();
         }
 
-        internal override void WorldChanged() => _stale = true;
+        internal override void WorldChanged(bool loaded) => _stale |= loaded;   // a scene that has gone brought no sky: nothing to look for
 
         protected override void Tick(float now)
         {

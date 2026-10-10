@@ -154,7 +154,7 @@ namespace RealLifeOverhaul
             return found.ToArray();
         }
 
-        internal override void WorldChanged() => _stale = true;
+        internal override void WorldChanged(bool loaded) => _stale = true;   // (an unloaded scene matters here: its squares are forgotten)
 
         // The timer only ever takes squares out. Giving them back is done the moment it is needed, in OnCameraRendering.
         protected override void Tick(float now)

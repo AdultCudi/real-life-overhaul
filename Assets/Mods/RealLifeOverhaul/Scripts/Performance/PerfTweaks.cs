@@ -85,14 +85,14 @@ namespace RealLifeOverhaul
             return options.AddSplitter();
         }
 
-        /// <summary>Scenes were loaded or unloaded: tweaks that keep lists of scene objects look again on their next tick.</summary>
-        public static void WorldChanged()
+        /// <summary>A scene was loaded or unloaded: tweaks that keep lists of scene objects look again on their next tick.</summary>
+        public static void WorldChanged(bool loaded)
         {
-            foreach (PerfTweak tweak in All)
+            for (int i = 0; i < All.Length; i++)
             {
-                if (tweak.Active)
+                if (All[i].Active)
                 {
-                    tweak.WorldChanged();
+                    All[i].WorldChanged(loaded);
                 }
             }
         }
