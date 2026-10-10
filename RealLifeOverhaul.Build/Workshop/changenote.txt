@@ -1,1 +1,1 @@
-0.1.1: smoother over a long session. The mod's people are made ready while the city loads, a passer-by keeps a look for a while, and bus stops cost nothing while you drive past. For reports of stutter, 'Developer diagnostics' now writes a line a minute to Player.log (the Guide's Troubleshooting page says what to send). Two copies switched on (Workshop and local) no longer run everything twice.
+0.1.2: the buttons on the options page now say what they do (they read YOUR TEXT HERE before), and every slider shows its value.

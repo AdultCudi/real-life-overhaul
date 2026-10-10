@@ -7171,5 +7171,7 @@
   "reallife_opt_caption_prepare": "Prepare",
   "reallife_opt_caption_repair": "Repair",
   "reallife_opt_caption_check": "Check",
-  "reallife_opt_caption_measure": "Measure"
+  "reallife_opt_caption_measure": "Measure",
+  "reallife_changes_001_2_title": "0.1.2",
+  "reallife_changes_001_2": "The buttons on the options page now say what they do, where they used to read YOUR TEXT HERE, and every slider shows its value."
 }
