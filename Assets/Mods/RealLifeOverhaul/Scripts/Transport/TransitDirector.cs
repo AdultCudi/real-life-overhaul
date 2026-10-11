@@ -1307,7 +1307,16 @@ namespace RealLifeOverhaul
                 {
                     _player = PlayerStep.None;
                 }
-                HidePanel();
+                // At a line's last stop no bus picks up: the stop says so, and where the nearest one that does is.
+                TransitStop last = free ? LastStopAt(at) : null;
+                if (last != null)
+                {
+                    ShowLastStop(last, at);
+                }
+                else
+                {
+                    HidePanel();
+                }
                 // On a bench at a stop that is not the served one (a line's last stop): the prompt alone.
                 Prompt(_seat.Seated ? "reallife_transit_prompt_seated" : _sitAt != null ? "reallife_transit_prompt_sit" : null, null);
                 return;
@@ -1656,6 +1665,53 @@ namespace RealLifeOverhaul
                     TransportHud.Instance.HidePanel();
                 }
             }
+        }
+
+        // The dressed stop the player stands at where its line ends, or null.
+        private TransitStop LastStopAt(Vector3 at)
+        {
+            for (int i = 0; i < Dressings; i++)
+            {
+                TransitStop stop = _dressings[i] != null ? _dressings[i].Stop : null;
+                if (stop != null && TransitMap.Onward(stop) == 0 && CitySpots.Flat(stop.Sign - at) < PanelRange * PanelRange)
+                {
+                    return stop;
+                }
+            }
+            return null;
+        }
+
+        // Built once for as long as the player stands there (the panel's key is the stop).
+        private void ShowLastStop(TransitStop stop, Vector3 at)
+        {
+            int key = -1 - stop.Id;
+            if (key == _panelKey)
+            {
+                return;
+            }
+            _panelKey = key;
+            _panelMore = 0;
+            TransitStop board = null;
+            float best = float.MaxValue;
+            List<TransitStop> stops = TransitMap.Stops;
+            for (int i = 0; i < stops.Count; i++)
+            {
+                float sqr = CitySpots.Flat(stops[i].Sign - at);
+                if (sqr < best && TransitMap.Onward(stops[i]) > 0)
+                {
+                    best = sqr;
+                    board = stops[i];
+                }
+            }
+            _text.Length = 0;
+            _text.Append(TransitText.T("reallife_transit_stop_ends", "route", TransitMap.Lines[stop.Line].Number)).Append('
+');
+            if (board != null)
+            {
+                _text.Append(TransitText.T("reallife_transit_stop_board_at", "route", TransitMap.Lines[board.Line].Number, "name", StopName(board),
+                    "metres", (Mathf.Max(1, Mathf.RoundToInt(Mathf.Sqrt(best) / 10f)) * 10).ToString()));
+            }
+            TransportHud.Instance.ShowPanel(TransitText.T("reallife_transit_stop_title", "name", StopName(stop)), _text.ToString());
         }
 
         private void HideHud()
