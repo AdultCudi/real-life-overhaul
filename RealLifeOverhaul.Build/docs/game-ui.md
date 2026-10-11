@@ -699,3 +699,46 @@ Proven: the members. Inferred: how the game's panel lays out three long button t
   `BusinessIncomeStatement` per address: `TotalSales`, `TotalProfit`), which is what EconoView's business page reads.
 
 Proven: all of it, from the game's code. Not seen in a running game.
+
+## 27. Starting something from an app, and what the Ventures app read from the game
+
+- **The phone pauses the game.** While any app is open `uis.gameSpeed.Paused` is true, so `LifeEvents.IsSafeForEvent`
+  (and `EconomyBridges.Held`, which asks it) says "not now", and `ThirdPersonCamera.IsUiOpen` says a screen is up. A
+  feature that starts something from an app's button must not ask those: Ventures asks the game's own holds one by
+  one without the pause (`VenturesGame.Busy`: a conversation, the time machine, an activity's panel, the subway, the
+  casino boat, the way to hospital, the wheel of a vehicle: `GameManager.selectedVehicle`) and the mod's through a
+  bridge of its own.
+- **A list window from an app.** The list (section 10) stands on the HUD's canvas, which `FullMenu.Toggle(true)`
+  hides. So the menu is closed first (`FullMenu.IsOpen` is static; `uis.fullMenu.Toggle(false)` is what
+  `BizManBusiness.SetDestination` calls), then the list is taken, filled and opened (`Ventures/PitchMeeting`).
+  `Toggle` does nothing but close the question box while `HudConfirm.isOpen`, so it is not called from a page that
+  has one up.
+- **One button of a kind to a row.** `InfoBox.Button(row, kind, ...)` shows the row's own button of that kind: two
+  calls with the same kind on one row are one button with the second's word and click. A second action of a kind
+  is a second `ButtonRow()`. Lines added after a row come under it.
+- **Pages in a tab.** A tab that needs more than the white box holds keeps a page number beside the picked row and
+  writes the box and the table from it; "Back" is an Additional button (Ventures' Raise money: the business, its
+  kind and budget, the investor).
+- **A business's day.** `GameInstance.financialSummaries[n].businessIncomeStatements` has `TotalSales` and
+  `TotalProfit` per address and day; a business's costs of a day are the difference. A day the business has no
+  statement for (it did not exist, or the summary is older than a year) is simply absent.
+- **`BuildingRegistration.creationDay`** is written by `AddToPlayer`: the day the player took the building, not the
+  day a business got its type. "The player has opened a business of this kind" is therefore told by counting the
+  businesses of the kind (`Books.Businesses`), not by that day. `GetDisplayName()` is the business's name or, with
+  none, its address.
+- **The kinds of business the player may start**: `BusinessTypeHelper.GetAllPlayerAvailableBusinesses()` (types
+  tagged `allowplayercreation`). A type's name is its id localised: `"ba:businesstype_webdevelopmentagency"`,
+  `_graphicdesigner`, `_marketingagency`, `_lawfirm` are the office kinds.
+- **The game's rivals**: `RivalsHelper.GetSpecialRivals()` (the list may be null before the rivals have loaded) with
+  `rivalData.rivalName`, a plain name; `RivalsHelper.IsFeatureEnabled` is false in a save with rivals off.
+- **The game's lettings.** `RealEstateHelper.RunDaily` moves each owned building's `occupancy` by the rent set in
+  BizMan against the market rent and pays `RealEstate.DailyIncome` in (`ba:transaction_rentrevenue`, `address` in
+  its data, dated the day that ended). `FinancialSummary.realEstateStatements` keeps that amount per building and
+  day for a year, where the transaction list is cut after six days. `Building.GetMarketValue()` is the value BizMan
+  shows. A Hamptons house is skipped by the run: it earns nothing.
+- **The game's investment funds** (`EconoViewInvestments`, `InvestmentFundHelper.RunDaily`): each fund grows by its
+  own yearly percentage spread over `daysPerYear`, with deposits and withdrawals in EconoView. Nothing of the mod's
+  touches them.
+
+Proven: every member named, from the game's code. Inferred: that a list opened in the same frame the menu is closed
+shows at once (the HUD's alpha is set back by `Toggle` itself; the menu fades out over a tenth of a second).
