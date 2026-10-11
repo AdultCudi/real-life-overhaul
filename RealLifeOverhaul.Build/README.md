@@ -268,6 +268,7 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       PerfGame       what the above need from the game (pedestrians, traffic, lamps, trees)
     Meta/      the mod about itself: the feature registry, the in-game guide and welcome panel, realism presets,
                the options page in sections, the save tools (see "Meta" below)
+    Navigation/ the minimap on the HUD and the GPS: a route along the roads to the game's destination (see "Minimap and GPS" below)
 CharacterAssets/                   asset pipeline for the new looks (outside Assets, Unity ignores it)
   scripts/                         Blender scripts: make the meshes and textures, write them to build/
   PreviewProject/, preview.ps1     the game's character rebuilt under HDRP: a look is judged here before it ships
@@ -288,6 +289,8 @@ GarageAssets/                      read-only extraction of the game's vehicle da
 RealLifeOverhaul.Build/            command-line build and checks (outside Assets, Unity ignores it)
   RealLifeOverhaul.csproj          compiles the same scripts with dotnet and installs to ModsLocal
   CatalogueCheck/                  verifies the event and crime catalogues, their dealing, and locale keys
+  PlannerCheck/                    checks the Planner's game-free parts (see "The Planner")
+  NavCheck/                        checks the game-free parts of the minimap and the GPS, and the shared route search (see "Minimap and GPS")
 ```
 
 ## Setup on a new machine
@@ -451,6 +454,10 @@ file"), build it and run the DLL through the dotnet host instead:
 `dotnet build RealLifeOverhaul.Build/CatalogueCheck -c Release`, then
 `dotnet RealLifeOverhaul.Build/CatalogueCheck/bin/Release/net10.0/CatalogueCheck.dll`.
 Run it after any change to the event catalogue or `en.json`.
+
+Two more check programs compile the mod's own game-free files and run them on made-up data: `PlannerCheck` (see "The
+Planner") and `NavCheck` (see "Minimap and GPS"; it also covers `Core/RouteSearch.cs`, which the bus network uses).
+Each ends with `ALL CHECKS PASSED`.
 
 ## Adding a crime
 
@@ -2997,6 +3004,8 @@ has cleared: a roadworks crew would have to close one of those very points in th
 |---|---|---|
 | `Justice.Bridges.Law` | `Wiring.Arrests` | `ReleaseSpot`: the pavement outside the nearest precinct, and its name. `PriorConvictions` -1, `Custody` false, the three record calls empty (see "For Scripts/Law") |
 | `Justice.Bridges.Licences` | `Wiring.LicenceLinks` | the licence's own suspension date |
+| `Nav.NavBridges.HudHeld` | `Wiring.NavLinks` | true during custody (`Law.Custody.Active`), a bus ride (`TransitDirector.Riding`) and photo mode: the minimap is hidden |
+| `Nav.NavBridges.GuideToStation` | `Wiring.NavLinks` | `LawDirector.GuideToNearest`: the nearest police station becomes the game's destination (the GPS's test button) |
 | `Justice.Bridges.Social` | `Wiring.LifeLinks` | the closest person at "close friend" or above; standing by the player is remembered. The Friend contact with the social life off |
 | `Justice.Bridges.Transport` | nobody | Transport keeps no pound for cars; the default tow and storage charge stand |
 | `Licences.Law` | `Wiring.LicenceLinks` | `Custody`: the courts' custody, else the old time skip; `Record`: nothing (Law's record has no line for a licence offence) |
@@ -3063,6 +3072,7 @@ Read through after the merge: 67 `Update` / `LateUpdate` / `FixedUpdate` methods
 | `NearbyInteraction.Update` | the option, ten `TakesInteractKey` flags, two key tests | left for whoever next touches that line: test the two keys first and the ten flags only on a press |
 | `TrafficAccidents.Update` -> `TrafficWatch` | 5 times a second: every pooled traffic car's body looked at | left: the bounce watchdog's whole purpose; it is the largest timed cost while idle |
 | `Wiring` | nothing: no component, no tick | adapters run when asked; `Wiring.Scenes` is four flag reads on a director's own roll timer |
+| `Nav.NavDirector` (added after this read-through) | a time comparison and two flag tests; while the minimap shows, the player's place and heading compared with what was last written, and written (one quad's texture window, one position, up to 34 rotations) only when they differ | see "Minimap and GPS": its work is on a 0.25 s tick, and a route search takes 0.4 ms of a frame while one is under way |
 
 Not shared, on purpose: every director reads the player, the hour and "in a vehicle" for itself, but on its own slow
 tick, so a common ticker would save a few property reads a second and couple thirteen features to one clock.
@@ -4223,3 +4233,201 @@ Planner/
 Cooking at home is offered the same native way: "Click to cook" on a cooker is one of the game's own click actions
 (`Home/HomeCookOffer`, and section 7 of game-ui.md). The key prompt remains only in a home that has a fridge and no
 cooker.
+
+## Minimap and GPS (`Scripts/Navigation`)
+
+A minimap on the game's HUD while the player is out in the city, and a GPS: a route along the roads to the game's
+destination, drawn on the minimap and on the game's city map, with the next turn, the distance left and the time on
+the game's clock at which the player should arrive. The base game has neither: its only navigation is the marker
+that points straight at a destination (`UI.Guiders`).
+
+```
+Core/
+  RouteSearch     the A* search over the road graph (moved here from Transport: the bus network and the GPS both use
+                  it). New: Begin / Advance, so a search can be done a slice at a time; Find is Begin + Advance and
+                  gives what it gave before
+  RoadGraph       the game's lane points as RouteSearch wants them (moved here from TransitMap, unchanged)
+Navigation/       (namespace RealLifeOverhaul.Nav: "Navigation" is a type of the engine's interface)
+  NavModel        game-free: the route as a line, turns, where the player is on it, leaving it and arriving, the
+                  view's arithmetic, the grid for "which lane points are near", the walking graph, the map picture
+  NavGraph        the roads once per city: the two graphs, the grid, the map picture (drawn on a pool thread),
+                  street names from the buildings' addresses
+  NavHud          the panel on the HUD: a copy of the game's task panel with the map, the markers and two lines in it
+  NavRouteLine    a line as one ribbon of the interface (a Graphic), made when the route changes
+  NavMarks        the places that matter, read from the game's markers and from Core/MapPlaces
+  NavCityMap      the route on the game's city map, and the double click that sets a destination
+  NavBridges      what it asks of the rest of the mod (Wiring/NavLinks answers); NavText, the feature's words
+  NavDirector     the one component: what shows, the destination, the search, following the route, the tests
+```
+
+### What the game has, and what was built on it
+
+Read in the decompiled game and in its scene data (`evidence/uitools`, and a study script that reads the road graph
+out of `level5`); nothing was seen running.
+
+- **The destination.** Everything that sets a destination ends in `GuidersManager.SetGuiderTarget(..., Destination)`:
+  a building's card, a task's button, this mod's "set destination" buttons and map markers (`Core/MapPlaces`, Law's
+  nearest station, the Planner). The GPS reads `GuidersManager.destinationGuider.target` four times a second, and a
+  job's (`jobDestinationGuider`) when no destination is set. So nothing that sets a destination knows of the GPS.
+  Quest guiders and the private driver's are not routed to; they are markers on the minimap.
+- **The game never clears a destination on arrival**; only the marker's own dismiss button does. On arrival the GPS
+  says so (the game's notification), clears its route and leaves the marker, as the game does. It guides to the same
+  place again only if the player has gone more than 150 m from it while the marker still stands.
+- **The roads.** `CurrentSceneData.allWaypoints`: 18,791 lane points in the city of this version (17,282 lane edges,
+  97 km of lanes, 3.8 by 2.2 km), each named `Road_25-Lane_3-Waypoint_7`, `...-In`, `...-Out`, or, for a junction's
+  own points, `...-Connector2` / `...-CConnect2`. A junction's points are named after the road left, the road
+  entered, or another one, so turns are found from the geometry (below), never from which road a point claims.
+  `roadIds` holds something else and is not used. The data has 322 ways through a junction that turn right, 112 that
+  turn left and 432 straight on: routes in this city turn right more often than left because the roads do.
+- **No street names in the road data.** Buildings have addresses. A road is named after the street most of the
+  buildings along it give as their address (`NavGraph.StreetOf`: up to seven places along the road each ask for the
+  nearest door within 45 m; two votes make a name). Where that fails the turn is said without a name.
+- **The HUD** is several canvases, all laid out for 3840 x 2160 and scaled by height, and all re-scaled by the
+  game's "interface zoom" option (`UIs.SetUIZooming`). Top: the bar, 183 high. Left column, 740 wide: the task panel
+  from 320 below the top (as high as its list, 1,000 at most, foldable), the control hints at the bottom (as high as
+  their content, absent when switched off). Bottom right: the phone, 628 x 1,230. Bottom middle: the address labels,
+  and the item panel (up to 1,834 wide) when something is held or driven. Top right: the job panel and the
+  notifications. There is no corner the game always leaves free; see "Where the panel stands".
+- **The city map** is the city seen by a camera; its markers are interface objects the game moves to their places on
+  the screen every frame the map is open. A click selects a building (whose card has "set destination"); a drag
+  moves the map; nothing sets a destination at a spot.
+
+### The minimap
+
+- **The picture is made once per city, from data, not rendered.** Every lane of the road graph is drawn as a
+  soft-edged band 4.6 m wide into one byte per pixel (`NavRaster`), on a thread of the pool, from arrays nothing
+  else writes; the main thread then hands it to the graphics card (`Texture2D`, Alpha8, no mip maps, not readable).
+  A second camera was not used: one HDRP render of the whole city costs an unknown amount under the loading screen,
+  comes out as the hour and the weather have it (dark at night), and cannot be checked without the game. A drawn
+  street map is the same every time, and reads like the map of a satnav.
+- **Size:** as many pixels as fit in 4,096 on the longer side, at most 1.25 a metre. This city: 4,096 x 2,308 at 1.13
+  a metre, 9.0 MB on the graphics card. Its array of the same size in main memory is let go once it is uploaded.
+- **Moving it costs one quad.** The picture is shown by one `RawImage` as wide as the view's diagonal; which part it
+  shows is its texture window (`uvRect`), and turning with the player is the image's own rotation. Route and markers
+  are children of an object turned and scaled the same way and moved so that the player is at its middle: their
+  places are in metres and are never written again while they show. The panel has a canvas of its own, so a frame in
+  which the player moved re-batches these few pictures and not the game's HUD.
+- **Per frame** (`NavHud.Frame`, only while the panel shows): the player's place, heading and speed are compared
+  with what was last written; standing still writes nothing. Moving writes the texture window (four vertices), one
+  position and, when the heading changed by more than 0.1 degree, two rotations and the markers in view (32 at most)
+  turned back upright. Nothing is allocated.
+- **The view:** 260 m across at 100% zoom; from 8 m/s it widens smoothly to 1.9 times that at 28 m/s
+  (`NavView.MetresAcross`), eased at 1.6 a second.
+- **Markers** (`NavMarks`, read every 2 s; which are in view, 4 times a second; a marker is written only when what it
+  shows changes): the game's guiders other than the one routed to; the game's permanent markers (the player's own
+  buildings); the subway stations; every kind of place of this mod whose row on the city map is ticked. A marker
+  is the game's own: the round base of its map markers (read once from the map's marker template) in the place's
+  colour with the place's picture on it. The player is the map's own player icon and colour
+  (`CityMapFilters.playerIcon`), turned by the game's own rule for it. The destination's marker is held at the view's
+  edge while the place is outside it.
+- **Where the panel stands** (`NavHud.Place`, 4 times a second, writes only on change). First choice: the game's
+  left column, between the control hints and the task panel, the map as high as the room between them (it is square
+  when there is room). Each of the game's panels is measured where it is on the screen, so the interface zoom and
+  the screen's shape need no table. When a long task list leaves less than 240 units for the map there, the panel
+  stands at the bottom beside the column instead, lifted over the address labels or the item panel if it would
+  reach them (a 4:3 screen). With no room in either place it is hidden and one line says so.
+- **Hidden** indoors, in the underground car park, on the subway and the casino boat, while the city map, the phone's
+  full menu, the pause menu, the options, a building preview, the interior designer, a mini game or the time skip is
+  on, at a funeral and on the way to hospital, whenever the game has switched its phone off (which it does with the
+  rest of its HUD), and during custody, a bus ride and photo mode (`NavBridges.HudHeld`). As a child of the game's
+  HUD it also goes with the game's own "hide the interface".
+
+### The GPS
+
+- **Driving** the route is searched on the road graph as the bus network uses it: lanes in their direction, a change
+  of lane for 30 m extra. It begins on a lane within 14 m that runs the way the car points and ends on any lane
+  within 30 m of the place (the single nearest within 400 m if there is none). If there is no way with the traffic
+  (in this city 20% of random pairs: a lane that leads away and nowhere back, a stretch nothing drives to), the same
+  streets are searched without the one-way rule and that way is shown; the log says so.
+- **On foot** the same streets are searched with every lane usable both ways (`NavEdges.TwoWay`). That is what the
+  route is: the way along the streets. Lanes are where cars drive, so the line runs down the carriageway while the
+  player walks on the pavement beside it, and it knows no path through a park, a square or a building. A straight
+  line would be wrong in a city of blocks and the game's marker already gives the direction; a search on the
+  navigation mesh was not used because one call over the whole city cannot be sliced.
+- **The search is sliced.** `RouteSearch.Advance` is called once a frame for 0.4 ms at most (the clock is read every
+  64 steps), until it finds a way or runs out of road. Measured outside the game on this city's graph (NavCheck,
+  .NET 10 on the build machine, not the game's Mono): 3,400 steps on average, 14,105 at most (the whole city, on
+  foot); a whole search 0.25 ms on average and 1.1 ms at most. Mono is several times slower, so the worst search
+  is expected to take a handful of frames, each with 0.4 ms of it. Not measured in the game: the log line of every
+  route gives the steps, the slices, the time in all and the longest slice.
+- **Turns** (`NavRoute.FindTurns`): at every junction the route passes, the heading over the last 14 m of plain lane
+  before the junction's own points against the heading over the first 14 m after them. Under 28 degrees nothing is
+  said; to 55 "keep left/right"; to 150 "turn left/right"; above, a U-turn. Two junctions within 18 m, or two curves
+  of one junction with a plain point between them, are one turn.
+- **Following** (4 times a second): the nearest place on the route, looked for around the segment the player was on
+  last. More than 32 m from the line in a car (22 m on foot) for 2 s asks for a new route, and never twice within
+  4 s. Arrived: within 28 m of the place in a car (14 m on foot), or at the end of the road in a car when the place
+  is not on one.
+- **The two lines** are put together again only when a figure in them changes (distances are rounded to 10, 50 or
+  100 m). The time is the game's clock: the lanes' speed limits at 75% for a drive, the player's own walking speed
+  on foot, turned into minutes at the rate the game's clock has been running.
+- **On the city map** the route is one line in the markers' layer, under the markers, worked out again only in a
+  frame in which the map's camera moved (the game moves every marker in every frame the map is open, and is paused
+  meanwhile). **Two clicks on one spot within 0.4 s** make that spot the destination (a building: the same call as
+  its card's button). One click is not used: it drags the map and selects buildings, and a destination must not be
+  replaced by accident.
+- **Voogle Route** (another author's GPS mod): if its assembly is loaded, this mod's route, turns, arrival notice and
+  double click are all left off and only the minimap is shown; one warning says so. Two route lines and two sets of
+  instructions for one destination would contradict each other, and that mod has no minimap.
+
+### Costs
+
+| when | what | cost |
+|---|---|---|
+| once per city | the driving graph | one pass over the lane points twice (as the bus network does); not measured in the game |
+| once per city | the walking graph and the grid | 0.5 ms and 1.3 ms outside the game |
+| once per city | the map picture | 34 to 50 ms outside the game, on a pool thread; then one upload of 9 MB on the main thread (not measured) |
+| once per city | the panel | one copy of the game's task panel with its entries, cut down asleep; not measured |
+| per route | the search | 0.4 ms a frame until done; see above |
+| per route | the route's line, turns and the two meshes | under 0.1 ms outside the game |
+| 4 times a second | visibility, placement, the destination, the place on the route, markers in view | a few dozen comparisons; text only when a rounded figure changes |
+| every 2 s | the places read again | one pass over the game's markers and the mod's places |
+| per frame, panel showing | `NavHud.Frame` | comparisons; when moving, one quad's texture window, one position, up to 34 rotations |
+| per frame, panel hidden or options off | `NavDirector.Update` | one time comparison and two flag tests |
+
+Each one-off step is named for the session record (`SessionWatch.Mark`: "the GPS's road graph", "the GPS's walking
+graph", "the minimap's picture", "the minimap's panel"), and its time is in its log line. The steps are taken one a
+tick from the moment the city's roads exist, so they fall under the loading screen where the game is quick enough
+to have the roads there.
+
+### Safety
+
+Nothing is written to the save. Every object made lives under the game's HUD or its map's marker layer and is
+destroyed when the director is (city unload, "prepare this save for removing the mod"). An error in the director
+switches the feature off for the session with one line and takes its objects off the screen; an error in the city
+map's part switches only that part off. The game's map event is held with `EventHold.Keep`. If the task panel, its
+headline or its mask is not there, the minimap is left off with one `Game UI:` line and the route is still drawn on
+the city map.
+
+### Checks
+
+`RealLifeOverhaul.Build/NavCheck` compiles `Core/RouteSearch.cs` and `Navigation/NavModel.cs` as they are:
+`dotnet build RealLifeOverhaul.Build/NavCheck -c Release`, then
+`dotnet RealLifeOverhaul.Build/NavCheck/bin/Release/net10.0/NavCheck.dll` ends with `ALL CHECKS PASSED`. It checks the
+search whole against the search in slices, routes on a made-up grid of streets named the three ways the game names
+junction points, a one-way street driven and walked, the turn list, following, leaving the route, arriving, the
+line that is drawn, the view's arithmetic and the picture. Given a file of lane points as its argument it also
+prints the timings quoted above (the file is made from the game's own data by a study script and is not in the
+repository).
+
+### Log lines (with "Developer diagnostics" on)
+
+- `Navigation: road graph made: 18791 lane points, ... edges (... of them changes of lane), 273 roads, ... ms.`
+- `Navigation: walking graph and index made: ... edges, ... lane points in the index, ... ms.`
+- `Navigation: map made: 4096 x 2308 pixels (1.13 a metre, 9.0 MB), ... lanes drawn in ... ms off the main thread, sent to the graphics card in ... ms.`
+- `Navigation: minimap on the HUD, a copy of the game's task panel, in the left column; view 568 x 568 units; ...`
+- `Navigation: route found to '...' (driving; a new destination): ... lane points, ... m, ... turns, ... search steps in ... slices, ... ms in all (longest slice ... ms).`
+- `Navigation: 41 m off the route for 2 s (driving, 310 m along it): looking for a new route.`
+- `Navigation: arrived at '...' (22 m from it, driving). ...`
+- `Navigation: destination set by a double click on the city map: ...`
+- Always logged: the Voogle Route warning, and every part left off because the game is not built as expected.
+
+### Not verified (the game could not be run)
+
+Everything on screen. In particular: that the copy of the task panel looks right at the sizes it is given; that an
+Alpha8 picture is drawn in the image's colour by the interface's standard shader (if not, the roads are black);
+that the mask's rounded corners cut the map; the player icon's direction (taken from the game's own rule); how the
+markers read at 46 units; that the game's phone object is active whenever its HUD is in use (the panel is hidden
+when it is not); the panel's place beside the column on a narrow screen; that a double click on the map reaches
+this code and not only the map's drag; the names streets are given; how far the walking line lies from the
+pavement; every time quoted from outside the game.

@@ -225,3 +225,61 @@ With "Developer diagnostics" on, one session's Player.log shows whether everythi
 - `Planner: reminder sent for work 14 ('Shift: ...', Tomorrow, 09:00 to 13:00).` and `... not sent: its entry is Done.`
 - `Home: 'Click to cook' added to the game's click actions (12 in the list).`
 - Every fallback is one `Game UI: ...` warning, logged whether or not diagnostics are on.
+
+## 10. The HUD, and a panel on it (`Navigation/NavHud`)
+
+The HUD is not one canvas. `Canvases` (the object with `UIs`) holds, among others, `Topbar`, `Tasks`, `PlayerHUD`,
+`Smartphone` and `ControlsHintUIController`: each an overlay canvas of order 2 with a scaler of 3840 x 2160 matched to
+height (`NotificationsUI` and `BuildingResume` match width). The game's "interface zoom" divides every scaler's
+reference size (`UIs.SetUIZooming`), so sizes below are in reference units and everything scales together.
+
+| what | where | size | notes |
+|---|---|---|---|
+| top bar | `Topbar/Container`, top, full width | 183 high | |
+| task panel | `Tasks/Container`, top left, 320 below the top | 740 wide; `Panel` as high as its list, 1,000 at most | `TasksUI.IsCollapsed`: folded away, its button stays at the left edge |
+| control hints | `ControlsHintUIController/Container`, bottom left | 740 wide; `Panel` as high as its content | the object is inactive when hints are off, in the pause menu and in the options |
+| phone | `Smartphone/Container`, bottom right | 628 x 1,230 | the game switches the whole object off with its HUD (`UIs.HideUiMiniMenu`, `HideUiInteriorDesigner`) |
+| address and neighbourhood | `PlayerHUD/CurrentAddressLabel`, `CurrentNeighborhoodLabel`, bottom middle | 600 x 100 each | |
+| item panel | `PlayerHUD/ItemPanelUI/Panel`, bottom middle, from 140 up | up to 1,834 wide, as high as its content | while something is held or driven |
+| job panel | `PlayerHUD/CurrentJobUI/Panel`, top right, 200 below the top | 715 x 460 | during one of the game's jobs |
+| notifications | `NotificationsUI/Container`, top right, 237 below the top | 737 wide at scale 1.089 | a different scaler (matched to width) |
+
+**The task panel is the model of a HUD panel**: `Tasks/Container/Panel` is an Image (sprite `darkgreybox@2x`, alpha
+0.729), a `Headline` (sprite `darkgreybox-header@2x`, 100 high, with `Label`: TMP 32, bold capitals, dark, and `Icon`,
+the arrows that fold it), a `Viewport` (Image `UIMask` with a `Mask`: the rounded window its list scrolls in), and a
+scroll bar. A task entry's `Label` (`TasksUI.taskEntryTemplate`, public) is TMP 30, white; a group's label is the grey
+(0.792, 0.804, 0.808). The control hints' panel is the same box.
+
+`NavHud.Build` copies that panel asleep (section 2), destroys everything but `Headline` and `Viewport` and every
+child of the viewport (the copy brings the live task entries with it), takes the game's scripts off, takes off the
+`ScrollRect`, the headline's `Button` and every raycast target (the copy is looked at, never clicked: a HUD panel that
+takes clicks would take them from the world under it), and adds a `Canvas` to the copy so that it is batched by
+itself. The two text lines are copies of the task entry's `Label` with its `TextLocalizationComponent` taken off
+(the words are final when written). The copy is switched off before it leaves the sleeping holder, so nothing wakes
+until it is first shown. It is made a child of `PlayerHUD`, first in order (the game's dialogs draw over it), and so
+goes with the game's own "hide the interface" (`ScreenshotController.ToggleUIVisibility` sets the alpha of the group
+above it).
+
+**Placing it.** No corner is always free, so the panel is placed by measuring: `RectTransform.GetWorldCorners` of the
+control hints' `Panel`, the task `Panel`, the address label and the item `Panel`, brought into the HUD canvas's own
+units. That needs no table of resolutions and follows the interface zoom. See `NavHud.Place`.
+
+**The map's markers** (`PointOfInterest`, made by `CityMap.AddPoi` from `poiTemplate`; its parent is the object
+`Pois`, an overlay layer in which a marker's world position is its place on the screen). A marker's round base and
+its picture are private (`blobImage`; `buildingIcon` -> `BuildingIcon.image`), read by reflection once
+(`NavMarks`). Public and useful: `CityMapFilters.playerIcon` / `playerFilterColor` (the player's own marker; the game
+turns that icon by 45 degrees plus its direction on the screen, `PlayerController.UpdateCityMapPlayerIconRotation`),
+`subwayStationIcon` / `subwayStationFilterColor`, `DirectionGuider.poiICon` / `poiBackgroundColor`,
+`BuildingRegistration.GetPOIIcon()` / `GetPOIBackgroundColor()`, and the palette `GlobalReferences.colors`
+(blue, midnight, lightGrey...).
+
+**Drawing on the city map** is done as the game does it for its markers: an interface object under `Pois` given
+screen positions from `Camera.WorldToScreenPoint`, again whenever the camera has moved (`NavCityMap`). The game is
+paused while the map is open, and `GlobalEvents.onCityMapToggle` says when it opens and shuts.
+
+**An Alpha8 texture in a `RawImage`** is drawn in the image's colour (the interface's shader adds white to an
+alpha-only texture: `_TextureSampleAdd`), so one byte a pixel is enough for a picture of one colour. Inferred from
+how the engine draws its own font textures; not seen in this game.
+
+Proven: every object, component, size and member named here. Inferred: everything about how the copy looks and
+where it ends up on screen.
