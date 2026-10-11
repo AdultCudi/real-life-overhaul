@@ -123,6 +123,7 @@ namespace RealLifeOverhaul
             {
                 _block.size = new Vector3(_halfLength * 2f, 2f, (on ? _halfDepth : _steerHalfDepth) * 2f);
                 _block.carving = on;
+                MeshCuts.Note(on ? "a cart or stand made solid" : "a cart or stand no longer solid");
             }
             SessionWatch.Mark(on ? "a cart made solid (the navigation mesh is cut round it)" : "a cart no longer solid (the navigation mesh closes)");
             _verifyAt = on ? now + 1.6f : -1f;   // the cut is made once the box has stood still for half a second

@@ -182,6 +182,8 @@ namespace RealLifeOverhaul
             _line.Length = 0;
             _line.Append("Session: a frame of ").Append((took * 1000f).ToString("F0")).Append(" ms; ");
             _line.Append(marked ? "the mod was at: " : "none of the mod's large pieces of work was under way");
+            float cutAgo = Time.unscaledTime - took - MeshCuts.At;
+            string cut = cutAgo >= 0f && cutAgo < 2.5f ? MeshCuts.Last : null;
             if (marked)
             {
                 _line.Append(_mark);
@@ -189,6 +191,10 @@ namespace RealLifeOverhaul
             if (collected)
             {
                 _line.Append("; a garbage collection ran in it");
+            }
+            if (cut != null)
+            {
+                _line.Append("; ").Append(cutAgo.ToString("F1")).Append(" s before it the navigation mesh was asked to be cut for ").Append(cut).Append(" (the engine cuts about half a second after)");
             }
             _line.Append("; ").Append(Where()).Append('.');
             Logger?.Info(_line.ToString());

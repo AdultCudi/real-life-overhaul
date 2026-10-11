@@ -1591,6 +1591,7 @@ namespace RealLifeOverhaul
             }
             NavMeshObstacle wall = _walls[index];
             wall.carveOnlyStationary = true;
+            MeshCuts.Note("a cordon's walls");
             wall.transform.SetPositionAndRotation(centre, Quaternion.LookRotation(run / length, Vector3.up));
             // From a metre under the road to two above it: the mesh need not lie exactly where the road's collider does.
             wall.center = new Vector3(0f, 0.5f, 0f);

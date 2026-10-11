@@ -112,6 +112,7 @@ namespace RealLifeOverhaul
                 return;
             }
             _solid = on;
+            MeshCuts.Note(on ? "a bus stop made solid" : "a bus stop no longer solid");
             SessionWatch.Mark(on ? "transit: a bus stop made solid (the navigation mesh is cut round it)" : "transit: a bus stop no longer solid (the navigation mesh closes)");
             for (int i = 0; i < _blocks.Length; i++)
             {

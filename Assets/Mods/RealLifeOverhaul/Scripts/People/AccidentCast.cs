@@ -775,8 +775,23 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- paramedics
 
+        // How long each part of sending the crew out took, in milliseconds, for the log: this is the one frame of an
+        // accident in which a way is planned, the cordon is run round it and a lane is shut.
+        private static readonly System.Diagnostics.Stopwatch OutWatch = new System.Diagnostics.Stopwatch();
+        private float _msPlan, _msCrew, _msWheel, _msCordon, _msLane;
+
+        private static float Lap()
+        {
+            float ms = (float)OutWatch.Elapsed.TotalMilliseconds;
+            OutWatch.Restart();
+            return ms;
+        }
+
         private float MedicsOut(VehicleComponent ambulance, float latest, float now)
         {
+            SessionWatch.Mark("accident: the ambulance crew being sent out (their way planned, the cordon run round it, a lane shut)");
+            _msPlan = _msCrew = _msWheel = _msCordon = _msLane = 0f;
+            OutWatch.Restart();
             // Out at the rear doors of their own vehicle; a side door or the road beside it if the rear is walled in.
             Vector3 forward = ambulance.transform.forward;
             forward.y = 0f;
@@ -818,6 +833,7 @@ namespace RealLifeOverhaul
                 _way.Lay(_patientAt, axis, from, _cpr ? CprOut : KneelOut, _cpr ? 0f : 0.25f, KneelOut, beside, _wreckAt);
                 _stretcher = Stretcher.Take();
                 planned = _stretcher != null && _way.Plan(ambulance, _plan);
+                _msPlan = Lap();
                 _kneelAt = _way.Kneel;   // (after the plan: the stretcher may stand on the other side of them from the one first chosen)
                 _secondKneel = _way.Second;
                 if (!planned)
@@ -835,8 +851,10 @@ namespace RealLifeOverhaul
             Vector3 right = ambulance.transform.right;
             Vector3 second = planned ? _way.SecondOut : _ambulanceDoor;
             Vector3 pusher = planned ? _way.Door : _ambulanceDoor + right * 0.9f;
+            OutWatch.Restart();
             bool gotA = _medicA.Enter(second, ActorLook.Paramedic, 2f, onRoad: true);
             bool gotB = (down || Random.value < SecondCrewChance) && _medicB.Enter(pusher, ActorLook.Paramedic, 2f, onRoad: true);
+            _msCrew = Lap();
             if (!gotA && !gotB)
             {
                 _stretcher = null;
@@ -865,7 +883,9 @@ namespace RealLifeOverhaul
                 // has an order of their own, and nothing but the end of that line ends this step.
                 _bearer = gotB ? _medicB : _medicA;
                 ActorRole other = gotA && gotB ? _medicA : null;
+                OutWatch.Restart();
                 _wheeled = _stretcher.Wheel(_bearer, other, _way.Out, _way.Guide, _way.Handle, _way.Swing, _way.Bed, _way.Heading);
+                _msWheel = Lap();
                 if (_wheeled)
                 {
                     paced = true;
@@ -873,7 +893,9 @@ namespace RealLifeOverhaul
                     if (_plan != null)
                     {
                         _plan.SetCorridor(_way.Out, _way.Home);   // the tape opens where it crosses; no post, cone or barrier stands on it
+                        _msCordon = Lap();
                         HoldLane();
+                        _msLane = Lap();
                     }
                     SetOffCheck(gotA && gotB);
                 }
@@ -921,7 +943,8 @@ namespace RealLifeOverhaul
             Phase(now, reach);
             Logger?.Info($"People: paramedics out ({(gotA && gotB ? 2 : 1)}){(_stretcher != null ? " with the stretcher" : "")}, {straight:F0} m from "
                          + (down ? "the casualty" : "the driver") + (paced ? $", at the {SceneClips.WalkPace:F1} m/s their walking clips are made for" : "")
-                         + $"; back aboard in about {reach + treat + back:F0} s.");
+                         + $"; back aboard in about {reach + treat + back:F0} s. Sending them out took: the way {_msPlan:F0} ms, the two characters {_msCrew:F0} ms, "
+                         + $"the stretcher taken {_msWheel:F0} ms, the cordon run round it {_msCordon:F0} ms, the lane shut {_msLane:F0} ms.");
             return now + reach + treat + back;
         }
 
