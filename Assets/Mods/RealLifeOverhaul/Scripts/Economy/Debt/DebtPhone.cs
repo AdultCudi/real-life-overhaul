@@ -138,6 +138,23 @@ namespace RealLifeOverhaul.Economy
         {
             return FinanceText.Money(amount);
         }
+
+        /// <summary>
+        /// A step of a conversation, kept from throwing into the game's dialogue: a fault is logged and the call ends
+        /// with a plain line.
+        /// </summary>
+        internal static DialogEntry Safe(Func<DialogEntry> step)
+        {
+            try
+            {
+                return step();
+            }
+            catch (Exception e)
+            {
+                EconomyDirector.Logger?.Error(e);
+                return PhoneContacts.Closing("reallife_advice_closed");
+            }
+        }
     }
 
     /// <summary>Collections on the line about the first debt whose call is due: pay what is overdue, agree a plan, or neither.</summary>
@@ -146,7 +163,7 @@ namespace RealLifeOverhaul.Economy
         public CollectionsDialog()
         {
             npcNameKey = DebtPhone.ContactIds[DebtPhone.Collections];
-            DialogController.current.ShowEntry(First());
+            DialogController.current.ShowEntry(DebtPhone.Safe(First));
         }
 
         private static DialogEntry First()
@@ -163,7 +180,7 @@ namespace RealLifeOverhaul.Economy
             {
                 messageData = "reallife_collect_call".Localize(new { lender = debt.Lender, account = debt.Name, amount = DebtPhone.Money(overdue), count = s.Misses.ToString() }),
                 ConfirmTextOverride = "reallife_collect_pay".Localize(new { amount = DebtPhone.Money(overdue) }),
-                OnConfirm = () => Pay(debt, overdue),
+                OnConfirm = () => DebtPhone.Safe(() => Pay(debt, overdue)),
                 CancelTextOverride = "reallife_collect_cannot",
                 OnCancel = () =>
                 {
@@ -174,7 +191,7 @@ namespace RealLifeOverhaul.Economy
             if (!s.PlanUsed)
             {
                 entry.SecondOptionTextOverride = "reallife_collect_plan";
-                entry.OnSecondOption = () => Plan(debt);
+                entry.OnSecondOption = () => DebtPhone.Safe(() => Plan(debt));
             }
             return entry;
         }
@@ -205,7 +222,7 @@ namespace RealLifeOverhaul.Economy
         public LenderDialog()
         {
             npcNameKey = DebtPhone.ContactIds[DebtPhone.Lender];
-            DialogController.current.ShowEntry(First());
+            DialogController.current.ShowEntry(DebtPhone.Safe(First));
         }
 
         private static DialogEntry First()
@@ -249,14 +266,14 @@ namespace RealLifeOverhaul.Economy
                     cap = DebtPhone.Money(SharkRules.Cap(amount))
                 }),
                 ConfirmTextOverride = "reallife_lender_take".Localize(new { amount = DebtPhone.Money(amount) }),
-                OnConfirm = () => Lend(amount),
+                OnConfirm = () => DebtPhone.Safe(() => Lend(amount)),
                 CancelTextOverride = "reallife_lender_no",
                 OnCancel = PhoneContacts.HangUp
             };
             if (next != amount)
             {
                 entry.SecondOptionTextOverride = "reallife_lender_other";
-                entry.OnSecondOption = () => Offer(next);
+                entry.OnSecondOption = () => DebtPhone.Safe(() => Offer(next));
             }
             return entry;
         }
@@ -290,7 +307,7 @@ namespace RealLifeOverhaul.Economy
             if (pay > 0)
             {
                 entry.ConfirmTextOverride = (pay >= debt.Owed ? "reallife_lender_pay_all" : "reallife_lender_pay_some").Localize(new { amount = DebtPhone.Money(pay) });
-                entry.OnConfirm = () => Pay(pay);
+                entry.OnConfirm = () => DebtPhone.Safe(() => Pay(pay));
             }
             else
             {
@@ -300,7 +317,7 @@ namespace RealLifeOverhaul.Economy
             if (!debt.Extended)
             {
                 entry.SecondOptionTextOverride = "reallife_lender_extend";
-                entry.OnSecondOption = Extend;
+                entry.OnSecondOption = () => DebtPhone.Safe(Extend);
             }
             return entry;
         }
@@ -339,7 +356,7 @@ namespace RealLifeOverhaul.Economy
         public DebtAdviceDialog()
         {
             npcNameKey = DebtPhone.ContactIds[DebtPhone.Advice];
-            DialogController.current.ShowEntry(First());
+            DialogController.current.ShowEntry(DebtPhone.Safe(First));
         }
 
         private static DialogEntry First()
@@ -360,9 +377,9 @@ namespace RealLifeOverhaul.Economy
             {
                 messageData = "reallife_advice_greeting".Localize(new { amount = DebtPhone.Money(total) }),
                 ConfirmTextOverride = "reallife_advice_sell".Localize(),
-                OnConfirm = Sell,
+                OnConfirm = () => DebtPhone.Safe(Sell),
                 SecondOptionTextOverride = "reallife_advice_arrange",
-                OnSecondOption = Arrange,
+                OnSecondOption = () => DebtPhone.Safe(Arrange),
                 CancelTextOverride = "reallife_advice_bye",
                 OnCancel = PhoneContacts.HangUp
             };
@@ -381,9 +398,9 @@ namespace RealLifeOverhaul.Economy
                     assets = DebtPhone.Money(wealth.totalAssets)
                 }),
                 ConfirmTextOverride = "reallife_advice_arrange".Localize(),
-                OnConfirm = Arrange,
+                OnConfirm = () => DebtPhone.Safe(Arrange),
                 SecondOptionTextOverride = "reallife_advice_bankrupt",
-                OnSecondOption = Bankrupt,
+                OnSecondOption = () => DebtPhone.Safe(Bankrupt),
                 CancelTextOverride = "reallife_advice_bye",
                 OnCancel = PhoneContacts.HangUp
             };
@@ -415,7 +432,7 @@ namespace RealLifeOverhaul.Economy
             {
                 messageData = words,
                 ConfirmTextOverride = "reallife_advice_bankrupt".Localize(),
-                OnConfirm = Bankrupt,
+                OnConfirm = () => DebtPhone.Safe(Bankrupt),
                 CancelTextOverride = "reallife_advice_bye",
                 OnCancel = PhoneContacts.HangUp
             };
