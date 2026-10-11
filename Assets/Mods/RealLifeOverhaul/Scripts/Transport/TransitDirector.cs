@@ -1704,8 +1704,7 @@ namespace RealLifeOverhaul
                 }
             }
             _text.Length = 0;
-            _text.Append(TransitText.T("reallife_transit_stop_ends", "route", TransitMap.Lines[stop.Line].Number)).Append('
-');
+            _text.Append(TransitText.T("reallife_transit_stop_ends", "route", TransitMap.Lines[stop.Line].Number)).Append('\n');
             if (board != null)
             {
                 _text.Append(TransitText.T("reallife_transit_stop_board_at", "route", TransitMap.Lines[board.Line].Number, "name", StopName(board),
