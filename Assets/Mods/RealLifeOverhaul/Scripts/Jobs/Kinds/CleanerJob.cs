@@ -48,6 +48,8 @@ namespace RealLifeOverhaul
         private const float Seconds = 330f;            // for the whole floor, the walk there included
         private const float SecondsPerMetre = 0.5f;    // more for a client further off
         private const float Spotless = 100f;           // the game's cleanliness at which a floor shows no dirt
+        private const float RedoShare = 0.3f;          // share of the dirtied cells a difficult client has put back
+        private const float RedoStrength = 0.8f;       // ...at this share of the dirt they had
         private const float Half = 0.5f;               // share of the floor at which a shift is done rather than failed
         private const string MopClip = "mop_floor";
 
@@ -81,6 +83,7 @@ namespace RealLifeOverhaul
         private bool _wasCleaning;
         private bool _wasInside;
         private bool _paid;
+        private bool _redone;          // the difficult client has had their say
         private bool _dressed;
         private int _hint = -1;
         private int _shownSeconds = int.MinValue;
@@ -160,7 +163,7 @@ namespace RealLifeOverhaul
                 Ctx.Logger?.Info("Jobs: no cleaning work: neither the mop clip nor the game's own cleaning animation can be played on the player.");
                 return false;
             }
-            _units = Ctx.FullShift ? Def.ShiftUnits : Mathf.Min(Def.ShiftUnits, JobState.LeftToday(Def));
+            _units = ShiftSize();   // the offer's floor: the bigger it is, the dirtier and the better paid
             if (_units <= 0)
             {
                 Refusal = "reallife_job_no_daily";
@@ -179,7 +182,8 @@ namespace RealLifeOverhaul
             _panelTarget = JobText.T("reallife_job_cleaner_panel_target");
             _objClock = JobText.T("reallife_job_cleaner_obj_clock");
             _endsAt = now + Seconds + JobSpots.Flat(Ctx.PlayerPosition, _client.Front) * SecondsPerMetre;
-            _dice = new System.Random(unchecked(Environment.TickCount * 397 + _units));
+            _dice = new System.Random(Ctx.Offer.Seed != 0u ? unchecked((int)Ctx.Offer.Seed) : unchecked(Environment.TickCount * 397 + _units));   // where the dirt lies is part of the offer's seed
+            BeginSpeed(now, _endsAt - now);
             _mop = new JobMop(Ctx.Logger);
             _step = Step.ToClient;
             _mode = Mode.Undecided;
@@ -410,8 +414,22 @@ namespace RealLifeOverhaul
                 _pct = pct;
                 _mop.Show(_clean);
             }
+            if (_clean >= Spotless - 0.001f && Ctx.Offer.RedoAt > 0 && !_redone)
+            {
+                // The difficult client, if the offer drew one, finds a patch they say was missed: some of the dirt is put back, and the pay follows the floor.
+                _redone = true;
+                int back = _dirt.Redo(RedoShare, RedoStrength);
+                ReadClean();
+                Ctx.Say("reallife_gig_redo_clean", 7f);
+                Ctx.Logger?.Info("Jobs: cleaner event: a difficult client points out a missed patch: " + back + " cells are dirty again, the floor reads " + Mathf.FloorToInt(_clean + 0.001f) + "% clean.");
+                return;
+            }
             if (_clean >= Spotless - 0.001f)
             {
+                if (_clockUnits == 0)
+                {
+                    EndSpeed(now);   // the whole floor by hand
+                }
                 Ctx.Say("reallife_job_cleaner_done", 7f);
                 _panel.Hide();
                 Conclude();

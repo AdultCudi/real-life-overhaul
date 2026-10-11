@@ -314,6 +314,10 @@ namespace RealLifeOverhaul
             {
                 reasonKey = "reallife_job_no_sacked";
             }
+            else if (GigOffers.DayOf(def.Id, TimeHelper.CurrentDay) == GigDay.Closed)
+            {
+                reasonKey = "reallife_job_no_today";   // the day's board (GigOffers): not every gig is on every day
+            }
             else if (JobState.LeftToday(def) <= 0)
             {
                 reasonKey = "reallife_job_no_daily";
@@ -437,7 +441,11 @@ namespace RealLifeOverhaul
             _context.Gig = gig;
             float scale = PayScale();   // the pay option, and less for somebody who runs businesses of their own
             _context.Level = JobState.Level(def);
-            _context.Rate = JobCatalogue.PayFactor(_context.Level) * scale * (shift != null ? shift.Rank.Piece : 1f);
+            // A freelance gig is offered as the Gig Line quoted it (the same day, hour and gig give the same offer); an employer's shift,
+            // a booked set and a test button are worked at the table's figures.
+            bool freelance = shift == null && gig == null && !test;
+            _context.Offer = freelance ? GigOffers.Draw(def, TimeHelper.CurrentDay, TimeHelper.CurrentHour, GigWords.Sky()) : GigOffer.Table(def);
+            _context.Rate = JobCatalogue.PayFactor(_context.Level) * scale * (shift != null ? shift.Rank.Piece : 1f) * _context.Offer.Fee;
             if (shift != null)
             {
                 shift.Hourly *= scale;
@@ -471,6 +479,10 @@ namespace RealLifeOverhaul
             _momentAt = -1f;
             _nextTick = 0f;
             Logger?.Info("Jobs: '" + def.Id + "' started" + (test ? " by the test button" : string.Empty) + ", level " + _context.Level + ", rate " + _context.Rate.ToString("F2") + ".");
+            if (Meta.Dev.Verbose)
+            {
+                GigWords.Log(Logger, _context.Offer, TimeHelper.CurrentDay, TimeHelper.CurrentHour);
+            }
             reasonKey = null;
             return true;
         }
@@ -730,8 +742,10 @@ namespace RealLifeOverhaul
         /// and the slip on screen. A slip that comes to nothing is still shown, so the player
         /// sees why.
         /// </summary>
-        public void Pay(Job job, in PaySlip slip, string titleKey)
+        public void Pay(Job job, in PaySlip given, string titleKey)
         {
+            PaySlip slip = given;
+            job.TakeEventMoney(ref slip);   // a big tip or a speed bonus earned since the last slip goes on this one
             JobDef def = job.Def;
             int total = slip.Total;
             job.Shift.Add(slip);
@@ -847,6 +861,17 @@ namespace RealLifeOverhaul
                 JobText.Toast(NotificationType.Info, "reallife_doctor_note_used");
             }
             SafeEnd(job, why);
+            if (why != JobEnd.Fault && job.HasEventMoney)
+            {
+                try
+                {
+                    Pay(job, default, "reallife_job_slip_events");   // a tip earned after the job's last slip
+                }
+                catch (Exception e)
+                {
+                    Logger?.Error(e);
+                }
+            }
             _cast.ReleaseAll();   // whoever a job forgot
             _stand.Clear();       // the place of work lets go of the player
             _body.Release();      // the player is their own again, whatever the job was doing with them

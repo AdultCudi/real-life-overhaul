@@ -138,6 +138,26 @@ namespace RealLifeOverhaul.Meta
                 .Fact("job_min_energy", () => Guide.Number(JobCatalogue.MinEnergy))
                 .Fact("job_stop_cut", () => Guide.Percent(JobCatalogue.PoliceStopCut))
                 .Fact("job_crash_cut", () => Guide.Percent(JobCatalogue.CrashCut))
+                .Fact("gig_client_low", () => Guide.Percent(GigOffers.ClientLow))
+                .Fact("gig_client_high", () => Guide.Percent(GigOffers.ClientHigh))
+                .Fact("gig_busy_fee", () => Guide.Percent(GigOffers.BusyFee))
+                .Fact("gig_normal_fee", () => Guide.Percent(GigOffers.NormalFee(JobCatalogue.All.Length)))
+                .Fact("gig_busy_per_day", () => Guide.Number(GigOffers.BusyPerDay))
+                .Fact("gig_closed_per_day", () => Guide.Number(GigOffers.ClosedPerDay))
+                .Fact("gig_quiet", () => Guide.Percent(GigOffers.QuietCrowd))
+                .Fact("gig_rush", () => Guide.Percent(GigOffers.RushCrowd))
+                .Fact("gig_tipper_chance", () => Guide.Percent(GigOffers.TipperChance))
+                .Fact("gig_tipper_low", () => Guide.Number(GigOffers.TipperLow))
+                .Fact("gig_tipper_high", () => Guide.Number(GigOffers.TipperHigh))
+                .Fact("gig_speed_chance", () => Guide.Percent(GigOffers.SpeedChance))
+                .Fact("gig_speed_low", () => Guide.Number(GigOffers.SpeedLow))
+                .Fact("gig_speed_high", () => Guide.Number(GigOffers.SpeedHigh))
+                .Fact("gig_speed_time", () => Guide.Percent(GigOffers.SpeedTime))
+                .Fact("gig_redo_chance", () => Guide.Percent(GigOffers.RedoChance))
+                .Fact("gig_rain_pay", () => Guide.Percent(GigOffers.RainPay - 1f))
+                .Fact("gig_storm_pay", () => Guide.Percent(GigOffers.StormPay - 1f))
+                .Fact("gig_spell_pay", () => Guide.Percent(GigOffers.HeatPay - 1f))
+                .Fact("gig_ice_pay", () => Guide.Percent(GigOffers.IcePay - 1f))
                 .Cleanup(() =>
                 {
                     JobDirector.Instance?.Quit();   // the shift ends, its people and props go back, a hired van is handed in
@@ -554,6 +574,9 @@ namespace RealLifeOverhaul.Meta
                     .Replace("{metre}", job.PayPerMetre > 0f
                         ? "reallife_guide_job_metre".GetLocalization().Replace("{amount}", Guide.Money(job.PayPerMetre * 100f))
                         : string.Empty)
+                    .Replace("{size}", job.ShiftUnits <= 0 ? string.Empty : "reallife_guide_job_size".GetLocalization()
+                        .Replace("{low}", (job.ShiftUnits - job.UnitsSpread).ToString(CultureInfo.InvariantCulture))
+                        .Replace("{high}", (job.ShiftUnits + job.UnitsSpread).ToString(CultureInfo.InvariantCulture)))
                     .Replace("{daily}", job.DailyUnits.ToString(CultureInfo.InvariantCulture))
                     .Replace("{level}", job.UnitsPerLevel.ToString(CultureInfo.InvariantCulture)));
                 if ((job.Needs & JobNeed.Car) != 0)

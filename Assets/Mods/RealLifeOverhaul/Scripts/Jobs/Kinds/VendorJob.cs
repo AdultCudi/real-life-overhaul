@@ -199,6 +199,8 @@ namespace RealLifeOverhaul
 
         private int LeftToServe => Mathf.Max(0, _customers - _served - _lost);
 
+        private bool _sentBack;   // the difficult customer has had their say
+
         private float PayEach => (Ctx.Perk(CareerPerk.OwnCart) ? CareerCatalogue.CartTakings - CareerCatalogue.CartStock : Def.UnitPay) * Ctx.Rate;
 
         protected override bool OnBegin(float now)
@@ -208,7 +210,7 @@ namespace RealLifeOverhaul
                 Refusal = "reallife_job_on_foot";
                 return false;
             }
-            _customers = Ctx.FullShift ? Def.ShiftUnits : Mathf.Min(Def.ShiftUnits, JobState.LeftToday(Def));
+            _customers = ShiftSize();   // the offer's number of customers
             if (_customers <= 0)
             {
                 Refusal = "reallife_job_no_daily";
@@ -428,7 +430,7 @@ namespace RealLifeOverhaul
             }
             else
             {
-                _nextArrival = now + Random.Range(2.5f, 6f);
+                _nextArrival = now + Random.Range(2.5f, 6f) / Ctx.Offer.CrowdFactor;   // a quiet street or a rush, as the offer said
             }
             // Only ever put down out of the player's sight: round the corner or further up the street, or not this time.
             if (!CitySpots.PavementRing(_cartAt, 11f, 20f, true, out Vector3 from) && !CitySpots.PavementRing(_cartAt, 20f, 34f, true, out from))
@@ -647,11 +649,21 @@ namespace RealLifeOverhaul
             Ctx.Stand.Busy(2.2f, now);   // the cloth is put down; the working pose comes back when the drink has been served
             float reach = Mathf.Max(0.9f, Ctx.Animations.Play(Ctx.Player.Character, JobClip.Serve));
             _serveUntil = now + Mathf.Min(reach, 2.2f);
-            if (choice != _wants)
+            // The one difficult customer of the shift, if the offer drew one, sends back the first right drink they are handed.
+            bool sendBack = choice == _wants && !_sentBack && Ctx.Offer.RedoAt > 0 && _served + 1 >= Ctx.Offer.RedoAt;
+            if (choice != _wants || sendBack)
             {
                 _orderEnds -= WrongCost;
                 Ctx.Animations.Play(person.Character, JobClip.Refuse);
                 Ctx.Cast.Emoji(person, CharacterEmojiName.CommonYellowNeutral, 1.6f);
+                if (sendBack)
+                {
+                    _sentBack = true;
+                    _wants = (_wants + 1 + Random.Range(0, JobKeys.Choices - 1)) % JobKeys.Choices;   // they now want another
+                    Ctx.Say("reallife_gig_redo_cart", 6f);
+                    Ctx.Logger?.Info("Jobs: vendor event: a difficult customer sends the drink back at customer " + (_served + 1) + " (the offer drew " + Ctx.Offer.RedoAt + "); it is made again, and the patience drops by " + WrongCost.ToString("F0") + " s.");
+                    return;
+                }
                 Ctx.Say(JobText.Pick(Wrong, ref _line), 4f);
                 if (Meta.Dev.Verbose)
                 {
@@ -664,6 +676,7 @@ namespace RealLifeOverhaul
             int tip = 0;
             _served++;
             _hand++;
+            UnitDone(_hand, UnitPay());   // the cart's big tipper, if the offer drew one
             if (took <= QuickTip)
             {
                 tip = Mathf.RoundToInt(Random.Range(5.5f, 9.5f) * Ctx.Rate);

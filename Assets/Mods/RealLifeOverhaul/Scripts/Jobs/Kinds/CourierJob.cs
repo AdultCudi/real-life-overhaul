@@ -47,7 +47,7 @@ namespace RealLifeOverhaul
         private const string ButtonLeave = "reallife_job_courier_button_leave";
 
         private const string SealedBox = "ba:itemname_sealedcardboardbox";
-        private const int MaxDrops = 5;
+        private const int MaxDrops = 7;             // the most parcels an offer can make a round: the table's five and the offer's spread of two
         private const int MostExtra = 3;             // a senior courier's round is this much bigger at most
         private const float DepotMax = 240f;
         private const float DropMin = 110f;
@@ -147,7 +147,7 @@ namespace RealLifeOverhaul
 
         protected override bool OnBegin(float now)
         {
-            int want = Ctx.FullShift ? MaxDrops + Mathf.Clamp(Ctx.Shift != null ? Ctx.Shift.Rank.ExtraUnits : 0, 0, MostExtra) : Mathf.Min(MaxDrops, JobState.LeftToday(Def));
+            int want = ShiftSize() + (Ctx.Shift != null ? Mathf.Clamp(Ctx.Shift.Rank.ExtraUnits, 0, MostExtra) : 0);   // the offer's round, and a senior courier's extra
             if (want <= 0)
             {
                 Refusal = "reallife_job_no_daily";
@@ -528,6 +528,7 @@ namespace RealLifeOverhaul
             TakeBox();   // out of the player's hands first, so the arm is free to reach
             _drops[_target].Done = true;
             _delivered++;
+            UnitDone(_delivered, UnitPay());   // the round's big tipper, if the offer drew one
             if (Meta.Dev.Verbose)
             {
                 Ctx.Logger?.Info("Jobs: courier: parcel " + _delivered + " of " + _count + " " + (toSomeone && _recipient != null ? "handed to someone at the door" : "left at the door") + " (" + _drops[_target].Spot.Name + "); "

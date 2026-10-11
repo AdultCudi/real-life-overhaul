@@ -150,7 +150,7 @@ namespace RealLifeOverhaul
                 Refusal = "reallife_job_no_here";
                 return false;
             }
-            _bundle = Ctx.FullShift ? Def.ShiftUnits : Mathf.Min(Def.ShiftUnits, JobState.LeftToday(Def));
+            _bundle = ShiftSize();   // the offer's bundle
             if (_bundle <= 0)
             {
                 Refusal = "reallife_job_no_daily";
@@ -158,6 +158,7 @@ namespace RealLifeOverhaul
             }
             _endsAt = now + Seconds;
             _begun = now;
+            BeginSpeed(now, Seconds);
             _markerText = JobText.T("reallife_job_flyers_marker");
             _objWalk = JobText.T("reallife_job_flyers_obj_walk");
             _objNear = JobText.T("reallife_job_flyers_obj_near");
@@ -203,6 +204,10 @@ namespace RealLifeOverhaul
                 if (_with == null)
                 {
                     _panel.Hide();
+                    if (_clocked == 0)
+                    {
+                        EndSpeed(now);   // the whole bundle by hand
+                    }
                     Finish(JobEnd.Done);
                 }
                 return;
@@ -437,7 +442,7 @@ namespace RealLifeOverhaul
             }
             Ctx.TurnPlayer(person.transform.position);
 
-            _heldTakes = Random.value < TakeChance + TakePerLevel * (Ctx.Level - 1);
+            _heldTakes = Random.value < (TakeChance + TakePerLevel * (Ctx.Level - 1)) * Ctx.Offer.CrowdFactor;   // a quiet street or a rush, as the offer said
             _heldUntil = now + Beat;
             Ctx.Self.Hold(Beat - 0.2f);   // on the spot while the arm is out; let go again by the director's tick
             _offered.Give(Ctx.Player.Character, Ctx.Props, OfferGrips, FlyerProp);

@@ -75,7 +75,8 @@ namespace RealLifeOverhaul
         public JobRental Rental;         // the hired car, when the player has none
         public bool Indoors;             // inside the one building the job allows
 
-        public float Rate;               // level and the pay option, as one factor on what the catalogue says
+        public float Rate;               // level, the pay option and the offer's fee, as one factor on what the catalogue says
+        public GigOffer Offer;           // what makes this shift differ from another of the gig: its size, fee, crowd and events (the table's figures for a shift that is not a freelance gig)
         public int Level;
         public bool Test;                // started by a test button: needs and daily limits are waived
 
@@ -276,10 +277,100 @@ namespace RealLifeOverhaul
             HasMarker = false;
         }
 
-        /// <summary>The catalogue's pay for one unit over a distance, at the player's level and the pay option.</summary>
+        /// <summary>The catalogue's pay for one unit over a distance, at the player's level, the pay option and the offer's fee.</summary>
         protected int UnitPay()
         {
             return Mathf.RoundToInt(Def.UnitPay * Ctx.Rate);
+        }
+
+        // ------------------------------------------------ what the offer drew (GigOffers): the job rolls none of it itself
+
+        /// <summary>How big this shift is: the offer's number of units, and on a freelance day never more than the day has left.</summary>
+        protected int ShiftSize()
+        {
+            int units = Ctx.Offer.Units > 0 ? Ctx.Offer.Units : Def.ShiftUnits;
+            return Ctx.FullShift ? units : Mathf.Min(units, JobState.LeftToday(Def));
+        }
+
+        private int _eventTips;
+        private int _eventBonus;
+        private bool _tipperDone;
+        private float _speedBy = -1f;
+        private bool _speedSettled;
+
+        /// <summary>Money the shift's events have earned that no slip has carried yet.</summary>
+        public bool HasEventMoney => _eventTips > 0 || _eventBonus > 0;
+
+        /// <summary>Puts the events' money on the slip that is being paid, once.</summary>
+        public void TakeEventMoney(ref PaySlip slip)
+        {
+            slip.Tips += _eventTips;
+            slip.Bonus += _eventBonus;
+            _eventTips = 0;
+            _eventBonus = 0;
+        }
+
+        /// <summary>
+        /// A unit has been done by hand: <paramref name="done"/> of them so far. The one big tipper of the shift, if the offer drew
+        /// one, turns up at the unit it says: a tip of so many units' pay (<paramref name="unitMoney"/> is what one unit is worth,
+        /// the fare for a ride), said in one of the game's notifications and paid with the next slip.
+        /// </summary>
+        protected void UnitDone(int done, int unitMoney)
+        {
+            GigOffer offer = Ctx.Offer;
+            if (_tipperDone || offer.TipperAt <= 0 || done < offer.TipperAt)
+            {
+                return;
+            }
+            _tipperDone = true;
+            int tip = Mathf.RoundToInt(offer.TipperUnits * unitMoney);
+            if (tip <= 0)
+            {
+                return;
+            }
+            _eventTips += tip;
+            JobText.Toast(UI.Notification.NotificationType.Success, "reallife_gig_tipper", "amount", JobText.Money(tip), 8f);
+            Ctx.Logger?.Info("Jobs: '" + Def.Id + "' event: a big tipper at unit " + done + " (the offer drew unit " + offer.TipperAt + ") tips " + tip + " (" + offer.TipperUnits.ToString("F2") + " units of " + unitMoney + ").");
+        }
+
+        /// <summary>
+        /// The client's speed bonus, if the offer drew one: said at the start with its money and its time, paid by
+        /// <see cref="EndSpeed"/> if the work is finished in time. <paramref name="allowed"/> is the real seconds the job gives the whole shift.
+        /// </summary>
+        protected void BeginSpeed(float now, float allowed)
+        {
+            GigOffer offer = Ctx.Offer;
+            if (!offer.HasSpeed)
+            {
+                return;
+            }
+            _speedBy = now + allowed * offer.SpeedShare;
+            int bonus = Mathf.RoundToInt(offer.SpeedUnits * UnitPay());
+            JobText.Toast(UI.Notification.NotificationType.Info, "reallife_gig_speed_offer", "amount", JobText.Money(bonus), "time", ShiftFigures.Clock(Mathf.RoundToInt(allowed * offer.SpeedShare)), 10f);
+            Ctx.Logger?.Info("Jobs: '" + Def.Id + "' event: the client adds " + bonus + " (" + offer.SpeedUnits.ToString("F2") + " units) if the shift is done within "
+                             + Mathf.RoundToInt(allowed * offer.SpeedShare) + " s of " + Mathf.RoundToInt(allowed) + " s.");
+        }
+
+        /// <summary>The whole shift has been done by hand: the speed bonus is paid if there was one and the time was kept.</summary>
+        protected void EndSpeed(float now)
+        {
+            if (_speedBy < 0f || _speedSettled)
+            {
+                return;
+            }
+            _speedSettled = true;
+            int bonus = Mathf.RoundToInt(Ctx.Offer.SpeedUnits * UnitPay());
+            bool kept = now <= _speedBy;
+            if (kept && bonus > 0)
+            {
+                _eventBonus += bonus;
+                JobText.Toast(UI.Notification.NotificationType.Success, "reallife_gig_speed_paid", "amount", JobText.Money(bonus), 8f);
+            }
+            else
+            {
+                JobText.Toast(UI.Notification.NotificationType.Info, "reallife_gig_speed_missed", 6f);
+            }
+            Ctx.Logger?.Info("Jobs: '" + Def.Id + "' event: speed bonus " + (kept ? "kept, " + bonus + " added" : "missed by " + (now - _speedBy).ToString("F0") + " s") + ".");
         }
 
         protected int DistancePay(float metres)
@@ -339,6 +430,12 @@ namespace RealLifeOverhaul
         public static void Toast(UI.Notification.NotificationType type, string key, float seconds = 7f)
         {
             UI.Notification.Notifications.Show(type, key, null, seconds);
+        }
+
+        public static void Toast(UI.Notification.NotificationType type, string key, string name, string value, string name2, string value2, float seconds)
+        {
+            var data = new System.Collections.Generic.Dictionary<string, string>(2) { { name, value }, { name2, value2 } };
+            UI.Notification.Notifications.Show(type, key, data, seconds);
         }
 
         public static void Toast(UI.Notification.NotificationType type, string key, string name, string value, float seconds = 8f)

@@ -53,10 +53,11 @@ namespace RealLifeOverhaul
         public readonly string Skill;            // the game's own skill it trains, or null
         public readonly int DailyUnits;          // how many units there are to be had in a day
         public readonly int UnitsPerLevel;       // units of work for each level after the first
-        public readonly int ShiftUnits;          // how many units one shift is (0 = until the player stops)
+        public readonly int ShiftUnits;          // how many units one shift is, on average (0 = until the player stops)
+        public readonly int UnitsSpread;         // ...and how many more or fewer a freelance offer may make it (GigOffers): the average stays ShiftUnits
 
         public JobDef(string id, string nameKey, string pitchKey, string transactionKey, JobNeed needs, float unitPay, float payPerMetre,
-            float unitEnergy, float unitSkill, string skill, int dailyUnits, int unitsPerLevel, int shiftUnits)
+            float unitEnergy, float unitSkill, string skill, int dailyUnits, int unitsPerLevel, int shiftUnits, int unitsSpread = 0)
         {
             Id = id;
             NameKey = nameKey;
@@ -71,6 +72,7 @@ namespace RealLifeOverhaul
             DailyUnits = dailyUnits;
             UnitsPerLevel = unitsPerLevel;
             ShiftUnits = shiftUnits;
+            UnitsSpread = unitsSpread;
         }
     }
 
@@ -105,22 +107,22 @@ namespace RealLifeOverhaul
         {
             // 24 flyers a bundle, about four minutes of walking up to people: 7 a flyer is 168 a bundle, 42 an hour (the cashier's 25).
             new JobDef(Flyers, "reallife_job_flyers_name", "reallife_job_flyers_pitch", "reallife_transaction_job_flyers",
-                JobNeed.Outdoors, 7f, 0f, 0.35f, 0.01f, CustomerService, 48, 40, 24),
+                JobNeed.Outdoors, 7f, 0f, 0.35f, 0.01f, CustomerService, 48, 40, 24, 6),
             // A client's floor cleaned to 100 %, about four minutes with the walk in: eight units of 20 are 160 at 100 %, 40 an hour (the game's cleaners cost 12).
             new JobDef(Cleaner, "reallife_job_cleaner_name", "reallife_job_cleaner_pitch", "reallife_transaction_job_cleaner",
-                JobNeed.Outdoors, 20f, 0f, 0.9f, 0.03f, Cleaning, 24, 30, 8),
+                JobNeed.Outdoors, 20f, 0f, 0.9f, 0.03f, Cleaning, 24, 30, 8, 2),
             // Six boxes from the kerb to a shop's shelves, about four minutes: 33 a box is 198, 50 an hour.
             new JobDef(Stocker, "reallife_job_stocker_name", "reallife_job_stocker_pitch", "reallife_transaction_job_stocker",
-                JobNeed.Outdoors, 33f, 0f, 1.3f, 0.02f, CustomerService, 18, 20, 6),
+                JobNeed.Outdoors, 33f, 0f, 1.3f, 0.02f, CustomerService, 18, 20, 6, 2),
             // Twelve customers at a pavement cart, about five minutes: 18 each is 216, 54 an hour, and tips for quick and right.
             new JobDef(Vendor, "reallife_job_vendor_name", "reallife_job_vendor_pitch", "reallife_transaction_job_vendor",
-                JobNeed.Outdoors, 18f, 0f, 0.6f, 0.04f, CustomerService, 36, 30, 12),
+                JobNeed.Outdoors, 18f, 0f, 0.6f, 0.04f, CustomerService, 36, 30, 12, 3),
             // Tips only: a song is 40 seconds and brings 11 to 45 by how busy the street is, the hour and how it was played.
             new JobDef(Busker, "reallife_job_busker_name", "reallife_job_busker_pitch", "reallife_transaction_job_busker",
-                JobNeed.Outdoors, 17f, 0f, 0.7f, 0f, null, 16, 20, 8),
+                JobNeed.Outdoors, 17f, 0f, 0.7f, 0f, null, 16, 20, 8, 2),
             // Five parcels a round, about four minutes with a car: 50 a door plus the distance, about 310 to 340 a round (the van job pays 100 an hour).
             new JobDef(Courier, "reallife_job_courier_name", "reallife_job_courier_pitch", "reallife_transaction_job_courier",
-                JobNeed.Outdoors | JobNeed.Car, 50f, 0.085f, 1.6f, 0.04f, DeliveryDriver, 15, 15, 5),
+                JobNeed.Outdoors | JobNeed.Car, 50f, 0.085f, 1.6f, 0.04f, DeliveryDriver, 15, 15, 5, 2),
             // A fare of 600 m: 22 + 117 = 139, with a tip of up to 30 % for a smooth, quick ride. About one and a half times what a taxi charges the player for the trip (90): the driver also drives to the pick-up, and has the car, the endorsement and the reference.
             new JobDef(Taxi, "reallife_job_taxi_name", "reallife_job_taxi_pitch", "reallife_transaction_job_taxi",
                 JobNeed.Outdoors | JobNeed.Car | JobNeed.Reference | JobNeed.CleanRecord, 22f, 0.195f, 2.2f, 0.05f, CustomerService, 14, 12, 0)

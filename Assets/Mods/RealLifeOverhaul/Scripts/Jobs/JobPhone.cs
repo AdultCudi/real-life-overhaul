@@ -167,17 +167,23 @@ namespace RealLifeOverhaul
             string reason = null;
             bool available = director != null && director.Available(def, out reason);
             int level = JobState.Level(def);
-            float rate = JobCatalogue.PayFactor(level) * JobDirector.PayScale();   // what the work will really pay, owners' cut included
+            // What the work will really pay, owners' cut and today's client included: the offer is drawn from the day, the hour and the gig,
+            // so it is the one the job is started with if it is taken in the same hour.
+            GigOffer offer = GigOffers.Draw(def, TimeHelper.CurrentDay, TimeHelper.CurrentHour, GigWords.Sky());
+            float rate = JobCatalogue.PayFactor(level) * JobDirector.PayScale() * offer.Fee;
+            int size = offer.Units > 0 ? offer.Units : def.ShiftUnits;
             var entry = new DialogEntry
             {
                 messageData = def.PitchKey.Localize(new
                 {
                     pay = (def.UnitPay * rate).ToCurrencyFormat(),
-                    shift = (def.UnitPay * def.ShiftUnits * rate).ToCurrencyFormat(),
+                    shift = (def.UnitPay * size * rate).ToCurrencyFormat(),
+                    count = size.ToString(),
                     km = (def.PayPerMetre * 1000f * rate).ToCurrencyFormat(),
                     level = level.ToString(),
                     left = JobState.LeftToday(def).ToString(),
                     status = (available ? "reallife_jobline_ready" : reason ?? "reallife_job_no_now").GetLocalization()
+                             + (available ? " " + GigWords.Quote(offer) : string.Empty)
                 }),
                 OnCancel = PhoneContacts.HangUp
             };

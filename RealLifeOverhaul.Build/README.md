@@ -629,6 +629,76 @@ review counts a tip for (a point a dollar to a point for 3, twenty at most). The
 shares or factors and needed no change. Every figure the Guide quotes (`job_table`, `job_van_fee`, and the pitches'
 `{pay}`, `{km}` and `{shift}`) is read from these constants.
 
+### No two shifts alike (`Jobs/GigOffers`, `Jobs/GigWords`)
+
+Everything that makes one shift of a gig differ from another is drawn in one place, `GigOffers.Draw`, once, from a
+seed made of the day, the hour and the gig (`Mix`, and a small xorshift `GigDice` that is the same on every machine).
+Asking again in the same hour gives the same offer, so the Gig Line's quote is the shift that is worked. The jobs roll
+none of this themselves; they read `JobContext.Offer`. The Gig Line (`JobPhone.Offer`, also read out at the boards) says
+the fee, the size and the reasons in one sentence; the first line of the shift's panel (`ShiftFigures`) repeats the
+reasons ("Gig Line, a generous client, a busy day"); each event is a notification when it happens. Employers' shifts,
+booked sets and the test buttons are flat: `GigOffer.Table`, the table's figures, none of this.
+
+| what | range | average | shown |
+|---|---|---|---|
+| the client | tight 80 to 95 % of the fee (40 % of offers), fair 95 to 107.5 % (40 %), generous 107.5 to 137.5 % (20 %) | exactly 100 % | the quote, the panel |
+| the day (which gigs are busy) | each day 2 or 3 of the 7 gigs are busy and pay 120 %; about one day in two one gig has nothing on and cannot be taken ("Nothing in that today"); every other offered shift pays 87.5 % | busy 2.5 and shut 0.5 a day; the fee over offered shifts exactly 100 % | the quote, the panel |
+| the size | flyers 18 to 30, cleaning 6 to 10 units of floor, stocker 4 to 8 boxes, cart 9 to 15 customers, busker 6 to 10 songs, courier 3 to 7 parcels (ride-hail has no set size) | the table's number | the pitch, the panel |
+| the street (flyers, cart, busker) | quiet 70 %, normal 100 %, rush 130 % (25 %, 50 %, 25 %): how many take a flyer, how soon customers come, what the hat holds | exactly 100 % | the panel |
+| a big tipper (cart, busker, courier, ride-hail, shelf stocker) | 25 % of shifts, at one unit of the shift, 1 to 2 units of pay (a share of the fare for ride-hail) | 0.375 units a shift | a notification, the slip's tips |
+| a speed bonus (flyers, cleaning, shelves) | 30 % of shifts, 0.5 to 1.5 units of pay if the work is done by hand in 60 % of the time allowed | 0.3 units a shift, taken as won | a notification at the start and at the end, the slip's bonus |
+| a difficult customer (cart, cleaning) | 20 % of shifts: the cart's customer sends the first right drink back (3 seconds off their patience, a new order); the client finds a patch missed and 30 % of the dirtied cells are dirty again at 80 % of their dirt | none in money; the pay follows the floor | a notification |
+| weather pay (outdoor gigs, weather option on) | rain +15 %, storm +25 %, heat wave or cold snap +10 %, ice +20 % | extra, only in bad weather | the quote, the panel |
+
+Fair means: for a shift played well in fair weather the pay averages the table's figure. The client's factor, the day's
+factor and the street's factor each average exactly 1, the size is symmetrical round the table's number, and the money
+the events are expected to add (a tip's and a speed bonus' chances times the middle of their ranges, as a share of the
+shift) is taken off every fee (`GigOffers.Calibration`, 0.94 to 1 by gig), so adding them back gives 1. That is why the
+quoted fee of a gig with events averages a little under 100 % (stocker 90 %). Weather pay is not taken off: it is a
+bonus for bad weather. The pay slip is the game's notification as before; tips and the speed bonus are on its lines.
+
+Checked offline by `CatalogueCheck` (`GigCheck.cs`), which draws about 5,500 seeded offers for each gig: the same
+day and hour give the same offer; the ranges above are kept; the client, day and crowd factors average 1 within 2 %;
+the size averages the table's within 3 %; a whole shift, events included, averages the table's within 2.5 %
+(measured 0.993 to 1.002 of the table, 0.998 over all gigs); the day's board has 2 or 3 busy and at most 1 shut gig a
+day and averages 2.49 and 0.51 over 3,000 days; a career shift gets the flat table; weather pay applies out of doors
+only. It also checks the pay table: every gig on foot pays at least 1.5 times the game's cashier an hour (the busker,
+whose pay is tips, at least the cashier's), courier and ride-hail more than the best unskilled gig and no more than
+the van job's 100 an hour, both desk units more than any unskilled gig's, and the own cart nets about the cart gig's pay.
+
+Log lines with "Developer diagnostics" on: `Jobs: offer for 'cleaner' (day 14, hour 9, seed ...): Generous client x1.2 ...`
+when a gig starts; `Jobs 'x' event: a big tipper at unit ...`, `... the client adds ... if the shift is done within ...`,
+`... speed bonus kept ...`, `Jobs: vendor event: a difficult customer sends the drink back ...`, `Jobs: cleaner event:
+a difficult client points out a missed patch ...`.
+
+### The cleaner works on the game's own dirt (`Kinds/CleanerJob`, `JobDirt`, `JobMop`)
+
+How the game cleans: every interior has a floor of `DirtSpotObject`s, each reading its dirtiness (0 to 100) from its
+place in `BuildingRegistration.dirtSpots`; `BuildingCleanliness.GetCleanliness()` is 100 minus the mean dirtiness
+minus the mean over spots of 5 or more (100 when none shows). The player takes a mop from a cleaning station
+(`CleaningStationController.OnCleaningStationClick`: `PlayerHelper.ItemInstanceInHands = ItemHelper.InitializeNewInstance("ba:itemname_mop")`),
+which shows the dirt highlighting (`MopController.AssignToPlayer`, `BuildingCleanlinessHelper.ShowDirtinessHighlighting`);
+clicking a dirt spot (`DirtSpotObject.Interact`, `BuildingManager.onFloorCellClick`) starts `MopController.FloorCellClick`,
+which cleans the clicked cell and those round it at 25 dirt a second shared among them, with the game's cleaning stance
+and a minimum of 0.2 s, and ends with the item panel's bar refreshed. The game's tasks list stops flagging dirty floors at
+90 %; the job asks 100 %, which is the game's own "no dirt shows" figure.
+
+In a business that is not the player's the objects exist but `dirtSpots` is empty or missing (`BuildingHelper.ResetRegistrationOnRent`
+makes it only for the player's), the click is hooked only in the player's own business, the item panel reads 100 % and the
+station refuses anyone but the owner. So `JobDirt` makes its own list for the client's floor (the same cells and order),
+puts dirt in it with `BuildingCleanliness.SetDirtiness` (patches, not single cells: some centres at random and the cells
+nearest them, at most six cells a unit, 55 plus 4 a unit above eight dirt each, 75 to 125 % of that), and hangs it on the
+client's registration while the player is inside; the game's floor objects, its mop and its percentage then work as in the
+player's shop. It is put back whenever the player leaves, when the job ends and while a save is written
+(`SaveHook`; the save is made on the main thread right after the event), so no job dirt is ever saved, and a business the
+player rents is refused outright. `JobMop` gives and takes the mop with the game's own calls, hooks the mop's
+click method to the floor click event for the length of the mop, and sets the item panel's bar to the real figure.
+If the game's dirt cannot be had (no floor cells, no floor object under the player, any exception), one line says why
+and the job uses the mod's own spills as before (`CleanerJob.Spills.cs`). Pay is the fee (units times the unit's pay) times
+the share of the dirt taken off, the whole fee at 100 %, half or more is a shift done; the clock cleans the rest at 85 %
+and sets that share of the dirt to nothing through the game's call. Log lines: `Jobs: cleaner: the game's own dirt is
+down at ...`, `Jobs: cleaner: the floor reads 62% clean (was 55%) ...`, `Jobs: cleaner: pay slip: ...`.
+
 ### The drinks cart: the model of a shift in the game's own interface (`Kinds/VendorJob`)
 
 The cart shift (an employee's rota shift at Uncle Lou's, or the gig) shows nothing of `JobHud`. `Job.NativeUi`

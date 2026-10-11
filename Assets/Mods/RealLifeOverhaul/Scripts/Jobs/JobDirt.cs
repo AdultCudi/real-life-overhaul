@@ -283,6 +283,27 @@ namespace RealLifeOverhaul
             Refresh();
         }
 
+        /// <summary>
+        /// Puts dirt back on the last <paramref name="share"/> of the dirtied cells (the edges of the patches), at
+        /// <paramref name="strength"/> of the mean they had, through the game's own call. Returns how many cells.
+        /// </summary>
+        public int Redo(float share, float strength)
+        {
+            if (_order == null || !_inPlace)
+            {
+                return 0;
+            }
+            int from = Mathf.Clamp(Mathf.FloorToInt(_order.Length * (1f - share)), 0, _order.Length - 1);
+            float dirt = Mathf.Clamp(Mean * strength, Visible + 5f, BuildingCleanliness.MaxDirtiness);
+            BuildingCleanliness game = _registration.Cleanliness;
+            for (int k = from; k < _order.Length; k++)
+            {
+                game.SetDirtiness(_order[k], dirt);
+            }
+            Refresh();
+            return _order.Length - from;
+        }
+
         // The game's own redraw of the floor of the building the player is in.
         private void Refresh()
         {
