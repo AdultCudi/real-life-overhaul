@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Ventures;
+using Claim = RealLifeOverhaul.Economy.Ventures.Claim;
 
 // Checks for investors and the market (Scripts/Economy/Ventures): the cast, an offer that comes to the player, a deal
 // over a long run, the save line, the pitch and the stock market.
