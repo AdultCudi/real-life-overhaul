@@ -37,12 +37,6 @@ namespace RealLifeOverhaul
         private const float BulkAlphaClip = 0.35f;  // strands thinner than this do not write depth
         private const float UnderlayShade = 0.72f;  // the scalp underlay's colour, as a share of the hair colour
 
-        private static readonly int[] MattIds =
-        {
-            Shader.PropertyToID("_Specular"), Shader.PropertyToID("_SecondarySpecular"), Shader.PropertyToID("_SmoothnessMax"),
-            Shader.PropertyToID("_SmoothnessMin"), Shader.PropertyToID("_TransmissionRim")
-        };
-        private static readonly float[] MattValues = { 0.04f, 0.04f, 0.25f, 0.15f, 0f };
         private const string OurPrefix = "RealLifeOverhaul ";
         private const string BootSuffix = "_boot";   // the mesh of a tall shoe of ours (feet_m_boot): trousers of ours tuck into it
         private const string BootShape = "Boots";     // the shape the game's trousers, and ours, have for that
@@ -62,6 +56,7 @@ namespace RealLifeOverhaul
         };
 
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int TransmissionColorId = Shader.PropertyToID("_TransmissionColor");
         private static readonly int BaseColorMapId = Shader.PropertyToID("_BaseColorMap");
         private static readonly int NormalMapId = Shader.PropertyToID("_NormalMap");
         private static readonly int NormalScaleId = Shader.PropertyToID("_NormalScale");
@@ -426,10 +421,6 @@ namespace RealLifeOverhaul
                 piece.Renderer.sharedMaterials = materials;
                 item.Wearers++;
                 dressed.Pieces[kind] = piece;
-                if (item.Under != null)
-                {
-                    TuneUnderlay(materials);
-                }
             }
 
             bool underlay = item.Under != null;
@@ -452,9 +443,22 @@ namespace RealLifeOverhaul
                 }
                 for (int i = 0; i < piece.Materials.Length; i++)
                 {
-                    if (piece.Materials[i] != null && piece.Materials[i].HasProperty(BaseColorId))
+                    Material material = piece.Materials[i];
+                    if (material == null || !material.HasProperty(BaseColorId))
                     {
-                        piece.Materials[i].SetColor(BaseColorId, colour);
+                        continue;
+                    }
+                    if (underlay)
+                    {
+                        // A surface on the skull, not strands: drawn before every layer of the game's hair, matt, and
+                        // letting no light through (HairFinish.Underlay; numbers only, no keyword is touched).
+                        HairFinish.Underlay(material, colour);
+                    }
+                    else
+                    {
+                        material.SetColor(BaseColorId, colour);
+                        // The template's back-light is the game's orange for every hair colour: ours follows the colour.
+                        HairFinish.Through(material, colour, i < piece.Item.Layers.Length && piece.Item.Layers[i].Role == LayerRole.Scalp);
                     }
                 }
                 ShapeByName(piece.Renderer, head);
@@ -660,37 +664,6 @@ namespace RealLifeOverhaul
             if (material.HasProperty(DoubleSidedEnableId))
             {
                 material.SetFloat(DoubleSidedEnableId, twoSided ? 1f : 0f);
-            }
-        }
-
-        /// <summary>
-        /// An underlay is a surface, not strands: drawn before every layer of the game's hair, and matt, so it
-        /// reads as the depth of the hair and never as a shiny cap. Numbers only; no keyword is touched.
-        /// </summary>
-        private static void TuneUnderlay(Material[] materials)
-        {
-            for (int i = 0; i < materials.Length; i++)
-            {
-                Material material = materials[i];
-                if (material == null)
-                {
-                    continue;
-                }
-                if (material.IsKeywordEnabled(TransparentKeyword))
-                {
-                    material.renderQueue = (int)RenderQueue.Transparent - 2;
-                    if (material.HasProperty(SortPriorityId))
-                    {
-                        material.SetFloat(SortPriorityId, -2f);
-                    }
-                }
-                for (int k = 0; k < MattIds.Length; k++)
-                {
-                    if (material.HasProperty(MattIds[k]))
-                    {
-                        material.SetFloat(MattIds[k], Mathf.Min(material.GetFloat(MattIds[k]), MattValues[k]));
-                    }
-                }
             }
         }
 
@@ -1162,6 +1135,26 @@ namespace RealLifeOverhaul
                 text += (i == 0 ? ", maps " : " | ") + (texture != null ? texture.name + " " + texture.width : "none");
             }
             return text;
+        }
+
+        /// <summary>The scalp underlay this character wears under the game's hair, for the hair check's line; "none" without one.</summary>
+        public static string DescribeUnderlay(AppearanceSetter character)
+        {
+            for (int i = 0; i < All.Count; i++)
+            {
+                Piece piece = All[i].Character == character ? All[i].Pieces[(int)LookKind.Hair] : null;
+                if (piece == null || piece.Item == null || piece.Item.Under == null || piece.Materials == null || piece.Materials.Length == 0 || piece.Materials[0] == null)
+                {
+                    continue;
+                }
+                Material material = piece.Materials[0];
+                bool drawn = piece.Renderer != null && piece.Renderer.enabled && !piece.Renderer.forceRenderingOff;
+                return "'" + piece.Item.Id + "' (a cap on the skull under '" + piece.Item.Under + "', " + (drawn ? "drawn" : "NOT drawn") + ", queue " + material.renderQueue
+                       + (material.IsKeywordEnabled(TransparentKeyword) ? ", blended" : ", solid") + (material.IsKeywordEnabled(AlphaTestKeyword) ? ", alpha-tested" : "")
+                       + ", one-sided, colour " + ColorUtility.ToHtmlStringRGB(material.GetColor(BaseColorId))
+                       + (material.HasProperty(TransmissionColorId) ? ", back-light " + ColorUtility.ToHtmlStringRGB(material.GetColor(TransmissionColorId)) : "") + ")";
+            }
+            return "none";
         }
 
         public static void Describe(StringBuilder text)

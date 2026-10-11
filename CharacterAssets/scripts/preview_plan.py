@@ -272,6 +272,41 @@ def palette(garment_id, colours=None, view=None, yaw=25, city=False):
     return shots
 
 
+# ---------------------------------------------------------------- hair against a strong light (hair_light.ps1)
+
+HAIR_LIGHT_FINISHES = (("0game", []), ("1before", ["hair:bounded=0,want=0", "underlay:old=1"]), ("2after", ["hair", "underlay"]))
+HAIR_LIGHT_COLOURS = ("black", "brown", "blond", "grey")
+HAIR_LIGHT_ANGLES = (150, 90, 20)       # the lamp behind the head as the camera sees it, beside it, and at the camera's side
+
+
+def _hair_light(skins, params, bald):
+    """Every hairstyle at night from the third-person camera (4 m behind the head, the character's back to it), one
+    lamp 3 m from the head: the game's own hair, the finish as it was before 11 October, and the finish as it is."""
+    shots = []
+    for who, styles, tag in ((MALE, MALE_HAIR, "m"), (FEMALE, FEMALE_HAIR, "f")):
+        for style in ([None] if bald else []) + styles:
+            for hair in HAIR_LIGHT_COLOURS if style else ("black",):
+                for skin in skins:
+                    for label, finish in HAIR_LIGHT_FINISHES if style else HAIR_LIGHT_FINISHES[:1]:
+                        for angle in HAIR_LIGHT_ANGLES:
+                            entry = shot("%s_%s_%s-%s_a%03d_%s" % (tag, style or "none", hair, skin, angle, label), who, style, hair, skin,
+                                         "night", "head", 180, finish, stageParams=dict(params, lampAngle=angle))
+                            entry["crop"] = [200, 200]
+                            shots.append(entry)
+    return shots
+
+
+def hair_light():
+    """The pictures: a warm lamp of 2 500 candela, the tone mapping of the city stage."""
+    return _hair_light(("light", "dark"), {"lampCandela": 2500, "lampColour": "FFD2A0"}, False)
+
+
+def hair_light_measure():
+    """The numbers: a white lamp of 900 candela and no tone mapping, so a pixel is the light sent back; the bald head is
+    the yardstick (lit skin)."""
+    return _hair_light(("light",), {"lampCandela": 900, "lampColour": "FFFFFF", "tonemap": 0, "contrast": 0, "saturation": 0}, True)
+
+
 PLANS = {
     "shoes_trial": shoes_trial,
     "wardrobe_trial": wardrobe_trial,
@@ -280,6 +315,8 @@ PLANS = {
     "calibration": calibration,
     "hair_trial": hair_trial,
     "hair_all": hair_all,
+    "hair_light": hair_light,
+    "hair_light_measure": hair_light_measure,
 }
 
 if __name__ == "__main__":
