@@ -598,6 +598,10 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyCompanyLicences = v)
                 .AddToggle(Settings.EconomyRotaId, "reallife_rota_enabled", Settings.EconomyRota,
                     v => Settings.EconomyRota = v)
+                .AddToggle(Settings.EconomyCleaningId, "reallife_svc_cleaning_enabled", Settings.EconomyCleaning,
+                    v => Settings.EconomyCleaning = v)
+                .AddToggle(Settings.EconomySaleId, "reallife_svc_sale_enabled", Settings.EconomySale,
+                    v => Settings.EconomySale = v)
                 .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
                     v => Settings.EconomyCompanyLevel = v)
@@ -613,6 +617,12 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rota_test_open", () => Economy.CompanyDirector.Instance?.TestRotaOpen())
                 .AddButton("reallife_rota_test_fill", () => Economy.CompanyDirector.Instance?.TestRotaFillAll())
                 .AddButton("reallife_rota_test_back", () => Economy.CompanyDirector.Instance?.TestRotaBackAll())
+                .AddButton("reallife_svc_test_round", () => Economy.ServicesDirector.Instance?.TestRound())
+                .AddButton("reallife_svc_test_contract", () => Economy.ServicesDirector.Instance?.TestContractOffer())
+                .AddButton("reallife_svc_test_week", () => Economy.ServicesDirector.Instance?.TestContractWeek())
+                .AddButton("reallife_svc_test_offer", () => Economy.ServicesDirector.Instance?.TestSaleOffer())
+                .AddButton("reallife_svc_test_sale_paper", () => Economy.ServicesDirector.Instance?.TestSalePaper())
+                .AddButton("reallife_svc_test_part", () => Economy.ServicesDirector.Instance?.TestPart())
                 .AddSplitter()
                 .AddHeader("reallife_nav_header")
                 .AddToggle(Settings.MinimapId, "reallife_nav_minimap", Settings.Minimap,
@@ -843,6 +853,9 @@ namespace RealLifeOverhaul
             _root.AddComponent<Economy.Ventures.VenturesDirector>();   // investors, the pitch, the stock market and the Ventures app (Scripts/Economy/Ventures)
             Economy.CompanyDirector.Logger = context.Logger;
             Economy.CompanyApp.Logger = context.Logger;
+            Economy.ServicesDirector.Logger = context.Logger;
+            Economy.ServicesApp.Logger = context.Logger;
+            _root.AddComponent<Economy.ServicesDirector>();   // the cleaning service and selling a business, and the Services app (Scripts/Economy/Services)
             _root.AddComponent<Economy.CompanyDirector>();   // running a business: staff, insurance, marketing, tax and licences, and the Company app (Scripts/Economy/Company)
             Nav.NavGraph.Logger = context.Logger;
             Nav.NavMarks.Logger = context.Logger;
