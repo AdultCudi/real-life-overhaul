@@ -94,7 +94,12 @@ namespace RealLifeOverhaul
             }
             if (raw > Seconds + LateSlack)
             {
-                Delay();   // further off than was promised: said so, not counted up
+                // Further off than the timetable had said (a wait capped short, or the bus could only start far back): the
+                // figure is set afresh to what the drive will take. DELAYED is for a bus that is held up, not for one that
+                // has just set out.
+                State = Mode.EnRoute;
+                Seconds = raw;
+                Epoch++;
                 return;
             }
             State = Mode.EnRoute;

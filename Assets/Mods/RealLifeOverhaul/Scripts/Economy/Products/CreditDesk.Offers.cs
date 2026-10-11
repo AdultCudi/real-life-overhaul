@@ -379,8 +379,10 @@ namespace RealLifeOverhaul.Economy
             }
             int amount = r.ApprovedAmount, cash = _wallet.Cash;
             string kind = FinanceText.T(ProductCatalogue.KindKeys[r.ApprovedKind]);
+            int charge = ProductTerms.AdvanceCharge(amount, r.ApprovedRateBp, Today - r.ApprovedDay + 1, AccountRules.DaysPerYear);
             r.ClearApproval();
             _wallet.Force(amount, Money.AdvanceBack, kind);
+            _wallet.Force(charge, Money.AdvanceCharge, kind);   // interest on the money for the days it was held
             Note(ranOut ? NotificationType.Warning : NotificationType.Info, ranOut ? "reallife_econ_note_approval_over" : "reallife_econ_note_approval_cancelled",
                 Data("kind", kind, "amount", FinanceText.Money(amount)));
             if (Verbose)
@@ -483,10 +485,12 @@ namespace RealLifeOverhaul.Economy
                 account.Street = r.ApprovedStreet;
                 account.Number = r.ApprovedNumber;
             }
+            int charge = ProductTerms.AdvanceCharge(approved, r.ApprovedRateBp, day - r.ApprovedDay + 1, AccountRules.DaysPerYear);
             r.ClearApproval();
             _owned.Clear();
             _ownedCount = -1;
             _wallet.Force(approved - financed, Money.AdvanceBack, kindName);
+            _wallet.Force(charge, Money.AdvanceCharge, kindName);   // interest on the whole advance for the days it was held
             if (account == null)
             {
                 return;

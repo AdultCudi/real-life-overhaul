@@ -159,6 +159,22 @@ namespace RealLifeOverhaul.Economy
         // ---------------------------------------------------------------- consolidation
 
         /// <summary>The fee for consolidating this much debt.</summary>
+        /// <summary>
+        /// What holding approved purchase money costs: a day's interest at the approved rate for every day it was held,
+        /// the day of approval counted, at least 1. Without it an approval was a day or two of cash for nothing.
+        /// </summary>
+        public static int AdvanceCharge(int amount, int rateBp, int daysHeld, int daysPerYear)
+        {
+            if (amount <= 0)
+            {
+                return 0;
+            }
+            int days = daysHeld < 1 ? 1 : daysHeld;
+            double charge = (double)amount * rateBp / 10000.0 * days / (daysPerYear < 1 ? 1 : daysPerYear);
+            int whole = (int)System.Math.Ceiling(charge);
+            return whole < 1 ? 1 : whole;
+        }
+
         public static int ConsolidationFee(int total)
         {
             return total <= 0 ? 0 : Math.Max(ProductCatalogue.ConsolidateFeeLeast, ProductCatalogue.ShareUp(total, ProductCatalogue.ConsolidateFeeShare));

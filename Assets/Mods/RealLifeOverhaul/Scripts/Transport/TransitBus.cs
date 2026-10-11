@@ -74,7 +74,7 @@ namespace RealLifeOverhaul
         private const float Cruise = 11f;            // m/s, 40 km/h
         private const float JunctionSpeed = 7f;
         private const float NoPassing = 0.001f;      // EmergencyDriver.PullOver with next to nothing: stays in its lane, passes nobody
-        private const float StartBack = 170f;        // metres of line before the stop it starts from, if it can
+        private const float StartBack = 125f;        // metres of line before the stop it starts from, if it can
         private const float StartBackMost = 330f;
         private const float StartBackLeast = 60f;
         private const float StartApart = 14f;        // metres between two places tried to start from

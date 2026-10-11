@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.Economy
         public const string Cover = "reallife_transaction_overdraft_cover";
         public const string Advance = "reallife_transaction_finance_advance";
         public const string AdvanceBack = "reallife_transaction_finance_returned";
+        public const string AdvanceCharge = "reallife_transaction_finance_charge";
         public const string LateFee = "reallife_transaction_late_fee";
         public const string Surplus = "reallife_transaction_repossession_surplus";
         public const string Diverted = "reallife_transaction_takings_diverted";

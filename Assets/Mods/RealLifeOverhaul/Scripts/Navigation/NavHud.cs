@@ -583,6 +583,10 @@ namespace RealLifeOverhaul.Nav
         /// <summary>The destination's marker (held at the view's edge while the place is outside it), or none.</summary>
         public void Goal(bool on, float x, float z, Sprite icon, Color32 colour)
         {
+            if (_goal == null || _goalBlob == null || _goalIcon == null)
+            {
+                return;   // the panel's objects are destroyed with the scene before the director is (the game quitting)
+            }
             _goalX = x;
             _goalZ = z;
             if (on)
