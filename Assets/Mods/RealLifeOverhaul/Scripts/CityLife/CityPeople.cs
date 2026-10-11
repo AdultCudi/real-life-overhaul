@@ -596,6 +596,7 @@ namespace RealLifeOverhaul
             appearance.data.fatness = Mathf.Min(appearance.data.fatness, MaxBuild);
             CityOutfits.Wear(appearance, look, person.Dyes);
             appearance.UpdateVisuals();   // the one mesh merge for this outfit
+            Looks.Done();
         }
     }
 }

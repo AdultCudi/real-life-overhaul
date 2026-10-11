@@ -80,12 +80,19 @@ namespace RealLifeOverhaul
             }
             _lastCrashTime = Time.unscaledTime;
 
-            bool hitTraffic = collision.collider != null
-                              && collision.collider.GetComponentInParent<VehicleComponent>() != null;
+            VehicleComponent struck = collision.collider != null ? collision.collider.GetComponentInParent<VehicleComponent>() : null;
+            bool hitTraffic = struck != null;
+            // The one car that is being driven recklessly (Traffic/Reckless): a collision with it is its driver's fault. The
+            // player owes nothing and nobody comes after them for it; what the impact does to the player is as for any crash.
+            bool theirFault = hitTraffic && RecklessDrivers.AtFault(struck);
             News.Report(NewsKind.PlayerCrash, Helpers.PlayerHelper.GetPosition());
-            Logger?.Info($"Crash: impact {speed:F1} m/s, hitTraffic={hitTraffic}");
+            Logger?.Info($"Crash: impact {speed:F1} m/s, hitTraffic={hitTraffic}{(theirFault ? ", with the reckless car: not the player's fault, no liability" : string.Empty)}");
 
-            if (hitTraffic)
+            if (theirFault)
+            {
+                RecklessDrivers.Instance.HitPlayer(struck, speed);   // the scene starts round it, and says whose fault it was
+            }
+            else if (hitTraffic)
             {
                 int liability = Mathf.RoundToInt(Mathf.Clamp(speed * speed * 2.5f, 150f, 3000f) / 10f) * 10;
 

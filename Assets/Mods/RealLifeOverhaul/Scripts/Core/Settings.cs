@@ -37,6 +37,8 @@ namespace RealLifeOverhaul
         public const string RagdollsId = "ragdolls";
         public const string PlayerKnockdownId = "player_knockdown";
         public const string PedestrianIncidentsId = "ped_incidents";
+        public const string HornReactionsId = "horn_reactions";
+        public const string NaturalAccidentsId = "natural_accidents";
         public const string PhoneContactsId = "phone_contacts";
         public const string PhoneSkinId = "phone_skin";
         public const string CarSpeedId = "car_speed";           // the old single "car speed %" slider: dropped at load
@@ -105,8 +107,10 @@ namespace RealLifeOverhaul
         public const string MinimapId = "nav_minimap";
         public const string GpsId = "nav_gps";
         public const string MinimapRotateId = "nav_rotate";
+        public const string NavOtherRouteId = "nav_other_route";
         public const string MinimapSizeId = "nav_size";
         public const string MinimapZoomId = "nav_zoom";
+        public const string MinimapBaseId = "nav_base";
         public const string RoadsideChecksId = "roadside_checks";
         public const string ShowTestToolsId = "show_test_tools";       // Meta: the "Test tools" section of the options page
         public const string DevDiagnosticsId = "dev_diagnostics";      // Meta: the diagnostic keys (F7, Shift+F7, F8, F9) and the Info lines in the log
@@ -211,6 +215,8 @@ namespace RealLifeOverhaul
         public static bool Ragdolls = true;          // people hit by a car fall as ragdolls and can be hurt or killed
         public static bool PlayerKnockdown = true;   // traffic can knock the player down when on foot
         public static bool PedestrianIncidents = true;   // now and then a traffic car hits someone near the player
+        public static bool HornReactions = true;         // people hurry, glare or look round when the player sounds the horn (People/HornReactions)
+        public static bool NaturalAccidents = true;      // accidents come from reckless drivers on the road, in view (Traffic/Reckless); off: the old roll that stages them out of view
         public static bool PhoneContacts = true;
         public static bool CarTuning = true;         // each car gets the acceleration and top speed of its kind (Driving/CarCatalogue)
         public static int CarTopSpeed = 100;         // percent of the car's own target top speed
@@ -281,8 +287,10 @@ namespace RealLifeOverhaul
         public static bool Minimap = true;               // the minimap on the HUD while out in the city (Scripts/Navigation)
         public static bool Gps = true;                   // a route along the roads to the game's destination, with the next turn
         public static bool MinimapRotate = true;         // the minimap turns with the player (off: north is up)
+        public static bool NavOtherRoute = false;        // with the mod Voogle Route switched on: its route line only, and none of this mod's (the row is there only then)
         public static int MinimapSize = 80;              // per cent of the width of the game's left column
         public static int MinimapZoom = 100;             // per cent: more is closer
+        public static bool MinimapBase = true;           // buildings and water on the minimap, under the roads (off: roads only, as before) (Scripts/Navigation/NavBase.cs)
         public static bool RoadsideChecks = true;        // now and then a patrol car pulls the player over only to see the licence
         public static bool ShowTestTools = false;        // the test buttons are on the options page
         public static bool DevDiagnostics = false;       // the diagnostic keys work and Info lines go to the log
@@ -425,6 +433,8 @@ namespace RealLifeOverhaul
             Ragdolls = Bool(modId, RagdollsId, Ragdolls);
             PlayerKnockdown = Bool(modId, PlayerKnockdownId, PlayerKnockdown);
             PedestrianIncidents = Bool(modId, PedestrianIncidentsId, PedestrianIncidents);
+            HornReactions = Bool(modId, HornReactionsId, HornReactions);
+            NaturalAccidents = Bool(modId, NaturalAccidentsId, NaturalAccidents);
             PhoneContacts = Bool(modId, PhoneContactsId, PhoneContacts);
             PhoneSkin = Bool(modId, PhoneSkinId, PhoneSkin);
             CarTuning = Bool(modId, CarTuningId, CarTuning);
@@ -457,6 +467,7 @@ namespace RealLifeOverhaul
             CityInteractions = Bool(modId, CityInteractionsId, CityInteractions);
             PerfTweaks.Load(modId);
             JusticeSettings.Load(modId);   // courts and prison (Scripts/Justice)
+            RoommateOptions.Load(modId);   // sharing the flat (Scripts/Home/Roommates)
             Jobs = Bool(modId, JobsId, Jobs);
             JobPay = Int(modId, JobPayId, JobPay);
             Family = Bool(modId, FamilyId, Family);
@@ -499,8 +510,10 @@ namespace RealLifeOverhaul
             Minimap = Bool(modId, MinimapId, Minimap);
             Gps = Bool(modId, GpsId, Gps);
             MinimapRotate = Bool(modId, MinimapRotateId, MinimapRotate);
+            NavOtherRoute = Bool(modId, NavOtherRouteId, NavOtherRoute);
             MinimapSize = Int(modId, MinimapSizeId, MinimapSize);
             MinimapZoom = Int(modId, MinimapZoomId, MinimapZoom);
+            MinimapBase = Bool(modId, MinimapBaseId, MinimapBase);
             RoadsideChecks = Bool(modId, RoadsideChecksId, RoadsideChecks);
             ShowTestTools = Bool(modId, ShowTestToolsId, ShowTestTools);
             DevDiagnostics = Bool(modId, DevDiagnosticsId, DevDiagnostics);

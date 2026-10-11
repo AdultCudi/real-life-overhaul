@@ -1037,9 +1037,10 @@ namespace RealLifeOverhaul.Economy.Brands
         // What the game does when its own schedule screen closes after the hours were changed (BizManSchedule.OnDisable), as the rota planner does it.
         private static void After(BuildingRegistration reg)
         {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            Guarded("the security level", () => reg.UpdateSecurityLevel());
             Guarded("the game's schedule screen", () =>
             {
-                UIs uis = InstanceBehavior<UIs>.Instance;
                 BizManBusiness shown = uis != null && uis.fullMenu != null && uis.fullMenu.bizMan != null ? uis.fullMenu.bizMan.business : null;
                 BizManSchedule schedule = uis != null && uis.fullMenu != null ? uis.fullMenu.schedule : null;
                 if (shown != null && shown.isActiveAndEnabled && shown.buildingRegistration == reg && schedule != null && schedule.isActiveAndEnabled)
@@ -1051,11 +1052,18 @@ namespace RealLifeOverhaul.Economy.Brands
             Guarded("today's customers and alerts", () =>
             {
                 CustomerEntriesHelper.UpdateCustomerEntriesForPlayerBusiness(reg, TimeHelper.GetDayOfWeek());
+                BusinessHelper.CheckIfTheaterHasNoActors(reg);
                 if (!BusinessHelper.IsMissingEmployeeTaskActive(reg))
                 {
                     BusinessHelper.ForceRecheckMissingEmployeeAlert(reg);
                 }
                 GlobalEvents.onBuildingRegistrationChange?.Invoke(reg.Address);
+                var work = uis != null && uis.playerActivityUI != null ? uis.playerActivityUI.GetCurrentActivity as PlayerActivity.WorkActivity : null;
+                if (work != null)
+                {
+                    work.SetTimeToWork();
+                    uis.playerActivityUI.UpdateActivityDisplay();
+                }
             });
             SaveGameManager.MarkChange();
         }

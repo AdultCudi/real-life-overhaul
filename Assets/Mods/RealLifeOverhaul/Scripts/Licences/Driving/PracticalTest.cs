@@ -65,6 +65,9 @@ namespace RealLifeOverhaul
         private const float LineApproach = 3f;         // metres short of a stop line the car's middle must have been seen for that line to count (its nose behind the line)
         private const float FirmStop = 6f;             // m/s2: a firm stop, not a harsh one
         private const float ReactTime = 0.7f;          // seconds to see a light change
+        private const float RoomMost = 26f;            // metres: the most room that is asked for (a stop line is seen from 30 m): a light already red from that far is the driver's at any speed
+        private const float ShuntAllow = 2.5f;         // seconds after being run into from behind in which a line crossed is not the driver's doing
+        private const float Abreast = 2f;              // metres along the road within which two lanes' stop lines are the same line
         private const float HarshFrom = 11f;           // m/s (40 km/h): braking is only harsh from above this...
         private const float HarshHeld = 0.9f;          // ...with the brake held flat this long: all but a full stop
         private const float OverHeld = 4f;             // seconds over the limit before it is a fault
@@ -140,6 +143,7 @@ namespace RealLifeOverhaul
         private bool _pastBooked;
         private float _lineFrom;            // how far short of the line the car was when the line was first seen (negative: short of it)
         private bool _couldStop;            // the light was red while there was still room to stop firmly
+        private float _lastShunt = -100f;   // when the car was last run into while standing or crawling
         private bool _settled;              // the car has been properly in a lane since setting off
         private float _driveSince;
         private float _overSince = -1f, _farOverSince = -1f;
@@ -194,7 +198,10 @@ namespace RealLifeOverhaul
                 reasonKey = "reallife_lic_no_roads";
                 return false;
             }
+            // Named and timed for the session record: the car is made by the game, in this one frame, and nothing else here is large.
+            int lending = SessionWatch.Mark("licences: the school's car being made and put out (the game's own vehicle spawn)");
             CarController car = _lender.Lend(desk, kind == LicenceClass.Commercial);
+            SessionWatch.Done(lending);
             if (car == null)
             {
                 reasonKey = "reallife_lic_no_car_spot";
@@ -675,6 +682,7 @@ namespace RealLifeOverhaul
             _redSince = -1f;
             _pastBooked = false;
             _couldStop = false;
+            _lastShunt = -100f;
             _settled = false;
             _overSince = -1f;
             _farOverSince = -1f;
@@ -720,12 +728,23 @@ namespace RealLifeOverhaul
                 bool red = RoadMap.IsRed(RoadMap.Line(line));
                 if (line != _line)
                 {
+                    // Another lane's line abreast of the one being watched (the car is changing lane, or straddles two
+                    // whose lines are a little staggered) is the same line: what is known of the approach is kept.
+                    bool same = _line >= 0 && Mathf.Abs(past - _along) < Abreast;
                     _line = line;
-                    _along = past;
-                    _lineFrom = past;
-                    _redSince = -1f;
-                    _couldStop = false;
-                    _pastBooked = false;
+                    if (!same)
+                    {
+                        _along = past;
+                        _lineFrom = past;
+                        _redSince = -1f;
+                        _couldStop = false;
+                        _pastBooked = false;
+                    }
+                    else if (past < _lineFrom)
+                    {
+                        _lineFrom = past;
+                    }
+                    _along = Mathf.Min(_along, past);
                 }
                 if (!red)
                 {
@@ -738,9 +757,9 @@ namespace RealLifeOverhaul
                     {
                         _redSince = now;
                     }
-                    _couldStop |= -past >= speed * ReactTime + speed * speed / (2f * FirmStop);
+                    _couldStop |= -past >= Mathf.Min(speed * ReactTime + speed * speed / (2f * FirmStop), RoomMost);
                 }
-                bool theirs = _settled && _lineFrom <= -LineApproach && red && _couldStop && now - _redSince >= 1f;
+                bool theirs = _settled && _lineFrom <= -LineApproach && red && _couldStop && now - _redSince >= 1f && now - _lastShunt >= ShuntAllow;
                 if (theirs && _along < 1f && past >= 1f && speed > 1.5f)
                 {
                     Fault(TestFault.RedLight, now);
@@ -782,7 +801,9 @@ namespace RealLifeOverhaul
             if (!RoadMap.NearestLane(position, out float distance, out Vector3 runs, out float limit))
             {
                 _overSince = -1f;
+                _farOverSince = -1f;
                 _laneSince = -1f;
+                _pavementSince = -1f;
                 _wrongSince = -1f;
                 return;
             }
@@ -927,6 +948,10 @@ namespace RealLifeOverhaul
                 }
                 // (Standing or crawling, whatever met the car ran into it: not marked.)
                 float speed = collision.relativeVelocity.magnitude;
+                if (speed >= TouchFrom && _lastSpeed < OwnMove)
+                {
+                    _lastShunt = now;   // (pushed: a stop line crossed in the next moments is not marked either)
+                }
                 if (speed < TouchFrom || _lastSpeed < OwnMove)
                 {
                     return;

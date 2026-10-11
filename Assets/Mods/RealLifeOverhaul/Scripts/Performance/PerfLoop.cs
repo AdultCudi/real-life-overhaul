@@ -73,10 +73,12 @@ namespace RealLifeOverhaul
             {
                 return;
             }
+            FrameSteps.Pause();   // the session record's own few timestamps stand aside: this window times every step itself
             _original = PlayerLoop.GetCurrentPlayerLoop();
             PlayerLoopSystem[] phases = _original.subSystemList;
             if (phases == null || phases.Length == 0)
             {
+                FrameSteps.Resume();
                 return;
             }
 
@@ -145,6 +147,7 @@ namespace RealLifeOverhaul
             _installed = false;
             PlayerLoop.SetPlayerLoop(_original);
             _original = default;
+            FrameSteps.Resume();
             return Summarise();
         }
 

@@ -31,18 +31,26 @@ namespace RealLifeOverhaul.Economy.Brands
 
         // ---------------------------------------------------------------- Applicants
 
-        private void WriteApplicants(InfoBox box, BrandsState state, int day, ref string selected)
+        private TableSpec WriteApplicants(InfoBox box, BrandsState state, int day, ref string selected)
         {
+            List<string> districts = BrandsTables.Applicants.Filters[1].Names;   // the second filter's kinds: the districts they want
+            districts.Clear();
             Applicant picked = null;
             for (int i = 0; i < state.Applicants.Count; i++)
             {
                 Applicant a = state.Applicants[i];
                 Brand b = state.Brand(a.BrandId);
-                if (Pick("app:" + a.Id, a.Name, BrandsText.T("reallife_brand_row_for", "brand", b != null ? b.Name : "?", "district", BrandsText.District(a.District)), BrandsText.Money(a.Capital), BrandsText.Day(a.Until),
-                        a.Until - day <= 2 ? 1 : 0, ref selected))
-                {
-                    picked = a;
-                }
+                TableRow row = Row("app:" + a.Id);
+                row.Kind = (int)a.Temper;
+                row.Kind2 = KindOf(districts, BrandsText.District(a.District));
+                row.Set(0, a.Name);
+                row.Set(1, b != null ? b.Name : "?");
+                row.Set(2, BrandsText.District(a.District));
+                row.Set(3, BrandsText.Temper(a.Temper));
+                row.Set(4, BrandsText.Money(a.Capital), a.Capital);
+                row.Set(5, a.Experience.ToString(), a.Experience);
+                row.Set(6, BrandsText.Day(a.Until), a.Until, a.Until - day <= 2 ? TableRow.Yellow : TableRow.Plain);
+                picked = Is(row, ref selected) ? a : picked;
             }
             if (state.Applicants.Count == 0)
             {
@@ -52,12 +60,13 @@ namespace RealLifeOverhaul.Economy.Brands
             if (brand != null)
             {
                 WriteApplicant(box, state, brand, picked, day);
-                return;
+                return BrandsTables.Applicants;
             }
             box.Title(BrandsText.T("reallife_brand_tab_applicants"));
             box.Line(BrandsText.Fill("reallife_brand_app_intro", "days", BrandCatalogue.ApplicantDays.ToString(), "most", BrandCatalogue.ApplicantsMost.ToString()));
             box.Line(BrandsText.Fill("reallife_brand_app_chance", "base", (BrandCatalogue.ArriveBase / 10).ToString(), "per", (BrandCatalogue.ArrivePerPoint / 10f).ToString("0.#")));
             box.Line(BrandsText.T("reallife_brand_app_tempers"));
+            return BrandsTables.Applicants;
         }
 
         private void WriteApplicant(InfoBox box, BrandsState state, Brand b, Applicant a, int day)
@@ -158,20 +167,50 @@ namespace RealLifeOverhaul.Economy.Brands
 
         // ---------------------------------------------------------------- Agreements
 
-        private void WriteAgreements(InfoBox box, BrandsState state, int day, ref string selected)
+        private TableSpec WriteAgreements(InfoBox box, BrandsState state, int day, ref string selected)
         {
-            Franchise franchise = FranchiseRows(state, day, false, ref selected);
+            Franchise franchise = null;
+            for (int i = 0; i < state.Franchises.Count; i++)
+            {
+                Franchise f = state.Franchises[i];
+                Brand b = state.Brand(f.BrandId);
+                bool waits = f.Ask != Ask.None;
+                TableRow row = Row("fr:" + f.Id);
+                row.Kind = waits ? BrandsTables.Waiting : f.Trouble ? BrandsTables.Trouble : BrandsTables.InOrder;
+                row.Set(0, f.Name);
+                row.Set(1, b != null ? b.Name : "?");
+                row.Set(2, BrandsText.District(f.District));
+                row.Set(3, BrandsText.Bp(f.RoyaltyBp), f.RoyaltyBp / 100.0);
+                row.Set(4, BrandsText.Money(f.Royalty), f.Royalty);
+                row.Set(5, BrandsText.Money(f.Paid), f.Paid);
+                row.Set(6, BrandsText.Day(f.Until), f.Until);
+                // (ordered by how pressing it is: 2 something waits, 1 short of cash, 0 in order)
+                row.Set(7, waits ? BrandsText.Ask(f.Ask) : f.Trouble ? BrandsText.T("reallife_brand_status_trouble") : BrandsText.T("reallife_brand_row_in_order"), waits ? 2 : f.Trouble ? 1 : 0,
+                    waits ? TableRow.Red : f.Trouble ? TableRow.Yellow : TableRow.Plain);
+                franchise = Is(row, ref selected) ? f : franchise;
+            }
             IReadOnlyList<BrandShop> shops = _director.Shops;
             BrandShop chainShop = null;
             for (int i = 0; i < shops.Count; i++)
             {
                 BrandShop shop = shops[i];
-                if (shop.Chain != null && Pick("shop:" + shop.Place, shop.Name, BrandsText.Chain(shop.Chain.Chain),
-                        BrandsText.T("reallife_brand_row_terms", "royalty", BrandsText.Bp(BrandCatalogue.ChainRoyaltyBp[shop.Chain.Chain]), "day", shop.Chain.Until.ToString()),
-                        shop.Chain.Breach > 0 ? BrandsText.T("reallife_brand_row_breach_days", "days", shop.Chain.Breach.ToString()) : BrandsText.T("reallife_brand_row_in_order"), shop.Chain.Breach > 0 ? 2 : 0, ref selected))
+                if (shop.Chain == null)
                 {
-                    chainShop = shop;
+                    continue;
                 }
+                Taken t = shop.Chain;
+                TableRow row = Row("shop:" + shop.Place);
+                row.Kind = BrandsTables.OwnChain;
+                row.Set(0, shop.Name);
+                row.Set(1, BrandsText.Chain(t.Chain));
+                row.Set(2, BrandsText.District(shop.District));
+                row.Set(3, BrandsText.Bp(BrandCatalogue.ChainRoyaltyBp[t.Chain]), BrandCatalogue.ChainRoyaltyBp[t.Chain] / 100.0);
+                row.Set(4, BrandsText.Money(-t.Average), -t.Average);
+                row.Set(5, BrandsText.Money(-t.Paid), -t.Paid);
+                row.Set(6, BrandsText.Day(t.Until), t.Until);
+                row.Set(7, t.Breach > 0 ? BrandsText.T("reallife_brand_row_breach_days", "days", t.Breach.ToString()) : BrandsText.T("reallife_brand_row_in_order"), t.Breach > 0 ? 2 : 0,
+                    t.Breach > 0 ? TableRow.Red : TableRow.Plain);
+                chainShop = Is(row, ref selected) ? shop : chainShop;
             }
             if (_rows.Count == 0)
             {
@@ -193,6 +232,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 box.Line(BrandsText.Fill("reallife_brand_agree_cause", "warnings", BrandCatalogue.CauseWarnings.ToString(), "days", BrandCatalogue.FreshDays.ToString()));
                 box.Line(BrandsText.Fill("reallife_brand_agree_unfair", "share", BrandsText.Share(BrandCatalogue.CompensationLeastShare), "points", BrandsText.Lost(BrandCatalogue.UnfairLoss)));
             }
+            return BrandsTables.Agreements;
         }
 
         // ---------------------------------------------------------------- one franchised shop

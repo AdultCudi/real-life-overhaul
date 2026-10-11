@@ -5,7 +5,7 @@ using RealLifeOverhaul.GameUi;
 namespace RealLifeOverhaul.Economy.Brands
 {
     /// <summary>
-    /// The Shops tab. The table: every shop of the player's, then every franchised shop, with who runs it, where,
+    /// The Shops tab. The table (BrandsTables.Shops): every shop of the player's and every franchised shop, with who runs it, where,
     /// what it took yesterday (and the royalty on that) and its standards. The box: for a shop of the player's under
     /// no brand, the ways into one (make a brand, join one, take a city chain's franchise); for a member shop, its
     /// standards and what the brand brings it, part by part; for a shop under a chain, how it stands with the chain;
@@ -17,26 +17,70 @@ namespace RealLifeOverhaul.Economy.Brands
         private int _joinBrand;   // the brand whose "join" is showing
         private int _chain;       // the city chain whose quote is showing
 
-        private void WriteShops(InfoBox box, BrandsState state, int day, ref string selected)
+        private TableSpec WriteShops(InfoBox box, BrandsState state, int day, ref string selected)
         {
             IReadOnlyList<BrandShop> shops = _director.Shops;
+            List<string> districts = BrandsTables.Shops.Filters[1].Names;   // the second filter's kinds: the districts the shops stand in
+            districts.Clear();
             BrandShop picked = null;
+            Franchise franchise = null;
+            string you = BrandsText.T("reallife_brand_run_you");
             for (int i = 0; i < shops.Count; i++)
             {
                 BrandShop shop = shops[i];
                 Brand b = shop.File != null ? state.Brand(shop.File.BrandId) : null;
-                string who = b != null ? BrandsText.T("reallife_brand_row_yours_brand", "brand", b.Name, "district", BrandsText.District(shop.District))
-                    : shop.Chain != null ? BrandsText.T("reallife_brand_row_yours_brand", "brand", BrandsText.Chain(shop.Chain.Chain), "district", BrandsText.District(shop.District))
-                    : BrandsText.T("reallife_brand_row_yours", "district", BrandsText.District(shop.District));
-                string standards = shop.File != null ? Standards(shop.File.Standards) : shop.Chain != null ? Standards(shop.Chain.Standards) : string.Empty;
-                int tone = shop.Chain != null && shop.Chain.Breach > 0 ? 2 : b != null && b.Minimum > 0 && shop.File.Standards < b.Minimum ? 1 : 0;
-                if (Pick("shop:" + shop.Place, shop.Name, who, shop.File != null || shop.Chain != null ? BrandsText.Money(shop.Takings) : string.Empty,
-                        shop.Chain != null && shop.Chain.Breach > 0 ? BrandsText.T("reallife_brand_row_breach", "standards", standards, "days", shop.Chain.Breach.ToString()) : standards, tone, ref selected))
+                TableRow row = Row("shop:" + shop.Place);
+                row.Kind = b != null ? BrandsTables.IsMember : shop.Chain != null ? BrandsTables.IsChainShop : BrandsTables.IsPlain;
+                row.Kind2 = KindOf(districts, BrandsText.District(shop.District));
+                row.Set(0, shop.Name);
+                row.Set(1, you);
+                row.Set(2, b != null ? b.Name : shop.Chain != null ? BrandsText.Chain(shop.Chain.Chain) : string.Empty);
+                row.Set(3, BrandsText.District(shop.District));
+                if (b != null)
                 {
-                    picked = shop;
+                    row.Set(4, BrandsText.Money(shop.Takings), shop.Takings);
+                    row.Set(6, Standards(shop.File.Standards), shop.File.Standards, b.Minimum > 0 && shop.File.Standards < b.Minimum ? TableRow.Yellow : TableRow.Plain);
+                    row.Set(7, BrandsText.T("reallife_brand_status_member"));
                 }
+                else if (shop.Chain != null)
+                {
+                    bool breach = shop.Chain.Breach > 0;
+                    row.Set(4, BrandsText.Money(shop.Takings), shop.Takings);
+                    row.Set(5, BrandsText.Money(-shop.Chain.Average), -shop.Chain.Average);
+                    row.Set(6, Standards(shop.Chain.Standards), shop.Chain.Standards, shop.Chain.Standards < BrandCatalogue.ChainStandards[shop.Chain.Chain] ? TableRow.Yellow : TableRow.Plain);
+                    row.Set(7, breach ? BrandsText.T("reallife_brand_row_breach_days", "days", shop.Chain.Breach.ToString()) : BrandsText.T("reallife_brand_status_chain"), breach ? TableRow.Red : TableRow.Plain);
+                }
+                else
+                {
+                    row.Set(7, BrandsText.T("reallife_brand_status_plain"));
+                }
+                picked = Is(row, ref selected) ? shop : picked;
             }
-            Franchise franchise = FranchiseRows(state, day, true, ref selected);
+            for (int i = 0; i < state.Franchises.Count; i++)
+            {
+                Franchise f = state.Franchises[i];
+                Brand b = state.Brand(f.BrandId);
+                TableRow row = Row("fr:" + f.Id);
+                row.Kind = BrandsTables.IsFranchised;
+                row.Kind2 = KindOf(districts, BrandsText.District(f.District));
+                row.Set(0, BrandsText.Shop(b, f));
+                row.Set(1, f.Name);
+                row.Set(2, b != null ? b.Name : "?");
+                row.Set(3, BrandsText.District(f.District));
+                row.Set(4, BrandsText.Money(f.Takings), f.Takings);
+                row.Set(5, BrandsText.Money(f.Royalty), f.Royalty);
+                if (f.Seen < 0)
+                {
+                    row.Set(6, BrandsText.T("reallife_brand_row_not_seen"));
+                }
+                else
+                {
+                    row.Set(6, Standards(f.Seen), f.Seen, b != null && f.Seen < b.Minimum ? TableRow.Yellow : TableRow.Plain);
+                }
+                row.Set(7, f.Ask != Ask.None ? BrandsText.Ask(f.Ask) : f.Trouble ? BrandsText.T("reallife_brand_status_trouble") : BrandsText.T("reallife_brand_row_in_order"),
+                    f.Ask != Ask.None || f.Trouble ? TableRow.Red : TableRow.Plain);
+                franchise = Is(row, ref selected) ? f : franchise;
+            }
             if (_rows.Count == 0)
             {
                 Say("none", BrandsText.T("reallife_brand_row_no_shop"));
@@ -57,33 +101,7 @@ namespace RealLifeOverhaul.Economy.Brands
                     "stock", BrandCatalogue.WeightStock.ToString(), "skill", BrandCatalogue.WeightSkill.ToString()));
                 box.Line(BrandsText.T("reallife_brand_shops_franchised"));
             }
-        }
-
-        // The franchised shops' rows, as the Shops tab shows them (takings and standards) or as the Agreements tab does (terms and what waits). Returns the one that is picked.
-        private Franchise FranchiseRows(BrandsState state, int day, bool asShops, ref string selected)
-        {
-            Franchise picked = null;
-            for (int i = 0; i < state.Franchises.Count; i++)
-            {
-                Franchise f = state.Franchises[i];
-                Brand b = state.Brand(f.BrandId);
-                string where = BrandsText.T("reallife_brand_row_for", "brand", b != null ? b.Name : "?", "district", BrandsText.District(f.District));
-                bool waits = f.Ask != Ask.None;
-                bool mine;
-                if (asShops)
-                {
-                    string seen = f.Seen < 0 ? BrandsText.T("reallife_brand_row_not_seen") : BrandsText.T("reallife_brand_row_seen", "standards", Standards(f.Seen), "day", f.SeenDay.ToString());
-                    mine = Pick("fr:" + f.Id, f.Name, where, BrandsText.T("reallife_brand_row_takings", "takings", BrandsText.Money(f.Takings), "royalty", BrandsText.Money(f.Royalty)), seen,
-                        f.Trouble ? 2 : b != null && f.Seen >= 0 && f.Seen < b.Minimum ? 1 : 0, ref selected);
-                }
-                else
-                {
-                    mine = Pick("fr:" + f.Id, f.Name, where, BrandsText.T("reallife_brand_row_terms", "royalty", BrandsText.Bp(f.RoyaltyBp), "day", f.Until.ToString()),
-                        waits ? BrandsText.Ask(f.Ask) : BrandsText.T("reallife_brand_row_in_order"), waits ? 2 : 0, ref selected);
-                }
-                picked = mine ? f : picked;
-            }
-            return picked;
+            return BrandsTables.Shops;
         }
 
         private void WriteShop(InfoBox box, BrandsState state, BrandShop shop, int day)

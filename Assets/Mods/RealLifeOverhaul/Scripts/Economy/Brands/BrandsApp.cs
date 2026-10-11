@@ -3,21 +3,19 @@ using System.Collections.Generic;
 using BAModAPI;
 using Localizor;
 using RealLifeOverhaul.GameUi;
-using TMPro;
 using UI.Smartphone;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Economy.Brands
 {
     /// <summary>
     /// What the Brands app shows, in the game's frame (GameUi.AppShell, copied from MyEmployees) as Finance, Ventures
-    /// and the Company app are, with Finance's table (FinanceTable, the game's own BaTable). An app of its own and not
-    /// a page of Ventures or the Company app: it has four lists of its own, each with a page for the row that is
+    /// and the Company app are, with the kit's table (GameUi.DataTable, the game's own BaTable). An app of its own and
+    /// not a page of Ventures or the Company app: it has four lists of its own, each with a page for the row that is
     /// picked, which is what one app's tabs are for, and the other two apps' tab bars are full. Four tabs over the
     /// table on the right, and on the left the white box with the one thing picked:
     ///
-    ///   Brands        each brand and, under it, each district it is known in; pick one for its figures explained
+    ///   Brands        each brand and each district it is known in; pick one for its figures explained
     ///   Shops         every shop of the player's and every franchised shop, in one table: who runs it, its takings,
     ///                 its standards; pick one of the player's to make a brand of it, join one or take a city chain's
     ///                 franchise
@@ -25,7 +23,9 @@ namespace RealLifeOverhaul.Economy.Brands
     ///   Agreements    every franchise agreement, what its franchisee asks, and the player's own with a city chain
     ///
     /// A list goes in the table, which scrolls; the white box, which does not, shows only the one thing picked, three
-    /// selectors at most and a Back button. Each tab's page is in its own file (BrandsApp.Brands.cs and its neighbours).
+    /// selectors at most and a Back button. Each tab's page is in its own file (BrandsApp.Brands.cs and its
+    /// neighbours). Every table is declared once, in BrandsApp.Tables.cs, and is sorted, filtered and summed by the
+    /// kit; what is picked stays picked through a sort or a filter (the kit keeps the row by its id).
     ///
     /// Everything on it is the game's. PER FRAME: NOTHING, open or closed. The rows and the page are made when the app
     /// opens, when a tab or a row is picked, and when the director says something has changed: a few dozen strings
@@ -33,29 +33,16 @@ namespace RealLifeOverhaul.Economy.Brands
     /// </summary>
     public sealed partial class BrandsApp
     {
-        // ---------------------------------------------------------------- the columns: every tab's four, in this one place
-
-        private const float WidthA = 620f, WidthB = 500f, WidthC = 300f, WidthD = 300f;
-
         private static readonly string[] TabKeys = { "reallife_brand_tab_brands", "reallife_brand_tab_shops", "reallife_brand_tab_applicants", "reallife_brand_tab_agreements" };
-        private static readonly string[] ColumnNames = { "ColumnA", "ColumnB", "ColumnC", "ColumnD" };
-        private static readonly float[] ColumnWidths = { WidthA, WidthB, WidthC, WidthD };
-        private static readonly string[][] ColumnKeys =
-        {
-            new[] { "reallife_brand_col_brand", "reallife_brand_col_type", "reallife_brand_col_recognition", "reallife_brand_col_standards" },
-            new[] { "reallife_brand_col_shop", "reallife_brand_col_run_by", "reallife_brand_col_takings", "reallife_brand_col_standards" },
-            new[] { "reallife_brand_col_applicant", "reallife_brand_col_for", "reallife_brand_col_capital", "reallife_brand_col_until" },
-            new[] { "reallife_brand_col_franchisee", "reallife_brand_col_for", "reallife_brand_col_terms", "reallife_brand_col_waiting" }
-        };
 
         public static IModLogger Logger;
 
         private readonly BrandsDirector _director;
-        private readonly List<FinanceRow> _rows = new List<FinanceRow>(48);
-        private readonly List<FinanceRow> _pool = new List<FinanceRow>(48);
+        private readonly List<TableRow> _rows = new List<TableRow>(48);
+        private readonly List<TableRow> _pool = new List<TableRow>(48);
 
         private AppShell _shell;
-        private FinanceTable _table;
+        private DataTable _table;
         private int _tab, _wanted = -1;
         private string _pick, _wantPick;   // what is picked: a row's id ("brand:3", "dist:3:...", "shop:...", "app:7", "fr:9")
         private bool _ready;               // the director has read the player's businesses for this opening
@@ -73,19 +60,13 @@ namespace RealLifeOverhaul.Economy.Brands
         {
             SessionWatch.Mark("brands: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
             _shell = AppShell.Make(menu, dormant, BrandsDirector.AppId);
-            if (_shell == null || !PrepareRow(_shell.RowPrefab) || !_shell.SetTabCount(TabKeys.Length))
+            _table = DataTable.On(_shell, "Brands");
+            if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(BrandsTables.Off))
             {
                 return null;
             }
-            if (!_shell.SetColumns(ColumnNames, ColumnKeys[0], ColumnWidths, 1))
-            {
-                return null;
-            }
-            FinanceCellView.SelectedColour = _shell.RowSelected;
-            _table = _shell.List.gameObject.AddComponent<FinanceTable>();
-            _table.scroller = _shell.Scroller;
-            _table.prefab = _shell.RowPrefab.AddComponent<FinanceCellView>();
-            _table.allowRowSelection = true;
+            _table.Money = amount => BrandsText.Money((float)amount);
+            _table.SelectionLost = ClosePick;
             _table.onRowSelected.AddListener(row => UiClone.Safe(() => RowClicked(row)));
             for (int i = 0; i < TabKeys.Length; i++)
             {
@@ -94,40 +75,6 @@ namespace RealLifeOverhaul.Economy.Brands
                 UiClone.Rewire(_shell.Tabs[i], () => ShowTab(tab));
             }
             return _shell.Root;
-        }
-
-        // The game's employee row has a tick box and ten cells. Four are kept and renamed, as Finance, the Planner and
-        // the Company app keep them: the name, the task (its warning sign hidden), the business and the satisfaction.
-        private static bool PrepareRow(GameObject row)
-        {
-            Transform t = row.transform;
-            var layout = row.GetComponent<HorizontalLayoutGroup>();
-            Transform a = t.Find("EmployeeName"), b = t.Find("TaskInfo"), c = t.Find("BusinessName"), d = t.Find("Satisfaction");
-            if (layout == null || a == null || b == null || c == null || d == null || b.Find("Task") == null)
-            {
-                UiClone.Fallback("the game's employee row is not built as expected, so the Brands app is not added");
-                return false;
-            }
-            UiClone.KeepOnly(t, "Background", "RaycastTarget", "EmployeeName", "TaskInfo", "BusinessName", "Satisfaction");
-            a.name = "A";
-            b.name = "B";
-            c.name = "C";
-            d.name = "D";
-            AppShell.RowLayout(layout);
-            AppShell.Width(a, WidthA, false);
-            AppShell.Width(b, WidthB, true);
-            AppShell.Width(c, WidthC, false);
-            AppShell.Width(d, WidthD, false);
-            AppShell.OneLine(a.GetComponent<TMP_Text>());
-            AppShell.OneLine(c.GetComponent<TMP_Text>());
-            AppShell.OneLine(d.GetComponent<TMP_Text>());
-            AppShell.OneLine(b.Find("Task").GetComponent<TMP_Text>());
-            Transform sign = b.Find("WarningIcon");
-            if (sign != null)
-            {
-                sign.gameObject.SetActive(false);
-            }
-            return true;
         }
 
         // ---------------------------------------------------------------- opening and the tabs
@@ -195,7 +142,8 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
-        private void RowClicked(FinanceRow row)
+        // A row was clicked, or the kit selected the first row left after a filter took the picked one out.
+        private void RowClicked(TableRow row)
         {
             if (row == null || !row.Pick)
             {
@@ -211,6 +159,12 @@ namespace RealLifeOverhaul.Economy.Brands
         }
 
         private void Back()
+        {
+            ClosePick();
+        }
+
+        // Nothing is picked any more: Back was pressed, or a filter left no row to pick.
+        private void ClosePick()
         {
             _pick = null;
             ResetPages();
@@ -251,10 +205,10 @@ namespace RealLifeOverhaul.Economy.Brands
                 }
                 _rows.Clear();
                 _shell.ShowTab(_tab);
-                _shell.SetColumns(ColumnNames, ColumnKeys[_tab], ColumnWidths, 1);
                 InfoBox box = _shell.Box;
                 box.Clear();
                 string selected = null;
+                TableSpec table = BrandsTables.Off;
                 BrandsState state = _ready ? _director.State : null;
                 if (state == null || SaveGameManager.Current == null)
                 {
@@ -270,21 +224,21 @@ namespace RealLifeOverhaul.Economy.Brands
                     switch (_tab)
                     {
                         case BrandsDirector.TabShops:
-                            WriteShops(box, state, day, ref selected);
+                            table = WriteShops(box, state, day, ref selected);
                             break;
                         case BrandsDirector.TabApplicants:
-                            WriteApplicants(box, state, day, ref selected);
+                            table = WriteApplicants(box, state, day, ref selected);
                             break;
                         case BrandsDirector.TabAgreements:
-                            WriteAgreements(box, state, day, ref selected);
+                            table = WriteAgreements(box, state, day, ref selected);
                             break;
                         default:
-                            WriteBrands(box, state, day, ref selected);
+                            table = WriteBrands(box, state, day, ref selected);
                             break;
                     }
                 }
                 box.Done();
-                _table.Show(_rows, selected);
+                _table.Show(table, _rows, selected);
                 if (Meta.Dev.Verbose)
                 {
                     Logger?.Info("Brands: tab " + _tab + " written, " + _rows.Count + " row(s)" + (_pick != null ? ", picked " + _pick : string.Empty) + "; "
@@ -299,9 +253,10 @@ namespace RealLifeOverhaul.Economy.Brands
 
         // ---------------------------------------------------------------- rows
 
-        private FinanceRow Row(string id)
+        // A row that can be picked, from the pool. Its cells are set by whoever asked (row.Set: the words, and the figure a column is ordered and summed by).
+        private TableRow Row(string id)
         {
-            FinanceRow row;
+            TableRow row;
             if (_pool.Count > 0)
             {
                 row = _pool[_pool.Count - 1];
@@ -309,53 +264,54 @@ namespace RealLifeOverhaul.Economy.Brands
             }
             else
             {
-                row = new FinanceRow();
+                row = new TableRow();
             }
-            row.Id = id;
-            row.A = row.B = row.C = row.D = null;
-            row.Info = row.Pick = false;
-            row.Index = 0;
-            row.Tone = 0;
+            row.Reset(id);
+            row.Pick = true;
             _rows.Add(row);
             return row;
         }
 
-        // A row that can be picked. Returns true if it is the one picked now.
-        private bool Pick(string id, string a, string b, string c, string d, int tone, ref string selected)
+        // True if a row is the one picked now; it is then the table's selected row.
+        private bool Is(TableRow row, ref string selected)
         {
-            FinanceRow row = Row(id);
-            row.Pick = true;
-            row.A = a;
-            row.B = b;
-            row.C = c;
-            row.D = d;
-            row.Tone = tone;
-            if (id == _pick)
+            if (row.Id != _pick)
             {
-                selected = id;
-                return true;
+                return false;
             }
-            return false;
+            selected = row.Id;
+            return true;
         }
 
+        // A line of words where a table has nothing to list at all.
         private void Say(string id, string words)
         {
-            FinanceRow row = Row(id);
+            TableRow row = Row(id);
             row.Info = true;
+            row.Pick = false;
             row.A = words;
+        }
+
+        // The number of a name in a filter's own list of kinds (districts), added if it is new.
+        private static int KindOf(List<string> names, string name)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return -1;
+            }
+            int at = names.IndexOf(name);
+            if (at < 0)
+            {
+                at = names.Count;
+                names.Add(name);
+            }
+            return at;
         }
 
         // What follows a prefix in what is picked ("app:" and the applicant's number); null if something else is picked.
         private string Picked(string prefix)
         {
             return _pick != null && _pick.StartsWith(prefix, StringComparison.Ordinal) ? _pick.Substring(prefix.Length) : null;
-        }
-
-        private int PickedNumber(string prefix)
-        {
-            string rest = Picked(prefix);
-            int number;
-            return rest != null && int.TryParse(rest, out number) ? number : 0;
         }
 
         private void BackButton(InfoBox box)

@@ -65,6 +65,7 @@ namespace RealLifeOverhaul
         private readonly StringBuilder _text = new StringBuilder(256);
         private CarRoadside _roadside;
         private GasStationController[] _stations;
+        private readonly List<GasStationController> _stationList = new List<GasStationController>(16);
         private CarController _car;
         private NwhVehicle _vehicle;
         private Rigidbody _body;
@@ -559,7 +560,27 @@ namespace RealLifeOverhaul
         {
             if (_stations == null)
             {
-                _stations = FindObjectsOfType<GasStationController>();   // once per city load
+                // From the city's own list of buildings, as the game finds them for a tow (Helpers.VehicleHelper): a station's
+                // controller sits on its building. A search of the whole scene for them was a frame of over 100 ms, the first
+                // time the player's car stood still in a city.
+                CityManager city = InstanceBehavior<CityManager>.Instance;
+                CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+                _stationList.Clear();
+                for (int i = 0; buildings != null && i < buildings.Length; i++)
+                {
+                    if (buildings[i] != null && buildings[i].TryGetComponent(out GasStationController station))
+                    {
+                        _stationList.Add(station);
+                    }
+                }
+                _stations = _stationList.Count > 0 ? _stationList.ToArray()
+                    : SceneFinds.All<GasStationController>("car ownership: the petrol stations being looked for (a search of the whole scene: the city's buildings had none)");
+                _stationList.Clear();
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Car ownership check (stations): " + _stations.Length + " petrol station(s) among " + (buildings != null ? buildings.Length : 0)
+                                 + " city buildings" + (_stations.Length > 0 ? ": PASS." : ": FAIL (none: the repair bay is never recognised)."));
+                }
             }
             return _stations;
         }

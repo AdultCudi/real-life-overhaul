@@ -61,6 +61,8 @@ namespace RealLifeOverhaul.Planner
 
         private readonly PlannerDirector _director;
         private readonly List<PlannerRow> _rows = new List<PlannerRow>(32);
+        private readonly List<PlannerRow> _shown = new List<PlannerRow>(40);   // the rows in the table's order, with a heading over each day
+        private TableView _view;
         private AppShell _shell;
         private PlannerTable _table;
         private FullMenu _menu;
@@ -91,9 +93,7 @@ namespace RealLifeOverhaul.Planner
             {
                 return null;
             }
-            if (!_shell.SetColumns(new[] { "ColumnWhen", "ColumnWhat", "ColumnWhere", "ColumnStatus" },
-                    new[] { "reallife_planner_col_when", "reallife_planner_col_what", "reallife_planner_col_where", "bizman_status" },
-                    new[] { WhenWidth, WhatWidth, WhereWidth, StatusWidth }, 1))
+            if (!_shell.SetColumns(Tables[0]))
             {
                 return null;
             }
@@ -103,6 +103,8 @@ namespace RealLifeOverhaul.Planner
             _table.prefab = _shell.RowPrefab.AddComponent<PlannerCellView>();
             _table.allowRowSelection = true;
             _table.onRowSelected.AddListener(row => UiClone.Safe(() => RowClicked(row)));
+            _view = new TableView(_shell) { RowCells = 4 };
+            _view.Changed = filter => UiClone.Safe(Reordered);
 
             UiClone.Key(_shell.TabLabels[0], "common_today");
             UiClone.Key(_shell.TabLabels[1], "reallife_planner_tab_upcoming");
@@ -118,6 +120,26 @@ namespace RealLifeOverhaul.Planner
         }
 
         private const float WhenWidth = 300f, WhatWidth = 600f, WhereWidth = 560f, StatusWidth = 300f;
+
+        // The agenda as a table (GameUi.TableSpec), one for each tab so that each keeps the order and the kind the
+        // player last chose there: every column sorts, the filter is the kind of entry. It opens in time order.
+        private static readonly TableSpec[] Tables = { Table("Today"), Table("Upcoming") };
+
+        private static TableSpec Table(string tab)
+        {
+            var kinds = new string[(int)PlannerCategory.Count];
+            for (int i = 0; i < kinds.Length; i++)
+            {
+                kinds[i] = PlannerText.CategoryKey((PlannerCategory)i);
+            }
+            return new TableSpec("Planner", tab)
+                .Column("reallife_planner_col_when", WhenWidth, TableSort.Date)
+                .Column("reallife_planner_col_what", WhatWidth, TableSort.Text, flexible: true)
+                .Column("reallife_planner_col_where", WhereWidth, TableSort.Text)
+                .Column("bizman_status", StatusWidth, TableSort.Text, right: true)
+                .Filter("reallife_tab_all_kinds", kinds)
+                .Empty("reallife_tab_empty_planner");
+        }
 
         // The game's employee row has a tick box and ten cells. Four are kept and renamed: the name (the time), the
         // task with its warning icon (what, with the category's icon), the business (where) and the satisfaction,
@@ -214,7 +236,7 @@ namespace RealLifeOverhaul.Planner
             }
             Rows(today);
             _shell.ShowTab(_tab);
-            _table.Show(_rows, _page == Page.Entry && selected != null ? RowId(selected.Id) : null);
+            ShowRows(today, _page == Page.Entry && selected != null ? RowId(selected.Id) : null);
             Headline(today);
             Write();
             if (Meta.Dev.Verbose)
@@ -239,7 +261,7 @@ namespace RealLifeOverhaul.Planner
             int today = TimeHelper.CurrentDay;
             Rows(today);
             _shell.ShowTab(_tab);
-            _table.Show(_rows, null);
+            ShowRows(today, null);
             Write();
         }
 
@@ -248,22 +270,18 @@ namespace RealLifeOverhaul.Planner
             return id.Source + ":" + id.A + ":" + id.B;
         }
 
+        // The entries of the tab, in the order the director keeps them (by time). The headings over the days are
+        // put in when the rows are shown (Fill): they belong to the order, not to the entries.
         private void Rows(int today)
         {
             _rows.Clear();
             List<PlannerEntry> items = _director.List.Items;
-            int headed = -1;
             for (int i = 0; i < items.Count; i++)
             {
                 PlannerEntry e = items[i];
                 if (_tab == 0 ? e.Day != today : e.Day <= today)
                 {
                     continue;
-                }
-                if (_tab == 1 && e.Day != headed)
-                {
-                    headed = e.Day;
-                    _rows.Add(new PlannerRow { Id = "day:" + e.Day, Kind = RowKind.DayHeader, What = e.Day == today + 1 ? PlannerText.T("reallife_planner_day_tomorrow", "date", PlannerText.Date(e.Day)) : PlannerText.Date(e.Day) });
                 }
                 string status = PlannerText.StatusKey(e);
                 _rows.Add(new PlannerRow
@@ -282,6 +300,97 @@ namespace RealLifeOverhaul.Planner
             if (_rows.Count == 0)
             {
                 _rows.Add(new PlannerRow { Id = "empty", Kind = RowKind.Info, What = PlannerText.T(_tab == 0 ? "reallife_planner_empty_today" : "reallife_planner_empty_upcoming") });
+            }
+        }
+
+        // The rows go to the table in the order and under the filter its headers and its drop-down say
+        // (GameUi.TableView): each entry gives its moment, its words and its kind.
+        private void ShowRows(int today, string selectedId)
+        {
+            TableModel model = _view.Model;
+            _view.Begin(Tables[_tab], _rows.Count);
+            for (int r = 0; r < _rows.Count; r++)
+            {
+                PlannerRow row = _rows[r];
+                PlannerEntry e = row.Entry;
+                if (row.Kind != RowKind.Entry || e == null)
+                {
+                    model.Pin(r);
+                    continue;
+                }
+                model.Set(r, 0, e.Day * 1440.0 + Mathf.Max(0, e.Start >= 0 ? e.Start : e.End), row.When);
+                model.Set(r, 1, double.NaN, row.What);
+                model.Set(r, 2, double.NaN, row.Where);
+                model.Set(r, 3, double.NaN, row.Status);
+                model.Kind(r, 0, (int)e.Category);
+            }
+            _view.Apply();
+            Fill(today);
+            _table.Show(_shown, selectedId);
+        }
+
+        // The rows as they are shown. In time order (as the tab opens, or by the Time column) each day of the
+        // upcoming entries has its heading; in any other order the day is written in the entry's own Time cell.
+        private void Fill(int today)
+        {
+            TableModel model = _view.Model;
+            TableSpec spec = model.Spec;
+            bool byTime = spec.OrderColumn <= 0;
+            int headed = -1, entries = 0;
+            _shown.Clear();
+            for (int i = 0; i < model.Count; i++)
+            {
+                PlannerRow row = _rows[model.RowAt(i)];
+                PlannerEntry e = row.Entry;
+                if (row.Kind == RowKind.Entry && e != null)
+                {
+                    entries++;
+                    if (_tab == 1 && byTime && e.Day != headed)
+                    {
+                        headed = e.Day;
+                        _shown.Add(new PlannerRow { Id = "day:" + e.Day, Kind = RowKind.DayHeader, What = e.Day == today + 1 ? PlannerText.T("reallife_planner_day_tomorrow", "date", PlannerText.Date(e.Day)) : PlannerText.Date(e.Day) });
+                    }
+                    row.When = _tab == 1 && !byTime ? PlannerText.Date(e.Day) + ", " + PlannerText.When(e) : PlannerText.When(e);
+                }
+                _shown.Add(row);
+            }
+            if (entries == 0 && model.Rows > model.Pinned)
+            {
+                _shown.Add(new PlannerRow { Id = "empty", Kind = RowKind.Info, What = PlannerText.T(spec.EmptyKey) });
+            }
+        }
+
+        // The player clicked a header or picked a kind. The entry that is open stays open if it still shows, and the
+        // table scrolls to it; if the filter took it out, the first entry shown is opened instead, or the day's
+        // summary when none is left.
+        private void Reordered()
+        {
+            Fill(TimeHelper.CurrentDay);
+            PlannerEntry selected = _page == Page.Entry ? Selected : null;
+            string id = selected != null ? RowId(selected.Id) : null;
+            bool moved = false;
+            if (id != null)
+            {
+                PlannerRow first = null;
+                bool shown = false;
+                for (int i = 0; i < _shown.Count && !shown; i++)
+                {
+                    shown = _shown[i].Id == id;
+                    first = first == null && _shown[i].Kind == RowKind.Entry ? _shown[i] : first;
+                }
+                if (!shown)
+                {
+                    moved = true;
+                    _page = first != null ? Page.Entry : Page.Glance;
+                    _selected = first != null ? first.Entry.Id : default(EntryId);
+                    id = first != null ? first.Id : null;
+                }
+            }
+            _table.Show(_shown, id);
+            _table.ScrollTo(id);
+            if (moved)
+            {
+                Write();
             }
         }
 

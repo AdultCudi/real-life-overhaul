@@ -5,7 +5,7 @@ using RealLifeOverhaul.GameUi;
 namespace RealLifeOverhaul.Economy.Brands
 {
     /// <summary>
-    /// The Brands tab. The table: each brand, and under it each district it has a figure for. The box: for a brand,
+    /// The Brands tab. The table (BrandsTables.Brands): each brand, and each district it has a figure for. The box: for a brand,
     /// one of three pages chosen with the selector at the top (its figures explained, its settings, its campaigns);
     /// for a district, what its recognition is made of today.
     /// </summary>
@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Economy.Brands
         private int _pushKind;       // the campaign whose quote is showing
         private int _pushDistrict;   // and the district for a local one
 
-        private void WriteBrands(InfoBox box, BrandsState state, int day, ref string selected)
+        private TableSpec WriteBrands(InfoBox box, BrandsState state, int day, ref string selected)
         {
             Brand picked = null;
             DistrictFile district = null;
@@ -26,18 +26,24 @@ namespace RealLifeOverhaul.Economy.Brands
             for (int i = 0; i < state.Brands.Count; i++)
             {
                 Brand b = state.Brands[i];
-                int tone = b.Standards < BrandCatalogue.LowStandards ? 2 : b.Minimum > 0 && b.Standards < b.Minimum ? 1 : 0;
-                if (Pick("brand:" + b.Id, b.Name, BrandsText.Type(b.Type), BrandsText.T("reallife_brand_row_rec", "best", BrandsText.Points(BrandRules.Best(b)), "city", BrandsText.Points(b.City)),
-                        Standards(b.Standards), tone, ref selected))
-                {
-                    picked = b;
-                }
+                string type = BrandsText.Type(b.Type);
+                int best = BrandRules.Best(b);
+                int tone = b.Standards < BrandCatalogue.LowStandards ? TableRow.Red : b.Minimum > 0 && b.Standards < b.Minimum ? TableRow.Yellow : TableRow.Plain;
+                TableRow row = Row("brand:" + b.Id);
+                row.Kind = BrandsTables.IsBrand;
+                row.Set(0, b.Name);
+                row.Set(1, type);
+                WriteBrandCells(row, BrandRules.Shops(state, b, null), best, b.City, b.Standards, tone, BrandRules.RecFootfall(best, b.Standards));
+                picked = Is(row, ref selected) ? b : picked;
                 for (int k = 0; k < b.Districts.Count; k++)
                 {
                     DistrictFile d = b.Districts[k];
-                    int shops = BrandRules.Shops(state, b, d.Name);
-                    if (Pick("dist:" + b.Id + ":" + d.Name, BrandsText.T("reallife_brand_row_district", "district", BrandsText.District(d.Name)), BrandsText.T("reallife_brand_row_shops", "count", shops.ToString()),
-                            BrandsText.Points(d.Rec), BrandsText.Percent(BrandRules.RecFootfall(BrandRules.Effective(b, d.Name), b.Standards)), 0, ref selected))
+                    TableRow sub = Row("dist:" + b.Id + ":" + d.Name);
+                    sub.Kind = BrandsTables.IsDistrict;
+                    sub.Set(0, BrandsText.T("reallife_brand_row_district", "brand", b.Name, "district", BrandsText.District(d.Name)));
+                    sub.Set(1, type);
+                    WriteBrandCells(sub, BrandRules.Shops(state, b, d.Name), d.Rec, b.City, b.Standards, tone, BrandRules.RecFootfall(BrandRules.Effective(b, d.Name), b.Standards));
+                    if (Is(sub, ref selected))
                     {
                         district = d;
                         districtOf = b;
@@ -64,6 +70,17 @@ namespace RealLifeOverhaul.Economy.Brands
                 box.Line(BrandsText.T("reallife_brand_intro_franchise"));
                 box.Line(BrandsText.T("reallife_brand_intro_start"));
             }
+            return BrandsTables.Brands;
+        }
+
+        // The five figures a brand's row and a district's row share (columns 2 to 6 of BrandsTables.Brands).
+        private static void WriteBrandCells(TableRow row, int shops, int rec, int city, int standards, int tone, int worth)
+        {
+            row.Set(2, shops.ToString(), shops);
+            row.Set(3, BrandsText.Points(rec), rec / 100.0);
+            row.Set(4, BrandsText.Points(city), city / 100.0);
+            row.Set(5, Standards(standards), standards, tone);
+            row.Set(6, BrandsText.Percent(worth), worth);
         }
 
         private void WriteBrand(InfoBox box, BrandsState state, Brand b)

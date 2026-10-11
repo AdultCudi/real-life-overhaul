@@ -27,6 +27,12 @@ namespace RealLifeOverhaul
     /// faster than it could brake to that car's speed, and takes each bend of its route no faster
     /// than a car's tyres would hold (looked up along the route with the look ahead, every 0.15 s).
     /// At or below FastFrom nothing of that applies and it drives as it always has.
+    /// It can also be told to drive like somebody who is not an emergency driver at all (Careless: a
+    /// reckless car of Traffic/Reckless): to brake with less than it has, to take in less of the road
+    /// ahead, not to see people on foot, to plan its bends with a grip of its owner's choosing, to
+    /// wander in its lane (Sway) and to stop at a point of its route while a light there is red (HoldAt).
+    /// Those are a few floats read in the steps that run anyway: no further query, and Begin puts every
+    /// one of them back, so no other drive is changed by them.
     /// </summary>
     public sealed class EmergencyDriver : MonoBehaviour
     {
@@ -59,6 +65,7 @@ namespace RealLifeOverhaul
         private const float FastBraking = 9f;       // m/s2 it plans its slowing for a bend, or for the car it follows, with
 
         private static int _obstacleMask;
+        private static int _blindMask;              // the same without the people the game walks about: for a driver who does not see them
         private static readonly RaycastHit[] Hits = new RaycastHit[32];
 
         private VehicleComponent _car;
@@ -93,6 +100,19 @@ namespace RealLifeOverhaul
         private Vector3 _kerbTowards;
         private float _kerbAt;
         private float _reach = PointReach;
+        private float _stopping = Slowing;          // m/s2 it can lose speed with (a careless drive: less)
+        private float _foresight = 1f;              // how much of its look ahead it takes in, 0 to 1
+        private bool _seesPeople = true;            // false: the game's pedestrians are not in its look ahead
+        private float _bendGrip;                    // m/s2 it plans its bends with; 0: only a fast drive plans them
+        private float _careful = CarefulSpeed;      // m/s while turning hard or out of its lane
+        private bool _gridLanes;                    // a lane to pass in is looked up in RoadMap's grid, not in the whole road graph
+        private float _sway;                        // metres it wanders either side of its line; 0: none
+        private float _swayEvery = 4f;              // ...once in this many seconds
+        private int _holdAt = -1;                   // the point of its route it must not pass for now, or -1
+        private float _hold = float.MaxValue;       // the fastest it may go for that point
+        private float _room = float.MaxValue;       // metres clear ahead of its nose at the last look
+        private Rigidbody _ahead;                   // what was there, if it has a body
+        private bool _aheadPerson;                  // ...or whether it was somebody on foot
 
         /// <summary>True while a drive is under way. The component only runs then.</summary>
         public bool Active
@@ -152,6 +172,77 @@ namespace RealLifeOverhaul
         {
             _kerbed = false;
         }
+
+        /// <summary>
+        /// Makes this drive a careless one: a driver who brakes with <paramref name="stopping"/> m/s2 at the most
+        /// (and plans to, so they brake late), takes in only that share of the road ahead, may not see people on
+        /// foot at all, and plans every bend with the grip given (more than the road has: they arrive too fast).
+        /// It also takes hard turns and passes at whatever that grip allows instead of at a careful pace, and looks
+        /// for a lane to pass in in RoadMap's grid (a handful of points) instead of asking the whole road graph.
+        /// The mod's own people, bodies in the road and the player on foot are always seen. Call after Begin, which undoes it.
+        /// </summary>
+        public void Careless(float stopping, float foresight, bool seesPeople, float bendGrip)
+        {
+            _stopping = Mathf.Clamp(stopping, 1f, Slowing);
+            _foresight = Mathf.Clamp(foresight, 0.05f, 1f);
+            _seesPeople = seesPeople;
+            _bendGrip = Mathf.Max(0f, bendGrip);
+            _careful = _bendGrip > 0f ? Mathf.Max(CarefulSpeed, Mathf.Sqrt(_bendGrip * 9f)) : CarefulSpeed;   // (a junction's turn is about 9 m round)
+            _gridLanes = true;
+            if (_blindMask == 0)
+            {
+                _blindMask = TrafficTools.VehicleMask | LayerMask.GetMask("Player");
+            }
+        }
+
+        /// <summary>
+        /// Takes over a vehicle that is moving: it carries on from that speed instead of from rest, so nothing
+        /// shows at the moment it changes hands. Call after Begin and after setting <see cref="CruiseSpeed"/>.
+        /// </summary>
+        public void Rolling(float speed)
+        {
+            _speed = Mathf.Clamp(speed, 0f, Mathf.Max(CruiseSpeed, DefaultCruiseSpeed));
+        }
+
+        /// <summary>
+        /// Makes it wander so many metres either side of its line, once in so many seconds: a driver who has
+        /// had a drink. 0 ends it. It is part of where it aims, nothing else. Begin undoes it.
+        /// </summary>
+        public void Sway(float metres, float every)
+        {
+            _sway = Mathf.Max(0f, metres);
+            _swayEvery = Mathf.Max(1f, every);
+        }
+
+        /// <summary>
+        /// The point of its route it must stop short of for now (a red light there), or -1 for none: it slows
+        /// into it at an ordinary driver's pace and waits, and sets off when this is set back to -1. Looked at
+        /// with the look ahead (every 0.15 s): a walk of the few route points up to it. Begin sets it to -1.
+        /// </summary>
+        public int HoldAt
+        {
+            get => _holdAt;
+            set
+            {
+                _holdAt = value;
+                if (value < 0)
+                {
+                    _hold = float.MaxValue;
+                }
+            }
+        }
+
+        /// <summary>True while it stands at the point it was told to hold at.</summary>
+        public bool Holding => Active && _holdAt >= 0 && _hold <= 0f && _speed < 0.3f;
+
+        /// <summary>Metres clear ahead of its nose at the last look; float.MaxValue if nothing was in reach.</summary>
+        public float Room => Active ? _room : float.MaxValue;
+
+        /// <summary>What was ahead at the last look, if that is a thing with a body (a vehicle); null for a person, something fixed, or nothing.</summary>
+        public Rigidbody Ahead => Active ? _ahead : null;
+
+        /// <summary>True if the nearest thing ahead at the last look was somebody on foot (or lying in the road), not a vehicle or anything fixed.</summary>
+        public bool AheadIsPerson => Active && _aheadPerson;
 
         /// <summary>True while it is out of its own lane, passing (not while pulled in to a kerb).</summary>
         public bool OutOfLane => Active && !_pulledOver && (_targetOffset != 0f || Mathf.Abs(_offset) > 0.3f);
@@ -235,6 +326,18 @@ namespace RealLifeOverhaul
             _braking = false;
             _kerbed = false;
             _reach = PointReach;
+            _stopping = Slowing;
+            _foresight = 1f;
+            _seesPeople = true;
+            _bendGrip = 0f;
+            _careful = CarefulSpeed;
+            _gridLanes = false;
+            _sway = 0f;
+            _holdAt = -1;
+            _hold = float.MaxValue;
+            _room = float.MaxValue;
+            _ahead = null;
+            _aheadPerson = false;
             MayPass = true;
             CruiseSpeed = DefaultCruiseSpeed;
             Arrived = false;
@@ -350,6 +453,7 @@ namespace RealLifeOverhaul
             _body = null;
             _target = null;
             _blocker = null;
+            _ahead = null;
         }
 
         private void FixedUpdate()
@@ -429,7 +533,8 @@ namespace RealLifeOverhaul
             {
                 _nextSense = Time.time + SenseInterval;
                 Sense(position, roadRight, goalSqr);
-                _bend = CruiseSpeed > FastFrom ? BendLimit(position) : float.MaxValue;
+                _bend = CruiseSpeed > FastFrom || _bendGrip > 0f ? BendLimit(position) : float.MaxValue;
+                _hold = _holdAt >= 0 ? HoldLimit(toPoint) : float.MaxValue;
                 if (_blocked && !_following && _nearEnough > 0f && Time.time - _blockedSince > StopPatience
                     && (_routeOnly ? RouteLeft < _nearEnough : goalSqr < _nearEnough * _nearEnough))
                 {
@@ -439,7 +544,9 @@ namespace RealLifeOverhaul
             }
             _offset = Mathf.MoveTowards(_offset, _targetOffset, 4f * Time.fixedDeltaTime);
 
-            Vector3 aim = Flat(toPoint + roadRight * _offset);
+            // (A driver who wanders does so about wherever its line is; it is not out of its lane for that, and not slowed.)
+            float aside = _sway > 0f ? _offset + _sway * Mathf.Sin(Time.time * (2f * Mathf.PI / _swayEvery)) : _offset;
+            Vector3 aim = Flat(toPoint + roadRight * aside);
             if (aim.sqrMagnitude < 0.01f)
             {
                 return;
@@ -452,7 +559,7 @@ namespace RealLifeOverhaul
             float wanted = 0f;
             if (!_blocked && !_braking)
             {
-                wanted = turn > 22f || Mathf.Abs(_offset) > 0.3f ? Mathf.Min(CarefulSpeed, CruiseSpeed) : CruiseSpeed;
+                wanted = turn > 22f || Mathf.Abs(_offset) > 0.3f ? Mathf.Min(_careful, CruiseSpeed) : CruiseSpeed;
                 if (_following)
                 {
                     // Ease off over the last few metres so the follower matches speed instead of ramming.
@@ -473,7 +580,7 @@ namespace RealLifeOverhaul
                         wanted = Mathf.Min(wanted, Mathf.Max(1.5f, Mathf.Sqrt(2f * Braking * toStop)));
                     }
                 }
-                wanted = Mathf.Min(wanted, Mathf.Min(_limit, _bend));
+                wanted = Mathf.Min(wanted, Mathf.Min(_limit, Mathf.Min(_bend, _hold)));
             }
             float pickup = Pickup;
             if (fast && _speed > DefaultCruiseSpeed)
@@ -481,7 +588,7 @@ namespace RealLifeOverhaul
                 // A car pulls less the faster it goes: all of it up to city speed, a fifth of it at its top speed.
                 pickup = Mathf.Max(FastPickupLeast, Pickup * (1f - 0.85f * (_speed - DefaultCruiseSpeed) / (CruiseSpeed - DefaultCruiseSpeed)));
             }
-            _speed = Mathf.MoveTowards(_speed, wanted, (wanted < _speed ? Slowing : pickup) * Time.fixedDeltaTime);
+            _speed = Mathf.MoveTowards(_speed, wanted, (wanted < _speed ? _stopping : pickup) * Time.fixedDeltaTime);
             // The traffic system's springs have no damper of their own: for its own cars it replaces the whole
             // velocity every step, and that is all that stops them bouncing. It does not do that for a car
             // it has been told to ignore, so here the vertical speed is bled off instead (about 0.7 of
@@ -505,7 +612,10 @@ namespace RealLifeOverhaul
                 return float.MaxValue;
             }
             float limit = float.MaxValue;
-            float look = _speed * _speed / (2f * FastBraking) + 25f;
+            // (A careless drive plans with the grip it was given and with no more braking than it has.)
+            float grip = _bendGrip > 0f ? _bendGrip : FastGrip;
+            float braking = _bendGrip > 0f ? Mathf.Min(FastBraking, _stopping) : FastBraking;
+            float look = _speed * _speed / (2f * braking) + 25f;
             Vector3 from = _path[_next];
             Vector3 before = Flat(from - _path[_next - 1]);
             float lastLeg = before.magnitude;
@@ -523,8 +633,8 @@ namespace RealLifeOverhaul
                     float bend = Vector3.Angle(before, leg) * Mathf.Deg2Rad;
                     if (bend > 0.01f)
                     {
-                        float through = Mathf.Sqrt(FastGrip * (lastLeg + length) * 0.5f / bend);
-                        limit = Mathf.Min(limit, Mathf.Sqrt(through * through + 2f * FastBraking * travelled));
+                        float through = Mathf.Sqrt(grip * (lastLeg + length) * 0.5f / bend);
+                        limit = Mathf.Min(limit, Mathf.Sqrt(through * through + 2f * braking * travelled));
                     }
                 }
                 travelled += length;
@@ -533,6 +643,26 @@ namespace RealLifeOverhaul
                 from = _path[i];
             }
             return limit;
+        }
+
+        private const float HoldShort = 3f;         // metres short of the point it holds at that its nose stops (the point is the stop line's own)
+
+        // The fastest it may go now for the point it has been told to hold at: what an ordinary driver's braking
+        // brings to a stand a little short of it, measured along the route. 0 once it is there; no limit once
+        // the point is behind it (the light changed too late: it is over the line and carries on).
+        private float HoldLimit(Vector3 toPoint)
+        {
+            if (_holdAt < _next || _holdAt >= _path.Count)
+            {
+                return float.MaxValue;
+            }
+            float along = toPoint.magnitude;
+            for (int i = _next + 1; i <= _holdAt; i++)
+            {
+                along += Flat(_path[i] - _path[i - 1]).magnitude;
+            }
+            float room = along - _car.length * 0.5f - HoldShort;
+            return room > 0.1f ? Mathf.Sqrt(2f * Mathf.Min(Braking, _stopping) * room) : 0f;
         }
 
         // Metres to where the vehicle will stop, when that is close: the point it pulls up at, the end
@@ -570,6 +700,8 @@ namespace RealLifeOverhaul
             Vector3 middle = position + Vector3.up * SenseHeight;
 
             float free = FreeAhead(middle, forward, beside: false, out Rigidbody blocker);
+            _room = free;
+            _ahead = blocker;
             if (free == float.MaxValue)
             {
                 _blocked = false;
@@ -624,7 +756,9 @@ namespace RealLifeOverhaul
                 }
                 // Close up to a couple of metres behind it, then wait.
                 float room = free - StopGap;
-                _limit = room > 0.1f ? Mathf.Sqrt(2f * (CruiseSpeed > FastFrom ? FastBraking : Braking) * room) : 0f;
+                // (A careless driver plans with all the braking they have, which is to say late.)
+                float plan = _stopping < Slowing ? _stopping : CruiseSpeed > FastFrom ? FastBraking : Braking;
+                _limit = room > 0.1f ? Mathf.Sqrt(2f * plan * room) : 0f;
                 _blocker = blocker;
                 if (_limit > 0f)
                 {
@@ -666,14 +800,22 @@ namespace RealLifeOverhaul
         {
             Vector3 beside = middle + roadRight * offset;
             Vector3 lane = beside + forward * (_car.length * 0.5f + 6f) - Vector3.up * SenseHeight;
-            return !IsBlocked(beside, forward) && TrafficManager.HasInstance
-                   && TrafficManager.Instance.GetClosestWaypoint(lane, LaneSnap) != null;
+            if (IsBlocked(beside, forward))
+            {
+                return false;
+            }
+            if (_gridLanes && RoadMap.Usable)
+            {
+                // The squares of RoadMap's grid round the place: a handful of points, where the call below walks every one in the city.
+                return RoadMap.NearestLane(lane, out float off, out _, out _) && off < LaneSnap;
+            }
+            return TrafficManager.HasInstance && TrafficManager.Instance.GetClosestWaypoint(lane, LaneSnap) != null;
         }
 
         // True if a lane beside the vehicle (or its own, seen from out of it) has anything in it, alongside or ahead.
         private bool IsBlocked(Vector3 origin, Vector3 direction)
         {
-            return Physics.CheckSphere(origin, _halfWidth + SenseMargin, _obstacleMask, QueryTriggerInteraction.Ignore)
+            return Physics.CheckSphere(origin, _halfWidth + SenseMargin, Mask, QueryTriggerInteraction.Ignore)
                    || FreeAhead(origin, direction, beside: true, out _) < float.MaxValue;
         }
 
@@ -686,15 +828,17 @@ namespace RealLifeOverhaul
             blocker = null;
             float halfLength = _car.length * 0.5f;
             // (From a fast drive's speeds that is not enough to stop in: there, as far as it takes to stop, and a little over.)
-            float reach = halfLength + Mathf.Max(SenseDistance + Mathf.Max(0f, _speed - DefaultCruiseSpeed), _speed * _speed / (2f * Slowing) * 1.15f + StopGap + 4f);
+            // (A careless driver takes in only a share of it.)
+            float reach = halfLength + Mathf.Max(SenseDistance + Mathf.Max(0f, _speed - DefaultCruiseSpeed), _speed * _speed / (2f * Slowing) * 1.15f + StopGap + 4f) * _foresight;
             float halfWidth = _halfWidth + SenseMargin;
             float free = float.MaxValue;
+            bool onFoot = false;
             if (_kerbed)
             {
                 // Beside a kerb it has been told of: the nearest thing that is on the carriageway. Every hit of the sweep
                 // is looked at, since the first may be somebody on the pavement. What the ball starts inside is no hit,
                 // as for the single sweep below; nor is any part of the vehicle itself.
-                int count = Physics.SphereCastNonAlloc(origin, halfWidth, direction, Hits, reach, _obstacleMask, QueryTriggerInteraction.Ignore);
+                int count = Physics.SphereCastNonAlloc(origin, halfWidth, direction, Hits, reach, Mask, QueryTriggerInteraction.Ignore);
                 float nearest = float.MaxValue;
                 for (int i = 0; i < count; i++)
                 {
@@ -716,7 +860,7 @@ namespace RealLifeOverhaul
                     free = Mathf.Max(0f, nearest + halfWidth * 0.5f - halfLength);
                 }
             }
-            else if (Physics.SphereCast(origin, halfWidth, direction, out RaycastHit hit, reach, _obstacleMask, QueryTriggerInteraction.Ignore))
+            else if (Physics.SphereCast(origin, halfWidth, direction, out RaycastHit hit, reach, Mask, QueryTriggerInteraction.Ignore))
             {
                 float travelled = hit.distance;
                 bool found = true;
@@ -724,7 +868,7 @@ namespace RealLifeOverhaul
                 {
                     // A part of our own vehicle the ball did not start inside: look again from just ahead of the nose.
                     float skip = halfLength + 0.4f;
-                    found = Physics.SphereCast(origin + direction * skip, halfWidth, direction, out hit, reach - skip, _obstacleMask, QueryTriggerInteraction.Ignore)
+                    found = Physics.SphereCast(origin + direction * skip, halfWidth, direction, out hit, reach - skip, Mask, QueryTriggerInteraction.Ignore)
                             && hit.rigidbody != _body;
                     travelled = skip + hit.distance;
                 }
@@ -732,6 +876,7 @@ namespace RealLifeOverhaul
                 {
                     blocker = hit.rigidbody;
                     free = Mathf.Max(0f, travelled + halfWidth * 0.5f - halfLength);
+                    onFoot = hit.collider != null && ((1 << hit.collider.gameObject.layer) & TrafficTools.PeopleMask) != 0;
                 }
             }
             // People a physics query cannot see: those standing still, kneeling or lying have no collider.
@@ -745,10 +890,18 @@ namespace RealLifeOverhaul
                 {
                     free = room;
                     blocker = null;
+                    onFoot = true;
                 }
+            }
+            if (!beside)
+            {
+                _aheadPerson = onFoot;
             }
             return free;
         }
+
+        // What its look ahead is made against: everything solid and everybody, or (a driver who does not see them) everything but the game's pedestrians.
+        private int Mask => _seesPeople || _blindMask == 0 ? _obstacleMask : _blindMask;
 
         private static Vector3 Flat(Vector3 vector)
         {
