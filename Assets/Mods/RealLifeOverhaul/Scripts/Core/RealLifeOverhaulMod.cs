@@ -639,6 +639,23 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rota_test_open", () => Economy.CompanyDirector.Instance?.TestRotaOpen())
                 .AddButton("reallife_rota_test_fill", () => Economy.CompanyDirector.Instance?.TestRotaFillAll())
                 .AddButton("reallife_rota_test_back", () => Economy.CompanyDirector.Instance?.TestRotaBackAll())
+                .AddHeader("reallife_estate_header")
+                .AddToggle(Settings.EstateId, "reallife_estate_enabled", Settings.Estate,
+                    v => Settings.Estate = v)
+                .AddToggle(Settings.EstateHotelId, "reallife_estate_opt_hotel", Settings.EstateHotel,
+                    v => Settings.EstateHotel = v)
+                .AddToggle(Settings.EstateHireId, "reallife_estate_opt_hire", Settings.EstateHire,
+                    v => Settings.EstateHire = v)
+                .AddButton("reallife_estate_test_applicant", () => Economy.EstateDirector.Instance?.TestApplicant())
+                .AddButton("reallife_estate_test_arrears", () => Economy.EstateDirector.Instance?.TestArrears())
+                .AddButton("reallife_estate_test_works", () => Economy.EstateDirector.Instance?.TestWorks())
+                .AddButton("reallife_estate_test_offer", () => Economy.EstateDirector.Instance?.TestOffer())
+                .AddButton("reallife_estate_test_instruction", () => Economy.EstateDirector.Instance?.TestInstruction())
+                .AddButton("reallife_estate_test_night", () => Economy.EstateDirector.Instance?.TestHotelNight())
+                .AddButton("reallife_estate_test_group", () => Economy.EstateDirector.Instance?.TestGroup())
+                .AddButton("reallife_estate_test_hire", () => Economy.EstateDirector.Instance?.TestHire())
+                .AddButton("reallife_estate_test_month", () => Economy.EstateDirector.Instance?.TestMonth())
+                .AddButton("reallife_estate_test_back", () => Economy.EstateDirector.Instance?.TestBack())
                 .AddToggle(Settings.EconomyOnlineId, "reallife_online_enabled", Settings.EconomyOnline,
                     v => Settings.EconomyOnline = v)
                 .AddButton("reallife_online_test_open", () => Economy.OnlineDirector.Instance?.TestOpen())
@@ -924,6 +941,9 @@ namespace RealLifeOverhaul
             Economy.ServicesApp.Logger = context.Logger;
             _root.AddComponent<Economy.ServicesDirector>();   // the cleaning service and selling a business, and the Services app (Scripts/Economy/Services)
             _root.AddComponent<Economy.CompanyDirector>();   // running a business: staff, insurance, marketing, tax and licences, and the Company app (Scripts/Economy/Company)
+            Economy.EstateDirector.Logger = context.Logger;
+            Economy.EstateApp.Logger = context.Logger;
+            _root.AddComponent<Economy.EstateDirector>();   // property: the market, letting, works, selling, an agency, a hotel and car hire, and the Property app (Scripts/Economy/Estate)
             Economy.Brands.BrandsDirector.Logger = context.Logger;
             Economy.Brands.BrandsApp.Logger = context.Logger;
             _root.AddComponent<Economy.Brands.BrandsDirector>();   // brands and franchises: recognition, standards, franchised shops, city chains and the Brands app (Scripts/Economy/Brands; after the company: its day follows the company's)

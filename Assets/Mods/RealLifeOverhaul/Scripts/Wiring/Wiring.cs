@@ -26,6 +26,7 @@ namespace RealLifeOverhaul
     ///     VenturesLinks   the stock market with the day's news (weather, city events, the paper, the council, a rival's
     ///                     move), a pitch with the founder's CV and what has hold of the player; the Ventures rows in the Planner
     ///     CompanyLinks    running a business with business pressure (footfall, closures, inspections, audits), fires, break-ins, the courts, the paper and the Planner
+    ///     EstateLinks     property with the council's rent and permits policies, the event calendar, a hotel's reception and the Planner
     ///     OnlineLinks     the online shops with the company's campaigns, the calendar's seasons, the GPS's roads and the Planner
     ///     ServicesLinks   selling a business with Ventures (investors bought out), the credit side (business loans paid off) and running a business; the Planner
     ///     BrandLinks      brands and franchises with business pressure (footfall), the city's economy (prices), fires, inspections, strikes, the courts and the Planner
@@ -72,6 +73,7 @@ namespace RealLifeOverhaul
             Step("the city's economy", CityLinks.Connect);
             Step("investors and the market", VenturesLinks.Connect);
             Step("running a business", CompanyLinks.Connect);
+            Step("property", EstateLinks.Connect);
             Step("online shops", OnlineLinks.Connect);
             Step("the cleaning service and selling a business", ServicesLinks.Connect);
             Step("brands and franchises", BrandLinks.Connect);
@@ -87,6 +89,7 @@ namespace RealLifeOverhaul
             }
             Connected = false;
             Step("the taxi by phone", TaxiLinks.Disconnect);
+            Step("property", EstateLinks.Disconnect);
             Step("the cleaning service and selling a business", ServicesLinks.Disconnect);
             Step("brands and franchises", BrandLinks.Disconnect);
             Step("the roommate", RoommateLinks.Disconnect);

@@ -93,6 +93,7 @@ internal static partial class Program
         Ventures();
         Company();
         Rota();
+        Estate();
         Online();
         Services();
         Brands();
