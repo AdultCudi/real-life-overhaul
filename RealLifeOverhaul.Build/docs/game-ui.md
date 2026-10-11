@@ -569,3 +569,78 @@ runtime (Mono) dispatches the interface to the derived class's methods, as the C
   `Open(onColorChanged, initial)`, `onColorPick` for its button, `CustomColorPicker.isOpen`. Its Cancel calls back
   with the first colour; the cancel key closes it with no call; its button also adds the colour to the player's
   saved colours (`PlayerSettingsHelper.AddPlayerColor`).
+
+## 20. More than two tabs over an app's table (`AppShell.SetTabCount`; the Finance app)
+
+MyEmployees' tab bar (`Right/TableTabs`, a HorizontalLayoutGroup that sizes each tab to its label, padding 25 and 50)
+has two tabs: the first with the sprite `white-box-top-left-corner`, the second with `white-box-top-right-corner`,
+both sliced Images in white with a `Button` (colour tint) and a `Label` (TMP 28).
+
+- A tab between them is a copy of the first with its Image's sprite set to none: a sliced Image without a sprite
+  draws a plain rectangle in its colour, which is a tab with square corners. The copy is put between the two with
+  `SetSiblingIndex`, and its click is replaced (`UiClone.Rewire`) like the others'.
+- `AppShell.ShowTab` marks whichever is showing as MyEmployees does, over however many there are.
+- The header cells of the table keep their objects for the app's life: `AppShell.SetColumns` can be called again to
+  give a tab its own column titles (the widths stay, so the rows stay under their headers).
+
+Proven: the bar's structure and both sprites. Inferred: how a tab without a sprite looks beside the two with one.
+
+## 21. The bank: its terms, its dialogue, and what a mod can do without patching
+
+- A bank is a building whose `SpecialService.settings` is a `SpecialServices.Bank.BankSettings` (a ScriptableObject):
+  `maxTotalLoanAmount`, `annualInterestRate`, `yearsToPayLoan`, `allowSideQuestEmergencyLoan`. The city's banks are
+  the entries of `BuildingHelper.SpecialServiceBuildings` with such settings; a bank's name is its
+  `BuildingRegistration.BusinessName`. Branches may share one settings object.
+- `Dialogs.BankDialog.LoanRequest` (the amount confirmed): under 500 is refused; the cap is `maxTotalLoanAmount` less
+  what is owed **to that address**; `GetEconomyMaxLoanAmount` (private) caps it by means: the greater of wealth before
+  loans (`PlayerHelper.GetPersonalWealth().WealthBeforeLoans`) and a quarter of `PlayerHelper.CalculateDailyIncome()`
+  over the payback days, 15,500 at least while the tutorial's first-business loan is open, less every loan. Over the
+  cap the answer is `dialog_bank_loan_maximum_exceeded` with the amount that is left, and no loan. With the side
+  quest `SQBankruptcy` active at a bank that allows it, the cap is ignored and the bank lends up to what brings the money in hand to 15,000.
+- `UI.Dialog.BankLoanSettings` (the input in the dialogue) reads the settings in `Start` and works out
+  `dailyInterest` and `dailyPayment` with `LoanHelper` each time the amount changes; the loan is made with those.
+- So the terms can be changed by writing the two fields on the settings object, and a cap of 0 makes the game
+  refuse. The object is an asset: it outlives a city load and is not in the save, so whoever writes it keeps the
+  first values seen and puts them back (`Economy/Lending/BankTerms`).
+- A dialogue has no event when it opens. `DialogController.current` is the open dialogue's controller (the counter's
+  `DialogUI`, or `ContactsApp` for a call) and its public `dialog` is the `Dialog` object, a `BankDialog` at a bank.
+  The game is paused during a call from the phone, so a timer that looks for it must run on the real clock.
+- `LoanHelper.RunDaily` reads `BuildingHelper.GetBuildingRegistration(loan.bankAddress).BusinessName` for every loan:
+  a loan whose address is no building throws in the game's daily run. A loan made by a mod must carry a real bank's
+  address.
+- `LoanHelper.RecalculateLoanPayments` rewrites every loan's daily interest and payment from its bank's settings when
+  `gameVariables.bankInterestMultiplier` is changed (`SaveGameManager`, where the game's variables are applied).
+- `LoanEntryUi` (EconoView) clamps a daily payment between `LoanHelper.CalculateMinimumDailyPayment` (half the
+  bank's standard payment, 5 at least; 0 for a bank without settings) and the balance, and pays off through
+  `HudConfirm`; a loan paid off there raises `ba:gameevent_loanpaid`, a new loan at the bank `ba:gameevent_newloan`.
+
+## 22. The day's order, and the game's money figures
+
+- `GameManager.NewDay`: the day number goes up, **`GlobalEvents.onNewHour`**, real estate, wages, the daily
+  run (`BusinessHelper.RunDaily`: rent, licensing fees, `LoanHelper.RunDaily`, marketing, the day's financial
+  summary), then **`GlobalEvents.onNewDay`**, then tax and the investment funds. A handler on the hour event
+  therefore sees the state just before the daily run and one on the day event just after it. The daily run books its
+  transactions on the day that ended (`Day - 1`).
+- Every change of money goes through `GameManager.ChangeMoneySafe(amount, TransactionInfo, day, address, force)` and
+  is kept as a `Transaction` in `SaveGameManager.Current.Transactions` (a queue): type (a locale key), categories
+  (a list, often empty), amount, `timestamp.Day`, the balance after it, and `transactionData` (the arguments of the
+  type's text). The queue is cut when it has more than 1,000 entries, and then only of entries over six days old.
+- EconoView names a type by `<type>_label` in its filter and writes a row with the type's own text filled from the
+  data. The game has eleven categories (`ba:transactioncategory_rent`, `_salaryexpenses`, `_loanexpenses`,
+  `_marketing`, `_licensingfees`, `_parkingfees`, `_salaryincome`, `_healthinsuranceexpenses`,
+  `_headhunterreplacementfees`, `_negativeinterestrates`, `_casino`); most transactions have none.
+- `SaveGameManager.Current.financialSummaries` has one `FinancialSummary` per day for a year (made in the daily
+  run): business statements, loan expenses, wages of unassigned staff, `totalProfit`.
+  `PlayerHelper.CalculateDailyIncome()` is the mean `totalProfit` of the last seven.
+- `PlayerHelper.GetPersonalWealth()` (Persona's figure): `cash`, `totalInvestments`, `totalLoans`, `totalAssets`
+  (vehicles and boats at list price, real estate at its purchase price); `CurrentWealth` and `WealthBeforeLoans`.
+- Money is written `amount.ToShortCurrencyFormat()` on the loan pages (whole units in the game's currency format;
+  `true` abbreviates from 10,000) and `amount.ToCurrencyFormat()` elsewhere (with decimals).
+
+## 23. Typing an amount
+
+`UIs.textInputUi.Show` (section 5) is a line of text: it has no mode for numbers, and its field is private. The game's
+own amount fields (`UI.Components.InputField` with an integer content type, as in the bank's dialogue and on a loan's
+row in EconoView) are parts of those screens, each wired to its screen's script. The Finance app therefore offers a
+previous/next selector over round amounts (section 2's selector) and, for any other amount, the game's text box, with
+what was typed read as digits and checked against the least and the most.

@@ -82,6 +82,7 @@ namespace RealLifeOverhaul
         public const string LicencePointsId = "licence_points";
         public const string PlannerId = "planner";
         public const string PlannerRemindersId = "planner_reminders";
+        public const string EconomyId = "economy";
         public const string MinimapId = "nav_minimap";
         public const string GpsId = "nav_gps";
         public const string MinimapRotateId = "nav_rotate";
@@ -238,6 +239,7 @@ namespace RealLifeOverhaul
         public static bool LicencePoints = true;         // booked offences put penalty points on the licence; twelve suspend it
         public static bool Planner = true;               // the Planner app on the phone: everything to do in one agenda (Scripts/Planner)
         public static bool PlannerReminders = true;      // ...and its reminders, sent as the game's own notifications
+        public static bool Economy = true;               // the credit rating, the banks' terms by it, loans from the phone and the Finance app (Scripts/Economy)
         public static bool Minimap = true;               // the minimap on the HUD while out in the city (Scripts/Navigation)
         public static bool Gps = true;                   // a route along the roads to the game's destination, with the next turn
         public static bool MinimapRotate = true;         // the minimap turns with the player (off: north is up)
@@ -436,6 +438,7 @@ namespace RealLifeOverhaul
             LicencePoints = Bool(modId, LicencePointsId, LicencePoints);
             Planner = Bool(modId, PlannerId, Planner);
             PlannerReminders = Bool(modId, PlannerRemindersId, PlannerReminders);
+            Economy = Bool(modId, EconomyId, Economy);
             Minimap = Bool(modId, MinimapId, Minimap);
             Gps = Bool(modId, GpsId, Gps);
             MinimapRotate = Bool(modId, MinimapRotateId, MinimapRotate);

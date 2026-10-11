@@ -27,15 +27,15 @@ namespace RealLifeOverhaul.Planner
         public static PlannerDirector Instance { get; private set; }
 
         /// <summary>Every source, in the order of PlannerCategory. A feature that is off or absent is skipped at no cost.</summary>
-        private readonly IPlannerSource[] _sources =
+        private IPlannerSource[] _sources =
         {
             new NoteSource(), new SampleSource(), new TaxSource(), new CareerSource(), new JusticeSource(), new CustodySource(),
             new LicenceSource(), new FamilySource(), new SocialSource(), new TravelSource(), new EventsSource(), new CivicSource(),
             new BusinessSource(), new HealthSource()
         };
 
-        private readonly int[] _counts;
-        private readonly bool[] _failed;
+        private int[] _counts;
+        private bool[] _failed;
         private readonly List<PlannerReminder> _due = new List<PlannerReminder>(4);
         public readonly PlannerList List = new PlannerList();
 
@@ -54,6 +54,30 @@ namespace RealLifeOverhaul.Planner
         {
             _counts = new int[_sources.Length];
             _failed = new bool[_sources.Length];
+        }
+
+        /// <summary>
+        /// One more source, from a pairing in Scripts/Wiring (a feature the Planner does not know of). Its id must be
+        /// one no other source has; adding it again does nothing.
+        /// </summary>
+        public void AddSource(IPlannerSource source)
+        {
+            if (source == null)
+            {
+                return;
+            }
+            for (int s = 0; s < _sources.Length; s++)
+            {
+                if (_sources[s] == source || _sources[s].Id == source.Id)
+                {
+                    return;
+                }
+            }
+            int count = _sources.Length;
+            Array.Resize(ref _sources, count + 1);
+            Array.Resize(ref _counts, count + 1);
+            Array.Resize(ref _failed, count + 1);
+            _sources[count] = source;
         }
 
         public static int Now()

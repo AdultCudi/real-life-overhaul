@@ -585,6 +585,62 @@ namespace RealLifeOverhaul.Meta
                     Family.Errands.Reset();
                 })
                 .Repair(Family.FamilyPhone.Setup);
+
+            // The economy core. Off, the banks have their own terms, the app is not on the phone and nothing is recorded.
+            // The game's loans are the game's own records: nothing of them is this feature's to remove.
+            Features.Add("economy", "reallife_meta_title_economy")
+                .Group("reallife_econ_header")
+                .About("reallife_guide_economy_about").Help("reallife_guide_economy")
+                .Owns(Settings.EconomyId)
+                .Data(Economy.CreditStore.Key)
+                .Fact("econ_min", () => Whole(Economy.CreditCatalogue.ScoreMin))
+                .Fact("econ_max", () => Whole(Economy.CreditCatalogue.ScoreMax))
+                .Fact("econ_threshold", () => Whole(Economy.CreditCatalogue.LendingThreshold))
+                .Fact("econ_start", () => Whole(Economy.CreditCatalogue.CleanStart))
+                .Fact("econ_bands", EconomyBands)
+                .Fact("econ_w_payments", () => Whole(Economy.CreditCatalogue.Weights[(int)Economy.CreditFactor.Payments]) + "%")
+                .Fact("econ_w_owed", () => Whole(Economy.CreditCatalogue.Weights[(int)Economy.CreditFactor.Owed]) + "%")
+                .Fact("econ_w_length", () => Whole(Economy.CreditCatalogue.Weights[(int)Economy.CreditFactor.Length]) + "%")
+                .Fact("econ_w_legal", () => Whole(Economy.CreditCatalogue.Weights[(int)Economy.CreditFactor.Legal]) + "%")
+                .Fact("econ_w_applications", () => Whole(Economy.CreditCatalogue.Weights[(int)Economy.CreditFactor.Applications]) + "%")
+                .Fact("econ_fade_days", () => Whole(Economy.CreditCatalogue.PaymentFadeDays))
+                .Fact("econ_miss_weight", () => Guide.Number(Economy.CreditCatalogue.MissWeight))
+                .Fact("econ_history_days", () => Whole(Economy.CreditCatalogue.HistoryFullDays))
+                .Fact("econ_application_days", () => Whole(Economy.CreditCatalogue.ApplicationFadeDays))
+                .Fact("econ_best_from", () => Whole(Economy.CreditCatalogue.BestTermsFrom))
+                .Fact("econ_cap_low", () => Guide.Percent(Economy.CreditCatalogue.CapShareAtThreshold))
+                .Fact("econ_cap_high", () => Guide.Percent(Economy.CreditCatalogue.CapShareAtBest))
+                .Fact("econ_rate_low", () => Whole(Economy.CreditCatalogue.RatePointsAtThreshold))
+                .Fact("econ_rate_high", () => Whole(-Economy.CreditCatalogue.RatePointsAtBest))
+                .Fact("econ_rate_floor", () => Whole(Economy.CreditCatalogue.RateFloor) + "%")
+                .Fact("econ_fee", () => Guide.Percent(Economy.CreditCatalogue.PhoneFeeShare))
+                .Fact("econ_fee_least", () => Guide.Money(Economy.CreditCatalogue.PhoneFeeLeast))
+                .Fact("econ_loan_least", () => Guide.Money(Economy.CreditCatalogue.LoanLeast))
+                .Fact("econ_events_shown", () => Whole(Economy.CreditCatalogue.LedgerShown))
+                .Fact("econ_week", () => Whole(Economy.CashFlow.PeriodDays[Economy.CashFlow.Week]))
+                .Fact("econ_month", () => Whole(Economy.CashFlow.PeriodDays[Economy.CashFlow.Month]))
+                .Fact("econ_top", () => Whole(Economy.CashFlow.TopMost))
+                .Cleanup(() => Economy.EconomyDirector.Instance?.StopAll())
+                .ResetData(() => Economy.EconomyDirector.Instance?.Forget());   // the director opens a new file from the (now empty) save on its next second
+        }
+
+        private static string Whole(int value)
+        {
+            return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        // One line per grade, from the catalogue the rating itself is graded by.
+        private static string EconomyBands()
+        {
+            var text = new StringBuilder();
+            for (int g = 0; g < Economy.CreditCatalogue.GradeFrom.Length; g++)
+            {
+                text.Append("- ").Append("reallife_guide_economy_band".GetLocalization()
+                    .Replace("{from}", Whole(Economy.CreditCatalogue.GradeFrom[g]))
+                    .Replace("{to}", Whole(Economy.CreditCatalogue.GradeTo((Economy.CreditGrade)g)))
+                    .Replace("{grade}", Economy.CreditCatalogue.GradeKeys[g].GetLocalization())).Append('\n');
+            }
+            return text.ToString();
         }
 
         // One line per job, from the catalogue the jobs themselves pay by.
