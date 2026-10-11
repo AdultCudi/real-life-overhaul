@@ -95,6 +95,7 @@ internal static partial class Program
         Rota();
         Online();
         Services();
+        Brands();
         Tables();
         Roommates();
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");

@@ -857,6 +857,15 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_economy_sale_about").Help("reallife_guide_economy_sale")
                 .Owns(Settings.EconomySaleId)
                 .Test("reallife_svc_test_offer", "reallife_svc_test_sale_paper", "reallife_svc_test_part"));
+            // Brands and franchises. Off, none of it runs, nothing is paid and every shop's footfall is without it. It runs only while the
+            // economy core does. (Cleaned up before the company, the city's economy and the core: order -3.)
+            Economy.Brands.BrandsGuide.AddFacts(Features.Add("economy_brands", "reallife_meta_title_economy_brands")
+                .Group("reallife_brand_header")
+                .About("reallife_guide_economy_brands_about").Help("reallife_guide_economy_brands")
+                .Owns(Settings.EconomyBrandsId)
+                .Data(Economy.Brands.BrandStore.Key, Economy.Brands.BrandStore.TestKey)
+                .Cleanup(() => Economy.Brands.BrandsDirector.Instance?.StopAll(), -3)
+                .ResetData(() => Economy.Brands.BrandsDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
             Roommates.RoommateGuide.Register();   // sharing the flat: the feature, its option, its save line, its tests and its Guide figures (Scripts/Home/Roommates)
         }
 

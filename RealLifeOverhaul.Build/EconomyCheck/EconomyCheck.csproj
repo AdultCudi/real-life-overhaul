@@ -11,7 +11,8 @@
        filtered and summed by, and the categories of the cash flow, and (OnlineChecks.cs) the online shops: demand,
        orders, picking, rounds, lateness and the rating, returns, the day's book, the bound on what a site adds and
        its line in the save, and (ServicesChecks.cs) the cleaning service and selling a business: the round,
-       what a visit does, contracts, a business's value, the market and the money on the day.
+       what a visit does, contracts, a business's value, the market and the money on the day, and (BrandChecks.cs) brands and franchises: recognition, standards, a
+       franchised shop's day, every way an agreement ends, a shop under a city chain and the save's line.
        Compiles the mod's own files, so it checks exactly what ships.
        the lender of last resort and the ways out of debt, and (VenturesChecks.cs) investors, the pitch, deals and the
        stock market. Compiles the mod's own files, so it checks exactly what ships.
@@ -74,6 +75,11 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\ContractRules.cs" Link="Mod\ContractRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\SaleRules.cs" Link="Mod\SaleRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\ServicesStore.cs" Link="Mod\ServicesStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandCatalogue.cs" Link="Mod\BrandCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandState.cs" Link="Mod\BrandState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandRules.cs" Link="Mod\BrandRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\FranchiseRules.cs" Link="Mod\FranchiseRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandStore.cs" Link="Mod\BrandStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\TableModel.cs" Link="Mod\TableModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\CashCategory.cs" Link="Mod\CashCategory.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialModel.cs" Link="Mod\SocialModel.cs" />
