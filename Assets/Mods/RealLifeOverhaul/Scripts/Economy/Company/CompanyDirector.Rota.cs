@@ -593,12 +593,26 @@ namespace RealLifeOverhaul.Economy
                     return;
                 }
                 int kind = useHours ? JobFillHours : JobFill;
-                if (!useHours && !RotaGame.HasRota(sheet))
+                if (!useHours && !RotaGame.HasRota(sheet) && sheet.Ladder.FillLeft.Count == 0)
                 {
                     RotaAsk(place, kind, false, -1);
                     return;
                 }
                 RotaRung plan = useHours ? RotaRungOf(sheet, rung) : null;
+                if (plan == null && sheet.Ladder.FillLeft.Count > 0)
+                {
+                    // The hours kept cannot hold somebody's least hours: said with the figures, and the plan that can is offered in its place.
+                    RotaLeft left = sheet.Ladder.FillLeft[0];
+                    RotaRung can = RotaRungOf(sheet, 1);
+                    can = can != null && can.Left.Count == 0 ? can : null;
+                    string who = left.Worker < sheet.Workers.Count ? RotaGame.WorkerName(sheet.Workers[left.Worker]) : "?";
+                    HudConfirm.Show("reallife_rota_tab".Localize(), (can != null ? "reallife_rota_confirm_short_plan" : "reallife_rota_confirm_short").Localize(new
+                    {
+                        name = who, least = left.Least, room = left.Why == RotaClash.Shared ? left.Held : left.Room, count = sheet.Ladder.FillLeft.Count,
+                        now = sheet.Ladder.Rungs[0].Sum.Hours, after = can != null ? can.Sum.Hours : sheet.Ladder.Rungs[0].Sum.Hours
+                    }), () => RotaConfirmed(place, can != null ? JobFillHours : kind, can != null ? 1 : -1), null, null, null, false, false);
+                    return;
+                }
                 if (plan == null)
                 {
                     HudConfirm.Show(null, "reallife_rota_confirm", () => RotaConfirmed(place, kind, -1), null, null, null, true, false);
@@ -919,7 +933,17 @@ namespace RealLifeOverhaul.Economy
             }
             RotaLadderResult l = sheet.Ladder;
             RotaShop shop = sheet.Shop;
-            bool pass = l.Count >= 1 && (l.Count < 2 || l.Rungs[1].Sum.Net >= l.Rungs[0].Sum.Net || !shop.HasCustomers);
+            bool pass = l.Count >= 1;
+            int left = l.FillLeft.Count;
+            for (int i = 1; i < l.Count; i++)
+            {
+                RotaRung r = l.Rungs[i];
+                left += r.Left.Count;
+                for (int w = 0; w < sheet.Workers.Count && w < r.Workers; w++)
+                {
+                    pass &= RotaFit.Inside(sheet.Problem.Worker[w], r.HoursOf[w]);   // (the hours a week people ask for, both ends, in every plan)
+                }
+            }
             string hours = string.Empty, rungs = string.Empty;
             for (int h = 0; h < RotaCatalogue.Hours; h++)
             {
@@ -935,6 +959,7 @@ namespace RealLifeOverhaul.Economy
                 : l.Stop == RotaEnd.Most ? "as many people as one ladder advises" : l.Stop == RotaEnd.NoAdvice ? "no hours are advised here" : "everybody the paying hours take is there";
             string line = "Company check (rota plans, " + place.Name + "): " + rungs + "; recommended rung " + l.Recommended + "; ends because " + stop + "; " + (l.Mode == RotaMode.StaffFirst ? "staff first" : "lean")
                           + (l.ModeAuto ? " (chosen by the week: lean " + l.LeanNet / 100 + ", staff first " + l.StaffNet / 100 + ")" : " (the player's choice)") + (shop.Cleaned ? "; the cleaning service cleans it" : string.Empty)
+                          + "; everybody in every plan inside the hours a week they ask for or without hours (" + left + " left without, over the plans and the fill)"
                           + "; customers a week by the hour of the day (the game's calculator): " + hours + "; a customer " + shop.Margin + " hundredths, satisfaction " + shop.Content + ", cleanliness " + shop.CleanNow
                           + ", dirt a customer " + shop.DirtPerCustomer + " and a cleaner's hour " + shop.CleanPerHour + " (thousandths of a point), theft a customer " + shop.TheftRate + " hundredths up to " + shop.TheftLimit
                           + " an hour, a night shut " + shop.NightRisk + " hundredths; " + l.Steps + " step(s): " + (pass ? "PASS" : "FAIL");
