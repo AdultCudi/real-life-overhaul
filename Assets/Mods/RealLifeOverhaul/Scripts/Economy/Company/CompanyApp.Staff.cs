@@ -21,14 +21,18 @@ namespace RealLifeOverhaul.Economy
                     Pick("strike:" + file.Place, CompanyText.T("reallife_co_row_strike"), shops[i].Name,
                         CompanyText.T(file.Striking(day) ? "reallife_co_row_strike_until" : "reallife_co_row_strike_from", "day", (file.Striking(day) ? file.StrikeEnd : file.StrikeFrom).ToString()),
                         CompanyText.T("reallife_co_row_answer"), 2, ref selected);
+                    Last.Pinned = true;   // (something to answer, not a member of staff: it stays at the head of the list)
                 }
                 if (file.OvertimeAsk > 0)
                 {
                     Pick("ot:" + file.Place, CompanyText.T("reallife_co_row_overtime"), shops[i].Name, CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(_director.OvertimeCost(file.Place))),
                         CompanyText.T("reallife_co_row_answer"), 1, ref selected);
+                    Last.Pinned = true;
                 }
             }
             int under = 0, low = 0;
+            TableFilter businesses = CompanyTables.Staff.Filters[0];   // the filter's kinds: the businesses the staff work at
+            businesses.Names.Clear();
             for (int pass = 0; pass < 2; pass++)
             {
                 for (int i = 0; i < state.Staff.Count; i++)
@@ -43,8 +47,19 @@ namespace RealLifeOverhaul.Economy
                     low += StaffRules.StandsLow(f) ? 1 : 0;
                     string stands = f.AskDay > 0 ? CompanyText.T("reallife_co_row_asks") : f.PoachDay > 0 ? CompanyText.T("reallife_co_row_offer")
                         : f.LeaveDay > 0 ? CompanyText.T("reallife_co_row_leaves", "day", f.LeaveDay.ToString()) : f.Standing.ToString();
-                    Pick("emp:" + f.Id, f.Name, _director.ShopName(f.Place), CompanyText.T("reallife_co_row_pay", "paid", CompanyText.Wage(f.Paid), "going", CompanyText.Wage(f.Going)), stands,
+                    string business = _director.ShopName(f.Place);
+                    Pick("emp:" + f.Id, f.Name, business, CompanyText.T("reallife_co_row_pay", "paid", CompanyText.Wage(f.Paid), "going", CompanyText.Wage(f.Going)), stands,
                         waits || f.LeaveDay > 0 ? 2 : StaffRules.StandsLow(f) ? 1 : 0, ref selected);
+                    // What the columns are ordered by: the hourly pay, the standing, and a working day's pay (the totals line adds that up).
+                    TableRow row = Last;
+                    float aDay = f.Paid / 100f * (f.DayHours / 100f);
+                    row.Kind = CompanyTables.KindOf(businesses, business);
+                    row.Kind2 = waits ? CompanyTables.StaffWaiting : f.LeaveDay > 0 ? CompanyTables.StaffLeaving
+                        : StaffRules.Underpaid(f, _director.Level) ? CompanyTables.StaffUnderpaid : CompanyTables.StaffFine;
+                    row.Key[2] = f.Paid / 100.0;
+                    row.Key[3] = f.Standing;
+                    row.Set(4, CompanyText.Money(aDay), aDay);
+                    row.Set(5, f.Skill.ToString(), f.Skill);
                 }
             }
             if (_rows.Count == 0)

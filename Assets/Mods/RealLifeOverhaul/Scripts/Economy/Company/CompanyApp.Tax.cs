@@ -23,12 +23,17 @@ namespace RealLifeOverhaul.Economy
             Pick("ret", CompanyText.T("reallife_co_row_return"), CompanyText.T("reallife_co_row_quarter", "quarter", (t.ReturnWaiting ? t.ReturnQuarter : t.Quarter).ToString()),
                 CompanyText.Day(t.ReturnWaiting ? t.ReturnDue : t.QuarterFrom + _director.QuarterDays),
                 CompanyText.T(late ? "reallife_co_row_return_late" : t.ReturnWaiting ? "reallife_co_row_return_due" : "reallife_co_row_return_running"), late ? 2 : t.ReturnWaiting ? 1 : 0, ref selected);
+            Last.Kind = CompanyTables.AboutTax;
+            Last.Key[2] = t.ReturnWaiting ? t.ReturnDue : t.QuarterFrom + _director.QuarterDays;
             Pick("acc", CompanyText.T("reallife_co_row_accountant"), CompanyText.Accountant(t.Accountant), t.Accountant >= 0 ? CompanyText.Day(t.AccountantNext) : string.Empty,
                 t.Accountant >= 0 ? CompanyText.T("reallife_co_row_a_month", "amount", CompanyText.Money(TaxRules.Fee(t.Accountant, _director.Index, _director.Hidden() > 0))) : string.Empty, 0, ref selected);
+            Last.Kind = CompanyTables.AboutTax;
+            Last.Key[2] = t.Accountant >= 0 ? t.AccountantNext : double.NaN;
             IReadOnlyList<CompanyShop> shops = _director.Shops;
             for (int i = 0; Settings.EconomyCompanyHide && i < shops.Count; i++)
             {
                 Pick("hide:" + shops[i].File.Place, shops[i].Name, CompanyText.T("reallife_co_row_hidden"), string.Empty, shops[i].File.Hide + "%", shops[i].File.Hide > 0 ? 1 : 0, ref selected);
+                Last.Kind = CompanyTables.AboutHidden;
             }
 
             string place = Picked("hide:");

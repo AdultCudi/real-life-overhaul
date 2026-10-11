@@ -22,8 +22,6 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     public sealed partial class CompanyApp
     {
-        private static readonly string[] RotaWeekColumns = { "reallife_rota_col_day", "reallife_rota_col_now", "reallife_rota_col_advised", "reallife_rota_col_customers" };
-        private static readonly string[] RotaDayColumns = { "reallife_rota_col_hour", "reallife_rota_col_customers", "reallife_rota_col_worth", "reallife_rota_col_staff" };
         private static readonly string[] RotaDayKeys = { "common_monday", "common_tuesday", "common_wednesday", "common_thursday", "common_friday", "common_saturday", "common_sunday" };   // the game's own
         private const int RotaRowsMost = 8;     // unmet demands and gaps listed under a week
 
@@ -80,6 +78,7 @@ namespace RealLifeOverhaul.Economy
                     : gaps ? CompanyText.T("reallife_rota_row_gaps", "hours", p.GapHours.ToString())
                     : CompanyText.T("reallife_rota_row_covered");
                 Pick("rota:" + p.Place, p.Name, RotaGame.TypeName(p.Reg) + ", " + hours, CompanyText.T("reallife_rota_row_staff", "count", p.Staff.ToString()), state, gaps ? 2 : 0, ref selected);
+                Last.Key[2] = p.Staff;
             }
             if (places.Count == 0)
             {
@@ -101,7 +100,7 @@ namespace RealLifeOverhaul.Economy
             RotaShop shop = sheet.Shop;
             RotaOutlook o = sheet.Outlook;
             string place = at.Place, none = null;
-            _shell.SetColumns(ColumnNames, RotaWeekColumns, ColumnWidths, 1);
+            _spec = CompanyTables.RotaWeek;
             for (int d = 0; d < RotaCatalogue.Days; d++)
             {
                 int customers = 0, busiest = -1;
@@ -122,7 +121,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 else
                 {
-                    FinanceRow row = Row("day" + d);
+                    TableRow row = Row("day" + d);
                     row.A = RotaDayName(d);
                     row.B = RotaHours(shop.Open, d);
                     row.C = advised;
@@ -191,7 +190,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < o.Roles.Count; i++)
             {
                 RotaRole role = o.Roles[i];
-                FinanceRow row = Row("role" + i);
+                TableRow row = Row("role" + i);
                 row.A = RotaGroup(sheet, role.Group);
                 row.B = CompanyText.T("reallife_rota_role", "need", role.Need.ToString(), "have", role.Have.ToString(), "skill", RotaGame.GroupSkill(sheet, role.Group));
                 row.C = role.Hire > 0 ? CompanyText.T("reallife_rota_role_hire", "count", role.Hire.ToString()) : role.Spare > 0 ? CompanyText.T("reallife_rota_role_spare", "count", role.Spare.ToString()) : CompanyText.T("reallife_rota_role_ok");
@@ -201,7 +200,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < o.Missing.Count; i++)
             {
                 RotaMissing missing = o.Missing[i];
-                FinanceRow row = Row("more" + i);
+                TableRow row = Row("more" + i);
                 row.A = CompanyText.T("reallife_rota_missing", "station", RotaGroup(sheet, missing.Group));
                 row.B = CompanyText.T("reallife_rota_missing_what", "customers", missing.Customers.ToString());
                 row.C = RotaDayName(missing.Day);
@@ -230,7 +229,7 @@ namespace RealLifeOverhaul.Economy
                 string asks = unmet.Demand < demands.Length ? RotaGame.DemandName(who, demands[unmet.Demand]) : string.Empty;
                 string why = unmet.Reason == RotaReason.Short ? "reallife_rota_why_short" : unmet.Reason == RotaReason.NoStation ? "reallife_rota_why_no_station"
                     : sheet.Shown != null ? "reallife_rota_why_needed" : "reallife_rota_why_broken";
-                FinanceRow row = Row("unmet" + i);
+                TableRow row = Row("unmet" + i);
                 row.A = RotaGame.WorkerName(who);
                 row.B = (asks.Length > 0 ? asks + ": " : string.Empty) + CompanyText.T(why);
                 row.C = unmet.Station >= 0 && unmet.Station < sheet.Stations.Count ? RotaGame.Name(sheet.Stations[unmet.Station]) : string.Empty;
@@ -240,7 +239,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < plan.Gaps.Count && rows < RotaRowsMost; i++, rows++)
             {
                 RotaGap gap = plan.Gaps[i];
-                FinanceRow row = Row("gap" + i);
+                TableRow row = Row("gap" + i);
                 row.A = gap.Station < sheet.Stations.Count ? RotaGame.Name(sheet.Stations[gap.Station]) : string.Empty;
                 row.B = CompanyText.T(gap.Reason == RotaReason.NoSkill ? "reallife_rota_gap_no_skill" : "reallife_rota_gap_stretched");
                 row.C = CompanyText.T("reallife_rota_from_to", "from", RotaHour(gap.From), "to", RotaHour(gap.To));
@@ -263,7 +262,7 @@ namespace RealLifeOverhaul.Economy
             string place = sheet.Place.Place;
             int stations = shop.Stations, customers = 0, busiest = -1;
             long makes = 0;
-            _shell.SetColumns(ColumnNames, RotaDayColumns, ColumnWidths, 1);
+            _spec = CompanyTables.RotaDay;
             for (int h = 0; h < RotaCatalogue.Hours; h++)
             {
                 int cell = d * RotaCatalogue.Hours + h, coming = shop.Customers[cell];
@@ -283,7 +282,7 @@ namespace RealLifeOverhaul.Economy
                     makes += o.Net[cell];
                     busiest = busiest < 0 || coming > shop.Customers[d * RotaCatalogue.Hours + busiest] ? h : busiest;
                 }
-                FinanceRow row = Row("hour" + h);
+                TableRow row = Row("hour" + h);
                 row.A = RotaHour(h);
                 row.B = CompanyText.T("reallife_rota_hour_customers", "count", coming.ToString(), "takings", RotaMoney((long)coming * shop.Takings));
                 row.C = RotaMoney(o.Net[cell]);
