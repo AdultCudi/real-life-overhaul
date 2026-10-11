@@ -7,7 +7,9 @@
        phone (TaxiCheck.cs with Transport\Taxi\TaxiRules.cs): its charges, its bands, its refusals, and its search. And the rules of the live street
        (StreetCheck.cs with Traffic\Reckless\StreetRules.cs): the horn, the reckless drivers, how often, and what comes of it. And the minimap's
        buildings and water (BaseCheck.cs with Navigation\NavBaseRules.cs): a place on the picture and back, the window at the city's edges,
-       outlines, the water grid, the drawing and the kept file. Run: dotnet run -c Release (from this folder).
+       outlines, the water grid, the drawing and the kept file. And the rules of "traffic sees people in the road"
+       (SolidCheck.cs with Traffic\Solid\SolidRules.cs): stopping, the strip and the grid, the stand-ins, the horn, the hold, and that
+       a careful car never reaches anybody. Run: dotnet run -c Release (from this folder).
        Exit code 0 = all checks passed. With the path of a file of lane points as its argument it also times the search
        and the picture on that city (see the README, "Minimap and GPS"). -->
   <PropertyGroup>
@@ -25,6 +27,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusBay.cs" Link="Mod\BusBay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\Taxi\TaxiRules.cs" Link="Mod\TaxiRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\Reckless\StreetRules.cs" Link="Mod\StreetRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\Solid\SolidRules.cs" Link="Mod\SolidRules.cs" />
   </ItemGroup>
 
 </Project>
