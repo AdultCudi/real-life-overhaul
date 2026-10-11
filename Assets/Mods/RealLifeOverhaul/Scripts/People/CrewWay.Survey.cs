@@ -15,8 +15,11 @@ namespace RealLifeOverhaul
     ///   3 m buckets. A pose whose strip touches none of those rectangles is clear, and the engine is not asked (a
     ///   rectangle never covers less than what it stands for). One that reaches well into a vehicle's or a box's
     ///   rectangle, at the height the crew is, is blocked, and the engine is not asked either. Only a strip that
-    ///   grazes one, or meets something of another shape, is asked of the engine as before, and of those at most
-    ///   Askings a tier: past that such a strip counts as blocked (a way is refused, never let through);
+    ///   grazes one, or meets something of another shape, is asked of the engine as before. What the engine said of
+    ///   a strip is remembered for the length of the Plan: the 56 ways of one last move all end in the same pose, and
+    ///   all the ways along one side of the ambulance begin in the same one, so a lamp post beside the casualty is
+    ///   asked about once, not 56 times. Of new strips at most Askings a tier are asked: past that such a strip
+    ///   counts as blocked (a way is refused, never let through);
     ///   the ground, and whether it is carriageway, remembered by 0.2 m square: asked once for a square, at its
     ///   middle, however many ways cross it;
     ///   the road points near the scene, so that the nearest one to a place is found among a few dozen.
@@ -34,7 +37,8 @@ namespace RealLifeOverhaul
         private const float Well = 0.2f;          // ...and smaller by, for a strip to be well into it: inside a vehicle's corners and mirrors
         private const float BandLow = 0.85f;      // from the ground: what stands there must reach above this...
         private const float BandHigh = 1.35f;     // ...and start below this, to be in the crew's way whatever the camber
-        private const int Askings = 160;          // strips a tier that the engine is asked about at most (and as many again for the way back)
+        private const int Askings = 160;          // different strips a tier that the engine is asked about at most (and as many again for the way back)
+        private const float Upright = 0.996f;     // the least a thing's own "up" may point up (5 degrees off) for its rectangle to be taken as its true shape
         private const int MostSolid = 8192;
         private const int MostEntries = 32768;
         private const int MostBuckets = 64;       // a side: LookMost * 2 / Bucket
@@ -64,6 +68,7 @@ namespace RealLifeOverhaul
         private static readonly int[] BucketFill = new int[MostBuckets * MostBuckets];
         private static readonly int[] BucketItems = new int[MostEntries];
         private static readonly Dictionary<int, Spot> Spots = new Dictionary<int, Spot>(4096);
+        private static readonly Dictionary<long, Collider> Answers = new Dictionary<long, Collider>(512);   // what the engine said of a strip (null: clear)
         private static readonly List<Waypoint> Near = new List<Waypoint>(256);
         private static readonly Predicate<Waypoint> CollectNear = KeepNear;
 
@@ -189,6 +194,7 @@ namespace RealLifeOverhaul
             _solidCount = 0;
             _spotsSeen = Spots.Count;
             Spots.Clear();
+            Answers.Clear();
             Near.Clear();
             _looked = false;
             _boxes = false;
@@ -217,6 +223,7 @@ namespace RealLifeOverhaul
             Mesh shape = mesh != null ? mesh.sharedMesh : null;
             float alongX = 1f, alongZ = 0f, halfA = bounds.extents.x, halfB = bounds.extents.z;
             Vector3 middle = bounds.center;
+            bool upright = false;
             if (box != null || shape != null)
             {
                 Transform t = solid.transform;
@@ -228,6 +235,7 @@ namespace RealLifeOverhaul
                 half.y = Mathf.Abs(half.y * scale.y);
                 half.z = Mathf.Abs(half.z * scale.z);
                 Vector3 right = t.right, up = t.up, forward = t.forward;
+                upright = Mathf.Abs(up.y) > Upright;
                 float rightFlat = right.x * right.x + right.z * right.z, forwardFlat = forward.x * forward.x + forward.z * forward.z;
                 float flat = Mathf.Sqrt(Mathf.Max(rightFlat, forwardFlat));
                 if (flat > 0.01f)
@@ -250,7 +258,9 @@ namespace RealLifeOverhaul
             SolidHalfB[i] = halfB;
             SolidHalfX[i] = Mathf.Abs(alongX) * halfA + Mathf.Abs(alongZ) * halfB + BoxPad;
             SolidHalfZ[i] = Mathf.Abs(alongZ) * halfA + Mathf.Abs(alongX) * halfB + BoxPad;
-            SolidSure[i] = (box != null || SolidBody[i] != null) && halfA > Well + 0.05f && halfB > Well + 0.05f
+            // Sure only of a box, or of a vehicle's own hull, standing upright: a thing lying on its side, leaning on
+            // another, or round (a ball, a capsule) is not its rectangle, and the engine is asked.
+            SolidSure[i] = upright && (box != null || SolidBody[i] != null) && halfA > Well + 0.05f && halfB > Well + 0.05f
                            && bounds.min.y < _lookY + BandHigh && bounds.max.y > _lookY + BandLow;
         }
 
@@ -259,9 +269,15 @@ namespace RealLifeOverhaul
         private static Collider InStrip(Vector3 from, Vector3 to, float halfWidth, Rigidbody except, int mask)
         {
             _poses++;
-            if (_looked && _boxes)
+            if (!_looked)
             {
-                int met = Meets(from, to, halfWidth, except, mask, out int which);
+                _asked++;
+                return SceneParking.InStrip(from, to, halfWidth, except, mask);
+            }
+            int met = Beyond, which = -1;
+            if (_boxes)
+            {
+                met = Meets(from, to, halfWidth, except, mask, out which);
                 if (met == Free)
                 {
                     return null;
@@ -270,15 +286,39 @@ namespace RealLifeOverhaul
                 {
                     return Solid[which];
                 }
-                if (met == Grazes && _askedNow >= Askings)
-                {
-                    _refused++;
-                    return Solid[which];
-                }
+            }
+            long key = Strip(from, to, halfWidth, except, mask);
+            if (Answers.TryGetValue(key, out Collider said))
+            {
+                return said;
+            }
+            if (met == Grazes && _askedNow >= Askings)
+            {
+                _refused++;
+                return Solid[which];
             }
             _asked++;
             _askedNow++;
-            return SceneParking.InStrip(from, to, halfWidth, except, mask);
+            said = SceneParking.InStrip(from, to, halfWidth, except, mask);
+            Answers[key] = said;
+            return said;
+        }
+
+        // One number for a strip, to the millimetre: the same strip met again has the same number. (64 bits mixed
+        // from six whole numbers: two different strips of one Plan sharing a number is not a thing that happens.)
+        private static long Strip(Vector3 from, Vector3 to, float halfWidth, Rigidbody except, int mask)
+        {
+            unchecked
+            {
+                const long Step = unchecked((long)0x9E3779B97F4A7C15UL);
+                long key = Mathf.RoundToInt((from.x - _lookX) * 1000f);
+                key = key * Step + Mathf.RoundToInt((from.z - _lookZ) * 1000f);
+                key = key * Step + Mathf.RoundToInt((to.x - _lookX) * 1000f);
+                key = key * Step + Mathf.RoundToInt((to.z - _lookZ) * 1000f);
+                key = key * Step + Mathf.RoundToInt(halfWidth * 1000f);
+                key = key * Step + (mask ^ (except != null ? 0x40000000 : 0));
+                return key ^ (key >> 29);
+            }
         }
 
         private const int Free = 0, Grazes = 1, Into = 2, Beyond = 3;
