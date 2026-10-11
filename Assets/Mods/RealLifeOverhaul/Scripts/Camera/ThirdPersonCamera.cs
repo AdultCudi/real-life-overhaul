@@ -191,7 +191,7 @@ namespace RealLifeOverhaul
                    || BigAmbitions.PlacementSystem.PlacementSystem.IsInPlacementMode
                    || GameManager.ShouldBlockKeyboardShortcuts()
 
-                   || Meta.MetaUi.AnyOpen        // the guide, the welcome panel, confirmations: all worked with the mouse
+                   || Meta.MetaUi.AnyOpen        // the options page's messages and questions, worked with the mouse
                    || JusticePanel.IsOpen        // bail, hearings, the Legal file
                    || GameUi.TravelList.AnyOpen; // the game's own list window, worked with the mouse: bus stops, the cooking list, the custom shop, "My vehicles", a two-wheeler stand
         }

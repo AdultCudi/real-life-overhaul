@@ -2805,9 +2805,11 @@ Meta/
   OptionsLayout   puts the finished options page in order: sections, test tools, the buttons at the top; the set-up check
   OptionsSearch   the other half of that class: the search box under the page's first header, and the words features are also found by
   OptionsCaptions a third part of it: the word on each button of the page ("Open", "Close", "Run", "Apply")
-  MetaUi          the mod's own canvas (above the menus, off unless a panel is open) and its controls; messages and confirmations
-  Guide           the in-game guide (topics, facts, search) and its phone contact
-  Welcome         the first-run / after-update panel
+  MetaUi          the mod's own canvas (above the menus, off unless a panel is open) for the options page's messages and questions only
+  Guide           the guide's pages and texts (topics, facts, mark-up) and its phone contact
+  GuideApp        the Guide as an app on the game's phone (GameUi.PhoneApp), asked for from the options page, the contact and the welcome notice
+  GuideView       the app's panel in the game's frame (GameUi.AppShell): a table of pages, a table of the lines of a page
+  Welcome         the first-run / after-update notification, with a click that opens the Guide on "What changed"
   Changelog       what changed per version (guide page, "since last time")
   SaveTools       prepare a save for removing the mod, reset the mod's data, repair, the check after each load
   MetaCity        Meta's part of a city load; Dev: the "Developer diagnostics" switch
@@ -2978,10 +2980,31 @@ on in the very frame the features are destroyed, before any autosave can run), s
 writes a report. It refuses in a vehicle and during a hospital trip, custody, sleep or an activity. There is no
 "all saves" variant.
 
+
+### The Guide and the welcome in the game's own interface
+
+- The Guide is an app called Guide on the game's phone, built as the Planner is (`GameUi.PhoneApp.Install`, a panel
+  from `GameUi.AppShell`, an icon from `GameUi.AppIconPainter`, one more tile on the phone's pages). Tab "Pages" lists
+  the pages (the features, Presets, Known limits, Credits, What changed); a click opens tab "Reading", which has the
+  page's text a line to a row in the game's table, headings in the game's yellow and bullets as "-". The left box says
+  which page and has "All pages". The texts, the `{facts}` and `Changelog` are as they were (`Guide.Fill`, `Guide.Check`).
+- Asked for from the options page, the contact's call or a click on the welcome notice: the app opens at once if no
+  menu of the game's is up; under one a notification says it opens when the menu is closed, and it does (a quarter-second
+  timer that lasts only while the request waits). In the main menu there is no phone: a notification says so.
+- The welcome is the game's notification ("Real Life Overhaul 0.1.5: open the Guide on your phone to see what changed"),
+  once per version; a click opens the Guide on "What changed". The four presets it used to offer are on the options page.
+- Removed: the guide's keyboard search, the welcome panel, and their canvas panels. `MetaUi` stays for the options
+  page's messages and questions (reset, import, preset questions, the set-up check): that page is also in the main menu,
+  where there is no phone and no HUD, so `MetaUi.AnyOpen` stays and the camera still counts it.
+- If the phone is not built as expected, the app is left off with one line in Player.log; the texts remain in the mod.
+- Log lines: "Meta check (guide app): the Guide is on the phone: PASS", "opened on the list of 40 pages, 40 rows ...: PASS",
+  "Meta check (welcome notice): ...: PASS".
+- Not checked in the game: the app's look (row heights are a guess at the line length: a screenshot of a long page
+  settles it), the icon, the notice's click, and the wait for the menus.
 ### Test paths
 
-- Guide: options page "Open the Guide"; the phone contact "Real Life Overhaul Guide"; "Check the mod's set-up" renders every page and lists unfilled `{facts}` and missing texts.
-- Welcome: "Show the welcome panel again"; or delete `m:<mod>:meta_seen_version` from PlayerPrefs.
+- Guide: options page "Open the Guide on your phone" (the app opens when the menu is closed); the phone contact "Real Life Overhaul Guide"; "Check the mod's set-up" renders every page and lists unfilled `{facts}` and missing texts.
+- Welcome: "Show what changed" (opens the Guide on that page); or delete `m:<mod>:meta_seen_version` from PlayerPrefs.
 - Presets: the four buttons, then the guide's Presets page (the "Now" column) and the header "Preset in use".
 - Options page: open and close sections; "Show test tools" off hides the last section. Every button has a word on it ("Open", "Close", "Run", "Apply"), never "Your text here", and every slider its number beside it. Each section's label ends in its count ("(5 options, on)"); switch a feature's first toggle and the "on" becomes "off" at once. Open "Test tools": one closed group per feature; open one, close and reopen the page: it is still open.
 - Search (main menu and in a city, both): with "Test tools" closed, click the box under "Real Life Overhaul: Start here" and type `bus`: the page jumps to the top, only the transport section and its group of tests are left, the line under the box counts them; type on to `bus stop`: the rows that say so are left, and pressing a button among them works. `stop bus` (two words, any order) finds them too. `zzzz` says "Nothing found for 'zzzz'". Try `police`, `fps`, `bike`. A toggle and a slider among the results still work. While typing `v`, `f`, `b`, `x`, the camera, interaction and garage keys must do nothing, and nor must the game's own (Space, M, Tab). Empty the box with the x: every section is as it was before. In the city, Esc while typing empties the box and leaves the page open; on the main menu it also closes the page. Switch "Show test tools" off and search `test`: the tests are still found. `Player.log` must have no "Meta: the search box" line.

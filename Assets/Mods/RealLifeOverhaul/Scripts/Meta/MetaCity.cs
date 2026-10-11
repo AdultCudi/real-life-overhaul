@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Meta
                 SaveTools.CityLoaded();
                 Dev.Apply();
                 _generation++;
+                GuideApp.Begin(_generation);
                 MetaUi.Instance.Run(Watch(_generation));
             }
             catch (Exception e)
@@ -43,6 +44,7 @@ namespace RealLifeOverhaul.Meta
         {
             _generation++;
             Root = null;
+            GuideApp.End();
             try
             {
                 if (MetaUi.Exists)
