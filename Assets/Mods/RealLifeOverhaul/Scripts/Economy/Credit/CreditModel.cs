@@ -128,12 +128,12 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Accounts the file keeps at most: closed ones are dropped first, oldest first.</summary>
         public const int AccountsMost = 24;
 
-        /// <summary>The open account of a kind, or null. (A card, an overdraft and a leftover of fees are one of each; finance can be several.)</summary>
+        /// <summary>The open account of a kind, or null; one made by a test tool is never it. (A card, an overdraft and a leftover of fees are one of each; finance can be several.)</summary>
         public CreditAccount Account(ProductKind kind)
         {
             for (int i = 0; i < Accounts.Count; i++)
             {
-                if (Accounts[i].Kind == kind && !Accounts[i].Closed)
+                if (Accounts[i].Kind == kind && !Accounts[i].Closed && !Accounts[i].Test)
                 {
                     return Accounts[i];
                 }
@@ -153,23 +153,22 @@ namespace RealLifeOverhaul.Economy
             return null;
         }
 
-        /// <summary>Puts an account in the file with an id of its own.</summary>
+        /// <summary>Puts an account in the file with an id of its own. (The list is never shortened here: it may be being gone through.)</summary>
         public CreditAccount Add(CreditAccount account)
         {
             account.Id = NextAccountId++;
             Accounts.Add(account);
-            Trim();
             return account;
         }
 
-        /// <summary>Closed accounts are forgotten: at once when there are too many, and all of them when asked.</summary>
-        public void Trim(bool allClosed = false)
+        /// <summary>Closed accounts are forgotten (what happened on them is on the file's events). They are never written to a save.</summary>
+        public void Trim()
         {
-            for (int i = 0; i < Accounts.Count && (allClosed || Accounts.Count > AccountsMost); i++)
+            for (int i = Accounts.Count - 1; i >= 0; i--)
             {
                 if (Accounts[i].Closed)
                 {
-                    Accounts.RemoveAt(i--);
+                    Accounts.RemoveAt(i);
                 }
             }
         }

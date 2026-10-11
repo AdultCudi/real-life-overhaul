@@ -43,6 +43,7 @@ namespace RealLifeOverhaul.Economy
         private readonly List<LoanView> _live = new List<LoanView>(8);
         private readonly List<LoanFinding> _findings = new List<LoanFinding>(8);
         private readonly CreditFactor[] _tips = new CreditFactor[2];
+        private CreditDesk _desk;      // the mod's own accounts, missed payments, the private lender, the ways out of debt
 
         private FinanceApp _view;
         private PhoneApp _app;
@@ -54,10 +55,15 @@ namespace RealLifeOverhaul.Economy
         private int _preRunDay;        // the day whose daily run the hour event has read the loans for
         private object _toldDialogue;  // the bank dialogue that has already been told why nobody lends
         private Action _onSave, _onHour, _onDay, _hourSeen, _daySeen;
+        private Action _deskSlow, _deskKeep, _deskSave, _deskRefused;   // kept, so that calling the desk each second allocates nothing
+        private bool _deskBroken;      // a fault in the credit desk: it is off for the session, the rating and the banks' terms go on
         private Action<CreditGrade, CreditGrade> _onGrade;
         private Action<CreditEvent, int, int> _onPosted;
 
         public bool Running => _running;
+
+        /// <summary>The credit desk; never null once the director is awake. It does nothing while the economy is not running.</summary>
+        public CreditDesk Desk => _desk;
 
         private static GameInstance Save => SaveGameManager.Current;
         private static bool Verbose => Meta.Dev.Verbose;
@@ -65,6 +71,11 @@ namespace RealLifeOverhaul.Economy
         private void Awake()
         {
             Instance = this;
+            _desk = new CreditDesk(this);
+            _deskSlow = _desk.Slow;
+            _deskKeep = _desk.KeepHolds;
+            _deskSave = _desk.BeforeSave;
+            _deskRefused = _desk.Refused;
             _onSave = OnSave;
             _onHour = OnHour;
             _onDay = OnDay;
@@ -98,6 +109,7 @@ namespace RealLifeOverhaul.Economy
             catch (Exception e)
             {
                 Logger?.Error(e);
+                StopDesk("the city is unloading");
                 BankTerms.Restore();
             }
             BankTerms.Forget();
@@ -159,6 +171,7 @@ namespace RealLifeOverhaul.Economy
             {
                 Install();
             }
+            DeskDo("the timer", _deskSlow);
             if (BankTerms.Lenders.Count == 0 && _findTries < FindTries)
             {
                 // The city's buildings were not all there yet: looked for again for a while, then left.
@@ -202,6 +215,7 @@ namespace RealLifeOverhaul.Economy
                 file.FirstCreditDay = today;   // a loan taken while the economy was off: its history starts when it is first seen
             }
             file.Roll(today);
+            DeskDo("the start", () => _desk.Start(file, today));   // the mod's own accounts join the rating before it is first worked out
             int score = CreditLedger.Refresh();
             CreditLedger.GradeChanged -= _onGrade;
             CreditLedger.GradeChanged += _onGrade;
@@ -239,6 +253,7 @@ namespace RealLifeOverhaul.Economy
             _running = false;
             CreditLedger.GradeChanged -= _onGrade;
             CreditLedger.Posted -= _onPosted;
+            StopDesk(why);   // every one of the game's loans has its own figures again
             CreditLedger.Close();
             int restored = BankTerms.Restore();
             if (_app != null)
@@ -258,6 +273,53 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        // Everything the director asks of the credit desk goes through here. A fault in the desk switches the desk off
+        // for the session with one line and gives every loan its own interest and payment back; the rating, the banks'
+        // terms, the Finance app and the game's daily run go on. What the save keeps of the accounts is kept.
+        private void DeskDo(string where, Action what)
+        {
+            if (_deskBroken)
+            {
+                return;
+            }
+            try
+            {
+                what();
+            }
+            catch (Exception e)
+            {
+                _deskBroken = true;
+                Logger?.Error(e);
+                StopDesk("a fault in the credit desk");
+                Logger?.Warn("Economy: the credit desk (the mod's own accounts, missed payments, the private lender, the ways out of debt) is switched off for this session after an error in "
+                             + where + ". Every loan has its own interest and payment again; the credit rating, the banks' terms and the game's loans are not affected.");
+            }
+        }
+
+        /// <summary>For the options page: one of the credit desk's test tools.</summary>
+        public void DeskTest(Action<CreditDesk> test)
+        {
+            if (_deskBroken || _broken || !_running)
+            {
+                TestRefusals.Tell(Logger, "Credit desk", Save == null || !ModState.Loaded ? TestRefusal.NotLoaded : TestRefusal.FeatureOff);
+                return;
+            }
+            DeskDo("a test", () => test(_desk));
+        }
+
+        // The credit desk stops, whatever state it is in: a fault in it must not keep the banks from getting their terms back.
+        private void StopDesk(string why)
+        {
+            try
+            {
+                _desk.Stop(why);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
         /// <summary>A fault: one line, the banks' own terms back, and nothing more of the economy this session.</summary>
         private void Fault(string where, Exception e)
         {
@@ -270,9 +332,10 @@ namespace RealLifeOverhaul.Economy
             catch (Exception second)
             {
                 Logger?.Error(second);
+                StopDesk("a fault");
                 BankTerms.Restore();
             }
-            Logger?.Warn("Economy: switched off for this session after an error in " + where + ". The banks have their own terms again; the game's loans are not affected.");
+            Logger?.Warn("Economy: switched off for this session after an error in " + where + ". The banks have their own terms again and every loan its own interest and payment; the game's daily run is not affected.");
         }
 
         private void Install()
@@ -320,11 +383,18 @@ namespace RealLifeOverhaul.Economy
             try
             {
                 int day = Save.Day;
+                DeskDo("the hour", _deskKeep);   // what is held on a loan is in place before the loans are read (the night's run may follow at once)
                 SyncLoans(day);
                 if (day != CreditLedger.File.SettledDay)
                 {
+                    bool first = _preRunDay != day;
                     _preRunDay = day;   // the marks are now exactly as the loans stand before this day's run
+                    if (first)
+                    {
+                        DeskDo("the overdraft", () => _desk.BeforeRun(day));   // the overdraft covers a day that is short
+                    }
                 }
+                DeskDo("the hour", () => _desk.Hour(day));
                 CreditLedger.Touch();
                 KeepTerms("the hour");
             }
@@ -428,6 +498,9 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             int missEffect = missed > 0 ? CreditLedger.Post(CreditKind.Missed, missedAmount, payDay, GameLoans.AccountKey, missed) : 0;
+            // The mod's own accounts take their payments after the game's loans, and each debt that was missed takes its next step.
+            DeskDo("the day", () => _desk.Day(day, _findings));
+            ReadLoansQuietly(day);   // (the marks were brought up to date a moment ago, so nothing of the borrower's can be passed over here)
             ReadRecord(day);
             file.SettledDay = day;
             CreditLedger.Touch();
@@ -557,9 +630,59 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        // The game's loans read again with nothing said. Only where nothing the borrower did can be waiting to be read:
+        // straight after the day's comparison has brought every mark up to date.
+        private void ReadLoansQuietly(int day)
+        {
+            GameLoans.Read(_live);
+            LoanBook.Sync(CreditLedger.File.Loans, _live, day, null, true);
+        }
+
+        /// <summary>
+        /// For the credit desk: a loan it has just made gets its mark in the file now, so that the hour event does not
+        /// take it for one made at the bank. Only this loan is marked: anything the borrower did at a bank since the
+        /// last hour is still found, and said, at the next. Returns the mark.
+        /// </summary>
+        public LoanMark Adopt(Loan loan)
+        {
+            if (!_running || CreditLedger.File == null || Save == null || loan == null)
+            {
+                return null;
+            }
+            List<LoanMark> marks = CreditLedger.File.Loans;
+            for (int i = 0; i < marks.Count; i++)
+            {
+                if (ReferenceEquals(marks[i].Ref, loan))
+                {
+                    return marks[i];
+                }
+            }
+            var bank = loan.bankAddress;
+            var mark = new LoanMark
+            {
+                Street = bank != null ? CreditStore.Clean(bank.streetName) : string.Empty, Number = bank != null ? bank.streetNumber : 0, Total = loan.totalAmount, FirstDay = Save.Day,
+                Remaining = loan.remainingAmount, Payment = loan.dailyPayment, Interest = loan.dailyInterest, Ref = loan
+            };
+            marks.Add(mark);
+            return mark;
+        }
+
+        /// <summary>For the credit desk: something that moves the rating or a bank's terms has changed.</summary>
+        public void TermsChanged(string when)
+        {
+            if (!_running || _broken || Save == null)
+            {
+                return;
+            }
+            CreditLedger.Touch();
+            KeepTerms(when);
+            Badge();
+        }
+
         /// <summary>The refusal, with the one or two things that would raise the rating most.</summary>
         public void TellRefused()
         {
+            DeskDo("a refusal", _deskRefused);   // the lender of last resort makes itself known, once
             CreditScore score = CreditLedger.Score;
             Notifications.Show(NotificationType.Warning, "reallife_econ_note_refused", new Dictionary<string, string>
             {
@@ -668,6 +791,7 @@ namespace RealLifeOverhaul.Economy
             {
                 if (_running && Save != null && CreditLedger.File != null)
                 {
+                    DeskDo("the save", _deskSave);   // every loan carries its own interest and payment in the save
                     CreditStore.Save(Save.modData, CreditLedger.File);
                 }
             }
@@ -684,6 +808,10 @@ namespace RealLifeOverhaul.Economy
         {
             try
             {
+                if (_running)
+                {
+                    DeskDo("leaving the save", () => _desk.Leave());   // nothing of the mod's stays on a loan, and what cash allows is settled
+                }
                 StandDown("the save tools asked", true, true);
             }
             catch (Exception e)

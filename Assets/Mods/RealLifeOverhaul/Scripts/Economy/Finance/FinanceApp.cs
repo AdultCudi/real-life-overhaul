@@ -15,17 +15,21 @@ namespace RealLifeOverhaul.Economy
 {
     /// <summary>
     /// What the Finance app shows, in the game's frame (GameUi.AppShell, copied from MyEmployees) as the Planner and
-    /// the Guide are. Four tabs over the table on the right, and on the left the white box with the tab's figures:
+    /// the Guide are. Five tabs over the table on the right, and on the left the white box with the tab's figures:
     ///
     ///   Overview    cash, what is owed, what leaves tomorrow, net worth, the rating; the table lists every debt
     ///   Credit      the score and its grade, what would raise it, each factor; the table lists the file's last events
-    ///   Borrow      the city's banks with today's offer; pick one, choose an amount, see what it costs, apply
+    ///   Borrow      the city's banks with today's offer, and the other kinds of credit; pick one, see what it costs, apply
     ///   Cash flow   money in and out by the game's kinds of transaction for yesterday, 7 days or 30
+    ///   Accounts    every debt with its lender, what is owed, the next payment and how it stands; pick one to pay it,
+    ///               draw on it or close it, and the ways out of debt (FinanceApp.Accounts.cs)
+    ///
+    /// A list goes in the table, which scrolls; the white box, which does not, shows only the one thing picked.
     ///
     /// Everything on it is the game's. Nothing runs while the app is closed: the rows and figures are made when it
     /// opens, when a tab is picked and when the player changes something in it.
     /// </summary>
-    public sealed class FinanceApp
+    public sealed partial class FinanceApp
     {
         /// <summary>The glyph on the app's icon: the game's coin, or a picture the phone's own scene uses.</summary>
         public static readonly string[] AppGlyphs = { "Icon-Money", "Icon-Coin" };
@@ -33,7 +37,7 @@ namespace RealLifeOverhaul.Economy
         private const float WidthA = 620f, WidthB = 500f, WidthC = 300f, WidthD = 300f;
         private const int TypedAmountLength = 9;
 
-        private static readonly string[] TabKeys = { "reallife_econ_tab_overview", "reallife_econ_tab_credit", "reallife_econ_tab_borrow", "reallife_econ_tab_cash" };
+        private static readonly string[] TabKeys = { "reallife_econ_tab_overview", "reallife_econ_tab_credit", "reallife_econ_tab_borrow", "reallife_econ_tab_cash", "reallife_econ_tab_accounts" };
         private static readonly string[] ColumnNames = { "ColumnA", "ColumnB", "ColumnC", "ColumnD" };
         private static readonly float[] ColumnWidths = { WidthA, WidthB, WidthC, WidthD };
         private static readonly string[][] ColumnKeys =
@@ -41,7 +45,8 @@ namespace RealLifeOverhaul.Economy
             new[] { "reallife_econ_col_debt", "reallife_econ_col_owed", "reallife_econ_col_per_day", "reallife_econ_col_left" },
             new[] { "reallife_econ_col_event", "reallife_econ_col_day", "reallife_econ_col_amount", "reallife_econ_col_effect" },
             new[] { "reallife_econ_col_lender", "reallife_econ_col_owed_them", "reallife_econ_col_rate", "reallife_econ_col_most" },
-            new[] { "reallife_econ_col_kind", "reallife_econ_col_net", "reallife_econ_col_in", "reallife_econ_col_out" }
+            new[] { "reallife_econ_col_kind", "reallife_econ_col_net", "reallife_econ_col_in", "reallife_econ_col_out" },
+            new[] { "reallife_econ_col_account", "reallife_econ_col_lender", "reallife_econ_col_owed", "reallife_econ_col_state" }
         };
         private static readonly int[] AmountSteps = { 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000, 2500000, 5000000 };
 
@@ -221,6 +226,7 @@ namespace RealLifeOverhaul.Economy
                     case Finance.Credit: WriteCredit(box, score); break;
                     case Finance.Borrow: selected = WriteBorrow(box, score); break;
                     case Finance.CashFlow: WriteCashFlow(box); break;
+                    case Finance.Accounts: selected = WriteAccounts(box); break;
                     default: WriteOverview(box, score); break;
                 }
             }
@@ -266,27 +272,27 @@ namespace RealLifeOverhaul.Economy
         {
             GameInstance save = SaveGameManager.Current;
             List<Loan> loans = save.Loans;
-            float owedLoans = 0f, payments = 0f, interest = 0f;
+            CreditFile file = CreditLedger.File;
+            Obligations due = Books.Tomorrow(file);   // the figure the overdraft covers a short day against
+            float owedLoans = 0f, payments = due.Loans, interest = due.LoanInterest;
             for (int i = 0; i < loans.Count; i++)
             {
                 Loan loan = loans[i];
                 owedLoans += loan.remainingAmount;
-                payments += GameLoans.Due(loan);
-                interest += loan.dailyInterest;
                 FinanceRow row = Row("loan:" + i);
                 row.A = GameLoans.BankName(loan);
                 row.B = FinanceText.T("reallife_econ_row_owed_of", "owed", FinanceText.Money(loan.remainingAmount), "total", FinanceText.Money(loan.totalAmount));
                 row.C = FinanceText.Money(GameLoans.Due(loan));
                 row.D = loan.dailyPayment > 0 ? FinanceText.T("reallife_econ_row_days", "days", Mathf.CeilToInt(loan.remainingAmount / loan.dailyPayment).ToString()) : string.Empty;
             }
+            float owedAccounts = OverviewAccounts(file, save.Day);
             _debts.Clear();
             EconomyBridges.OtherDebts?.Invoke(_debts);
-            float owedOther = 0f, otherDaily = 0f;
+            float owedOther = 0f, otherDaily = due.Other;
             for (int i = 0; i < _debts.Count; i++)
             {
                 DebtLine debt = _debts[i];
                 owedOther += debt.Owed;
-                otherDaily += Mathf.Min(debt.PerDay, debt.Owed);
                 FinanceRow row = Row("debt:" + i);
                 row.A = FinanceText.T(debt.NameKey);
                 row.B = FinanceText.Money(debt.Owed);
@@ -299,36 +305,16 @@ namespace RealLifeOverhaul.Economy
                 Say("none", FinanceText.T("reallife_econ_row_no_debts"));
             }
 
-            // Rent as the game's daily run takes it (BusinessHelper.RunDaily): every rented building the player does not own.
-            float rent = 0f;
-            bool homeRentFree = !TutorialHelper.HasCompletedObjective("tutorial_quest_get_some_sleep_objective_4");
-            List<BuildingRegistration> registrations = save.BuildingRegistrations;
-            for (int i = 0; i < registrations.Count; i++)
-            {
-                BuildingRegistration r = registrations[i];
-                if (r.RentedByPlayer && !r.BuildingOwnedByPlayer && r.RentPerDay > 0f && (!homeRentFree || r.GetBuildingType() != "ba:buildingtype_residential"))
-                {
-                    rent += r.RentPerDay;
-                }
-            }
-            // Wages are worked out by the game as it pays them (EmployeeInstance.PayWage): what it paid yesterday is the figure it has.
-            float wages = 0f;
-            int yesterday = save.Day - 1;
-            foreach (Transaction t in save.Transactions)
-            {
-                if (t != null && t.timestamp.Day == yesterday && t.transactionCategories != null && t.transactionCategories.Contains("ba:transactioncategory_salaryexpenses"))
-                {
-                    wages -= t.amount;
-                }
-            }
+            // Rent and wages as the game's daily run takes them (Books.Tomorrow).
+            float rent = due.Rent, wages = due.Wages;
             var wealth = PlayerHelper.GetPersonalWealth();   // the game's own figure for what the player is worth (Persona shows it)
 
             box.Title(FinanceText.T("reallife_econ_tab_overview"));
             box.Line(FinanceText.Pair("reallife_econ_over_cash", FinanceText.Money(save.Money)));
-            box.Line(FinanceText.Pair("reallife_econ_over_owed", FinanceText.Money(owedLoans + owedOther)));
-            if (owedOther > 0f)
+            box.Line(FinanceText.Pair("reallife_econ_over_owed", FinanceText.Money(owedLoans + owedAccounts + owedOther)));
+            if (owedOther > 0f || owedAccounts > 0f)
             {
-                box.Line(FinanceText.T("reallife_econ_over_owed_split", "loans", FinanceText.Money(owedLoans), "other", FinanceText.Money(owedOther)));
+                box.Line(FinanceText.T("reallife_econ_over_owed_three", "loans", FinanceText.Money(owedLoans), "accounts", FinanceText.Money(owedAccounts), "other", FinanceText.Money(owedOther)));
             }
             box.Line(FinanceText.Pair("reallife_econ_over_rating", FinanceText.T("reallife_econ_rating_value", "score", score.Value.ToString(), "grade", FinanceText.Grade(score.Grade))));
             box.Headline("reallife_econ_over_costs");
@@ -337,6 +323,10 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(FinanceText.T("reallife_econ_over_interest", "amount", FinanceText.Money(interest)));
             }
+            if (due.Accounts > 0f)
+            {
+                box.Line(FinanceText.Pair("reallife_econ_over_accounts", FinanceText.Money(due.Accounts)));
+            }
             if (otherDaily > 0f)
             {
                 box.Line(FinanceText.Pair("reallife_econ_over_fines", FinanceText.Money(otherDaily)));
@@ -344,7 +334,8 @@ namespace RealLifeOverhaul.Economy
             box.Line(FinanceText.Pair("reallife_econ_over_rent", FinanceText.Money(rent)));
             box.Line(FinanceText.Pair("reallife_econ_over_wages", FinanceText.Money(wages)));
             box.Headline("reallife_econ_over_worth_head");
-            box.Line(FinanceText.Pair("reallife_econ_over_worth", FinanceText.Money(wealth.CurrentWealth - owedOther)));
+            box.Line(FinanceText.Pair("reallife_econ_over_leaves", FinanceText.Money(due.Total)));
+            box.Line(FinanceText.Pair("reallife_econ_over_worth", FinanceText.Money(wealth.CurrentWealth - owedOther - owedAccounts)));
             box.Line(FinanceText.T("reallife_econ_over_worth_parts", "investments", FinanceText.Money(wealth.totalInvestments), "assets", FinanceText.Money(wealth.totalAssets)));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_econ_open_econoview", OpenEconoView);
@@ -395,6 +386,7 @@ namespace RealLifeOverhaul.Economy
             {
                 Say("none", FinanceText.T("reallife_econ_row_no_events"));
             }
+            WorstLine(box, score);
         }
 
         // ---------------------------------------------------------------- Borrow
@@ -420,7 +412,7 @@ namespace RealLifeOverhaul.Economy
                 return null;
             }
             IReadOnlyList<Lender> lenders = BankTerms.Lenders;
-            string selected = null;
+            string selected = ProductRows();   // the other kinds of credit, under the banks
             bool found = false;
             for (int i = 0; i < lenders.Count; i++)
             {
@@ -447,6 +439,11 @@ namespace RealLifeOverhaul.Economy
             if (lenders.Count == 0)
             {
                 Say("none", FinanceText.T("reallife_econ_row_no_banks"));
+            }
+            if (_lender == null && _product >= 0)
+            {
+                WriteProduct(box);
+                return selected;
             }
             if (_lender == null)
             {
@@ -574,6 +571,11 @@ namespace RealLifeOverhaul.Economy
 
         private void RowClicked(FinanceRow row)
         {
+            if (row != null && row.Pick && PickedOther(row))
+            {
+                Refresh();
+                return;
+            }
             if (row == null || !row.Pick || _tab != Finance.Borrow || row.Index < 0 || row.Index >= BankTerms.Lenders.Count)
             {
                 _table.ClearSelection();
@@ -585,12 +587,15 @@ namespace RealLifeOverhaul.Economy
                 _lender = lender;
                 _amount = 0;
             }
+            _product = -1;
             Refresh();
         }
 
         private void ClosePick()
         {
             _lender = null;
+            _product = -1;
+            _picked = null;
             _table.ClearSelection();
             Refresh();
         }

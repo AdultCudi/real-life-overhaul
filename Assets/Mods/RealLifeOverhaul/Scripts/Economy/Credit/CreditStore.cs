@@ -20,7 +20,8 @@ namespace RealLifeOverhaul.Economy
     ///      on it in memory with the loan's own interest and payment, its purpose and its security
     ///   a  the mod's own accounts (version 2): the numbers of <see cref="CreditAccount"/>, its standing, and three texts
     ///   k  the lender of last resort (version 2): the numbers of <see cref="SharkDebt"/>
-    ///   r  the ways out of debt and an approval for finance (version 2): the numbers of <see cref="Relief"/>
+    ///   r  the ways out of debt and an approval for finance (version 2): the numbers of <see cref="Relief"/>, the lending
+    ///      bank's street, and the court's numbers of the claims still open, divided by commas
     ///
     /// VERSION 1 had the first five parts and seven fields to a loan. Its file loads as it is: there are no accounts,
     /// nothing is owed to the lender of last resort, and every loan starts in order with its lender
@@ -128,10 +129,14 @@ namespace RealLifeOverhaul.Economy
                 t.Append('|').Append(Clean(m.Security));
             }
             t.Append("~a:");
-            for (int i = 0; i < f.Accounts.Count; i++)
+            for (int i = 0, written = 0; i < f.Accounts.Count && written < CreditFile.AccountsMost; i++)
             {
                 CreditAccount a = f.Accounts[i];
-                t.Append(i > 0 ? ";" : string.Empty);
+                if (a.Closed)
+                {
+                    continue;   // closed: forgotten at the day's end, and never kept in a save
+                }
+                t.Append(written++ > 0 ? ";" : string.Empty);
                 Join(t, a.Id, (int)a.Kind, a.Owed, a.Agreed, a.RateBp);
                 t.Append('|').Append(a.Carry.ToString(Inv)).Append('|');
                 Join(t, a.OpenedDay, a.Term, a.Instalment, a.NextDay, a.DueDay, a.StatementLeft, a.MinimumLeft, a.Charged ? 1 : 0, a.Secured ? 1 : 0, a.SecurityValue,
@@ -148,7 +153,11 @@ namespace RealLifeOverhaul.Economy
             Join(t, r.Arranged ? 1 : 0, r.ArrangedDay, r.ArrangedPerDay, r.ArrangedTotal, r.ArrangedPaid, r.ArrangedMisses, r.ArrangedEndDay, r.BankruptDay, r.OverdueSince,
                 r.AdviceTold ? 1 : 0, r.AdviceKnown ? 1 : 0, r.CollectorKnown ? 1 : 0, r.ApprovedKind, r.ApprovedAmount, r.ApprovedDeposit, r.ApprovedTerm, r.ApprovedRateBp,
                 r.ApprovedDay, r.ApprovedNumber);
-            t.Append('|').Append(Clean(r.ApprovedStreet));
+            t.Append('|').Append(Clean(r.ApprovedStreet)).Append('|');
+            for (int i = 0; i < r.Claims.Count; i++)
+            {
+                t.Append(i > 0 ? "," : string.Empty).Append(r.Claims[i].ToString(Inv));
+            }
             return t.ToString();
         }
 
@@ -296,6 +305,14 @@ namespace RealLifeOverhaul.Economy
                             r.ApprovedDay = I(c, 17);
                             r.ApprovedNumber = I(c, 18);
                             r.ApprovedStreet = c.Length > 19 ? c[19] : string.Empty;
+                            foreach (string claim in c.Length > 20 && c[20].Length > 0 ? c[20].Split(',') : Array.Empty<string>())
+                            {
+                                int number;
+                                if (int.TryParse(claim, NumberStyles.Integer, Inv, out number) && number > 0 && r.Claims.Count < Relief.ClaimsMost && !r.Claims.Contains(number))
+                                {
+                                    r.Claims.Add(number);
+                                }
+                            }
                             if (!r.HasApproval)
                             {
                                 r.ClearApproval();

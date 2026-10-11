@@ -16,7 +16,9 @@ namespace RealLifeOverhaul.Economy
             "reallife_econ_event_paid", "reallife_econ_event_missed", "reallife_econ_event_part", "reallife_econ_event_new",
             "reallife_econ_event_paid_off", "reallife_econ_event_paid_off_early", "reallife_econ_event_payment_changed", "reallife_econ_event_extra",
             "reallife_econ_event_application", "reallife_econ_event_refused", "reallife_econ_event_fine_late", "reallife_econ_event_judgment",
-            "reallife_econ_event_conviction", "reallife_econ_event_cleared", "reallife_econ_event_started", "reallife_econ_event_test_set"
+            "reallife_econ_event_conviction", "reallife_econ_event_cleared", "reallife_econ_event_started", "reallife_econ_event_test_set",
+            "reallife_econ_event_consolidated", "reallife_econ_event_late_fee", "reallife_econ_event_penalty", "reallife_econ_event_collections",
+            "reallife_econ_event_repossessed", "reallife_econ_event_claim", "reallife_econ_event_plan", "reallife_econ_event_arrangement", "reallife_econ_event_bankruptcy"
         };
 
         private static readonly string[] WordKeys =
@@ -42,6 +44,17 @@ namespace RealLifeOverhaul.Economy
         public static string T(string key, string name, string value, string name2, string value2, string name3, string value3)
         {
             return T(key, name, value, name2, value2).Replace("{" + name3 + "}", value3 ?? string.Empty);
+        }
+
+        /// <summary>A text with any number of its names filled in: name, value, name, value.</summary>
+        public static string Fill(string key, params string[] pairs)
+        {
+            string text = key.GetLocalization();
+            for (int i = 0; i + 1 < pairs.Length; i += 2)
+            {
+                text = text.Replace("{" + pairs[i] + "}", pairs[i + 1] ?? string.Empty);
+            }
+            return text;
         }
 
         public static string Money(float amount)
@@ -193,6 +206,46 @@ namespace RealLifeOverhaul.Economy
                 default:
                     return e.Amount > 0 ? Money(e.Amount) : string.Empty;
             }
+        }
+
+        /// <summary>How one of the mod's accounts stands with its lender, in a few words.</summary>
+        public static string State(CreditAccount a)
+        {
+            return State(a.Ladder, a.Frozen, ProductCatalogue.Instalment(a.Kind) && !a.Secured);
+        }
+
+        /// <summary>How a debt stands with its lender, the gravest thing first: in an arrangement, to be repossessed, in collections, on a plan, behind, in order.</summary>
+        public static string State(LadderState s, bool frozen, bool unsecured)
+        {
+            if (frozen)
+            {
+                return T("reallife_econ_state_arranged");
+            }
+            if (s.RepoPending)
+            {
+                return T("reallife_econ_state_repo_due");
+            }
+            if (s.CallDue)
+            {
+                return T("reallife_econ_state_collections");
+            }
+            if (s.PlanLeft > 0)
+            {
+                return T("reallife_econ_state_plan");
+            }
+            if (s.Misses > 0)
+            {
+                return T("reallife_econ_state_behind", "count", s.Misses.ToString());
+            }
+            if (s.RepoDay > 0)
+            {
+                return T(unsecured ? "reallife_econ_state_repossessed" : "reallife_econ_state_diverted");
+            }
+            if (s.Penalty)
+            {
+                return T("reallife_econ_state_penalty");
+            }
+            return T(unsecured ? "reallife_econ_state_unsecured" : "reallife_econ_state_ok");
         }
 
         /// <summary>An effect on the score: "+12", "-45", or a dash-free "0".</summary>

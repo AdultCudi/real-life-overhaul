@@ -36,6 +36,10 @@ namespace RealLifeOverhaul.Economy
         public string ApprovedStreet = string.Empty;   // the lending bank
         public int ApprovedNumber;
 
+        /// <summary>The court's numbers of the claims lenders have filed that the court has not dealt with yet.</summary>
+        public readonly System.Collections.Generic.List<int> Claims = new System.Collections.Generic.List<int>(2);
+        public const int ClaimsMost = 12;
+
         public bool HasApproval => ApprovedKind >= 0 && ApprovedAmount > 0;
 
         public void ClearApproval()

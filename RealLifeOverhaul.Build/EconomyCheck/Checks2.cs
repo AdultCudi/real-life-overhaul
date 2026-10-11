@@ -591,6 +591,8 @@ internal static partial class Program
         file.Relief.BankruptDay = 2;
         file.Relief.Arranged = true;
         file.Relief.ArrangedPerDay = 80;
+        file.Relief.Claims.Add(31);
+        file.Relief.Claims.Add(44);
         var mark = new LoanMark { Street = "W 34th St", Number = 120, Total = 25000f, FirstDay = 9, Remaining = 20000f, Payment = 208, Interest = 34, Purpose = LoanPurpose.Business, Security = "5th Ave#12" };
         mark.Ladder.Misses = 3;
         mark.Ladder.Penalty = true;
@@ -605,7 +607,10 @@ internal static partial class Program
         if (back != null)
         {
             CreditAccount c = back.AccountById(card.Id), v = back.AccountById(carAccount.Id);
-            Check(back.Accounts.Count == 3 && back.NextAccountId == 4 && c != null && v != null && back.Account(ProductKind.Overdraft) == null, "the accounts come back with their ids; a closed one is not an open one");
+            Check(back.Accounts.Count == 2 && back.NextAccountId == 4 && c != null && v != null && back.Account(ProductKind.Overdraft) == null && back.AccountById(gone.Id) == null,
+                "the open accounts come back with their ids; a closed one is not kept in a save, and its id is not used again");
+            Check(back.Account(ProductKind.CarFinance) == null && back.Account(ProductKind.CreditCard) == c, "an account made by a test tool is never taken for the player's own");
+            Check(back.Relief.Claims.Count == 2 && back.Relief.Claims[0] == 31 && back.Relief.Claims[1] == 44, "the claims still before the court");
             Check(c != null && c.Kind == ProductKind.CreditCard && c.Owed == 1030 && c.Agreed == 1200 && c.RateBp == 2600 && c.Carry == 123456789012L && c.NextDay == 17 && c.Street == "Odd Name  St " && c.Number == 7,
                 "a card's figures, its lender's name with the dividers taken out");
             Check(c != null && c.Ladder.Misses == 4 && c.Ladder.Overdue == 52 && c.Ladder.Penalty && c.Ladder.PlanUsed && !c.Ladder.CallDue, "its standing with the lender");
@@ -652,14 +657,16 @@ internal static partial class Program
             CreditAccount a = many.Add(AccountRules.Finance(ProductKind.CarFinance, 1000 + i, 60, 1000, 1, "v" + i, "car", 2000));
             a.Closed = i % 2 == 0;
         }
-        Check(many.Accounts.Count <= 30 + 1 && many.Account(ProductKind.CarFinance) != null && many.NextAccountId == 61, "closed accounts are dropped when there are too many; an id is never used twice");
-        many.Trim(true);
+        Check(many.Accounts.Count == 60 && many.Account(ProductKind.CarFinance) != null && many.NextAccountId == 61, "adding an account never shortens the list, and an id is never used twice");
+        CreditFile capped = CreditStore.Read(CreditStore.Write(many), out version);
+        Check(capped != null && capped.Accounts.Count == CreditFile.AccountsMost && capped.Accounts[0].Id == 2 && !capped.Accounts[0].Closed, "a save keeps open accounts only, and no more than the file's cap");
+        many.Trim();
         bool allOpen = true;
         foreach (CreditAccount a in many.Accounts)
         {
             allOpen &= !a.Closed;
         }
-        Check(allOpen && many.Accounts.Count == 30, "and all of them when asked");
+        Check(allOpen && many.Accounts.Count == 30, "closed accounts are forgotten at the day's end");
     }
 
     // The game's own loan arithmetic (LoanHelper.CalculateDailyInterestPayment), written out independently in doubles.

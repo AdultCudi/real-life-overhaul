@@ -521,6 +521,15 @@ namespace RealLifeOverhaul
                 .AddHeader("reallife_econ_header")
                 .AddToggle(Settings.EconomyId, "reallife_econ_enabled", Settings.Economy,
                     v => Settings.Economy = v)
+                .AddToggle(Settings.EconomyProductsId, "reallife_econ_products", Settings.EconomyProducts,
+                    v => Settings.EconomyProducts = v)
+                .AddToggle(Settings.EconomySharkId, "reallife_econ_shark", Settings.EconomyShark,
+                    v => Settings.EconomyShark = v)
+                .AddToggle(Settings.EconomyConsequencesId, "reallife_econ_consequences", Settings.EconomyConsequences,
+                    v => Settings.EconomyConsequences = v)
+                .AddDropdown(Settings.EconomyLevelId, "reallife_econ_level",
+                    new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyLevel,
+                    v => Settings.EconomyLevel = v)
                 .AddButton("reallife_econ_test_report", () => Economy.EconomyDirector.Instance?.TestReport())
                 .AddButton("reallife_econ_test_missed", () => Economy.EconomyDirector.Instance?.TestMissed())
                 .AddButton("reallife_econ_test_on_time", () => Economy.EconomyDirector.Instance?.TestOnTime())
@@ -529,6 +538,14 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_econ_test_set_760", () => Economy.EconomyDirector.Instance?.TestSet(760))
                 .AddButton("reallife_econ_test_clear", () => Economy.EconomyDirector.Instance?.TestClear())
                 .AddButton("reallife_econ_test_restore", () => Economy.EconomyDirector.Instance?.TestRestore())
+                .AddButton("reallife_econ_test_open", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestOpen()))
+                .AddButton("reallife_econ_test_miss_1", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestMiss(1)))
+                .AddButton("reallife_econ_test_miss_3", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestMiss(3)))
+                .AddButton("reallife_econ_test_collections", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestCollections()))
+                .AddButton("reallife_econ_test_repossess", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestRepossess()))
+                .AddButton("reallife_econ_test_lender", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestLenderText()))
+                .AddButton("reallife_econ_test_ways", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestWaysOut()))
+                .AddButton("reallife_econ_test_back", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestBack()))
                 .AddSplitter()
                 .AddHeader("reallife_nav_header")
                 .AddToggle(Settings.MinimapId, "reallife_nav_minimap", Settings.Minimap,
