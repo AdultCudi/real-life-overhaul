@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Economy
 {
     /// <summary>
     /// What the Company app shows, in the game's frame (GameUi.AppShell, copied from MyEmployees) as Finance, the
-    /// Planner and the Guide are, with Finance's table (FinanceTable, the game's own BaTable). Six tabs over the
+    /// Planner and the Guide are, with Finance's table (DataTable, the game's own BaTable). Six tabs over the
     /// table on the right, and on the left the white box with the one thing picked:
     ///
     ///   Overview            each business: its district, yesterday's profit by the game's books, what needs an answer
@@ -30,29 +30,17 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     public sealed partial class CompanyApp
     {
-        private const float WidthA = 620f, WidthB = 500f, WidthC = 300f, WidthD = 300f;
-
+        // (Every table is declared in CompanyApp.Tables.cs and is sorted, filtered and summed by the kit: GameUi.DataTable.)
         private static readonly string[] TabKeys = { "reallife_co_tab_overview", "reallife_co_tab_staff", "reallife_co_tab_cover", "reallife_co_tab_marketing", "reallife_co_tab_tax", "reallife_rota_tab" };
-        private static readonly string[] ColumnNames = { "ColumnA", "ColumnB", "ColumnC", "ColumnD" };
-        private static readonly float[] ColumnWidths = { WidthA, WidthB, WidthC, WidthD };
-        private static readonly string[][] ColumnKeys =
-        {
-            new[] { "reallife_co_col_business", "reallife_co_col_district", "reallife_co_col_profit", "reallife_co_col_state" },
-            new[] { "reallife_co_col_name", "reallife_co_col_business", "reallife_co_col_pay", "reallife_co_col_standing" },
-            new[] { "reallife_co_col_business", "reallife_co_col_cover", "reallife_co_col_insurer", "reallife_co_col_premium" },
-            new[] { "reallife_co_col_business", "reallife_co_col_campaign", "reallife_co_col_until", "reallife_co_col_effect" },
-            new[] { "reallife_co_col_item", "reallife_co_col_what", "reallife_co_col_until", "reallife_co_col_state" },
-            new[] { "reallife_co_col_business", "reallife_rota_col_hours", "reallife_rota_col_staff", "reallife_rota_col_rota" }
-        };
-
         public static IModLogger Logger;
 
         private readonly CompanyDirector _director;
-        private readonly List<FinanceRow> _rows = new List<FinanceRow>(48);
-        private readonly List<FinanceRow> _pool = new List<FinanceRow>(48);
+        private readonly List<TableRow> _rows = new List<TableRow>(48);
+        private readonly List<TableRow> _pool = new List<TableRow>(48);
 
         private AppShell _shell;
-        private FinanceTable _table;
+        private DataTable _table;
+        private TableSpec _spec = CompanyTables.Off;   // the table the page that shows is written as
         private int _tab, _wanted = -1;
         private string _pick, _wantPick;   // what is picked: a row's id ("shop:...", "emp:...", "pol:...")
         private bool _ready;               // the director has read the staff for this opening
@@ -70,19 +58,13 @@ namespace RealLifeOverhaul.Economy
         {
             SessionWatch.Mark("company: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
             _shell = AppShell.Make(menu, dormant, CompanyDirector.AppId);
-            if (_shell == null || !PrepareRow(_shell.RowPrefab) || !_shell.SetTabCount(TabKeys.Length))
+            _table = DataTable.On(_shell, "Company");
+            if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(CompanyTables.Off))
             {
                 return null;
             }
-            if (!_shell.SetColumns(ColumnNames, ColumnKeys[0], ColumnWidths, 1))
-            {
-                return null;
-            }
-            FinanceCellView.SelectedColour = _shell.RowSelected;
-            _table = _shell.List.gameObject.AddComponent<FinanceTable>();
-            _table.scroller = _shell.Scroller;
-            _table.prefab = _shell.RowPrefab.AddComponent<FinanceCellView>();
-            _table.allowRowSelection = true;
+            _table.Money = amount => CompanyText.Money((float)amount);
+            _table.SelectionLost = Back;
             _table.onRowSelected.AddListener(row => UiClone.Safe(() => RowClicked(row)));
             for (int i = 0; i < TabKeys.Length; i++)
             {
@@ -91,40 +73,6 @@ namespace RealLifeOverhaul.Economy
                 UiClone.Rewire(_shell.Tabs[i], () => ShowTab(tab));
             }
             return _shell.Root;
-        }
-
-        // The game's employee row has a tick box and ten cells. Four are kept and renamed, as Finance and the Planner
-        // keep them: the name, the task (its warning sign hidden), the business and the satisfaction.
-        private static bool PrepareRow(GameObject row)
-        {
-            Transform t = row.transform;
-            var layout = row.GetComponent<HorizontalLayoutGroup>();
-            Transform a = t.Find("EmployeeName"), b = t.Find("TaskInfo"), c = t.Find("BusinessName"), d = t.Find("Satisfaction");
-            if (layout == null || a == null || b == null || c == null || d == null || b.Find("Task") == null)
-            {
-                UiClone.Fallback("the game's employee row is not built as expected, so the Company app is not added");
-                return false;
-            }
-            UiClone.KeepOnly(t, "Background", "RaycastTarget", "EmployeeName", "TaskInfo", "BusinessName", "Satisfaction");
-            a.name = "A";
-            b.name = "B";
-            c.name = "C";
-            d.name = "D";
-            AppShell.RowLayout(layout);
-            AppShell.Width(a, WidthA, false);
-            AppShell.Width(b, WidthB, true);
-            AppShell.Width(c, WidthC, false);
-            AppShell.Width(d, WidthD, false);
-            AppShell.OneLine(a.GetComponent<TMP_Text>());
-            AppShell.OneLine(c.GetComponent<TMP_Text>());
-            AppShell.OneLine(d.GetComponent<TMP_Text>());
-            AppShell.OneLine(b.Find("Task").GetComponent<TMP_Text>());
-            Transform sign = b.Find("WarningIcon");
-            if (sign != null)
-            {
-                sign.gameObject.SetActive(false);
-            }
-            return true;
         }
 
         // ---------------------------------------------------------------- opening and the tabs
@@ -184,7 +132,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        private void RowClicked(FinanceRow row)
+        private void RowClicked(TableRow row)
         {
             if (row == null || !row.Pick)
             {
@@ -219,11 +167,11 @@ namespace RealLifeOverhaul.Economy
                 }
                 _rows.Clear();
                 _shell.ShowTab(_tab);
-                _shell.SetColumns(ColumnNames, ColumnKeys[_tab], ColumnWidths, 1);
                 InfoBox box = _shell.Box;
                 box.Clear();
                 string selected = null;
                 CompanyState state = _ready ? _director.State : null;
+                _spec = state != null ? CompanyTables.For(_tab) : CompanyTables.Off;
                 if (state == null || SaveGameManager.Current == null)
                 {
                     UiClone.Words(_shell.Header, CompanyText.T("reallife_co_app"));
@@ -274,7 +222,7 @@ namespace RealLifeOverhaul.Economy
                     }
                 }
                 box.Done();
-                _table.Show(_rows, selected);
+                _table.Show(_spec, _rows, selected);
                 if (Meta.Dev.Verbose)
                 {
                     Logger?.Info("Company: tab " + _tab + " written, " + _rows.Count + " row(s)" + (_pick != null ? ", picked " + _pick : string.Empty) + "; "
@@ -302,6 +250,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return true;
             }
+            _spec = CompanyTables.Off;
             box.Title(CompanyText.T(TabKeys[_tab]));
             box.Line(CompanyText.T("reallife_co_part_off"));
             Say("off", CompanyText.T("reallife_co_part_off_row"));
@@ -310,9 +259,9 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- rows
 
-        private FinanceRow Row(string id)
+        private TableRow Row(string id)
         {
-            FinanceRow row;
+            TableRow row;
             if (_pool.Count > 0)
             {
                 row = _pool[_pool.Count - 1];
@@ -320,21 +269,16 @@ namespace RealLifeOverhaul.Economy
             }
             else
             {
-                row = new FinanceRow();
+                row = new TableRow();
             }
-            row.Id = id;
-            row.A = row.B = row.C = row.D = null;
-            row.Info = row.Pick = false;
-            row.Index = 0;
-            row.Tone = 0;
-            _rows.Add(row);
+            _rows.Add(row.Reset(id));
             return row;
         }
 
         // A row that can be picked. Returns its id if it is the one picked now.
         private string Pick(string id, string a, string b, string c, string d, int tone, ref string selected)
         {
-            FinanceRow row = Row(id);
+            TableRow row = Row(id);
             row.Pick = true;
             row.A = a;
             row.B = b;
@@ -348,9 +292,12 @@ namespace RealLifeOverhaul.Economy
             return id;
         }
 
+        /// <summary>The row written last: for the figures its columns are ordered by, its kind and the cells past the fourth.</summary>
+        private TableRow Last => _rows[_rows.Count - 1];
+
         private void Say(string id, string words)
         {
-            FinanceRow row = Row(id);
+            TableRow row = Row(id);
             row.Info = true;
             row.A = words;
         }
@@ -388,12 +335,19 @@ namespace RealLifeOverhaul.Economy
             string selected = null;
             IReadOnlyList<CompanyShop> shops = _director.Shops;
             CompanyShop picked = null;
+            TableFilter districts = CompanyTables.Overview.Filters[0];   // the filter's kinds: the districts the businesses are in
+            districts.Names.Clear();
             for (int i = 0; i < shops.Count; i++)
             {
                 CompanyShop shop = shops[i];
                 int waiting = ShopWaiting(state, shop, day);
-                string id = Pick("shop:" + shop.File.Place, shop.Name, CompanyText.District(shop.District), shop.HasBooks ? CompanyText.Money(shop.Profit) : CompanyText.T("reallife_co_no_books"),
+                string district = CompanyText.District(shop.District);
+                string id = Pick("shop:" + shop.File.Place, shop.Name, district, shop.HasBooks ? CompanyText.Money(shop.Profit) : CompanyText.T("reallife_co_no_books"),
                     waiting > 0 ? CompanyText.T("reallife_co_state_waiting", "count", waiting.ToString()) : CompanyText.T("reallife_co_state_in_order"), waiting > 0 ? 2 : 0, ref selected);
+                TableRow row = Last;
+                row.Kind = CompanyTables.KindOf(districts, district);
+                row.Key[2] = shop.HasBooks ? shop.Profit : double.NaN;
+                row.Key[3] = waiting;
                 picked = id == selected ? shop : picked;
             }
             if (shops.Count == 0)
@@ -423,6 +377,7 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(CompanyText.T("reallife_co_over_more", "count", (alerts.Count - 6).ToString()));
             }
+            if (ServicesDirector.CanClean) InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_svc_open_cleaning", ServicesDirector.OpenCleaning);   // (the cleaning service: Economy/Services)
             return null;
         }
 
@@ -495,6 +450,7 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(FinanceText.Pair("reallife_co_shop_hidden", file.Hide + "%"));
             }
+            if (ServicesDirector.CanSell) InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_svc_open_sale", () => ServicesDirector.OpenSale(file.Place));   // (selling a business: Economy/Services)
             BackButton(box);
         }
     }

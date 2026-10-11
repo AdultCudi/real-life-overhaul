@@ -31,6 +31,9 @@ namespace RealLifeOverhaul.Economy
                     bool valid = LicenceRules.Valid(l, day), soon = valid && l.Until - day < CompanyCatalogue.LicenceRemindDays;
                     Pick("lic:" + shops[i].File.Place + ":" + k, shops[i].Name, CompanyText.T("reallife_co_row_licence", "licence", CompanyText.Licence(k)), valid ? CompanyText.Day(l.Until) : string.Empty,
                         CompanyText.T(!valid ? "reallife_co_row_lic_missing" : l.Auto ? "reallife_co_row_lic_auto" : soon ? "reallife_co_row_lic_soon" : "reallife_co_row_lic_valid"), !valid ? 2 : soon && !l.Auto ? 1 : 0, ref selected);
+                    Last.Kind = CompanyTables.AboutLicence;
+                    Last.Kind2 = !valid ? CompanyTables.LicenceMissing : soon ? CompanyTables.LicenceSoon : CompanyTables.LicenceValid;
+                    Last.Key[2] = valid ? l.Until : double.NaN;
                 }
             }
             string place;

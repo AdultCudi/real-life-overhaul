@@ -124,7 +124,7 @@ namespace RealLifeOverhaul.Nav
 
         private bool Begin()
         {
-            CurrentSceneData data = CurrentSceneData.GetSceneInstance();
+            CurrentSceneData data = RoadData.Scene;
             if (data == null || data.allWaypoints == null || data.allWaypoints.Length < 100)
             {
                 return false;   // the city's roads are not there yet

@@ -90,7 +90,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            Applicant a = EstateRules.Apply(h, _state.Seed, Save.Day + _state.Holdings.Count + h.NextApplicant, _climate, true);
+            RentApplicant a = EstateRules.Apply(h, _state.Seed, Save.Day + _state.Holdings.Count + h.NextApplicant, _climate, true);
             if (a != null)
             {
                 a.Lapse = Save.Day + EstateCatalogue.ApplicantDays;
@@ -117,7 +117,7 @@ namespace RealLifeOverhaul.Economy
             if (!h.Let)
             {
                 h.Applicants.Clear();
-                Applicant a = EstateRules.Apply(h, _state.Seed, day, _climate, true);
+                RentApplicant a = EstateRules.Apply(h, _state.Seed, day, _climate, true);
                 if (a == null || !EstateRules.Accept(h, a.Id, day))
                 {
                     TestRefusals.TellKey(Logger, test, "reallife_estate_test_no_fit");

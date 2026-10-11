@@ -345,6 +345,68 @@ namespace RealLifeOverhaul
             Path.Clear();
         }
 
+        /// <summary>
+        /// Lets go of the car where it stands for another holder to take in the same moment (an accident scene
+        /// takes a car that has just crashed as one of its wrecks). The driver is stopped, what this unit put on the
+        /// car comes off, and the car is left exactly as a holder finds any car it takes: still out of the traffic
+        /// system's hands, able to move, with no scripted route of ours. Nothing is handed back to traffic and
+        /// nothing is taken off the road: whoever is given the car must do one or the other.
+        /// </summary>
+        /// <returns>The car, or null if it was no longer ours to give (the pool had reused it).</returns>
+        public VehicleComponent HandOver()
+        {
+            if (!InUse)
+            {
+                return null;
+            }
+            VehicleComponent car = Car;
+            bool held = TrafficTools.IsHeld(car);
+            if (held)
+            {
+                Driver.Stop();
+            }
+            else
+            {
+                Driver.Forget();
+            }
+            if (car != null)
+            {
+                if (Parked)
+                {
+                    car.rb.isKinematic = _wasKinematic;
+                }
+                if (car.presetPath == _preset)
+                {
+                    car.presetPath = null;
+                }
+            }
+            if (_rescue != null)
+            {
+                _rescue.enabled = true;
+            }
+            if (_body != null)
+            {
+                Object.Destroy(_body);
+            }
+            if (_kit != null)
+            {
+                Object.Destroy(_kit);
+            }
+            if (held)
+            {
+                TrafficTools.Touch(car, "handed from a unit to a scene");
+            }
+            Car = null;
+            _kit = null;
+            _body = null;
+            _siren = null;
+            _rescue = null;
+            InUse = false;
+            Parked = false;
+            Path.Clear();
+            return held ? car : null;
+        }
+
         private string Label()
         {
             return Kind == UnitKind.Ambulance ? "an ambulance released" : Kind == UnitKind.Police ? "a patrol car released" : "a car the mod was driving released";

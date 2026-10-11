@@ -23,36 +23,25 @@ namespace RealLifeOverhaul.Economy.Ventures
     ///
     /// A list goes in the table, which scrolls; the white box, which does not, shows only the one thing picked, and a
     /// tab that needs more than one page has pages with a Back button. The table and its rows are the Finance app's
-    /// (FinanceTable, the game's own BaTable).
+    /// (DataTable, the game's own BaTable).
     ///
+    /// Every table is declared in VenturesApp.Tables.cs and is sorted, filtered and summed by the kit (GameUi.DataTable).
     /// Everything on it is the game's. Nothing runs while the app is closed: the rows and figures are made when it
     /// opens, when a tab is picked and when the player changes something in it.
     /// </summary>
     public sealed partial class VenturesApp
     {
-        private const float WidthA = 620f, WidthB = 500f, WidthC = 300f, WidthD = 300f;
-
         private static readonly string[] TabKeys = { "reallife_ven_tab_investors", "reallife_ven_tab_market", "reallife_ven_tab_portfolio", "reallife_ven_tab_property" };
-        private static readonly string[] ColumnNames = { "ColumnA", "ColumnB", "ColumnC", "ColumnD" };
-        private static readonly float[] ColumnWidths = { WidthA, WidthB, WidthC, WidthD };
-        private static readonly string[] InvestorColumns = { "reallife_ven_col_investor", "reallife_ven_col_business", "reallife_ven_col_terms", "reallife_ven_col_state" };
-        private static readonly string[] BusinessColumns = { "reallife_ven_col_business", "reallife_ven_col_profit", "reallife_ven_col_age", "reallife_ven_col_promised" };
-        private static readonly string[] TypeColumns = { "reallife_ven_col_kind", "reallife_ven_col_sector", "reallife_ven_col_liked", "reallife_ven_col_run" };
-        private static readonly string[] WhoColumns = { "reallife_ven_col_investor", "reallife_ven_col_looks", "reallife_ven_col_sums", "reallife_ven_col_open" };
-        private static readonly string[] MarketColumns = { "reallife_ven_col_company", "reallife_ven_col_price", "reallife_ven_col_today", "reallife_ven_col_trend" };
-        private static readonly string[] PortfolioColumns = { "reallife_ven_col_company", "reallife_ven_col_shares", "reallife_ven_col_worth", "reallife_ven_col_gain" };
-        private static readonly string[] PropertyColumns = { "reallife_ven_col_building", "reallife_ven_col_cost", "reallife_ven_col_rent", "reallife_ven_col_yield" };
-
         public static IModLogger Logger;
 
         private readonly VenturesDirector _director;
-        private readonly List<FinanceRow> _rows = new List<FinanceRow>(24);
-        private readonly List<FinanceRow> _pool = new List<FinanceRow>(24);
+        private readonly List<TableRow> _rows = new List<TableRow>(24);
+        private readonly List<TableRow> _pool = new List<TableRow>(24);
         private readonly List<BuildingRegistration> _businesses = new List<BuildingRegistration>(16);
         private readonly List<string> _types = new List<string>(40);
 
         private AppShell _shell;
-        private FinanceTable _table;
+        private DataTable _table;
         private FullMenu _menu;
         private int _tab, _wanted = -1;
         private bool _ready;       // the director has the file open for this opening
@@ -71,14 +60,13 @@ namespace RealLifeOverhaul.Economy.Ventures
             _menu = menu;
             SessionWatch.Mark("ventures: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
             _shell = AppShell.Make(menu, dormant, VenturesDirector.AppId);
-            if (_shell == null || !PrepareRow(_shell.RowPrefab) || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(ColumnNames, InvestorColumns, ColumnWidths, 1))
+            _table = DataTable.On(_shell, "Ventures");
+            if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(VenturesTables.Off))
             {
                 return null;
             }
-            _table = _shell.List.gameObject.AddComponent<FinanceTable>();
-            _table.scroller = _shell.Scroller;
-            _table.prefab = _shell.RowPrefab.AddComponent<FinanceCellView>();
-            _table.allowRowSelection = true;
+            _table.Money = amount => FinanceText.Money((float)amount);
+            _table.SelectionLost = ClosePick;
             _table.onRowSelected.AddListener(row => UiClone.Safe(() => RowClicked(row)));
             for (int i = 0; i < TabKeys.Length; i++)
             {
@@ -87,40 +75,6 @@ namespace RealLifeOverhaul.Economy.Ventures
                 UiClone.Rewire(_shell.Tabs[i], () => ShowTab(tab));
             }
             return _shell.Root;
-        }
-
-        // The game's employee row has a tick box and ten cells. Four are kept and renamed, as Finance and the Planner keep
-        // them: the name, the task (its warning sign hidden), the business and the satisfaction, which the game sets to the right.
-        private static bool PrepareRow(GameObject row)
-        {
-            Transform t = row.transform;
-            var layout = row.GetComponent<HorizontalLayoutGroup>();
-            Transform a = t.Find("EmployeeName"), b = t.Find("TaskInfo"), c = t.Find("BusinessName"), d = t.Find("Satisfaction");
-            if (layout == null || a == null || b == null || c == null || d == null || b.Find("Task") == null)
-            {
-                UiClone.Fallback("the game's employee row is not built as expected, so the Ventures app is not added");
-                return false;
-            }
-            UiClone.KeepOnly(t, "Background", "RaycastTarget", "EmployeeName", "TaskInfo", "BusinessName", "Satisfaction");
-            a.name = "A";
-            b.name = "B";
-            c.name = "C";
-            d.name = "D";
-            AppShell.RowLayout(layout);
-            AppShell.Width(a, WidthA, false);
-            AppShell.Width(b, WidthB, true);
-            AppShell.Width(c, WidthC, false);
-            AppShell.Width(d, WidthD, false);
-            AppShell.OneLine(a.GetComponent<TMP_Text>());
-            AppShell.OneLine(c.GetComponent<TMP_Text>());
-            AppShell.OneLine(d.GetComponent<TMP_Text>());
-            AppShell.OneLine(b.Find("Task").GetComponent<TMP_Text>());
-            Transform sign = b.Find("WarningIcon");
-            if (sign != null)
-            {
-                sign.gameObject.SetActive(false);
-            }
-            return true;
         }
 
         // ---------------------------------------------------------------- opening and the tabs
@@ -187,7 +141,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             InfoBox box = _shell.Box;
             box.Clear();
             VenturesFile file = _ready ? _director.File : null;
-            string[] columns = InvestorColumns;
+            TableSpec table = VenturesTables.Off;
             if (file == null || SaveGameManager.Current == null)
             {
                 UiClone.Words(_shell.Header, FinanceText.T("reallife_ven_app"));
@@ -200,24 +154,23 @@ namespace RealLifeOverhaul.Economy.Ventures
                 int day = SaveGameManager.Current.Day;
                 switch (_tab)
                 {
-                    case VenturesPhone.Market: columns = WriteMarket(box, file); break;
-                    case VenturesPhone.Portfolio: columns = WritePortfolio(box, file); break;
-                    case VenturesPhone.Property: columns = WriteProperty(box, file, day); break;
-                    default: columns = WriteInvestors(box, file, day); break;
+                    case VenturesPhone.Market: table = WriteMarket(box, file); break;
+                    case VenturesPhone.Portfolio: table = WritePortfolio(box, file); break;
+                    case VenturesPhone.Property: table = WriteProperty(box, file, day); break;
+                    default: table = WriteInvestors(box, file, day); break;
                 }
             }
-            _shell.SetColumns(ColumnNames, columns, ColumnWidths, 1);
             box.Done();
-            _table.Show(_rows, _picked);
+            _table.Show(table, _rows, _picked);
             if (Meta.Dev.Verbose)
             {
                 Logger?.Info("Ventures: tab " + _tab + " written, " + _rows.Count + " row(s); " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms.");
             }
         }
 
-        private FinanceRow Row(string kind, int index)
+        private TableRow Row(string kind, int index)
         {
-            FinanceRow row;
+            TableRow row;
             if (_pool.Count > 0)
             {
                 row = _pool[_pool.Count - 1];
@@ -225,21 +178,18 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             else
             {
-                row = new FinanceRow();
+                row = new TableRow();
             }
-            row.Id = kind + index;
-            row.A = row.B = row.C = row.D = null;
-            row.Info = false;
+            row.Reset(kind + index);
             row.Pick = true;
             row.Index = index;
-            row.Tone = 0;
             _rows.Add(row);
             return row;
         }
 
         private void Say(string words)
         {
-            FinanceRow row = Row("say:", _rows.Count);
+            TableRow row = Row("say:", _rows.Count);
             row.Info = true;
             row.Pick = false;
             row.A = words;
@@ -252,7 +202,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             return id != null && id.StartsWith(kind, System.StringComparison.Ordinal) && int.TryParse(id.Substring(kind.Length), out number) ? number : -1;
         }
 
-        private void RowClicked(FinanceRow row)
+        private void RowClicked(TableRow row)
         {
             if (row == null || !row.Pick)
             {

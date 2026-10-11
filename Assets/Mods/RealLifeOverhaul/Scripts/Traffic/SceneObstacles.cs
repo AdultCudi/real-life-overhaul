@@ -66,6 +66,7 @@ namespace RealLifeOverhaul
             box.center = new Vector3(0f, 1f, 0f);
             box.size = new Vector3((halfWidth + Clearance) * 2f, 2f, (halfLength + Clearance) * 2f);
             box.gameObject.SetActive(true);
+            MeshCuts.Note("a vehicle standing at a scene");
             Owners[slot] = car;
         }
 
@@ -97,9 +98,10 @@ namespace RealLifeOverhaul
         private static void Free(int slot)
         {
             Owners[slot] = null;
-            if (Boxes[slot] != null)
+            if (Boxes[slot] != null && Boxes[slot].gameObject.activeSelf)
             {
                 Boxes[slot].gameObject.SetActive(false);
+                MeshCuts.Note("a vehicle gone from a scene");
             }
         }
 

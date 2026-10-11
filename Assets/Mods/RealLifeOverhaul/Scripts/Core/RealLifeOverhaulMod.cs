@@ -73,6 +73,7 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.SmoothThrottleId, "reallife_car_smooth_throttle", Settings.SmoothThrottle,
                     v => Settings.SmoothThrottle = v)
                 .AddButton("reallife_car_measure", CarMeasure.Arm)
+                .AddButton("reallife_camera_test_pretend", CameraYield.TestPretend)
                 .AddToggle(Settings.SpeedometerId, "reallife_speedometer", Settings.Speedometer,
                     v => Settings.Speedometer = v)
                 .AddSlider(Settings.CameraFollowId, "reallife_camera_follow", 0, 10, Settings.CameraFollow,
@@ -136,6 +137,10 @@ namespace RealLifeOverhaul
                     v => Settings.PlayerKnockdown = v)
                 .AddToggle(Settings.PedestrianIncidentsId, "reallife_ped_incidents", Settings.PedestrianIncidents,
                     v => Settings.PedestrianIncidents = v)
+                .AddToggle(Settings.HornReactionsId, "reallife_horn_reactions", Settings.HornReactions,
+                    v => Settings.HornReactions = v)
+                .AddToggle(Settings.NaturalAccidentsId, "reallife_natural_accidents", Settings.NaturalAccidents,
+                    v => Settings.NaturalAccidents = v)
                 .AddToggle(Settings.PhoneContactsId, "reallife_phone_contacts", Settings.PhoneContacts,
                     v => Settings.PhoneContacts = v)
                 .AddToggle(Settings.PhoneSkinId, "reallife_phone_skin", Settings.PhoneSkin,
@@ -147,6 +152,13 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_accident_severe", () => TrafficAccidents.Instance?.StageAccidentNow(TrafficAccidents.Severity.Severe))
                 .AddButton("reallife_test_ragdoll", () => PedestrianIncidents.Instance?.TestNearest())
                 .AddButton("reallife_test_ped_incident", () => PedestrianIncidents.Instance?.StageNow())
+                .AddButton("reallife_test_streets_speeder", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.Speeder))
+                .AddButton("reallife_test_streets_redlight", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.RedLight))
+                .AddButton("reallife_test_streets_drunk", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.Drunk))
+                .AddButton("reallife_test_streets_jaywalker", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.Jaywalker))
+                .AddButton("reallife_test_streets_hit", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.HitSomeone))
+                .AddButton("reallife_test_streets_crash", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.Crash))
+                .AddButton("reallife_test_streets_patrol", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.Patrol))
                 .AddSplitter()
                 .AddHeader("reallife_crime_header")
                 .AddToggle(Settings.StreetCrimeId, "reallife_crime_enabled", Settings.StreetCrime,
@@ -306,6 +318,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_law_test_clear", () => Law.LawDirector.Instance?.TestClearRecord())
                 .AddSplitter()
                 .AddHeader("reallife_transport_header")
+                .AddButton("reallife_panel_test_beside", GameUi.WorldPanel.TestBeside)
                 .AddToggle(Settings.BusesId, "reallife_transport_buses", Settings.Buses,
                     v => Settings.Buses = v)
                 .AddToggle(Settings.TransitPeopleId, "reallife_transport_people", Settings.TransitPeople,
@@ -364,6 +377,7 @@ namespace RealLifeOverhaul
                     v => Settings.PhotoMode = v)
                 .AddButton("reallife_leisure_test_chess", () => Leisure.LeisureDirector.Instance?.TestStart(Leisure.LeisureKind.Chess))
                 .AddButton("reallife_leisure_test_fishing", () => Leisure.LeisureDirector.Instance?.TestStart(Leisure.LeisureKind.Fishing))
+                .AddButton("reallife_leisure_test_fishing_near", () => Leisure.LeisureDirector.Instance?.TestFishNearest())
                 .AddButton("reallife_leisure_test_dance", () => Leisure.LeisureDirector.Instance?.TestStart(Leisure.LeisureKind.Dance))
                 .AddButton("reallife_leisure_test_drinks", () => Leisure.LeisureDirector.Instance?.TestStart(Leisure.LeisureKind.Drinks))
                 .AddButton("reallife_leisure_test_sights", () => Leisure.LeisureDirector.Instance?.TestStart(Leisure.LeisureKind.Sightseeing))
@@ -598,6 +612,10 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyCompanyLicences = v)
                 .AddToggle(Settings.EconomyRotaId, "reallife_rota_enabled", Settings.EconomyRota,
                     v => Settings.EconomyRota = v)
+                .AddToggle(Settings.EconomyCleaningId, "reallife_svc_cleaning_enabled", Settings.EconomyCleaning,
+                    v => Settings.EconomyCleaning = v)
+                .AddToggle(Settings.EconomySaleId, "reallife_svc_sale_enabled", Settings.EconomySale,
+                    v => Settings.EconomySale = v)
                 .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
                     v => Settings.EconomyCompanyLevel = v)
@@ -630,21 +648,52 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_estate_test_hire", () => Economy.EstateDirector.Instance?.TestHire())
                 .AddButton("reallife_estate_test_month", () => Economy.EstateDirector.Instance?.TestMonth())
                 .AddButton("reallife_estate_test_back", () => Economy.EstateDirector.Instance?.TestBack())
+                .AddToggle(Settings.EconomyOnlineId, "reallife_online_enabled", Settings.EconomyOnline,
+                    v => Settings.EconomyOnline = v)
+                .AddButton("reallife_online_test_open", () => Economy.OnlineDirector.Instance?.TestOpen())
+                .AddButton("reallife_online_test_orders", () => Economy.OnlineDirector.Instance?.TestOrders())
+                .AddButton("reallife_online_test_late", () => Economy.OnlineDirector.Instance?.TestLate())
+                .AddButton("reallife_online_test_return", () => Economy.OnlineDirector.Instance?.TestReturn())
+                .AddButton("reallife_online_test_day", () => Economy.OnlineDirector.Instance?.TestDay())
+                .AddButton("reallife_online_test_back", () => Economy.OnlineDirector.Instance?.TestBack())
+                .AddButton("reallife_svc_test_round", () => Economy.ServicesDirector.Instance?.TestRound())
+                .AddButton("reallife_svc_test_contract", () => Economy.ServicesDirector.Instance?.TestContractOffer())
+                .AddButton("reallife_svc_test_week", () => Economy.ServicesDirector.Instance?.TestContractWeek())
+                .AddButton("reallife_svc_test_offer", () => Economy.ServicesDirector.Instance?.TestSaleOffer())
+                .AddButton("reallife_svc_test_sale_paper", () => Economy.ServicesDirector.Instance?.TestSalePaper())
+                .AddButton("reallife_svc_test_part", () => Economy.ServicesDirector.Instance?.TestPart())
+                .AddHeader("reallife_brand_header")
+                .AddToggle(Settings.EconomyBrandsId, "reallife_brand_enabled", Settings.EconomyBrands,
+                    v => Settings.EconomyBrands = v)
+                .AddButton("reallife_brand_test_make", () => Economy.Brands.BrandsDirector.Instance?.TestMake())
+                .AddButton("reallife_brand_test_applicant", () => Economy.Brands.BrandsDirector.Instance?.TestApplicant())
+                .AddButton("reallife_brand_test_sign", () => Economy.Brands.BrandsDirector.Instance?.TestSign())
+                .AddButton("reallife_brand_test_trouble", () => Economy.Brands.BrandsDirector.Instance?.TestTrouble())
+                .AddButton("reallife_brand_test_scandal", () => Economy.Brands.BrandsDirector.Instance?.TestScandal())
+                .AddButton("reallife_brand_test_year", () => Economy.Brands.BrandsDirector.Instance?.TestYear())
+                .AddButton("reallife_brand_test_back", () => Economy.Brands.BrandsDirector.Instance?.TestBack())
                 .AddSplitter()
                 .AddHeader("reallife_nav_header")
                 .AddToggle(Settings.MinimapId, "reallife_nav_minimap", Settings.Minimap,
                     v => Settings.Minimap = v)
                 .AddToggle(Settings.GpsId, "reallife_nav_gps", Settings.Gps,
                     v => Settings.Gps = v)
+                .AddToggle(Settings.NavOtherRouteId, "reallife_nav_other_route", Settings.NavOtherRoute,
+                    v => Settings.NavOtherRoute = v)
                 .AddToggle(Settings.MinimapRotateId, "reallife_nav_rotate", Settings.MinimapRotate,
                     v => Settings.MinimapRotate = v)
                 .AddSlider(Settings.MinimapSizeId, "reallife_nav_size", 60, 100, Settings.MinimapSize,
                     v => Settings.MinimapSize = v, Meta.SettingsTable.SliderPercent)
                 .AddSlider(Settings.MinimapZoomId, "reallife_nav_zoom", 50, 200, Settings.MinimapZoom,
                     v => Settings.MinimapZoom = v, Meta.SettingsTable.SliderPercent)
+                .AddToggle(Settings.MinimapBaseId, "reallife_nav_base", Settings.MinimapBase,
+                    v => Settings.MinimapBase = v)
                 .AddButton("reallife_nav_test_station", () => Nav.NavDirector.Instance?.TestStation())
                 .AddButton("reallife_nav_test_far", () => Nav.NavDirector.Instance?.TestFar())
                 .AddButton("reallife_nav_test_clear", () => Nav.NavDirector.Instance?.TestClear())
+                .AddButton("reallife_nav_test_base_alone", () => Nav.NavDirector.Instance?.TestBaseAlone())
+                .AddButton("reallife_nav_test_base_marks", () => Nav.NavDirector.Instance?.TestBaseMarks())
+                .AddButton("reallife_nav_test_base_again", () => Nav.NavDirector.Instance?.TestBaseAgain())
                 .AddSplitter()
                 .AddHeader("reallife_civic_header")
                 .AddToggle(Settings.CivicId, "reallife_civic_enabled", Settings.Civic,
@@ -694,6 +743,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_family_test_page", () => Family.FamilyDirector.Instance?.TestPage())
                 .AddButton("reallife_family_test_clear", () => Family.FamilyDirector.Instance?.TestClear())
                 .AddSplitter()
+                .AddRoommates()
                 .AddControls()
                 .AddPerformance();
 
@@ -750,6 +800,9 @@ namespace RealLifeOverhaul
             }
             _running = context.ModId;
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on; warnings and errors always
+            OtherMods.Look(context.Logger);   // other authors' mods this one stands aside for: one walk over the loaded assemblies (Core/OtherMods)
+            CameraYield.Logger = context.Logger;
+            GameUi.WorldPanel.Logger = context.Logger;
             ThirdPersonCamera.Logger = context.Logger;
             VisualEnhancer.Logger = context.Logger;
             NearbyInteraction.Logger = context.Logger;
@@ -780,6 +833,10 @@ namespace RealLifeOverhaul
             RagdollSystem.Logger = context.Logger;
             PedestrianIncidents.Logger = context.Logger;
             CarStrikes.Logger = context.Logger;
+            HornReactions.Logger = context.Logger;
+            Crossings.Logger = context.Logger;
+            RecklessDrivers.Logger = context.Logger;
+            Jaywalker.Logger = context.Logger;
             PlayerKnockdown.Logger = context.Logger;
             PhoneContacts.Logger = context.Logger;
             CityLifeDirector.Logger = context.Logger;
@@ -802,6 +859,10 @@ namespace RealLifeOverhaul
             _root = new GameObject(RootName);
             SessionWatch.Logger = context.Logger;
             _root.AddComponent<SessionWatch>();   // the record of the session for "it stutters after a while": disabled unless "Developer diagnostics" is on
+            _root.AddComponent<ScenePrewarm>();   // one-off searches of the scene done behind the loading screen (Core/SceneFinds): disabled unless a piece is waiting
+            ScenePrewarm.Add("roads: the traffic system's road data being found for the city", RoadData.Prewarm);
+            ScenePrewarm.Add("traffic: the game's smoke effect being found for accidents and fires", TrafficEffects.Prewarm);
+            ScenePrewarm.Add("game UI: the game's font being found", FindFont);
             ClickWatch.Logger = context.Logger;
             _root.AddComponent<ClickWatch>();     // with "Developer diagnostics" on, what a left click in the city met: one flag test a frame otherwise
             _root.AddComponent<ThirdPersonCamera>();
@@ -822,6 +883,8 @@ namespace RealLifeOverhaul
             _root.AddComponent<PolicePresence>();
             _root.AddComponent<PedestrianIncidents>();
             _root.AddComponent<CarStrikes>();
+            _root.AddComponent<HornReactions>();     // people answer the player's horn (People/HornReactions)
+            _root.AddComponent<RecklessDrivers>();   // reckless drivers and the accidents that come of them (Traffic/Reckless); after CarStrikes and TrafficAccidents
             _root.AddComponent<PlayerKnockdown>();
             _root.AddComponent<CityLifeDirector>();   // people at work and about their day: its own pool of eight
             _root.AddComponent<JobDirector>();   // jobs the player takes themselves (Scripts/Jobs)
@@ -858,20 +921,31 @@ namespace RealLifeOverhaul
             Economy.Ventures.VenturesDirector.Logger = context.Logger;
             Economy.Ventures.VenturesApp.Logger = context.Logger;
             _root.AddComponent<Economy.Ventures.VenturesDirector>();   // investors, the pitch, the stock market and the Ventures app (Scripts/Economy/Ventures)
+            Economy.OnlineDirector.Logger = context.Logger;
+            Economy.OnlineApp.Logger = context.Logger;
+            _root.AddComponent<Economy.OnlineDirector>();   // online shops: orders from the whole city, picked from real stock and delivered, and the Web shop app (Scripts/Economy/Online); before the company, so that its day comes first
             Economy.CompanyDirector.Logger = context.Logger;
             Economy.CompanyApp.Logger = context.Logger;
+            Economy.ServicesDirector.Logger = context.Logger;
+            Economy.ServicesApp.Logger = context.Logger;
+            _root.AddComponent<Economy.ServicesDirector>();   // the cleaning service and selling a business, and the Services app (Scripts/Economy/Services)
             _root.AddComponent<Economy.CompanyDirector>();   // running a business: staff, insurance, marketing, tax and licences, and the Company app (Scripts/Economy/Company)
             Economy.EstateDirector.Logger = context.Logger;
             Economy.EstateApp.Logger = context.Logger;
             _root.AddComponent<Economy.EstateDirector>();   // property: the market, letting, works, selling, an agency, a hotel and car hire, and the Property app (Scripts/Economy/Estate)
+            Economy.Brands.BrandsDirector.Logger = context.Logger;
+            Economy.Brands.BrandsApp.Logger = context.Logger;
+            _root.AddComponent<Economy.Brands.BrandsDirector>();   // brands and franchises: recognition, standards, franchised shops, city chains and the Brands app (Scripts/Economy/Brands; after the company: its day follows the company's)
             Nav.NavGraph.Logger = context.Logger;
             Nav.NavMarks.Logger = context.Logger;
             Nav.NavHud.Logger = context.Logger;
+            Nav.NavBase.Logger = context.Logger;
             Nav.NavCityMap.Logger = context.Logger;
             Nav.NavDirector.Logger = context.Logger;
             _root.AddComponent<Nav.NavDirector>();   // the minimap on the HUD and the GPS: a route along the roads to the game's destination (Scripts/Navigation)
             _root.AddComponent<CivicDirector>();   // city government, elections and construction sites (Scripts/Civic): its own cast of five
             _root.AddComponent<Family.FamilyDirector>();   // a partner at home, engagement and wedding, children, relatives (Scripts/Family)
+            Roommates.RoommateDirector.Attach(_root, context.Logger);   // a roommate who shares the flat and the rent (Scripts/Home/Roommates)
             CarTuning.Logger = context.Logger;
             SpeedReading.Logger = context.Logger;
             CarMeasure.Logger = context.Logger;
@@ -892,22 +966,26 @@ namespace RealLifeOverhaul
             PerfDirector.Logger = context.Logger;
             _root.AddComponent<PerfDirector>();   // performance tweaks for the base game, and the two measurements (their keys are development aids)
             _root.AddComponent<MapLinks>();   // every feature's places on the city map (World/MapLinks reads them; no feature knows of it)
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                if (assembly.GetName().Name == "Immersion")
-                {
-                    context.Logger.Warn("The 'Immersion - RPG Camera' mod is also loaded. Two camera mods fight over the camera: disable one of them.");
-                }
-            }
             Wiring.Connect(context.Logger, _root);   // every director is there: the bridges between the features are filled in (Scripts/Wiring)
             // The loading screen is still up: the people of the two street pools are made and dressed now, where the time
             // it takes is not seen (People/Looks). Each catches its own faults and falls back to making them as they are needed.
             Looks.Reset();
             CityLifeDirector.Instance?.Prewarm();
             ActorPool.Instance?.Prewarm();
+            // And every search of the whole scene a feature would otherwise make the first time it needs its answer,
+            // a frame of over 100 ms each in the middle of play (Core/SceneFinds).
+            ScenePrewarm.Begin();
             Meta.MetaCity.Begin(context, _root);   // the check for leftovers, the guide's contact, the welcome panel
             context.Logger.Info("City features started.");
             return Task.CompletedTask;
+        }
+
+        // The game's font is found by a search of the scene for any text of the interface (Core/GameUi/GameFont) and kept
+        // for the session: asked for here, so that the search is not made when the first bus stop or sign is lettered.
+        private static bool FindFont()
+        {
+            _ = GameUi.GameFont.Asset;
+            return true;
         }
 
         public Task OnUnloadAsync()

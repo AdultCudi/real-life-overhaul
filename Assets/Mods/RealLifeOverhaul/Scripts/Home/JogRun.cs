@@ -60,6 +60,25 @@ namespace RealLifeOverhaul
             _parks = null;
         }
 
+        /// <summary>
+        /// The parks are found where the search is not seen (behind the loading screen, or the game's black screen at a
+        /// door), not in the frame the first run starts. They are only there to be found while the city is shown:
+        /// false, to be asked again, while the player is inside a building.
+        /// </summary>
+        public static bool Prewarm()
+        {
+            if (!Settings.HomeLife || _parks != null)
+            {
+                return true;
+            }
+            if (BuildingManager.IsInsideBuilding)
+            {
+                return false;
+            }
+            InPark(Vector3.zero);
+            return true;
+        }
+
         /// <summary>Lays the loop out from where the player stands. False, with the reason, if it cannot be run here.</summary>
         public bool Begin(PlayerController player, Transform root, out string refusal)
         {
@@ -258,7 +277,7 @@ namespace RealLifeOverhaul
         {
             if (_parks == null)
             {
-                LocationHappinessTrigger[] triggers = Object.FindObjectsOfType<LocationHappinessTrigger>();
+                LocationHappinessTrigger[] triggers = SceneFinds.All<LocationHappinessTrigger>("home: the city's parks being looked for (a search of the whole scene, once a city)");
                 var bounds = new List<Bounds>(triggers.Length);
                 foreach (LocationHappinessTrigger trigger in triggers)
                 {

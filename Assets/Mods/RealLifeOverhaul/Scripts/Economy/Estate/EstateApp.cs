@@ -12,8 +12,9 @@ namespace RealLifeOverhaul.Economy
 {
     /// <summary>
     /// What the Property app shows, in the game's frame (GameUi.AppShell, copied from MyEmployees) as Finance,
-    /// Ventures and Company are, with Finance's table (FinanceTable, the game's own BaTable). Seven tabs over the
-    /// table on the right, and on the left the white box with the one thing picked:
+    /// Ventures and Company are, with the kit's table (GameUi.DataTable, the game's own BaTable: it sorts by a
+    /// click on a heading, filters by kind and ends in a line of totals; EstateTables declares each). Seven tabs
+    /// over the table on the right, and on the left the white box with the one thing picked:
     ///
     ///   Market      the game's own listings at the mod's prices, and the city's hotels; pick one for what makes
     ///               its price and the button that opens the game's purchase screen
@@ -37,11 +38,16 @@ namespace RealLifeOverhaul.Economy
         public static IModLogger Logger;
 
         private readonly EstateDirector _director;
-        private readonly List<FinanceRow> _rows = new List<FinanceRow>(48);
-        private readonly List<FinanceRow> _pool = new List<FinanceRow>(48);
+        private static readonly TableSpec[] Specs =
+        {
+            EstateTables.Market, EstateTables.Mine, EstateTables.Tenants, EstateTables.Works, EstateTables.Agency, EstateTables.Hotel, EstateTables.Hire
+        };
+
+        private readonly List<TableRow> _rows = new List<TableRow>(48);
+        private readonly List<TableRow> _pool = new List<TableRow>(48);
 
         private AppShell _shell;
-        private FinanceTable _table;
+        private DataTable _table;
         private int _tab, _wanted = -1;
         private string _pick, _wantPick;   // what is picked: a row's id ("own:...", "app:...", "ins:...", "hot:...", "car:...")
         private bool _ready;               // the director has read the game for this opening
@@ -59,61 +65,21 @@ namespace RealLifeOverhaul.Economy
         {
             SessionWatch.Mark("estate: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
             _shell = AppShell.Make(menu, dormant, EstateDirector.AppId);
-            if (_shell == null || !PrepareRow(_shell.RowPrefab) || !_shell.SetTabCount(EstateColumns.Tabs.Length))
+            _table = DataTable.On(_shell, "Property");
+            if (_table == null || !_shell.SetTabCount(EstateTables.Tabs.Length) || !_shell.SetColumns(EstateTables.Off))
             {
                 return null;
             }
-            if (!_shell.SetColumns(EstateColumns.Names, EstateColumns.Titles[0], EstateColumns.Widths, EstateColumns.Flexible))
-            {
-                return null;
-            }
-            FinanceCellView.SelectedColour = _shell.RowSelected;
-            _table = _shell.List.gameObject.AddComponent<FinanceTable>();
-            _table.scroller = _shell.Scroller;
-            _table.prefab = _shell.RowPrefab.AddComponent<FinanceCellView>();
-            _table.allowRowSelection = true;
+            _table.Money = amount => EstateText.Money((float)amount);
+            _table.SelectionLost = Back;   // a filter took the picked row out and left none: the tab's own page
             _table.onRowSelected.AddListener(row => UiClone.Safe(() => RowClicked(row)));
-            for (int i = 0; i < EstateColumns.Tabs.Length; i++)
+            for (int i = 0; i < EstateTables.Tabs.Length; i++)
             {
                 int tab = i;
-                UiClone.Key(_shell.TabLabels[i], EstateColumns.Tabs[i]);
+                UiClone.Key(_shell.TabLabels[i], EstateTables.Tabs[i]);
                 UiClone.Rewire(_shell.Tabs[i], () => ShowTab(tab));
             }
             return _shell.Root;
-        }
-
-        // The game's employee row has a tick box and ten cells. Four are kept and renamed, as Finance and the Planner
-        // keep them: the name, the task (its warning sign hidden), the business and the satisfaction.
-        private static bool PrepareRow(GameObject row)
-        {
-            Transform t = row.transform;
-            var layout = row.GetComponent<HorizontalLayoutGroup>();
-            Transform a = t.Find("EmployeeName"), b = t.Find("TaskInfo"), c = t.Find("BusinessName"), d = t.Find("Satisfaction");
-            if (layout == null || a == null || b == null || c == null || d == null || b.Find("Task") == null)
-            {
-                UiClone.Fallback("the game's employee row is not built as expected, so the Property app is not added");
-                return false;
-            }
-            UiClone.KeepOnly(t, "Background", "RaycastTarget", "EmployeeName", "TaskInfo", "BusinessName", "Satisfaction");
-            a.name = "A";
-            b.name = "B";
-            c.name = "C";
-            d.name = "D";
-            AppShell.RowLayout(layout);
-            AppShell.Width(a, EstateColumns.WidthA, false);
-            AppShell.Width(b, EstateColumns.WidthB, true);
-            AppShell.Width(c, EstateColumns.WidthC, false);
-            AppShell.Width(d, EstateColumns.WidthD, false);
-            AppShell.OneLine(a.GetComponent<TMP_Text>());
-            AppShell.OneLine(c.GetComponent<TMP_Text>());
-            AppShell.OneLine(d.GetComponent<TMP_Text>());
-            AppShell.OneLine(b.Find("Task").GetComponent<TMP_Text>());
-            Transform sign = b.Find("WarningIcon");
-            if (sign != null)
-            {
-                sign.gameObject.SetActive(false);
-            }
-            return true;
         }
 
         // ---------------------------------------------------------------- opening and the tabs
@@ -123,7 +89,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The tab to show the next time the app opens, and what is picked on it (a notification was clicked).</summary>
         public void Want(int tab, string pick)
         {
-            _wanted = Mathf.Clamp(tab, 0, EstateColumns.Tabs.Length - 1);
+            _wanted = Mathf.Clamp(tab, 0, EstateTables.Tabs.Length - 1);
             _wantPick = pick;
             if (Showing)
             {
@@ -172,7 +138,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        private void RowClicked(FinanceRow row)
+        private void RowClicked(TableRow row)
         {
             if (row == null || !row.Pick)
             {
@@ -217,7 +183,6 @@ namespace RealLifeOverhaul.Economy
                 }
                 _rows.Clear();
                 _shell.ShowTab(_tab);
-                _shell.SetColumns(EstateColumns.Names, EstateColumns.Titles[_tab], EstateColumns.Widths, EstateColumns.Flexible);
                 InfoBox box = _shell.Box;
                 box.Clear();
                 string selected = null;
@@ -273,7 +238,7 @@ namespace RealLifeOverhaul.Economy
                     }
                 }
                 box.Done();
-                _table.Show(_rows, selected);
+                _table.Show(state == null || SaveGameManager.Current == null ? EstateTables.Off : Specs[_tab], _rows, selected);
                 if (Meta.Dev.Verbose)
                 {
                     Logger?.Info("Estate: tab " + _tab + " written, " + _rows.Count + " row(s)" + (_pick != null ? ", picked " + _pick : string.Empty) + "; "
@@ -293,7 +258,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return true;
             }
-            box.Title(EstateText.T(EstateColumns.Tabs[_tab]));
+            box.Title(EstateText.T(EstateTables.Tabs[_tab]));
             box.Line(EstateText.T("reallife_estate_part_off"));
             Say("off", EstateText.T("reallife_estate_part_off_row"));
             return false;
@@ -301,9 +266,9 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- rows
 
-        private FinanceRow Row(string id)
+        private TableRow Row(string id)
         {
-            FinanceRow row;
+            TableRow row;
             if (_pool.Count > 0)
             {
                 row = _pool[_pool.Count - 1];
@@ -311,27 +276,18 @@ namespace RealLifeOverhaul.Economy
             }
             else
             {
-                row = new FinanceRow();
+                row = new TableRow();
             }
-            row.Id = id;
-            row.A = row.B = row.C = row.D = null;
-            row.Info = row.Pick = false;
-            row.Index = 0;
-            row.Tone = 0;
+            row.Reset(id);
             _rows.Add(row);
             return row;
         }
 
-        // A row that can be picked. True if it is the one picked now.
-        private bool Pick(string id, string a, string b, string c, string d, int tone, ref string selected)
+        // A row that can be picked, for its cells to be written. True if it is the one picked now.
+        private bool Pick(string id, ref string selected, out TableRow row)
         {
-            FinanceRow row = Row(id);
+            row = Row(id);
             row.Pick = true;
-            row.A = a;
-            row.B = b;
-            row.C = c;
-            row.D = d;
-            row.Tone = tone;
             if (id == _pick)
             {
                 selected = id;
@@ -342,9 +298,21 @@ namespace RealLifeOverhaul.Economy
 
         private void Say(string id, string words)
         {
-            FinanceRow row = Row(id);
+            TableRow row = Row(id);
             row.Info = true;
             row.A = words;
+        }
+
+        // The place of a name among a filter's own kinds (the districts of the rows that are there), added if it is new.
+        private static int KindOf(System.Collections.Generic.List<string> names, string name)
+        {
+            int at = names.IndexOf(name);
+            if (at < 0)
+            {
+                at = names.Count;
+                names.Add(name);
+            }
+            return at;
         }
 
         // What follows a prefix in what is picked ("own:" and the place); null if something else is picked.
@@ -370,8 +338,6 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- Market
 
-        private readonly List<BuildingForSale> _listed = new List<BuildingForSale>(32);
-
         private void WriteMarket(InfoBox box, EstateState state, int day, ref string selected)
         {
             EstateClimate c = _director.Climate;
@@ -379,7 +345,9 @@ namespace RealLifeOverhaul.Economy
             CityBuilding picked = null;
             HotelSlot pickedHotel = null;
             bool property = _director.On(EstatePart.Property);
-            _listed.Clear();
+            List<string> districts = EstateTables.Market.Filters[0].Names;   // the first filter's kinds: the districts of what is for sale
+            districts.Clear();
+            TableRow row;
             for (int i = 0; property && save.buildingsForSale != null && i < save.buildingsForSale.Count; i++)
             {
                 BuildingForSale f = save.buildingsForSale[i];
@@ -388,11 +356,24 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                int cond = EstateRules.StreetCondition(state.Seed, b.Key);
-                if (Pick("mkt:" + b.Place, f.address.ToFormattedString(), EstateText.District(b.District) + ", " + EstateText.Use(EstateGame.UseOf(b.B.BuildingType)), EstateText.Money(f.buildingPrice),
-                        EstateText.Level(cond), cond < EstateCatalogue.RunDownMost ? 1 : 0, ref selected))
+                int cond = EstateRules.StreetCondition(state.Seed, b.Key), use = EstateGame.UseOf(b.B.BuildingType);
+                int rent = EstateRules.MarketRent(b.Base, use, Mathf.RoundToInt(CityEconomy.DistrictIncome(b.District) * 10f), cond, 0, c);
+                string district = EstateText.District(b.District);
+                if (Pick("mkt:" + b.Place, ref selected, out row))
                 {
                     picked = b;
+                }
+                row.Kind = KindOf(districts, district);
+                row.Kind2 = use;
+                row.Set(0, f.address.ToFormattedString());
+                row.Set(1, district);
+                row.Set(2, EstateText.Use(use));
+                row.Set(3, EstateText.Money(f.buildingPrice), f.buildingPrice);
+                row.Set(4, EstateText.Level(cond), cond, cond <= EstateCatalogue.RunDownMost ? TableRow.Yellow : TableRow.Plain);
+                if (rent > 0 && f.buildingPrice > 0f)
+                {
+                    row.Set(5, EstateText.Money(rent), rent);
+                    row.Set(6, EstateText.Yield((int)((long)rent * c.DaysPerYear * 10000 / (long)f.buildingPrice)), (double)rent * c.DaysPerYear * 100.0 / f.buildingPrice);
                 }
             }
             for (int i = 0; _director.On(EstatePart.Hotel) && i < TravelCatalogue.Hotels.Length; i++)
@@ -402,11 +383,19 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                if (Pick("htl:" + slot.Id, EstateGame.HotelName(slot), EstateText.District(slot.Neighbourhood) + ", " + EstateText.T("reallife_estate_row_hotel"),
-                        EstateText.Money(EstateGame.HotelPrice(slot, state.Real, c.DaysPerYear)), EstateText.T("reallife_estate_row_going_concern"), 0, ref selected))
+                int price = EstateGame.HotelPrice(slot, state.Real, c.DaysPerYear);
+                string district = EstateText.District(slot.Neighbourhood);
+                if (Pick("htl:" + slot.Id, ref selected, out row))
                 {
                     pickedHotel = slot;
                 }
+                row.Kind = KindOf(districts, district);
+                row.Kind2 = EstateTables.IsHotel;
+                row.Set(0, EstateGame.HotelName(slot));
+                row.Set(1, district);
+                row.Set(2, EstateText.T("reallife_estate_row_hotel"));
+                row.Set(3, EstateText.Money(price), price);
+                row.Set(4, EstateText.T("reallife_estate_row_going_concern"));
             }
             if (_rows.Count == 0)
             {

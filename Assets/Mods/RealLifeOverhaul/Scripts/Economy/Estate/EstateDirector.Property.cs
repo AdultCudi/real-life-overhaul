@@ -120,7 +120,7 @@ namespace RealLifeOverhaul.Economy
                     Logger?.Info("Estate check (tenancy, " + h.Name + ", day " + day + "): " + (d.Evicted ? "put out by the court" : d.Left ? "gone" : d.Missed ? "a day's rent missed" : d.Renewed ? "the lease renewed" : "paid up")
                                  + "; " + d.Lump + " came in, " + d.WrittenOff + " written off, arrears now " + h.Arrears + " over " + h.ArrearsDays + " day(s): PASS");
                 }
-                Applicant a = EstateRules.Apply(h, s.Seed, day, c);
+                RentApplicant a = EstateRules.Apply(h, s.Seed, day, c);
                 if (a != null)
                 {
                     Tell(NotificationType.Info, "reallife_estate_note_applied", Data("building", h.Name, "who", EstateText.Tenant(h.Use, a.Kind), "amount", EstateText.Money(a.Offer)), TabTenants, pick);
@@ -348,7 +348,7 @@ namespace RealLifeOverhaul.Economy
         public void Refuse(string place, int applicant)
         {
             EstateHolding h = Mine(place);
-            Applicant a = h != null ? h.ApplicantOf(applicant) : null;
+            RentApplicant a = h != null ? h.ApplicantOf(applicant) : null;
             if (a != null)
             {
                 h.Applicants.Remove(a);

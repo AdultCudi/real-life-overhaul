@@ -73,7 +73,7 @@ namespace RealLifeOverhaul
 
         private static void Build()
         {
-            CurrentSceneData data = CurrentSceneData.GetSceneInstance();
+            CurrentSceneData data = RoadData.Scene;   // kept from the city's one search, behind the loading screen (Core/RoadData)
             if (data == null || data.allWaypoints == null || data.allWaypoints.Length == 0)
             {
                 return;
@@ -219,6 +219,13 @@ namespace RealLifeOverhaul
         /// </summary>
         public static bool NearestLane(Vector3 position, out float distance, out Vector3 runs, out float limitKmh)
         {
+            return NearestLane(position, out distance, out runs, out limitKmh, out _);
+        }
+
+        /// <summary>The same, with where that lane point is: which side of somebody on the pavement the road lies.</summary>
+        public static bool NearestLane(Vector3 position, out float distance, out Vector3 runs, out float limitKmh, out Vector3 at)
+        {
+            at = position;
             distance = float.MaxValue;
             runs = Vector3.forward;
             limitKmh = CrimeLaw.SpeedLimitKmh;
@@ -254,6 +261,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             distance = Mathf.Sqrt(best);
+            at = nearest.position;
             int next = nearest.neighbors[0];
             if (next >= 0 && next < _lanes.Length && _lanes[next] != null)
             {

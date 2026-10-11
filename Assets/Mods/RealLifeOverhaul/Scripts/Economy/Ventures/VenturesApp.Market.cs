@@ -19,24 +19,35 @@ namespace RealLifeOverhaul.Economy.Ventures
         private readonly List<int> _counts = new List<int>(ShareSteps.Length + 2);
         private int _shareStep;        // which of the counts on offer is picked
 
-        private string[] WriteMarket(InfoBox box, VenturesFile file)
+        private TableSpec WriteMarket(InfoBox box, VenturesFile file)
         {
             UiClone.Words(_shell.Header, FinanceText.T("reallife_ven_head_market", "days", file.MarketSteps.ToString()));
             for (int i = 0; i < file.Companies.Count; i++)
             {
                 Company c = file.Companies[i];
-                FinanceRow row = Row(CompanyRow, c.Id);
-                row.A = c.Name;
-                row.B = VenturesText.Price(c.PriceCents);
-                row.C = VenturesText.Change(c.LastBp);
-                row.D = VenturesText.Change(c.TrendBp);
-                row.Tone = c.TrendBp < 0 ? 2 : 0;
+                Holding h = file.Holding(c.Id);
+                bool held = h != null && h.Shares > 0;
+                TableRow row = Row(CompanyRow, c.Id);
+                row.Kind = (int)c.Sector;
+                row.Kind2 = held ? VenturesTables.Held : VenturesTables.NotHeld;
+                row.Set(0, c.Name);
+                row.Set(1, FinanceText.T(VenturesCatalogue.MarketSectorKeys[(int)c.Sector]));
+                row.Set(2, VenturesText.Price(c.PriceCents), c.PriceCents / 100.0);
+                row.Set(3, VenturesText.Change(c.LastBp), c.LastBp / 100.0, Sign(c.LastBp));
+                if (held)
+                {
+                    int value = Market.Value(c, h.Shares);
+                    row.Set(4, h.Shares.ToString("N0"), h.Shares);
+                    row.Set(5, Money(value), value);
+                    row.Set(6, (value >= h.Cost ? "+" : "-") + Money(Mathf.Abs(value - h.Cost)), value - h.Cost, Sign(value - h.Cost));
+                }
+                row.Set(7, (c.YieldBp / 100f).ToString("0.0#") + "%", c.YieldBp / 100.0);
             }
             Company picked = file.Company(Picked(_picked, CompanyRow));
             if (picked != null)
             {
                 WriteCompany(box, file, picked);
-                return MarketColumns;
+                return VenturesTables.Market;
             }
             _picked = null;
             int cost;
@@ -50,10 +61,10 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 box.Line(FinanceText.T("reallife_ven_market_off"));
             }
-            return MarketColumns;
+            return VenturesTables.Market;
         }
 
-        private string[] WritePortfolio(InfoBox box, VenturesFile file)
+        private TableSpec WritePortfolio(InfoBox box, VenturesFile file)
         {
             int cost, dividends = 0;
             int worth = Market.Worth(file, out cost);
@@ -68,12 +79,15 @@ namespace RealLifeOverhaul.Economy.Ventures
                 }
                 int value = Market.Value(c, h.Shares);
                 dividends += h.Dividends;
-                FinanceRow row = Row(HoldRow, c.Id);
-                row.A = c.Name;
-                row.B = h.Shares.ToString("N0");
-                row.C = Money(value);
-                row.D = (value >= h.Cost ? "+" : "-") + Money(Mathf.Abs(value - h.Cost));
-                row.Tone = value < h.Cost ? 2 : 0;
+                TableRow row = Row(HoldRow, c.Id);
+                row.Kind = (int)c.Sector;
+                row.Set(0, c.Name);
+                row.Set(1, FinanceText.T(VenturesCatalogue.MarketSectorKeys[(int)c.Sector]));
+                row.Set(2, h.Shares.ToString("N0"), h.Shares);
+                row.Set(3, Money(value), value);
+                row.Set(4, Money(h.Cost), h.Cost);
+                row.Set(5, (value >= h.Cost ? "+" : "-") + Money(Mathf.Abs(value - h.Cost)), value - h.Cost, Sign(value - h.Cost));
+                row.Set(6, Money(h.Dividends), h.Dividends);
             }
             if (_rows.Count == 0)
             {
@@ -83,7 +97,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             if (picked != null)
             {
                 WriteCompany(box, file, picked);
-                return PortfolioColumns;
+                return VenturesTables.Portfolio;
             }
             _picked = null;
             box.Title(FinanceText.T("reallife_ven_tab_portfolio"));
@@ -93,7 +107,13 @@ namespace RealLifeOverhaul.Economy.Ventures
             box.Line(Pair("reallife_ven_port_dividends", Money(dividends)));
             box.Line(FinanceText.T("reallife_ven_market_dividends", "every", VenturesCatalogue.DividendEveryDays.ToString(), "days", Market.DaysToDividend(file).ToString()));
             box.Line(FinanceText.T("reallife_ven_port_note"));
-            return PortfolioColumns;
+            return VenturesTables.Portfolio;
+        }
+
+        // A gain in the game's green and a loss in its red, as EconoView colours an amount.
+        private static int Sign(int amount)
+        {
+            return amount > 0 ? TableRow.Green : amount < 0 ? TableRow.Red : TableRow.Plain;
         }
 
         // One company: what it is, what moves it, what is held, and a count of shares to buy or sell.
@@ -111,12 +131,18 @@ namespace RealLifeOverhaul.Economy.Ventures
             box.Line(Pair("reallife_ven_co_sector", FinanceText.T(VenturesCatalogue.MarketSectorKeys[(int)c.Sector])));
             box.Line(Pair("reallife_ven_co_price", FinanceText.T("reallife_ven_co_price_value", "price", VenturesText.Price(c.PriceCents), "change", VenturesText.Change(c.LastBp),
                 "cause", VenturesText.Cause(c.LastCause))));
-            box.Line(Pair("reallife_ven_co_range", FinanceText.T("reallife_ven_row_range", "least", VenturesText.Price(low), "most", VenturesText.Price(high))));
+            box.Line(Pair("reallife_ven_co_range", FinanceText.T("reallife_ven_row_range", "least", VenturesText.Price(low), "most", VenturesText.Price(high)))
+                     + " " + FinanceText.T("reallife_tab_ven_trend", "change", VenturesText.Change(c.TrendBp)));
             box.Line(Pair("reallife_ven_co_dividend", FinanceText.T("reallife_ven_co_dividend_value", "share", (c.YieldBp / 100f).ToString("0.0#") + "%",
                 "every", VenturesCatalogue.DividendEveryDays.ToString())));
             box.Line(FinanceText.T(VenturesCatalogue.MovesKeys[(int)c.Sector]));
             box.Line(Pair("reallife_ven_co_held", have > 0 ? FinanceText.T("reallife_ven_co_held_value", "shares", have.ToString("N0"), "worth", Money(Market.Value(c, have)), "cost", Money(held.Cost))
                 : FinanceText.T("reallife_ven_meet_none")));
+            if (have > 0)
+            {
+                // What a share cost on average, commission included, and what the holding has paid in dividends.
+                box.Line(FinanceText.T("reallife_tab_ven_held_more", "price", VenturesText.Price((int)((long)held.Cost * 100L / have)), "dividends", Money(held.Dividends)));
+            }
             if (!Settings.VenturesMarket)
             {
                 box.Line(FinanceText.T("reallife_ven_market_off"));

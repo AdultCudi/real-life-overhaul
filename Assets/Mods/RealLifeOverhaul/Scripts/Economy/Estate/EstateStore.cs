@@ -71,7 +71,7 @@ namespace RealLifeOverhaul.Economy
                     h.Managed ? 1 : 0, applicants);
                 for (int a = 0; a < applicants; a++)
                 {
-                    Applicant p = h.Applicants[a];
+                    RentApplicant p = h.Applicants[a];
                     t.Append('|');
                     Join(t, p.Id, p.Kind, p.Offer, p.Record, p.Term, p.Lapse);
                 }
@@ -278,7 +278,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     break;
                 }
-                h.Applicants.Add(new Applicant
+                h.Applicants.Add(new RentApplicant
                 {
                     Id = I(c, at), Kind = EstateCatalogue.Clamp(I(c, at + 1), 0, EstateCatalogue.TenantKinds - 1), Offer = Math.Max(1, I(c, at + 2, 1)),
                     Record = EstateCatalogue.Clamp(I(c, at + 3), 0, 100), Term = Math.Max(1, I(c, at + 4, 1)), Lapse = Math.Max(0, I(c, at + 5))

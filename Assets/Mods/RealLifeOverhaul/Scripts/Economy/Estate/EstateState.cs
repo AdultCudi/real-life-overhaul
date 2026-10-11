@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>Somebody who would take a building: what they offer a day, how good their record is, and until when they wait.</summary>
-    public sealed class Applicant
+    public sealed class RentApplicant
     {
         public int Id;
         public int Kind;        // which description of its use's eight (EstateText)
@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Economy
 
         public int RentYear, CostYear;  // since the first day of the running year of the game
         public int NextApplicant = 1;
-        public readonly List<Applicant> Applicants = new List<Applicant>(EstateCatalogue.ApplicantsMost);
+        public readonly List<RentApplicant> Applicants = new List<RentApplicant>(EstateCatalogue.ApplicantsMost);
 
         // read from the game, not saved
         public int Base;                // the game's own value of it, before anything of the mod's
@@ -65,7 +65,7 @@ namespace RealLifeOverhaul.Economy
         public bool Let => Tenant >= 0;
         public bool Busy => Work != (int)EstateWork.None;
 
-        public Applicant ApplicantOf(int id)
+        public RentApplicant ApplicantOf(int id)
         {
             for (int i = 0; i < Applicants.Count; i++)
             {

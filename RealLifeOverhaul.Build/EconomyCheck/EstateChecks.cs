@@ -51,7 +51,7 @@ internal static partial class Program
     private static EstateHolding Let(int rent, int record, int day = 1, int term = 90)
     {
         EstateHolding h = Building();
-        h.Applicants.Add(new Applicant { Id = 1, Kind = 2, Offer = rent, Record = record, Term = term, Lapse = day + 4 });
+        h.Applicants.Add(new RentApplicant { Id = 1, Kind = 2, Offer = rent, Record = record, Term = term, Lapse = day + 4 });
         EstateRules.Accept(h, 1, day);
         return h;
     }
@@ -233,7 +233,7 @@ internal static partial class Program
         for (int day = 1; day <= 2000; day++)
         {
             EstateHolding h = Building();
-            Applicant a = EstateRules.Apply(h, 4242, day, c);
+            RentApplicant a = EstateRules.Apply(h, 4242, day, c);
             if (a == null)
             {
                 continue;
@@ -486,7 +486,7 @@ internal static partial class Program
         Check(EstateRules.SaleOffer(slump, 1, 1, 1000000, 3, true) <= 970000, "in a recession buyers offer less");
         EstateHolding sold = Building();
         sold.List = 1000000;
-        sold.Applicants.Add(new Applicant { Id = 1, Offer = 5 });
+        sold.Applicants.Add(new RentApplicant { Id = 1, Offer = 5 });
         int taken = EstateRules.SaleOffer(sold, 1, 1, 1000000, 1, true);
         Check(!EstateRules.AcceptOffer(Building(), 1, 1, 1) && EstateRules.AcceptOffer(sold, 1, 2, 1) && sold.SaleDay == 2 + EstateCatalogue.CompletionDays && sold.SalePrice == taken && sold.Offer == 0 && sold.Applicants.Count == 0,
             "an accepted offer completes five days later at its price, and applicants are turned away");
@@ -989,8 +989,8 @@ internal static partial class Program
         h.CostYear = 4000;
         s.Holdings.Add(h);
         var empty = new EstateHolding { Place = "Low%20Road~9", Managed = true, Use = 3, Cond = 420, Work = (int)EstateWork.Planning, WorkEnd = 46, WorkCost = 3000, WorkTo = 0, List = 800000, Offer = 770000, OfferLapse = 42, NextApplicant = 4 };
-        empty.Applicants.Add(new Applicant { Id = 2, Kind = 5, Offer = 800, Record = 33, Term = 90, Lapse = 43 });
-        empty.Applicants.Add(new Applicant { Id = 3, Kind = 1, Offer = 760, Record = 88, Term = 150, Lapse = 44 });
+        empty.Applicants.Add(new RentApplicant { Id = 2, Kind = 5, Offer = 800, Record = 33, Term = 90, Lapse = 43 });
+        empty.Applicants.Add(new RentApplicant { Id = 3, Kind = 1, Offer = 760, Record = 88, Term = 150, Lapse = 44 });
         s.Holdings.Add(empty);
         s.Agency.Office = "Office~1";
         s.Agency.NextId = 9;

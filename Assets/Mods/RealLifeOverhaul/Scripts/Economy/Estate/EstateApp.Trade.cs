@@ -25,11 +25,18 @@ namespace RealLifeOverhaul.Economy
             {
                 HotelFile f = state.Hotels[i];
                 int rooms = HotelRules.Rooms(f.Tier);
-                if (Pick("hot:" + f.Slot, f.Name, EstateText.T("reallife_estate_row_sold", "sold", (f.Sold[0] + f.Sold[1]).ToString(), "rooms", rooms.ToString()), EstateText.Money(f.Takings), EstateText.Stars(f.Rating),
-                        f.AskRooms > 0 ? 1 : f.Takings < f.Costs ? 2 : 0, ref selected))
+                TableRow row;
+                if (Pick("hot:" + f.Slot, ref selected, out row))
                 {
                     picked = f;
                 }
+                row.Set(0, f.Name, f.AskRooms > 0 ? TableRow.Yellow : TableRow.Plain);
+                row.Set(1, EstateText.T("reallife_estate_row_sold", "sold", (f.Sold[0] + f.Sold[1]).ToString(), "rooms", rooms.ToString()), f.Sold[0] + f.Sold[1]);
+                row.Set(2, EstateText.Money(f.Takings), f.Takings);
+                row.Set(3, EstateText.Money(f.Costs), f.Costs, f.Takings < f.Costs ? TableRow.Red : TableRow.Plain);
+                row.Set(4, EstateText.Money(f.TakingsYear), f.TakingsYear);
+                row.Set(5, EstateText.Money(f.CostsYear), f.CostsYear);
+                row.Set(6, EstateText.Stars(f.Rating), f.Rating);
             }
             if (picked == null && state.Hotels.Count == 1 && _pick == null)
             {
@@ -123,14 +130,26 @@ namespace RealLifeOverhaul.Economy
             HireFile hire = state.Hire;
             HireCar picked = null;
             VehicleInstance add = null;
+            TableRow row;
             for (int i = 0; i < hire.Cars.Count; i++)
             {
                 HireCar car = hire.Cars[i];
-                string standing = car.State == (int)HireState.Out ? EstateText.T("reallife_estate_car_out_until", "day", car.Day.ToString()) : EstateText.CarState(car.State);
-                if (Pick("car:" + car.Id, EstateGame.CarName(car.Type), standing, EstateText.T("reallife_estate_row_a_day", "amount", EstateText.Money(HireRules.Rate(car.Price, car.Rate, c.Index))), EstateText.Money(car.Takings),
-                        car.State == (int)HireState.Waiting ? 1 : 0, ref selected))
+                int rate = HireRules.Rate(car.Price, car.Rate, c.Index), carClass = HireRules.Class(car.Price);
+                if (Pick("car:" + car.Id, ref selected, out row))
                 {
                     picked = car;
+                }
+                row.Kind = carClass;
+                row.Kind2 = car.State == (int)HireState.Out ? EstateTables.CarOut : EstateTables.CarIn;
+                row.Set(0, EstateGame.CarName(car.Type));
+                row.Set(1, EstateText.CarClass(carClass));
+                row.Set(2, EstateText.CarState(car.State), car.State == (int)HireState.Waiting ? TableRow.Yellow : TableRow.Plain);
+                row.Set(3, EstateText.Money(rate), rate);
+                row.Set(4, car.Hires.ToString(), car.Hires);
+                row.Set(5, EstateText.Money(car.Takings), car.Takings);
+                if (car.State == (int)HireState.Out)
+                {
+                    row.Set(6, EstateText.T("reallife_estate_row_until", "day", car.Day.ToString()), car.Day);
                 }
             }
             if (hire.Running)
@@ -139,12 +158,18 @@ namespace RealLifeOverhaul.Economy
                 for (int i = 0; i < _vehicles.Count; i++)
                 {
                     VehicleInstance v = _vehicles[i];
-                    int price = EstateGame.CarPrice(v);
-                    if (Pick("add:" + v.id, EstateGame.CarName(v.vehicleTypeName), EstateText.T("reallife_estate_row_on_lot"), EstateText.T("reallife_estate_row_a_day", "amount", EstateText.Money(HireRules.Going(price, c.Index))),
-                            EstateText.CarClass(HireRules.Class(price)), 0, ref selected))
+                    int price = EstateGame.CarPrice(v), going = HireRules.Going(price, c.Index);
+                    if (Pick("add:" + v.id, ref selected, out row))
                     {
                         add = v;
                     }
+                    row.Kind = HireRules.Class(price);
+                    row.Kind2 = EstateTables.CarNotOnHire;
+                    row.NoTotal = true;
+                    row.Set(0, EstateGame.CarName(v.vehicleTypeName));
+                    row.Set(1, EstateText.CarClass(HireRules.Class(price)));
+                    row.Set(2, EstateText.T("reallife_estate_row_on_lot"));
+                    row.Set(3, EstateText.Money(going), going);
                 }
             }
             if (_rows.Count == 0)

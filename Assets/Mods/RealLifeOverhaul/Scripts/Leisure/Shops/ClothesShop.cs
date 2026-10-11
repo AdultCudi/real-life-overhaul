@@ -287,6 +287,7 @@ namespace RealLifeOverhaul.Leisure
                     solid.size = new Vector3(1.5f, 1.6f, 0.6f);
                     solid.carving = true;   // the shop's customers go round it; over a metre of floor is left on every side
                 }
+                MeshCuts.Note("a clothes rack on a shop floor");
                 _prop = prop;
                 LeisureDirector.Logger?.Info("Leisure: the rack stands on the shop floor, " + edge.distance.ToString("F1") + " m from the nearest fitting.");
             }

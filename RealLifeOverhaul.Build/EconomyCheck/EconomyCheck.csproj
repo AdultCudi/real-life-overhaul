@@ -7,7 +7,14 @@
        from many seeds, the central bank's rule, the adjustments, the rate the credit side reads and the save's line,
        and (Checks5.cs) running a business: staff, insurance, marketing, tax and the accountant, cash off the books,
        licences and its line in the save, and (RotaChecks.cs) the staff rota planner: the rota itself, the hours worth
-       opening and the people a week takes.
+       opening and the people a week takes, and (TableChecks.cs) the table model every app's table is ordered,
+       filtered and summed by, and the categories of the cash flow, and (OnlineChecks.cs) the online shops: demand,
+       orders, picking, rounds, lateness and the rating, returns, the day's book, the bound on what a site adds and
+       its line in the save, and (ServicesChecks.cs) the cleaning service and selling a business: the round,
+       what a visit does, contracts, a business's value, the market and the money on the day, and (BrandChecks.cs) brands and franchises: recognition, standards, a
+       franchised shop's day, every way an agreement ends, a shop under a city chain and the save's line, and (EstateChecks.cs) property:
+       the market, a purchase on the existing mortgage, tenancies, works, a sale, the agency, a hotel's night, car hire,
+       the yearly returns and the save's line.
        Compiles the mod's own files, so it checks exactly what ships.
        the lender of last resort and the ways out of debt, and (VenturesChecks.cs) investors, the pitch, deals and the
        stock market. Compiles the mod's own files, so it checks exactly what ships.
@@ -67,6 +74,31 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\HireRules.cs" Link="Mod\HireRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateBalance.cs" Link="Mod\EstateBalance.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateStore.cs" Link="Mod\EstateStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Online\OnlineCatalogue.cs" Link="Mod\OnlineCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Online\OnlineModel.cs" Link="Mod\OnlineModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Online\OnlineRules.cs" Link="Mod\OnlineRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Online\OnlineStore.cs" Link="Mod\OnlineStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\ServicesCatalogue.cs" Link="Mod\ServicesCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\ServicesState.cs" Link="Mod\ServicesState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\CleaningRules.cs" Link="Mod\CleaningRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\RoundRules.cs" Link="Mod\RoundRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\ContractRules.cs" Link="Mod\ContractRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\SaleRules.cs" Link="Mod\SaleRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\ServicesStore.cs" Link="Mod\ServicesStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandCatalogue.cs" Link="Mod\BrandCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandState.cs" Link="Mod\BrandState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandRules.cs" Link="Mod\BrandRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\FranchiseRules.cs" Link="Mod\FranchiseRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandStore.cs" Link="Mod\BrandStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\TableModel.cs" Link="Mod\TableModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\CashCategory.cs" Link="Mod\CashCategory.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialModel.cs" Link="Mod\SocialModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialCatalogue.cs" Link="Mod\SocialCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Roommates\RoommateRules.cs" Link="Mod\RoommateRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Roommates\RoommateState.cs" Link="Mod\RoommateState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Roommates\RoommateStore.cs" Link="Mod\RoommateStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLedger.cs" Link="Mod\RotaLedger.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Business\BusinessCatalogue.cs" Link="Mod\BusinessCatalogue.cs" />
   </ItemGroup>
 
 </Project>

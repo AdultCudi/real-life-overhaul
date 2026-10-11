@@ -34,8 +34,13 @@ namespace RealLifeOverhaul.Economy
     ///   7  again      unless that rota covers everything and meets every demand, a second one is made from a plain
     ///                 start (hour by hour in the order of the week, then steps 5 and 6) and the better is kept
     ///
-    /// Nothing is allocated while it runs once its arrays have grown to the largest business seen. The steps that
-    /// place shifts are in RotaSolver.Shifts.cs, the improving pass and the rating in RotaSolver.Improve.cs.
+    /// A rota can be made in one go (<see cref="Solve"/>) or a few steps at a time (<see cref="Start"/> and
+    /// <see cref="Step"/>): the director does the latter and spreads the steps over frames, because the game's
+    /// runtime is several times slower than the one the offline checks measure. Either way gives the same rota.
+    ///
+    /// Cost: nothing unless asked. Nothing is allocated while it runs once its arrays have grown to the largest
+    /// business seen. The steps that place shifts are in RotaSolver.Shifts.cs, the improving pass and the rating in
+    /// RotaSolver.Improve.cs.
     /// </summary>
     public sealed partial class RotaSolver
     {
@@ -70,59 +75,188 @@ namespace RealLifeOverhaul.Economy
         private int[] _order = new int[0];          // the workers with a goal, the heaviest demand first
         private readonly int[] _could = new int[Hours];
         private readonly RotaPlan _other = new RotaPlan();     // the second start's rota
+
+        // Where the making of a rota stands, so that it can stop after any step and go on from there.
+        private const int PhaseWhole = 0, PhaseGoals = 1, PhaseShifts = 2, PhaseInOrder = 3, PhaseCover = 4, PhaseHand = 5, PhaseRelax = 6, PhaseCoverRelaxed = 7, PhaseRate = 8, PhaseDone = 9;
+        private int _phase = PhaseDone, _i, _pass, _goals;
+        private bool _second, _any, _ever, _placed;
+        private RotaPlan _first;
         private readonly int[] _pre = new int[Hours + 1];
         private readonly int[] _rare = new int[Hours + 1];      // like _pre, of how few could take each hour of the day at hand
 
-        /// <summary>The rota for a problem, written into <paramref name="plan"/> (made if null) and rated.</summary>
+        /// <summary>The rota for a problem, written into <paramref name="plan"/> (made if null) and rated: every step at once.</summary>
         public RotaPlan Solve(RotaProblem problem, RotaPlan plan = null)
         {
-            // Two starts, and the better rota is kept: shifts by value, and hour by hour in the order of the week.
-            plan = Begin(problem, plan);
-            Whole();
-            Goals();
-            Shifts(0, false);
-            Finish();
-            if (plan.Full && plan.UnmetCount == 0)
+            Start(problem, plan);
+            while (!Step(int.MaxValue))
             {
-                return plan;   // (nothing a second start could do better but wages, and the first start is the one that looks at wages)
             }
-            RotaPlan first = plan;
-            Begin(problem, _other);
-            Whole();
-            InOrder();
-            Finish();
-            if (Better(_other, first))
-            {
-                Copy(_other, first);
-            }
-            return first;
+            return _first;
         }
 
-        // Steps 5 and 6, and the rating.
-        private void Finish()
+        /// <summary>
+        /// Begins a rota that is then made a few steps at a time by <see cref="Step"/>, so that whoever asks can
+        /// spread it over frames. The steps are the same ones in the same order however they are cut up, so the rota
+        /// is the one <see cref="Solve"/> gives. The problem must not change until the last step is done.
+        /// </summary>
+        public RotaPlan Start(RotaProblem problem, RotaPlan plan = null)
+        {
+            _first = Begin(problem, plan);
+            _second = false;
+            _phase = PhaseWhole;
+            return _first;
+        }
+
+        /// <summary>
+        /// Does so many steps more. One step is one small piece of work: one employee's first shifts, one day at one
+        /// station, one day of the plain start, one rating. True when the rota is finished.
+        /// </summary>
+        public bool Step(int steps)
+        {
+            while (steps-- > 0 && _phase != PhaseDone)
+            {
+                One();
+            }
+            return _phase == PhaseDone;
+        }
+
+        // The steps in their order. Two starts are made and the better rota is kept: shifts by value, and hour by hour in the
+        // order of the week; each is then improved, relaxed if hours are left, and rated.
+        private void One()
+        {
+            int lanes = Days * _s;
+            switch (_phase)
+            {
+                case PhaseWhole:
+                    Whole();
+                    _goals = _second ? 0 : GoalsOrder();
+                    _i = 0;
+                    _phase = _second ? PhaseInOrder : PhaseGoals;
+                    break;
+                case PhaseGoals:
+                    if (_i < _goals)
+                    {
+                        GoalsFor(_order[_i++]);
+                    }
+                    else
+                    {
+                        _i = 0;
+                        _phase = PhaseShifts;
+                    }
+                    break;
+                case PhaseShifts:
+                    if (_i < lanes)
+                    {
+                        ShiftsLane(0, false, _i++);
+                    }
+                    else
+                    {
+                        ToCover(PhaseCover);
+                    }
+                    break;
+                case PhaseInOrder:
+                    if (_i < Days)
+                    {
+                        InOrderDay(_i++);
+                    }
+                    else
+                    {
+                        ToCover(PhaseCover);
+                    }
+                    break;
+                case PhaseCover:
+                case PhaseCoverRelaxed:
+                    if (_i < lanes && _steps > 0)
+                    {
+                        _any |= CoverLane(_phase == PhaseCover ? 0 : 1, _i++);
+                    }
+                    else if (_any && _pass == 0)
+                    {
+                        // Something was covered: the lanes are gone over once more, for what that has made possible.
+                        _ever = true;
+                        _pass = 1;
+                        _i = 0;
+                        _any = false;
+                    }
+                    else if (_phase == PhaseCover)
+                    {
+                        _steps = RotaCatalogue.ImproveSteps;
+                        _i = 0;
+                        _phase = PhaseHand;
+                    }
+                    else
+                    {
+                        _plan.Level = _placed || _ever || _any ? 1 : 0;
+                        _phase = PhaseRate;
+                    }
+                    break;
+                case PhaseHand:
+                    if (_i < lanes && _steps > 0)
+                    {
+                        HandLane(0, _i++);
+                    }
+                    else if (_optional && AnyNeed())
+                    {
+                        // The game's own second step: only demands of high priority are still limits.
+                        _placed = false;
+                        _i = 0;
+                        _phase = PhaseRelax;
+                    }
+                    else
+                    {
+                        _phase = PhaseRate;
+                    }
+                    break;
+                case PhaseRelax:
+                    if (_i < lanes)
+                    {
+                        _placed |= ShiftsLane(1, true, _i++);
+                    }
+                    else
+                    {
+                        ToCover(PhaseCoverRelaxed);
+                    }
+                    break;
+                case PhaseRate:
+                    Rate();
+                    if (!_second && _first.Full && _first.UnmetCount == 0)
+                    {
+                        _phase = PhaseDone;   // (nothing a second start could do better but wages, and the first start is the one that looks at wages)
+                    }
+                    else if (!_second)
+                    {
+                        _second = true;
+                        Begin(_p, _other);
+                        _phase = PhaseWhole;
+                    }
+                    else
+                    {
+                        if (Better(_other, _first))
+                        {
+                            Copy(_other, _first);
+                        }
+                        _phase = PhaseDone;
+                    }
+                    break;
+            }
+        }
+
+        private void ToCover(int phase)
         {
             _steps = RotaCatalogue.ImproveSteps;
-            Cover(0);
-            _steps = RotaCatalogue.ImproveSteps;
-            Hand(0);
-            if (_optional && AnyNeed())
-            {
-                // The game's own second step: only demands of high priority are still limits.
-                bool placed = Shifts(1, true);
-                _steps = RotaCatalogue.ImproveSteps;
-                placed |= Cover(1);
-                _plan.Level = placed ? 1 : 0;
-            }
-            Rate();
+            _pass = 0;
+            _i = 0;
+            _any = _ever = false;
+            _phase = phase;
         }
 
-        // The second start: hour by hour through the week, station by station, the hour goes to whoever stands there the hour
+        // One day of the second start: hour by hour, station by station, the hour goes to whoever stands there the hour
         // before, else to the first who may take it.
-        private void InOrder()
+        private void InOrderDay(int d)
         {
-            for (int cell = 0; cell < Cells; cell++)
+            for (int h = 0; h < Hours; h++)
             {
-                int d = cell / Hours, h = cell % Hours;
+                int cell = d * Hours + h;
                 for (int s = 0; s < _s; s++)
                 {
                     if (((_need[d * _s + s] >> h) & 1u) == 0 || _p.Whole[s])

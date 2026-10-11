@@ -57,6 +57,7 @@ namespace RealLifeOverhaul.Economy
             EstateClimate c = _director.Climate;
             EstateHolding picked = null;
             long worth = 0, rent = 0;
+            TableRow row;
             bool property = _director.On(EstatePart.Property);
             for (int i = 0; property && i < state.Holdings.Count; i++)
             {
@@ -65,22 +66,42 @@ namespace RealLifeOverhaul.Economy
                 int income = h.Managed ? (h.Let && h.Arrears == 0 ? h.Rent : 0) : EstateGame.GameRent(h);
                 worth += value;
                 rent += income;
-                if (Pick("own:" + h.Place, h.Name, StateOf(h, day), EstateText.Money(value), EstateText.T("reallife_estate_row_a_day", "amount", EstateText.Money(income)),
-                        h.Arrears > 0 || (h.Managed && !h.Let && !h.Busy) ? 1 : 0, ref selected))
+                if (Pick("own:" + h.Place, ref selected, out row))
                 {
                     picked = h;
                 }
+                row.Kind = EstateTables.OwnBuilding;
+                row.Set(0, h.Name);
+                row.Set(1, EstateText.T("reallife_estate_kind_building"));
+                row.Set(2, StateOf(h, day), h.Arrears > 0 ? TableRow.Red : h.Managed && !h.Let && !h.Busy ? TableRow.Yellow : TableRow.Plain);
+                row.Set(3, EstateText.Money(value), value);
+                row.Set(4, EstateText.Money(h.Paid), h.Paid);
+                row.Set(5, EstateText.Money(income), income);
+                row.Set(6, EstateText.Money(h.RentYear), h.RentYear);
+                row.Set(7, EstateText.Money(h.CostYear), h.CostYear);
             }
             for (int i = 0; _director.On(EstatePart.Hotel) && i < state.Hotels.Count; i++)
             {
                 HotelFile f = state.Hotels[i];
-                Pick("hot:" + f.Slot, f.Name, EstateText.T(f.Leased ? "reallife_estate_row_hotel_leased" : "reallife_estate_row_hotel_owned"), EstateText.Money(f.Paid),
-                    EstateText.T("reallife_estate_row_a_day", "amount", EstateText.Money(f.Takings - f.Costs)), f.Takings < f.Costs ? 2 : 0, ref selected);
+                Pick("hot:" + f.Slot, ref selected, out row);
+                row.Kind = EstateTables.OwnHotel;
+                row.Set(0, f.Name);
+                row.Set(1, EstateText.T("reallife_estate_kind_hotel"));
+                row.Set(2, EstateText.T(f.Leased ? "reallife_estate_row_hotel_leased" : "reallife_estate_row_hotel_owned"));
+                row.Set(4, EstateText.Money(f.Paid), f.Paid);
+                row.Set(5, EstateText.Money(f.Takings - f.Costs), f.Takings - f.Costs, f.Takings < f.Costs ? TableRow.Red : TableRow.Plain);
+                row.Set(6, EstateText.Money(f.TakingsYear), f.TakingsYear);
+                row.Set(7, EstateText.Money(f.CostsYear), f.CostsYear);
             }
             if (_director.On(EstatePart.Hire) && state.Hire.Running)
             {
-                Pick("lot:", EstateGame.NameOf(state.Hire.Lot), EstateText.T("reallife_estate_row_lot", "out", state.Hire.Count(HireState.Out).ToString(), "count", state.Hire.Cars.Count.ToString()), string.Empty,
-                    EstateText.Money(state.Hire.TakingsYear), 0, ref selected);
+                Pick("lot:", ref selected, out row);
+                row.Kind = EstateTables.OwnLot;
+                row.Set(0, EstateGame.NameOf(state.Hire.Lot));
+                row.Set(1, EstateText.T("reallife_estate_kind_lot"));
+                row.Set(2, EstateText.T("reallife_estate_row_lot", "out", state.Hire.Count(HireState.Out).ToString(), "count", state.Hire.Cars.Count.ToString()));
+                row.Set(6, EstateText.Money(state.Hire.TakingsYear), state.Hire.TakingsYear);
+                row.Set(7, EstateText.Money(state.Hire.CostsYear), state.Hire.CostsYear);
             }
             if (_rows.Count == 0)
             {
@@ -184,7 +205,8 @@ namespace RealLifeOverhaul.Economy
         {
             EstateClimate c = _director.Climate;
             EstateHolding picked = null, applied = null;
-            Applicant applicant = null;
+            RentApplicant applicant = null;
+            TableRow row;
             int let = 0, empty = 0, owed = 0;
             for (int i = 0; i < state.Holdings.Count; i++)
             {
@@ -201,19 +223,37 @@ namespace RealLifeOverhaul.Economy
                     : h.CourtDay > 0 ? EstateText.T("reallife_estate_state_court", "day", h.CourtDay.ToString())
                     : h.NoticeEnd > 0 ? EstateText.T("reallife_estate_state_notice", "day", h.NoticeEnd.ToString())
                     : h.Arrears > 0 ? EstateText.T("reallife_estate_state_arrears", "days", h.ArrearsDays.ToString()) : EstateText.T("reallife_estate_state_paying");
-                if (Pick("own:" + h.Place, h.Name, who, h.Let ? EstateText.T("reallife_estate_row_a_day", "amount", EstateText.Money(h.Rent)) : string.Empty, standing, h.Arrears > 0 ? 2 : !h.Let ? 1 : 0, ref selected))
+                if (Pick("own:" + h.Place, ref selected, out row))
                 {
                     picked = h;
                 }
+                row.Kind = !h.Let ? EstateTables.TenantNone : h.CourtDay > 0 || h.NoticeEnd > 0 ? EstateTables.TenantNotice : h.Arrears > 0 ? EstateTables.TenantBehind : EstateTables.TenantPaying;
+                row.Set(0, h.Name);
+                row.Set(1, who);
+                row.Set(6, standing, h.Arrears > 0 ? TableRow.Red : !h.Let ? TableRow.Yellow : TableRow.Plain);
+                if (h.Let)
+                {
+                    row.Set(2, EstateText.Money(h.Rent), h.Rent);
+                    row.Set(3, EstateText.Money(h.Arrears), h.Arrears);
+                    row.Set(4, EstateText.Record(h.Record), h.Record);
+                    row.Set(5, EstateText.T("reallife_estate_row_until", "day", h.Until.ToString()), h.Until);
+                }
                 for (int a = 0; a < h.Applicants.Count; a++)
                 {
-                    Applicant p = h.Applicants[a];
-                    if (Pick("app:" + h.Place + ":" + p.Id, EstateText.T("reallife_estate_row_applicant", "building", h.Name), EstateText.Tenant(h.Use, p.Kind), EstateText.T("reallife_estate_row_a_day", "amount", EstateText.Money(p.Offer)),
-                            EstateText.Record(p.Record), 0, ref selected))
+                    RentApplicant p = h.Applicants[a];
+                    if (Pick("app:" + h.Place + ":" + p.Id, ref selected, out row))
                     {
                         applied = h;
                         applicant = p;
                     }
+                    row.Kind = EstateTables.TenantApplies;
+                    row.NoTotal = true;   // (an offer is not rent yet)
+                    row.Set(0, h.Name);
+                    row.Set(1, EstateText.Tenant(h.Use, p.Kind));
+                    row.Set(2, EstateText.Money(p.Offer), p.Offer);
+                    row.Set(4, EstateText.Record(p.Record), p.Record);
+                    row.Set(5, EstateText.T("reallife_estate_row_until", "day", p.Lapse.ToString()), p.Lapse);
+                    row.Set(6, EstateText.T("reallife_estate_filter_applicants"), TableRow.Green);
                 }
             }
             if (_rows.Count == 0)
@@ -240,7 +280,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        private void WriteApplicant(InfoBox box, EstateHolding h, Applicant a, EstateClimate c)
+        private void WriteApplicant(InfoBox box, EstateHolding h, RentApplicant a, EstateClimate c)
         {
             string place = h.Place;
             int id = a.Id, market = EstateRules.MarketRent(h, c);
@@ -317,10 +357,22 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < state.Holdings.Count; i++)
             {
                 EstateHolding h = state.Holdings[i];
-                if (Pick("own:" + h.Place, h.Name, EstateText.Level(h.Cond), EstateText.T("reallife_estate_row_level", "level", h.Level.ToString(), "use", EstateText.Use(h.Use)),
-                        h.Busy ? EstateText.T("reallife_estate_row_until", "day", h.WorkEnd.ToString()) : string.Empty, h.Cond < EstateCatalogue.ConditionPoor ? 2 : h.Busy ? 1 : 0, ref selected))
+                TableRow row;
+                int repair = EstateRules.RepairCost(h.Base, h.Cond, c.Index);
+                if (Pick("own:" + h.Place, ref selected, out row))
                 {
                     picked = h;
+                }
+                row.Kind = h.Busy ? EstateTables.WorksOn : h.Cond < EstateCatalogue.ConditionPoor ? EstateTables.WorksNeeded : EstateTables.WorksNone;
+                row.Set(0, h.Name);
+                row.Set(1, EstateText.Level(h.Cond), h.Cond, h.Cond < EstateCatalogue.ConditionUnfit ? TableRow.Red : h.Cond < EstateCatalogue.ConditionPoor ? TableRow.Yellow : TableRow.Plain);
+                row.Set(2, h.Level.ToString(), h.Level);
+                row.Set(3, EstateText.Use(h.Use));
+                row.Set(4, EstateText.Money(repair), repair);
+                if (h.Busy)
+                {
+                    row.Set(5, EstateText.Work(h.Work));
+                    row.Set(6, EstateText.T("reallife_estate_row_until", "day", h.WorkEnd.ToString()), h.WorkEnd);
                 }
             }
             if (_rows.Count == 0)
@@ -425,12 +477,21 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < agency.Open.Count; i++)
             {
                 Instruction n = agency.Open[i];
-                string what = EstateText.T(n.Sale ? "reallife_estate_row_sale" : "reallife_estate_row_letting", "district", EstateText.District(n.District));
-                if (Pick("ins:" + n.Id, what, EstateText.Money(n.Value), EstateText.Stage(n.Stage), EstateText.T("reallife_estate_row_until", "day", n.Day.ToString()),
-                        n.Stage == (int)InstructionStage.Offered ? 1 : 0, ref selected))
+                TableRow row;
+                int pays = AgencyRules.Commission(n.Sale, n.Stage == (int)InstructionStage.Completing ? n.Price : n.Value);
+                if (Pick("ins:" + n.Id, ref selected, out row))
                 {
                     picked = n;
                 }
+                row.Kind = n.Sale ? EstateTables.IsSale : EstateTables.IsLetting;
+                row.Kind2 = n.Stage;
+                row.Set(0, EstateText.T(n.Sale ? "reallife_estate_row_sale" : "reallife_estate_row_letting", "district", EstateText.District(n.District)));
+                row.Set(1, EstateText.T(n.Sale ? "reallife_estate_filter_sales" : "reallife_estate_filter_lettings"));
+                row.Set(2, EstateText.Money(n.Value), n.Value);
+                row.Set(3, EstateText.Money(pays), pays);
+                row.Set(4, ((n.Hours - n.Done) / 10f).ToString("0.#"), (n.Hours - n.Done) / 10.0);
+                row.Set(5, EstateText.Stage(n.Stage), n.Stage == (int)InstructionStage.Offered ? TableRow.Yellow : TableRow.Plain);
+                row.Set(6, EstateText.T("reallife_estate_row_until", "day", n.Day.ToString()), n.Day);
             }
             if (agency.Open.Count == 0)
             {

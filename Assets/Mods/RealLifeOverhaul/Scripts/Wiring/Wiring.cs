@@ -27,6 +27,10 @@ namespace RealLifeOverhaul
     ///                     move), a pitch with the founder's CV and what has hold of the player; the Ventures rows in the Planner
     ///     CompanyLinks    running a business with business pressure (footfall, closures, inspections, audits), fires, break-ins, the courts, the paper and the Planner
     ///     EstateLinks     property with the council's rent and permits policies, the event calendar, a hotel's reception and the Planner
+    ///     OnlineLinks     the online shops with the company's campaigns, the calendar's seasons, the GPS's roads and the Planner
+    ///     ServicesLinks   selling a business with Ventures (investors bought out), the credit side (business loans paid off) and running a business; the Planner
+    ///     BrandLinks      brands and franchises with business pressure (footfall), the city's economy (prices), fires, inspections, strikes, the courts and the Planner
+    ///     RoommateLinks   the roommate with family life (a partner who moves in), social life (friends, introductions) and the Planner
     ///
     /// <see cref="Connect"/> is called once per city load, after every director has been added;
     /// <see cref="Disconnect"/> on unload puts every bridge back to its default. Nothing here
@@ -70,6 +74,10 @@ namespace RealLifeOverhaul
             Step("investors and the market", VenturesLinks.Connect);
             Step("running a business", CompanyLinks.Connect);
             Step("property", EstateLinks.Connect);
+            Step("online shops", OnlineLinks.Connect);
+            Step("the cleaning service and selling a business", ServicesLinks.Connect);
+            Step("brands and franchises", BrandLinks.Connect);
+            Step("the roommate", RoommateLinks.Connect);
             Logger?.Info("Wiring: the features are connected.");
         }
 
@@ -82,7 +90,11 @@ namespace RealLifeOverhaul
             Connected = false;
             Step("the taxi by phone", TaxiLinks.Disconnect);
             Step("property", EstateLinks.Disconnect);
+            Step("the cleaning service and selling a business", ServicesLinks.Disconnect);
+            Step("brands and franchises", BrandLinks.Disconnect);
+            Step("the roommate", RoommateLinks.Disconnect);
             Step("running a business", CompanyLinks.Disconnect);
+            Step("online shops", OnlineLinks.Disconnect);
             Step("the city's economy", CityLinks.Disconnect);
             Step("credit and debt", DebtLinks.Disconnect);
             Step("the economy", EconomyLinks.Disconnect);

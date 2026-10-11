@@ -80,7 +80,11 @@ namespace RealLifeOverhaul
                     Dirty = true;
                 });
             }
-            options.AddToggle(StepTimingId, "reallife_perf_step_timing", StepTiming, on => StepTiming = on);
+            options.AddToggle(StepTimingId, "reallife_perf_step_timing", StepTiming, on =>
+            {
+                StepTiming = on;
+                FrameSteps.Refresh();   // the session record's own timestamps leave the engine's loop, or go back in, at once
+            });
             options.AddButton("reallife_perf_probe_button", () => PerfDirector.Instance?.StartProbe());
             options.AddButton("reallife_perf_bench_button4", () => PerfDirector.Instance?.StartBench());
             return options.AddSplitter();

@@ -346,7 +346,7 @@ namespace RealLifeOverhaul
 
         private static bool Begin()
         {
-            CurrentSceneData data = CurrentSceneData.GetSceneInstance();
+            CurrentSceneData data = RoadData.Scene;
             CityManager city = InstanceBehavior<CityManager>.Instance;
             if (data == null || data.allWaypoints == null || data.allWaypoints.Length < 100 || city == null || city.subwayStations == null)
             {

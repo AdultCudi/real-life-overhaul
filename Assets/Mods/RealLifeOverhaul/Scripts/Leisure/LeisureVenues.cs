@@ -163,6 +163,8 @@ namespace RealLifeOverhaul.Leisure
         /// searches here are the one-off setup the performance rules allow; whatever the city does not have is
         /// simply not on the list.
         /// </summary>
+        private const string LandmarkSearch = "leisure: one of the city's landmarks being looked for (a search of the whole scene, six of them once a city)";
+
         public static void FindLandmarks()
         {
             if (_landmarksTried)
@@ -178,7 +180,7 @@ namespace RealLifeOverhaul.Leisure
                 Scene<SwimmingPoolBuildingController>("swimming_pool", "reallife_leisure_landmark_swimming_pool", 40f, false);
                 Scene<BridgeController>("bridge", "reallife_leisure_landmark_bridge", 70f, true);
 
-                CasinoBuildingController[] casinos = UnityEngine.Object.FindObjectsByType<CasinoBuildingController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                CasinoBuildingController[] casinos = SceneFinds.All<CasinoBuildingController>(LandmarkSearch, FindObjectsInactive.Include);
                 if (casinos.Length > 0 && casinos[0] != null)
                 {
                     Transform at = casinos[0].ticketHouse != null ? casinos[0].ticketHouse.transform : casinos[0].transform;
@@ -225,7 +227,7 @@ namespace RealLifeOverhaul.Leisure
 
         private static void Scene<T>(string id, string nameKey, float radius, bool waterside) where T : Component
         {
-            T[] found = UnityEngine.Object.FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            T[] found = SceneFinds.All<T>(LandmarkSearch, FindObjectsInactive.Include);
             // The same one every time, whatever order the engine hands them over in: the most westerly.
             T pick = null;
             for (int i = 0; i < found.Length; i++)
@@ -352,6 +354,79 @@ namespace RealLifeOverhaul.Leisure
             water = position + forward * 6f;
             water.y = surfaceKnown ? surface : position.y - 1f;
             return true;
+        }
+
+        /// <summary>
+        /// A place to fish from at the waterside landmark nearest to <paramref name="from"/>, then the next nearest:
+        /// a spot a little in from the edge of the walkable ground, and the way to face there for open water
+        /// (<see cref="WaterAhead"/>). For the test button only: it looks at up to 33 spots a landmark and eight ways
+        /// to face at each, three rays a look, so it is never called on a timer.
+        /// </summary>
+        public static bool WaterEdgeNear(Vector3 from, out Vector3 stand, out Vector3 facing, out float metres)
+        {
+            stand = from;
+            facing = Vector3.forward;
+            metres = 0f;
+            FindLandmarks();
+            float beyond = -1f;
+            for (int tried = 0; tried < Landmarks.Count; tried++)
+            {
+                // The nearest waterside landmark not looked at yet.
+                Landmark next = null;
+                float nearest = float.MaxValue;
+                for (int i = 0; i < Landmarks.Count; i++)
+                {
+                    float away = CitySpots.Flat(Landmarks[i].Position - from);
+                    if (Landmarks[i].Waterside && away > beyond && away < nearest)
+                    {
+                        nearest = away;
+                        next = Landmarks[i];
+                    }
+                }
+                if (next == null)
+                {
+                    return false;
+                }
+                beyond = nearest;
+                for (int ring = 0; ring <= 4; ring++)
+                {
+                    int bearings = ring == 0 ? 1 : 8;
+                    for (int b = 0; b < bearings; b++)
+                    {
+                        float turn = b * Mathf.PI * 0.25f;
+                        Vector3 probe = next.Position + new Vector3(Mathf.Sin(turn), 0f, Mathf.Cos(turn)) * (ring * 12f);
+                        if (!NavMesh.SamplePosition(probe, out NavMeshHit ground, 6f, NavMesh.AllAreas)
+                            || !NavMesh.FindClosestEdge(ground.position, out NavMeshHit edge, NavMesh.AllAreas) || edge.distance > 40f)
+                        {
+                            continue;
+                        }
+                        Vector3 inward = ground.position - edge.position;
+                        inward.y = 0f;
+                        if (inward.sqrMagnitude < 0.01f)
+                        {
+                            inward = edge.normal;
+                            inward.y = 0f;
+                        }
+                        if (inward.sqrMagnitude < 0.0001f
+                            || !NavMesh.SamplePosition(edge.position + inward.normalized * 1.2f, out NavMeshHit spot, 1.5f, NavMesh.AllAreas))
+                        {
+                            continue;
+                        }
+                        for (int f = 0; f < 8; f++)
+                        {
+                            Vector3 way = Quaternion.Euler(0f, f * 45f, 0f) * -inward.normalized;   // straight out over the edge first
+                            if (WaterAhead(spot.position, way, out _, out _))
+                            {
+                                stand = spot.position;
+                                facing = way;
+                                metres = Mathf.Sqrt(CitySpots.Flat(spot.position - from));
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
         }
 
         private static bool NamedWater(Collider collider)

@@ -225,7 +225,7 @@ namespace RealLifeOverhaul.Economy
         /// Somebody applies today, or nobody: null. An applicant with a poorer record offers more. Nobody applies
         /// while a tenant is in, works are under way, the building is not to let or three applications wait.
         /// </summary>
-        public static Applicant Apply(EstateHolding h, int seed, int day, EstateClimate c, bool whatever = false)
+        public static RentApplicant Apply(EstateHolding h, int seed, int day, EstateClimate c, bool whatever = false)
         {
             int place = Hash(h.Place);
             int market = MarketRent(h, c);
@@ -241,7 +241,7 @@ namespace RealLifeOverhaul.Economy
             int record = Between(Roll(seed, day, ForRecord, place + n), EstateCatalogue.RecordLeast, EstateCatalogue.RecordMost);
             int offer = h.Ask + Between(Roll(seed, day, ForOffer, place + n), -EstateCatalogue.OfferUnder, EstateCatalogue.OfferOver) + Math.Max(0, 60 - record) * EstateCatalogue.RecordPremium;
             offer = EstateCatalogue.Clamp(offer, EstateCatalogue.OfferLeast, EstateCatalogue.OfferMost);
-            var a = new Applicant
+            var a = new RentApplicant
             {
                 Id = n,
                 Kind = Between(Roll(seed, day, ForKind, place + n), 0, EstateCatalogue.TenantKinds - 1),
@@ -273,7 +273,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>An applicant becomes the tenant: the rent offered, a deposit held, a lease to its last day. The others are turned away.</summary>
         public static bool Accept(EstateHolding h, int applicantId, int day)
         {
-            Applicant a = h.ApplicantOf(applicantId);
+            RentApplicant a = h.ApplicantOf(applicantId);
             if (a == null || h.Let || h.Self || !h.Managed || h.Busy || h.Cond < EstateCatalogue.ConditionUnfit)
             {
                 return false;
