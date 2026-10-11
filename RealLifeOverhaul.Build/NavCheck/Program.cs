@@ -10,7 +10,7 @@ using RealLifeOverhaul.Nav;
 // ALL CHECKS PASSED or the count that failed. Given the path of a file of lane points it then times the search and
 // the map picture on that city (timings are printed, never judged). The bus bays are checked here too (BayCheck.cs); with
 // --bays as an argument each run of the model bus is printed with what it measured. And the rules of the taxi called from
-// the phone (TaxiCheck.cs).
+// the phone (TaxiCheck.cs). And the minimap's buildings and water (BaseCheck.cs).
 internal static partial class Program
 {
     private static int _failed, _run;
@@ -40,6 +40,7 @@ internal static partial class Program
         Following();
         View();
         Picture();
+        Base();
         Bays(Array.IndexOf(args, "--bays") >= 0);
         Taxi();
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
