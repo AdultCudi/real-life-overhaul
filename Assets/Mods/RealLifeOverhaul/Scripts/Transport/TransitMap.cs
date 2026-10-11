@@ -635,7 +635,8 @@ namespace RealLifeOverhaul
             {
                 bay = Try(line, j, true);
             }
-            for (int k = i - 1; bay == null && k >= 0 && line.Metres[k] >= wanted - BayBack; k--)
+            // (Never nearer the start of the line than a first stop may be: a bus has to be put on the road before its stop.)
+            for (int k = i - 1; bay == null && k >= 0 && line.Metres[k] >= Mathf.Max(wanted - BayBack, FirstStopAt); k--)
             {
                 bay = Try(line, k, true);
             }
