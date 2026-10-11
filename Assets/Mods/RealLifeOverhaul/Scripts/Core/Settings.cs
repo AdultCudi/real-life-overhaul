@@ -455,6 +455,7 @@ namespace RealLifeOverhaul
             CityInteractions = Bool(modId, CityInteractionsId, CityInteractions);
             PerfTweaks.Load(modId);
             JusticeSettings.Load(modId);   // courts and prison (Scripts/Justice)
+            RoommateOptions.Load(modId);   // sharing the flat (Scripts/Home/Roommates)
             Jobs = Bool(modId, JobsId, Jobs);
             JobPay = Int(modId, JobPayId, JobPay);
             Family = Bool(modId, FamilyId, Family);
