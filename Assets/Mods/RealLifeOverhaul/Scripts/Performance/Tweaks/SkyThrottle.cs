@@ -60,14 +60,16 @@ namespace RealLifeOverhaul
         }
 
         // Every sky a volume or a static-lighting component in the loaded scenes can put in front of the camera.
+        private const string SkySearch = "performance: the skies being listed (two searches of the whole scene, after scenes arrive)";
+
         private void Sweep()
         {
             _stale = false;
-            foreach (Volume volume in UnityEngine.Object.FindObjectsByType<Volume>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            foreach (Volume volume in SceneFinds.All<Volume>(SkySearch, FindObjectsInactive.Include))
             {
                 Take(volume.HasInstantiatedProfile() ? volume.profile : volume.sharedProfile);
             }
-            foreach (StaticLightingSky sky in UnityEngine.Object.FindObjectsByType<StaticLightingSky>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            foreach (StaticLightingSky sky in SceneFinds.All<StaticLightingSky>(SkySearch, FindObjectsInactive.Include))
             {
                 Take(sky.profile);
             }
