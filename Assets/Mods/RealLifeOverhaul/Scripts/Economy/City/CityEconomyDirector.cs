@@ -13,11 +13,13 @@ namespace RealLifeOverhaul.Economy
     /// The city's economy: a central bank, prices, a cycle, districts with an income, supply that moves, and what each
     /// does to the player. See the README ("Economy: the city").
     ///
-    /// This class keeps it going and applies it. It has no Update and no timer of its own: once a second the credit
-    /// side's timer calls <see cref="EachSecond"/> (the save is waited for, the option is looked at, three event
-    /// handlers are kept in place); everything else happens on the game's own events.
+    /// This class keeps it going and applies it. It has no Update, no timer and no place of its own in the game's
+    /// events: once a second the credit side's timer calls <see cref="EachSecond"/> (the save is waited for, the
+    /// option is looked at), and the credit side's own handlers of the game's hour and day events call
+    /// <see cref="OnHour"/> and <see cref="OnDay"/> when their own work is done (EconomyDirector.AfterHour, AfterDay).
     ///
-    ///   the day    after the game's daily run: the model counts the day (<see cref="CityModel.Day"/>), then the
+    ///   the day    after the game's daily run and after the credit side has settled its day (the accounts take their
+    ///              payments first): the model counts the day (<see cref="CityModel.Day"/>), then the
     ///              rate, the wholesale prices and each business's footfall are put as the model says, the day's
     ///              rent, wages and takings are adjusted, and a rival may answer a business that does well
     ///   the hour   each business's footfall figure is kept (the game writes its own over it when marketing changes)
@@ -55,7 +57,7 @@ namespace RealLifeOverhaul.Economy
         private bool _holding;         // the footfall figures are the game's own for a save: nothing is added until the next game hour
         private int _level;
         private int _monthDays = MacroCatalogue.MonthDaysLeast;
-        private Action _second, _onSave, _onHour, _onDay, _hourSeen, _daySeen;
+        private Action _second, _onSave, _onHour, _onDay;
 
         public bool Running => _running;
 
@@ -80,14 +82,16 @@ namespace RealLifeOverhaul.Economy
             _onHour = OnHour;
             _onDay = OnDay;
             EconomyDirector.Second += _second;
+            EconomyDirector.AfterHour += _onHour;
+            EconomyDirector.AfterDay += _onDay;
         }
 
         private void OnDestroy()
         {
             EconomyDirector.Second -= _second;
+            EconomyDirector.AfterHour -= _onHour;
+            EconomyDirector.AfterDay -= _onDay;
             SaveHook.Drop(_onSave);
-            GlobalEvents.onNewHour -= _onHour;
-            GlobalEvents.onNewDay -= _onDay;
             if (Instance != this)
             {
                 return;   // another city's director has started since: the state and the figures are its
@@ -146,8 +150,6 @@ namespace RealLifeOverhaul.Economy
                 StartUp();
             }
             SaveHook.Keep(_onSave);
-            EventHold.Keep(ref GlobalEvents.onNewHour, _onHour, ref _hourSeen);
-            EventHold.Keep(ref GlobalEvents.onNewDay, _onDay, ref _daySeen);
             int level = MacroCatalogue.Level(Settings.EconomyCityLevel);
             if (level != _level)
             {
@@ -215,8 +217,9 @@ namespace RealLifeOverhaul.Economy
         }
 
         // The city's economy stops: every figure it changed is the game's own again. With 'keep' the state goes into
-        // the save's data first (a stop in the middle of play); with 'redraw' the customers still to come today are
-        // drawn again from the game's own footfall (not when the city itself is going).
+        // the save's data first (a stop in the middle of play). Unless the city itself is going ('unloading'), the banks
+        // are given their terms without the rate and the customers still to come today are drawn again from the game's
+        // own footfall.
         private void StandDown(string why, bool tell, bool keep, bool unloading)
         {
             bool was = _running;
@@ -292,7 +295,7 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- the hour, the day, the save
 
-        // GlobalEvents.onNewHour: every game hour, and first thing in the game's NewDay, before its daily run.
+        // The game's hour event (every game hour, and first thing in its NewDay, before its daily run), after the credit side's own work on it.
         private void OnHour()
         {
             if (!_running || _broken || Save == null)
@@ -321,7 +324,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // GlobalEvents.onNewDay: after the game's daily run (rent, wages and takings are booked, the day's customers drawn).
+        // The game's day event (after its daily run: rent, wages and takings are booked, the day's customers drawn), after the credit side has settled its day.
         private void OnDay()
         {
             if (!_running || _broken || Save == null)

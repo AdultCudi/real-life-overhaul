@@ -6080,7 +6080,7 @@ on unload and before every save; else (c) a dated transaction of the mod's own.
 | effect | way | how |
 | --- | --- | --- |
 | **loan rates** | (a) | `LendingTerms.BasePoints` is added to the rating's points before the rate is rounded and held to its floor, so `BankTerms` writes it on the banks' settings with everything else and the bank's dialogue and the Borrow tab show it. A bank's rate is a whole per cent in the game, so quarters count once they add up with the rating's points. The mod's own accounts count in hundredths: an overdraft and a card are opened at the rating's rate and charged `AccountRules.BaseBp` on top day by day (`CreditAccount.RateAgreedNow`); car finance and a mortgage take it once, when approved (`ProductTerms.FixedRateBp`). A loan or account already made keeps its rate. Both numbers are the mod's own and are 0 while this is off. |
-| **wholesale and import prices** | (b) | The game works a wholesale price out each time it is asked (`ItemHelper.GetWholesalePrice`: the item's `wholesalePrice`, the market's import index, the game's price multiplier), on the wholesaler's shelf, on a delivery contract and at the importer. The item is an asset in memory, not part of a save. `CityGame.ApplyWholesale` writes `own x the kind's factor x the index / 100` on every retail product with a wholesale price, once a day and only for a kind whose factor changed; `RestoreWholesale` puts every item's own price back exactly. Nothing to restore before a save: the items are not in it. |
+| **wholesale and import prices** | (b) | The game works a wholesale price out each time it is asked (`ItemHelper.GetWholesalePrice`: the item's `wholesalePrice`, the market's import index, the game's price multiplier), on the wholesaler's shelf, on a delivery contract and at the importer. The item is an asset in memory, not part of a save. `CityGame.ApplyWholesale` writes `own x the kind's factor x the index / 100` on every retail product with a wholesale price, once a day and only where the price is not already that; `RestoreWholesale` puts every item's own price back exactly. Nothing to restore before a save: the items are not in it. |
 | **footfall** | (a) | For each business the player runs: the cycle's per cent, a tenth of a per cent for each point its district is away from 100, and its prices against what the district bears; together -25% to +15%, and nothing under 2% either way. Written through business pressure's own promotion figure: `BusinessGame.Footfall` asks `BusinessGame.Ambient` each time it writes a business's figure, so one writer puts an issue's change and the city's on it together, each inside its own bounds. Applied each morning with the day's customers drawn again; kept each game hour; put at the game's own before every save and until the next game hour; the game itself writes its own figure every night. |
 | **price tolerance** | (a) | The game keeps each business's prices (`BuildingRegistration.retailPrices`). They are judged against the game's own price for the neighbourhood (`Item.DefaultMarketPrice` x `CitizenHelper.averagePriceIndicesInNeighborhoods`, plus the 0.3 the game itself allows a monopoly), as a mean over the price list, and that against what the district bears: half a per cent more or less for each point its income is over or under its start, times what customers spend in the cycle. Up to 2% over costs nothing; then 0.8% of customers for each per cent over, 10% at most; at or under, +2%. It is part of the footfall above. The game's own table is read and never written (its figures reach rivals' saved prices). |
 | **rents and wages** | (c) | After the game's daily run, its own rent and wage transactions of the day that ended are added up (`CityGame.DayFigures`: by the game's categories) and one transaction each adjusts them by `index / 100 - 1`: "Rent, cost of living adjustment", "Wages, cost of living adjustment". None within 1% of 100. |
@@ -6090,7 +6090,9 @@ on unload and before every save; else (c) a dated transaction of the mod's own.
 | **credit risk** | none added | The rating's "owed against income" already falls with income. Nothing hidden is added. |
 
 An adjustment that would take money is never taken beyond the cash in hand (`CityAdjust.Take`): what cannot be taken is
-carried to the next day as it is, per stream, in the state. "Prepare this save for removing the mod" writes what
+carried to the next day as it is, per stream, in the state. The credit side settles its day first (it calls the city's
+economy when its own work on the day event is done), so an adjustment never takes the cash an account's payment was
+waiting for. "Prepare this save for removing the mod" writes what
 was carried off. The adjustments carry no category of the game's, so its daily statements, its tax and the
 Overview's rent and wages lines stay the game's own figures.
 
@@ -6141,8 +6143,9 @@ answers as a city with no economy of the mod's would.
 
 - `Economy/Lending/LendingTerms`: `BasePoints`, and `For(score, cap, rate, basePoints)`. `ProductTerms`: `BaseBp`,
   `WithBase`, `FixedRateBp`; `RateBp` is by the rating alone. `AccountRules`: `BaseBp`, `BaseMultiplier`.
-  `CreditAccount.RateAgreedNow`. `ProductOffer.AgreedBp`. `EconomyDirector`: `Second` (the one-second timer's call
-  for the city's economy, which has no timer of its own), `OpenCity`. `Finance.OpenCity`.
+  `CreditAccount.RateAgreedNow`. `ProductOffer.AgreedBp`. `EconomyDirector`: `Second`, `AfterHour`, `AfterDay` (its
+  one-second timer and its handlers of the game's hour and day events call the city's economy, which has no timer
+  and no handler of its own in the game's events), `OpenCity`. `Finance.OpenCity`.
 - `Business/BusinessCatalogue`: `AmbientMostDip`, `AmbientMostBoost`, `ClampAmbient`, `PromotionFor` with an ambient
   part. `BusinessGame`: `Ambient`, `LastOwn`, `LastWritten`. `BusinessDirector`: `RollScale`, `WeightOf`,
   `StartIssue(kind, reg)`, `Footfall(reg, redraw, newDay, out own, out written)`.
@@ -6151,10 +6154,10 @@ answers as a city with no economy of the mod's would.
 
 ### Cost
 
-No Update, no timer of its own, nothing per frame. Once a second (on the credit side's timer): four comparisons.
+No Update, no timer and no handler of its own in the game's events, nothing per frame and nothing allocated per
+second. Once a second (on the credit side's timer): four comparisons.
 Each game hour: two comparisons for the rate, and one promotion figure written per business that carries a change.
-Each game day: one tick of the model (a few dozen integer operations), at most a few hundred float writes for the
-wholesale prices of the kinds whose factor changed, one pass over the player's businesses and their price lists, one
+Each game day: one tick of the model (a few dozen integer operations), one comparison for each good with a wholesale price and a write where it differs, one pass over the player's businesses and their price lists, one
 pass over the game's transaction history (the last thousand entries) for the adjustments, and the day's customers
 drawn again for each business whose footfall is changed. That last one is the only work of any size: it is the
 game's own draw (`CustomerEntriesHelper.UpdateCustomerEntriesForPlayerBusiness`), done once more for those

@@ -107,9 +107,10 @@ namespace RealLifeOverhaul.Economy
         private static readonly Dictionary<string, Good> Goods = new Dictionary<string, Good>(512);
         private static readonly List<Item> Priced = new List<Item>(512);
         private static readonly List<int> PricedKind = new List<int>(512);
-        private static readonly int[] Written = new int[MacroCatalogue.SupplyKinds];   // the factor last written for each kind, thousandths; 0 for the game's own
+        private static readonly List<float> PricedOwn = new List<float>(512);
         private static readonly HashSet<string> Monopolies = new HashSet<string>();
         private static readonly int[] KindCount = new int[MacroCatalogue.SupplyKinds];
+        private static readonly int[] Factors = new int[MacroCatalogue.SupplyKinds];   // today's factor of each kind, while the prices are written
 
         /// <summary>True while any wholesale price in memory is this class's and not the game's own.</summary>
         public static bool WholesaleApplied { get; private set; }
@@ -153,6 +154,7 @@ namespace RealLifeOverhaul.Economy
             Goods.Clear();
             Priced.Clear();
             PricedKind.Clear();
+            PricedOwn.Clear();
             Array.Clear(KindCount, 0, KindCount.Length);
             var rank = new Dictionary<string, int>(512);   // the best (lowest) place in the catalogue's list of a type that sells the item
             foreach (string typeName in BusinessTypeHelper.BusinessTypeNames)
@@ -198,6 +200,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     Priced.Add(item);
                     PricedKind.Add(kind);
+                    PricedOwn.Add(own);
                     KindCount[kind]++;
                 }
             }
@@ -211,42 +214,33 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// Writes today's wholesale prices: each good's own price times its kind's factor and the price index. A kind
-        /// whose factor has not changed since it was last written costs one comparison. Returns how many prices were written.
+        /// Writes today's wholesale prices: each good's own price times its kind's factor and the price index. Every
+        /// good is looked at (one comparison each) and only a price that is not what it should be is written, so a
+        /// price the game has put back by itself is found the same day. Returns how many prices were written.
         /// </summary>
         public static int ApplyWholesale(CityState state)
         {
             int written = 0;
-            bool any = false;
-            for (int k = 0; k < Written.Length; k++)
+            bool applied = false;
+            for (int k = 0; k < Factors.Length; k++)
             {
-                int factor = CityModel.Wholesale(state, k);
-                any |= factor != Written[k] && !(Written[k] == 0 && factor == 1000);   // (nothing written yet and nothing to write is no change)
-            }
-            if (!any)
-            {
-                return 0;
+                Factors[k] = CityModel.Wholesale(state, k);
+                applied |= Factors[k] != 1000;
             }
             for (int i = 0; i < Priced.Count; i++)
             {
                 Item item = Priced[i];
-                int factor = CityModel.Wholesale(state, PricedKind[i]);
-                if (item == null || factor == Written[PricedKind[i]])
+                if (item == null)
                 {
                     continue;   // (an item the game has unloaded has nothing to write to)
                 }
-                float want = factor == 1000 ? Own[item] : Own[item] * (factor / 1000f);
+                int factor = Factors[PricedKind[i]];
+                float want = factor == 1000 ? PricedOwn[i] : PricedOwn[i] * (factor / 1000f);
                 if (item.wholesalePrice != want)
                 {
                     item.wholesalePrice = want;
                     written++;
                 }
-            }
-            bool applied = false;
-            for (int k = 0; k < Written.Length; k++)
-            {
-                Written[k] = CityModel.Wholesale(state, k);
-                applied |= Written[k] != 1000;
             }
             WholesaleApplied = applied;
             return written;
@@ -278,7 +272,6 @@ namespace RealLifeOverhaul.Economy
             {
                 Own.Remove(dead[i]);   // an item the game has unloaded: when it is loaded again it has its own price
             }
-            Array.Clear(Written, 0, Written.Length);
             WholesaleApplied = false;
             return restored;
         }
@@ -296,7 +289,7 @@ namespace RealLifeOverhaul.Economy
                     continue;
                 }
                 int factor = state != null ? CityModel.Wholesale(state, PricedKind[i]) : 1000;
-                float want = factor == 1000 ? Own[item] : Own[item] * (factor / 1000f);
+                float want = factor == 1000 ? PricedOwn[i] : PricedOwn[i] * (factor / 1000f);
                 if (item.wholesalePrice != want)
                 {
                     if (wrong++ < 3)
@@ -315,6 +308,7 @@ namespace RealLifeOverhaul.Economy
             Goods.Clear();
             Priced.Clear();
             PricedKind.Clear();
+            PricedOwn.Clear();
             Monopolies.Clear();
         }
 
