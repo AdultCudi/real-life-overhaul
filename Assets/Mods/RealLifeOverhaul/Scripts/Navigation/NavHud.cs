@@ -44,6 +44,7 @@ namespace RealLifeOverhaul.Nav
         private const float Column = 740f;        // the width of the game's left column (tasks above, control hints below)
         private const float Head = 100f;          // the headline's height
         private const float Side = 12f;           // the box's own edge
+        private const float ViewSide = 26f;       // the map inside it: the box and its headline are drawn 14 inside their own rectangles (a soft edge), as seen in the game
         private const float Foot = 40f;           // ...and its lower edge
         private const float LineHeight = 58f;
         private const float LinesPad = 14f;
@@ -104,7 +105,7 @@ namespace RealLifeOverhaul.Nav
         public bool Alive => _panel != null && _rect != null;
 
         /// <summary>The view's width and height in the HUD's own units, as last laid out.</summary>
-        public float ViewWidth => _width - Side * 2f;
+        public float ViewWidth => _width - ViewSide * 2f;
         public float ViewHeight => _mapHeight;
 
         /// <summary>False when there was no room for the panel between the game's own (it is then hidden).</summary>
@@ -424,7 +425,7 @@ namespace RealLifeOverhaul.Nav
         {
             float width = Mathf.Round(Column * Mathf.Clamp(sizePercent, 50, 100) / 100f);
             float linesHeight = lines ? LineHeight * 2f + LinesPad : 0f;
-            float wanted = map ? width - Side * 2f : 0f;
+            float wanted = map ? width - ViewSide * 2f : 0f;
             float frame = Head + Foot + linesHeight;
             float screenHeight = _screen.rect.height;
 
@@ -484,8 +485,8 @@ namespace RealLifeOverhaul.Nav
             _rect.anchoredPosition = new Vector2(x, bottom);
             _rect.sizeDelta = new Vector2(width, Head + mapHeight + linesHeight + Foot);
             _view.gameObject.SetActive(map);
-            _view.offsetMin = new Vector2(Side, -Head - mapHeight);
-            _view.offsetMax = new Vector2(-Side, -Head);
+            _view.offsetMin = new Vector2(ViewSide, -Head - mapHeight);
+            _view.offsetMax = new Vector2(-ViewSide, -Head);
             float diagonal = Mathf.Ceil(Mathf.Sqrt(ViewWidth * ViewWidth + mapHeight * mapHeight)) + 2f;
             _roads.sizeDelta = new Vector2(diagonal, diagonal);
             PlaceLine(_line1, Foot + LineHeight + 4f, lines);
