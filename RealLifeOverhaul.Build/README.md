@@ -387,7 +387,7 @@ A carving `NavMeshObstacle` makes the engine cut the piece of mesh it stands on 
 moves. All of the mod's are `carveOnlyStationary`, placed while switched off and then switched on, so each is cut once.
 
 - **Bus stops** (`BusStopDressing`, five boxes a stop, three stops dressed). In 0.1.0 the boxes cut the mesh whenever a
-  stop was dressed, which driving through the city did every few seconds (dressed within 135 m, taken in beyond 175 m).
+  stop was dressed, which driving through the city did every few seconds (dressed within 135 m, taken in beyond 175 m; 190 m and 230 m from 0.1.4).
   Now a dressed stop is a thing to look at until the player is on foot within 60 m of it (`Solid`, kept until 90 m, and
   never on the bus): only then are its boxes enabled. Nothing is cut while driving. What is lost: while a stop is not
   solid the game's pedestrians (who walk on this mesh) may pass through its pole and panels, which can be seen from a
@@ -2007,7 +2007,7 @@ that one bus was either still crawling when the game was closed or its vehicle w
   over six points), at street level, and has pavement 1.3 to 5.6 m to its right that is 1.5 m deep with nothing
   static and no door within 2.4 m where the pole and the waiting people stand. Where the pavement is also bare and
   deep 3.2 m further on there is room for a shelter. A stop is named after the nearest building's address.
-- **A stop is solid** (`BusStopDressing`). The three nearest stops within 135 m are dressed, out of view (175 m to
+- **A stop is solid** (`BusStopDressing`). The three nearest stops within 190 m are dressed, out of view if a wait of three seconds allows it and at once after a load or an arrival (230 m to
   be taken in), from the modelled `bus_stop_sign` and `bus_shelter` (plain shapes of the same size without the
   bundle). Everyone on foot is moved on the navigation mesh, so the pole, the shelter's back, its end panel, the
   screen at its other end and the bench each have a carving `NavMeshObstacle` (the cordon's mechanism): children of

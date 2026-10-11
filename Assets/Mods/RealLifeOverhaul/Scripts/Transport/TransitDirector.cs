@@ -70,8 +70,10 @@ namespace RealLifeOverhaul
     public sealed class TransitDirector : MonoBehaviour
     {
         private const float TickInterval = 0.25f;
-        private const float DressRange = 135f;
-        private const float UndressRange = 175f;
+        private const float DressRange = 190f;      // metres: well beyond the 110 m at which a place counts as in view, so that a stop is up before it is looked at, driving fast too
+        private const float UndressRange = 230f;
+        private const float HoldBackFor = 3f;       // seconds a stop in view is held back, for the player to look away, before it is put up as it is
+        private const float ArrivedBeyond = 60f;    // metres between two passes that no walk or drive covers: the player was set down here
         private const float SolidWithin = 60f;      // metres: on foot this near, a dressed stop's boxes cut the navigation mesh
         private const float SolidKeep = 90f;        // ...and stay cut until this far off
         private const float ServeRange = 80f;
@@ -165,6 +167,10 @@ namespace RealLifeOverhaul
         private bool _failed;
         private bool _saveLoaded;
         private bool _streetClear = true;
+        private bool _dressAtOnce = true;           // nothing has been put out for where the player now is: the first pass does not wait for them to look away
+        private TransitStop _heldBack;
+        private float _heldSince;
+        private Vector3 _dressedFrom;
         private float _minutesPerSecond = 1f;
         private float _rateFrom;
         private float _rateMinutes;
@@ -330,7 +336,11 @@ namespace RealLifeOverhaul
             _streetClear = false;
             if ((_tick & 3) == 0)
             {
-                DressNear(at, false);
+                // Just loaded, back on the street, or set down somewhere else by a taxi or the subway: the stops go up at once.
+                bool atOnce = _dressAtOnce || CitySpots.Flat(at - _dressedFrom) > ArrivedBeyond * ArrivedBeyond;
+                _dressAtOnce = false;
+                _dressedFrom = at;
+                DressNear(at, atOnce, now);
                 Serve(at, now);
                 for (int i = 0; i < Dressings; i++)
                 {
@@ -416,7 +426,7 @@ namespace RealLifeOverhaul
             return _walkerRadius;
         }
 
-        private void DressNear(Vector3 at, bool evenInView)
+        private void DressNear(Vector3 at, bool evenInView, float now)
         {
             // Take in what the player has left behind.
             for (int i = 0; i < Dressings; i++)
@@ -428,6 +438,7 @@ namespace RealLifeOverhaul
                 }
             }
             // Put out the nearest that are not out yet: a pass over the stops, once a second.
+            TransitStop waiting = null;   // held back in this pass: the next nearest is looked at instead
             for (int pass = 0; pass < Dressings; pass++)
             {
                 TransitStop nearest = null;
@@ -436,7 +447,7 @@ namespace RealLifeOverhaul
                 for (int i = 0; i < stops.Count; i++)
                 {
                     float sqr = CitySpots.Flat(stops[i].Sign - at);
-                    if (sqr < best && Mathf.Abs(stops[i].Sign.y - at.y) < 10f && !Dressed(stops[i]))
+                    if (sqr < best && Mathf.Abs(stops[i].Sign.y - at.y) < 10f && stops[i] != waiting && !Dressed(stops[i]))
                     {
                         best = sqr;
                         nearest = stops[i];
@@ -454,18 +465,63 @@ namespace RealLifeOverhaul
                         free = i;
                     }
                 }
-                if (free < 0 || (!evenInView && CitySpots.InView(nearest.Sign)))
+                if (free < 0)
                 {
-                    return;
+                    // All out: the furthest of them gives its place to a nearer stop, which is the one the player can reach.
+                    float furthest = best;
+                    for (int i = 0; i < Dressings; i++)
+                    {
+                        float sqr = CitySpots.Flat(_dressings[i].Stop.Sign - at);
+                        if (sqr > furthest && _dressings[i].Stop != _served)
+                        {
+                            furthest = sqr;
+                            free = i;
+                        }
+                    }
+                    if (free < 0)
+                    {
+                        return;
+                    }
+                }
+                // Not put up under the player's eyes if a moment's wait avoids it; never left out for it.
+                if (!evenInView && CitySpots.InView(nearest.Sign))
+                {
+                    if (_heldBack != nearest)
+                    {
+                        _heldBack = nearest;
+                        _heldSince = now;
+                    }
+                    if (now - _heldSince < HoldBackFor)
+                    {
+                        if (waiting != null)
+                        {
+                            return;
+                        }
+                        waiting = nearest;
+                        continue;
+                    }
+                }
+                if (_heldBack == nearest)
+                {
+                    _heldBack = null;
                 }
                 // What may have come to stand there since the stop was laid out: a parked car on the pavement, a cart, a cordon.
                 if (!SceneParking.IsFree(nearest.Sign, Quaternion.LookRotation(nearest.Along), 0.25f, 0.25f, 0.1f))
                 {
+                    if (waiting != null)
+                    {
+                        return;
+                    }
+                    waiting = nearest;
                     continue;
                 }
                 if (_dressings[free] == null)
                 {
                     _dressings[free] = new BusStopDressing(_root, free + 1);
+                }
+                else if (_dressings[free].Stop != null)
+                {
+                    _dressings[free].Clear();   // the furthest, giving up its place only now that the nearer one is going up
                 }
                 TransitLine line = TransitMap.Lines[nearest.Line];
                 _dressings[free].Put(nearest, line.Number, line.Number + " " + line.To, WalkerRadius());
@@ -1199,6 +1255,8 @@ namespace RealLifeOverhaul
                 {
                     _dressings[i]?.Clear();
                 }
+                _dressAtOnce = true;
+                _heldBack = null;
             }
             _streetClear = true;
         }
@@ -1535,7 +1593,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            DressNear(to.Sign, true);
+            DressNear(to.Sign, true, Time.time);
             // The bus that brought them pulls away: put on the lane while the screen is still dark (traffic may need a moment to start again).
             _seeOff = to;
             _seeOffBy = Time.time + 1.2f;
