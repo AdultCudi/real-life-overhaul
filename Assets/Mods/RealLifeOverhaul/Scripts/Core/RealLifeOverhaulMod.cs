@@ -718,6 +718,8 @@ namespace RealLifeOverhaul
             _root = new GameObject(RootName);
             SessionWatch.Logger = context.Logger;
             _root.AddComponent<SessionWatch>();   // the record of the session for "it stutters after a while": disabled unless "Developer diagnostics" is on
+            ClickWatch.Logger = context.Logger;
+            _root.AddComponent<ClickWatch>();     // with "Developer diagnostics" on, what a left click in the city met: one flag test a frame otherwise
             _root.AddComponent<ThirdPersonCamera>();
             _root.AddComponent<VisualEnhancer>();
             _root.AddComponent<NearbyInteraction>();
