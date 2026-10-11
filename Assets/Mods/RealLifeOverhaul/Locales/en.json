@@ -1564,7 +1564,7 @@
   "reallife_job_cleaner_prompt_mop": "{key}: mop this patch",
   "reallife_job_cleaner_obj_go": "Cleaning wanted at {place}. Walk there and go in.",
   "reallife_job_cleaner_obj_back": "There is more floor to do at {place}. Go back in.",
-  "reallife_job_cleaner_obj_floor": "Mop the spills: {done} of {count} done. Stand on the next one.",
+  "reallife_job_cleaner_obj_floor": "Mop the spills: {done} of {count} done. Walk to the next wet patch, stand on it and press Mop it up.",
   "reallife_job_cleaner_obj_mopping": "Mopping",
   "reallife_job_cleaner_time": "The Gig Line: \"Time's up on the cleaning. You're paid for the patches you did.\"",
   "reallife_job_cleaner_small": "There is no more clear floor to work on in here. That is the job done.",
@@ -7621,7 +7621,7 @@
   "reallife_job_cleaner_panel_spill": "A spill to mop",
   "reallife_job_cleaner_panel_left": "Spills left",
   "reallife_job_cleaner_obj_clock": "The clock is mopping the rest of the floor",
-  "reallife_job_cleaner_obj_spill": "Stand on the next spill and mop it up",
+  "reallife_job_cleaner_obj_spill": "Walk to the spill, a pale wet patch on the floor with a yellow bucket by it. Stand on it and press Mop it up. The mop is with you.",
   "reallife_job_cleaner_card_done": "Spills mopped {done} of {count}",
   "reallife_job_cleaner_unit": "spill",
   "reallife_job_cleaner_units": "spills",
@@ -7678,5 +7678,6 @@
   "reallife_job_lead_panel_time": "Time to decide",
   "reallife_job_lead_card_done": "Calls made {done} of {count}",
   "reallife_job_lead_card_bad": "bad calls {bad}",
-  "reallife_changes_next": "The drinks cart shift, as a job and as a gig, is worked in the game's own interface: walk round behind the cart and you are at work in the vendor's uniform, the job panel shows your figures for the whole shift, and a panel over the cart has the drinks, \"Call out\", \"Let time pass\" (the rest of the shift by the game's clock) and \"Step away\". Carts are solid, a shift's time is shown with its start and its end, and the help-wanted boards use the game's own panel. Home, the garage and car ownership now use the game's own interface. Hygiene, stress and home are three more bars under the game's own. Cooking is a list opened from a cooker or from a fridge's panel, and a coffee machine is clicked. In a repair bay the game's panel says what is due and has a Garage button for the service, the custom shop and \"My vehicles\". Bike docks, racks and stands, a breakdown and the doctor's desk have the game's panel with its key. What a car needs is written in the game's vehicle panel. The Garage key is gone. The other jobs work the same way: flyers, cleaning, shelf stocking and busking have the game's panel over the place, the job panel for their figures and \"Let time pass\"; the courier, the dispatch desk and a shift in charge have the panel and the job panel, and ride-hail has the job panel."
+  "reallife_changes_next": "The drinks cart shift, as a job and as a gig, is worked in the game's own interface: walk round behind the cart and you are at work in the vendor's uniform, the job panel shows your figures for the whole shift, and a panel over the cart has the drinks, \"Call out\", \"Let time pass\" (the rest of the shift by the game's clock) and \"Step away\". Carts are solid, a shift's time is shown with its start and its end, and the help-wanted boards use the game's own panel. Home, the garage and car ownership now use the game's own interface. Hygiene, stress and home are three more bars under the game's own. Cooking is a list opened from a cooker or from a fridge's panel, and a coffee machine is clicked. In a repair bay the game's panel says what is due and has a Garage button for the service, the custom shop and \"My vehicles\". Bike docks, racks and stands, a breakdown and the doctor's desk have the game's panel with its key. What a car needs is written in the game's vehicle panel. The Garage key is gone. The other jobs work the same way: flyers, cleaning, shelf stocking and busking have the game's panel over the place, the job panel for their figures and \"Let time pass\"; the courier, the dispatch desk and a shift in charge have the panel and the job panel, and ride-hail has the job panel.",
+  "reallife_job_cleaner_panel_far": "A spill to mop. Stand on it."
 }

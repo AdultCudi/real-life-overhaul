@@ -44,6 +44,7 @@ namespace RealLifeOverhaul
         private const float ClientMax = 260f;
         private const float DoorReach = 3.2f;
         private const float PatchReach = 1.1f;
+        private const float PatchSeen = 14f;           // metres from which the spill's panel stands over it, to be walked to: the city's marker does not show indoors
         private const float PatchesApart = 2.4f;
         private const float MopSeconds = 5.5f;
         private const float Seconds = 330f;            // for the whole floor, the walk there included
@@ -72,6 +73,7 @@ namespace RealLifeOverhaul
         private ShiftClock _clock;
         private string _panelDoor;
         private string _panelSpill;
+        private string _panelFar;
         private string _panelHands;
         private string _panelLeft;
         private string _objClock;
@@ -143,6 +145,7 @@ namespace RealLifeOverhaul
             _patchLabel = JobText.T("reallife_job_cleaner_marker_patch");
             _panelDoor = JobText.T("reallife_job_cleaner_panel_door", "place", _clientName);
             _panelSpill = JobText.T("reallife_job_cleaner_panel_spill");
+            _panelFar = JobText.T("reallife_job_cleaner_panel_far");
             _panelHands = JobText.T("reallife_job_obj_hands");
             _panelLeft = JobText.T("reallife_job_cleaner_panel_left");
             _objClock = JobText.T("reallife_job_cleaner_obj_clock");
@@ -286,6 +289,13 @@ namespace RealLifeOverhaul
                 _panel.Offer(hands ? _panelHands : _panelSpill, _panelLeft, JobText.Number(_patches - _mopped), _panel.White, ButtonMop, !hands, hands ? null : ButtonSkip, true);
                 _panel.Show(_patchAt + Vector3.up * PanelUp, Ctx.Player);
                 Hint(hands ? 4 : 2);
+            }
+            else if (JobSpots.Flat(Ctx.Player.transform.position, _patchAt) < PatchSeen)
+            {
+                // Not on it yet: the panel stands over the spill as the thing to walk to, its button off until they are.
+                _panel.Offer(_panelFar, _panelLeft, JobText.Number(_patches - _mopped), _panel.White, ButtonMop, false, null, false);
+                _panel.Show(_patchAt + Vector3.up * PanelUp, Ctx.Player);
+                Hint(2);
             }
             else
             {

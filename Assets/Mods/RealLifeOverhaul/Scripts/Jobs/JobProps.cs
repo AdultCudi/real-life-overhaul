@@ -200,9 +200,10 @@ namespace RealLifeOverhaul
                     return true;
 
                 case "floor_patch":
-                    // A spill on a shop floor: a flat dull disc, a few millimetres proud of the floor so it does not flicker.
-                    Shapes.Piece("Spill", prop, Shapes.Drum, Shapes.Paint(new Color(0.23f, 0.19f, 0.15f)), new Vector3(0f, 0.002f, 0f), new Vector3(0.95f, 0.006f, 0.75f));
-                    Shapes.Piece("Splash", prop, Shapes.Drum, Shapes.Paint(new Color(0.27f, 0.22f, 0.17f)), new Vector3(0.36f, 0.002f, 0.22f), new Vector3(0.34f, 0.006f, 0.28f));
+                    // A spill on a shop floor: a flat pale disc, a few millimetres proud of the floor so it does not flicker.
+                    // Pale and a little blue, to be seen on a dark floor as on a light one (a dull brown one was walked past).
+                    Shapes.Piece("Spill", prop, Shapes.Drum, Shapes.Paint(new Color(0.55f, 0.66f, 0.74f)), new Vector3(0f, 0.002f, 0f), new Vector3(1.05f, 0.006f, 0.85f));
+                    Shapes.Piece("Splash", prop, Shapes.Drum, Shapes.Paint(new Color(0.62f, 0.72f, 0.80f)), new Vector3(0.40f, 0.002f, 0.26f), new Vector3(0.38f, 0.006f, 0.30f));
                     return true;
                 case "guitar_case":
                     Shapes.Piece("Shell", prop, Shapes.Cube, Shapes.Paint(Dark), new Vector3(0f, 0.045f, 0f), new Vector3(0.40f, 0.09f, 1.06f));
