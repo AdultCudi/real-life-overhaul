@@ -565,6 +565,22 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_macro_test_district_up", () => Economy.CityEconomyDirector.Instance?.TestDistrict(100))
                 .AddButton("reallife_macro_test_district_down", () => Economy.CityEconomyDirector.Instance?.TestDistrict(-100))
                 .AddButton("reallife_macro_test_back", () => Economy.CityEconomyDirector.Instance?.TestBack())
+                .AddToggle(Settings.VenturesInvestorsId, "reallife_ven_investors", Settings.VenturesInvestors,
+                    v => Settings.VenturesInvestors = v)
+                .AddToggle(Settings.VenturesMarketId, "reallife_ven_market", Settings.VenturesMarket,
+                    v => Settings.VenturesMarket = v)
+                .AddDropdown(Settings.VenturesLevelId, "reallife_ven_level",
+                    new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.VenturesLevel,
+                    v => Settings.VenturesLevel = v)
+                .AddButton("reallife_ven_test_offer", () => Economy.Ventures.VenturesDirector.Instance?.TestOffer())
+                .AddButton("reallife_ven_test_pitch_angel", () => Economy.Ventures.VenturesDirector.Instance?.TestPitch((int)Economy.Ventures.InvestorKind.Angel))
+                .AddButton("reallife_ven_test_pitch_tycoon", () => Economy.Ventures.VenturesDirector.Instance?.TestPitch((int)Economy.Ventures.InvestorKind.Tycoon))
+                .AddButton("reallife_ven_test_pitch_firm", () => Economy.Ventures.VenturesDirector.Instance?.TestPitch((int)Economy.Ventures.InvestorKind.Firm))
+                .AddButton("reallife_ven_test_list", () => Economy.Ventures.VenturesDirector.Instance?.TestList())
+                .AddButton("reallife_ven_test_market", () => Economy.Ventures.VenturesDirector.Instance?.TestMarket())
+                .AddButton("reallife_ven_test_dividend", () => Economy.Ventures.VenturesDirector.Instance?.TestDividend())
+                .AddButton("reallife_ven_test_call", () => Economy.Ventures.VenturesDirector.Instance?.TestCall())
+                .AddButton("reallife_ven_test_back", () => Economy.Ventures.VenturesDirector.Instance?.TestBack())
                 .AddSplitter()
                 .AddHeader("reallife_nav_header")
                 .AddToggle(Settings.MinimapId, "reallife_nav_minimap", Settings.Minimap,
@@ -790,6 +806,9 @@ namespace RealLifeOverhaul
             _root.AddComponent<Economy.EconomyDirector>();   // the credit rating, the banks' terms by it, loans from the phone and the Finance app (Scripts/Economy)
             Economy.CityEconomyDirector.Logger = context.Logger;
             _root.AddComponent<Economy.CityEconomyDirector>();   // the city's economy: a central bank, prices, a cycle, districts and supply (Scripts/Economy/City)
+            Economy.Ventures.VenturesDirector.Logger = context.Logger;
+            Economy.Ventures.VenturesApp.Logger = context.Logger;
+            _root.AddComponent<Economy.Ventures.VenturesDirector>();   // investors, the pitch, the stock market and the Ventures app (Scripts/Economy/Ventures)
             Nav.NavGraph.Logger = context.Logger;
             Nav.NavMarks.Logger = context.Logger;
             Nav.NavHud.Logger = context.Logger;

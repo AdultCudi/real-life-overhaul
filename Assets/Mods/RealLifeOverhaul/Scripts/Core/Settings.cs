@@ -89,6 +89,9 @@ namespace RealLifeOverhaul
         public const string EconomyLevelId = "economy_level";
         public const string EconomyCityId = "economy_city";
         public const string EconomyCityLevelId = "economy_city_level";
+        public const string VenturesInvestorsId = "ventures_investors";
+        public const string VenturesMarketId = "ventures_market";
+        public const string VenturesLevelId = "ventures_level";
         public const string MinimapId = "nav_minimap";
         public const string GpsId = "nav_gps";
         public const string MinimapRotateId = "nav_rotate";
@@ -252,6 +255,9 @@ namespace RealLifeOverhaul
         public static int EconomyLevel = 1;              // how hard not paying hits: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Products/ProductCatalogue)
         public static bool EconomyCity = true;           // the city's economy: a central bank, prices, a cycle, districts and supply (off: every figure is the game's own and the model stands still) (Scripts/Economy/City)
         public static int EconomyCityLevel = 1;          // how far it swings: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/City/MacroCatalogue)
+        public static bool VenturesInvestors = true;     // investors: offers for a business that does well, the pitch, deals (off: no new offers or meetings; deals that exist carry on) (Scripts/Economy/Ventures)
+        public static bool VenturesMarket = true;        // the city's stock market (off: prices stand still, nothing is traded and no dividend is paid; shares held are kept)
+        public static int VenturesLevel = 1;             // how demanding investors are: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Ventures/VenturesCatalogue)
         public static bool Minimap = true;               // the minimap on the HUD while out in the city (Scripts/Navigation)
         public static bool Gps = true;                   // a route along the roads to the game's destination, with the next turn
         public static bool MinimapRotate = true;         // the minimap turns with the player (off: north is up)
@@ -457,6 +463,9 @@ namespace RealLifeOverhaul
             EconomyLevel = Int(modId, EconomyLevelId, EconomyLevel);
             EconomyCity = Bool(modId, EconomyCityId, EconomyCity);
             EconomyCityLevel = Int(modId, EconomyCityLevelId, EconomyCityLevel);
+            VenturesInvestors = Bool(modId, VenturesInvestorsId, VenturesInvestors);
+            VenturesMarket = Bool(modId, VenturesMarketId, VenturesMarket);
+            VenturesLevel = Int(modId, VenturesLevelId, VenturesLevel);
             Minimap = Bool(modId, MinimapId, Minimap);
             Gps = Bool(modId, GpsId, Gps);
             MinimapRotate = Bool(modId, MinimapRotateId, MinimapRotate);

@@ -6,6 +6,8 @@
        the lender of last resort and the ways out of debt, and (Checks3.cs) the city's economy: twenty years of the model
        from many seeds, the central bank's rule, the adjustments, the rate the credit side reads and the save's line.
        Compiles the mod's own files, so it checks exactly what ships.
+       the lender of last resort and the ways out of debt, and (VenturesChecks.cs) investors, the pitch, deals and the
+       stock market. Compiles the mod's own files, so it checks exactly what ships.
        Run: dotnet run -c Release (from this folder). Exit code 0 = all checks passed. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -34,6 +36,13 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityModel.cs" Link="Mod\CityModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityStore.cs" Link="Mod\CityStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityEconomy.cs" Link="Mod\CityEconomy.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\VenturesCatalogue.cs" Link="Mod\VenturesCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\VenturesModel.cs" Link="Mod\VenturesModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\Cast.cs" Link="Mod\Cast.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\Deals.cs" Link="Mod\Deals.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\Pitch.cs" Link="Mod\Pitch.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\Market.cs" Link="Mod\Market.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\VenturesStore.cs" Link="Mod\VenturesStore.cs" />
   </ItemGroup>
 
 </Project>

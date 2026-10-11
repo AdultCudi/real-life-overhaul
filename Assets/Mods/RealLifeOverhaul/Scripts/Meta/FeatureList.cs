@@ -726,6 +726,69 @@ namespace RealLifeOverhaul.Meta
                 .Fact("macro_swing_hardcore", () => Whole(Economy.MacroCatalogue.SwingPercent[Economy.MacroCatalogue.Hardcore]) + "%")
                 .Cleanup(() => Economy.CityEconomyDirector.Instance?.StopAll(), -1)
                 .ResetData(() => Economy.CityEconomyDirector.Instance?.Forget());   // the director opens a new economy from the (now empty) save on its next second
+            // Investors and the market. Its rows stand under the economy's header on the options page; its file is its own
+            // line in the save. Nothing of it is in the game's business or property records: removing the line removes it.
+            Features.Add("ventures", "reallife_meta_title_ventures")
+                .About("reallife_guide_ventures_about").Help("reallife_guide_ventures")
+                .Owns(Settings.VenturesInvestorsId, Settings.VenturesMarketId, Settings.VenturesLevelId)
+                .Preset(Settings.VenturesLevelId, Economy.Ventures.VenturesCatalogue.Relaxed, Economy.Ventures.VenturesCatalogue.Realistic, Economy.Ventures.VenturesCatalogue.Hardcore)   // (Standard is its default)
+                .Data(Economy.Ventures.VenturesStore.Key)
+                .Test("reallife_ven_test_offer", "reallife_ven_test_pitch_angel", "reallife_ven_test_pitch_tycoon", "reallife_ven_test_pitch_firm", "reallife_ven_test_list",
+                    "reallife_ven_test_market", "reallife_ven_test_dividend", "reallife_ven_test_call", "reallife_ven_test_back")
+                .Fact("ven_profit_days", () => Whole(Economy.Ventures.VenturesCatalogue.ProfitDaysNeeded))
+                .Fact("ven_window", () => Whole(Economy.Ventures.VenturesCatalogue.ProfitWindowDays))
+                .Fact("ven_average_days", () => Whole(Economy.Ventures.VenturesCatalogue.AverageDays))
+                .Fact("ven_profit_floor", () => Guide.Money(Economy.Ventures.VenturesCatalogue.OfferProfitFloor))
+                .Fact("ven_offer_every", () => Whole(Economy.Ventures.VenturesCatalogue.OfferEveryDays))
+                .Fact("ven_offer_chance", () => Whole(Economy.Ventures.VenturesCatalogue.OfferChancePct) + "%")
+                .Fact("ven_offer_liked", () => Whole(Economy.Ventures.VenturesCatalogue.OfferChancePct + Economy.Ventures.VenturesCatalogue.LikedBonusPct) + "%")
+                .Fact("ven_value_days", () => Whole(Economy.Ventures.VenturesCatalogue.OfferValueDays))
+                .Fact("ven_lapse_days", () => Whole(Economy.Ventures.VenturesCatalogue.OfferLapseDays))
+                .Fact("ven_counter_money", () => Whole(Economy.Ventures.VenturesCatalogue.CounterMoneyPct) + "%")
+                .Fact("ven_counter_share", () => Whole(Economy.Ventures.VenturesCatalogue.CounterSharePct) + "%")
+                .Fact("ven_questions_least", () => Whole(Economy.Ventures.VenturesCatalogue.Questions[0]))
+                .Fact("ven_questions_most", () => Whole(Economy.Ventures.VenturesCatalogue.Questions[2]))
+                .Fact("ven_bank", () => Whole(Economy.Ventures.Pitch.Bank.Length))
+                .Fact("ven_truth_base", () => Whole(Economy.Ventures.VenturesCatalogue.TruthBase))
+                .Fact("ven_points", () => Whole(Economy.Ventures.VenturesCatalogue.PointsMost))
+                .Fact("ven_catch_little", () => Whole(Economy.Ventures.VenturesCatalogue.StretchCatchPct) + "%")
+                .Fact("ven_catch_much", () => Whole(Economy.Ventures.VenturesCatalogue.BoldCatchPct) + "%")
+                .Fact("ven_caught_days", () => Whole(Economy.Ventures.VenturesCatalogue.CaughtCloseDays))
+                .Fact("ven_caught_name", () => Whole(-Economy.Ventures.VenturesCatalogue.ReputationCaught))
+                .Fact("ven_cold_name", () => Whole(-Economy.Ventures.VenturesCatalogue.ReputationCold))
+                .Fact("ven_cooldown", () => Whole(Economy.Ventures.VenturesCatalogue.PitchCooldownDays))
+                .Fact("ven_need_angel", () => Whole(Economy.Ventures.VenturesCatalogue.ScoreNeeded[0]))
+                .Fact("ven_need_tycoon", () => Whole(Economy.Ventures.VenturesCatalogue.ScoreNeeded[1]))
+                .Fact("ven_need_firm", () => Whole(Economy.Ventures.VenturesCatalogue.ScoreNeeded[2]))
+                .Fact("ven_pitch_days_least", () => Whole(Economy.Ventures.VenturesCatalogue.ValueDaysLeast))
+                .Fact("ven_pitch_days_most", () => Whole(Economy.Ventures.VenturesCatalogue.ValueDaysMost))
+                .Fact("ven_budget_least", () => Whole(Economy.Ventures.VenturesCatalogue.BudgetShareLeastPct) + "%")
+                .Fact("ven_budget_most", () => Whole(Economy.Ventures.VenturesCatalogue.BudgetShareMostPct) + "%")
+                .Fact("ven_pledge_days", () => Whole(Economy.Ventures.VenturesCatalogue.PledgeDays))
+                .Fact("ven_young_days", () => Whole(Economy.Ventures.VenturesCatalogue.YoungDays))
+                .Fact("ven_share_cap", () => Guide.Percent(Economy.Ventures.VenturesCatalogue.ShareCapBp / 10000f))
+                .Fact("ven_demand_days", () => Whole(Economy.Ventures.VenturesCatalogue.DemandDays))
+                .Fact("ven_board_extra", () => Guide.Percent(Economy.Ventures.VenturesCatalogue.BoardExtraBp / 10000f))
+                .Fact("ven_board_days", () => Whole(Economy.Ventures.VenturesCatalogue.BoardDays))
+                .Fact("ven_cut", () => Whole(Economy.Ventures.VenturesCatalogue.CostCutPct) + "%")
+                .Fact("ven_cut_days", () => Whole(Economy.Ventures.VenturesCatalogue.CostCutDays))
+                .Fact("ven_call_kept", () => Whole(Economy.Ventures.VenturesCatalogue.CallKeptPct) + "%")
+                .Fact("ven_call_least", () => Whole(Economy.Ventures.VenturesCatalogue.CallLeastPct) + "%")
+                .Fact("ven_call_misses", () => Whole(Economy.Ventures.VenturesCatalogue.CallMissesMost))
+                .Fact("ven_levels", VenturesLevels)
+                .Fact("ven_buy_out_days", () => Whole(Economy.Ventures.VenturesCatalogue.BuyOutDays))
+                .Fact("ven_buy_out_floor", () => Whole(Economy.Ventures.VenturesCatalogue.BuyOutFloorPct) + "%")
+                .Fact("ven_companies", () => Whole(Economy.Ventures.VenturesCatalogue.Companies))
+                .Fact("ven_commission", () => Guide.Percent(Economy.Ventures.VenturesCatalogue.CommissionBp / 10000f))
+                .Fact("ven_commission_least", () => Guide.Money(Economy.Ventures.VenturesCatalogue.CommissionLeast))
+                .Fact("ven_holding", () => Economy.Ventures.VenturesCatalogue.HoldingMost.ToString("N0", CultureInfo.InvariantCulture))
+                .Fact("ven_dividend_days", () => Whole(Economy.Ventures.VenturesCatalogue.DividendEveryDays))
+                .Fact("ven_dividend_least", () => Guide.Percent(Economy.Ventures.VenturesCatalogue.DividendLeastBp / 10000f))
+                .Fact("ven_dividend_most", () => Guide.Percent(Economy.Ventures.VenturesCatalogue.DividendMostBp / 10000f))
+                .Fact("ven_news_cap", () => Guide.Percent(Economy.Ventures.VenturesCatalogue.NewsCapBp / 10000f))
+                .Fact("ven_history", () => Whole(Economy.Ventures.VenturesCatalogue.HistoryDays))
+                .Cleanup(() => Economy.Ventures.VenturesDirector.Instance?.StopAll())
+                .ResetData(() => Economy.Ventures.VenturesDirector.Instance?.Forget());   // the director opens a new file from the (now empty) save on its next second
         }
 
         private static string Whole(int value)
@@ -759,6 +822,23 @@ namespace RealLifeOverhaul.Meta
                     .Replace("{footfall}", Economy.CityText.Percent(Economy.MacroCatalogue.StateFootfall[s]))
                     .Replace("{spend}", Economy.CityText.Change(Economy.MacroCatalogue.StateSpend[s]))
                     .Replace("{property}", Economy.CityText.Change(Economy.MacroCatalogue.StateProperty[s]))).Append('\n');
+            }
+            return text.ToString();
+        }
+
+        // One line per level of "How demanding investors are", from the tables the deals themselves count by.
+        private static string VenturesLevels()
+        {
+            var text = new StringBuilder();
+            string[] names = { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" };
+            for (int level = 0; level < names.Length; level++)
+            {
+                int misses = Economy.Ventures.VenturesCatalogue.MissesToCall[level];
+                text.Append("- ").Append((misses > 0 ? "reallife_guide_ventures_level" : "reallife_guide_ventures_level_never").GetLocalization()
+                    .Replace("{level}", names[level].GetLocalization())
+                    .Replace("{growth}", Whole(Economy.Ventures.VenturesCatalogue.GrowthScalePct[level]) + "%")
+                    .Replace("{misses}", Whole(misses))
+                    .Replace("{days}", Whole(Economy.Ventures.VenturesCatalogue.CallDays[level]))).Append('\n');
             }
             return text.ToString();
         }
