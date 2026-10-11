@@ -541,9 +541,10 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        // (somebody whose satisfaction is at nothing has resigned: the game takes them off its list within the hour)
         private static bool Counts(EmployeeInstance e, EmployeeInstance self)
         {
-            return e != null && !ReferenceEquals(e, self) && !string.IsNullOrEmpty(e.id) && !e.IsCandidate && !e.isBeingReplaced && e.hourlyWage > 0f && e.characterData != null
+            return e != null && !ReferenceEquals(e, self) && !string.IsNullOrEmpty(e.id) && !e.IsCandidate && !e.isBeingReplaced && e.hourlyWage > 0f && e.satisfaction > 0f && e.characterData != null
                    && e.characterData.skills != null && e.characterData.skills.Count > 0 && e.characterData.skills[0] != null && e.assignedAddress != null;
         }
 

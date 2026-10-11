@@ -52,6 +52,7 @@ namespace RealLifeOverhaul.Economy
                     _raisePay[at] += StaffRules.Pay(f.Raise, f.Hours);
                 }
                 f.Hours = 0;
+                // (the game picks the new day's absences after its day event, so this is still the day that has ended)
                 if (f.Sick)
                 {
                     _sickPay[at] += StaffRules.SickPay(f, s.SickPolicy);
@@ -97,7 +98,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (_sickPay[i] > 0)
                 {
-                    WagePaid(_sickPay[i], CompanyGame.SickKey, shop, null, shop.Sick + " off sick today by the game's own absences, policy " + s.SickPolicy + " ("
+                    WagePaid(_sickPay[i], CompanyGame.SickKey, shop, yesterday, shop.Sick + " off sick on day " + yesterday + " by the game's own absences, policy " + s.SickPolicy + " ("
                                                                            + CompanyText.Share(CompanyCatalogue.SickShare[s.SickPolicy]) + " of a day's pay)");
                 }
             }
@@ -314,6 +315,51 @@ namespace RealLifeOverhaul.Economy
             Notifications.Show(answer == RaiseAnswer.Refuse ? NotificationType.Warning : NotificationType.Success,
                 answer == RaiseAnswer.Agree ? "reallife_co_note_raise_agreed" : answer == RaiseAnswer.Less ? "reallife_co_note_raise_less" : "reallife_co_note_raise_refused",
                 new Dictionary<string, string> { { "name", f.Name }, { "raise", CompanyText.Wage(raise) }, { "standing", f.Standing.ToString() } }, 8f, null, null, true, false);
+            Recount();
+            Changed();
+        }
+
+        /// <summary>How many requests for a raise wait, and what agreeing to all of them would add to an hour's wages, in hundredths.</summary>
+        public int RaisesWaiting(out int perHour)
+        {
+            int waiting = 0;
+            perHour = 0;
+            for (int i = 0; _state != null && i < _state.Staff.Count; i++)
+            {
+                if (_state.Staff[i].AskDay > 0)
+                {
+                    waiting++;
+                    perHour += StaffRules.RaiseFor(_state.Staff[i], RaiseAnswer.Agree);
+                }
+            }
+            return waiting;
+        }
+
+        /// <summary>Every request that waits is given the same answer, each by the rule that answers one.</summary>
+        public void AnswerAllRaises(RaiseAnswer answer)
+        {
+            if (!On(CompanyPart.Staff))
+            {
+                return;
+            }
+            int count = 0, raise = 0;
+            for (int i = 0; i < _state.Staff.Count; i++)
+            {
+                StaffFile f = _state.Staff[i];
+                if (f.AskDay > 0)
+                {
+                    raise += StaffRules.RaiseFor(f, answer);
+                    StaffRules.Answer(f, answer, Save.Day);
+                    count++;
+                }
+            }
+            if (count == 0)
+            {
+                return;
+            }
+            Logger?.Info("Company: " + count + " request(s) for a raise answered together: " + answer + ", " + raise + " more an hour in all (hundredths); no wage of the game's is changed.");
+            Notifications.Show(answer == RaiseAnswer.Refuse ? NotificationType.Warning : NotificationType.Success, answer == RaiseAnswer.Refuse ? "reallife_co_note_raise_all_refused" : "reallife_co_note_raise_all_agreed",
+                new Dictionary<string, string> { { "count", count.ToString() }, { "raise", CompanyText.Wage(raise) } }, 8f, null, null, true, false);
             Recount();
             Changed();
         }

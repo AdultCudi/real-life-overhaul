@@ -84,6 +84,15 @@ namespace RealLifeOverhaul.Economy
                 }
                 box.Line(CompanyText.T("reallife_co_staff_sick_what", "share", CompanyText.Share(CompanyCatalogue.SickShare[state.SickPolicy]),
                     "standing", CompanyText.Percent(CompanyCatalogue.SickStanding[state.SickPolicy]).TrimEnd('%')));
+                int perHour, asks = _director.RaisesWaiting(out perHour);
+                if (asks > 1)
+                {
+                    // Many at once (a district's income rose, prices moved): one answer for all of them, each still by the rule that answers one.
+                    box.Line(CompanyText.T("reallife_co_staff_asks", "count", asks.ToString(), "amount", CompanyText.Wage(perHour)));
+                    var buttons = box.ButtonRow();
+                    InfoBox.Button(buttons, InfoBox.Positive, "reallife_co_staff_agree_all", () => _director.AnswerAllRaises(RaiseAnswer.Agree));
+                    InfoBox.Button(buttons, InfoBox.Negative, "reallife_co_staff_refuse_all", () => _director.AnswerAllRaises(RaiseAnswer.Refuse));
+                }
             }
         }
 

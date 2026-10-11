@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Economy
         public int DayHours;            // hundredths of an hour in one of their working days
         public int Skill;               // the game's value of their main skill
         public int Mood;                // the game's own satisfaction, 0 to 100; -1 if it could not be read
-        public bool Sick;               // the game has them off sick today
+        public bool Sick;               // the game has them off sick: in the day's pass still on the day that has ended, read later on today
         public bool Seen;               // found in the game on the last look
 
         /// <summary>What they are paid an hour, the game's wage and the agreed raise together.</summary>

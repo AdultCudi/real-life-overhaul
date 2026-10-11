@@ -6274,6 +6274,10 @@ run clears it; a delivery driver's fixed day as the game pays it) as one transac
 raise: {business}", taken whatever the cash is, as the game takes its own wages. An employee who is no longer at a
 business of the player's is no longer read, and their file is dropped on the next day's pass with the raise in it.
 
+**Sick pay follows the game's own absences.** `GameManager.NewDay` raises the day event before `EmployeeHelper.RunDaily`
+picks the new day's absences, so on the day's pass `isAbsent` still says who was off on the day that has ended:
+sick pay is paid for that day and dated on it. Nobody is made sick by the mod and `nextSickDay` is not written.
+
 **Deductible costs** are marked with `TransactionInfo.SetTaxDeductibleName`, which is how the game's tax reads its
 own. The name is the cost's label as words ("Business insurance"), the way the game itself passes a business's name
 there, so the game's tax notice reads the same in a save the mod has left. The game keeps those sums in its own
