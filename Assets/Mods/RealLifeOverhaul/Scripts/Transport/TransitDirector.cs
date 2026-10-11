@@ -111,6 +111,9 @@ namespace RealLifeOverhaul
         public static IModLogger Logger;
         public static TransitDirector Instance { get; private set; }
 
+        /// <summary>True while the player is aboard a bus (the ride hides the player and darkens the screen).</summary>
+        public static bool Riding => Instance != null && Instance._ride != null && Instance._ride.Riding;
+
         /// <summary>True while one of transport's key prompts is on screen: the mod's own enter-a-door key stands aside.</summary>
         public static bool TakesInteractKey => Instance != null && (Instance._promptOn || Instance._keyFrame == Time.frameCount
                                                                     || (Instance._subway != null && Instance._subway.TakesKey));

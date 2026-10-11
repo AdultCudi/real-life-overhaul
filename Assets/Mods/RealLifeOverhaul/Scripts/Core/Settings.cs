@@ -82,6 +82,11 @@ namespace RealLifeOverhaul
         public const string LicencePointsId = "licence_points";
         public const string PlannerId = "planner";
         public const string PlannerRemindersId = "planner_reminders";
+        public const string MinimapId = "nav_minimap";
+        public const string GpsId = "nav_gps";
+        public const string MinimapRotateId = "nav_rotate";
+        public const string MinimapSizeId = "nav_size";
+        public const string MinimapZoomId = "nav_zoom";
         public const string RoadsideChecksId = "roadside_checks";
         public const string ShowTestToolsId = "show_test_tools";       // Meta: the "Test tools" section of the options page
         public const string DevDiagnosticsId = "dev_diagnostics";      // Meta: the diagnostic keys (F7, Shift+F7, F8, F9) and the Info lines in the log
@@ -232,6 +237,11 @@ namespace RealLifeOverhaul
         public static bool LicencePoints = true;         // booked offences put penalty points on the licence; twelve suspend it
         public static bool Planner = true;               // the Planner app on the phone: everything to do in one agenda (Scripts/Planner)
         public static bool PlannerReminders = true;      // ...and its reminders, sent as the game's own notifications
+        public static bool Minimap = true;               // the minimap on the HUD while out in the city (Scripts/Navigation)
+        public static bool Gps = true;                   // a route along the roads to the game's destination, with the next turn
+        public static bool MinimapRotate = true;         // the minimap turns with the player (off: north is up)
+        public static int MinimapSize = 80;              // per cent of the width of the game's left column
+        public static int MinimapZoom = 100;             // per cent: more is closer
         public static bool RoadsideChecks = true;        // now and then a patrol car pulls the player over only to see the licence
         public static bool ShowTestTools = false;        // the test buttons are on the options page
         public static bool DevDiagnostics = false;       // the diagnostic keys work and Info lines go to the log
@@ -424,6 +434,11 @@ namespace RealLifeOverhaul
             LicencePoints = Bool(modId, LicencePointsId, LicencePoints);
             Planner = Bool(modId, PlannerId, Planner);
             PlannerReminders = Bool(modId, PlannerRemindersId, PlannerReminders);
+            Minimap = Bool(modId, MinimapId, Minimap);
+            Gps = Bool(modId, GpsId, Gps);
+            MinimapRotate = Bool(modId, MinimapRotateId, MinimapRotate);
+            MinimapSize = Int(modId, MinimapSizeId, MinimapSize);
+            MinimapZoom = Int(modId, MinimapZoomId, MinimapZoom);
             RoadsideChecks = Bool(modId, RoadsideChecksId, RoadsideChecks);
             ShowTestTools = Bool(modId, ShowTestToolsId, ShowTestTools);
             DevDiagnostics = Bool(modId, DevDiagnosticsId, DevDiagnostics);

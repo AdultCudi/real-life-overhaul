@@ -129,6 +129,9 @@ namespace RealLifeOverhaul
 
             internal bool Offered => Settings.MapPlacesShown && (Available == null || Available());   // (the one switch over all of them: "The mod's places on the map")
 
+            /// <summary>True while the row is ticked and offered: its places are on the map (and on the minimap).</summary>
+            public bool Shown => On && Offered;
+
             /// <summary>These places and no others.</summary>
             public void Set(IReadOnlyList<MapPlace> places)
             {
@@ -194,6 +197,9 @@ namespace RealLifeOverhaul
         private static Action<bool> _onMap;
         private static Action<bool> _mapSeen;
         private static bool _mapOpen;
+
+        /// <summary>Every kind of place registered (read only: the minimap shows the ones that are <see cref="Category.Shown"/>).</summary>
+        public static IReadOnlyList<Category> All => Categories;
 
         /// <summary>True once the map's filter list has taken the mod's rows (false: every category's markers are simply always on the map).</summary>
         public static bool HasFilterRows => _filters != null && !_filterFailed;

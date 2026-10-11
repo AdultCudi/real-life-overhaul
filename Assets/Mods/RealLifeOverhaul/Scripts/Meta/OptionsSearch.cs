@@ -53,6 +53,7 @@ namespace RealLifeOverhaul.Meta
             new[] { "civic reallife_civic_header", "election vote mayor politics construction roadworks" },
             new[] { "leisure reallife_leisure_header", "fun night life photo clothes" },
             new[] { "business reallife_business_header", "company shop competition" },
+            new[] { "navigation reallife_nav_header", "gps minimap map route satnav directions destination" },
             new[] { "savetools", "uninstall remove backup" },
             new[] { "diagnostics", "debug log developer" },
         };

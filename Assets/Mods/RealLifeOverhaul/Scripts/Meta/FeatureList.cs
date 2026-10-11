@@ -457,6 +457,19 @@ namespace RealLifeOverhaul.Meta
                 .Cleanup(() => Planner.PlannerDirector.Instance?.StopAll())
                 .ResetData(Planner.PlannerStore.Reset);   // the director reads the (now empty) save again on its next second
 
+            // The minimap and the GPS read the game's destination and the other features' places and change neither; nothing of theirs is in the save.
+            Features.Add("navigation", "reallife_meta_title_nav")
+                .Group("reallife_nav_header")
+                .About("reallife_guide_nav_about").Help("reallife_guide_nav")
+                .Owns(Settings.MinimapId, Settings.GpsId, Settings.MinimapRotateId, Settings.MinimapSizeId, Settings.MinimapZoomId)
+                .Objects(Nav.NavHud.PanelName, Nav.NavCityMap.ObjectName)
+                .Fact("nav_arrive_foot", () => Nav.NavTracker.ArriveOnFoot.ToString("F0", CultureInfo.InvariantCulture))
+                .Fact("nav_arrive_car", () => Nav.NavTracker.ArriveDriving.ToString("F0", CultureInfo.InvariantCulture))
+                .Fact("nav_off_foot", () => Nav.NavTracker.OffOnFoot.ToString("F0", CultureInfo.InvariantCulture))
+                .Fact("nav_off_car", () => Nav.NavTracker.OffDriving.ToString("F0", CultureInfo.InvariantCulture))
+                .Fact("nav_view", () => Nav.NavView.BaseMetres.ToString("F0", CultureInfo.InvariantCulture))
+                .Cleanup(() => Nav.NavDirector.Instance?.StopAll());
+
             // Civic life keeps its state on its director and puts its policies back itself when it is switched off or the city unloads.
             Features.Add("civic", "reallife_meta_title_civic")
                 .Group("reallife_civic_header")

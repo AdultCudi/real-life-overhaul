@@ -17,6 +17,7 @@ namespace RealLifeOverhaul
     ///     CivicLinks      city hall with the record, the weather, the paper and the scenes; Paper, a story for the City Ledger
     ///     LifeLinks       careers, social life, travel, the garage and the weather with each other
     ///     FamilyLinks     family life with social life, home life and the law
+    ///     NavLinks        the minimap and the GPS with the scenes that take the screen, and the police stations
     ///
     /// <see cref="Connect"/> is called once per city load, after every director has been added;
     /// <see cref="Disconnect"/> on unload puts every bridge back to its default. Nothing here
@@ -52,6 +53,7 @@ namespace RealLifeOverhaul
             Step("civic life", CivicLinks.Connect);
             Step("everyday life", LifeLinks.Connect);
             Step("family life", FamilyLinks.Connect);
+            Step("the minimap and the GPS", NavLinks.Connect);
             Logger?.Info("Wiring: the features are connected.");
         }
 
@@ -62,6 +64,7 @@ namespace RealLifeOverhaul
                 return;
             }
             Connected = false;
+            Step("the minimap and the GPS", NavLinks.Disconnect);
             Step("family life", FamilyLinks.Disconnect);
             Step("everyday life", LifeLinks.Disconnect);
             Step("civic life", CivicLinks.Disconnect);

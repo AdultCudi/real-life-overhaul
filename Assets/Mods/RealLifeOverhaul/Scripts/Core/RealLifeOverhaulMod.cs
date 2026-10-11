@@ -513,6 +513,21 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_planner_test_fill", () => Planner.PlannerDirector.Instance?.TestFill())
                 .AddButton("reallife_planner_test_clear", () => Planner.PlannerDirector.Instance?.TestClear())
                 .AddSplitter()
+                .AddHeader("reallife_nav_header")
+                .AddToggle(Settings.MinimapId, "reallife_nav_minimap", Settings.Minimap,
+                    v => Settings.Minimap = v)
+                .AddToggle(Settings.GpsId, "reallife_nav_gps", Settings.Gps,
+                    v => Settings.Gps = v)
+                .AddToggle(Settings.MinimapRotateId, "reallife_nav_rotate", Settings.MinimapRotate,
+                    v => Settings.MinimapRotate = v)
+                .AddSlider(Settings.MinimapSizeId, "reallife_nav_size", 60, 100, Settings.MinimapSize,
+                    v => Settings.MinimapSize = v, Meta.SettingsTable.SliderPercent)
+                .AddSlider(Settings.MinimapZoomId, "reallife_nav_zoom", 50, 200, Settings.MinimapZoom,
+                    v => Settings.MinimapZoom = v, Meta.SettingsTable.SliderPercent)
+                .AddButton("reallife_nav_test_station", () => Nav.NavDirector.Instance?.TestStation())
+                .AddButton("reallife_nav_test_far", () => Nav.NavDirector.Instance?.TestFar())
+                .AddButton("reallife_nav_test_clear", () => Nav.NavDirector.Instance?.TestClear())
+                .AddSplitter()
                 .AddHeader("reallife_civic_header")
                 .AddToggle(Settings.CivicId, "reallife_civic_enabled", Settings.Civic,
                     v => Settings.Civic = v)
@@ -714,6 +729,12 @@ namespace RealLifeOverhaul
             Planner.PlannerApp.Logger = context.Logger;
             Planner.PlannerDirector.Logger = context.Logger;
             _root.AddComponent<Planner.PlannerDirector>();   // the Planner: an app on the game's phone with everything to do, reminders and notes (Scripts/Planner)
+            Nav.NavGraph.Logger = context.Logger;
+            Nav.NavMarks.Logger = context.Logger;
+            Nav.NavHud.Logger = context.Logger;
+            Nav.NavCityMap.Logger = context.Logger;
+            Nav.NavDirector.Logger = context.Logger;
+            _root.AddComponent<Nav.NavDirector>();   // the minimap on the HUD and the GPS: a route along the roads to the game's destination (Scripts/Navigation)
             _root.AddComponent<CivicDirector>();   // city government, elections and construction sites (Scripts/Civic): its own cast of five
             _root.AddComponent<Family.FamilyDirector>();   // a partner at home, engagement and wedding, children, relatives (Scripts/Family)
             CarTuning.Logger = context.Logger;
