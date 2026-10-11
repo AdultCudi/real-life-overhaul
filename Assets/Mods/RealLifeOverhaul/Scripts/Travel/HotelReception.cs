@@ -21,7 +21,15 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class HotelReception
     {
-        private const int RowBack = -1, RowNights = -2, RowPayNow = -3, RowDeposit = -4;   // rooms are 0 and up
+        private const int RowBack = -1, RowNights = -2, RowPayNow = -3, RowDeposit = -4, RowBooks = -5;   // rooms are 0 and up
+
+        /// <summary>Whether the player holds the hotel with this id as a business (Economy/Estate, through Wiring/EstateLinks): the desk then has "The books" and the room is free. Default: nobody holds one.</summary>
+        public static Func<string, bool> Owner;
+
+        /// <summary>Opens the owner's books of a hotel. Default: nothing.</summary>
+        public static Action<string> Books;
+
+        public static bool Owned(string hotelId) => Owner != null && Owner(hotelId);
         private const string ButtonChoose = "reallife_travel_list_choose";
         private const string ButtonChange = "reallife_travel_list_change";
         private const string ButtonBook = "reallife_travel_list_book";
@@ -105,6 +113,10 @@ namespace RealLifeOverhaul
                     : TravelText.T("reallife_travel_desk_room_full", "room", TravelText.T(room.NameKey));
                 list.Add(i, TravelText.T(room.NameKey), detail, ButtonChoose, free > 0);
             }
+            if (Owned(_site.Slot.Id))
+            {
+                list.Add(RowBooks, TravelText.T("reallife_estate_desk_books"), TravelText.T("reallife_estate_desk_books_detail"), ButtonChoose, true);
+            }
             return rooms.Length;
         }
 
@@ -169,6 +181,12 @@ namespace RealLifeOverhaul
                 else if ((id == RowPayNow || id == RowDeposit) && _room != null)
                 {
                     Book(list, id == RowDeposit);
+                }
+                else if (id == RowBooks)
+                {
+                    string hotel = _site.Slot.Id;
+                    Close("the owner opened the books");
+                    Books?.Invoke(hotel);
                 }
             }
             catch (Exception e)

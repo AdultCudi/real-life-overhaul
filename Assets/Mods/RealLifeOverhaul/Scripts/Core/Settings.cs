@@ -101,6 +101,9 @@ namespace RealLifeOverhaul
         public const string EconomyCompanyHideId = "economy_company_hide";
         public const string EconomyCompanyLicencesId = "economy_company_licences";
         public const string EconomyRotaId = "economy_rota";
+        public const string EstateId = "economy_estate";
+        public const string EstateHotelId = "economy_estate_hotel";
+        public const string EstateHireId = "economy_estate_hire";
         public const string MinimapId = "nav_minimap";
         public const string GpsId = "nav_gps";
         public const string MinimapRotateId = "nav_rotate";
@@ -276,6 +279,9 @@ namespace RealLifeOverhaul
         public static bool EconomyCompanyHide = true;    // ...cash sales kept off the books (off: every share is nothing and none can be set)
         public static bool EconomyCompanyLicences = true;    // ...licences and permits
         public static bool EconomyRota = true;           // the staff rota planner: a customer forecast, the hours worth opening, the people they take and a rota at a press, on the Company app's Rota tab (off: the tab says so and nothing is worked out) (Scripts/Economy/Company/CompanyDirector.Rota.cs)
+        public static bool Estate = true;                // property: a market that moves, letting a building yourself, works, selling and an estate agency, with the Property app (off: every value and rent is the game's own) (Scripts/Economy/Estate)
+        public static bool EstateHotel = true;           // owning a hotel of the city's as a business (off: a hotel that is held stands still and nothing is taken or paid)
+        public static bool EstateHire = true;            // car hire: the player's own vehicles go out to customers from a lot (off: no car goes out, and one that is out is called back)
         public static bool Minimap = true;               // the minimap on the HUD while out in the city (Scripts/Navigation)
         public static bool Gps = true;                   // a route along the roads to the game's destination, with the next turn
         public static bool MinimapRotate = true;         // the minimap turns with the player (off: north is up)
@@ -493,6 +499,9 @@ namespace RealLifeOverhaul
             EconomyCompanyHide = Bool(modId, EconomyCompanyHideId, EconomyCompanyHide);
             EconomyCompanyLicences = Bool(modId, EconomyCompanyLicencesId, EconomyCompanyLicences);
             EconomyRota = Bool(modId, EconomyRotaId, EconomyRota);
+            Estate = Bool(modId, EstateId, Estate);
+            EstateHotel = Bool(modId, EstateHotelId, EstateHotel);
+            EstateHire = Bool(modId, EstateHireId, EstateHire);
             Minimap = Bool(modId, MinimapId, Minimap);
             Gps = Bool(modId, GpsId, Gps);
             MinimapRotate = Bool(modId, MinimapRotateId, MinimapRotate);

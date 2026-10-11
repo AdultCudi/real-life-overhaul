@@ -807,6 +807,16 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_economy_rota_about").Help("reallife_guide_economy_rota")
                 .Owns(Settings.EconomyRotaId)
                 .Test("reallife_rota_test_open", "reallife_rota_test_fill", "reallife_rota_test_back"));
+
+            // Property: a market that moves, letting, works, selling, an agency, a hotel and car hire. Off, every building's
+            // value and rent is the game's own and no car is out. It runs only while the economy core does. (Cleaned up before the city's economy and the core: order -2.)
+            Economy.EstateGuide.AddFacts(Features.Add("economy_estate", "reallife_meta_title_economy_estate")
+                .Group("reallife_estate_header")
+                .About("reallife_guide_economy_estate_about").Help("reallife_guide_economy_estate")
+                .Owns(Settings.EstateId, Settings.EstateHotelId, Settings.EstateHireId)
+                .Data(Economy.EstateStore.Key, Economy.EstateStore.TestKey)
+                .Cleanup(() => Economy.EstateDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Economy.EstateDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
         }
 
         private static string Whole(int value)

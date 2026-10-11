@@ -120,6 +120,10 @@ namespace RealLifeOverhaul
             int voucher = TravelState.FreeNights > 0 ? Mathf.Min(perNight, TravelCatalogue.FreeNightCap) : 0;
             int now = deposit ? Mathf.Max(perNight - voucher, 0) : Mathf.Max(total - voucher, 0);
             int later = deposit ? Mathf.RoundToInt((total - perNight) * (1f + TravelCatalogue.DepositSurcharge)) : 0;
+            if (HotelReception.Owned(site.Slot.Id))
+            {
+                now = later = perNight = voucher = 0;   // the owner of the hotel stays for nothing (Economy/Estate)
+            }
             if (!TravelEffects.Pay(now, "reallife_transaction_hotel"))
             {
                 failKey = "reallife_travel_desk_no_money";

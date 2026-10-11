@@ -59,6 +59,14 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaSolver.Shifts.cs" Link="Mod\RotaSolver.Shifts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaSolver.Improve.cs" Link="Mod\RotaSolver.Improve.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaAdvice.cs" Link="Mod\RotaAdvice.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateCatalogue.cs" Link="Mod\EstateCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateState.cs" Link="Mod\EstateState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateRules.cs" Link="Mod\EstateRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\AgencyRules.cs" Link="Mod\AgencyRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\HotelRules.cs" Link="Mod\HotelRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\HireRules.cs" Link="Mod\HireRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateBalance.cs" Link="Mod\EstateBalance.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateStore.cs" Link="Mod\EstateStore.cs" />
   </ItemGroup>
 
 </Project>
