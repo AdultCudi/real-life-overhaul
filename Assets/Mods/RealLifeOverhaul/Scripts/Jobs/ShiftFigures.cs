@@ -90,7 +90,7 @@ namespace RealLifeOverhaul
 
         private void Compose()
         {
-            _card.Line(2, string.IsNullOrEmpty(_limit) ? _units : _units + ", " + _limit, _limitColour);
+            _card.Line(2, string.IsNullOrEmpty(_limit) ? _units : string.IsNullOrEmpty(_units) ? _limit : _units + ", " + _limit, _limitColour);
         }
 
         /// <summary>Line 3: what the shift has earned and the tips in it.</summary>

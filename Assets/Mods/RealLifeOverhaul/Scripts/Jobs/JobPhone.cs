@@ -173,6 +173,7 @@ namespace RealLifeOverhaul
                 messageData = def.PitchKey.Localize(new
                 {
                     pay = (def.UnitPay * rate).ToCurrencyFormat(),
+                    shift = (def.UnitPay * def.ShiftUnits * rate).ToCurrencyFormat(),
                     km = (def.PayPerMetre * 1000f * rate).ToCurrencyFormat(),
                     level = level.ToString(),
                     left = JobState.LeftToday(def).ToString(),
