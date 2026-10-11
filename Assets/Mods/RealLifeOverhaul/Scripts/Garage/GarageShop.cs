@@ -292,6 +292,9 @@ namespace RealLifeOverhaul
                 _mixing = false;
 
                 // Seated: the pedals are taken off the keys and the car is held where it stands, so nothing drives it from under the view.
+                // Held by its body alone, both pedals up: to the automatic gearbox a brake pedal held at a standstill is "reverse", and
+                // in reverse the brake pedal is the throttle, so a pressed brake spun the wheels backwards for the whole visit and the
+                // car shot back into whatever stood behind it the moment it was let go.
                 var driven = gm != null && gm.selectedVehicle == car ? car as CarController : null;
                 if (driven != null && driven.vehicleController != null && driven.vehicleController.input != null)
                 {
@@ -299,7 +302,7 @@ namespace RealLifeOverhaul
                     _autoInput = _held.input.autoSetInput;
                     _held.input.autoSetInput = false;
                     _held.input.Throttle = 0f;
-                    _held.input.Brakes = 1f;
+                    _held.input.Brakes = 0f;
                     _held.input.Steering = 0f;
                     car.SetFreeze(true);
                     _frozen = true;
@@ -348,8 +351,20 @@ namespace RealLifeOverhaul
                 {
                     if (_held.input != null)
                     {
+                        _held.input.Throttle = 0f;
                         _held.input.Brakes = 0f;
                         _held.input.autoSetInput = _autoInput;
+                    }
+                    // Let go standing still and out of gear, whatever the gearbox did meanwhile.
+                    if (_held.powertrain != null && _held.powertrain.transmission != null)
+                    {
+                        _held.powertrain.transmission.ShiftInto(0, true);
+                    }
+                    Rigidbody body = _held.GetComponent<Rigidbody>();
+                    if (body != null && !body.isKinematic)
+                    {
+                        body.velocity = Vector3.zero;
+                        body.angularVelocity = Vector3.zero;
                     }
                     _held = null;
                 }

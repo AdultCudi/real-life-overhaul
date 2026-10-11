@@ -34,12 +34,21 @@ namespace RealLifeOverhaul
     /// the examiner walks from the desk and gets in beside the player, and the route (TestRoute)
     /// is driven checkpoint by checkpoint to a marked bay at the kerb. What is marked:
     ///   red lights (crossing the stop line on red is a serious fault, stopping past it a minor one),
-    ///   speed against the lane's own limit (10 over for two seconds minor, 30 over serious),
+    ///   speed against the lane's own limit (10 over held for four seconds minor, 30 over for two and a half serious),
     ///   keeping to the lane (minor), the pavement and the wrong side of the road (serious),
     ///   harsh braking (minor), touching anything (minor) or hitting it (serious),
     ///   and the parking: inside the box, straight, and for the commercial class reversed into.
     /// A test passes with no serious fault and at most six minor ones. A lesson is the same drive
     /// with the instructor saying each fault as it happens and nothing at stake.
+    /// Only what the player could have helped is marked. The pedals of this game are keys, all or nothing, and the
+    /// school's car stands where there was room for it, so:
+    ///   nothing about where the car is (lane, pavement, direction, stop lines) is marked until it has first been
+    ///   properly in a lane, or SettleAllow seconds have passed (it may start on a kerb, across a line or facing a red light);
+    ///   a stop line counts only if the car came up to it from LineApproach metres back, and a red light only if it was
+    ///   red while there was still room to stop firmly (a light that changes on top of the car is nobody's fault);
+    ///   braking is harsh only as a full stop held from speed (a dab of the brake key is as hard as the key gets);
+    ///   speed over the limit has to be held for long enough to have seen it and lifted off;
+    ///   being run into while standing or crawling is not the player's collision.
     /// Cost: while one is on, ten looks a second at the car (a few subtractions against RoadMap's
     /// grid, one navigation-mesh sample), a 0.2 s step, and the marker drawn per frame. Otherwise nothing.
     /// </summary>
@@ -52,6 +61,17 @@ namespace RealLifeOverhaul
         private const float Reach = 9f;                // metres from a checkpoint that counts as through it
         private const float OutOfCarAllow = 30f;
         private const float OffRouteAllow = 40f;
+        private const float SettleAllow = 25f;         // seconds from setting off after which the car is taken to be on the road, wherever it is
+        private const float LineApproach = 3f;         // metres short of a stop line the car's middle must have been seen for that line to count (its nose behind the line)
+        private const float FirmStop = 6f;             // m/s2: a firm stop, not a harsh one
+        private const float ReactTime = 0.7f;          // seconds to see a light change
+        private const float HarshFrom = 11f;           // m/s (40 km/h): braking is only harsh from above this...
+        private const float HarshHeld = 0.9f;          // ...with the brake held flat this long: all but a full stop
+        private const float OverHeld = 4f;             // seconds over the limit before it is a fault
+        private const float FarOverHeld = 2.5f;        // ...and far over it
+        private const float TouchFrom = 1f;            // m/s of impact that is a touch
+        private const float CollisionFrom = 3.5f;      // ...and a collision
+        private const float OwnMove = 1.5f;            // m/s: slower than this, what hit the car hit it
 
         private enum Step { None, Meet, Drive, Park, Result, Leaving }
 
@@ -118,6 +138,10 @@ namespace RealLifeOverhaul
         private float _along;
         private float _redSince = -1f;
         private bool _pastBooked;
+        private float _lineFrom;            // how far short of the line the car was when the line was first seen (negative: short of it)
+        private bool _couldStop;            // the light was red while there was still room to stop firmly
+        private bool _settled;              // the car has been properly in a lane since setting off
+        private float _driveSince;
         private float _overSince = -1f, _farOverSince = -1f;
         private bool _overBooked, _farOverBooked;
         private float _laneSince = -1f;
@@ -518,6 +542,8 @@ namespace RealLifeOverhaul
             if (ready)
             {
                 _step = Step.Drive;
+                _driveSince = now;
+                _settled = false;
                 _stepEnd = now + TimeLimit;
                 _lastPosition = _body.position;
                 _lastSpeed = 0f;
@@ -648,6 +674,8 @@ namespace RealLifeOverhaul
             _line = -1;
             _redSince = -1f;
             _pastBooked = false;
+            _couldStop = false;
+            _settled = false;
             _overSince = -1f;
             _farOverSince = -1f;
             _overBooked = false;
@@ -685,7 +713,8 @@ namespace RealLifeOverhaul
             }
             _lastPosition = position;
 
-            // The red light ahead in their own lane.
+            // The red light ahead in their own lane. A line counts once the car has come up to it from behind (not one it
+            // started on or pulled out beside), and its red once it has been red with room left to stop firmly.
             if (RoadMap.LineAt(position, heading, out int line, out float past))
             {
                 bool red = RoadMap.IsRed(RoadMap.Line(line));
@@ -693,47 +722,52 @@ namespace RealLifeOverhaul
                 {
                     _line = line;
                     _along = past;
-                    _redSince = red ? now : -1f;
+                    _lineFrom = past;
+                    _redSince = -1f;
+                    _couldStop = false;
                     _pastBooked = false;
+                }
+                if (!red)
+                {
+                    _redSince = -1f;
+                    _couldStop = false;
                 }
                 else
                 {
-                    if (!red)
-                    {
-                        _redSince = -1f;
-                    }
-                    else if (_redSince < 0f)
+                    if (_redSince < 0f)
                     {
                         _redSince = now;
                     }
-                    bool held = red && now - _redSince >= 1f;
-                    if (held && _along < 1f && past >= 1f && speed > 1.5f)
-                    {
-                        Fault(TestFault.RedLight, now);
-                        _pastBooked = true;
-                    }
-                    else if (held && !_pastBooked && speed < 0.4f && past > 0.6f && past < 4f)
-                    {
-                        Fault(TestFault.PastLine, now);
-                        _pastBooked = true;
-                    }
-                    _along = past;
+                    _couldStop |= -past >= speed * ReactTime + speed * speed / (2f * FirmStop);
                 }
+                bool theirs = _settled && _lineFrom <= -LineApproach && red && _couldStop && now - _redSince >= 1f;
+                if (theirs && _along < 1f && past >= 1f && speed > 1.5f)
+                {
+                    Fault(TestFault.RedLight, now);
+                    _pastBooked = true;
+                }
+                else if (theirs && !_pastBooked && speed < 0.4f && past > 1.2f && past < 4f)
+                {
+                    Fault(TestFault.PastLine, now);
+                    _pastBooked = true;
+                }
+                _along = past;
             }
             else
             {
                 _line = -1;
             }
 
-            // Harsh braking: a hard stop held for a moment, from a real speed.
+            // Harsh braking: the brake held flat from a real speed for all but a full stop. (The brake is a key: a short
+            // press is as hard as a long one, so only the length of it can be marked.)
             float decel = (_lastSpeed - speed) / delta;
-            if (decel > 9f && _lastSpeed > 7f)
+            if (decel > 9f && (_brakeSince >= 0f || _lastSpeed > HarshFrom))
             {
                 if (_brakeSince < 0f)
                 {
                     _brakeSince = now;
                 }
-                else if (now - _brakeSince >= 0.3f && now - _lastBrake > 6f)
+                else if (now - _brakeSince >= HarshHeld && now - _lastBrake > 6f)
                 {
                     _lastBrake = now;
                     Fault(TestFault.HarshBrake, now);
@@ -761,7 +795,7 @@ namespace RealLifeOverhaul
                 {
                     _overSince = now;
                 }
-                else if (!_overBooked && now - _overSince >= 2f)
+                else if (!_overBooked && now - _overSince >= OverHeld)
                 {
                     _overBooked = true;
                     Fault(TestFault.Speeding, now);
@@ -778,7 +812,7 @@ namespace RealLifeOverhaul
                 {
                     _farOverSince = now;
                 }
-                else if (!_farOverBooked && now - _farOverSince >= 1f)
+                else if (!_farOverBooked && now - _farOverSince >= FarOverHeld)
                 {
                     _farOverBooked = true;
                     Fault(TestFault.SpeedingFar, now);
@@ -794,6 +828,16 @@ namespace RealLifeOverhaul
             // may lie metres apart, so the distance to the nearest of them says little). Not in a junction, where there is
             // no lane to keep to, not while parking, and not once they are so far off that it is another road altogether.
             float lateral = _route.Lateral(position, out bool junction);
+            float withLane = runs.x * velocity.x + runs.z * velocity.z;
+            if (!_settled)
+            {
+                // Not yet on the road: the car is where the school left it. In a lane and going its way, or time enough to have got there.
+                _settled = now - _driveSince >= SettleAllow || (speed > 3f && lateral < 1.8f && distance < 2.2f && withLane > 0.5f * speed);
+                _laneSince = -1f;
+                _pavementSince = -1f;
+                _wrongSince = -1f;
+                return;
+            }
             if (_step == Step.Drive && speed > 3f && !junction && lateral > 2.6f && lateral < 7f)
             {
                 if (_laneSince < 0f)
@@ -834,7 +878,6 @@ namespace RealLifeOverhaul
 
             // Against the traffic: close to a lane point whose lane runs the other way. The clock only stops when they are
             // seen to be with a lane again (or slow): between two lane points nothing is known either way.
-            float withLane = runs.x * velocity.x + runs.z * velocity.z;
             if (speed > 5f && distance < 2.2f && withLane < -0.85f * speed)
             {
                 if (_wrongSince < 0f)
@@ -882,13 +925,14 @@ namespace RealLifeOverhaul
                 {
                     return;
                 }
+                // (Standing or crawling, whatever met the car ran into it: not marked.)
                 float speed = collision.relativeVelocity.magnitude;
-                if (speed < 0.6f)
+                if (speed < TouchFrom || _lastSpeed < OwnMove)
                 {
                     return;
                 }
                 _lastTouch = now;
-                Fault(speed >= 2.5f ? TestFault.Collision : TestFault.Touched, now);
+                Fault(speed >= CollisionFrom ? TestFault.Collision : TestFault.Touched, now);
             }
             catch (Exception e)
             {
