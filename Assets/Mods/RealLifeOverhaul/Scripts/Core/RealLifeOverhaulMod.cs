@@ -578,6 +578,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyCompanyTax = v)
                 .AddToggle(Settings.EconomyCompanyHideId, "reallife_co_opt_hide", Settings.EconomyCompanyHide,
                     v => Settings.EconomyCompanyHide = v)
+                .AddToggle(Settings.EconomyCompanyLicencesId, "reallife_co_opt_licences", Settings.EconomyCompanyLicences,
+                    v => Settings.EconomyCompanyLicences = v)
                 .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
                     v => Settings.EconomyCompanyLevel = v)

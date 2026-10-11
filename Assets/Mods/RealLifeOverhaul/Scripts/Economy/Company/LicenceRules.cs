@@ -14,6 +14,14 @@ namespace RealLifeOverhaul.Economy
     /// <summary>Licences and permits by rule: which a business needs, what each costs, how long it lasts, and what trading without one costs. Game-free.</summary>
     public static class LicenceRules
     {
+        private const int PurposeCheck = 81;
+
+        /// <summary>Whether an inspection is asked for today at a business that trades without a licence it needs; the same answer for a seed, a day and a business.</summary>
+        public static bool Checked(int seed, int age, int shop)
+        {
+            return CityModel.Draw(seed, PurposeCheck, age * CompanyCatalogue.ShopsMost + shop, 1000) < CompanyCatalogue.LicenceCheckChance;
+        }
+
         /// <summary>The licences a business needs, a bit each: food hygiene, alcohol, late opening, and signage for all.</summary>
         public static int Needs(bool food, bool alcohol, bool late)
         {

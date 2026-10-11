@@ -99,6 +99,12 @@ namespace RealLifeOverhaul.Economy
             return tier < 0 ? T("reallife_co_accountant_none") : T(AccountantKeys[CompanyCatalogue.Clamp(tier, 0, AccountantKeys.Length - 1)]);
         }
 
+        /// <summary>A name at the head of a line or a cell: with a capital.</summary>
+        public static string Capital(string name)
+        {
+            return string.IsNullOrEmpty(name) ? name : char.ToUpper(name[0], Inv) + name.Substring(1);
+        }
+
         /// <summary>A district's name as the game writes it.</summary>
         public static string District(string district)
         {

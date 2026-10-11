@@ -1,0 +1,168 @@
+using System.Collections.Generic;
+using UI.Notification;
+
+namespace RealLifeOverhaul.Economy
+{
+    /// <summary>
+    /// Licences and permits: what the director does with <see cref="LicenceRules"/>.
+    ///
+    /// WHAT THE GAME ALREADY HAS: "licensing fees" for the films a cinema shows and the plays a theatre stages
+    /// (LicensingFeesHelper), which are a cost of what is on, not a permit to trade. It has no licence to sell food or
+    /// alcohol, to open late or to hang a sign. WHAT THE MOD ALREADY HAS: business pressure's "paperwork" issue (a
+    /// one-off fee now and then) and its health and fire inspections, which are left as they are.
+    ///
+    /// WHAT IS ADDED HERE: by what a business is and when it opens (the game's own type and opening hours, read and
+    /// never written) it needs up to four licences, each bought for a term as a transaction of the mod's own
+    /// (deductible: way c). Trading without one costs a fine (a transaction: way c) when one of business pressure's
+    /// inspections ends there, and for food hygiene and alcohol the doors are shut for some hours by business
+    /// pressure's own closure, which reopens them (way a). Now and then an inspection is asked for where a licence is
+    /// missing, through business pressure's own entry and by its own rules. A business that already ran when the
+    /// feature first appeared in the save holds every licence it needs for a first term, free.
+    /// </summary>
+    public sealed partial class CompanyDirector
+    {
+        partial void LicenceDay(int day)
+        {
+            for (int i = 0; i < _shops.Count; i++)
+            {
+                CompanyShop shop = _shops[i];
+                ShopFile file = shop.File;
+                for (int k = 0; k < file.Permits.Length; k++)
+                {
+                    Licence l = file.Permits[k];
+                    LicenceNote note = LicenceRules.Day(l, day);
+                    if (note == LicenceNote.None || !LicenceRules.Needed(shop.Needs, k))
+                    {
+                        continue;   // (one the business no longer needs runs out without a word)
+                    }
+                    string pick = "lic:" + file.Place + ":" + k;
+                    if (note == LicenceNote.Renew)
+                    {
+                        int fee = LicenceRules.Fee(k, _index);
+                        if (Cost(fee, CompanyGame.LicenceKey, shop, shop.Name, CostKind.Licences, null, CompanyText.Licence(k) + " renewed by itself for " + CompanyCatalogue.LicenceTerm[k] + " days at today's prices (" + _index + ")"))
+                        {
+                            LicenceRules.Grant(l, k, day);
+                            continue;
+                        }
+                        note = LicenceNote.Lapsed;   // it could not be paid for: it has lapsed
+                    }
+                    Tell(note == LicenceNote.Remind ? NotificationType.Info : NotificationType.Warning, note == LicenceNote.Remind ? "reallife_co_note_licence_remind" : "reallife_co_note_licence_lapsed",
+                        new Dictionary<string, string> { { "licence", CompanyText.Licence(k) }, { "business", shop.Name }, { "day", l.Until.ToString() } }, TabTax, pick);
+                }
+                int missing = LicenceRules.Missing(file, shop.Needs, day);
+                if (missing != 0 && LicenceRules.Checked(_state.Seed, _state.Age, i))
+                {
+                    bool started = CompanyBridges.Inspect != null && CompanyBridges.Inspect(shop.Reg);
+                    if (Verbose)
+                    {
+                        Logger?.Info("Company check (licences, " + shop.Name + "): trading without " + CompanyText.Licences(missing) + "; an inspection was asked of business pressure today: "
+                                     + (started ? "one has started there" : "its own rules said no (a rest, an open issue, or it is switched off)") + ": PASS");
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// One of business pressure's inspections has just ended at a business (through Wiring/CompanyLinks): a licence
+        /// it needs and does not hold is fined, and for food hygiene or alcohol the doors are shut for some hours.
+        /// </summary>
+        public void Inspected(string place)
+        {
+            CompanyShop shop = On(CompanyPart.Licences) && Save != null ? ShopAt(place) : null;
+            if (shop == null)
+            {
+                return;
+            }
+            try
+            {
+                int missing = LicenceRules.Missing(shop.File, shop.Needs, Save.Day), fines = 0;
+                if (missing == 0)
+                {
+                    return;
+                }
+                bool shut = false;
+                for (int k = 0; k < CompanyCatalogue.LicenceKinds; k++)
+                {
+                    if ((missing & (1 << k)) == 0)
+                    {
+                        continue;
+                    }
+                    int fine = LicenceRules.Fine(k, _index);
+                    bool paid = Charge(fine, CompanyGame.LicenceFineKey, shop, shop.Name, null, false, "trading without " + CompanyText.Licence(k) + ": " + CompanyCatalogue.LicenceFineMultiple + " times its fee");
+                    fines += paid ? fine : 0;
+                    shut |= LicenceRules.Shuts(k) || !paid;   // a fine that cannot be paid shuts the doors as well
+                }
+                shut = shut && CompanyBridges.Close != null && CompanyBridges.Close(shop.Reg, CompanyCatalogue.LicenceClosedHours);
+                Tell(NotificationType.Error, shut ? "reallife_co_note_licence_fined_shut" : "reallife_co_note_licence_fined", new Dictionary<string, string>
+                {
+                    { "business", shop.Name }, { "list", CompanyText.Licences(missing) }, { "amount", CompanyText.Money(fines) }, { "hours", CompanyCatalogue.LicenceClosedHours.ToString() }
+                }, TabTax, null);
+                Logger?.Info("Company: an inspection at " + shop.Name + " found it trading without " + CompanyText.Licences(missing) + ": fined " + fines
+                             + (shut ? ", and shut for " + CompanyCatalogue.LicenceClosedHours + " hours by business pressure's own closure." : "."));
+                Changed();
+            }
+            catch (System.Exception e)
+            {
+                PartFault(CompanyPart.Licences, "an inspection", e);
+            }
+        }
+
+        // ---------------------------------------------------------------- what the app asks
+
+        public void BuyLicence(string place, int kind)
+        {
+            CompanyShop shop = On(CompanyPart.Licences) ? ShopAt(place) : null;
+            if (shop == null || kind < 0 || kind >= CompanyCatalogue.LicenceKinds)
+            {
+                return;
+            }
+            int fee = LicenceRules.Fee(kind, _index);
+            if (!Cost(fee, CompanyGame.LicenceKey, shop, shop.Name, CostKind.Licences, null, CompanyText.Licence(kind) + " for " + CompanyCatalogue.LicenceTerm[kind] + " days at today's prices (" + _index + ")"))
+            {
+                Notifications.ShowInsufficientMoney();
+                return;
+            }
+            LicenceRules.Grant(shop.File.Permits[kind], kind, Save.Day);
+            Logger?.Info("Company: " + CompanyText.Licence(kind) + " bought for " + shop.Name + " for " + fee + ": good to day " + shop.File.Permits[kind].Until + ".");
+            Notifications.Show(NotificationType.Success, "reallife_co_note_licence_bought", new Dictionary<string, string>
+            {
+                { "licence", CompanyText.Licence(kind) }, { "business", shop.Name }, { "day", shop.File.Permits[kind].Until.ToString() }
+            }, 8f, null, null, true, false);
+            Changed();
+        }
+
+        public void SetAutoRenew(string place, int kind, bool on)
+        {
+            ShopFile file = On(CompanyPart.Licences) ? _state.Shop(place) : null;
+            if (file != null && kind >= 0 && kind < CompanyCatalogue.LicenceKinds)
+            {
+                file.Permits[kind].Auto = on;
+                Changed();
+            }
+        }
+
+        partial void LicenceAlerts(int day)
+        {
+            for (int i = 0; i < _shops.Count; i++)
+            {
+                ShopFile file = _shops[i].File;
+                int number = PlaceNumber(file.Place);
+                int missing = LicenceRules.Missing(file, _shops[i].Needs, day);
+                if (missing != 0)
+                {
+                    Alert(14, number, day, CompanyText.T("reallife_co_plan_missing_title", "business", _shops[i].Name), CompanyText.T("reallife_co_plan_missing_what", "list", CompanyText.Licences(missing)), null,
+                        CompanyText.T("reallife_co_plan_missing_missed"));
+                }
+                for (int k = 0; k < file.Permits.Length; k++)
+                {
+                    Licence l = file.Permits[k];
+                    if (LicenceRules.Needed(_shops[i].Needs, k) && !l.Auto && l.Until >= day && l.Until - day < CompanyCatalogue.LicenceRemindDays)
+                    {
+                        Alert(3, number % 100000000 * 4 + k, l.Until, CompanyText.T("reallife_co_plan_licence_title", "licence", CompanyText.Capital(CompanyText.Licence(k)), "business", _shops[i].Name),
+                            CompanyText.T("reallife_co_plan_licence_what"), CompanyText.T("reallife_planner_costs", "amount", CompanyText.Money(LicenceRules.Fee(k, _index))), CompanyText.T("reallife_co_plan_missing_missed"));
+                    }
+                }
+            }
+        }
+    }
+}

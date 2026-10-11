@@ -28,6 +28,9 @@ namespace RealLifeOverhaul
         ///                 if a policy covers it. The loss is the other feature's own and is not changed
         ///   Audit         business pressure's own tax audit, started through its own rules (BusinessDirector.StartIssue)
         ///   TaxCase       a criminal case for tax kept back, opened as one of Justice's own (Justice/TaxCases)
+        ///   Inspect       one of business pressure's own inspections, started through its own rules where a licence is missing
+        ///   inspections   when a health or fire safety inspection ends (Business/BusinessEvents), the company fines a
+        ///                 business that trades without a licence it needs
         ///   the paper     a strike that starts today, in the City Ledger (News.Extra, after the city's economy's pieces)
         ///
         /// Everything is read from what those features already keep in public or asked through an entry they already
@@ -48,6 +51,8 @@ namespace RealLifeOverhaul
                 CompanyBridges.Leave = Leave;
                 CompanyBridges.Audit = Audit;
                 CompanyBridges.TaxCase = TaxCases.File;
+                CompanyBridges.Inspect = Inspect;
+                BusinessEvents.Closed += IssueClosed;
                 BusinessGame.Ambient = Ambient;
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
@@ -62,6 +67,7 @@ namespace RealLifeOverhaul
                 FireLosses.Billed -= FireLoss;
                 BreakIns.Happened -= BreakIn;
                 BusinessEvents.Fined -= Fined;
+                BusinessEvents.Closed -= IssueClosed;
                 BusinessGame.Ambient = CityEconomyDirector.FootfallOf;   // (the city's economy's own pairing takes it off in a moment)
                 News.Extra = _paperBefore;
                 _paperBefore = null;
@@ -175,6 +181,35 @@ namespace RealLifeOverhaul
                     return false;
                 }
             }
+            // One of business pressure's inspections, started through its own rules: health where food is sold, fire safety otherwise, or whichever of the two it will start.
+            private static bool Inspect(BuildingRegistration reg)
+            {
+                try
+                {
+                    BusinessDirector director = BusinessDirector.Instance;
+                    if (director == null || reg == null)
+                    {
+                        return false;
+                    }
+                    bool food = BusinessGame.IsFood(reg);
+                    return director.StartIssue(food ? BusinessCatalogue.Health : BusinessCatalogue.Fire, reg) || director.StartIssue(food ? BusinessCatalogue.Fire : BusinessCatalogue.Health, reg);
+                }
+                catch (Exception e)
+                {
+                    Fault("CompanyLinks.Inspect", e);
+                    return false;
+                }
+            }
+
+            // A health or fire safety inspection has ended at a business: the company looks at its licences.
+            private static void IssueClosed(string kind, string place, string outcome)
+            {
+                if (kind == BusinessCatalogue.Health || kind == BusinessCatalogue.Fire)
+                {
+                    CompanyDirector.Instance?.Inspected(place);
+                }
+            }
+
             private static void Paper(int day, List<NewsItem> into)
             {
                 try
