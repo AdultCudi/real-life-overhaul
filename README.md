@@ -11,7 +11,7 @@ This repository is the source. You only need it if you want to read the code, re
 
 Version 0.1.0 was the first public release; 0.2.3 is the current one. Much of it has had little play from start to finish. The in-game Guide has a "Known limits" page, and [the Workshop description](RealLifeOverhaul.Build/Workshop/description.txt) carries the short version.
 
-Windows and English only.
+Windows only. English and Brazilian Portuguese.
 
 ## What is in the repository
 

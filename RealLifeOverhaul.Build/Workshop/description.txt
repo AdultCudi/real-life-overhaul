@@ -33,8 +33,8 @@ No frame-rate figures are claimed. Apart from the cameras, the mod's features do
 [list]
 [*]Built against the Steam version of Big Ambitions as of October 2026 (Steam build 25482473, Unity 2022.3.62f2).
 [*]Windows. The mod's models and animations are built for Windows only.
-[*]English only.
-[*]One DLL, one text file and three asset files. No game files are replaced.
+[*]English and Brazilian Portuguese. The mod follows the language the game is set to; in any other language it is in English.
+[*]One DLL, a text file for each language and three asset files. No game files are replaced.
 [*]While another camera mod such as "Immersion - RPG Camera" drives the camera, this mod's cameras stand aside and come back when it stops.
 [*]It can be added to an existing save.
 [/list]
