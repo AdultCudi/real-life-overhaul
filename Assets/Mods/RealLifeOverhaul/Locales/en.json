@@ -11,14 +11,12 @@
   "reallife_car_camera_distance": "Chase camera distance",
   "reallife_speedometer": "Speedometer when driving",
   "reallife_camera_follow": "Swing behind you when mouse look is off (0 = off)",
-
   "reallife_visuals_header": "Real Life Overhaul: Visuals",
   "reallife_visuals_enabled": "Visual upgrades",
   "reallife_visuals_saturation": "Colour saturation",
   "reallife_visuals_contrast": "Contrast",
   "reallife_visuals_bloom": "Bloom in % (costs performance, 0 = the game's own)",
   "reallife_visuals_detail": "Detail distance in % (above 100 costs performance)",
-
   "reallife_life_header": "Real Life Overhaul: Life",
   "reallife_life_events": "Random life events",
   "reallife_life_frequency": "Life events per week (about)",
@@ -37,7 +35,6 @@
   "reallife_ped_incidents": "Pedestrians struck by traffic nearby (needs ragdolls; uses the accident frequency)",
   "reallife_phone_skin": "Modern phone look (body, wallpaper, status bar)",
   "reallife_phone_contacts": "Extra phone contacts you can call (applies on next load)",
-
   "reallife_happinessmodifier_sick": "Feeling sick",
   "reallife_happinessmodifier_injured": "Injured",
   "reallife_happinessmodifier_lucky": "Lucky day",
@@ -51,7 +48,6 @@
   "reallife_happinessmodifier_mood_up_big": "A really good day",
   "reallife_happinessmodifier_mood_down": "A minor annoyance",
   "reallife_happinessmodifier_mood_down_big": "A rough day",
-
   "reallife_transaction_found_money": "Found money",
   "reallife_transaction_pickpocket": "Pickpocketed",
   "reallife_transaction_donation": "Gave money to a stranger",
@@ -86,7 +82,6 @@
   "reallife_transaction_subscription": "Subscription",
   "reallife_transaction_interest": "Interest",
   "reallife_transaction_scam": "Scammed",
-
   "reallife_event_sick": "You have come down with a cold. You will get tired faster until you recover. Rest, or call the doctor.",
   "reallife_event_recovered": "You are feeling healthy again.",
   "reallife_event_ambulance": "You are being taken to hospital by ambulance. Ambulance fee: {amount}.",
@@ -96,7 +91,6 @@
   "reallife_event_car_not_towed": "Your car could not be towed. It is still where you crashed.",
   "reallife_event_blackout": "You black out...",
   "reallife_event_ambulance_failed": "The ambulance could not reach you. Try again in a moment.",
-
   "reallife_crash_liability": "You hit another car. You paid {amount} in damages.",
   "reallife_crash_stop_prompt": "You hit another car. Stop here to exchange details, or it is a hit-and-run.",
   "reallife_crash_stopped": "You stopped and exchanged details. You paid {amount} in damages.",
@@ -106,7 +100,6 @@
   "reallife_pursuit_fine_later": "A traffic camera caught your plate at that hit-and-run. Damages and fine: {amount}.",
   "reallife_crash_injured": "You are hurt in the crash: bruised and shaken, but you can carry on.",
   "reallife_crash_severe": "You are severely injured in the crash. An ambulance has been called.",
-
   "reallife_test_event": "Test: life event",
   "reallife_test_accident": "Test: traffic accident (random severity)",
   "reallife_test_accident_minor": "Test: minor accident",
@@ -146,7 +139,6 @@
   "reallife_accident_cleared_single_moderate_2": "Nobody else was involved. A tow truck has cleared the wreck.",
   "reallife_accident_cleared_single_severe_1": "The driver was taken to hospital. The wreck has been cleared and the road has reopened.",
   "reallife_accident_cleared_single_severe_2": "Emergency crews got the driver out and away. The car has been towed.",
-
   "reallife_crime_test_staged": "Test started: \"{name}\", {metres} m from you.",
   "reallife_crime_marker": "Police incident",
   "reallife_crime_chase_start_1": "Someone just bolted down the pavement nearby, with a police officer sprinting after them.",
@@ -175,7 +167,6 @@
   "reallife_crime_disturbance_end_2": "The row is over. Both parties have left, each certain that they won.",
   "reallife_crime_disturbance_end_3": "Calm again. After a word from the police, both of them walked away.",
   "reallife_crime_disturbance_near": "You step in and ask if everything is all right. It takes some of the heat out of it.",
-
   "reallife_pedhit_marker": "Pedestrian down",
   "reallife_pedhit_knocked": "You knocked a pedestrian off their feet. They are getting up, and they are furious.",
   "reallife_pedhit_stop_prompt": "You hit a pedestrian and they are not getting up. Stop here and wait, or it is a hit-and-run.",
@@ -197,7 +188,6 @@
   "reallife_player_hit_knocked": "A car knocked you off your feet. Nothing broken, but you are shaken.",
   "reallife_player_hit_injured": "You were hit by a car. You are hurt, but you can carry on.",
   "reallife_player_hit_severe": "You were hit hard by a car and are badly injured. An ambulance has been called.",
-
   "reallife-911": "Emergency Services (911)",
   "reallife_contact_911_desc": "Report an accident, a crime or a fire, or call an ambulance",
   "reallife_text_911_welcome": "Emergency Services. Call to report an accident, a crime or a fire, or to ask for an ambulance.",
@@ -209,7 +199,6 @@
   "reallife_911_ambulance_offer": "We can send an ambulance to take you to hospital. The ambulance fee is {amount}, and the hospital will bill you separately. Shall I send it?",
   "reallife_911_ambulance_confirm": "Send the ambulance",
   "reallife_911_ambulance_sent": "An ambulance is on its way. Put your phone away and stay where you are.",
-
   "reallife-doctor": "Dr. Patel",
   "reallife_contact_doctor_desc": "Family doctor, phone consultations",
   "reallife_text_doctor_welcome": "Dr. Patel's practice. If you're feeling unwell, call for a phone consultation.",
@@ -217,7 +206,6 @@
   "reallife_doctor_offer": "That does not sound good. A phone consultation with a prescription is {amount}. Would you like that?",
   "reallife_doctor_pay": "Yes, please",
   "reallife_doctor_treated": "I've sent the prescription to your pharmacy. You should feel better right away. Take care!",
-
   "reallife-friend": "Alex",
   "reallife_contact_friend_desc": "An old friend",
   "reallife_text_friend_welcome": "Hey, it's Alex. Got a new number. Call me sometime!",
@@ -225,7 +213,6 @@
   "reallife_friend_chat": "Chat for a while",
   "reallife_friend_bye": "Ha, that was great. Don't be a stranger, okay? Talk soon!",
   "reallife_friend_again": "We literally just talked today! Call me tomorrow, I'll have new gossip by then.",
-
   "reallife-mom": "Mom",
   "reallife_contact_mom_desc": "She worries about you",
   "reallife_text_mom_welcome": "Hi sweetie, it's Mom. Call me when you can. Are you eating properly?",
@@ -234,7 +221,6 @@
   "reallife_mom_bye": "I'm so proud of you. Don't work too hard, and call your mother more often!",
   "reallife_mom_bye_sick": "You sound terrible! Go see a doctor and get some rest. I mean it. Love you.",
   "reallife_mom_again": "We already spoke today, sweetie! I love hearing from you, but go enjoy your evening.",
-
   "reallife_ev_st01": "A folded bill is stuck in a subway grate. You fish out {amount} with a pen and some patience.",
   "reallife_ev_st02_h": "A stranger needs help",
   "reallife_ev_st02_b": "Someone on the street says they lost their wallet and asks for $25 to get home.",
@@ -337,7 +323,6 @@
   "reallife_ev_st34_n": "No thanks",
   "reallife_ev_st34_y1": "It's oddly flattering. You look like a cartoon tycoon.",
   "reallife_ev_st34_y2": "He has given you an enormous chin. You do not have an enormous chin. Do you?",
-
   "reallife_ev_wx01": "You got soaked to the skin, and now your throat feels scratchy.",
   "reallife_ev_wx02_h": "Umbrella, umbrella!",
   "reallife_ev_wx02_b": "A vendor with a bucket of umbrellas has appeared out of nowhere, as they do the second it rains.",
@@ -371,7 +356,6 @@
   "reallife_ev_wx17_n": "Get on with it",
   "reallife_ev_wx17_y1": "It eases to a drizzle. Patience, rewarded.",
   "reallife_ev_wx17_y2": "It gets heavier. The sky is doing this on purpose.",
-
   "reallife_ev_tr01": "You hit a pothole the size of a bathtub. Realigning the wheel cost {amount}.",
   "reallife_ev_tr02": "Green lights all the way down the avenue. Every single one. You feel chosen.",
   "reallife_ev_tr03": "A double-parked truck, a cab cutting in, and somebody leaning on the horn. Deep breaths.",
@@ -415,7 +399,6 @@
   "reallife_ev_tr24_n": "Sorry, in a hurry",
   "reallife_ev_tr24_y1": "Their engine coughs to life. They honk a thank-you all the way down the block.",
   "reallife_ev_tr24_y2": "It starts first try. They push {amount} into your hand and won't take it back.",
-
   "reallife_ev_hm01": "The upstairs neighbour took up tap dancing last night. You're running on four hours of sleep.",
   "reallife_ev_hm02": "The kitchen tap at home started spraying sideways. The plumber charged {amount} for ten minutes' work.",
   "reallife_ev_hm03_h": "A favour from next door",
@@ -480,7 +463,6 @@
   "reallife_ev_hm26_n": "Pretend you don't have one",
   "reallife_ev_hm26_y1": "It comes back the same evening, with a plate of cookies on the top step.",
   "reallife_ev_hm26_y2": "It's been 'one more day' for a while now. You may have donated a ladder.",
-
   "reallife_ev_bz01": "A customer left your business a glowing five-star review. They mentioned the service by name.",
   "reallife_ev_bz02": "A one-star review of your business appeared online: 'Never been, but the sign looks arrogant.'",
   "reallife_ev_bz03": "A city inspector decided your shop sign is two inches too wide. The correction cost {amount}.",
@@ -542,7 +524,6 @@
   "reallife_ev_bz26_n": "No thanks",
   "reallife_ev_bz26_y1": "It took forty minutes, not twenty. Still, {amount} is {amount}.",
   "reallife_ev_bz26_y2": "He's so pleased he rounds it up to {amount} and offers you a job. You already have several.",
-
   "reallife_ev_fr01": "Hey stranger, been a while! Give me a call when you get a minute.",
   "reallife_ev_fr02": "Saw a dog wearing sunglasses on the subway and thought of you. No reason. Hope you're good!",
   "reallife_ev_fr03": "You alive over there? Call me, I've got stories.",
@@ -605,7 +586,6 @@
   "reallife_ev_fr25_n": "No bet",
   "reallife_ev_fr25_y1": "I can't believe it. Here's your {amount}. I'm never watching sports again.",
   "reallife_ev_fr25_y2": "HA! Pleasure doing business. I'm framing this twenty.",
-
   "reallife_ev_fm01": "I put {amount} in your account, sweetie. Buy yourself something nice. Love, Mom",
   "reallife_ev_fm02": "Your father fixed the garage door himself. It now opens whenever the microwave runs. Call me.",
   "reallife_ev_fm03": "Are you eating vegetables? Pizza sauce does not count. I asked a doctor.",
@@ -653,7 +633,6 @@
   "reallife_ev_fm21_n": "It's a busy time",
   "reallife_ev_fm21_y1": "I'm so excited! I'll bring food. And a list of things I'd like to rearrange in your apartment.",
   "reallife_ev_fm21_n1": "I understand. I'll just sit here with my bus timetable. It's fine. Really.",
-
   "reallife_ev_hl01": "You've been running yourself ragged, and your body just sent the bill.",
   "reallife_ev_hl02": "Someone in a crowd on the pavement sneezed right in your face. You can already feel it coming on.",
   "reallife_ev_hl03": "The dentist's bill finally arrived: {amount}.",
@@ -700,7 +679,6 @@
   "reallife_ev_hl22_n": "Absolutely not",
   "reallife_ev_hl22_y1": "It tastes like a battery, but you are AWAKE.",
   "reallife_ev_hl22_y2": "A burst of energy, then the jitters. Your left eyelid has its own pulse now.",
-
   "reallife_ev_mn01": "A forgotten subscription renewed itself: {amount}. You don't even remember what it's for.",
   "reallife_ev_mn02": "The bank refunded {amount} in fees it should never have charged. No apology, but still.",
   "reallife_ev_mn03": "A city form you filed was 'incomplete'. Refiling, with the late fee, cost {amount}.",
@@ -759,7 +737,6 @@
   "reallife_ev_mn27_n": "Use the machine",
   "reallife_ev_mn27_y1": "An hour of rolling coins: {amount}, and fingers that smell like pennies.",
   "reallife_ev_mn27_n1": "The machine rattles for a minute and pays out {amount}.",
-
   "reallife_ev_fd01": "A hot dog vendor is closing up and hands you the last one for free. 'Can't take it home.'",
   "reallife_ev_fd02_h": "The cart with the long queue",
   "reallife_ev_fd02_b": "There's a food cart on the corner with a queue down the block. That's usually a good sign. $8 a plate.",
@@ -805,7 +782,6 @@
   "reallife_ev_fd19_n": "Politely decline",
   "reallife_ev_fd19_y1": "It's delicious. You have no idea what it was, and he won't say.",
   "reallife_ev_fd19_y2": "It was not delicious. You smile, nod and walk quickly away.",
-
   "reallife_ev_lk01": "Everything is going your way today.",
   "reallife_ev_lk02": "You won a radio call-in contest you forgot you'd entered. The prize: {amount}.",
   "reallife_ev_lk03": "You wore two different socks all day. Nobody told you. Somebody definitely noticed.",
@@ -841,7 +817,6 @@
   "reallife_ev_lk19_y1": "Eleven identical grey t-shirts and a single flipper.",
   "reallife_ev_lk19_y2": "A decent camera, wrapped in a towel. You sell it on for {amount}.",
   "reallife_ev_lk19_y3": "A beautiful wool coat that fits you perfectly. Somebody's loss.",
-
   "reallife_ev_tc01": "Your phone screen cracked. The repair cost {amount}.",
   "reallife_ev_tc02": "Your phone updated itself overnight and moved every single button.",
   "reallife_ev_tc03": "Your phone battery hit 1% at the exact moment you needed the map.",
@@ -881,7 +856,6 @@
   "reallife_ev_tc17_y1": "Forty minutes of a progress bar. Everything looks exactly the same afterwards.",
   "reallife_ev_tc17_y2": "Done in two minutes, and the battery seems better. A rare win.",
   "reallife_ev_tc17_n1": "It will ask again in an hour. And again. Forever.",
-
   "reallife_ev_pt01_h": "A dog with no owner",
   "reallife_ev_pt01_b": "A small, scruffy dog trailing a lead trots up to you and sits down like you had an appointment.",
   "reallife_ev_pt01_y": "Check the tag and call",
@@ -917,7 +891,6 @@
   "reallife_ev_pt13_y1": "The owner arrives in slippers, weeping. You get {amount}, and the parrot calls you 'Kevin'.",
   "reallife_ev_pt13_y2": "By the time the owner arrives, the parrot has moved one tree over. They're grateful anyway.",
   "reallife_ev_pt13_n1": "'Hello,' you say. 'Hello,' says the parrot. A good chat.",
-
   "reallife_ev_wk01": "Monday morning. The whole city seems to be on its second coffee and first complaint.",
   "reallife_ev_wk02": "Friday evening. You can feel the entire city exhale.",
   "reallife_ev_wk03": "Sunday morning. The streets are quiet, the light is soft and nobody is honking yet.",
@@ -5510,7 +5483,6 @@
   "reallife-firearms-unit": "Firearms Licensing Unit",
   "reallife-gunshop": "Gun shop",
   "reallife_guide_job_row_tips": "<b>{name}</b>: tips only, about {pay} a unit before the crowd, the hour and your playing are counted; at most {daily} units a day, a level every {level} units",
-
   "reallife_civic_header": "Real Life Overhaul: Civic life",
   "reallife_civic_enabled": "Civic life: a city government and a construction programme (City Hall on the phone)",
   "reallife_civic_elections": "Elections and the mayor: campaigns in the street, voting, policies that change the city (off: every policy effect is taken back)",
@@ -5538,19 +5510,16 @@
   "reallife_civic_site_refused_wall": "Test not started: no upright building wall was found behind the nearest door, or it is too low for a scaffold.",
   "reallife_civic_site_refused_room": "Test not started: the wall is not flat for long enough, the pavement is too narrow, or something stands in the way.",
   "reallife_civic_site_refused_close": "Test not started: the lane runs within 3 m of the kerb and cannot be closed here (a junction in the stretch, or traffic would have no other way to go).",
-
   "reallife-cityhall": "City Hall",
   "reallife_contact_cityhall_desc": "Mayor, policies, elections, building works",
   "reallife_text_cityhall_welcome": "City Hall information line. Call for who governs and what their policies cost or pay you, the next election and its candidates, building works near you, and petitions.",
   "reallife_civic_page": "{text}",
   "reallife_civic_closed": "City Hall's line is closed. (Civic life is switched off on the options page.)",
-
   "reallife_happinessmodifier_civic_clean": "Clean streets",
   "reallife_happinessmodifier_civic_litter": "Litter everywhere",
   "reallife_happinessmodifier_civic_festive": "Something on in the streets",
   "reallife_happinessmodifier_civic_noise": "Building noise next door",
   "reallife_happinessmodifier_civic_voted": "Voted",
-
   "reallife_transaction_civic_levy": "City levy (mayor's budget)",
   "reallife_transaction_civic_tax": "City business tax adjustment (policy)",
   "reallife_transaction_civic_trade": "City trade levy on sales (policy)",
@@ -5563,14 +5532,12 @@
   "reallife_transaction_civic_fare": "Subway fare adjustment (city policy)",
   "reallife_transaction_civic_donation": "Campaign donation",
   "reallife_transaction_civic_refit": "Shopfront refit",
-
   "reallife_civic_issue_safety": "safety on the streets",
   "reallife_civic_issue_roads": "the roads",
   "reallife_civic_issue_business": "doing business",
   "reallife_civic_issue_living": "the cost of living",
   "reallife_civic_issue_services": "city services",
   "reallife_civic_issue_growth": "growth and night life",
-
   "reallife_civic_first_1": "Marisol",
   "reallife_civic_first_2": "Desmond",
   "reallife_civic_first_3": "Ingrid",
@@ -5619,7 +5586,6 @@
   "reallife_civic_party_6": "Brownstone Coalition",
   "reallife_civic_party_7": "Open Streets Ticket",
   "reallife_civic_party_8": "Ferry and Bridge Party",
-
   "reallife_civic_slogan_safety_1": "Lights on, every block.",
   "reallife_civic_slogan_safety_2": "Walk home without looking back.",
   "reallife_civic_slogan_safety_3": "An officer you know by name.",
@@ -5638,7 +5604,6 @@
   "reallife_civic_slogan_growth_1": "Build it. Open it. Fill it.",
   "reallife_civic_slogan_growth_2": "The city that stays up late.",
   "reallife_civic_slogan_growth_3": "Cranes are a good sign.",
-
   "reallife_civic_policy_policing_up": "More officers on the street",
   "reallife_civic_policy_policing_up_fx": "about 40% more officers and patrol cars about, street crime down about 20%; the city levy rises by $70 a week",
   "reallife_civic_policy_policing_up_say": "I will put four officers where there are three today, and you will see them on foot. It costs every household and business seventy dollars a week on the levy, and I think a street you can walk down is worth it.",
@@ -5717,7 +5682,6 @@
   "reallife_civic_policy_wages_down": "A wage subsidy",
   "reallife_civic_policy_wages_down_fx": "the city pays 5% of your weekly wage bill back to you",
   "reallife_civic_policy_wages_down_say": "Hire somebody and the city pays a twentieth of their wage. It is the cheapest job programme there is, and it leaves the hiring to people who know how.",
-
   "reallife_civic_campaign_begins": "Election campaign: {count} candidates are standing for mayor. Days until election day: {days}. Call City Hall to read their platforms.",
   "reallife_civic_campaign_recall": "Recall election: {count} candidates, the mayor among them, face the voters in {days} days.",
   "reallife_civic_debate_tonight": "The mayoral debate has been held. Each candidate's answers are on City Hall's line, under the election.",
@@ -5743,7 +5707,6 @@
   "reallife_civic_news_scandal_body": "A local business owner's public endorsement turned into a liability when their record came out. The candidate's rivals have not stopped mentioning it.",
   "reallife_civic_news_paytoplay": "Pay to play? A donor's building permit jumped the queue",
   "reallife_civic_news_paytoplay_body": "A construction permit was fast-tracked days after a call from one of the mayor's campaign donors. City Hall says procedures were followed.",
-
   "reallife_civic_no_campaign": "There is no campaign on at the moment.",
   "reallife_civic_donate_offer": "Donate {amount} to {name}'s campaign? You have given {given} so far; the most a campaign may take from one person is {cap}. Donations move the polls a little. If {name} wins, every $1,000 you gave earns you one fast-track building permit (two at most), which you call in on a site from this line. One time in four, calling one in ends up in the paper as \"pay to play\", which costs the mayor approval and you your good mood.",
   "reallife_civic_donate_thanks": "{name}'s campaign thanks you for {amount}. It will go on posters and leaflets.",
@@ -5775,7 +5738,6 @@
   "reallife_civic_vote_already": "The clerk finds your name crossed off: you have already voted in this election.",
   "reallife_civic_vote_closed": "The polls are not open. Voting is on election day, 07:00 to 20:00.",
   "reallife_civic_ballot": "Ballot for mayor, candidate {number} of {count}.\n{name}, {party}.\n\"{slogan}\"\nPledges:{platform}",
-
   "reallife_civic_button_next_topic": "Next topic",
   "reallife_civic_button_back": "Back",
   "reallife_civic_button_next": "Next",
@@ -5804,7 +5766,6 @@
   "reallife_civic_button_start_this": "Start this petition",
   "reallife_civic_button_next_policy": "Another policy",
   "reallife_civic_button_vote": "Vote for this candidate",
-
   "reallife_civic_topic_mayor": "CITY HALL: THE MAYOR\n{name} ({party}) is mayor. Approval: {approval}%. {council}\nPolicies in force: {policies}. Changes on their way: {pending}.",
   "reallife_civic_council_line": "The mayor's party holds {own} of the {seats} council seats.",
   "reallife_civic_topic_election_quiet": "CITY HALL: THE ELECTION\nDays until the next election for mayor: {days}. Days until the campaign opens: {campaign}. An election is held every {weeks} weeks. On the day, you vote at the polling place of your district, or stay home and let the city decide.",
@@ -5816,7 +5777,6 @@
   "reallife_civic_topic_works": "CITY HALL: CONSTRUCTION\nSites in progress across the city: {count}. Handed over since you came: {done}. Fast-track permits you are owed: {favours}. You can also order a refit of your own shopfront from here.",
   "reallife_civic_topic_petition_open": "CITY HALL: PETITIONS\nA petition for \"{policy}\" is open: {signed} of {needed} signatures.",
   "reallife_civic_topic_petition_none": "CITY HALL: PETITIONS\nNo petition is open. Anyone may start one for a policy that is not in force. It needs the signatures of two voters in a hundred: {needed} of the city's {electorate}. With enough, the council must vote on it.",
-
   "reallife_civic_account_head": "YOUR WEEKLY CITY ACCOUNT (as things stand; days until it is settled: {days})",
   "reallife_civic_account_levy": "City levy",
   "reallife_civic_account_tax": "Business tax policy",
@@ -5838,7 +5798,6 @@
   "reallife_civic_pending_line": "- {policy} ({effect}), days from now: {days}",
   "reallife_civic_pending_ends": "- \"{policy}\" ends, days from now: {days}",
   "reallife_civic_platform_none": "- no pledges: \"the city as it is\"",
-
   "reallife_civic_candidate": "{name}, {party}. Leads on {issue}.\n\"{slogan}\"\nPledges:{platform}\nPolling {share}%. You have given their campaign {given}.",
   "reallife_civic_candidate_incumbent": "{name}, {party}: the sitting mayor. Leads on {issue}.\n\"{slogan}\"\nPledges for a new term:{platform}\nPolling {share}%. You have given their campaign {given}.",
   "reallife_civic_debate_question": "THE DEBATE. Moderator: \"The city is talking about {issue}. What will you do?\"",
@@ -5848,7 +5807,6 @@
   "reallife_civic_results_district": "THE COUNT: {district}\n{electorate} on the roll.",
   "reallife_civic_results_yours": "One of those votes for {name} was yours.",
   "reallife_civic_results_no_vote": "You did not vote. The city decided without you.",
-
   "reallife_civic_site_page": "{project}\n{address}. Contractor: {contractor}.\nStage {phase} of {phases}: {doing}.\nWorking 0{opens}:00 to {shuts}:00 on weekdays. Days to finish: about {days}.",
   "reallife_civic_site_distance": "About {metres} m from you.",
   "reallife_civic_site_rain": "Hours lost to rain so far: {hours}.",
@@ -5877,7 +5835,6 @@
   "reallife_civic_labour_offer": "The foreman could use a pair of hands today. Take a day's labouring on this site?",
   "reallife_civic_labour_go": "Your hard hat is on the hook by the gate. Get yourself over there.",
   "reallife_civic_labour_no": "The foreman has nothing for you right now.",
-
   "reallife_civic_refit_bid": "REFIT OF YOUR SHOPFRONT at {address}. Bid {bid} of 3.\n{contractor}: {amount}, paid now, about {days} working days behind a hoarding. Your shop stays open throughout. When the hoarding comes down your mood gets a lift; the shop's trade does not change.",
   "reallife_civic_refit_ordered": "Agreed: {amount} paid. The hoarding goes up at {address}; follow the work on City Hall's line or on the notice outside.",
   "reallife_civic_refit_done": "The hoarding is down at {address}: your shopfront has been refitted.",
@@ -5885,7 +5842,6 @@
   "reallife_civic_refit_busy": "A refit of yours is already under way. One frontage at a time.",
   "reallife_civic_refit_recent": "Your frontage was refitted within the last four weeks. The paint is barely dry.",
   "reallife_civic_refit_broke": "You do not have the money for that bid.",
-
   "reallife_civic_petition_page": "PETITION: \"{policy}\"\nIt would mean, for you: {effect}.\n{signed} of {needed} signatures. Days left: {days}.",
   "reallife_civic_petition_page_mine": "YOUR PETITION: \"{policy}\"\nIt would mean, for you: {effect}.\n{signed} of {needed} signatures. Days left: {days}.",
   "reallife_civic_petition_signed": "Signed. With the sheets on the counters of the businesses you run, names added: {count}.",
@@ -5896,14 +5852,12 @@
   "reallife_civic_petition_rest": "City Hall is not taking new petitions just now (during an election campaign, and for some days after a petition closes).",
   "reallife_civic_petition_in_force": "That policy is already in force.",
   "reallife_civic_petition_none": "There is no such policy to petition for.",
-
   "reallife_civic_charge_fine_up": "Strict traffic enforcement (city policy): {amount} added to your fine.",
   "reallife_civic_charge_fine_down": "A lighter touch on drivers (city policy): {amount} of your fine has been refunded.",
   "reallife_civic_charge_ticket_up": "Stiffer parking tickets (city policy): {amount} added to your ticket.",
   "reallife_civic_charge_ticket_down": "Cheap parking (city policy): {amount} of your parking ticket has been refunded.",
   "reallife_civic_week_charged": "Weekly city account settled: you paid {amount}. The lines are in your transactions; what makes them up is on City Hall's line.",
   "reallife_civic_week_paid": "Weekly city account settled: you received {amount}. The lines are in your transactions; what makes them up is on City Hall's line.",
-
   "reallife_civic_contractor_1": "Dunmore and Pike Civil",
   "reallife_civic_contractor_2": "Hartwell Groundworks",
   "reallife_civic_contractor_3": "Calloway Brothers Scaffolding",
@@ -7826,5 +7780,8 @@
   "reallife_meta_welcome_note_update": "Real Life Overhaul {version}: open the Guide on your phone to see what changed.",
   "reallife_map_rows_failed": "Real Life Overhaul could not add its places to the map's filter list, so they are always shown. To hide them, switch off \"The mod's places on the map\" on the mod's options page.",
   "reallife_changes_001_6_title": "0.1.6",
-  "reallife_changes_001_6": "The rest of the mod's own boxes are replaced by the game's interface. Jobs: every gig and shift has the game's job panel and the game's panel over the place you work at, and most can be left to the game's clock at 85% of the pay. At the drinks cart you take your place by walking behind it, wear a uniform and can call out to passers-by, and carts are solid. The cleaner's spills are all on the floor at once. Shift times show a start and an end. Home: hygiene, stress and home are bars under the game's own, and cooking is a list opened from a cooker or from the fridge's panel. Garage: a repair bay's own panel says what is due and has a Garage button for the service, the custom shop and your vehicles. The Garage key is gone. Hotels, the police station's desk and cell, and the driving school with its theory test use the game's panel and list. The Guide is an app on the phone, and the welcome is a notice. On the map, an unticked row hides its places in the street too."
+  "reallife_changes_001_6": "The rest of the mod's own boxes are replaced by the game's interface. Jobs: every gig and shift has the game's job panel and the game's panel over the place you work at, and most can be left to the game's clock at 85% of the pay. At the drinks cart you take your place by walking behind it, wear a uniform and can call out to passers-by, and carts are solid. The cleaner's spills are all on the floor at once. Shift times show a start and an end. Home: hygiene, stress and home are bars under the game's own, and cooking is a list opened from a cooker or from the fridge's panel. Garage: a repair bay's own panel says what is due and has a Garage button for the service, the custom shop and your vehicles. The Garage key is gone. Hotels, the police station's desk and cell, and the driving school with its theory test use the game's panel and list. The Guide is an app on the phone, and the welcome is a notice. On the map, an unticked row hides its places in the street too.",
+  "reallife_transit_bay_marking": "BUS STOP",
+  "reallife_changes_next_title": "Next version",
+  "reallife_changes_next": "Where a street has a parking strip beside the lane, a bus now pulls into a marked bay at the kerb to stand, so traffic passes it, and pulls out again when the lane is clear; where there is no room for a bay it stops in the lane as before, and for less time when nobody is waiting."
 }

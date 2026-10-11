@@ -28,6 +28,20 @@ namespace RealLifeOverhaul
         public bool Parking;      // a parking lane lies between the lane and the kerb
         public float Metres;      // along the line from its start
         public string Name;       // the address it is called by
+
+        // The bay: the length of the strip between lane and kerb the bus pulls into, so that it stands beside the lane (BusBay).
+        public float KerbAside;   // metres from the lane's line to the kerb's edge
+        public bool HasBay;       // the strip is wide, straight, level and bare enough for one
+        public Vector3 Bay;       // where the middle of the bus stands in it, on the road surface: beside the pole
+        public Vector3 BayAlong;  // the way it runs (flat, unit): the lane's
+        public float BayOffset;   // metres from the lane's line to the bay's (the middle of the bus)
+        public float BayBehind;   // metres of the strip, back from Bay, that must be free for the bus to come in (the body on its own van)
+        public float BayAhead;    // ...and on from it, to pull out
+        public float BayRoom;     // metres back from Bay for which the strip will do: BayBehind at the least, more where a longer-nosed vehicle can come in too
+        public string NoBay;      // why it has none, for the log
+
+        /// <summary>The length of strip the bay takes up.</summary>
+        public float BayLength => BayBehind + BayAhead;
     }
 
     /// <summary>One direction of a bus route: a path along the road graph and the stops on it.</summary>
@@ -63,9 +77,20 @@ namespace RealLifeOverhaul
     /// waiting people stand. Vehicles are not looked at here (they come and go): they are
     /// tested when a stop is dressed and when a bus pulls up.
     ///
-    /// The work is done in slices from the director's timer, a search or a line's stops at a
-    /// time, in the first seconds out of doors: a few dozen searches of the road graph at most
-    /// and a few hundred physics queries in all, never again.
+    /// BAYS. A stop has a bay where the kerb is at least 4.10 m from the lane's line (the lane's
+    /// half, 0.15 m clear of its edge, the 2.10 m body, 0.20 m to the kerb: BusBay.KerbNeeded)
+    /// along the whole length a bus needs to come in and pull out (some 30 m, more where the
+    /// strip is wider), the lane runs straight and plain for that length with no other lane
+    /// between it and the kerb, the strip is level road with nothing fixed standing in it, and
+    /// the kerb keeps its line. Of the places that will do for a stop, one with a bay is taken
+    /// before one without: first in the 140 m, then up to 60 m further on, then up to 50 m
+    /// before the place wanted (two stops are then never nearer than 210 m along the line),
+    /// and only then the first place without one. Parked cars are not looked at here either.
+    ///
+    /// The work is done in slices from the director's timer, a search at a time and then stops
+    /// one after another for no more than three milliseconds a slice, in the first seconds out
+    /// of doors: a few dozen searches of the road graph at most and some thousands of rays and
+    /// samples in all (most of them looking for bays), never again.
     /// </summary>
     public static class TransitMap
     {
@@ -80,8 +105,15 @@ namespace RealLifeOverhaul
         private const float JunctionClear = 26f;    // metres of plain lane either side of a stop
         private const float KerbMost = 5.6f;        // lane middle to pavement edge
         private const float KerbLeast = 1.3f;
+        private const float BayOn = 60f;            // metres beyond a stop's window in which a place with a bay is still taken
+        private const float BayBack = 50f;          // ...and before the place wanted: two stops are never nearer than StopSpacing less this
+        private const float BayStraight = 0.35f;    // metres the lane's points may lie off its line along a bay
+        private const float BayLevel = 0.30f;       // metres the strip may lie above or below the lane along a bay
+        private const float BayRoomMost = 23.5f;    // metres back from the pole the strip is looked at for a vehicle that needs more of it than the bus body on its van
+        private const float BayAheadSlack = 1f;     // metres more of the strip ahead than the body on its van needs to pull out: a vehicle's own middle is seldom quite its origin
         private const int MaxExpansions = 400000;
         private const int MaxSearches = 48;         // in all: a city where nothing connects is given up on
+        private const double StopsSlice = 0.003;    // seconds of looking for stops in one slice
 
         public static IModLogger Logger;
 
@@ -111,12 +143,18 @@ namespace RealLifeOverhaul
         private static int _searches;
         private static int _laneChanges;
         private static int _lineCursor;
+        private static bool _lineBegun;         // the line at the cursor has had some of its stops looked for
+        private static float _stopWanted;       // metres along it at which its next stop is wanted
+        private static int _stopFrom;           // ...and the point of its path the look goes on from
         private static int _widest;
         private static bool _pairing;
         private static bool _limitHit;
         private static int _staticMask;
         private static int _doorMask;
         private static int _parkingMask;
+
+        /// <summary>How many of the stops have a bay.</summary>
+        public static int Bays { get; private set; }
 
         public static void Reset()
         {
@@ -140,9 +178,11 @@ namespace RealLifeOverhaul
             _searches = 0;
             _laneChanges = 0;
             _lineCursor = 0;
+            _lineBegun = false;
             _widest = 0;
             _pairing = false;
             _limitHit = false;
+            Bays = 0;
             Ready = false;
             Failed = false;
         }
@@ -186,8 +226,16 @@ namespace RealLifeOverhaul
                 }
                 if (_lineCursor < Lines.Count)
                 {
-                    PlaceStops(Lines[_lineCursor], _lineCursor);
-                    _lineCursor++;
+                    // Stop after stop, line after line, until the slice's time is up: at least one each slice.
+                    long until = System.Diagnostics.Stopwatch.GetTimestamp() + (long)(StopsSlice * System.Diagnostics.Stopwatch.Frequency);
+                    do
+                    {
+                        if (PlaceStop(Lines[_lineCursor]))
+                        {
+                            _lineCursor++;
+                        }
+                    }
+                    while (_lineCursor < Lines.Count && System.Diagnostics.Stopwatch.GetTimestamp() < until);
                     return;
                 }
                 Finish();
@@ -213,6 +261,7 @@ namespace RealLifeOverhaul
                 }
             }
             Stops.Clear();
+            Bays = 0;
             for (int i = 0; i < Lines.Count; i++)
             {
                 TransitLine line = Lines[i];
@@ -223,6 +272,7 @@ namespace RealLifeOverhaul
                     stop.Order = s;
                     stop.Id = Stops.Count;
                     Stops.Add(stop);
+                    Bays += stop.HasBay ? 1 : 0;
                 }
             }
             Ready = true;
@@ -257,20 +307,34 @@ namespace RealLifeOverhaul
                     }
                 }
             }
-            var text = new StringBuilder("Transit check (network): " + Lines.Count + " bus lines, " + Stops.Count + " stops, " + bothWays + " of the lines with their other direction, "
+            var text = new StringBuilder("Transit check (network): " + Lines.Count + " bus lines, " + Stops.Count + " stops, " + Bays + " of them with a bay (the bus stands out of the lane there; a bay wants the kerb "
+                                         + BusBay.KerbNeeded(TransitBus.BodyHalfWidth).ToString("F2") + " m or more from the lane's line), " + bothWays + " of the lines with their other direction, "
                                          + _searches + " searches of " + (_points != null ? _points.Length : 0) + " lane points (" + _laneChanges + " lane changes offered): "
                                          + (bothWays == Lines.Count ? "PASS" : "FAIL (a line runs one way only)") + ".");
             for (int i = 0; i < Lines.Count; i++)
             {
                 TransitLine line = Lines[i];
                 int sheltered = 0;
+                int bays = 0;
                 for (int s = 0; s < line.Stops.Count; s++)
                 {
                     sheltered += line.Stops[s].Shelter ? 1 : 0;
+                    bays += line.Stops[s].HasBay ? 1 : 0;
                 }
                 text.Append(" ").Append(line.Number).Append(" to ").Append(line.To).Append(' ')
                     .Append((line.Metres[line.Metres.Length - 1] / 1000f).ToString("F1")).Append(" km ")
-                    .Append(line.Stops.Count).Append(" stops (").Append(sheltered).Append(" with a shelter);");
+                    .Append(line.Stops.Count).Append(" stops (").Append(sheltered).Append(" with a shelter, ").Append(bays).Append(" with a bay; the kerb at");
+                // Each stop's kerb, and in a word why a stop has no bay: what a look at the street is then held against.
+                for (int s = 0; s < line.Stops.Count; s++)
+                {
+                    TransitStop stop = line.Stops[s];
+                    text.Append(' ').Append(stop.KerbAside.ToString("F2"));
+                    if (!stop.HasBay)
+                    {
+                        text.Append(" [").Append(stop.NoBay ?? "no bay").Append(']');
+                    }
+                }
+                text.Append(" m);");
             }
             Logger?.Info(text.ToString());
         }
@@ -521,44 +585,74 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- the stops of a line
 
-        private static void PlaceStops(TransitLine line, int lineIndex)
+        // The next stop of a line (or the finding that the next stretch of it has none). True once the line has all its stops.
+        private static bool PlaceStop(TransitLine line)
         {
+            if (!_lineBegun)
+            {
+                _lineBegun = true;
+                _stopWanted = FirstStopAt;
+                _stopFrom = 0;
+            }
             float total = line.Metres[line.Metres.Length - 1];
-            float wanted = FirstStopAt;
-            int i = 0;
-            while (i < line.Path.Length && wanted < total - 40f)
+            float wanted = _stopWanted;
+            int i = _stopFrom;
+            if (i >= line.Path.Length || wanted >= total - 40f)
             {
-                while (i < line.Path.Length && line.Metres[i] < wanted)
+                for (int s = 0; s < line.Stops.Count; s++)
                 {
-                    i++;
+                    line.Stops[s].Name = NameOf(line.Stops[s].Wait);
                 }
-                bool placed = false;
-                int j = i;
-                for (; j < line.Path.Length && line.Metres[j] <= wanted + StopWindow; j++)
-                {
-                    TransitStop stop = Try(line, j);
-                    if (stop != null)
-                    {
-                        line.Stops.Add(stop);
-                        wanted = line.Metres[j] + StopSpacing;
-                        placed = true;
-                        break;
-                    }
-                }
-                if (!placed)
-                {
-                    wanted += StopWindow;
-                }
-                i = j;
+                _lineBegun = false;
+                return true;
             }
-            for (int s = 0; s < line.Stops.Count; s++)
+            while (i < line.Path.Length && line.Metres[i] < wanted)
             {
-                line.Stops[s].Name = NameOf(line.Stops[s].Wait);
+                i++;
             }
+            // The first place with a bay; failing that, the first place that will do at all (what was always taken).
+            TransitStop plain = null;
+            TransitStop bay = null;
+            int j = i;
+            for (; bay == null && j < line.Path.Length && line.Metres[j] <= wanted + StopWindow; j++)
+            {
+                TransitStop stop = Try(line, j, plain != null);
+                if (stop != null && stop.HasBay)
+                {
+                    bay = stop;
+                }
+                else if (stop != null && plain == null)
+                {
+                    plain = stop;
+                }
+            }
+            int windowEnd = j;
+            // None in the window: a little further on, then a little before the place wanted, nearest first.
+            for (; bay == null && j < line.Path.Length && line.Metres[j] <= wanted + StopWindow + BayOn; j++)
+            {
+                bay = Try(line, j, true);
+            }
+            for (int k = i - 1; bay == null && k >= 0 && line.Metres[k] >= wanted - BayBack; k--)
+            {
+                bay = Try(line, k, true);
+            }
+            TransitStop placed = bay ?? plain;
+            if (placed != null)
+            {
+                line.Stops.Add(placed);
+                _stopWanted = placed.Metres + StopSpacing;
+                _stopFrom = placed.PathIndex;
+            }
+            else
+            {
+                _stopWanted = wanted + StopWindow;
+                _stopFrom = windowEnd;
+            }
+            return false;
         }
 
-        // A stop at one lane point of a line, or null if that point will not do.
-        private static TransitStop Try(TransitLine line, int index)
+        // A stop at one lane point of a line, or null if that point will not do (or has no bay, when only one with a bay is wanted).
+        private static TransitStop Try(TransitLine line, int index, bool bayOnly)
         {
             int[] path = line.Path;
             if (index < 3 || index >= path.Length - 3)
@@ -618,10 +712,15 @@ namespace RealLifeOverhaul
             }
             // Another lane of the road between this one and the kerb: its traffic would run between the bus and the people.
             // (The road graph names the lanes that run beside a lane point; one of them to the right is that lane.)
-            for (int i = 0; point.otherLanes != null && i < point.otherLanes.Count; i++)
+            if (LaneToRight(point, right))
             {
-                Waypoint beside = Point(point.otherLanes[i]);
-                if (beside != null && Vector3.Dot(beside.position - point.position, right) > 1f)
+                return null;
+            }
+            var stop = new TransitStop { PathIndex = index, Lane = lane, Along = along, Kerb = kerb, Metres = line.Metres[index] };
+            if (bayOnly)
+            {
+                LayBay(stop, line, right);
+                if (!stop.HasBay)
                 {
                     return null;
                 }
@@ -633,11 +732,13 @@ namespace RealLifeOverhaul
             {
                 return null;
             }
-            var stop = new TransitStop
+            stop.Sign = sign;
+            stop.Wait = wait;
+            stop.Parking = _parkingMask != 0 && Physics.CheckSphere(lane + right * (edge * 0.5f + 0.6f) + Vector3.up * 0.5f, 0.6f, _parkingMask, QueryTriggerInteraction.Collide);
+            if (!bayOnly)
             {
-                PathIndex = index, Lane = lane, Along = along, Kerb = kerb, Sign = sign, Wait = wait, Metres = line.Metres[index],
-                Parking = _parkingMask != 0 && Physics.CheckSphere(lane + right * (edge * 0.5f + 0.6f) + Vector3.up * 0.5f, 0.6f, _parkingMask, QueryTriggerInteraction.Collide)
-            };
+                LayBay(stop, line, right);
+            }
             // A shelter stands back from the kerb, open to the road, ahead of the pole: only where the pavement is deep and bare enough.
             Vector3 shelter = lane + right * (edge + 2.35f) + along * 3.2f;
             if (IsPavement(shelter, out Vector3 floor) && IsPavement(shelter + right * 0.85f + along * 1.7f, out _) && IsPavement(shelter + right * 0.85f - along * 1.7f, out _)
@@ -649,6 +750,150 @@ namespace RealLifeOverhaul
                 stop.ShelterAt = floor;
             }
             return stop;
+        }
+
+        // Another lane of the road to the right of a lane point (the road graph names the lanes that run beside one).
+        private static bool LaneToRight(Waypoint point, Vector3 right)
+        {
+            for (int i = 0; point.otherLanes != null && i < point.otherLanes.Count; i++)
+            {
+                Waypoint beside = Point(point.otherLanes[i]);
+                if (beside != null && Vector3.Dot(beside.position - point.position, right) > 1f)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // ---------------------------------------------------------------- a stop's bay
+
+        // Whether the strip beside a stop will do for a bay, and where the bus then stands. Says why not in a word or two.
+        // Arithmetic first, then some forty rays and samples and two boxes: only for a place that is otherwise a stop.
+        private static void LayBay(TransitStop stop, TransitLine line, Vector3 right)
+        {
+            Vector3 lane = stop.Lane;
+            Vector3 along = stop.Along;
+            stop.BayAlong = along;
+            stop.KerbAside = KerbAside(stop, right);
+            float half = TransitBus.BodyHalfWidth;
+            float halfLength = TransitBus.BodyLength * 0.5f;
+            float offset = BusBay.Offset(stop.KerbAside, half);
+            if (offset <= 0f)
+            {
+                stop.NoBay = "narrow";
+                return;
+            }
+            BusBay.Curve curveIn = BusBay.In(offset, halfLength);
+            BusBay.Curve curveOut = BusBay.Out(offset, halfLength);
+            if (curveIn.Cut || curveOut.Cut || curveIn.Length + 1f > JunctionClear || curveOut.Length + 1f > JunctionClear)
+            {
+                stop.NoBay = "too wide to cross in the plain lane there is";
+                return;
+            }
+            float behind = BusBay.Behind(curveIn, 0f);
+            float ahead = BusBay.Ahead(curveOut, 0f) + BayAheadSlack;
+            stop.NoBay = LaneBends(stop, line, right, curveIn.Length + 1f, curveOut.Length + 1f) ?? StripBad(stop, right, offset, -behind, ahead);
+            if (stop.NoBay != null)
+            {
+                return;
+            }
+            Vector3 bay = lane + right * offset;
+            CitySpots.Ground(bay, out float ground);
+            bay.y = ground;
+            stop.HasBay = true;
+            stop.Bay = bay;
+            stop.BayOffset = offset;
+            stop.BayBehind = behind;
+            stop.BayAhead = ahead;
+            // Further back than the body on its van needs: for a vehicle with a longer nose (it comes in over a longer curve).
+            stop.BayRoom = behind < BayRoomMost && LaneBends(stop, line, right, BayRoomMost + 2.5f, 0f) == null && StripBad(stop, right, offset, -BayRoomMost, -behind) == null
+                ? BayRoomMost : behind;
+        }
+
+        // The lane along a bay: straight for so far back and on from the stop, and nothing of the road between it and the
+        // kerb. Null if so, else why not. Arithmetic on the line's own points.
+        private static string LaneBends(TransitStop stop, TransitLine line, Vector3 right, float back, float on)
+        {
+            int[] path = line.Path;
+            for (int step = -1; step <= 1; step += 2)
+            {
+                float run = step < 0 ? back : on;
+                for (int k = stop.PathIndex + step; k >= 0 && k < path.Length && Mathf.Abs(line.Metres[k] - stop.Metres) <= run; k += step)
+                {
+                    Waypoint point = _points[path[k]];
+                    Vector3 off = point.position - stop.Lane;
+                    if (!Plain(point))
+                    {
+                        return "a junction";
+                    }
+                    if (Mathf.Abs(Vector3.Dot(off, right)) > BayStraight || Mathf.Abs(off.y) > 1f)
+                    {
+                        return "the lane bends";
+                    }
+                    if (LaneToRight(point, right))
+                    {
+                        return "a lane beside";
+                    }
+                }
+            }
+            return null;
+        }
+
+        // The strip from one place along the stop's lane to another (metres from the pole): road at the lane's level right
+        // up to where the bus's door side will be, the kerb keeping its line, and nothing fixed standing in it. Null if so,
+        // else why not. Two rays and a sample every four metres or so, and one box.
+        private static string StripBad(TransitStop stop, Vector3 right, float offset, float from, float to)
+        {
+            Vector3 lane = stop.Lane;
+            Vector3 along = stop.Along;
+            float inner = stop.KerbAside - BusBay.KerbGap * 0.5f;
+            int steps = Mathf.Max(2, Mathf.CeilToInt((to - from) / 4f));
+            for (int i = 0; i <= steps; i++)
+            {
+                Vector3 at = lane + along * (from + (to - from) * i / steps);
+                if (!CitySpots.Ground(at + right * inner, out float edgeGround) || !CitySpots.Ground(at + right * offset, out float middleGround)
+                    || Mathf.Abs(edgeGround - lane.y) > BayLevel || Mathf.Abs(middleGround - lane.y) > BayLevel)
+                {
+                    return "not level road";
+                }
+                // (Pavement within a step of the bus's side: the kerb comes in, or a crossing runs over the strip.)
+                if (CitySpots.Pavement(at + right * (stop.KerbAside - 0.45f), 0.3f, out _))
+                {
+                    return "the kerb comes in";
+                }
+            }
+            float near = BusBay.LaneHalf + 0.1f;
+            float width = stop.KerbAside - 0.05f - near;
+            Vector3 centre = lane + along * ((from + to) * 0.5f) + right * (near + width * 0.5f);
+            return Physics.CheckBox(centre + Vector3.up * 1.15f, new Vector3(width * 0.5f, 0.8f, (to - from) * 0.5f), Quaternion.LookRotation(along), _staticMask, QueryTriggerInteraction.Ignore)
+                ? "something stands in the strip" : null;
+        }
+
+        // How far the kerb is from the lane's line: the pavement's edge as the navigation mesh has it, or, where the
+        // road surface itself steps up before that, the step. (The mesh is a few centimetres coarse; a bus that stands
+        // 0.2 m from the kerb is placed by the kerb that is there.)
+        private static float KerbAside(TransitStop stop, Vector3 right)
+        {
+            Vector3 lane = stop.Lane;
+            float meshEdge = Vector3.Dot(Flat(stop.Kerb - lane), right);
+            if (meshEdge < BusBay.KerbNeeded(TransitBus.BodyHalfWidth))
+            {
+                return meshEdge;   // too near for a bay as it is: the step, if there is one, is nearer still
+            }
+            float from = meshEdge - 0.5f;
+            if (!CitySpots.Ground(lane + right * from, out float road) || Mathf.Abs(road - lane.y) > BayLevel)
+            {
+                return meshEdge;
+            }
+            for (float d = from + 0.05f; d < meshEdge; d += 0.05f)
+            {
+                if (CitySpots.Ground(lane + right * d, out float height) && height - road > 0.05f)
+                {
+                    return d - 0.025f;
+                }
+            }
+            return meshEdge;
         }
 
         private static bool Plain(Waypoint point)

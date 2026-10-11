@@ -25,6 +25,16 @@ namespace RealLifeOverhaul
         /// </summary>
         public static float Nearest(Vector3 origin, Vector3 direction, float from, float to, float halfWidth)
         {
+            return Nearest(origin, direction, from, to, halfWidth, default, float.MaxValue);
+        }
+
+        /// <summary>
+        /// The same, for a vehicle beside a kerb: nobody further across the road than the kerb counts (they are on
+        /// the pavement). The kerb is given as the way across the road towards it (flat, unit) and how far along
+        /// that way it lies from the world's origin.
+        /// </summary>
+        public static float Nearest(Vector3 origin, Vector3 direction, float from, float to, float halfWidth, Vector3 kerbTowards, float kerbAt)
+        {
             float nearest = float.MaxValue;
             ActorPool pool = ActorPool.Instance;
             if (pool != null)
@@ -34,7 +44,7 @@ namespace RealLifeOverhaul
                     StreetActor actor = pool.ActorAt(i);
                     if (actor.InUse && actor.IsValid)
                     {
-                        nearest = Mathf.Min(nearest, Along(actor.Position, origin, direction, from, to, halfWidth));
+                        nearest = Mathf.Min(nearest, Along(actor.Position, origin, direction, from, to, halfWidth, kerbTowards, kerbAt));
                     }
                 }
             }
@@ -46,21 +56,25 @@ namespace RealLifeOverhaul
                 {
                     if (ragdolls.TryGetBody(i, out Vector3 body))
                     {
-                        nearest = Mathf.Min(nearest, Along(body, origin, direction, from, to, halfWidth + 0.5f));
+                        nearest = Mathf.Min(nearest, Along(body, origin, direction, from, to, halfWidth + 0.5f, kerbTowards, kerbAt));
                     }
                 }
             }
 
             if (!PlayerHelper.IsUsingVehicle)
             {
-                nearest = Mathf.Min(nearest, Along(PlayerHelper.GetPosition(), origin, direction, from, to, halfWidth));
+                nearest = Mathf.Min(nearest, Along(PlayerHelper.GetPosition(), origin, direction, from, to, halfWidth, kerbTowards, kerbAt));
             }
             return nearest;
         }
 
-        // How far along the strip a point is, or float.MaxValue if it is outside it.
-        private static float Along(Vector3 point, Vector3 origin, Vector3 direction, float from, float to, float halfWidth)
+        // How far along the strip a point is, or float.MaxValue if it is outside it (or beyond the kerb, if one is given).
+        private static float Along(Vector3 point, Vector3 origin, Vector3 direction, float from, float to, float halfWidth, Vector3 kerbTowards, float kerbAt)
         {
+            if (kerbAt < float.MaxValue && point.x * kerbTowards.x + point.z * kerbTowards.z > kerbAt)
+            {
+                return float.MaxValue;
+            }
             Vector3 offset = point - origin;
             offset.y = 0f;
             float along = Vector3.Dot(offset, direction);

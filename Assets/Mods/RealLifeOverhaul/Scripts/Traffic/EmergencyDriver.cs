@@ -19,7 +19,8 @@ namespace RealLifeOverhaul
     /// goal is the end of its route (BeginRoute: a place to stand, reached exactly), a fixed
     /// place (Begin: an incident), a point on its route to pull up at, or another vehicle to
     /// stay behind (a chase). One short physics query every 0.15 s and a handful of distance
-    /// checks; nothing else recurring.
+    /// checks; nothing else recurring. Told where the kerb is (Kerb: a bus turning in to its bay),
+    /// it leaves out of that look whatever is beyond it, on the pavement.
     /// Asked to cruise faster than a city street allows (above FastFrom: a pursuit of the player's car),
     /// it drives like a fast car instead of a quick one: it picks up speed more slowly the faster
     /// it goes, looks as far ahead as it needs to stop in, comes up behind the car it follows no
@@ -58,6 +59,7 @@ namespace RealLifeOverhaul
         private const float FastBraking = 9f;       // m/s2 it plans its slowing for a bend, or for the car it follows, with
 
         private static int _obstacleMask;
+        private static readonly RaycastHit[] Hits = new RaycastHit[32];
 
         private VehicleComponent _car;
         private Rigidbody _body;
@@ -87,6 +89,10 @@ namespace RealLifeOverhaul
         private bool _following;
         private bool _braking;
         private bool _active;
+        private bool _kerbed;           // the carriageway's edge on one side is known: see Kerb
+        private Vector3 _kerbTowards;
+        private float _kerbAt;
+        private float _reach = PointReach;
 
         /// <summary>True while a drive is under way. The component only runs then.</summary>
         public bool Active
@@ -113,6 +119,39 @@ namespace RealLifeOverhaul
         /// where the other unit stands, and pulling out to pass put the two nose to nose. Begin sets it back to true.
         /// </summary>
         public bool MayPass { get; set; } = true;
+
+        /// <summary>
+        /// How near a point of its route counts as reached, in metres. A route is cut that much at every corner, which is
+        /// what the open road wants; a path that must be kept to (in to a kerb and out again, a hand's width from it)
+        /// asks for less. Begin sets it back to what it has always been.
+        /// </summary>
+        public float Reach
+        {
+            get => _reach;
+            set => _reach = Mathf.Clamp(value, FinalReach, PointReach);
+        }
+
+        /// <summary>
+        /// Tells it where the carriageway ends on one side: a point of the kerb and the way across the road towards
+        /// it. What stands or walks beyond that line is on the pavement and is not in its way, however its nose
+        /// points while it turns in beside it: people waiting at a stop, somebody walking past. On the carriageway
+        /// everything counts as ever. Begin, and <see cref="NoKerb"/>, undo it.
+        /// </summary>
+        public void Kerb(Vector3 point, Vector3 towards)
+        {
+            towards.y = 0f;
+            _kerbed = towards.sqrMagnitude > 0.01f;
+            if (_kerbed)
+            {
+                _kerbTowards = towards.normalized;
+                _kerbAt = point.x * _kerbTowards.x + point.z * _kerbTowards.z;
+            }
+        }
+
+        public void NoKerb()
+        {
+            _kerbed = false;
+        }
 
         /// <summary>True while it is out of its own lane, passing (not while pulled in to a kerb).</summary>
         public bool OutOfLane => Active && !_pulledOver && (_targetOffset != 0f || Mathf.Abs(_offset) > 0.3f);
@@ -194,6 +233,8 @@ namespace RealLifeOverhaul
             _blocked = false;
             _following = false;
             _braking = false;
+            _kerbed = false;
+            _reach = PointReach;
             MayPass = true;
             CruiseSpeed = DefaultCruiseSpeed;
             Arrived = false;
@@ -364,7 +405,7 @@ namespace RealLifeOverhaul
             {
                 Vector3 to = Flat(_path[_next] - position);
                 bool final = _routeOnly && _next == last;
-                float reach = final ? FinalReach : PointReach;
+                float reach = final ? FinalReach : _reach;
                 if (to.sqrMagnitude >= reach * reach && !(final && Vector3.Dot(to, heading) < 0f))
                 {
                     break;
@@ -648,7 +689,34 @@ namespace RealLifeOverhaul
             float reach = halfLength + Mathf.Max(SenseDistance + Mathf.Max(0f, _speed - DefaultCruiseSpeed), _speed * _speed / (2f * Slowing) * 1.15f + StopGap + 4f);
             float halfWidth = _halfWidth + SenseMargin;
             float free = float.MaxValue;
-            if (Physics.SphereCast(origin, halfWidth, direction, out RaycastHit hit, reach, _obstacleMask, QueryTriggerInteraction.Ignore))
+            if (_kerbed)
+            {
+                // Beside a kerb it has been told of: the nearest thing that is on the carriageway. Every hit of the sweep
+                // is looked at, since the first may be somebody on the pavement. What the ball starts inside is no hit,
+                // as for the single sweep below; nor is any part of the vehicle itself.
+                int count = Physics.SphereCastNonAlloc(origin, halfWidth, direction, Hits, reach, _obstacleMask, QueryTriggerInteraction.Ignore);
+                float nearest = float.MaxValue;
+                for (int i = 0; i < count; i++)
+                {
+                    RaycastHit seen = Hits[i];
+                    Hits[i] = default;
+                    if (seen.distance <= 0f || seen.rigidbody == _body || (_target != null && seen.rigidbody == _target)
+                        || seen.point.x * _kerbTowards.x + seen.point.z * _kerbTowards.z > _kerbAt)
+                    {
+                        continue;
+                    }
+                    if (seen.distance < nearest)
+                    {
+                        nearest = seen.distance;
+                        blocker = seen.rigidbody;
+                    }
+                }
+                if (nearest < float.MaxValue)
+                {
+                    free = Mathf.Max(0f, nearest + halfWidth * 0.5f - halfLength);
+                }
+            }
+            else if (Physics.SphereCast(origin, halfWidth, direction, out RaycastHit hit, reach, _obstacleMask, QueryTriggerInteraction.Ignore))
             {
                 float travelled = hit.distance;
                 bool found = true;
@@ -667,7 +735,9 @@ namespace RealLifeOverhaul
                 }
             }
             // People a physics query cannot see: those standing still, kneeling or lying have no collider.
-            float person = PeopleAhead.Nearest(origin, direction, beside ? -halfLength : halfLength, reach, halfWidth + 0.3f);
+            float person = _kerbed
+                ? PeopleAhead.Nearest(origin, direction, beside ? -halfLength : halfLength, reach, halfWidth + 0.3f, _kerbTowards, _kerbAt)
+                : PeopleAhead.Nearest(origin, direction, beside ? -halfLength : halfLength, reach, halfWidth + 0.3f);
             if (person < float.MaxValue)
             {
                 float room = Mathf.Max(0f, person - halfLength - PersonGap);
