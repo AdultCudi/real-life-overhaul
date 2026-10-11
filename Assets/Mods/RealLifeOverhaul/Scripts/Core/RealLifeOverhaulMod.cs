@@ -613,6 +613,16 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rota_test_open", () => Economy.CompanyDirector.Instance?.TestRotaOpen())
                 .AddButton("reallife_rota_test_fill", () => Economy.CompanyDirector.Instance?.TestRotaFillAll())
                 .AddButton("reallife_rota_test_back", () => Economy.CompanyDirector.Instance?.TestRotaBackAll())
+                .AddHeader("reallife_brand_header")
+                .AddToggle(Settings.EconomyBrandsId, "reallife_brand_enabled", Settings.EconomyBrands,
+                    v => Settings.EconomyBrands = v)
+                .AddButton("reallife_brand_test_make", () => Economy.Brands.BrandsDirector.Instance?.TestMake())
+                .AddButton("reallife_brand_test_applicant", () => Economy.Brands.BrandsDirector.Instance?.TestApplicant())
+                .AddButton("reallife_brand_test_sign", () => Economy.Brands.BrandsDirector.Instance?.TestSign())
+                .AddButton("reallife_brand_test_trouble", () => Economy.Brands.BrandsDirector.Instance?.TestTrouble())
+                .AddButton("reallife_brand_test_scandal", () => Economy.Brands.BrandsDirector.Instance?.TestScandal())
+                .AddButton("reallife_brand_test_year", () => Economy.Brands.BrandsDirector.Instance?.TestYear())
+                .AddButton("reallife_brand_test_back", () => Economy.Brands.BrandsDirector.Instance?.TestBack())
                 .AddSplitter()
                 .AddHeader("reallife_nav_header")
                 .AddToggle(Settings.MinimapId, "reallife_nav_minimap", Settings.Minimap,
@@ -844,6 +854,9 @@ namespace RealLifeOverhaul
             Economy.CompanyDirector.Logger = context.Logger;
             Economy.CompanyApp.Logger = context.Logger;
             _root.AddComponent<Economy.CompanyDirector>();   // running a business: staff, insurance, marketing, tax and licences, and the Company app (Scripts/Economy/Company)
+            Economy.Brands.BrandsDirector.Logger = context.Logger;
+            Economy.Brands.BrandsApp.Logger = context.Logger;
+            _root.AddComponent<Economy.Brands.BrandsDirector>();   // brands and franchises: recognition, standards, franchised shops, city chains and the Brands app (Scripts/Economy/Brands; after the company: its day follows the company's)
             Nav.NavGraph.Logger = context.Logger;
             Nav.NavMarks.Logger = context.Logger;
             Nav.NavHud.Logger = context.Logger;
