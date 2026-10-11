@@ -2,128 +2,22 @@
 Real Life Overhaul adds everyday life to the city of Big Ambitions: things happen in the street, to other people and to you, and you can take part in them. Every part can be switched off by itself, and four presets set how much of it happens to you.
 
 [h1]What it adds[/h1]
-
-[b]Driving[/b]
 [list]
-[*]A camera behind your character on foot and behind the car when you drive.
-[*]Each car gets the acceleration and top speed of its kind, an eased throttle and a speedometer.
-[*]Car ownership: fuel, servicing, wear, breakdowns, insurance, registration and roadside help.
-[*]A custom shop in any repair bay: paint, lamps, underglow, fitted parts and performance parts.
-[*]Bicycles and motorbikes to hire or buy.
-[*]People react to your horn: someone in your way who should not be there hurries clear, and someone with the light in their favour stops and glares.
-[*]A fairer driving test: only what you could have helped is marked.
+[*][b]A living street.[/b] People chat, eat, queue and busk. There are accidents with ambulances and police, fires, crimes, street events and weather. Accidents come from drivers you can watch go wrong, and traffic brakes and sounds its horn for people in the road.
+[*][b]Driving.[/b] Cars that handle by their kind, a third-person and a chase camera, a speed reading, a garage for paint, parts and tuning, running costs, and people who react to your horn. A driving school with lessons, a theory test and a practical test.
+[*][b]Getting around.[/b] Buses with stops and bays, the subway, a taxi called from your phone, bicycles and scooters, and a minimap with a GPS route.
+[*][b]Police and courts.[/b] Offences, fines, arrests, a cell, bail, hearings, community service and prison. A council you can vote for and stand for.
+[*][b]Home and family.[/b] Cooking, chores, a partner, a wedding, a baby, friends and outings, leisure such as fishing and chess, and a roommate who shares the rent.
+[*][b]Work.[/b] Jobs you do yourself, with shifts and uniforms, gigs called by phone, and a career.
+[*][b]Money and credit.[/b] A credit rating from 300 to 850. A Finance app with loans, an overdraft, a card, car finance and a mortgage, and real consequences for not paying.
+[*][b]The city's economy.[/b] A bank rate, prices that rise and fall, booms and recessions, and districts with their own income.
+[*][b]Investors and the market.[/b] Investors who put money into your business for a share, and a stock market.
+[*][b]Running a business.[/b] Staff who ask for raises and may strike, insurance, marketing with results, a quarterly tax return and licences. A rota planner that forecasts customers and shows what each further hire would add.
+[*][b]Growing a business.[/b] A cleaning crew shared between shops. Brands and franchises. Online shops that sell from your real stock. Selling a business for what it is worth.
+[*][b]Property.[/b] Buy, let, repair and sell buildings, run an estate agency, own or lease a hotel, and put your own cars out on hire.
+[*][b]Tools.[/b] A Planner and a Guide on your phone, four presets (Relaxed, Standard, Realistic, Hardcore), tables that sort and filter, settings export and import, every key rebindable, and a tool that takes the mod out of a save.
 [/list]
-
-[b]Accidents and emergency services[/b]
-[list]
-[*]Traffic accidents near you, with police, an ambulance, paramedics, a stretcher and a taped-off road.
-[*]People hit by a car fall and can be hurt or killed. So can you, short of dying: the worst is a trip to hospital.
-[*]Fires in cars, bins and shopfronts, with a fire engine and crew.
-[*]A 911 contact on your phone for accidents, crimes and fires.
-[*]Accidents come from drivers you can watch go wrong: speeders, red-light runners, late brakers and drunks at night. They may crash where it happens, run somebody down, drive off and be chased, or be pulled over.
-[*]Traffic sees people in the road: cars brake for anyone in their way, sound the horn, wait and drive on.
-[/list]
-
-[b]Police and courts[/b]
-[list]
-[*]Street crime near you, and pickpockets, muggers, break-ins and scam calls against you.
-[*]Police stops for red lights, speeding and reckless driving, pursuits, and officers on the beat.
-[*]A police station in each district, arrest, a holding cell and a record that follows you.
-[*]Courts: bail, a lawyer, a hearing, fines, community service, prison and civil claims.
-[*]Driving licences: a driving school, a theory test, a driven test, penalty points and roadside checks.
-[/list]
-
-[b]City life[/b]
-[list]
-[*]People at work and about their day on the pavements, and a coffee cart you can buy from.
-[*]Markets, parades, protests, fun runs, film shoots and fireworks on closed roads.
-[*]Weather that changes grip, traffic, accidents and energy.
-[*]A mayor, elections, city policies and building sites that progress over days.
-[*]Chess, fishing, a night out, sights to see, clothes to buy, city sounds and a photo mode.
-[/list]
-
-[b]Home and family[/b]
-[list]
-[*]Hygiene, stress, a tidy flat, cooking, sleep, fitness, illness and a doctor.
-[*]Small things that happen to you, more than 300 of them, without repeats until all have been seen.
-[*]People to get to know, things to do together, and a morning paper about your city.
-[*]A partner who moves in, an engagement, a wedding, children and relatives.
-[*]A roommate: put up a notice or ask a friend. They pay a share of the rent every week and are at home when their hours say so.
-[/list]
-
-[b]Work and business[/b]
-[list]
-[*]Seven jobs you do yourself: flyers, courier, ride-hail, cleaner, shelf stocker, drinks cart and busker. Each is worked in the game's own panels, and most can be left to the game's clock for a little less pay.
-[*]Careers with six employers: a rota, reviews, promotion and a CV.
-[*]Pressure on the businesses you run: rivals, a protection racket, inspections, staff, suppliers and an audit.
-[/list]
-
-[b]Money and credit[/b]
-[list]
-[*]A credit rating from 300 to 850, worked out from how you pay your loans, what you owe, and your fines and court record. Banks lend more and charge less as it rises. Under 580 no bank lends.
-[*]Finance, an app on your phone: your money, your rating and what moves it, your accounts and your cash flow, and loans without a trip to the bank.
-[*]An overdraft, a credit card, a business loan against a shop's takings, car finance and a mortgage.
-[*]Not paying has steps: a reminder, a late fee, a higher rate, collections, repossession and a claim in court. How far it goes follows the preset.
-[*]A lender of last resort when the banks say no, and ways out of debt: a payment arrangement or bankruptcy.
-[/list]
-
-[b]The city's economy[/b]
-[list]
-[*]A central bank that sets a rate each month. Bank offers, overdrafts and cards follow it.
-[*]Prices that rise or fall, with rents, wages, wholesale prices and takings following them.
-[*]Booms, slowdowns and recessions that last months. A new save starts with three steady months.
-[*]Districts with an income level: price above what a district will bear and customers stay away.
-[*]Wholesale prices that move with the season, the weather and events. The paper announces a shortage or a glut a day ahead.
-[/list]
-
-[b]Investors and the market[/b]
-[list]
-[*]A tycoon may offer money for a share of a business that does well. Accept, refuse or counter.
-[*]Pitch to angel investors, tycoons and venture firms. They ask questions and check your figures against your books.
-[*]A stock market of the city's companies, moved by the day's news, with a commission and dividends.
-[*]Ventures, an app on your phone for all of it, with what your buildings earn.
-[/list]
-
-[b]Running a business[/b]
-[list]
-[*]Staff with a going rate by job and district: raise requests, offers from rivals, strikes, overtime and sick pay.
-[*]Insurance against fire, theft and an inspector's fine, with claims.
-[*]Marketing campaigns with a cost, an end and a report of what they brought.
-[*]A quarterly return, an accountant, and cash off the books with an audit risk that grows.
-[*]Licences that cost money and run out.
-[*]Company, an app on your phone for all of it.
-[*]A staff rota planner: the customer forecast for each hour, the opening hours that pay for their staff, who to hire, and a rota at a press.
-[*]A cleaning service: cleaners shared between your businesses on a round, and cleaning contracts from other businesses.
-[*]Selling a business for what it is worth, to buyers who make offers with their own terms.
-[/list]
-
-[b]Growing a business[/b]
-[list]
-[*]Brands: shops of one type trade under one name, with recognition in each district and standards they share.
-[*]Franchises: applicants open shops under your brand and pay an entry fee and a share of their takings.
-[*]Online shops: orders from the whole city, picked from your real stock by your staff and sent by your vans or a courier.
-[*]Property, an app on your phone: buy, let, repair and sell buildings, or run an estate agency.
-[*]Own or lease one of the city's hotels, and put your own cars out on hire.
-[/list]
-
-[b]Getting around[/b]
-[list]
-[*]A minimap on screen while you are out in the city, and a GPS: a route along the roads to your destination, with the next turn and the distance left.
-[*]Bus stops, bus routes and fares: click a stop and choose any stop in the city from a list. Where a street has room a bus pulls into a marked bay. The subway is a journey with a wait.
-[*]A taxi called from your phone to where you are.
-[*]Hotels to stay in, and holidays booked at the travel agencies.
-[*]The mod's places on the city map, each with its own filter.
-[*]The minimap shows the city's buildings and water under the roads.
-[/list]
-
-[b]The mod's own tools[/b]
-[list]
-[*]Planner, an app on your phone that lists what you have to do today and in the week ahead, with reminders and your own notes.
-[*]Guide, an app on your phone with a page for every feature: what it is, how to start it, what it costs and which keys it uses.
-[*]Four presets (Relaxed, Standard, Realistic, Hardcore), settings export and import, and every key rebindable.
-[*]A tool that takes the mod out of a save, with a backup first.
-[*]Every table in Finance, Ventures, Company and the Planner sorts by its headings, filters by kind and ends in a line of totals.
-[/list]
+The Guide in the game has a page for every feature: what it is, how to start it and what it costs.
 
 [h1]How to start[/h1]
 [list]
