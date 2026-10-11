@@ -596,6 +596,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyCompanyHide = v)
                 .AddToggle(Settings.EconomyCompanyLicencesId, "reallife_co_opt_licences", Settings.EconomyCompanyLicences,
                     v => Settings.EconomyCompanyLicences = v)
+                .AddToggle(Settings.EconomyRotaId, "reallife_rota_enabled", Settings.EconomyRota,
+                    v => Settings.EconomyRota = v)
                 .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
                     v => Settings.EconomyCompanyLevel = v)
@@ -608,6 +610,9 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_co_test_audit", () => Economy.CompanyDirector.Instance?.TestAudit())
                 .AddButton("reallife_co_test_licence", () => Economy.CompanyDirector.Instance?.TestLicence())
                 .AddButton("reallife_co_test_back", () => Economy.CompanyDirector.Instance?.TestBack())
+                .AddButton("reallife_rota_test_open", () => Economy.CompanyDirector.Instance?.TestRotaOpen())
+                .AddButton("reallife_rota_test_fill", () => Economy.CompanyDirector.Instance?.TestRotaFillAll())
+                .AddButton("reallife_rota_test_back", () => Economy.CompanyDirector.Instance?.TestRotaBackAll())
                 .AddSplitter()
                 .AddHeader("reallife_nav_header")
                 .AddToggle(Settings.MinimapId, "reallife_nav_minimap", Settings.Minimap,

@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Economy
 {
     /// <summary>
     /// What the Company app shows, in the game's frame (GameUi.AppShell, copied from MyEmployees) as Finance, the
-    /// Planner and the Guide are, with Finance's table (FinanceTable, the game's own BaTable). Five tabs over the
+    /// Planner and the Guide are, with Finance's table (FinanceTable, the game's own BaTable). Six tabs over the
     /// table on the right, and on the left the white box with the one thing picked:
     ///
     ///   Overview            each business: its district, yesterday's profit by the game's books, what needs an answer
@@ -19,6 +19,8 @@ namespace RealLifeOverhaul.Economy
     ///   Cover               claims that wait, then each business's three kinds of cover; pick one for quotes
     ///   Marketing           each business's campaign, then the last eight reports
     ///   Tax and licences    the return, the accountant, cash off the books, and every licence a business needs
+    ///   Rota                every place with staff; pick one for its forecast, the hours worth opening, the people it
+    ///                       takes and the button that fills its rota; pick a day of it for that day's hours
     ///
     /// A list goes in the table, which scrolls; the white box, which does not, shows only the one thing picked, with a
     /// Back button to the tab's own page. Each tab's page is in its own file (CompanyApp.Staff.cs and its neighbours).
@@ -30,7 +32,7 @@ namespace RealLifeOverhaul.Economy
     {
         private const float WidthA = 620f, WidthB = 500f, WidthC = 300f, WidthD = 300f;
 
-        private static readonly string[] TabKeys = { "reallife_co_tab_overview", "reallife_co_tab_staff", "reallife_co_tab_cover", "reallife_co_tab_marketing", "reallife_co_tab_tax" };
+        private static readonly string[] TabKeys = { "reallife_co_tab_overview", "reallife_co_tab_staff", "reallife_co_tab_cover", "reallife_co_tab_marketing", "reallife_co_tab_tax", "reallife_rota_tab" };
         private static readonly string[] ColumnNames = { "ColumnA", "ColumnB", "ColumnC", "ColumnD" };
         private static readonly float[] ColumnWidths = { WidthA, WidthB, WidthC, WidthD };
         private static readonly string[][] ColumnKeys =
@@ -39,7 +41,8 @@ namespace RealLifeOverhaul.Economy
             new[] { "reallife_co_col_name", "reallife_co_col_business", "reallife_co_col_pay", "reallife_co_col_standing" },
             new[] { "reallife_co_col_business", "reallife_co_col_cover", "reallife_co_col_insurer", "reallife_co_col_premium" },
             new[] { "reallife_co_col_business", "reallife_co_col_campaign", "reallife_co_col_until", "reallife_co_col_effect" },
-            new[] { "reallife_co_col_item", "reallife_co_col_what", "reallife_co_col_until", "reallife_co_col_state" }
+            new[] { "reallife_co_col_item", "reallife_co_col_what", "reallife_co_col_until", "reallife_co_col_state" },
+            new[] { "reallife_co_col_business", "reallife_rota_col_hours", "reallife_rota_col_staff", "reallife_rota_col_rota" }
         };
 
         public static IModLogger Logger;
@@ -159,6 +162,7 @@ namespace RealLifeOverhaul.Economy
         public void Closed()
         {
             _ready = false;
+            _director.RotaLeft();
         }
 
         /// <summary>The director says something has changed: the page is written again if it is showing.</summary>
@@ -250,6 +254,9 @@ namespace RealLifeOverhaul.Economy
                                 WriteMarketing(box, state, day, ref selected);
                             }
                             break;
+                        case CompanyDirector.TabRota:
+                            WriteRota(box, ref selected);
+                            break;
                         case CompanyDirector.TabTax:
                             if (!_director.On(CompanyPart.Tax) && !_director.On(CompanyPart.Licences))
                             {
@@ -286,6 +293,7 @@ namespace RealLifeOverhaul.Economy
         partial void WriteMarketing(InfoBox box, CompanyState state, int day, ref string selected);
         partial void WriteTax(InfoBox box, CompanyState state, int day, ref string selected);
         partial void WriteLicences(InfoBox box, CompanyState state, int day, ref string selected);
+        partial void WriteRota(InfoBox box, ref string selected);
 
         // A tab whose part is switched off, or stopped by a fault, says so and shows nothing else.
         private bool PartPage(CompanyPart part, InfoBox box)

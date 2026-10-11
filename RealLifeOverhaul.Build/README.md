@@ -6682,3 +6682,123 @@ game's tax notice shows the deductible labels as words. That business pressure's
 read well together when both features are on, and what the player sees when a campaign's customers are cut by
 business pressure's bounds in a boom. That a tax case opened by a summons is heard as Justice's other summonses are.
 The milliseconds of the day's pass in a late save.
+
+## Economy: the staff rota planner
+
+A tab of the Company app, "Rota" (`Scripts/Economy/Company/Rota*.cs`, `CompanyDirector.Rota.cs`, `CompanyApp.Rota.cs`;
+option "Staff rota planner", id `economy_rota`, under "Real Life Overhaul: Running a business", on by default). For
+every place the player runs it shows the game's own customer forecast for each hour of the week, the opening hours
+that pay for their staff, the people those hours take against the people there are, and it writes a week's rota when
+the player presses a button. It keeps nothing in a save and has no Harmony patch.
+
+```
+Economy/Company/        the first five are game-free and compiled by EconomyCheck
+  RotaModel               the planner's numbers (the game's limits among them) and its plain data: problem, plan, demand
+  RotaSolver              the rota itself: limits and goals, the start, placing an hour, a demand met or not
+  RotaSolver.Shifts       whole-week stations, shifts for those with a least number of hours or days, shifts by value
+  RotaSolver.Improve      the improving pass under a fixed budget of moves, and the rating of a rota
+  RotaAdvice              an hour's crew, the hours worth opening, what each hour at each station is worth, a week in
+                          money, the people a week takes, a station that is missing
+  RotaGame                the places, what a business was worked out from, names; everything from the game is here
+  RotaGame.Read           one business into plain numbers: stations, skills, the week it keeps, customers, worth, fees
+  RotaGame.Demands        the game's rota demands, each asked of the demand itself
+  RotaGame.Write          the rota and hours written, the week as it was kept and put back
+  CompanyDirector.Rota    the list of places, the one business worked out and kept, the buttons, the Planner's row, tests
+  CompanyApp.Rota         the tab: the places, one business's week, one day's hours
+  RotaGuide               the Guide page's figures, from RotaModel
+```
+
+### What the game already had, and what was therefore built
+
+The game has a schedule screen and, with an HR manager at a headquarters, an auto fill (`ScheduleAutoFiller`, Google
+OR-Tools on a worker thread) that puts the employees of a business on its stations for the hours it is open and keeps
+their demands. It is left as it is. It does not say which hours are worth opening, how many customers will come, how
+many people that takes or which stations are worth staffing. Those are what was built, with a rota of the mod's own
+making (no OR-Tools: the mod references nothing new).
+
+### How each kind of place is planned
+
+| Place | Forecast | Hours | Rota |
+| --- | --- | --- | --- |
+| A shop of any type on a retail building, a gym, a hairdresser, a nightclub, a casino, a cinema, a theatre | the game's calculator for it (`CustomerEntriesCalculatorFactory`): `GetCustomersByHour` for each of 168 hours | advised | service stations by the customers each adds, support stations while open, cleaning by the dirt |
+| An office that takes customers (a law firm, an agency) | the game's office calculator without its cap at the desks staffed now | advised | one customer a staffed desk an hour, as `OfficeBusinessSimulator` serves them |
+| A factory, or any type the game sends no customers | none | the hours it keeps | every work station every open hour, cleaning by the stations at work |
+| A headquarters | none | the game's office hours (its screen refuses to change them) | one person a desk for the whole week, the game's own rule there |
+| A warehouse | none | none | none: the page says the game gives its drivers their vehicles |
+
+A place with no assignable station, or with nobody assigned, says so in a sentence. A business the game's figures
+cannot be read for is left out for the session with one line in Player.log, and its page says so.
+
+### What is read, and why nothing of the mod's is counted twice
+
+- **Customers**: `GetInitialCustomers` and `GetCustomersByHour`, which hold capacity, the promotion figure and the
+  type's day and hour factors. The city's economy, a campaign, overtime and a strike of the mod's change customers by
+  writing that promotion figure (`BusinessGame.Footfall`, through `Wiring/CompanyLinks`), so the game's figure already
+  has them for today and they are not added again. A weekday on which a campaign or a strike will have ended or begun
+  is scaled by the company's own rules (`CompanyDirector.RotaScales`).
+- **What a customer brings**: the business's `orderHistory` of the last 7 days (revenue, wholesale cost, customers);
+  with fewer than 20 customers on it, the products on sale at their prices by the arithmetic of
+  `CustomerEntriesCalculatorRetail`. The page says which.
+- **Stations**: `BuildingRegistration.GetAssignableItems`; what one serves an hour by
+  `ItemHelper.GetItemsSortedByCapacity` (the rule of `RetailBusinessSimulator.GetMaxCustomerCapacityThisHour`). A
+  station that lacks one of its furniture requirements is passed over, as the game's simulation passes over it.
+- **Skills**: one of the employee's skills among the item's `suitableSkills`; how well by skill and satisfaction.
+- **Demands**: `HoursWorkingPerWeek` and `WorksOnItem` by their public members; `DaysWorkingPerWeek`, `FreeOnDays`,
+  `HasNoShiftBetweenHours` and `NoSpecificShift` by asking the demand's own `Fulfilled` or `AcceptsWorkStation` about
+  an employee who is nobody with a made-up week. No private member of the game is read.
+- **Fees**: the cinema's and the theatre's licensing fee for a day it opens. **Cleaning**: the game's dirt figures.
+
+### The rota (`RotaSolver`)
+
+Never broken: a skill for the station, one place at a time, a shift of at most 12 hours, a day of at most 14, one
+person for the week at a headquarters desk. Wanted, in this order: the most value covered, the most demands met
+(weighed 2, 3 and 5 as `JobDemand.Impact`), the lowest wages, few and long shifts. Demands that set an upper end are
+limits; a least number of hours, a number of days and a station asked for are goals. If hours stay uncovered, demands
+that are not of high priority stop being limits (the game's own `skipOptional` step) and give way only where that
+covers an hour; those of high priority never do. Two starts are made and the better kept; the improving pass counts
+its moves against a fixed budget, so the same business always gets the same rota.
+
+### What is written, and how it is undone
+
+Only on the player's button, after the game's own confirm dialogue where a rota is written over or hours change:
+`ScheduleDay.workShifts`, and with "Use these hours and fill the rota" `isOpen` and `openingHourSlots`. Then exactly
+what the game does after its own auto fill (`ScheduleAutoFiller.ApplyResult`, `ScheduleAutoFillerHelper.OnCompleted`)
+and when its schedule screen closes (`BizManSchedule.OnDisable`); a fill of the game's own still running for the
+business is stopped first (`AbortAutoFillForBusiness`). Delivery drivers' shifts are not touched. The week as it was
+is kept in memory until the Company app closes, and "Put the old rota back" restores it.
+
+### Cost
+
+Nothing runs per frame, per second or per hour. The list of places is read on the day event, when the app opens and
+after a rota is written: one walk over the save's buildings and one over its employees. A business is worked out
+when it is picked on the tab and kept until something it was worked out from changes (`RotaGame.Stamp`). Measured by
+`EconomyCheck` on the largest business it is asked to bear (40 stations, 60 employees, 7 days, 4,480 wanted hours): a
+rota in about 1.5 ms on average and under 2.5 ms at the slowest of forty runs, the whole advice with its rotas in under 3 ms,
+and nothing allocated once the arrays have grown. Those are figures of the .NET runtime the checker runs on; the game's
+Mono is slower and was not measured. The rota is made on the main thread: there is no worker thread to guard.
+
+### Test tools
+
+Three buttons: open the rota of the busiest business, fill every business's rota (without the dialogue; the weeks as
+they were are kept), and put every rota back.
+
+### Checks
+
+`EconomyCheck` compiles the five game-free files and runs 167 checks of them (`RotaChecks.cs`), 1,011 in all: every
+kind of demand; the limits on a shift and a day; one place at a time; skills; the headquarters rule; what gives way
+and what never does, with the reason told; no employees, no stations, closed all week, no customers; an hour's crew;
+the hours advised (never an hour that loses money, at most two blocks of two hours or more, a day's fee); cleaning;
+the people a week takes; a missing station; a week in money; the same business twice; the time of the largest
+business; and 240 generated businesses against a plain rota filled hour by hour in the order of the week. Against
+that plain rota it never covers less value. With every demand of high priority it never leaves more demands unmet,
+and covers at least as many hours in 116 of 120 businesses (in the other four it covers fewer hours that are worth
+more). With demands of every priority it covers more hours in 51 of 120 and leaves more demands unmet in 13 of them,
+each time for more value covered: optional demands give way to cover an hour, as they are meant to.
+
+### Not checked in the game (the game could not be run)
+
+That six tabs fit the Company app's bar. That the week's box, with its lines and up to three rows of buttons, fits
+the white box, and that "Use these hours and fill the rota" fits a button. That the game's confirm dialogue shows over
+the phone. That each of the game's demands answers the made-up week as its decompiled code says. That the game's
+schedule screen shows a written rota as it shows its own. What the forecast is against a day really played. The
+milliseconds on the game's Mono.
