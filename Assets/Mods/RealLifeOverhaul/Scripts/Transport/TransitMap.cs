@@ -846,6 +846,8 @@ namespace RealLifeOverhaul
         // The strip from one place along the stop's lane to another (metres from the pole): road at the lane's level right
         // up to where the bus's door side will be, the kerb keeping its line, and nothing fixed standing in it. Null if so,
         // else why not. Two rays and a sample every four metres or so, and one box.
+        private static readonly Collider[] StripHits = new Collider[1];
+
         private static string StripBad(TransitStop stop, Vector3 right, float offset, float from, float to)
         {
             Vector3 lane = stop.Lane;
@@ -867,10 +869,18 @@ namespace RealLifeOverhaul
                 }
             }
             float near = BusBay.LaneHalf + 0.1f;
-            float width = stop.KerbAside - 0.05f - near;
+            // Up to where the bus's side will be (BusBay.KerbGap from the kerb), not to the kerb itself: a lamp post or a
+            // sign on the kerb's edge is not in the bus's way. What is found is named, for the log.
+            float width = stop.KerbAside - BusBay.KerbGap - near;
             Vector3 centre = lane + along * ((from + to) * 0.5f) + right * (near + width * 0.5f);
-            return Physics.CheckBox(centre + Vector3.up * 1.15f, new Vector3(width * 0.5f, 0.8f, (to - from) * 0.5f), Quaternion.LookRotation(along), _staticMask, QueryTriggerInteraction.Ignore)
-                ? "something stands in the strip" : null;
+            int found = Physics.OverlapBoxNonAlloc(centre + Vector3.up * 1.15f, new Vector3(width * 0.5f, 0.8f, (to - from) * 0.5f), StripHits, Quaternion.LookRotation(along), _staticMask, QueryTriggerInteraction.Ignore);
+            if (found == 0)
+            {
+                return null;
+            }
+            Collider first = StripHits[0];
+            StripHits[0] = null;
+            return "something stands in the strip: '" + (first != null ? first.name + "' on " + LayerMask.LayerToName(first.gameObject.layer) : "?'");
         }
 
         // How far the kerb is from the lane's line: the pavement's edge as the navigation mesh has it, or, where the
