@@ -698,6 +698,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_family_test_page", () => Family.FamilyDirector.Instance?.TestPage())
                 .AddButton("reallife_family_test_clear", () => Family.FamilyDirector.Instance?.TestClear())
                 .AddSplitter()
+                .AddRoommates()
                 .AddControls()
                 .AddPerformance();
 
@@ -887,6 +888,7 @@ namespace RealLifeOverhaul
             _root.AddComponent<Nav.NavDirector>();   // the minimap on the HUD and the GPS: a route along the roads to the game's destination (Scripts/Navigation)
             _root.AddComponent<CivicDirector>();   // city government, elections and construction sites (Scripts/Civic): its own cast of five
             _root.AddComponent<Family.FamilyDirector>();   // a partner at home, engagement and wedding, children, relatives (Scripts/Family)
+            Roommates.RoommateDirector.Attach(_root, context.Logger);   // a roommate who shares the flat and the rent (Scripts/Home/Roommates)
             CarTuning.Logger = context.Logger;
             SpeedReading.Logger = context.Logger;
             CarMeasure.Logger = context.Logger;

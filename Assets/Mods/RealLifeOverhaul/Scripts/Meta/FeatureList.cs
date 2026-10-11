@@ -833,6 +833,8 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_economy_rota_about").Help("reallife_guide_economy_rota")
                 .Owns(Settings.EconomyRotaId)
                 .Test("reallife_rota_test_open", "reallife_rota_test_fill", "reallife_rota_test_back"));
+
+            Roommates.RoommateGuide.Register();   // sharing the flat: the feature, its option, its save line, its tests and its Guide figures (Scripts/Home/Roommates)
         }
 
         private static string Whole(int value)
