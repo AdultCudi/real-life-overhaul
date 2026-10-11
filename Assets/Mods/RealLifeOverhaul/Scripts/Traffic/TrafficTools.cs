@@ -301,9 +301,17 @@ namespace RealLifeOverhaul
         /// here first: a car goes back able to move (not kinematic), without an empty scripted route (only
         /// ever a marker of ours; with one the game never clears a stop or takes the car off the road) and
         /// standing still, so that the traffic system starts it from rest.
+        /// It can also go back on the move (<paramref name="carry"/>). The traffic system keeps no speed of
+        /// its own for a car: every physics step it reads the body's velocity and builds the next one on it
+        /// (TrafficManager.FixedUpdate fills vehicleVelocity from the rigidbodies; DriveJob.Execute starts from
+        /// its length), and it gives a car it has just put on the road a velocity itself (NewVehicleAdded). So
+        /// a car handed back with a velocity along its lane simply drives on at that pace, and is slowed with
+        /// ordinary braking if that is over its lane's limit. Only a car with clear road ahead may go back
+        /// this way: the action list is emptied below, and with it anything its sensor knew.
         /// </summary>
         /// <param name="by">Who is letting it go, for the log.</param>
-        public static void ReturnToTraffic(VehicleComponent car, string by = "a scene")
+        /// <param name="carry">The velocity it keeps, flat along its lane; zero (the default) to go back standing.</param>
+        public static void ReturnToTraffic(VehicleComponent car, string by = "a scene", Vector3 carry = default)
         {
             try
             {
@@ -321,6 +329,14 @@ namespace RealLifeOverhaul
                     traffic.SetVehicleTargetWaypoint(car, ahead);
                 }
                 traffic.ForceSetVehicleActiveAction(car, SpecialDriveActionTypes.Forward);
+                carry.y = 0f;
+                if (carry.sqrMagnitude > 1f && car.rb != null)
+                {
+                    car.rb.velocity = carry;
+                    Touch(car, "handed back to traffic on the move");
+                    LogRelease(car, "handed back to traffic at " + (carry.magnitude * 3.6f).ToString("F0") + " km/h", by);
+                    return;
+                }
                 Touch(car, "handed back to traffic");
                 LogRelease(car, "handed back to traffic", by);
             }

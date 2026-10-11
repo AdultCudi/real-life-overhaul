@@ -256,7 +256,8 @@ namespace RealLifeOverhaul
         /// <param name="resumeTraffic">False when traffic itself has been shut down (indoors, fast-forward).</param>
         /// <param name="remove">Take the car off the road instead of letting it drive away.</param>
         /// <param name="quiet">Drive away with the lights on but the siren off (a chase called off).</param>
-        public void Release(bool resumeTraffic, bool remove, bool quiet = false)
+        /// <param name="rolling">It goes back to traffic at the speed it has, instead of from rest (TrafficTools.ReturnToTraffic says when that is sound).</param>
+        public void Release(bool resumeTraffic, bool remove, bool quiet = false, bool rolling = false)
         {
             if (!InUse)
             {
@@ -265,6 +266,8 @@ namespace RealLifeOverhaul
             VehicleComponent car = Car;
             bool held = TrafficTools.IsHeld(car);
             bool drivesOff = held && resumeTraffic && !remove && TrafficTools.Ready;
+            // (Read before the driver is stopped, which leaves the body with no motion at all.)
+            Vector3 carry = rolling && drivesOff && car != null && car.rb != null && !car.rb.isKinematic ? car.rb.velocity : Vector3.zero;
 
             if (held)
             {
@@ -325,7 +328,7 @@ namespace RealLifeOverhaul
             {
                 if (drivesOff)
                 {
-                    TrafficTools.ReturnToTraffic(car, Label());
+                    TrafficTools.ReturnToTraffic(car, Label(), carry);
                 }
                 else
                 {

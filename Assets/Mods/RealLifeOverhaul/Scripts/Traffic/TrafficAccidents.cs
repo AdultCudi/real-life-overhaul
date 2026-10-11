@@ -74,6 +74,13 @@ namespace RealLifeOverhaul
         private const float TumbleReach = 14f;          // metres of clear road the roll needs ahead of the car
         private const float TumbleRadius = 16f;         // the car is frozen if it gets this far from where it started
         private const float TumbleMaxTime = 3.2f;
+        private const float ShuntLeast = 1f;            // m/s: cars that met slower than this stand where they met
+        private const float ShuntMaxTime = 1.6f;        // seconds physics has the cars of a collision on the road before they are frozen
+        private const float ShuntRestFrom = 0.25f;      // ...and the least it has them
+        private const float ShuntBraking = 9f;          // m/s2 they lose speed with (locked wheels on a dry road)
+        private const float ShuntRadius = 12f;          // metres from where they met beyond which a car is frozen at once
+        private const float ShuntBounce = 0.2f;         // of the speed they met at that they part with again
+        private const float ShuntDamping = 11f;         // per second on the vertical speed (EmergencyDriver's own figure: the traffic system's springs have no damper for a car it ignores)
         private const float TumblePlayerDistance = 35f;
         private const float RollLongest = 5.6f;         // metres: nothing longer than this rolls (vans, trucks, buses, limousines)
         private const float RollTallest = 2.1f;         // ...nor anything taller
@@ -89,7 +96,7 @@ namespace RealLifeOverhaul
         private const float CrewGrace = 14f;            // seconds a unit waits past its time for a crew still walking back
         private const float StretcherGrace = 40f;       // ...and for paramedics bringing someone back on the stretcher
 
-        private enum Phase { None, Tumbling, Active }
+        private enum Phase { None, Tumbling, Shunting, Active }
 
         // Where one attending unit is in its visit to the scene.
         // Ready: its crew is aboard and it stands lit, for seconds only: the patrol car until the scene clears round it
@@ -235,6 +242,8 @@ namespace RealLifeOverhaul
         private float _side;
         private float _tumbleRestFrom;
         private float _tumbleEnd;
+        private float _shuntRestFrom;
+        private float _shuntEnd;
 
         private Attendance _ambulance;
         private Attendance _police;
@@ -347,6 +356,11 @@ namespace RealLifeOverhaul
             if (_phase == Phase.Tumbling)
             {
                 TickTumble(now);
+                return;
+            }
+            if (_phase == Phase.Shunting)
+            {
+                TickShunt(now);
                 return;
             }
 
@@ -694,18 +708,26 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// A collision that has just happened on the road, in front of whoever is looking: the scene starts
-        /// round the two cars exactly where they met. Nothing is moved into place (the old staging puts its
-        /// second car behind its first, out of view; here both are in view and stay as they are), and the
-        /// severity is what the speed they met at makes it: low a bump, middling a crash, high a serious one
-        /// with the same roll, smoke and fire rules as any other. From there on it is the scene every accident
-        /// is: drivers out, wrecks dressed, the road closed, ambulance and patrol car, a driver who may bolt.
+        /// round the two cars where they met. Nothing is moved into place by hand (the old staging puts its
+        /// second car behind its first, out of view; here both are in view), and the severity is what the
+        /// speed they met at makes it: low a bump, middling a crash, high a serious one with the same roll,
+        /// smoke and fire rules as any other. From there on it is the scene every accident is: drivers out,
+        /// wrecks dressed, the road closed, ambulance and patrol car, a driver who may bolt.
+        /// The cars are not pinned dead at the moment of contact. Given the velocities they met with, physics
+        /// has them for a moment first (Shunting, as a severe roll has its car): they share their momentum, part
+        /// a little, slide to rest on locked wheels and are frozen there, upright. That is bounded in time
+        /// (1.6 s) and in distance (12 m), and the scene is measured only after it: the place, the heading, the
+        /// road to close, the parking for the units and the cordon all start from where the cars came to rest.
+        /// Every way out of a scene (Clear) gives a car in that state back exactly as it gives back a pinned one.
         /// </summary>
         /// <param name="first">The car that caused it. It may be one the caller was driving a moment ago (ResponseUnit.HandOver): any car still on the road will do.</param>
         /// <param name="second">The car it met, if that is an ordinary traffic car; null for a crash on its own (a wall, a parked car, the player's car).</param>
         /// <param name="closingSpeed">How fast the two were closing, in m/s.</param>
         /// <param name="noticeKey">What is said about it, by its cause; null for the usual sentence of its severity.</param>
+        /// <param name="firstVelocity">The velocity the first car has just after it struck: what it had, for a car that met another or left its lane; a little of it back the way it came, for one that met something that does not give. Zero: it stands where it is.</param>
+        /// <param name="secondVelocity">The velocity the second car had as they met.</param>
         /// <returns>False if no scene could start (another is on, traffic is not running): the caller still has the car to let go.</returns>
-        public bool BeginAt(VehicleComponent first, VehicleComponent second, float closingSpeed, string noticeKey)
+        public bool BeginAt(VehicleComponent first, VehicleComponent second, float closingSpeed, string noticeKey, Vector3 firstVelocity = default, Vector3 secondVelocity = default)
         {
             try
             {
@@ -747,16 +769,25 @@ namespace RealLifeOverhaul
                 bool tumble = _severity == Severity.Severe && Random.value < TumbleChance && Rolls(first) && CanTumble(first, player);
 
                 _leadWreck = Seize(first);
-                if (second != null)
-                {
-                    Pin(Seize(second), second.transform.position, second.transform.rotation);
-                }
+                Wreck other = second != null ? Seize(second) : null;
                 Logger?.Info($"Accident: a collision on the road, closing at {closingSpeed * 3.6f:F0} km/h: {_severity}, {_wrecks.Count} car(s), "
-                             + $"{Vector3.Distance(player, _scene):F0} m away, left where they met{(tumble ? ", lead car rolling" : "")}.");
+                             + $"{Vector3.Distance(player, _scene):F0} m away{(tumble ? ", lead car rolling" : "")}.");
                 if (tumble)
                 {
+                    if (other != null)
+                    {
+                        Pin(other, second.transform.position, second.transform.rotation);
+                    }
                     BeginTumble(first);
                     return true;
+                }
+                if (BeginShunt(first, second, firstVelocity, secondVelocity))
+                {
+                    return true;
+                }
+                if (other != null)
+                {
+                    Pin(other, second.transform.position, second.transform.rotation);
                 }
                 Pin(_leadWreck, _origin, _heading);
                 CompleteStaging(tumbled: false);
@@ -1001,6 +1032,100 @@ namespace RealLifeOverhaul
             _scene = new Vector3(rest.x, _origin.y, rest.z);
             Logger?.Info($"Accident: the rolling car came to rest {how}, {Vector3.Distance(rest, _origin):F0} m on.");
             CompleteStaging(tumbled: true);
+        }
+
+        // The cars of a collision on the road keep moving for a moment: they share their momentum (two of them), part
+        // with a fifth of the speed they met at, and turn a little. False (nothing changed) if they met too slowly
+        // for any of that to show, or a body cannot be moved by physics.
+        private bool BeginShunt(VehicleComponent first, VehicleComponent second, Vector3 firstVelocity, Vector3 secondVelocity)
+        {
+            firstVelocity.y = 0f;
+            secondVelocity.y = 0f;
+            Rigidbody lead = first.rb;
+            Rigidbody struck = second != null ? second.rb : null;
+            if (lead == null || lead.isKinematic || (struck != null && struck.isKinematic)
+                || (firstVelocity.sqrMagnitude < ShuntLeast * ShuntLeast && secondVelocity.sqrMagnitude < ShuntLeast * ShuntLeast))
+            {
+                return false;
+            }
+            float turn = Mathf.Clamp((firstVelocity - secondVelocity).magnitude * 0.06f, 0.15f, 1.1f) * _side;
+            if (struck != null)
+            {
+                float total = Mathf.Max(1f, lead.mass + struck.mass);
+                Vector3 together = (firstVelocity * lead.mass + secondVelocity * struck.mass) / total;
+                Vector3 closing = firstVelocity - secondVelocity;
+                lead.velocity = together - closing * (ShuntBounce * struck.mass / total);
+                struck.velocity = together + closing * (ShuntBounce * lead.mass / total);
+                struck.angularVelocity = Vector3.up * (-turn * 0.6f);
+            }
+            else
+            {
+                lead.velocity = firstVelocity;
+            }
+            lead.angularVelocity = Vector3.up * turn;
+            _shuntRestFrom = Time.time + ShuntRestFrom;
+            _shuntEnd = Time.time + ShuntMaxTime;
+            _phase = Phase.Shunting;
+            return true;
+        }
+
+        // Every frame while the cars of a collision are still moving (1.6 s at the most): each loses speed as on locked
+        // wheels, its vertical speed is bled off (nothing else damps the springs of a car the traffic system ignores,
+        // and it must not hop), and once all are at rest, or out of time or room, each is frozen upright where it is
+        // and the scene is built round where they came to rest.
+        private void TickShunt(float now)
+        {
+            float step = Time.deltaTime;
+            bool moving = false;
+            bool strayed = false;
+            for (int i = 0; i < _wrecks.Count; i++)
+            {
+                VehicleComponent car = _wrecks[i].Car;
+                Rigidbody body = car != null ? car.rb : null;
+                if (body == null || body.isKinematic)
+                {
+                    continue;
+                }
+                Vector3 velocity = body.velocity;
+                float fall = velocity.y * Mathf.Exp(-ShuntDamping * step);
+                velocity.y = 0f;
+                velocity = Vector3.MoveTowards(velocity, Vector3.zero, ShuntBraking * step);
+                body.velocity = new Vector3(velocity.x, fall, velocity.z);
+                float spin = Mathf.MoveTowards(body.angularVelocity.y, 0f, 1.2f * step);
+                body.angularVelocity = Vector3.up * spin;
+                moving |= velocity.sqrMagnitude > 0.09f || Mathf.Abs(spin) > 0.1f;
+                Vector3 offset = body.position - _origin;
+                strayed |= offset.x * offset.x + offset.z * offset.z > ShuntRadius * ShuntRadius || offset.y < -3f;
+            }
+            if (!strayed && now < _shuntEnd && (moving || now < _shuntRestFrom))
+            {
+                return;
+            }
+
+            // Where each came to rest is where it stands for the scene: on its wheels, turned as it turned.
+            for (int i = 0; i < _wrecks.Count; i++)
+            {
+                VehicleComponent car = _wrecks[i].Car;
+                if (car != null)
+                {
+                    Transform at = car.transform;
+                    Pin(_wrecks[i], at.position, Quaternion.Euler(0f, at.rotation.eulerAngles.y, 0f));
+                }
+            }
+            VehicleComponent first = _leadWreck != null ? _leadWreck.Car : null;
+            if (first == null)
+            {
+                Clear(resumeTraffic: true, announce: false, why: "the car that crashed was lost");
+                return;
+            }
+            Vector3 rest = first.transform.position;
+            float moved = Vector3.Distance(rest, _origin);
+            _origin = rest;
+            _heading = first.transform.rotation;
+            _scene = _origin;
+            Logger?.Info($"Accident: the cars came to rest {moved:F1} m on from where they met, after {ShuntMaxTime - Mathf.Max(0f, _shuntEnd - now):F1} s"
+                         + $"{(strayed ? " (frozen early: one had gone too far)" : string.Empty)}; the scene is measured from there.");
+            CompleteStaging(tumbled: false);
         }
 
         private static readonly List<Collider> RestScratch = new List<Collider>(16);

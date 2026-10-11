@@ -17,18 +17,25 @@ namespace RealLifeOverhaul
     /// distance the car covers before the next look. That is a few dozen subtractions, no
     /// physics query and no allocation, and none of it runs while parked or on foot.
     /// What happens to whoever is hit is PedestrianIncidents' business.
-    /// One traffic car can be watched in exactly the same way (Watch): the one reckless driver
-    /// of Traffic/Reckless, or the car somebody has stepped out in front of. The game lets its
-    /// own cars pass through people just as it does the player's, so for that one car the same
-    /// look is taken with its box, and whoever is inside it is reported to PedestrianIncidents
-    /// as hit by traffic, at the car's real speed. The same few dozen subtractions again, and
-    /// only while a car is being watched.
+    /// A few traffic cars can be watched in exactly the same way: the one reckless driver of
+    /// Traffic/Reckless and the car somebody has stepped out in front of (Watch, until Unwatch),
+    /// and the cars Traffic/Solid finds within a second of somebody in their way (Glance, which
+    /// runs out by itself). Eight at the most, never the whole traffic. The game lets its own
+    /// cars pass through people just as it does the player's, so for each of those few the same
+    /// look is taken with its box. Whoever is inside it at 8 km/h or more is reported to
+    /// PedestrianIncidents as hit by traffic, at the car's real speed, and the reckless drivers'
+    /// director is told which car did it (RecklessDrivers.Struck: the one path for every car that
+    /// has hit somebody). Slower than that it is a bump: they turn on the car and shout
+    /// (HornReactions.Shout) and nobody falls. The same few dozen subtractions for each watched
+    /// car, and only while one is being watched.
     /// </summary>
     public class CarStrikes : MonoBehaviour
     {
         private const float MinSpeed = 1.4f;        // m/s, about 5 km/h: slower than this the car only nudges
         private const float PersonRadius = 0.3f;
         private const float LookupInterval = 0.5f;  // how often it asks which car the player is driving
+        private const int WatchMost = 8;            // traffic cars watched at once
+        private const float BumpEvery = 3f;         // seconds between two shouts at one car that keeps nudging somebody
 
         private static readonly List<Collider> ColliderScratch = new List<Collider>();
 
@@ -44,16 +51,34 @@ namespace RealLifeOverhaul
         private bool _driving;
         private bool _skip;
 
-        // The one traffic car watched as well, if any.
-        private VehicleComponent _watched;
-        private Rigidbody _watchedBody;
-        private Vector3 _watchedCentre;
-        private Vector3 _watchedHalf;
-        private int _watchedDown;       // people it has thrown down since they were last asked for
+        // The few traffic cars watched as well.
+        private sealed class Watched
+        {
+            public VehicleComponent Car;    // null: free
+            public Rigidbody Body;
+            public Vector3 Centre;
+            public Vector3 Half;
+            public bool Kept;               // named by Watch: watched until Unwatch
+            public float Until;             // named by Glance: watched until then
+            public float NextBump;
+        }
+
+        private readonly Watched[] _watched = new Watched[WatchMost];
+        private int _watching;              // how many of them are in use
+
+        // Each pooled traffic car's box, measured the first time it is asked for (by its index in the pool).
+        private Vector3[] _boxCentre = new Vector3[0];
+        private Vector3[] _boxHalf = new Vector3[0];
+        private bool[] _boxKnown = new bool[0];
+        private object _boxPool;            // the traffic system the boxes were measured in
 
         private void Awake()
         {
             Instance = this;
+            for (int i = 0; i < _watched.Length; i++)
+            {
+                _watched[i] = new Watched();
+            }
         }
 
         private void OnDestroy()
@@ -80,8 +105,7 @@ namespace RealLifeOverhaul
                 // Without this nobody is run over; better that than a fault every physics step.
                 Logger?.Error(e);
                 Logger?.Warn("Pedestrian collisions: switched off for this session after the error above.");
-                _watched = null;
-                _watchedBody = null;
+                Forget();
                 enabled = false;
             }
         }
@@ -96,68 +120,179 @@ namespace RealLifeOverhaul
             }
             if (_driving && _body != null)
             {
-                Sweep(_body, _centre, _half, null, now);
+                Sweep(_body, _centre, _half, null, null, now);
             }
-            if ((object)_watched != null)
+            for (int i = 0; i < _watched.Length && _watching > 0; i++)
             {
-                // (Taken off the road, or handed out again by the pool, it is nobody's to watch.)
-                if (_watched == null || _watchedBody == null || !_watched.gameObject.activeInHierarchy)
+                Watched slot = _watched[i];
+                if ((object)slot.Car == null)
                 {
-                    _watched = null;
-                    _watchedBody = null;
+                    continue;
                 }
-                else
+                // (Taken off the road, handed out again by the pool, or its glance has run out: nobody's to watch.)
+                if (slot.Car == null || slot.Body == null || !slot.Car.gameObject.activeInHierarchy || (!slot.Kept && now > slot.Until))
                 {
-                    Sweep(_watchedBody, _watchedCentre, _watchedHalf, _watched, now);
+                    Free(slot);
+                    continue;
                 }
+                Sweep(slot.Body, slot.Centre, slot.Half, slot.Car, slot, now);
             }
         }
 
-        // ---------------------------------------------------------------- a traffic car watched as well
+        // ---------------------------------------------------------------- traffic cars watched as well
 
         /// <summary>
-        /// Watches one traffic car as the player's is watched, until Unwatch or until it leaves the road. Its
-        /// size is measured once, here. One car at a time: a second call replaces the first.
+        /// Watches a traffic car as the player's is watched, until Unwatch or until it leaves the road. If all
+        /// eight places are taken by cars that were named this way, it is not watched (that has never been more
+        /// than two: the reckless car and the car somebody stepped out in front of).
         /// </summary>
         public void Watch(VehicleComponent car)
         {
-            if (car == null || car.rb == null)
+            Watched slot = Place(car);
+            if (slot != null)
             {
-                Unwatch();
+                slot.Kept = true;
+            }
+        }
+
+        /// <summary>
+        /// Watches a traffic car for a moment: until <paramref name="until"/> (Time.time), unless it is named again
+        /// before then. For the cars that are about to reach somebody; they need no Unwatch.
+        /// </summary>
+        public void Glance(VehicleComponent car, float until)
+        {
+            Watched slot = Place(car);
+            if (slot != null && until > slot.Until)
+            {
+                slot.Until = until;
+            }
+        }
+
+        // The car's place among the watched: the one it has, or a free one, or one whose glance is the oldest.
+        private Watched Place(VehicleComponent car)
+        {
+            if (car == null || car.rb == null || !enabled)
+            {
+                return null;
+            }
+            Watched free = null;
+            Watched oldest = null;
+            for (int i = 0; i < _watched.Length; i++)
+            {
+                Watched slot = _watched[i];
+                if ((object)slot.Car == car)
+                {
+                    return slot;
+                }
+                if ((object)slot.Car == null)
+                {
+                    free = free ?? slot;
+                }
+                else if (!slot.Kept && (oldest == null || slot.Until < oldest.Until))
+                {
+                    oldest = slot;
+                }
+            }
+            Watched take = free ?? oldest;
+            if (take == null)
+            {
+                return null;
+            }
+            if ((object)take.Car == null)
+            {
+                _watching++;
+            }
+            take.Car = car;
+            take.Body = car.rb;
+            take.Kept = false;
+            take.Until = 0f;
+            take.NextBump = 0f;
+            Box(car, out take.Centre, out take.Half);
+            return take;
+        }
+
+        /// <summary>Stops watching a car named by Watch (a glance at it, if there is one, runs out by itself).</summary>
+        public void Unwatch(VehicleComponent car)
+        {
+            for (int i = 0; i < _watched.Length; i++)
+            {
+                Watched slot = _watched[i];
+                if ((object)slot.Car != null && (object)slot.Car == car)
+                {
+                    slot.Kept = false;
+                    if (Time.time > slot.Until)
+                    {
+                        Free(slot);
+                    }
+                }
+            }
+        }
+
+        public bool Watching(VehicleComponent car)
+        {
+            for (int i = 0; i < _watched.Length && car != null; i++)
+            {
+                if ((object)_watched[i].Car == car)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>How many traffic cars are being watched now.</summary>
+        public int WatchedCount => _watching;
+
+        private void Free(Watched slot)
+        {
+            slot.Car = null;
+            slot.Body = null;
+            slot.Kept = false;
+            slot.Until = 0f;
+            _watching = Mathf.Max(0, _watching - 1);
+        }
+
+        private void Forget()
+        {
+            for (int i = 0; i < _watched.Length; i++)
+            {
+                _watched[i].Car = null;
+                _watched[i].Body = null;
+                _watched[i].Kept = false;
+            }
+            _watching = 0;
+        }
+
+        /// <summary>
+        /// A pooled traffic car's box in its own space: the middle of its body and half its width, height and
+        /// length. Measured from its colliders the first time it is asked for and remembered by the car's place in
+        /// the pool (the pool hands the same cars out again and again), so asking costs two array reads after that.
+        /// </summary>
+        public void Box(VehicleComponent car, out Vector3 centre, out Vector3 half)
+        {
+            int index = car.GetIndex();
+            object pool = TrafficManager.HasInstance ? TrafficManager.Instance : null;
+            if (!ReferenceEquals(pool, _boxPool) || index >= _boxKnown.Length)
+            {
+                // Another city's traffic, or the first car: the boxes are measured afresh.
+                int size = Mathf.Max(index + 1, pool != null ? Manager.GetVehicleList().Count : 0);
+                _boxCentre = new Vector3[size];
+                _boxHalf = new Vector3[size];
+                _boxKnown = new bool[size];
+                _boxPool = pool;
+            }
+            if (index < 0)
+            {
+                Measure(car, car.rb, out centre, out half, false);
                 return;
             }
-            _watched = car;
-            _watchedBody = car.rb;
-            _watchedDown = 0;
-            Measure(car, _watchedBody, out _watchedCentre, out _watchedHalf);
-        }
-
-        /// <summary>Stops watching (that car, or whichever it is).</summary>
-        public void Unwatch(VehicleComponent car = null)
-        {
-            if (car == null || car == _watched)
+            if (!_boxKnown[index])
             {
-                _watched = null;
-                _watchedBody = null;
+                Measure(car, car.rb, out _boxCentre[index], out _boxHalf[index], false);
+                _boxKnown[index] = true;
             }
-        }
-
-        public bool Watching(VehicleComponent car) => car != null && car == _watched;
-
-        /// <summary>How many people the watched car has thrown down since this was last asked.</summary>
-        public int TakeWatchedDown()
-        {
-            int down = _watchedDown;
-            _watchedDown = 0;
-            return down;
-        }
-
-        /// <summary>The box of the watched car in its own space (as measured when it was named). False if none is watched.</summary>
-        public bool WatchedBox(out Vector3 centre, out Vector3 half)
-        {
-            centre = _watchedCentre;
-            half = _watchedHalf;
-            return (object)_watched != null;
+            centre = _boxCentre[index];
+            half = _boxHalf[index];
         }
 
         /// <summary>The car the player is driving and its box in its own space. False on foot or parked up.</summary>
@@ -172,12 +307,15 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- the look
 
         // One look for one vehicle: everybody inside its box, stretched ahead by what it covers before the next look.
-        // traffic is null for the player's car, and the traffic car itself otherwise.
-        private void Sweep(Rigidbody body, Vector3 centre, Vector3 half, VehicleComponent traffic, float now)
+        // traffic is null for the player's car, and the traffic car itself (with its place among the watched) otherwise.
+        private void Sweep(Rigidbody body, Vector3 centre, Vector3 half, VehicleComponent traffic, Watched watched, float now)
         {
             Vector3 velocity = body.velocity;
             float sqrSpeed = velocity.x * velocity.x + velocity.z * velocity.z;
-            if (sqrSpeed < MinSpeed * MinSpeed)
+            bool player = (object)traffic == null;
+            // (A traffic car is looked at from a slower pace than the player's: between that and 8 km/h it bumps people.)
+            float least = player ? MinSpeed : SolidRules.BumpFrom;
+            if (sqrSpeed < least * least)
             {
                 return;
             }
@@ -186,9 +324,10 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            bool player = (object)traffic == null;
 
             float speed = Mathf.Sqrt(sqrSpeed);
+            bool bump = !player && SolidRules.Touch(speed) == SolidRules.Contact.Bump;
+            _struckBefore = _down;
             Vector3 origin = body.position;
             Quaternion toCar = Quaternion.Inverse(body.rotation);
             float along = (toCar * velocity).z;
@@ -237,6 +376,11 @@ namespace RealLifeOverhaul
                     Vector3 local = toCar * (walker.transform.position - origin);
                     if (local.x > -side && local.x < side && local.z > back && local.z < front && local.y > -1.5f && local.y < 2f)
                     {
+                        if (bump)
+                        {
+                            Bump(walker, null, traffic, watched, origin, speed, now);
+                            continue;
+                        }
                         Count(player ? incidents.StrikePedestrian(walker, velocity, speed, body) : incidents.StruckByTraffic(walker, velocity, speed, traffic), player);
                     }
                 }
@@ -255,6 +399,11 @@ namespace RealLifeOverhaul
                 Vector3 local = toCar * (figure.transform.position - origin);
                 if (local.x > -side && local.x < side && local.z > back && local.z < front && local.y > -1.5f && local.y < 2f)
                 {
+                    if (bump)
+                    {
+                        Bump(null, figure, traffic, watched, origin, speed, now);
+                        continue;
+                    }
                     Count(player ? incidents.StrikeFigure(figure, velocity, speed, body) : incidents.StruckByTraffic(figure, velocity, speed, traffic), player);
                 }
             }
@@ -269,15 +418,41 @@ namespace RealLifeOverhaul
                 }
                 Vector3 local = toCar * (actor.Position - origin);
                 if (local.x > -side && local.x < side && local.z > back && local.z < front && local.y > -1.5f && local.y < 2f
-                    && !actor.Limp)
+                    && !actor.Limp && !bump)
                 {
                     Count(player ? incidents.StrikeActor(actor, velocity, speed, body) : incidents.StruckByTraffic(actor, velocity, speed, traffic), player);
+                }
+            }
+            if (!player && _down > _struckBefore)
+            {
+                // The one path for every traffic car that has hit somebody: its driver stops or runs (Traffic/Reckless).
+                RecklessDrivers drivers = RecklessDrivers.Instance;
+                if (drivers != null)
+                {
+                    drivers.Struck(traffic, speed);
                 }
             }
             if (_swept > 0)
             {
                 Report(speed, now, player);
             }
+        }
+
+        private int _struckBefore;
+
+        // A traffic car has come up against somebody at walking pace: they turn on it and shout, and nobody falls.
+        // Said once every few seconds for a car that keeps nudging.
+        private void Bump(Pedestrian walker, BaseHuman figure, VehicleComponent car, Watched watched, Vector3 origin, float speed, float now)
+        {
+            if (watched == null || now < watched.NextBump)
+            {
+                return;
+            }
+            watched.NextBump = now + BumpEvery;
+            HornReactions reactions = HornReactions.Instance;
+            bool shouted = reactions != null && reactions.Shout(walker, figure, origin);
+            Logger?.Info($"Traffic check (bump): '{TrafficTools.Name(car)}' touched somebody at {speed * 3.6f:F0} km/h, under {SolidRules.StrikeFrom * 3.6f:F0}: "
+                         + (shouted ? "they turn on it and shout, nobody falls: PASS" : "nobody falls (they could not be made to react): PASS"));
         }
 
         // ---------------------------------------------------------------- one line per batch
@@ -293,10 +468,6 @@ namespace RealLifeOverhaul
                 case PedestrianIncidents.Strike.Seated: _swept++; _seated++; break;
                 case PedestrianIncidents.Strike.NoRagdoll: _swept++; _noRagdoll++; break;
                 case PedestrianIncidents.Strike.Failed: _swept++; _failed++; break;
-            }
-            if (!player && result == PedestrianIncidents.Strike.Down)
-            {
-                _watchedDown++;
             }
         }
 
@@ -329,7 +500,7 @@ namespace RealLifeOverhaul
                 _body = car != null ? car.GetComponent<Rigidbody>() : null;
                 if (_body != null)
                 {
-                    Measure(car, _body, out _centre, out _half);
+                    Measure(car, _body, out _centre, out _half, true);
                 }
             }
             if (_spawner == null && _driving)
@@ -340,7 +511,8 @@ namespace RealLifeOverhaul
         }
 
         // A vehicle's size from its colliders, once per vehicle. Anything that does not look like a car gets a saloon's.
-        private static void Measure(Component vehicle, Rigidbody body, out Vector3 centre, out Vector3 half)
+        // say: put it in the log (the player's car; a traffic car's is measured once for the whole session, quietly).
+        private static void Measure(Component vehicle, Rigidbody body, out Vector3 centre, out Vector3 half, bool say)
         {
             Transform root = body.transform;
             var bounds = new Bounds();
@@ -397,7 +569,10 @@ namespace RealLifeOverhaul
                 centre = new Vector3(0f, 0.8f, 0f);
                 half = new Vector3(0.95f, 0.8f, 2.2f);
             }
-            Logger?.Info($"Pedestrian collisions: {vehicle.name} measured {half.x * 2f:F1} m wide, {half.z * 2f:F1} m long.");
+            if (say)
+            {
+                Logger?.Info($"Pedestrian collisions: {vehicle.name} measured {half.x * 2f:F1} m wide, {half.z * 2f:F1} m long.");
+            }
         }
     }
 }

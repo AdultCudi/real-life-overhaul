@@ -12,8 +12,13 @@ namespace RealLifeOverhaul
     /// no lights, no body, no sound of the mod's. This class holds what its kind does that the driver
     /// does not know about (which lights it stops at, the drunk's uneven pace) and notices, by position
     /// alone, what really comes of it: its box meeting another vehicle's, a bend taken faster than the
-    /// road holds, something solid a hand's width ahead of its nose. Who reacts to it and what scene
-    /// follows is RecklessDrivers' business.
+    /// road holds, something solid a hand's width ahead of its nose. For a driver with no margin that
+    /// includes what stands beside the road (buildings, lamp posts and the like: EmergencyDriver.SeeSolids,
+    /// the same look with a wider mask), and one who takes a bend faster than the road holds is no longer
+    /// stopped dead in it: the car carries straight on, unsteered, for a second and a half at the most
+    /// (EmergencyDriver.Slide), and ends against whatever is there, a wall, a lamp post, a parked car
+    /// or another car, or comes to rest across the road if nothing is. Who reacts to it and what
+    /// scene follows is RecklessDrivers' business.
     ///
     /// WHICH OF THE ROAD'S SAFETY RULES ARE RELAXED, FOR THIS CAR ONLY. The traffic system stops its cars
     /// for each other with a sensor box ahead of each and for lights with a flag on the stop line. This
@@ -48,6 +53,8 @@ namespace RealLifeOverhaul
         private const float SolidSpeed = 2.5f;       // ...if it is still doing this much, m/s
         private const float BendWithin = 5f;         // metres from a route point at which the bend there is judged
         private const float SettledPace = 11f;       // m/s once it has settled down: the traffic's pace
+        private const float SlideMost = 1.5f;        // seconds a car that has lost a bend carries straight on before it has simply come to rest across the road
+        private const float RollLeast = 2f;          // m/s: slower than this it is handed back standing
 
         private readonly List<Waypoint> _route = new List<Waypoint>(RoutePoints);
         private readonly VehicleComponent[] _near = new VehicleComponent[NearMost];
@@ -66,6 +73,8 @@ namespace RealLifeOverhaul
         private bool _skip;
         private int _lightAt = -1;       // the next light on its route, and what it showed when last looked at
         private bool _lightRed;
+        private float _slideUntil;       // while it carries straight on out of a bend: when that ends; 0 otherwise
+        private float _slideFrom;        // the speed it lost the bend at
 
         public StreetRules.Kind Kind { get; private set; }
         public bool AccidentDue { get; private set; }
@@ -79,6 +88,12 @@ namespace RealLifeOverhaul
 
         /// <summary>How fast the two were closing at that moment (or how fast it was going, alone), in m/s.</summary>
         public float Closing { get; private set; }
+
+        /// <summary>Its own velocity at the moment it struck (before it was stopped), for the scene to let it carry on a little from.</summary>
+        public Vector3 Velocity { get; private set; }
+
+        /// <summary>The velocity of the traffic car it met, at that moment.</summary>
+        public Vector3 OtherVelocity { get; private set; }
 
         /// <summary>Red lights it has driven through since it was taken (counted as its route passes each stop line).</summary>
         public int LightsRun { get; private set; }
@@ -132,9 +147,12 @@ namespace RealLifeOverhaul
             Struck = Hit.None;
             Other = null;
             Closing = 0f;
+            Velocity = Vector3.zero;
+            OtherVelocity = Vector3.zero;
             LightsRun = 0;
             _lightAt = -1;
             _nearCount = 0;
+            _slideUntil = 0f;
             float grip = Events.Weather.GripFactor;
             _cruise = StreetRules.Cruise(kind, Random.value);
             _stopping = never ? 3f : StreetRules.Stopping(accidentDue, Random.value);
@@ -149,6 +167,10 @@ namespace RealLifeOverhaul
             driver.BeginRoute(car, _unit.Path, 0f);
             driver.CruiseSpeed = _cruise;
             driver.Careless(_stopping, _foresight, _seesPeople, _grip);
+            if (accidentDue || never)
+            {
+                driver.SeeSolids();    // no margin: what stands beside the road is what it may end against
+            }
             driver.Rolling(rolling);   // it carries on from the speed it had: nothing shows as it changes hands
             if (kind == StreetRules.Kind.Drunk)
             {
@@ -156,12 +178,12 @@ namespace RealLifeOverhaul
             }
             RoadMap.Ensure();   // the grid a lane to pass in is looked up in
 
-            // Its size, as CarStrikes has just measured it (it is watched for people from the same moment).
+            // Its size, as CarStrikes measures it (it is watched for people from the same moment).
             CarStrikes strikes = CarStrikes.Instance;
             if (strikes != null && Settings.Ragdolls)
             {
                 strikes.Watch(car);
-                strikes.WatchedBox(out _centre, out _half);
+                strikes.Box(car, out _centre, out _half);
             }
             else
             {
@@ -259,6 +281,16 @@ namespace RealLifeOverhaul
             }
             VehicleComponent car = _unit.Car;
             EmergencyDriver driver = _unit.Driver;
+            if (_slideUntil > 0f)
+            {
+                // Carrying straight on out of a bend it lost: if nothing has been in its way by now (FixedUpdate sees
+                // that), it has come to rest across the road, and that is the crash.
+                if (car != null && (now >= _slideUntil || !driver.Active))
+                {
+                    Hold(Hit.Bend, null, _slideFrom);
+                }
+                return;
+            }
             if (car == null || !driver.Active)
             {
                 return;
@@ -387,7 +419,11 @@ namespace RealLifeOverhaul
             float speed = driver.Speed;
             if (StreetRules.LosesIt(speed, legs / bend, Events.Weather.GripFactor))
             {
-                Hold(Hit.Bend, null, speed);
+                // Not stopped dead in the bend: it goes straight on, and ends against whatever is there.
+                _slideFrom = speed;
+                _slideUntil = Time.time + SlideMost;
+                driver.SeeSolids();
+                driver.Slide();
             }
         }
 
@@ -410,6 +446,7 @@ namespace RealLifeOverhaul
             Vector3 velocity = body.velocity;
             velocity.y = 0f;
             float speed = velocity.magnitude;
+            _own = velocity;
             Vector3 origin = body.position;
             Quaternion toCar = Quaternion.Inverse(body.rotation);
 
@@ -431,6 +468,7 @@ namespace RealLifeOverhaul
                 {
                     Vector3 their = other.rb.velocity;
                     their.y = 0f;
+                    _theirs = their;
                     Hold(Hit.Car, other, (velocity - their).magnitude);
                     return;
                 }
@@ -452,7 +490,11 @@ namespace RealLifeOverhaul
 
             // Something fixed a hand's width ahead of its nose while it is still moving: the driver's own look ahead
             // says so (the one query it has always made). A person is CarStrikes' business, not a crash.
-            if (speed > SolidSpeed && driver.Room < SolidTouch && !driver.AheadIsPerson)
+            if (speed > SolidSpeed && driver.SolidRoom < SolidTouch)
+            {
+                Hold(Hit.Solid, null, speed);   // its nose has reached a wall, a lamp post or the like
+            }
+            else if (speed > SolidSpeed && driver.Room < SolidTouch && !driver.AheadIsPerson)
             {
                 Rigidbody ahead = driver.Ahead;
                 VehicleComponent vehicle = ahead != null ? ahead.GetComponent<VehicleComponent>() : null;
@@ -460,6 +502,7 @@ namespace RealLifeOverhaul
                 {
                     Vector3 their = ahead.velocity;
                     their.y = 0f;
+                    _theirs = their;
                     Hold(Hit.Car, vehicle, (velocity - their).magnitude);
                 }
                 else if (ahead != null && strikes != null && strikes.PlayerCar(out Rigidbody mine, out _, out _) && ahead == mine)
@@ -520,9 +563,34 @@ namespace RealLifeOverhaul
             Struck = what;
             Other = other;
             Closing = closing;
+            Velocity = _own;
+            OtherVelocity = other != null ? _theirs : Vector3.zero;
+            _slideUntil = 0f;
             if (_unit.InUse && !_unit.IsLost)
             {
                 _unit.Driver.Stop();
+            }
+        }
+
+        private Vector3 _own;            // its velocity at the last physics step it looked at, and the other car's when they met
+        private Vector3 _theirs;
+
+        /// <summary>
+        /// True if it can be handed back to traffic on the move: settled, at the traffic's pace, in its lane, with
+        /// nothing in its look ahead and no light holding it. Then nothing is lost by the traffic system starting
+        /// with an empty slate for it, and nothing shows as it changes hands.
+        /// </summary>
+        public bool CanRoll
+        {
+            get
+            {
+                if (!InUse || _unit.IsLost || !Settled || Struck != Hit.None || _slideUntil > 0f)
+                {
+                    return false;
+                }
+                EmergencyDriver driver = _unit.Driver;
+                return driver.Active && !driver.OutOfLane && driver.HoldAt < 0 && driver.Room == float.MaxValue
+                       && driver.Speed >= RollLeast && driver.Speed <= SettledPace + 0.5f;
             }
         }
 
@@ -558,7 +626,8 @@ namespace RealLifeOverhaul
         /// light that is the stop line itself, whose flag the traffic system reads at once and holds the car by, so
         /// a car given back at a light waits for it like any other.
         /// </summary>
-        public void Release(bool resumeTraffic, bool remove)
+        /// <param name="rolling">It keeps the speed it has (ask CanRoll first).</param>
+        public void Release(bool resumeTraffic, bool remove, bool rolling = false)
         {
             if (_unit == null)
             {
@@ -573,7 +642,7 @@ namespace RealLifeOverhaul
                 next = index >= 0 && index < _route.Count ? _route[index] : null;
             }
             Unwatch(car);
-            _unit.Release(resumeTraffic, remove);
+            _unit.Release(resumeTraffic, remove, false, rolling);
             if (next != null && car != null && car.gameObject.activeInHierarchy && TrafficTools.Ready
                 && !TrafficManager.Instance.IsVehicleIgnored(car.GetIndex()))
             {
@@ -601,6 +670,7 @@ namespace RealLifeOverhaul
             _route.Clear();
             Struck = Hit.None;
             Other = null;
+            _slideUntil = 0f;
             enabled = false;
         }
     }

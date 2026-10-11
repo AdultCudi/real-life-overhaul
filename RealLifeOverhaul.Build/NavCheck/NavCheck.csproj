@@ -35,6 +35,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\EventHold.cs" Link="Mod\EventHold.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WorkRings.cs" Link="Mod\WorkRings.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Character\HairRules.cs" Link="Mod\HairRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\Solid\SolidRules.cs" Link="Mod\SolidRules.cs" />
   </ItemGroup>
 
 </Project>

@@ -50,6 +50,7 @@ internal static partial class Program
         Polish();
         Hitch();
         Hair();
+        Solid();
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         if (_failed == 0 && args.Length > 0 && File.Exists(args[0]))
         {

@@ -66,6 +66,7 @@ namespace RealLifeOverhaul
 
         private static int _obstacleMask;
         private static int _blindMask;              // the same without the people the game walks about: for a driver who does not see them
+        private static int _solidMask;              // buildings and street furniture: what a car that leaves its lane ends against
         private static readonly RaycastHit[] Hits = new RaycastHit[32];
 
         private VehicleComponent _car;
@@ -194,6 +195,43 @@ namespace RealLifeOverhaul
                 _blindMask = TrafficTools.VehicleMask | LayerMask.GetMask("Player");
             }
         }
+
+        /// <summary>
+        /// The look ahead also takes in what stands beside the road: buildings and street furniture (lamp posts,
+        /// hydrants, benches, bins), on top of the vehicles, parked ones among them, that it has always seen. The
+        /// same one query every 0.15 s with a wider mask; nothing more is asked. Only for a driver who may leave
+        /// the lane (a reckless one with no margin). Such a thing is not braked for while the car is being steered:
+        /// a car turning at a junction always has a wall or a lamp post somewhere ahead of its nose and is about to
+        /// turn away from it, and one that stopped for it would stand in the junction. It is only measured
+        /// (<see cref="SolidRoom"/>), so that whoever drives the car knows the moment its nose reaches one. Once
+        /// the car is no longer steered (Slide) it counts like anything else in its way. Begin undoes it.
+        /// </summary>
+        public void SeeSolids()
+        {
+            if (_solidMask == 0)
+            {
+                _solidMask = LayerMask.GetMask("Buildings", "StreetProps");
+            }
+            _solids = true;
+        }
+
+        /// <summary>
+        /// The car has been taken into a bend faster than the road holds: from here it is not steered. It carries
+        /// straight on the way it points, off its line, losing speed with whatever braking it has, and its look
+        /// ahead goes on measuring what is in front of its nose (Room, Ahead), so that whoever drives it sees it
+        /// reach something. It ends by itself when it has all but stopped (Active goes false). Begin undoes it.
+        /// </summary>
+        public void Slide()
+        {
+            _sliding = true;
+            _nextSense = 0f;
+        }
+
+        /// <summary>True while it is carrying straight on, unsteered (Slide).</summary>
+        public bool Sliding => Active && _sliding;
+
+        /// <summary>Metres of clear road between its nose and a building or a piece of street furniture straight ahead of it; float.MaxValue if there is none in its look, or it was not told to look (SeeSolids).</summary>
+        public float SolidRoom => Active ? _solidRoom : float.MaxValue;
 
         /// <summary>
         /// Takes over a vehicle that is moving: it carries on from that speed instead of from rest, so nothing
@@ -332,6 +370,9 @@ namespace RealLifeOverhaul
             _bendGrip = 0f;
             _careful = CarefulSpeed;
             _gridLanes = false;
+            _solids = false;
+            _sliding = false;
+            _solidRoom = float.MaxValue;
             _sway = 0f;
             _holdAt = -1;
             _hold = float.MaxValue;
@@ -473,6 +514,11 @@ namespace RealLifeOverhaul
             }
 
             Vector3 position = _body.position;
+            if (_sliding)
+            {
+                SlideOn(position);
+                return;
+            }
             if (_following)
             {
                 if (_target != null)
@@ -593,6 +639,10 @@ namespace RealLifeOverhaul
             // velocity every step, and that is all that stops them bouncing. It does not do that for a car
             // it has been told to ignore, so here the vertical speed is bled off instead (about 0.7 of
             // critical for those springs): the body follows the road and settles, and never hops on the spot.
+            if (_solidRoom < float.MaxValue)
+            {
+                _solidRoom = Mathf.Max(0f, _solidRoom - _speed * Time.fixedDeltaTime);   // between two looks: what it has covered since is off the room it had
+            }
             Vector3 velocity = _body.rotation * Vector3.forward * (_reverse ? -_speed : _speed);
             velocity.y = _body.velocity.y * Mathf.Exp(-VerticalDamping * Time.fixedDeltaTime);
             _body.velocity = velocity;
@@ -833,6 +883,10 @@ namespace RealLifeOverhaul
             float halfWidth = _halfWidth + SenseMargin;
             float free = float.MaxValue;
             bool onFoot = false;
+            if (!beside)
+            {
+                _solidRoom = float.MaxValue;   // measured afresh by this look, if there is anything to measure
+            }
             if (_kerbed)
             {
                 // Beside a kerb it has been told of: the nearest thing that is on the carriageway. Every hit of the sweep
@@ -860,7 +914,7 @@ namespace RealLifeOverhaul
                     free = Mathf.Max(0f, nearest + halfWidth * 0.5f - halfLength);
                 }
             }
-            else if (Physics.SphereCast(origin, halfWidth, direction, out RaycastHit hit, reach, Mask, QueryTriggerInteraction.Ignore))
+            else if (Physics.SphereCast(origin, halfWidth, direction, out RaycastHit hit, reach, Mask | (_solids && !beside ? _solidMask : 0), QueryTriggerInteraction.Ignore))
             {
                 float travelled = hit.distance;
                 bool found = true;
@@ -868,11 +922,16 @@ namespace RealLifeOverhaul
                 {
                     // A part of our own vehicle the ball did not start inside: look again from just ahead of the nose.
                     float skip = halfLength + 0.4f;
-                    found = Physics.SphereCast(origin + direction * skip, halfWidth, direction, out hit, reach - skip, Mask, QueryTriggerInteraction.Ignore)
+                    found = Physics.SphereCast(origin + direction * skip, halfWidth, direction, out hit, reach - skip, Mask | (_solids && !beside ? _solidMask : 0), QueryTriggerInteraction.Ignore)
                             && hit.rigidbody != _body;
                     travelled = skip + hit.distance;
                 }
-                if (found && (_target == null || hit.rigidbody != _target))
+                if (found && _solids && !beside && !_sliding && hit.collider != null && ((1 << hit.collider.gameObject.layer) & _solidMask) != 0)
+                {
+                    // A wall or a lamp post while the car is being steered: measured, not braked for (see SeeSolids).
+                    _solidRoom = Mathf.Max(0f, travelled + halfWidth * 0.5f - halfLength);
+                }
+                else if (found && (_target == null || hit.rigidbody != _target))
                 {
                     blocker = hit.rigidbody;
                     free = Mathf.Max(0f, travelled + halfWidth * 0.5f - halfLength);
@@ -901,7 +960,36 @@ namespace RealLifeOverhaul
         }
 
         // What its look ahead is made against: everything solid and everybody, or (a driver who does not see them) everything but the game's pedestrians.
+        // (For a driver told to, SeeSolids, the one sweep ahead of its own nose also takes in what stands beside the road.)
         private int Mask => _seesPeople || _blindMask == 0 ? _obstacleMask : _blindMask;
+
+        private bool _solids;
+        private bool _sliding;
+        private float _solidRoom = float.MaxValue;
+
+        // A car that has lost it: straight on the way it points, braking, with the look ahead still made.
+        private void SlideOn(Vector3 position)
+        {
+            if (Time.time >= _nextSense)
+            {
+                _nextSense = Time.time + SenseInterval;
+                _room = FreeAhead(position + Vector3.up * SenseHeight, _body.rotation * Vector3.forward, beside: false, out _ahead);
+            }
+            else if (_room < float.MaxValue)
+            {
+                _room = Mathf.Max(0f, _room - _speed * Time.fixedDeltaTime);   // between two looks: what it has covered since is off the room it had
+            }
+            _speed = Mathf.MoveTowards(_speed, 0f, _stopping * Time.fixedDeltaTime);
+            if (_speed <= 0.3f)
+            {
+                Stop();
+                return;
+            }
+            Vector3 velocity = _body.rotation * Vector3.forward * _speed;
+            velocity.y = _body.velocity.y * Mathf.Exp(-VerticalDamping * Time.fixedDeltaTime);
+            _body.velocity = velocity;
+            _body.angularVelocity = Vector3.zero;
+        }
 
         private static Vector3 Flat(Vector3 vector)
         {

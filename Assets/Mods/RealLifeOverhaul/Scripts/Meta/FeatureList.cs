@@ -254,9 +254,11 @@ namespace RealLifeOverhaul.Meta
 
             Features.Add("streets", "reallife_meta_title_streets")
                 .About("reallife_guide_streets_about").Help("reallife_guide_streets")
-                .Owns(Settings.HornReactionsId, Settings.NaturalAccidentsId)
+                .Owns(Settings.HornReactionsId, Settings.NaturalAccidentsId, Settings.SolidStreetsId)
                 .Test("reallife_test_streets_speeder", "reallife_test_streets_redlight", "reallife_test_streets_drunk", "reallife_test_streets_jaywalker",
-                    "reallife_test_streets_hit", "reallife_test_streets_crash", "reallife_test_streets_patrol")
+                    "reallife_test_streets_hit", "reallife_test_streets_crash", "reallife_test_streets_patrol",
+                    "reallife_test_solid_room", "reallife_test_solid_close", "reallife_test_solid_dawdle", "reallife_test_solid_late",
+                    "reallife_test_solid_crowd", "reallife_test_solid_senses")
                 .Fact("horn_reach", () => Guide.Number(StreetRules.HornReach))
                 .Fact("horn_most", () => Guide.Number(StreetRules.HornMost))
                 .Fact("horn_officer", () => Guide.Number(StreetRules.OfficerWithin))
@@ -265,9 +267,12 @@ namespace RealLifeOverhaul.Meta
                 .Fact("reckless_most", () => Guide.Number(StreetRules.LastsMost))
                 .Fact("crash_minor", () => Guide.Number((float)System.Math.Round(StreetRules.MinorBelow * 3.6f)))
                 .Fact("crash_severe", () => Guide.Number((float)System.Math.Round(StreetRules.SevereFrom * 3.6f)))
+                .Fact("solid_horn", () => Guide.Number(SolidRules.HornEvery))
+                .Fact("solid_hold", () => Guide.Number(SolidRules.HoldMost))
                 .Cleanup(() =>
                 {
                     // Before the accident scene's own cleanup: the car, the patrol car and whoever was in the road are given back first.
+                    SolidStreets.Instance?.ReleaseAll("the options page's cleanup");
                     RecklessDrivers.Instance?.EndNow("the options page's cleanup");
                     HornReactions.Instance?.ReleaseAll("the options page's cleanup");
                 }, 5);
