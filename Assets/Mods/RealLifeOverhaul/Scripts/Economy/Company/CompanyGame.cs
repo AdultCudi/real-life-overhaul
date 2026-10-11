@@ -19,6 +19,9 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Has a business's promotion figure written again as it should stand now (business pressure's own writer). Default: nothing is written, so footfall is not changed.</summary>
         public static CityBridges.FootfallWriter Footfall;
 
+        /// <summary>True where the game keeps a promotion figure for a business, so that its footfall can be changed at all. Default: nowhere.</summary>
+        public static Func<BuildingRegistration, bool> Promoted;
+
         /// <summary>Shuts a business for some hours by business pressure's own closure, which reopens it itself. False if it would not. Default: never.</summary>
         public static Func<BuildingRegistration, int, bool> Close;
 
@@ -43,6 +46,7 @@ namespace RealLifeOverhaul.Economy
         public static void Reset()
         {
             Footfall = null;
+            Promoted = null;
             Close = null;
             Audit = null;
             Inspect = null;

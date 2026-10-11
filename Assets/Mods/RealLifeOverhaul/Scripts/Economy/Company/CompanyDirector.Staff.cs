@@ -156,7 +156,7 @@ namespace RealLifeOverhaul.Economy
                 WagePaid(file.OvertimeCost, CompanyGame.OvertimeKey, shop, day - 1, CompanyCatalogue.OvertimeHours + " extra hours each at time and a half on day " + (day - 1));
             }
             StaffRules.OvertimeDay(file, day);
-            bool busy = file.Pushing(day) || _cycle == CycleState.Boom;
+            bool busy = (file.Pushing(day) || _cycle == CycleState.Boom) && Promoted(shop);   // (where the game keeps no customer figure, extra hours would bring nobody)
             if (shop.Staff > 0 && StaffRules.OvertimeOffered(file, busy, _state.Seed, _state.Age, at, day))
             {
                 file.OvertimeAsk = day;
@@ -225,12 +225,7 @@ namespace RealLifeOverhaul.Economy
 
         private void WagePaid(int amount, string key, CompanyShop shop, int? day, string how)
         {
-            CompanyGame.Take(amount, key, shop.Name, shop, day, (int)CostKind.Wages, true);
-            TaxRules.Note(_state.Tax, CostKind.Wages, amount);
-            if (Verbose)
-            {
-                Logger?.Info("Company check (transaction, " + key + ", " + shop.Name + "): " + amount + " taken, deductible, counted in quarter " + _state.Tax.Quarter + "; " + how + ": PASS");
-            }
+            Cost(amount, key, shop, shop.Name, CostKind.Wages, day, how, true);
         }
 
         private int ShopIndex(string place)

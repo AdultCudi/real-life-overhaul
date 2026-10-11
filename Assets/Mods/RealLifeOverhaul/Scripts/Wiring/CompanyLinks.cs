@@ -39,6 +39,7 @@ namespace RealLifeOverhaul
             internal static void Connect()
             {
                 CompanyBridges.Footfall = Footfall;
+                CompanyBridges.Promoted = BusinessGame.Promoted;
                 CompanyBridges.Close = Close;
                 CompanyBridges.Dispute = Dispute;
                 CompanyBridges.Rival = Rival;

@@ -704,15 +704,21 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+
+        /// <summary>True where the game keeps a customer figure for the business, so that a campaign, overtime or a strike can change its footfall.</summary>
+        public bool Promoted(CompanyShop shop)
+        {
+            return shop != null && shop.Reg != null && CompanyBridges.Promoted != null && CompanyBridges.Promoted(shop.Reg);
+        }
         // ---------------------------------------------------------------- money
 
         /// <summary>
-        /// A business cost: taken as a transaction of its own (never forced: false, and nothing is taken, if the cash
+        /// A business cost: taken as a transaction of its own (unless 'force', never forced: false, and nothing is taken, if the cash
         /// does not cover it), marked deductible, and counted in the quarter that is running.
         /// </summary>
-        internal bool Cost(int amount, string key, CompanyShop shop, string name, CostKind kind, int? day, string how)
+        internal bool Cost(int amount, string key, CompanyShop shop, string name, CostKind kind, int? day, string how, bool force = false)
         {
-            bool taken = CompanyGame.Take(amount, key, name, shop, day, (int)kind, false);
+            bool taken = CompanyGame.Take(amount, key, name, shop, day, (int)kind, force);
             if (taken && amount > 0)
             {
                 TaxRules.Note(_state.Tax, kind, amount);
