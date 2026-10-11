@@ -596,12 +596,17 @@ namespace RealLifeOverhaul.Family
         /// <summary>The test button's wedding: it costs nothing and brings in nothing.</summary>
         public bool Free;
 
-        private enum Step { Gathering, Aisle, Welcome, Vows, TheirVow, Rings, Pronounce, Applause, Photo, Leaving, Cut }
+        private enum Step { Gathering, Aisle, Welcome, Vows, TheirVow, Rings, Pronounce, Applause, Photo, Dance, Leaving, Cut }
 
         private const int MaxGuestSpots = 6;
         private const int MaxBorrowed = 4;
         private const float RingGap = 1.10f;     // metres apart, facing, that ring_present and ring_receive are made for (CityAssets)
         private const float RingSlack = 0.12f;
+        private const string LeadClip = "slow_dance_a";     // the player's half of the first dance (the one who leads)
+        private const string FollowClip = "slow_dance_b";   // the partner's: 0.45 m ahead of the leader, turned to face them, started at the same moment
+        private const float DanceGap = 0.45f;               // metres apart, facing, that the two dance clips are made for (CityAssets)
+        private const float DanceSlack = 0.10f;             // further off than this the clasped hands would be apart: no dance
+        private const float DanceSeconds = 8f;              // one turn of the loop
 
         private static readonly string[] HeartVows = { "reallife_family_vow_heart_1", "reallife_family_vow_heart_2", "reallife_family_vow_heart_3" };
         private static readonly string[] FunnyVows = { "reallife_family_vow_funny_1", "reallife_family_vow_funny_2", "reallife_family_vow_funny_3" };
@@ -626,6 +631,8 @@ namespace RealLifeOverhaul.Family
         private bool _married;
         private bool _closing;       // the partner is taking the step that puts the two a ring's distance apart
         private float _closeFrom;
+        private bool _danced;        // the first dance has been offered (done or passed over): once
+        private bool _dancing;       // both halves are playing
 
         public override string Name => "the wedding";
 
@@ -1030,9 +1037,16 @@ namespace RealLifeOverhaul.Family
                         _until = now + 2.5f;
                     }
                     break;
+                case Step.Dance:
+                    Dance(now, player);
+                    break;
                 case Step.Leaving:
                     if (now >= _until && !_d.Busy)
                     {
+                        if (!_danced && BeginDance(now, player))
+                        {
+                            break;   // the couple's first dance, then the cut to the reception
+                        }
                         _step = Step.Cut;
                         if (!_d.Run(_d.Passage("reallife_family_passage_reception", 4, () => { Release(); WeddingDay.Feast(); }, () => WeddingDay.Complete(true, Free))))
                         {
@@ -1042,6 +1056,90 @@ namespace RealLifeOverhaul.Family
                         }
                     }
                     break;
+            }
+        }
+
+        // The first dance, once the photograph is taken: the partner steps in to the clips' distance (as for the rings), and both
+        // halves start together. False (nothing changed) if the bundle lacks either clip.
+        private bool BeginDance(float now, Vector3 player)
+        {
+            _danced = true;
+            if (!ClipLibrary.Has(LeadClip) || !ClipLibrary.Has(FollowClip))
+            {
+                return false;
+            }
+            _d.Body.Bind(PlayerHelper.PlayerController);
+            _d.Body.Hold();
+            FacePartner(player);
+            _d.Cast.Face(_partner, player);
+            _closing = Mathf.Abs(Mathf.Sqrt(CitySpots.Flat(player - _partner.Position)) - DanceGap) > DanceSlack * 0.5f && _partner.StepTo(player, DanceGap);
+            _closeFrom = now;
+            _dancing = false;
+            _step = Step.Dance;
+            _until = now + 4f;   // the longest the step in may take
+            return true;
+        }
+
+        private void FacePartner(Vector3 player)
+        {
+            Vector3 to = _partner.Position - player;
+            to.y = 0f;
+            if (to.sqrMagnitude > 0.04f)
+            {
+                PlayerHelper.PlayerController.Character.transform.rotation = Quaternion.LookRotation(to);
+            }
+        }
+
+        // In: waits for the partner to stop, measures the gap that was really reached, and plays the pair only if it is the one
+        // they were made for (further off, the clasped hands would be apart). Dancing: one turn of the loop, then both are let go.
+        private void Dance(float now, Vector3 player)
+        {
+            if (!_dancing)
+            {
+                if (!(now >= _until || (now - _closeFrom > 0.4f && _partner.Arrived && _partner.Speed < 0.05f)))
+                {
+                    return;
+                }
+                _partner.Stand();
+                _d.Cast.Face(_partner, player);
+                FacePartner(player);
+                float gap = Mathf.Sqrt(CitySpots.Flat(player - _partner.Position));
+                bool fits = Mathf.Abs(gap - DanceGap) <= DanceSlack;
+                if (fits && _d.Body.Clip(LeadClip, 0.4f))
+                {
+                    if (_partner.Work(FollowClip, _d.Cast.Props, 0.4f))
+                    {
+                        ClipLibrary.Played(LeadClip, "the player");
+                        _dancing = true;
+                        _until = now + DanceSeconds;
+                        FamilyText.Toast(NotificationType.Info, "reallife_family_first_dance", Args.Us, 7f);
+                    }
+                    else
+                    {
+                        _d.Body.Rest(0.3f);   // the pair is both or neither
+                    }
+                }
+                if (Meta.Dev.Verbose)
+                {
+                    FamilyDirector.Logger?.Info("Family: the first dance, " + gap.ToString("F2") + " m apart (made for " + DanceGap.ToString("F2") + " m, give or take "
+                                                + DanceSlack.ToString("F2") + "): " + (_dancing ? "played." : "not played."));
+                }
+                if (!_dancing)
+                {
+                    _d.Body.Free();
+                    _step = Step.Leaving;
+                    _until = now;
+                }
+                return;
+            }
+            if (now >= _until)
+            {
+                _d.Body.Rest(0.4f);
+                _partner.Idle(0.4f);
+                _d.Body.Free();
+                _dancing = false;
+                _step = Step.Leaving;
+                _until = now;
             }
         }
 

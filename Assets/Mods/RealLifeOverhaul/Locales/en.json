@@ -8155,5 +8155,6 @@
   "reallife_city_name_street_lunch": "somebody eating lunch from a carton",
   "reallife_city_name_mug_break": "somebody on the doorstep with a mug",
   "reallife_city_name_bench_chat": "two friends talking on a bench",
-  "reallife_city_name_traveller": "somebody walking with a suitcase"
+  "reallife_city_name_traveller": "somebody walking with a suitcase",
+  "reallife_family_first_dance": "The first dance with {name}."
 }
