@@ -3411,10 +3411,12 @@ CivicWorks        the construction programme as data: six sites, working hours, 
 SiteDresser       the three sites nearest the player as props, a closed lane, one crew
 RoadClosure       one lane closed for roadworks through the traffic system's switch (a small copy of SceneCordon's part)
 CampaignWorld     posters, boards, the canvasser, rallies, the polling place's sign; VolunteerShift (the player canvassing)
-CivicCast         civic life's own five people (a second instance of CityPeople), CivicCrew (walk in, work, walk off), CivicHud
+CivicCast         civic life's own five people (a second instance of CityPeople), CivicCrew (walk in, work, walk off); CivicScreen: the game's panel and job panel for its prompts and shift figures
 CivicProps        pooled props by id: the bundle's model if it has one, else a plain stand-in built to the same size
 CityHallPhone     the City Hall contact (four topics), the ballot and the site notice in the game's conversation panel
 ```
+
+**On screen (Civic).** The mod draws nothing of its own for civic life (`CivicHud` is gone; `CivicScreen` takes its place). The polling station, the campaign canvasser, the site notice and the canvassing shift's "offer a leaflet" are the game's panel over the player (`GameUi.DoorPanel`, one button the game labels with the player's key); the shift's figures (leaflets taken, seconds left) are the headline and first line of a copy of the game's job panel (`ShiftCard`), or a notification each time they change if that copy cannot be made. The council's meetings and ballots were already the game's phone dialogue (`CityHallPhone`). Cost: nothing per frame; the prompt is offered once a second and told to the panel only when it changed. Log lines with diagnostics on: `Civic check (prompt panel)`, `Civic check (shift card)`. Not seen in the game.
 
 ### What the game lets a mod change, and what is done instead
 
