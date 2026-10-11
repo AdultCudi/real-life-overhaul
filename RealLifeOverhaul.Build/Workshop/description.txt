@@ -102,9 +102,9 @@ The mod is new, and parts of it have had little play.
 [*]Courts and prison, the family, hotels and two-wheelers have had little or no play from start to finish.
 [*]The bus ride and the subway journey are a fade to black while time passes. There is no bus or train interior.
 [*]A hotel is its door and lists of choices: you do not walk around a room. Most holidays are told as messages.
-[*]On an outing your companion goes in at the door and the screen fades. Nobody sits at a table.
+[*]On an outing that goes indoors your companion goes in at the door and the screen fades. Nobody sits at a table.
 [*]A court hearing and prison are pages of text with choices.
-[*]Children are never seen as characters, and a partner at home stands and walks but never sits.
+[*]Children are never seen as characters, and a partner at home never lies down.
 [*]One incident at a time: no crime starts while an accident, a fire or a street event is on.
 [*]A job in progress ends when its save is loaded: you are paid what you were owed. A home routine or a leisure activity in progress is simply over.
 [/list]

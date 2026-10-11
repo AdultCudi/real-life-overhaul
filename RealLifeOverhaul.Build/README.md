@@ -1364,7 +1364,7 @@ walk in from out of view; otherwise they are waiting. See "Arriving, and what ho
 | the cinema | cinema, theater | 18 | 130 min | |
 | a workout | gym | 15 | 60 min, -14 energy | |
 | a look round your business | a business the player rents | | 30 min | friend |
-| a walk | outside any business | | 160 m walked with them beside the player; twice on the way they talk as they walk (`walk_talk` / `walk_talk_l` by the side they are on, upper body over the game's walk) | |
+| a walk | outside any business | | 160 m walked with them beside the player; twice on the way they talk as they walk (`walk_talk` / `walk_talk_l` by the side they are on, upper body over the game's walk); by one of the game's street benches the panel offers "Sit down", once a walk, and a rest counts as 40 m (Family, "Sitting") | |
 | a drive | outside any business | | 650 m driven with them in the back, then pull over | friend, a car |
 | a lift (favour) | from one address to another | | to the door they name; petrol money | |
 | helping them move (favour) | between two doors 22 to 75 m apart | | three boxes carried (`carry_box_hold`; the box is `moving_box` when the bundle has it, else `parcel_m`) | friend |
@@ -3975,7 +3975,8 @@ walks in, or come in at the door when it is not being looked at.
   short days if they are the one looking after small children.
 - **At home**: they stand by what the game calls a cooker, fridge, coffee machine (a cup held, a sip now
   and then), a sofa, television, armchair or bookshelf (reading the paper, or watching), or failing all
-  furniture on clear floor; every minute or so they walk to another of those places. They wave and greet
+  furniture on clear floor; every minute or so they walk to another of those places. Up to two of the places
+  are beside something to sit on, and there they sit down (see "Sitting" below). They wave and greet
   the player at the door (lines by the hour and by how the player is), and within reach, facing them, the
   interaction key opens a conversation: both stand, face each other and animate (`talk_a` / `talk_b`).
 - **Conversation**: a chat about what has really happened (the player ill, a shift worked today and what
@@ -3993,6 +3994,78 @@ walks in, or come in at the door when it is not being looked at.
 - **Evenings out**: Leisure bridge, else Social's outing, else dinner at the nearest real restaurant: the
   game's destination marker, a key prompt at its door, the bill (90), two hours skipped, and a line.
   Not turning up is noticed.
+
+### Sitting (`People/Seating.cs`): the partner at home, a bench on a walk
+
+**What the game has to sit on, and how it seats its own people.** Looked for in the decompiled game:
+
+- every chair, armchair, sofa, stool and indoor bench a player can place is a `Controllers.SeatController`
+  (an `ItemController`), with one or more sitting positions (`SittingPosition`: one that is free, or null) and its own
+  record of which are taken (`Occupied`, `OnSittingChanged`);
+- the city's street benches are `OutsideBenchController`, each with `sittingPosition` (the player's) and
+  `aiSittingPosition` (where the game itself seats a pedestrian while the bench is near, `_npc`);
+- a person is seated by `ThirdPersonCharacter.SitOnChair(seat)` (the game's own sitting pose, the navigation agent
+  off, the body on the seat's position and turned as it is, the seat told it is taken) and taken off it by
+  `ThirdPersonCharacter.Reset()`. Its customers, its employees and the player in its own activities all go through
+  those two.
+- beds are the game's sleep activity's and are not seats: nobody of the mod's lies down.
+
+So nobody of the mod's is posed on a seat by the mod. `Seating` uses the game's two calls, and adds what they leave
+open: where the person stood (they stand up there, on the mesh, and not wherever the agent lands), and what "free" is.
+
+```csharp
+bool   CityPerson.Sit(Transform seat)     // anybody from a cast: the family's partner, a companion, a city person
+void   CityPerson.Rise()                  // safe at any time; also done by WalkTo, Work, Reset and Surrender
+bool   CityPerson.Seated
+Seating.IsSeat(item)                      // an ItemController that is a SeatController
+Seating.Free(item)                        // a sitting position of it with nobody on ANY of its places, or null
+Seating.InReach(from, seat)               // within 2.4 m: near enough to sit down without being seen to jump
+Seating.Bench(near, within)               // the nearest OutsideBenchController (one physics query: on a slow timer only)
+Seating.SecondPlaceFree(bench)            // its pedestrian's place is empty (the game's own field, read when asked)
+new PlayerSeat().Sit(player, seat) / .Stand() / .Seated   // the player, held by the game's own RestActivity blocker
+```
+
+Rules kept: a whole-body clip is never played on somebody seated (`CityPerson.Work` stands them up first), nobody
+walks off a seat with the agent off (`WalkTo` stands them up first), and a person given back to a pool or knocked
+down is stood up first (`Reset`, `Surrender`), so every existing way out of every scene already gets people off seats.
+
+**The partner at home** (`HomeLife`). `Scan` makes up to two of the partner's six places "beside a seat": any
+`SeatController` in the home with a clear piece of floor by it that is not in the doorway (`Usable`: 1.6 m from the
+entry, 1.5 m from the other places, on the same mesh). When they have walked to such a place (`Settle`) they sit down
+if `Seating.Free` gives a position (so never on a seat the player, or anybody, is on) within reach, for 70 to 160
+seconds (`Mode.Sitting`); otherwise they stand there as in the living room. They get up (`GetUp`: back where they
+stood) when that time is over and the player is not right beside them, when it is time to leave or to go to bed,
+when the seat is switched off or taken away, when a scene takes them over (`Hand`), and when the player presses Talk:
+the panel is offered over them seated, and they stand up to talk. While seated they have the game's sitting pose and
+nothing in their hands.
+
+**A bench on a walk** (`OutingScene`). On a walk, every second and a half while both are on foot and within 6 m of
+each other, `Seating.Bench` looks 4.5 m round the player for a street bench; with one in reach the game's panel
+offers "Sit down" (`reallife_social_button_sit`), once a walk. On the button: the player is seated on the bench's own
+place (`PlayerSeat`); the companion on its second place if the game has no pedestrian there and it is in reach,
+otherwise they stand by, facing; the bench's `spawnPedestrians` is switched off meanwhile and put back, so the game
+seats nobody on top of them. After four seconds the companion says something and the panel offers "Get up"; after 90
+seconds they get up by themselves. A rest counts as 40 m of the walk's 160. They are got up at once by anything that
+wants the player (`Wiring.Scenes.PlayerHeld`: an arrest, a panel of the mod's; the hospital), when the scene is cut
+(a time skip, a door) and when it ends in any way (`LeaveBench` in `Cut` and `End`).
+
+Outings that go indoors are as they were: the door, the fade, the time passing. Nobody sits at a table, and the
+Guide says so.
+
+Cost: nothing per frame. The home is scanned once on entering, as before; the partner's tick is the family's
+once-a-second one; the bench query is one `OverlapSphereNonAlloc` every 1.5 s of a walk and nothing otherwise.
+
+Log lines with diagnostics on: `People check (seat): this home has N place(s) to sit among M ...`, `... the partner
+sat down on <item>, 0.00 m from where they stood, for N s: PASS`, `... the partner stays standing by <item> (in use, or
+out of reach)`, `... the partner got up after N s (<why>): PASS`, `... a street bench is N m from the player on a walk:
+sitting down is offered`, `... the player sat down on a street bench; the companion sat down beside them`, `... up from
+the street bench (<why>): the player is free to walk: PASS`.
+
+Not checked in the game: any of it. To look at first: that one of the mod's characters takes the game's sitting pose
+at all (they are the game's own character type, but from the mod's pool) and sits at the right height on each kind of
+seat; that the player seated outside the game's own activity keeps the camera and can click the panel's button; that
+standing up puts both back on the pavement; whether the game's bench panel ("rest") still opens on a click while the
+player sits there through the mod. A screenshot of the partner on a sofa and one of the two on a bench settle the look.
 
 ### Engagement and wedding
 
