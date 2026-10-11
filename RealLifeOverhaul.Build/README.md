@@ -2297,6 +2297,36 @@ wall's real surface; what does not fit is left out and named in the log (`Law: <
   (the side one shortened to the depth there is), or the whole back of a room no wider than one panel; a bench
   inside; and a closed **evidence-room door** in the back wall beside it.
 
+With **Furnished police stations** on (`law_station_furniture`, `StationInterior.Furnish.cs`), the game's own
+furniture then goes round all of it. Each piece is a copy of one of the game's item prefabs
+(`PrefabHelper.LoadPrefabAssetByName`), made under a switched-off holder so that none of its scripts runs, and
+stripped while asleep of what makes it an item: the ground and direction indicators, attachment points and their
+decals, navigation targets, the "for sale" sign, a counter's waiting line, and every script, collider and obstacle
+(`Core/GameFurniture.cs`). What is left is the game's meshes and materials; a lamp keeps its light with its shadows
+off. Every item prefab stands on the floor at its pivot with its front towards +Z (read from the game's own
+prefabs); sizes are measured from the copy's meshes. Placed in the room's frame, only where the floor and a straight
+stretch of wall have room, and never on floor already taken: the way from the door to the counter, round both its
+ends, to the cell and in front of the bars, the sergeant's and the visitor's places and the officers' desks are
+taken first.
+
+- on the counter (sergeant's side) a `ComputerMonitor`, an `OfficePhone` and a `StackOfBooks`; on each officer's
+  desk a monitor, a phone and a `DeskPlant01`;
+- along the side walls, in front of the counter: a `WaterCooler`, a `GroundPlant03`, a `TrashBin`; behind it:
+  up to two `OfficeLockers`, a `Printer`, a `StorageShelf`, a `CheapCoffeeMachine`, up to two `UniformLocker`, a
+  plant; each with its back to the wall and 0.55 m kept free in front of it;
+- on the walls, where a ray finds the surface: an `ExitSign` over the door, a `LargeWallClock` in the public part,
+  two `FramedCertificate` behind the counter (never where the notice board hangs);
+- up to three flush `CeilingLampSquare` down the middle where a ray finds a ceiling; a `CarpetBigBasic` in the
+  waiting part where all of it is floor;
+- in a corner cell big enough for it beside its bench: a `ToiletClassic` against the back wall and a
+  `SinkWallModern` on its side wall.
+
+One pass on the way in, under the game's fade: a few thousand walkable-floor samples, and the first copy of each
+piece (kept for every later visit, moved to the next station's own places). The log line names how many pieces went
+in. Off, the station is the counter, bench, desks and cell only. Not seen in the game yet: how the pieces look in the
+units' rooms, whether every piece's front is the side the game's own placing uses (read from the prefabs' direction
+indicators and seat points), and whether a unit has a ceiling a ray can find.
+
 Furniture and bars are cut out of the navigation mesh. The sergeant is a pool character of the scene's own;
 the other three are presence characters. A room too small for any of it keeps the front desk service where
 the player stands.

@@ -317,6 +317,8 @@ namespace RealLifeOverhaul
                     v => Settings.LawReputation = v)
                 .AddToggle(Settings.LawStationId, "reallife_law_station", Settings.LawStation,
                     v => Settings.LawStation = v)
+                .AddToggle(Settings.LawStationFurnitureId, "reallife_law_station_furniture", Settings.LawStationFurniture,
+                    v => Settings.LawStationFurniture = v)
                 .AddToggle(Settings.LawMapMarkersId, "reallife_law_map_markers", Settings.LawMapMarkers,
                     v => Settings.LawMapMarkers = v)
                 .AddButton("reallife_law_test_arrest_minor", () => Law.LawDirector.Instance?.TestArrest(0))
@@ -856,6 +858,7 @@ namespace RealLifeOverhaul
             Jaywalker.Logger = context.Logger;
             PlayerKnockdown.Logger = context.Logger;
             PhoneContacts.Logger = context.Logger;
+            GameFurniture.Logger = context.Logger;
             ContactPictures.Logger = context.Logger;
             ContactSearch.Logger = context.Logger;
             CityLifeDirector.Logger = context.Logger;
