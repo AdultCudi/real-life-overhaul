@@ -46,6 +46,9 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The footfall change, per cent, that one of business pressure's own issues has running at a business on a day; 0 with none then. Default: none.</summary>
         public static Func<BuildingRegistration, int, int> IssueFootfall;
 
+        /// <summary>Income of the days from one to another (both counted) that is in no business's statement and belongs in the quarter's return: the gain on a business sold. Default: none.</summary>
+        public static Func<int, int, int> OtherIncome;
+
         public static void Reset()
         {
             Footfall = null;
@@ -58,6 +61,7 @@ namespace RealLifeOverhaul.Economy
             Leave = null;
             TaxCase = null;
             IssueFootfall = null;
+            OtherIncome = null;
         }
     }
 

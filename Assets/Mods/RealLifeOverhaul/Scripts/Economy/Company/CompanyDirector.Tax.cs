@@ -118,7 +118,8 @@ namespace RealLifeOverhaul.Economy
 
             if (TaxRules.QuarterOver(t, day, QuarterDays))
             {
-                int from = t.QuarterFrom, takings = CompanyGame.Sales(from, yesterday);
+                // (With what is in no business's statement: the gain on a business sold in the quarter, counted here once.)
+                int from = t.QuarterFrom, takings = CompanyGame.Sales(from, yesterday) + (CompanyBridges.OtherIncome != null ? CompanyBridges.OtherIncome(from, yesterday) : 0);
                 TaxRules.Close(t, takings, day);
                 if (Verbose)
                 {

@@ -843,6 +843,20 @@ namespace RealLifeOverhaul.Meta
                 .Data(Economy.OnlineStore.Key, Economy.OnlineStore.TestKey)
                 .Cleanup(() => Economy.OnlineDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Economy.OnlineDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
+            // The cleaning service and selling a business. Their rows stand under the company's header on the options page
+            // and their pages are the Services app. They share one line of the save. Off, the cleaning service plans no
+            // round, shows no cleaner and charges nothing; selling a business offers, pays and charges nothing.
+            Economy.ServicesGuide.AddCleaningFacts(Features.Add("economy_cleaning", "reallife_meta_title_economy_cleaning")
+                .About("reallife_guide_economy_cleaning_about").Help("reallife_guide_economy_cleaning")
+                .Owns(Settings.EconomyCleaningId)
+                .Test("reallife_svc_test_round", "reallife_svc_test_contract", "reallife_svc_test_week")
+                .Data(Economy.ServicesStore.Key)
+                .Cleanup(() => Economy.ServicesDirector.Instance?.StopAll(), -3)
+                .ResetData(() => Economy.ServicesDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
+            Economy.ServicesGuide.AddSaleFacts(Features.Add("economy_sale", "reallife_meta_title_economy_sale")
+                .About("reallife_guide_economy_sale_about").Help("reallife_guide_economy_sale")
+                .Owns(Settings.EconomySaleId)
+                .Test("reallife_svc_test_offer", "reallife_svc_test_sale_paper", "reallife_svc_test_part"));
             Roommates.RoommateGuide.Register();   // sharing the flat: the feature, its option, its save line, its tests and its Guide figures (Scripts/Home/Roommates)
         }
 

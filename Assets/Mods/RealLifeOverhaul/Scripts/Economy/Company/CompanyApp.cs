@@ -377,6 +377,7 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(CompanyText.T("reallife_co_over_more", "count", (alerts.Count - 6).ToString()));
             }
+            if (ServicesDirector.CanClean) InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_svc_open_cleaning", ServicesDirector.OpenCleaning);   // (the cleaning service: Economy/Services)
             return null;
         }
 
@@ -449,6 +450,7 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(FinanceText.Pair("reallife_co_shop_hidden", file.Hide + "%"));
             }
+            if (ServicesDirector.CanSell) InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_svc_open_sale", () => ServicesDirector.OpenSale(file.Place));   // (selling a business: Economy/Services)
             BackButton(box);
         }
     }
