@@ -116,6 +116,7 @@ namespace RealLifeOverhaul
         public const string BusesId = "transit_buses";
         public const string TransitPeopleId = "transit_people";
         public const string SubwayJourneyId = "transit_subway";
+        public const string TaxiCallId = "transit_taxi_call";
         public const string CarOwnershipId = "car_ownership";
         public const string CarEasyId = "car_easy";
         public const string LeisureId = "leisure";
@@ -290,6 +291,7 @@ namespace RealLifeOverhaul
         public static bool Buses = true;                 // bus stops near the player, buses that call at them, riding one
         public static bool TransitPeople = true;         // people waiting at a stop, getting on and off
         public static bool SubwayJourney = true;         // the subway as a trip with a wait and a ride, from a key at each entrance
+        public static bool TaxiCall = true;              // the City Cabs contact: a taxi called from the phone comes to the player's street (Scripts/Transport/Taxi)
         public static bool CarOwnership = true;          // distance, servicing, wear, breakdowns, insurance, registration, the fuel gauge
         public static bool CarEasy = false;              // easy car ownership: no fuel use, no breakdowns, no wear
         public static bool Leisure = true;               // everything under Scripts/Leisure
@@ -468,6 +470,7 @@ namespace RealLifeOverhaul
             Buses = Bool(modId, BusesId, Buses);
             TransitPeople = Bool(modId, TransitPeopleId, TransitPeople);
             SubwayJourney = Bool(modId, SubwayJourneyId, SubwayJourney);
+            TaxiCall = Bool(modId, TaxiCallId, TaxiCall);
             CarOwnership = Bool(modId, CarOwnershipId, CarOwnership);
             CarEasy = Bool(modId, CarEasyId, CarEasy);
             Leisure = Bool(modId, LeisureId, Leisure);

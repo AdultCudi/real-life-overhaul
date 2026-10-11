@@ -45,6 +45,7 @@ namespace RealLifeOverhaul.Meta
             new[] { "licences reallife_licences_header", "driving licence license test theory examiner points" },
             new[] { "garage reallife_garage_header", "car tuning paint parts bike motorbike motorcycle scooter two-wheeler" },
             new[] { "transport reallife_transport_header", "bus buses subway metro train car ownership" },
+            new[] { "taxi", "taxi cab cabs hail call ride" },
             new[] { "events reallife_events_header", "fire weather rain storm street" },
             new[] { "family reallife_family_header", "partner spouse wife husband wedding marriage children kids baby" },
             new[] { "social reallife_social_header", "friends dating date relationship career" },
