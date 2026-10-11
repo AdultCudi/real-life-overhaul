@@ -75,46 +75,57 @@ namespace RealLifeOverhaul.Economy
 
         private void OnDestroy()
         {
-            // The city is unloading (or the mod is being switched off): the banks have their own terms again before anything else.
+            SaveHook.Drop(_onSave);
+            GlobalEvents.onNewHour -= _onHour;
+            GlobalEvents.onNewDay -= _onDay;
+            if (Instance != this)
+            {
+                // Another city's director has started since: the file, the banks and the ledger are its, and are left alone.
+                if (_app != null)
+                {
+                    _app.Remove();
+                    _app = null;
+                }
+                return;
+            }
+            // The city is unloading (or the mod is being switched off): the banks have their own terms again before
+            // anything else. Nothing is written to the save here: by now the game's current save may be another one,
+            // and what a save keeps of the file is written when the game saves (OnSave).
             try
             {
-                StandDown("the city is unloading", false);
+                StandDown("the city is unloading", false, false);
             }
             catch (Exception e)
             {
                 Logger?.Error(e);
                 BankTerms.Restore();
             }
-            SaveHook.Drop(_onSave);
-            GlobalEvents.onNewHour -= _onHour;
-            GlobalEvents.onNewDay -= _onDay;
             BankTerms.Forget();
             CreditLedger.Clock = null;
             CreditLedger.Income = null;
             CreditLedger.Legal = null;
-            if (Instance == this)
-            {
-                Instance = null;
-            }
+            Instance = null;
         }
 
+        // The first look is a second after the city's objects are made, never in the frame they are made in.
         private IEnumerator Tick()
         {
             var wait = new WaitForSecondsRealtime(1f);
             while (true)
             {
-                if (!_broken)
-                {
-                    try
-                    {
-                        Slow();
-                    }
-                    catch (Exception e)
-                    {
-                        Fault("the timer", e);
-                    }
-                }
                 yield return wait;
+                if (_broken)
+                {
+                    continue;
+                }
+                try
+                {
+                    Slow();
+                }
+                catch (Exception e)
+                {
+                    Fault("the timer", e);
+                }
             }
         }
 
@@ -129,7 +140,7 @@ namespace RealLifeOverhaul.Economy
             {
                 if (_running)
                 {
-                    StandDown("the option is off", true);
+                    StandDown("the option is off", true, true);
                 }
                 return;
             }
@@ -215,11 +226,13 @@ namespace RealLifeOverhaul.Economy
             Badge();
         }
 
-        // The economy stops: the file goes into the save's data, the banks get their own terms back, the app leaves the phone.
-        private void StandDown(string why, bool tell)
+        // The economy stops: the banks get their own terms back and the app leaves the phone. With 'keep' the file goes
+        // into the save's data first, so that switching the option on again (or the next save) has it; that is only
+        // for a stop in the middle of play, when the game's current save is certainly the one the file belongs to.
+        private void StandDown(string why, bool tell, bool keep)
         {
             bool was = _running || BankTerms.Applied;
-            if (_running && Save != null && CreditLedger.File != null)
+            if (keep && _running && Save != null && CreditLedger.File != null)
             {
                 CreditStore.Save(Save.modData, CreditLedger.File);
             }
@@ -252,7 +265,7 @@ namespace RealLifeOverhaul.Economy
             Logger?.Error(e);
             try
             {
-                StandDown("a fault", false);
+                StandDown("a fault", false, false);   // (what a fault leaves of the file is not written anywhere)
             }
             catch (Exception second)
             {
@@ -671,7 +684,7 @@ namespace RealLifeOverhaul.Economy
         {
             try
             {
-                StandDown("the save tools asked", true);
+                StandDown("the save tools asked", true, true);
             }
             catch (Exception e)
             {

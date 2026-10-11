@@ -5048,6 +5048,11 @@ A later version adds fields at the end of a record or a part with a new letter; 
 full file is under 8,000 characters (`EconomyCheck` measures one). A damaged line opens a fresh file from what the save shows. The loans are the
 game's own records: a save loads in the plain game with its loans as they are.
 
+The line is written when the game saves (`SaveHook`), and when the option is switched off or the save tools stop the
+feature in the middle of play. It is **not** written when the city unloads: by then the game's current save may be
+another one. The director's first look is a second after the city's objects are made, and one that is destroyed after
+a newer one has started leaves the file, the ledger and the banks to that one.
+
 ### For the later phases
 
 ```csharp
