@@ -24,7 +24,6 @@ namespace RealLifeOverhaul
         PhoneDump,
         CharacterReport,
         PhotoMode,          // into and out of photo mode (Leisure/Photo)
-        Garage,             // the custom shop in a repair bay; hire, return and buy at a bike dock, rack or stand
     }
 
     public enum KeyModifier
@@ -78,7 +77,6 @@ namespace RealLifeOverhaul
             new Binding("phone_dump", "reallife_keys_phone_dump", KeyCode.F8),
             new Binding("character_report", "reallife_keys_character_report", KeyCode.F9),
             new Binding("photo_mode", "reallife_keys_photo_mode", KeyCode.F10),
-            new Binding("garage", "reallife_keys_garage", KeyCode.K),   // (not B: the game opens BizMan with it, on foot and at the wheel)
         };
 
         private static readonly TextLocalizationComponent[] Rows = new TextLocalizationComponent[All.Length];

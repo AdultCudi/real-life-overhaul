@@ -705,11 +705,10 @@ namespace RealLifeOverhaul
             _root.AddComponent<CityLifeDirector>();   // people at work and about their day: its own pool of eight
             _root.AddComponent<JobDirector>();   // jobs the player takes themselves (Scripts/Jobs)
             HomeDirector.Logger = context.Logger;
-            HomeCookOffer.Logger = context.Logger;
             _root.AddComponent<HomeDirector>();   // home life and health (Scripts/Home); after LifeEvents and the city life director, whose clip player it shares
             _root.AddComponent<Law.LawDirector>();   // precincts, custody, the record and reputation (Scripts/Law)
             _root.AddComponent<TransitDirector>();   // bus stops, buses and the subway journey (Scripts/Transport)
-            _root.AddComponent<CarOwnership>();   // servicing, wear, breakdowns, insurance, the fuel gauge (Scripts/Transport)
+            _root.AddComponent<CarOwnership>();   // servicing, wear, breakdowns, insurance, the word in the game's vehicle panel for what a car needs (Scripts/Transport)
             Leisure.LeisureDirector.Logger = context.Logger;
             _root.AddComponent<Leisure.LeisureDirector>();   // things to do for fun, the clothes rack, night life, the sound bed, photo mode (Scripts/Leisure)
             _root.AddComponent<Events.EventDirector>();   // fires, weather that matters, street events (Scripts/Events): after CityLifeDirector, whose clip player it uses

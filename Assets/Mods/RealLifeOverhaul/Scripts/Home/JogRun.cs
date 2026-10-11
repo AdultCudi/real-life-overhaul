@@ -9,8 +9,9 @@ namespace RealLifeOverhaul
     /// <summary>
     /// Going for a run: a loop of six checkpoints on the pavement (or on the paths of a park,
     /// when the player starts in one), run by the player themselves with the game's own
-    /// running. The checkpoint ahead has a marker and a ring on the ground; reaching it moves
-    /// both on. Fitness, a calmer head and a sweaty shirt come from the game minutes spent
+    /// running. The checkpoint ahead has the game's own destination marker on it (GameUi.GuideMark:
+    /// the guider the game marks a job's destination with, named with how far round the loop the
+    /// runner is) and a ring on the ground; reaching it moves both on. Fitness, a calmer head and a sweaty shirt come from the game minutes spent
     /// actually moving (the director counts them while <see cref="Moving"/>); a park is worth a
     /// quarter more, rain a fifth less, and soaks the runner as rain does.
     ///
@@ -30,6 +31,8 @@ namespace RealLifeOverhaul
         private readonly IModLogger _logger;
         private readonly Vector3[] _route = new Vector3[Checkpoints];
         private readonly string[] _lines = new string[Checkpoints];
+        private readonly GameUi.GuideMark _mark = new GameUi.GuideMark();
+        private int _marked = -1;
         private Transform _ring;
         private int _next;
         private float _endsAt;
@@ -38,7 +41,6 @@ namespace RealLifeOverhaul
         private Vector3 _lastAt;
         private float _lastTime;
         private string _title;
-        private string _label;
 
         private static Bounds[] _parks;
 
@@ -101,12 +103,12 @@ namespace RealLifeOverhaul
             bool rain = BigAmbitions.DayNightCycle.RainHelper.AreRainDropsFalling;
             Boost = (park ? 1.25f : 1f) * (rain ? 0.8f : 1f);
             _title = JobText.T(park ? "reallife_home_run_title_park" : "reallife_home_run_title");
-            _label = JobText.T("reallife_home_run_marker");
             for (int i = 0; i < Checkpoints; i++)
             {
-                _lines[i] = JobText.T("reallife_home_run_line", "done", i.ToString(), "all", Checkpoints.ToString());
+                _lines[i] = _title + ": " + JobText.T("reallife_home_run_mark", "next", (i + 1).ToString(), "all", Checkpoints.ToString());
             }
             _next = 0;
+            _marked = -1;
             _endsAt = Time.unscaledTime + MostSeconds;
             _startMinutes = TimeHelper.NowInMinutes();
             _startFitness = HomeState.Fitness;
@@ -163,21 +165,22 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Per frame while a run is on: the marker over the checkpoint ahead. Nothing is allocated.</summary>
-        public void Draw(PlayerController player)
+        /// <summary>
+        /// Four times a second while a run is on: the game's marker on the checkpoint ahead. One compare unless the
+        /// checkpoint has changed; a marker a job or an outing has taken meanwhile is left to it and asked for again.
+        /// </summary>
+        public void Mark()
         {
-            if (!Active || ThirdPersonCamera.IsUiOpen())
+            if (!Active || (_marked == _next && _mark.Showing))
             {
-                if (JobHud.Exists)
-                {
-                    JobHud.Instance.HideMarker();
-                    JobHud.Instance.HideObjective();
-                }
                 return;
             }
-            JobHud hud = JobHud.Instance;
-            hud.ShowObjective(_title, _lines[_next]);
-            hud.ShowMarkerAt(_label, _route[_next], player.transform.position);
+            bool shown = _mark.Show(_route[_next] + Vector3.up * 1.5f, _lines[_next]);
+            if (_marked != _next && Meta.Dev.Verbose)
+            {
+                _logger?.Info("Home check (run): checkpoint " + (_next + 1) + " of " + Checkpoints + " is " + (shown ? "on the game's destination marker: PASS" : "NOT marked (the game's marker is on a job or an outing; the ring on the ground still shows it): FAIL") + ".");
+            }
+            _marked = _next;
         }
 
         /// <summary>Stops the run. With no reason it was run to the end; otherwise the reason is said.</summary>
@@ -193,11 +196,8 @@ namespace RealLifeOverhaul
             {
                 _ring.gameObject.SetActive(false);
             }
-            if (JobHud.Exists)
-            {
-                JobHud.Instance.HideMarker();
-                JobHud.Instance.HideObjective();
-            }
+            _mark.Hide();
+            _marked = -1;
             int minutes = Mathf.Max(0, Mathf.RoundToInt(TimeHelper.NowInMinutes() - _startMinutes));
             float gained = HomeState.Fitness - _startFitness;
             var data = new Dictionary<string, string>(3)
@@ -216,6 +216,7 @@ namespace RealLifeOverhaul
         {
             Active = false;
             Moving = false;
+            _mark.Hide();
             if (_ring != null)
             {
                 Object.Destroy(_ring.gameObject);

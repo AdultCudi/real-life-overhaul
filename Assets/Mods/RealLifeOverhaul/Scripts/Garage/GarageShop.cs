@@ -4,10 +4,14 @@ using BAModAPI;
 using Cinemachine;
 using Helpers;
 using Localizor;
-using TMPro;
+using RealLifeOverhaul.GameUi;
+using UI;
 using UI.Load;
+using UI.MiniMenu;
 using UI.Notification;
+using UI.Smartphone;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using NwhVehicle = NWH.VehiclePhysics2.VehicleController;
 
@@ -16,10 +20,15 @@ namespace RealLifeOverhaul
     /// <summary>
     /// The custom shop. It is at every repair bay the game has: the bays of its auto repair shops and truck
     /// garages (the game's own <c>GasStationTrigger</c>s marked as repair stations, found once per city
-    /// load). Drive a car of your own into a bay, stop, and the Garage key opens the workshop: the mod's own
-    /// camera on a turntable round the car (drag to turn, wheel to move in and out), a panel of what can be
-    /// done to it, every choice shown on the car as it is picked, what it costs, what it does to the car's
-    /// figures, and one bill at the end. Leaving without paying puts the car back as it came in.
+    /// load). Drive a car of your own into a bay, stop, and the "Garage" button of the game's own panel
+    /// there (<see cref="GarageBay"/>) lists the custom shop. In it: the mod's own camera on a turntable round
+    /// the car (drag to turn, wheel to move in and out), and the game's list window left of the middle, the car to its right
+    /// (<see cref="GarageList"/>, a copy of the window the game lists its subway stations in) with what can
+    /// be done to the car, page by page: paint, finish, lights, body, parts. Every choice is shown on the
+    /// car as it is picked; the lines under the headline say what the visit costs and what it does to the
+    /// car's figures; the first entry pays the one bill. A colour of one's own is mixed in the game's own
+    /// colour picker. Cancel (the yellow button, or the game's cancel key) leaves without paying, which
+    /// puts the car back as it came in.
     ///
     /// Work is done at once. The game has no notion of a car that is away being worked on: a car is either
     /// in the save's vehicle list and in the world, or it is not the player's. Keeping one back would mean
@@ -28,7 +37,7 @@ namespace RealLifeOverhaul
     public sealed class GarageShop
     {
         private const int CameraPriority = 200;        // over the mod's chase camera (100) and the game's own (1)
-        private const float BayStandingSpeed = 1.5f;   // m/s, as the game's vehicles report their speed (rounded): standing, or rolling to a stop
+        private const float ViewAside = 0.21f;         // of the camera's distance: puts the car about a sixth of the screen's width right of the middle (lens of 40 degrees)
 
         private static readonly string[] WheelIds = { "wheel_5spoke", "wheel_mesh", "wheel_steel" };
 
@@ -37,7 +46,13 @@ namespace RealLifeOverhaul
             "reallife_garage_wheels_5spoke", "reallife_garage_wheels_mesh", "reallife_garage_wheels_steel"
         };
 
-        private enum Tab { Paint, Finish, Lights, Body, Parts }
+        private enum Page { Main, Paint, Finish, Lights, Body, Parts }
+
+        private static readonly string[] Families =
+        {
+            "reallife_garage_list_family_1", "reallife_garage_list_family_2", "reallife_garage_list_family_3",
+            "reallife_garage_list_family_4", "reallife_garage_list_family_5", "reallife_garage_list_family_6"
+        };
 
         public static IModLogger Logger;
 
@@ -54,33 +69,49 @@ namespace RealLifeOverhaul
         private NwhVehicle _held;          // the car's physics, while its pedals are ours
         private bool _autoInput;
         private bool _frozen;
-        private Tab _tab;
+        private Page _page;
 
         // the view
         private CinemachineVirtualCamera _vcam;
         private float _yaw, _pitch, _distance, _minDistance, _maxDistance;
         private Vector3 _focus;
 
-        // the panel
-        private GameObject _panel;
+        // the list
+        private readonly List<Action> _acts = new List<Action>(40);   // what each entry's button does, by the entry's id
+        private readonly System.Text.StringBuilder _text = new System.Text.StringBuilder(240);
+        private readonly System.Text.StringBuilder _info = new System.Text.StringBuilder(320);
+        private readonly Action<int> _onPick;
+        private readonly Action _onListClosed;
+        private readonly Action _toMain, _toPaint, _toFinish, _toLights, _toBody, _toParts, _pay, _stock, _mix;
+        private readonly Action<Color> _onMixing, _onMixed;
         private GameObject _dragArea;
-        private Transform _content;
-        private TextMeshProUGUI _money, _figures, _total, _customPrice;
-        private TextMeshProUGUI _payLabel;
-        private Image _customSwatch;
-        private float _h, _s, _v;
+        private string _listClosing;
+        private int _moneyShown;
+        private bool _mixing;
+        private bool _mixKept;      // the colour picker's own button was used: the mixed colour stays in the cart
+        private int _mixFrom;       // the cart's paint when the picker was opened: put back unless the colour was kept
 
-        private bool _promptOn;
         private bool _open;
 
         public GarageShop(Transform owner)
         {
             _owner = owner;
+            _onPick = Picked;
+            _onListClosed = ListClosed;
+            _toMain = () => To(Page.Main);
+            _toPaint = () => To(Page.Paint);
+            _toFinish = () => To(Page.Finish);
+            _toLights = () => To(Page.Lights);
+            _toBody = () => To(Page.Body);
+            _toParts = () => To(Page.Parts);
+            _pay = Pay;
+            _stock = Stock;
+            _mix = MixOpen;
+            _onMixing = Mixing;
+            _onMixed = Mixed;
         }
 
         public bool IsOpen => _open;
-
-        public bool PromptOn => _promptOn;
 
         public VehicleController Car => _car;
 
@@ -199,56 +230,43 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- four times a second
 
-        /// <summary>Looks whether the player has stopped in a bay (shows the prompt), and whether an open shop may stay open.</summary>
+        /// <summary>Whether an open shop may stay open, and whether the lines under its headline still say what the player has.</summary>
         public void Tick(GameManager gm)
         {
-            if (_open)
-            {
-                // The car gone, the option off, the driver out of the seat, the player walked off (the test button opens it on foot).
-                if (_car == null || !Settings.Garage || (_held != null && gm.selectedVehicle != _car) || LoadScene.isLoading
-                    || (_held == null && gm.playerController != null && (gm.playerController.transform.position - _car.transform.position).sqrMagnitude > 30f * 30f))
-                {
-                    Close(false);
-                }
-                else if (_money != null)
-                {
-                    RefreshMoney();
-                }
-                SetPrompt(false);
-                return;
-            }
-            VehicleController vehicle = gm.selectedVehicle;
-            bool here = false;
-            if (Settings.Garage && vehicle is CarController && vehicle.CurrentSpeed <= BayStandingSpeed && !ThirdPersonCamera.IsUiOpen())
-            {
-                if (!_baysFound)
-                {
-                    FindBays();
-                }
-                here = _bays.Count > 0 && BayOf(vehicle) != null && Refusal(vehicle) == null;
-            }
-            SetPrompt(here);
-        }
-
-        private void SetPrompt(bool on)
-        {
-            if (on == _promptOn)
+            if (!_open)
             {
                 return;
             }
-            _promptOn = on;
-            if (on || GarageUi.Exists)
+            // The car gone, the option off, the driver out of the seat, the player walked off (the test button opens it on foot), another screen up.
+            string why = _car == null ? "the car is gone" : !Settings.Garage ? "the Garage was switched off" : _held != null && gm.selectedVehicle != _car ? "the driver left the seat"
+                : LoadScene.isLoading ? "the city is loading"
+                : _held == null && gm.playerController != null && (gm.playerController.transform.position - _car.transform.position).sqrMagnitude > 30f * 30f ? "the player walked off"
+                : GarageList.MenuUp ? "another screen came up" : null;
+            if (why != null)
             {
-                GarageDirector.Prompt(this, on ? GarageText.T("reallife_garage_prompt_shop") : null);
+                _listClosing = why;
+                Close(false);
+                return;
             }
-        }
-
-        /// <summary>The Garage key, while the prompt is up.</summary>
-        public void Use(GameManager gm)
-        {
-            if (_promptOn && !_open && gm.selectedVehicle != null)
+            if (_mixing && !CustomColorPicker.isOpen)
             {
-                Open(gm.selectedVehicle);
+                _mixing = false;   // the game's colour picker has been closed: the list says what the paint is now
+                if (!_mixKept)
+                {
+                    _cart.Paint = _mixFrom;   // closed without its button (its Cancel, a click beside it, the cancel key): as it was
+                    Preview();
+                }
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Garage check (choice): mixed paint " + (_cart.Paint < 0 ? "factory" : "#" + _cart.Paint.ToString("X6")) + "; this visit " + Bill() + ".");
+                }
+                Fill();
+                return;
+            }
+            GameInstance save = SaveGameManager.Current;
+            if (save != null && Mathf.RoundToInt(save.Money) != _moneyShown && GarageList.OpenFor(this))
+            {
+                GarageList.Take(this, true).Info(Info());
             }
         }
 
@@ -270,8 +288,8 @@ namespace RealLifeOverhaul
                 GarageBuild own = GarageState.Of(car.vehicleInstance.id);
                 _saved = own != null ? own.Copy() : new GarageBuild();
                 _cart = _saved.Copy();
-                _tab = Tab.Paint;
-                Color.RGBToHSV(_cart.Paint >= 0 ? GarageCar.FromRgb(_cart.Paint) : _fitted.StockColour(), out _h, out _s, out _v);
+                _page = Page.Main;
+                _mixing = false;
 
                 // Seated: the pedals are taken off the keys and the car is held where it stands, so nothing drives it from under the view.
                 var driven = gm != null && gm.selectedVehicle == car ? car as CarController : null;
@@ -287,11 +305,23 @@ namespace RealLifeOverhaul
                     _frozen = true;
                 }
 
+                if (GarageList.Take(this, true) == null)
+                {
+                    Logger?.Warn("Garage: the custom shop has no window this session (the game's list could not be copied; a \"Game UI:\" line above says why).");
+                    Close(false);
+                    return false;
+                }
                 View(gm);
-                Build();
+                DragArea();
+                float began = Time.realtimeSinceStartup;
+                Fill();
                 Preview();
-                SetPrompt(false);
                 Logger?.Info("Garage: custom shop opened on " + car.name + " (" + _kind + ").");
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Garage check (custom shop list): the game's list is open left of the middle with " + _acts.Count + " entries (pay, paint, finish, lights, body, parts, all stock); "
+                                 + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
+                }
                 return true;
             }
             catch (Exception e)
@@ -305,7 +335,7 @@ namespace RealLifeOverhaul
         /// <summary>Every way out. <paramref name="keep"/>: the cart has been paid for and is the car's build now.</summary>
         public void Close(bool keep)
         {
-            if (!_open && _panel == null)
+            if (!_open)
             {
                 return;
             }
@@ -338,20 +368,33 @@ namespace RealLifeOverhaul
                 Logger?.Warn("Garage: the car could not be handed back cleanly. " + e);
             }
             _fitted = null;
-            if (_panel != null)
+            try
             {
-                UnityEngine.Object.Destroy(_panel);
-                _panel = null;
-                GarageUi.GiveCursor();
+                if (_mixing)
+                {
+                    _mixing = false;
+                    UIs uis = InstanceBehavior<UIs>.Instance;
+                    if (CustomColorPicker.isOpen && uis != null && uis.customColorPicker != null)
+                    {
+                        uis.customColorPicker.Close();
+                    }
+                }
+                if (GarageList.OpenFor(this))
+                {
+                    _listClosing = _listClosing ?? (keep ? "the bill was paid" : "the shop was left");
+                    GarageList.Close();
+                }
             }
+            catch (Exception e)
+            {
+                Logger?.Warn("Garage: the shop's list could not be closed cleanly. " + e);
+            }
+            _acts.Clear();
             if (_dragArea != null)
             {
                 UnityEngine.Object.Destroy(_dragArea);
                 _dragArea = null;
             }
-            _content = null;
-            _money = _figures = _total = _customPrice = _payLabel = null;
-            _customSwatch = null;
             if (_vcam != null)
             {
                 _vcam.Priority = -100;
@@ -420,7 +463,9 @@ namespace RealLifeOverhaul
             }
             Vector3 target = _car.transform.TransformPoint(_focus);
             Quaternion rotation = Quaternion.Euler(_pitch, _yaw, 0f);
-            _vcam.transform.SetPositionAndRotation(target - rotation * Vector3.forward * _distance, rotation);
+            // The camera stands a little to the left of its line to the car, so the car is seen right of the middle: in the part
+            // of the screen between the shop's list and the game's phone.
+            _vcam.transform.SetPositionAndRotation(target - rotation * Vector3.forward * _distance - rotation * Vector3.right * (_distance * ViewAside), rotation);
         }
 
         private void Turn(Vector2 pixels)
@@ -436,232 +481,341 @@ namespace RealLifeOverhaul
             Aim();
         }
 
-        // ---------------------------------------------------------------- the panel
-
-        private void Build()
+        // The part of the screen the list leaves free: an invisible plate on the HUD's canvas, behind everything else on it.
+        // Dragging on it turns the turntable view, the wheel moves it in and out, and no click in the shop reaches the world behind.
+        private void DragArea()
         {
-            GarageUi ui = GarageUi.Instance;
-
-            RectTransform drag = ui.Box("Shop View", ui.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, new Color(0f, 0f, 0f, 0f));
-            GarageUi.Stretch(drag, 0f);
-            var area = drag.gameObject.AddComponent<GarageDragArea>();
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            Transform canvas = uis != null && uis.playerHUD != null ? uis.playerHUD.transform : null;
+            if (canvas == null || _dragArea != null)
+            {
+                return;
+            }
+            var made = new GameObject("RealLifeOverhaul Shop View", typeof(RectTransform));
+            made.transform.SetParent(canvas, false);
+            var rect = (RectTransform)made.transform;
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            rect.SetAsFirstSibling();
+            made.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0f);
+            var area = made.AddComponent<GarageDragArea>();
             area.Dragged = Turn;
             area.Scrolled = Zoom;
-            _dragArea = drag.gameObject;
-
-            RectTransform panel = ui.Box("Shop", ui.transform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(24f, -45f), new Vector2(560f, 780f), GarageUi.Plate);
-            _panel = panel.gameObject;
-            GarageUi.TakeCursor();   // given back in Close, which looks for the panel
-            string name = _car.vehicleType != null ? _car.vehicleType.vehicleTypeName.GetLocalization() : _car.name;
-            ui.TextAt(panel, 16f, 10f, 528f, 32f, 26f, Color.white, GarageText.T("reallife_customshop_title", "car", name));
-            _money = ui.TextAt(panel, 16f, 44f, 528f, 24f, 18f, GarageUi.Dim, string.Empty);
-
-            Tabs(panel);
-            var content = new GameObject("Content", typeof(RectTransform));
-            content.transform.SetParent(panel, false);
-            var rect = (RectTransform)content.transform;
-            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
-            rect.anchoredPosition = new Vector2(10f, -118f);
-            rect.sizeDelta = new Vector2(540f, 420f);
-            _content = content.transform;
-
-            _figures = ui.TextAt(panel, 16f, 546f, 528f, 72f, 17f, GarageUi.Dim, string.Empty, TextAlignmentOptions.TopLeft);
-            _total = ui.TextAt(panel, 16f, 624f, 528f, 26f, 20f, Color.white, string.Empty);
-            Button pay = ui.ButtonAt(panel, 16f, 660f, 256f, 44f, GarageUi.Go, string.Empty, Pay, 20f);
-            _payLabel = pay.GetComponentInChildren<TextMeshProUGUI>();
-            ui.ButtonAt(panel, 282f, 660f, 126f, 44f, GarageUi.Stop, GarageText.T("reallife_garage_leave"), () => Close(false));
-            ui.ButtonAt(panel, 418f, 660f, 126f, 44f, GarageUi.Row, GarageText.T("reallife_garage_stock"), Stock);
-            ui.ButtonAt(panel, 16f, 716f, 256f, 36f, GarageUi.Row, GarageText.T("reallife_garage_my_vehicles"), () => GarageSummary.Toggle());
-            GarageUi.Wrap(ui.TextAt(panel, 282f, 714f, 262f, 44f, 14f, GarageUi.Dim, GarageText.T("reallife_garage_work_note"), TextAlignmentOptions.TopLeft));
-            Fill();
-            Refresh();
+            _dragArea = made;
         }
 
-        private void Tabs(Transform panel)
-        {
-            GarageUi ui = GarageUi.Instance;
-            var holder = new GameObject("Tabs", typeof(RectTransform));
-            holder.transform.SetParent(panel, false);
-            var rect = (RectTransform)holder.transform;
-            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
-            rect.anchoredPosition = new Vector2(10f, -74f);
-            rect.sizeDelta = new Vector2(540f, 36f);
-            string[] names =
-            {
-                GarageText.T("reallife_garage_tab_paint"), GarageText.T("reallife_garage_tab_finish"), GarageText.T("reallife_garage_tab_lights"),
-                GarageText.T("reallife_garage_tab_body"), GarageText.T("reallife_garage_tab_parts")
-            };
-            var buttons = new Image[names.Length];
-            for (int i = 0; i < names.Length; i++)
-            {
-                var tab = (Tab)i;
-                Button button = ui.ButtonAt(rect, 6f + i * 106f, 0f, 102f, 34f, tab == _tab ? GarageUi.Chosen : GarageUi.Row, names[i], null, 17f);
-                buttons[i] = button.GetComponent<Image>();
-                button.onClick.AddListener(() =>
-                {
-                    _tab = tab;
-                    for (int n = 0; n < buttons.Length; n++)
-                    {
-                        buttons[n].color = n == (int)tab ? GarageUi.Chosen : GarageUi.Row;
-                    }
-                    Fill();
-                });
-            }
-        }
+        // ---------------------------------------------------------------- the list
 
-        // The middle of the panel, for the tab that is open. Rebuilt on a click, never otherwise.
+        // The shop's list, written for the page that is open. On opening and on a click, never otherwise.
         private void Fill()
         {
-            if (_content == null)
+            TravelList list = GarageList.Take(this, true);
+            if (list == null)
             {
                 return;
             }
-            GarageUi.Empty(_content);
-            _customPrice = null;
-            _customSwatch = null;
-            switch (_tab)
+            _acts.Clear();
+            string name = _car.vehicleType != null ? _car.vehicleType.vehicleTypeName.GetLocalization() : _car.name;
+            list.Begin(GarageText.T("reallife_customshop_title", "car", name), Info());
+            if (_page == Page.Main)
             {
-                case Tab.Paint: FillPaint(); break;
-                case Tab.Finish: FillFinish(); break;
-                case Tab.Lights: FillLights(); break;
-                case Tab.Body: FillBody(); break;
-                default: FillParts(); break;
+                FillMain(list);
+            }
+            else
+            {
+                Row(list, GarageText.T("reallife_garage_list_back_name"), GarageText.T("reallife_customshop_total", "amount", GarageText.Money(Bill())), "reallife_garage_list_back", true, _toMain);
+                switch (_page)
+                {
+                    case Page.Paint: FillPaint(list); break;
+                    case Page.Finish: FillFinish(list); break;
+                    case Page.Lights: FillLights(list); break;
+                    case Page.Body: FillBody(list); break;
+                    default: FillParts(list); break;
+                }
+            }
+            _listClosing = null;
+            list.Open(_onPick, _onListClosed);
+        }
+
+        private void Row(TravelList list, string name, string detail, string button, bool enabled, Action act)
+        {
+            _acts.Add(act);
+            list.Add(_acts.Count - 1, name, detail, button, enabled);
+        }
+
+        // An entry's button was clicked: its action runs, and the list is written again with what is true now.
+        private void Picked(int id)
+        {
+            try
+            {
+                if (!_open || id < 0 || id >= _acts.Count || _acts[id] == null)
+                {
+                    return;
+                }
+                _acts[id]();
+                if (_open)
+                {
+                    Fill();
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Garage: the custom shop was closed after something unexpected. " + e);
+                Close(false);
             }
         }
 
-        private void FillPaint()
+        // The list was closed: by the Cancel button or the game's cancel key (leaving without paying), or by the shop itself.
+        private void ListClosed()
         {
-            GarageUi ui = GarageUi.Instance;
-            if (!_fitted.Paintable)
+            if (Meta.Dev.Verbose)
             {
-                ui.TextAt(_content, 6f, 6f, 528f, 60f, 18f, GarageUi.Dim, GarageText.T("reallife_garage_no_paint"));
-                return;
+                Logger?.Info("Garage check (custom shop list): closed (" + (_listClosing ?? "cancelled by the player: the car goes back as it came in") + ").");
             }
-            int[] palette = GarageCatalogue.Palette;
-            for (int i = 0; i < palette.Length; i++)
+            _listClosing = null;
+            _acts.Clear();
+            if (_open)
             {
-                int colour = palette[i];
-                float x = 6f + i % 7 * 76f;
-                float y = i / 7 * 44f;
-                RectTransform frame = ui.At("Swatch", _content, x, y, 70f, 38f, colour == _cart.Paint ? Color.white : GarageUi.Row);
-                Button button = ui.ButtonAt(frame, 4f, 4f, 62f, 30f, GarageCar.FromRgb(colour), null, () => PickPaint(colour));
-                button.name = "Colour";
+                Close(false);
             }
-            ui.ButtonAt(_content, 6f, 272f, 250f, 32f, _cart.Paint < 0 ? GarageUi.Chosen : GarageUi.Row, GarageText.T("reallife_garage_paint_factory"), () => PickPaint(-1), 17f);
-            ui.TextAt(_content, 266f, 276f, 270f, 26f, 16f, GarageUi.Dim,
-                GarageText.T("reallife_garage_paint_prices", "palette", GarageText.Money(GarageCatalogue.PaintPrice(_kind, false)),
-                    "custom", GarageText.Money(GarageCatalogue.PaintPrice(_kind, true))));
+        }
 
-            ui.TextAt(_content, 6f, 312f, 150f, 22f, 16f, GarageUi.Dim, GarageText.T("reallife_garage_paint_hue"));
-            ui.TextAt(_content, 6f, 340f, 150f, 22f, 16f, GarageUi.Dim, GarageText.T("reallife_garage_paint_saturation"));
-            ui.TextAt(_content, 6f, 368f, 150f, 22f, 16f, GarageUi.Dim, GarageText.T("reallife_garage_paint_brightness"));
-            ui.SliderAt(_content, 150f, 314f, 280f, _h, value => Mix(value, _s, _v));
-            ui.SliderAt(_content, 150f, 342f, 280f, _s, value => Mix(_h, value, _v));
-            ui.SliderAt(_content, 150f, 370f, 280f, _v, value => Mix(_h, _s, value));
-            RectTransform swatch = ui.At("Mixed", _content, 444f, 312f, 90f, 76f, Color.HSVToRGB(_h, _s, _v));
-            _customSwatch = swatch.GetComponent<Image>();
-            _customSwatch.raycastTarget = false;
-            _customPrice = ui.TextAt(_content, 6f, 396f, 528f, 22f, 15f, GarageUi.Dim, GarageText.T("reallife_garage_paint_mix_note"));
+        private void To(Page page)
+        {
+            _page = page;
+            if (Meta.Dev.Verbose)
+            {
+                Logger?.Info("Garage check (custom shop list): page " + page + ", this visit " + Bill() + ".");
+            }
+        }
+
+        // The lines under the headline: the money, the bill, and what the cart does to the car's figures.
+        private string Info()
+        {
+            GameInstance save = SaveGameManager.Current;
+            _moneyShown = save != null ? Mathf.RoundToInt(save.Money) : 0;
+            _info.Length = 0;
+            _info.Append(GarageText.T("reallife_garage_money", "amount", GarageText.Money(_moneyShown))).Append(". ")
+                .Append(GarageText.T("reallife_customshop_total", "amount", GarageText.Money(Bill()))).Append('.');
+            string figures = Figures();
+            if (figures.Length > 0)
+            {
+                _info.Append("\n<size=80%>").Append(figures).Append("</size>");
+            }
+            return _info.ToString();
+        }
+
+        private void FillMain(TravelList list)
+        {
+            int bill = Bill();
+            Row(list, bill > 0 ? GarageText.T("reallife_garage_pay", "amount", GarageText.Money(bill)) : GarageText.T("reallife_customshop_done"), GarageText.T("reallife_garage_work_note"),
+                bill > 0 ? "reallife_garage_list_pay" : "reallife_customshop_done", true, _pay);
+
+            bool paintable = _fitted.Paintable;
+            string paint = !paintable ? GarageText.T("reallife_garage_no_paint")
+                : (_cart.Paint < 0 ? GarageText.T("reallife_garage_paint_factory") : "#" + _cart.Paint.ToString("X6")) + ". "
+                  + GarageText.T("reallife_garage_paint_prices", "palette", GarageText.Money(GarageCatalogue.PaintPrice(_kind, false)), "custom", GarageText.Money(GarageCatalogue.PaintPrice(_kind, true)));
+            Row(list, GarageText.T("reallife_garage_tab_paint"), paint, "reallife_garage_list_choose", paintable, _toPaint);
+            Row(list, GarageText.T("reallife_garage_tab_finish"), paintable ? GarageText.T(GarageCatalogue.FinishName(_cart.Finish)) : GarageText.T("reallife_garage_no_paint"),
+                "reallife_garage_list_choose", paintable, _toFinish);
+
+            string lights = GarageText.T(GarageCatalogue.LampName(_cart.Lamps));
+            if (_cart.Glow >= 0)
+            {
+                lights += ", " + GarageText.T("reallife_garage_summary_glow");
+            }
+            Row(list, GarageText.T("reallife_garage_tab_lights"), lights, "reallife_garage_list_choose", true, _toLights);
+
+            _text.Length = 0;
+            Fitted(_cart.Spoiler, "reallife_garage_body_spoiler");
+            Fitted(_cart.Rack, "reallife_garage_body_rack");
+            Fitted(_cart.Bar, "reallife_garage_body_bar");
+            for (int i = 0; i < WheelIds.Length; i++)
+            {
+                Fitted(_cart.Wheels == WheelIds[i], WheelNames[i]);
+            }
+            Row(list, GarageText.T("reallife_garage_tab_body"), _text.Length > 0 ? _text.ToString() : GarageText.T("reallife_garage_part_stock"), "reallife_garage_list_choose", true, _toBody);
+
+            _text.Length = 0;
+            for (int s = 0; s < GarageCatalogue.Slots; s++)
+            {
+                PartDef part = GarageCatalogue.Part(_cart.Parts[s]);
+                if (part != null)
+                {
+                    Fitted(true, part.Name);
+                }
+            }
+            bool tuning = Settings.GarageTuning;
+            Row(list, GarageText.T("reallife_garage_tab_parts"), !tuning ? GarageText.T("reallife_garage_parts_off") : _text.Length > 0 ? _text.ToString() : GarageText.T("reallife_garage_part_stock"),
+                "reallife_garage_list_choose", tuning, _toParts);
+
+            Row(list, GarageText.T("reallife_garage_stock"), GarageText.T("reallife_garage_list_stock_detail"), "reallife_garage_list_reset", !_cart.IsStock, _stock);
+        }
+
+        private void Fitted(bool fitted, string nameKey)
+        {
+            if (fitted)
+            {
+                if (_text.Length > 0)
+                {
+                    _text.Append(", ");
+                }
+                _text.Append(GarageText.T(nameKey));
+            }
+        }
+
+        // The button's word for an option: the one in the cart cannot be chosen again.
+        private static string Choose(bool chosen)
+        {
+            return chosen ? "reallife_garage_list_chosen" : "reallife_garage_list_choose";
+        }
+
+        private const int Shades = 7;   // the chart is six families of seven shades, light to dark (GarageCatalogue.Palette)
+
+        // The chart, a family to an entry: its button steps through the family's shades, each shown on the car at once.
+        private void FillPaint(TravelList list)
+        {
+            Row(list, GarageText.T("reallife_garage_paint_factory"), _saved.Paint < 0 ? GarageText.T("reallife_garage_fitted") : GarageText.Money(GarageCatalogue.PaintPrice(_kind, false)),
+                Choose(_cart.Paint < 0), _cart.Paint >= 0, () => PickPaint(-1));
+            int[] palette = GarageCatalogue.Palette;
+            string price = GarageText.Money(GarageCatalogue.PaintPrice(_kind, false));
+            for (int f = 0; f * Shades < palette.Length && f < Families.Length; f++)
+            {
+                int family = f;
+                int first = f * Shades;
+                int count = Mathf.Min(Shades, palette.Length - first);
+                int at = -1;
+                for (int i = 0; i < count; i++)
+                {
+                    if (palette[first + i] == _cart.Paint)
+                    {
+                        at = i;
+                    }
+                }
+                // The family's name is written in the shade chosen (the middle one while none is; lightened where it would not show
+                // on the dark window): the car is the real sample.
+                int sample = palette[first + (at >= 0 ? at : count / 2)];
+                Color shown = GarageCar.FromRgb(sample);
+                if (shown.grayscale < 0.22f)
+                {
+                    shown = Color.Lerp(shown, Color.white, 0.4f);
+                }
+                string detail = at >= 0
+                    ? GarageText.T("reallife_garage_list_shade", "n", (at + 1).ToString(), "all", count.ToString()) + " #" + sample.ToString("X6") + ", "
+                      + (sample == _saved.Paint ? GarageText.T("reallife_garage_fitted") : price) + "."
+                    : GarageText.T("reallife_garage_list_shades", "all", count.ToString(), "price", price);
+                int next = palette[first + (at + 1) % count];
+                Row(list, "<color=#" + ColorUtility.ToHtmlStringRGB(shown) + ">" + GarageText.T(Families[family]) + "</color>", detail, "reallife_garage_list_next", true, () => PickPaint(next));
+            }
+            bool mixed = _cart.Paint >= 0 && !GarageCatalogue.InPalette(_cart.Paint);
+            Row(list, GarageText.T("reallife_garage_list_mix"), mixed
+                    ? "#" + _cart.Paint.ToString("X6") + ". " + GarageText.T("reallife_garage_paint_mixed", "amount", GarageText.Money(GarageCatalogue.PaintPrice(_kind, true)))
+                    : GarageText.T("reallife_garage_list_mix_detail", "amount", GarageText.Money(GarageCatalogue.PaintPrice(_kind, true))),
+                "reallife_garage_list_open", true, _mix);
         }
 
         private void PickPaint(int colour)
         {
             _cart.Paint = colour;
-            if (colour >= 0)
-            {
-                Color.RGBToHSV(GarageCar.FromRgb(colour), out _h, out _s, out _v);
-            }
-            Preview();
-            Fill();
-            Refresh();
+            Changed("paint " + (colour < 0 ? "factory" : "#" + colour.ToString("X6")));
         }
 
-        // A slider of the colour mixer moved: the car is repainted, the panel is not rebuilt (the slider is being held).
-        private void Mix(float h, float s, float v)
+        // The game's own colour picker (Canvases/CustomColorPicker, what its interior designer mixes a colour with): the car is
+        // repainted as the colour is moved; its button keeps the colour, and closing it any other way puts the paint back.
+        private void MixOpen()
         {
-            _h = h;
-            _s = s;
-            _v = v;
-            Color colour = Color.HSVToRGB(h, s, v);
-            _cart.Paint = GarageCar.ToRgb(colour);
-            if (_customSwatch != null)
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            CustomColorPicker picker = uis != null ? uis.customColorPicker : null;
+            if (picker == null)
             {
-                _customSwatch.color = colour;
-            }
-            Preview();
-            Refresh();
-        }
-
-        private void FillFinish()
-        {
-            GarageUi ui = GarageUi.Instance;
-            if (!_fitted.Paintable)
-            {
-                ui.TextAt(_content, 6f, 6f, 528f, 60f, 18f, GarageUi.Dim, GarageText.T("reallife_garage_no_paint"));
+                GameUi.UiClone.Fallback("the game's colour picker is not there, so only the chart's colours can be chosen");
                 return;
             }
+            _mixFrom = _cart.Paint;
+            _mixKept = false;
+            picker.onColorPick = _onMixed;
+            picker.Open(_onMixing, _cart.Paint >= 0 ? GarageCar.FromRgb(_cart.Paint) : _fitted.StockColour());
+            _mixing = true;
+            if (Meta.Dev.Verbose)
+            {
+                Logger?.Info("Garage check (custom shop list): the game's colour picker is open for a mixed colour.");
+            }
+        }
+
+        private void Mixing(Color colour)
+        {
+            if (!_open || _cart == null)
+            {
+                return;
+            }
+            _cart.Paint = GarageCar.ToRgb(colour);
+            Preview();
+        }
+
+        // The picker's own button: the colour is kept.
+        private void Mixed(Color colour)
+        {
+            Mixing(colour);
+            _mixKept = _open;
+        }
+
+        private void FillFinish(TravelList list)
+        {
             for (int i = 0; i <= (int)PaintFinish.Pearl; i++)
             {
                 var finish = (PaintFinish)i;
                 string price = finish == _saved.Finish ? GarageText.T("reallife_garage_fitted") : GarageText.Money(GarageCatalogue.FinishPrice(finish, _kind));
-                Option(i * 46f, GarageText.T(GarageCatalogue.FinishName(finish)), price, finish == _cart.Finish, () =>
+                Row(list, GarageText.T(GarageCatalogue.FinishName(finish)), i == 0 ? price + ". " + GarageText.T("reallife_garage_finish_note") : price, Choose(finish == _cart.Finish), finish != _cart.Finish, () =>
                 {
                     _cart.Finish = finish;
-                    Changed();
+                    Changed("finish " + finish);
                 });
             }
-            GarageUi.Wrap(ui.TextAt(_content, 6f, 240f, 528f, 60f, 15f, GarageUi.Dim, GarageText.T("reallife_garage_finish_note"), TextAlignmentOptions.TopLeft));
         }
 
-        private void FillLights()
+        private void FillLights(TravelList list)
         {
-            GarageUi ui = GarageUi.Instance;
-            ui.TextAt(_content, 6f, 0f, 528f, 24f, 18f, Color.white, GarageText.T("reallife_garage_lamps_header"));
             for (int i = 0; i <= (int)LampTint.Yellow; i++)
             {
                 var tint = (LampTint)i;
                 string price = tint == _saved.Lamps ? GarageText.T("reallife_garage_fitted")
                     : GarageText.Money(tint == LampTint.Stock ? GarageCatalogue.RemovalPrice : GarageCatalogue.LampPrice);
-                Option(28f + i * 42f, GarageText.T(GarageCatalogue.LampName(tint)), price, tint == _cart.Lamps, () =>
+                Row(list, GarageText.T("reallife_garage_lamps_header") + ": " + GarageText.T(GarageCatalogue.LampName(tint)), price, Choose(tint == _cart.Lamps), tint != _cart.Lamps, () =>
                 {
                     _cart.Lamps = tint;
-                    Changed();
-                }, 38f);
+                    Changed("lamps " + tint);
+                });
             }
-            ui.TextAt(_content, 6f, 206f, 528f, 24f, 18f, Color.white,
-                GarageText.T("reallife_garage_glow_header", "price", GarageText.Money(GarageCatalogue.GlowPrice)));
-            ui.ButtonAt(_content, 6f, 236f, 110f, 38f, _cart.Glow < 0 ? GarageUi.Chosen : GarageUi.Row, GarageText.T("reallife_customshop_none"), () =>
+            string glow = GarageText.T("reallife_garage_glow_header", "price", GarageText.Money(GarageCatalogue.GlowPrice));
+            Row(list, GarageText.T("reallife_garage_summary_glow") + ": " + GarageText.T("reallife_customshop_none"), glow, Choose(_cart.Glow < 0), _cart.Glow >= 0, () =>
             {
                 _cart.Glow = -1;
-                Changed();
-            }, 17f);
+                Changed("underglow off");
+            });
             int[] colours = GarageCatalogue.GlowColours;
             for (int i = 0; i < colours.Length; i++)
             {
                 int colour = colours[i];
-                RectTransform frame = ui.At("Glow", _content, 124f + i * 58f, 236f, 54f, 38f, colour == _cart.Glow ? Color.white : GarageUi.Row);
-                ui.ButtonAt(frame, 4f, 4f, 46f, 30f, GarageCar.FromRgb(colour), null, () =>
-                {
-                    _cart.Glow = colour;
-                    Changed();
-                });
+                Row(list, "<color=#" + colour.ToString("X6") + ">" + GarageText.T("reallife_garage_summary_glow") + " " + (i + 1) + "</color>", "#" + colour.ToString("X6") + ". " + GarageText.T("reallife_garage_glow_note"),
+                    Choose(colour == _cart.Glow), colour != _cart.Glow, () =>
+                    {
+                        _cart.Glow = colour;
+                        Changed("underglow #" + colour.ToString("X6"));
+                    });
             }
-            GarageUi.Wrap(ui.TextAt(_content, 6f, 284f, 528f, 60f, 15f, GarageUi.Dim, GarageText.T("reallife_garage_glow_note"), TextAlignmentOptions.TopLeft));
         }
 
-        private void FillBody()
+        private void FillBody(TravelList list)
         {
-            GarageUi ui = GarageUi.Instance;
             string type = _car.vehicleType != null ? _car.vehicleType.vehicleTypeName : null;
-            float y = 0f;
-            y = BodyRow(y, "reallife_garage_body_spoiler", GarageCatalogue.SpoilerPrice, GarageFit.Spoiler(type, _kind), _cart.Spoiler, _saved.Spoiler, () => _cart.Spoiler = !_cart.Spoiler);
-            y = BodyRow(y, "reallife_garage_body_rack", GarageCatalogue.RackPrice, GarageFit.Rack(type, _kind), _cart.Rack, _saved.Rack, () => _cart.Rack = !_cart.Rack);
-            y = BodyRow(y, "reallife_garage_body_bar", GarageCatalogue.BarPrice, GarageFit.Bar(type, _kind), _cart.Bar, _saved.Bar, () => _cart.Bar = !_cart.Bar);
+            BodyRow(list, "reallife_garage_body_spoiler", GarageCatalogue.SpoilerPrice, GarageFit.Spoiler(type, _kind), _cart.Spoiler, _saved.Spoiler, () => _cart.Spoiler = !_cart.Spoiler);
+            BodyRow(list, "reallife_garage_body_rack", GarageCatalogue.RackPrice, GarageFit.Rack(type, _kind), _cart.Rack, _saved.Rack, () => _cart.Rack = !_cart.Rack);
+            BodyRow(list, "reallife_garage_body_bar", GarageCatalogue.BarPrice, GarageFit.Bar(type, _kind), _cart.Bar, _saved.Bar, () => _cart.Bar = !_cart.Bar);
 
-            y += 10f;
-            ui.TextAt(_content, 6f, y, 528f, 24f, 18f, Color.white, GarageText.T("reallife_garage_wheels_header"));
-            y += 28f;
             bool any = false;
+            string header = GarageText.T("reallife_garage_wheels_header") + ": ";
             for (int i = 0; i < WheelIds.Length; i++)
             {
                 string id = WheelIds[i];
@@ -672,69 +826,54 @@ namespace RealLifeOverhaul
                 if (!any)
                 {
                     any = true;
-                    Option(y, GarageText.T("reallife_garage_wheels_own"), string.Empty, _cart.Wheels.Length == 0, () =>
+                    Row(list, header + GarageText.T("reallife_garage_wheels_own"), string.Empty, Choose(_cart.Wheels.Length == 0), _cart.Wheels.Length != 0, () =>
                     {
                         _cart.Wheels = string.Empty;
-                        Changed();
-                    }, 38f);
-                    y += 42f;
+                        Changed("the car's own wheels");
+                    });
                 }
                 string price = id == _saved.Wheels ? GarageText.T("reallife_garage_fitted") : GarageText.Money(GarageCatalogue.WheelsPrice);
-                Option(y, GarageText.T(WheelNames[i]), price, _cart.Wheels == id, () =>
+                Row(list, header + GarageText.T(WheelNames[i]), price, Choose(_cart.Wheels == id), _cart.Wheels != id, () =>
                 {
                     _cart.Wheels = id;
-                    Changed();
-                }, 38f);
-                y += 42f;
+                    Changed("wheels " + id);
+                });
             }
             if (!any)
             {
-                GarageUi.Wrap(ui.TextAt(_content, 6f, y, 528f, 70f, 15f, GarageUi.Dim, GarageText.T("reallife_garage_wheels_none"), TextAlignmentOptions.TopLeft));
+                Row(list, GarageText.T("reallife_garage_wheels_header"), GarageText.T("reallife_garage_wheels_none"), "reallife_garage_list_choose", false, null);
             }
         }
 
-        private float BodyRow(float y, string nameKey, int price, bool fits, bool inCart, bool fitted, Action toggle)
+        private void BodyRow(TravelList list, string nameKey, int price, bool fits, bool inCart, bool fitted, Action toggle)
         {
             if (!fits)
             {
-                GarageUi.Instance.At("Row", _content, 6f, y, 528f, 40f, new Color(0.09f, 0.10f, 0.12f, 0.9f)).GetComponent<Image>().raycastTarget = false;
-                GarageUi.Instance.TextAt(_content, 18f, y + 9f, 510f, 24f, 17f, GarageUi.Dim,
-                    GarageText.T("reallife_garage_body_no_fit", "part", GarageText.T(nameKey)));
-                return y + 46f;
+                Row(list, GarageText.T(nameKey), GarageText.T("reallife_garage_body_no_fit", "part", GarageText.T(nameKey)), "reallife_garage_list_fit", false, null);
+                return;
             }
             string cost = fitted == inCart ? (fitted ? GarageText.T("reallife_garage_fitted") : GarageText.Money(price))
                 : GarageText.Money(inCart ? price : GarageCatalogue.RemovalPrice);
-            Option(y, GarageText.T(nameKey), cost, inCart, () =>
+            Row(list, GarageText.T(nameKey), cost, inCart ? "reallife_garage_list_remove" : "reallife_garage_list_fit", true, () =>
             {
                 toggle();
-                Changed();
+                Changed(nameKey + (inCart ? " off" : " on"));
             });
-            return y + 46f;
         }
 
-        private void FillParts()
+        private void FillParts(TravelList list)
         {
-            GarageUi ui = GarageUi.Instance;
-            if (!Settings.GarageTuning)
-            {
-                ui.TextAt(_content, 6f, 6f, 528f, 60f, 18f, GarageUi.Dim, GarageText.T("reallife_garage_parts_off"));
-                return;
-            }
             for (int s = 0; s < GarageCatalogue.Slots; s++)
             {
                 int slot = s;
-                float y = s * 52f;
                 PartDef part = GarageCatalogue.Part(_cart.Parts[slot]);
-                ui.At("Row", _content, 6f, y, 528f, 48f, part != null ? new Color(0.12f, 0.24f, 0.36f, 0.95f) : GarageUi.Row).GetComponent<Image>().raycastTarget = false;
-                ui.TextAt(_content, 14f, y + 4f, 118f, 22f, 17f, Color.white, GarageText.T(GarageCatalogue.SlotName((PartSlot)slot)));
-                ui.ButtonAt(_content, 134f, y + 6f, 34f, 36f, GarageUi.Plate, "<", () => Cycle(slot, -1), 20f);
-                ui.TextAt(_content, 174f, y + 3f, 258f, 22f, 17f, Color.white, part != null ? GarageText.T(part.Name) : GarageText.T("reallife_garage_part_stock"));
-                ui.TextAt(_content, 174f, y + 25f, 258f, 20f, 13f, GarageUi.Dim, part != null ? Effects(part) : string.Empty);
-                ui.ButtonAt(_content, 436f, y + 6f, 34f, 36f, GarageUi.Plate, ">", () => Cycle(slot, 1), 20f);
                 string price = _cart.Parts[slot] == _saved.Parts[slot]
                     ? (part != null ? GarageText.T("reallife_garage_fitted") : string.Empty)
                     : GarageText.Money(part != null ? GarageCatalogue.PartPrice(part, _kind) : GarageCatalogue.RemovalPrice);
-                ui.TextAt(_content, 472f, y + 13f, 60f, 22f, 15f, GarageUi.Dim, price, TextAlignmentOptions.Right);
+                string effects = part != null ? Effects(part) : string.Empty;
+                string detail = price.Length > 0 && effects.Length > 0 ? price + ". " + effects : price + effects;
+                Row(list, GarageText.T(GarageCatalogue.SlotName((PartSlot)slot)) + ": " + (part != null ? GarageText.T(part.Name) : GarageText.T("reallife_garage_part_stock")), detail,
+                    "reallife_garage_list_next", true, () => Cycle(slot, 1));
             }
         }
 
@@ -774,7 +913,7 @@ namespace RealLifeOverhaul
                     break;
                 }
             }
-            Changed();
+            Changed((PartSlot)slot + " " + (_cart.Parts[slot] ?? "stock"));
         }
 
         /// <summary>What a part does and costs to run, in a line: "acceleration +12 %, top speed +4 %, wears 12 % faster".</summary>
@@ -829,20 +968,14 @@ namespace RealLifeOverhaul
             text.Append(piece);
         }
 
-        // One row of a list: a name on the left, a price on the right, lit when it is the one chosen.
-        private void Option(float y, string name, string price, bool chosen, Action pick, float height = 42f)
-        {
-            GarageUi ui = GarageUi.Instance;
-            Button button = ui.ButtonAt(_content, 6f, y, 528f, height, chosen ? GarageUi.Chosen : GarageUi.Row, null, () => pick());
-            ui.TextAt(button.transform, 12f, (height - 24f) * 0.5f, 360f, 24f, 18f, Color.white, name);
-            ui.TextAt(button.transform, 376f, (height - 24f) * 0.5f, 140f, 24f, 17f, GarageUi.Dim, price, TextAlignmentOptions.Right);
-        }
-
-        private void Changed()
+        // Something in the cart changed: it is shown on the car. (The list is written again by whoever ran the click.)
+        private void Changed(string what)
         {
             Preview();
-            Fill();
-            Refresh();
+            if (Meta.Dev.Verbose)
+            {
+                Logger?.Info("Garage check (choice): " + what + "; this visit " + Bill() + ".");
+            }
         }
 
         // The cart on the car: looks only, with the underglow lit whatever the hour. Handling waits for the bill.
@@ -861,63 +994,39 @@ namespace RealLifeOverhaul
             return GarageCatalogue.Price(_saved, _cart, _kind, _cart.Paint < 0 || GarageCatalogue.InPalette(_cart.Paint));
         }
 
-        private void RefreshMoney()
+        // What the cart does to the car's figures, in up to four lines.
+        private string Figures()
         {
-            GameInstance save = SaveGameManager.Current;
-            if (_money != null && save != null)
-            {
-                _money.SetText(GarageText.T("reallife_garage_money", "amount", GarageText.Money(save.Money)));
-            }
-        }
-
-        // The bottom of the panel: the bill, and what the cart does to the car's figures.
-        private void Refresh()
-        {
-            if (_panel == null)
-            {
-                return;
-            }
-            RefreshMoney();
-            int bill = Bill();
-            _total.SetText(GarageText.T("reallife_customshop_total", "amount", GarageText.Money(bill)));
-            _payLabel.SetText(bill > 0 ? GarageText.T("reallife_garage_pay", "amount", GarageText.Money(bill)) : GarageText.T("reallife_customshop_done"));
-            if (_customPrice != null)
-            {
-                _customPrice.SetText(_cart.Paint >= 0 && !GarageCatalogue.InPalette(_cart.Paint)
-                    ? GarageText.T("reallife_garage_paint_mixed", "amount", GarageText.Money(GarageCatalogue.PaintPrice(_kind, true)))
-                    : GarageText.T("reallife_garage_paint_mix_note"));
-            }
-
             var car = _car as CarController;
             GarageFigures before = GarageTuning.Figures(car, _saved);
             GarageFigures after = GarageTuning.Figures(car, _cart);
             GarageModifiers m = _cart.Modifiers();
-            var text = new System.Text.StringBuilder(220);
+            _text.Length = 0;
             if (before.To100 > 0f && after.To100 > 0f)
             {
-                text.Append(GarageText.T("reallife_garage_fig_to100", "from", before.To100.ToString("F1"), "to", after.To100.ToString("F1"))).Append('\n');
+                _text.Append(GarageText.T("reallife_garage_fig_to100", "from", before.To100.ToString("F1"), "to", after.To100.ToString("F1"))).Append('\n');
             }
             if (before.TopKmh > 0f && after.TopKmh > 0f)
             {
-                text.Append(GarageText.T("reallife_garage_fig_top", "from", Mathf.RoundToInt(before.TopKmh).ToString(), "to", Mathf.RoundToInt(after.TopKmh).ToString())).Append('\n');
+                _text.Append(GarageText.T("reallife_garage_fig_top", "from", Mathf.RoundToInt(before.TopKmh).ToString(), "to", Mathf.RoundToInt(after.TopKmh).ToString())).Append('\n');
             }
             if (before.StopMetres > 0f && after.StopMetres > 0f)
             {
-                text.Append(GarageText.T("reallife_garage_fig_stop", "from", Mathf.RoundToInt(before.StopMetres).ToString(), "to", Mathf.RoundToInt(after.StopMetres).ToString())).Append('\n');
+                _text.Append(GarageText.T("reallife_garage_fig_stop", "from", Mathf.RoundToInt(before.StopMetres).ToString(), "to", Mathf.RoundToInt(after.StopMetres).ToString())).Append('\n');
             }
             if (m.Wear > 0f || m.Insurance > 0f || m.Loudness >= 2)
             {
-                text.Append(GarageText.T("reallife_garage_fig_costs", "wear", Mathf.RoundToInt(m.Wear * 100f).ToString(), "insurance", Mathf.RoundToInt(m.Insurance * 100f).ToString()));
+                _text.Append(GarageText.T("reallife_garage_fig_costs", "wear", Mathf.RoundToInt(m.Wear * 100f).ToString(), "insurance", Mathf.RoundToInt(m.Insurance * 100f).ToString()));
                 if (m.Loudness >= 2)
                 {
-                    text.Append(' ').Append(GarageText.T("reallife_garage_fig_illegal"));
+                    _text.Append(' ').Append(GarageText.T("reallife_garage_fig_illegal"));
                 }
             }
             else if (before.To100 < 0f)
             {
-                text.Append(GarageText.T("reallife_garage_fig_none"));
+                _text.Append(GarageText.T("reallife_garage_fig_none"));
             }
-            _figures.SetText(text.ToString());
+            return _text.ToString().TrimEnd('\n');
         }
 
         private void Stock()
@@ -925,7 +1034,7 @@ namespace RealLifeOverhaul
             int spent = _cart.Spent;
             _cart.Take(new GarageBuild());
             _cart.Spent = spent;
-            Changed();
+            Changed("all stock");
         }
 
         private void Pay()
@@ -985,6 +1094,27 @@ namespace RealLifeOverhaul
                 }
             }
             return build;
+        }
+    }
+
+    /// <summary>
+    /// The part of the screen the shop's list leaves free: dragging on it turns the turntable view, the
+    /// wheel moves it in and out. An invisible plate that takes the mouse, so clicks in the shop never
+    /// reach the world behind it.
+    /// </summary>
+    public sealed class GarageDragArea : MonoBehaviour, IDragHandler, IScrollHandler
+    {
+        public Action<Vector2> Dragged;
+        public Action<float> Scrolled;
+
+        public void OnDrag(PointerEventData data)
+        {
+            Dragged?.Invoke(data.delta);
+        }
+
+        public void OnScroll(PointerEventData data)
+        {
+            Scrolled?.Invoke(data.scrollDelta.y);
         }
     }
 }

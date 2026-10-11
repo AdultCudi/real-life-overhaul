@@ -8,17 +8,19 @@ using PlayerActivity;
 using PlayerActivity.Activities.Rest;
 using UI;
 using UI.Load;
+using UI.MiniMenu;
+using UI.Smartphone;
 using UI.Notification;
 using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>Something the player asked for from the phone, a key prompt or a test button.</summary>
+    /// <summary>Something the player asked for from the phone, a click on the furniture, a button of the game's panel or a test button.</summary>
     public enum HomeWish
     {
         None,
-        Cook,          // opens the cooking panel
-        CookFirst,     // a test: the first dish the fridges allow, without the panel
+        Cook,          // opens the cooking list
+        CookFirst,     // a test: the first dish the fridges allow, without the list
         Coffee,
         Tidy,
         Stretch,
@@ -37,8 +39,14 @@ namespace RealLifeOverhaul
     /// diet; and it offers the mod's own routines (cooking, coffee, tidying, floor exercises,
     /// the doctor) at the furniture they need, on the phone and from the options page.
     ///
-    /// Per frame while nothing is on: one time compare. A run has its marker drawn per frame
-    /// (nothing allocated) and is ticked four times a second. A fault anywhere switches the
+    /// Everything it shows is the game's own interface: a click on a cooker or a coffee machine
+    /// (<see cref="HomeOffers"/>), a button in the fridge's panel (<see cref="HomeFridgeButton"/>),
+    /// the game's list for the dishes (<see cref="HomeCookList"/>), three more bars under the
+    /// game's needs (<see cref="HomeNeedsBar"/>), the game's panel over a place at the doctor's
+    /// desk (GameUi.WorldPanel), and the game's activity panel for every routine. It reads no key.
+    ///
+    /// Per frame while nothing is on: one time compare. A run is ticked four times a second,
+    /// and its marker is the game's own. A fault anywhere switches the
     /// whole feature off for the session with everything of its own taken back.
     /// </summary>
     public class HomeDirector : MonoBehaviour
@@ -59,17 +67,24 @@ namespace RealLifeOverhaul
         private JobProps _props;
         private JogRun _run;
         private HomeActivity _activity;
-        private HomeActivity _starting;      // chosen on the cooking panel: started for the player once the game's panel has shown it
-        private CookPlan _plan;              // chosen on the cooking panel and waiting for the player to be free
+        private HomeActivity _starting;      // chosen on the cooking list: started for the player once the game's panel has shown it
+        private CookPlan _plan;              // chosen on the cooking list and waiting for the player to be free
         private float _planUntil;
         private readonly System.Collections.Generic.List<PantryItem> _pantry = new System.Collections.Generic.List<PantryItem>(16);
         private Action _later;
         private int _laterFrame;
         private HomeWish _wish;
         private float _wishUntil;
-        private HomeWish _prompt;
-        private string _promptCook, _promptCoffee, _promptDoctor;
-        private int _keysVersion = -1;
+        private ItemController _clicked;     // the coffee machine a click was on: the cup is made at that one
+        private readonly GameUi.WorldPanel _doctor = new GameUi.WorldPanel();
+        private Action _onDoctor;
+        private Buildings.Building _doctorIn;   // the hospital the desk was looked for in
+        private Vector3 _doctorAt;
+        private bool _doctorDesk;
+        private int _doctorKey = int.MinValue;
+        private int _doctorState;            // 0 not up, 1 up, 2 refused by the game's own panel
+        private int _keyFrame = -1;
+        private bool _offersTold;
         private float _nextSlow;
         private float _nextRunTick;
         private bool _broken;
@@ -85,7 +100,6 @@ namespace RealLifeOverhaul
         private bool _bedHome;
         private int _readingKnown;       // 0 not asked, 1 the player's animator has the parameter, 2 it has not
         private bool _wasOn;
-        private float _hospitalSince = -1f;
         private int _noteCode = -1;
         private string _note;
 
@@ -100,14 +114,29 @@ namespace RealLifeOverhaul
             Body = new JobBody(_props, Logger);
             _run = new JogRun(Logger);
             HomeHealth.Logger = Logger;
+            HomeOffers.Logger = Logger;
+            HomeFridgeButton.Logger = Logger;
+            HomeCookList.Logger = Logger;
+            HomeNeedsBar.Logger = Logger;
+            GameUi.WorldPanel.Logger = Logger;
+            GameUi.TravelList.Logger = Logger;
+            GameUi.GuideMark.Logger = Logger;
+            _onDoctor = DoctorClicked;
         }
+
+        /// <summary>
+        /// True while the game's panel at the doctor's desk is up with its button on the game's interact key, and in
+        /// the frame that button ran: the mod's own interact key does nothing else then (World/NearbyInteraction).
+        /// </summary>
+        public static bool TakesInteractKey => Instance != null && (Instance._doctor.Showing || Instance._keyFrame == Time.frameCount);
 
         private void OnDestroy()
         {
             SaveHook.Drop(_onSave);
             GameEvent.onGameEventTriggered -= OnGameEvent;
-            HomeCookOffer.Remove();
             TakeBack();
+            HomeCookList.Remove();
+            HomeNeedsBar.Remove();
             _run.Dispose();
             _props.Dispose();
             HomeHealth.Reset();
@@ -128,18 +157,40 @@ namespace RealLifeOverhaul
             _laterFrame = Time.frameCount + frames;
         }
 
-        /// <summary>Asks for a routine as soon as nothing is in the way (the phone put down, the conversation over).</summary>
-        /// <summary>The game's "Click to cook" on a cooker was clicked: the same as the key was.</summary>
-        public void CookClicked()
+        /// <summary>
+        /// The game ran a click of the mod's: "Click to cook" on a cooker, "Click to make a coffee" on a coffee
+        /// machine, or "Cook a meal" in a fridge's panel.
+        /// </summary>
+        public void OfferClicked(HomeWish wish, ItemController item)
         {
-            if (_broken || ThirdPersonCamera.IsUiOpen())
+            if (_broken)
             {
                 return;
             }
-            HidePrompt();
-            Act(HomeWish.Cook, false);
+            try
+            {
+                bool busy = ThirdPersonCamera.IsUiOpen();
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Home check (choice): the player clicks " + (wish == HomeWish.Coffee ? "a coffee machine" : item is FridgeController ? "'Cook a meal' in a fridge's panel" : "a cooker")
+                                 + (item != null ? " (" + item.itemName + ")" : string.Empty) + ": " + (busy ? "nothing is started, another screen is open" : "it is started") + ".");
+                }
+                if (busy)
+                {
+                    return;
+                }
+                _clicked = wish == HomeWish.Coffee ? item : null;
+                Act(wish, false);
+                _clicked = null;
+            }
+            catch (Exception e)
+            {
+                _clicked = null;
+                Logger?.Error(e);
+            }
         }
 
+        /// <summary>Asks for a routine as soon as nothing is in the way (the phone put down, the conversation over).</summary>
         public void Wish(HomeWish wish)
         {
             _wish = wish;
@@ -165,12 +216,6 @@ namespace RealLifeOverhaul
                 {
                     TryCook(now);
                 }
-                if (_prompt != HomeWish.None && JobKeys.InteractDown() && !ThirdPersonCamera.IsUiOpen())
-                {
-                    HomeWish wanted = _prompt;
-                    HidePrompt();
-                    Act(wanted, false);
-                }
                 if (_run.Active)
                 {
                     PlayerController player = PlayerHelper.PlayerController;
@@ -184,8 +229,8 @@ namespace RealLifeOverhaul
                         {
                             _nextRunTick = Time.time + 0.25f;
                             _run.Tick(player);
+                            _run.Mark();
                         }
-                        _run.Draw(player);
                     }
                 }
                 if (_activity != null && _activity.SkipAt > 0f && now >= _activity.SkipAt)
@@ -218,20 +263,19 @@ namespace RealLifeOverhaul
         {
             try
             {
-                HomeCookOffer.Remove();
+                HomeOffers.Remove();
+                HomeFridgeButton.Remove();
                 Body?.Release();
                 _run?.End("reallife_home_run_ended_left");
-                HidePrompt();
-                if (HomeHud.Exists)
-                {
-                    HomeHud.Instance.Hide();
-                }
+                HideDoctor();
+                HomeNeedsBar.Hide();
                 _activity = null;
                 _later = null;
                 _wish = HomeWish.None;
                 _starting = null;
                 _plan = null;
-                HomeCookPanel.CloseIfOpen();
+                _offersTold = false;
+                HomeCookList.Close("home life was switched off or the city is unloading");
             }
             catch (Exception e)
             {
@@ -325,6 +369,11 @@ namespace RealLifeOverhaul
                 HomeHealth.Hourly(atHome, inside && !atHome && !InstanceBehavior<BuildingManager>.Instance.IsPlayerOwnedBusiness);
             }
 
+            if (HomeCookList.IsOpen && (!atHome || !Settings.HomeRoutines || PlayerHelper.IsUsingVehicle || FullMenu.IsOpen || CityMap.IsOpen || MiniMenu.IsOpen || HudConfirm.isOpen
+                                        || PlayerActivityUI.IsPanelOpen))
+            {
+                HomeCookList.Close(!atHome ? "the player left home" : "another screen came up");
+            }
             bool free = Free(player);
             if (_wish != HomeWish.None)
             {
@@ -443,85 +492,134 @@ namespace RealLifeOverhaul
                    && !player.NavigationDisabled && !GameManager.IsAnyMiniGameActive();
         }
 
-        // ---------------------------------------------------------------- prompts and the strip
+        // ---------------------------------------------------------------- what is offered, and the bars
 
-        // The key prompt at a cooker, a fridge or a coffee machine at home, and anywhere in a hospital.
+        private const float DoctorReach = 7f;        // metres from the doctor's desk at which the game's panel is offered
+        private const string ButtonDoctor = "reallife_home_button_doctor";
+
+        // At home the game offers a click on the cookers and coffee machines and a button in a fridge's panel; in a
+        // hospital its panel over a place stands at the doctor's desk. Once a second: a few compares unless something changed.
         private void Offer(PlayerController player, bool free, bool atHome)
         {
-            HomeWish offer = HomeWish.None;
-            if (free && Settings.HomeRoutines && atHome)
+            if (Settings.HomeRoutines && atHome)
             {
                 HomePlace.Scan();
-                Vector3 at = player.transform.position;
-                // Where the home has a cooker, cooking is offered by the game itself: "Click to cook" on the cooker
-                // (HomeCookOffer). The key prompt is left for the one case that has no such object: a home with a
-                // fridge and no cooker, where the fridge's own click belongs to the game's panel of what is in it.
-                bool clickCooks = HomeCookOffer.Mark(HomePlace.Cookers);
-                if (!clickCooks && HomePlace.NearestFridge(at, HomeBalance.CookReach) != null)
+                bool clicks = HomeOffers.Mark(HomePlace.Cookers, HomePlace.CoffeeMachines);
+                bool button = HomeFridgeButton.Install();
+                if (!_offersTold && Meta.Dev.Verbose)
                 {
-                    offer = HomeWish.Cook;
-                }
-                else if (HomePlace.Nearest(HomePlace.CoffeeMachines, at, HomeBalance.CookReach) != null)
-                {
-                    offer = HomeWish.Coffee;
+                    _offersTold = true;
+                    Logger?.Info("Home check (offer): at home with " + HomePlace.Cookers.Count + " cooker(s), " + HomePlace.CoffeeMachines.Count + " coffee machine(s) and "
+                                 + HomePlace.Fridges.Count + " fridge(s): click actions " + (clicks ? "on" : "NOT on") + ", the fridge panel's button " + (button ? "in" : "NOT in") + ": "
+                                 + (clicks && button ? "PASS" : "FAIL") + ".");
                 }
             }
-            else if (free && Settings.HomeIllness && HomePlace.InHospital())
+            else if (!atHome)
             {
-                // To someone who is ill the offer stands for as long as they are in the building; to someone well it is
-                // made for a quarter of a minute on the way in (a check-up) and then leaves the screen alone.
-                if (_hospitalSince < 0f)
-                {
-                    _hospitalSince = Time.unscaledTime;
-                }
-                if (HomeHealth.Ill || ModState.IsSick || Time.unscaledTime - _hospitalSince < 15f)
-                {
-                    offer = HomeWish.Doctor;
-                }
+                _offersTold = false;
             }
-            else if (!BuildingManager.IsInsideBuilding)
+            if (free && Settings.HomeIllness && HomePlace.InHospital())
             {
-                _hospitalSince = -1f;
-            }
-            if (offer == HomeWish.None)
-            {
-                HidePrompt();
+                Doctor(player);
                 return;
             }
-            if (_keysVersion != Keys.Version)
+            HideDoctor();
+            if (!BuildingManager.IsInsideBuilding)
             {
-                _keysVersion = Keys.Version;
-                _promptCook = JobText.T("reallife_home_prompt_cook");
-                _promptCoffee = JobText.T("reallife_home_prompt_coffee");
-                _promptDoctor = JobText.T("reallife_home_prompt_doctor", "amount", JobText.Money(HomeBalance.ConsultationFee));
+                _doctorIn = null;
             }
-            _prompt = offer;
-            JobHud.Instance.ShowPrompt(offer == HomeWish.Cook ? _promptCook : offer == HomeWish.Coffee ? _promptCoffee : _promptDoctor);
         }
 
-        private void HidePrompt()
+        // The game's panel over a place, at the doctor's desk (or, in a clinic without one, where the player came in).
+        private void Doctor(PlayerController player)
         {
-            if (_prompt != HomeWish.None)
+            Vector3 at = player.transform.position;
+            Buildings.Building building = InstanceBehavior<BuildingManager>.Instance.building;
+            if (!ReferenceEquals(building, _doctorIn))
             {
-                _prompt = HomeWish.None;
-                if (JobHud.Exists && !JobDirector.OnShift)
+                _doctorIn = building;
+                _doctorDesk = HomePlace.DoctorDesk(out _doctorAt);
+                if (!_doctorDesk)
                 {
-                    JobHud.Instance.HidePrompt();
+                    _doctorAt = at;
                 }
+                _doctorKey = int.MinValue;
+            }
+            if (CitySpots.Flat(_doctorAt - at) > DoctorReach * DoctorReach || Mathf.Abs(_doctorAt.y - at.y) > 3f)
+            {
+                HideDoctor();
+                return;
+            }
+            bool ill = HomeHealth.Ill || ModState.IsSick;
+            int key = (ill ? 1 : 0) | ((int)HomeState.Ill << 1);
+            if (key != _doctorKey)
+            {
+                _doctorKey = key;
+                _doctor.Lines(JobText.T("reallife_home_doctor_title"),
+                    JobText.T(HomeHealth.Ill ? HomeHealth.NameKey(HomeState.Ill) : ill ? "reallife_home_doctor_unwell" : "reallife_home_doctor_checkup"),
+                    JobText.Money(HomeBalance.ConsultationFee), GameUi.WorldPanel.White());
+                _doctor.Buttons(ButtonDoctor, _onDoctor, true, null, null, false);
+            }
+            // Over the desk; over the player's own head while the desk is behind the camera.
+            Vector3 over = _doctorAt + Vector3.up * (_doctorDesk ? 2.2f : 2.1f);
+            Camera camera = GameManager.GetMainCamera();
+            if (camera != null && Vector3.Dot(over - camera.transform.position, camera.transform.forward) < 0.5f)
+            {
+                over = at + Vector3.up * 2.1f;
+            }
+            _doctor.Position = over;
+            int state = _doctor.Show() ? 1 : 2;
+            if (state != _doctorState)
+            {
+                _doctorState = state;
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Home check (doctor panel): " + Mathf.Sqrt(CitySpots.Flat(_doctorAt - at)).ToString("F1") + " m from " + (_doctorDesk ? "the doctor's desk" : "where the player came in (no desk found)")
+                                 + ", offered within " + DoctorReach.ToString("F0") + " m: " + (state == 1 ? "the game's own panel is up (" + (ill ? "ill" : "well") + ", fee " + HomeBalance.ConsultationFee + "): PASS"
+                                     : "FAIL (the game's panel is showing another place, a lift; it is tried again while the player stands here)") + ".");
+                }
+            }
+        }
+
+        private void HideDoctor()
+        {
+            if (_doctorState != 0)
+            {
+                bool was = _doctorState == 1;
+                _doctorState = 0;
+                _doctor.Hide();
+                if (was && Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Home check (doctor panel): closed (its button was used, the player walked away or left, or another screen is open).");
+                }
+            }
+        }
+
+        // The panel's button, on the game's interact key or a click.
+        private void DoctorClicked()
+        {
+            try
+            {
+                _keyFrame = Time.frameCount;   // the key that pressed the button does nothing else this frame
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Home check (choice): 'See a doctor' at the doctor's panel.");
+                }
+                HideDoctor();
+                Act(HomeWish.Doctor, false);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
             }
         }
 
         private void Strip(bool atHome)
         {
-            var uis = InstanceBehavior<UIs>.Instance;
-            bool show = Settings.HomeStrip && Settings.HomeNeeds && !ThirdPersonCamera.IsUiOpen() && uis != null && !uis.timeMachine.isRunning   // the time skip hides the game's own HUD
-                        && (atHome || HomeState.Hygiene < 35f || HomeState.Stress > 65f || HomeHealth.Ill);
+            bool show = Settings.HomeStrip && Settings.HomeNeeds && (atHome || HomeState.Hygiene < 35f || HomeState.Stress > 65f || HomeHealth.Ill);
             if (!show)
             {
-                if (HomeHud.Exists)
-                {
-                    HomeHud.Instance.Hide();
-                }
+                HomeNeedsBar.Hide();
                 return;
             }
             string note = null;
@@ -536,7 +634,7 @@ namespace RealLifeOverhaul
                 }
                 note = _note;
             }
-            HomeHud.Instance.Show(HomeState.Hygiene, HomeState.Stress, HomeState.Tidy, HomeTidy.HasHome, note);
+            HomeNeedsBar.Show(HomeState.Hygiene, HomeState.Stress, HomeState.Tidy, HomeTidy.HasHome, note);
         }
 
         // ---------------------------------------------------------------- the game's events
@@ -668,11 +766,14 @@ namespace RealLifeOverhaul
                     HomePlace.Scan(true);
                     if (wish == HomeWish.Cook)
                     {
-                        // The panel says for itself what is missing: no fridge, nothing in it, no cooker.
-                        HidePrompt();
-                        string found = HomeCookPanel.Open(this);
-                        Logger?.Info("Home: cooking panel opened: " + found);
-                        return;
+                        // The list says for itself what is missing: no fridge, nothing in it, no cooker.
+                        string found = HomeCookList.Open(this);
+                        if (found != null)
+                        {
+                            Logger?.Info("Home: cooking list opened: " + found);
+                            return;
+                        }
+                        // (The game's window could not be copied, said once in Player.log: the first dish the fridges allow is cooked.)
                     }
                     HomePlace.ReadPantry(_pantry);
                     bool cooker = HomePlace.Cookers.Count > 0;
@@ -705,7 +806,7 @@ namespace RealLifeOverhaul
                         return;
                     }
                     HomePlace.Scan(true);
-                    ItemController item = HomePlace.Nearest(HomePlace.CoffeeMachines, at, 200f);
+                    ItemController item = _clicked != null && HomePlace.CoffeeMachines.Contains(_clicked) ? _clicked : HomePlace.Nearest(HomePlace.CoffeeMachines, at, 200f);
                     if (item == null)
                     {
                         Refuse("reallife_home_refused_no_coffee_machine", what);
@@ -783,7 +884,6 @@ namespace RealLifeOverhaul
                     }
                     else
                     {
-                        HidePrompt();
                         _nextRunTick = Time.time + 0.25f;
                     }
                     return;
@@ -830,7 +930,6 @@ namespace RealLifeOverhaul
         // Puts a routine on the game's own activity panel. The game may still say no (no energy for an exercise): then nothing is on.
         private void Show(HomeActivity activity, bool startForThePlayer = false)
         {
-            HidePrompt();
             bool panelBusy = PlayerActivityUI.IsPanelOpen;   // the game's Show then does nothing and says nothing
             PlayerActivityUI.Show(activity);
             var uis = InstanceBehavior<UIs>.Instance;
@@ -892,7 +991,7 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- cooking
 
         /// <summary>
-        /// A dish was chosen on the cooking panel. It starts as soon as the player is free (the panel has just
+        /// A dish was chosen on the cooking list. It starts as soon as the player is free (the list has just
         /// closed; from the options page, when the menus are closed): within 20 seconds, or they are told why not.
         /// </summary>
         public void Cook(CookPlan plan)

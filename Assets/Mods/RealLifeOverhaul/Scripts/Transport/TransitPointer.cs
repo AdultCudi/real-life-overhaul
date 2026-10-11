@@ -10,7 +10,7 @@ namespace RealLifeOverhaul
 {
     /// <summary>
     /// Makes a bus stop's pole, its shelter and the bus standing at it things the player can point at, the way the
-    /// game's own objects are (see docs/game-ui.md, sections 7 and 11, and Home/HomeCookOffer, which this follows).
+    /// game's own objects are (see docs/game-ui.md, sections 7 and 11, and Home/HomeOffers, which this follows).
     ///
     /// The game's pointer (MouseController) casts a ray on its interactive layers and asks whatever
     /// <c>EntityController</c> it hits to react: the object is outlined, its name is shown with a "call to action" in
@@ -140,7 +140,7 @@ namespace RealLifeOverhaul
 
     /// <summary>
     /// The one entry the buses add to the game's list of calls to action (CtaManager.CtaBehaviors, private: reached
-    /// by reflection as Home/HomeCookOffer does). Asked by the game for whatever the pointer is on: a type test,
+    /// by reflection as Home/HomeOffers does). Asked by the game for whatever the pointer is on: a type test,
     /// unless it is one of the mod's pointers.
     /// </summary>
     public static class TransitCta

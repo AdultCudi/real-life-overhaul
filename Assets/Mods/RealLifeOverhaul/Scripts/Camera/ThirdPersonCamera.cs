@@ -188,14 +188,12 @@ namespace RealLifeOverhaul
                    || PurchaseUI.IsPanelOpen || PurchaseVehicleUI.IsPanelOpen || InteriorDesignerUI.IsOpen
                    || BlueprintsPanel.IsOpen || AcknowledgeWarning.isOpen
                    || CustomColorPicker.isOpen || LoadScene.isLoading || TravelUi.PanelOpen
-                   || GarageUi.NeedsCursor   // the custom shop, "My vehicles", a two-wheeler stand's panel
                    || BigAmbitions.PlacementSystem.PlacementSystem.IsInPlacementMode
                    || GameManager.ShouldBlockKeyboardShortcuts()
                    || Law.CustodyPanel.IsOpen   // the holding cell has buttons
                    || Meta.MetaUi.AnyOpen        // the guide, the welcome panel, confirmations: all worked with the mouse
-                   || HomeCookPanel.IsOpen       // the cooking panel (one of Meta's panels; named so that it is found here)
                    || JusticePanel.IsOpen        // bail, hearings, the Legal file
-                   || GameUi.TravelList.AnyOpen; // the list of bus stops: the game's own window, worked with the mouse
+                   || GameUi.TravelList.AnyOpen; // the game's own list window, worked with the mouse: bus stops, the cooking list, the custom shop, "My vehicles", a two-wheeler stand
         }
 
         private void SetLooking(bool look)
