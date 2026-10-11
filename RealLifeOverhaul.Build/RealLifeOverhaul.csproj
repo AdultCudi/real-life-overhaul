@@ -14,7 +14,10 @@
     <!-- Single source of truth: the mod lives in the Unity SDK project; this project only compiles it from the command line. -->
     <ModSource>$(MSBuildThisFileDirectory)..\Assets\Mods\RealLifeOverhaul</ModSource>
     <GameManaged Condition="'$(GameManaged)' == ''">G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\Managed</GameManaged>
-    <ModsLocal Condition="'$(ModsLocal)' == ''">$(USERPROFILE)\AppData\LocalLow\Hovgaard Games\Big Ambitions\ModsLocal</ModsLocal>
+    <!-- Where the built mod is put. The game's own mods folder only when asked for with -p:InstallToGame=true: the game
+         watches that folder, and files changed under a running game lose their textures and texts until it is restarted. -->
+    <ModsLocal Condition="'$(ModsLocal)' == '' And '$(InstallToGame)' == 'true'">$(USERPROFILE)\AppData\LocalLow\Hovgaard Games\Big Ambitions\ModsLocal</ModsLocal>
+    <ModsLocal Condition="'$(ModsLocal)' == ''">$(MSBuildProjectDirectory)\out</ModsLocal>
   </PropertyGroup>
 
   <!-- Game assemblies: compile against them, never ship them. -->

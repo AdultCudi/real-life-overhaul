@@ -40,7 +40,7 @@ Build and install into the game's local mods folder:
 dotnet build RealLifeOverhaul.Build/RealLifeOverhaul.csproj -c Release "-p:GameManaged=<Steam>\steamapps\common\Big Ambitions\Big Ambitions_Data\Managed"
 ```
 
-The build must end with `0 Warning(s)` and `0 Error(s)`. It copies the mod to `%USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions\ModsLocal\RealLifeOverhaul`. To build without installing, add `"-p:ModsLocal=<some other folder>"`.
+The build must end with `0 Warning(s)` and `0 Error(s)`. It puts the built mod in `RealLifeOverhaul.Build/out/RealLifeOverhaul`. To install it into the game's local mods folder (`%USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions\ModsLocal\RealLifeOverhaul`) add `-p:InstallToGame=true`, and only while the game is closed: the game watches that folder, and files changed under a running game lose their textures and texts until it is restarted. To build into any other folder, add `"-p:ModsLocal=<some other folder>"`.
 
 If you are also subscribed on the Workshop, untick the Workshop item under Mods in the game's main menu while you test a local build. With both switched on the game starts the mod twice. From 0.1.1 the second copy to start writes a warning to `Player.log` and does nothing, so nothing runs twice, but which of the two copies is the one running is then up to the game: keep only one switched on.
 
