@@ -44,8 +44,8 @@ namespace RealLifeOverhaul.Nav
         private const float Column = 740f;        // the width of the game's left column (tasks above, control hints below)
         private const float Head = 100f;          // the headline's height
         private const float Side = 12f;           // the box's own edge
-        private const float ViewSide = 26f;       // the map inside it: the box and its headline are drawn 14 inside their own rectangles (a soft edge), as seen in the game
-        private const float Foot = 40f;           // ...and its lower edge
+        private const float ViewSide = 32f;       // the map inside it: the box and its headline are drawn 14 inside their own rectangles (a soft edge), as seen in the game; 6 more for a frame of the box round the map
+        private const float Foot = 46f;           // ...and its lower edge
         private const float LineHeight = 58f;
         private const float LinesPad = 14f;
         private const float Gap = 16f;            // between this panel and the game's panels above and below it
