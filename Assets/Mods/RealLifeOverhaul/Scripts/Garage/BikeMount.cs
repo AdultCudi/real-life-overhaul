@@ -30,6 +30,8 @@ namespace RealLifeOverhaul
         private const float CadencePerMetre = 1.41f;   // radians of crank per metre: 75 turns a minute at 20 km/h
         private const float AnkleAbovePedal = 0.10f;
         private const float BicycleRolling = 6f;       // N m per wheel: a bicycle coasts; the scooter's own tyres stop it in a few metres
+        private const float PushOff = 3.2f;            // m/s2 of extra push from a standstill while pedalling (about a third of a g: a hard push on the pedals)
+        private const float PushOffUntil = 6f;         // m/s by which that push has faded to nothing (about 22 km/h); pedal power carries on from there
         private const float StopBelow = 0.35f;         // m/s: slower than this with no throttle is standing still (a foot goes down)
         private const float MoveAbove = 0.8f;          // m/s: and faster than this is riding again
         private const float PoseFade = 0.35f;          // seconds from one riding clip to the next
@@ -723,6 +725,21 @@ namespace RealLifeOverhaul
             if (_drag > 0f && speed > 1f)
             {
                 _rigidbody.AddForce(velocity * (-_drag * speed));
+            }
+            // Pushing off: the game's scooter is a quarter of a tonne with an engine that makes little of its power at low
+            // revs, so pedal power alone left a bicycle crawling away from a stop. A rider stands on the pedals: an extra
+            // push along the bike while the throttle is down, strongest at a standstill and gone by PushOffUntil, scaled
+            // by the same effort (energy) the pedal power is. Bicycles only; a motorbike has its engine.
+            if (_drag > 0f && Def.CruiseKmh > 0f && _nwh != null && _nwh.input != null)
+            {
+                float throttle = _nwh.input.Throttle;
+                Vector3 ahead = transform.forward;
+                float along = Vector3.Dot(velocity, ahead);
+                if (throttle > 0.1f && along > -0.5f && along < PushOffUntil)
+                {
+                    float fade = 1f - Mathf.Clamp01(along / PushOffUntil);
+                    _rigidbody.AddForce(ahead * (_rigidbody.mass * PushOff * fade * throttle * Mathf.Clamp01(_effort)));
+                }
             }
             // Coming off: most of the speed gone in one physics step (it hit something), or the bike on its side while moving.
             // Not when the game has just moved the bike somewhere else (a tow, a way in or out of a building).
