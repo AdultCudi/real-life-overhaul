@@ -35,6 +35,12 @@ namespace RealLifeOverhaul
         public static IModLogger Logger;
         public static BusinessDirector Instance { get; private set; }
 
+        /// <summary>What the morning's chance that something comes up is multiplied by (the city's economy: Wiring/CityLinks). One while it is not set.</summary>
+        public static Func<float> RollScale;
+
+        /// <summary>A kind's share of the deal, given its own (the city's economy makes rivals undercut more often in bad times). Its own while this is not set.</summary>
+        public static Func<string, int, int> WeightOf;
+
         private readonly BusinessVisit _visit = new BusinessVisit();
         private readonly List<BuildingRegistration> _shops = new List<BuildingRegistration>(8);
         private readonly List<IssueDef> _deal = new List<IssueDef>(BusinessCatalogue.All.Length);
@@ -287,7 +293,7 @@ namespace RealLifeOverhaul
         private void Roll(int day)
         {
             if (!BusinessState.PastGrace(day) || BusinessState.Issues.Count >= BusinessCatalogue.MostOpen
-                || Random.value > BusinessCatalogue.RollChance(Settings.BusinessFrequency))
+                || Random.value > BusinessCatalogue.RollChance(Settings.BusinessFrequency) * (RollScale != null ? Mathf.Clamp(RollScale(), 0.5f, 2f) : 1f))
             {
                 return;
             }
@@ -318,7 +324,7 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 _deal.Add(def);
-                total += def.Weight;
+                total += Weigh(def);
             }
             if (total <= 0)
             {
@@ -327,7 +333,7 @@ namespace RealLifeOverhaul
             int draw = Random.Range(0, total);
             for (int i = 0; i < _deal.Count; i++)
             {
-                draw -= _deal[i].Weight;
+                draw -= Weigh(_deal[i]);
                 if (draw < 0)
                 {
                     Open(_deal[i], reg, day);
@@ -335,6 +341,64 @@ namespace RealLifeOverhaul
                 }
             }
             _deal.Clear();
+        }
+
+        private static int Weigh(IssueDef def)
+        {
+            return WeightOf != null ? Mathf.Clamp(WeightOf(def.Id, def.Weight), 0, def.Weight * 4) : def.Weight;
+        }
+
+        /// <summary>
+        /// For another feature (through Wiring): one kind of issue starts at a business now, if the rules that hold
+        /// for every issue allow it there today: the feature and the kind's group on, "easy business" off for anything
+        /// but an opportunity, past the grace days, under the most that may be open, the business and the kind rested,
+        /// and whatever the story itself needs. False, with nothing changed, if any of them says no.
+        /// </summary>
+        public bool StartIssue(string kind, BuildingRegistration reg)
+        {
+            try
+            {
+                IssueDef def = BusinessCatalogue.Find(kind);
+                int day = TimeHelper.CurrentDay;
+                if (def == null || _broken || !BusinessState.Loaded || !Settings.Business || !BusinessGame.IsBusiness(reg) || !BusinessIssues.GroupOn(def.Group)
+                    || (Settings.BusinessEasy && !def.Positive) || !BusinessState.PastGrace(day) || BusinessState.Issues.Count >= BusinessCatalogue.MostOpen
+                    || !BusinessState.Eligible(BusinessGame.Place(reg), day) || !BusinessState.KindRested(def, day) || BusinessIssues.Why(def, reg, false) != null)
+                {
+                    return false;
+                }
+                return Open(def, reg, day);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// For another feature (through Wiring): a business's promotion figure is written again as it should stand
+        /// now: its own, an issue's change if one is running there, and whatever <see cref="BusinessGame.Ambient"/>
+        /// adds. With <paramref name="redraw"/> the customers still to come today are drawn again, unless it is a new
+        /// day and a change of this feature's own runs there: then this feature does exactly that itself within the
+        /// second. Works whether or not business pressure is switched on. False where the game keeps no promotion
+        /// figure for the business; otherwise the business's own figure and the one written.
+        /// </summary>
+        public static bool Footfall(BuildingRegistration reg, bool redraw, bool newDay, out int own, out int written)
+        {
+            own = written = 0;
+            if (reg == null)
+            {
+                return false;
+            }
+            int at = BusinessState.Loaded ? BusinessState.EffectAt(BusinessGame.Place(reg)) : -1;
+            bool mine = at >= 0 && newDay && Settings.Business && Instance != null && !Instance._broken;
+            if (!BusinessGame.Footfall(reg, at >= 0 ? BusinessState.Effects[at].Percent : 0, redraw && !mine))
+            {
+                return false;
+            }
+            own = BusinessGame.LastOwn;
+            written = BusinessGame.LastWritten;
+            return true;
         }
 
         private bool Open(IssueDef def, BuildingRegistration reg, int day)

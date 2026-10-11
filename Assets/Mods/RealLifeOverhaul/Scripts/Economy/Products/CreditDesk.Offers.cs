@@ -13,7 +13,8 @@ namespace RealLifeOverhaul.Economy
     {
         public ProductAnswer Answer;
         public int Most;                // the limit it would give, or the most it would finance
-        public int RateBp;
+        public int RateBp;              // the rate as it would be charged today
+        public int AgreedBp;            // the rate an overdraft or a card is opened at: by the rating alone (the central bank's rate is charged on top day by day)
         public Lender Bank;
         public CreditAccount Account;   // the one that is open, when the answer is AlreadyOpen
     }
@@ -46,7 +47,10 @@ namespace RealLifeOverhaul.Economy
 
         private int RateFor(ProductKind kind, Lender bank)
         {
-            return ProductTerms.RateBp(CreditLedger.Value, BankTerms.OwnRate(bank.Settings), ProductTerms.Points(kind), Multiplier);
+            // An overdraft and a card follow the central bank's rate day by day (CreditAccount.RateNow); finance takes it once, here.
+            return ProductCatalogue.Revolving(kind)
+                ? ProductTerms.RateBp(CreditLedger.Value, BankTerms.OwnRate(bank.Settings), ProductTerms.Points(kind), Multiplier)
+                : ProductTerms.FixedRateBp(CreditLedger.Value, BankTerms.OwnRate(bank.Settings), ProductTerms.Points(kind), Multiplier);
         }
 
         /// <summary>The offer of an overdraft, a card, car finance or a mortgage as it stands now.</summary>
@@ -67,7 +71,8 @@ namespace RealLifeOverhaul.Economy
                 return offer;
             }
             int score = CreditLedger.Value;
-            offer.RateBp = RateFor(kind, offer.Bank);
+            offer.AgreedBp = RateFor(kind, offer.Bank);
+            offer.RateBp = ProductCatalogue.Revolving(kind) ? ProductTerms.WithBase(offer.AgreedBp, AccountRules.BaseBp, AccountRules.BaseMultiplier) : offer.AgreedBp;
             switch (kind)
             {
                 case ProductKind.Overdraft: offer.Most = ProductTerms.OverdraftLimit(score, BankTerms.OwnCapTotal); break;
@@ -107,7 +112,7 @@ namespace RealLifeOverhaul.Economy
                 return offer.Answer == ProductAnswer.Yes ? ProductAnswer.Off : offer.Answer;
             }
             int day = Today;
-            account = AccountRules.Open(kind, offer.Most, offer.RateBp, day);
+            account = AccountRules.Open(kind, offer.Most, offer.AgreedBp, day);
             account.Street = offer.Bank.Street;
             account.Number = offer.Bank.Number;
             Opened(account);

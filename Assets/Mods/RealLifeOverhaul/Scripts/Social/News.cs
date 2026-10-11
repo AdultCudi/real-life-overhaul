@@ -73,6 +73,14 @@ namespace RealLifeOverhaul
         /// <summary>The day today's paper was written for; 0 when there has been none.</summary>
         public static int PaperDay { get; private set; }
 
+        /// <summary>
+        /// Pieces another feature has for the day's paper (the city's economy: Wiring/CityLinks). Called once when the
+        /// paper is written, with the day and the paper so far; it adds what it has, after the business piece. It must
+        /// give the same pieces for the same day however often it is asked (the test button writes a day's paper again).
+        /// Nothing while it is not set.
+        /// </summary>
+        public static Action<int, List<NewsItem>> Extra;
+
         /// <summary>Today's paper, masthead first. Empty until one has been written.</summary>
         public static IReadOnlyList<NewsItem> Today => Paper;
 
@@ -357,6 +365,17 @@ namespace RealLifeOverhaul
 
             // ---- business: the player's own shops, from the game's own books for yesterday
             Paper.Add(Business(day));
+            if (Extra != null)
+            {
+                try
+                {
+                    Extra(day, Paper);
+                }
+                catch (Exception e)
+                {
+                    SocialDirector.Logger?.Error(e);
+                }
+            }
 
             // ---- somebody the player knows
             if (People(day, out NewsItem person))

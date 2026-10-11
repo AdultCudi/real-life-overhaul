@@ -39,6 +39,21 @@ namespace RealLifeOverhaul.Economy
         public static IModLogger Logger;
         public static EconomyDirector Instance { get; private set; }
 
+        /// <summary>
+        /// Called once a second on the real clock by this director's own timer, after its own look and whatever state
+        /// the credit side is in (off, running or stopped by a fault): the city's economy (Economy/City) looks at its
+        /// option and its save with it and has no timer of its own. A handler must not throw.
+        /// </summary>
+        public static Action Second;
+
+        /// <summary>
+        /// Called at the end of this director's own work on the game's hour event and on its day event, while the
+        /// credit side runs: the city's economy does its hour and its day here, so it always comes after the loans are
+        /// read and the accounts have taken their payments, and needs no place of its own in the game's events.
+        /// A handler must not throw.
+        /// </summary>
+        public static Action AfterHour, AfterDay;
+
         private readonly GameLoans _loans = new GameLoans();
         private readonly List<LoanView> _live = new List<LoanView>(8);
         private readonly List<LoanFinding> _findings = new List<LoanFinding>(8);
@@ -126,18 +141,18 @@ namespace RealLifeOverhaul.Economy
             while (true)
             {
                 yield return wait;
-                if (_broken)
+                if (!_broken)
                 {
-                    continue;
+                    try
+                    {
+                        Slow();
+                    }
+                    catch (Exception e)
+                    {
+                        Fault("the timer", e);
+                    }
                 }
-                try
-                {
-                    Slow();
-                }
-                catch (Exception e)
-                {
-                    Fault("the timer", e);
-                }
+                Second?.Invoke();
             }
         }
 
@@ -402,6 +417,7 @@ namespace RealLifeOverhaul.Economy
             {
                 Fault("the hour", e);
             }
+            AfterHour?.Invoke();
         }
 
         // GlobalEvents.onNewDay: after the game's daily run (GameManager.NewDay; LoanHelper.RunDaily is in BusinessHelper.RunDaily before it).
@@ -419,6 +435,7 @@ namespace RealLifeOverhaul.Economy
             {
                 Fault("the day", e);
             }
+            AfterDay?.Invoke();
         }
 
         // The loans as they are now against the file's marks: what the player did since the last look.
@@ -749,6 +766,16 @@ namespace RealLifeOverhaul.Economy
         private void OpenCredit()
         {
             Open(Finance.Credit);
+        }
+
+        /// <summary>The Finance app on the city's page.</summary>
+        public void OpenCity()
+        {
+            if (_app != null && _view != null && _running)
+            {
+                _view.WantCity();
+                _app.Open();
+            }
         }
 
         /// <summary>The app has been opened: the file is brought up to date with the game, and what the badge counted has been seen.</summary>

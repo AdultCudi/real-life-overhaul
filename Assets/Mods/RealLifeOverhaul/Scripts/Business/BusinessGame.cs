@@ -37,6 +37,16 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger;
 
+        /// <summary>
+        /// What the city's economy adds to a business's footfall, in per cent of customers, whatever else is running
+        /// there (set by Wiring/CityLinks; nothing while it is not set). It is asked each time the figure is written,
+        /// kept inside <see cref="BusinessCatalogue.AmbientMostDip"/> and <see cref="BusinessCatalogue.AmbientMostBoost"/>.
+        /// </summary>
+        public static Func<BuildingRegistration, int> Ambient;
+
+        /// <summary>The last business <see cref="Footfall"/> wrote: its own promotion figure and what was written.</summary>
+        public static int LastOwn, LastWritten;
+
         private static readonly List<EmployeeInstance> StaffScratch = new List<EmployeeInstance>(16);
 
         // ---------------------------------------------------------------- which businesses
@@ -343,15 +353,19 @@ namespace RealLifeOverhaul
                     return false;
                 }
                 int own = reg.promotion.total;
-                if (percent != 0)
+                int ambient = Ambient != null ? Ambient(reg) : 0;
+                if (percent != 0 || ambient != 0)
                 {
                     float baseMultiplier = SaveGameManager.Current.gameVariables.baseCustomerPromotionMultiplier;
-                    reg.promotion.total = BusinessCatalogue.PromotionFor(own, percent, baseMultiplier);
+                    reg.promotion.total = BusinessCatalogue.PromotionFor(own, percent, ambient, baseMultiplier);
                 }
+                LastOwn = own;
+                LastWritten = reg.promotion.total;
                 if (regenerate)
                 {
                     CustomerEntriesHelper.UpdateCustomerEntriesForPlayerBusiness(reg, TimeHelper.GetDayOfWeek());
-                    Logger?.Info("Business: footfall at " + Name(reg) + " " + (percent >= 0 ? "+" : string.Empty) + percent + " %: promotion " + own + " -> "
+                    Logger?.Info("Business: footfall at " + Name(reg) + " " + (percent >= 0 ? "+" : string.Empty) + percent + " %"
+                                 + (ambient != 0 ? " and " + (ambient > 0 ? "+" : string.Empty) + ambient + " % from the city's economy" : string.Empty) + ": promotion " + own + " -> "
                                  + reg.promotion.total + ".");
                 }
                 return true;

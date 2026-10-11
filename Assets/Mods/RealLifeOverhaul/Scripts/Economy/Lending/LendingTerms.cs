@@ -29,14 +29,27 @@ namespace RealLifeOverhaul.Economy
     ///
     /// A rate is never under 1 per cent. Both figures move one way only as the score rises: the cap never falls and
     /// the rate never rises.
+    ///
+    /// THE CENTRAL BANK. <see cref="BasePoints"/> is added to the rating's points before the rate is rounded and held
+    /// to its floor. It is nothing unless the city's economy (Economy/City) has set it, and then every rate offered
+    /// from now on carries it; a loan already made keeps the rate it was made at.
     /// </summary>
     public static class LendingTerms
     {
+        /// <summary>The central bank's rate in points on top of the banks' own. Nothing while the city's economy is off.</summary>
+        public static float BasePoints;
+
         public static LenderTerms For(int score, float ownCap, int ownRate)
+        {
+            return For(score, ownCap, ownRate, BasePoints);
+        }
+
+        /// <summary>The terms with a given central bank rate (nothing: the terms by the rating alone).</summary>
+        public static LenderTerms For(int score, float ownCap, int ownRate, float basePoints)
         {
             var terms = new LenderTerms();
             float t = Position(score);
-            float points = CreditCatalogue.RatePointsAtThreshold + (CreditCatalogue.RatePointsAtBest - CreditCatalogue.RatePointsAtThreshold) * t;
+            float points = CreditCatalogue.RatePointsAtThreshold + (CreditCatalogue.RatePointsAtBest - CreditCatalogue.RatePointsAtThreshold) * t + basePoints;
             terms.AnnualRate = Math.Max(CreditCatalogue.RateFloor, ownRate + (int)Math.Round(points, MidpointRounding.AwayFromZero));
             terms.Lends = score >= CreditCatalogue.LendingThreshold;
             if (terms.Lends)

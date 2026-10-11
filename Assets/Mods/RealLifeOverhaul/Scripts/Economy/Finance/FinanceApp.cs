@@ -40,6 +40,7 @@ namespace RealLifeOverhaul.Economy
         private static readonly string[] TabKeys = { "reallife_econ_tab_overview", "reallife_econ_tab_credit", "reallife_econ_tab_borrow", "reallife_econ_tab_cash", "reallife_econ_tab_accounts" };
         private static readonly string[] ColumnNames = { "ColumnA", "ColumnB", "ColumnC", "ColumnD" };
         private static readonly float[] ColumnWidths = { WidthA, WidthB, WidthC, WidthD };
+        private static readonly string[] CityColumnKeys = { "reallife_macro_col_name", "reallife_macro_col_now", "reallife_macro_col_change", "reallife_macro_col_note" };
         private static readonly string[][] ColumnKeys =
         {
             new[] { "reallife_econ_col_debt", "reallife_econ_col_owed", "reallife_econ_col_per_day", "reallife_econ_col_left" },
@@ -164,6 +165,13 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>The city's page is what shows the next time the app opens (a notification of the city's economy was clicked).</summary>
+        public void WantCity()
+        {
+            _wantCity = true;
+            Want(Finance.Overview);
+        }
+
         public void Opened()
         {
             if (_shell == null || _table == null)
@@ -175,6 +183,8 @@ namespace RealLifeOverhaul.Economy
                 _tab = _wanted;
                 _wanted = -1;
             }
+            _city = _wantCity && _tab == Finance.Overview;
+            _wantCity = false;
             _ready = _director.AppOpened();
             Refresh();
         }
@@ -186,9 +196,10 @@ namespace RealLifeOverhaul.Economy
 
         private void ShowTab(int tab)
         {
-            if (tab != _tab)
+            if (tab != _tab || _city)
             {
                 _tab = tab;
+                _city = false;
                 Refresh();
             }
         }
@@ -206,8 +217,9 @@ namespace RealLifeOverhaul.Economy
                 _pool.Add(_rows[i]);
             }
             _rows.Clear();
-            _shell.ShowTab(_tab);
-            _shell.SetColumns(ColumnNames, ColumnKeys[_tab], ColumnWidths, 1);
+            bool city = _city && _tab == Finance.Overview && CityState() != null;
+            _shell.ShowTab(city ? -1 : _tab);   // (on the city's page no tab is the one showing: Overview's can be clicked to go back)
+            _shell.SetColumns(ColumnNames, city ? CityColumnKeys : ColumnKeys[_tab], ColumnWidths, 1);
             InfoBox box = _shell.Box;
             box.Clear();
             string selected = null;
@@ -227,7 +239,16 @@ namespace RealLifeOverhaul.Economy
                     case Finance.Borrow: selected = WriteBorrow(box, score); break;
                     case Finance.CashFlow: WriteCashFlow(box); break;
                     case Finance.Accounts: selected = WriteAccounts(box); break;
-                    default: WriteOverview(box, score); break;
+                    default:
+                        if (city)
+                        {
+                            WriteCity(box);
+                        }
+                        else
+                        {
+                            WriteOverview(box, score);
+                        }
+                        break;
                 }
             }
             box.Done();
@@ -317,6 +338,7 @@ namespace RealLifeOverhaul.Economy
                 box.Line(FinanceText.T("reallife_econ_over_owed_three", "loans", FinanceText.Money(owedLoans), "accounts", FinanceText.Money(owedAccounts), "other", FinanceText.Money(owedOther)));
             }
             box.Line(FinanceText.Pair("reallife_econ_over_rating", FinanceText.T("reallife_econ_rating_value", "score", score.Value.ToString(), "grade", FinanceText.Grade(score.Grade))));
+            bool cityOn = CityLines(box);   // the bank rate, prices and the economy, while the city's economy runs
             box.Headline("reallife_econ_over_costs");
             box.Line(FinanceText.Pair("reallife_econ_over_loan_payments", FinanceText.Money(payments)));
             if (interest > 0f)
@@ -338,6 +360,10 @@ namespace RealLifeOverhaul.Economy
             box.Line(FinanceText.Pair("reallife_econ_over_worth", FinanceText.Money(wealth.CurrentWealth - owedOther - owedAccounts)));
             box.Line(FinanceText.T("reallife_econ_over_worth_parts", "investments", FinanceText.Money(wealth.totalInvestments), "assets", FinanceText.Money(wealth.totalAssets)));
             Transform buttons = box.ButtonRow();
+            if (cityOn)
+            {
+                InfoBox.Button(buttons, InfoBox.Positive, "reallife_macro_open", ShowCity);
+            }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_econ_open_econoview", OpenEconoView);
         }
 

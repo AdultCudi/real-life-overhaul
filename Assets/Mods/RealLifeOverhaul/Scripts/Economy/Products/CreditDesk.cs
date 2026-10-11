@@ -670,7 +670,7 @@ namespace RealLifeOverhaul.Economy
                 if (o.PenaltyEnded)
                 {
                     Note(NotificationType.Success, "reallife_econ_note_penalty_over", Data("account", name));
-                    Check("rate restored: " + a.Kind + " #" + a.Id + " back at " + (a.RateNow / 100f).ToString("0.##") + "% after three payments in a row", a.RateNow == a.RateBp);
+                    Check("rate restored: " + a.Kind + " #" + a.Id + " back at " + (a.RateNow / 100f).ToString("0.##") + "% after three payments in a row", a.RateNow == a.RateAgreedNow);
                 }
                 if (o.Step != LadderStep.None)
                 {
