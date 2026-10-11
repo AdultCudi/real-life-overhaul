@@ -34,6 +34,9 @@ namespace RealLifeOverhaul
 
         private readonly TravelDirector _director;
         private readonly HotelReception _reception;
+
+        /// <summary>True while the reception's list is open at a hotel's door (the player is in the street, in no room).</summary>
+        public bool AtReception => _reception != null && _reception.IsOpen;
         private bool _plain;               // the game's list could not be made: the night is slept at once and the player is back outside
         private bool _sleeping;
         private bool _confirming;

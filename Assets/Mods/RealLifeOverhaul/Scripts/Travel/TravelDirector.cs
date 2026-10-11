@@ -379,7 +379,7 @@ namespace RealLifeOverhaul
         {
             if (!_secluded)
             {
-                if (Window.IsOpen && !TravelState.InRoom && !TravelState.Away && !Holidays.ShowingCancel)
+                if (Window.IsOpen && !TravelState.InRoom && !TravelState.Away && !Holidays.ShowingCancel && !Stay.AtReception)   // (reception is used from the street, in no room)
                 {
                     Window.Close();
                 }
