@@ -943,7 +943,7 @@ namespace RealLifeOverhaul
             Phase(now, reach);
             Logger?.Info($"People: paramedics out ({(gotA && gotB ? 2 : 1)}){(_stretcher != null ? " with the stretcher" : "")}, {straight:F0} m from "
                          + (down ? "the casualty" : "the driver") + (paced ? $", at the {SceneClips.WalkPace:F1} m/s their walking clips are made for" : "")
-                         + $"; back aboard in about {reach + treat + back:F0} s. Sending them out took: the way {_msPlan:F0} ms, the two characters {_msCrew:F0} ms, "
+                         + $"; back aboard in about {reach + treat + back:F0} s. Sending them out took: the way {_msPlan:F1} ms ({_way.Cost}), the two characters {_msCrew:F0} ms, "
                          + $"the stretcher taken {_msWheel:F0} ms, the cordon run round it {_msCordon:F0} ms, the lane shut {_msLane:F0} ms.");
             return now + reach + treat + back;
         }

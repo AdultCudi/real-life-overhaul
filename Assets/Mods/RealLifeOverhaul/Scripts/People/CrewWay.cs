@@ -27,7 +27,7 @@ namespace RealLifeOverhaul
     /// pavement or through that lane (held shut meanwhile) only if not. A way that cannot be made at all is
     /// said so, with what was in it. All of it is asked once per outing; nothing here runs.
     /// </summary>
-    public sealed class CrewWay
+    public sealed partial class CrewWay
     {
         public const float Width = 2.3f;            // metres the crew takes up across its way: the bed, and whoever walks beside its leading end, with a little either side
         public const float BedOut = 0.85f;          // from the body's axis to the stretcher's middle line: 0.55 m to its near rail
@@ -243,6 +243,7 @@ namespace RealLifeOverhaul
             Door = RearFace - forward * DoorBack;
             Straight = Flat(Bed - Door).magnitude;
             Measure(centre, forward, halfLength, halfWidth);
+            Look();   // the street round the scene, read once: every way below is tested against that (CrewWay.Survey)
 
             Vector3 firstSide = Side;
             float best = float.MaxValue;
@@ -252,6 +253,7 @@ namespace RealLifeOverhaul
             _blocked = null;
             for (int tier = 0; tier < 2 && best == float.MaxValue; tier++)
             {
+                _askedNow = 0;   // (each tier has its own share of what the engine may be asked)
                 for (int body = 0; body < 2; body++)
                 {
                     // (On the carriageway a side of the body that failed its own clear test is not tried; wherever there is room, both are.)
@@ -284,6 +286,7 @@ namespace RealLifeOverhaul
                                 {
                                     continue;
                                 }
+                                _ways++;
                                 if (Valid(tier, guide, swing, from, -Side, Bed, heading, home: false))
                                 {
                                     best = length;
@@ -309,6 +312,7 @@ namespace RealLifeOverhaul
             }
             if (best == float.MaxValue)
             {
+                Forget();
                 Try(firstSide);
                 Face(_preferred);
                 Why = "no way " + Width.ToString("F1") + " m wide is clear from either side of the ambulance to either side of the casualty, by a run-in or a swing-in"
@@ -339,7 +343,9 @@ namespace RealLifeOverhaul
             Out.Second(0f, out float secondX, out float secondZ);
             SecondOut = new Vector3(secondX, Out.Height(0f), secondZ);
             OutGate = Gate(Out, entering: true);
+            _askedNow = 0;   // (...and so has the way back)
             PlanHome(right);
+            Forget();
             Planned = true;
             return true;
         }
@@ -567,7 +573,8 @@ namespace RealLifeOverhaul
             int mask = tier == 0 ? SceneParking.StreetMask : SceneParking.RoadsideMask;
             float half = Sweep + (tier == 0 ? 0.3f : 0.12f);
             int steps = Mathf.Max(1, Mathf.CeilToInt(travel / 0.5f));
-            for (int i = 0; i <= steps; i++)
+            // (From the far end back: what is in the way is most often by the casualty, and a way is given up at the first thing found.)
+            for (int i = steps; i >= 0; i--)
             {
                 float along = travel * i / steps;
                 _try.Pose(along, out float pusherX, out float pusherZ, out float bedX, out float bedZ, out float headingX, out float headingZ);
@@ -653,7 +660,7 @@ namespace RealLifeOverhaul
         // One pose of the crew: nothing solid in its strip, ground under it, and (tier 0) carriageway that is nobody's open lane.
         private bool PoseClear(Vector3 pusher, Vector3 bed, Vector3 heading, float half, int mask, bool atDoors, int tier, bool looked)
         {
-            Collider hit = SceneParking.InStrip(pusher - heading * (CrewPath.Body + 0.05f), bed + heading * (CrewPath.SecondAhead + CrewPath.Body + 0.05f), half,
+            Collider hit = InStrip(pusher - heading * (CrewPath.Body + 0.05f), bed + heading * (CrewPath.SecondAhead + CrewPath.Body + 0.05f), half,
                 atDoors ? _ambulance : null, mask);
             if (hit != null)
             {
@@ -664,7 +671,7 @@ namespace RealLifeOverhaul
             {
                 return true;
             }
-            if (!StreetSpots.Ground(pusher, out _) || !StreetSpots.Ground(bed, out _))
+            if (!HasGround(pusher) || !HasGround(bed))
             {
                 _blocked = "no ground under it";
                 return false;
@@ -680,7 +687,7 @@ namespace RealLifeOverhaul
                 _blocked = "the lane traffic is let past in";
                 return false;
             }
-            if (!OnCarriage(pusher) || !OnCarriage(bed))
+            if (!OnRoad(pusher) || !OnRoad(bed))
             {
                 _blocked = "a pavement or a kerb in the line";
                 return false;
@@ -915,21 +922,22 @@ namespace RealLifeOverhaul
         }
 
         private const float LaneHalf = 1.9f;   // metres from a lane's middle line that are that lane
+        private const float LaneReach = 6f;    // ...and from a place that a lane's nearest point is looked for
 
         // True within a lane's width of the road graph: measured across the lane from its nearest point's own line,
         // so that a pavement beside a kerb lane (2 m and more from that line) is not taken for the road.
         private static bool InLane(Vector3 point)
         {
-            if (!TrafficManager.HasInstance)
+            return TrafficManager.HasInstance && InLane(point, TrafficManager.Instance.GetClosestWaypoint(point, LaneReach));
+        }
+
+        private static bool InLane(Vector3 point, Waypoint nearest)
+        {
+            if (nearest == null || !TrafficManager.HasInstance)
             {
                 return false;
             }
             TrafficManager traffic = TrafficManager.Instance;
-            Waypoint nearest = traffic.GetClosestWaypoint(point, 6f);
-            if (nearest == null)
-            {
-                return false;
-            }
             Waypoint other = nearest.neighbors != null && nearest.neighbors.Count > 0 ? traffic.GetWaypoint(nearest.neighbors[0])
                 : nearest.prev != null && nearest.prev.Count > 0 ? traffic.GetWaypoint(nearest.prev[0]) : null;
             Vector3 along = other != null ? Flat(other.position - nearest.position) : Vector3.zero;
