@@ -2028,7 +2028,7 @@ that one bus was either still crawling when the game was closed or its vehicle w
   take the other seat (walks to it, sits, gets up when the bus stands); those standing wait by the pole, outside
   the shelter.
 - **Service**: the nearest dressed stop within 80 m that has stops after it is served: up to two people walk up from
-  out of view, and a bus comes every 150 s by day, 100 s in the weekday rush (7 to 9, 16 to 19), 210 s in the
+  out of view, and a bus comes every 150 s by day (from 0.1.4 never later than 20 minutes of the game clock, the drive in counted: `Wait`; and it stands up to 34 s for a player within 35 m), 100 s in the weekday rush (7 to 9, 16 to 19), 210 s in the
   evening, 220 s early, 360 s at night, a third longer in the rain. In the rush one bus in four is full.
 - **The bus** (`TransitBus`) is a vehicle of the traffic pool wearing the modelled `minibus` (hidden under it
   wholly; without the bundle, a van with a lit route board). The body is made to the Mersaidi Dash (6.66 m, axles

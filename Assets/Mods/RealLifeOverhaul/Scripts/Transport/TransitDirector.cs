@@ -82,6 +82,9 @@ namespace RealLifeOverhaul
         private const float BoardRange = 16f;
         private const float SitRange = 1.5f;         // metres from a seat's place at which sitting is offered
         private const float BusLead = 30f;           // seconds before it is due that a bus is put on the road
+        private const float MostWaitMinutes = 20f;   // game minutes: nobody waits longer for a bus than this, whatever the hour
+        private const float DriveIn = 14f;           // seconds a bus usually takes from where it is put on the road to the stop
+        private const float WaitsWithin = 35f;       // metres from the stop within which a bus waits for the player on foot, up to DwellMost
         private const float RetryEvery = 2f;         // seconds between tries when no bus could be put on the road
         private const float MoveUpAfter = 40f;       // seconds without progress, out of view, before a bus is moved up its line
         private const float GiveUpAfter = 150f;      // seconds without progress before a bus is given up
@@ -579,7 +582,7 @@ namespace RealLifeOverhaul
             _served = nearest;
             // Arriving at a stop is arriving part of the way through an interval: the same part for the same stop in the same hour.
             float part = Mathf.Abs((nearest.Id * 7919 + TimeHelper.CurrentDay * 104729 + TimeHelper.CurrentHour * 1299709) % 1000) / 1000f;
-            _eta.Timetable(Mathf.Max(BusLead + 4f, Headway() * (0.2f + 0.6f * part)));
+            _eta.Timetable(Wait(Mathf.Max(BusLead + 4f, Headway() * (0.2f + 0.6f * part))));
             _refusals = 0;
             _nextTry = 0f;
             _nextWaiter = now + 2f;
@@ -600,6 +603,13 @@ namespace RealLifeOverhaul
             _refusals = 0;
             _player = PlayerStep.None;
             HideHud();
+        }
+
+        // The wait the timetable asks for, held to MostWaitMinutes of the game's clock at the rate it is running at, the
+        // drive in counted: a wait shorter than BusLead puts the bus on the road at once.
+        private float Wait(float seconds)
+        {
+            return Mathf.Clamp(seconds, 2f, Mathf.Max(2f, MostWaitMinutes / Mathf.Max(0.1f, _minutesPerSecond) - DriveIn));
         }
 
         /// <summary>Seconds between buses at a stop now: by the hour, the day and the weather.</summary>
@@ -698,7 +708,9 @@ namespace RealLifeOverhaul
                         busy |= _waiting[i].Step == RiderStep.Rising || _waiting[i].Step == RiderStep.Boarding || _waiting[i].Step == RiderStep.Entering;
                     }
                     bool held = (_player == PlayerStep.Choosing && now < _chooseUntil) || _ride.Riding;   // (aboard: it stands until the screen is dark)
-                    if ((now >= _dwellUntil && !busy && !held) || _bus.Standing > DwellMost + (held ? ChooseFor : 0f))
+                    // The driver waits for somebody at the stop or walking up to it: the least stand is for an empty stop.
+                    bool wanted = !_busFull && PlayerAtStop(WaitsWithin);
+                    if ((now >= _dwellUntil && !busy && !held && !wanted) || _bus.Standing > DwellMost + (held ? ChooseFor : 0f))
                     {
                         Leave(now);
                     }
@@ -712,6 +724,12 @@ namespace RealLifeOverhaul
                     _eta.Wait(TickInterval, false);   // the next one is on its way while this one drives off
                     break;
             }
+        }
+
+        private bool PlayerAtStop(float within)
+        {
+            return _served != null && !PlayerHelper.IsUsingVehicle && !BuildingManager.IsInsideBuilding
+                   && CitySpots.Flat(_served.Sign - PlayerHelper.GetPosition()) < within * within;
         }
 
         // A bus has just been put on the road for the served stop.
@@ -805,6 +823,12 @@ namespace RealLifeOverhaul
         private void Arrived(float now)
         {
             _dwellUntil = now + DwellLeast;
+            if (!_busFull && !_ride.Riding && PlayerAtStop(WaitsWithin))
+            {
+                // Said once as it pulls in: the bus is a small one, and it is not obvious that it is theirs.
+                Notifications.Show(NotificationType.Info, "reallife_transit_bus_here",
+                    new Dictionary<string, string>(2) { { "route", TransitMap.Lines[_served.Line].Number }, { "key", JobKeys.Label } }, 8f);
+            }
             _doorFound = false;
             _boardable = false;
             _boarded = 0;
@@ -895,7 +919,7 @@ namespace RealLifeOverhaul
                              + " allowed); " + _boarded + " got in, " + _alighted + " got out, the player " + (_ride.Riding ? "is aboard" : _player == PlayerStep.Choosing ? "was still choosing a stop" : "did not board")
                              + ": " + (stood <= DwellMost + ChooseFor + 2f ? "PASS" : "FAIL") + ".");
             }
-            _eta.Timetable(Headway() * (_busFull ? 0.5f : 1f));
+            _eta.Timetable(Wait(Headway() * (_busFull ? 0.5f : 1f)));
             _refusals = 0;
             _busFull = false;
             // Whoever was still on the way to the door goes back to waiting.
