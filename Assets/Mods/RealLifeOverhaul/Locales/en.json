@@ -5361,7 +5361,7 @@
   "reallife_lic_test_checkpoint": "Follow the road to checkpoint {number} of {of}",
   "reallife_lic_test_park": "Park inside the marked bay at the kerb, straight, touching nothing",
   "reallife_lic_test_park_reverse": "Reverse into the marked bay at the kerb, straight, touching nothing",
-  "reallife_lic_test_stop": "Pull up and stop at the marker",
+  "reallife_lic_test_stop": "Stop inside the yellow box painted on the road",
   "reallife_lic_test_say_park": "Examiner: Park in the marked bay on the right, please.",
   "reallife_lic_test_say_park_reverse": "Examiner: Pull past the bay on the right and reverse into it, please.",
   "reallife_lic_test_say_stop": "Examiner: There is no room to park here. Pull up at the marker and stop, please.",
@@ -5386,7 +5386,7 @@
   "reallife_lic_marker_car": "School car",
   "reallife_lic_marker_checkpoint": "Checkpoint",
   "reallife_lic_marker_bay": "Parking bay",
-  "reallife_lic_marker_stop": "Stop here",
+  "reallife_lic_marker_stop": "Stop in this box",
   "reallife_lic_sheet_title_pass": "Practical test: PASSED",
   "reallife_lic_sheet_title_fail": "Practical test: FAILED",
   "reallife_lic_sheet_title_lesson": "Lesson report",
@@ -5406,8 +5406,8 @@
   "reallife_lic_fault_brake": "Braked flat out from speed to a stop",
   "reallife_lic_fault_touched": "Touched another vehicle or an obstacle",
   "reallife_lic_fault_collision": "Collision (serious)",
-  "reallife_lic_fault_parked_badly": "Parked crooked or over the line",
-  "reallife_lic_fault_not_parked": "Did not park in the bay (serious)",
+  "reallife_lic_fault_parked_badly": "Stopped crooked or over the box's line",
+  "reallife_lic_fault_not_parked": "Did not stop inside the marked box (serious)",
   "reallife_lic_fault_no_reverse": "Drove into the bay forwards instead of reversing",
   "reallife_lic_fault_police": "Pulled over by the police during the test (serious)",
   "reallife_lic_q_d01": "The light ahead turns red as you approach the stop line. What must you do?|Stop behind the stop line and wait for green|Slow down and roll through if nothing is coming|Speed up to clear the junction",
@@ -11719,5 +11719,6 @@
   "reallife_opt_tip_perf_step_timing": "The performance measurements time each step of the frame. Switch off only if a measurement misbehaves.",
   "reallife_opt_tip_dev_diagnostics": "Detailed lines go to Player.log and the diagnostic keys work. Switch on to report a problem.",
   "reallife_opt_tip_show_test_tools": "Test buttons for every part of the mod appear under Troubleshooting, in Test tools.",
-  "reallife_opt_test_no_city": "Test tools work in the city. Load a save first."
+  "reallife_opt_test_no_city": "Test tools work in the city. Load a save first.",
+  "reallife_lic_marker_in": "You are in the box: stop"
 }

@@ -125,6 +125,16 @@ namespace RealLifeOverhaul
         private Vector3 _desk;
         private Transform _beacon;
         private Transform _bay;
+        // The box the drive ends in, painted on the road: the bay at the kerb, or (with no kerb to mark one at) a box in the
+        // lane where the car is to stop. Whatever is judged is what is painted, and the marker stands in its middle.
+        private Vector3 _boxCentre;
+        private Quaternion _boxFacing = Quaternion.identity;
+        private float _boxHalfWidth, _boxHalfLength;
+        private bool _inBox;
+        private const float StopHalfWidth = 1.7f;      // metres: the stop box in the lane, half its width...
+        private const float StopHalfLength = 4f;       // ...and half its length: a car and a good metre each end
+        private const float BoxAllow = 0.6f;           // metres a car may stand over the box's edge and still be in it
+        private const float BoxNear = 2.5f;            // ...and still be marked only as parked badly (a minor fault)
         private int _next;
         private float _stepEnd;
         private float _nextTick;
@@ -579,18 +589,36 @@ namespace RealLifeOverhaul
             _step = Step.Park;
             _reversed = 0f;
             HideBeacon();
+            // The box: the bay, or a stop box across the lane at the last checkpoint, facing the way the lane runs.
+            _inBox = false;
             if (_route.HasBay)
             {
-                if (_bay == null)
-                {
-                    _bay = LicenceProps.MakeBay(_parent);
-                }
-                if (_bay != null)
-                {
-                    LicenceProps.SizeBay(_bay, _route.BayHalfWidth, _route.BayHalfLength);
-                    _bay.SetPositionAndRotation(_route.BayCentre + Vector3.up * 0.02f, _route.BayFacing);
-                    _bay.gameObject.SetActive(true);
-                }
+                _boxCentre = _route.BayCentre;
+                _boxFacing = _route.BayFacing;
+                _boxHalfWidth = _route.BayHalfWidth;
+                _boxHalfLength = _route.BayHalfLength;
+            }
+            else
+            {
+                Vector3 runs = _route.Runs.Count > 0 ? _route.Runs[_route.Runs.Count - 1] : Vector3.forward;
+                runs.y = 0f;
+                _boxCentre = _route.StopAt;
+                _boxFacing = runs.sqrMagnitude > 0.01f ? Quaternion.LookRotation(runs.normalized, Vector3.up) : Quaternion.identity;
+                _boxHalfWidth = StopHalfWidth;
+                _boxHalfLength = StopHalfLength;
+            }
+            if (_bay == null)
+            {
+                _bay = LicenceProps.MakeBay(_parent);
+            }
+            if (_bay != null)
+            {
+                LicenceProps.SizeBay(_bay, _boxHalfWidth, _boxHalfLength);
+                _bay.SetPositionAndRotation(_boxCentre + Vector3.up * 0.02f, _boxFacing);
+                _bay.gameObject.SetActive(true);
+            }
+            if (_route.HasBay)
+            {
                 Show(Licences.T(_class == LicenceClass.Commercial ? "reallife_lic_test_park_reverse" : "reallife_lic_test_park"),
                     _route.BayCentre, Licences.T("reallife_lic_marker_bay"));
                 Say(_class == LicenceClass.Commercial ? "reallife_lic_test_say_park_reverse" : "reallife_lic_test_say_park");
@@ -712,6 +740,7 @@ namespace RealLifeOverhaul
             // Backing up near the bay: the commercial class has to reverse in.
             if (_step == Step.Park)
             {
+                BoxSign();
                 Vector3 moved = position - _lastPosition;
                 float along = moved.x * forward.x + moved.z * forward.z;
                 if (along < 0f && along > -3f)
@@ -976,17 +1005,41 @@ namespace RealLifeOverhaul
             }
         }
 
+        // How far the car stands over the edge of the painted box (0 or less: wholly inside it).
+        private float OverBox(Vector3 centre, float halfLength, float halfWidth)
+        {
+            Vector3 local = Quaternion.Inverse(_boxFacing) * (centre - _boxCentre);
+            return Mathf.Max(Mathf.Abs(local.x) + halfWidth - _boxHalfWidth, Mathf.Abs(local.z) + halfLength - _boxHalfLength);
+        }
+
+        // The marker over the box says whether the car is in it, so there is no guessing before "I have parked" is pressed.
+        // Looked at with the examiner's other looks (ten a second); the words change only when the answer does.
+        private void BoxSign()
+        {
+            JobSpots.CarFrame(_car, out Vector3 centre, out _, out float halfLength, out float halfWidth);
+            bool inside = OverBox(centre, halfLength, halfWidth) <= BoxAllow;
+            if (inside != _inBox)
+            {
+                _inBox = inside;
+                _markerLabel = Licences.T(inside ? "reallife_lic_marker_in" : _route.HasBay ? "reallife_lic_marker_bay" : "reallife_lic_marker_stop");
+            }
+        }
+
         // Stopped and declared: is the car in the box, straight, and (for the commercial class) backed in?
         private void JudgeParking()
         {
             JobSpots.CarFrame(_car, out Vector3 centre, out Vector3 forward, out float halfLength, out float halfWidth);
             if (!_route.HasBay)
             {
-                if (JobSpots.Flat(centre, _route.StopAt) > 6f)
+                // A stop in the lane: judged by the box painted there, and only by where the car stands (not by how straight).
+                float out0 = OverBox(centre, halfLength, halfWidth);
+                _logger?.Info("Licences: stopped " + Mathf.Max(0f, out0).ToString("F2") + " m over the edge of the stop box painted in the lane ("
+                              + (_boxHalfWidth * 2f).ToString("F1") + " by " + (_boxHalfLength * 2f).ToString("F1") + " m).");
+                if (out0 > BoxNear)
                 {
                     _faults[(int)TestFault.NotParked]++;
                 }
-                else if (JobSpots.Flat(centre, _route.StopAt) > 3f)
+                else if (out0 > BoxAllow)
                 {
                     _faults[(int)TestFault.ParkedBadly]++;
                 }
