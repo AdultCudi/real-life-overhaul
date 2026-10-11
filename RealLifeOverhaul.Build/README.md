@@ -664,17 +664,39 @@ shirt exist under the same names in the detailed character set (if not, the doub
 there and the outfit's log line says so), and that the walker's radius leaves room for a cut (the check line
 says).
 
-**What the other six jobs need to adopt these pieces.** Flyers: `NativeUi` and a `ShiftCard` (flyers taken, the
-busy share, time); the offer is already made at a person, so its key prompt becomes a `WorldPanel` over them; a
-uniform (`CityLook.Canvasser`); `ShiftSkip` with a rate per flyer. Cleaner: card, uniform (`CityLook.Cleaner`),
-`ShiftSkip`; each spill a `WorldPanel` button or a click action on the spill (`Transport/TransitPointer` is the
-model), and `WorksInside` as now. Shelf stocker: card, `ShiftSkip`; picking up and putting down as click actions
-on the box and the shelf. Busker: `JobStand` on the pitch (it holds the player already), the three songs as the
-panel's three buttons exactly as the drinks, card, `ShiftSkip` by songs. Courier and ride-hail: card only (parcels
-or fares, the clock, the tip); their marker is the game's guider already; a `ShiftSkip` would have to place the
-car at the end and is not suggested. The two career-only shifts (`DispatchJob`, `LeadJob`) need the card and a
-`WorldPanel` for their choices. Each also needs its pay slip moved to the notification (`NativeUi` does it) and
-its texts.
+**The other jobs on the same pieces.** Every job is now in the game's own interface: `NativeUi` is gone (all jobs are),
+and with it the mod's own objective plate, status text, number-key choices, key prompt and pay slip. Shared by all:
+`ShiftFigures` (the card laid out as the cart lays it out, each line written only when a figure changes), `JobPanel`
+(the game's panel over a place: one or two buttons by locale key, or the job's own four), `ShiftClock` (the offer,
+texts, rate, pay slip and log of "Let time pass" for the jobs other than the cart) and `ShiftRates` (the 85% and the
+game minutes a unit: four game hours over the units of the shift; the cart's twenty minutes is the same sum).
+`WorldPanel` gained `Follow`/`FollowLift` so that the box stays on a person who walks.
+
+- **Flyers.** Canvasser uniform; the panel follows the passer-by in reach with "Offer a flyer", and stands over the
+  player with "Let time pass" when nobody is in reach (10 game minutes a flyer, 85%, no busy bonus, no bundle bonus).
+- **Cleaner.** Cleaner uniform; "Go in" over the door, "Mop it up" and "Let time pass" over each spill in reach
+  (30 game minutes a spill, 85%).
+- **Shelf stocker.** No uniform (the game has no shop assistant's outfit); "Pick up" and "Let time pass" over the pile,
+  "Go in" over the door, "Put on the shelf" over the shelf (40 game minutes a box, 85%).
+- **Busker.** `JobStand` on the pitch (the guitar pose when the clip bundle has the strumming clip); the three songs, "Strum"
+  and "More" (which has "Step away" and "Let time pass") are the panel's buttons; 30 game minutes a song at 85% of
+  `BuskerJob.AverageTip`, the song's own tip formula for the crowd and hour now, the middle song and
+  `AveragePlay` of the strums in time; no uniform.
+- **Courier.** Card and panel buttons (collect, load, take, hand over, leave). No clock: the car would have to be moved.
+- **Ride-hail.** Card only; nothing in it is done on foot with a key. No clock.
+- **Dispatch desk and shift in charge.** Card and panel buttons for the choices (a button for each van and "Take one
+  back"; "Check on them", what to say, what to do about an incident). No clock: every call is a decision. The dispatch
+  desk's map (`DispatchBoard`) is still the mod's own canvas.
+
+`JobHud` keeps the plate, marker and prompt that the home's offers and the run for fitness call; its status, countdown,
+choices, target diamond and pay slip, and the director's drawing of them, are deleted. `JobKeys` is unchanged: every
+member still has a caller outside the jobs.
+
+Not checked in the game (nothing here has been run): any of the above. In particular where each panel stands and how
+it reads, that the box follows a walking passer-by, that the canvasser and cleaner outfits fit, that the clock runs in
+a shop and on the open street without the player being moved, that the busker's idle pose and the stand sit well with
+the game's guitar performance, and the amounts the clock pays.
+
 
 ### Adding a job
 

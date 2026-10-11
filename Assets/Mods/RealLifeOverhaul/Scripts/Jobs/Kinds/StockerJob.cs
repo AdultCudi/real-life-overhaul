@@ -101,8 +101,6 @@ namespace RealLifeOverhaul
 
         public override JobDef Def => _def;
 
-        public override bool NativeUi => true;
-
         public override bool PassingTime => _clock != null && _clock.Working;
 
         /// <summary>While the panel is up its first button is on the game's interact key: the mod's own use of that key stands aside.</summary>

@@ -736,7 +736,7 @@ namespace RealLifeOverhaul
             {
                 int piece = job.Shift.Total;
                 int hours = 0;
-                if (!failed && job.Shift.Units > 0 && (why != JobEnd.Fault || job.NativeUi))   // (a job that pays what was done before a fault is paid its hours too)
+                if (!failed && job.Shift.Units > 0)   // (a job pays what was done before a fault, and its hours too)
                 {
                     float elapsed = TimeHelper.NowInMinutes() - shift.StartMinutes;
                     hours = Mathf.Clamp(Mathf.CeilToInt(elapsed / 60f), 1, CareerCatalogue.ShiftHours) - (shift.Late ? 1 : 0);
@@ -784,40 +784,19 @@ namespace RealLifeOverhaul
         // employer job pays its hourly rate in full, and income tax is on business sales only), so the line reads zero.
         private void Payslip(Job job, CareerShift shift, int piece, int hours, int wage)
         {
-            if (job.NativeUi)
+            // The payslip is one of the game's notifications (it also stays in the game's list of them), with the same figures.
+            var data = new Dictionary<string, string>(6)
             {
-                // A job shown in the game's own interface: the payslip is one of the game's notifications (it also stays in
-                // the game's list of them), with the same figures.
-                var data = new Dictionary<string, string>(6)
-                {
-                    { "employer", JobText.T(shift.Employer.NameKey) }, { "total", JobText.Money(piece + wage) }, { "lines", _director.SlipLines(job.Shift) },
-                    { "hours", hours.ToString() }, { "rate", JobText.Money(shift.Hourly) }, { "wage", JobText.Money(wage) }
-                };
-                Notifications.Show(piece + wage > 0 ? NotificationType.Success : NotificationType.Info,
-                    shift.Late ? "reallife_career_slip_note_late" : "reallife_career_slip_note", data, 16f);
-                if (Meta.Dev.Verbose)
-                {
-                    _logger?.Info("Careers: payslip shown as one of the game's notifications: total " + (piece + wage) + " (" + data["lines"] + "; basic " + hours + " h at "
-                                  + shift.Hourly.ToString("F1") + " = " + wage + (shift.Late ? "; late: 1 h docked" : string.Empty) + ").");
-                }
-                return;
-            }
-            _text.Length = 0;
-            _text.Append(JobText.T(shift.Rank.TitleKey)).Append('\n');
-            Line("reallife_career_slip_work", JobText.Money(piece));
-            Line(JobText.T("reallife_career_slip_basic", "hours", hours.ToString(), "rate", JobText.Money(shift.Hourly)), JobText.Money(wage), false);
-            if (shift.Late)
+                { "employer", JobText.T(shift.Employer.NameKey) }, { "total", JobText.Money(piece + wage) }, { "lines", _director.SlipLines(job.Shift) },
+                { "hours", hours.ToString() }, { "rate", JobText.Money(shift.Hourly) }, { "wage", JobText.Money(wage) }
+            };
+            Notifications.Show(piece + wage > 0 ? NotificationType.Success : NotificationType.Info,
+                shift.Late ? "reallife_career_slip_note_late" : "reallife_career_slip_note", data, 16f);
+            if (Meta.Dev.Verbose)
             {
-                Line("reallife_career_slip_late", JobText.T("reallife_career_slip_late_value"));
+                _logger?.Info("Careers: payslip shown as one of the game's notifications: total " + (piece + wage) + " (" + data["lines"] + "; basic " + hours + " h at "
+                              + shift.Hourly.ToString("F1") + " = " + wage + (shift.Late ? "; late: 1 h docked" : string.Empty) + ").");
             }
-            Line("reallife_career_slip_tax", JobText.Money(0f));
-            _text.Append('\n').Append(JobText.T("reallife_job_slip_total")).Append("   <b><color=#7CE08A>").Append(JobText.Money(piece + wage)).Append("</color></b>");
-            _director.ShowCareerSlip(JobText.T("reallife_career_slip_title", "employer", JobText.T(shift.Employer.NameKey)), _text.ToString());
-        }
-
-        private void Line(string key, string value, bool lookUp = true)
-        {
-            _text.Append(lookUp ? JobText.T(key) : key).Append("   <color=#FFFFFF>").Append(value).Append("</color>\n");
         }
 
         // ---------------------------------------------------------------- the review

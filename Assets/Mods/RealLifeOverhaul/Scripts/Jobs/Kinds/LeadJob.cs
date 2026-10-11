@@ -1,6 +1,9 @@
+using System;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
@@ -17,11 +20,21 @@ namespace RealLifeOverhaul
     /// The team are the jobs' own two characters, put on pavement that was found clear and out
     /// of the player's sight, with the same faces every shift (seeded); they only stand, turn
     /// and, at the end, walk away. If nobody can be put out, the shift is the incidents alone.
+    ///
+    /// IN THE GAME'S OWN INTERFACE. The game's panel over a place (<see cref="JobPanel"/>) stands over each team member
+    /// in reach with "Check on them"; over them again with the three things to say (the choices are its buttons, on the
+    /// game's keys); and over the player with the three things to do about an incident. The shift's figures are on the
+    /// HUD in a copy of the game's job panel (<see cref="ShiftFigures"/>). There is no "Let time pass": every call is a
+    /// decision. The player works in their own clothes.
     /// </summary>
     public sealed class LeadJob : Job
     {
         private enum Step { Rounds, Asking, Briefing, Incident, Leaving }
         private enum Mood { Fine, Slacking, Stuck }
+
+        private const float Debounce = 0.7f;      // seconds after a step begins in which the panel's buttons do nothing (a key meant for the step before)
+        private const string ButtonCheck = "reallife_job_lead_button_check";
+        private static readonly string[] DoKeys = { "reallife_job_lead_do_praise", "reallife_job_lead_do_word", "reallife_job_lead_do_help" };
 
         private const int Incidents = 2;
         private const float Seconds = 260f;
@@ -57,7 +70,6 @@ namespace RealLifeOverhaul
         private readonly Mood[] _mood = new Mood[JobCast.Size];
         private readonly bool[] _checked = new bool[JobCast.Size];
         private readonly string[] _names = new string[JobCast.Size];
-        private readonly string[] _prompts = new string[JobCast.Size];
         private readonly string[] _labels = new string[JobCast.Size];
 
         private Step _step;
@@ -73,9 +85,33 @@ namespace RealLifeOverhaul
         private int _calls;
         private bool _paid;
         private int _line = -1;
-        private string[] _askChoices;
+
+        // The game's own interface.
+        private readonly JobPanel _panel;
+        private readonly Action[] _onChoice = new Action[JobKeys.Choices];
+        private ShiftFigures _figures;
+        private int _callsTotal;      // the calls the shift is: one for each of the team out, and the incidents
+        private float _stepAt;
+        private int _panelState = int.MinValue;
+        private int _cardKey = int.MinValue;
+        private string _panelCalls;
+        private string _panelTime;
+        private readonly string[] _askWords = new string[JobCast.Size];
+        private readonly string[] _incidentWords = new string[Incidents];
+        private readonly string[] _incidentKeys = new string[JobKeys.Choices];
+        private Action _onCheck;
+        private bool _wanted;
+
+        public LeadJob()
+        {
+            _panel = new JobPanel("lead panel");
+        }
 
         public override JobDef Def => _def;
+
+        /// <summary>While the panel is up its first button is on the game's interact key: the mod's own use of that key stands aside.</summary>
+        public override bool OwnsInteractKey => _panel.Up;
+
         public override bool QuitIsFailure => _calls > 0 && _good * 2 < _calls;
 
         protected override bool OnBegin(float now)
@@ -88,21 +124,37 @@ namespace RealLifeOverhaul
             Vector3 player = Ctx.PlayerPosition;
             _employer = Ctx.Shift != null ? Ctx.Shift.Employer : CareerCatalogue.Find(CareerCatalogue.Retail);
             _anchor = Ctx.Shift != null && Ctx.Shift.HasDepot && JobSpots.Flat(Ctx.Shift.Depot, player) < LeaveReach ? Ctx.Shift.Depot : player;
-            _askChoices = new[]
+            for (int i = 0; i < JobKeys.Choices; i++)
             {
-                JobText.T("reallife_job_lead_do_praise"), JobText.T("reallife_job_lead_do_word"), JobText.T("reallife_job_lead_do_help")
-            };
+                int pick = i;
+                _onChoice[i] = () => Choose(pick, Time.time);
+            }
+            _panelCalls = JobText.T("reallife_job_lead_panel_calls");
+            _panelTime = JobText.T("reallife_job_lead_panel_time");
+            _onCheck = Check;
+            for (int i = 0; i < Incidents; i++)
+            {
+                _incidentWords[i] = JobText.T("reallife_job_lead_obj_incident", "number", (i + 1).ToString(), "count", Incidents.ToString());
+            }
             for (int i = 0; i < _staff.Length; i++)
             {
                 _names[i] = JobText.T(_employer.Colleagues[i % _employer.Colleagues.Length]);
-                _prompts[i] = JobText.T("reallife_job_lead_prompt", "name", _names[i]);
+                _askWords[i] = JobText.T("reallife_job_lead_obj_ask", "name", _names[i]);
                 _labels[i] = _names[i];
                 PutStaff(i);
             }
+            _callsTotal = Incidents + (_staff[0] != null ? 1 : 0) + (_staff[1] != null ? 1 : 0);
             _endsAt = now + Seconds;
             _step = Step.Rounds;
+            _figures = new ShiftFigures(Ctx, Def, "reallife_job_lead_card_done");
             NextStaff(now);
+            Figures(now);
             Ctx.Logger?.Info("Jobs: lead shift for " + _employer.Id + ", " + (_staff[0] != null ? 1 : 0) + "+" + (_staff[1] != null ? 1 : 0) + " of the team out.");
+            if (Meta.Dev.Verbose)
+            {
+                Ctx.Logger?.Info("Jobs: lead: " + _callsTotal + " calls to make; shown in the game's own interface: job panel " + (_figures.Shown ? "copied" : "NOT copied (the panels over the team and the player are all there is)")
+                                 + ", no clock offered (every call is a decision).");
+            }
             return true;
         }
 
@@ -144,9 +196,7 @@ namespace RealLifeOverhaul
                     _target = i;
                 }
             }
-            Prompt = null;
-            PromptOver = null;
-            Choices = null;
+            _panelState = int.MinValue;
             if (_target < 0)
             {
                 Unmark();
@@ -160,7 +210,56 @@ namespace RealLifeOverhaul
 
         public override void Tick(float now)
         {
-            ClockSeconds = Mathf.CeilToInt(_endsAt - now);
+            _wanted = false;
+            Work(now);
+            if (!_wanted)
+            {
+                _panel.Hide();
+            }
+            if (!Over)
+            {
+                Figures(now);
+            }
+        }
+
+        // The shift's figures on the card: each line is written only when what it says changes.
+        private void Figures(float now)
+        {
+            _figures.Objective(Objective);
+            _figures.Units(_calls, _callsTotal);
+            int seconds = Mathf.Max(0, Mathf.CeilToInt(_endsAt - now));
+            int key = seconds | (_bad << 12);
+            if (key != _cardKey)
+            {
+                _cardKey = key;
+                _figures.Limit(JobText.T("reallife_job_card_time_left", "time", ShiftFigures.Clock(seconds)) + ", "
+                               + JobText.T("reallife_job_lead_card_bad", "bad", _bad.ToString()), _bad > 0 ? WorldPanel.Yellow() : _panel.White);
+            }
+            int each = UnitPay();
+            _figures.Money(Mathf.Max(0, _good * each - _bad * Mathf.RoundToInt(each * 0.5f)), 0);
+            _figures.Time(-1);
+        }
+
+        // The panel over the team member in reach, or over the player; made only when a step, a second or a count changes.
+        // (with the keys of the three choices, or with the one key of "Check on them" when there are none)
+        private void Up(Transform over, float lift, string first, string left, string right, Color32 colour, int state, string[] choiceKeys)
+        {
+            _wanted = true;
+            if (state != _panelState)
+            {
+                _panelState = state;
+                _panel.Panel.Lines(first, left, right, colour);
+                for (int i = 0; i < WorldPanel.Slots; i++)
+                {
+                    string key = choiceKeys != null ? (i < JobKeys.Choices ? choiceKeys[i] : null) : i == 0 ? ButtonCheck : null;
+                    _panel.Panel.Button(i, key, key == null ? null : choiceKeys != null ? _onChoice[i] : _onCheck, key != null, key != null);
+                }
+            }
+            _panel.Show(over, lift, Ctx.Player);
+        }
+
+        private void Work(float now)
+        {
             if (Ctx.Driving || JobSpots.Flat(Ctx.PlayerPosition, _anchor) > LeaveReach)
             {
                 Ctx.Say("reallife_job_lead_left", 8f);
@@ -185,16 +284,22 @@ namespace RealLifeOverhaul
                         NextStaff(now);
                         break;
                     }
-                    bool near = JobSpots.Flat(Ctx.PlayerPosition, _staff[_target].Position) < StaffReach;
-                    Prompt = near ? _prompts[_target] : null;
-                    PromptOver = near ? _staff[_target].Character.transform : null;
-                    PromptLift = 2.05f;
+                    if (JobSpots.Flat(Ctx.PlayerPosition, _staff[_target].Position) < StaffReach)
+                    {
+                        Up(_staff[_target].Character.transform, 2.05f, _names[_target], _panelCalls, JobText.Number(_calls), _panel.White, _target + 2 * _calls, null);
+                    }
                     break;
 
                 case Step.Asking:
                     if (now >= _stepEnd)
                     {
                         Decide(-1, now);   // walked up and said nothing
+                    }
+                    else
+                    {
+                        int left = Mathf.Max(0, Mathf.CeilToInt(_stepEnd - now));
+                        Up(_staff[_target].Character.transform, 2.05f, _askWords[_target], _panelTime, ShiftFigures.Clock(left),
+                            left <= 5 ? WorldPanel.Red() : _panel.White, 1000 + left * 4 + _target, DoKeys);
                     }
                     break;
 
@@ -210,6 +315,12 @@ namespace RealLifeOverhaul
                     {
                         Call(-1, now);
                     }
+                    else
+                    {
+                        int left = Mathf.Max(0, Mathf.CeilToInt(_stepEnd - now));
+                        Up(Ctx.Player.transform, 2.1f, _incidentWords[Mathf.Min(_incident, Incidents - 1)], _panelTime, ShiftFigures.Clock(left), left <= 8 ? WorldPanel.Red() : left <= 15 ? WorldPanel.Yellow() : _panel.White,
+                            5000 + left * 8 + _deckAt, _incidentKeys);
+                    }
                     break;
 
                 case Step.Leaving:
@@ -221,29 +332,34 @@ namespace RealLifeOverhaul
             }
         }
 
-        public override void Interact(float now)
+        // The panel's "Check on them" (the game ran it on its key or on a click).
+        private void Check()
         {
-            if (_step != Step.Rounds || Prompt == null || _target < 0 || _staff[_target] == null)
+            if (Ctx == null || Over || _step != Step.Rounds || _target < 0 || _staff[_target] == null || Time.time - _stepAt < Debounce)
             {
                 return;
             }
-            Prompt = null;
-            PromptOver = null;
+            float now = Time.time;
+            _stepAt = now;
+            _panelState = int.MinValue;
             Unmark();
             StreetActor person = _staff[_target];
             person.Face(Ctx.Player.transform.position);
             Ctx.TurnPlayer(person.Position);
             Ctx.Say(MoodLine[(int)_mood[_target]], 9f);
-            Show(JobText.T("reallife_job_lead_obj_ask", "name", _names[_target]));
-            Choices = _askChoices;
-            ChoiceLit = -1;
+            Show(_askWords[_target]);
             _step = Step.Asking;
             _stepEnd = now + AskSeconds;
             CareerLinks.TellMet(_employer, _target);
         }
 
+        /// <summary>One of the panel's three buttons (the game ran it on its key or on a click): 0, 1 or 2.</summary>
         public override void Choose(int choice, float now)
         {
+            if (Ctx == null || Over || now - _stepAt < Debounce)
+            {
+                return;
+            }
             if (_step == Step.Asking)
             {
                 Decide(choice, now);
@@ -266,7 +382,6 @@ namespace RealLifeOverhaul
             bool right = choice == (int)_mood[index];
             _calls++;
             _checked[index] = true;
-            Choices = null;
             if (right)
             {
                 _good++;
@@ -318,8 +433,11 @@ namespace RealLifeOverhaul
             string key = Deck[pick].key;
             Ctx.Say(key, IncidentSeconds);
             Show(JobText.T("reallife_job_lead_obj_incident", "number", (_incident + 1).ToString(), "count", Incidents.ToString()));
-            Choices = new[] { JobText.T(Deck[pick].a), JobText.T(Deck[pick].b), JobText.T(Deck[pick].c) };
-            ChoiceLit = -1;
+            _incidentKeys[0] = Deck[pick].a;
+            _incidentKeys[1] = Deck[pick].b;
+            _incidentKeys[2] = Deck[pick].c;
+            _stepAt = now;
+            _panelState = int.MinValue;
             _step = Step.Incident;
             _stepEnd = now + IncidentSeconds;
         }
@@ -330,7 +448,6 @@ namespace RealLifeOverhaul
             int bad = Deck[_deckAt].bad;
             _calls++;
             _incident++;
-            Choices = null;
             if (choice == best)
             {
                 _good++;
@@ -351,9 +468,6 @@ namespace RealLifeOverhaul
         // The shift is done: the team walk off, and the job waits a moment for them to be out of sight.
         private void Wind(float now)
         {
-            Prompt = null;
-            PromptOver = null;
-            Choices = null;
             Unmark();
             Vector3 player = Ctx.PlayerPosition;
             for (int i = 0; i < _staff.Length; i++)
@@ -419,9 +533,6 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            Prompt = null;
-            PromptOver = null;
-            Choices = null;
             for (int i = 0; i < _staff.Length; i++)
             {
                 Ctx.Cast.Release(_staff[i]);

@@ -190,8 +190,6 @@ namespace RealLifeOverhaul
 
         public override JobDef Def => _def;
 
-        public override bool NativeUi => true;
-
         public override bool PassingTime => _skip != null && _skip.Working;
 
         /// <summary>While the panel over the cart is up its first button is on the game's interact key: the mod's own use of that key stands aside.</summary>

@@ -137,8 +137,6 @@ namespace RealLifeOverhaul
 
         public override JobDef Def => _def;
 
-        public override bool NativeUi => true;
-
         public override bool PassingTime => _clock != null && _clock.Working;
 
         /// <summary>While the player is on the pitch the panel's first button is on the game's interact key: the mod's own use of that key stands aside.</summary>

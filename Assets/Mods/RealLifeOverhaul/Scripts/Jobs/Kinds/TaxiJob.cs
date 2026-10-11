@@ -1,5 +1,6 @@
 using BigAmbitions.Characters;
 using Characters.EmojiSystem;
+using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -24,6 +25,11 @@ namespace RealLifeOverhaul
     /// What counts as a hard stop is worked out from the car being driven, each ride: the most
     /// its brakes and its engine can do (never more than the tyres can hold), of which a
     /// passenger puts up with seven tenths. A gentle car is therefore judged gently.
+    ///
+    /// IN THE GAME'S OWN INTERFACE. Nothing in this job is done on foot with a key, so there is no panel over a place:
+    /// the shift's figures are on the HUD in a copy of the game's job panel (<see cref="ShiftFigures"/>), the fare to
+    /// reach or the ride's comfort and the missed fares of the two allowed on its second line. There is no "Let time
+    /// pass": the car would have to be moved by the clock. The driver works in their own clothes.
     /// </summary>
     public sealed class TaxiJob : Job
     {
@@ -51,7 +57,8 @@ namespace RealLifeOverhaul
         private const string SignProp = "taxi_sign";
         private const float DoorExact = 0.35f;          // metres from the place the getting-in clip is made for within which it is played
         private const float SpeedingAbove = 26f;        // m/s: about 94 km/h, with a passenger aboard
-        private const int MissesAllowed = 2;
+        /// <summary>Missed fares that end the shift.</summary>
+        public const int MissesAllowed = 2;
 
         private static readonly string[] Greetings =
         {
@@ -130,6 +137,10 @@ namespace RealLifeOverhaul
         private string _pickupLabel;
         private string _dropLabel;
 
+        // The game's own interface.
+        private ShiftFigures _figures;
+        private int _cardKey = int.MinValue;
+
         public override JobDef Def => _def;
 
         /// <summary>Giving up with someone waving at the kerb, or sitting in the back, counts against the driver.</summary>
@@ -158,7 +169,33 @@ namespace RealLifeOverhaul
             }
             _hired = ReferenceEquals(Ctx.Rental.Car, car);
             Sign(car);
+            _figures = new ShiftFigures(Ctx, Def, "reallife_job_taxi_card_done");
+            Figures(now);
+            if (Meta.Dev.Verbose)
+            {
+                Ctx.Logger?.Info("Jobs: taxi: shown in the game's own interface: job panel " + (_figures.Shown ? "copied" : "NOT copied (the shift's figures are not shown)")
+                                 + ", " + MissesAllowed + " missed fares end the shift, no clock offered (the car would have to be moved).");
+            }
             return true;
+        }
+
+        // The shift's figures on the card: each line is written only when what it says changes.
+        private void Figures(float now)
+        {
+            _figures.Objective(Objective);
+            _figures.Units(_fares, 0);
+            int value = _step == Step.ToPickup ? Mathf.Max(0, Mathf.CeilToInt(_stepEnd - now)) : _step == Step.Riding ? Mathf.Max(0, _comfortShown) : -1;
+            int key = (int)_step | ((value + 1) << 3) | (_misses << 20);
+            if (key != _cardKey)
+            {
+                _cardKey = key;
+                string missed = JobText.T("reallife_job_taxi_card_missed", "misses", _misses.ToString(), "most", MissesAllowed.ToString());
+                _figures.Limit(_step == Step.ToPickup ? JobText.T("reallife_job_taxi_card_reach", "time", ShiftFigures.Clock(value)) + ", " + missed
+                    : _step == Step.Riding ? JobText.T("reallife_job_taxi_card_comfort", "percent", value.ToString()) + ", " + missed : missed,
+                    _misses >= MissesAllowed - 1 ? WorldPanel.Yellow() : WorldPanel.White());
+            }
+            _figures.Money(Shift.Total, Shift.Tips);
+            _figures.Time(-1);
         }
 
         // ---------------------------------------------------------------- the roof sign
@@ -267,7 +304,6 @@ namespace RealLifeOverhaul
             _pickupBy = _stepEnd;
             Show(JobText.T("reallife_job_taxi_obj_pickup", "place", _pickup.Name));
             Mark(_pickup.Front, _pickupLabel);
-            Status = null;
             Ctx.Logger?.Info("Jobs: taxi fare from " + _pickup.Name + " to " + _drop.Name + ", " + _metres.ToString("F0") + " m.");
             return true;
         }
@@ -306,12 +342,16 @@ namespace RealLifeOverhaul
                 case Step.Between: Between(now); break;
             }
             _lastVelocity = Ctx.Velocity;
+            if (!Over)
+            {
+                Figures(now);
+            }
         }
 
         private void ToPickup(float now)
         {
             int left = Mathf.CeilToInt(_stepEnd - now);
-            ClockSeconds = left;
+            // (the countdown is on the card: see Figures)
             if (left <= 0)
             {
                 Missed(now);
@@ -402,7 +442,6 @@ namespace RealLifeOverhaul
             _tried = false;
             _car = Ctx.Car;
             _boardCarAt = carAt;
-            ClockSeconds = -1;
             Unmark();
             Show(JobText.T("reallife_job_taxi_obj_boarding"));
             Go(Step.Boarding, now, BoardAllow);
@@ -663,8 +702,6 @@ namespace RealLifeOverhaul
             Ctx.Cast.Release(_rider);   // only still aboard if there was no room to get out: gone unseen
             _rider = null;
             Unmark();
-            ClockSeconds = -1;
-            Status = JobText.T("reallife_job_taxi_status_fares", "count", _fares.ToString());
             Show(JobText.T("reallife_job_taxi_obj_between"));
             Go(Step.Between, now, Random.Range(6f, 11f));
         }
@@ -720,7 +757,6 @@ namespace RealLifeOverhaul
                 return;
             }
             Unmark();
-            ClockSeconds = -1;
             Show(JobText.T("reallife_job_taxi_obj_between"));
             Go(Step.Between, now, 6f);
         }
@@ -730,7 +766,6 @@ namespace RealLifeOverhaul
         {
             LetGo(now);
             Unmark();
-            ClockSeconds = -1;
             Show(JobText.T("reallife_job_taxi_obj_between"));
             Go(Step.Between, now, 3f);
         }
@@ -847,7 +882,6 @@ namespace RealLifeOverhaul
             if (shown != _comfortShown)
             {
                 _comfortShown = shown;
-                Status = JobText.T("reallife_job_taxi_status_comfort", "percent", shown.ToString());
             }
         }
 
