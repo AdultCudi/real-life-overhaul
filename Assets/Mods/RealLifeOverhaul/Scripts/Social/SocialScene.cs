@@ -57,6 +57,20 @@ namespace RealLifeOverhaul
         public string Line { get; protected set; }
         public string Status { get; protected set; }
         public string Prompt { get; protected set; }
+
+        /// <summary>The locale key of the word on the prompt's button (the game writes the player's key after it).</summary>
+        public string PromptButton { get; protected set; }
+
+        /// <summary>The person the prompt's panel stands over; null: over the player.</summary>
+        public Transform PromptOver { get; protected set; }
+
+        /// <summary>Offers the prompt: its words (no key in them), the button's word and the person it is about, if one is out.</summary>
+        protected void Offer(string words, string button, CityPerson over)
+        {
+            Prompt = words;
+            PromptButton = button;
+            PromptOver = over != null && !over.Lost ? over.Character.transform : null;
+        }
         public bool HasMarker { get; protected set; }
         public Vector3 MarkerAt { get; protected set; }
         public string MarkerLabel { get; protected set; }
@@ -609,7 +623,8 @@ namespace RealLifeOverhaul
                     }
                     if (Prompt == null)
                     {
-                        Prompt = SocialLife.T(_kind == Kind.Stranger ? "reallife_social_meet_prompt" : "reallife_social_talk_prompt", SocialLife.Data(_friend ?? _who));
+                        Offer(SocialLife.Say(_kind == Kind.Stranger ? "reallife_social_meet_prompt" : "reallife_social_talk_prompt", SocialLife.Data(_friend ?? _who)),
+                            "reallife_social_button_talk", _a);
                     }
                     break;
                 case Step.Talk:

@@ -219,7 +219,7 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       SocialCast      the two characters, wearing the look of whoever they stand for
       SocialBody      the player's own body in a scene: held, a gesture, a cup, a box
       SocialPlaces    venues by business type, streets, places to wait, walk in from and walk off to
-      SocialHud       the plan panel, marker, prompt and card
+      (SocialHud removed: the plan is a ShiftCard, the prompt a DoorPanel, the marker a GuideMark)
       News            the log any feature reports to (News.Report), and the desk that writes the paper
     Travel/    hotels to stay in and holidays to take: see "Travel and lodging" below
       Kinds/         the jobs: FlyerJob, CourierJob, TaxiJob, CleanerJob, StockerJob, VendorJob, BuskerJob;
@@ -1386,6 +1386,20 @@ is still to be added to the chain in `RealLifeOverhaulMod.cs` (outside this fold
 `.AddButton("reallife_social_test_mom", () => SocialDirector.Instance?.TestOutingWithMom())`. Until then "Test: a
 walk with the chosen person, here" does the same thing (the chosen person is Mom until another is chosen): it is
 agreed for the pavement where the player stands, and looks for a business only if there is no pavement within 8 m.
+
+### On screen: the game's own interface (Social)
+
+The mod draws nothing of its own for the social life (`SocialHud` is gone). None of this has been seen in the game.
+
+| screen | what it is now | if it cannot be made |
+|---|---|---|
+| the plan ("Coffee with Mom", the line and the time) | the headline and two lines of a copy of the game's job panel at the top right (`ShiftCard`), shown while a scene is on, from an hour before the plan | the line goes out as a notification each time it changes |
+| the place, or the person to meet | the game's destination marker (`GameUi.GuideMark`), moved when the place moves by more than a metre. It was the game's marker already; the mod's own plate for a person is gone | not shown while a delivery job of the game's or a job of the mod's has the marker; tried again every tick |
+| "say hello", "talk", "pick up a box", "put it down", and the phone ringing | the game's panel over the person (`GameUi.DoorPanel`, following them), or over the player, with one button the game labels with the key (`reallife_social_button_*`) | tried again every tick while the game's panel shows another place |
+| what an outing cost and did | one of the game's notifications, 11 seconds | none needed |
+
+Cost: no per-frame work of the mod's. The scene still ticks five times a second; what is on screen is brought up to date on that tick and the panels are told only what changed. The key is no longer read by the mod: the game runs the button on its key or a click.
+Log lines with diagnostics on: `Social check (prompt panel)`, `Social check (plan card)`, `Social check (marker)`, each ending PASS or FAIL.
 
 ### Not verified in the game (Social)
 

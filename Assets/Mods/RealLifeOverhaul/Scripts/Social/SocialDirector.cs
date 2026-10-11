@@ -8,6 +8,7 @@ using UI;
 using UI.Guiders;
 using UI.Load;
 using UI.Notification;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -57,7 +58,7 @@ namespace RealLifeOverhaul
     ///
     /// Cost: with nothing on, <see cref="Update"/> is three comparisons a frame; once a second
     /// a handful more (did the hour change, is a plan due, did the player come out of a door).
-    /// A scene is ticked five times a second and per frame only draws its marker and listens
+    /// A scene is ticked five times a second, its panels brought up to date on the same tick, and per frame there are only clock comparisons; the game itself listens
     /// for its key. Text is built when something changes, never per frame. Anything unexpected
     /// is logged once, everything on the street is given back, and the social life stays off
     /// for the session.
@@ -66,10 +67,10 @@ namespace RealLifeOverhaul
     {
         private const float TickInterval = 0.2f;
         private const float CardSeconds = 11f;
+        private const string ButtonAnswer = "reallife_social_button_answer";
         private const float RingSeconds = 22f;
         private const float PendingSeconds = 150f;
         private const float IntroSeconds = 720f;
-        private static readonly Color GuideColour = new Color(0.96f, 0.52f, 0.42f, 1f);
         private static readonly float[] WealthTiers = { 10000f, 50000f, 250000f, 1000000f, 5000000f };
 
         private enum Inside { None, Gym, OwnShop, Home, Other }
@@ -82,13 +83,14 @@ namespace RealLifeOverhaul
 
         /// <summary>True while the interaction key is the social life's: a prompt is up, or the phone is ringing.</summary>
         public static bool TakesInteractKey =>
-            Instance != null && (Instance._ringing || Instance._keyFrame == Time.frameCount || (Instance._scene != null && Instance._scene.Prompt != null));
+            Instance != null && (Instance._ringing || Instance._keyFrame == Time.frameCount || (Instance._door != null && Instance._door.TakesKey)
+                                 || (Instance._scene != null && Instance._scene.Prompt != null));
 
         /// <summary>True while somebody is out on the street with the player (not while a plan only shows where to go).</summary>
         public static bool Busy => Instance != null && Instance._scene != null && !Instance._scene.Waiting;
 
         /// <summary>True while the game's own destination guider points at a scene's place (which is then on the city map already): for World/MapLinks.</summary>
-        public static bool Guiding => Instance != null && Instance._guided;
+        public static bool Guiding => Instance != null && Instance._mark.Showing;
 
         // ---- what a scene is handed: refreshed in place on the tick
         public SocialCast Cast { get; private set; }
@@ -110,7 +112,7 @@ namespace RealLifeOverhaul
         private float _lastCrash = -100f;
         private float _nextSlow;
         private float _nextTick;
-        private float _cardUntil;
+        private float _nextDraw;
         private float _lastInsideAt = -100f;
         private float _lastContextAt;
         private Vector3 _lastOnFoot;
@@ -118,9 +120,14 @@ namespace RealLifeOverhaul
         private int _keyFrame = -1;
         private int _lastHour = -1;
         private int _phoneState = -1;
-        private bool _guided;
         private Vector3 _guidedAt;
-        private bool _guiderBroken;
+        private readonly GuideMark _mark = new GuideMark();   // the game's destination marker for the scene's place or person
+        private DoorPanel _door;                              // the game's own panel over the person, or the player, with one button
+        private ShiftCard _plan;                              // a copy of the game's job panel for the plan ("Coffee with Mom, 15:00 at ...")
+        private bool _planTried;
+        private Action _onPrompt;                             // made once: the panel's button
+        private Func<string> _doorWhat;                       // made once: for the log
+        private string _planToldLine;
 
         // ---- things waiting for their moment
         private SocialPerson _pendingMeet;
@@ -153,6 +160,9 @@ namespace RealLifeOverhaul
         private void Awake()
         {
             Instance = this;
+            _door = new DoorPanel(Logger, "Social check (prompt panel)");
+            _onPrompt = _door.Press(PromptPressed);
+            _doorWhat = DoorWhat;
             SocialState.Reset();
             News.Reset();
             SocialLife.Logger = Logger;
@@ -166,6 +176,10 @@ namespace RealLifeOverhaul
         {
             SaveHook.Drop(_onSave);
             EndScene(SceneEnd.Interrupted, SceneBreak.Shutdown);
+            HideUi();
+            _mark.Hide();
+            _plan?.Destroy();
+            _plan = null;
             Unhook();
             Body.Release();
             Cast.Dispose();
@@ -199,31 +213,34 @@ namespace RealLifeOverhaul
                 }
                 if (_scene != null)
                 {
-                    if (_held == SceneBreak.None && _scene.Prompt != null && JobKeys.InteractDown() && !UiOpen())
-                    {
-                        _keyFrame = Time.frameCount;
-                        _scene.Interact(Time.time);
-                    }
                     if (Time.time >= _nextTick)
                     {
                         _nextTick = Time.time + TickInterval;
                         Tick(Time.time);
                     }
                 }
-                Draw();
+                if (real >= _nextDraw)
+                {
+                    _nextDraw = real + TickInterval;
+                    Draw();
+                }
             }
             catch (Exception e)
             {
-                Logger?.Error(e);
-                Logger?.Warn("Social: switched off for this session after the error above; whoever was on the street was taken back.");
-                _broken = true;
-                EndScene(SceneEnd.Fault);
-                _ringing = false;
-                if (SocialHud.Exists)
-                {
-                    SocialHud.Instance.HideAll(true);
-                }
+                Fail(e);
             }
+        }
+
+        // A fault: logged once, whoever was on the street taken back, the social life off for the session.
+        private void Fail(Exception e)
+        {
+            Logger?.Error(e);
+            Logger?.Warn("Social: switched off for this session after the error above; whoever was on the street was taken back.");
+            _broken = true;
+            EndScene(SceneEnd.Fault);
+            _ringing = false;
+            HideUi();
+            _mark.Hide();
         }
 
         // ---------------------------------------------------------------- once a second
@@ -268,15 +285,6 @@ namespace RealLifeOverhaul
                 _phoneState = phone;
                 SocialPhone.Setup(Logger);
             }
-            if (_cardUntil > 0f && real >= _cardUntil)
-            {
-                _cardUntil = 0f;
-                if (SocialHud.Exists)
-                {
-                    SocialHud.Instance.HideCard();
-                }
-            }
-
             int day = save.Day;
             int hour = save.Hour;
             UIs uis = InstanceBehavior<UIs>.Instance;
@@ -1070,7 +1078,7 @@ namespace RealLifeOverhaul
             _ringPerson = person;
             _ringUntil = real + RingSeconds;
             Dictionary<string, string> data = SocialLife.Data(person, "key", Keys.Label(KeyAction.Interact));
-            _ringPrompt = SocialLife.T("reallife_social_ring_prompt", data);
+            _ringPrompt = SocialLife.Say("reallife_social_ring_prompt", data);
             SocialLife.Toast(NotificationType.Info, "reallife_social_ringing", data, 6f);
             SocialState.LastCallInDay = SocialLife.Day;
             Logger?.Info("Social: " + person.Name + " is ringing the player.");
@@ -1090,17 +1098,23 @@ namespace RealLifeOverhaul
                 _ringPerson = null;
                 return;
             }
-            if (JobKeys.InteractDown() && !UiOpen())
+        }
+
+        // The panel's button while the phone rings.
+        private void AnswerRing()
+        {
+            if (!_ringing || _ringPerson == null)
             {
-                _keyFrame = Time.frameCount;
-                _ringing = false;
-                SocialPerson caller = _ringPerson;
-                _ringPerson = null;
-                SocialPhone.Incoming = caller.Index;
-                if (!SocialPhone.Call(caller))
-                {
-                    SocialPhone.Incoming = -1;
-                }
+                return;
+            }
+            _keyFrame = Time.frameCount;
+            _ringing = false;
+            SocialPerson caller = _ringPerson;
+            _ringPerson = null;
+            SocialPhone.Incoming = caller.Index;
+            if (!SocialPhone.Call(caller))
+            {
+                SocialPhone.Incoming = -1;
             }
         }
 
@@ -1136,11 +1150,6 @@ namespace RealLifeOverhaul
             _held = SceneBreak.None;
             _nextTick = 0f;
             _lastInsideAt = Time.time;
-            if (SocialHud.Exists)
-            {
-                SocialHud.Instance.HideCard();
-            }
-            _cardUntil = 0f;
             return true;
         }
 
@@ -1362,108 +1371,166 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The card with what an outing cost and did: up for a few seconds, then taken down by the slow tick.</summary>
+        /// <summary>
+        /// What an outing cost and did, as one of the game's notifications (the lines under the title). It stays up for the notification's
+        /// own time and is not taken down by the slow tick.
+        /// </summary>
         public void ShowCard(string title, string body)
         {
-            SocialHud.Instance.ShowCard(title, body);
-            _cardUntil = Time.unscaledTime + CardSeconds;
+            SocialLife.Toast(NotificationType.Info, "reallife_social_card_toast",
+                new Dictionary<string, string>(2) { { "title", title ?? string.Empty }, { "body", body ?? string.Empty } }, CardSeconds);
         }
 
+        // Five times a second while a scene is on or the phone rings: the plan on the copy of the game's job panel and the prompt in the
+        // game's panel over the person. Each is told only what changed. The marker is the game's destination marker, moved by Guide().
         private void Draw()
         {
             if (_scene == null && !_ringing)
             {
-                if (SocialHud.Exists)
-                {
-                    SocialHud.Instance.HideAll(false);
-                }
+                HideUi();
                 return;
             }
-            SocialHud hud = SocialHud.Instance;
             if (ThirdPersonCamera.IsUiOpen())
             {
-                hud.HideAll(false);
+                HideUi();
                 return;
             }
             if (_scene != null && (_scene.Title != null || _scene.Line != null))
             {
-                hud.ShowPlan(_scene.Title, _scene.Line, _scene.Status);
+                ShowPlan();
             }
             else
             {
-                hud.HidePlan();
-            }
-            if (_scene != null && _scene.HasMarker && _held == SceneBreak.None && (!_guided || _scene.MarkerOnPerson))
-            {
-                hud.ShowMarkerAt(_scene.MarkerLabel, _scene.MarkerAt, PlayerPosition);
-            }
-            else
-            {
-                hud.HideMarker();
+                _plan?.Show(false);
             }
             string prompt = _ringing ? _ringPrompt : _scene != null && _held == SceneBreak.None ? _scene.Prompt : null;
-            if (prompt != null)
+            PlayerController player = PlayerHelper.PlayerController;
+            if (prompt == null || player == null || SocialPhone.DialogOpen)
             {
-                hud.ShowPrompt(prompt);
+                _door.Hide("nothing to offer here now");
+                return;
             }
-            else
-            {
-                hud.HidePrompt();
-            }
+            WorldPanel panel = _door.Panel;
+            panel.Lines(prompt, null, null, WorldPanel.White());
+            panel.Button(0, _ringing ? ButtonAnswer : _scene.PromptButton, _onPrompt, true, true);
+            panel.Button(1, null, null, false, false);
+            panel.Button(2, null, null, false, false);
+            panel.Button(3, null, null, false, false);
+            Transform over = _ringing ? null : _scene.PromptOver;
+            panel.Follow = over;
+            panel.FollowLift = 2.1f;
+            Vector3 at = player.transform.position;
+            _door.Show(at, at, 2.1f, _doorWhat);
         }
 
-        // The game's own destination guider, the one its delivery jobs use: the place also shows on the city map.
-        // Moved only when the scene's marker moves. If the game refuses it once, the mod's own marker is all there is.
-        private void Guide()
+        private string DoorWhat()
         {
-            if (_guiderBroken || _scene == null)
+            return _ringing ? "the phone is ringing" : _scene != null ? _scene.GetType().Name : string.Empty;
+        }
+
+        // The panel's button, on the game's key or a click: the phone is answered, or the scene's own key is pressed.
+        private void PromptPressed()
+        {
+            if (_broken || UiOpen())
             {
                 return;
             }
             try
             {
-                // Somebody who is out is pointed at by the mod's own marker (it moves with them); and while a delivery
-                // job of the game's own is on, the guider is that job's.
-                if (!_scene.HasMarker || _scene.MarkerOnPerson || (SaveGameManager.Current != null && SaveGameManager.Current.currentPlayerMission != null))
+                if (_ringing)
                 {
-                    Unguide();
+                    AnswerRing();
                 }
-                else if (!_guided || (_scene.MarkerAt - _guidedAt).sqrMagnitude > 1f)
+                else if (_scene != null && _held == SceneBreak.None && _scene.Prompt != null)
                 {
-                    GuidersManager.SetGuiderTarget(_scene.MarkerAt, _scene.MarkerLabel, SocialPhone.Badge, GuideColour, DirectionGuiderType.JobDestination);
-                    _guided = true;
-                    _guidedAt = _scene.MarkerAt;
+                    _keyFrame = Time.frameCount;
+                    _scene.Interact(Time.time);
                 }
             }
             catch (Exception e)
             {
-                _guiderBroken = true;
-                _guided = false;
-                Logger?.Error(e);
-                Logger?.Warn("Social: the game's destination guider could not be used; only the mod's own marker is shown.");
+                Fail(e);
             }
         }
+
+        private void ShowPlan()
+        {
+            if (_plan != null && !_plan.Alive)
+            {
+                _plan = null;
+                _planTried = false;
+            }
+            if (_plan == null && !_planTried)
+            {
+                _planTried = true;
+                _plan = ShiftCard.Make(Logger);
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Social check (plan card): " + (_plan != null ? "a copy of the game's job panel is ready: PASS"
+                        : "the game's job panel could not be copied; the plan is sent as a notification each time it changes: FAIL") + ".");
+                }
+            }
+            if (_plan == null)
+            {
+                if (_scene.Line != null && !ReferenceEquals(_scene.Line, _planToldLine))
+                {
+                    _planToldLine = _scene.Line;
+                    SocialLife.Toast(NotificationType.Info, "reallife_social_text",
+                        new Dictionary<string, string>(1) { { "text", (_scene.Title != null ? _scene.Title + ": " : string.Empty) + _scene.Line } }, 8f);
+                }
+                return;
+            }
+            Color32 white = WorldPanel.White();
+            _plan.Title(_scene.Title);
+            _plan.Line(0, _scene.Line, white);
+            _plan.Line(1, _scene.Status, white);
+            _plan.Show(true);
+        }
+
+        private void HideUi()
+        {
+            _plan?.Show(false);
+            _door?.Hide("nothing is going on");
+        }
+
+        // The game's own destination marker, the one its delivery jobs use: the place also shows on the city map. Moved only when the
+        // scene's place moves by more than a metre (somebody walking to the meeting place moves it as they go). A delivery job of the
+        // game's own or a job of the mod's that has the marker keeps it: this is tried again on the next tick.
+        private void Guide()
+        {
+            if (_scene == null)
+            {
+                return;
+            }
+            if (!_scene.HasMarker || (SaveGameManager.Current != null && SaveGameManager.Current.currentPlayerMission != null))
+            {
+                Unguide();
+                return;
+            }
+            Vector3 at = _scene.MarkerAt;
+            if (_mark.Showing && (at - _guidedAt).sqrMagnitude <= 1f && ReferenceEquals(_scene.MarkerLabel, _guidedLabel))
+            {
+                return;
+            }
+            if (_mark.Show(at, _scene.MarkerLabel))
+            {
+                _guidedAt = at;
+                _guidedLabel = _scene.MarkerLabel;
+                if (Meta.Dev.Verbose && !_markSaid)
+                {
+                    _markSaid = true;
+                    Logger?.Info("Social check (marker): the game's destination marker is on " + _scene.MarkerLabel + ": PASS.");
+                }
+            }
+        }
+
+        private string _guidedLabel;
+        private bool _markSaid;
 
         private void Unguide()
         {
-            if (!_guided)
-            {
-                return;
-            }
-            _guided = false;
-            try
-            {
-                // Only ours to clear while neither a delivery of the game's own nor a job of the mod's is using it.
-                if ((SaveGameManager.Current == null || SaveGameManager.Current.currentPlayerMission == null) && !JobDirector.OnShift)
-                {
-                    GuidersManager.ResetGuider(DirectionGuiderType.JobDestination);
-                }
-            }
-            catch (Exception e)
-            {
-                _guiderBroken = true;
-                Logger?.Error(e);
-            }
+            _mark.Hide();
+            _guidedLabel = null;
         }
 
         // A screen of the game's has the keys: its menus, and the face-to-face dialogue.
@@ -1502,6 +1569,7 @@ namespace RealLifeOverhaul
                 Logger?.Error(e);
             }
             Talk = null;
+            HideUi();
             SafeEnd(scene, why);
             Cast.ReleaseAll();   // whoever a scene forgot
             Body.Release();      // the player is their own again, whatever the scene was doing with them
@@ -1509,10 +1577,6 @@ namespace RealLifeOverhaul
             Unguide();
             Car = null;
             _carBody = null;
-            if (SocialHud.Exists)
-            {
-                SocialHud.Instance.HideAll(false);
-            }
         }
 
         private static void SafeEnd(SocialScene scene, SceneEnd why)
@@ -1946,16 +2010,13 @@ namespace RealLifeOverhaul
             }
             EndScene(SceneEnd.Interrupted, SceneBreak.TestButton);
             _ringing = false;
+            HideUi();
             _pendingMeet = null;
             _pendingDropBy = null;
             _introStranger = null;
             _callWhenFree = null;
             SocialState.Plan.Clear();
             SocialState.Offer.Clear();
-            if (SocialHud.Exists)
-            {
-                SocialHud.Instance.HideAll(true);
-            }
         }
     }
 }
