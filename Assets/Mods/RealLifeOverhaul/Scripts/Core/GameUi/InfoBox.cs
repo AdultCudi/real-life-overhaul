@@ -354,6 +354,20 @@ namespace RealLifeOverhaul.GameUi
             return button;
         }
 
+        /// <summary>
+        /// How the page fits the box, for the log: the height the page asks for against the height the box has. The
+        /// box does not scroll, so a page taller than the box loses its foot. Works the layout out at once: call it
+        /// only where a line is being written anyway (diagnostics on, a click).
+        /// </summary>
+        public string Fit()
+        {
+            var rect = (RectTransform)_box;
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rect);
+            float asks = LayoutUtility.GetPreferredHeight(rect), has = rect.rect.height;
+            float room = rect.parent is RectTransform outer ? outer.rect.height : has;
+            return "the page asks for " + Mathf.RoundToInt(asks) + " px, the box is " + Mathf.RoundToInt(has) + " px in " + Mathf.RoundToInt(room) + " px" + (asks > room + 1f ? ": ITS FOOT IS CUT OFF" : string.Empty);
+        }
+
         /// <summary>The layout is worked out now, not next frame: a page is written in one go and shown at once.</summary>
         public void Done()
         {
