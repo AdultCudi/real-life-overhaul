@@ -10,8 +10,9 @@ namespace RealLifeOverhaul.Leisure
     /// from the living city's pool and the other left free for the player. Put out of the
     /// player's view on a wide piece of pavement by day in the dry, at the places the living
     /// city's own chess scene tests (both stools on the pavement, room either side), and taken
-    /// in again out of view when the player has gone, the light fails or it rains. One person,
-    /// one prop, asked once a second by the director. Never while the living city has its own
+    /// in again out of view when the player has gone, the light fails or it rains. One person
+    /// and one prop, and an onlooker to the side of the table where the pool can spare a third (watch_nod; when the
+    /// player wins the onlooker punches the air once with cheer_once), asked once a second by the director. Never while the living city has its own
     /// chess table out: one table at a time.
     /// </summary>
     public sealed class ChessCorner
@@ -19,15 +20,35 @@ namespace RealLifeOverhaul.Leisure
         private const float StoolOut = 0.62f;   // a stool's centre from the table's (chess_sit)
         private const int FromHour = 9, ToHour = 20;
 
+        private const string WatchClip = "watch_nod";
+        private const string CheerClip = "cheer_once";
+        private const float WatcherOut = 1.3f;     // an onlooker's feet from the table's middle, to the side of it (the stools are on its long axis)
+
         private CityPerson _opponent;
+        private CityPerson _watcher;               // somebody standing by the table watching the game, where the pool could spare one; null otherwise
         private Transform _table;
         private float _nextTry;
+        private float _cheerEnds;                  // while the onlooker cheers, when it is over; 0 otherwise
 
         public bool Out => _table != null;
         public Vector3 Table { get; private set; }
         public Vector3 Stool { get; private set; }      // the free one
         public CityPerson Opponent => _opponent;
         public bool OpponentThere => _opponent != null && !_opponent.Lost;
+        public bool WatcherThere => _watcher != null && !_watcher.Lost;
+
+        /// <summary>The onlooker, if there is one, punches the air once and goes back to watching. Nothing happens without one.</summary>
+        public void Cheer()
+        {
+            if (!WatcherThere || _cheerEnds > 0f || !ClipLibrary.TryGet(CheerClip, out CityClip cheer))
+            {
+                return;
+            }
+            if (_watcher.Work(CheerClip, CityLifeDirector.Instance.Props, 0.25f))
+            {
+                _cheerEnds = Time.time + cheer.Length;
+            }
+        }
 
         /// <summary>Once a second while the player is out of doors. <paramref name="busy"/>: a game is on at the table.</summary>
         public void Tick(Vector3 player, float now, bool busy)
@@ -42,6 +63,14 @@ namespace RealLifeOverhaul.Leisure
                           && TimeHelper.CurrentHour >= FromHour && TimeHelper.CurrentHour < ToHour;
             if (Out)
             {
+                if (_cheerEnds > 0f && Time.time >= _cheerEnds)
+                {
+                    _cheerEnds = 0f;
+                    if (WatcherThere)
+                    {
+                        _watcher.Work(WatchClip, city.Props, 0.3f);   // the cheer is over: back to watching
+                    }
+                }
                 if (busy)
                 {
                     return;
@@ -128,10 +157,40 @@ namespace RealLifeOverhaul.Leisure
             }
             _table = prop;
             _opponent = person;
+            Watch(city, table, along);
             Table = table;
             Stool = mine;
             LeisureDirector.Logger?.Info("Leisure: a chess player set up at " + table.ToString("F0") + ", " + Mathf.RoundToInt(CitySpots.Flat(table - player)) + " m away.");
             return true;
+        }
+
+        // Somebody standing to one side of the table watching, if the pool can spare a third and a clear place to the side is
+        // on the pavement. Without one the game is played as it was.
+        private void Watch(CityLifeDirector city, Vector3 table, Vector3 along)
+        {
+            _watcher = null;
+            _cheerEnds = 0f;
+            if (city.People.Free < 3 || !ClipLibrary.Has(WatchClip) || !ClipLibrary.Has(CheerClip))
+            {
+                return;
+            }
+            Vector3 across = Vector3.Cross(Vector3.up, along);
+            for (int side = -1; side <= 1; side += 2)
+            {
+                Vector3 wanted = table + across * (side * WatcherOut);
+                if (!CitySpots.OnPavement(wanted, out Vector3 spot) || !CitySpots.ClearQuietly(spot, 0.3f))
+                {
+                    continue;
+                }
+                CityPerson person = city.People.Take(CityLook.Civilian, spot, table);
+                if (person != null && !person.Work(WatchClip, city.Props, 0f, ClipEnd.Return, true, Random.value * 2f))
+                {
+                    city.People.Release(person);
+                    person = null;
+                }
+                _watcher = person;
+                return;
+            }
         }
 
         public void TakeIn()
@@ -145,6 +204,10 @@ namespace RealLifeOverhaul.Leisure
                     {
                         city.People.Release(_opponent);
                     }
+                    if (_watcher != null)
+                    {
+                        city.People.Release(_watcher);
+                    }
                     if (_table != null)
                     {
                         city.Props.Return(_table);
@@ -156,6 +219,8 @@ namespace RealLifeOverhaul.Leisure
                 LeisureDirector.Logger?.Error(e);
             }
             _opponent = null;
+            _watcher = null;
+            _cheerEnds = 0f;
             _table = null;
         }
     }
@@ -441,6 +506,7 @@ namespace RealLifeOverhaul.Leisure
                 LeisureMoney.Give(Stake * 2, "reallife_transaction_chess_win");
                 outcome = T("reallife_leisure_chess_won", "amount", JobText.Money(Stake));
                 Mood = ModState.MoodUp;
+                _corner.Cheer();   // the onlooker, if the table has one
             }
             else if (_points >= 5)
             {

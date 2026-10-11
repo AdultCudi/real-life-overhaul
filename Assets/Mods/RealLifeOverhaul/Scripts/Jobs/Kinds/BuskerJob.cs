@@ -64,6 +64,8 @@ namespace RealLifeOverhaul
         private const int SongsBeforeMoveOn = 2;
         private const string StrumClip = "guitar_strum";
         private const string CaseProp = "guitar_case";
+        private const string CheerClip = "cheer_once";   // a listener, after a song that went well: one punch of the fist, then they go on their way
+        private const float WellPlayed = 0.6f;           // the quality at which a song is "good" (the toast, and the cheer)
 
         // gap between strums, how long the moment lasts, what the song pays by
         private static readonly float[] Gap = { 3.3f, 2.5f, 1.8f };
@@ -125,6 +127,8 @@ namespace RealLifeOverhaul
         private int _tips;
         private float _nextHint;
         private float _listenUntil;
+        private bool _cheerDue;               // the song just played went well and the listener holding has not cheered it yet
+        private float _cheerEnds;             // while the listener's cheer is playing, when it is over; 0 otherwise
         private float _nextListener;
         private bool _paid;
         private int _line = -1;
@@ -685,13 +689,14 @@ namespace RealLifeOverhaul
             float street = 0.5f + Mathf.Min(crowd, CrowdFull) / (float)CrowdFull;
             int tip = Mathf.RoundToInt(Def.UnitPay * Ctx.Rate * street * HourFactor(TimeHelper.CurrentHour) * Worth[_song] * (0.3f + quality) * Ctx.TipFactor * Ctx.Offer.CrowdFactor);   // a quiet street or a rush, as the offer said
             _tips += tip;
+            _cheerDue = _listener.Held && quality >= WellPlayed && ClipLibrary.Has(CheerClip);
             _songs++;
             _handSongs++;
             UnitDone(_handSongs, UnitPay());   // the big tipper of the set, if the offer drew one
             _songOver = now;
             Ctx.Logger?.Info("Jobs: busking song " + _songs + ": " + _hits + " of " + _beats + " strums, " + _wrong + " wrong notes, " + crowd
                              + " people about, hour " + TimeHelper.CurrentHour + ": " + tip + " in the case.");
-            JobText.Toast(UI.Notification.NotificationType.Info, JobText.Pick(quality >= 0.6f ? Good : Poor, ref _line), "amount", JobText.Money(tip), 6f);
+            JobText.Toast(UI.Notification.NotificationType.Info, JobText.Pick(quality >= WellPlayed ? Good : Poor, ref _line), "amount", JobText.Money(tip), 6f);
 
             if (_songs >= _songsWanted)
             {
@@ -757,15 +762,25 @@ namespace RealLifeOverhaul
                 if (_listener.PutAway)
                 {
                     Unlook();
+                    StopCheer(_listener.Character);
                     _listener.Forget();   // the game took them back meanwhile
                     return;
+                }
+                if (_cheerEnds > 0f && now < _cheerEnds)
+                {
+                    return;   // the cheer plays out first
                 }
                 if (now < _listenUntil && _playing)
                 {
                     return;
                 }
-                // Something in the case, and on their way.
+                // Something in the case, and on their way (after a cheer, if the song earned one).
                 ThirdPersonCharacter body = _listener.Character;
+                if (_cheerDue && body != null && Cheer(body, now))
+                {
+                    return;
+                }
+                StopCheer(body);
                 if (body != null)
                 {
                     body.LookTarget = Vector3.zero;
@@ -826,6 +841,41 @@ namespace RealLifeOverhaul
             }
         }
 
+        // One punch of the fist from the listener: their own clip on the game's pedestrian, which stands where it is with its
+        // steering off. False (nothing changed) if the clip cannot be had; they then simply go on.
+        private bool Cheer(ThirdPersonCharacter body, float now)
+        {
+            _cheerDue = false;
+            ActivityAnimator player = ActivityAnimators.Working && body.animator != null ? ActivityAnimators.For(body.animator) : null;
+            if (player == null || !player.Usable || !ClipLibrary.TryGet(CheerClip, out CityClip cheer) || !player.Play(cheer.Clip, 0.25f, 1f, ClipEnd.Return))
+            {
+                if (Meta.Dev.Verbose)
+                {
+                    Ctx.Logger?.Info("Jobs: the busker's listener did not cheer ('" + CheerClip + "' could not be played); they go on as before.");
+                }
+                return false;
+            }
+            _cheerEnds = now + cheer.Length;
+            ClipLibrary.Played(CheerClip, "a listener at the busker");
+            return true;
+        }
+
+        // The cheer is over, or the listener is being let go in the middle of it: the game's own animation again, at once.
+        // (The pedestrian is the game's and pooled: no mod clip stays on it.) The body may be gone.
+        private void StopCheer(ThirdPersonCharacter body)
+        {
+            _cheerDue = false;
+            if (_cheerEnds <= 0f)
+            {
+                return;
+            }
+            _cheerEnds = 0f;
+            if (body != null && body.animator != null)
+            {
+                ActivityAnimators.Forget(body.animator);
+            }
+        }
+
         // A pooled pedestrian keeps whatever look target it was left with: cleared before it is forgotten.
         private void Unlook()
         {
@@ -843,6 +893,7 @@ namespace RealLifeOverhaul
                 return;
             }
             ThirdPersonCharacter body = _listener.Character;
+            StopCheer(body);
             if (body == null || _listener.PutAway)
             {
                 Unlook();
