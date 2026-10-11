@@ -80,6 +80,7 @@ namespace RealLifeOverhaul
         private const float ServeKeep = 105f;
         private const float PanelRange = 13f;
         private const float BoardRange = 16f;
+        private const float DoorRange = 6f;          // metres from the standing bus within which boarding is offered: at its side, not from across the street
         private const float SitRange = 1.5f;         // metres from a seat's place at which sitting is offered
         private const float BusLead = 30f;           // seconds before it is due that a bus is put on the road
         private const float MostWaitMinutes = 20f;   // game minutes: nobody waits longer for a bus than this, whatever the hour
@@ -724,6 +725,11 @@ namespace RealLifeOverhaul
                     _eta.Wait(TickInterval, false);   // the next one is on its way while this one drives off
                     break;
             }
+        }
+
+        private bool AtDoor(Vector3 at)
+        {
+            return _bus.Car != null && CitySpots.Flat(_bus.Car.transform.position - at) < DoorRange * DoorRange;
         }
 
         private bool PlayerAtStop(float within)
@@ -1427,7 +1433,7 @@ namespace RealLifeOverhaul
             }
             // One prompt at a time: board while the bus stands; else the bench; else the pass.
             string prompt = _seat.Active ? (_seat.Seated ? "reallife_transit_prompt_seated" : null)
-                : standing && !_busFull ? "reallife_transit_prompt_board"
+                : standing && !_busFull ? (AtDoor(at) ? "reallife_transit_prompt_board" : null)
                 : _sitAt != null && !standing ? "reallife_transit_prompt_sit"
                 : !TransitState.HasPass && !standing ? "reallife_transit_prompt_pass" : null;
             Prompt(prompt, line);
@@ -1547,7 +1553,7 @@ namespace RealLifeOverhaul
                 return;
             }
             _keyFrame = Time.frameCount;
-            if (_served != null && _player == PlayerStep.AtStop && _bus.State == TransitBus.Phase.Standing && !_busFull)
+            if (_served != null && _player == PlayerStep.AtStop && _bus.State == TransitBus.Phase.Standing && !_busFull && AtDoor(PlayerHelper.GetPosition()))
             {
                 _player = PlayerStep.Choosing;
                 _page = 0;
