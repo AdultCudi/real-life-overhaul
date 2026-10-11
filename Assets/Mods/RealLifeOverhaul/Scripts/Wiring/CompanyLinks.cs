@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using BigAmbitions.Rivals;
 using Entities;
 using RealLifeOverhaul.Events;
+using RealLifeOverhaul.Planner;
 using RealLifeOverhaul.Economy;
 
 namespace RealLifeOverhaul
@@ -32,13 +33,47 @@ namespace RealLifeOverhaul
         ///   inspections   when a health or fire safety inspection ends (Business/BusinessEvents), the company fines a
         ///                 business that trades without a licence it needs
         ///   the paper     a strike that starts today, in the City Ledger (News.Extra, after the city's economy's pieces)
+        ///   the Planner   a source of its own (<see cref="CompanySource"/>): the rows the company has made for the day
         ///
         /// Everything is read from what those features already keep in public or asked through an entry they already
         /// have; nothing of theirs is changed.
         /// </summary>
         public static class CompanyLinks
         {
+            /// <summary>
+            /// The company's rows in the Planner, as a source of its own: a premium or an accountant's fee that leaves
+            /// tomorrow, a licence in its last three days and one that is missing, a return due within three days, a
+            /// claim to put in and one paid tomorrow, raise requests and a rival's offer that wait, a strike called for
+            /// tomorrow, an offer of overtime, a campaign's report due, back-tax still owed, and a business that lost
+            /// money three days running. The rows are made by the company on the day event and when the player changes
+            /// something (CompanyDirector.Alerts); this only hands them over, and changes nothing.
+            /// </summary>
+            private sealed class CompanySource : IPlannerSource
+            {
+                public string Id => "company";
+
+                public bool Available => Settings.Economy && Settings.EconomyCompany && CompanyDirector.Instance != null && CompanyDirector.Instance.Running;
+
+                public void Collect(int fromDay, int toDay, PlannerList into)
+                {
+                    IReadOnlyList<CompanyAlert> alerts = CompanyDirector.Instance.Alerts;
+                    for (int i = 0; i < alerts.Count; i++)
+                    {
+                        CompanyAlert alert = alerts[i];
+                        PlannerEntry e = into.Add(Id, alert.A, alert.B, PlannerCategory.Business, alert.Day);
+                        if (e != null && into.WantText)
+                        {
+                            e.Title = alert.Title;
+                            e.What = alert.What;
+                            e.Money = alert.Money;
+                            e.IfMissed = alert.IfMissed;
+                        }
+                    }
+                }
+            }
+
             private static readonly List<string> Names = new List<string>(4);
+            private static readonly CompanySource Source = new CompanySource();
             private static Action<int, List<NewsItem>> _paperBefore;
 
             internal static void Connect()
@@ -56,6 +91,7 @@ namespace RealLifeOverhaul
                 BusinessGame.Ambient = Ambient;
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
+                PlannerDirector.Instance?.AddSource(Source);
                 FireLosses.Billed += FireLoss;
                 BreakIns.Happened += BreakIn;
                 BusinessEvents.Fined += Fined;

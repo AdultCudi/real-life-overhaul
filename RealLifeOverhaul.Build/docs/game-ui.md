@@ -743,3 +743,55 @@ A button in the page's own box does the same.
   building type's multiplier and the traffic index; the same inputs set the market rent the game saves on a building.
 
 Proven: all of it, from the game's code. Not seen in a running game.
+
+## 28. A second app on Finance's table, and what the game keeps about staff, tax, marketing and opening hours
+
+**An app whose table is another app's** (the Company app). `FinanceTable`, `FinanceRow` and `FinanceCellView` are the
+game's own `BaTable` with four cells (section 24); a second app adds them to its own copy of MyEmployees
+(`AppShell.Make`) exactly as Finance does and prepares its own row the same way. Two apps can share the row class
+because each has its own copy of the row and its own list. A row's id is also what is "picked": the page in the white
+box is chosen by it ("emp:" and an employee's id, "pol:" with a place and a kind), so a notification can open the app
+on a tab with one thing picked (`CompanyApp.Want`). A tab with two subjects (Tax and licences) is two writers of the
+same table, one after the other, and one page in the box.
+
+**Three answers** are the three kinds of button of one row (`InfoBox.Positive`, `Additional`, `Negative`): agree,
+offer less, refuse. A row has no fourth, so a page with three answers puts its Back in a second row.
+
+**A switch in the box** is `InfoBox.Switch` (MyEmployees' own switch row); where the game's row could not be had it
+returns false and the page shows a button that does the same.
+
+**What the game keeps, and where a mod can read it without patching**
+
+- **Staff.** `SaveGameManager.Current.EmployeeInstances` is every employee. `id` is a stable text id
+  (`EmployeeHelper.GetEmployeeById`). `hourlyWage`, `satisfaction` (0 to 100), `characterData.skills` (the first is
+  the main one: `name`, `value`), `assignedAddress`, `assignedWeeklyHours`, `assignedWeeklyDays`, `isAbsent` (off
+  sick today: `EmployeeHelper.RunDaily` decides it each night from `nextSickDay`, and somebody absent is paid
+  nothing), `workedHoursToday` (counted each hour, cleared in the daily run after wages are paid). The wage the game
+  itself would offer is `EmployeeHelper.CalculateHourlyWageForSkill(skill)`. All of it is saved: read it, do not
+  write it. The player's own employee instance is `PlayerHelper.GetPlayerEmployeeInstance()`.
+- **What staff ask of the player** is `demands` (`Entities.Employee.JobDemands`: a clean workplace, days and hours a
+  week, free days, health insurance, an item in the building, no shift between certain hours, the player's
+  happiness). Satisfaction moves towards how many are met; under 10 they resign. There is no demand about pay
+  against a market, and no overtime pay.
+- **Poaching.** `EmployeeInstance.PoachByRival(rivalId, days, percent)` is the game's own offer, answered in the
+  employee's messages; accepting writes the wage. A rival's name is `rivalId.GetRivalName()`.
+- **Tax.** `TaxHelper.RunDaily` bills once a year, on the day the year turns: `gameVariables.taxPercentage` of the
+  businesses' `TotalSales` (from `financialSummaries`) and gambling winnings, less
+  `currentTaxPeriodDeductibleExpenses`, if the total passes `TaxHelper.MinimumIncomeForTaxes`. A transaction made
+  with `TransactionInfo.SetTaxDeductibleName(name)` is added to that list by `GameManager.ChangeMoney` itself
+  (`TaxHelper.TrackTransaction`); a name that is no locale key is shown as it is, which is how the game passes a
+  business's name. `TaxHelper.MeetsIncomeTaxThreshold` and `TaxCalculationHelper.GetBusinessSales(from, to)` are
+  public.
+- **A day's figures for one business.** `financialSummaries[i].businessIncomeStatements` has `TotalSales`,
+  `TotalProfit` and `Address` for each business and day; it is made from transactions by their category, so a
+  transaction with no category is in neither. Customers by day are `BuildingRegistration.orderHistory`
+  (`dayNumber`, `totalCustomers`, `totalRevenue`).
+- **The game's own marketing** is `BuildingRegistration.marketingCampaigns`, paid daily
+  (`MarketingHelper.RunDaily`, category `ba:transactioncategory_marketing`); it sets `promotion.marketing`, and
+  `promotion.total` is the traffic index plus that times the neighbourhood's `marketingStrength`, 100 at most.
+- **Opening hours** are `BuildingRegistration.scheduleDays`: for each day `isOpen` and `openingHourSlots`
+  (`startingHour`, `endingHour`).
+- **Business types** are told by name (`businessTypeName`, "ba:businesstype_fastfoodrestaurant"); there is no tag
+  for food or alcohol.
+
+Proven: all of it, from the game's code. Not seen in a running game.

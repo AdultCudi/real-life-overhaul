@@ -583,6 +583,15 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
                     v => Settings.EconomyCompanyLevel = v)
+                .AddButton("reallife_co_test_raise", () => Economy.CompanyDirector.Instance?.TestRaise())
+                .AddButton("reallife_co_test_offer", () => Economy.CompanyDirector.Instance?.TestOffer())
+                .AddButton("reallife_co_test_strike", () => Economy.CompanyDirector.Instance?.TestStrike())
+                .AddButton("reallife_co_test_claim", () => Economy.CompanyDirector.Instance?.TestFireClaim())
+                .AddButton("reallife_co_test_campaign", () => Economy.CompanyDirector.Instance?.TestCampaign())
+                .AddButton("reallife_co_test_return", () => Economy.CompanyDirector.Instance?.TestReturn())
+                .AddButton("reallife_co_test_audit", () => Economy.CompanyDirector.Instance?.TestAudit())
+                .AddButton("reallife_co_test_licence", () => Economy.CompanyDirector.Instance?.TestLicence())
+                .AddButton("reallife_co_test_back", () => Economy.CompanyDirector.Instance?.TestBack())
                 .AddSplitter()
                 .AddHeader("reallife_nav_header")
                 .AddToggle(Settings.MinimapId, "reallife_nav_minimap", Settings.Minimap,

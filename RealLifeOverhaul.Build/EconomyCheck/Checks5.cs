@@ -650,6 +650,15 @@ internal static partial class Program
         LicenceRules.Grant(auto, signage, 50);
         Check(auto.Until == 89 && LicenceRules.Valid(auto, 50), "renewed by itself, there is no day without it");
         Check(LicenceRules.Day(new Licence(), 5) == LicenceNote.None, "a licence never held needs nothing said");
+        int asked = 0;
+        bool sameAnswer = true;
+        for (int age = 0; age < 10000; age++)
+        {
+            bool today = LicenceRules.Checked(2024, age, 3);
+            asked += today ? 1 : 0;
+            sameAnswer &= today == LicenceRules.Checked(2024, age, 3);
+        }
+        Check(sameAnswer && asked > 850 && asked < 1150, "where a licence is missing an inspection is asked for on about one day in ten, the same days for the same seed (" + asked + " in 10000)");
     }
 
     private static CompanyState FullCompany()

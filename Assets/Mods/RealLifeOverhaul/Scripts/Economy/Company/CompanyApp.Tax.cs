@@ -45,7 +45,7 @@ namespace RealLifeOverhaul.Economy
             {
                 WriteHidden(box, t, hide);
             }
-            else if (Picked("lic:") == null)
+            else if (Picked("lic:") == null || !_director.On(CompanyPart.Licences))
             {
                 box.Title(CompanyText.T("reallife_co_tab_tax"));
                 box.Line(CompanyText.T("reallife_co_tax_game", "percent", CompanyGame.TaxPercent.ToString()));
