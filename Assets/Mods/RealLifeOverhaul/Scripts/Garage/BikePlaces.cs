@@ -80,7 +80,7 @@ namespace RealLifeOverhaul
             try
             {
                 var stands = new List<Transform>();
-                foreach (VehicleSpawnerController spawner in UnityEngine.Object.FindObjectsOfType<VehicleSpawnerController>())
+                foreach (VehicleSpawnerController spawner in SceneFinds.All<VehicleSpawnerController>("garage: the city's scooter stands being looked for (a search of the whole scene, once a city)"))
                 {
                     if (spawner != null && spawner.vehicleType == TwoWheelers.ScooterType && spawner.gameObject.activeInHierarchy)
                     {

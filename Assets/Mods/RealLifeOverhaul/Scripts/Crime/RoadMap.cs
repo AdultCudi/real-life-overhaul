@@ -73,7 +73,7 @@ namespace RealLifeOverhaul
 
         private static void Build()
         {
-            CurrentSceneData data = CurrentSceneData.GetSceneInstance();
+            CurrentSceneData data = RoadData.Scene;   // kept from the city's one search, behind the loading screen (Core/RoadData)
             if (data == null || data.allWaypoints == null || data.allWaypoints.Length == 0)
             {
                 return;

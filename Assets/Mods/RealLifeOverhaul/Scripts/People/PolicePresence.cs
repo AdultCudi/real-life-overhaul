@@ -246,6 +246,7 @@ namespace RealLifeOverhaul
                 _car.SetActive(false);   // moved while off, so the navigation mesh is cut once, in the right place
                 _car.transform.SetPositionAndRotation(at, facing);
                 _car.SetActive(true);
+                MeshCuts.Note("a patrol car parked at a junction");
                 _carOut = true;
                 _carAt = at;
                 _kerb = kerb;

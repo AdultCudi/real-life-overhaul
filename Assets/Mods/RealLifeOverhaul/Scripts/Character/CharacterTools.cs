@@ -139,7 +139,7 @@ namespace RealLifeOverhaul
             {
                 return candidate;
             }
-            foreach (AppearanceSetter other in Resources.FindObjectsOfTypeAll<AppearanceSetter>())
+            foreach (AppearanceSetter other in SceneFinds.InMemory<AppearanceSetter>("character: a detailed character being looked for (everything in memory gone through, a last resort)"))
             {
                 if (other.GetComponent<BaseHuman>() == null && other.name.IndexOf("RealLifeOverhaul", StringComparison.Ordinal) < 0
                     && Accept(other, exclude, "'" + other.name + "'", ref searched))

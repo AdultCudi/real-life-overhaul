@@ -88,7 +88,7 @@ namespace RealLifeOverhaul
         private void Begin()
         {
             _stale = false;
-            _sweeping = UnityEngine.Object.FindObjectsByType<StreetLamp>(FindObjectsSortMode.None);
+            _sweeping = SceneFinds.All<StreetLamp>("performance: the street lamps being listed (a search of the whole scene, after scenes arrive)");
             _cursor = 0;
         }
 

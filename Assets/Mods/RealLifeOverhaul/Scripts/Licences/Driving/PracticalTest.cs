@@ -198,7 +198,10 @@ namespace RealLifeOverhaul
                 reasonKey = "reallife_lic_no_roads";
                 return false;
             }
+            // Named and timed for the session record: the car is made by the game, in this one frame, and nothing else here is large.
+            int lending = SessionWatch.Mark("licences: the school's car being made and put out (the game's own vehicle spawn)");
             CarController car = _lender.Lend(desk, kind == LicenceClass.Commercial);
+            SessionWatch.Done(lending);
             if (car == null)
             {
                 reasonKey = "reallife_lic_no_car_spot";

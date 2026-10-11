@@ -56,6 +56,7 @@ namespace RealLifeOverhaul.Events
             Put(appearance, AppearanceElementType.FeetAccessory, Nothing, default, default, default, null);
             Looks.Count("events: a firefighter's look being built (a mesh merge)");
             appearance.UpdateVisuals();
+            Looks.Done();
         }
 
         // One garment by name; with a list of dyes, recoloured in its first plain colour (see CityOutfits.Put, which this follows).

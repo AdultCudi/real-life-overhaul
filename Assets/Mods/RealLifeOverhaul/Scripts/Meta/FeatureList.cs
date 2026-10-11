@@ -281,7 +281,8 @@ namespace RealLifeOverhaul.Meta
 
             Features.Add("performance", "reallife_meta_title_performance").As(FeatureKind.Performance)
                 .Group("reallife_perf_header")
-                .About("reallife_guide_performance_about").Help("reallife_guide_performance");
+                .About("reallife_guide_performance_about").Help("reallife_guide_performance")
+                .Test("reallife_perf_test_session", SessionWatch.TestSay);
             foreach (PerfTweak tweak in PerfTweaks.All)
             {
                 if (!tweak.Trial)

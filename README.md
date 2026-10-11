@@ -69,7 +69,7 @@ With "Developer diagnostics" on, the mod writes one line to `Player.log` for eve
 
 ```
 [Mod:Real Life Overhaul] Session 12 min: frames 5210, average 11.5 ms, worst 61 ms, over 33 ms: 4, over 50 ms: 1; managed heap 412 MB of 610 MB, collections in the minute 3; engine memory 2950 MB; mod objects 345 (118 shown) under 6 roots; people 2 out, 12 made of 12; city people 3 out, 8 made of 8, city props made 14; looks built in the minute 1 (0 while playing), since the city loaded 23 (2 while playing); on foot in the street, game hour 9.
-[Mod:Real Life Overhaul] Session: a frame of 96 ms; the mod was at: city life: a character's look being built (a mesh merge); a garbage collection ran in it; on foot in the street, game hour 9.
+[Mod:Real Life Overhaul] Session: a frame of 96 ms; the mod was at: city life: a character's look being built (a mesh merge) (the mod's named and timed work in that frame took 14.2 ms of it); where it went: scripts' Update 71 ms, rendering 12 ms, the rest 13 ms; the collector: no collection (41 so far), at work 0.0 ms, heap 731 MB before and 733 MB after; the game: its screen was clear, not saving, no scene loaded or unloaded; ...; on foot in the street, game hour 9.
 ```
 
 Please send:

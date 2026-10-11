@@ -64,8 +64,32 @@ namespace RealLifeOverhaul
             _smokeTemplate = null;
             _smokeSearched = false;
             _smokeGenuine = false;
+            _smokeTries = 0;
             _policeTemplate = null;
             _policeSearched = false;
+        }
+
+        private const int SmokeTries = 3;   // searches for the game's own engine smoke per city, each made where it is not seen
+        private static int _smokeTries;
+
+        /// <summary>
+        /// The smoke is looked for where the search is not seen: behind the loading screen, and (while only a stand-in
+        /// was to be had) behind the game's black screen at a door, three times at most. True once there is nothing
+        /// more to try.
+        /// </summary>
+        public static bool Prewarm()
+        {
+            if ((!Settings.TrafficAccidents && !Settings.CityFires) || _smokeGenuine || _smokeTries >= SmokeTries)
+            {
+                return true;
+            }
+            _smokeTries++;
+            GetSmokeTemplate();
+            if (_smokeTemplate == null)
+            {
+                _smokeSearched = false;   // no smoke of any kind in memory yet: the first accident looks once more, as it always did
+            }
+            return _smokeGenuine || _smokeTries >= SmokeTries;
         }
 
         // Templates live under an inactive object, so no game script on a copy ever wakes up.
@@ -599,9 +623,10 @@ namespace RealLifeOverhaul
         // exactly as the game's smoke does. Found once, kept as a disabled template.
         private static GameObject GetSmokeTemplate()
         {
-            // The engine smoke is only in memory while a player car is; until it turns up, a stand-in
-            // is used and the search is repeated at the next accident (one search per accident at most).
-            if (_smokeSearched && (_smokeGenuine || _smokeTemplate == null))
+            // The engine smoke is only in memory while a player car is; until it turns up, a stand-in is used. The
+            // search goes through everything the engine has in memory (a long frame), so it is made behind the
+            // loading screen (Prewarm) and never again while the game is being played: an accident takes what there is.
+            if (_smokeSearched && (_smokeGenuine || _smokeTemplate == null || !SceneFinds.Hidden))
             {
                 return _smokeTemplate;
             }
@@ -609,7 +634,7 @@ namespace RealLifeOverhaul
 
             ParticleSystemRenderer source = null;
             bool genuine = false;
-            foreach (ParticleSystemRenderer renderer in Resources.FindObjectsOfTypeAll<ParticleSystemRenderer>())
+            foreach (ParticleSystemRenderer renderer in SceneFinds.InMemory<ParticleSystemRenderer>("traffic: the game's smoke effect being looked for (everything in memory gone through)"))
             {
                 Material material = renderer.sharedMaterial;
                 if (material == null || material.name.IndexOf("smoke", StringComparison.OrdinalIgnoreCase) < 0
