@@ -2442,7 +2442,7 @@ on its bar. **A bicycle or motorbike here is one of those scooters**: made with
   bar that lies along X, which is what the game's hand rig holds), the roadster's bar, the sport bike's clip-ons
   under the top yoke.
 - **numbers**: a bicycle gets a small "engine" behind the pedals (1.2 or 1.6 kW for the scooter's 250 kg), almost
-  no engine braking, a bicycle's rolling resistance, air drag sized so that steady pedalling holds 24 or 32 km/h,
+  no engine braking, a bicycle's rolling resistance, air drag sized so that steady pedalling holds 38 or 50 km/h (24 and 32 before 0.1.4, which felt slow against the city),
   and no engine sound. A motorbike gets power, final drive and drag from `CarModel.Solve` for its targets, the
   limiter off and 1.6 times the brakes. Logged once per kind ("Two-wheelers: ...").
 - **rider**: the game's own riding pose, moved so that the hips are over and just above the seat (fitted to the
@@ -2469,8 +2469,8 @@ on its bar. **A bicycle or motorbike here is one of those scooters**: made with
 
 | model | at | price | goes |
 |---|---|---|---|
-| City bicycle | bike-share docks (hire 15, back to any dock by the end of the next day, else collected with a 25 late fee); racks outside supermarkets | 350 | about 24 km/h, 0.06 energy a second of pedalling |
-| Road bicycle | racks outside supermarkets | 900 | about 32 km/h, 0.08 energy a second |
+| City bicycle | bike-share docks (hire 15, back to any dock by the end of the next day, else collected with a 25 late fee); racks outside supermarkets | 350 | about 38 km/h, 0.06 energy a second of pedalling |
+| Road bicycle | racks outside supermarkets | 900 | about 50 km/h, 0.08 energy a second |
 | Motorbike | stands outside car dealerships (at repair garages if the city has no dealership open) | 7 500 | 0-100 in 6.0 s, 150 km/h |
 | Sport motorbike | the same stands | 18 000 | 0-100 in 4.5 s, 190 km/h |
 | Helmet | the same stands | 120 | riding without one: a look every 30 s above 18 km/h, 10 %, once a day, fine 60 |
