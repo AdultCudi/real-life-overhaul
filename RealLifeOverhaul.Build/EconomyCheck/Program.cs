@@ -1,0 +1,673 @@
+using System;
+using System.Collections.Generic;
+using RealLifeOverhaul.Economy;
+
+// Checks for the economy's game-free parts. A check that fails prints one line; the last line is
+// ALL CHECKS PASSED or the count that failed.
+internal static class Program
+{
+    private static int _failed, _run;
+    private static int _day;
+    private static float _income;
+    private static LegalStanding _legal;
+
+    private static void Check(bool ok, string what)
+    {
+        _run++;
+        if (!ok)
+        {
+            _failed++;
+            Console.WriteLine("FAIL  " + what);
+        }
+    }
+
+    /// <summary>One account with settable figures, standing in for the game's loans.</summary>
+    private sealed class Account : ICreditAccount
+    {
+        public float Owed, Cap, Due;
+        public string Key => "loans";
+        public string NameKey => "name";
+        public float Balance => Owed;
+        public float Limit => Cap;
+        public float PaymentDue => Due;
+    }
+
+    private static Account Begin(int day, CreditFile file = null)
+    {
+        CreditLedger.Close();
+        _day = day;
+        _income = 0f;
+        _legal = default(LegalStanding);
+        CreditLedger.Clock = () => _day;
+        CreditLedger.Income = () => _income;
+        CreditLedger.Legal = () => _legal;
+        var account = new Account { Cap = 100000f };
+        if (file == null)
+        {
+            file = new CreditFile();
+            CreditScoring.Open(file, new List<LoanView>(), day);
+        }
+        CreditLedger.Open(file);
+        CreditLedger.Register(account);
+        CreditLedger.Refresh();
+        return account;
+    }
+
+    private static int Score()
+    {
+        CreditLedger.Touch();
+        return CreditLedger.Score.Value;
+    }
+
+    private static int Main()
+    {
+        Catalogue();
+        Start();
+        CleanHistory();
+        Misses();
+        Applications();
+        OwedAndLegal();
+        Bounds();
+        Gate();
+        Terms();
+        Fee();
+        Folding();
+        Tests();
+        SaveAndLoad();
+        Identity();
+        DailyRun();
+        Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+        return _failed == 0 ? 0 : 1;
+    }
+
+    private static void Catalogue()
+    {
+        int sum = 0;
+        foreach (int w in CreditCatalogue.Weights)
+        {
+            sum += w;
+        }
+        Check(sum == 100, "the factors' weights add up to 100 (they add up to " + sum + ")");
+        Check(CreditCatalogue.Weights.Length == (int)CreditFactor.Count && CreditCatalogue.FactorKeys.Length == (int)CreditFactor.Count, "a weight and a name for every factor");
+        Check(CreditCatalogue.GradeFrom.Length == 6 && CreditCatalogue.GradeKeys.Length == 6, "six grades, each with a name");
+        Check(CreditCatalogue.GradeOf(300) == CreditGrade.VeryPoor && CreditCatalogue.GradeOf(499) == CreditGrade.VeryPoor, "300 to 499 is very poor");
+        Check(CreditCatalogue.GradeOf(500) == CreditGrade.Poor && CreditCatalogue.GradeOf(579) == CreditGrade.Poor, "500 to 579 is poor");
+        Check(CreditCatalogue.GradeOf(580) == CreditGrade.Fair && CreditCatalogue.GradeOf(669) == CreditGrade.Fair, "580 to 669 is fair");
+        Check(CreditCatalogue.GradeOf(670) == CreditGrade.Good && CreditCatalogue.GradeOf(739) == CreditGrade.Good, "670 to 739 is good");
+        Check(CreditCatalogue.GradeOf(740) == CreditGrade.VeryGood && CreditCatalogue.GradeOf(799) == CreditGrade.VeryGood, "740 to 799 is very good");
+        Check(CreditCatalogue.GradeOf(800) == CreditGrade.Excellent && CreditCatalogue.GradeOf(850) == CreditGrade.Excellent, "800 to 850 is excellent");
+        Check(CreditCatalogue.GradeFrom[(int)CreditGrade.Fair] == CreditCatalogue.LendingThreshold, "the lending threshold is where 'fair' begins");
+        Check(CreditCatalogue.GradeTo(CreditGrade.Poor) == 579 && CreditCatalogue.GradeTo(CreditGrade.Excellent) == 850, "the top of a grade");
+        Check(CreditCatalogue.ScoreFor(0f) == 300 && CreditCatalogue.ScoreFor(100f) == 850 && CreditCatalogue.ScoreFor(-5f) == 300 && CreditCatalogue.ScoreFor(140f) == 850, "the scale runs from 300 to 850");
+        Check((int)CreditKind.Count == 16 && (int)CreditKind.TestAdjust == 15 && (int)CreditKind.Application == 8, "the kinds of event keep their numbers (they are in saves)");
+    }
+
+    private static void Start()
+    {
+        Begin(1);
+        Check(Score() == CreditCatalogue.CleanStart && CreditCatalogue.CleanStart == 640, "no debts and no record starts at 640 (got " + Score() + ")");
+        Check(CreditLedger.Grade == CreditGrade.Fair, "640 is fair");
+        Begin(200);
+        Check(Score() == 640, "a late start with nothing on file is the same 640");
+
+        // A save with a loan half paid: taken as paid on time for the days that took.
+        var loans = new List<LoanView> { new LoanView { Street = "5th Ave", Number = 12, Total = 10000f, Remaining = 6000f, Payment = 100, Interest = 10 } };
+        var file = new CreditFile();
+        CreditScoring.Open(file, loans, 90);
+        Check(file.FirstCreditDay == 50 && file.OldOnTime == 40 && file.StartDay == 90, "a half-paid loan gives 40 days of history");
+        Account a = Begin(90, file);
+        a.Owed = 6000f;
+        a.Due = 110f;
+        _income = 2000f;
+        int withLoan = Score();
+        Check(withLoan > 640 && withLoan < 760, "a loan in good order starts above a blank file, not at the top (got " + withLoan + ")");
+
+        // The same loan with a conviction and a court debt running late starts lower, but from the record, not from a penalty.
+        _legal = new LegalStanding { Convictions = 1, LateDays = 3, Outstanding = 900 };
+        int withRecord = Score();
+        Check(withRecord < withLoan && withRecord >= 300, "a record lowers the starting estimate (got " + withRecord + ")");
+        var early = new CreditFile();
+        CreditScoring.Open(early, loans, 10);
+        Check(early.FirstCreditDay == 1, "the history cannot begin before day 1");
+        var fresh = new CreditFile();
+        CreditScoring.Open(fresh, new List<LoanView> { new LoanView { Total = 5000f, Remaining = 5000f, Payment = 50 } }, 30);
+        Check(fresh.FirstCreditDay == 30 && fresh.OldOnTime == 0, "a loan with nothing paid yet starts its history today");
+    }
+
+    private static void CleanHistory()
+    {
+        Account a = Begin(1);
+        CreditLedger.Post(CreditKind.NewCredit, 10000, 1, "loans");
+        a.Owed = 10000f;
+        a.Due = 120f;
+        _income = 1500f;
+        int previous = Score(), first = previous;
+        bool rising = true;
+        for (int day = 2; day <= 200; day++)
+        {
+            _day = day;
+            a.Owed = Math.Max(0f, a.Owed - 100f);
+            CreditLedger.File.Roll(day);
+            CreditLedger.Post(CreditKind.PaidOnTime, 120, day - 1, "loans");
+            int now = Score();
+            rising &= now >= previous - 1;   // (a point of rounding either way is not a fall)
+            previous = now;
+        }
+        Check(rising, "a clean history never falls");
+        Check(previous >= 800 && previous > first + 100, "a clean history rises towards the top (from " + first + " to " + previous + ")");
+        Check(CreditLedger.Grade == CreditGrade.Excellent, "two hundred days on time is excellent");
+        Check(CreditLedger.Score.Missed == 0 && CreditLedger.Score.OnTime == CreditCatalogue.PaymentFadeDays - 1, "the app counts the instalments of the last sixty days, today's not yet taken (" + CreditLedger.Score.OnTime + ")");
+    }
+
+    private static void Misses()
+    {
+        Account a = Begin(1);
+        CreditLedger.Post(CreditKind.NewCredit, 10000, 1, "loans");
+        a.Owed = 10000f;
+        a.Due = 120f;
+        _income = 1500f;
+        for (int day = 2; day <= 40; day++)
+        {
+            _day = day;
+            CreditLedger.Post(CreditKind.PaidOnTime, 120, day - 1, "loans");
+        }
+        int before = Score();
+        _day = 41;
+        int effect = CreditLedger.Post(CreditKind.Missed, 100, 40, "loans");
+        int after = Score();
+        Check(effect < -15 && after == before + effect, "a missed instalment drops the score at once (by " + effect + ")");
+        Check(CreditLedger.File.UnseenMissed == 1 && CreditLedger.File.LastMissedDay == 40 && CreditLedger.File.LastMissedAmount == 100, "a miss is kept for the badge and the Planner");
+        int second = CreditLedger.Post(CreditKind.Missed, 100, 41, "loans");
+        Check(second < 0, "a second miss drops it further");
+        int low = Score();
+
+        // Paying on time again: it climbs back, and the misses are gone from the factor after the fade.
+        int previous = low;
+        bool recovering = true;
+        for (int day = 42; day <= 41 + CreditCatalogue.PaymentFadeDays + 1; day++)
+        {
+            _day = day;
+            CreditLedger.File.Roll(day);
+            CreditLedger.Post(CreditKind.PaidOnTime, 120, day - 1, "loans");
+            int now = Score();
+            recovering &= now >= previous - 1;
+            previous = now;
+        }
+        Check(recovering && previous > before, "it recovers over the stated sixty days (" + low + " to " + previous + ", was " + before + ")");
+        Check(CreditLedger.Score.Missed == 0, "after the fade no miss weighs on the payment factor");
+        Check(CreditLedger.File.OldMissed == 2, "the misses stay on the file's totals");
+
+        // A miss weighs more on a thin file than on a long one.
+        Account thin = Begin(1);
+        thin.Owed = 5000f;
+        CreditLedger.Post(CreditKind.PaidOnTime, 60, 1, "loans");
+        int thinEffect = CreditLedger.Post(CreditKind.Missed, 50, 1, "loans");
+        Check(thinEffect < effect, "a miss costs a thin file more (" + thinEffect + " against " + effect + ")");
+        int part = CreditLedger.Post(CreditKind.PartPaid, 25, 1, "loans");
+        Check(part < 0 && part > thinEffect, "an instalment paid in part costs less than one missed");
+    }
+
+    private static void Applications()
+    {
+        Begin(10);
+        int before = Score();
+        int effect = CreditLedger.Post(CreditKind.Application, 5000, 10, "phone");
+        Check(effect < 0 && effect >= -12, "an application dents the score a little (" + effect + ")");
+        int second = CreditLedger.Post(CreditKind.Application, 5000, 10, "phone");
+        int third = CreditLedger.Post(CreditKind.Application, 5000, 10, "phone");
+        Check(second < 0 && third < 0 && Score() == before + effect + second + third, "applying over and over costs each time");
+        Check(CreditLedger.Score.Applications == 3, "three applications are counting");
+        int previous = Score();
+        bool fading = true;
+        for (int day = 11; day <= 10 + CreditCatalogue.ApplicationFadeDays; day++)
+        {
+            _day = day;
+            int now = Score();
+            fading &= now >= previous;
+            previous = now;
+        }
+        Check(fading && previous == before, "the dent fades over ten days and is gone (" + previous + ")");
+        Check(CreditLedger.Score.Applications == 0, "after ten days no application counts");
+        for (int i = 0; i < 20; i++)
+        {
+            CreditLedger.Post(CreditKind.Application, 500, 20, "phone");
+        }
+        Check(CreditLedger.Score.Factor[(int)CreditFactor.Applications] == 0f && Score() >= 300, "the dent stops at the whole factor");
+    }
+
+    private static void OwedAndLegal()
+    {
+        Account a = Begin(5);
+        int clear = Score();
+        a.Owed = 50000f;
+        int half = Score();
+        a.Owed = 100000f;
+        int full = Score();
+        a.Owed = 250000f;
+        int over = Score();
+        Check(clear > half && half > full && full == over, "owing more of what could be borrowed lowers the score, to a floor (" + clear + ", " + half + ", " + full + ")");
+        a.Owed = 20000f;
+        a.Due = 300f;
+        _income = 0f;
+        int noIncome = Score();
+        _income = 3000f;
+        int income = Score();
+        _income = 600f;
+        int tight = Score();
+        Check(income > tight && tight == noIncome, "payments against income: comfortable beats tight, and no income is the worst (" + income + ", " + tight + ")");
+        Check(CreditLedger.Score.ServiceShare == 0.5f, "the share of income the payments take is reported");
+        a.Cap = 0f;
+        Check(CreditLedger.Gather().Limit == 0f && Score() <= tight, "owing with nothing to measure against counts as fully used");
+
+        Begin(5);
+        int clean = Score();
+        _legal = new LegalStanding { Outstanding = 400 };
+        int owing = Score();
+        _legal = new LegalStanding { Outstanding = 400, LateDays = 2 };
+        int late = Score();
+        _legal = new LegalStanding { Convictions = 1 };
+        int convicted = Score();
+        _legal = new LegalStanding { Convictions = 2, Judgments = 1, LateDays = 9, Outstanding = 1 };
+        int worst = Score();
+        Check(clean > owing && owing > late && clean > convicted && convicted > worst, "the record: a debt, a late debt, a conviction, all of it");
+        Check(CreditScoring.Legal(_legal) == 0f && clean - worst == (int)Math.Round(CreditCatalogue.PointsOf(CreditFactor.Legal)), "the record can cost its whole 15% and no more (" + (clean - worst) + " points)");
+        Check(worst < CreditCatalogue.LendingThreshold, "a bad enough record alone puts a blank file under the threshold (" + worst + ")");
+        var tips = new CreditFactor[2];
+        int count = CreditScoring.Tips(CreditLedger.Score, tips);
+        Check(count == 2 && (tips[0] == CreditFactor.Legal || tips[1] == CreditFactor.Legal), "with that record, the record is one of the two things to mend");
+    }
+
+    private static void Bounds()
+    {
+        var random = new Random(12345);
+        bool inside = true;
+        for (int run = 0; run < 400; run++)
+        {
+            Account a = Begin(1 + random.Next(300));
+            a.Owed = random.Next(3) == 0 ? 0f : random.Next(400000);
+            a.Cap = random.Next(4) == 0 ? 0f : random.Next(300000);
+            a.Due = random.Next(5000);
+            _income = random.Next(8000) - 2000;
+            _legal = new LegalStanding { Convictions = random.Next(4), Judgments = random.Next(3), LateDays = random.Next(12), Outstanding = random.Next(2) * 500, RecentOffences = random.Next(8) };
+            for (int i = 0; i < 40; i++)
+            {
+                var kind = (CreditKind)random.Next((int)CreditKind.TestAdjust);
+                CreditLedger.Post(kind, random.Next(20000), _day - random.Next(80), "x", 1 + random.Next(3));
+            }
+            if (random.Next(4) == 0)
+            {
+                CreditLedger.TestSet(300 + random.Next(551), _day);
+            }
+            int score = Score();
+            inside &= score >= CreditCatalogue.ScoreMin && score <= CreditCatalogue.ScoreMax;
+            for (int f = 0; f < (int)CreditFactor.Count; f++)
+            {
+                inside &= CreditLedger.Score.Factor[f] >= 0f && CreditLedger.Score.Factor[f] <= 1f;
+            }
+        }
+        Check(inside, "the score is always within 300 to 850 and every factor within 0 to 1");
+    }
+
+    private static void Gate()
+    {
+        CreditLedger.Close();
+        CreditRefusal reason;
+        Check(!CreditLedger.CanBorrow(out reason) && reason == CreditRefusal.NotReady, "no file, no loan");
+        Check(CreditLedger.Post(CreditKind.Missed, 1, 1, "x") == 0 && CreditLedger.Value == 640, "nothing is recorded while there is no file");
+        Begin(1);
+        Check(CreditLedger.CanBorrow(out reason) && reason == CreditRefusal.None, "at 640 lenders lend");
+        CreditLedger.TestSet(580, 1);
+        Check(CreditLedger.CanBorrow(out reason), "at exactly 580 lenders lend");
+        CreditLedger.TestSet(579, 1);
+        Check(!CreditLedger.CanBorrow(out reason) && reason == CreditRefusal.BelowThreshold, "at 579 nobody lends");
+        Check(LendingTerms.Decide(579, 1000f, 50000f) == LoanAnswer.BelowThreshold && LendingTerms.Decide(300, 500f, 1e9f) == LoanAnswer.BelowThreshold, "under the threshold every amount is refused");
+        Check(LendingTerms.Decide(580, 1000f, 50000f) == LoanAnswer.Approved, "at the threshold an amount within the limit is approved");
+        Check(LendingTerms.Decide(700, 499f, 50000f) == LoanAnswer.TooLittle && LendingTerms.Decide(700, 500f, 50000f) == LoanAnswer.Approved, "the smallest loan is 500");
+        Check(LendingTerms.Decide(700, 50001f, 50000f) == LoanAnswer.TooMuch && LendingTerms.Decide(700, 50000f, 50000f) == LoanAnswer.Approved, "no more than the lender will lend now");
+
+        int changes = 0;
+        CreditGrade was = CreditGrade.Fair, now = CreditGrade.Fair;
+        Action<CreditGrade, CreditGrade> heard = (a, b) =>
+        {
+            changes++;
+            was = a;
+            now = b;
+        };
+        CreditLedger.GradeChanged += heard;
+        CreditLedger.TestSet(578, 1);
+        Check(changes == 0, "a move inside a grade raises nothing");
+        CreditLedger.TestSet(700, 1);
+        Check(changes == 1 && was == CreditGrade.Poor && now == CreditGrade.Good && CreditLedger.File.UnseenGrade && CreditLedger.File.LastGradeWas == (int)CreditGrade.Poor, "a change of grade is raised once, with both grades");
+        CreditLedger.GradeChanged -= heard;
+    }
+
+    private static void Terms()
+    {
+        const float own = 100000f;
+        const int rate = 8;
+        bool capRises = true, rateFalls = true, floor = true, shut = true;
+        LenderTerms previous = LendingTerms.For(CreditCatalogue.LendingThreshold, own, rate);
+        for (int score = CreditCatalogue.ScoreMin; score <= CreditCatalogue.ScoreMax; score++)
+        {
+            LenderTerms t = LendingTerms.For(score, own, rate);
+            if (score < CreditCatalogue.LendingThreshold)
+            {
+                shut &= !t.Lends && t.Cap == 0f;
+                continue;
+            }
+            capRises &= t.Cap >= previous.Cap && t.Lends;
+            rateFalls &= t.AnnualRate <= previous.AnnualRate;
+            previous = t;
+            for (int lowRate = 0; lowRate <= 3; lowRate++)
+            {
+                floor &= LendingTerms.For(score, own, lowRate).AnnualRate >= CreditCatalogue.RateFloor;
+            }
+        }
+        Check(shut, "under the threshold the cap is 0 at every score");
+        Check(capRises, "the cap never falls as the score rises");
+        Check(rateFalls, "the rate never rises as the score rises");
+        Check(floor, "a rate is never under 1");
+        LenderTerms at = LendingTerms.For(580, own, rate), best = LendingTerms.For(800, own, rate), top = LendingTerms.For(850, own, rate), mid = LendingTerms.For(690, own, rate);
+        Check(at.Cap == 40000f && at.AnnualRate == 14, "at 580: 40% of the bank's cap, its rate plus 6");
+        Check(best.Cap == 130000f && best.AnnualRate == 6 && top.Cap == best.Cap && top.AnnualRate == best.AnnualRate, "from 800: 130% of the cap, the rate less 2");
+        Check(mid.Cap == 85000f && mid.AnnualRate == 10, "half way: 85% of the cap, the rate plus 2");
+        Check(LendingTerms.For(579, own, rate).AnnualRate == 14, "under the threshold the rate is the threshold's (it is not offered)");
+        Check(LendingTerms.For(800, own, 2).AnnualRate == 1 && LendingTerms.For(800, own, 1).AnnualRate == 1, "a low rate stops at 1");
+        Check(LendingTerms.For(700, 0f, rate).Cap == 0f && LendingTerms.For(700, -5f, rate).Cap == 0f, "a bank with no cap lends nothing");
+        Check(LendingTerms.MostNow(40000f, 15000f, 1e9f) == 25000f && LendingTerms.MostNow(40000f, 50000f, 1e9f) == 0f, "what is owed to a lender comes off its cap");
+        Check(LendingTerms.MostNow(40000f, 0f, 12000.9f) == 12000f && LendingTerms.MostNow(40000f, 0f, -3f) == 0f, "never more than the borrower's means allow");
+    }
+
+    private static void Fee()
+    {
+        Check(LendingTerms.PhoneFee(500f) == 25 && LendingTerms.PhoneFee(1000f) == 25 && LendingTerms.PhoneFee(1666f) == 25, "the fee is never under 25");
+        Check(LendingTerms.PhoneFee(2000f) == 30 && LendingTerms.PhoneFee(10000f) == 150 && LendingTerms.PhoneFee(100000f) == 1500, "the fee is 1.5% of the amount");
+        Check(LendingTerms.PhoneFee(2010f) == 31, "a fee with a fraction is rounded up");
+        Check(LendingTerms.PhoneFee(0f) == 0 && LendingTerms.PhoneFee(-10f) == 0, "no amount, no fee");
+        bool rises = true;
+        int previous = 0;
+        for (int amount = 500; amount <= 300000; amount += 137)
+        {
+            int fee = LendingTerms.PhoneFee(amount);
+            rises &= fee >= previous && fee >= amount * 0.015f - 0.01f && fee <= amount * 0.015f + 25f;
+            previous = fee;
+        }
+        Check(rises, "the fee never falls as the amount rises");
+    }
+
+    private static void Folding()
+    {
+        Begin(1);
+        CreditFile file = CreditLedger.File;
+        long paid = 0;
+        int count = 0;
+        for (int i = 0; i < 500; i++)
+        {
+            _day = 1 + i / 3;
+            int amount = 100 + i;
+            CreditLedger.Post(CreditKind.PaidOnTime, amount, _day, "loans", 1 + i % 2);
+            paid += amount;
+            count += 1 + i % 2;
+            if (i % 50 == 0)
+            {
+                CreditLedger.Post(CreditKind.Missed, 77, _day, "loans");
+            }
+        }
+        Check(file.Events.Count == CreditCatalogue.LedgerMost, "the file keeps the last 120 events (" + file.Events.Count + ")");
+        long amountOnFile;
+        int total = file.Total(CreditKind.PaidOnTime, out amountOnFile);
+        Check(total == count && amountOnFile == paid, "folding keeps the totals (" + total + " of " + count + ", " + amountOnFile + " of " + paid + ")");
+        long missedAmount;
+        Check(file.Total(CreditKind.Missed, out missedAmount) == 10 && missedAmount == 770, "every kind keeps its own total");
+        Check(file.Events[file.Events.Count - 1].Day == _day && file.Events[0].Day <= file.Events[file.Events.Count - 1].Day, "the newest events are the ones kept, in order");
+
+        file.Roll(_day);
+        int inWindow = 0, missedInWindow = 0;
+        foreach (PayDay d in file.Days)
+        {
+            inWindow += d.OnTime;
+            missedInWindow += d.Missed;
+        }
+        Check(file.Days.Count <= CreditCatalogue.PaymentFadeDays && file.Days[0].Day > _day - CreditCatalogue.PaymentFadeDays, "the days kept are the last sixty");
+        Check(inWindow + file.OldOnTime == count && missedInWindow + file.OldMissed == 10, "rolling the days keeps every instalment counted");
+
+        // A day posted out of order lands in its place.
+        file.CountPayments(_day - 5, 1, 0, 0);
+        bool ordered = true;
+        for (int i = 1; i < file.Days.Count; i++)
+        {
+            ordered &= file.Days[i].Day > file.Days[i - 1].Day;
+        }
+        Check(ordered, "the days stay in order, one entry a day");
+    }
+
+    // The file's line without its header: the days, the events, the totals and the loans.
+    private static string Body(CreditFile file)
+    {
+        string line = CreditStore.Write(file);
+        return line.Substring(line.IndexOf("~d:", StringComparison.Ordinal));
+    }
+
+    private static void Tests()
+    {
+        Account a = Begin(30);
+        a.Owed = 3000f;
+        CreditLedger.Post(CreditKind.PaidOnTime, 50, 29, "loans");
+        string before = Body(CreditLedger.File);
+        int real = Score();
+        Check(CreditLedger.TestSet(560, 30) == 560 && !CreditLedger.Score.Lends, "the test tool sets 560");
+        Check(CreditLedger.TestSet(600, 30) == 600 && CreditLedger.TestSet(760, 30) == 760, "and 600, and 760");
+        CreditLedger.Post(CreditKind.Missed, 100, 30, "test", 1, true);
+        for (int day = 1; day <= 30; day++)
+        {
+            CreditLedger.Post(CreditKind.PaidOnTime, 100, day, "test", 1, true);
+        }
+        Check(CreditLedger.File.UnseenMissed == 0, "a test miss sets no badge");
+        Check(CreditLedger.TestClear(), "there was something to clear");
+        Check(Score() == real && Body(CreditLedger.File) == before && CreditLedger.File.TestOffset == 0, "clearing the test entries leaves the score, the days, the events and the totals exactly as they were");
+        Check(!CreditLedger.TestClear(), "nothing to clear the second time");
+
+        // Test entries never reach the totals, even when they are folded away.
+        Begin(1);
+        for (int i = 0; i < 200; i++)
+        {
+            CreditLedger.Post(CreditKind.Missed, 10, 1, "test", 1, true);
+        }
+        long amount;
+        Check(CreditLedger.File.Total(CreditKind.Missed, out amount) == 0 && amount == 0, "test entries are never folded into the totals");
+    }
+
+    private static void SaveAndLoad()
+    {
+        Account a = Begin(12);
+        a.Owed = 8000f;
+        CreditFile file = CreditLedger.File;
+        CreditLedger.Post(CreditKind.NewCredit, 8000, 12, "phone");
+        CreditLedger.Post(CreditKind.Application, 8000, 12, "phone");
+        for (int day = 13; day <= 150; day++)
+        {
+            _day = day;
+            file.Roll(day);
+            CreditLedger.Post(day % 17 == 0 ? CreditKind.Missed : CreditKind.PaidOnTime, 95, day - 1, "loans");
+        }
+        CreditLedger.TestSet(601, _day);
+        file.LegalSeen = new LegalStanding { Convictions = 1, Judgments = 2, LateDays = 3, Outstanding = 450, RecentOffences = 1 };
+        file.Loans.Add(new LoanMark { Street = "Odd|Name; St~", Number = 7, Total = 8000f, FirstDay = 12, Remaining = 1234.5f, Payment = 66, Interest = 9 });
+        file.Loans.Add(new LoanMark { Street = "W 34th St", Number = 120, Total = 25000f, FirstDay = 90, Remaining = 25000f, Payment = 208, Interest = 34 });
+        int score = Score();
+
+        var data = new Dictionary<string, string>();
+        CreditStore.Save(data, file);
+        string line = data[CreditStore.Key];
+        Check(data.Count == 1 && line.StartsWith("v=1~h:"), "one line in the save, under reallife:economy, with its version first");
+        Check(line.IndexOf('\n') < 0 && line.Length < 8000, "the line is small (" + line.Length + " characters with a full file)");
+        bool fresh;
+        int version;
+        CreditFile back = CreditStore.Load(data, out fresh, out version);
+        Check(back != null && !fresh && version == 1, "it loads");
+        Check(back != null && CreditStore.Write(back) == line, "a round trip writes the same line");
+        if (back != null)
+        {
+            Check(back.Loans.Count == 2 && back.Loans[0].Street == "Odd Name  St " && back.Loans[0].Remaining == 1234.5f && back.Loans[1].Interest == 34, "the loans come back, a street name's dividers taken out");
+            Check(back.Loans[0].Ref == null, "no object is carried across a save");
+            Check(back.LegalSeen.Judgments == 2 && back.LegalSeen.Outstanding == 450 && back.TestOffset == file.TestOffset && back.FirstCreditDay == 12, "the header comes back");
+            Begin(_day, back).Owed = 8000f;
+            Check(Score() == score, "the loaded file scores the same (" + Score() + " and " + score + ")");
+        }
+
+        // A later version: a higher number, more fields at the end of records, and a part this version does not know.
+        string later = line.Replace("v=1~", "v=2~").Replace("~d:", "|77|new~x:something|new;more~d:") + "~z:1|2|3";
+        int laterVersion;
+        CreditFile fromLater = CreditStore.Read(later, out laterVersion);
+        Check(fromLater != null && laterVersion == 2, "a save from a later version is read");
+        Check(fromLater != null && CreditStore.Write(fromLater) == line, "what this version knows of it is all there, written back as version 1");
+
+        // Damage: nothing throws, and what cannot be read opens a fresh file.
+        var damaged = new[] { "", "v=", "v=0~h:1", "nonsense", "v=1", "v=1~h:~d:~e:~f:~l:", "v=1~h:a|b|c~d:x|y;1|2~e:99|1|1;|||~f:x~l:a|b", "v=1~~~q~h:5", "v=1~e:" + new string(';', 400) };
+        bool calm = true;
+        int opened = 0;
+        foreach (string text in damaged)
+        {
+            try
+            {
+                var d = new Dictionary<string, string> { { CreditStore.Key, text } };
+                CreditFile f = CreditStore.Load(d, out fresh, out version);
+                opened += f != null ? 1 : 0;
+                calm &= f == null == fresh;
+                if (f != null)
+                {
+                    CreditStore.Write(f);
+                    var s = new CreditScore();
+                    CreditScoring.Compute(f, default(CreditInputs), 10, s);
+                    calm &= s.Value >= 300 && s.Value <= 850;
+                }
+            }
+            catch (Exception)
+            {
+                calm = false;
+            }
+        }
+        Check(calm, "a damaged line never throws");
+        Check(opened == 5, "a line with a version is read as far as it goes, one without is not (" + opened + ")");
+        Check(CreditStore.Load(null, out fresh, out version) == null && fresh && CreditStore.Load(new Dictionary<string, string>(), out fresh, out version) == null && fresh, "a save without the line is a fresh file");
+        var many = new CreditFile();
+        var text2 = new System.Text.StringBuilder("v=1~e:");
+        for (int i = 0; i < 300; i++)
+        {
+            text2.Append(i > 0 ? ";" : "").Append("0|1|5|1|0|0|loans");
+        }
+        Check(CreditStore.Read(text2.ToString(), out version).Events.Count == CreditCatalogue.LedgerMost && many.Events.Count == 0, "a line with too many events is cut to the cap");
+    }
+
+    private static LoanView View(object reference, string street, int number, float total, float remaining, int payment, int interest = 10)
+    {
+        return new LoanView { Ref = reference, Street = street, Number = number, Total = total, Remaining = remaining, Payment = payment, Interest = interest };
+    }
+
+    private static int Count(List<LoanFinding> findings, LoanNote note)
+    {
+        int count = 0;
+        foreach (LoanFinding f in findings)
+        {
+            count += f.Note == note ? 1 : 0;
+        }
+        return count;
+    }
+
+    private static void Identity()
+    {
+        object a = new object(), b = new object(), c = new object(), d = new object();
+        var marks = new List<LoanMark>();
+        var findings = new List<LoanFinding>();
+        var live = new List<LoanView> { View(a, "5th Ave", 12, 10000f, 10000f, 100), View(b, "5th Ave", 12, 10000f, 10000f, 100), View(c, "Wall St", 3, 4000f, 4000f, 40) };
+        LoanBook.Sync(marks, live, 5, findings, true);
+        Check(marks.Count == 3 && findings.Count == 0, "the first look is quiet");
+        Check(ReferenceEquals(marks[0].Ref, a) && ReferenceEquals(marks[1].Ref, b) && marks[2].FirstDay == 5, "each loan has its mark");
+
+        // The list changes: the first is paid off and removed, one is added at the end.
+        live = new List<LoanView> { View(b, "5th Ave", 12, 10000f, 10000f, 100), View(c, "Wall St", 3, 4000f, 4000f, 40), View(d, "5th Ave", 12, 10000f, 10000f, 100) };
+        LoanBook.Sync(marks, live, 6, findings);
+        Check(Count(findings, LoanNote.Gone) == 1 && Count(findings, LoanNote.New) == 1 && findings.Count == 2, "one gone, one new, though all three share a bank and two an amount");
+        Check(marks.Count == 3 && ReferenceEquals(marks[0].Ref, b) && ReferenceEquals(marks[2].Ref, d) && marks[2].FirstDay == 6, "the marks follow the objects, not the places in the list");
+
+        findings.Clear();
+        live[0] = View(b, "5th Ave", 12, 10000f, 7000f, 100);
+        live[1] = View(c, "Wall St", 3, 4000f, 4000f, 60);
+        LoanBook.Sync(marks, live, 6, findings);
+        Check(findings.Count == 2 && findings[0].Note == LoanNote.ExtraPaid && findings[0].Amount == 3000 && findings[1].Note == LoanNote.PaymentChanged && findings[1].Amount == 60, "paying part off and changing the daily payment are seen");
+        findings.Clear();
+        LoanBook.Sync(marks, live, 6, findings);
+        Check(findings.Count == 0, "nothing changed, nothing found");
+
+        // Across a save: the objects are new, the fingerprints and balances tell the loans apart.
+        var file = new CreditFile();
+        file.Loans.AddRange(marks);
+        int version;
+        CreditFile loaded = CreditStore.Read(CreditStore.Write(file), out version);
+        object b2 = new object(), c2 = new object(), d2 = new object();
+        live = new List<LoanView> { View(b2, "5th Ave", 12, 10000f, 7000f, 100), View(c2, "Wall St", 3, 4000f, 4000f, 60), View(d2, "5th Ave", 12, 10000f, 10000f, 100) };
+        findings.Clear();
+        LoanBook.Sync(loaded.Loans, live, 9, findings);
+        Check(findings.Count == 0 && loaded.Loans.Count == 3, "after a load every loan is known again: nothing new, nothing gone");
+        Check(ReferenceEquals(loaded.Loans[0].Ref, b2) && loaded.Loans[0].Remaining == 7000f && ReferenceEquals(loaded.Loans[2].Ref, d2) && loaded.Loans[2].FirstDay == 6, "twins of one bank and one amount are told apart by their balance");
+
+        // The list in another order after the load, and one twin paid down while the mod was away.
+        loaded = CreditStore.Read(CreditStore.Write(file), out version);
+        live = new List<LoanView> { View(d2, "5th Ave", 12, 10000f, 9000f, 100), View(c2, "Wall St", 3, 4000f, 4000f, 60), View(b2, "5th Ave", 12, 10000f, 7000f, 100) };
+        findings.Clear();
+        LoanBook.Sync(loaded.Loans, live, 9, findings);
+        Check(Count(findings, LoanNote.New) == 0 && Count(findings, LoanNote.Gone) == 0 && Count(findings, LoanNote.ExtraPaid) == 1, "a twin paid down in the meantime is still the same loan");
+        Check(ReferenceEquals(loaded.Loans[0].Ref, b2) && ReferenceEquals(loaded.Loans[2].Ref, d2), "the exact balance is matched first, whatever the order");
+
+        // A loan that left the list is not taken for a new one of the same print made the same hour.
+        marks.Clear();
+        findings.Clear();
+        object old = new object(), fresh = new object();
+        LoanBook.Sync(marks, new List<LoanView> { View(old, "Wall St", 3, 4000f, 1000f, 40) }, 3, findings, true);
+        LoanBook.Sync(marks, new List<LoanView> { View(fresh, "Wall St", 3, 4000f, 4000f, 40) }, 4, findings);
+        Check(Count(findings, LoanNote.Gone) == 1 && Count(findings, LoanNote.New) == 1 && marks.Count == 1 && marks[0].FirstDay == 4, "paid off and borrowed again is one gone and one new");
+    }
+
+    private static void DailyRun()
+    {
+        object a = new object(), b = new object(), c = new object(), d = new object();
+        var marks = new List<LoanMark>();
+        var findings = new List<LoanFinding>();
+        // Before the run (the hour event): four loans. a is paid, b is missed (only its interest is taken),
+        // c has less left than its daily payment and is paid off, d was changed by the player an hour ago.
+        var before = new List<LoanView> { View(a, "5th Ave", 12, 10000f, 5000f, 100, 12), View(b, "5th Ave", 12, 10000f, 5000f, 100, 12), View(c, "Wall St", 3, 4000f, 30f, 40, 5), View(d, "Wall St", 3, 9000f, 9000f, 75, 11) };
+        LoanBook.Sync(marks, before, 20, findings, true);
+        var after = new List<LoanView> { View(a, "5th Ave", 12, 10000f, 4900f, 100, 12), View(b, "5th Ave", 12, 10000f, 5000f, 100, 12), View(d, "Wall St", 3, 9000f, 8925f, 75, 11) };
+        LoanBook.Settle(marks, after, findings);
+        Check(findings.Count == 4 && Count(findings, LoanNote.Paid) == 2 && Count(findings, LoanNote.Missed) == 1 && Count(findings, LoanNote.PaidOff) == 1, "paid, missed and paid off are told apart");
+        foreach (LoanFinding f in findings)
+        {
+            if (f.Note == LoanNote.Missed)
+            {
+                Check(f.Mark.Total == 10000f && f.Amount == 100, "the missed one is the loan whose balance did not move, for its daily payment");
+            }
+            if (f.Note == LoanNote.PaidOff)
+            {
+                Check(f.Mark.Street == "Wall St" && f.Amount == 35, "the last instalment is what was left, and the interest");
+            }
+        }
+        Check(marks.Count == 3 && marks[0].Remaining == 4900f, "the marks are brought up to date, the paid-off loan gone from them");
+
+        // The player pays part off during the day; the hour event before the run sees it, so the run's own part is read right.
+        findings.Clear();
+        var midday = new List<LoanView> { View(a, "5th Ave", 12, 10000f, 2900f, 100, 12), View(b, "5th Ave", 12, 10000f, 5000f, 100, 12), View(d, "Wall St", 3, 9000f, 8925f, 75, 11) };
+        LoanBook.Sync(marks, midday, 21, findings);
+        Check(findings.Count == 1 && findings[0].Note == LoanNote.ExtraPaid && findings[0].Amount == 2000, "paying part off by hand is its own event");
+        findings.Clear();
+        LoanBook.Settle(marks, midday, findings);
+        Check(Count(findings, LoanNote.Missed) == 3 && findings.Count == 3, "and if the run then takes nothing, all three are missed, the one paid down by hand included");
+
+        // A loan with no daily payment (a bank without settings lets it be set to nothing) is neither paid nor missed.
+        marks.Clear();
+        findings.Clear();
+        var zero = new List<LoanView> { View(a, "5th Ave", 12, 10000f, 5000f, 0, 12) };
+        LoanBook.Sync(marks, zero, 5, findings, true);
+        LoanBook.Settle(marks, zero, findings);
+        Check(findings.Count == 0, "no payment due, nothing to report");
+    }
+}
