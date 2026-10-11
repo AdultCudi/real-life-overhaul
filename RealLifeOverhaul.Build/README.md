@@ -243,7 +243,7 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       JusticeState     what a save remembers of it: one line in modData (game-free)
       JusticeBridges   Justice (the door for the rest of the mod), Justice.Bridges (Law, Licences, Social, Transport; each with a default), JusticeReports
       JusticeDirector  the clock and the switchboard: hourly business, what waits for the player, the watchdog, the test buttons
-      JusticePanel     the one full-screen panel (courtroom, cell, Legal file); JusticeHud: prompt, marker, status line
+      JusticePanel     the hearing, bail, cell, prison and Legal file as pages of the game's list window (DeskList)
       Courthouse       which building it is, the sign on its frontage, where one stands to go in
       LegalCounsel     the law firms, rating and fee, motions and plea deals; the Legal contact and its conversation
       CourtHearing     one hearing: charges, plea, the rounds of a trial, the verdict and its sum, the sentence and its reasons
@@ -1674,14 +1674,28 @@ because the player is never put anywhere the base game does not know.
 | `JusticeState` | what a save remembers, and its one line of text (game-free) |
 | `JusticeBridges` | `Justice` (the door for the rest of the mod), `Justice.Bridges` (Law, Licences, Social, Transport, each with a default), `JusticeReports` |
 | `JusticeDirector` | the clock and the switchboard: hourly business, what is waiting for the player, the watchdog, the test buttons |
-| `JusticePanel` | the one full-screen panel: courtroom, cell and Legal file are pages of it (plain shapes, portrait frames, three answers by click or keys 1 to 3) |
-| `JusticeHud` | key prompt, marker with distance, one status line |
+| `JusticePanel` | the screen: courtroom, cell and Legal file are pages of it, in the game's own list window (`GameUi.DeskList`), three answers at most, answered by a click |
 | `Courthouse` | which building it is, the sign on its frontage, where one stands to go in |
 | `LegalCounsel` | the law firms, their rating and fee, what counsel can do before the hearing; the Legal contact and its conversation |
 | `CourtHearing` | one hearing, page by page |
 | `PrisonStay` | custody (hours) and prison (days) as time passing; `JusticeHold`: everything changed on the game while the player is held |
 | `CommunityService` | a played litter-picking shift |
 | `LegalFile` | the Legal file page and what can be done from it |
+
+### On screen: the game's own interface
+
+Nothing in the justice system is drawn by the mod any more (`JusticeHud` and the full-screen panel are gone). Not seen in the game.
+
+| screen | what it is now | if it cannot be made |
+|---|---|---|
+| the hearing, bail, the cell, the prison mornings, the summary, the Legal file | pages of `JusticePanel`, which is a `GameUi.DeskList` (a copy of the subway station window): the title and who is present under the headline, what is said as a note with the speaker's name over it, and an entry with a button for each answer (at most three) with its hint under its name. Answered by a click. Locked (no cancel key) while the player is held; the Legal file, which holds nobody, can be put away with the cancel key. While the screen is faded to black by the game the list stands on the canvas of the game's black cover, and goes back to the HUD's when the cover is gone | the justice system switches itself off for the session with one line (`Justice check (page list) ... FAIL`); the player is let go and cases and sentences stay in the save |
+| the courthouse door ("Attend the hearing", "Hand yourself in", "Report for service") and the lawyer's desk ("Speak to a lawyer") | the game's panel over a place (`GameUi.DoorPanel`), told once a second | tried again the next second while the game's panel shows another place |
+| the court's marker | the game's destination marker (`GameUi.GuideMark`) | not shown while a job or an outing has the marker |
+| community service: the litter, the pieces picked and the hours owed | the panel over the litter with "Pick it up"; the marker as above; the figures on a copy of the game's job panel (`ShiftCard`) | the pieces picked are sent as notifications |
+
+Cost: nothing per frame. A page is written once when it is shown; the shift's tick (five a second) tells the panel and the marker only what changed.
+Log lines with diagnostics on: `Justice check (page list)`, `Justice check (door panel)`, `Justice check (litter panel)`, `Justice check (community card)`, each ending PASS or FAIL.
+Behaviour that changed: the keys 1 to 3 and the interact key no longer answer a page (a click does); the portraits and the drawn courtroom are gone (the names of those present are under the headline), and the portrait sprites in the bundle are unused.
 
 ### What happens, in order
 
@@ -1873,7 +1887,7 @@ is a police contact; `CrashConsequences.ChargeLiability` and the two pursuit set
 | clip | `court_stand`, `court_swear` | standing at a rail, hands on it; right hand raised | a 3D courtroom, if one is ever built. `oath_hand` (delivered) is the raised hand: **not wired**, a hearing is a dialogue panel and nobody is played in it |
 | sound | `gavel` | two raps | the first and the verdict page of a hearing |
 | sound | `cell_door` | a steel door closing | the prison fade and lights out |
-| sprite | portraits | judge, prosecutor, counsel, officer, inmate, visitor, clerk: 178 x 196 busts | `JusticePanel.Dress`, in place of the plain-shape busts |
+| sprite | portraits | judge, prosecutor, counsel, officer, inmate, visitor, clerk: 178 x 196 busts | nothing now: the list has no pictures, so these are unused |
 
 ### Not verified in the game
 
@@ -3651,7 +3665,7 @@ Read through after the merge: 67 `Update` / `LateUpdate` / `FixedUpdate` methods
 | `CrimeDirector`, `EventDirector`, `BusinessDirector`, `SocialDirector`, `CarOwnership`, `LeisureSound`, `PoliceAttention`, `PolicePursuit`, `BeatPatrol`, `PolicePresence`, `PedestrianIncidents`, `PlayerKnockdown`, `Law.LawDirector` | one to three comparisons | nothing to do per frame. **On their timers, found later: `Law.LawDirector` (the save and the two building events, every three seconds), `HomeDirector` (the game's event, every second), `Family.FamilyDirector` (the save, every two seconds) and `MapPlaces` (the map event, every three seconds) still took themselves off the game's events and put themselves back. Now `SaveHook.Keep` and `EventHold.Keep`: nothing allocated while the game's event has not changed** |
 | `PerfDirector` and the tweaks that are on by default | one time comparison; the tweaks tick every 2 to 5 s | **before: every scene loaded or unloaded made `RefractionOff` look through every material in memory in that frame (`Resources.FindObjectsOfTypeAll<Material>`, seven engine calls a material) and, on the next tick, `StaleLampLights` through all 3,038 street lamps (three reflected fields each). After: unloads are ignored, a load asks for one look four seconds after the last scene arrived, and both looks go through their list 300 and 250 at a time, 20 times a second. The first look after the city loads is sliced the same way; refraction stays as the game has it until that look is finished** |
 | `TransitDirector` (4 times a second) | the stops in reach, the bus | **before: every second the label of each dressed stop was put together for a self-check that had already been made; and the self-check itself (a dozen questions to the navigation mesh, once per dressing) ran with diagnostics off, when nobody reads its line. After: neither** |
-| `MetaUi`, `CuffPose`, `JusticePanel`, `HoseHold`, `CarMeasure`, `CarDrag`, `ActivityAnimators`, `RagdollSystem`, `Stretcher`, `EmergencyDriver`, `BikeMount`, `TipsyDriving`, `PerfSampler`, `PerfLoop` | disabled while idle | nothing to do |
+| `MetaUi`, `CuffPose`, `HoseHold`, `CarMeasure`, `CarDrag`, `ActivityAnimators`, `RagdollSystem`, `Stretcher`, `EmergencyDriver`, `BikeMount`, `TipsyDriving`, `PerfSampler`, `PerfLoop` | disabled while idle | nothing to do |
 | `CityPeople.Update`, `ActorPool.Update` | off with nobody out; with people out, a distance and a dot product each to hide those out of view | left: it is what keeps unseen characters from being drawn |
 | `PlayerDouble.LateUpdate` | off by default; on: every bone copied | left: an option that says what it costs |
 | `CarStrikes.FixedUpdate` (driving above 5 km/h) | every other step: the car against walkers, standing figures and the mod's people | left: it is the hit test itself |

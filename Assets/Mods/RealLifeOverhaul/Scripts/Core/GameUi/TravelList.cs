@@ -258,6 +258,19 @@ namespace RealLifeOverhaul.GameUi
             _root.transform.SetAsLastSibling();
         }
 
+        /// <summary>Back to the top of the entries: for an owner that fills the window again with another page while it is open.</summary>
+        public void ScrollToTop()
+        {
+            if (_root != null && _scroll != null)
+            {
+                _scroll.StopMovement();
+                if (_scroll.content != null)
+                {
+                    _scroll.content.anchoredPosition = Vector2.zero;
+                }
+            }
+        }
+
         /// <summary>True while the window's objects are there (the game's interface is rebuilt with the city).</summary>
         public bool Alive => _root != null;
 
@@ -327,7 +340,9 @@ namespace RealLifeOverhaul.GameUi
             }
             _used++;
             row.Id = id;
-            UiClone.Words(row.Label, string.IsNullOrEmpty(detail) ? "<uppercase>" + name + "</uppercase>"
+            // (An entry with no name is the detail alone, in the list's own lettering: a page of plain text.)
+            UiClone.Words(row.Label, string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(detail) ? detail
+                : string.IsNullOrEmpty(detail) ? "<uppercase>" + name + "</uppercase>"
                 : "<uppercase>" + name + "</uppercase>\n<size=80%><color=#C9CED3>" + detail + "</color></size>");
             if (!note && !ReferenceEquals(row.ButtonKey, buttonKey))
             {
