@@ -620,6 +620,9 @@ namespace RealLifeOverhaul.Economy
             float force = Mathf.Max(1f, Mathf.Ceil(BuildingSizeHelper.GetData(building).squareMeters * CleanersPerSquareMetre));
             float skill = handed > 0 ? hands / (float)handed : 50f;
             shop.CleanHours = Mathf.Max(1, Mathf.RoundToInt(1000f * perSpot * force / Mathf.Max(1f, skill)));
+            // The same two figures as the ladder of plans runs its week with: points of mean dirt a customer adds, and points a cleaner's hour takes off.
+            shop.DirtPerCustomer = Mathf.Max(1, Mathf.RoundToInt(shop.DirtEvents * 10f * perSpot));
+            shop.CleanPerHour = Mathf.Max(1, Mathf.RoundToInt(1000f * Mathf.Max(1f, skill) / force));
         }
 
         // What an hour of somebody at a station costs when nobody is rostered for it yet: the average of those who could stand

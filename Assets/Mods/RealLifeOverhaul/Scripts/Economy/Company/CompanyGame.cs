@@ -49,6 +49,9 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Income of the days from one to another (both counted) that is in no business's statement and belongs in the quarter's return: the gain on a business sold. Default: none.</summary>
         public static Func<int, int, int> OtherIncome;
 
+        /// <summary>True for a business whose cleaning the cleaning service does on its round, so that the staff rota planner asks for no cleaning shift there. Default: none is.</summary>
+        public static Func<Address, bool> Cleaned;
+
         public static void Reset()
         {
             Footfall = null;
@@ -62,6 +65,7 @@ namespace RealLifeOverhaul.Economy
             TaxCase = null;
             IssueFootfall = null;
             OtherIncome = null;
+            Cleaned = null;
         }
     }
 

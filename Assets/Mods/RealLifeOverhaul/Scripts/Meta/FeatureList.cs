@@ -828,11 +828,11 @@ namespace RealLifeOverhaul.Meta
                 .ResetData(() => Economy.CompanyDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
 
             // The staff rota planner. Its rows stand under the company's header on the options page and its page is a tab of
-            // the Company app. It keeps nothing in a save and leaves nothing behind: off, the tab says so and no rota is written.
+            // the Company app. In a save it keeps only the choice between staff first and lean for a business (RotaStore): off, the tab says so and no rota is written.
             Economy.RotaGuide.AddFacts(Features.Add("economy_rota", "reallife_meta_title_economy_rota")
                 .About("reallife_guide_economy_rota_about").Help("reallife_guide_economy_rota")
                 .Owns(Settings.EconomyRotaId)
-                .Test("reallife_rota_test_open", "reallife_rota_test_fill", "reallife_rota_test_back"));
+                .Test("reallife_rota_test_open", "reallife_rota_test_plans", "reallife_rota_test_fill", "reallife_rota_test_back"));
 
             // Online shops. Their rows stand under the company's header on the options page; the Web shop app is their own.
             // Off, no orders come and nothing is charged or paid. They run only while the economy core does. (Cleaned up before the core: order -2.)

@@ -97,6 +97,15 @@ namespace RealLifeOverhaul.Economy
             .Column("reallife_rota_col_advised", 300f, TableSort.None)
             .Column("reallife_rota_col_customers", 300f, TableSort.None, right: true);
 
+        /// <summary>Rota, a business's ladder of plans: 0 plan, 1 hours a week, 2 staff, 3 profit a week, 4 gain, 5 what it needs. Under them the people (name, skills, wage, what they ask, hours, demands).</summary>
+        public static readonly TableSpec RotaPlans = new TableSpec("Company", "Rota: the plans")
+            .Column("reallife_rota_col_plan", 520f, TableSort.None)
+            .Column("reallife_rota_col_week_hours", 380f, TableSort.None)
+            .Column("reallife_rota_col_staff", 240f, TableSort.None)
+            .Column("reallife_rota_col_profit", 300f, TableSort.None)
+            .Column("reallife_rota_col_gain", 300f, TableSort.None)
+            .Column("reallife_rota_col_needs", 600f, TableSort.None, flexible: true);
+
         public static readonly TableSpec RotaDay = new TableSpec("Company", "Rota: a day")
             .Column("reallife_rota_col_hour", 620f, TableSort.None)
             .Column("reallife_rota_col_customers", 500f, TableSort.None, flexible: true)

@@ -81,6 +81,7 @@ namespace RealLifeOverhaul.Economy
     public sealed class RotaWorker
     {
         public int Wage;        // hundredths an hour, everything they are paid
+        public int Mood = 100;  // their satisfaction now, 0 to 100 (what an unmet demand takes from, hour by hour)
         public RotaDemand[] Demands = Empty;
 
         public static readonly RotaDemand[] Empty = new RotaDemand[0];
@@ -122,6 +123,7 @@ namespace RealLifeOverhaul.Economy
                     Worker[w] = new RotaWorker();
                 }
                 Worker[w].Wage = 0;
+                Worker[w].Mood = 100;
                 Worker[w].Demands = RotaWorker.Empty;
             }
         }
