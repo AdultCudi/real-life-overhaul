@@ -246,7 +246,7 @@ namespace RealLifeOverhaul.Law
         /// </summary>
         public static TextMeshPro Letter(Transform parent, string word, Vector3 at, float width, float height)
         {
-            TMP_FontAsset font = Hud.Font;
+            TMP_FontAsset font = GameUi.GameFont.Asset;
             if (font == null)
             {
                 return null;

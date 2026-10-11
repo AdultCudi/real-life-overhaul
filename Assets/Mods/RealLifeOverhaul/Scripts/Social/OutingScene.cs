@@ -194,8 +194,8 @@ namespace RealLifeOverhaul
             Status = SocialLife.Clock(_time);
             Mark(_spot, _venue.Name);
             _lastPlayer = D.PlayerPosition;
-            _pickPrompt = SocialLife.T("reallife_social_moving_pick");
-            _dropPrompt = SocialLife.T("reallife_social_moving_drop");
+            _pickPrompt = SocialLife.Say("reallife_social_moving_pick", null);
+            _dropPrompt = SocialLife.Say("reallife_social_moving_drop", null);
             Go(Step.Travel, now, 0f);
             return true;
         }
@@ -348,7 +348,7 @@ namespace RealLifeOverhaul
             {
                 if (Prompt == null)
                 {
-                    Prompt = SocialLife.T("reallife_social_hello_prompt", SocialLife.Data(_who));
+                    Offer(SocialLife.Say("reallife_social_hello_prompt", SocialLife.Data(_who)), "reallife_social_button_hello", _friend);
                 }
             }
             else
@@ -1638,7 +1638,14 @@ namespace RealLifeOverhaul
                     Prompt = null;
                     return;
                 }
-                Prompt = JobSpots.Flat(player, _drop) < 2.4f ? _dropPrompt : null;
+                if (JobSpots.Flat(player, _drop) < 2.4f)
+                {
+                    Offer(_dropPrompt, "reallife_social_button_drop", null);
+                }
+                else
+                {
+                    Prompt = null;
+                }
                 return;
             }
             if (!D.OnFoot)
@@ -1646,7 +1653,14 @@ namespace RealLifeOverhaul
                 Prompt = null;
                 return;
             }
-            Prompt = NearestBox(player) >= 0 ? _pickPrompt : null;
+            if (NearestBox(player) >= 0)
+            {
+                Offer(_pickPrompt, "reallife_social_button_pick", null);
+            }
+            else
+            {
+                Prompt = null;
+            }
         }
 
         private int NearestBox(Vector3 player)

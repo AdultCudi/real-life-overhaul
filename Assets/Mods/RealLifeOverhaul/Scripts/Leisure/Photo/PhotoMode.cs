@@ -21,13 +21,17 @@ namespace RealLifeOverhaul.Leisure
     /// Photo mode: one key stops the game (its own pause: the picture goes on being drawn) and
     /// frees the camera to fly, tilt, roll and zoom; exposure, a handful of colour filters and a
     /// depth-of-field focus distance go through a Volume that exists only while the mode is on;
-    /// the game's HUD and the mod's are hidden, the player can be too, and Enter saves the
-    /// frame as a PNG at the screen's resolution to the mod's Shots folder. Everything touched
+    /// the player can be hidden, and Enter saves the frame as a PNG at the screen's resolution to
+    /// the mod's Shots folder. The mod draws nothing of its own: the mode starts with the game's
+    /// interface showing and one of the game's notifications naming the controls and the settings;
+    /// the "hide or show" key puts the game's interface away (the game's own "hide the interface")
+    /// for a clean view, and brings it back with the notification again. A picture is always taken
+    /// with the interface away. Everything touched
     /// is recorded on the way in and put back exactly on the way out, on every way out (the
     /// key, a menu opening, the game being unpaused, the city unloading).
     ///
     /// Idle cost: one key test a frame. While the mode is on it runs every frame, which is the
-    /// point of it, and allocates only when a setting changes (the line that names it).
+    /// point of it, and allocates only when the notification is asked for.
     /// </summary>
     public sealed class PhotoMode : MonoBehaviour
     {
@@ -60,11 +64,10 @@ namespace RealLifeOverhaul.Leisure
         private float _fovBefore;
         private CursorLockMode _cursorBefore;
         private bool _cursorShown;
-        private bool _hidUi;
+        private bool _uiWasVisible;
         private bool _zoomWasBlocked;
         private bool _timeWasLocked;
         private bool _playerHidden;
-        private bool _hudWasOn, _jobHudWasOn;
         private GameSpeedController _speed;
 
         private Vector3 _startPosition;
@@ -81,13 +84,9 @@ namespace RealLifeOverhaul.Leisure
         private ColorAdjustments _color;
         private DepthOfField _depth;
 
-        private GameObject _overlay;
-        private Canvas _overlayCanvas;
-        private TextMeshProUGUI _helpText, _stateText;
         private bool _stateDirty;
-        private int _shotStep;          // 0 none; counts frames through a capture with the overlay off
+        private int _shotStep;          // 0 none; counts frames through a capture with the interface away
         private string _shotPath;
-        private float _savedUntil;
         private bool _armed;            // asked for from the options page: starts when the menu is closed
         private float _armedUntil;
         private int _enteredFrame;
@@ -219,79 +218,46 @@ namespace RealLifeOverhaul.Leisure
             _blur = false;
             _focus = Mathf.Clamp(Vector3.Distance(_startPosition, PlayerHelper.PlayerController.transform.position), 1f, 40f);
 
-            HideHuds(true);
+            _uiWasVisible = ScreenshotController.uiIsVisible;
+            _help = true;
+            Interface(true);
+            LeisureDirector director = LeisureDirector.Instance;
+            if (director != null && director.Screen != null)
+            {
+                director.Screen.Suppress(true);   // the activity's panels stay away while the camera is free
+            }
             BuildVolume();
-            BuildOverlay();
             ApplyLook();
             _stateDirty = true;
+            Help();
             Logger?.Info("Photo mode: on.");
         }
 
-        private void HideHuds(bool hide)
+        // The game's own "hide the interface" (its canvases go clear, nothing is destroyed): put to the state asked for, and only if it is not
+        // already there.
+        private void Interface(bool visible)
         {
-            var uis = InstanceBehavior<UIs>.Instance;
-            if (hide)
-            {
-                _hidUi = false;
-                try
-                {
-                    if (uis != null && uis.screenshot != null && ScreenshotController.uiIsVisible)
-                    {
-                        _hidUi = true;   // before the call: if it faults half way, the way out still toggles it back
-                        uis.screenshot.ToggleUIVisibility();   // the game's own "hide the interface"
-                    }
-                }
-                catch (Exception e)
-                {
-                    Logger?.Error(e);
-                }
-                _hudWasOn = Hud.Exists && SetCanvas(Hud.Instance, false);
-                _jobHudWasOn = JobHud.Exists && SetCanvas(JobHud.Instance, false);
-                if (LeisureHud.Exists)
-                {
-                    LeisureHud.Instance.Suppress(true);
-                }
-                return;
-            }
             try
             {
-                if (_hidUi && uis != null && uis.screenshot != null && !ScreenshotController.uiIsVisible)
+                var uis = InstanceBehavior<UIs>.Instance;
+                if (uis != null && uis.screenshot != null && ScreenshotController.uiIsVisible != visible)
                 {
-                    uis.screenshot.ToggleUIVisibility();   // its first act is to show the interface again
+                    uis.screenshot.ToggleUIVisibility();
                 }
             }
             catch (Exception e)
             {
                 Logger?.Error(e);
             }
-            _hidUi = false;
-            if (_hudWasOn && Hud.Exists)
-            {
-                SetCanvas(Hud.Instance, true);
-            }
-            if (_jobHudWasOn && JobHud.Exists)
-            {
-                SetCanvas(JobHud.Instance, true);
-            }
-            _hudWasOn = false;
-            _jobHudWasOn = false;
-            if (LeisureHud.Exists)
-            {
-                LeisureHud.Instance.Suppress(false);
-            }
         }
 
-        // Switches a HUD's canvas; answers whether it was on before.
-        private static bool SetCanvas(Component hud, bool on)
+        // The controls and the settings, as one of the game's notifications.
+        private void Help()
         {
-            Canvas canvas = hud.GetComponent<Canvas>();
-            if (canvas == null)
-            {
-                return false;
-            }
-            bool was = canvas.enabled;
-            canvas.enabled = on;
-            return was;
+            string text = "reallife_photo_help".GetLocalization().Replace("{key}", Keys.Label(KeyAction.PhotoMode))   // (not through JobText: that would put the interact key in)
+                          + "\n" + StateWords();
+            UI.Notification.Notifications.Show(UI.Notification.NotificationType.Info, "reallife_leisure_text",
+                new System.Collections.Generic.Dictionary<string, string>(1) { { "text", text } }, 20f);
         }
 
         private void BuildVolume()
@@ -306,56 +272,6 @@ namespace RealLifeOverhaul.Leisure
             volume.priority = 1100f;   // over the mod's own grading (1000)
             volume.sharedProfile = _profile;
             volume.weight = 1f;
-        }
-
-        private void BuildOverlay()
-        {
-            _overlay = new GameObject("RealLifeOverhaul Photo Overlay");
-            _overlay.transform.SetParent(transform, false);
-            _overlayCanvas = _overlay.AddComponent<Canvas>();
-            _overlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            _overlayCanvas.sortingOrder = 50;
-            var scaler = _overlay.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 1f;
-            _helpText = Line("Help", 44f, 17f);
-            _stateText = Line("State", 16f, 19f);
-            _helpText.SetText("reallife_photo_help".GetLocalization().Replace("{key}", Keys.Label(KeyAction.PhotoMode)));   // (not through JobText: that would put the interact key in)
-        }
-
-        private TextMeshProUGUI Line(string objectName, float fromBottom, float size)
-        {
-            var plate = new GameObject(objectName, typeof(RectTransform));
-            plate.transform.SetParent(_overlay.transform, false);
-            var rect = (RectTransform)plate.transform;
-            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);
-            rect.pivot = new Vector2(0.5f, 0f);
-            rect.anchoredPosition = new Vector2(0f, fromBottom);
-            rect.sizeDelta = new Vector2(1800f, 26f);
-            var image = plate.AddComponent<Image>();
-            image.color = new Color(0f, 0f, 0f, 0.45f);
-            image.raycastTarget = false;
-            var holder = new GameObject("Text", typeof(RectTransform));
-            holder.transform.SetParent(plate.transform, false);
-            var text = holder.AddComponent<TextMeshProUGUI>();
-            var textRect = (RectTransform)holder.transform;
-            textRect.anchorMin = Vector2.zero;
-            textRect.anchorMax = Vector2.one;
-            textRect.offsetMin = Vector2.zero;
-            textRect.offsetMax = Vector2.zero;
-            text.raycastTarget = false;
-            text.alignment = TextAlignmentOptions.Center;
-            text.fontSize = size;
-            text.color = Color.white;
-#pragma warning disable CS0618
-            text.enableWordWrapping = false;
-#pragma warning restore CS0618
-            if (Hud.Font != null)
-            {
-                text.font = Hud.Font;
-            }
-            return text;
         }
 
         // ---------------------------------------------------------------- while it is on
@@ -422,7 +338,11 @@ namespace RealLifeOverhaul.Leisure
             if (PhotoKeys.ToggleHelp)
             {
                 _help = !_help;
-                _overlayCanvas.enabled = _help;
+                Interface(_help);
+                if (_help)
+                {
+                    Help();
+                }
             }
             if (PhotoKeys.ResetView)
             {
@@ -454,11 +374,6 @@ namespace RealLifeOverhaul.Leisure
             {
                 _stateDirty = false;
                 ApplyLook();
-            }
-            if (_savedUntil > 0f && Time.unscaledTime >= _savedUntil)
-            {
-                _savedUntil = 0f;
-                _stateDirty = true;   // the line goes back to naming the settings
             }
             if (PhotoKeys.Shoot)
             {
@@ -496,15 +411,17 @@ namespace RealLifeOverhaul.Leisure
             _depth.farFocusEnd.overrideState = _blur;
             _depth.farFocusEnd.value = _focus * 3.5f + 2f;
 
-            if (_stateText != null && _savedUntil <= 0f)
-            {
-                _stateText.SetText(JobText.T("reallife_photo_state")
-                    .Replace("{fov}", Mathf.RoundToInt(_fov).ToString())
-                    .Replace("{roll}", Mathf.RoundToInt(_roll).ToString())
-                    .Replace("{exposure}", _exposure.ToString("+0.0;-0.0;0.0", System.Globalization.CultureInfo.InvariantCulture))
-                    .Replace("{filter}", JobText.T(filter.NameKey))
-                    .Replace("{focus}", _blur ? _focus.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " m" : JobText.T("reallife_photo_focus_off")));
-            }
+        }
+
+        // The settings in words.
+        private string StateWords()
+        {
+            return JobText.T("reallife_photo_state")
+                .Replace("{fov}", Mathf.RoundToInt(_fov).ToString())
+                .Replace("{roll}", Mathf.RoundToInt(_roll).ToString())
+                .Replace("{exposure}", _exposure.ToString("+0.0;-0.0;0.0", System.Globalization.CultureInfo.InvariantCulture))
+                .Replace("{filter}", JobText.T(Filters[_filter].NameKey))
+                .Replace("{focus}", _blur ? _focus.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) + " m" : JobText.T("reallife_photo_focus_off"));
         }
 
         private void ShowPlayer(bool show)
@@ -531,7 +448,7 @@ namespace RealLifeOverhaul.Leisure
             switch (_shotStep)
             {
                 case 1:
-                    _overlayCanvas.enabled = false;
+                    Interface(false);
                     _shotStep = 2;
                     break;
                 case 2:
@@ -553,11 +470,15 @@ namespace RealLifeOverhaul.Leisure
                     break;
                 default:
                     _shotStep = 0;
-                    _overlayCanvas.enabled = _help;
-                    _stateText.SetText(_shotPath != null
-                        ? JobText.T("reallife_photo_saved").Replace("{path}", _shotPath)
-                        : JobText.T("reallife_photo_save_failed"));
-                    _savedUntil = Time.unscaledTime + 4f;
+                    Interface(_help);
+                    if (_help)
+                    {
+                        UI.Notification.Notifications.Show(UI.Notification.NotificationType.Info, "reallife_leisure_text",
+                            new System.Collections.Generic.Dictionary<string, string>(1)
+                            {
+                                { "text", _shotPath != null ? JobText.T("reallife_photo_saved").Replace("{path}", _shotPath) : JobText.T("reallife_photo_save_failed") }
+                            }, 8f);
+                    }
                     break;
             }
         }
@@ -592,7 +513,12 @@ namespace RealLifeOverhaul.Leisure
                 PedestrianCam.blockCameraZoom = _zoomWasBlocked;
                 Cursor.lockState = _cursorBefore;
                 Cursor.visible = _cursorShown;
-                HideHuds(false);
+                Interface(_uiWasVisible);
+                LeisureDirector director = LeisureDirector.Instance;
+                if (director != null && director.Screen != null)
+                {
+                    director.Screen.Suppress(false);
+                }
                 if (_speed != null)
                 {
                     _speed.DisableTimeControl(_timeWasLocked);
@@ -611,18 +537,10 @@ namespace RealLifeOverhaul.Leisure
             {
                 Destroy(_profile);
             }
-            if (_overlay != null)
-            {
-                Destroy(_overlay);
-            }
             _volumeObject = null;
             _profile = null;
             _color = null;
             _depth = null;
-            _overlay = null;
-            _overlayCanvas = null;
-            _helpText = null;
-            _stateText = null;
             _camera = null;
             _brain = null;
             _speed = null;

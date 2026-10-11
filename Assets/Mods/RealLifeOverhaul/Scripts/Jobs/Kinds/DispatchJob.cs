@@ -16,8 +16,8 @@ namespace RealLifeOverhaul
     /// </summary>
     internal static class DispatchPlan
     {
-        public const int Parcels = DispatchBoard.Parcels;
-        public const int Vans = DispatchBoard.Vans;
+        public const int Parcels = 6;
+        public const int Vans = 3;
         public const int Capacity = 3;            // parcels a van takes
         public const float VanOut = 0.45f;        // what sending a van out costs, in map units of driving
         public const float Kilometres = 2.4f;     // a map unit, as the board words it
@@ -116,7 +116,7 @@ namespace RealLifeOverhaul
     /// <summary>
     /// A shift at the dispatch desk, a courier firm's third rank. Three batches of six parcels come
     /// in; each parcel is put on one of three vans (three parcels a van at most) with the choice
-    /// buttons, against the clock, on a small map (<see cref="DispatchBoard"/>) that draws each van's
+    /// buttons, against the clock, on a small map (<see cref="DispatchList"/>) that lists each van's
     /// round as it grows. A button takes the last parcel back. A plan is paid by how near
     /// it came to the best plan there was for that batch (found by trying all 729): better plans
     /// pay more, and two poor ones in a shift are a bad shift. Worked on foot at the depot; walking
@@ -178,6 +178,8 @@ namespace RealLifeOverhaul
         private readonly string[] _asks = new string[DispatchPlan.Parcels];
         private Action _onBack;
         private ShiftFigures _figures;
+        private DispatchList _list;
+        private Action<int> _assign;
         private string _panelLoads;
         private float _batchAt;
         private int _panelState = int.MinValue;
@@ -215,6 +217,8 @@ namespace RealLifeOverhaul
                 _onVan[v] = () => Choose(van, Time.time);
             }
             _onBack = TakeBack;
+            _assign = AssignFromList;
+            _list = new DispatchList(Ctx.Logger);
             for (int i = 0; i < DispatchPlan.Parcels; i++)
             {
                 _asks[i] = JobText.T("reallife_job_dispatch_panel_ask", "parcel", (i + 1).ToString(), "count", DispatchPlan.Parcels.ToString());
@@ -261,6 +265,7 @@ namespace RealLifeOverhaul
                 _load[v] = 0;
             }
             DispatchPlan.Bounds(_where, out _best, out _worst);
+            _list?.Reopen();
             _current = 0;
             _step = Step.Planning;
             _stepEnd = now + PlanSeconds;
@@ -275,7 +280,7 @@ namespace RealLifeOverhaul
         {
             float cost = DispatchPlan.Cost(_where, _van, _rounds);
             string foot = JobText.T("reallife_job_dispatch_foot", "km", (cost * DispatchPlan.Kilometres).ToString("F1"));
-            DispatchBoard.Instance.Draw(_title, foot, _where, _van, _rounds, _step == Step.Planning && _current < DispatchPlan.Parcels ? _current : -1);
+            _list?.Draw(_title, foot, _where, _van, _rounds, _load, _step == Step.Planning && _current < DispatchPlan.Parcels ? _current : -1, _assign, _onBack);
             _panelState = int.MinValue;
             if (_step == Step.Planning && _current < DispatchPlan.Parcels)
             {
@@ -417,6 +422,12 @@ namespace RealLifeOverhaul
             }
         }
 
+        // A click on a van in the list: the same as the panel's button for it.
+        private void AssignFromList(int van)
+        {
+            Choose(van, Time.time);
+        }
+
         // The panel's "Take one back": the last parcel comes off its van.
         private void TakeBack()
         {
@@ -449,7 +460,7 @@ namespace RealLifeOverhaul
             _stepEnd = now + ResultSeconds;
             string km = (cost * DispatchPlan.Kilometres).ToString("F1");
             string best = (_best * DispatchPlan.Kilometres).ToString("F1");
-            DispatchBoard.Instance.Draw(_title, JobText.T("reallife_job_dispatch_foot_done", "km", km, "best", best), _where, _van, _rounds, -1);
+            _list?.Draw(_title, JobText.T("reallife_job_dispatch_foot_done", "km", km, "best", best), _where, _van, _rounds, _load, -1, _assign, _onBack);
             Show(JobText.T("reallife_job_dispatch_obj_done", "km", km, "best", best));
             JobText.Toast(quality >= 0.85f ? NotificationType.Success : quality >= PoorBelow ? NotificationType.Info : NotificationType.Warning,
                 JobText.Pick(quality >= 0.85f ? Great : quality >= PoorBelow ? Fair : Poor, ref _line), "amount", JobText.Money(pay), 6f);
@@ -475,10 +486,9 @@ namespace RealLifeOverhaul
 
         public override void End(JobEnd why)
         {
-            if (DispatchBoard.Exists)
-            {
-                DispatchBoard.Instance.Hide();
-            }
+            _list?.Hide();
+            _list?.Dispose();
+            _list = null;
             if (Ctx == null)
             {
                 return;

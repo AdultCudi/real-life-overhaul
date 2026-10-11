@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Leisure
@@ -31,14 +33,28 @@ namespace RealLifeOverhaul.Leisure
         private readonly string[] _names = new string[MaxRows];
         private readonly string[] _rights = new string[MaxRows];
         private readonly int[] _before = new int[8];
-        private string[] _keysGarments;
-        private string[] _keysColours;
+        private const int NextId = -1;     // the list's entries: the rows are 0 and up
+        private const int BackId = -2;
+        private const string ButtonOpen = "reallife_leisure_browse_btn_open";
+        private const string ButtonWear = "reallife_leisure_browse_btn_wear";
+        private const string ButtonTakeOff = "reallife_leisure_browse_btn_take_off";
+        private const string ButtonTry = "reallife_leisure_browse_btn_try";
+        private const string ButtonBuy = "reallife_leisure_browse_btn_buy";
+        private const string ButtonOutfit = "reallife_leisure_browse_btn_outfit";
+        private const string ButtonNext = "reallife_leisure_browse_btn_next";
+        private const string ButtonBack = "reallife_leisure_browse_btn_back";
+
+        private LeisureScreen _screen;
+        private TravelList _list;
+        private Action<int> _onPick;
+        private Action _onClosed;
+        private bool _ending;
+        private bool _top;
         private int _section;
         private int _garment;      // 0: the section's garments are listed; otherwise the first entry of the garment whose colourways are
         private int _garmentRow;   // the row to come back to
         private int _rows;
         private int _lit;
-        private int _first;
         private bool _bought;
         private string _foot;
         private string _title;
@@ -83,10 +99,16 @@ namespace RealLifeOverhaul.Leisure
             ClothesShop.Trying = !_wardrobe;
             Anchor = _at;
             Leash = 3.6f;
-            OwnsInteractKey = true;
-            _keysGarments = new[] { T("reallife_leisure_browse_up"), T("reallife_leisure_browse_down"), T("reallife_leisure_browse_section") };
-            _keysColours = new[] { _keysGarments[0], _keysGarments[1], T("reallife_leisure_browse_back") };
-            Choices = _keysGarments;
+            _screen = Ctx.Director.Screen;
+            _list = _screen != null ? _screen.ListFor(this) : null;
+            if (_list == null)
+            {
+                ClothesShop.Trying = false;
+                refusalKey = "reallife_leisure_list_failed";
+                return false;
+            }
+            _onPick = Picked;
+            _onClosed = Closed;
             _foot = T(_wardrobe ? "reallife_leisure_wardrobe_foot" : "reallife_leisure_rack_foot");
             Show(T(_wardrobe ? "reallife_leisure_wardrobe_intro" : "reallife_leisure_rack_intro"));
             _section = 0;
@@ -98,41 +120,46 @@ namespace RealLifeOverhaul.Leisure
         {
         }
 
-        public override void Choose(int choice, float now)
+        // A click on an entry of the list.
+        private void Picked(int id)
         {
-            if (choice == 0)
-            {
-                _lit = _rows == 0 ? 0 : (_lit + _rows - 1) % _rows;
-            }
-            else if (choice == 1)
-            {
-                _lit = _rows == 0 ? 0 : (_lit + 1) % _rows;
-            }
-            else if (_garment > 0)
-            {
-                Back();
-                return;
-            }
-            else
+            if (id == NextId)
             {
                 _section = (_section + 1) % SectionCount;
                 Build(true);
-                return;
             }
-            Build(false);
+            else if (id == BackId)
+            {
+                Back();
+            }
+            else if (id >= 0 && id < _rows)
+            {
+                _lit = id;
+                Act();
+            }
+            Fill();
+        }
+
+        // The list was closed: by the player (the activity ends as if they had walked away) or by the end of the activity itself.
+        private void Closed()
+        {
+            if (!_ending)
+            {
+                Ctx.Director.Quit();
+            }
         }
 
         // From a garment's colourways back to the section's garments, on the row it was opened from.
         private void Back()
         {
             _garment = 0;
-            Choices = _keysGarments;
             Build(true);
             _lit = Mathf.Clamp(_garmentRow, 0, Mathf.Max(0, _rows - 1));
             Build(false);
         }
 
-        public override void Interact(float now)
+        // The button of the lit row.
+        private void Act()
         {
             if (_rows == 0)
             {
@@ -151,7 +178,6 @@ namespace RealLifeOverhaul.Leisure
                 // A garment: its colourways, the one worn (or the first) lit.
                 _garment = entry;
                 _garmentRow = _lit;
-                Choices = _keysColours;
                 Build(true);
                 LeisureSound.Cue(LeisureCue.Tick);
                 return;
@@ -268,7 +294,6 @@ namespace RealLifeOverhaul.Leisure
                     _names[_rows] = T("reallife_leisure_outfit_save", "number", (i + 1).ToString());
                     _rights[_rows++] = string.Empty;
                 }
-                Prompt = T("reallife_leisure_browse_prompt_outfit");
             }
             else if (_garment == 0)
             {
@@ -335,7 +360,6 @@ namespace RealLifeOverhaul.Leisure
             {
                 // A list just opened starts on what is worn.
                 _lit = 0;
-                _first = 0;
                 for (int row = 0; row < _rows && litEntry >= 0; row++)
                 {
                     if (_rowIndex[row] == litEntry)
@@ -345,54 +369,80 @@ namespace RealLifeOverhaul.Leisure
                 }
             }
             _lit = Mathf.Clamp(_lit, 0, Mathf.Max(0, _rows - 1));
-            if (_lit < _first)
-            {
-                _first = _lit;
-            }
-            else if (_lit >= _first + LeisureHud.ListRows)
-            {
-                _first = _lit - LeisureHud.ListRows + 1;
-            }
-            if (!OnOutfits)
-            {
-                Prompt = PromptFor();
-            }
+            _top = fresh;
             Status = _garment > 0
                 ? T("reallife_leisure_browse_status_colours", "row", (_lit + 1).ToString(), "rows", _rows.ToString())
                 : T("reallife_leisure_browse_status", "section", (_section + 1).ToString(), "sections", SectionCount.ToString());
             ListDirty = true;
         }
 
-        private string PromptFor()
+        // The word on a row's button: what pressing it does.
+        private string ButtonFor(int row)
         {
-            if (_rows == 0)
+            if (OnOutfits)
             {
-                return T(_wardrobe ? "reallife_leisure_wardrobe_nothing" : "reallife_leisure_rack_nothing");
+                return ButtonOutfit;
             }
             CharacterCatalogue.Slot slot = _sections[_section];
-            int entry = _rowIndex[_lit];
+            int entry = _rowIndex[row];
             if (_garment == 0 && entry > 0)
             {
-                return T("reallife_leisure_browse_prompt_open");
+                return ButtonOpen;
             }
             string id = slot.Ids[entry];
             bool worn = slot.Index == entry;
             if (ClothesShop.Has(id))
             {
-                return T(worn && entry > 0 ? "reallife_leisure_browse_prompt_take_off" : "reallife_leisure_browse_prompt_wear");
+                return worn && entry > 0 ? ButtonTakeOff : ButtonWear;
             }
-            return worn
-                ? T("reallife_leisure_browse_prompt_buy", "price", JobText.Money(ClothesShop.Price(id)), "tier", T(ClothesShop.TierKey(ClothesShop.Tier(id))))
-                : T("reallife_leisure_browse_prompt_try", "price", JobText.Money(ClothesShop.Price(id)), "tier", T(ClothesShop.TierKey(ClothesShop.Tier(id))));
+            return worn ? ButtonBuy : ButtonTry;
         }
 
-        public override void DrawList(LeisureHud hud)
+        public override void DrawList(LeisureScreen screen)
         {
-            hud.ShowList(_title, _names, _rights, _first, _rows, _lit, _foot);
+            Fill();
+        }
+
+        // The page in the game's list window: a first entry for the next section (or back to the garments) and an entry for each row,
+        // its price or state under its name and the verb on its button. Written when something changes, never on a timer.
+        private void Fill()
+        {
+            ListDirty = false;
+            TravelList list = _list;
+            if (list == null || !list.Alive || _ending)
+            {
+                return;
+            }
+            list.Begin(_title, _foot);
+            if (_garment > 0)
+            {
+                list.Add(BackId, T("reallife_leisure_browse_back"), null, ButtonBack, true);
+            }
+            else
+            {
+                list.Add(NextId, T("reallife_leisure_browse_section"), Status, ButtonNext, true);
+            }
+            if (_rows == 0)
+            {
+                list.AddNote(string.Empty, T(_wardrobe ? "reallife_leisure_wardrobe_nothing" : "reallife_leisure_rack_nothing"), 90f);
+            }
+            for (int row = 0; row < _rows; row++)
+            {
+                list.Add(row, _names[row], _rights[row], ButtonFor(row), true);
+            }
+            list.Open(_onPick, _onClosed);
+            list.Locked = false;
+            if (_top)
+            {
+                _top = false;
+                list.ScrollToTop();
+            }
         }
 
         public override void End()
         {
+            _ending = true;
+            _screen?.CloseList();
             // Whatever is on and is not theirs comes off: back to what they came in wearing, if that is theirs.
             bool reverted = false;
             for (int i = 0; i < CharacterCatalogue.Slots.Length && i < _before.Length; i++)

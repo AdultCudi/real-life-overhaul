@@ -7,6 +7,7 @@ using PlayerActivity;
 using UI;
 using UI.Load;
 using UI.Notification;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Leisure
@@ -50,7 +51,7 @@ namespace RealLifeOverhaul.Leisure
                 {
                     return false;
                 }
-                return director._interactFrame == Time.frameCount
+                return director._interactFrame == Time.frameCount || (director._screen != null && director._screen.TakesKey)
                        || (director._activity != null && (director._activity.Prompt != null || director._activity.OwnsInteractKey))
                        || (director._activity == null && director._offer != LeisureKind.None);
             }
@@ -61,6 +62,9 @@ namespace RealLifeOverhaul.Leisure
 
         /// <summary>True from two drinks up: the car wanders.</summary>
         public static bool Tipsy => Drinks >= BarDrinks.TipsyFrom;
+
+        /// <summary>What leisure shows on screen: the game's panels, lists and notifications (see <see cref="LeisureScreen"/>).</summary>
+        internal LeisureScreen Screen => _screen;
 
         public LeisureKind CurrentKind => _activity != null ? _activity.Kind : LeisureKind.None;
 
@@ -87,7 +91,8 @@ namespace RealLifeOverhaul.Leisure
         private int _offerKeys = -1;
         private float _nextSlow;
         private float _nextTick;
-        private float _cardUntil;
+        private float _nextDraw;
+        private LeisureScreen _screen;
         private float _noOfferUntil;
         private int _interactFrame = -1;
         private Vector3 _lastPosition;
@@ -106,6 +111,7 @@ namespace RealLifeOverhaul.Leisure
         private void Awake()
         {
             Instance = this;
+            _screen = new LeisureScreen(Logger, PressInteract, PressChoose, PressAccept);
             LeisureSound.Logger = Logger;
             PhotoMode.Logger = Logger;
             _props = new LeisureProps(transform);
@@ -133,6 +139,7 @@ namespace RealLifeOverhaul.Leisure
             {
                 Logger?.Error(e);
             }
+            _screen.Dispose();
             _body.Release();
             _corner.TakeIn();
             _night.Clear();
@@ -163,72 +170,114 @@ namespace RealLifeOverhaul.Leisure
                 }
                 if (_activity == null)
                 {
-                    if (_offer != LeisureKind.None && JobKeys.InteractDown() && !UiOpen())
-                    {
-                        _interactFrame = Time.frameCount;
-                        Accept();
-                    }
                     return;
                 }
                 if (Time.timeScale <= 0f || PhotoMode.Active)
                 {
-                    return;   // the game is paused: nothing is played and no key is taken
+                    return;   // the game is paused: nothing is played
                 }
                 float now = Time.time;
-                if (!UiOpen())
-                {
-                    if (_activity.Choices != null)
-                    {
-                        int choice = JobKeys.ChoiceDown();
-                        if (choice >= 0)
-                        {
-                            _activity.Choose(choice, now);
-                        }
-                    }
-                    if ((_activity.Prompt != null || _activity.OwnsInteractKey) && JobKeys.InteractDown())
-                    {
-                        _interactFrame = Time.frameCount;
-                        _activity.Interact(now);
-                    }
-                }
                 if (_body.NeedsFrame)
                 {
                     _body.Frame(Time.deltaTime);
                 }
                 _activity.Frame(now, Time.deltaTime);
+                if (_activity.Meter)
+                {
+                    _screen.Gauge(_activity);   // writes a line only when the cursor is in another cell
+                }
                 if (now >= _nextTick)
                 {
                     _nextTick = now + TickInterval;
                     Tick(now);
                 }
-                if (_activity != null)
+                if (_activity != null && now >= _nextDraw)
                 {
+                    _nextDraw = now + TickInterval;
                     Draw();
                 }
             }
             catch (Exception e)
             {
-                Logger?.Error(e);
-                Logger?.Warn("Leisure: switched off for this session after the error above; the player and everything borrowed were put back.");
-                _broken = true;
-                try
-                {
-                    EndActivity(null, true);
-                }
-                catch (Exception inner)
-                {
-                    Logger?.Error(inner);
-                }
-                _body.Release();
-                _corner.TakeIn();
-                _night.Clear();
-                _rack.TakeIn(_props);
-                _tipsy.Stop();
-                ClothesShop.Trying = false;
-                if (LeisureHud.Exists)
-                {
-                    LeisureHud.Instance.HideActivity(true);
-                }
+                Fail(e);
+            }
+        }
+
+        // A fault: logged once, the player and everything borrowed put back, leisure off for the session.
+        private void Fail(Exception e)
+        {
+            Logger?.Error(e);
+            Logger?.Warn("Leisure: switched off for this session after the error above; the player and everything borrowed were put back.");
+            _broken = true;
+            try
+            {
+                EndActivity(null, true);
+            }
+            catch (Exception inner)
+            {
+                Logger?.Error(inner);
+            }
+            _body.Release();
+            _corner.TakeIn();
+            _night.Clear();
+            _rack.TakeIn(_props);
+            _tipsy.Stop();
+            ClothesShop.Trying = false;
+            _screen.HideActivity();
+            _screen.HideOffer();
+            _screen.CloseList();
+        }
+
+        // The buttons of the game's panel (it runs them on the player's key or a click).
+        private void PressInteract()
+        {
+            if (_broken || _activity == null || Time.timeScale <= 0f || PhotoMode.Active || UiOpen())
+            {
+                return;
+            }
+            try
+            {
+                _interactFrame = Time.frameCount;
+                _activity.Interact(Time.time);
+                _nextDraw = 0f;
+            }
+            catch (Exception e)
+            {
+                Fail(e);
+            }
+        }
+
+        private void PressChoose(int choice)
+        {
+            if (_broken || _activity == null || _activity.Choices == null || Time.timeScale <= 0f || PhotoMode.Active || UiOpen())
+            {
+                return;
+            }
+            try
+            {
+                _activity.Choose(choice, Time.time);
+                _nextDraw = 0f;
+            }
+            catch (Exception e)
+            {
+                Fail(e);
+            }
+        }
+
+        private void PressAccept()
+        {
+            if (_broken || _activity != null || _offer == LeisureKind.None || UiOpen())
+            {
+                return;
+            }
+            try
+            {
+                _interactFrame = Time.frameCount;
+                Accept();
+            }
+            catch (Exception e)
+            {
+                Fail(e);
             }
         }
 
@@ -261,15 +310,6 @@ namespace RealLifeOverhaul.Leisure
                 }
             }
             ClothesShop.Enforce();
-
-            if (_cardUntil > 0f && unscaled >= _cardUntil)
-            {
-                _cardUntil = 0f;
-                if (LeisureHud.Exists)
-                {
-                    LeisureHud.Instance.HideCard();
-                }
-            }
 
             bool indoors = BuildingManager.IsInsideBuilding;
             BuildingManager manager = indoors ? InstanceBehavior<BuildingManager>.Instance : null;
@@ -373,9 +413,9 @@ namespace RealLifeOverhaul.Leisure
                 if (_offerFor != null)
                 {
                     _offerFor = null;
-                    if (LeisureHud.Exists && _activity == null)
+                    if (_activity == null)
                     {
-                        LeisureHud.Instance.HidePrompt();
+                        _screen.HideOffer();
                     }
                 }
                 return;
@@ -398,7 +438,10 @@ namespace RealLifeOverhaul.Leisure
                         break;
                 }
             }
-            LeisureHud.Instance.ShowPrompt(_offerText);
+            if (_activity == null)
+            {
+                _screen.Offer(_offerText, place, _lastPosition);
+            }
         }
 
         private void Accept()
@@ -644,8 +687,6 @@ namespace RealLifeOverhaul.Leisure
             _title = JobText.T(activity.TitleKey);
             _nextTick = Time.time + TickInterval;
             SetOffer(LeisureKind.None, default, null);
-            LeisureHud.Instance.HideCard();
-            _cardUntil = 0f;
             Logger?.Info("Leisure: '" + LeisureKinds.Id(kind) + "' started" + (test ? " (test)" : string.Empty) + (companion != null ? " with company." : "."));
             return true;
         }
@@ -708,49 +749,10 @@ namespace RealLifeOverhaul.Leisure
             return false;
         }
 
+        // Five times a second: the card, the marker and the panel are told what changed (the gauge has its own frame).
         private void Draw()
         {
-            LeisureHud hud = LeisureHud.Instance;
-            LeisureActivity activity = _activity;
-            hud.ShowObjective(_title, activity.Objective, activity.Status);
-            if (activity.Prompt != null)
-            {
-                hud.ShowPrompt(activity.Prompt);
-            }
-            else
-            {
-                hud.HidePrompt();
-            }
-            if (activity.Choices != null)
-            {
-                hud.ShowChoices(activity.Choices);
-            }
-            else
-            {
-                hud.HideChoices();
-            }
-            if (activity.Meter)
-            {
-                hud.ShowMeter(activity.MeterCursor, activity.ZoneCentre, activity.ZoneWidth, activity.SweetWidth, activity.MeterLabel);
-            }
-            else
-            {
-                hud.HideMeter();
-            }
-            if (activity.Marked)
-            {
-                hud.ShowMarkerAt(activity.MarkLabel, activity.MarkAt, _context.Position);
-            }
-            else
-            {
-                hud.HideMarker();
-            }
-            if (activity.ListDirty)
-            {
-                activity.ListDirty = false;
-                activity.DrawList(hud);
-            }
-            hud.Shade(activity.Shade);
+            _screen.Draw(_activity, _title, _context.Position);
         }
 
         private void EndActivity(string reasonKey, bool silent)
@@ -770,10 +772,7 @@ namespace RealLifeOverhaul.Leisure
             {
                 Logger?.Error(e);
             }
-            if (LeisureHud.Exists)
-            {
-                LeisureHud.Instance.HideActivity(false);
-            }
+            _screen.HideActivity();
             _noOfferUntil = Time.unscaledTime + 2.5f;
             string id = LeisureKinds.Id(activity.Kind);
             Logger?.Info("Leisure: '" + id + "' ended (" + (activity.Played ? "played, score " + activity.Score : reasonKey ?? "left") + ").");
@@ -802,8 +801,7 @@ namespace RealLifeOverhaul.Leisure
                     {
                         body += "\n" + JobText.T("reallife_leisure_new_best");
                     }
-                    LeisureHud.Instance.ShowCard(activity.CardTitle, body);
-                    _cardUntil = Time.unscaledTime + CardSeconds;
+                    _screen.Card(activity.CardTitle, body, CardSeconds);
                 }
             }
             else if (reasonKey != null)
@@ -908,8 +906,7 @@ namespace RealLifeOverhaul.Leisure
             {
                 body += "\n" + JobText.T("reallife_leisure_records_next", "place", missing);
             }
-            LeisureHud.Instance.ShowCard(JobText.T("reallife_leisure_records_title"), body);
-            _cardUntil = Time.unscaledTime + 16f;
+            _screen.Card(JobText.T("reallife_leisure_records_title"), body, 16f);
         }
     }
 }

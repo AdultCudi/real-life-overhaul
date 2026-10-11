@@ -305,7 +305,7 @@ namespace RealLifeOverhaul
                 Shapes.Piece("Line", _bay, Shapes.Cube, line, Vector3.zero, Vector3.one);
             }
             // No lettering on the road: seen in the game it ran far outside the box and shimmered. The yellow box is the marking.
-            TMP_FontAsset font = BayLettering ? Hud.Font : null;
+            TMP_FontAsset font = BayLettering ? GameUi.GameFont.Asset : null;
             if (font == null)
             {
                 return;
@@ -535,7 +535,7 @@ namespace RealLifeOverhaul
         // Lettering on one face of the flag. Text is read from behind its own forward.
         private static TextMeshPro Label(Transform parent, Vector3 at, bool back)
         {
-            TMP_FontAsset font = Hud.Font;
+            TMP_FontAsset font = GameUi.GameFont.Asset;
             if (font == null)
             {
                 return null;

@@ -49,7 +49,8 @@ namespace RealLifeOverhaul
 
         /// <summary>True while one of civic life's key prompts is on screen: the mod's own "enter the building" on the same key stands aside.</summary>
         public static bool TakesInteractKey =>
-            Instance != null && (Instance._prompt != PromptKind.None || (Instance.Volunteer != null && Instance.Volunteer.Active));
+            Instance != null && (Instance._prompt != PromptKind.None || (Instance.Volunteer != null && Instance.Volunteer.Active)
+                                 || (Instance._hud != null && Instance._hud.TakesKey));
 
         /// <summary>True while a campaign rally is gathering or on: no other street scene starts beside it (Scripts/Wiring).</summary>
         public static bool RallyOn => Instance != null && Instance._campaign != null && Instance._campaign.NeedsCast;
@@ -68,7 +69,7 @@ namespace RealLifeOverhaul
         private SiteDresser _sites;
         private CampaignWorld _campaign;
         public CampaignWorld Campaign => _campaign;   // read only, for the city map (World/MapLinks)
-        private CivicHud _hud;
+        private CivicScreen _hud;
 
         private bool _loaded, _failed, _worldFailed;
         private bool _effectsOn, _worldOut;
@@ -76,8 +77,11 @@ namespace RealLifeOverhaul
         private int _lastHour = -1, _lastDay = -1;
         private PromptKind _prompt;
         private SiteState _promptSite;
-        private string _voteText, _leafletText, _noticeText;
-        private int _keysVersion = -1;
+        private string _voteFirst, _leafletFirst, _noticeFirst, _canvassFirst, _canvassTitle;
+        private const string ButtonVote = "reallife_civic_panel_vote";
+        private const string ButtonLeaflet = "reallife_civic_panel_leaflet";
+        private const string ButtonNotice = "reallife_civic_panel_notice";
+        private const string ButtonOffer = "reallife_civic_panel_offer";
         private bool _volunteerKey;
         private int _testPolicy;
         private int _cityTries;
@@ -99,7 +103,7 @@ namespace RealLifeOverhaul
             _cast = new CivicCast(gameObject);
             _sites = new SiteDresser(_props, Works, _cast);
             _campaign = new CampaignWorld(_props, Government, City, _cast);
-            _hud = new CivicHud(transform);
+            _hud = new CivicScreen(Logger, PromptPressed);
             Volunteer = new VolunteerShift(Government, this);
             Government.LeversChanged = OnLevers;
             _nextSlow = Time.time + 3f;
@@ -115,6 +119,7 @@ namespace RealLifeOverhaul
                 _effects.Revert();
                 _effectsOn = false;
                 CivicPolicy.Publish(null);
+                _hud.Dispose();
                 _props.Dispose();
             }
             catch (Exception e)
@@ -136,23 +141,31 @@ namespace RealLifeOverhaul
             float now = Time.time;
             try
             {
-                if (_prompt != PromptKind.None && Keys.Down(KeyAction.Interact) && !ThirdPersonCamera.IsUiOpen())
-                {
-                    Interact();
-                }
                 if (Volunteer.Active)
                 {
-                    _volunteerKey |= Keys.Down(KeyAction.Interact) && !ThirdPersonCamera.IsUiOpen();
                     if (now >= _nextFast)
                     {
                         _nextFast = now + 0.2f;
                         Volunteer.Tick(now, TimeHelper.CurrentHour, _volunteerKey);
                         _volunteerKey = false;
-                        _hud.Status(Volunteer.Status);
-                        _hud.Prompt(Volunteer.Prompt);
                         if (!Volunteer.Active)
                         {
                             _hud.HideAll();
+                        }
+                        else
+                        {
+                            _canvassTitle = _canvassTitle ?? CivicText.T("reallife_civic_card_title");
+                            _hud.Status(_canvassTitle, Volunteer.Status);
+                            PlayerController player = PlayerHelper.PlayerController;
+                            if (Volunteer.Prompt != null && player != null)
+                            {
+                                _canvassFirst = _canvassFirst ?? CivicText.T("reallife_civic_door_canvass");
+                                _hud.Offer(_canvassFirst, ButtonOffer, player.transform.position);
+                            }
+                            else
+                            {
+                                _hud.ClearOffer();
+                            }
                         }
                     }
                 }
@@ -409,25 +422,56 @@ namespace RealLifeOverhaul
             }
             if (kind == PromptKind.None)
             {
-                _hud.Prompt(null);
+                _hud.ClearOffer();
                 return;
             }
-            if (_keysVersion != Keys.Version)
+            // A place and a verb, in the game's panel; the words are made once.
+            if (kind == PromptKind.Vote)
             {
-                _keysVersion = Keys.Version;
-                string key = Keys.Label(KeyAction.Interact);
-                _voteText = CivicText.T("reallife_civic_prompt_vote", "key", key);
-                _leafletText = CivicText.T("reallife_civic_prompt_leaflet", "key", key);
-                _noticeText = CivicText.T("reallife_civic_prompt_notice", "key", key);
+                _voteFirst = _voteFirst ?? CivicText.T("reallife_civic_door_vote");
+                _hud.Offer(_voteFirst, ButtonVote, player);
             }
-            _hud.Prompt(kind == PromptKind.Vote ? _voteText : kind == PromptKind.Leaflet ? _leafletText : _noticeText);
+            else if (kind == PromptKind.Leaflet)
+            {
+                _leafletFirst = _leafletFirst ?? CivicText.T("reallife_civic_door_leaflet");
+                _hud.Offer(_leafletFirst, ButtonLeaflet, player);
+            }
+            else
+            {
+                _noticeFirst = _noticeFirst ?? CivicText.T("reallife_civic_door_notice");
+                _hud.Offer(_noticeFirst, ButtonNotice, player);
+            }
+        }
+
+        // The panel's button, on the game's key or a click: the canvassing shift's leaflet, or what the prompt offers.
+        private void PromptPressed()
+        {
+            if (_failed || ThirdPersonCamera.IsUiOpen())
+            {
+                return;
+            }
+            try
+            {
+                if (Volunteer.Active)
+                {
+                    _volunteerKey = true;
+                }
+                else if (_prompt != PromptKind.None)
+                {
+                    Interact();
+                }
+            }
+            catch (Exception e)
+            {
+                Fail(e);
+            }
         }
 
         private void Interact()
         {
             PromptKind kind = _prompt;
             _prompt = PromptKind.None;
-            _hud.Prompt(null);
+            _hud.ClearOffer();
             switch (kind)
             {
                 case PromptKind.Vote:

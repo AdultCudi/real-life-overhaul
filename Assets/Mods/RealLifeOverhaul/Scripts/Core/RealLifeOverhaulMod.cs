@@ -759,6 +759,7 @@ namespace RealLifeOverhaul
             _root.AddComponent<CivicDirector>();   // city government, elections and construction sites (Scripts/Civic): its own cast of five
             _root.AddComponent<Family.FamilyDirector>();   // a partner at home, engagement and wedding, children, relatives (Scripts/Family)
             CarTuning.Logger = context.Logger;
+            SpeedReading.Logger = context.Logger;
             CarMeasure.Logger = context.Logger;
             _root.AddComponent<CarTuning>();
             _root.AddComponent<Speedometer>();

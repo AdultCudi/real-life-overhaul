@@ -1354,7 +1354,7 @@ namespace RealLifeOverhaul
         // Amber lettering on a face of a board. Text is read from behind its own forward.
         private static void Letter(Transform parent, Vector3 at, bool facingForward, float width, string words)
         {
-            TMP_FontAsset font = Hud.Font;
+            TMP_FontAsset font = GameUi.GameFont.Asset;
             if (font == null)
             {
                 return;

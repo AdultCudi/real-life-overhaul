@@ -246,7 +246,7 @@ namespace RealLifeOverhaul
             Shapes.Piece("Rule", root, Shapes.Cube, brass, new Vector3(0f, 1.27f, 0.004f), new Vector3(1.18f, 0.03f, 0.05f));
             Shapes.Piece("Cap", root, Shapes.Cube, brass, new Vector3(0f, 1.85f, 0f), new Vector3(1.36f, 0.04f, 0.08f));
 
-            TMP_FontAsset font = Hud.Font;
+            TMP_FontAsset font = GameUi.GameFont.Asset;
             if (font != null)
             {
                 var label = new GameObject("Lettering");

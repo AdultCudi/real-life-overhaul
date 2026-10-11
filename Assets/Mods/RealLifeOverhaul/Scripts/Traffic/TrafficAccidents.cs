@@ -216,6 +216,7 @@ namespace RealLifeOverhaul
         private bool _fled;          // a driver ran for it; changes how the scene is reported
         private bool _single;        // one car on its own: worded as that, never as a collision between drivers
         private string _markerLabel;
+        private readonly RealLifeOverhaul.GameUi.GuideMark _mark = new RealLifeOverhaul.GameUi.GuideMark();
 
         // Staging, kept while a rolling car comes to rest.
         private Wreck _leadWreck;
@@ -1694,7 +1695,7 @@ namespace RealLifeOverhaul
             {
                 _markerLabel = "reallife_accident_marker".GetLocalization();
             }
-            Hud.Instance.ShowMarkerAt(_markerLabel, _scene);
+            _mark.Show(_scene, _markerLabel);   // the game's destination marker
         }
 
         // One unit's visit: wait to be sent, drive there, pull up, stay while its crew works, drive away.
@@ -2909,10 +2910,7 @@ namespace RealLifeOverhaul
             _seatsEmptied = false;
             _conesIn = false;
             _exitWrecks.Clear();
-            if (Hud.Exists)
-            {
-                Hud.Instance.HideMarker();
-            }
+            _mark.Hide();
 
             // Units still out: one that is moving goes back to traffic or carries on leaving; one that is standing drives
             // off along its lane now that the road is open (or is taken off the road): never handed back standing

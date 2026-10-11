@@ -1,6 +1,7 @@
 using System;
 using BAModAPI;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UnityEngine;
 
@@ -52,18 +53,28 @@ namespace RealLifeOverhaul
         private bool _stepSaid;
         private PlayerController _held;
         private ActivityAnimator _animator;
-        private string _status, _prompt, _label;
-        private int _keysVersion = -1;
+        private string _label;
+        private readonly DoorPanel _door;          // the game's own panel over the litter, with one button
+        private readonly GuideMark _mark = new GuideMark();
+        private readonly Action _onPick;           // made once: the panel's button
+        private readonly Func<string> _doorWhat;
+        private ShiftCard _card;                   // a copy of the game's job panel: the pieces picked and the hours owed
+        private bool _cardTried;
+        private string _headline, _pieces;
+        private int _owed = -1;
 
         public CommunityService(IModLogger logger)
         {
             _logger = logger;
+            _door = new DoorPanel(logger, "Justice check (litter panel)");
+            _onPick = _door.Press(PickPressed);
+            _doorWhat = () => "litter";
         }
 
         public bool Active { get; private set; }
 
-        /// <summary>True while the interaction key would pick a piece up.</summary>
-        public bool WantsKey => Active && _inReach && !_picking && !_stepping;
+        /// <summary>True while the panel's key would pick a piece up.</summary>
+        public bool WantsKey => Active && (_door.TakesKey || (_inReach && !_picking && !_stepping));
 
         /// <summary>Begins a shift where the player stands. Says why not if it cannot.</summary>
         public JusticeRefusal Start(PlayerController player)
@@ -98,13 +109,68 @@ namespace RealLifeOverhaul
             return JusticeRefusal.None;
         }
 
-        /// <summary>Five times a second while a shift is on.</summary>
+        /// <summary>Five times a second while a shift is on: the shift itself, then what is on screen for it.</summary>
         public void Tick(float now, PlayerController player)
         {
             if (!Active)
             {
                 return;
             }
+            Run(now, player);
+            if (Active && player != null)
+            {
+                Present(player);
+            }
+        }
+
+        // The marker leads to the litter and the panel stands over it while it can be picked up; both are told only what changed
+        // (a panel the game refused is tried again on the next tick).
+        private void Present(PlayerController player)
+        {
+            if (_picking || _stepping)
+            {
+                _mark.Hide();
+                _door.Hide("the litter is being picked up");
+                return;
+            }
+            _mark.Show(_at, _label);
+            if (!_inReach)
+            {
+                _door.Hide("out of reach of the litter");
+                return;
+            }
+            WorldPanel panel = _door.Panel;
+            panel.Lines(JusticeText.T("reallife_justice_door_litter"), null, null, WorldPanel.White());
+            panel.Button(0, ButtonPick, _onPick, true, true);
+            panel.Button(1, null, null, false, false);
+            panel.Button(2, null, null, false, false);
+            panel.Button(3, null, null, false, false);
+            _door.Show(_at, player.transform.position, 1.2f, _doorWhat);
+        }
+
+        private const string ButtonPick = "reallife_justice_button_pick";
+
+        // The panel's button: the key was pressed by the litter.
+        private void PickPressed()
+        {
+            PlayerController player = PlayerHelper.PlayerController;
+            if (!Active || player == null || !_inReach || _picking || _stepping || ThirdPersonCamera.IsUiOpen())
+            {
+                return;
+            }
+            try
+            {
+                Pick(player);
+            }
+            catch (Exception e)
+            {
+                _logger?.Error(e);
+                Stop(false);
+            }
+        }
+
+        private void Run(float now, PlayerController player)
+        {
             if (player == null || BuildingManager.IsInsideBuilding || PlayerHelper.IsUsingVehicle || PoliceAttention.IsBusy || JobDirector.OnShift
                 || now - _startedAt > ShiftMostSeconds || TimeHelper.CurrentHour >= 22 || TimeHelper.CurrentHour < 6)
             {
@@ -151,38 +217,6 @@ namespace RealLifeOverhaul
                 return;
             }
             Status();
-        }
-
-        /// <summary>Every frame while a shift is on: the marker, the prompt and the key. Nothing is allocated.</summary>
-        public void Frame(PlayerController player)
-        {
-            if (!Active || player == null)
-            {
-                return;
-            }
-            JusticeHud hud = JusticeHud.Instance;
-            if (_picking || _stepping)
-            {
-                hud.HideMarker();
-                hud.HidePrompt();
-                return;
-            }
-            hud.ShowMarkerAt(_label, _at, player.transform.position);
-            if (!_inReach)
-            {
-                hud.HidePrompt();
-                return;
-            }
-            if (_prompt == null || _keysVersion != Keys.Version)
-            {
-                _keysVersion = Keys.Version;
-                _prompt = JusticeText.T("reallife_justice_cs_prompt");
-            }
-            hud.ShowPrompt(_prompt);
-            if (JobKeys.InteractDown() && !ThirdPersonCamera.IsUiOpen())
-            {
-                Pick(player);
-            }
         }
 
         // The key was pressed by the litter. With the clip made for it they are first walked, by the game itself, to
@@ -352,10 +386,9 @@ namespace RealLifeOverhaul
             {
                 _litter.SetActive(false);
             }
-            if (JusticeHud.Exists)
-            {
-                JusticeHud.Instance.HideAll();
-            }
+            _mark.Hide();
+            _door.Hide("the shift is over");
+            _card?.Show(false);
             int hours = whole && _picked >= JusticeLaw.CommunityShiftPieces ? JusticeLaw.CommunityShiftHours
                 : _picked * JusticeLaw.CommunityShiftHours / JusticeLaw.CommunityShiftPieces;   // half an hour a piece, whole hours only
             hours = Mathf.Min(hours, JusticeState.CommunityHours);
@@ -385,6 +418,8 @@ namespace RealLifeOverhaul
         public void Dispose()
         {
             Stop(false);
+            _card?.Destroy();
+            _card = null;
             if (_litter != null)
             {
                 UnityEngine.Object.Destroy(_litter);
@@ -392,10 +427,42 @@ namespace RealLifeOverhaul
             }
         }
 
+        // The shift's figures on the copy of the game's job panel: the pieces picked and the hours still owed. Without that copy
+        // the pieces picked are sent as a notification each time, as the line used to be shown.
         private void Status()
         {
-            _status = JusticeText.T("reallife_justice_cs_status", "done", JusticeText.N(_picked), "pieces", JusticeText.N(JusticeLaw.CommunityShiftPieces));
-            JusticeHud.Instance.ShowStatus(_status);
+            string pieces = JusticeText.T("reallife_justice_cs_status", "done", JusticeText.N(_picked), "pieces", JusticeText.N(JusticeLaw.CommunityShiftPieces));
+            if (!_cardTried || (_card != null && !_card.Alive))
+            {
+                _cardTried = true;
+                _card = ShiftCard.Make(_logger);
+                if (Meta.Dev.Verbose)
+                {
+                    _logger?.Info("Justice check (community card): " + (_card != null ? "a copy of the game's job panel is ready: PASS" : "the game's job panel could not be copied; the pieces are sent as notifications: FAIL") + ".");
+                }
+            }
+            if (_card == null)
+            {
+                JusticeText.Toast(NotificationType.Info, "reallife_justice_raw", "text", pieces, 4f);
+                return;
+            }
+            if (_headline == null)
+            {
+                _headline = JusticeText.T("reallife_justice_cs_card_title");
+            }
+            if (_owed != JusticeState.CommunityHours)
+            {
+                _owed = JusticeState.CommunityHours;
+                _pieces = JusticeText.T("reallife_justice_cs_card_owed", "hours", JusticeText.N(_owed));
+            }
+            _card.Title(_headline);
+            _card.Line(0, pieces, WorldPanel.White());
+            _card.Line(1, _pieces, WorldPanel.White());
+            for (int i = 2; i < ShiftCard.Lines; i++)
+            {
+                _card.Line(i, null, WorldPanel.White());
+            }
+            _card.Show(true);
         }
 
         // The next piece: on pavement between 9 and 36 m away, clear of everything, somewhere the player can walk to.

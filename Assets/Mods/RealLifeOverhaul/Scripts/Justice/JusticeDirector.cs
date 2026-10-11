@@ -7,6 +7,7 @@ using Helpers;
 using Streets;
 using UI;
 using UI.Guiders;
+using RealLifeOverhaul.GameUi;
 using UI.Load;
 using UI.Notification;
 using UnityEngine;
@@ -67,21 +68,26 @@ namespace RealLifeOverhaul
         private int _lastUnlicensedDay;
 
         private int _promptKind;            // 0 none, 1 hearing, 2 surrender, 3 community service, 4 a lawyer's desk
-        private string _prompt;
-        private int _promptKeys = -1;
         private int _promptShownKind;
         private bool _markCourt;
         private string _courtLabel;
+        private DoorPanel _door;            // the game's own panel over the courthouse door or the lawyer's desk
+        private Action _onUse;              // made once: the panel's button
+        private Func<string> _doorWhat;     // made once: for the log
+        private GuideMark _courtMark = new GuideMark();
 
         /// <summary>False once the justice system has switched itself off after repeated errors.</summary>
         public bool Working => !_broken && isActiveAndEnabled;
 
         /// <summary>True while the interaction key is the justice system's.</summary>
-        public bool WantsKey => _promptKind != 0 || (_community != null && _community.WantsKey);
+        public bool WantsKey => (_door != null && _door.TakesKey) || (_community != null && _community.WantsKey);
 
         private void Awake()
         {
             Instance = this;
+            _door = new DoorPanel(Logger, "Justice check (door panel)");
+            _onUse = _door.Press(UseDoor);
+            _doorWhat = DoorWhat;
             _onSave = OnSaveGame;   // one delegate for the life of the component: re-hooking it every second allocates nothing new
             JusticeState.Reset();
             _hold = new JusticeHold(Logger);
@@ -100,8 +106,10 @@ namespace RealLifeOverhaul
                 _court.Dispose();
                 if (JusticePanel.Exists)
                 {
-                    JusticePanel.Instance.Close();
+                    JusticePanel.Instance.Dispose();
                 }
+                _door.Hide("the director went with the city");
+                _courtMark.Hide();
                 _hold.ReleaseAll(null);   // a routine that was running dies with us: what it had changed is put back here
             }
             catch (Exception e)
@@ -125,24 +133,10 @@ namespace RealLifeOverhaul
             {
                 if (_community.Active)
                 {
-                    PlayerController player = PlayerHelper.PlayerController;
-                    _community.Frame(player);
                     if (Time.time >= _nextFast)
                     {
                         _nextFast = Time.time + 0.2f;
-                        _community.Tick(Time.time, player);
-                    }
-                }
-                else if (_promptKind != 0 && JobKeys.InteractDown() && !ThirdPersonCamera.IsUiOpen())
-                {
-                    UsePrompt();
-                }
-                if (_markCourt)
-                {
-                    PlayerController player = PlayerHelper.PlayerController;
-                    if (player != null)
-                    {
-                        JusticeHud.Instance.ShowMarkerAt(_courtLabel, _court.Front, player.transform.position);
+                        _community.Tick(Time.time, PlayerHelper.PlayerController);
                     }
                 }
                 if (Time.unscaledTime >= _nextSlow)
@@ -164,6 +158,24 @@ namespace RealLifeOverhaul
         public void PanelFault(Exception e)
         {
             Fault(e);
+        }
+
+        /// <summary>True while the Legal file is the page on screen (the only page that holds nobody).</summary>
+        public bool FileIsOpen => _fileOpen;
+
+        /// <summary>The game's list window could not be copied: everything is let go and the justice system stays off for the session.</summary>
+        public void UiLost()
+        {
+            Logger?.Warn("Justice check (page list): the game's list window could not be copied. Switched off for this session; cases and sentences are kept in the save: FAIL.");
+            try
+            {
+                Letgo();
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+            _broken = true;
         }
 
         // Whatever went wrong, the player is let go and the screens are taken down. Three faults and it stays off.
@@ -1330,39 +1342,72 @@ namespace RealLifeOverhaul
                     }
                 }
             }
-            if (mark != _markCourt)
+            _promptKind = kind;
+            if (mark)
             {
-                _markCourt = mark;
-                if (mark)
+                // The marker is the game's destination marker; a job or an outing that has it keeps it, and it is tried again next second.
+                _markCourt = true;
+                if (_courtLabel == null)
                 {
                     _courtLabel = JusticeText.T("reallife_justice_marker_court");
                 }
-                else if (JusticeHud.Exists)
-                {
-                    JusticeHud.Instance.HideMarker();
-                }
+                _courtMark.Show(_court.Front, _courtLabel);
             }
-            _promptKind = kind;
+            else if (_markCourt)
+            {
+                _markCourt = false;
+                _courtMark.Hide();
+            }
             if (kind == 0)
             {
                 if (_promptShownKind != 0)
                 {
                     _promptShownKind = 0;
-                    if (JusticeHud.Exists)
-                    {
-                        JusticeHud.Instance.HidePrompt();
-                    }
+                    _door.Hide("nothing to offer here now");
                 }
                 return;
             }
-            if (kind != _promptShownKind || _promptKeys != Keys.Version)
+            WorldPanel panel = _door.Panel;
+            if (kind != _promptShownKind)
             {
                 _promptShownKind = kind;
-                _promptKeys = Keys.Version;
-                _prompt = JusticeText.T(kind == 1 ? "reallife_justice_prompt_hearing" : kind == 2 ? "reallife_justice_prompt_surrender"
-                    : kind == 3 ? "reallife_justice_prompt_community" : "reallife_justice_prompt_lawyer");
+                panel.Lines(JusticeText.T(kind == 4 ? "reallife_justice_door_lawfirm" : "reallife_justice_door_courthouse"),
+                    JusticeText.T(kind == 1 ? "reallife_justice_door_hearing" : kind == 2 ? "reallife_justice_door_warrant"
+                        : kind == 3 ? "reallife_justice_door_community" : "reallife_justice_door_lawyer"), null, WorldPanel.White());
+                panel.Button(0, kind == 1 ? ButtonHearing : kind == 2 ? ButtonSurrender : kind == 3 ? ButtonCommunity : ButtonLawyer, _onUse, true, true);
+                panel.Button(1, null, null, false, false);
+                panel.Button(2, null, null, false, false);
+                panel.Button(3, null, null, false, false);
             }
-            JusticeHud.Instance.ShowPrompt(_prompt);
+            Vector3 standing = player.transform.position;
+            _door.Show(kind == 4 ? standing : _court.Front, standing, kind == 4 ? 2.1f : 2.4f, _doorWhat);
+        }
+
+        private const string ButtonHearing = "reallife_justice_button_hearing";
+        private const string ButtonSurrender = "reallife_justice_button_surrender";
+        private const string ButtonCommunity = "reallife_justice_button_community";
+        private const string ButtonLawyer = "reallife_justice_button_lawyer";
+
+        private string DoorWhat()
+        {
+            return _promptKind == 1 ? "hearing" : _promptKind == 2 ? "surrender" : _promptKind == 3 ? "community service" : "lawyer's desk";
+        }
+
+        // The panel's button, on the game's key or a click.
+        private void UseDoor()
+        {
+            if (_promptKind == 0 || ThirdPersonCamera.IsUiOpen())
+            {
+                return;
+            }
+            try
+            {
+                UsePrompt();
+            }
+            catch (Exception e)
+            {
+                Fault(e);
+            }
         }
 
         private void HidePrompt()
@@ -1370,11 +1415,8 @@ namespace RealLifeOverhaul
             _promptKind = 0;
             _promptShownKind = 0;
             _markCourt = false;
-            if (JusticeHud.Exists)
-            {
-                JusticeHud.Instance.HidePrompt();
-                JusticeHud.Instance.HideMarker();
-            }
+            _door.Hide("another screen has the player");
+            _courtMark.Hide();
         }
 
         private void UsePrompt()

@@ -8,6 +8,8 @@ using Helpers;
 using UI;
 using UI.Load;
 using UI.Notification;
+using Localizor;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Family
@@ -52,7 +54,7 @@ namespace RealLifeOverhaul.Family
         public static FamilyDirector Instance { get; private set; }
 
         /// <summary>True while one of family life's key prompts is on screen: the mod's own E/F (enter a door, get in a car) stands aside.</summary>
-        public static bool TakesInteractKey => Instance != null && Instance._promptOn;
+        public static bool TakesInteractKey => Instance != null && Instance._door != null && Instance._door.TakesKey;
 
         internal FamilyCast Cast;
         internal FamilyProps Props;
@@ -70,6 +72,12 @@ namespace RealLifeOverhaul.Family
         private bool _failed;
         private bool _social;     // whether the partner came from Social when the phone contacts were last set up
 
+        private DoorPanel _door;          // the game's own panel over the person or place a prompt is about
+        private ShiftCard _card;          // a copy of the game's job panel for the objective
+        private bool _cardTried;
+        private Action _onPrompt;         // made once: the panel's button
+        private Func<string> _promptWhat; // made once: for the log
+        private string _promptButton;     // the button's locale key (the game writes the player's key after it)
         private bool _promptOn;
         private bool _promptWanted;
         private string _promptKey;
@@ -86,6 +94,9 @@ namespace RealLifeOverhaul.Family
         private void Awake()
         {
             Instance = this;
+            _door = new DoorPanel(Logger, "Family check (prompt panel)");
+            _onPrompt = _door.Press(PromptPressed);
+            _promptWhat = PromptWhat;
             FamilyState.Logger = Logger;
             FamilyState.Reset();
             FamilyPlaces.Reset();
@@ -104,10 +115,9 @@ namespace RealLifeOverhaul.Family
             {
                 Cast.Dispose();
                 _bodyProps.Dispose();
-                if (FamilyHud.Exists)
-                {
-                    Destroy(FamilyHud.Instance.gameObject);
-                }
+                _door.Hide("the director went with the city");
+                _card?.Destroy();
+                _card = null;
             }
             catch (Exception e)
             {
@@ -179,13 +189,6 @@ namespace RealLifeOverhaul.Family
                 {
                     Cast.Tick(Time.deltaTime);
                 }
-                if (_promptOn && JobKeys.InteractDown() && CanAct())
-                {
-                    Action act = _promptAction;
-                    ClearPrompt();
-                    act?.Invoke();
-                }
-
                 float now = Time.time;
                 if (now < _nextTick)
                 {
@@ -250,9 +253,9 @@ namespace RealLifeOverhaul.Family
             {
                 ClearPrompt();
             }
-            if (!_objectiveWanted && FamilyHud.Exists)
+            if (!_objectiveWanted)
             {
-                FamilyHud.Instance.HideObjective();
+                _card?.Show(false);
                 _objectiveKey = null;
             }
         }
@@ -286,12 +289,9 @@ namespace RealLifeOverhaul.Family
                 Body.Release();
                 FamilyPlaces.Unguide();
                 _questions.Clear();
-                _promptOn = false;
-                if (FamilyHud.Exists)
-                {
-                    FamilyHud.Instance.HidePrompt();
-                    FamilyHud.Instance.HideObjective();
-                }
+                ClearPrompt();
+                _card?.Show(false);
+                _objectiveKey = null;
             }
             catch (Exception e)
             {
@@ -342,10 +342,11 @@ namespace RealLifeOverhaul.Family
         }
 
         /// <summary>
-        /// The key prompt for this tick. Whoever wants one asks every tick; when nobody does it
-        /// goes. The line is rebuilt only when the key or what fills it changes.
+        /// The prompt for this tick, as the game's own panel over <paramref name="over"/> (a person; the player when null) with one
+        /// button, which the game labels with the player's key. Whoever wants one asks every tick; when nobody does it goes. The
+        /// words are rebuilt only when the key or what fills it changes; the panel is told nothing when nothing changed.
         /// </summary>
-        internal void Prompt(string key, string fill, Action action)
+        internal void Prompt(string key, string fill, Action action, Transform over = null)
         {
             if (_promptWanted)
             {
@@ -357,35 +358,77 @@ namespace RealLifeOverhaul.Family
             {
                 _promptKey = key;
                 _promptFill = fill;
-                _promptText = FamilyText.T(key, new Args { Name = fill, Child = fill, Place = fill });
+                string line = FamilyText.Fill(key.GetLocalization().Replace("{key}: ", string.Empty), new Args { Name = fill, Child = fill, Place = fill });
+                _promptText = line.Length > 0 ? char.ToUpperInvariant(line[0]) + line.Substring(1) : line;
+                _promptButton = key.Replace("_prompt_", "_button_");
             }
-            if (CanAct())
+            PlayerController player = PlayerHelper.PlayerController;
+            if (CanAct() && player != null)
             {
-                _promptOn = true;
-                FamilyHud.Instance.ShowPrompt(_promptText);
+                WorldPanel panel = _door.Panel;
+                panel.Lines(_promptText, null, null, WorldPanel.White());
+                panel.Button(0, _promptButton, _onPrompt, true, true);
+                panel.Button(1, null, null, false, false);
+                panel.Button(2, null, null, false, false);
+                panel.Button(3, null, null, false, false);
+                panel.Follow = over;
+                panel.FollowLift = 2.1f;
+                _promptOn = _door.Show(player.transform.position, player.transform.position, 2.1f, _promptWhat);
             }
-            else if (_promptOn)
+            else if (_promptOn || _door.Up)
             {
-                _promptOn = false;
-                FamilyHud.Instance.HidePrompt();
+                ClearPrompt();
+            }
+        }
+
+        private string PromptWhat()
+        {
+            return _promptKey ?? string.Empty;
+        }
+
+        // The panel's button (the game runs it on the player's key or a click): the prompt's own action, once.
+        private void PromptPressed()
+        {
+            if (!CanAct())
+            {
+                return;
+            }
+            try
+            {
+                Action act = _promptAction;
+                ClearPrompt();
+                act?.Invoke();
+            }
+            catch (Exception e)
+            {
+                _failed = true;
+                Logger?.Error(e);
+                Logger?.Warn("Family: switched off for this session after the error above. The save keeps the family as it was.");
+                Stop(false);
             }
         }
 
         private void ClearPrompt()
         {
             _promptAction = null;
-            if (_promptOn)
+            if (_promptOn || _door.Up)
             {
                 _promptOn = false;
-                FamilyHud.Instance.HidePrompt();
+                _door.Panel.Follow = null;
+                _door.Hide("nothing to offer here now");
             }
         }
 
-        /// <summary>The two lines under the top bar for this tick: where to be, and until when.</summary>
+        /// <summary>
+        /// The objective for this tick, on the copy of the game's job panel at the top right: the headline says what is going on and
+        /// the first line what to do, where and by when. Without that panel the line goes out as one of the game's notifications
+        /// each time it changes. Words are rebuilt only when the objective changes.
+        /// </summary>
         internal void Objective(string titleKey, string lineKey, string fill, string child = null)
         {
             _objectiveWanted = true;
-            if (!ReferenceEquals(lineKey, _objectiveKey) || fill != _objectiveFill || child != _objectiveChild)
+            bool changed = !ReferenceEquals(lineKey, _objectiveKey) || fill != _objectiveFill || child != _objectiveChild;
+            if (changed)
             {
                 _objectiveKey = lineKey;
                 _objectiveFill = fill;
@@ -393,14 +436,35 @@ namespace RealLifeOverhaul.Family
                 _objectiveTitle = FamilyText.T(titleKey);
                 _objectiveLine = FamilyText.T(lineKey, new Args { Name = Partner.Name, Place = fill, Child = child ?? fill, Text = fill, N = fill });
             }
+            if (!_cardTried || (_card != null && !_card.Alive))
+            {
+                _cardTried = true;
+                _card = ShiftCard.Make(Logger);
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Family check (objective card): " + (_card != null ? "a copy of the game's job panel is ready: PASS" : "the game's job panel could not be copied; objectives are sent as notifications: FAIL") + ".");
+                }
+            }
+            if (_card == null)
+            {
+                if (changed && !ThirdPersonCamera.IsUiOpen())
+                {
+                    FamilyText.Toast(NotificationType.Info, "reallife_family_text", new Args { Text = _objectiveTitle + ": " + _objectiveLine }, 8f);
+                }
+                return;
+            }
             if (ThirdPersonCamera.IsUiOpen())
             {
-                FamilyHud.Instance.HideObjective();
+                _card.Show(false);
+                return;
             }
-            else
+            _card.Title(_objectiveTitle);
+            _card.Line(0, _objectiveLine, WorldPanel.White());
+            for (int i = 1; i < ShiftCard.Lines; i++)
             {
-                FamilyHud.Instance.ShowObjective(_objectiveTitle, _objectiveLine);
+                _card.Line(i, null, WorldPanel.White());
             }
+            _card.Show(true);
         }
 
         /// <summary>
@@ -572,8 +636,6 @@ namespace RealLifeOverhaul.Family
                     if (phone) uis.smartphoneUI.gameObject.SetActive(false);
                     if (top) uis.topBar.gameObject.SetActive(false);
                 }
-                if (FamilyHud.Exists) FamilyHud.Instance.Show(false);
-                ShowCoreHud(false);
             }
             catch (Exception e)
             {
@@ -595,8 +657,6 @@ namespace RealLifeOverhaul.Family
                     if (phone) uis.smartphoneUI.gameObject.SetActive(true);
                     if (top) uis.topBar.gameObject.SetActive(true);
                 }
-                if (FamilyHud.Exists) FamilyHud.Instance.Show(true);
-                ShowCoreHud(true);
                 if (file != null)
                 {
                     Logger?.Info("Family: photograph written to " + file);
@@ -606,18 +666,6 @@ namespace RealLifeOverhaul.Family
             catch (Exception e)
             {
                 Logger?.Error(e);
-            }
-        }
-
-        private static void ShowCoreHud(bool show)
-        {
-            if (Hud.Exists && Hud.Instance.TryGetComponent(out Canvas canvas))
-            {
-                canvas.enabled = show;
-            }
-            if (JobHud.Exists && JobHud.Instance.TryGetComponent(out Canvas jobs))
-            {
-                jobs.enabled = show;
             }
         }
 

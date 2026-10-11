@@ -89,6 +89,23 @@ namespace RealLifeOverhaul
             return text;
         }
 
+        /// <summary>
+        /// A prompt's words for the game's panel, which writes the key on the button itself: the text with its leading "{key}: "
+        /// taken off and a capital letter. Builds a string: for when something changes, never per frame.
+        /// </summary>
+        public static string Say(string key, Dictionary<string, string> data)
+        {
+            string text = key.GetLocalization().Replace("{key}: ", string.Empty);
+            if (data != null && text.IndexOf('{') >= 0)
+            {
+                foreach (KeyValuePair<string, string> pair in data)
+                {
+                    text = text.Replace("{" + pair.Key + "}", pair.Value ?? string.Empty);
+                }
+            }
+            return Capital(text);
+        }
+
         public static string First(SocialPerson person)
         {
             int space = person.Name.IndexOf(' ');
