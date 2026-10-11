@@ -303,6 +303,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             Playing = clipName;
+            ClipLibrary.Played(clipName, "a street character");
             return true;
         }
 
@@ -332,6 +333,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             PlayingOver = clipName;
+            ClipLibrary.Played(clipName, "a street character");
             return true;
         }
 

@@ -14,7 +14,10 @@ namespace RealLifeOverhaul.Leisure
     /// with the three choice keys. Trying on is done on the player themselves: the look goes on
     /// at once through the catalogue, exactly as picking it on the options page would, and
     /// whatever was tried and not bought comes off again when the list closes (walking away
-    /// closes it). The player is never held.
+    /// closes it). At a rack the player's upper body goes through the rail (<c>browse_rack</c>, over the
+    /// game's own legs, so they are not held) and a garment tried on is turned round in once
+    /// (<c>try_on_turn</c>, whole body: held on the spot for its three seconds, then the rail again). The
+    /// director takes both off on every way out; a missing clip leaves the player as they were.
     /// </summary>
     internal sealed class ClothesBrowser : LeisureActivity
     {
@@ -33,6 +36,9 @@ namespace RealLifeOverhaul.Leisure
         private readonly string[] _names = new string[MaxRows];
         private readonly string[] _rights = new string[MaxRows];
         private readonly int[] _before = new int[8];
+        private const string BrowseClip = "browse_rack";
+        private const string TurnClip = "try_on_turn";
+        private static bool _saidMissing;   // the log line for a rack without its clips: once a session
         private const int NextId = -1;     // the list's entries: the rows are 0 and up
         private const int BackId = -2;
         private const string ButtonOpen = "reallife_leisure_browse_btn_open";
@@ -56,6 +62,7 @@ namespace RealLifeOverhaul.Leisure
         private int _rows;
         private int _lit;
         private bool _bought;
+        private float _turnUntil;          // while try_on_turn plays, when it is over; 0 otherwise
         private string _foot;
         private string _title;
 
@@ -111,6 +118,8 @@ namespace RealLifeOverhaul.Leisure
             _onClosed = Closed;
             _foot = T(_wardrobe ? "reallife_leisure_wardrobe_foot" : "reallife_leisure_rack_foot");
             Show(T(_wardrobe ? "reallife_leisure_wardrobe_intro" : "reallife_leisure_rack_intro"));
+            _turnUntil = 0f;
+            Browse();
             _section = 0;
             Build(true);
             return true;
@@ -118,6 +127,57 @@ namespace RealLifeOverhaul.Leisure
 
         public override void Tick(float now)
         {
+            // The turn is over (a one-off ends by itself): the player is let go and goes back to the rail.
+            if (_turnUntil > 0f && now >= _turnUntil)
+            {
+                _turnUntil = 0f;
+                Ctx.Body.Rest(0.25f);
+                Ctx.Body.Free();
+                Browse();
+            }
+        }
+
+        // The rail: the right hand through the hangers, the upper body only. At a rack, not at a wardrobe.
+        private void Browse()
+        {
+            if (_wardrobe || Ctx.Body.Over(BrowseClip, BodyMask.Full, null, 0.35f))
+            {
+                return;
+            }
+            Missing(BrowseClip);
+        }
+
+        // A garment on: once round in front of the mirror, held where they stand, and the rail again when it is done.
+        private void TurnRound()
+        {
+            if (_wardrobe || _turnUntil > 0f)
+            {
+                return;
+            }
+            if (!ClipLibrary.TryGet(TurnClip, out CityClip turn) || !Ctx.Body.Usable)
+            {
+                Missing(TurnClip);
+                return;
+            }
+            Ctx.Body.Rest(0.2f);
+            Ctx.Body.Hold();
+            if (Ctx.Body.Play(TurnClip, null, 0.25f, ClipEnd.Return))
+            {
+                _turnUntil = Time.time + turn.Length;
+                return;
+            }
+            Ctx.Body.Free();
+            Browse();
+            Missing(TurnClip);
+        }
+
+        private void Missing(string clip)
+        {
+            if (Meta.Dev.Verbose && !_saidMissing)
+            {
+                _saidMissing = true;
+                Ctx.Logger?.Info("Leisure: the '" + clip + "' clip could not be played at the rack; the player is left as they were (said the first time only).");
+            }
         }
 
         // A click on an entry of the list.
@@ -198,6 +258,7 @@ namespace RealLifeOverhaul.Leisure
             {
                 ClothesShop.Wear(slot, entry);   // tried on
                 LeisureSound.Cue(LeisureCue.Tick);
+                TurnRound();
             }
             else
             {
