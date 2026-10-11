@@ -42,16 +42,16 @@ namespace RealLifeOverhaul.Leisure
         // ---- what is on screen (set only on change)
         public string Objective;
         public string Status;
-        public string Prompt;              // a key prompt: the interaction key is then the activity's
-        public string[] Choices;           // three labels: keys 1, 2, 3
-        public bool OwnsInteractKey;       // the interaction key is the activity's even with no prompt up
+        public string Prompt;              // a prompt ("E: cast"): the game's panel carries it as a button on the interaction key
+        public string QuietPrompt;         // the button's words while the key is the activity's but nothing is announced (see OwnsInteractKey)
+        public string[] Choices;           // up to three labels: buttons of the game's panel on its second, third and fourth keys (null: none)
+        public bool OwnsInteractKey;       // the interaction key is the activity's even with no prompt up (it shows QuietPrompt)
         public bool Meter;
         public float MeterCursor, ZoneCentre, ZoneWidth, SweetWidth;
         public string MeterLabel;
         public bool Marked;
         public Vector3 MarkAt;
         public string MarkLabel;
-        public float Shade;                // how dark the screen is, 0..1
         public bool ListDirty;             // the activity changed its list: the director calls DrawList once
 
         // ---- where it is
@@ -84,7 +84,7 @@ namespace RealLifeOverhaul.Leisure
         }
 
         /// <summary>The list panel, when the activity has one: called by the director after <see cref="ListDirty"/>.</summary>
-        public virtual void DrawList(LeisureHud hud)
+        public virtual void DrawList(LeisureScreen screen)
         {
         }
 

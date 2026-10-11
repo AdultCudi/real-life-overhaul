@@ -276,6 +276,7 @@ namespace RealLifeOverhaul.Leisure
                         Objective = T("reallife_leisure_fishing_waiting");
                         Prompt = null;
                         OwnsInteractKey = true;
+                        QuietPrompt = T("reallife_leisure_fishing_prompt_strike");   // the key is live, and the button says so without saying a fish is there
                         Rod(WaitClip);   // the cast ends in this loop's first pose
                     }
                     break;
@@ -331,6 +332,7 @@ namespace RealLifeOverhaul.Leisure
             Meter = false;
             Prompt = null;
             OwnsInteractKey = false;
+            QuietPrompt = null;
             _step = Step.Landed;
             _stepEnds = now + after;
             Stow();
@@ -366,6 +368,7 @@ namespace RealLifeOverhaul.Leisure
             Prompt = null;
             Choices = null;
             OwnsInteractKey = false;
+            QuietPrompt = null;
             Stow();
             Ctx.Body.Rest(0.4f);   // the rod down before the hold is let go
             Score = _bestGrams;

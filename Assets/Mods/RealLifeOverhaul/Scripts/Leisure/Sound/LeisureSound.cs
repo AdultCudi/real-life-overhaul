@@ -50,7 +50,6 @@ namespace RealLifeOverhaul.Leisure
         private bool _paused;
         private bool _failed;
         private bool _hooked;
-        private float _stripUntil;
 
         private void Awake()
         {
@@ -299,7 +298,7 @@ namespace RealLifeOverhaul.Leisure
 
         // ---------------------------------------------------------------- the radio's name on the HUD
 
-        // The game's own car radio says nothing on screen when the station or the song changes: a strip names both
+        // The game's own car radio says nothing on screen when the station or the song changes: a notification names both
         // for a few seconds while driving. Its events are the game's; we only listen.
         private void Radio(GameManager gm, bool live, float now)
         {
@@ -311,14 +310,6 @@ namespace RealLifeOverhaul.Leisure
             {
                 _hooked = true;
                 gm.radioPlayer.onNewSong.AddListener(OnSong);
-            }
-            if (_stripUntil > 0f && now >= _stripUntil)
-            {
-                _stripUntil = 0f;
-                if (LeisureHud.Exists)
-                {
-                    LeisureHud.Instance.HideStrip();
-                }
             }
         }
 
@@ -345,8 +336,12 @@ namespace RealLifeOverhaul.Leisure
                 {
                     return;
                 }
-                LeisureHud.Instance.ShowStrip(JobText.T("reallife_leisure_radio_strip", "station", gm.radioPlayer.GetCurrentStation().ToString(), "song", song));
-                _stripUntil = Time.unscaledTime + 5f;
+                // The game's own car radio says nothing on screen when the song changes: one of the game's notifications does.
+                LeisureDirector director = LeisureDirector.Instance;
+                if (director != null && director.Screen != null)
+                {
+                    director.Screen.Say(JobText.T("reallife_leisure_radio_strip", "station", gm.radioPlayer.GetCurrentStation().ToString(), "song", song), 5f);
+                }
             }
             catch (Exception e)
             {

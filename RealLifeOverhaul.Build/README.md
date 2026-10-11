@@ -935,7 +935,7 @@ Leisure/
   LeisureActivity   the base every activity derives from; Sweep, the one timing interaction they share
   LeisureApi        Activities.Start / Stop / Finished for the rest of the mod; LeisureMoney
   LeisureState      this save's records, landmarks, catch, clothes bought, outfits, drinks: plain strings in modData
-  LeisureHud        objective (two lines), key prompt, three choices, the meter, a list, the result card, a marker
+  LeisureScreen     the game's panels, job panel, list window, marker and notifications for all of it
   LeisureBody       the player's body at play: held, a clip with its tool (HeldTool), an arm loop, one of the game's dances
   LeisureProps      pooled props: from PropLibrary by id, else a stand-in of plain shapes (see the wish-list)
   LeisureVenues     what the game's city has: the items of the building the player is in, landmarks, the water's edge
@@ -1099,15 +1099,35 @@ stop with the game's pause. One slider per layer.
 `KeyAction.PhotoMode` (F10: the game binds nothing to it). The game is paused through its own
 `GameSpeedController.SetPause` (the frame goes on being drawn) and its pause key is locked out; the Cinemachine
 brain is switched off and the main camera moved directly; the game's interface is hidden with the game's own
-`ScreenshotController.ToggleUIVisibility`, the mod's three HUD canvases switched off. Mouse: look. W A S D: fly.
+`ScreenshotController.ToggleUIVisibility`, the mod puts nothing of its own on screen. Mouse: look. W A S D: fly.
 X / Z: up / down. Shift / Ctrl: fast / slow. Wheel: zoom (field of view 8 to 100). J / L: roll. , / .: exposure.
 K: filter (none, warm, cool, black and white, vivid, faded). G: depth of field, Y / U: its focus distance.
-1: hide the player. 2: hide the help. 3: reset. Enter: save a PNG at the screen's resolution to
+1: hide the player. 2: hide or show the game's interface (the controls and settings come in a notification). 3: reset. Enter: save a PNG at the screen's resolution to
 `<persistentDataPath>/RealLifeOverhaul/Shots`. Exposure, filters and depth of field are a Volume (priority 1100)
 that exists only while the mode is on. Everything is recorded on the way in and put back on every way out (the
 key, a menu opening, the game unpaused by anything else, the city unloading, an error). The camera stays within
 150 m of the player. The fixed keys live in `Core/Keys.cs` (`PhotoKeys`) and were chosen from keys the game does
 nothing with while paused (not Space, Q, E or F).
+
+### On screen: the game's own interface (Leisure)
+
+The mod draws nothing of its own for leisure (`LeisureHud` is gone; everything is `LeisureScreen`, which owns the pieces below). None of this has been seen in the game.
+
+| screen | what it is now | if it cannot be made |
+|---|---|---|
+| a place where chess, fishing, a dance, a drink, the rack, the wardrobe or a view is on offer | the game's panel over the place (`GameUi.DoorPanel`): the offer as the first line, "Go ahead" on the button | tried again once a second while the game's panel shows another place |
+| the objective and the figures of an activity | the headline and lines of a copy of the game's job panel at the top right (`ShiftCard`): the activity's name, what to do, the status | what is asked is sent as a notification each time it changes |
+| the prompt ("cast", "strike", "pull in the green", "on the beat") and the choices (the chess moves, the drinks, "pack up") | buttons of the game's panel over the player: the prompt on the first, each choice on the next ones, the game writing each key and running it on that key or a click. A button's words are a locale key filled from the activity's text (`reallife_leisure_button`) | as above |
+| the marker | the game's destination marker (`GameUi.GuideMark`) | not shown while a job or an outing has the marker |
+| the timing meter (fishing: cast and pull; the dance beat) and the chess clock | two lines of the job panel: what it asks with the zone as percentages, and a gauge of twenty cells in plain letters (`=` good, `#` best, `|` the cursor; for the clock `#` is what is left). The action is the panel's button. Timings, windows and judging are the activities' own and untouched | no gauge without the job panel; the button and the words still work through the notification |
+| the clothes browser (rack and wardrobe) | the game's list window (`GameUi.DeskList`): a first entry for the next section (or back to the garments), then an entry for each garment, colour or outfit with its price or state under its name and the verb on its button (Colours, Wear, Take off, Try on, Buy, Use). Closing the list ends the activity as walking away did | the rack and the wardrobe are not offered (`Leisure check (clothes list) ... FAIL`) |
+| what a game or a visit adds up to; the records; the radio's station and song | one of the game's notifications | none needed |
+
+Why the meter is not the game's activity panel. `PlayerActivityUI` was read: showing an activity pauses the game (`gameSpeed.SetPause(true)`), and its progress bar is written only by `SetUpProgressBar`, which runs when a whole minute of game time has passed (`OnActivityRunning`) or inside `UpdateActivityDisplay`, which also makes its labels and buttons again. A cursor that crosses in about a second cannot be a progress bar there and could not be moved without remaking the panel every frame. The job panel's line with a text gauge was used instead, as the fallback allowed.
+
+Cost: per frame only `LeisureScreen.Gauge`, which compares one cell number and writes a line only when the cursor is in another cell (about twenty times a pass, only while a meter is up). Everything else is told on the tick (five a second) or on a button press, and only when it changed.
+Log lines with diagnostics on: `Leisure check (prompt panel)`, `Leisure check (activity card)`, `Leisure check (clothes list)`, each ending PASS or FAIL.
+Behaviour that changed: the keys 1 to 3 and the interact key are the panel's buttons now (the game shows the player's own keys); the browser's up and down are the list's scroll; photo mode starts with the game's interface showing and the controls in a notification (the "2" key hides or shows the game's interface, and a picture is always taken with it away); the mod's own help and settings strips, the dimming of the screen (nothing used it) and the corner strip for the radio are gone.
 
 ### Performance
 
@@ -1115,8 +1135,7 @@ Idle: `LeisureDirector` one timer test a frame and a look round once a second (t
 distance tests; the pass over a building's items happens once per building entered, the scene search for
 landmarks once per city load; the water test, three rays, only while the player stands still near the water);
 `LeisureSound` one timer test a frame and four volume comparisons a quarter second; `PhotoMode` one key test a
-frame; `TipsyDriving` switched off. Per frame only while an activity is on: the keys, the meter's cursor, the HUD's
-fields compared by reference, for fishing the float and the line (the rod is turned by its clips; only the stand-in for a bundle without them aims it), and for a drink at the bar two timed moments. Strings are built when something
+frame; `TipsyDriving` switched off. Per frame only while an activity is on: the meter's cursor (one cell number compared), for fishing the float and the line (the rod is turned by its clips; only the stand-in for a bundle without them aims it), and for a drink at the bar two timed moments. Strings are built when something
 changes (a key press, a new step), never on a timer. Each of the three components catches what its `Update`
 throws, logs once, puts back what it changed and stays off for the session.
 

@@ -47,6 +47,7 @@ namespace RealLifeOverhaul.GameUi
 
         private ButtonInfo[] _buttons;
         private readonly string[] _slotKey = new string[Slots];
+        private readonly object[] _slotArgs = new object[Slots];
         private readonly Action[] _slotAction = new Action[Slots];
         private readonly bool[] _slotOn = new bool[Slots];
         private readonly bool[] _slotBlue = new bool[Slots];
@@ -114,10 +115,22 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public void Button(int slot, string key, Action action, bool enabled, bool blue)
         {
-            if (ReferenceEquals(key, _slotKey[slot]) && (key == null || (enabled == _slotOn[slot] && blue == _slotBlue[slot] && ReferenceEquals(action, _slotAction[slot]))))
+            Button(slot, key, null, action, enabled, blue);
+        }
+
+        /// <summary>
+        /// A button whose words are a locale key filled from <paramref name="arguments"/> (an object with the key's placeholders as
+        /// members, as the game's own buttons take them). Keep the same object while the words are the same: a different one makes
+        /// the game's buttons again.
+        /// </summary>
+        public void Button(int slot, string key, object arguments, Action action, bool enabled, bool blue)
+        {
+            if (ReferenceEquals(key, _slotKey[slot]) && (key == null || (enabled == _slotOn[slot] && blue == _slotBlue[slot] && ReferenceEquals(action, _slotAction[slot])
+                                                                           && ReferenceEquals(arguments, _slotArgs[slot]))))
             {
                 return;
             }
+            _slotArgs[slot] = arguments;
             _slotKey[slot] = key;
             _slotAction[slot] = action;
             _slotOn[slot] = enabled;
@@ -139,7 +152,9 @@ namespace RealLifeOverhaul.GameUi
             {
                 if (_slotKey[i] != null)
                 {
-                    _buttons[at++] = new ButtonInfo(SlotName[i], _slotKey[i], _slotBlue[i] ? "blue" : "gray", _slotAction[i], SlotAction[i], _slotOn[i]);
+                    _buttons[at++] = _slotArgs[i] != null
+                        ? new ButtonInfo(SlotName[i], _slotKey[i], _slotArgs[i], _slotBlue[i] ? "blue" : "gray", _slotAction[i], SlotAction[i], _slotOn[i])
+                        : new ButtonInfo(SlotName[i], _slotKey[i], _slotBlue[i] ? "blue" : "gray", _slotAction[i], SlotAction[i], _slotOn[i]);
                 }
             }
             _buttonsChanged = true;
