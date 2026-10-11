@@ -1,4 +1,4 @@
-Next version (not yet numbered)
+0.2.2
 
 New
 - Traffic sees people in the road: cars brake, sound the horn and wait. People react to your horn too.
