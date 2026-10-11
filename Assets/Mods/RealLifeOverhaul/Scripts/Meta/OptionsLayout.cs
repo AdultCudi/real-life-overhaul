@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Meta
             public string Opened = string.Empty;
             public string Found = string.Empty;
             public string Shown;                   // the one of the three that is on the button now
+            public string Aside;                   // why some of its options do nothing just now (Feature.StandsAside), or null
             public bool HasMaster;                 // one of its rows switches the whole feature
             public bool MasterOn;
 
@@ -83,6 +84,7 @@ namespace RealLifeOverhaul.Meta
         }
 
         private static readonly List<Section> Sections = new List<Section>();
+        private static readonly HashSet<GameObject> Absent = new HashSet<GameObject>();   // rows of this drawing that are not on the page (Feature.Present said no)
         private static ModOptions _built;
         private static string _modId;
         private static bool _hooked;
@@ -295,7 +297,10 @@ namespace RealLifeOverhaul.Meta
                     section.HeaderText = null;
                     section.Shown = null;
                     section.Objects.Clear();
+                    section.Aside = null;
                 }
+                Absent.Clear();
+                OtherMods.Look(MetaLog.Sink);   // a row may be there only with another author's mod: looked for when the page is drawn
                 _presetText = null;
                 CaptionsBegin(parent);
                 SearchDrawn(parent);
@@ -422,11 +427,25 @@ namespace RealLifeOverhaul.Meta
                 CaptionSection(section);
                 section.Start = parent.childCount;
                 section.Objects.Clear();
+                section.Aside = section.Parent == null && section.Feature.AsideWhy != null ? section.Feature.AsideWhy() : null;
                 Describe(section);
             }));
             foreach (ModOption row in section.Rows)
             {
                 page.AddCustom(row);
+                if (section.Parent == null && row is IPersistableOption saved && !string.IsNullOrEmpty(saved.Id))
+                {
+                    string id = saved.Id;
+                    Feature feature = section.Feature;
+                    if (feature.RowPresent.TryGetValue(id, out Func<bool> present))
+                    {
+                        page.AddCustom(new RowTap(parent => RowAway(Last(parent), present)));
+                    }
+                    if (feature.AsideOptions.Contains(id))
+                    {
+                        page.AddCustom(new RowTap(parent => RowAside(Last(parent), section)));
+                    }
+                }
             }
             page.AddCustom(new RowTap(parent =>
             {
@@ -525,9 +544,10 @@ namespace RealLifeOverhaul.Meta
                 int options = 0;
                 foreach (ModOption row in section.Rows)
                 {
-                    if (row is IPersistableOption)
+                    if (row is IPersistableOption saved
+                        && !(saved.Id != null && section.Feature.RowPresent.TryGetValue(saved.Id, out Func<bool> present) && !present()))
                     {
-                        options++;
+                        options++;   // (a row that is not on the page is not counted)
                     }
                 }
                 string what = options > 0
@@ -535,7 +555,7 @@ namespace RealLifeOverhaul.Meta
                     : Counted(section.Rows.Count, "reallife_meta_section_button", "reallife_meta_section_buttons");
                 string state = !section.HasMaster ? string.Empty
                     : ", " + (section.MasterOn ? "reallife_meta_section_on" : "reallife_meta_section_off").GetLocalization();
-                about = "   (" + what + state + ")";
+                about = "   (" + what + state + (section.Aside != null ? ", " + section.Aside : string.Empty) + ")";
             }
             section.Found = about;
             section.Closed = about;
@@ -578,9 +598,33 @@ namespace RealLifeOverhaul.Meta
 
         private static void Show(GameObject row, bool on)
         {
+            on = on && !Absent.Contains(row);   // a row that is not on the page stays away, whatever opens or is found
             if (row != null && row.activeSelf != on)
             {
                 row.SetActive(on);
+            }
+        }
+
+        // A row just made that is on the page only while something is true: away it goes, and stays for this drawing.
+        private static void RowAway(GameObject row, Func<bool> present)
+        {
+            if (row != null && !present())
+            {
+                Absent.Add(row);
+                row.SetActive(false);
+            }
+        }
+
+        // A row just made whose option does nothing for now: its controls as the game draws one that cannot be used.
+        private static void RowAside(GameObject row, Section section)
+        {
+            if (row == null || section.Aside == null)
+            {
+                return;
+            }
+            foreach (UnityEngine.UI.Selectable control in row.GetComponentsInChildren<UnityEngine.UI.Selectable>(true))
+            {
+                control.interactable = false;
             }
         }
 

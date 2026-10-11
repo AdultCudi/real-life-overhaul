@@ -9,6 +9,7 @@ namespace RealLifeOverhaul
     /// Cinemachine rigs with no script to steer, so this adds its own virtual camera and
     /// raises its priority above the game's while the normal outdoor driving camera is live.
     /// The look-back camera, garages and parking keep the game's own cameras.
+    /// While another author's mod drives the camera (<see cref="CameraYield"/>) this one is let go.
     /// </summary>
     public class ChaseCamera : MonoBehaviour
     {
@@ -26,6 +27,9 @@ namespace RealLifeOverhaul
         /// <summary>True while the mouse is steering the chase camera (cursor locked).</summary>
         public static bool IsLooking { get; private set; }
 
+        /// <summary>True while the chase camera is the one asked for (its priority is above the game's).</summary>
+        public static bool Live { get; private set; }
+
         private CinemachineVirtualCamera _vcam;
         private bool _active;
         private bool _lockedByUs;
@@ -42,7 +46,7 @@ namespace RealLifeOverhaul
         {
             var gm = InstanceBehavior<GameManager>.Instance;
             VehicleController vehicle = gm != null ? gm.selectedVehicle : null;
-            bool drive = Settings.CameraEnabled && Settings.CarCamera && vehicle != null
+            bool drive = !CameraYield.StoodDown && Settings.CameraEnabled && Settings.CarCamera && vehicle != null
                          && !vehicle.vehicleType.spawnInPlayerObject
                          && gm.vehicleCamera != null && gm.vehicleCamera.Priority == 1;
             if (!drive)
@@ -125,6 +129,7 @@ namespace RealLifeOverhaul
             _lastMouseTime = 0f;
             _vcam.Priority = LivePriority;
             _active = true;
+            Live = true;
             Logger?.Info("Camera: chase camera on.");
         }
 
@@ -135,6 +140,7 @@ namespace RealLifeOverhaul
                 return;
             }
             _active = false;
+            Live = false;
             _vcam.Priority = IdlePriority;
             SetLooking(false);
             Logger?.Info("Camera: chase camera off.");
@@ -161,6 +167,7 @@ namespace RealLifeOverhaul
         private void OnDestroy()
         {
             SetLooking(false);
+            Live = false;
         }
     }
 }

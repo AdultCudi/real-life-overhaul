@@ -20,11 +20,16 @@ namespace RealLifeOverhaul.GameUi
     /// The game has one such box. If it is showing one of its own (a filling station, a lift) or another of the
     /// mod's, <see cref="Show"/> does nothing and says so: the one that was there first keeps the place.
     ///
-    /// The cost: nothing per frame of the mod's. Texts and buttons are objects made when what they say changes; a
+    /// The game's building box (the card over a shop's door while the pointer is on the shop) is another object, and
+    /// the two would cover each other where a panel's place is in front of a shop. The other half of this class
+    /// (WorldPanel.Beside.cs) keeps every panel clear of it by one rule (<see cref="PanelPlacement"/>).
+    ///
+    /// The cost: while no panel of the mod's is up, nothing. While one is up, the few loads of WorldPanel.Beside.cs
+    /// each frame and no more. Texts and buttons are objects made when what they say changes; a
     /// change of the lines alone rewrites the three texts (the game's private SetUpHeader, called through a delegate
     /// made once), and only a change of the buttons has the game make its buttons again.
     /// </summary>
-    public sealed class WorldPanel : IOverlay
+    public sealed partial class WorldPanel : IOverlay
     {
         public static IModLogger Logger;
 
@@ -181,11 +186,13 @@ namespace RealLifeOverhaul.GameUi
                 if (_buttonsChanged)
                 {
                     _buttonsChanged = false;
+                    _measureAgain = true;   // the box is another size now
                     box.RefreshButtons();
                 }
                 if (_linesChanged)
                 {
                     _linesChanged = false;
+                    _measureAgain = true;
                     Action<OverlayUI> header = HeaderCall();
                     if (header != null)
                     {
@@ -201,26 +208,36 @@ namespace RealLifeOverhaul.GameUi
             if (_current == this)
             {
                 _current = null;   // the game put one of its own in the box since
+                Watch(false);
             }
+            Waiting = false;
             if (OverlayUI.IsVisible)
             {
+                return false;
+            }
+            if (Held())
+            {
+                Waiting = true;    // the game's building box is in the way and no side of it has room: tried again by the owner's timer
                 return false;
             }
             _current = this;
             _linesChanged = false;
             _buttonsChanged = false;
             OverlayUI.Show(this);
+            Watch(true);
             return true;
         }
 
         /// <summary>Takes the panel out of the game's box. Safe at any time, and when the interface has already gone.</summary>
         public void Hide()
         {
+            Waiting = false;
             if (_current != this)
             {
                 return;
             }
             _current = null;
+            Watch(false);
             try
             {
                 UIs uis = InstanceBehavior<UIs>.Instance;
@@ -248,6 +265,14 @@ namespace RealLifeOverhaul.GameUi
         // ---------------------------------------------------------------- what the game asks
 
         Vector3 IOverlay.GetTargetPosition()
+        {
+            // (The step aside from the game's building box is in the world's own measure, so the game's own
+            // WorldToScreenPoint puts the box beside it: WorldPanel.Beside.cs.)
+            return ReferenceEquals(_current, this) ? Home() + _shift : Home();
+        }
+
+        // The place the panel stands over, before any step aside.
+        private Vector3 Home()
         {
             return Follow != null ? Follow.position + Vector3.up * FollowLift : Position;
         }

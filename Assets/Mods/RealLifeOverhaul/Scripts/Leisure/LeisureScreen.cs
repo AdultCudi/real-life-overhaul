@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI.Notification;
@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Leisure
     /// <summary>
     /// Everything leisure puts on screen, as the game's own interface (nothing is drawn by the mod):
     ///  - the objective and the figures: a copy of the game's job panel at the top right (<see cref="ShiftCard"/>): the activity's
-    ///    name, what to do, the status, and while a timing meter is up two more lines (what it asks and the gauge);
+    ///    name, what to do, the status, and while a timing meter is up what it asks and, under that, the game's own bar;
     ///  - the prompt and the choices: the game's panel over the player (<see cref="DoorPanel"/>), the game writing each key on its
     ///    button and running it on that key or a click;
     ///  - a place worth a visit, before anything is started: the same panel over the place;
@@ -19,22 +19,22 @@ namespace RealLifeOverhaul.Leisure
     ///  - the list of the clothes browser: the game's list window (<see cref="DeskList"/>);
     ///  - what a game or a visit adds up to, and the radio's station and song: the game's notifications.
     ///
-    /// The timing meter. The game has no such widget. Its activity panel (PlayerActivityUI) was looked at: it pauses the game
-    /// while it is shown, and it writes its progress bar only when a whole minute of game time has passed (OnActivityRunning), or
-    /// in UpdateActivityDisplay, which also makes its labels and buttons again. A cursor that crosses in about a second cannot be a
-    /// progress bar there. So the meter is a line of the job panel: what it asks in words with the zone as percentages
-    /// ("Cast: good from 59% to 85%, best from 68% to 76%"), and under it a gauge of twenty cells in plain letters, the zone shown
-    /// as = and #, the cursor as |, written only when the cursor moves to another cell. The action is a button of the game's panel
-    /// on the game's key.
+    /// The timing meter (a cast, a pull on the line, the beat on a dance floor, a chess clock). The game's activity panel
+    /// (PlayerActivityUI) cannot carry it: it pauses the game while it is shown and writes its progress bar once a game minute. So
+    /// the meter is on the job panel: one line that says what it asks ("Cast"), and under it one of the game's own bars
+    /// (<see cref="GameBar"/>, a copy of the energy bar of the top bar): the zone marked on it in the game's green, the better part
+    /// of the zone in full green, and a marker that runs along it; a clock is the same bar filled, running down. The action is a
+    /// button of the game's panel on the game's key. If the bar cannot be copied the line gives the zone in figures instead
+    /// ("Cast: good from 59% to 85%"), and nothing stands in for the bar.
     ///
-    /// The cost: nothing per frame except <see cref="Gauge"/>, which compares one cell number and writes a line only when the cursor
-    /// has moved to another cell (about twenty times a pass). Everything else is told on the tick and only when it changed.
+    /// The cost: nothing per frame except <see cref="Gauge"/>, which hands the bar one number: two comparisons, and one position
+    /// written only when the marker has moved a visible step (<see cref="BarRule"/>). No text is made and nothing is laid out for
+    /// it. Everything else is told on the tick and only when it changed.
     /// </summary>
     public sealed class LeisureScreen
     {
         private const string ButtonText = "reallife_leisure_button";          // "{text}": the words come from the activity
         private const string ButtonGo = "reallife_leisure_button_go";
-        private const int Cells = 20;
 
         private readonly IModLogger _logger;
         private readonly DoorPanel _door;
@@ -43,7 +43,6 @@ namespace RealLifeOverhaul.Leisure
         private readonly Action _interact;
         private readonly Action[] _choose = new Action[3];
         private readonly object[] _choiceArgs = new object[3];
-        private readonly StringBuilder _gauge = new StringBuilder(160);
         private ShiftCard _card;
         private bool _cardTried;
         private bool _suppressed;
@@ -53,9 +52,10 @@ namespace RealLifeOverhaul.Leisure
         private string _objectiveToldFor;
         private string _meterLabel;
         private float _zoneCentre = -1f, _zoneWidth = -1f, _zoneSweet = -1f;
-        private string _meterWords, _gaugeWords;
-        private int _cell = -2;
+        private string _meterWords;
+        private GameBar _bar;
         private bool _meterOn;
+        private LeisureActivity _gaugeSaidFor;
         private string _offerText, _offerPlain;
         private bool _offerUp;
         private Action _onOffer;
@@ -137,6 +137,8 @@ namespace RealLifeOverhaul.Leisure
             {
                 _card = null;
                 _cardTried = false;
+                _bar = null;
+                _meterOn = false;
             }
             if (_card == null && !_cardTried)
             {
@@ -145,7 +147,7 @@ namespace RealLifeOverhaul.Leisure
                 if (Meta.Dev.Verbose)
                 {
                     _logger?.Info("Leisure check (activity card): " + (_card != null ? "a copy of the game's job panel is ready: PASS"
-                        : "the game's job panel could not be copied; what is asked is sent as notifications and the meter has no gauge: FAIL") + ".");
+                        : "the game's job panel could not be copied; what is asked is sent as notifications and a timing has no bar: FAIL") + ".");
                 }
             }
             return _card;
@@ -196,7 +198,7 @@ namespace RealLifeOverhaul.Leisure
                 {
                     _meterOn = false;
                     card.Line(2, null, WorldPanel.White());
-                    card.Line(3, null, WorldPanel.White());
+                    _bar?.Show(false);
                 }
                 return;
             }
@@ -208,53 +210,57 @@ namespace RealLifeOverhaul.Leisure
                 _zoneCentre = activity.ZoneCentre;
                 _zoneWidth = activity.ZoneWidth;
                 _zoneSweet = activity.SweetWidth;
-                _meterWords = MeterWords(activity);
-                _cell = -2;
+                _bar = card.Bar();
+                // With the bar the line says what is asked and the bar shows where; without it the line gives the zone in figures.
+                _meterWords = _bar != null ? activity.MeterLabel ?? string.Empty : MeterWords(activity);
                 card.Line(2, _meterWords, WorldPanel.White());
+                card.Line(3, null, WorldPanel.White());   // the bar stands in the place of the card's last two lines
+                card.Line(4, null, WorldPanel.White());
+                if (_bar != null && activity.ZoneWidth > 0f)
+                {
+                    _bar.Zone(activity.ZoneCentre, activity.ZoneWidth, activity.SweetWidth);
+                }
             }
-            Cursor(activity, card);
+            Cursor(activity);
+            _bar?.Show(true);
+            if (!ReferenceEquals(_gaugeSaidFor, activity))
+            {
+                _gaugeSaidFor = activity;   // once for each game played
+                if (Meta.Dev.Verbose)
+                {
+                    _logger?.Info("Gauge check (" + LeisureKinds.Id(activity.Kind) + "): "
+                                  + (_bar != null && _bar.Value >= 0f
+                                      ? "the game's bar, " + _bar.Value.ToString("0.00", CultureInfo.InvariantCulture)
+                                        + (_bar.Timing ? " (a marker, the zone about " + activity.ZoneCentre.ToString("0.00", CultureInfo.InvariantCulture) + ")" : " (filled)") + ": PASS"
+                                      : "FAIL (the game's bar could not be copied; the zone is given in figures on the line above)") + ".");
+                }
+            }
         }
 
-        /// <summary>Per frame while a meter is up: the gauge is written only when the cursor is in another cell.</summary>
+        /// <summary>Per frame while a meter is up: the bar is handed one number, and writes it only when the marker has moved a visible step.</summary>
         public void Gauge(LeisureActivity activity)
         {
-            if (_card != null && _meterOn && activity.Meter && !_suppressed)
+            if (_bar != null && _meterOn && activity.Meter && !_suppressed)
             {
-                Cursor(activity, _card);
+                Cursor(activity);
             }
         }
 
-        private void Cursor(LeisureActivity activity, ShiftCard card)
+        // A zone to stop in: the marker runs along the bar. No zone: a clock, the bar filled with what is left.
+        private void Cursor(LeisureActivity activity)
         {
-            int cell = Mathf.Clamp(Mathf.RoundToInt(activity.MeterCursor * (Cells - 1)), 0, Cells - 1);
-            if (cell == _cell)
+            if (_bar == null)
             {
                 return;
             }
-            _cell = cell;
-            _gauge.Length = 0;
-            _gauge.Append('[');
-            bool zone = activity.ZoneWidth > 0f;
-            for (int i = 0; i < Cells; i++)
+            if (activity.ZoneWidth > 0f)
             {
-                float at = i / (float)(Cells - 1);
-                if (i == cell)
-                {
-                    _gauge.Append(zone ? "<color=#FFC83C>|</color>" : "#");
-                }
-                else if (!zone)
-                {
-                    _gauge.Append(i < cell ? '#' : '-');   // a clock draining: what is left is filled
-                }
-                else
-                {
-                    float off = Mathf.Abs(at - activity.ZoneCentre);
-                    _gauge.Append(off <= activity.SweetWidth * 0.5f ? '#' : off <= activity.ZoneWidth * 0.5f ? '=' : '-');
-                }
+                _bar.Mark(activity.MeterCursor);
             }
-            _gauge.Append(']');
-            _gaugeWords = _gauge.ToString();
-            card.Line(3, _gaugeWords, WorldPanel.White());
+            else
+            {
+                _bar.Fill(activity.MeterCursor);
+            }
         }
 
         private static string MeterWords(LeisureActivity activity)

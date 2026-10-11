@@ -11,6 +11,7 @@ namespace RealLifeOverhaul.GameUi
     /// is known to have been used this frame so that the mod's own interact key does nothing else with it
     /// (<see cref="TakesKey"/>, read by <c>NearbyInteraction</c> through the feature's static
     /// <c>TakesInteractKey</c>). One line goes to the log when the game accepts or refuses the panel and when it goes.
+    /// Like every <see cref="WorldPanel"/> it steps aside for the game's building box (WorldPanel.Beside.cs).
     ///
     /// The cost: nothing per frame. The owner calls <see cref="Show"/> from its once-a-second timer and builds the
     /// texts only when what they say has changed.
@@ -19,7 +20,7 @@ namespace RealLifeOverhaul.GameUi
     {
         private readonly IModLogger _logger;
         private readonly string _check;
-        private int _state;          // 0 not up, 1 up, 2 refused by the game's own panel
+        private int _state;          // 0 not up, 1 up, 2 refused by the game's own panel, 3 waiting for the game's building box to leave it room
         private int _keyFrame = -1;
 
         /// <param name="logger">The feature's logger.</param>
@@ -62,14 +63,16 @@ namespace RealLifeOverhaul.GameUi
                 over = player + Vector3.up * 2.1f;
             }
             Panel.Position = over;
-            int state = Panel.Show() ? 1 : 2;
+            int state = Panel.Show() ? 1 : Panel.Waiting ? 3 : 2;
             if (state != _state)
             {
                 _state = state;
                 if (Meta.Dev.Verbose)
                 {
                     _logger?.Info(_check + ": " + (what != null ? what() : string.Empty) + ": "
-                                  + (state == 1 ? "the game's own panel is up: PASS" : "FAIL (the game's panel is showing another place; it is tried again while the player stands here)") + ".");
+                                  + (state == 1 ? "the game's own panel is up: PASS"
+                                      : state == 3 ? "the game's building box leaves it no room on any side, so it waits and is tried again while the player stands here: PASS"
+                                      : "FAIL (the game's panel is showing another place; it is tried again while the player stands here)") + ".");
                 }
             }
             return state == 1;

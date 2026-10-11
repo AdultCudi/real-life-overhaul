@@ -104,6 +104,7 @@ namespace RealLifeOverhaul
         public const string MinimapId = "nav_minimap";
         public const string GpsId = "nav_gps";
         public const string MinimapRotateId = "nav_rotate";
+        public const string NavOtherRouteId = "nav_other_route";
         public const string MinimapSizeId = "nav_size";
         public const string MinimapZoomId = "nav_zoom";
         public const string RoadsideChecksId = "roadside_checks";
@@ -279,6 +280,7 @@ namespace RealLifeOverhaul
         public static bool Minimap = true;               // the minimap on the HUD while out in the city (Scripts/Navigation)
         public static bool Gps = true;                   // a route along the roads to the game's destination, with the next turn
         public static bool MinimapRotate = true;         // the minimap turns with the player (off: north is up)
+        public static bool NavOtherRoute = false;        // with the mod Voogle Route switched on: its route line only, and none of this mod's (the row is there only then)
         public static int MinimapSize = 80;              // per cent of the width of the game's left column
         public static int MinimapZoom = 100;             // per cent: more is closer
         public static bool RoadsideChecks = true;        // now and then a patrol car pulls the player over only to see the licence
@@ -496,6 +498,7 @@ namespace RealLifeOverhaul
             Minimap = Bool(modId, MinimapId, Minimap);
             Gps = Bool(modId, GpsId, Gps);
             MinimapRotate = Bool(modId, MinimapRotateId, MinimapRotate);
+            NavOtherRoute = Bool(modId, NavOtherRouteId, NavOtherRoute);
             MinimapSize = Int(modId, MinimapSizeId, MinimapSize);
             MinimapZoom = Int(modId, MinimapZoomId, MinimapZoom);
             RoadsideChecks = Bool(modId, RoadsideChecksId, RoadsideChecks);

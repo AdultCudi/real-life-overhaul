@@ -43,6 +43,8 @@ namespace RealLifeOverhaul
         private string _titleWords;
         private bool _shown;
         private bool _under;
+        private GameBar _bar;
+        private bool _barTried;
 
         private ShiftCard(GameObject panel, TMP_Text title, TMP_Text[] lines, GameObject gamePanel)
         {
@@ -173,6 +175,29 @@ namespace RealLifeOverhaul
                 _colour[line] = colour;
                 _line[line].color = colour;
             }
+        }
+
+        /// <summary>
+        /// One of the game's bars (<see cref="GameBar"/>) on the card, in the place of its last two lines, which the
+        /// owner then leaves blank. Made the first time it is asked for and kept, switched off, with the card; null
+        /// (one "Game UI:" line, once) if the game's top bar could not be copied. The owner shows, hides and fills it.
+        /// </summary>
+        public GameBar Bar()
+        {
+            if (_bar == null && !_barTried && _panel != null)
+            {
+                _barTried = true;
+                _bar = GameBar.Make(_rect, "RealLifeOverhaul Card Bar");
+                if (_bar != null)
+                {
+                    // Midway between the last two lines, in the middle of the card: measured from the lines themselves.
+                    var upper = (RectTransform)_line[Lines - 2].transform;
+                    var lower = (RectTransform)_line[Lines - 1].transform;
+                    float y = (upper.localPosition.y + upper.rect.center.y + lower.localPosition.y + lower.rect.center.y) * 0.5f;
+                    _bar.Rect.localPosition = new Vector3(_rect.rect.center.x, y, 0f);
+                }
+            }
+            return _bar != null && _bar.Alive ? _bar : null;
         }
 
         /// <summary>Shows or hides the card. Two comparisons when nothing changes: fit for every frame.</summary>
