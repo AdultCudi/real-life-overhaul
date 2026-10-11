@@ -328,6 +328,18 @@ namespace RealLifeOverhaul
             return JobKeys.Fill(key.GetLocalization()).Replace("{" + name + "}", value).Replace("{" + name2 + "}", value2);
         }
 
+        private static readonly string[] Numbers = new string[100];
+
+        /// <summary>A small whole number as a text, made once each: for a panel that is written on every tick.</summary>
+        public static string Number(int number)
+        {
+            if (number < 0 || number >= Numbers.Length)
+            {
+                return number.ToString();
+            }
+            return Numbers[number] ?? (Numbers[number] = number.ToString());
+        }
+
         public static string Money(float amount)
         {
             return amount.ToCurrencyFormat();

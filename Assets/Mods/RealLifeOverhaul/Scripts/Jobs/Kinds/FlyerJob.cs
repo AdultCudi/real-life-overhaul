@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Characters.EmojiSystem;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using Streets.Pedestrians;
 using UnityEngine;
 using UnityEngine.AI;
@@ -23,13 +24,21 @@ namespace RealLifeOverhaul
     /// walk on (HeldProp). The stack is held to the chest by the left arm alone (job_flyer_hold on
     /// the masked layer) while the game walks the player; the offer is an upper-body gesture, and
     /// the player stands still for the second and a half it takes.
+    ///
+    /// IN THE GAME'S OWN INTERFACE. The player is dressed as a canvasser (<see cref="JobUniform"/>, taken off by the
+    /// director however the shift ends). The game's panel over a place (<see cref="JobPanel"/>) stands over whoever is in
+    /// reach with an "Offer a flyer" button on the game's interact key; with nobody in reach it stands over the player
+    /// with "Let time pass", which hands the rest of the shift to the game's clock (<see cref="ShiftClock"/>):
+    /// <see cref="ShiftRates"/> minutes a flyer, at <see cref="ShiftRates.Share"/> of a flyer's pay, no bonus. The
+    /// shift's figures are on the HUD in a copy of the game's job panel (<see cref="ShiftFigures"/>).
     /// </summary>
-    public sealed class FlyerJob : Job
+    public sealed class FlyerJob : Job, IClockedShift
     {
         private const float Pitch = 70f;            // metres from where the job was taken that still count as the pitch
         private const float Reach = 3.5f;           // how near someone must be to be offered a flyer
-        private const float Grace = 1.5f;           // a key press reaches this much further: whoever was in reach a moment ago and is walking off
-        private const float HintGap = 2f;           // seconds between two "nobody in reach" hints
+        private const float Grace = 1.5f;           // a press reaches this much further: whoever was in reach a moment ago and is walking off
+        private const float Debounce = 0.7f;        // seconds after an offer ends in which the panel's "let time pass" does nothing (a press meant for the next flyer)
+        private const float PanelOver = 2.1f;       // metres over the player the panel stands with nobody in reach
         private const float Seconds = 420f;         // for the bundle
         private const float TakeChance = 0.55f;
         private const float TakePerLevel = 0.04f;
@@ -76,7 +85,6 @@ namespace RealLifeOverhaul
         private bool _withWalker;       // they were stopped on their walk (PedestrianTakeover) and are handed back walking
         private bool _turned;           // someone standing was turned to face the player...
         private Quaternion _turnedFrom; // ...from this, and is turned back
-        private float _nextHint;
         private float _heldUntil;
         private bool _heldTakes;
         private bool _receiveDue;
@@ -87,16 +95,50 @@ namespace RealLifeOverhaul
         private bool _away;
         private bool _paid;
         private int _line = -1;
-        private string _promptText;
         private string _markerText;
+
+        // The game's own interface.
+        private readonly JobPanel _panel;
+        private ShiftFigures _figures;
+        private ShiftClock _clock;
+        private int _clocked;           // flyers the game's clock handed out
+        private int _clockPay;          // ...and what it was paid for them
+        private float _offerOver = -10f;
+        private bool _dressed;
+        private string _objWalk;
+        private string _objNear;
+        private string _objClock;
+        private string _objBack;
+        private string _panelNear;
+        private string _panelNone;
+        private string _panelLeft;
+        private int _shownSeconds = int.MinValue;
+
+        private const string ButtonOffer = "reallife_job_flyers_button_offer";
+        private const string ButtonSkip = "reallife_job_button_skip";
+
+        public FlyerJob()
+        {
+            _panel = new JobPanel("flyer panel", Act, OfferSkip);
+        }
 
         public override JobDef Def => _def;
 
-        /// <summary>On foot the key is the job's for the whole shift: a press offers a flyer or says nobody is in reach, and never opens a door.</summary>
-        public override bool OwnsInteractKey => Ctx != null && !Ctx.Driving && !PlayerHelper.IsUsingVehicle;
+        public override bool NativeUi => true;
+
+        public override bool PassingTime => _clock != null && _clock.Working;
+
+        /// <summary>While the panel is up its first button is on the game's interact key: the mod's own use of that key (a door, a car) stands aside.</summary>
+        public override bool OwnsInteractKey => _panel.Up;
 
         /// <summary>Walking off with most of the bundle still in hand is a bad shift.</summary>
-        public override bool QuitIsFailure => _taken > 0 && _taken * 3 < _bundle && _taken + _refusals < FairTry;
+        public override bool QuitIsFailure => DoneCount > 0 && DoneCount * 3 < _bundle && DoneCount + _refusals < FairTry;
+
+        private int DoneCount => _taken + _clocked;
+
+        int IClockedShift.ClockLeft => Mathf.Max(0, _bundle - DoneCount);
+
+        float IClockedShift.ClockPay => Def.UnitPay * Ctx.Rate;
 
         protected override bool OnBegin(float now)
         {
@@ -118,26 +160,51 @@ namespace RealLifeOverhaul
             }
             _endsAt = now + Seconds;
             _begun = now;
-            _promptText = JobText.T("reallife_job_flyers_prompt");
             _markerText = JobText.T("reallife_job_flyers_marker");
-            ShowCount();
+            _objWalk = JobText.T("reallife_job_flyers_obj_walk");
+            _objNear = JobText.T("reallife_job_flyers_obj_near");
+            _objClock = JobText.T("reallife_job_flyers_obj_clock");
+            _objBack = JobText.T("reallife_job_flyers_obj_back");
+            _panelNear = JobText.T("reallife_job_flyers_panel_near");
+            _panelNone = JobText.T("reallife_job_flyers_panel_none");
+            _panelLeft = JobText.T("reallife_job_flyers_panel_left");
+            _figures = new ShiftFigures(Ctx, Def, "reallife_job_flyers_card_done");
+            _clock = new ShiftClock(Ctx, this, this, "flyers", "reallife_job_flyers_unit", "reallife_job_flyers_units", "reallife_job_flyers_slip");
+            Show(_objWalk);
+            Figures(now);
+            if (Meta.Dev.Verbose)
+            {
+                Ctx.Logger?.Info("Jobs: flyers: a bundle of " + _bundle + ", the pitch is " + Pitch.ToString("F0") + " m round the player, reach " + Reach.ToString("F1")
+                                 + " m; shown in the game's own interface: job panel " + (_figures.Shown ? "copied" : "NOT copied (the panel over the passer-by is all there is)")
+                                 + ", " + ShiftRates.Minutes(Def) + " game minutes a flyer by the clock at " + ShiftRates.Percent + "%.");
+            }
             return true;
         }
 
         public override void Tick(float now)
         {
-            ClockSeconds = Mathf.CeilToInt(_endsAt - now);
+            if (_clock.Hold())
+            {
+                Figures(now);   // the clock is doing the work (or the offer is up, with the game paused)
+                return;
+            }
             bool onFoot = !Ctx.Driving && !PlayerHelper.IsUsingVehicle;
+            if (!_dressed && onFoot && Ctx.Player.Character.visible)
+            {
+                _dressed = true;
+                Ctx.Uniform.Wear(Ctx.Player, CityLook.Canvasser);   // once: the director takes it off however the shift ends
+            }
             ShowStack(now, onFoot && Ctx.Player.Character.visible);
 
             if (_with != null)
             {
                 Holding(now);
             }
-            if (_taken >= _bundle)
+            if (DoneCount >= _bundle)
             {
                 if (_with == null)
                 {
+                    _panel.Hide();
                     Finish(JobEnd.Done);
                 }
                 return;
@@ -148,7 +215,8 @@ namespace RealLifeOverhaul
                 {
                     Ctx.Say("reallife_job_flyers_time", 8f);
                     // A quiet street is not the player's fault: only a bundle that was barely offered is a bad shift.
-                    Finish(_taken * 3 < _bundle && _taken + _refusals < FairTry ? JobEnd.Failed : JobEnd.Done);
+                    _panel.Hide();
+                    Finish(DoneCount * 3 < _bundle && DoneCount + _refusals < FairTry ? JobEnd.Failed : JobEnd.Done);
                 }
                 return;
             }
@@ -160,12 +228,11 @@ namespace RealLifeOverhaul
                 if (away)
                 {
                     Mark(_centre, _markerText);
-                    Show(JobText.T("reallife_job_flyers_obj_back"));
+                    Show(_objBack);
                 }
                 else
                 {
                     Unmark();
-                    ShowCount();
                 }
             }
             if (away || !onFoot || _with != null)
@@ -177,6 +244,90 @@ namespace RealLifeOverhaul
                 Find(Reach, out BaseHuman person, out Pedestrian walker);
                 Point(person, walker);
             }
+            if (!away)
+            {
+                Show(_with != null || _near != null ? _objNear : _objWalk);
+            }
+            Figures(now);
+            Panel(onFoot && !away);
+        }
+
+        // ---------------------------------------------------------------- the game's own interface
+
+        // The shift's figures on the card: each line is written only when what it says changes.
+        private void Figures(float now)
+        {
+            bool clock = _clock.Working;
+            if (clock)
+            {
+                Show(_objClock);
+            }
+            _figures.Objective(Objective);
+            _figures.Units(DoneCount + _clock.Done, _bundle);
+            int seconds = clock ? int.MaxValue : Mathf.Max(0, Mathf.CeilToInt(_endsAt - now));
+            if (seconds != _shownSeconds)
+            {
+                _shownSeconds = seconds;
+                _figures.Limit(clock ? null : JobText.T("reallife_job_card_time_left", "time", ShiftFigures.Clock(seconds)), seconds <= 60 ? WorldPanel.Yellow() : WorldPanel.White());
+            }
+            _figures.Money(Mathf.RoundToInt(_taken * Def.UnitPay * Ctx.Rate) + _clockPay, 0);
+            _figures.Time(Mathf.Max(0, _bundle - DoneCount - _clock.Done) * _clock.MinutesEach);
+        }
+
+        // Over whoever is in reach, with "Offer a flyer"; over the player with "Let time pass" when nobody is.
+        private void Panel(bool active)
+        {
+            if (!active || _clock.Offered)
+            {
+                _panel.Hide();
+                return;
+            }
+            int left = Mathf.Max(0, _bundle - DoneCount);
+            BaseHuman who = _with != null ? _with : _near;
+            bool someone = who != null;
+            _panel.Offer(someone ? _panelNear : _panelNone, _panelLeft, JobText.Number(left), _panel.White,
+                someone ? ButtonOffer : null, _with == null, someone || left <= 0 ? null : ButtonSkip, true);
+            if (someone)
+            {
+                _panel.Show(who.head != null ? who.head : who.transform, who.head != null ? 0.42f : 2.05f, Ctx.Player);
+            }
+            else
+            {
+                _panel.Show(Ctx.Player.transform, PanelOver, Ctx.Player);
+            }
+        }
+
+        // The panel's first button was pressed (the game ran it on its key or on a click).
+        private void Act(string action)
+        {
+            if (Ctx != null && !Over && ReferenceEquals(action, ButtonOffer))
+            {
+                Offer(Time.time);
+            }
+        }
+
+        private void OfferSkip()
+        {
+            if (Ctx == null || Over || _with != null || Time.time - _offerOver < Debounce || !_clock.Offer())
+            {
+                return;
+            }
+            _panel.Hide();   // the game's activity panel has the keys while it is up
+        }
+
+        void IClockedShift.ClockStarted()
+        {
+            Point(null, null);
+            _panel.Hide();
+        }
+
+        void IClockedShift.ClockEnded(int count, int pay, float away)
+        {
+            _clocked += count;
+            _clockPay += pay;
+            _endsAt += away;   // the minutes the clock took are not the bundle's own time
+            _offerOver = Time.time;
+            _shownSeconds = int.MinValue;
         }
 
         // The stack in the left hand: at a measured grip if the clip bundle can give one, as plain shapes if it cannot.
@@ -230,7 +381,7 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- offering one
 
-        // Who the prompt is about, and the marker over their head. Set only when it changes.
+        // Who the panel is about. Set only when it changes.
         private void Point(BaseHuman person, Pedestrian walker)
         {
             if (ReferenceEquals(person, _near))
@@ -239,20 +390,10 @@ namespace RealLifeOverhaul
             }
             _near = person;
             _nearWalker = walker;
-            Prompt = person != null ? _promptText : null;
-            if (person != null && person.head != null)
-            {
-                PromptOver = person.head;
-                PromptLift = 0.42f;
-            }
-            else
-            {
-                PromptOver = person != null ? person.transform : null;
-                PromptLift = 2.05f;
-            }
         }
 
-        public override void Interact(float now)
+        // The panel's "Offer a flyer": to whoever the panel stands over, or failing that whoever is nearest a little further out.
+        private void Offer(float now)
         {
             if (_with != null || Ctx.Driving || PlayerHelper.IsUsingVehicle)
             {
@@ -269,12 +410,7 @@ namespace RealLifeOverhaul
             Point(null, null);
             if (person == null || (walker != null && !_held.Take(walker)))
             {
-                if (!_away && now >= _nextHint)   // off the pitch the objective already says what to do
-                {
-                    _nextHint = now + HintGap;
-                    JobText.Toast(UI.Notification.NotificationType.Info, "reallife_job_flyers_nobody", "key", JobKeys.Label, 3f);
-                }
-                return;
+                return;   // nobody in reach after all (the panel is made again on the next tick)
             }
             Remember(person.GetInstanceID(), now);
             _with = person;
@@ -367,10 +503,12 @@ namespace RealLifeOverhaul
             {
                 return;
             }
+            bool busy = false;
             if (_heldTakes)
             {
                 _taken++;
-                if (Busy())
+                busy = Busy();
+                if (busy)
                 {
                     _busy++;
                 }
@@ -378,11 +516,13 @@ namespace RealLifeOverhaul
                 {
                     Ctx.Say(JobText.Pick(Took, ref _line), 4f);
                 }
-                if (!_away)
-                {
-                    ShowCount();
-                }
             }
+            if (Meta.Dev.Verbose)
+            {
+                Ctx.Logger?.Info("Jobs: flyers: a flyer was " + (_heldTakes ? "taken" + (busy ? " on a busy street" : string.Empty) : "waved away") + "; taken " + _taken + " of " + _bundle
+                                 + ", waved away " + _refusals + ", " + Mathf.Max(0, Mathf.CeilToInt(_endsAt - now)) + " s of the bundle's time left.");
+            }
+            _offerOver = now;
             LetGo();
         }
 
@@ -613,11 +753,6 @@ namespace RealLifeOverhaul
             return people >= BusyPeople;
         }
 
-        private void ShowCount()
-        {
-            Show(JobText.T("reallife_job_flyers_obj", "taken", _taken.ToString(), "bundle", _bundle.ToString()));
-        }
-
         // ---------------------------------------------------------------- the end
 
         public override void End(JobEnd why)
@@ -634,8 +769,11 @@ namespace RealLifeOverhaul
             }
             _near = null;
             _nearWalker = null;
-            PromptOver = null;
-            Prompt = null;
+            if (Ctx != null)
+            {
+                _panel.Hide();
+                _clock?.Close();   // the game's activity panel goes; nothing more is settled through it
+            }
             if (Ctx == null || _paid || _taken <= 0 || why == JobEnd.Fault)
             {
                 return;
@@ -646,7 +784,7 @@ namespace RealLifeOverhaul
             {
                 Units = _taken,
                 Base = Mathf.RoundToInt(_taken * each),
-                Bonus = Mathf.RoundToInt(_busy * each * BusyBonus + (_taken >= _bundle ? _bundle * each * 0.1f : 0f))   // busy street; the whole bundle gone
+                Bonus = Mathf.RoundToInt(_busy * each * BusyBonus + (DoneCount >= _bundle ? _taken * each * 0.1f : 0f))   // busy street; the whole bundle gone (the clock's flyers earn no bonus)
             };
             Ctx.Pay(this, slip, "reallife_job_flyers_slip");
         }
