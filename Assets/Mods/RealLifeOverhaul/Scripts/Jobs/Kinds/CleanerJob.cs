@@ -236,13 +236,16 @@ namespace RealLifeOverhaul
 
         private void ToClient()
         {
-            _panel.Hide();
             Mark(_client.Front, _doorLabel);
             Hint(_mopped > 0 ? 1 : 0);
             if (!Ctx.Driving && !PlayerHelper.IsUsingVehicle && JobSpots.Flat(Ctx.PlayerPosition, _client.Front) < DoorReach)
             {
                 _panel.Offer(_panelDoor, _panelLeft, JobText.Number(_patches - _mopped), _panel.White, ButtonEnter, true, null, false);
                 _panel.Show(_client.Front + Vector3.up * PanelUp, Ctx.Player);
+            }
+            else
+            {
+                _panel.Hide();
             }
         }
 
