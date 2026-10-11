@@ -33,6 +33,9 @@ namespace RealLifeOverhaul.Economy
     ///              the doors in the morning; on the hour that opens a day the hours worked are noted
     ///   the save   the footfall figures are the game's own in the save; the state is written
     ///
+    /// The staff rota planner (CompanyDirector.Rota.cs) is the one thing here that is no part with a day of its own:
+    /// it works a business out when its page is opened and writes a rota when the player presses the button.
+    ///
     /// EVERY EFFECT AND HOW IT IS UNDONE
     ///   footfall     what <see cref="FootfallOf"/> answers when business pressure writes a business's promotion figure
     ///                (Wiring/CompanyLinks adds it to the city's economy's): put back before every save, when this
@@ -48,7 +51,7 @@ namespace RealLifeOverhaul.Economy
     public sealed partial class CompanyDirector : MonoBehaviour
     {
         public const string AppId = "RealLifeCompany";
-        public const int TabOverview = 0, TabStaff = 1, TabCover = 2, TabMarketing = 3, TabTax = 4;
+        public const int TabOverview = 0, TabStaff = 1, TabCover = 2, TabMarketing = 3, TabTax = 4;   // (and TabRota, CompanyDirector.Rota.cs)
 
         private static readonly string[] PartNames = { "staff", "insurance", "marketing", "tax", "licences" };
         private static readonly string[] AppGlyphs = { "Icon-Shop", "Icon-Building", "Icon-Neighborhood" };
@@ -161,6 +164,7 @@ namespace RealLifeOverhaul.Economy
                 mask |= On((CompanyPart)p) ? 1 << p : 0;
             }
             mask |= Settings.EconomyCompanyHide ? 1 << (int)CompanyPart.Count : 0;   // (no part of its own: the tax part's cash off the books)
+            mask |= RotaOn ? 1 << ((int)CompanyPart.Count + 1) : 0;                  // (no part either: the staff rota planner)
             return mask;
         }
 
@@ -178,6 +182,9 @@ namespace RealLifeOverhaul.Economy
         partial void TaxAlerts(int day);
         partial void LicenceDay(int day);
         partial void LicenceAlerts(int day);
+        partial void RotaRead();
+        partial void RotaStop();
+        partial void RotaAlerts(int day);
 
         private void PartDay(CompanyPart part, int day)
         {
@@ -257,6 +264,7 @@ namespace RealLifeOverhaul.Economy
             StaffLevel();
             TaxLevel();
             WriteAll(Save.Day, true, false);
+            RotaRead();
             Changed();
             if (Verbose)
             {
@@ -308,6 +316,7 @@ namespace RealLifeOverhaul.Economy
             StaffLevel();
             TaxLevel();
             WriteAll(today, true, false);
+            RotaRead();
             BuildAlerts(today);
             Logger?.Info("Company: " + (fresh ? "opened for this save" : "state loaded (version " + version + ")") + " on day " + today + ". " + _shops.Count + " business(es)"
                          + (fresh && added > 0 ? ", each with the licences it needs for a first term" : string.Empty) + ", " + _state.Staff.Count + " employee(s), strictness " + _level
@@ -387,6 +396,7 @@ namespace RealLifeOverhaul.Economy
             }
             _shops.Clear();
             _alerts.Clear();
+            RotaStop();
             if (!unloading)
             {
                 RemoveApp();
@@ -568,6 +578,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 float ruled = Time.realtimeSinceStartup;
                 int written = WriteAll(day, true, true);
+                RotaRead();
                 Changed();
                 if (Verbose)
                 {
@@ -781,6 +792,7 @@ namespace RealLifeOverhaul.Economy
             {
                 int gone;
                 ReadPeople(out gone);
+                RotaRead();
                 Badge();
                 return true;
             }
@@ -873,6 +885,7 @@ namespace RealLifeOverhaul.Economy
                         CompanyText.T("reallife_co_plan_loss_what", "days", _shops[i].File.LossRun.ToString(), "amount", FinanceText.Money(-_shops[i].Profit)), null, null);
                 }
             }
+            RotaAlerts(day);
         }
 
         internal void Alert(int a, int b, int day, string title, string what, string money, string ifMissed)
