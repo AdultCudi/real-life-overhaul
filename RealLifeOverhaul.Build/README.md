@@ -106,7 +106,7 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       Activities/       SoloActivity (one person, data only: sweeper, window cleaner, painter on a ladder, tai chi, newspaper, doorman...),
                         RoadCrewActivity, ChatActivity, BuskerAudienceActivity, JoggerActivity,
                         StallActivity (coffee and hot-dog carts with a queue that walks up, is served and walks off),
-                        CourierActivity (sack truck, parcel to a shopfront), WalkingActivities (the mail round; pushchair; umbrellas in the rain),
+                        CourierActivity (sack truck, parcel to a shopfront), WalkingActivities (the mail round; pushchair; a traveller with a suitcase; umbrellas in the rain),
                         StandingScenes (chess table, a driver leaning on a parked car, a door with a queue, a gardener at a street tree)
       CityPeople        the pool of eight (not the accident pool's six): made a person at a time, hidden when out of view, knocked down by the player's car
       CityPerson        one of them: stand, walk, play a clip with its tool, drop it when hit
@@ -584,11 +584,24 @@ note says it belongs:
 | `point_show` | the existing `doorman` | `Greet`: somebody on foot in front of him is shown the way in |
 
 `HoldNow` and `Ring` are two fields of `SoloSpec`, so another such person is still one catalogue entry. The budget is
-the director's and is unchanged (three sites, eight people); the Guide's count is `CityCatalogue.All.Length` (32 now);
+the director's and is unchanged (three sites, eight people); the Guide's count is `CityCatalogue.All.Length` (33 now);
 each start writes the director's own line, `City life: <id> started N m away; ...`. A clip or prop missing from the
 bundle leaves `bench_chat`, `street_lunch` and `mug_break` unstarted and the other two as they were.
 
-Nineteen stay unplayed. Each was looked at for a place among the features that exist:
+A second pass wired eight more, each where its clip's own note says it belongs:
+
+| clip | where | how it starts, how it ends, what it falls back to |
+|---|---|---|
+| `browse_rack` | the player at a clothes rack (`ClothesBrowser`, rack only, not the wardrobe) | played over the game's legs (the clip is upper body, `LeisureBody.Over`) from the moment the list opens; the director takes it off on every way out. Without the clip the player stands as before |
+| `try_on_turn` | the same, when a garment is tried on | whole body, once: the player is held on the spot for its 3 s (`LeisureBody.Hold`, `Play`), then `Rest`, `Free` and the rail again, on the activity's own 5 times a second tick. A second try-on during the turn is not turned for. Without the clip the garment simply goes on |
+| `carry_suitcase_walk` (with `suitcase`) | new entry `traveller` (Leisure, 6:00 to 23:00), `StrollActivity` with `StrollKind.Suitcase`: three or four stretches of pavement, 16 to 30 m each | the clip is a whole-body walk made for 1.3 m/s, so it is played only while the agent is really moving and its speed is set from the agent's (`CityPerson.KeepStep`, `ActivityAnimator.MatchSpeed`, as the crews are kept in step) once a second on the director's tick; held up (under 0.2 m/s, two seconds after setting off) they go back to the game's own walk with the case in one hand. No landmark is known to the catalogue, so it is placed like the pushchair. Without the clip or the case the entry does not start |
+| `cheer_once` | the listener at the busker (`BuskerJob`) | the song just played was good (the quality of the "good" toast); when the listener is about to leave, instead of leaving at once they cheer once (the game's pedestrian, the mod's clip, 1.8 s), and the clip is taken off with `ActivityAnimators.Forget` before they are handed back, on every way (the pedestrian is pooled). If the clip cannot be played they leave as before |
+| `cheer_once` | an onlooker at the street chess table (`ChessCorner`) | a third person from the pool, to the side of the table (`watch_nod`), only where the pool has three free after the opponent; when the player wins (7 of 10) they cheer once and go back to watching on the corner's own second tick. Taken in with the table |
+| `hold_baby` (with `baby_bundle`) | the partner at home (`HomeLife`), with a baby under a year old (`FamilyBalance.BabyUntil`, the age the cot shows its swaddled baby to) | one of the ways they stand at a place: every other day at the living-room places, always at a clear-floor place. The cot's bundle is hidden while they hold it and lies in the cot again when they put it down (`HomeLife.Cradle`), walk, are spoken to, or leave. A child of one or two is not held: there is no toddler shape, and a held empty bundle would be wrong |
+| `rock_cot` | the partner at home, a place of its own beside the cot (`CotPlace`, found when the cot is put down) | the feet 0.68 m to the cot's side (the clip's figure), within 8 cm of the mesh; the partner is brought to it and then set on it exactly (`NavMeshAgent.Warp`, a few centimetres), facing the cot. **The cot does not move with the push** (the clip says it should; moving it needs a per-frame step the mod does not take), so the hands go 2.8 cm either side of the rail |
+| `slow_dance_a`, `_b` | the wedding, after the photograph (`WeddingScene`, `Step.Dance`) | the partner takes the step to 0.45 m (`CityPerson.StepTo`), the gap really reached is measured and the pair is played only within 0.10 m of it, both in the same call, for 8 s; both are released on every way out (`Abandon`, `End`). If the gap is not reached, or either clip is missing, the ceremony goes on to the reception as before |
+
+Eleven stay unplayed. Each was looked at for a place among the features that exist:
 
 | clip | why not |
 |---|---|
@@ -601,17 +614,13 @@ Nineteen stay unplayed. Each was looked at for a place among the features that e
 | `throw_ball` | a free throw: no ball and no hoop are modelled |
 | `eat_sit` | seated at a table 0.75 m high whose edge is 0.20 m ahead: no seat in the game or the mod has a table at a known place in front of it |
 | `box_lift_with`, `_b` | two people lifting a box 1.20 m long: no such prop (the move's boxes are 0.45 m and carried one each) |
-| `browse_rack`, `try_on_turn` | belong at the clothes rack (`Leisure/Shops/ClothesBrowser`, `clothes_rack`: its rail is the 1.55 m the clip is made for), on the player's own body while the list is open. **Not wired in this pass** |
-| `collector_lean` | belongs to the collector of "Business pressure", leaning on the player's counter. **Not wired in this pass** |
-| `carry_suitcase_walk` | a traveller with a `suitcase`; a whole-body walking clip, which the living city's rules allow only with its speed matched to the ground. **Not wired in this pass** |
-| `cheer_once` | a listener when a busker's song ends, or the player on winning at chess. **Not wired in this pass** |
-| `hold_baby`, `rock_cot` | the partner at home with a child under three (the `cot` and `baby_bundle` are in the bundle, the cot already stands in the home). **Not wired in this pass** |
-| `slow_dance_a`, `_b` | a first dance at the wedding: two bodies 0.45 m apart, one of them the player's, started in the same frame. **Not wired in this pass** |
-
-The last six rows are work that has a place and was not done; the first ten have none among the features that exist.
+| `collector_lean` | the collector of "Business pressure" would lean on a counter 0.975 m up whose near edge is 0.32 to 0.36 m ahead, the player 1.1 m beyond it. A visit is played on open floor 1.7 m from the player and the game's shop furniture gives no measured counter (`BusinessVisit` says so); played anywhere else the clip reads as a man bent forward with a hand in the air. Left listed; should a shop ever offer a measured counter it is one line in `BusinessVisit` |
 
 Not checked in the game: any of it. A screenshot of the bench with the two on it settles whether they sit on the
 seat and not in it (the seat is 0.46 m, the clips are made for 0.45) and whether the bench stands clear of the wall.
+For the second pass: the hands on the rack's rail and on the cot's rail, the baby in the partner's arm, the traveller's
+feet on the pavement, the clasped hands of the first dance. The log (developer diagnostics on) says the first time
+each clip is played, `Clips: the '<clip>' clip is played by <who> (said the first time only).`, and the dance says the gap it measured.
 
 ## Jobs
 
@@ -1102,7 +1111,7 @@ gives back whatever else it put out. A best score is kept per save for chess, fi
 
 | activity | where | how it plays | costs | pays / mood | record |
 |---|---|---|---|---|---|
-| Street chess | at the mod's chess table, where a chess player sits by day in the dry (put out of view 30 to 70 m off, one at a time, never while the living city has its own chess table out) | walk to the free stool (marked), sit (`chess_sit`); five positions, three moves each on a 22 s clock: 2 points for the move, 1 for a sound one, 0 for a blunder; the hand makes the move chosen (`chess_move_player`, from and back to the sitting loop); he answers each in a line | stake 10 | 7+ of 10 wins the stake (MoodUp), 5 or 6 draws it (Social), under 5 loses it | points |
+| Street chess | at the mod's chess table, where a chess player sits by day in the dry (put out of view 30 to 70 m off, one at a time, never while the living city has its own chess table out) | walk to the free stool (marked), sit (`chess_sit`); five positions, three moves each on a 22 s clock: 2 points for the move, 1 for a sound one, 0 for a blunder; the hand makes the move chosen (`chess_move_player`, from and back to the sitting loop); he answers each in a line; an onlooker to the side of the table, where the pool can spare one, cheers once (`cheer_once`) on a win | stake 10 | 7+ of 10 wins the stake (MoodUp), 5 or 6 draws it (Social), under 5 loses it | points |
 | Fishing | standing still at the water's edge within 320 m of a waterside landmark, facing open water | the rod in the hand at the grip the four rod clips share: `fish_wait` between casts and while the float is out, `cast_rod` for the cast (the float and line leave the tip at its `release` mark, 0.9 s), `reel_in` while a fish is on, `fish_land` when it comes out; they cross-fade with the rod in the hand and turn it themselves. Five casts: stop the cursor in the zone to cast (a better cast: shorter wait, better fish), wait for the bite, strike inside the fish's window (a strike at nothing scares it; three and the cast is over), then three timed pulls (the zone narrower the heavier the fish; two misses and it is off). Key 3 packs up early | bait 6 | the catch is sold by weight (0 to about 110 a fish); MoodUp for a catch, MoodUpBig for a new kind or 3 kg | heaviest fish; kinds caught (8) |
 | Dancing | in a nightclub, on or beside a dance floor item | the player dances one of the game's nine dances; a cursor crosses the meter once a beat (0.86 s), 24 beats: the key in the zone scores 1, in the bright middle 3; every sixth in a row changes the dance | free (the club's own entrance fee is the game's) | MoodUp from 12 on the beat, MoodUpBig from 18 | points + 2 x longest run |
 | Drinks | in a nightclub, within 2.8 m of a cocktail bar item | beer 8, cocktail 14, soft drink 4; the glass is stood on the bar and the player steps up to it and drinks with `drink_bar` (the glass on the bar before the clip's `grip` mark and after its `release`, in the right hand between) where the bar measures as one that clip fits; anywhere else drunk where they stand (`sip` with a glass). See "The bar" below | the price | MoodUp; from two drinks in the blood the Tipsy mood (+3, 3 h) instead, and the car wanders | none |
@@ -1164,7 +1173,8 @@ shoes are on the same rack.
 Browsing is a list (keys 1 and 2 up and down, 3 the next section: tops, trousers, shoes, and dresses for a woman)
 and the interaction key: once to **try on** (on the player themselves, through the catalogue, exactly as the
 options page would put it on: the game's shop preview character is a uniform editor and is not used), again to
-**buy**. Walking away closes the list and whatever was tried and not bought comes off, back to what they came in
+**buy**. At a rack the player's upper body goes through the rail while the list is open (`browse_rack`) and turns round once in a garment
+tried on (`try_on_turn`, held on the spot for its 3 s). Walking away closes the list and whatever was tried and not bought comes off, back to what they came in
 wearing. The catalogue has no tier field, so the price goes by the garment:
 
 | garment | tier | price |
@@ -1297,8 +1307,7 @@ throws, logs once, puts back what it changed and stays off for the session.
 All drop in by id with no code change (`LeisureProps.Take` prefers `PropLibrary`; `ClipLibrary.Has` gates each
 clip), except where a line says what to change. **Delivered and played:** `cast_rod`, `fish_wait`, `reel_in`,
 `fish_land`, `drink_bar`, `chess_move_player`, and the props `fishing_rod`, `fishing_float`, `fishing_line`,
-`drink_glass`, `clothes_rack`. **Delivered, not played yet:** `browse_rack` and `try_on_turn` (browsing is a list on
-the HUD while the player is free to walk: there is no moment at the rail to play them in), `throw_ball`,
+`drink_glass`, `clothes_rack`. `browse_rack` and `try_on_turn` are played on the player at the rack (see "Clothes"). **Delivered, not played yet:** `throw_ball`,
 `cocktail_glass`, `beer_bottle` and `shopping_bag`.
 
 | clip | length | loop | what it is |
@@ -4020,7 +4029,7 @@ walks in, or come in at the door when it is not being looked at.
   short days if they are the one looking after small children.
 - **At home**: they stand by what the game calls a cooker, fridge, coffee machine (a cup held, a sip now
   and then), a sofa, television, armchair or bookshelf (reading the paper, or watching), or failing all
-  furniture on clear floor; every minute or so they walk to another of those places. Up to two of the places
+  furniture on clear floor; every minute or so they walk to another of those places. With a baby under a year old they hold it (`hold_baby`) at some of them, and a place beside the cot, where they rock it (`rock_cot`), is one of the places. Up to two of the places
   are beside something to sit on, and there they sit down (see "Sitting" below). They wave and greet
   the player at the door (lines by the hour and by how the player is), and within reach, facing them, the
   interaction key opens a conversation: both stand, face each other and animate (`talk_a` / `talk_b`).
@@ -4154,7 +4163,9 @@ player sits there through the mod. A screenshot of the partner on a sofa and one
   half plays alone, as before), the pronouncement, applause (the officiant and the family's guest clap, the
   borrowed guests clap and `cheer_loop` by turns, each starting a little later than the last; the partner's
   `cheer`), a photograph (the HUD hidden
-  for two frames; saved under `RealLifeOverhaul_shots` in the game's data folder), then the screen goes
+  for two frames; saved under `RealLifeOverhaul_shots` in the game's data folder), the first dance (`slow_dance_a` on the
+  player and `slow_dance_b` on the partner, 0.45 m apart and facing, started together for 8 s; the partner takes the step in
+  and the pair is played only if the gap really reached is within 0.10 m of that, else it is left out), then the screen goes
   dark for the reception (four hours) and everybody is taken away unseen. Then the bill is settled, the
   gifts counted (about 140 a guest times the root of the size), and the story of the party told.
 - **Married**: a lasting mood (+10, renewed daily while home is not unhappy), next of kin, and the offer
@@ -4278,11 +4289,8 @@ small box, head up, held as a loop; `propose_react_yes` (`clap`): hands to the m
 `ring_present` (`job_hand_over`): takes the other's left hand and slides a ring on at 1.05 m, 3 s once;
 `cheer` (`wave_hello`): both arms up, once. **All five are delivered and played, and so are**
 `propose_kneel_down`, `propose_kneel_up`, `ring_receive` and `cheer_loop` (see "Engagement and wedding").
-**Delivered, not played yet:** `slow_dance_a` / `_b` (the reception passes under a dark screen: there is
-nobody to be seen dancing), `hold_baby` and `rock_cot` (the partner at home stands at places found for an
-adult to stand at; the cot is put down elsewhere, and bringing them to its long side, a quarter turn and
-0.68 m from its middle, needs a placement that has not been written), `cheer_once`. Still wanted: `sit_sofa`
-(only if seats are solved).
+**Played since:** `slow_dance_a` / `_b` (the first dance, after the wedding photograph), `hold_baby` and `rock_cot` (the
+partner at home), `cheer_once` (a busker's listener, the chess onlooker). Still wanted: `sit_sofa` (only if seats are solved).
 
 Props (drawn from the prop bundle by these ids when present; plain shapes from `FamilyProps` until then,
 origin on the floor, facing +z, metres): `wedding_arch` (2.1 wide, 2.4 high, 0.3 deep, flowers along the
