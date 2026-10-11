@@ -65,6 +65,7 @@ namespace RealLifeOverhaul
         private const float BoxKerbSide = 0.06f;    // its kerb-side line lies this far out from the kerb
         private const float LineWide = 0.12f;
         private const float LineTall = 0.03f;
+        private static readonly bool BayLettering = false;
         private const string BayWords = "reallife_transit_bay_marking";
         private static readonly Color BayYellow = new Color(0.98f, 0.82f, 0.10f);
 
@@ -303,7 +304,8 @@ namespace RealLifeOverhaul
             {
                 Shapes.Piece("Line", _bay, Shapes.Cube, line, Vector3.zero, Vector3.one);
             }
-            TMP_FontAsset font = Hud.Font;
+            // No lettering on the road: seen in the game it ran far outside the box and shimmered. The yellow box is the marking.
+            TMP_FontAsset font = BayLettering ? Hud.Font : null;
             if (font == null)
             {
                 return;

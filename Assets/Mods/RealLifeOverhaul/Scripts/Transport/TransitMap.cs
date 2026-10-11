@@ -124,7 +124,7 @@ namespace RealLifeOverhaul
         public static bool Ready { get; private set; }
 
         /// <summary>True while the stops are being placed, a slice at a time: the director then comes back every frame, so that the stops are there in seconds and not in minutes.</summary>
-        public static bool PlacingStops => !Ready && _phase == 2;
+        public static bool PlacingStops => !Ready;   // (the pairing too: one search a frame, a few milliseconds each)
         public static bool Failed { get; private set; }
 
         private static Waypoint[] _points;
@@ -931,7 +931,7 @@ namespace RealLifeOverhaul
         private static string NameOf(Vector3 place)
         {
             CityBuildingController nearest = null;
-            float best = 70f * 70f;
+            float best = 150f * 150f;
             for (int i = 0; _buildings != null && i < _buildings.Length; i++)
             {
                 CityBuildingController building = _buildings[i];

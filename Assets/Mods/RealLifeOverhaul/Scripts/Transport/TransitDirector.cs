@@ -95,7 +95,7 @@ namespace RealLifeOverhaul
         private const float DwellMost = 34f;
         private const float ChooseFor = 30f;         // seconds the bus waits for the player to pick a stop
         private const int Dressings = 48;          // every stop of the city stands for as long as the city is loaded (18 in the city as it is)
-        private const int PutsATick = 2;            // stops put up in one pass, nearest first: all of them within seconds of the network being ready
+        private const int PutsATick = 6;            // stops put up in one pass, nearest first: all of them within seconds of the network being ready
         private const int Waiters = 2;
 
         private enum RiderStep { None, Arriving, Waiting, Rising, Boarding, Entering, Exiting, Leaving }
