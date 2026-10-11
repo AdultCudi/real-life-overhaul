@@ -513,6 +513,18 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_planner_test_fill", () => Planner.PlannerDirector.Instance?.TestFill())
                 .AddButton("reallife_planner_test_clear", () => Planner.PlannerDirector.Instance?.TestClear())
                 .AddSplitter()
+                .AddHeader("reallife_econ_header")
+                .AddToggle(Settings.EconomyId, "reallife_econ_enabled", Settings.Economy,
+                    v => Settings.Economy = v)
+                .AddButton("reallife_econ_test_report", () => Economy.EconomyDirector.Instance?.TestReport())
+                .AddButton("reallife_econ_test_missed", () => Economy.EconomyDirector.Instance?.TestMissed())
+                .AddButton("reallife_econ_test_on_time", () => Economy.EconomyDirector.Instance?.TestOnTime())
+                .AddButton("reallife_econ_test_set_560", () => Economy.EconomyDirector.Instance?.TestSet(560))
+                .AddButton("reallife_econ_test_set_600", () => Economy.EconomyDirector.Instance?.TestSet(600))
+                .AddButton("reallife_econ_test_set_760", () => Economy.EconomyDirector.Instance?.TestSet(760))
+                .AddButton("reallife_econ_test_clear", () => Economy.EconomyDirector.Instance?.TestClear())
+                .AddButton("reallife_econ_test_restore", () => Economy.EconomyDirector.Instance?.TestRestore())
+                .AddSplitter()
                 .AddHeader("reallife_nav_header")
                 .AddToggle(Settings.MinimapId, "reallife_nav_minimap", Settings.Minimap,
                     v => Settings.Minimap = v)
@@ -728,6 +740,9 @@ namespace RealLifeOverhaul
             Planner.PlannerApp.Logger = context.Logger;
             Planner.PlannerDirector.Logger = context.Logger;
             _root.AddComponent<Planner.PlannerDirector>();   // the Planner: an app on the game's phone with everything to do, reminders and notes (Scripts/Planner)
+            Economy.EconomyDirector.Logger = context.Logger;
+            Economy.FinanceApp.Logger = context.Logger;
+            _root.AddComponent<Economy.EconomyDirector>();   // the credit rating, the banks' terms by it, loans from the phone and the Finance app (Scripts/Economy)
             Nav.NavGraph.Logger = context.Logger;
             Nav.NavMarks.Logger = context.Logger;
             Nav.NavHud.Logger = context.Logger;

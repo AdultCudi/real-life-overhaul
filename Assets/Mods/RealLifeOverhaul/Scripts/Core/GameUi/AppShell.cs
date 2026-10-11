@@ -288,6 +288,50 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
+        /// <summary>
+        /// More tabs than the two MyEmployees has. The first keeps the rounded left corner and the last the rounded
+        /// right one; each tab between them is a copy of the first with no picture, which a sliced image draws as a
+        /// plain white box: a tab with square corners. The bar lays them out itself. Call it while the app is still
+        /// asleep (in Build), before the tabs are given their words and clicks. False, with one line in Player.log, if
+        /// a copy is not a tab.
+        /// </summary>
+        public bool SetTabCount(int count)
+        {
+            if (count <= 2 || Tabs == null || Tabs.Length != 2)
+            {
+                return count == 2;
+            }
+            Transform bar = Tabs[0].transform.parent;
+            var tabs = new Button[count];
+            var labels = new TMP_Text[count];
+            tabs[0] = Tabs[0];
+            labels[0] = TabLabels[0];
+            tabs[count - 1] = Tabs[1];
+            labels[count - 1] = TabLabels[1];
+            for (int i = 1; i < count - 1; i++)
+            {
+                GameObject copy = UnityEngine.Object.Instantiate(Tabs[0].gameObject, bar, false);
+                copy.name = "Tab" + i;
+                copy.transform.SetSiblingIndex(i);
+                var picture = copy.GetComponent<Image>();
+                if (picture != null)
+                {
+                    picture.sprite = null;
+                }
+                tabs[i] = UiClone.Rewire(copy.transform, null);
+                Transform label = copy.transform.Find("Label");
+                labels[i] = label != null ? label.GetComponent<TMP_Text>() : null;
+                if (tabs[i] == null || labels[i] == null)
+                {
+                    UiClone.Fallback("a copy of the game's table tab is not a tab, so the app cannot have " + count + " of them");
+                    return false;
+                }
+            }
+            Tabs = tabs;
+            TabLabels = labels;
+            return true;
+        }
+
         /// <summary>Marks a tab as the one showing, as MyEmployees.ChangeTab does: it cannot be clicked and its label is black.</summary>
         public void ShowTab(int index)
         {
