@@ -25,9 +25,6 @@ namespace RealLifeOverhaul
         public static Contact Friend { get; private set; }
         public static Contact Mom { get; private set; }
 
-        // Kept alive for the whole session: the game caches contact icons by sprite name.
-        private static readonly List<Sprite> Icons = new List<Sprite>();
-
         public static void Setup()
         {
             Friend = null;
@@ -37,15 +34,16 @@ namespace RealLifeOverhaul
                 return;
             }
 
-            AddIcon(EmergencyId, new Color(0.82f, 0.13f, 0.13f));
-            AddIcon(DoctorId, new Color(0.10f, 0.62f, 0.55f));
-            AddIcon(FriendId, new Color(0.95f, 0.62f, 0.10f));
-            AddIcon(MomId, new Color(0.78f, 0.30f, 0.62f));
+            ContactPictures.Add(EmergencyId);
+            ContactPictures.Add(DoctorId);
+            ContactPictures.Add(FriendId);
+            ContactPictures.Add(MomId);
 
             Register(EmergencyId, "reallife_contact_911_desc", "reallife_911_calldialogtype", () => new EmergencyDialog(), "reallife_text_911_welcome");
             Register(DoctorId, "reallife_contact_doctor_desc", "reallife_doctor_calldialogtype", () => new DoctorCallDialog(), "reallife_text_doctor_welcome");
             Friend = Register(FriendId, "reallife_contact_friend_desc", "reallife_friend_calldialogtype", () => new FriendDialog(), "reallife_text_friend_welcome");
             Mom = Register(MomId, "reallife_contact_mom_desc", "reallife_mom_calldialogtype", () => new MomDialog(), "reallife_text_mom_welcome");
+            ContactSearch.Install();   // a search box in the game's Contacts app (Phone/Contacts)
             Logger?.Info("Phone contacts registered.");
         }
 
@@ -60,54 +58,6 @@ namespace RealLifeOverhaul
                 contact.SendMessage(new TextMessage(welcomeKey), notify: false);
             }
             return contact;
-        }
-
-        // A plain coloured disc; the game looks icons up by sprite name == contact id.
-        private static void AddIcon(string id, Color color)
-        {
-            var references = InstanceBehavior<GlobalReferences>.Instance;
-            if (references == null || references.contactIcons == null)
-            {
-                return;
-            }
-            foreach (Sprite existing in references.contactIcons)
-            {
-                if (existing != null && existing.name == id)
-                {
-                    return;
-                }
-            }
-
-            Sprite sprite = Icons.Find(s => s != null && s.name == id);
-            if (sprite == null)
-            {
-                const int size = 96;
-                var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-                var pixels = new Color[size * size];
-                float radius = size / 2f - 2f;
-                for (int y = 0; y < size; y++)
-                {
-                    for (int x = 0; x < size; x++)
-                    {
-                        float distance = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(size / 2f, size / 2f));
-                        float alpha = Mathf.Clamp01(radius - distance);
-                        Color pixel = distance < radius * 0.42f ? Color.white : color;
-                        pixel.a = alpha;
-                        pixels[y * size + x] = pixel;
-                    }
-                }
-                texture.SetPixels(pixels);
-                texture.Apply();
-                sprite = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
-                sprite.name = id;
-                Icons.Add(sprite);
-            }
-
-            Sprite[] old = references.contactIcons;
-            var icons = new Sprite[old.Length + 1];
-            old.CopyTo(icons, 0);
-            icons[old.Length] = sprite;
-            references.contactIcons = icons;
         }
 
         /// <summary>A closing line: on the phone the call ends by itself, in person there's a leave button.</summary>

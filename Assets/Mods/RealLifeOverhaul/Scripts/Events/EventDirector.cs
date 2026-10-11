@@ -87,8 +87,6 @@ namespace RealLifeOverhaul.Events
         private int _announcedDay, _toldDay, _doneDay;
         private int _stageFailures;
         private Contact _bulletin;
-        private Sprite _bulletinIcon;
-
         // A wreck another feature asked to have set alight (CrashFire): flames only, no engine.
         private VehicleComponent _crashCar;
         private float _crashUntil;
@@ -557,7 +555,7 @@ namespace RealLifeOverhaul.Events
             {
                 if (_bulletin == null)
                 {
-                    AddBulletinIcon();
+                    ContactPictures.Add(BulletinId);   // the game's own logo shapes (Phone/Contacts)
                     _bulletin = Contact.GetContact(BulletinId, ContactCategoryName.General, "reallife_contact_bulletin_desc", null, false, true);
                 }
                 _bulletin.SendMessage(new TextMessage(key, data), notify: false);
@@ -566,51 +564,6 @@ namespace RealLifeOverhaul.Events
             {
                 Logger?.Error(e);
             }
-        }
-
-        // The game looks a contact's icon up by sprite name; a contact without one must not be left to chance.
-        private void AddBulletinIcon()
-        {
-            var references = InstanceBehavior<GlobalReferences>.Instance;
-            if (references == null || references.contactIcons == null)
-            {
-                return;
-            }
-            foreach (Sprite existing in references.contactIcons)
-            {
-                if (existing != null && existing.name == BulletinId)
-                {
-                    return;
-                }
-            }
-            if (_bulletinIcon == null)
-            {
-                const int size = 64;
-                var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-                var pixels = new Color[size * size];
-                var colour = new Color(0.16f, 0.42f, 0.72f);
-                float radius = size / 2f - 2f;
-                for (int y = 0; y < size; y++)
-                {
-                    for (int x = 0; x < size; x++)
-                    {
-                        float distance = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(size / 2f, size / 2f));
-                        Color pixel = Mathf.Abs(y - size / 2) < 4 && Mathf.Abs(x - size / 2) < 16 || Mathf.Abs(y - size / 2 - 12) < 3 && Mathf.Abs(x - size / 2) < 16
-                                      || Mathf.Abs(y - size / 2 + 12) < 3 && Mathf.Abs(x - size / 2) < 16 ? Color.white : colour;
-                        pixel.a = Mathf.Clamp01(radius - distance);
-                        pixels[y * size + x] = pixel;
-                    }
-                }
-                texture.SetPixels(pixels);
-                texture.Apply();
-                _bulletinIcon = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
-                _bulletinIcon.name = BulletinId;
-            }
-            Sprite[] old = references.contactIcons;
-            var icons = new Sprite[old.Length + 1];
-            old.CopyTo(icons, 0);
-            icons[old.Length] = _bulletinIcon;
-            references.contactIcons = icons;
         }
 
         // ---------------------------------------------------------------- the save: one line of plain text in modData

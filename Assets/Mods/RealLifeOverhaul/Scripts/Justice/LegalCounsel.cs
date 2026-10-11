@@ -355,8 +355,6 @@ namespace RealLifeOverhaul
         public const string ContactId = "reallife-legal";
         private const string DialogTypeName = "reallife_legal_calldialogtype";
 
-        private static Sprite _icon;   // kept for the session: the game caches contact icons by sprite name
-
         public static Contact Contact { get; private set; }
 
         public static void Setup(IModLogger logger)
@@ -368,7 +366,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                AddIcon();
+                ContactPictures.Add(ContactId);   // the game's own logo shapes or portrait camera (Phone/Contacts)
                 Contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_legal_desc", null, false, true);
                 var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogTypeName);
                 Contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
@@ -411,31 +409,6 @@ namespace RealLifeOverhaul
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogTypeName);
             CallDialogFactory.RegisterDialog(dialogType, () => new LegalDialog());
             InstanceBehavior<UI.UIs>.Instance.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog);
-        }
-
-        private static void AddIcon()
-        {
-            var references = InstanceBehavior<GlobalReferences>.Instance;
-            if (references == null || references.contactIcons == null)
-            {
-                return;
-            }
-            foreach (Sprite existing in references.contactIcons)
-            {
-                if (existing != null && existing.name == ContactId)
-                {
-                    return;
-                }
-            }
-            if (_icon == null)
-            {
-                _icon = MakeIcon();
-            }
-            Sprite[] old = references.contactIcons;
-            var icons = new Sprite[old.Length + 1];
-            old.CopyTo(icons, 0);
-            icons[old.Length] = _icon;
-            references.contactIcons = icons;
         }
 
         // A plain coloured disc with a white middle, like the mod's other contacts; the game looks icons up by sprite name == contact id.

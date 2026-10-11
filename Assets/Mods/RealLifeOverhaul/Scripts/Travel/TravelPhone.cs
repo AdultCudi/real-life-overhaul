@@ -33,12 +33,12 @@ namespace RealLifeOverhaul
             TravelDirector director = TravelDirector.Instance;
             try
             {
-                AddIcon(TripsId, new Color(0.20f, 0.52f, 0.86f));
+                ContactPictures.Add(TripsId);
                 Register(TripsId, "reallife_contact_trips_desc", "reallife_trips_calldialogtype", () => new TripsDialog(), "reallife_text_trips_welcome");
                 bool noAgency = director != null && director.Holidays != null && director.Holidays.AgencyCount == 0;
                 if (Settings.Holidays && (TravelState.AgencyVisited || noAgency))
                 {
-                    AddIcon(AgentId, new Color(0.50f, 0.15f, 0.13f));
+                    ContactPictures.Add(AgentId);
                     TravelAgentDialog.Host = director != null ? director.Holidays : null;
                     Register(AgentId, "reallife_contact_travel_desc", "reallife_travelagent_calldialogtype", () => new TravelAgentDialog(), "reallife_text_travel_welcome");
                 }
@@ -62,50 +62,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A plain coloured disc with a white middle, like the mod's other contacts; the game looks icons up by sprite name == contact id.
-        private static void AddIcon(string id, Color colour)
-        {
-            var references = InstanceBehavior<GlobalReferences>.Instance;
-            if (references == null || references.contactIcons == null)
-            {
-                return;
-            }
-            foreach (Sprite existing in references.contactIcons)
-            {
-                if (existing != null && existing.name == id)
-                {
-                    return;
-                }
-            }
-            Sprite sprite = Icons.Find(s => s != null && s.name == id);
-            if (sprite == null)
-            {
-                const int size = 96;
-                var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-                var pixels = new Color[size * size];
-                float radius = size / 2f - 2f;
-                for (int y = 0; y < size; y++)
-                {
-                    for (int x = 0; x < size; x++)
-                    {
-                        float distance = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(size / 2f, size / 2f));
-                        Color pixel = distance < radius * 0.42f ? Color.white : colour;
-                        pixel.a = Mathf.Clamp01(radius - distance);
-                        pixels[y * size + x] = pixel;
-                    }
-                }
-                texture.SetPixels(pixels);
-                texture.Apply();
-                sprite = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
-                sprite.name = id;
-                Icons.Add(sprite);
-            }
-            Sprite[] old = references.contactIcons;
-            var icons = new Sprite[old.Length + 1];
-            old.CopyTo(icons, 0);
-            icons[old.Length] = sprite;
-            references.contactIcons = icons;
-        }
     }
 
     /// <summary>The Trips page: what is booked now; then past trips and loyalty; the nearest hotel; a ticket used.</summary>

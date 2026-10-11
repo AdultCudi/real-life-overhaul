@@ -34,7 +34,6 @@ namespace RealLifeOverhaul
         private const string BallotName = "reallife_ballot_calldialogtype";
         private const string NoticeName = "reallife_sitenotice_calldialogtype";
 
-        private static Sprite _icon;
         internal static readonly StringBuilder Text = new StringBuilder(1024);
 
         /// <summary>The site whose notice is being read.</summary>
@@ -48,7 +47,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                AddIcon();
+                ContactPictures.Add(ContactId);   // the game's own logo shapes or portrait camera (Phone/Contacts)
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_cityhall_desc", null, false, true);
                 var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogName);
                 contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
@@ -141,52 +140,6 @@ namespace RealLifeOverhaul
             return text.Length > 0 ? text.ToString() : "\n" + CivicText.T("reallife_civic_platform_none");
         }
 
-        private static void AddIcon()
-        {
-            var references = InstanceBehavior<GlobalReferences>.Instance;
-            if (references == null || references.contactIcons == null)
-            {
-                return;
-            }
-            foreach (Sprite existing in references.contactIcons)
-            {
-                if (existing != null && existing.name == ContactId)
-                {
-                    return;
-                }
-            }
-            if (_icon == null)
-            {
-                const int size = 96;
-                var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-                var pixels = new Color[size * size];
-                var colour = new Color(0.16f, 0.30f, 0.52f);
-                float radius = size / 2f - 2f;
-                for (int y = 0; y < size; y++)
-                {
-                    for (int x = 0; x < size; x++)
-                    {
-                        float distance = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(size / 2f, size / 2f));
-                        // A white pediment and three columns on a blue disc.
-                        bool column = y > 26 && y < 58 && (Mathf.Abs(x - 34) < 4 || Mathf.Abs(x - 48) < 4 || Mathf.Abs(x - 62) < 4);
-                        bool beam = (y >= 58 && y < 64 && Mathf.Abs(x - 48) < 22) || (y >= 22 && y <= 26 && Mathf.Abs(x - 48) < 24);
-                        bool roof = y >= 64 && y < 78 && Mathf.Abs(x - 48) < (78 - y) * 1.6f;
-                        Color pixel = column || beam || roof ? Color.white : colour;
-                        pixel.a = Mathf.Clamp01(radius - distance);
-                        pixels[y * size + x] = pixel;
-                    }
-                }
-                texture.SetPixels(pixels);
-                texture.Apply();
-                _icon = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
-                _icon.name = ContactId;
-            }
-            Sprite[] old = references.contactIcons;
-            var icons = new Sprite[old.Length + 1];
-            old.CopyTo(icons, 0);
-            icons[old.Length] = _icon;
-            references.contactIcons = icons;
-        }
     }
 
     public class CityHallDialog : Dialog

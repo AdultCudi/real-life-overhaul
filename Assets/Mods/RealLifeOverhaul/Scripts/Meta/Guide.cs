@@ -325,8 +325,6 @@ namespace RealLifeOverhaul.Meta
     {
         public const string ContactId = "reallife-guide";
 
-        private static Sprite _icon;   // kept for the session: the game looks contact icons up by sprite name
-
         /// <summary>Returns true if the contact is in the save after the call.</summary>
         public static bool Setup()
         {
@@ -336,7 +334,7 @@ namespace RealLifeOverhaul.Meta
             }
             try
             {
-                AddIcon();
+                ContactPictures.Add(ContactId);   // the game's own logo shapes or portrait camera (Phone/Contacts)
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_guide_desc", null, false, true);
                 var dialogType = (CallDialogType)BAModAPI.ModEnumHash.GetSafeHash("reallife_guide_calldialogtype");
                 contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
@@ -355,49 +353,6 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        // A plain disc with a white middle, like the mod's other contacts.
-        private static void AddIcon()
-        {
-            var references = InstanceBehavior<GlobalReferences>.Instance;
-            if (references == null || references.contactIcons == null)
-            {
-                return;
-            }
-            foreach (Sprite existing in references.contactIcons)
-            {
-                if (existing != null && existing.name == ContactId)
-                {
-                    return;
-                }
-            }
-            if (_icon == null)
-            {
-                const int size = 96;
-                var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-                var pixels = new Color[size * size];
-                float radius = size / 2f - 2f;
-                var colour = new Color(1f, 0.58f, 0.08f);
-                for (int y = 0; y < size; y++)
-                {
-                    for (int x = 0; x < size; x++)
-                    {
-                        float distance = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(size / 2f, size / 2f));
-                        Color pixel = distance < radius * 0.42f ? Color.white : colour;
-                        pixel.a = Mathf.Clamp01(radius - distance);
-                        pixels[y * size + x] = pixel;
-                    }
-                }
-                texture.SetPixels(pixels);
-                texture.Apply();
-                _icon = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
-                _icon.name = ContactId;
-            }
-            Sprite[] old = references.contactIcons;
-            var icons = new Sprite[old.Length + 1];
-            old.CopyTo(icons, 0);
-            icons[old.Length] = _icon;
-            references.contactIcons = icons;
-        }
     }
 
     /// <summary>The call to the guide contact: one line, then the guide opens.</summary>

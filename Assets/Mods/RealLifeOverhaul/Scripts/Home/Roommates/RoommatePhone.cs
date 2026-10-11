@@ -23,14 +23,29 @@ namespace RealLifeOverhaul.Roommates
         private const string DialogTypeName = "reallife_roommate_calldialogtype";
 
         private static readonly List<SocialPerson> Friends = new List<SocialPerson>(SocialRules.CastSize);
-        private static Sprite _icon;
-
         /// <summary>The contact, once it has been added to this save's phone; null before, and with the phone's contacts off.</summary>
         public static Contact Contact { get; private set; }
 
         public static void Reset()
         {
             Contact = null;
+        }
+
+        /// <summary>
+        /// The contact's picture from the game's own assets (Phone/Contacts): the roommate's own face, from the look they are
+        /// dressed in at home (RoommateCast.Dress), while somebody lives in; the catalogue's logo of a room to let while nobody does.
+        /// Asked when the contact is set up and when somebody moves in or out.
+        /// </summary>
+        public static void Picture()
+        {
+            RoommateDirector d = RoommateDirector.Instance;
+            Flatmate mate = d != null && d.State != null ? d.State.Mate : null;
+            if (mate != null && mate.Person != null)
+            {
+                ContactPictures.Person(ContactId, mate.Person.Female, Math.Max(18, Math.Min(80, mate.Person.Age)), mate.Person.Seed != 0 ? mate.Person.Seed : 1);
+                return;
+            }
+            ContactPictures.Add(ContactId);
         }
 
         /// <summary>Adds the contact (or finds it again in a loaded save) and gives it its call. Safe to call again.</summary>
@@ -43,7 +58,7 @@ namespace RealLifeOverhaul.Roommates
             }
             try
             {
-                AddIcon();
+                Picture();
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_roommate_desc", null, false, true);
                 var type = (CallDialogType)ModEnumHash.GetSafeHash(DialogTypeName);
                 contact.callDialogTypeOverride = type;   // not saved by the game, so set on every load
@@ -59,32 +74,6 @@ namespace RealLifeOverhaul.Roommates
                 RoommateDirector.Logger?.Error(e);
                 RoommateDirector.Logger?.Warn("Roommates: the Roommate contact could not be added; what it would have said is shown as notices instead.");
             }
-        }
-
-        // The game looks a contact's icon up by sprite name == contact id: a plain disc like the mod's other contacts.
-        private static void AddIcon()
-        {
-            var references = InstanceBehavior<GlobalReferences>.Instance;
-            if (references == null || references.contactIcons == null)
-            {
-                return;
-            }
-            foreach (Sprite existing in references.contactIcons)
-            {
-                if (existing != null && existing.name == ContactId)
-                {
-                    return;
-                }
-            }
-            if (_icon == null)
-            {
-                _icon = CareerPhone.Disc(ContactId, new Color(0.85f, 0.56f, 0.24f));
-            }
-            Sprite[] old = references.contactIcons;
-            var icons = new Sprite[old.Length + 1];
-            old.CopyTo(icons, 0);
-            icons[old.Length] = _icon;
-            references.contactIcons = icons;
         }
 
         // ---------------------------------------------------------------- the call

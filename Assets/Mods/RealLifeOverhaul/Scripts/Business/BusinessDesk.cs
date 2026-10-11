@@ -24,7 +24,6 @@ namespace RealLifeOverhaul
         public const string ContactId = "reallife-business";
         private const string DialogName = "reallife_business_calldialogtype";
 
-        private static Sprite _icon;
         private static Contact _contact;
         private static bool _tried;
 
@@ -44,7 +43,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                AddIcon();
+                ContactPictures.Add(ContactId);   // the game's own logo shapes or portrait camera (Phone/Contacts)
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.Business, "reallife_contact_business_desc", null, false, true);
                 var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogName);
                 contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
@@ -99,30 +98,6 @@ namespace RealLifeOverhaul
             InstanceBehavior<UI.UIs>.Instance.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog);
         }
 
-        private static void AddIcon()
-        {
-            var references = InstanceBehavior<GlobalReferences>.Instance;
-            if (references == null || references.contactIcons == null)
-            {
-                return;
-            }
-            foreach (Sprite existing in references.contactIcons)
-            {
-                if (existing != null && existing.name == ContactId)
-                {
-                    return;
-                }
-            }
-            if (_icon == null)
-            {
-                _icon = CareerPhone.Disc(ContactId, new Color(0.55f, 0.36f, 0.16f));
-            }
-            Sprite[] old = references.contactIcons;
-            var icons = new Sprite[old.Length + 1];
-            old.CopyTo(icons, 0);
-            icons[old.Length] = _icon;
-            references.contactIcons = icons;
-        }
     }
 
     public class BusinessDeskDialog : Dialog

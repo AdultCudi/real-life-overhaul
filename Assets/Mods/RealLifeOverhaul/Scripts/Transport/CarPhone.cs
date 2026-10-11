@@ -26,9 +26,6 @@ namespace RealLifeOverhaul
         public const string RoadsideId = "reallife-roadside";
         private const float RoadsideReach = 30f;
 
-        private static Sprite _garageIcon;
-        private static Sprite _roadsideIcon;
-
         public static void Setup()
         {
             if (!Settings.CarOwnership || !Settings.PhoneContacts)
@@ -37,8 +34,8 @@ namespace RealLifeOverhaul
             }
             try
             {
-                PhoneIcons.Add(GarageId, new Color(0.35f, 0.38f, 0.42f), ref _garageIcon);
-                PhoneIcons.Add(RoadsideId, new Color(0.95f, 0.55f, 0.08f), ref _roadsideIcon);
+                ContactPictures.Add(GarageId);   // the game's own logo shapes (Phone/Contacts)
+                ContactPictures.Add(RoadsideId);
                 Register(GarageId, "reallife_contact_garage_desc", "reallife_garage_calldialogtype", () => new GarageDialog(), "reallife_text_garage_welcome");
                 Register(RoadsideId, "reallife_contact_roadside_desc", "reallife_roadside_calldialogtype", () => new RoadsideDialog(), "reallife_text_roadside_welcome");
             }

@@ -462,6 +462,7 @@ namespace RealLifeOverhaul.Roommates
             int weekly = RoommateRules.Weekly(RoommateGame.RentPerDay(home, out bool owned), who.SharePct);
             int day = RoommateGame.Day;
             s.MoveIn(who, day, home.StreetName, home.StreetNumber, owned, room == RoomKind.Sofa, weekly);
+            RoommatePhone.Picture();   // the contact shows who lives in now
             s.PartnerSeen = partner;
             RoommateGame.Mood(ModState.MoodUp);
             RoommateText.Message("reallife_text_roommate_moved_in", Fill.For(who.Person.Name).Cost(weekly).On(RoommateText.When(s.RentDay)));

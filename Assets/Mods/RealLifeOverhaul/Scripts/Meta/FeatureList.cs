@@ -217,6 +217,7 @@ namespace RealLifeOverhaul.Meta
                 .Owns(Settings.PhoneContactsId, Settings.PhoneSkinId)
                 .NeedsReload(Settings.PhoneContactsId)
                 .Contact("reallife-911", "reallife-doctor", "reallife-friend", "reallife-mom")
+                .Test("reallife_contacts_test_pictures", "reallife_contacts_test_redraw")
                 .Repair(PhoneContacts.Setup);
 
             Features.Add("ragdoll", "reallife_meta_title_ragdoll")
@@ -831,6 +832,7 @@ namespace RealLifeOverhaul.Meta
             Features.Add("economy_banks", "reallife_meta_title_economy_banks")
                 .About("reallife_guide_economy_banks_about").Help("reallife_guide_economy_banks")
                 .Owns(Settings.EconomyBanksId)
+                .Fact("bank_threshold", () => Whole(Economy.CreditCatalogue.LendingThreshold))
                 .Test("reallife_bank_test_check", "reallife_bank_test_open");
 
             // Running a business. Off, none of it runs, nothing is charged or paid and every business's footfall is

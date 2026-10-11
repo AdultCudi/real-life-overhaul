@@ -103,8 +103,6 @@ namespace RealLifeOverhaul
     public static class HomePhone
     {
         public const string ContactId = "reallife-health";
-        private static Sprite _icon;
-
         public static CallDialogType DialogType => (CallDialogType)ModEnumHash.GetSafeHash("reallife_health_calldialogtype");
 
         public static void Setup()
@@ -115,7 +113,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                AddIcon();
+                ContactPictures.Add(ContactId);   // the game's own logo shapes or portrait camera (Phone/Contacts)
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_health_desc", null, false, true);
                 contact.callDialogTypeOverride = DialogType;   // not saved by the game, so set on every load
                 CallDialogFactory.RegisterDialog(DialogType, () => new WellbeingDialog());
@@ -138,48 +136,6 @@ namespace RealLifeOverhaul
             InstanceBehavior<UI.UIs>.Instance.playerHUD.dialogUI.ShowDialog(DialogType, NavigationBlocker.SpecialEmployeeDialog);
         }
 
-        private static void AddIcon()
-        {
-            var references = InstanceBehavior<GlobalReferences>.Instance;
-            if (references == null || references.contactIcons == null)
-            {
-                return;
-            }
-            foreach (Sprite existing in references.contactIcons)
-            {
-                if (existing != null && existing.name == ContactId)
-                {
-                    return;
-                }
-            }
-            if (_icon == null)
-            {
-                const int size = 96;
-                var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-                var pixels = new Color[size * size];
-                var colour = new Color(0.36f, 0.72f, 0.36f);
-                float radius = size / 2f - 2f;
-                for (int y = 0; y < size; y++)
-                {
-                    for (int x = 0; x < size; x++)
-                    {
-                        float distance = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(size / 2f, size / 2f));
-                        Color pixel = distance < radius * 0.42f ? Color.white : colour;
-                        pixel.a = Mathf.Clamp01(radius - distance);
-                        pixels[y * size + x] = pixel;
-                    }
-                }
-                texture.SetPixels(pixels);
-                texture.Apply();
-                _icon = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
-                _icon.name = ContactId;
-            }
-            Sprite[] old = references.contactIcons;
-            var icons = new Sprite[old.Length + 1];
-            old.CopyTo(icons, 0);
-            icons[old.Length] = _icon;
-            references.contactIcons = icons;
-        }
     }
 
     public class WellbeingDialog : Dialog
