@@ -33,6 +33,16 @@ namespace RealLifeOverhaul
     /// this class makes it obey what the driver does not know of: it pulls up at a red light
     /// and before lane points a scene has closed, and goes on when they open.
     ///
+    /// WHERE IT STANDS. At a stop with a bay (<see cref="TransitStop.HasBay"/>, <see cref="BusBay"/>)
+    /// that is free, the end of its route is not the lane's line but a path of its own across
+    /// the strip beside the lane (points a metre apart, followed by the same driver, which is told
+    /// to keep to them closely, to go slowly, and where the kerb is): it stands parallel to the
+    /// kerb, door side 0.2 m from it, its body beyond the lane's edge, and the lane is free. To
+    /// leave it waits, standing, until the lane beside and behind it is clear (one box four times
+    /// a second while it waits, nothing otherwise), then follows a path of its own back onto the
+    /// lane's line. Where the stop has no bay, or the bay is taken when the bus sets out or as it
+    /// comes up, it stops on the lane's line as it always has.
+    ///
     /// WHICH VEHICLE. Not luck: an idle van of the pool if there is one; else a van that is
     /// driving somewhere out of sight (taken off the road there and put on the line); and,
     /// when the body is the modelled one, which hides the vehicle under it wholly, any other
@@ -75,6 +85,17 @@ namespace RealLifeOverhaul
         private const float FinalShort = 1.2f;       // the driver stops this far short of the last point of a route
         private const float OnwardMetres = 240f;     // of its line it follows after the stop
         private const float LeaveFor = 50f;          // seconds after which a leaving bus is let go wherever it is
+        private const float BayBraking = 2.5f;       // m/s2 it comes down to a bay's pace with, before the bay's path begins
+        private const float BayLead = 6f;            // metres before a bay's path at which the driver is told of the kerb and to keep to its points
+        private const float BayLookAt = 16f;         // metres before a bay's path at which the bay is looked at once more
+        private const float BayNear = 9f;            // held up on a bay's path with no more than this left, it stops where it is and that is its stand
+        private const float BayLeast = 0.6f;         // metres aside of the lane's line from which a standing bus pulls out along a path of its own
+        private const float GapBack = 30f;           // metres of lane behind its tail that must be clear for it to pull out
+        private const float GapBackLate = 12f;       // ...once it has waited GapPatience: it edges out as a bus does
+        private const float GapAhead = 5f;           // ...and ahead of its nose, always
+        private const float GapHalf = 1.2f;          // half the width of the lane that is looked at
+        private const float GapPatience = 15f;
+        private const float GapMost = 45f;           // seconds after which a bus that still cannot pull out is let go where it stands
 
         private static readonly string[] VanNames = { "MersaidiDash", "UMCDesert" };
         private static readonly string[] NeverNames = { "Ambulance", "Taxi", "Limo", "Police", "Fire" };
@@ -104,6 +125,24 @@ namespace RealLifeOverhaul
         private float _progressLeft;
         private float _sideHalf = BodyHalfWidth;
         private Vector3 _bodyAt;         // where the modelled body's origin is, in the vehicle's own space
+        private float _middleAhead;      // the middle of what it fills, ahead of the vehicle's own origin (the point it is turned about)
+        private float _noseAhead;        // its nose, ahead of that point
+        private float _tailBehind;       // its tail, behind it
+        private float _widthHalf = BodyHalfWidth;   // half of what it fills across: the body or the vehicle's colliders, whichever is wider
+        private bool _bay;               // its route ends in its stop's bay
+        private bool _bayMode;           // the driver has been told to keep to the bay's path and where the kerb is
+        private bool _bayLooked;         // the bay has been looked at once more as it came up
+        private bool _awaitGap;          // doors closed, standing in the bay until the lane is clear
+        private bool _departed;
+        private bool _pulledOut;
+        private int _bayFrom;            // the first point of its route that is the bay's path
+        private int _bayTo;              // ...and, leaving, the first that is the lane again
+        private int _laneNext;           // the first point of its line not put on its route (the lane's points beside the bay)
+        private float _bayRun;           // metres of route from the first point of the bay's path to its end
+        private float _bayBehind;        // metres of the strip this vehicle needs free behind the pole to come in
+        private float _bayAhead;         // ...and ahead of it to pull out
+        private BusBay.Curve _curveIn;   // its own curve into the bay (by how far its nose reaches)
+        private float _gapSince;
 
         public TransitBus(GameObject host)
         {
@@ -151,6 +190,34 @@ namespace RealLifeOverhaul
 
         /// <summary>Seconds it has been standing at its stop; 0 otherwise.</summary>
         public float Standing => State == Phase.Standing ? Time.time - _since : 0f;
+
+        /// <summary>True when its route ends in its stop's bay (from when it is put on the road; false again if the bay is found taken as it comes up).</summary>
+        public bool InBay => _bay;
+
+        /// <summary>Why it stops in the lane at a stop that has a bay; null when it uses the bay, or the stop has none.</summary>
+        public string BayNote { get; private set; }
+
+        /// <summary>How many of the game's parked cars, out of view, were taken in from the bay when it was put on the road.</summary>
+        public int SentAway { get; private set; }
+
+        /// <summary>True while it stands in its bay with its doors closed, waiting for the lane to be clear.</summary>
+        public bool AwaitingGap => _awaitGap;
+
+        /// <summary>
+        /// True once after it has left its stop for good: pulled out of its bay (<paramref name="pulledOut"/>, after
+        /// <paramref name="waited"/> seconds for a gap in the lane) or let go standing there because no gap came.
+        /// A bus that stood in the lane has left the moment it is told to, and says nothing here.
+        /// </summary>
+        public bool TakeDeparted(out float waited, out bool pulledOut)
+        {
+            waited = _gapWaited;
+            pulledOut = _pulledOut;
+            bool departed = _departed;
+            _departed = false;
+            return departed;
+        }
+
+        private float _gapWaited;
 
         /// <summary>True while its vehicle is still the one it took and still ours (the pool hands vehicles out again).</summary>
         public bool Held => Car != null && TrafficTools.IsHeld(Car) && Car.presetPath == _marker;
@@ -216,20 +283,21 @@ namespace RealLifeOverhaul
                 return false;
             }
             Take(car, stop, line, Tiers[tier]);
+            Dress(car, line);   // first: what it fills (the body, or the vehicle's own colliders) decides where it can stand
+            Fill(car);
+            _bay = BayOpen(stop, sendAway: true);
             Vector3 from = TransitMap.Point(line.Path[start]).position;
-            for (int i = start + 1; i < stop.PathIndex; i++)
+            if (_bay)
             {
-                Add(line, i);
+                RouteToBay(line, stop, start + 1);
             }
-            // The last point is a place of our own: where the vehicle's own origin must come to rest for the middle of its
-            // body (its door) to stand beside the pole. The driver stops FinalShort before the last point of a route.
-            TrafficTools.Footprint(car, out Vector3 centre, out _, out _, out _);
-            float middleAhead = car.transform.InverseTransformPoint(centre).z;
-            _route.Add(stop.Lane + stop.Along * (FinalShort - middleAhead));
-            _routePoints.Add(-1);
+            else
+            {
+                _laneNext = start + 1;
+                RouteToLane(line, stop);
+            }
             Face(car, _route[0] - from);
             StartedBack = stop.Metres - line.Metres[start];
-            Dress(car, line);
             State = Phase.Approaching;
             Lost = false;
             _since = Time.time;
@@ -246,7 +314,9 @@ namespace RealLifeOverhaul
                 return false;
             }
             TransitLine line = TransitMap.Lines[stop.Line];
-            int last = Mathf.Min(stop.PathIndex + 9, line.Path.Length - 3);
+            // (At a stop with a bay it is put where a bus that has just pulled out is: on the lane, past the bay's end.)
+            float lead = stop.HasBay ? stop.BayAhead : 0f;
+            int last = Mathf.Min(stop.PathIndex + (stop.HasBay ? 14 : 9), line.Path.Length - 3);
             VehicleComponent pick = PickChassis(line, stop.PathIndex, Mathf.Min(stop.PathIndex + 40, line.Path.Length - 1), out int tier);
             if (pick == null)
             {
@@ -262,7 +332,7 @@ namespace RealLifeOverhaul
             for (int i = stop.PathIndex + 2; i <= last && car == null; i += 2)
             {
                 Waypoint point = TransitMap.Point(line.Path[i]);
-                if (point != null && !point.temporaryDisabled && TrafficManager.IsNotIntersection(point))
+                if (point != null && !point.temporaryDisabled && TrafficManager.IsNotIntersection(point) && line.Metres[i] - stop.Metres >= lead)
                 {
                     at = i;
                     car = TrafficManager.Instance.LoadVehicle(prefab, point);
@@ -458,6 +528,18 @@ namespace RealLifeOverhaul
             Waiting = Hold.None;
             _route.Clear();
             _routePoints.Clear();
+            _bay = false;
+            _bayMode = false;
+            _bayLooked = false;
+            _awaitGap = false;
+            _departed = false;
+            _pulledOut = false;
+            _gapWaited = 0f;
+            _bayFrom = 0;
+            _bayTo = 0;
+            _bayRun = 0f;
+            BayNote = null;
+            SentAway = 0;
             Manager.SetVehicleIgnored(car.GetIndex(), true);
             _marker.Clear();
             car.presetPath = _marker;
@@ -486,15 +568,151 @@ namespace RealLifeOverhaul
             }
         }
 
+        // What the bus fills, from the point the driver turns it about (the vehicle's own origin): the vehicle's colliders,
+        // and the modelled body where it reaches further.
+        private void Fill(VehicleComponent car)
+        {
+            TrafficTools.Footprint(car, out Vector3 centre, out _, out float halfLength, out float halfWidth);
+            _middleAhead = car.transform.InverseTransformPoint(centre).z;
+            _noseAhead = _middleAhead + halfLength;
+            _tailBehind = halfLength - _middleAhead;
+            _widthHalf = halfWidth;
+            if (_modelled)
+            {
+                _noseAhead = Mathf.Max(_noseAhead, _bodyAt.z + BodyLength * 0.5f);
+                _tailBehind = Mathf.Max(_tailBehind, BodyLength * 0.5f - _bodyAt.z);
+                _widthHalf = Mathf.Max(_widthHalf, BodyHalfWidth);
+            }
+        }
+
+        // Whether it can use its stop's bay now, and if not, why (BayNote). With sendAway, the game's parked cars that stand
+        // in the bay out of view are taken in first (TransitBays).
+        private bool BayOpen(TransitStop stop, bool sendAway)
+        {
+            BayNote = null;
+            if (!stop.HasBay)
+            {
+                return false;
+            }
+            float offset = BusBay.Offset(stop.KerbAside, _widthHalf);
+            if (offset <= 0f)
+            {
+                BayNote = "the vehicle that carries it is " + (_widthHalf * 2f).ToString("F2") + " m wide, too wide for the bay";
+                return false;
+            }
+            // Its own curves, by how far it reaches either side of the point it is turned about, and the strip they take.
+            _curveIn = BusBay.In(offset, _noseAhead, BusBay.RunMost - Mathf.Max(0f, _middleAhead));
+            BusBay.Curve curveOut = BusBay.Out(offset, _tailBehind, BusBay.RunMost + Mathf.Min(0f, _middleAhead));
+            _bayBehind = Mathf.Max(stop.BayBehind, BusBay.Behind(_curveIn, _middleAhead));
+            _bayAhead = Mathf.Max(stop.BayAhead, BusBay.Ahead(curveOut, _middleAhead));
+            if (_curveIn.Cut || curveOut.Cut || _bayBehind > stop.BayRoom + 0.01f || _bayAhead > stop.BayAhead + 0.01f)
+            {
+                BayNote = "the vehicle that carries it reaches " + _noseAhead.ToString("F1") + " m ahead and " + _tailBehind.ToString("F1") + " m behind the point it turns about and needs "
+                          + _bayBehind.ToString("F0") + " m of bay to come in and " + _bayAhead.ToString("F0") + " to pull out, where the stop's has " + stop.BayRoom.ToString("F0") + " and " + stop.BayAhead.ToString("F0");
+                return false;
+            }
+            bool free = TransitBays.Free(stop, _bayBehind, _bayAhead, Car != null ? Car.rb : null, sendAway, out string taken, out int sent);
+            SentAway += sent;
+            if (!free)
+            {
+                BayNote = "its bay is taken by " + taken;
+            }
+            return free;
+        }
+
+        // The end of a route on the lane's line. The last point is a place of our own: where the vehicle's own origin must
+        // come to rest for the middle of its body (its door) to stand beside the pole. The driver stops FinalShort before
+        // the last point of a route.
+        private void RouteToLane(TransitLine line, TransitStop stop)
+        {
+            for (int i = _laneNext; i < stop.PathIndex; i++)
+            {
+                Add(line, i);
+            }
+            _laneNext = stop.PathIndex;
+            _route.Add(stop.Lane + stop.Along * (FinalShort - _middleAhead));
+            _routePoints.Add(-1);
+        }
+
+        // The end of a route in the stop's bay: the lane's points up to where the bay's path leaves the lane's line, then
+        // the path (BusBay.In, a point every metre, places of our own), the standing place and the point beyond it that
+        // the driver stops short of. The path is laid for the point the vehicle is turned about, which comes to rest
+        // where the middle of the body is beside the pole.
+        private void RouteToBay(TransitLine line, TransitStop stop, int from)
+        {
+            BusBay.Curve curve = _curveIn;
+            float offset = curve.Offset;
+            int points = curve.Points;
+            float leaves = points * BusBay.Step + _middleAhead + 0.5f;   // metres of line before the stop at which the path leaves the lane
+            int i = from;
+            for (; i < stop.PathIndex && stop.Metres - line.Metres[i] > leaves; i++)
+            {
+                Add(line, i);
+            }
+            _laneNext = i;
+            _bayFrom = _route.Count;
+            Vector3 right = Vector3.Cross(Vector3.up, stop.Along);
+            Vector3 rest = stop.Lane + stop.Along * -_middleAhead + right * offset;
+            for (int k = points; k >= 1; k--)
+            {
+                float before = k * BusBay.Step;
+                _route.Add(rest - stop.Along * before - right * curve.Aside(before));
+                _routePoints.Add(-1);
+            }
+            _route.Add(rest);
+            _routePoints.Add(-1);
+            _route.Add(rest + stop.Along * FinalShort);
+            _routePoints.Add(-1);
+            _bayRun = points * BusBay.Step + FinalShort;
+        }
+
+        // The bay was free when it set out and is not now: the end of its route is put back on the lane's line. Only while
+        // the bay's path is still ahead of it.
+        private void BackToLane(string why)
+        {
+            int from = Mathf.Clamp(_bayFrom, 0, _route.Count);
+            _route.RemoveRange(from, _route.Count - from);
+            _routePoints.RemoveRange(from, _routePoints.Count - from);
+            _bay = false;
+            BayMode(false);
+            BayNote = why;
+            RouteToLane(_line, Stop);
+        }
+
+        // On a bay's path the driver keeps to the points (it cuts every corner of a route on the open lane by 4.5 m) and
+        // knows where the kerb is, so that nobody on the pavement is taken to be in its way while its nose points at them.
+        private void BayMode(bool on)
+        {
+            if (on == _bayMode || Stop == null)
+            {
+                return;
+            }
+            _bayMode = on;
+            if (on)
+            {
+                Vector3 right = Vector3.Cross(Vector3.up, Stop.Along);
+                _driver.Reach = BusBay.Reach;
+                _driver.Kerb(Stop.Lane + right * Stop.KerbAside, right);
+            }
+            else
+            {
+                _driver.Reach = float.MaxValue;   // (held to what it is on the open road)
+                _driver.NoKerb();
+            }
+        }
+
         // The driver sets off along what is left of the route (its first point is the next one ahead).
         private void Begin()
         {
             _gate = -1;
             _gateWhy = Hold.None;
             Waiting = Hold.None;
-            _driver.BeginRoute(Car, _route, 0f);
+            // Held up on the last metres of a bay's path (somebody standing in the bay, a car nosing in), it stops there
+            // and that is where it stands; on the lane it waits for the way to clear, as ever.
+            _driver.BeginRoute(Car, _route, _bay && State != Phase.Leaving ? BayNear : 0f);
             _driver.CruiseSpeed = Cruise;
             _driver.PullOver(NoPassing);
+            _bayMode = false;   // (a drive begun is a driver reset: told again when it is next on the bay's path)
             _progressAt = Time.time;
             _progressLeft = float.MaxValue;
         }
@@ -537,6 +755,11 @@ namespace RealLifeOverhaul
                     break;
 
                 case Phase.Leaving:
+                    if (_awaitGap)
+                    {
+                        AwaitGap(now);
+                        break;
+                    }
                     Drive(now);
                     if ((_driver.Arrived && _gate < 0 && !_driver.Active) || now - _since > LeaveFor)
                     {
@@ -564,6 +787,8 @@ namespace RealLifeOverhaul
                     int done = Mathf.Min(_driver.NextPoint, _route.Count - 1);
                     _route.RemoveRange(0, done);
                     _routePoints.RemoveRange(0, done);
+                    _bayFrom = Mathf.Max(0, _bayFrom - done);
+                    _bayTo = Mathf.Max(0, _bayTo - done);
                     float mark = _progressAt;
                     float left = _progressLeft;
                     Begin();
@@ -621,7 +846,44 @@ namespace RealLifeOverhaul
                 _driver.PullUpAt(gate);
             }
             _gateWhy = why;
-            _driver.CruiseSpeed = junction ? JunctionSpeed : Cruise;
+            float cruise = junction ? JunctionSpeed : Cruise;
+            float toGo = _driver.RouteLeft;
+            if (State == Phase.Approaching && _bay)
+            {
+                // Coming up to its bay: down to the bay's pace by where the path begins; the bay looked at once more while the
+                // lane's line can still be had instead; the driver told of the path and the kerb just before it.
+                float lead = toGo - _bayRun;
+                if (!_bayLooked && lead <= BayLookAt)
+                {
+                    _bayLooked = true;
+                    if (next < _bayFrom && !TransitBays.Free(Stop, _bayBehind, _bayAhead, Car.rb, false, out string taken, out _))
+                    {
+                        BackToLane("its bay was taken by " + taken + " as it came up");
+                        toGo = _driver.RouteLeft;
+                        lead = toGo - _bayRun;
+                    }
+                }
+                if (_bay)
+                {
+                    cruise = Mathf.Min(cruise, Mathf.Sqrt(BusBay.Speed * BusBay.Speed + 2f * BayBraking * Mathf.Max(0f, lead)));
+                    BayMode(lead <= BayLead);
+                }
+            }
+            else if (State == Phase.Leaving && _bayTo > 0)
+            {
+                // Pulling out: gently from rest, at the bay's pace until it is on the lane's own points again.
+                if (next >= _bayTo)
+                {
+                    _bayTo = 0;
+                    BayMode(false);
+                }
+                else
+                {
+                    BayMode(true);
+                    cruise = Mathf.Min(BusBay.Speed, 1.5f + 1.5f * (now - _since));
+                }
+            }
+            _driver.CruiseSpeed = cruise;
 
             float heldUp = _driver.HeldFor;
             if (heldUp > 1f)
@@ -636,7 +898,7 @@ namespace RealLifeOverhaul
             {
                 Waiting = Hold.None;
             }
-            Remaining = _driver.RouteLeft;
+            Remaining = toGo;
             if (Remaining < _progressLeft - 1f)
             {
                 _progressLeft = Remaining;
@@ -715,26 +977,27 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// Where it came to rest, measured against its stop: metres its middle is along the lane from the pole (past it is
-        /// positive), metres off the lane's line (towards the kerb is positive), degrees off the lane's direction, and
-        /// metres of road between its side and the kerb's edge.
+        /// positive), metres off the lane's line (towards the kerb is positive), degrees off the lane's direction, and,
+        /// by the corner of what it fills that is nearest each, metres of road between it and the kerb's edge and metres
+        /// between it and the lane's edge (negative: that much of it stands in the lane; on the lane's line, about -2.7).
         /// </summary>
-        public void Measure(out float along, out float aside, out float angle, out float toKerb)
+        public void Measure(out float along, out float aside, out float angle, out float toKerb, out float toLane)
         {
-            along = aside = angle = toKerb = 0f;
+            along = aside = angle = toKerb = toLane = 0f;
             if (Car == null || Stop == null)
             {
                 return;
             }
-            TrafficTools.Footprint(Car, out Vector3 centre, out Vector3 forward, out _, out float halfWidth);
+            TrafficTools.Footprint(Car, out Vector3 centre, out Vector3 forward, out _, out _);
             Vector3 right = Vector3.Cross(Vector3.up, Stop.Along);
             Vector3 offset = centre - Stop.Lane;
             offset.y = 0f;
             along = Vector3.Dot(offset, Stop.Along);
             aside = Vector3.Dot(offset, right);
             angle = Vector3.Angle(forward, Stop.Along);
-            Vector3 kerb = Stop.Kerb - Stop.Lane;
-            kerb.y = 0f;
-            toKerb = Vector3.Dot(kerb, right) - aside - (_modelled ? BodyHalfWidth : halfWidth);
+            float halfLength = (_noseAhead + _tailBehind) * 0.5f;
+            toKerb = BusBay.KerbClear(Stop.KerbAside, aside, angle, halfLength, _widthHalf);
+            toLane = BusBay.LaneClear(aside, angle, halfLength, _widthHalf);
         }
 
         /// <summary>Where somebody stands to step in at its door, on its kerb side, and the way they face then.</summary>
@@ -757,14 +1020,110 @@ namespace RealLifeOverhaul
         /// <summary>True when the body is the modelled bus (a door with a step: <c>board_step</c>), false for the plain van.</summary>
         public bool Modelled => _modelled;
 
-        /// <summary>Doors closed: it pulls out and follows its line for a while.</summary>
+        /// <summary>
+        /// Doors closed. Standing on the lane's line it pulls away at once and follows its line for a while. Standing
+        /// in its bay (or anywhere beside the lane's line) it is Leaving from now on but stays where it is until the
+        /// lane is clear for it: see <see cref="TakeDeparted"/>.
+        /// </summary>
         public void Depart()
         {
             if (State != Phase.Standing || !Held)
             {
                 return;
             }
-            Onward(_line, Stop.PathIndex);
+            Vector3 right = Vector3.Cross(Vector3.up, Stop.Along);
+            if (Vector3.Dot(Car.transform.position - Stop.Lane, right) < BayLeast)
+            {
+                Onward(_line, Stop.PathIndex);
+                return;
+            }
+            _awaitGap = true;
+            _gapSince = Time.time;
+            State = Phase.Leaving;
+            _since = Time.time;
+            TrafficTools.Touch(Car, "a bus in its bay, doors closed, waiting for the lane to be clear");
+        }
+
+        // Standing in the bay with the doors closed. It gives way to everything in the lane: it goes only when the lane is
+        // clear from GapBack behind its tail to GapAhead beyond its nose; after GapPatience, when it is clear from
+        // GapBackLate behind (it edges out, as a bus does); and never while anything is beside it. No gap in GapMost:
+        // it is let go where it stands, out of the lane, and the next bus comes when it is due.
+        private void AwaitGap(float now)
+        {
+            float waited = now - _gapSince;
+            if (LaneClear(waited >= GapPatience ? GapBackLate : GapBack))
+            {
+                _gapWaited = waited;
+                _awaitGap = false;
+                _departed = true;
+                _pulledOut = true;
+                PullOut(now);
+            }
+            else if (waited > GapMost)
+            {
+                _gapWaited = waited;
+                _awaitGap = false;
+                _departed = true;
+                _pulledOut = false;
+                Release(remove: false);
+            }
+        }
+
+        // Nothing but itself in the lane beside it: one box, from so far behind its tail to a little beyond its nose.
+        private bool LaneClear(float back)
+        {
+            Vector3 middle = Car.transform.position - Stop.Lane;
+            middle.y = 0f;
+            float at = Vector3.Dot(middle, Stop.Along) + _middleAhead;
+            float halfLength = (_noseAhead + _tailBehind) * 0.5f;
+            Vector3 from = Stop.Lane + Stop.Along * (at - halfLength - back);
+            Vector3 to = Stop.Lane + Stop.Along * (at + halfLength + GapAhead);
+            return SceneParking.InStrip(from, to, GapHalf, Car.rb, TrafficTools.VehicleMask) == null;
+        }
+
+        // Out of the bay: a path of its own from where it really stands back onto the lane's line (BusBay.Out), then the
+        // lane's own points from where that path ends.
+        private void PullOut(float now)
+        {
+            TransitLine line = _line;
+            Vector3 right = Vector3.Cross(Vector3.up, Stop.Along);
+            Vector3 stands = Car.transform.position - Stop.Lane;
+            stands.y = 0f;
+            float along = Vector3.Dot(stands, Stop.Along);
+            float aside = Vector3.Dot(stands, right);
+            BusBay.Curve curve = BusBay.Out(aside, _tailBehind, BusBay.RunMost - Mathf.Max(0f, along));
+            int points = curve.Points;
+            Unpark();
+            _route.Clear();
+            _routePoints.Clear();
+            for (int k = 1; k <= points; k++)
+            {
+                float gone = k * BusBay.Step;
+                _route.Add(Stop.Lane + Stop.Along * (along + gone) + right * (aside - curve.Aside(gone)));
+                _routePoints.Add(-1);
+            }
+            _bayFrom = 0;
+            _bayTo = _route.Count;
+            float rejoins = along + points * BusBay.Step + 0.5f;
+            for (int i = Stop.PathIndex + 1; i < line.Path.Length && line.Metres[i] - Stop.Metres < OnwardMetres; i++)
+            {
+                if (line.Metres[i] - Stop.Metres > rejoins)
+                {
+                    Add(line, i);
+                }
+            }
+            _since = now;
+            if (_route.Count < 2)
+            {
+                Release(remove: false);   // nowhere to go: let go where it stands
+                return;
+            }
+            // (At the end of its line there are no lane points to follow: it still pulls out onto the lane, and is let go there.)
+            Begin();
+            BayMode(true);
+            _driver.CruiseSpeed = 1.5f;
+            Remaining = _driver.RouteLeft;
+            TrafficTools.Touch(Car, "pulling out of its bay");
         }
 
         private void Onward(TransitLine line, int fromIndex)
@@ -888,6 +1247,10 @@ namespace RealLifeOverhaul
             Waiting = Hold.None;
             _route.Clear();
             _routePoints.Clear();
+            _bay = false;
+            _bayMode = false;
+            _awaitGap = false;
+            _bayTo = 0;
             Car = null;
             Stop = null;
             Remaining = 0f;

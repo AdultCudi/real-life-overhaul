@@ -54,6 +54,11 @@ namespace RealLifeOverhaul
     ///   DELAYED and why;
     /// - when the bus stands, somebody may get out and walk off, the people waiting get up, walk
     ///   to the door one at a time and get in, and it leaves, always;
+    /// - WHERE IT STANDS: in the stop's bay beside the lane where the stop has one and it is free
+    ///   (<see cref="BusBay"/>, <see cref="TransitBays"/>, <see cref="TransitBus"/>), so that the
+    ///   lane is free while it stands; else on the lane's line, and then for as short a time as
+    ///   the stop allows: 4 s where nobody waits, nobody gets out and the player is not near,
+    ///   9 s otherwise, up to 34 s only while the player is on foot within 35 m;
     /// - on foot at the stop the player is shown, in the game's own panel, the stop, the line and
     ///   the next bus; may sit on the shelter's bench (<see cref="TransitSeat"/>); picks any stop
     ///   of the network from the game's own list (<see cref="TransitTrips"/>), at once or while
@@ -89,6 +94,7 @@ namespace RealLifeOverhaul
         private const float GiveUpAfter = 150f;      // seconds without progress before a bus is given up
         private const float GiveUpOut = 300f;        // ...or this long on the road without arriving
         private const float DwellLeast = 9f;
+        private const float DwellEmpty = 4f;         // ...where it stands in the lane and nobody waits, nobody gets out and the player is not near: doors open and shut
         private const float DwellMost = 34f;
         private const float ChooseFor = 30f;         // seconds the bus waits for the player to pick a stop
         private const int Dressings = 3;
@@ -140,6 +146,9 @@ namespace RealLifeOverhaul
         private float _nextTick;
         private int _tick;
         private float _dwellUntil;
+        private float _dwellLeast = DwellLeast;
+        private string _departure;       // the departure line of a bus that is waiting in its bay for the lane to be clear: written when it goes
+        private bool _departureSound;
         private float _nextWaiter;
         private float _chooseUntil;
         private float _nextTry;
@@ -655,6 +664,13 @@ namespace RealLifeOverhaul
         private void RunBus(float now)
         {
             _bus.Tick(now);
+            if (_bus.TakeDeparted(out float gap, out bool pulledOut))
+            {
+                // It stood in its bay with its doors closed until the lane was clear: the departure line, held until now.
+                Logger?.Info((_departure ?? "Transit check (departure): the bus leaves its bay") + "; in its bay it waited " + gap.ToString("F0") + " s for the lane beside and behind it to be clear"
+                             + (pulledOut ? " and pulled out" : " and no gap came: it is let go where it stands, out of the lane") + ": " + (pulledOut && _departureSound ? "PASS" : "FAIL") + ".");
+                _departure = null;
+            }
             if (_served == null)
             {
                 _bus.TakeLost();
@@ -760,7 +776,12 @@ namespace RealLifeOverhaul
             Logger?.Info("Transit check (bus assigned): the " + line.Number + " to " + line.To + " for " + StopLabel(_served) + (test ? " (test button)" : "") + ": " + _bus.Chassis
                          + "; it starts " + _bus.StartedBack.ToString("F0") + " m of line before the stop, " + away.ToString("F0") + " m from the player, in view: " + (inView ? "yes" : "no")
                          + "; " + _bus.Remaining.ToString("F0") + " m to drive, about " + (_bus.Remaining / TransitEta.StartSpeed).ToString("F0") + " s; the panel was showing "
-                         + (was == TransitEta.Mode.Delayed ? "DELAYED" : _promised.ToString("F0") + " s") + ": " + (pass ? "PASS" : "FAIL (it appears where it can be seen, or too near)") + ".");
+                         + (was == TransitEta.Mode.Delayed ? "DELAYED" : _promised.ToString("F0") + " s") + "; "
+                         + (_bus.InBay ? "it will stand in the stop's bay, " + _served.BayOffset.ToString("F2") + " m off the lane's line"
+                             : _served.HasBay ? "it will stop in the lane (" + (_bus.BayNote ?? "the bay cannot be used") + ")"
+                             : "the stop has no bay (" + (_served.NoBay ?? "none laid out") + "): it will stop in the lane")
+                         + (_bus.SentAway > 0 ? ", " + _bus.SentAway + " of the game's parked cars taken in from the bay out of view" : "")
+                         + ": " + (pass ? "PASS" : "FAIL (it appears where it can be seen, or too near)") + ".");
         }
 
         // The bus on its way: a line a minute, and what is done when it gets nowhere.
@@ -843,13 +864,22 @@ namespace RealLifeOverhaul
             _alighted = 0;
             VehicleComponent car = _bus.Car;
             TransitLine line = TransitMap.Lines[_served.Line];
-            _bus.Measure(out float along, out float aside, out float angle, out float toKerb);
-            bool placed = Mathf.Abs(along) <= 2.5f && Mathf.Abs(aside) <= 1.2f && angle <= 12f;
-            Logger?.Info("Transit check (arrival): the " + line.Number + " stands at " + StopLabel(_served) + " with its middle " + Mathf.Abs(along).ToString("F1") + " m "
-                         + (along >= 0f ? "past" : "short of") + " the pole, " + Mathf.Abs(aside).ToString("F1") + " m " + (aside >= 0f ? "towards the kerb" : "away from the kerb")
-                         + " off the lane's line, " + angle.ToString("F0") + " degrees off the lane's direction, door side to the kerb with " + toKerb.ToString("F1") + " m of road between; "
-                         + _bus.Took.ToString("F0") + " s after setting out " + _bus.StartedBack.ToString("F0") + " m back (the panel had promised " + _promised.ToString("F0") + " s): "
-                         + (placed ? "PASS" : "FAIL (allowed: 2.5 m along, 1.2 m aside, 12 degrees)") + ".");
+            // Where it stands. In its bay the measure is the bay's: nothing of it in the lane, nothing over the kerb, parallel
+            // to it. On the lane's line it is the lane's, as it always was.
+            _bus.Measure(out float along, out float aside, out float angle, out float toKerb, out float toLane);
+            bool inBay = _bus.InBay;
+            bool placed = inBay ? Mathf.Abs(along) <= 2.5f && toLane >= 0f && toKerb >= 0f && angle <= 3f
+                                : Mathf.Abs(along) <= 2.5f && Mathf.Abs(aside) <= 1.2f && angle <= 12f;
+            Logger?.Info("Transit check (arrival): the " + line.Number + " stands at " + StopLabel(_served) + (inBay ? " in its bay" : "") + " with its middle " + Mathf.Abs(along).ToString("F1") + " m "
+                         + (along >= 0f ? "past" : "short of") + " the pole, " + Mathf.Abs(aside).ToString(inBay ? "F2" : "F1") + " m " + (aside >= 0f ? "towards the kerb" : "away from the kerb")
+                         + " off the lane's line" + (inBay ? " (the bay's line is " + _served.BayOffset.ToString("F2") + ")" : "") + ", " + angle.ToString(inBay ? "F1" : "F0")
+                         + " degrees off the lane's direction, door side to the kerb with " + toKerb.ToString(inBay ? "F2" : "F1") + " m of road between"
+                         + (inBay ? ", its body " + toLane.ToString("F2") + " m clear of the lane's edge (a lorry on the lane's line passes " + (toLane + BusBay.LaneHalf - BusBay.WidestHalf).ToString("F2")
+                                    + " m from it): the lane is " + (toLane >= 0f ? "free" : "NOT free")
+                             : _served.HasBay ? ", in the lane (" + (_bus.BayNote ?? "the bay was not used") + ")"
+                             : ", in the lane (no bay here: " + (_served.NoBay ?? "none laid out") + ", the kerb " + _served.KerbAside.ToString("F2") + " m from the lane's line)")
+                         + "; " + _bus.Took.ToString("F0") + " s after setting out " + _bus.StartedBack.ToString("F0") + " m back (the panel had promised " + _promised.ToString("F0") + " s): "
+                         + (placed ? "PASS" : inBay ? "FAIL (allowed: 2.5 m along, 3 degrees, nothing of it in the lane or over the kerb)" : "FAIL (allowed: 2.5 m along, 1.2 m aside, 12 degrees)") + ".");
 
             // The door: where somebody stands to step in. On the road surface, clear of every other vehicle; a little further out
             // from the body if the mesh does not come that close to it.
@@ -876,7 +906,8 @@ namespace RealLifeOverhaul
             bool sat = _seat.Seated;
             Logger?.Info("Transit check (doors): doors open; a place to step in " + (_doorFound ? "found " + out_.ToString("F1") + " m further out than the door wants" : "NOT found on the road surface beside the door")
                          + "; the way from the kerb to it " + (!_doorFound ? "not looked at" : wayClear ? "clear" : "has vehicles standing in it") + "; " + waiting + " waiting (" + seated + " seated)"
-                         + (sat ? ", the player seated and getting up" : "") + "; the bus is " + (_busFull ? "full: nobody boards" : "not full") + ": "
+                         + (sat ? ", the player seated and getting up" : "") + "; the bus is " + (_busFull ? "full: nobody boards" : "not full") + "; it stands "
+                         + (_bus.InBay ? "out of the lane" : "in the lane") + ": "
                          + (_doorFound && wayClear ? "PASS" : "FAIL (nobody on foot gets in or out this time; the player still boards from the stop)") + ".");
             if (!wayClear)
             {
@@ -891,6 +922,12 @@ namespace RealLifeOverhaul
             {
                 Alight(now);
             }
+            // How long it stands at the least. In the lane it is in the way of everything behind it, so where nobody at all
+            // has business with it (nobody waiting or walking up, nobody getting out, the player not near and not aboard
+            // or choosing) the doors open and shut and it goes. Out of the lane, in its bay, it keeps the usual stand.
+            bool nobody = waiting == 0 && !sat && _alighter.Step == RiderStep.None && _player != PlayerStep.Choosing && !_ride.Riding && !PlayerAtStop(WaitsWithin);
+            _dwellLeast = toLane < 0f && nobody ? DwellEmpty : DwellLeast;
+            _dwellUntil = now + _dwellLeast;
             _panelKey = int.MinValue;
         }
 
@@ -923,9 +960,24 @@ namespace RealLifeOverhaul
             {
                 float stood = _bus.Standing;
                 _bus.Depart();
-                Logger?.Info("Transit check (departure): the bus pulls out after standing " + stood.ToString("F0") + " s (" + DwellLeast.ToString("F0") + " to " + DwellMost.ToString("F0")
-                             + " allowed); " + _boarded + " got in, " + _alighted + " got out, the player " + (_ride.Riding ? "is aboard" : _player == PlayerStep.Choosing ? "was still choosing a stop" : "did not board")
-                             + ": " + (stood <= DwellMost + ChooseFor + 2f ? "PASS" : "FAIL") + ".");
+                bool sound = stood <= DwellMost + ChooseFor + 2f;
+                bool waits = _bus.AwaitingGap;   // in its bay: it goes when the lane is clear, and the line is written then (RunBus)
+                _departure = null;
+                _departureSound = sound;
+                if (Logger != null)
+                {
+                    string said = "Transit check (departure): the bus " + (waits ? "closes its doors" : "pulls away in the lane") + " after standing " + stood.ToString("F0") + " s ("
+                                  + _dwellLeast.ToString("F0") + " to " + DwellMost.ToString("F0") + " allowed); " + _boarded + " got in, " + _alighted + " got out, the player "
+                                  + (_ride.Riding ? "is aboard" : _player == PlayerStep.Choosing ? "was still choosing a stop" : "did not board");
+                    if (waits)
+                    {
+                        _departure = said;
+                    }
+                    else
+                    {
+                        Logger.Info(said + ": " + (sound ? "PASS" : "FAIL") + ".");
+                    }
+                }
             }
             _eta.Timetable(Wait(Headway() * (_busFull ? 0.5f : 1f)));
             _refusals = 0;
@@ -1314,7 +1366,7 @@ namespace RealLifeOverhaul
                 TestRefusals.Tell(Logger, test, why);
                 return false;
             }
-            for (int i = 0; i < 120 && !TransitMap.Ready; i++)
+            for (int i = 0; i < 400 && !TransitMap.Ready; i++)
             {
                 TransitMap.Step();   // a press before the layout has finished: finished now
             }
@@ -1342,8 +1394,10 @@ namespace RealLifeOverhaul
             }
             DressNow(stop, at);
             int metres = Mathf.RoundToInt(Mathf.Sqrt(CitySpots.Flat(stop.Sign - at)));
+            BusStopDressing dressed = DressingOf(stop);
             Logger?.Info("Bus stop test: the stop at " + StopName(stop) + " (" + TransitMap.Lines[stop.Line].Number + ", " + (stop.Shelter ? "with room for a shelter" : "pole only")
-                         + (stop.Parking ? ", a parking lane between lane and kerb" : "") + ") is dressed, " + metres + " m away; its check line follows in a moment.");
+                         + (stop.Parking ? ", a parking lane between lane and kerb" : "") + ") is dressed, " + metres + " m away" + (dressed != null ? "; " + dressed.BayFound() : "")
+                         + "; its check line follows in a moment.");
             Notifications.Show(NotificationType.Info, "reallife_transit_test_dressed",
                 new Dictionary<string, string>(2) { { "name", StopName(stop) }, { "metres", metres.ToString() } }, 8f);
         }

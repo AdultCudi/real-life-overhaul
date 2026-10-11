@@ -8,8 +8,9 @@ using RealLifeOverhaul.Nav;
 
 // Checks for the game-free parts of the minimap and the GPS. A check that fails prints one line; the last line is
 // ALL CHECKS PASSED or the count that failed. Given the path of a file of lane points it then times the search and
-// the map picture on that city (timings are printed, never judged).
-internal static class Program
+// the map picture on that city (timings are printed, never judged). The bus bays are checked here too (BayCheck.cs); with
+// --bays as an argument each run of the model bus is printed with what it measured.
+internal static partial class Program
 {
     private static int _failed, _run;
 
@@ -38,6 +39,7 @@ internal static class Program
         Following();
         View();
         Picture();
+        Bays(Array.IndexOf(args, "--bays") >= 0);
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         if (_failed == 0 && args.Length > 0 && File.Exists(args[0]))
         {

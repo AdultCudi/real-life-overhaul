@@ -178,6 +178,8 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       TransitDirector  what of it is on the street: three dressed stops, the stop that is served, its people, the bus, the player's ride; the test buttons
       BusStopDressing  one stop's pole, flag, shelter and bench (modelled props when the bundle has them, plain shapes to the same size until then); on the city map every stop is a place of the "Bus stops" row (World/MapLinks)
       TransitBus       one bus: a van from the traffic pool with a route board, driven by the traffic system on a scripted route, stopped "in point" at the stop
+      BusBay           the geometry of a bus bay and nothing else (game-free: NavCheck drives a model bus through it): where the bus stands, the curves in and out
+      TransitBays      a bay on the street as it is now: whether its length of the strip is free; the game's parked cars standing in it out of view are taken in
       TransitRide      the ride itself (fade, the game's time machine, put down at the far end), for bus and subway; TransitState: day pass and ride counts in modData
       SubwayJourney    the prompt at each subway entrance, service by the clock (frequency, delays, a night closure), the City Transit contact
       CarDash          what a car needs as one more reading in the game's own vehicle panel (a copy of its "Condition" reading)
@@ -296,7 +298,7 @@ RealLifeOverhaul.Build/            command-line build and checks (outside Assets
   RealLifeOverhaul.csproj          compiles the same scripts with dotnet and installs to ModsLocal
   CatalogueCheck/                  verifies the event and crime catalogues, their dealing, and locale keys
   PlannerCheck/                    checks the Planner's game-free parts (see "The Planner")
-  NavCheck/                        checks the game-free parts of the minimap and the GPS, and the shared route search (see "Minimap and GPS")
+  NavCheck/                        checks the game-free parts of the minimap and the GPS, the shared route search (see "Minimap and GPS") and the bus bays (see "Transport", "Bays")
 ```
 
 ## Setup on a new machine
@@ -2153,6 +2155,74 @@ that one bus was either still crawling when the game was closed or its vehicle w
   over six points), at street level, and has pavement 1.3 to 5.6 m to its right that is 1.5 m deep with nothing
   static and no door within 2.4 m where the pole and the waiting people stand. Where the pavement is also bare and
   deep 3.2 m further on there is room for a shelter. A stop is named after the nearest building's address.
+  Of the places that will do, one with a **bay** (below) is taken before one without: first in the 140 m, then up
+  to 60 m further on, then up to 50 m before the place wanted (so two stops are never nearer than 210 m of line),
+  and only then the first place without one, which is the place that was always taken. `Transit check (network)`
+  counts the stops with a bay and gives every stop's kerb distance, with a word for why a stop has none.
+- **Bays** (`BusBay`, `TransitBays`; the owner's report: "Busses are blocking traffic"). The road and the pavement
+  are the game's meshes and cannot be cut, so a bay is made of room that is there: the strip between a driving lane
+  and the kerb where the game parks cars.
+  - *Where there is one.* A stop has a bay where the kerb is at least 4.10 m from the lane's line (the lane's half
+    of 1.65, 0.15 m clear of its edge, the 2.10 m body, 0.20 m to the kerb: `BusBay.KerbNeeded`), measured at the
+    kerb that is there (the first step up of the road surface, where that comes before the navigation mesh's edge);
+    the lane runs straight (its points within 0.35 m of its line) and plain, with no other lane between it and the
+    kerb, for the whole run; and the strip is road at the lane's level, with the kerb keeping its line and nothing
+    fixed standing in it, from about 17 m behind the pole to 16 m ahead of it (more where the strip is wider: the
+    bus crosses further). A stop records where the bus stands (`Bay`, `BayOffset`), how much strip it takes
+    (`BayBehind`, `BayAhead`) and how far back the strip will do for a vehicle with a longer nose (`BayRoom`).
+  - *Why a bay is that long.* The driver turns a vehicle about its own origin (under the middle of a van), so the
+    3.3 m of bus ahead of that point swings towards the kerb as it comes in at an angle and the 3.3 m behind
+    swings towards it as it turns out. A body that stands 0.2 m from the kerb has room for neither unless the angle
+    falls away as fast as the gap closes: the last metres in and the first metres out are an exponential whose
+    length constant is about that lever. The rest is a straight run across the strip at 16 degrees (up to 22
+    where the strip is wide) and three metres of easing off the lane's line. A vehicle whose curve will not fit
+    the stop's bay (a long nose ahead of a rear axle on a wide strip) is given the lane's line instead, and the
+    log says so.
+  - *In.* The end of the bus's route is the curve in (a point of the mod's own every metre), the standing place
+    and the point beyond it that the driver stops 1.2 m short of. From 6 m before the curve the driver is told to
+    take a point as reached at 2 m, not 4.5 (`EmergencyDriver.Reach`: on the open lane it cuts every corner by
+    4.5 m, which here would be the kerb), and where the kerb is (`EmergencyDriver.Kerb`): its look ahead runs
+    along its nose, which points at the pavement while it turns in, and without that the people waiting at the
+    stop, or the player standing at the kerb, would stop it half way across. With the kerb known, what the sweep
+    finds beyond it does not count and nobody of the mod's people beyond it counts (`PeopleAhead`); everything on
+    the carriageway counts as ever. It comes down to 4.5 m/s by where the curve begins (2.5 m/s2). Held up on
+    the last 9 m by something that is in the bay after all, it stops there and that is its stand.
+  - *Standing, and why traffic passes.* The game's drivers do not overtake a standing vehicle (nothing in the
+    traffic system's code does). Each sees what is ahead with one trigger box on its
+    nose, as wide as the vehicle itself (`VehicleComponent.OnTriggerEnter`, `colliderWidth` from that box; the
+    box is turned with the steering, `UpdateTriggerJob`), and stops for any solid collider of a vehicle that the
+    box touches. A bus in its bay has its nearest side 1.80 m or more from the lane's line; the widest thing the
+    game drives on that line is taken as 2.60 m (`BusBay.WidestHalf`), which reaches 1.30 m. So the box of whatever passes never touches the bus, and
+    nothing is switched off or excluded to make that so: the bus keeps its colliders, and a car that leaves its
+    lane still stops for it.
+  - *Out.* Doors closed, it stays where it is, frozen, and gives way: it goes when the lane is clear from 30 m
+    behind its tail to 5 m beyond its nose (one box, `SceneParking.InStrip`, four times a second while it waits
+    and never otherwise); after 15 s, when it is clear from 12 m behind (it edges out, and what comes up behind
+    it sees it in its box and slows, as for any vehicle ahead); never while something is beside it. No gap in
+    45 s and it is let go where it stands, out of the lane. Nothing is ever taken off the road to make a gap.
+    The curve out is laid from where it really stands, so a bus that stopped short and askew gets out too.
+  - *Kept free.* The game fills the strip by chance (`ParkingLaneGenerator`: a spot in four or so, again each day
+    and when a business opens or shuts, never within 80 m of the player). When a stop is dressed and when a bus
+    is put on the road for it, the game's parked cars for show that stand in the bay **out of view** are handed
+    back to the game's own store of them, the way the game takes them in (the lane's `onReleaseVehicle`, then
+    `ParkingSimulator.ReleaseParkedVehicle`). Nothing in view is touched, and nothing else at all: a vehicle of
+    the player's, a delivery van, a wreck or a cart leaves the bay taken, the bus stops on the lane's line as it
+    used to, and the bay is looked at again for the next bus. It is looked at once more as the bus comes up, 16 m
+    before its curve; taken by then, the end of its route is put back on the lane's line.
+  - *Marked.* A dressed stop with a bay has a yellow box on the road round where the bus stands and the words
+    BUS STOP (`reallife_transit_bay_marking`), read the way the traffic runs: four painted strips, as the
+    driving test's bay, laid to the road's own fall, made once per dressing and gone with it. Nothing solid.
+  - *In the lane.* Where there is no bay, or it is taken, the bus stands on the lane's line as before, and for
+    less time: 4 s where nobody is waiting or walking up, nobody gets out and the player is not within 35 m
+    (`DwellEmpty`), 9 s otherwise, and up to 34 s only while the player is on foot within 35 m.
+  - *Checked outside the game* (`NavCheck`, `BayCheck.cs`): the arithmetic, the two curves, and a bus driven in,
+    stood and driven out by a model of the driver's steering and pacing, for the body on its van, on a van whose
+    origin is 0.4 m behind its middle and on a vehicle turned about its rear axle, at four kerb distances, with
+    the physics step halved and doubled, coming up off the line and askew, slower and faster, and standing askew
+    part of the way across. `NavCheck.dll --bays` prints what each run measured. In the model the body on its
+    van stands within 3 cm of the bay's line and 1.3 degrees of it, its nearest corner 0.06 m clear of the lane's
+    edge at the narrowest bay, never nearer the kerb than 0.13 m coming in and 0.06 m pulling out. The model is
+    not the game's physics: `Transit check (arrival)` says what the real vehicle did.
 - **A stop is solid** (`BusStopDressing`). The three nearest stops within 190 m are dressed, out of view if a wait of three seconds allows it and at once after a load or an arrival (230 m to
   be taken in), from the modelled `bus_stop_sign` and `bus_shelter` (plain shapes of the same size without the
   bundle). Everyone on foot is moved on the navigation mesh, so the pole, the shelter's back, its end panel, the
@@ -2162,7 +2232,9 @@ that one bus was either still crawling when the game was closed or its vehicle w
   things themselves and the bench's is that much smaller than the bench: the open side stays open, the place in
   front of each seat stays on the mesh, and the 1.69 m of pavement between the shelter's posts and the kerb stays a
   way past. That way past is tested on the mesh before the shelter is shown; where it is not one strip, the stop is
-  a pole only. `Transit check (stop dressed)` says, 1.6 s later, what the mesh says was really cut.
+  a pole only. `Transit check (stop dressed)` says, 1.6 s later, what the mesh says was really cut, and what the
+  stop's bay is: its length, where the bus stands in it, free or taken by what, how many parked cars were taken
+  in out of view, and that the marking was made.
   (This is the one place the mod cuts the mesh on a pavement: the rule against it below is about closing a
   pavement, and this leaves it open.)
 - **The bench** has two seats (never one for two), the sitter's feet 0.30 m in front of the seat's middle line,
@@ -2210,13 +2282,19 @@ that one bus was either still crawling when the game was closed or its vehicle w
   the panel says DELAYED and why, with no figure; when the bus has been moving again for two seconds one new
   figure is given from where it is. The game minutes shown are that figure at the measured rate of the game's
   clock, and are not allowed to rise for the rate's wobble either.
-- **At the stop** it stands in its lane with the middle of its body (its door) beside the pole, door side to the
-  kerb, frozen, for 9 to 34 s. `Transit check (arrival)` gives metres along and aside and degrees off; `(doors)`
+- **At the stop** it stands with the middle of its body (its door) beside the pole, door side to the kerb, frozen:
+  in the stop's bay where there is one and it is free (0.2 m from the kerb, out of the lane), else on the lane's
+  line; for 9 to 34 s (4 s in the lane where nobody has business with it). `Transit check (arrival)` gives metres
+  along and aside and degrees off and, in a bay, the metres between the body's nearest corner and the kerb and
+  between its nearest corner and the lane's edge (PASS: within 2.5 m of the pole, 3 degrees, nothing of it in the
+  lane or over the kerb; on the lane's line, as before: 2.5 m, 1.2 m aside, 12 degrees); `(doors)`
   the place somebody steps in from (0.30 m outside the body at the door 0.76 m ahead of its middle, as the model
   documents and `board_step` wants: the step's edge 0.30 to 0.35 m ahead of the feet; up to 0.9 m further out if the mesh does not come that close) and whether anything stands between it
   and the kerb. Somebody may get out and walk off; those waiting get up, walk to the door one at a time and step
-  in (`board_step`; the van: `job_car_enter`); `(departure)` counts them. It follows the next 240 m of its line and
-  is then taken off the road if nobody is looking, or handed back to the traffic AI as it is.
+  in (`board_step`; the van: `job_car_enter`); `(departure)` counts them and, for a bus in its bay, says how many
+  seconds it waited for the lane to be clear (the line is written when it goes). It follows the next 240 m of its
+  line and is then taken off the road if nobody is looking, or handed back to the traffic AI as it is. The bus a
+  rider sees pull away after a ride is put on the lane just past the bay's end, where one that has pulled out is.
 - **Riding** (`TransitDirector.Player.cs`): everything the player is shown is the game's own interface (see
   `docs/game-ui.md`, sections 9 to 11), and nothing of it runs per frame.
   - *Pointing.* The pole, the shelter and the standing bus each have a `TransitPointer`: an `EntityController` of
@@ -4674,14 +4752,15 @@ the city map.
 
 ### Checks
 
-`RealLifeOverhaul.Build/NavCheck` compiles `Core/RouteSearch.cs` and `Navigation/NavModel.cs` as they are:
+`RealLifeOverhaul.Build/NavCheck` compiles `Core/RouteSearch.cs`, `Navigation/NavModel.cs` and `Transport/BusBay.cs` as they are:
 `dotnet build RealLifeOverhaul.Build/NavCheck -c Release`, then
 `dotnet RealLifeOverhaul.Build/NavCheck/bin/Release/net10.0/NavCheck.dll` ends with `ALL CHECKS PASSED`. It checks the
 search whole against the search in slices, routes on a made-up grid of streets named the three ways the game names
 junction points, a one-way street driven and walked, the turn list, following, leaving the route, arriving, the
 line that is drawn, the view's arithmetic and the picture. Given a file of lane points as its argument it also
 prints the timings quoted above (the file is made from the game's own data by a study script and is not in the
-repository).
+repository). The bus bays are checked in the same run (see "Transport", "Bays"); `--bays` prints each run of the
+model bus.
 
 ### Log lines (with "Developer diagnostics" on)
 

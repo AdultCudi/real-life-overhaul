@@ -28,6 +28,14 @@ namespace RealLifeOverhaul
     /// stop is dressed <see cref="Check"/> asks the mesh what was really cut and says so in
     /// one line.
     ///
+    /// THE BAY. Where the stop has one (<see cref="TransitStop.HasBay"/>) the place the bus stands
+    /// in it is marked on the road: a yellow box and the words BUS STOP, read the way the traffic
+    /// runs. Painted strips and lettering, nothing solid; made the first time this dressing stands
+    /// at a stop with a bay, laid to the road's own fall each time it is put out, gone with the
+    /// dressing. As the stop is dressed the bay is looked at once (<see cref="TransitBays"/>): the
+    /// game's parked cars standing in it out of view are taken in, and what the check line says of
+    /// the bay is what was found then.
+    ///
     /// THE SEATS are two places on the bench (never one for two): the sitter's feet 0.30 m in
     /// front of the seat's middle line, facing the road, which is what the clips
     /// <c>sit_bench</c>, <c>sit_wait</c> and <c>sit_bench_up</c> are made for (seat 0.46 m up).
@@ -52,6 +60,13 @@ namespace RealLifeOverhaul
         private const float RoutesWide = 0.44f;     // the lettering's box: 3 cm inside the flag's edges, 2 cm clear of the band below
         private const float RoutesHigh = 0.34f;
         private static readonly float[] SeatZ = { -0.85f, 0.15f };
+        private const float BoxEnd = 0.9f;          // the bay's box reaches this far beyond each end of the bus
+        private const float BoxLaneSide = 0.12f;    // ...and this far beyond its side, towards the lane
+        private const float BoxKerbSide = 0.06f;    // its kerb-side line lies this far out from the kerb
+        private const float LineWide = 0.12f;
+        private const float LineTall = 0.03f;
+        private const string BayWords = "reallife_transit_bay_marking";
+        private static readonly Color BayYellow = new Color(0.98f, 0.82f, 0.10f);
 
         private readonly GameObject _root;
         private readonly Transform _sign;
@@ -66,6 +81,11 @@ namespace RealLifeOverhaul
         private float _radius = 0.5f;
         private float _walkRoom;
         private string _walkNote;
+        private Transform _bay;        // the bay's marking: four strips and the lettering
+        private TextMeshPro _bayText;
+        private bool _bayFree;
+        private string _bayTaken;
+        private int _baySent;
 
         public TransitStop Stop { get; private set; }
         public Transform Sign => _sign;
@@ -144,6 +164,7 @@ namespace RealLifeOverhaul
                 _shelter.SetPositionAndRotation(stop.ShelterAt, facing);
             }
             Lay();
+            LayBay(stop);
             for (int i = 0; i < _labels.Length; i++)
             {
                 if (_labels[i] != null)
@@ -178,6 +199,135 @@ namespace RealLifeOverhaul
             if (_root != null)
             {
                 Object.Destroy(_root);
+            }
+        }
+
+        // ---------------------------------------------------------------- the bay
+
+        /// <summary>What was found of the stop's bay when it was dressed, in words for a log line.</summary>
+        public string BayFound()
+        {
+            if (Stop == null)
+            {
+                return "no stop";
+            }
+            if (!Stop.HasBay)
+            {
+                return "no bay (" + (Stop.NoBay ?? "none laid out") + "; the kerb is " + Stop.KerbAside.ToString("F2") + " m from the lane's line, "
+                       + BusBay.KerbNeeded(TransitBus.BodyHalfWidth).ToString("F2") + " needed): the bus stops in the lane";
+            }
+            return "a bay " + Stop.BayLength.ToString("F0") + " m long (" + Stop.BayBehind.ToString("F0") + " m to come in, " + Stop.BayAhead.ToString("F0") + " to pull out), the bus "
+                   + Stop.BayOffset.ToString("F2") + " m off the lane's line in it with the kerb at " + Stop.KerbAside.ToString("F2") + ", "
+                   + (_bayFree ? "free" : "taken by " + _bayTaken + " (the bus stops in the lane until it is free)")
+                   + (_baySent > 0 ? ", " + _baySent + " of the game's parked cars taken in from it out of view" : "")
+                   + ", the marking " + (_bay != null && _bay.gameObject.activeSelf ? "made" : "NOT made");
+        }
+
+        // The marking, where the stop has a bay, and one look at what stands in the bay now.
+        private void LayBay(TransitStop stop)
+        {
+            _bayFree = false;
+            _bayTaken = null;
+            _baySent = 0;
+            if (!stop.HasBay)
+            {
+                if (_bay != null)
+                {
+                    _bay.gameObject.SetActive(false);
+                }
+                return;
+            }
+            if (_bay == null)
+            {
+                BuildBay();
+            }
+            if (_bay != null)
+            {
+                // The box round where the bus stands. It lies on the road as the road lies there: its ends and its two
+                // sides are put on the ground under them, so a street that falls away or a cambered strip is followed.
+                Vector3 right = Vector3.Cross(Vector3.up, stop.BayAlong);
+                float halfLength = TransitBus.BodyLength * 0.5f + BoxEnd;
+                float inner = stop.BayOffset - TransitBus.BodyHalfWidth - BoxLaneSide;
+                float outer = stop.KerbAside - BoxKerbSide;
+                float halfWidth = (outer - inner) * 0.5f;
+                Vector3 middle = stop.Lane + right * ((inner + outer) * 0.5f);
+                Vector3 back = OnGround(middle - stop.BayAlong * halfLength, stop.Bay.y);
+                Vector3 front = OnGround(middle + stop.BayAlong * halfLength, stop.Bay.y);
+                Vector3 laneSide = OnGround(middle - right * halfWidth, stop.Bay.y);
+                Vector3 kerbSide = OnGround(middle + right * halfWidth, stop.Bay.y);
+                Vector3 forward = front - back;
+                Vector3 up = Vector3.Cross(forward, kerbSide - laneSide);
+                if (up.y < 0.9f * up.magnitude)
+                {
+                    forward = stop.BayAlong;   // (a reading that makes no sense: flat, at the bay's own height)
+                    up = Vector3.up;
+                }
+                _bay.SetPositionAndRotation(new Vector3(middle.x, (back.y + front.y + laneSide.y + kerbSide.y) * 0.25f, middle.z), Quaternion.LookRotation(forward, up));
+                Strip(_bay.GetChild(0), new Vector3(-halfWidth, LineTall, 0f), new Vector3(LineWide, LineTall, halfLength * 2f));
+                Strip(_bay.GetChild(1), new Vector3(halfWidth, LineTall, 0f), new Vector3(LineWide, LineTall, halfLength * 2f));
+                Strip(_bay.GetChild(2), new Vector3(0f, LineTall, halfLength), new Vector3(halfWidth * 2f + LineWide, LineTall, LineWide));
+                Strip(_bay.GetChild(3), new Vector3(0f, LineTall, -halfLength), new Vector3(halfWidth * 2f + LineWide, LineTall, LineWide));
+                if (_bayText != null)
+                {
+                    _bayText.rectTransform.sizeDelta = new Vector2(Mathf.Max(0.8f, halfWidth * 2f - 0.5f), 3.6f);
+                }
+                _bay.gameObject.SetActive(true);
+            }
+            _bayFree = TransitBays.Free(stop, stop.BayBehind, stop.BayAhead, null, true, out _bayTaken, out _baySent);
+        }
+
+        private static Vector3 OnGround(Vector3 place, float otherwise)
+        {
+            place.y = CitySpots.Ground(new Vector3(place.x, otherwise, place.z), out float ground) && Mathf.Abs(ground - otherwise) < 1f ? ground : otherwise;
+            return place;
+        }
+
+        private static void Strip(Transform piece, Vector3 position, Vector3 size)
+        {
+            piece.localPosition = position;
+            piece.localScale = size;
+        }
+
+        // Four painted strips (the driving test's bay is marked the same way: Licences/LicenceProps.MakeBay) and the words,
+        // lying on the road and read the way the traffic runs. Local axes: Z along the bay, X towards the kerb.
+        private void BuildBay()
+        {
+            if (!Shapes.Available)
+            {
+                return;
+            }
+            _bay = new GameObject("Bay").transform;
+            _bay.SetParent(_root.transform, false);
+            Material line = Shapes.Paint(BayYellow, 0.6f);
+            for (int i = 0; i < 4; i++)
+            {
+                Shapes.Piece("Line", _bay, Shapes.Cube, line, Vector3.zero, Vector3.one);
+            }
+            TMP_FontAsset font = Hud.Font;
+            if (font == null)
+            {
+                return;
+            }
+            var words = new GameObject("Words");
+            words.transform.SetParent(_bay, false);
+            words.transform.localPosition = new Vector3(0f, LineTall + 0.01f, 0f);
+            words.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);   // flat on the road, the tops of the letters ahead
+            _bayText = words.AddComponent<TextMeshPro>();
+            _bayText.font = font;
+            _bayText.text = TransitText.T(BayWords);
+            _bayText.color = new Color(BayYellow.r * 0.85f, BayYellow.g * 0.85f, BayYellow.b * 0.85f);
+            _bayText.fontStyle = FontStyles.Bold;
+            _bayText.alignment = TextAlignmentOptions.Center;
+            _bayText.textWrappingMode = TextWrappingModes.Normal;
+            _bayText.rectTransform.sizeDelta = new Vector2(1.8f, 3.6f);
+            _bayText.enableAutoSizing = true;
+            _bayText.fontSizeMin = 2f;
+            _bayText.fontSizeMax = 14f;
+            var renderer = words.GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                renderer.shadowCastingMode = ShadowCastingMode.Off;
+                renderer.receiveShadows = false;
             }
         }
 
@@ -265,7 +415,7 @@ namespace RealLifeOverhaul
             if (!_shelter.gameObject.activeSelf)
             {
                 logger?.Info("Transit check (stop dressed): " + name + ": the pole" + (_modelled ? " (modelled)" : " (plain shapes)") + ", no shelter (" + (_walkNote ?? "none wanted")
-                             + "); walker radius " + _radius.ToString("F2") + " m; cut out of the mesh: pole " + YesNo(pole) + ": " + (pole ? "PASS" : "FAIL (the pole can be walked through)") + ".");
+                             + "); " + BayFound() + "; walker radius " + _radius.ToString("F2") + " m; cut out of the mesh: pole " + YesNo(pole) + ": " + (pole ? "PASS" : "FAIL (the pole can be walked through)") + ".");
                 return;
             }
             bool back = !OnMesh(_shelter.TransformPoint(new Vector3(BackX, 0f, 0.9f)));
@@ -285,7 +435,7 @@ namespace RealLifeOverhaul
                         && !NavMesh.Raycast(a.position, b.position, out _, NavMesh.AllAreas);
             bool pass = pole && back && end && screen && bench && seats == Seats && inside && past;
             logger?.Info("Transit check (stop dressed): " + name + ": the pole and the shelter" + (_modelled ? " (modelled)" : " (plain shapes)") + ", bench seat " + BenchSeat.ToString("F2")
-                         + " m up; walker radius " + _radius.ToString("F2") + " m; cut out of the mesh: pole " + YesNo(pole) + ", back " + YesNo(back) + ", end panel " + YesNo(end)
+                         + " m up; " + BayFound() + "; walker radius " + _radius.ToString("F2") + " m; cut out of the mesh: pole " + YesNo(pole) + ", back " + YesNo(back) + ", end panel " + YesNo(end)
                          + ", screen " + YesNo(screen) + ", bench " + YesNo(bench) + "; still walkable: " + seats + " of " + Seats + " seat places, the open side " + YesNo(inside)
                          + ", the way past between shelter and kerb " + YesNo(past) + " (" + _walkRoom.ToString("F2") + " m to the kerb): " + (pass ? "PASS" : "FAIL") + ".");
         }
