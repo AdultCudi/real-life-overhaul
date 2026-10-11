@@ -33,6 +33,7 @@ namespace RealLifeOverhaul
             new LayerCull("view_radius", "reallife_perf_view_radius", 0f, "Default", "StreetProps", "InteractiveItems", "InteractiveItemsOutlined", "ParkedVehicles", "AiVehicles", "Human", "Sidewalk"),
             new LayerCull("far_props", "reallife_perf_far_props2", 200f, "StreetProps", "InteractiveItems", "InteractiveItemsOutlined", "ParkedVehicles"),
             new FarDistricts(true),
+            new TexturesWhole(),
             new FarObstacleTrial(),
             // What the render pipeline's passes cost, one group at a time (several change the picture while their row runs).
             new FrameSettingTrial("trial_no_custom_pass", "custom passes off: whatever the game injects (outlines, see-through of walls)", FrameSettingsField.CustomPass),
