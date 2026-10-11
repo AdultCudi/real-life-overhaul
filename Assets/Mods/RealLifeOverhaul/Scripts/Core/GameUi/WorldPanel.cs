@@ -39,11 +39,18 @@ namespace RealLifeOverhaul.GameUi
         private string _leftWords;
         private string _rightWords;
         private Color32 _rightColour;
+        /// <summary>The most buttons a panel has: one for each key the game sends to its box (interact, secondary, special, confirm).</summary>
+        public const int Slots = 4;
+
+        private static readonly PlayerAction[] SlotAction = { PlayerAction.Interact, PlayerAction.SecondaryInteract, PlayerAction.SpecialInteract, PlayerAction.Confirm };
+        private static readonly string[] SlotName = { "RealLifeFirst", "RealLifeSecond", "RealLifeThird", "RealLifeFourth" };
+
         private ButtonInfo[] _buttons;
-        private string _keyA;
-        private string _keyB;
-        private bool _onA;
-        private bool _onB;
+        private readonly string[] _slotKey = new string[Slots];
+        private readonly Action[] _slotAction = new Action[Slots];
+        private readonly bool[] _slotOn = new bool[Slots];
+        private readonly bool[] _slotBlue = new bool[Slots];
+        private bool _slotsChanged;      // a slot differs from the buttons last put together
         private bool _linesChanged;
         private bool _buttonsChanged;
 
@@ -84,24 +91,47 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public void Buttons(string keyA, Action a, bool enabledA, string keyB, Action b, bool enabledB)
         {
-            if (ReferenceEquals(keyA, _keyA) && ReferenceEquals(keyB, _keyB) && enabledA == _onA && enabledB == _onB)
+            Button(0, keyA, a, enabledA, true);
+            Button(1, keyB, b, enabledB, false);
+            Button(2, null, null, false, false);
+            Button(3, null, null, false, false);
+        }
+
+        /// <summary>
+        /// One button by its place: 0 on the game's interact key, 1 on its secondary one, 2 on its special one, 3 on
+        /// its confirm key. They stand in that order in the box. A key is a locale key; null leaves the place empty.
+        /// Nothing is made unless the place differs from what it held: the buttons are put together again by the
+        /// next <see cref="Show"/>. Pass a delegate made once.
+        /// </summary>
+        public void Button(int slot, string key, Action action, bool enabled, bool blue)
+        {
+            if (ReferenceEquals(key, _slotKey[slot]) && (key == null || (enabled == _slotOn[slot] && blue == _slotBlue[slot] && ReferenceEquals(action, _slotAction[slot]))))
             {
                 return;
             }
-            _keyA = keyA;
-            _keyB = keyB;
-            _onA = enabledA;
-            _onB = enabledB;
-            int count = (keyA != null ? 1 : 0) + (keyB != null ? 1 : 0);
-            _buttons = count > 0 ? new ButtonInfo[count] : null;
-            int at = 0;
-            if (keyA != null)
+            _slotKey[slot] = key;
+            _slotAction[slot] = action;
+            _slotOn[slot] = enabled;
+            _slotBlue[slot] = blue;
+            _slotsChanged = true;
+        }
+
+        // The game's button list from the four places: made only when a place has changed.
+        private void Assemble()
+        {
+            _slotsChanged = false;
+            int count = 0;
+            for (int i = 0; i < Slots; i++)
             {
-                _buttons[at++] = new ButtonInfo("RealLifeFirst", keyA, "blue", a, PlayerAction.Interact, enabledA);
+                count += _slotKey[i] != null ? 1 : 0;
             }
-            if (keyB != null)
+            _buttons = count > 0 ? new ButtonInfo[count] : null;
+            for (int i = 0, at = 0; i < Slots; i++)
             {
-                _buttons[at] = new ButtonInfo("RealLifeSecond", keyB, "gray", b, PlayerAction.SecondaryInteract, enabledB);
+                if (_slotKey[i] != null)
+                {
+                    _buttons[at++] = new ButtonInfo(SlotName[i], _slotKey[i], _slotBlue[i] ? "blue" : "gray", _slotAction[i], SlotAction[i], _slotOn[i]);
+                }
             }
             _buttonsChanged = true;
         }
@@ -117,6 +147,10 @@ namespace RealLifeOverhaul.GameUi
             if (box == null)
             {
                 return false;
+            }
+            if (_slotsChanged)
+            {
+                Assemble();
             }
             if (_current == this && OverlayUI.IsVisible && box.GetCurrentOverlayType == typeof(WorldPanel))
             {

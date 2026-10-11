@@ -234,6 +234,12 @@ namespace RealLifeOverhaul
         /// <summary>True while a loop started with <see cref="Clip"/> is still playing (the clip service may be switched off under us).</summary>
         public bool ClipAlive => _clip != null && _animator != null && _animator.Active;
 
+        /// <summary>True while this clip, started with <see cref="Clip"/>, is the one on the player (another may have been played over it since).</summary>
+        public bool Playing(string name)
+        {
+            return _clip == name && _animator != null && _animator.Active && ClipLibrary.TryGet(name, out CityClip clip) && _animator.Current == clip.Clip;
+        }
+
         /// <summary>Whether the player's animator has one of the game's looping animations.</summary>
         public bool Knows(PermanentAnimationType pose)
         {

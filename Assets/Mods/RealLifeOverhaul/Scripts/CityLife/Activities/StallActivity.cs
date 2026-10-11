@@ -39,6 +39,8 @@ namespace RealLifeOverhaul
         private const float VendorBack = 0.68f;     // metres from the cart's middle to where the vendor stands
         private const float CustomerOut = 0.72f;    // and to the customer at the counter
         private const float QueueStep = 0.85f;      // between two people in the queue
+        private const float CartHalfLength = 0.75f; // the cart's body, along the pavement
+        private const float CartHalfDepth = 0.40f;  // ...and its counter, across it
         private const int QueueMost = 3;
         private const int PeopleMost = 4;           // vendor, queue and whoever is walking off, at once
         private const float BuyWithin = 2.3f;
@@ -50,6 +52,7 @@ namespace RealLifeOverhaul
         private const float ReachLength = 2.4f;
 
         private readonly StallKind _kind;
+        private readonly SolidFootprint _solid = new SolidFootprint();
         private readonly Vector3[] _places = new Vector3[QueueMost];
         private readonly CityPerson[] _queue = new CityPerson[QueueMost];
         private readonly bool[] _settled = new bool[QueueMost];
@@ -135,17 +138,10 @@ namespace RealLifeOverhaul
                 End();
                 return false;
             }
-            // Solid to people on foot: an obstacle agents steer round. Not a carving one (those are not allowed on
-            // pavements): the navigation mesh is untouched and nobody's route changes. It lives on the pooled cart object.
-            GameObject cart = Dressing[0].gameObject;
-            if (!cart.TryGetComponent(out NavMeshObstacle solid))
-            {
-                solid = cart.AddComponent<NavMeshObstacle>();
-                solid.shape = NavMeshObstacleShape.Box;
-                solid.center = new Vector3(0f, 1f, 0f);
-                solid.size = new Vector3(1.5f, 2f, 0.56f);   // narrower than the counter: vendor and customer stand 0.7 m from its middle and must be able to get there
-                solid.carving = false;
-            }
+            // Solid to everyone on foot, as the bus stops are (Core/SolidFootprint): a box on the pooled cart object that
+            // walkers steer round, and that cuts the navigation mesh only while the player is on foot near the cart (Tick).
+            // Its depth leaves the vendor's and the customer's places, 0.7 m from the cart's middle, on the mesh.
+            _solid.Fit(Dressing[0], CartHalfLength, CartHalfDepth, Mathf.Min(VendorBack, CustomerOut));
             if (_hasShade)
             {
                 Put("vendor_umbrella", _shade, _heading);
@@ -185,6 +181,18 @@ namespace RealLifeOverhaul
                 return CitySpots.InView(Centre);
             }
             CityPerson vendor = Cast[0];
+
+            // Solid only while the player is on foot near it: nearer to become so than to stay so, never while driving past.
+            PlayerController walker = PlayerHelper.PlayerController;
+            float solidWithin = _solid.IsSolid ? SolidFootprint.Keep : SolidFootprint.Within;
+            _solid.Solid(walker != null && !PlayerHelper.IsUsingVehicle && CitySpots.Flat(walker.transform.position - _cart) < solidWithin * solidWithin, now);
+            if (_solid.VerifyDue && _solid.Verify(now, _vendor, _places[0], out bool cut, out bool kept, out bool way) && Meta.Dev.Verbose)
+            {
+                CityLifeDirector.Logger?.Info("City life check (cart solid): the " + (_kind == StallKind.Coffee ? "coffee" : "hot-dog") + " cart: walker radius " + _solid.Radius.ToString("F2")
+                                              + " m; cut out of the mesh: the cart's middle " + (cut ? "yes" : "no") + "; still walkable: the vendor's place and the first customer's place "
+                                              + (kept ? "yes" : "no") + ", a way on foot from one to the other " + (way ? "yes" : "no") + ": "
+                                              + (cut && kept && way ? "PASS" : !kept || !way ? "FAIL (the cut is taken back: the cart is steered round, not solid)" : "FAIL (the cart can be walked through)") + ".");
+            }
 
             // The queue: forget whoever was knocked down, close up, and let people settle where they have arrived.
             for (int i = 0; i < _placeCount; i++)
@@ -412,6 +420,7 @@ namespace RealLifeOverhaul
         public override void End()
         {
             PlayerAtCounter = false;
+            _solid.Clear();   // nothing is left cutting the mesh when the same cart object is next put out
             _cup = null;   // if it was on the counter it is among the dressing and goes back with it
             _site = null;
             for (int i = 0; i < QueueMost; i++)

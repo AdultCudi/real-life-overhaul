@@ -250,7 +250,7 @@ namespace RealLifeOverhaul
                 messageData = "reallife_career_rota_offer".Localize(new
                 {
                     rota = rota.NameKey.GetLocalization(),
-                    time = rota.Hour.GetFormattedTime(0f, true)
+                    time = CareerClock.Span(rota.Hour)
                 }),
                 ConfirmTextOverride = "reallife_career_rota_take".Localize(),
                 OnConfirm = G(() =>
@@ -279,7 +279,7 @@ namespace RealLifeOverhaul
             {
                 return "reallife_career_next_none".GetLocalization();
             }
-            string time = CareerState.RotaHour.GetFormattedTime(0f, true);
+            string time = CareerClock.SpanWithWindow(CareerState.RotaHour);   // start to end, when clocking on opens and from when it is late
             return next == day
                 ? "reallife_career_next_today".GetLocalization().Replace("{time}", time)
                 : "reallife_career_next_day".GetLocalization().Replace("{time}", time).Replace("{day}", DayNames[(next - 1) % 7].GetLocalization());
@@ -295,7 +295,7 @@ namespace RealLifeOverhaul
                     return rotas[i].NameKey.GetLocalization();
                 }
             }
-            return CareerState.RotaHour.GetFormattedTime(0f, true);
+            return CareerClock.Span(CareerState.RotaHour);
         }
 
         private static DialogEntry Staff(bool inPerson)
@@ -354,8 +354,9 @@ namespace RealLifeOverhaul
             }
             // Asked again now: the hour may have turned while they talked.
             return career.ClockOn(out string reason)
-                ? PhoneContacts.Closing("reallife_career_clocked_on")
-                : PhoneContacts.Closing(reason ?? "reallife_job_no_now", new { time = CareerState.RotaHour.GetFormattedTime(0f, true) });
+                ? PhoneContacts.Closing(CareerState.Employer != null && CareerState.Employer.Job == JobCatalogue.Vendor && CareerState.CurrentRank.Work == CareerWork.Gig
+                    ? "reallife_career_clocked_on_cart" : "reallife_career_clocked_on_time", new { time = CareerClock.Span(CareerState.RotaHour) })
+                : PhoneContacts.Closing(reason ?? "reallife_job_no_now", new { time = CareerClock.Span(CareerState.RotaHour) });
         }
 
         private static DialogEntry Other(bool inPerson)

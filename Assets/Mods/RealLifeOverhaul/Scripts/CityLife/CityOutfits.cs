@@ -169,6 +169,18 @@ namespace RealLifeOverhaul
         /// </summary>
         public static void Wear(AppearanceSetter appearance, CityLook look, List<Dye> dyes)
         {
+            Wear(appearance, look, dyes, appearance.data.elements);
+        }
+
+        /// <summary>
+        /// The same outfit written into a list of the caller's own and not into the character's appearance data: for
+        /// work clothes worn over somebody's own for a while (the player on a shift, Jobs/JobUniform), shown with the
+        /// game's AppearanceSetter.UpdateVisuals(list) and gone again with UpdateVisuals(). The garments are looked up
+        /// by name on this character, and what is recoloured is this character's own colour entries, recorded in
+        /// <paramref name="dyes"/> as always.
+        /// </summary>
+        public static void Wear(AppearanceSetter appearance, CityLook look, List<Dye> dyes, List<AppearanceElementData> elements)
+        {
             Garment[] outfit = look == CityLook.RoadWorker ? RoadWorker : look == CityLook.Sweeper ? Sweeper : look == CityLook.Cleaner ? Cleaner
                 : look == CityLook.Vendor ? Vendor : look == CityLook.Canvasser ? Canvasser : look == CityLook.Courier ? Courier : look == CityLook.Postie ? Postie
                 : look == CityLook.Painter ? Painter : look == CityLook.Gardener ? Gardener : look == CityLook.Doorman ? Doorman : null;
@@ -178,11 +190,11 @@ namespace RealLifeOverhaul
             }
             for (int i = 0; i < outfit.Length; i++)
             {
-                Put(appearance, outfit[i], dyes);
+                Put(appearance, outfit[i], dyes, elements);
             }
             for (int i = 0; i < Bare.Length; i++)
             {
-                Put(appearance, Bare[i], dyes);
+                Put(appearance, Bare[i], dyes, elements);
             }
         }
 
@@ -208,7 +220,7 @@ namespace RealLifeOverhaul
             dyes.Clear();
         }
 
-        private static void Put(AppearanceSetter appearance, Garment garment, List<Dye> dyes)
+        private static void Put(AppearanceSetter appearance, Garment garment, List<Dye> dyes, List<AppearanceElementData> elements)
         {
             List<AppearanceElementVariant> variants = appearance.GetElementVariants(garment.Slot);
             if (variants == null || variants.Count == 0)
@@ -234,7 +246,6 @@ namespace RealLifeOverhaul
             }
 
             AppearanceElementData element = null;
-            List<AppearanceElementData> elements = appearance.data.elements;
             for (int i = 0; i < elements.Count; i++)
             {
                 if (elements[i].type == garment.Slot)

@@ -70,6 +70,8 @@ namespace RealLifeOverhaul
 
         public JobProps Props;           // what jobs put on the street and in hands
         public JobBody Self;             // the player's own body at work: held still, a clip, a tool
+        public JobStand Stand;           // a place of work the player takes by walking on to it
+        public JobUniform Uniform;       // work clothes over the player's own, taken off by the director however the job ends
         public JobRental Rental;         // the hired car, when the player has none
         public bool Indoors;             // inside the one building the job allows
 
@@ -91,6 +93,12 @@ namespace RealLifeOverhaul
 
         /// <summary>What the rank (or a booking) does to tips: 1 freelance.</summary>
         public float TipFactor => Shift != null ? Shift.Rank.TipFactor : Gig != null ? CareerCatalogue.GigTipFactor : 1f;
+
+        /// <summary>
+        /// The shift's figures on the HUD, in a copy of the game's own job panel; null if the game's panel could not be
+        /// copied (said once in the log). Made the first time a job asks, shown by the director while that job is on.
+        /// </summary>
+        public ShiftCard Card => Director.Card();
 
         /// <summary>Pays a slip through the game's own transaction, counts the work, spends the energy and shows the slip.</summary>
         public void Pay(Job job, in PaySlip slip, string titleKey)
@@ -179,6 +187,19 @@ namespace RealLifeOverhaul
         /// called on every press (it says so itself when there is nothing in reach).
         /// </summary>
         public virtual bool OwnsInteractKey => false;
+
+        /// <summary>
+        /// True for a job that shows everything in the game's own interface (the game's panel over a place, a copy of
+        /// its job panel, its activity panel, its notifications): the director then draws nothing of the mod's own
+        /// job HUD for it, and its pay slip is one of the game's notifications.
+        /// </summary>
+        public virtual bool NativeUi => false;
+
+        /// <summary>
+        /// True while the job itself has handed the shift to the game's clock (<see cref="ShiftSkip"/>): the game's
+        /// time machine running is then the shift being worked, not something that has taken the player away.
+        /// </summary>
+        public virtual bool PassingTime => false;
 
         /// <summary>
         /// Up to three things to pick from, shown as a row with their keys (an order's three

@@ -39,6 +39,14 @@ namespace RealLifeOverhaul
         public static IModLogger Logger;
         public static PlayerDouble Instance { get; private set; }
 
+        /// <summary>
+        /// Work clothes worn over the player's own for a while (Jobs/JobUniform): called each time the double is
+        /// dressed, with the double and the list of pieces it is about to be dressed from (a copy: the player's own
+        /// appearance data is never written). Null when nothing is worn over. Set and cleared by whoever dresses the
+        /// player, who then has the player's look announce a change so that the double is dressed again.
+        /// </summary>
+        public static Action<AppearanceSetter, List<AppearanceElementData>> Workwear;
+
         private State _state = State.Waiting;
         private bool _failed;
         private float _nextTry;
@@ -349,6 +357,11 @@ namespace RealLifeOverhaul
 
             // A copy: the game's appearance code keeps the object it is given, and the player's is the savegame's.
             CharacterData copy = _playerLook.data.Copy();
+            Action<AppearanceSetter, List<AppearanceElementData>> workwear = Workwear;
+            if (workwear != null)
+            {
+                workwear(_doubleLook, copy.elements);   // a uniform for a shift: the double wears what the player's own body is shown in
+            }
             _doubleObject.SetActive(true);
             _shown = true;
 

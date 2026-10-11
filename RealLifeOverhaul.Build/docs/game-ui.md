@@ -256,6 +256,12 @@ OverlayUI [VerticalLayoutGroup (padding 30/30/55/40, spacing 20), ContentSizeFit
   `RefreshButtons`.
 - While a `WorldPanel` with a button on Interact is up, the mod's own interact key must do nothing else:
   `TransitDirector.TakesInteractKey` is true while it shows and in the frame its button ran.
+- A panel has four places for buttons, one for each key the game sends to its box, in this order: Interact,
+  SecondaryInteract, SpecialInteract, Confirm (`WorldPanel.Button(place, key, action, enabled, blue)`; the older
+  `Buttons` sets the first two). A button that is not `interactable` is drawn dimmed and ignores its key. The drinks
+  cart uses all four (`Jobs/Kinds/VendorJob`): three drinks and "Call out" while a customer orders, "Step away",
+  "Let time pass" and "Call out" otherwise. Four buttons make the box about 320 units higher than its header.
+- The game's Cancel key is not sent to this box. A panel that must be left by a key needs a button for it.
 
 Proven: every member named above and the object's structure. Inferred: how the box looks with other content than
 the game's (the second line makes it wider; capitals on the right-hand word and the buttons).
@@ -390,3 +396,61 @@ how the engine draws its own font textures; not seen in this game.
 
 Proven: every object, component, size and member named here. Inferred: everything about how the copy looks and
 where it ends up on screen.
+
+## 13. The game's activity panel, for time that passes (`Jobs/ShiftSkip`, `Home/HomeActivity`)
+
+`UIs.Instance.playerActivityUI` is `Canvases/PlayerHUD/PlayerActivityUI` (a draggable window in the middle of the
+screen, 1,322 wide as authored):
+
+```
+PlayerActivityUI [PlayerActivityUI, DraggableWindow, VerticalLayoutGroup, ContentSizeFitter, CanvasGroup]
+  Background        sprite Box-Dark
+  Headline/Title    TMP 32, white
+  Content
+    ProgressionRow  ProgressBar (800 x 20, green fill) and ProgressionLabel (TMP 30)
+    LabelsRow       LabelTemplate (TMP 28, bold), one copy per label
+    SliderRow       the slider, its two key labels and SliderLabel
+    SpeedOptionsRow TimeMachineButton (Button-Blue; its Label gets the suffix of SpecialInteract) and the fast-forward switch
+    ButtonsRow      ButtonTemplate (button-gray@2x, Label TMP 38 capitals), one copy per button
+```
+
+- It shows whatever implements `PlayerActivity.IPlayerActivity`: a headline, labels, buttons (`ButtonInfo`, as
+  section 9), whether there is a progress bar, a slider, the time machine and the fast-forward switch, and a state.
+  `PlayerActivityUI.Show(activity)` opens it paused; the panel's `Update` reads the state every frame:
+  MovingTowardsActivity (it hides itself and lets the clock run), Started (it makes it Running), Running (it calls
+  `Perform(minutes)` as game minutes pass), Finished (it closes).
+- `GameManager` sends Confirm, Interact, SecondaryInteract, Sell and SpecialInteract to it while it is open, and
+  `CancelButtonHandler` sends Cancel: a button on any of those is run by its key. SpecialInteract is the time
+  machine while the activity has one; SecondaryInteract is the fast-forward switch while it has one and the player
+  is indoors (the switch is not shown out of doors).
+- The time machine (`TimeMachine.StartTimeMachine(goal)`) clears the traffic, hides the HUD, blurs the view and runs
+  the clock to `GetTimeMachineGoal()`; when it ends the panel calls `Perform` with the minutes that passed, then
+  `Finish`. The player running out of energy, or the panel's Stop, also ends in `Finish`: settle there.
+- The game's own employer job is `PlayerActivity.WorkActivity`: this is the model `ShiftSkip` follows.
+- While the panel is open `PlayerActivityUI.IsPanelOpen` is true, which the mod's camera counts as a screen being
+  open: the pointer is free and its buttons can be clicked.
+
+## 14. The game's job panel on the HUD (`Jobs/ShiftCard`)
+
+`UIs.Instance.playerHUD.currentJobUI` is `Canvases/PlayerHUD/CurrentJobUI` (class `UI.CurrentJob.CurrentJob`,
+anchored top right at (-35, -200)); its public `panel` is the child `Panel` (714.5 x 460, inactive unless the player
+has the game's employer job):
+
+```
+Panel [Image darkgreybox@2x, alpha 0.859]
+  Headline            sprite darkgreybox-header@2x, 100 high; Text (TMP) 32, bold capitals, dark
+  BusinessName        TMP 30, capitals, at y -132
+  Address             TMP 30, capitals, at y -174
+  TodayWorkStatus     TMP 30, bold capitals, at y -217
+  TomorrowWorkStatus  TMP 30, bold capitals, at y -257
+  SetDestinationButton, QuitJobButton
+```
+
+`ShiftCard.Make` copies the panel asleep, keeps `Headline`, `BusinessName` and `Address`, copies `Address` three
+more times for five lines 42 apart, lets a long line shrink to 18 before it would be cut, takes every raycast
+target off (it is looked at, never clicked), gives the copy a canvas of its own and hangs it on `CurrentJobUI`
+itself, so it stands where the game's panel stands; while the game's own panel is showing the copy moves 476 down.
+The lines are in capitals because the game's are. The game hides `playerHUD` during its time machine, and the copy
+with it.
+
+Proven: every object, size and member named in sections 13 and 14. Inferred: how the copies look.

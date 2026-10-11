@@ -124,6 +124,11 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       JobDirector    the one job that is on: start, 0.2 s tick, interruptions (indoors only in the one building a job names), pay, the test buttons
       Job            the base every job derives from, the pay slip, what a job is handed each tick, text helpers
       JobHud         objective panel (placed under the game's top bar, measured), the job's own marker, key prompt, a row of three choices, pay slip
+      JobStand       a place of work taken by walking on to it: the last step, the turn, the hold, the working pose, stepping away
+      JobUniform     work clothes over the player's own (the game's UpdateVisuals(list)); the director takes them off on every way out
+      ShiftSkip      the rest of a shift left to the game's clock: one of the game's activities on the game's own panel, as its employer job
+      ShiftCard      the shift's figures on the HUD: a copy of the game's job panel, five lines written only when they change
+      CareerClock    a shift's time as start to end in the game's clock format: the one formatter every text asks
       JobKeys        every key test and key name the jobs use: the two lines to change for rebindable keys; fills {key} in texts
       JobPhone       the Gig Line contact and its conversation, on the phone or face to face at a board
       JobBoards      help-wanted boards outside a few service buildings: the same list as the Gig Line
@@ -397,6 +402,16 @@ moves. All of the mod's are `carveOnlyStationary`, placed while switched off and
   passing car. A stop's five boxes change in the same frame on purpose: the engine cuts the tile once for the lot, and
   one box a frame would have it cut five times. The self-check ("stop dressed", diagnostics only) is made when a stop
   becomes solid.
+- **Carts** (`Core/SolidFootprint`: the player's own job cart, and the living city's coffee and hot-dog carts). One
+  box on the cart object, its own length (1.5 m) and as deep as leaves the vendor's and the customer's places
+  (0.68 m and 0.72 m from the cart's middle) on the mesh: half a depth of 0.68 less the walker's radius less 0.05 m,
+  0.40 m at most. While it does not cut it is the obstacle walkers steer round that the carts had before (0.56 m
+  deep). The living city's carts cut only while the player is on foot within 60 m (kept to 90 m), as the bus stops;
+  the job's cart cuts from the moment it is put down, because the player is on foot beside it for as long as it
+  stands. 1.6 s after a cut `Verify` asks the mesh: the cart's middle off it, both places on it, and a way on foot
+  from one to the other. If a place was lost the cut is taken back for that placing and the cart is steered round
+  only. One line: `Jobs check (cart solid): ...` or `City life check (cart solid): ...`. If the walker's radius is
+  0.58 m or more there is no room for a box and the carts are steered round, not solid; the line says so.
 - **Scenes** (`SceneObstacles`, eight vehicle boxes; the cordon's walls; a parked patrol car's box; a precinct's parked
   cars; the wedding's): put out once when the scene is set and taken in once when it ends, each group in one frame for
   the same reason. The cordon switches a wall off and on once more if its cut did not take. None is toggled on a timer.
@@ -568,6 +583,98 @@ boxes, 30 customers, 20 songs, 15 parcels, 12 fares; four levels) and by the "Jo
 a job pays; a slip never goes below zero. Three failed shifts in a job and it lets the player go for three
 days; a good shift takes a strike off. Work spends energy and trains a skill through the game's own
 systems, and never takes energy below 12.
+
+### The drinks cart: the model of a shift in the game's own interface (`Kinds/VendorJob`)
+
+The cart shift (an employee's rota shift at Uncle Lou's, or the gig) shows nothing of `JobHud`. `Job.NativeUi`
+is true for it, and the director then draws none of the mod's own job HUD and reads no key for it. What the
+player sees and does is built from four shared pieces of `Scripts/Jobs`, each usable by any other job:
+
+- **`JobStand`: the place is taken by walking on to it.** `Place(post, facing, reach, idleClip)` names a zone;
+  the job calls `Tick` on its own tick. A player on foot inside the zone is held (`JobBody.Hold`, the game's
+  navigation blocker), drawn the last step to the exact place and turned (a coroutine of the director's, per
+  frame for the half second it takes and never otherwise), and given the looping clip as the working pose
+  (`counter_wipe`, the living city's vendor's; the game's own standing if the bundle lacks it). A one-off motion
+  goes through `Busy`, after which the pose comes back by itself. `StepAway` frees them and the zone will not
+  take them again until they have left it by 0.6 m. The director calls `Clear` on every way a job can stop.
+- **`JobUniform`: work clothes over the player's own.** The game dresses the player for a while with
+  `AppearanceSetter.UpdateVisuals(list)` (its swimwear, the uniform at its own tills): the pieces of the list are
+  drawn where there is one and the character's own data is not written. `Wear(player, CityLook.Vendor)` builds
+  that list from the living city's outfit (`CityOutfits.Wear` into a list of the caller's own: white shirt with
+  red trim, charcoal trousers, red hat) and calls it; `Off` puts back what was recoloured and calls
+  `UpdateVisuals()`. Nothing reaches the save: a save made in uniform holds the player's own clothes and loads
+  the same with or without the mod. Where the player is drawn by the detailed double (`Character/PlayerDouble`),
+  the double is dressed through `PlayerDouble.Workwear`, a delegate it calls with the copy of the data it is about
+  to dress from. The director calls `Off` in `EndJob` (every ending, a fault and the feature switched off
+  included) and in `OnDestroy`. Each change is one rebuild of the player's look, counted in `Looks`.
+- **`ShiftSkip`: the rest of the shift by the game's clock.** The game's employer job is
+  `PlayerActivity.WorkActivity` on `PlayerActivityUI`: Start and Cancel with the game paused; started, the player
+  is kept at the till, the panel shows a progress bar with the time remaining, the game's skip button on its
+  special key (it runs `TimeMachine.StartTimeMachine` to the end of the shift) and Stop; `Finish` pays the hourly
+  wage for the minutes worked. `ShiftSkip` is an `IPlayerActivity` on the same panel with the same buttons and
+  keys, for a job that implements `ISkippableShift` (how many minutes are left, what the offer says, what to do
+  when the clock starts, as minutes pass and when it ends). No walk order is given (the player is already held at
+  the stand), so the panel's cancel-on-walk-order trap (see Home) cannot fire; the activity is "on its way" for
+  one frame because that is the step in which the game's panel lets the clock run. While `Job.PassingTime` is
+  true the director does not take the running time machine for an interruption. Differences from the game's job:
+  the game's fast-forward switch is offered by the game only indoors, so on the street the panel has the skip
+  button alone; and no customers are shown while the clock runs.
+- **`ShiftCard`: the figures, for the whole shift.** A copy of `PlayerHUD/CurrentJobUI/Panel` made asleep
+  (`UiClone`), its two buttons and every raycast target taken off, three more lines copied from its own, a canvas
+  of its own, 336 high. It hangs on the game's `CurrentJobUI`, in the game's place for it, and under the game's own
+  panel while the player also has the game's job. `Title` and `Line(n, words, colour)` write only on change.
+
+For the cart: the rule of the clock is `VendorJob.MinutesEach` (20 game minutes a customer: twelve are the four
+hours an employer pays basic wage for) and `VendorJob.SkipShare` (85 % of a customer's pay, no tips, no "nobody
+walked off" bonus). Units, energy, the level, the employer's hours, lateness, marks and the review are settled by
+the same code as a shift by hand (`Ctx.Pay`, `CareerDirector.ShiftEnded`); tips count towards a review, so a
+shift left to the clock scores lower. The order and the three drinks are the game's panel over a place
+(`GameUi.WorldPanel`, now with four places: the game's interact, secondary, special and confirm keys) over the
+cart: three buttons, one per drink, because the game writes each button's key itself, runs it on the key or a
+click, and the three keys are the three the game sends to that panel. Calling out is on the confirm key in both
+states of the panel; "Let time pass" and "Step away" are on the special and secondary keys while nobody is
+ordering, and do nothing for 0.7 s after an order ends (a key meant for a drink). The pay slip is one
+notification (`reallife_job_slip_note`, or `reallife_career_slip_note` with the basic wage).
+
+**Calling out** (`VendorJob.Hawk`). Each of the game's pedestrians within 14 m (six at most) rolls once: annoyed
+with 0.10 + 0.13 for each call in the last 25 s; else tempted with 0.32 x the hour (0.5 at night, 0.8 before nine,
+1.2 from eleven to two, 1.3 from four to nine) x the pavement (0.8 to 1.2 by how many are within 30 m) x the
+player's customer service skill (1 to 1.5) x the queue (0.6 with one at the cart, 0.3 with two), less a fifth for
+each recent call. Tempted: the game's green face, up to two are borrowed (`PedestrianTakeover`, as the busker's
+listener) and look at the cart for four to seven seconds, and a customer more is added to the shift (four at most,
+never past a gig's daily amount) who arrives within a couple of seconds. Annoyed: the red face and
+`JobClip.Annoyed`, and they are not asked again this shift. Ten seconds between calls. With three recent calls
+and police presence above zero, a warning by chance (0.12 + 0.03 x the presence option); the second ends calling
+out for the shift. No officer is put on the street for it. The player's motion is `JobClip.Hail` over the working
+pose; no sound is played (the game's sound list was not read for one that fits).
+
+**The cart is solid** (`Core/SolidFootprint`, shared with the living city's two carts): see "What cuts the
+navigation mesh".
+
+Log lines with "Developer diagnostics" on: `Jobs: vendor cart put down ...`, `Jobs check (cart solid): ... PASS`,
+`Jobs: stand entered ...`, `Jobs: uniform on (Vendor, ...; worn before: ...)`, `Jobs check (cart panel): ... PASS`,
+`Jobs: vendor: customer served by hand (...) in 2.8 s, tip 3 ...`, `Jobs: vendor: called out. Chances: ...`,
+`Jobs: vendor: the rest of the shift is left to the clock: ...`, `Jobs: vendor: shift skipped by the clock: 3.0 game
+hours ..., pay ..., energy ... -> ...`, `Jobs: stand left (...)`, `Jobs: uniform off ...`,
+`Jobs: pay slip shown as one of the game's notifications ...` or `Careers: payslip shown as ...`.
+
+Not verified (the game could not be run): everything that is seen. In particular how the copied job panel lays
+out with five lines, where the game's panel over the cart stands on screen with four buttons, whether the hat and
+shirt exist under the same names in the detailed character set (if not, the double keeps the player's own piece
+there and the outfit's log line says so), and that the walker's radius leaves room for a cut (the check line
+says).
+
+**What the other six jobs need to adopt these pieces.** Flyers: `NativeUi` and a `ShiftCard` (flyers taken, the
+busy share, time); the offer is already made at a person, so its key prompt becomes a `WorldPanel` over them; a
+uniform (`CityLook.Canvasser`); `ShiftSkip` with a rate per flyer. Cleaner: card, uniform (`CityLook.Cleaner`),
+`ShiftSkip`; each spill a `WorldPanel` button or a click action on the spill (`Transport/TransitPointer` is the
+model), and `WorksInside` as now. Shelf stocker: card, `ShiftSkip`; picking up and putting down as click actions
+on the box and the shelf. Busker: `JobStand` on the pitch (it holds the player already), the three songs as the
+panel's three buttons exactly as the drinks, card, `ShiftSkip` by songs. Courier and ride-hail: card only (parcels
+or fares, the clock, the tip); their marker is the game's guider already; a `ShiftSkip` would have to place the
+car at the end and is not suggested. The two career-only shifts (`DispatchJob`, `LeadJob`) need the card and a
+`WorldPanel` for their choices. Each also needs its pay slip moved to the notification (`NativeUi` does it) and
+its texts.
 
 ### Adding a job
 
@@ -1185,6 +1292,15 @@ cannot be seen from close by, shelved when the player is 100 m off). On a day th
 whoever is on the same shift waits on the other side of the board and waves when the player walks up. With no
 board in the bundle, or fewer than six, the employers without an office are spoken to through the **Work**
 contact on the phone.
+
+A shift's time is never said as a bare hour. `Jobs/CareerClock` is the one formatter: `Span(hour)` gives the start
+and the end in the game's clock format ("13:00 to 17:00", or with AM and PM under the game's 12 hour option), and
+`SpanWithWindow` adds when clocking on opens (`EarlyHours` before) and from when it is late (`OnTimeHours` after).
+The boss's rota offer, the Work contact's "next shift", its too-early refusal, the reminders and the clocked-on
+line all pass it as `{time}`; the shift's panel shows it beside the employer's name; the Planner's rows carry the
+same two times as minutes and format them with its own `PlannerText.Time`. At an office board the game's panel
+over a place offers "Speak to the office" on the game's interact key (`JobDirector.Boards`); the mod reads no key
+there and draws no prompt.
 
 | employer | grows out of | references needed | ranks (what the shift is) |
 |---|---|---|---|

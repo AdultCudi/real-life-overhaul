@@ -420,7 +420,7 @@ namespace RealLifeOverhaul
                     CareerState.RemindedDay = day;
                     var data = new Dictionary<string, string>(3)
                     {
-                        { "employer", JobText.T(employer.NameKey) }, { "time", start.GetFormattedTime(0f, true) }, { "title", JobText.T(CareerState.CurrentRank.TitleKey) }
+                        { "employer", JobText.T(employer.NameKey) }, { "time", CareerClock.Span(start) }, { "title", JobText.T(CareerState.CurrentRank.TitleKey) }
                     };
                     Notifications.Show(NotificationType.Info, "reallife_career_reminder", data, 12f);
                     CareerPhone.Text("reallife_career_text_reminder", data);
@@ -736,7 +736,7 @@ namespace RealLifeOverhaul
             {
                 int piece = job.Shift.Total;
                 int hours = 0;
-                if (!failed && job.Shift.Units > 0 && why != JobEnd.Fault)
+                if (!failed && job.Shift.Units > 0 && (why != JobEnd.Fault || job.NativeUi))   // (a job that pays what was done before a fault is paid its hours too)
                 {
                     float elapsed = TimeHelper.NowInMinutes() - shift.StartMinutes;
                     hours = Mathf.Clamp(Mathf.CeilToInt(elapsed / 60f), 1, CareerCatalogue.ShiftHours) - (shift.Late ? 1 : 0);
@@ -750,7 +750,7 @@ namespace RealLifeOverhaul
                         JobState.Worked(job.Def, 0, wage);
                     }
                 }
-                Payslip(shift, piece, hours, wage);
+                Payslip(job, shift, piece, hours, wage);
                 _logger?.Info("Careers: shift ended (" + why + (failed ? ", failed" : string.Empty) + "): work " + piece + ", " + hours + " h basic " + wage + ".");
                 if (!shift.Counts || !CareerState.Employed || why == JobEnd.Fault)
                 {
@@ -782,8 +782,26 @@ namespace RealLifeOverhaul
 
         // The payslip: what the work paid, the basic wage, and the tax line. The game takes no tax from wages (its own
         // employer job pays its hourly rate in full, and income tax is on business sales only), so the line reads zero.
-        private void Payslip(CareerShift shift, int piece, int hours, int wage)
+        private void Payslip(Job job, CareerShift shift, int piece, int hours, int wage)
         {
+            if (job.NativeUi)
+            {
+                // A job shown in the game's own interface: the payslip is one of the game's notifications (it also stays in
+                // the game's list of them), with the same figures.
+                var data = new Dictionary<string, string>(6)
+                {
+                    { "employer", JobText.T(shift.Employer.NameKey) }, { "total", JobText.Money(piece + wage) }, { "lines", _director.SlipLines(job.Shift) },
+                    { "hours", hours.ToString() }, { "rate", JobText.Money(shift.Hourly) }, { "wage", JobText.Money(wage) }
+                };
+                Notifications.Show(piece + wage > 0 ? NotificationType.Success : NotificationType.Info,
+                    shift.Late ? "reallife_career_slip_note_late" : "reallife_career_slip_note", data, 16f);
+                if (Meta.Dev.Verbose)
+                {
+                    _logger?.Info("Careers: payslip shown as one of the game's notifications: total " + (piece + wage) + " (" + data["lines"] + "; basic " + hours + " h at "
+                                  + shift.Hourly.ToString("F1") + " = " + wage + (shift.Late ? "; late: 1 h docked" : string.Empty) + ").");
+                }
+                return;
+            }
             _text.Length = 0;
             _text.Append(JobText.T(shift.Rank.TitleKey)).Append('\n');
             Line("reallife_career_slip_work", JobText.Money(piece));
