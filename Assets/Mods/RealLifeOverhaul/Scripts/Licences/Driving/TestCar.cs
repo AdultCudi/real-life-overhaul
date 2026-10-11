@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using BAModAPI;
 using GleyTrafficSystem;
 using Helpers;
+using UI;
+using UI.Notification;
 using UnityEngine;
 using Vehicles.DeliveryDriverJob;
 using Vehicles.VehicleTypes;
@@ -13,7 +15,10 @@ namespace RealLifeOverhaul
     /// <summary>
     /// The driving school's car: one of the game's own vehicles, made the way the game makes
     /// one for the player (<c>VehicleHelper.CreateAndSpawnVehicle</c>), lent for a lesson or a
-    /// test and taken back afterwards with the game's own delete.
+    /// test and taken back afterwards with the game's own delete. Once it is due back it is not
+    /// the player's to drive: they are seen out of it when it has stopped (after twelve seconds
+    /// at the latest), seen out again if they get back in, and it goes twenty seconds after
+    /// they left it, sooner when they have walked off or look away.
     ///
     /// It is never in a savegame. The game serialises the save in the same call that raises its
     /// save event, so on that event the school's car is taken off the save's vehicle list and
@@ -43,6 +48,8 @@ namespace RealLifeOverhaul
         private string _leftover;       // an id from modData that should not exist: deleted if it does
         private bool _returning;
         private float _returnFrom;
+        private bool _wasLeft;          // the player has been out of it since it was due back
+        private bool _seeingOut;
         private bool _failed;
 
         public TestCar(MonoBehaviour host, IModLogger logger)
@@ -138,13 +145,18 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The lesson or test is over: the car goes back once the player is out of it and has walked off (or a minute has passed).</summary>
+        /// <summary>The lesson or test is over: the player is seen out of the car, and it goes back once they have walked off or looked away (or twenty seconds have passed).</summary>
         public void Return()
         {
             if (_car != null && !_returning)
             {
                 _returning = true;
                 _returnFrom = Time.time;
+                _wasLeft = !Driven;
+                if (Driven)
+                {
+                    Licences.Toast(NotificationType.Info, "reallife_lic_car_step_out", 8f);
+                }
             }
         }
 
@@ -178,12 +190,32 @@ namespace RealLifeOverhaul
                 {
                     Forget();   // wrecked and removed by the game
                 }
-                if (_car == null || !_returning || Driven || BuildingManager.IsInsideBuilding)
+                if (_car == null || !_returning)
+                {
+                    return;
+                }
+                if (Driven)
+                {
+                    // Still at its wheel, or back at it: seen out. The time it may stand counts from when they are out.
+                    _returnFrom = Time.time;
+                    if (!_seeingOut && _host != null && _host.isActiveAndEnabled)
+                    {
+                        if (_wasLeft)
+                        {
+                            Licences.Toast(NotificationType.Warning, "reallife_lic_car_not_yours", 8f);
+                        }
+                        _seeingOut = true;
+                        _host.StartCoroutine(SeeOut(_car));
+                    }
+                    return;
+                }
+                _wasLeft = true;
+                if (BuildingManager.IsInsideBuilding)
                 {
                     return;
                 }
                 float away = (_car.transform.position - player).sqrMagnitude;
-                if (away > 30f * 30f || Time.time - _returnFrom > 60f || (away > 12f * 12f && !StreetSpots.IsInView(_car.transform.position)))
+                if (away > 30f * 30f || Time.time - _returnFrom > 20f || (away > 12f * 12f && !StreetSpots.IsInView(_car.transform.position)))
                 {
                     TakeBack();
                 }
@@ -203,6 +235,54 @@ namespace RealLifeOverhaul
                     _logger?.Error(again);
                     Forget();
                 }
+            }
+        }
+
+        // Out of the school's car with the game's own exit: when it has stopped, or after twelve seconds if they drive on
+        // (the exit halts it where it is).
+        private IEnumerator SeeOut(CarController car)
+        {
+            float waited = 0f;
+            while (Held(car) && Mathf.Abs(car.CurrentSpeed) > 1f && waited < 12f)
+            {
+                waited += Time.unscaledDeltaTime;
+                yield return null;
+            }
+            if (Held(car) && PutOut(car))
+            {
+                yield return new WaitForSecondsRealtime(0.5f);
+                ClosePanel();
+            }
+            _seeingOut = false;
+        }
+
+        private bool Held(CarController car)
+        {
+            return car != null && ReferenceEquals(car, _car) && _returning && Driven;
+        }
+
+        private bool PutOut(CarController car)
+        {
+            try
+            {
+                car.ExitVehicle();
+                return true;
+            }
+            catch (Exception e)
+            {
+                _logger?.Error(e);
+                return false;
+            }
+        }
+
+        // The game clears the selected vehicle only when its panel closes (as in Law/Custody).
+        private static void ClosePanel()
+        {
+            var gm = InstanceBehavior<GameManager>.Instance;
+            UIs hud = InstanceBehavior<UIs>.Instance;
+            if (gm != null && gm.selectedVehicle != null && !PlayerHelper.IsUsingVehicle && hud != null && hud.playerHUD != null && hud.playerHUD.itemPanelUI != null)
+            {
+                hud.playerHUD.itemPanelUI.Toggle(false);
             }
         }
 
@@ -315,6 +395,8 @@ namespace RealLifeOverhaul
             _car = null;
             _instance = null;
             _returning = false;
+            _wasLeft = false;
+            _seeingOut = false;
         }
 
         // A stretch of lane near the desk with nothing standing in it: the kerb side first, then the lane itself.

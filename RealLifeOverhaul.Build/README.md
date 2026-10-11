@@ -4062,7 +4062,7 @@ Licences/
     DrivingQuestions   the 66 theory questions in seven subjects
     PracticalTest      a lesson or test, driven: examiner, checkpoints, what is marked, the bay, the result sheet
     TestRoute          five to seven checkpoints along real lanes and a marked bay at the kerb
-    TestCar            the school's car: made the game's way, never in a save, taken back with the game's own delete
+    TestCar            the school's car: made the game's way, never in a save, the player seen out of it when the drive ends (and again if they get back in), taken back with the game's own delete
     DrivingEnforcement penalty points, the licence asked for at a stop, impound, arrest, the routine roadside check
 ```
 
