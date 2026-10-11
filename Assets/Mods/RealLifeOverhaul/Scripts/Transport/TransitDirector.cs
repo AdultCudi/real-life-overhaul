@@ -76,10 +76,6 @@ namespace RealLifeOverhaul
     public sealed partial class TransitDirector : MonoBehaviour
     {
         private const float TickInterval = 0.25f;
-        private const float DressRange = 190f;      // metres: well beyond the 110 m at which a place counts as in view, so that a stop is up before it is looked at, driving fast too
-        private const float UndressRange = 230f;
-        private const float BlockedFor = 5f;        // seconds a stop waits for its pole's place to be free before it is put up all the same
-        private const float HoldBackFor = 3f;       // seconds a stop in view is held back, for the player to look away, before it is put up as it is
         private const float ArrivedBeyond = 60f;    // metres between two passes that no walk or drive covers: the player was set down here
         private const float SolidWithin = 60f;      // metres: on foot this near, a dressed stop's boxes cut the navigation mesh
         private const float SolidKeep = 90f;        // ...and stay cut until this far off
@@ -98,7 +94,8 @@ namespace RealLifeOverhaul
         private const float DwellEmpty = 4f;         // ...where it stands in the lane and nobody waits, nobody gets out and the player is not near: doors open and shut
         private const float DwellMost = 34f;
         private const float ChooseFor = 30f;         // seconds the bus waits for the player to pick a stop
-        private const int Dressings = 3;
+        private const int Dressings = 48;          // every stop of the city stands for as long as the city is loaded (18 in the city as it is)
+        private const int PutsATick = 2;            // stops put up in one pass, nearest first: all of them within seconds of the network being ready
         private const int Waiters = 2;
 
         private enum RiderStep { None, Arriving, Waiting, Rising, Boarding, Entering, Exiting, Leaving }
@@ -175,10 +172,6 @@ namespace RealLifeOverhaul
         private bool _saveLoaded;
         private bool _streetClear = true;
         private bool _dressAtOnce = true;           // nothing has been put out for where the player now is: the first pass does not wait for them to look away
-        private TransitStop _heldBack;
-        private TransitStop _blocked;               // the stop whose pole's place something stands at
-        private float _blockedSince;
-        private float _heldSince;
         private Vector3 _dressedFrom;
         private float _minutesPerSecond = 1f;
         private float _rateFrom;
@@ -440,26 +433,18 @@ namespace RealLifeOverhaul
 
         private void DressNear(Vector3 at, bool evenInView, float now)
         {
-            // Take in what the player has left behind.
-            for (int i = 0; i < Dressings; i++)
-            {
-                BusStopDressing dressing = _dressings[i];
-                if (dressing != null && dressing.Stop != null && CitySpots.Flat(dressing.Stop.Sign - at) > UndressRange * UndressRange && dressing.Stop != _served)
-                {
-                    dressing.Clear();
-                }
-            }
+            // A bus stop is part of the street: every stop is put up once, the nearest first, and stays up while the city
+            // is loaded. Nothing waits for the player to look away and nothing is taken in behind them.
             // Put out the nearest that are not out yet: a pass over the stops, once a second.
-            TransitStop waiting = null;   // held back in this pass: the next nearest is looked at instead
-            for (int pass = 0; pass < Dressings; pass++)
+            for (int pass = 0; pass < PutsATick; pass++)
             {
                 TransitStop nearest = null;
-                float best = DressRange * DressRange;
+                float best = float.MaxValue;
                 List<TransitStop> stops = TransitMap.Stops;
                 for (int i = 0; i < stops.Count; i++)
                 {
                     float sqr = CitySpots.Flat(stops[i].Sign - at);
-                    if (sqr < best && Mathf.Abs(stops[i].Sign.y - at.y) < 10f && stops[i] != waiting && !Dressed(stops[i]))
+                    if (sqr < best && !Dressed(stops[i]))
                     {
                         best = sqr;
                         nearest = stops[i];
@@ -494,57 +479,6 @@ namespace RealLifeOverhaul
                     {
                         return;
                     }
-                }
-                // Not put up under the player's eyes if a moment's wait avoids it; never left out for it.
-                if (!evenInView && CitySpots.InView(nearest.Sign))
-                {
-                    if (_heldBack != nearest)
-                    {
-                        _heldBack = nearest;
-                        _heldSince = now;
-                    }
-                    if (now - _heldSince < HoldBackFor)
-                    {
-                        if (waiting != null)
-                        {
-                            return;
-                        }
-                        waiting = nearest;
-                        continue;
-                    }
-                }
-                if (_heldBack == nearest)
-                {
-                    _heldBack = null;
-                }
-                // What may have come to stand there since the stop was laid out: a parked car on the pavement, a cart, a cordon.
-                // It is waited for a few seconds and no longer: a stop that never comes is worse than a pole beside a bumper
-                // (beside a bay there is often a parked car within a hand of the pole, and the stop was never put up).
-                if (!SceneParking.IsFree(nearest.Sign, Quaternion.LookRotation(nearest.Along), 0.25f, 0.25f, 0.1f))
-                {
-                    if (_blocked != nearest)
-                    {
-                        _blocked = nearest;
-                        _blockedSince = now;
-                    }
-                    if (now - _blockedSince < BlockedFor)
-                    {
-                        if (waiting != null)
-                        {
-                            return;
-                        }
-                        waiting = nearest;
-                        continue;
-                    }
-                    if (Meta.Dev.Verbose)
-                    {
-                        Logger?.Info("Transit check (stop dressed): " + StopLabel(nearest) + ": something stood at the pole's place for " + BlockedFor.ToString("F0")
-                                     + " s; the stop is put up all the same.");
-                    }
-                }
-                if (_blocked == nearest)
-                {
-                    _blocked = null;
                 }
                 if (_dressings[free] == null)
                 {
@@ -1362,7 +1296,6 @@ namespace RealLifeOverhaul
                     _dressings[i]?.Clear();
                 }
                 _dressAtOnce = true;
-                _heldBack = null;
             }
             _streetClear = true;
         }

@@ -2354,7 +2354,7 @@ that one bus was either still crawling when the game was closed or its vehicle w
     van stands within 3 cm of the bay's line and 1.3 degrees of it, its nearest corner 0.06 m clear of the lane's
     edge at the narrowest bay, never nearer the kerb than 0.13 m coming in and 0.06 m pulling out. The model is
     not the game's physics: `Transit check (arrival)` says what the real vehicle did.
-- **A stop is solid** (`BusStopDressing`). The three nearest stops within 190 m are dressed, out of view if a wait of three seconds allows it and at once after a load or an arrival (230 m to
+- **A stop is solid** (`BusStopDressing`). From 0.2 every stop of the city is put up once, nearest first, two a second, when the network is ready, and stays up while the city is loaded (no waiting for the player to look away, nothing taken in behind them; the navigation mesh is still cut only near a player on foot). Before that: The three nearest stops within 190 m are dressed, out of view if a wait of three seconds allows it and at once after a load or an arrival (230 m to
   be taken in), from the modelled `bus_stop_sign` and `bus_shelter` (plain shapes of the same size without the
   bundle). Everyone on foot is moved on the navigation mesh, so the pole, the shelter's back, its end panel, the
   screen at its other end and the bench each have a carving `NavMeshObstacle` (the cordon's mechanism): children of
