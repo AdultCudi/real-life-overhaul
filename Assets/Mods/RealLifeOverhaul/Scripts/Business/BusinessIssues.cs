@@ -803,6 +803,7 @@ namespace RealLifeOverhaul
         {
             BusinessState.Close(issue, TimeHelper.CurrentDay);
             BusinessGame.Logger?.Info("Business: '" + issue.Kind + "' closed (" + key + ").");
+            BusinessEvents.RaiseClosed(issue.Kind, issue.Place, key);   // (for whoever wants to know: Business/BusinessEvents.cs)
             return key;
         }
 
@@ -1107,6 +1108,7 @@ namespace RealLifeOverhaul
         {
             int fine = BusinessGame.Fee(reg, share, floor, ceiling);
             bool paid = fine > 0 && BusinessGame.Charge(reg, fine, transaction, BusinessGame.Licensing);
+            BusinessEvents.RaiseFined(issue.Kind, issue.Place, paid ? fine : 0);
             data["amount"] = Money(paid ? fine : 0);
             data["hours"] = hours.ToString();
             bool closed = (shut || !paid) && Director.CloseFor(reg, hours);

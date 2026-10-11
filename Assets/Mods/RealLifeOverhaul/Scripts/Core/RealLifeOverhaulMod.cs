@@ -581,6 +581,33 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_ven_test_dividend", () => Economy.Ventures.VenturesDirector.Instance?.TestDividend())
                 .AddButton("reallife_ven_test_call", () => Economy.Ventures.VenturesDirector.Instance?.TestCall())
                 .AddButton("reallife_ven_test_back", () => Economy.Ventures.VenturesDirector.Instance?.TestBack())
+                .AddHeader("reallife_co_header")
+                .AddToggle(Settings.EconomyCompanyId, "reallife_co_enabled", Settings.EconomyCompany,
+                    v => Settings.EconomyCompany = v)
+                .AddToggle(Settings.EconomyCompanyStaffId, "reallife_co_opt_staff", Settings.EconomyCompanyStaff,
+                    v => Settings.EconomyCompanyStaff = v)
+                .AddToggle(Settings.EconomyCompanyCoverId, "reallife_co_opt_cover", Settings.EconomyCompanyCover,
+                    v => Settings.EconomyCompanyCover = v)
+                .AddToggle(Settings.EconomyCompanyMarketingId, "reallife_co_opt_marketing", Settings.EconomyCompanyMarketing,
+                    v => Settings.EconomyCompanyMarketing = v)
+                .AddToggle(Settings.EconomyCompanyTaxId, "reallife_co_opt_tax", Settings.EconomyCompanyTax,
+                    v => Settings.EconomyCompanyTax = v)
+                .AddToggle(Settings.EconomyCompanyHideId, "reallife_co_opt_hide", Settings.EconomyCompanyHide,
+                    v => Settings.EconomyCompanyHide = v)
+                .AddToggle(Settings.EconomyCompanyLicencesId, "reallife_co_opt_licences", Settings.EconomyCompanyLicences,
+                    v => Settings.EconomyCompanyLicences = v)
+                .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
+                    new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
+                    v => Settings.EconomyCompanyLevel = v)
+                .AddButton("reallife_co_test_raise", () => Economy.CompanyDirector.Instance?.TestRaise())
+                .AddButton("reallife_co_test_offer", () => Economy.CompanyDirector.Instance?.TestOffer())
+                .AddButton("reallife_co_test_strike", () => Economy.CompanyDirector.Instance?.TestStrike())
+                .AddButton("reallife_co_test_claim", () => Economy.CompanyDirector.Instance?.TestFireClaim())
+                .AddButton("reallife_co_test_campaign", () => Economy.CompanyDirector.Instance?.TestCampaign())
+                .AddButton("reallife_co_test_return", () => Economy.CompanyDirector.Instance?.TestReturn())
+                .AddButton("reallife_co_test_audit", () => Economy.CompanyDirector.Instance?.TestAudit())
+                .AddButton("reallife_co_test_licence", () => Economy.CompanyDirector.Instance?.TestLicence())
+                .AddButton("reallife_co_test_back", () => Economy.CompanyDirector.Instance?.TestBack())
                 .AddSplitter()
                 .AddHeader("reallife_nav_header")
                 .AddToggle(Settings.MinimapId, "reallife_nav_minimap", Settings.Minimap,
@@ -809,6 +836,9 @@ namespace RealLifeOverhaul
             Economy.Ventures.VenturesDirector.Logger = context.Logger;
             Economy.Ventures.VenturesApp.Logger = context.Logger;
             _root.AddComponent<Economy.Ventures.VenturesDirector>();   // investors, the pitch, the stock market and the Ventures app (Scripts/Economy/Ventures)
+            Economy.CompanyDirector.Logger = context.Logger;
+            Economy.CompanyApp.Logger = context.Logger;
+            _root.AddComponent<Economy.CompanyDirector>();   // running a business: staff, insurance, marketing, tax and licences, and the Company app (Scripts/Economy/Company)
             Nav.NavGraph.Logger = context.Logger;
             Nav.NavMarks.Logger = context.Logger;
             Nav.NavHud.Logger = context.Logger;

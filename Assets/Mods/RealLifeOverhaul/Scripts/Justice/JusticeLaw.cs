@@ -61,6 +61,7 @@ namespace RealLifeOverhaul
         public const string Resisting = "resisting";
         public const string NoShow = "failure_to_appear";
         public const string Violation = "probation_violation";
+        public const string TaxEvasion = "tax_evasion";    // tax kept back and found by an audit (Justice/TaxCases.cs)
 
         // Caps. Nothing a court does goes past these, whatever is added up.
         public const int CustodyCapHours = 48;         // the station's own limit (Law bridge): never held longer without a prison sentence
@@ -131,7 +132,9 @@ namespace RealLifeOverhaul
             new ChargeDef { Id = NoShow, NameKey = "reallife_justice_charge_failure_to_appear", Class = ChargeClass.Misdemeanour,
                 Fine = 1000, CommunityHours = 4, ProbationDays = 3, JailHours = 12 },
             new ChargeDef { Id = Violation, NameKey = "reallife_justice_charge_probation_violation", Class = ChargeClass.Misdemeanour,
-                Fine = 1500, ProbationDays = 5, JailHours = 24 }
+                Fine = 1500, ProbationDays = 5, JailHours = 24 },
+            new ChargeDef { Id = TaxEvasion, NameKey = "reallife_justice_charge_tax_evasion", Class = ChargeClass.Misdemeanour,
+                Fine = 3000, CommunityHours = 12, ProbationDays = 7, JailHours = 24 }
         };
 
         public static ChargeDef Find(string id)

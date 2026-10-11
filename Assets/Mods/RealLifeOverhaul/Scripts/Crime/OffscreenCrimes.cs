@@ -166,6 +166,7 @@ namespace RealLifeOverhaul
             Notifications.Show(NotificationType.Error, repair > 0 ? "reallife_crime_breakin_alarm" : "reallife_crime_breakin_alarm_free", data, 12f);
             News.Report(NewsKind.BreakIn, Vector3.zero, target.BusinessName, repair);
             CivicBridges.NoteCrime();   // out of sight, so city hall cannot have counted it itself (Scripts/Civic)
+            BreakIns.Raise(target, Mathf.RoundToInt(taken), repair);   // (for whoever insures it: Crime/BreakIns.cs)
             Crime.Logger?.Info($"Crime: break-in at {target.BusinessName}, security {target.securityLevelPercentage:F0}%, stock {taken:F0}, repair {repair}.");
             return true;
         }

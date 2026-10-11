@@ -1382,6 +1382,7 @@ namespace RealLifeOverhaul.Events
                 int hours = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(3f, 10f, slow) * relief), 2, 10);
                 int bill = Mathf.RoundToInt(Mathf.Lerp(350f, 1800f, slow) * relief / 10f) * 10;
                 GameManager.ChangeMoneySafe(-bill, new TransactionInfo("reallife_transaction_fire_repair"), null, business.Address, force: true);
+                FireLosses.Raise(business, bill);   // (for whoever insures it: Events/FireLosses.cs)
                 bool closedByUs = false;
                 if (!business.temporarilyClosed && ClosedKey == null)
                 {

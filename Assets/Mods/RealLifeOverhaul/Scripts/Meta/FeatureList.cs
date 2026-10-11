@@ -789,6 +789,17 @@ namespace RealLifeOverhaul.Meta
                 .Fact("ven_history", () => Whole(Economy.Ventures.VenturesCatalogue.HistoryDays))
                 .Cleanup(() => Economy.Ventures.VenturesDirector.Instance?.StopAll())
                 .ResetData(() => Economy.Ventures.VenturesDirector.Instance?.Forget());   // the director opens a new file from the (now empty) save on its next second
+
+            // Running a business. Off, none of it runs, nothing is charged or paid and every business's footfall is
+            // without it. It runs only while the economy core does. (Cleaned up before the city's economy and the core: order -2.)
+            Economy.CompanyGuide.AddFacts(Features.Add("economy_company", "reallife_meta_title_economy_company")
+                .Group("reallife_co_header")
+                .About("reallife_guide_economy_company_about").Help("reallife_guide_economy_company")
+                .Owns(Settings.EconomyCompanyId, Settings.EconomyCompanyStaffId, Settings.EconomyCompanyCoverId, Settings.EconomyCompanyMarketingId, Settings.EconomyCompanyTaxId, Settings.EconomyCompanyHideId, Settings.EconomyCompanyLicencesId)
+                .Preset(Settings.EconomyCompanyLevelId, Economy.CompanyCatalogue.Relaxed, Economy.CompanyCatalogue.Realistic, Economy.CompanyCatalogue.Hardcore)   // (Standard is its default)
+                .Data(Economy.CompanyStore.Key, Economy.CompanyStore.TestKey)
+                .Cleanup(() => Economy.CompanyDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Economy.CompanyDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
         }
 
         private static string Whole(int value)
