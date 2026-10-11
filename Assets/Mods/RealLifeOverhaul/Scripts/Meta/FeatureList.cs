@@ -837,11 +837,11 @@ namespace RealLifeOverhaul.Meta
                 .ResetData(() => Economy.CompanyDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
 
             // The staff rota planner. Its rows stand under the company's header on the options page and its page is a tab of
-            // the Company app. It keeps nothing in a save and leaves nothing behind: off, the tab says so and no rota is written.
+            // the Company app. In a save it keeps only the choice between staff first and lean for a business (RotaStore): off, the tab says so and no rota is written.
             Economy.RotaGuide.AddFacts(Features.Add("economy_rota", "reallife_meta_title_economy_rota")
                 .About("reallife_guide_economy_rota_about").Help("reallife_guide_economy_rota")
                 .Owns(Settings.EconomyRotaId)
-                .Test("reallife_rota_test_open", "reallife_rota_test_fill", "reallife_rota_test_back"));
+                .Test("reallife_rota_test_open", "reallife_rota_test_plans", "reallife_rota_test_fill", "reallife_rota_test_back"));
 
             // Property: a market that moves, letting, works, selling, an agency, a hotel and car hire. Off, every building's
             // value and rent is the game's own and no car is out. It runs only while the economy core does. (Cleaned up before the city's economy and the core: order -2.)

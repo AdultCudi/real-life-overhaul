@@ -637,6 +637,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_co_test_licence", () => Economy.CompanyDirector.Instance?.TestLicence())
                 .AddButton("reallife_co_test_back", () => Economy.CompanyDirector.Instance?.TestBack())
                 .AddButton("reallife_rota_test_open", () => Economy.CompanyDirector.Instance?.TestRotaOpen())
+                .AddButton("reallife_rota_test_plans", () => Economy.CompanyDirector.Instance?.TestRotaPlans())
                 .AddButton("reallife_rota_test_fill", () => Economy.CompanyDirector.Instance?.TestRotaFillAll())
                 .AddButton("reallife_rota_test_back", () => Economy.CompanyDirector.Instance?.TestRotaBackAll())
                 .AddHeader("reallife_estate_header")

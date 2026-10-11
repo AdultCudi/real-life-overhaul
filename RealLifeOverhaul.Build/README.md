@@ -6897,6 +6897,129 @@ decides, and is checked offline:
   05:00 are barred from the advice, so "Use these hours" can never put it in breach. The page says what the permit
   would add (hours and money), and says so when the business opens late without one as it stands.
 
+### The ladder of plans (`RotaLadder.cs`, `RotaLadder.Steps.cs`)
+
+The Rota page of a business no longer shows two extremes ("with the staff", "with all it takes"). It shows a ladder,
+every rung a set of opening hours with a rota, all valued the same way (`RotaLadder.Evaluate`):
+
+| Rung | What it is |
+| --- | --- |
+| As it is | the hours and the rota the business has |
+| Best with the people you have | the better of: the week as it is; the hours kept with a new rota; those hours less the ones nobody can keep the smallest crew for; the hours worth opening, cut to what the people can keep. Never worse than the week as it is, by construction |
+| Hire 1, Hire 2, ... | one more person at the going wage (`StaffRules.Going` of the game's wage formula for the station's skill at a middling value), for the group of stations where that adds most (up to three groups are tried), counted for a full week of 40 hours and no more. Kept only if it adds at least 5 per cent of the week before and at least 50.00 a week. The ladder ends at the first hire that does not, and at four hires |
+
+A week is: what the customers served leave (at the cleanliness they find), less wages, licensing fees, the game's
+hourly theft, the risk of a break-in on a night shut, and what unmet demands cost. So a week open round the clock is
+shown only if every step to it pays.
+
+**Staff first or lean.** Staff first: every demand is a limit (the solver is given them all at the game's high
+priority, which never gives way), and the least hours people ask for are wanted at stations that would otherwise
+stand empty, as the game's own auto fill gives everybody their least hours. Lean: only hours that pay are wanted, the
+solver lets demands below high priority give way to an hour, and what that costs is counted. Left alone the planner
+makes the hours kept in both and takes whichever comes to more; the player's choice for a business is kept in the save
+under `reallife:economy_rota` (`RotaStore`, version 1; a line of another version is not read and is left untouched
+until a choice is made). For a small shop the default comes out as staff first: losing its only cashier costs more
+than the hours asked for.
+
+**Cleaning hours** are chosen one move at a time by what each adds to what the week's customers leave, less the
+cleaner's wage: one hour more, or the same hour more on every day (a single hour changes nothing where the floor is
+dirtier than one hour cleans). Staff first, the hours a cleaner asks for beyond those are added from closing time
+backwards, spread evenly over the days. Where the mod's cleaning service cleans a business
+(`CompanyBridges.Cleaned`, set in `Wiring/ServicesLinks.cs` from `CleaningService.Covers`) no cleaning hour is wanted
+and the floor is taken to stay as it is.
+
+**What is written.** "Fill the rota" writes the rota for the hours kept (the ladder's `Fill`). "Use this plan" is on
+the page of the best week with the people when it differs from the week as it is; the confirm dialogue says the hours
+open now and after and what the plan is worth. A rung that takes a hire is never written (`RotaLadder.Writable`,
+checked again by the director before the job and before the write); its page shows a button that cannot be pressed,
+who to hire, at what wage, and where. Every hour a plan opens or closes is listed with its reason and what it comes to
+now and in the plan.
+
+### What the game does, as read from its code (decompiled `BigAmbitions`)
+
+- **An unmanned till sells nothing (away).** `Buildings.Retail.Simulation/RetailBusinessSimulator.cs:106`
+  (`LoadPointsOfSaleWithCustomerSatisfactionThisHour`) keeps only tills whose employee gives a customer satisfaction
+  above nothing; `ProcessCustomer` (:229) with no till leaves every retail entry unpaid (`ProcessItemInOrder`, :296)
+  and completes the order. `Helpers/BusinessHelper.cs:234` (`CreateDailyOrderHistory`) counts only orders with a paid
+  entry as customers and revenue. **With the player inside** customers queue at an employee station
+  (`CustomerJoinQueue.cs:38`) and complain where none is available; an order is only added to the day's books when it
+  completes (`Customer.cs:383`). The planner therefore values an open hour without the smallest crew at no sales.
+  Not verified in the running game.
+- **A till's customers an hour are a hard limit, and skill does not change it.** `RetailBusinessSimulator.cs:214`
+  (`GetMaxCustomerCapacityThisHour`) sums `Item.addedCustomersPerHour` of the manned stations of each group and takes
+  the smallest group; customers beyond it are marked completed and lost (:176). Skill enters only as the order's
+  service quality: `Entities/EmployeeInstance.cs:1037` (skill x satisfaction x 0.01). The forecast itself stops at what
+  all stations serve (`registration.customerCapacity`), so the page shows the uncapped figure beside it ("36 come, the
+  stations serve 20") and what one more station would serve.
+- **Satisfaction and sales.** `Helpers/BusinessHelper.cs:822` (`UpdateSatisfaction`): overall = (service + pricing +
+  cleanliness + facility) / 4, the last three over orders with a paid entry.
+  `AI.Customers.CustomerEntries/CustomerEntriesCalculator.cs:43`: what customers buy goes with (overall - 50) / 100 + 1.
+  One point of cleanliness is therefore a quarter of a point of satisfaction, 1 / (4 x (50 + satisfaction)) of sales.
+- **Nights.** The game's forecast gives every hour its own figure; the self-check line prints the week's customers by
+  the hour of the day. Nothing in `BusinessHelper.RunHourly` (:454) charges an open hour beyond wages and, for a cinema
+  or theatre, the day's licensing fee. Theft (`Helpers/BusinessSecurityHelper.cs:133`, `SimulateTheft`) follows the
+  customers of the last hour, not the time of day: thieves a shelf = customers x 0.04 x (1 - security); under one it is
+  the chance that one unit goes from a stocked shelf, and from one on the code takes nothing (`num2` is only set in
+  the branch under one). The security level counts guards only while they are on a shift (:82, `IsWorking`). The mod's
+  break-ins (`Scripts/Crime/OffscreenCrimes.cs:77`, `BreakIn` :120) are rolled once a night in the small hours and only
+  hit a shop that is shut then, so an hour open at 01:00 removes that risk; the planner counts the expected loss of each
+  night shut (chance 4 per cent x the frequency option x exposure, shared among the player's shops, times a quarter of
+  the shelves up to 2,500 and the repair). The late opening permit bars the hours from 22:00 and before 05:00 as
+  before. `HasNoShiftBetweenHours` demands are read as limits as before.
+- **Cleaning.** `Buildings.BuildingTypes.Shared.Dirtiness/BuildingCleanliness.cs:35` (`ApplyDirt`): each dirtying adds
+  1.2 to two thirds of the spots an item touches; :112 (`SimulateCleaning`, hourly from `BuildingCleanlinessHelper.cs:22`
+  on a day the business opens): every spot loses the cleaners' skill x satisfaction / 100, divided by the cleaners the
+  floor needs; :64 (`GetCleanliness`) = 100 - mean dirt - mean visible dirt (five points and more), which an order
+  carries into the satisfaction above. `CleaningStationController.cs` only places the cleaner in the room. The planner
+  runs the week hour by hour with the mean dirt (twice, so that it starts as dirty as it ends).
+- **An unmet demand.** `Entities/EmployeeInstance.cs:744` (`UpdateSatisfaction`, hourly): plus the weight of each demand
+  met and minus that of each unmet (`JobDemand.Impact`, `Entities.Employee.JobDemands/JobDemand.cs:43`: 0.2, 0.3, 0.5),
+  no more than 0.6 an hour; with a third or fewer met it cannot rise above 60, with two thirds or fewer above 80.
+  `AI.Employees/LowSatisfactionComplaint.cs:13` and `EmployeeInstance.cs:1305`: at nothing the employee resigns at once.
+  `AI.Employees/UnfulfilledDemandsComplaint.cs:19`: a complaint about an unmet demand gives 72 hours to meet it or pay
+  a bonus (not counted: it comes at a random time). `Helpers/EmployeeHelper.cs:154`: more than 14 hours worked in a day
+  gives a chance of a sick day (the solver never rosters more than 14). The planner counts: hours to the resignation =
+  satisfaction x 10 / (weights unmet - weights met); the sales the person's customers leave less their wages (or their
+  wages, if more) for the 7 days the post is taken to stand empty, spread over the weeks to the resignation; and the
+  worse work on the way (service is skill x satisfaction). **The 7 days are the planner's own figure**, not the game's.
+- **Hiring.** Candidates come from the MyEmployees app and job boards
+  (`UI.Smartphone.Apps.MyEmployees/JobBoardCandidateGenerator.cs:22`); a signing bonus is optional
+  (`AI.Employees.SalaryNegotiation/CandidateSalaryNegotiation.cs:70` starts it at nothing). The planner counts no
+  one-off cost for a hire.
+- **Stock.** `RetailBusinessSimulator.cs:296`: an entry is sold only from a shelf that holds it, and shelves are
+  refilled from storage at the hour the last work shift of the day ends (:424). **Not counted**: the plans take the
+  shelves to be full. A plan that sells more needs deliveries to match; the Guide says so.
+
+### A worked example (printed by `EconomyCheck --rota-example`)
+
+A gift shop: one till (20 customers an hour), one cleaning station; 786 customers a week (112 a day, 12 in the busiest
+hour, a few through the night); a customer leaves 20.86 after the goods; a cashier at 12.00 who asks for 20 to 30
+hours, a cleaner at 9.00 who asks for 35 to 45; open 68 hours with the cashier rostered for 30 and the cleaner for 4.
+Going wages 12.50 and 9.50; satisfaction 70, cleanliness 80; theft 0.23 a customer; a night shut 3.24.
+
+| Rung | Open | With the cashier | Staff hours | Served of those who come | Sales | Wages | Theft | Night | Demands | Week | Gain |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| As it is | 68 | 30 | 34 | 307 of 572 | 6,209.79 | 396.00 | 131.56 | 22.68 | 36.16 | 5,623.39 | |
+| Best with the people | 68 | 30 | 65 | 312 of 572 | 6,753.41 | 675.00 | 131.56 | 22.68 | 0 | 5,924.17 | 300.78 |
+| Hire 1 cashier | 67 | 67 | 101 | 563 of 563 | 12,130.79 | 1,128.50 | 129.49 | 22.68 | 307.37 | 10,542.75 | 4,618.58 |
+| Hire 2 cashiers | 109 | 109 | 144 | 728 of 728 | 15,667.43 | 1,662.50 | 167.44 | 19.44 | 0 | 13,818.05 | 3,275.30 |
+| Hire 3 cashiers | 147 | 147 | 182 | 786 of 786 | 16,933.10 | 2,137.50 | 180.78 | 0 | 0 | 14,614.82 | 796.77 |
+
+Read: as it is, 265 customers a week find nobody at the till in the 38 open hours without the cashier, and four hours
+of cleaning a week leave the floor costing 456 of sales. The best week with these two people keeps the hours, gives
+the cleaner the 35 hours asked for (the floor then costs 22) and leaves the cashier at 30: nothing more can be sold
+without somebody at the till. Each further cashier keeps about 40 more hours; the third still adds 796.77, over the
+5 per cent (690.90) a rung must add, because in this example a customer or two an hour through the night leave more
+than a cashier's wage. With no customers at night no plan opens those hours (checked).
+
+**Where this contradicts the earlier figures.** The earlier page said for this shop: now 6,008.02; "with the staff"
+13,021.36 at 90 hours; "with all it takes" 14,631.96 at 147 hours. The first left out theft, the night risk, the dirty
+floor and the cleaner's unmet demand. The second had the one cashier work 90 hours a week against a demand for at most
+30, and counted nothing for it; the game would take 0.3 of satisfaction an hour and the cashier would resign within
+two weeks. The earlier advice also gave the cleaner the fewest hours that kept up with the dirt at closing time (four
+to six a week), which the hour by hour run shows to be the wrong place and too few. The third assumed four people
+appeared at once; the ladder shows what each one adds.
+
 ### Cost
 
 Nothing runs per frame, per second or per hour while nothing is asked. The list of places is read on the day event,
@@ -6912,15 +7035,31 @@ checker runs on. On a runtime eight times slower that is some seven frames of 2 
 have held a frame for 15 ms or more. With "Developer diagnostics" on, "Company check (rota, ...)" and "Company: rota
 written for ..." say the real milliseconds, the frames and the longest share of a frame.
 
+The ladder of plans is made by the same job, after the advice: `RotaLadder.Begin`/`Step`, the same steps as its
+one-go `Make` (checked on the example and on the largest business). A step is one piece of a candidate week (the
+worth of its hours, a day's worth of cleaning moves, one step of its rota, its valuation). For the largest business
+(40 stations, 60 employees) that is about 8,300 steps and 9 ms in all on the checker's runtime, the longest step
+about 0.4 ms; for the example shop about 1,650 steps. A small shop's ladder makes up to some fifteen candidate rotas,
+so on a runtime eight times slower its page may take a second or so of frames at 2 ms each to appear; the page says
+the week is being worked out meanwhile. With "Developer diagnostics" on, "Company check (rota plans, ...)" gives the
+ladder in short form, the customers by the hour of the day and every rate it was valued with.
+
 ### Test tools
 
-Three buttons: open the rota of the busiest business, fill every business's rota (without the dialogue; the weeks as
-they were are kept), and put every rota back.
+Four buttons: open the rota of the busiest business, show that business's plans in the log (the ladder in one line,
+then every rung with what its week is made of), fill every business's rota (without the dialogue; the weeks as they
+were are kept), and put every rota back.
 
 ### Checks
 
-`EconomyCheck` compiles the six game-free files (and `Business/BusinessCatalogue.cs`, for the promotion figure) and
-runs 253 checks of them (`RotaChecks.cs`, `RotaLedgerChecks.cs`), 1,097 in all: every kind of demand; the limits on
+`EconomyCheck` compiles the nine game-free files (and `Business/BusinessCatalogue.cs`, for the promotion figure) and
+runs 343 checks of them (`RotaChecks.cs`, `RotaLedgerChecks.cs`, and 90 in `RotaPlanChecks.cs` for the ladder: an
+unmanned hour sells nothing and still costs its theft; a till's limit and a second till; that skill changes no
+count; theft, night risk, fees; cleanliness and the hour cleaned; the cleaning service's rule; what an unmet demand
+costs, figure by figure, and against the wages that meet it in both modes; the best week never worse than the week
+as it is; each gain as shown and each hire rung paying; a hire rung never writable; every changed hour with its
+reason; no hour opened that nobody comes in; barred hours in no plan; the same ladder every time and a step at a
+time; the choices' line in the save; the time of the longest step): every kind of demand; the limits on
 a shift and a day as behaviour at each limit; one place at a time; skills; the headquarters rule; what gives way and
 what never does, with the reason told; no employees, no stations, closed all week, no customers; an hour's crew; the
 hours advised (never an hour that loses money, at most two blocks of two hours or more, a day's fee, no late block
@@ -6945,3 +7084,11 @@ schedule screen shows a written rota as it shows its own. What the forecast is a
 milliseconds on the game's Mono, and above all those of the one frame that reads a large business from the game (its
 stations' capacities, its staff's demands and 168 hours of the calculator), which is not cut into steps. That the
 coroutine runs while the phone is open (it waits a frame, not game time).
+
+Of the ladder of plans: that six columns and the people's rows read well in the plans table, that the titles of
+columns that do not sort are readable (the kit shows them as the game shows a button that cannot be pressed) and that
+a page opens at its first row (a different table is shown from the top: `DataTable.Show`). That the game's selector
+row shows the three choices in the white box, and that a button set not to be pressed looks so. That an unmanned
+till sells nothing with the player inside as it does away. That the dirt and cleaning rates read from a real
+building give a believable week (the self-check line prints them). That theft in a played week is near the figure
+counted. The seven days a post is taken to stand empty are the planner's own figure. Stock is not counted.

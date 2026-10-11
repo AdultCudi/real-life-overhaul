@@ -29,9 +29,26 @@ namespace RealLifeOverhaul.Economy
         public int CleanHours;          // thousandths of a cleaner's hour it takes to clean one such time away
         public int Version;             // goes up each time it is filled again, so that what was worked out for the last filling is not used
 
+        // What the ladder of plans (RotaLadder) counts beside customers and wages. Each is nothing where the game gives no figure.
+        public int[] GroupGoing = new int[0];   // [group] the going hourly wage of somebody new at it, hundredths; 0: the station's wage is taken
+        public int DirtPerCustomer;     // thousandths of a point of the game's mean dirt, a customer served
+        public int CleanPerHour;        // thousandths of a point of it one cleaner's hour takes off
+        public int Content = 75;        // the customers' satisfaction now, 0 to 100 (the game's overall figure)
+        public int CleanNow = 100;      // the cleanliness the customers of the last days found: the one Margin was earned at
+        public int TheftRate;           // hundredths the game's hourly theft takes for each customer who comes in an hour...
+        public int TheftLimit;          // ...while fewer than so many come (from there on its arithmetic takes nothing); 0: no such end
+        public int NightRisk;           // hundredths a night it is shut at one in the morning (the mod's break-ins come only to a shut shop)
+        public bool Cleaned;            // the cleaning service cleans it on its round: no cleaning shift is wanted, and the floor is taken to stay as it is
+        public int HireCost;            // hundredths paid once for each person taken on (the game asks nothing unless a signing bonus is offered)
+
         public void Size(int stations, int groups)
         {
             Version++;
+            GroupGoing = RotaProblem.Room(GroupGoing, groups);
+            DirtPerCustomer = CleanPerHour = TheftRate = TheftLimit = NightRisk = HireCost = 0;
+            Content = 75;
+            CleanNow = 100;
+            Cleaned = false;
             Stations = stations;
             Groups = groups;
             Group = RotaProblem.Room(Group, stations);
@@ -456,7 +473,7 @@ namespace RealLifeOverhaul.Economy
                     }
                 }
                 // The day's cleaning: the hours it takes, at the end of the day when the dirt is there to clean.
-                long cleaning = dirt > 0 && shop.CleanHours > 0 ? Math.Max(1L, (dirt * shop.CleanHours + 99999L) / 100000L) : 0L;
+                long cleaning = !shop.Cleaned && dirt > 0 && shop.CleanHours > 0 ? Math.Max(1L, (dirt * shop.CleanHours + 99999L) / 100000L) : 0L;
                 for (int s = 0; s < stations && cleaning > 0 && openHours > 0; s++)
                 {
                     if (shop.GroupKind[shop.Group[s]] != RotaGroupKind.Cleaning)

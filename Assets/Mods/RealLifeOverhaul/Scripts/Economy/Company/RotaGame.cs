@@ -64,6 +64,7 @@ namespace RealLifeOverhaul.Economy
         public readonly RotaProblem Problem = new RotaProblem();
         public readonly RotaOutlook Outlook = new RotaOutlook();
         public readonly RotaPlan Now = new RotaPlan();          // the rota it has, rated
+        public readonly RotaLadderResult Ladder = new RotaLadderResult();   // the ladder of plans: the week as it is, the best the people there are can keep, and each person worth hiring
         public RotaPlan Shown;                                  // the rota the page speaks of: the one just written, else the advised one
         public readonly List<ItemInstance> Stations = new List<ItemInstance>(16);
         public readonly List<EmployeeInstance> Workers = new List<EmployeeInstance>(16);

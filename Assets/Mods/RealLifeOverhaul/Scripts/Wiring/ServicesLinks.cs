@@ -102,6 +102,7 @@ namespace RealLifeOverhaul
                 ServicesBridges.SettleLoans = SettleLoans;
                 ServicesBridges.BusinessGone = BusinessGone;
                 CompanyBridges.OtherIncome = BusinessSales.GainsBetween;   // a sale's gain goes into the quarter's return
+                CompanyBridges.Cleaned = CleaningService.Covers;            // the staff rota planner asks for no cleaning shift where the service cleans
                 PlannerDirector.Instance?.AddSource(Source);
             }
 
@@ -109,6 +110,7 @@ namespace RealLifeOverhaul
             {
                 ServicesBridges.Reset();   // (the Planner's director goes with the city, and its sources with it)
                 CompanyBridges.OtherIncome = null;
+                CompanyBridges.Cleaned = null;
             }
 
             // The deals on a business, by the key Ventures keeps a business under (Books.Key).

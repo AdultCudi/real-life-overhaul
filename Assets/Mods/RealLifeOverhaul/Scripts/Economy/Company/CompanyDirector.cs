@@ -184,6 +184,8 @@ namespace RealLifeOverhaul.Economy
         partial void LicenceAlerts(int day);
         partial void RotaRead();
         partial void RotaStop();
+        partial void RotaLoad(GameInstance save);
+        partial void RotaSave(GameInstance save);
         partial void RotaAlerts(int day);
 
         private void PartDay(CompanyPart part, int day)
@@ -316,6 +318,7 @@ namespace RealLifeOverhaul.Economy
             StaffLevel();
             TaxLevel();
             WriteAll(today, true, false);
+            RotaLoad(save);
             RotaRead();
             BuildAlerts(today);
             Logger?.Info("Company: " + (fresh ? "opened for this save" : "state loaded (version " + version + ")") + " on day " + today + ". " + _shops.Count + " business(es)"
@@ -634,6 +637,7 @@ namespace RealLifeOverhaul.Economy
                 save.modData = new Dictionary<string, string>();
             }
             save.modData[CompanyStore.Key] = CompanyStore.Write(_state);
+            RotaSave(save);
             if (_beforeTests != null)
             {
                 save.modData[CompanyStore.TestKey] = _beforeTests;

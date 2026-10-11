@@ -24,7 +24,11 @@ namespace RealLifeOverhaul.Economy
                 .Fact("rota_late_hour", () => CompanyCatalogue.LateHour.ToString("00", Inv))
                 .Fact("rota_early_hour", () => CompanyCatalogue.EarlyHour.ToString("00", Inv))
                 .Fact("rota_stations_most", () => Whole(RotaCatalogue.StationsMost))
-                .Fact("rota_staff_most", () => Whole(RotaCatalogue.WorkersMost));
+                .Fact("rota_staff_most", () => Whole(RotaCatalogue.WorkersMost))
+                .Fact("rota_hires_most", () => Whole(RotaLadder.HiresMost))
+                .Fact("rota_share_least", () => Whole(RotaLadder.ShareLeast))
+                .Fact("rota_gain_least", () => CompanyText.Money(RotaLadder.GainLeast / 100f))
+                .Fact("rota_replace_days", () => Whole(RotaLadder.ReplaceDays));
         }
 
         private static string Whole(int value)

@@ -29,6 +29,7 @@ internal static partial class Program
         RotaGenerated();
         RotaTiming();
         RotaLedgerChecks();
+        RotaPlanChecks();
     }
 
     // ---------------------------------------------------------------- making a problem by hand

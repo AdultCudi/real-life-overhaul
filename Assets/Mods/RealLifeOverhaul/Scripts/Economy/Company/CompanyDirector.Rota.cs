@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Entities;
+using Localizor;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Economy
@@ -43,7 +45,7 @@ namespace RealLifeOverhaul.Economy
         private const int RotaStepsAtOnce = 2;      // steps between two looks at the clock: each is a fraction of a millisecond
         private const int RotaRestartsMost = 3;     // times a job starts again because its business changed under it, before it gives up
         private const int JobShow = 0, JobFill = 1, JobFillHours = 2, JobTell = 3;
-        private const int StageRead = 0, StageAdvise = 1, StageRate = 2, StageSolve = 3, StageWrite = 4;
+        private const int StageRead = 0, StageAdvise = 1, StageRate = 2, StageSolve = 3, StageWrite = 4, StageLadder = 5;
 
         // One thing asked of the planner: a business worked out for its page, a rota filled, or the notice that ends a run of test fills.
         private struct RotaJob
@@ -51,6 +53,7 @@ namespace RealLifeOverhaul.Economy
             public string Place;
             public int Kind;
             public bool Test;
+            public int Rung;        // the plan of the ladder to write; less than nothing: a rota for the hours kept now
         }
 
         private readonly List<RotaPlace> _rotaPlaces = new List<RotaPlace>(16), _rotaPool = new List<RotaPlace>(16);
@@ -60,7 +63,9 @@ namespace RealLifeOverhaul.Economy
         private readonly RotaSheet _rotaSheet = new RotaSheet();
         private readonly RotaSolver _rotaSolver = new RotaSolver();
         private readonly RotaAdvisor _rotaAdvisor = new RotaAdvisor();
-        private readonly RotaPlan _rotaPlan = new RotaPlan();
+        private readonly RotaLadder _rotaLadder = new RotaLadder();
+        private readonly Dictionary<string, int> _rotaModes = new Dictionary<string, int>(8);   // the player's choice for a business: staff first or lean (RotaStore)
+        private bool _rotaModesUnread;              // the save holds a line of choices this version cannot read: it is left as it is until a choice is made
         private readonly int[] _rotaPromotion = new int[RotaCatalogue.Days];
         private readonly bool[] _rotaBarred = new bool[RotaCatalogue.Cells];
         private readonly Stopwatch _rotaClock = new Stopwatch();
@@ -260,7 +265,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 sum = unchecked(sum * 31 + _rotaPromotion[d]);
             }
-            return unchecked(sum * 4) + (On(CompanyPart.Staff) ? 1 : 0) + (permit ? 2 : 0);
+            return (unchecked(sum * 4) + (On(CompanyPart.Staff) ? 1 : 0) + (permit ? 2 : 0)) ^ (RotaModeOf(place.Place) << 24) ^ (RotaCleaned(place) ? 1 << 27 : 0) ^ ((shop != null ? shop.Income : 0) << 12) ^ (_index << 4);
         }
 
         // A business's own promotion figure, before anything of the mod's: what the mod's one writer of that figure starts from.
@@ -307,7 +312,7 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- jobs, a few steps a frame
 
-        private void RotaAsk(string place, int kind, bool test)
+        private void RotaAsk(string place, int kind, bool test, int rung = -1)
         {
             for (int i = 0; i < _rotaJobs.Count; i++)
             {
@@ -316,7 +321,7 @@ namespace RealLifeOverhaul.Economy
                     return;   // asked already
                 }
             }
-            _rotaJobs.Add(new RotaJob { Place = place, Kind = kind, Test = test });
+            _rotaJobs.Add(new RotaJob { Place = place, Kind = kind, Test = test, Rung = rung });
             if (!_rotaWorking)
             {
                 _rotaWorking = true;
@@ -417,13 +422,14 @@ namespace RealLifeOverhaul.Economy
                     if (RotaFresh(place))
                     {
                         sheet.Place = place;
-                        _rotaStage = StageSolve;
+                        _rotaStage = StageWrite;
                         return RotaToFill(job, sheet);
                     }
                     _rotaSheetGood = false;
                     _rotaRaise = _rotaRaise ?? RotaRaise;
                     int days = RotaDays(place);
                     RotaGame.Read(sheet, place, _rotaPromotion, _rotaRaise);
+                    RotaGame.ReadDeep(sheet, RotaMarket(place));
                     sheet.Stamp = RotaGame.Stamp(place, days);
                     sheet.Permit = (days & 2) != 0;
                     if (!sheet.Permit)
@@ -440,6 +446,15 @@ namespace RealLifeOverhaul.Economy
                     // Left as the page and the fill need it: the worth of the hours it keeps now, and the rota it has rated against them.
                     _rotaAdvisor.Grid(sheet.Shop, sheet.Shop.Open, sheet.Problem);
                     _rotaSolver.Rate(sheet.Problem, sheet.Now);
+                    _rotaLadder.Begin(sheet.Shop, sheet.Problem, _rotaSolver, _rotaAdvisor, sheet.Outlook, sheet.Now, sheet.Permit ? null : _rotaBarred, RotaModeOf(place.Place), sheet.Ladder);
+                    _rotaStage = StageLadder;
+                    return false;
+                case StageLadder:
+                    // The ladder of plans: each a week of its own, valued the same way. A few steps a piece, like the advice.
+                    if (!_rotaLadder.Step(RotaStepsAtOnce))
+                    {
+                        return false;
+                    }
                     if (RotaGame.Stamp(place, RotaDays(place)) != sheet.Stamp)
                     {
                         return RotaAgain(job, place);   // (the business changed while it was being worked out: what was read is no longer it)
@@ -448,17 +463,20 @@ namespace RealLifeOverhaul.Economy
                     sheet.Shown = _rotaMade == place.Place && _rotaMadeStamp == sheet.Stamp ? sheet.Now : null;
                     _rotaSheetGood = true;
                     RotaCheck(place, sheet);
-                    _rotaStage = StageSolve;
+                    RotaPlansLog(place, sheet, false);
+                    _rotaStage = StageWrite;
                     return RotaToFill(job, sheet);
-                case StageSolve:
-                    _rotaStage = _rotaSolver.Step(RotaStepsAtOnce) ? StageWrite : StageSolve;
-                    return false;
                 default:
                     if (!RotaFresh(place))
                     {
                         return RotaAgain(job, place);   // (never a rota from a reading that is no longer true)
                     }
-                    RotaWrite(job, place, sheet, job.Kind == JobFillHours ? sheet.Outlook.Plan : _rotaPlan);
+                    RotaRung rung = job.Kind == JobFillHours ? RotaRungOf(sheet, job.Rung) : null;
+                    if (job.Kind == JobFillHours && rung == null)
+                    {
+                        return true;   // (a plan that takes people still to be hired, or one that is no longer there: nothing is written)
+                    }
+                    RotaWrite(job, place, sheet, rung != null ? rung.Plan : sheet.Ladder.Fill, rung);
                     return true;
             }
         }
@@ -467,18 +485,15 @@ namespace RealLifeOverhaul.Economy
         // advice, or one for the hours the business keeps (the sheet's problem holds their worth), made over the coming frames.
         private bool RotaToFill(RotaJob job, RotaSheet sheet)
         {
-            if (job.Kind == JobShow || RotaRefusal(sheet) != null || (job.Kind == JobFillHours && !sheet.Outlook.Advised))
+            if (job.Kind == JobShow && job.Test)
+            {
+                RotaPlansLog(sheet.Place, sheet, true);
+            }
+            if (job.Kind == JobShow || RotaRefusal(sheet) != null || (job.Kind == JobFillHours && RotaRungOf(sheet, job.Rung) == null))
             {
                 return true;
             }
-            if (job.Kind == JobFillHours)
-            {
-                _rotaStage = StageWrite;
-            }
-            else
-            {
-                _rotaSolver.Start(sheet.Problem, _rotaPlan);
-            }
+            _rotaStage = StageWrite;
             return false;
         }
 
@@ -551,8 +566,9 @@ namespace RealLifeOverhaul.Economy
         /// there is a rota to write over or hours to change, as it comes before the game's own auto fill. The rota
         /// is then made and written by a job, over the coming frames.
         /// </summary>
-        public void FillRota(string place, bool useHours)
+        public void FillRota(string place, int rung)
         {
+            bool useHours = rung >= 0;
             if (!RotaOn)
             {
                 return;
@@ -567,7 +583,7 @@ namespace RealLifeOverhaul.Economy
                     Changed();
                     return;
                 }
-                string refusal = sheet == null ? "reallife_rota_cannot" : RotaRefusal(sheet) ?? (useHours && !sheet.Outlook.Advised ? "reallife_rota_no_hours" : null);
+                string refusal = sheet == null ? "reallife_rota_cannot" : RotaRefusal(sheet) ?? (useHours && RotaRungOf(sheet, rung) == null ? "reallife_rota_no_hours" : null);
                 if (refusal != null)
                 {
                     Notifications.Show(NotificationType.Warning, refusal, new Dictionary<string, string>
@@ -579,10 +595,20 @@ namespace RealLifeOverhaul.Economy
                 int kind = useHours ? JobFillHours : JobFill;
                 if (!useHours && !RotaGame.HasRota(sheet))
                 {
-                    RotaAsk(place, kind, false);
+                    RotaAsk(place, kind, false, -1);
                     return;
                 }
-                HudConfirm.Show(null, useHours ? "reallife_rota_confirm_hours" : "reallife_rota_confirm", () => RotaConfirmed(place, kind), null, null, null, true, false);
+                RotaRung plan = useHours ? RotaRungOf(sheet, rung) : null;
+                if (plan == null)
+                {
+                    HudConfirm.Show(null, "reallife_rota_confirm", () => RotaConfirmed(place, kind, -1), null, null, null, true, false);
+                    return;
+                }
+                // A plan that changes the opening hours is always asked about, with the hours now and after and what it brings.
+                HudConfirm.Show("reallife_rota_tab".Localize(), "reallife_rota_confirm_plan".Localize(new
+                {
+                    now = sheet.Ladder.Rungs[0].Sum.Hours, after = plan.Sum.Hours, gain = CompanyText.Money((plan.Sum.Net - sheet.Ladder.Rungs[0].Sum.Net) / 100f)
+                }), () => RotaConfirmed(place, kind, rung), null, null, null, false, false);
             }
             catch (Exception e)
             {
@@ -590,13 +616,13 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        private void RotaConfirmed(string place, int kind)
+        private void RotaConfirmed(string place, int kind, int rung)
         {
             try
             {
                 if (RotaOn)
                 {
-                    RotaAsk(place, kind, false);
+                    RotaAsk(place, kind, false, rung);
                     Changed();
                 }
             }
@@ -608,9 +634,13 @@ namespace RealLifeOverhaul.Economy
 
         // The last piece of a fill, in one frame: the sheet has just been found true of the business as it is. The week as it
         // was is kept first (the oldest one, if it is filled twice), then the rota is written.
-        private void RotaWrite(RotaJob job, RotaPlace at, RotaSheet sheet, RotaPlan plan)
+        private void RotaWrite(RotaJob job, RotaPlace at, RotaSheet sheet, RotaPlan plan, RotaRung rung)
         {
-            bool useHours = job.Kind == JobFillHours;
+            bool useHours = rung != null;
+            if (plan.Stations != sheet.Stations.Count || (rung != null && (rung.Hires > 0 || rung.Workers != sheet.Workers.Count)))
+            {
+                return;   // (never a rota with people in it who are not there)
+            }
             string place = job.Place, name = at.Name;   // (the list of places is made again below, and its entries with it)
             int kept = RotaUndoAt(place);
             if (kept < 0)
@@ -622,7 +652,7 @@ namespace RealLifeOverhaul.Economy
                 _rotaUndo[kept].Kept |= job.Test;
             }
             double before = _rotaClock.Elapsed.TotalMilliseconds;
-            int shifts = RotaGame.Write(sheet, plan, useHours ? sheet.Outlook.Staffed : null);
+            int shifts = RotaGame.Write(sheet, plan, useHours ? rung.Open : null);
             double wrote = _rotaClock.Elapsed.TotalMilliseconds - before;
             _rotaSheetGood = false;
             _rotaOwnOf = null;
@@ -632,7 +662,7 @@ namespace RealLifeOverhaul.Economy
             _rotaMadeStamp = at != null ? RotaGame.Stamp(at, RotaDays(at)) : 0;
             _rotaTestFilled += job.Test ? 1 : 0;
             _rotaTestShifts += job.Test ? shifts : 0;
-            Logger?.Info("Company: rota written for " + name + (useHours ? ", with the advised opening hours (" + sheet.Outlook.HoursStaffed + " a week)" : string.Empty) + ": " + shifts + " shift(s), "
+            Logger?.Info("Company: rota written for " + name + (useHours ? ", with the plan's opening hours (" + rung.Sum.Hours + " a week, " + sheet.Ladder.Rungs[0].Sum.Hours + " before)" : string.Empty) + ": " + shifts + " shift(s), "
                          + plan.CoveredHours + " of " + plan.WantedHours + " wanted hours covered, " + plan.UnmetCount + " demand(s) unmet" + (plan.Level > 0 ? " (optional demands gave way)" : string.Empty)
                          + ", " + sheet.FixedCount + " employee(s) left as they were, wages " + plan.Wage / 100 + " a week; worked out in " + _rotaSpent.ToString("0.0") + " ms over " + (_rotaFrames + 1)
                          + " frame(s), the longest share of a frame " + _rotaLongest.ToString("0.0") + " ms; written in " + wrote.ToString("0.0") + " ms.");
@@ -711,6 +741,217 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        // ---------------------------------------------------------------- the ladder of plans
+
+        /// <summary>
+        /// The plan of a sheet's ladder that may be written: the best week of the people there are, if it is not
+        /// the week as it is. Never a plan that takes somebody still to be hired. Null otherwise.
+        /// </summary>
+        internal static RotaRung RotaRungOf(RotaSheet sheet, int rung)
+        {
+            RotaLadderResult ladder = sheet != null ? sheet.Ladder : null;
+            RotaRung r = ladder != null && rung > 0 && rung < ladder.Count ? ladder.Rungs[rung] : null;
+            return r != null && RotaLadder.Writable(r) && r.Workers == sheet.Workers.Count ? r : null;
+        }
+
+        /// <summary>How a business weighs what its people ask for: the player's choice, or <see cref="RotaMode.Auto"/>.</summary>
+        internal int RotaModeOf(string place)
+        {
+            int mode;
+            return place != null && _rotaModes.TryGetValue(place, out mode) ? mode : RotaMode.Auto;
+        }
+
+        /// <summary>The player's choice for a business, from its page. The plans are worked out again with it; it is kept in the save.</summary>
+        public void RotaChoose(string place, int mode)
+        {
+            try
+            {
+                if (!RotaOn || string.IsNullOrEmpty(place) || RotaModeOf(place) == mode)
+                {
+                    return;
+                }
+                if (mode == RotaMode.StaffFirst || mode == RotaMode.Lean)
+                {
+                    _rotaModes[place] = mode;
+                }
+                else
+                {
+                    _rotaModes.Remove(place);
+                }
+                _rotaModesUnread = false;
+                RotaSave(Save);
+                Logger?.Info("Company: the staff rota planner's choice for " + place + " is now " + (mode == RotaMode.StaffFirst ? "staff first" : mode == RotaMode.Lean ? "lean" : "whichever comes to more") + ".");
+                Changed();
+            }
+            catch (Exception e)
+            {
+                RotaFault("a choice", e);
+            }
+        }
+
+        partial void RotaLoad(GameInstance save)
+        {
+            string text = null;
+            _rotaModes.Clear();
+            _rotaModesUnread = save != null && save.modData != null && save.modData.TryGetValue(RotaStore.Key, out text) && !RotaStore.Read(text, _rotaModes);
+            if (_rotaModesUnread)
+            {
+                Logger?.Warn("Company: the staff rota planner's choices in this save are not of a version this one reads; every business weighs for itself until a choice is made, and the line is left as it is until then.");
+            }
+            else if (Verbose)
+            {
+                Logger?.Info("Company check (rota choices): " + _rotaModes.Count + " business(es) with a choice of their own read from the save (version " + RotaStore.Version + "): PASS");
+            }
+        }
+
+        partial void RotaSave(GameInstance save)
+        {
+            if (_rotaModesUnread || save == null)
+            {
+                return;
+            }
+            if (save.modData == null)
+            {
+                save.modData = new Dictionary<string, string>();
+            }
+            if (_rotaModes.Count == 0)
+            {
+                save.modData.Remove(RotaStore.Key);
+            }
+            else
+            {
+                save.modData[RotaStore.Key] = RotaStore.Write(_rotaModes);
+            }
+        }
+
+        // True for a business the cleaning service cleans on its round (asked through CompanyBridges: Wiring/ServicesLinks).
+        private static bool RotaCleaned(RotaPlace place)
+        {
+            try
+            {
+                return CompanyBridges.Cleaned != null && place.Reg != null && CompanyBridges.Cleaned(place.Reg.Address);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>True while the cleaning service is there to be asked (the page names it as a way out for a cleaner with too few hours).</summary>
+        internal static bool RotaCleaningService => CompanyBridges.Cleaned != null;
+
+        // The going rate against the game's wage formula where a business stands, thousandths.
+        private int RotaMarket(RotaPlace place)
+        {
+            CompanyShop shop = null;
+            for (int i = 0; i < _shops.Count; i++)
+            {
+                shop = ReferenceEquals(_shops[i].Reg, place.Reg) ? _shops[i] : shop;
+            }
+            return StaffRules.Market(_index, _cycle, shop != null ? shop.Income : CompanyCatalogue.IncomeMiddle);
+        }
+
+        /// <summary>
+        /// Another business of the player's where somebody with one of these skills would find hours: the one with
+        /// the most open hours that have nobody on a shift, among those with a station the skill fits. Null with none.
+        /// Asked when a page is written for somebody whose hours cannot be met; a walk over the other businesses' items.
+        /// </summary>
+        internal RotaPlace RotaBusier(RotaPlace from, EmployeeInstance who)
+        {
+            RotaPlace best = null;
+            try
+            {
+                for (int i = 0; who != null && who.characterData != null && who.characterData.skills != null && i < _rotaPlaces.Count; i++)
+                {
+                    RotaPlace p = _rotaPlaces[i];
+                    if (p == from || p.Reg == null || p.Type == RotaType.Warehouse || p.Shut || p.GapHours <= 0 || p.Reg.itemInstances == null || (best != null && p.GapHours <= best.GapHours))
+                    {
+                        continue;
+                    }
+                    bool fits = false;
+                    foreach (var item in p.Reg.itemInstances.Values)
+                    {
+                        string[] skills = item != null && item.ItemCached != null ? item.ItemCached.suitableSkills : null;
+                        for (int k = 0; !fits && skills != null && k < skills.Length; k++)
+                        {
+                            for (int j = 0; !fits && j < who.characterData.skills.Count; j++)
+                            {
+                                fits = who.characterData.skills[j] != null && who.characterData.skills[j].name == skills[k];
+                            }
+                        }
+                        if (fits)
+                        {
+                            break;
+                        }
+                    }
+                    best = fits ? p : best;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Company: the other businesses could not be looked through for somebody's hours (" + e.Message + ").");
+            }
+            return best;
+        }
+
+        // One rung in a line of the log: its hours, what its week comes to and what that is made of. Money in whole units.
+        private static string RotaRungLog(RotaSheet sheet, RotaRung r)
+        {
+            RotaWeekSum s = r.Sum;
+            string what = r.Kind == RotaRungKind.AsItIs ? "as it is" : r.Kind == RotaRungKind.Best ? "best with the people (" + (r.Source == 0 ? "the week as it is" : r.Source == 1 ? "the hours kept, a new rota"
+                : r.Source == 2 ? "the hours kept less those nobody can keep" : "the hours worth opening") + ")" : "hire " + r.Hires;
+            for (int i = 0; i < r.Hires; i++)
+            {
+                what += (i == 0 ? " (" : ", ") + RotaGame.GroupSkill(sheet, r.Hire[i]) + " at " + (RotaLadder.Going(sheet.Shop, r.Hire[i]) / 100f).ToString("0.00") + (i == r.Hires - 1 ? ")" : string.Empty);
+            }
+            return what + ": " + s.Hours + " h open, " + s.Manned + " manned, " + s.StaffHours + " staff h (" + s.CleanHours + " cleaning), " + s.Served + " of " + s.Come + " customers served ("
+                   + s.LostUnmanned + " found nobody, " + s.LostFull + " over what the stations serve), sales " + s.Sales / 100 + " (dirt takes " + s.Clean / 100 + "), wages " + s.Wages / 100 + ", fees " + s.Fees / 100
+                   + ", theft " + s.Theft / 100 + ", night risk " + s.Night / 100 + ", demands " + s.Demands / 100 + ", net " + s.Net / 100 + (r.Kind != RotaRungKind.AsItIs ? ", gain " + r.Gain / 100 : string.Empty)
+                   + ", " + r.Plan.UnmetCount + " demand(s) unmet";
+        }
+
+        // The ladder of a business in the log: the self-check line of each working out (verbose), and the whole of it for the test tool.
+        private void RotaPlansLog(RotaPlace place, RotaSheet sheet, bool always)
+        {
+            if (!always && !Verbose)
+            {
+                return;
+            }
+            RotaLadderResult l = sheet.Ladder;
+            RotaShop shop = sheet.Shop;
+            bool pass = l.Count >= 1 && (l.Count < 2 || l.Rungs[1].Sum.Net >= l.Rungs[0].Sum.Net || !shop.HasCustomers);
+            string hours = string.Empty, rungs = string.Empty;
+            for (int h = 0; h < RotaCatalogue.Hours; h++)
+            {
+                hours += (h > 0 ? " " : string.Empty) + l.Hourly[h];
+            }
+            for (int i = 0; i < l.Count; i++)
+            {
+                RotaRung r = l.Rungs[i];
+                pass &= r.Kind != RotaRungKind.Hire || r.Gain >= RotaLadder.GainLeast;
+                rungs += (i > 0 ? " > " : string.Empty) + (r.Kind == RotaRungKind.AsItIs ? "now" : r.Kind == RotaRungKind.Best ? "best" : "hire " + r.Hires) + " " + r.Sum.Hours + " h " + r.Sum.Net / 100;
+            }
+            string stop = l.Stop == RotaEnd.TooLittle ? "one more for " + RotaGame.GroupSkill(sheet, l.StopGroup) + " would add " + l.StopGain / 100 + ", under the " + l.StopNeed / 100 + " a rung must"
+                : l.Stop == RotaEnd.Most ? "as many people as one ladder advises" : l.Stop == RotaEnd.NoAdvice ? "no hours are advised here" : "everybody the paying hours take is there";
+            string line = "Company check (rota plans, " + place.Name + "): " + rungs + "; recommended rung " + l.Recommended + "; ends because " + stop + "; " + (l.Mode == RotaMode.StaffFirst ? "staff first" : "lean")
+                          + (l.ModeAuto ? " (chosen by the week: lean " + l.LeanNet / 100 + ", staff first " + l.StaffNet / 100 + ")" : " (the player's choice)") + (shop.Cleaned ? "; the cleaning service cleans it" : string.Empty)
+                          + "; customers a week by the hour of the day (the game's calculator): " + hours + "; a customer " + shop.Margin + " hundredths, satisfaction " + shop.Content + ", cleanliness " + shop.CleanNow
+                          + ", dirt a customer " + shop.DirtPerCustomer + " and a cleaner's hour " + shop.CleanPerHour + " (thousandths of a point), theft a customer " + shop.TheftRate + " hundredths up to " + shop.TheftLimit
+                          + " an hour, a night shut " + shop.NightRisk + " hundredths; " + l.Steps + " step(s): " + (pass ? "PASS" : "FAIL");
+            if (always)
+            {
+                Logger?.Warn(line);
+            }
+            else
+            {
+                Logger?.Info(line);
+            }
+            for (int i = 0; always && i < l.Count; i++)
+            {
+                Logger?.Warn("Company test (rota plans, " + place.Name + "), rung " + i + ", " + RotaRungLog(sheet, l.Rungs[i]) + ".");
+            }
+        }
+
         // ---------------------------------------------------------------- the test tools
 
         private bool RotaTestReady(string test)
@@ -737,7 +978,18 @@ namespace RealLifeOverhaul.Economy
         /// <summary>"Test: open the rota of my busiest business": the one the game's calculator gives the most customers in a week; with none that has customers, the one with the most staff.</summary>
         public void TestRotaOpen()
         {
-            if (!RotaTestReady("Rota open"))
+            RotaTestBusiest(false);
+        }
+
+        /// <summary>"Test: show my busiest business's plans in the log": the same business, its ladder of plans rung by rung with what each week is made of.</summary>
+        public void TestRotaPlans()
+        {
+            RotaTestBusiest(true);
+        }
+
+        private void RotaTestBusiest(bool plans)
+        {
+            if (!RotaTestReady(plans ? "Rota plans" : "Rota open"))
             {
                 return;
             }
@@ -755,6 +1007,20 @@ namespace RealLifeOverhaul.Economy
                         most = key;
                         best = place;
                     }
+                }
+                if (plans)
+                {
+                    Logger?.Warn("Company test: the plans of " + best.Name + " (" + most / 1000 + " customers a week by the game's calculator, " + best.Staff + " staff) follow in the log"
+                                 + (RotaFresh(best) ? "." : " once they are worked out, over the coming frames."));
+                    if (RotaFresh(best))
+                    {
+                        RotaPlansLog(best, _rotaSheet, true);
+                    }
+                    else
+                    {
+                        RotaAsk(best.Place, JobShow, true);
+                    }
+                    return;
                 }
                 Logger?.Warn("Company test: the rota of " + best.Name + " opened (" + most / 1000 + " customers a week by the game's calculator, " + best.Staff + " staff).");
                 Open(TabRota, "rota:" + best.Place);
