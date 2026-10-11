@@ -17,6 +17,7 @@ namespace RealLifeOverhaul
     ///  - where the player stands, how far the walkable mesh is from their feet and how far its nearest edge;
     ///  - every walking obstacle within <see cref="Reach"/> metres: whose it is (its root object: the mod's own
     ///    start with "RealLifeOverhaul"), whether it cuts the mesh, its size, and whether anything of it is drawn;
+    ///  - every other walker (a navigation agent) within the same reach: one nobody can see stops the player like a wall;
     ///  - every solid collider within the same reach that is not the ground, the same way.
     ///
     /// An obstacle that cuts and is not drawn is the unseen block. Per frame: nothing. A press goes through the
@@ -68,14 +69,37 @@ namespace RealLifeOverhaul
                     {
                         continue;
                     }
-                    bool drawn = Drawn(o.transform);
+                    bool drawn = Drawn(o.transform, out int renderers, out int seen) && seen > 0;
                     unseen += o.carving && !drawn ? 1 : 0;
                     if (obstacles++ < Most)
                     {
                         Text.Length = 0;
                         Text.Append("Block check (obstacle): '").Append(Path(o.transform)).Append("', ").Append(Mathf.Max(0f, flat).ToString("0.0")).Append(" m away, ")
                             .Append(o.carving ? "CUTS the mesh" : "does not cut the mesh").Append(", ").Append(size.x.ToString("0.0")).Append(" x ").Append(size.z.ToString("0.0")).Append(" m, ")
-                            .Append(drawn ? "drawn" : "NOT DRAWN").Append(", layer ").Append(LayerMask.LayerToName(o.gameObject.layer)).Append('.');
+                            .Append(drawn ? "drawn" : "NOT DRAWN").Append(" (").Append(renderers).Append(" renderer(s) of its own, ").Append(seen).Append(" in view), its middle ")
+                            .Append((centre.x - feet.x).ToString("0.0")).Append(" m east and ").Append((centre.z - feet.z).ToString("0.0")).Append(" m north of the player, turned ")
+                            .Append(Mathf.RoundToInt(o.transform.eulerAngles.y)).Append(" degrees, layer ").Append(LayerMask.LayerToName(o.gameObject.layer)).Append('.');
+                        ClickWatch.Logger?.Warn(Text.ToString());
+                    }
+                }
+
+                int agents = 0;
+                NavMeshAgent[] people = UnityEngine.Object.FindObjectsByType<NavMeshAgent>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+                for (int i = 0; i < people.Length; i++)
+                {
+                    NavMeshAgent a = people[i];
+                    float flat = Flat(a.transform.position, feet);
+                    if (!a.enabled || flat > Reach || a.transform.IsChildOf(player.transform) || player.transform.IsChildOf(a.transform))
+                    {
+                        continue;
+                    }
+                    bool drawn = Drawn(a.transform, out int renderers, out int seen) && seen > 0;
+                    unseen += drawn ? 0 : 1;
+                    if (agents++ < Most)
+                    {
+                        Text.Length = 0;
+                        Text.Append("Block check (walker): '").Append(Path(a.transform)).Append("', ").Append(flat.ToString("0.0")).Append(" m away, radius ").Append(a.radius.ToString("0.00")).Append(" m, ")
+                            .Append(drawn ? "drawn" : "NOT DRAWN").Append(" (").Append(renderers).Append(" renderer(s), ").Append(seen).Append(" in view), avoidance ").Append(a.obstacleAvoidanceType).Append('.');
                         ClickWatch.Logger?.Warn(Text.ToString());
                     }
                 }
@@ -100,7 +124,7 @@ namespace RealLifeOverhaul
                         ClickWatch.Logger?.Warn(Text.ToString());
                     }
                 }
-                ClickWatch.Logger?.Warn("Block check: " + obstacles + " walking obstacle(s) within " + Reach + " m, " + unseen + " of them cutting the mesh with nothing drawn; " + solids + " solid thing(s) with nothing drawn.");
+                ClickWatch.Logger?.Warn("Block check: " + obstacles + " walking obstacle(s) and " + agents + " walker(s) within " + Reach + " m, " + unseen + " of them with nothing in view; " + solids + " solid thing(s) with nothing drawn.");
                 var data = new Dictionary<string, string>(2) { { "obstacles", obstacles.ToString() }, { "unseen", unseen.ToString() } };
                 Notifications.Show(NotificationType.Info, "reallife_test_block_said", data, NoticeSeconds, null, null, true, false);
             }
@@ -118,25 +142,28 @@ namespace RealLifeOverhaul
             return Vector3.Distance(a, b);
         }
 
-        // True if the thing, or anything under the nearest parent that has anything to draw, is being drawn.
-        private static bool Drawn(Transform t)
+        // What of the thing itself is drawn: its own renderers and those under it, never a parent's (a parked car's parent is
+        // the road, which is always drawn). "IN VIEW" is the engine's own word that a camera drew it this frame.
+        private static bool Drawn(Transform t) => Drawn(t, out _, out _);
+
+        private static bool Drawn(Transform t, out int renderers, out int seen)
         {
-            for (int up = 0; t != null && up < 3; up++, t = t.parent)
+            renderers = seen = 0;
+            int on = 0;
+            Renderer[] all = t.GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < all.Length; i++)
             {
-                Renderer[] renderers = t.GetComponentsInChildren<Renderer>(false);
-                for (int i = 0; i < renderers.Length; i++)
+                Renderer r = all[i];
+                if (r is ParticleSystemRenderer)
                 {
-                    if (renderers[i].enabled && !(renderers[i] is ParticleSystemRenderer))
-                    {
-                        return true;
-                    }
+                    continue;
                 }
-                if (renderers.Length > 0)
-                {
-                    return false;
-                }
+                renderers++;
+                bool can = r.enabled && r.gameObject.activeInHierarchy && !r.forceRenderingOff;
+                on += can ? 1 : 0;
+                seen += can && r.isVisible ? 1 : 0;
             }
-            return false;
+            return on > 0;
         }
 
         // The thing's name under its parents, the scene's root first.
