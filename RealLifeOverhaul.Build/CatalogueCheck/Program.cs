@@ -265,6 +265,7 @@ namespace RealLifeOverhaul
             CheckCrimes(src, locale);
             GigCheck.Run(Fail, locale);
             SavedShiftCheck.Run(Fail, locale, src);
+            OptionsCheck.Run(Fail, locale, src);
 
             Console.WriteLine(_failures == 0 ? "\nALL CHECKS PASSED" : $"\n{_failures} CHECK(S) FAILED");
             return _failures == 0 ? 0 : 1;
