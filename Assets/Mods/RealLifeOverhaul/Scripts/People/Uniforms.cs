@@ -183,6 +183,7 @@ namespace RealLifeOverhaul
             }
             Looks.Count("people: a look being built again for a hi-vis shirt (a mesh merge)");
             appearance.UpdateVisuals();
+            Looks.Done();
         }
 
         private static readonly List<Material> Own = new List<Material>(4);

@@ -82,6 +82,7 @@ namespace RealLifeOverhaul
                 PlayerDouble.Workwear = _overDouble;
                 Looks.Count("jobs: the player's uniform put on");
                 look.UpdateVisuals(_worn);   // their own data is untouched; the double hears of it and is dressed through OverDouble
+                Looks.Done();
                 if (Meta.Dev.Verbose)
                 {
                     _logger?.Info("Jobs: uniform on (" + outfit + ", " + _worn.Count + " pieces over the player's own; worn before: " + Describe(look, look.data.elements)
@@ -122,6 +123,7 @@ namespace RealLifeOverhaul
                 {
                     Looks.Count("jobs: the player's uniform taken off");
                     look.UpdateVisuals();
+                    Looks.Done();
                     if (Meta.Dev.Verbose)
                     {
                         _logger?.Info("Jobs: uniform off; the player is drawn in their own clothes again (" + Describe(look, look.data.elements) + ").");

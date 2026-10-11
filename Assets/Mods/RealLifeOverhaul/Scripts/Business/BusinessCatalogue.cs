@@ -280,6 +280,17 @@ namespace RealLifeOverhaul
             return percent < AmbientMostDip ? AmbientMostDip : percent > AmbientMostBoost ? AmbientMostBoost : percent;
         }
 
+        /// <summary>
+        /// The promotion figure the mod writes for a business: its own where nothing changes its footfall, otherwise
+        /// <see cref="PromotionFor(int, int, int, float)"/>. The one function behind every write of that figure
+        /// (BusinessGame.Footfall), and behind the staff rota planner's forecast of a day on which the parts will be
+        /// different, so that the forecast and what is written cannot drift apart.
+        /// </summary>
+        public static int Written(int own, int percent, int ambient, float baseMultiplier)
+        {
+            return percent != 0 || ambient != 0 ? PromotionFor(own, percent, ambient, baseMultiplier) : own;
+        }
+
         /// <summary>The same with the city's economy on top: an issue's change and the ambient one are each kept to their own bounds and added.</summary>
         public static int PromotionFor(int own, int percent, int ambient, float baseMultiplier)
         {

@@ -640,6 +640,7 @@ namespace RealLifeOverhaul
             CityOutfits.Wear(appearance, CityLook.Doorman, person.Dyes);
             Looks.Count("travel: the hotel doorman's look being built (a mesh merge)");
             appearance.UpdateVisuals();
+            Looks.Done();
             character.gameObject.SetActive(false);
             return person;
         }

@@ -15,7 +15,6 @@ namespace RealLifeOverhaul
     internal static class CrimeCars
     {
         private static readonly Collider[] Hits = new Collider[24];
-        private static readonly string[] NeverOffenders = { "ambulance", "taxi", "limo", "police", "bus", "truck", "van", "fire", "garbage", "delivery", "tow" };
 
         /// <summary>A parked car near a point: its middle, heading and half its width. False if there is none.</summary>
         public static bool FindParked(Vector3 near, float radius, out Vector3 centre, out Vector3 forward, out float halfWidth)
@@ -80,8 +79,11 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        // On the road as plain traffic, a car and not a truck, nobody's taxi, and not a vehicle with a job to do.
-        private static bool IsOrdinary(VehicleComponent car)
+        /// <summary>
+        /// On the road as plain traffic, a car and not a truck, nobody's taxi, held by nobody of the mod's, and not a
+        /// vehicle with a job to do (the names are StreetRules.IsOrdinaryCarName's). The reckless drivers pick by it too.
+        /// </summary>
+        internal static bool IsOrdinary(VehicleComponent car)
         {
             if (car == null || !car.gameObject.activeInHierarchy || car.presetPath != null || car.prefab == null
                 || car.vehicleType != VehicleTypes.Car || TrafficManager.Instance.IsVehicleIgnored(car.GetIndex())
@@ -89,15 +91,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            string name = car.prefab.name;
-            for (int i = 0; i < NeverOffenders.Length; i++)
-            {
-                if (name.IndexOf(NeverOffenders[i], StringComparison.OrdinalIgnoreCase) >= 0)
-                {
-                    return false;
-                }
-            }
-            return true;
+            return StreetRules.IsOrdinaryCarName(car.prefab.name);
         }
 
         /// <summary>The road ahead of a traffic car, for it to be driven along. False if it has too little road in front of it.</summary>

@@ -48,6 +48,35 @@ namespace RealLifeOverhaul
             _logger = logger;
         }
 
+        /// <summary>
+        /// Behind the loading screen: the people are made and dressed now and put on the shelf, so that the first job,
+        /// lesson or test that needs somebody does not make one (a character and a mesh merge) in the middle of play.
+        /// A fault leaves them to be made on first need, as before.
+        /// </summary>
+        public bool Prewarm(int people)
+        {
+            if (_failed || _host == null)
+            {
+                return true;
+            }
+            try
+            {
+                for (int i = 0; i < Size && i < people; i++)
+                {
+                    if (_people[i] == null || !_people[i].IsValid)
+                    {
+                        _people[i] = Create(_host.transform.position);
+                        Shelve(_people[i]);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                _logger?.Error(e);
+            }
+            return true;
+        }
+
         /// <summary>True while somebody is out on the street.</summary>
         public bool AnyOut => (_out[0] && !_seated[0]) || (_out[1] && !_seated[1]);
 
@@ -293,6 +322,7 @@ namespace RealLifeOverhaul
             appearance.RandomizeElements(gender, SkinColorHelper.GetRandom(), CasualWear);
             Looks.Count("jobs: a character's look being built (a mesh merge)");
             appearance.UpdateVisuals();
+            Looks.Done();
         }
 
         private static readonly AppearanceTag[] FormalWear = { AppearanceTag.Formal };
@@ -319,6 +349,7 @@ namespace RealLifeOverhaul
             }
             Looks.Count("jobs: a character's look being built (a mesh merge)");
             appearance.UpdateVisuals();
+            Looks.Done();
         }
 
         private void Shelve(StreetActor person)

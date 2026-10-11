@@ -110,6 +110,7 @@ namespace RealLifeOverhaul
             HomeTidy.Reset();
             HomePlace.Reset();
             JogRun.ForgetCity();
+            ScenePrewarm.Add("home: the city's parks being listed for the run", JogRun.Prewarm);
             _props = new JobProps(transform);
             Body = new JobBody(_props, Logger);
             _run = new JogRun(Logger);

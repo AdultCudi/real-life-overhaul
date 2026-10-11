@@ -24,12 +24,27 @@ namespace RealLifeOverhaul.Economy
                 Pick("push:" + file.Place, shops[i].Name, on ? CompanyText.Campaign(file.Push) : CompanyText.T("reallife_co_none"),
                     !on ? string.Empty : file.Pushing(day) ? CompanyText.Day(file.PushEnd - 1) : CompanyText.T("reallife_co_row_from", "day", file.PushFrom.ToString()),
                     on ? CompanyText.Percent(file.PushPercent) : string.Empty, 0, ref selected);
+                TableRow row = Last;
+                row.Kind = !on ? CompanyTables.PushNone : file.Pushing(day) ? CompanyTables.PushRunning : CompanyTables.PushBooked;
+                if (on)
+                {
+                    row.Key[2] = file.Pushing(day) ? file.PushEnd - 1 : file.PushFrom;
+                    row.Key[3] = file.PushPercent;
+                    row.Set(4, CompanyText.Money(file.PushCost), file.PushCost);
+                }
             }
             for (int i = state.Reports.Count - 1; i >= 0; i--)
             {
                 CampaignReport r = state.Reports[i];
+                // A campaign that has ended: how many more customers came, what it cost and what it brought in beyond that.
                 Pick("rep:" + i, CompanyText.T("reallife_co_row_report", "business", r.Name), CompanyText.Campaign(r.Kind), CompanyText.Day(r.From + r.Days - 1),
-                    CompanyText.T("reallife_co_row_extra", "amount", CompanyText.Money(r.Extra)), r.Extra < 0 ? 2 : 0, ref selected);
+                    CompanyText.Percent(r.Footfall), 0, ref selected);
+                TableRow row = Last;
+                row.Kind = CompanyTables.PushEnded;
+                row.Key[2] = r.From + r.Days - 1;
+                row.Key[3] = r.Footfall;
+                row.Set(4, CompanyText.Money(r.Cost), r.Cost);
+                row.Set(5, CompanyText.T("reallife_co_row_extra", "amount", CompanyText.Money(r.Extra)), r.Extra, r.Extra < 0 ? TableRow.Red : r.Extra > 0 ? TableRow.Green : TableRow.Plain);
             }
             if (_rows.Count == 0)
             {

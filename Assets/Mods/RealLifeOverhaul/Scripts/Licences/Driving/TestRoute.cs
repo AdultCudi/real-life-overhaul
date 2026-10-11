@@ -45,8 +45,8 @@ namespace RealLifeOverhaul
             _junction.Clear();
             HasBay = false;
             Length = 0f;
-            CurrentSceneData data = CurrentSceneData.GetSceneInstance();
-            Waypoint[] all = data != null ? data.allWaypoints : null;
+            // Kept from the city's one search: the traffic system's own accessor searches the whole scene on every call, a long frame at the start of every lesson.
+            Waypoint[] all = RoadData.Points;
             Waypoint at = TrafficTools.ClosestWaypointAlong(from, heading, 30f);
             if (all == null || at == null)
             {

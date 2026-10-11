@@ -42,6 +42,20 @@ namespace RealLifeOverhaul.GameUi
         public GameObject RowPrefab { get; private set; }
         /// <summary>The colour the game gives the row that is selected, read from its row.</summary>
         public Color RowSelected { get; private set; } = new Color(0.741f, 0.78f, 0.812f, 1f);
+        /// <summary>The game's drop-down that stands over MyEmployees' table, asleep and whole: what a table's filter is a copy of. Null if the game no longer has it.</summary>
+        public GameObject FilterTemplate { get; private set; }
+        /// <summary>Whether the header cells are the game's buttons with their two arrows: without them no column sorts.</summary>
+        public bool CanSort { get; private set; }
+        /// <summary>Told which column's header was clicked (only the header of a column that sorts can be).</summary>
+        public Action<int> HeaderClicked;
+
+        // The header cells, read once: the cell, its button, its title and the two arrows the game shows the order with.
+        private readonly Transform[] _headCells = new Transform[TableSpec.MaxColumns];
+        private readonly Button[] _headButtons = new Button[TableSpec.MaxColumns];
+        private readonly Transform[] _headTitles = new Transform[TableSpec.MaxColumns];
+        private readonly GameObject[] _arrowsUp = new GameObject[TableSpec.MaxColumns], _arrowsDown = new GameObject[TableSpec.MaxColumns];
+        private int _headCount;
+        private TableSpec _columnsOf;   // the table whose columns the header cells show now
 
         /// <summary>The copy, asleep under 'dormant'. Null, with one line in Player.log, if the game's app is not built as expected.</summary>
         public static AppShell Make(FullMenu menu, Transform dormant, string name)
@@ -58,7 +72,9 @@ namespace RealLifeOverhaul.GameUi
                 GameObject rowSource = RowOf(source);
                 GameObject root = UiClone.Asleep(source, dormant, name);
                 shell.Root = root;
-                UiClone.StripGameScripts(root, script => Array.IndexOf(Harmless, script.GetType().Name) >= 0);
+                // The drop-down over the table keeps its scripts: it is the game's own control, whole (see TakeFilter).
+                Transform filter = root.transform.Find("Layout 30-70/Right/MassActionDropdown");
+                UiClone.StripGameScripts(root, script => Array.IndexOf(Harmless, script.GetType().Name) >= 0 || (filter != null && script.transform.IsChildOf(filter)));
 
                 Transform layout = UiClone.Need(root.transform, "Layout 30-70", name);
                 Transform left = UiClone.Need(layout, "Left", name);
@@ -85,6 +101,8 @@ namespace RealLifeOverhaul.GameUi
                     UnityEngine.Object.DestroyImmediate(root);
                     return null;
                 }
+
+                shell.TakeFilter(filter, root.transform.Find("Templates"));
 
                 // The headline over the left column: wide enough for a sentence, cut with dots if it is longer still.
                 shell.Header = header;
@@ -152,6 +170,7 @@ namespace RealLifeOverhaul.GameUi
 
                 shell.List = list;
                 shell.Headers = headers;
+                shell.ReadHeaders();
                 UiClone.KeepOnly(list, "Headers", "ListBackground", shell.Scroller.name);
                 // Rows start at the list's left edge (MyEmployees leaves 127 for its tick boxes) and end 30 short of
                 // the right one, where the scroll bar is: the headers are 30 narrower than the list for the same reason.
@@ -202,21 +221,43 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// Makes the table's columns: the header cells are the game's own, the first so-many of them, renamed (so the
-        /// table does not take them for sortable columns) and given their words and widths. One column may be flexible.
-        /// </summary>
-        public bool SetColumns(string[] names, string[] titleKeys, float[] widths, int flexible)
+        // The game's drop-down goes among the templates, asleep, as the white box's parts do: a table that filters
+        // copies it when it first needs one. Without it (a game update took it away) tables have no filter.
+        private void TakeFilter(Transform filter, Transform templates)
         {
-            var layout = Headers.GetComponent<HorizontalLayoutGroup>();
-            if (layout == null)
+            bool found = false;
+            try
             {
-                UiClone.Fallback("the table's header row has no layout");
-                return false;
+                found = filter != null && templates != null && FilterDrop.Is(filter.gameObject);
             }
-            RowLayout(layout);
-            int made = 0;
-            for (int i = 0; i < Headers.childCount; i++)
+            catch (Exception e)
+            {
+                Logger?.Error(e);   // the game's drop-down class is not what it was
+            }
+            if (!found)
+            {
+                UiClone.Fallback("the drop-down over the game's MyEmployees table is not there to copy, so the tables have no filter");
+                if (filter != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(filter.gameObject);
+                }
+                return;
+            }
+            filter.SetParent(templates, false);
+            filter.name = "Filter";
+            FilterTemplate = filter.gameObject;
+        }
+
+        // The game's table makes a header cell sort by giving its Button a click (BaTable.Start) and shows the order
+        // by switching the cell's ArrowUp or ArrowDown on (BaTable.ChangeSortOrder). The cells are kept as they are,
+        // button, hover effect and arrows; the click is the mod's (the order is worked out by GameUi.TableModel).
+        // The title is white and gets its dark colour from the button's tint, so the button stays on every cell: a
+        // column that does not sort has it switched to "not interactable", the game's own look for that.
+        private void ReadHeaders()
+        {
+            _headCount = 0;
+            bool whole = true;
+            for (int i = 0; i < Headers.childCount && _headCount < TableSpec.MaxColumns; i++)
             {
                 Transform cell = Headers.GetChild(i);
                 var element = cell.GetComponent<LayoutElement>();
@@ -224,37 +265,152 @@ namespace RealLifeOverhaul.GameUi
                 {
                     continue;   // the background
                 }
-                if (made >= names.Length)
+                int column = _headCount++;
+                Transform up = cell.Find("ArrowUp"), down = cell.Find("ArrowDown");
+                _headCells[column] = cell;
+                _headTitles[column] = cell.Find("Title");
+                _arrowsUp[column] = up != null ? up.gameObject : null;
+                _arrowsDown[column] = down != null ? down.gameObject : null;
+                _headButtons[column] = UiClone.Rewire(cell, () =>
                 {
-                    cell.gameObject.SetActive(false);
+                    if (HeaderClicked != null)
+                    {
+                        HeaderClicked(column);
+                    }
+                });
+                whole &= _headButtons[column] != null && up != null && down != null;
+                cell.name = "Column" + column;   // not a field of any row class: the game's own sort by reflection stays out of it
+            }
+            CanSort = whole && _headCount > 0;
+            if (!CanSort)
+            {
+                UiClone.Fallback("the header cells of the game's table are no longer buttons with two arrows, so the tables' columns do not sort");
+            }
+        }
+
+        /// <summary>
+        /// Makes the table's columns from a specification: the first so-many header cells of the game's, each with
+        /// its title and width; a column that sorts keeps its button, one that does not has it switched off. May be
+        /// called again for another table of the same app (a tab, a page).
+        /// </summary>
+        public bool SetColumns(TableSpec spec)
+        {
+            var layout = Headers.GetComponent<HorizontalLayoutGroup>();
+            if (layout == null)
+            {
+                UiClone.Fallback("the table's header row has no layout");
+                return false;
+            }
+            if (ReferenceEquals(spec, _columnsOf))
+            {
+                return true;   // written again with the same columns: the header cells are as they should be
+            }
+            _columnsOf = spec;
+            RowLayout(layout);
+            for (int i = 0; i < _headCount; i++)
+            {
+                Transform cell = _headCells[i];
+                bool used = i < spec.Count;
+                if (cell.gameObject.activeSelf != used)
+                {
+                    cell.gameObject.SetActive(used);
+                }
+                if (!used)
+                {
                     continue;
                 }
-                cell.name = names[made];
-                // A header that sorts nothing is not a button. The hover effect goes first: it may require the button.
-                foreach (MonoBehaviour script in cell.GetComponents<MonoBehaviour>())
+                TableColumn column = spec.Columns[i];
+                if (_headTitles[i] != null)
                 {
-                    if (script != null && script.GetType().Name == "ButtonEffects")
-                    {
-                        UnityEngine.Object.DestroyImmediate(script);
-                    }
+                    UiClone.Key(_headTitles[i], column.TitleKey);
                 }
-                var button = cell.GetComponent<Button>();
-                if (button != null)
+                Width(cell, column.Width, column.Flexible);
+                var group = cell.GetComponent<HorizontalLayoutGroup>();
+                if (group != null)
                 {
-                    UnityEngine.Object.DestroyImmediate(button);
+                    group.childAlignment = column.Right ? TextAnchor.MiddleRight : TextAnchor.MiddleLeft;
                 }
-                Transform title = cell.Find("Title");
-                if (title != null)
+                if (_headButtons[i] != null)
                 {
-                    UiClone.Key(title, titleKeys[made]);
+                    _headButtons[i].interactable = CanSort && column.Sort != TableSort.None;
                 }
-                Width(cell, widths[made], made == flexible);
-                made++;
             }
-            if (made < names.Length)
+            if (_headCount < spec.Count)
             {
-                UiClone.Fallback("the game's table has " + made + " header cells, " + names.Length + " were needed");
+                UiClone.Fallback("the game's table has " + _headCount + " header cells, " + spec.Count + " were needed");
+                _columnsOf = null;
                 return false;
+            }
+            return true;
+        }
+
+        /// <summary>Columns that do not sort, from plain lists (a table with no specification of its own).</summary>
+        public bool SetColumns(string[] names, string[] titleKeys, float[] widths, int flexible)
+        {
+            var spec = new TableSpec("Plain", names.Length > 0 ? names[0] : string.Empty);
+            for (int i = 0; i < names.Length; i++)
+            {
+                spec.Column(titleKeys[i], widths[i], TableSort.None, i == flexible);
+            }
+            bool made = SetColumns(spec);
+            ShowSort(-1, true);
+            return made;
+        }
+
+        /// <summary>Shows the order as the game's table does: the arrow of that column, up for ascending; -1 for none.</summary>
+        public void ShowSort(int column, bool ascending)
+        {
+            for (int i = 0; i < _headCount; i++)
+            {
+                Arrow(_arrowsUp[i], CanSort && i == column && ascending);
+                Arrow(_arrowsDown[i], CanSort && i == column && !ascending);
+            }
+        }
+
+        private static void Arrow(GameObject arrow, bool shown)
+        {
+            if (arrow != null && arrow.activeSelf != shown)
+            {
+                arrow.SetActive(shown);
+            }
+        }
+
+        /// <summary>Whether the header row has what a specification asks for: its cells, and buttons with arrows where a column sorts.</summary>
+        public bool HeadersFit(TableSpec spec)
+        {
+            return _headCount >= spec.Count && (CanSort || spec.Sortable == 0);
+        }
+
+        /// <summary>
+        /// The game's employee row made into a row of so many plain cells of text. The row has a tick box and ten
+        /// cells of different kinds; the first, the employee's name, is a text with a width of its own, so the cells
+        /// are copies of it ("Cell0", "Cell1"...) and everything else but the background goes. Which of them show,
+        /// and how wide, is the table's specification (DataCellView). False, with one line in Player.log, if the row
+        /// is not built as expected.
+        /// </summary>
+        public static bool PrepareRow(GameObject row, int cells, string app)
+        {
+            Transform t = row != null ? row.transform : null;
+            var layout = row != null ? row.GetComponent<HorizontalLayoutGroup>() : null;
+            Transform first = t != null ? t.Find("EmployeeName") : null;
+            if (layout == null || first == null || first.GetComponent<TMP_Text>() == null)
+            {
+                UiClone.Fallback("the game's employee row is not built as expected, so the " + app + " app is not added");
+                return false;
+            }
+            UiClone.KeepOnly(t, "Background", "RaycastTarget", "EmployeeName");
+            first.name = "Cell0";
+            for (int i = 1; i < cells; i++)
+            {
+                GameObject copy = UnityEngine.Object.Instantiate(first.gameObject, t, false);
+                copy.name = "Cell" + i;
+            }
+            RowLayout(layout);
+            for (int i = 0; i < cells; i++)
+            {
+                Transform cell = t.Find("Cell" + i);
+                Width(cell, 200f, i == 0);
+                OneLine(cell.GetComponent<TMP_Text>());
             }
             return true;
         }

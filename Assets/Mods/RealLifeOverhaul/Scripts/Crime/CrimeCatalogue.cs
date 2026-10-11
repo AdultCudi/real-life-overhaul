@@ -16,6 +16,7 @@ namespace RealLifeOverhaul
         public const int SpeedingFine = 180;
         public const int RecklessFine = 320;           // driving on the pavement or against the traffic
         public const int JaywalkFine = 25;
+        public const int HornFine = 40;                // sounding the horn again and again at people who have the right of way, with an officer in earshot (People/HornReactions)
         public const int DrunkDrivingFine = 900;       // at the wheel after two drinks or more (Leisure), found at any stop
         public const int FleeingFine = 900;            // on top of the offence, for making them chase
         public const int FleeingPerQuarterMinute = 120; // the longer the chase, the more it costs

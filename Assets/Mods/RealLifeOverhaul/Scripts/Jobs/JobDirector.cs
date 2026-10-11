@@ -94,11 +94,17 @@ namespace RealLifeOverhaul
         private Vector3 _guidedAt;
         private bool _guiderBroken;
 
+        private bool PrewarmCast()
+        {
+            return !Settings.Jobs && !Settings.DrivingSchool || _cast.Prewarm(JobCast.Size);
+        }
+
         private void Awake()
         {
             Instance = this;
             JobState.Reset();
             _cast = new JobCast(this, Logger);
+            ScenePrewarm.Add("jobs: the two people of job scenes being made", PrewarmCast);
             _context.Director = this;
             _context.Cast = _cast;
             _props = new JobProps(transform);

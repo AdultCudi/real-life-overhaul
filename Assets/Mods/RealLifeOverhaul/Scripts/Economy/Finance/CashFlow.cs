@@ -36,6 +36,19 @@ namespace RealLifeOverhaul.Economy
             public int Day;
         }
 
+        /// <summary>One movement of money in the period, for the table: what it was, when, how much and what for (CashCategory).</summary>
+        public struct Entry
+        {
+            public string Type;
+            public Dictionary<string, string> Data;
+            public float Amount;
+            public int Day;
+            public int Category;
+        }
+
+        /// <summary>The names of the categories, for the table's filter.</summary>
+        public static string[] CategoryKeys => CashCategory.Keys;
+
         public const int Yesterday = 0, Week = 1, Month = 2;
         public static readonly int[] PeriodDays = { 1, 7, 30 };
         public const int TopMost = 5;
@@ -46,6 +59,10 @@ namespace RealLifeOverhaul.Economy
 
         public readonly List<Kind> Kinds = new List<Kind>(48);
         public readonly Item[] Top = new Item[TopMost];
+        /// <summary>Every movement of money in the period, oldest first as the game keeps them.</summary>
+        public readonly List<Entry> Entries = new List<Entry>(256);
+        /// <summary>Money in and out by category over the period (out is negative).</summary>
+        public readonly float[] CategoryIn = new float[CashCategory.Count], CategoryOut = new float[CashCategory.Count];
         public int TopCount { get; private set; }
         public float In { get; private set; }
         public float Out { get; private set; }
@@ -60,6 +77,9 @@ namespace RealLifeOverhaul.Economy
         {
             Kinds.Clear();
             _index.Clear();
+            Entries.Clear();
+            Array.Clear(CategoryIn, 0, CategoryIn.Length);
+            Array.Clear(CategoryOut, 0, CategoryOut.Length);
             TopCount = 0;
             In = Out = 0f;
             Count = 0;
@@ -97,15 +117,19 @@ namespace RealLifeOverhaul.Economy
                 }
                 Kind kind = Kinds[at];
                 kind.Count++;
+                int category = CashCategory.For(type);
+                Entries.Add(new Entry { Type = type, Data = t.transactionData, Amount = t.amount, Day = day, Category = category });
                 if (t.amount > 0f)
                 {
                     kind.In += t.amount;
                     In += t.amount;
+                    CategoryIn[category] += t.amount;
                 }
                 else
                 {
                     kind.Out += t.amount;
                     Out += t.amount;
+                    CategoryOut[category] += t.amount;
                 }
                 Kinds[at] = kind;
                 Count++;
@@ -156,11 +180,17 @@ namespace RealLifeOverhaul.Economy
         /// <summary>One transaction in the game's own words, as EconoView's list writes it (the type's text, filled from the transaction's data).</summary>
         public static string ItemName(in Item item)
         {
-            if (string.IsNullOrEmpty(item.Type) || !LocalizorManager.IsLocalizedKey(item.Type))
+            return ItemName(item.Type, item.Data);
+        }
+
+        /// <summary>The same for a type and its data.</summary>
+        public static string ItemName(string type, Dictionary<string, string> data)
+        {
+            if (string.IsNullOrEmpty(type) || !LocalizorManager.IsLocalizedKey(type))
             {
-                return KindName(item.Type);
+                return KindName(type);
             }
-            return item.Data != null && item.Data.Count > 0 ? item.Type.Localize(item.Data).ToString() : item.Type.GetLocalization();
+            return data != null && data.Count > 0 ? type.Localize(data).ToString() : type.GetLocalization();
         }
     }
 }

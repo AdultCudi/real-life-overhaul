@@ -347,6 +347,7 @@ namespace RealLifeOverhaul.Family
                 appearance.data.fatness = Mathf.Min(appearance.data.fatness, MaxBuild);
                 Looks.Count("family: a relative's look being built (a mesh merge)");
                 appearance.UpdateVisuals();
+                Looks.Done();
             }
             finally
             {
@@ -427,6 +428,7 @@ namespace RealLifeOverhaul.Family
             if (carve && prop.TryGetComponent(out NavMeshObstacle obstacle))
             {
                 obstacle.enabled = true;   // people on foot go round it instead of through it
+                MeshCuts.Note("a cot or a high chair at home");
             }
             _outNow.Add(prop);
             return prop;
@@ -439,9 +441,10 @@ namespace RealLifeOverhaul.Family
                 return;
             }
             _outNow.Remove(prop);
-            if (prop.TryGetComponent(out NavMeshObstacle obstacle))
+            if (prop.TryGetComponent(out NavMeshObstacle obstacle) && obstacle.enabled)
             {
                 obstacle.enabled = false;
+                MeshCuts.Note("a cot or a high chair put away");
             }
             prop.SetParent(_root, false);
             prop.gameObject.SetActive(false);

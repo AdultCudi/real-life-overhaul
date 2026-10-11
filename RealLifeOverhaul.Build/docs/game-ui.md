@@ -107,7 +107,9 @@ public sealed class PlannerCellView : BaTableCellView<PlannerRow> { SetData(row)
 ```
 
 - `Start` sets `scroller.Delegate`, and makes a header cell sort its column if the cell's **name** is a public field
-  or property of the model. Name header cells otherwise if nothing should sort.
+  or property of the model (it then orders the rows by that field through reflection and `OrderBy`). The mod's
+  header cells are named `Column0`, `Column1`... so that this takes no part: its tables are ordered by their own
+  model (section 30).
 - `GetCellView` calls `SetData`, then (with `allowRowSelection`) wires the row's Button to `SelectRow`, calls
   `VisualizeSelected(false)` and `ResetVisuals()`. `VisualizeSelected` sets the row background to
   `selectedBackgroundColor` and every text to midnight or white, **except** texts that are exactly the game's red
@@ -261,6 +263,24 @@ OverlayUI [VerticalLayoutGroup (padding 30/30/55/40, spacing 20), ContentSizeFit
   cart uses all four (`Jobs/Kinds/VendorJob`): three drinks and "Call out" while a customer orders, "Step away",
   "Let time pass" and "Call out" otherwise. Four buttons make the box about 320 units higher than its header.
 - The game's Cancel key is not sent to this box. A panel that must be left by a key needs a button for it.
+- **The building box.** The card that comes up over a shop's door while the pointer is on the shop is another object,
+  `UI.InGameUI.BuildingResume` (`UIs.Instance.buildingResume`, an overlay canvas of its own). Its `LateUpdate` puts its
+  private `panelRectTransform` over `entranceDoors[0]` every frame and switches it on while it has a target; nothing
+  announces it. The game has no rule between that box and this one (its own panels stand at filling stations and lifts,
+  where no building box comes up), so the kit has one, for every `WorldPanel` and `DoorPanel`
+  (`GameUi/PanelPlacement.cs`, the rule; `GameUi/WorldPanel.Beside.cs`, the part that touches the game): the building
+  box never moves; the panel steps to the side of it that has room on the screen, left or right first (the shorter
+  step), then above or below, 14 pixels away; with no side free it leaves the box and `Show` answers false with
+  `Waiting` true until the building box has gone or moved, as the game's small item card waits for its large one.
+  Once on a side it stays there while that side has room, and it goes home only when home is clear by 42 pixels.
+- **How the step is given.** `OverlayUI.Update` writes the box's place from `GetTargetPosition` every frame, so the step
+  is handed to the game as a step in the world: the answer is the place plus a vector across the camera's view that
+  is exactly the wanted pixels at the place's depth. The game then keeps the box beside the building box by itself.
+  The two rectangles are read (`GetWorldCorners`, into an array made once) only when the building box comes or goes,
+  when either has moved more than 6 pixels on the screen, or when the panel's words or buttons changed; the look is
+  on `Canvas.willRenderCanvases`, which runs after every `LateUpdate` and the interface's layout and before the
+  frame is drawn, so the two are never drawn over each other. The watch is on that event only while a panel of the
+  mod's is up. `WorldPanel.Name` ("stop") is the word in the log line.
 
 Proven: every member named above and the object's structure. Inferred: how the box looks with other content than
 the game's (the second line makes it wider; capitals on the right-hand word and the buttons).
@@ -342,6 +362,8 @@ With "Developer diagnostics" on, one session's Player.log shows whether everythi
 - `Garage check (bay): in a repair bay with ...: the game's panel has its 2 button(s) and 'Garage' on the game's confirm key, second line 'Due: service $120.00': PASS.`
 - `Garage check (custom shop list): the game's list is open left of the middle with 7 entries (...); 2.8 ms: PASS.`
 - `Car check (dash): 'SERVICE DUE' is in the game's vehicle panel, after its condition reading, in the game's orange: PASS.`
+- `Panel check (stop, beside a building box): moved to the left of it by 212 pixels: PASS.` and `... back over its own place: PASS.`
+- `Gauge check (fishing): the game's bar, 0.42 (a marker, the zone about 0.72): PASS.`
 - Every fallback is one `Game UI: ...` warning, logged whether or not diagnostics are on.
 
 ## 10. The HUD, and a panel on it (`Navigation/NavHud`)
@@ -651,7 +673,7 @@ The white box (`InfoBox`, section 2) is a vertical layout with no scroll view: w
 table beside it is the game's scroller and takes any number of rows. So a tab that has a list of things with actions
 puts the list in the table and shows in the box only the row that is picked:
 
-- A row that can be picked sets `FinanceRow.Pick`; `BaTable.allowRowSelection` and `onRowSelected` do the rest
+- A row that can be picked sets `TableRow.Pick`; `BaTable.allowRowSelection` and `onRowSelected` do the rest
   (section 2), and `BaTableCellView.VisualizeSelected` colours it. Rows of different kinds share one table by their
   id's prefix (`acct:`, `loan:`, `product:`, `lender:`).
 - The box's page for a row: a title, a few lines, at most three selectors, and one or two rows of buttons. A row of
@@ -788,9 +810,9 @@ shows at once (the HUD's alpha is set back by `Toggle` itself; the menu fades ou
 
 ## 29. A second app on Finance's table, and what the game keeps about staff, tax, marketing and opening hours
 
-**An app whose table is another app's** (the Company app). `FinanceTable`, `FinanceRow` and `FinanceCellView` are the
-game's own `BaTable` with four cells (section 24); a second app adds them to its own copy of MyEmployees
-(`AppShell.Make`) exactly as Finance does and prepares its own row the same way. Two apps can share the row class
+**An app whose table is another app's** (the Company app). `DataTable`, `TableRow` and `DataCellView` (the kit's:
+section 30) are the game's own `BaTable` with up to nine cells; a second app adds them to its own copy of MyEmployees
+with one call (`DataTable.On`), exactly as Finance does. Two apps can share the row class
 because each has its own copy of the row and its own list. A row's id is also what is "picked": the page in the white
 box is chosen by it ("emp:" and an employee's id, "pol:" with a place and a kind), so a notification can open the app
 on a tab with one thing picked (`CompanyApp.Want`). A tab with two subjects (Tax and licences) is two writers of the
@@ -837,3 +859,143 @@ returns false and the page shows a button that does the same.
   for food or alcohol.
 
 Proven: all of it, from the game's code. Not seen in a running game.
+
+## 30. Tables that sort, filter and add up (`GameUi.TableSpec`, `TableModel`, `TableView`, `DataTable`)
+
+Every table of Finance, Ventures, Company and the Planner is declared as data and gets its sorting, its filter, its
+totals line and its "nothing here" sentence from the kit. A new table is a specification and the rows.
+
+**How the game does each, and what the mod copies**
+
+- **Sorting.** `BaTable.Start` gives the `Button` of a header cell a click if the cell's name is a field of the row
+  class; `ChangeSortOrder` then orders the list (reflection, `OrderBy`), a second click on the same header turns the
+  order round, and the cell's child `ArrowUp` (ascending) or `ArrowDown` is switched on. A header cell of MyEmployees
+  is `[HorizontalLayoutGroup, Button, Image, ButtonEffects, LayoutElement]` with the children `ArrowDown`, `ArrowUp`
+  (both inactive, sprite `DropdownArrow`, black) and `Title`. The title is white: its dark colour is the button's
+  tint (the button's target graphic is `Title`, normal colour 0.282/0.327/0.424), so **a header cell without its
+  button has a white title on the white header**. The mod keeps every cell as it is and gives the button its own
+  click (`AppShell.ReadHeaders`); a column that does not sort has its button "not interactable" (the game's grey).
+  The arrows are switched exactly as the game switches them (`AppShell.ShowSort`).
+- **Filter.** EconoView filters its list of transactions with the game's drop-down (`UI.Elements.Dropdown`, "All
+  types" first, no counts: `EconoViewFullTransactions.SetUpTypesDropdown`), and MyEmployees has one over its table
+  (`Right/MassActionDropdown`, 581.9 x 80 at the top right, level with the tabs). That object is copied **with its
+  scripts** (`Dropdown`, `DropdownOptionScrollerController`, `DropdownOptionCellView`): its references are all
+  inside itself, it is driven through `SetOptions(list, localize, selected)` and `onOptionSelected`, and the game
+  closes an open one on a click elsewhere (`GameManager` asks `Dropdown.currentDropdown`). `AppShell.TakeFilter`
+  keeps it asleep among the templates; `FilterDrop.Make` copies it under the app's panel, one row above the tabs
+  (the mod's apps have up to seven tabs, which fill the row MyEmployees has it in). MyEmployees' own filter panel
+  (the funnel button, `EmployeeFilterPanel`) is a window of switches tied to `EmployeeModel`: not used.
+- **Totals.** EconoView's income statement ends in a total (`TotalEntryPositive`, `TotalEntryNegative`, the last
+  entries of its list): the mod's totals line is the last row of the table, in bold, and scrolls with it.
+- **Nothing here.** EconoView writes a sentence in the list's place (`NoLoansLabel`, `NoInvestmentsLabel`): the mod
+  writes one row with no background.
+
+**Declaring a table**
+
+```csharp
+static readonly TableSpec Accounts = new TableSpec("Finance", "Accounts")       // app and tab: its name in Player.log
+    .Column("reallife_econ_col_account", 480f, TableSort.Text, flexible: true)  // title key, width, how it sorts
+    .Column("reallife_econ_col_owed", 230f, TableSort.Money, sums: true)        // summed in the totals line
+    .Column("reallife_tab_col_due", 180f, TableSort.Date)
+    .Column("reallife_econ_col_state", 330f, TableSort.Custom, right: true)     // a number where there is one, else the words
+    .Filter("reallife_tab_all_kinds", KindKeys)                                 // "all" first, then the kinds (locale keys)
+    .Order(2, true)                                                             // opens by column 2, ascending
+    .Empty("reallife_tab_empty_debts");                                         // the sentence when a filter leaves nothing
+```
+
+- `TableSort`: `None` (the header is no button), `Text`, `Number`, `Money`, `Date`, `Custom`. A cell with nothing to
+  compare comes last in both directions; equal rows stay in the order they were written.
+- Up to nine columns (the header row has nine cells) and two filters. `.Filter(allKey)` without kinds is a filter
+  whose kinds the app names each time it writes the table (`spec.Filters[n].Names`: districts, businesses).
+- Widths: the table is about 2,345 units wide at 16:9, less 20 for each gap; one column is `flexible`.
+- The specification object also keeps what the player last chose there (column, direction, kinds) until the game is
+  closed. One static object per table; a tab and its pages each have their own.
+
+**Writing the rows** (an app of the Finance family: `DataTable`)
+
+```csharp
+_table = DataTable.On(_shell, "Finance");          // in Build: the game's row made into nine plain cells
+_table.Money = amount => FinanceText.Money((float)amount);
+_table.SelectionLost = ClosePick;                   // the filter took the selected row out and left none
+
+TableRow row = Row("acct:" + id);                   // (the app's pool; row.Reset(id))
+row.Pick = true;                                    // a click means something
+row.Kind = kind;                                    // for the first filter; Kind2 for the second
+row.Set(0, name);                                   // words: ordered by them
+row.Set(2, Money(owed), owed);                      // words and the figure the column is ordered and summed by
+row.Set(6, state, gravity, TableRow.Red);           // a tone: Yellow, Red, Green (the game's)
+_table.Show(spec, _rows, selectedId);
+```
+
+- `row.Info` is a line of words; `row.Pinned` a row that stays first whatever the order and the filter and is in no
+  total; `row.NoTotal` a row that is ordered and filtered but not summed.
+- A specification with no sortable column and no filter is a page laid out by hand: its rows stay exactly as written
+  (the Company app's rota pages).
+- A click on a header or a choice in the drop-down re-orders the same rows (`TableModel`: a stable merge sort on an
+  array of row numbers kept for the purpose, no allocation after the first). The selected row stays selected and the
+  scroller jumps to it; if the filter took it out, the first row is selected as a click on it would be
+  (`onRowSelected`), and `SelectionLost` is called when none is left. `Filtered` is for an app whose box says
+  something about the rows shown.
+- An app with a row class of its own uses `TableView` directly, as the Planner does (`PlannerApp.ShowRows`): `Begin`,
+  `Model.Set` / `Kind` / `Pin` for each row, `Apply`, then its rows in the order of `Model.RowAt`.
+
+**If the game changes.** No header buttons or arrows: `AppShell.CanSort` is false, the titles stay and nothing
+sorts. No drop-down, or an exception from it: no filter, everything is shown. Each is one `Game UI: ...` warning.
+
+**Diagnostics** (with "Developer diagnostics" on)
+
+- `Table check (Finance, Accounts): 7 columns, 6 sortable, filter with 11 kinds, totals: PASS.` once per table and
+  session, the first time it is written.
+- `Table (Finance, Accounts): sorted by column 3 (Money), descending, 6 row(s) shown; 0.21 ms.` and
+  `Table (Finance, Accounts): filter 1 set to kind 4, 2 of 6 row(s) shown; 0.18 ms.` for each click.
+
+The model has no Unity type in it and is checked offline (`EconomyCheck/TableChecks.cs`).
+
+Proven: every member and object named, from the game's code and its scene data. Inferred: that the copy of the
+drop-down works away from MyEmployees as it does there, where the filter stands on screen, and how seven or eight
+columns of text fit their widths.
+
+## 31. A bar (`GameUi.GameBar`)
+
+The game's bar is the needs bar of its top bar (section 16): `Canvases/Topbar/Container/Left Bar/PlayerStats/Energy`,
+412 x 56, an Image with the pill `StatBarBackground` at 30 % black and a child `EnergyFiller`, the same pill as a
+filled Image. The game has no other bar that is written while the game runs: the activity panel's progress bar is
+written once a game minute and the panel pauses the game (section 13).
+
+`GameBar.Make(parent, name)` copies `Energy` asleep, takes its `Button`, its hover script and its picture off, sets
+it to the game's size in the middle of `parent`, takes every raycast target off and gives it a canvas of its own. It
+shows one of two things:
+
+- **A quantity**: `Fill(value)` writes the filler's `fillAmount`, as the game does for its needs (a clock running down).
+- **A timing**: `Zone(centre, width, bestWidth)` marks a zone on the empty bar and `Mark(value)` puts a marker on it.
+  The zone, its better part and the marker are the filler's own picture three more times, whole (`Image.Type.Simple`),
+  placed in the filler's rectangle by shares of its width: the zone in the game's green at 45 %, the better part in
+  full green, the marker white, 12 wide and 8 higher than the bar above and below. A stretch of the pill is a rounded
+  band, which is why nothing has to be drawn.
+
+- **When it is written.** `Topbar.UpdateStatsBars` writes a bar only when it differs by more than 0.005 (energy) or
+  0.01, and always when it runs empty. `GameUi/BarRule.cs` is that rule with the finer step, for the filler and for
+  the marker: `Fill` and `Mark` may be called every frame and write one number to one object on a visible step, and
+  nothing at all while the value stands still. No text is made and nothing is laid out.
+- **Where it stands.** `ShiftCard.Bar()` gives the card's own bar, in the place of its last two lines (measured from
+  the lines), made the first time it is asked for. The leisure meters use it (`Leisure/LeisureScreen`): a cast and a
+  pull on the line while fishing, the beat on a dance floor, the chess clock.
+- Keep it at 412 x 56: the sprite has no border.
+- With "Developer diagnostics" on: `Gauge check (fishing): the game's bar, 0.42 (a marker, the zone about 0.72): PASS.`
+
+Proven: the objects, sizes and members. Inferred: how the zone and the marker look on the bar, and where the bar ends
+up on the card.
+
+## 32. Options that do nothing for a while, and a row that is not always there (`Meta/Features`)
+
+The mod API has no way to grey a row out or to leave one off. The rows are the game's own objects, though, made
+again each time the page is drawn, and `OptionsLayout` is told as each is made (its `RowTap`):
+
+- `Feature.StandsAside(why, optionIds...)`: while `why()` answers a sentence, every `Selectable` of those rows (the
+  game's toggle and slider) gets `interactable = false`, which is the game's own look for a control that cannot be
+  used, and the section's button says the sentence after its name: "Camera   (12 options, on, unavailable: the camera
+  is with ...)".
+- `Feature.Present(optionId, present)`: while `present()` is false the row is switched off and kept off for that
+  drawing, whatever section opens or search finds it, and is not counted in "5 options". The option keeps its value.
+
+Both are asked when the page is drawn, never per frame. See [other-mods.md](other-mods.md) for what uses them.

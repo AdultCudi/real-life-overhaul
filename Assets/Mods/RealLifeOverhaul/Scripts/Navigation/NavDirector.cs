@@ -26,6 +26,13 @@ namespace RealLifeOverhaul.Nav
     /// with nothing more to do. The route is searched for over the road graph a slice a frame, followed on a timer,
     /// and drawn on the minimap and on the game's city map (<see cref="NavCityMap"/>).
     ///
+    /// With the mod Voogle Route switched on (<see cref="OtherMods"/>) the city map is left to it altogether: it draws
+    /// its route there as lines in the world on the map's own layer and has its own click, panels and markers on the
+    /// map, so nothing of this mod's is added to the map (no route line, no double click). This mod's route is then
+    /// drawn on its own minimap only, where the other mod draws nothing; and with "Use the other mod's route line" on
+    /// there is no route of this mod's at all, only the minimap. Either way that mod announces the arrival and ends the
+    /// destination: this mod then only clears its own line.
+    ///
     /// What runs when:
     ///   every frame      while the panel shows: the player's place and heading into <see cref="NavHud.Frame"/> (which
     ///                    writes only what changed); while a search is under way: one slice of it, 0.4 ms at most
@@ -34,9 +41,12 @@ namespace RealLifeOverhaul.Nav
     ///   every two seconds     the places are read again
     /// With both options off nothing is built and the timer returns at once.
     ///
+    ///   while the city under the roads is being made (NavDirector.Base.cs, NavBase): one step of it a frame, 0.8 ms
+    ///                    at most; once it is made, one test a frame
+    ///
     /// A fault anywhere switches the feature off for the session with one line, and takes its objects off the HUD.
     /// </summary>
-    public sealed class NavDirector : MonoBehaviour
+    public sealed partial class NavDirector : MonoBehaviour
     {
         private const float Tick = 0.25f;
         private const float MarksEvery = 2f;
@@ -52,7 +62,6 @@ namespace RealLifeOverhaul.Nav
         private const float SameGoal = 5f;              // a destination that has moved less than this is the same one
         private const float RearmBeyond = 150f;         // after arriving, a new route to the same place is made only from this far away
         private const float RetryAfter = 10f;           // seconds before a search that found no way is tried again
-        private const string VoogleRoute = "VoogleRoute";
 
         public static IModLogger Logger;
         public static NavDirector Instance { get; private set; }
@@ -72,7 +81,8 @@ namespace RealLifeOverhaul.Nav
         private NavCityMap _map;
         private bool _hudGaveUp, _mapGaveUp;
         private bool _broken;
-        private bool _voogle;
+        private bool _voogle;       // the mod Voogle Route is switched on: the city map is its own
+        private bool _otherSaid;
         private float _next;
         private float _nextMarks;
         private bool _showing;
@@ -123,20 +133,18 @@ namespace RealLifeOverhaul.Nav
             Instance = this;
             NavMarks.Reset();
             _onMap = OnMap;
-            foreach (System.Reflection.Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                if (assembly.GetName().Name == VoogleRoute)
-                {
-                    _voogle = true;
-                    Logger?.Warn("Navigation: the mod 'Voogle Route' is also loaded. The route, the turns and the click on the city map are left to it; this mod shows its minimap only.");
-                }
-            }
+            OtherMods.Look(Logger);   // (done once for the city already; this costs a loop over the table)
+            _voogle = OtherMods.VoogleRoute.Loaded;
         }
+
+        // True while the route is left to the other mod altogether: it is switched on and the player chose its line.
+        private bool RouteLeft => _voogle && Settings.NavOtherRoute;
 
         private void OnDestroy()
         {
             GlobalEvents.onCityMapToggle -= _onMap;
             Remove();
+            _base.Drop();
             _graph.Dispose();
             NavMarks.Reset();
             if (Instance == this)
@@ -162,6 +170,10 @@ namespace RealLifeOverhaul.Nav
                 if (_phase == Phase.Searching)
                 {
                     Search();
+                }
+                if (_base.Busy)
+                {
+                    _base.Step(SaveGameManager.Current != null && !LoadScene.isLoading);
                 }
                 if (_showing && Settings.Minimap)
                 {
@@ -253,7 +265,15 @@ namespace RealLifeOverhaul.Nav
         private void Slow(float now)
         {
             bool wantMap = Settings.Minimap;
-            bool wantGps = Settings.Gps && !_voogle;
+            bool wantGps = Settings.Gps && !RouteLeft;
+            if (_voogle && !_otherSaid && Meta.Dev.Verbose)
+            {
+                _otherSaid = true;   // once a city
+                Logger?.Info("Navigation check (other mod): " + OtherMods.VoogleRoute.Name + " is switched on: "
+                             + (RouteLeft ? "the route is left to it, this mod shows its minimap only" : "this mod's route is drawn on its own minimap only")
+                             + ", and nothing of this mod's is on the city map (" + (_map == null ? "no object there: PASS" : "FAIL: its route object is still there") + ").");
+            }
+            BaseWanted(wantMap);
             if (!wantMap && !wantGps)
             {
                 if (_hud != null || _map != null || _hasGoal)
@@ -287,6 +307,7 @@ namespace RealLifeOverhaul.Nav
             {
                 _hud = null;   // the game rebuilt its HUD: the copy went with it
                 _pictureGiven = false;
+                _baseGiven = false;
             }
             if (_hud == null && !_hudGaveUp && _graph.Ready)
             {
@@ -307,6 +328,7 @@ namespace RealLifeOverhaul.Nav
                 _pictureGiven = true;
                 _hud.SetPicture(_graph.Picture);
             }
+            BaseShown(now);
             if (wantGps && _graph.Ready)
             {
                 Guide(now, outdoors);
@@ -623,12 +645,19 @@ namespace RealLifeOverhaul.Nav
             {
                 _hud.Title(null);
             }
-            Notifications.Show(NotificationType.Success, "reallife_nav_arrived", new Dictionary<string, string>(1) { { "place", _goalName ?? string.Empty } },
-                               6f, "reallife_nav_arrived", null, true, false);
+            if (_voogle)
+            {
+                own = false;   // that mod says "arrived" and ends the destination by its own rule: one notice and one rule for one arrival
+            }
+            else
+            {
+                Notifications.Show(NotificationType.Success, "reallife_nav_arrived", new Dictionary<string, string>(1) { { "place", _goalName ?? string.Empty } },
+                                   6f, "reallife_nav_arrived", null, true, false);
+            }
             if (Meta.Dev.Verbose)
             {
                 Logger?.Info("Navigation: arrived at '" + _goalName + "' (" + toPlace.ToString("F0") + " m from it, " + (_driving ? "driving" : "on foot")
-                             + "). The route is cleared" + (own ? " and the destination's marker with it." : "; a job's marker is the job's to take away."));
+                             + "). The route is cleared" + (own ? " and the destination's marker with it." : _voogle ? "; the notice and the marker are the other mod's." : "; a job's marker is the job's to take away."));
             }
             if (own)
             {
@@ -996,6 +1025,8 @@ namespace RealLifeOverhaul.Nav
                 _map = null;
             }
             _pictureGiven = false;
+            _baseGiven = false;
+            _aloneUntil = 0f;
             _hudSaid = false;
         }
 
@@ -1017,7 +1048,7 @@ namespace RealLifeOverhaul.Nav
                 TestRefusals.Tell(Logger, test, TestRefusal.FeatureOff);
                 return true;
             }
-            if (_voogle)
+            if (RouteLeft)
             {
                 TestRefusals.TellKey(Logger, test, "reallife_nav_test_other_mod");
                 return true;

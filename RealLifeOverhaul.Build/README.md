@@ -269,6 +269,7 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       FamilyTalk / FamilyText / FamilyCalendar  conversations and menus, text and its fillers, what happens by the hour and the day
     Diagnostics/ temporary F9 character report (remove before release)
       SessionWatch   the session record: with "Developer diagnostics" on, one line a minute (frame times, memory, the mod's objects) and one for every frame over 80 ms, naming what the mod was at (see "The session record")
+      FrameSteps     where the frame before this one went, by engine step (scripts' Update, coroutines, physics, navigation, rendering...), for the long-frame line; in the engine's loop only while the record runs
     Performance/ fixes for the base game's frame rate, and the measuring that decides them
       PerfDirector   switches the tweaks as the options ask, gives each its timer tick; F7 probe, Shift+F7 benchmark
       PerfTweak      one optimisation: Apply records what it changes, Restore puts it back; a fault switches it off
@@ -432,15 +433,20 @@ moves. All of the mod's are `carveOnlyStationary`, placed while switched off and
 
 For reports of the kind "it stutters after a few minutes, or hours". `Diagnostics/SessionWatch` is a component on the
 mod's root object that is disabled unless "Developer diagnostics" is on (`Meta.Dev.Apply` switches it), so it costs
-nothing as shipped. On, it costs a few comparisons a frame and, once a minute, a walk over the mod's own objects.
+nothing as shipped. On, it costs a dozen reads of numbers the engine and the game already keep and as many comparisons
+a frame, about thirty reads of the clock for the step timing (`Diagnostics/FrameSteps`, under two microseconds), and,
+once a minute, a walk over the mod's own objects. Nothing is allocated except for a line that is written.
 
 One line for every minute of play (loading screens, pauses and time with the window in the background are left out):
 
 ```
 Session 12 min: frames 5210, average 11.5 ms, worst 61 ms, over 33 ms: 4, over 50 ms: 1; managed heap 412 MB of 610 MB,
-collections in the minute 3; engine memory 2950 MB; mod objects 345 (118 shown) under 6 roots; people 2 out, 12 made of 12;
-city people 3 out, 8 made of 8, city props made 14; looks built in the minute 1 (0 while playing), since the city loaded 23
-(2 while playing); on foot in the street, game hour 9.
+collections in the minute 3, grown by 31.0 MB in the minute (517 KB a second), the collector at work 212 ms in the minute
+and 3.1 ms at most in a frame; engine memory 2950 MB; mod objects 345 (118 shown) under 6 roots; people 2 out, 12 made of
+12; city people 3 out, 8 made of 8, city props made 14; looks built in the minute 1 (0 while playing), since the city
+loaded 23 (2 while playing); frames over 80 ms: 2, of them 2 behind the game's black screen (into or out of a building)
+and 0 seen; the mod's navigation obstacles changed in the minute 0; handlers put back on the game's events 0 (changed
+events looked into 3); searches of the whole scene 0 (0 while playing); on foot in the street, game hour 9.
 ```
 
 | part | what it is | what to look for over a session |
@@ -448,29 +454,86 @@ city people 3 out, 8 made of 8, city props made 14; looks built in the minute 1 
 | frames, average, worst | the minute's frame times | the average is the frame rate; the worst is the minute's longest stall |
 | over 33 ms, over 50 ms | frames longer than that in the minute | these are the stutters: how many a minute, and whether the number grows |
 | managed heap A of B | `GC.GetTotalMemory(false)` and the size the heap has grown to (`Profiler.GetMonoHeapSizeLong`) | B only ever grows; if it grows minute after minute something allocates on a timer (the game's code and every mod share this heap) |
-| collections in the minute | `GC.CollectionCount(0)` since the last line | more collections a minute at the same place and speed means more garbage a second; a long frame with a collection in it is that collection |
+| collections in the minute | `GC.CollectionCount(0)` since the last line | more collections a minute at the same place and speed means more garbage a second |
+| grown by N MB in the minute | the allocation budget: `GC.GetTotalMemory(false)` read every frame, and every rise added up (what a collection gives back in the same frame is not seen, so it is a little under what was allocated). The game's share and every mod's together | about 35 MB a minute in a busy city with the mod as it is now. A version of the mod that raises it by megabytes allocates on a timer somewhere |
+| the collector at work, and at most in a frame | the engine's own `GC.Collect` time (a profiler counter this build offers), summed over the minute and its largest frame | the game's collector works in slices of 3 ms (`gc-max-time-slice=3` in boot.config): "at most" near 3 ms is the collector as intended; tens of milliseconds is a collection that could not be sliced |
 | engine memory | `Profiler.GetTotalAllocatedMemoryLong`: meshes, textures, materials, audio | a steady climb between two midnights is normal for the game (it frees unused assets once a game day, at midnight); a climb across days is a leak |
 | mod objects (shown) under N roots | every object under a root object named `RealLifeOverhaul...`, and how many of them are switched on | everything of the mod's is pooled: the count rises while each kind of scene is met for the first time and then stands still. If it climbs all session, something is made per use and never put away |
 | people, city people, city props | the two pools of characters (12 and 8) and the living city's prop shelf | "made" stops at 12 and 8; "out" goes up and down |
 | looks built (while playing) | characters' looks built, a mesh merge each (`People/Looks`): in the minute and since the city loaded; in brackets those built while the game was neither loading nor paused | about twenty at the load, none of them while playing. After that a few an hour is the pools changing worn looks, one at a time. Several "while playing" in one minute, minute after minute, means scenes are asking for looks nobody on the shelf has |
+| frames over 80 ms: N, behind the game's black screen, seen | the long frames of the minute; "behind the black screen" are those with the game's fade up (`UI.UiFader.isFading`), which is its walk into or out of a building | every walk out of a building is a frame of about 225 ms and every walk in one of 85 to 630 ms, all the game's own and all behind its black screen (see below). "Seen" is the number that matters, and it should be 0 |
+| the mod's navigation obstacles changed | carving obstacles of the mod's made, moved or switched in the minute (`Core/MeshCuts`) | a handful when a bus stop, a cart or a cordon comes or goes while the player is on foot near it; never a steady number minute after minute |
+| handlers put back on the game's events | `Core/EventHold`: times a handler had to be put on one of the game's event fields, and times a changed field was looked into | a few after a load, then 0. Sixty a minute is a holder putting itself back every second |
+| searches of the whole scene (while playing) | `Core/SceneFinds`: every `FindObjectsByType` and `Resources.FindObjectsOfTypeAll` the mod makes | each is a frame of about 110 ms in this game. "While playing" must be 0: what a search finds is found behind the loading screen (`ScenePrewarm`) |
 
 One line for a frame longer than 80 ms (12 a minute at most; the rest are in the minute's count):
 
 ```
-Session: a frame of 96 ms; the mod was at: city life: a character's look being built (a mesh merge); a garbage collection ran in it; on foot in the street, game hour 9.
-Session: a frame of 140 ms; none of the mod's large pieces of work was under way; in a vehicle, game hour 14.
+Session: a frame of 231 ms; none of the mod's large pieces of work was under way; where it went: coroutines and timers
+204 ms, rendering 14 ms, the rest 13 ms; the collector: no collection (41 so far), at work 0.0 ms, heap 731 MB before and
+733 MB after; the game: its screen was black or fading (its own walk into or out of a building: not seen as a stutter),
+the player came out of a building in it, not saving, no scene loaded or unloaded; the mod's navigation obstacles changed
+in the second before it and in it: 0; the mod's last pieces of work: "people: a character being made" (3.1 ms) 41.0 s
+before, "transit: a bus stop being put out" (not timed) 80.2 s before; on foot in the street, game hour 7.
 ```
 
+How to read it:
+
+- **where it went** is the engine's own steps of that frame, timed by `Diagnostics/FrameSteps`. "navigation" is the step
+  in which the engine cuts the walkable mesh: a long frame with its time there is a cut, asked for half a second
+  earlier by a carving obstacle. "coroutines and timers" with the screen black is the game taking the player through a
+  door. "scripts' Update" is some script's Update, the game's or a mod's: the mod's share is the time beside the pieces
+  of work named "in it". "rendering" and "the rest" are the engine's.
+- **the collector** says whether a collection finished between the record's two looks, how long the engine's collector
+  worked in that frame, and the heap on both sides of it.
+- **the game** says whether its black screen was up, whether the player had just gone through a door, whether it was
+  saving (`SaveGameManager.SavingGameInProgress`) and whether a scene had just been loaded or unloaded.
+- **the mod's last pieces of work** are the last three named with `SessionWatch.Mark`, with how long each took where the
+  place that named it also called `SessionWatch.Done`, and when it was, seen from the long frame.
+
+The test "Test: write the session record's lines now" (Options, Tests, under Performance) writes both lines at once, so
+every part can be read without waiting for a stutter.
+
 "The mod was at" is the last piece of work named with `SessionWatch.Mark("...")` in the three frames before. `Mark` is
-two writes to static fields with a constant text (the same cost with diagnostics on or off). It is called where the mod
+a handful of writes into a fixed ring with a constant text and one read of the clock (the same cost with diagnostics on or off). It is called where the mod
 does something large in one go: a character made or given a look (`ActorPool.Dress`, `CityPeople.Dress`, the casts), a
 living-city site set up, a bus stop, a precinct front or a two-wheeler stand put out, an accident, a crime, a fire or a
 street event starting, the game saving (the mod's own share of the save is timed and written as its own `Session:`
 line), the performance tweaks listing the loaded materials. New code that builds something in one frame names it the
 same way; `Mark` is never called per frame and never with a text put together for the call.
 
-What the lines cannot say: which script a long frame was spent in when no work was named (the F7 probe splits a frame
-by engine step, not by script), and anything about the graphics card.
+What the lines cannot say: which script a long frame was spent in when its time is under "scripts' Update" or
+"coroutines and timers" and no work was named, and anything about the graphics card.
+
+### Long frames: what was found, and the rules that follow
+
+Three sessions of Player.log with the record on (83 frames over 80 ms) sort like this:
+
+- **The game's own, behind its black screen: about three in four.** `BuildingManager.ExitFromBuildingCoroutine` fades to black,
+  then calls `GlobalEvents.onExitBuilding`, on which every `CityMapHider` switches its part of the city back on in the
+  one frame (`CityMapHider.OnExitBuilding`; on the way in the same work is spread over frames): 215 to 280 ms every
+  time. `EnterBuildingCoroutine` loads the interior and its items under the same fade: 85 to 630 ms. Neither is the
+  mod's and neither is seen. The record now counts them apart.
+- **A search of the whole scene, in play: the mod's, about 110 ms each.** `Object.FindObjectsOfType` and its relations go
+  through every object the engine has in memory. The traffic system's `CurrentSceneData.GetSceneInstance()` is such a
+  search on every call, and five features called it: the line "Crime: road map built" was followed by a frame of 112 to
+  117 ms in all three sessions, and every driving lesson and test began with one of 126 to 146 ms. **Rule: no search of
+  the scene while the game is played.** `Core/RoadData` finds the road data once per city; `Core/SceneFinds` is the
+  only place that searches, names and times each search and says FAIL in the log for one made in play;
+  `ScenePrewarm` runs each feature's one-off search behind the loading screen (the game loads its mods after the city's
+  scenes and before its loading screen goes: `UI.Load.LoadingScreen.LoadAsyncScenes`).
+- **The collector: not a cause of a frame that is seen.** Four of those frames had a collection finish in them, all
+  four at a door (the game makes and destroys a whole interior there, and a collection that cannot keep up is finished
+  in one go: it made those frames an estimated 40 to 100 ms longer, behind the black screen). No long frame outside a
+  door had one: in ordinary play the collector works in slices of 3 ms, and the probe measured 3.09 ms as its longest
+  share of a frame.
+- **Cuts of the navigation mesh: not shown to be a cause.** Every long frame within 2.5 s of a cut asked for by the mod
+  was a walk through a door, or the frame the cordon itself was set out in. The step timing now proves or refutes it
+  per frame ("navigation"). The rules stand: a carving obstacle is moved only while switched off, everything of one
+  scene changes in one frame, and every change is noted in `Core/MeshCuts`.
+- **Handlers on the game's events.** `EventHold.Keep` with several holders on one event had each put itself back every
+  second for ever, because each one's putting back changed the event for the others (`Core/EventHold.cs` says how it is
+  kept now). It was a few kilobytes a second, not a long frame.
 
 ## Checks
 
@@ -483,8 +546,9 @@ file"), build it and run the DLL through the dotnet host instead:
 Run it after any change to the event catalogue or `en.json`.
 
 Three more check programs compile the mod's own game-free files and run them on made-up data: `PlannerCheck` (see
-"The Planner"), `NavCheck` (see "Minimap and GPS"; it also covers `Core/RouteSearch.cs`, which the bus network uses)
-and `EconomyCheck` (see "Economy"). Each ends with `ALL CHECKS PASSED`.
+"The Planner"), `NavCheck` (see "Minimap and GPS"; it also covers `Core/RouteSearch.cs`, which the bus network uses,
+and in `HitchCheck.cs` the keeper of handlers on the game's events, `Core/EventHold.cs`, and the session record's
+rings, `Core/WorkRings.cs`) and `EconomyCheck` (see "Economy"). Each ends with `ALL CHECKS PASSED`.
 
 ## Adding a crime
 
@@ -5287,6 +5351,11 @@ Navigation/       (namespace RealLifeOverhaul.Nav: "Navigation" is a type of the
   NavRouteLine    a line as one ribbon of the interface (a Graphic), made when the route changes
   NavMarks        the places that matter, read from the game's markers and from Core/MapPlaces
   NavCityMap      the route on the game's city map, and the double click that sets a destination
+  NavBaseRules    game-free: the city under the roads (buildings and water): a place on the picture and back, a
+                  building's outline, the water grid and its settling, the drawing, the file the measured city is kept in
+  NavBaseGame     the only place of it that reads the game: a building's outline, one look down for water, the palette
+  NavBase         makes that picture once per city load: from the mod's folder, or by measuring the city in slices
+  NavDirector.Base  when it is made and shown, its two checks and its three tests
   NavBridges      what it asks of the rest of the mod (Wiring/NavLinks answers); NavText, the feature's words
   NavDirector     the one component: what shows, the destination, the search, following the route, the tests
 ```
@@ -5397,9 +5466,12 @@ out of `level5`); nothing was seen running.
   meanwhile). **Two clicks on one spot within 0.4 s** make that spot the destination (a building: the same call as
   its card's button). One click is not used: it drags the map and selects buildings, and a destination must not be
   replaced by accident.
-- **Voogle Route** (another author's GPS mod): if its assembly is loaded, this mod's route, turns, arrival notice and
-  double click are all left off and only the minimap is shown; one warning says so. Two route lines and two sets of
-  instructions for one destination would contradict each other, and that mod has no minimap.
+- **Voogle Route** (another author's GPS mod, found by `Core/OtherMods`; see [docs/other-mods.md](docs/other-mods.md)):
+  if it is switched on, the city map is left to it. It draws its route there as lines in the world on the map's own
+  layer and has its own click, panels and markers on the map, so nothing of this mod's is added to the map: no route
+  object, no double click. This mod's route is then on its own minimap only, with its two lines, where that mod draws
+  nothing; the arrival notice and the end of the destination are that mod's. The option "Use the other mod's route line" (a row that is on the options page only while that mod is on;
+  off by default) leaves the route to it altogether: only the minimap is shown. One warning says which.
 
 ### Costs
 
@@ -5454,7 +5526,8 @@ The taxi called from the phone is checked in the same run too (`TaxiCheck.cs` wi
 - `Navigation: 41 m off the route for 2 s (driving, 310 m along it): looking for a new route.`
 - `Navigation: arrived at '...' (22 m from it, driving). ...`
 - `Navigation: destination set by a double click on the city map: ...`
-- Always logged: the Voogle Route warning, and every part left off because the game is not built as expected.
+- `Navigation check (other mod): Voogle Route is switched on: this mod's route is drawn on its own minimap only, and nothing of this mod's is on the city map (no object there: PASS).`
+- Always logged: the "Other mods:" warning for Voogle Route, and every part left off because the game is not built as expected.
 
 ### Not verified (the game could not be run)
 
@@ -5465,6 +5538,37 @@ markers read at 46 units; that the game's phone object is active whenever its HU
 when it is not); the panel's place beside the column on a narrow screen; that a double click on the map reaches
 this code and not only the map's drag; the names streets are given; how far the walking line lies from the
 pavement; every time quoted from outside the game.
+
+### The city under the roads (`NavBase`)
+
+The option "Buildings and water on the minimap" (on by default; off, the minimap is what it was: roads, route,
+markers, and nothing of this is made or kept).
+
+- **The game has no map picture.** Its city map is the city itself under a camera: `CityMap.Toggle` sets the main
+  camera's culling mask and switches to the map's Cinemachine camera (`CityMap.cs` 221 to 284), `CityMapCam` moves
+  that camera, and each building is drawn by its simple `lodVersion` mesh (`CityBuildingController.ToggleLodMode`,
+  230 to 244). No texture, sprite or render texture of the city exists in the game's code. So the base is drawn.
+- **Buildings**: `CityManager.cityBuildingControllers`. An outline is the convex outline, seen from above, of the
+  `lodVersion` renderer's box: the mesh's own box turned as the building is, or the engine's upright box when the
+  renderer is part of a static batch (its mesh is then the whole batch's); all the building's renderers if it has
+  no `lodVersion`.
+- **Water**: the game has no water object, layer or list (Leisure's fishing found the same). The city is asked on a
+  grid of 8 m squares, one look straight down each (`Physics.Raycast`), by the fishing rule: nothing there, or
+  something more than 0.8 m below the nearest road that is neither road, building nor walkable (the navigation
+  mesh), is open. Water is the open squares that reach the picture's edge without crossing ground, so a courtyard
+  or a lawn stays ground. A square within 8 m of a lane point or inside a building is ground without asking.
+- **Colours**: the game's interface palette (`GlobalReferences.colors`): buildings the roads' `lightGrey` at a third
+  of their strength, water `darkBlue`. The game's map has no flat colours of its own to read.
+- **The picture**: at most 2048 pixels on its long side, RGBA32, no smaller copies: 2048 x 1154 and 9.0 MB on the
+  graphics card for the game's city (3.6 km by 2 km), 1.77 m a pixel. It covers the road picture's piece of the
+  world from the same origin: pixel = (world - origin) x pixels a metre. One `RawImage` under the roads shows it,
+  as large and turned as the roads' square; when the player has moved its window is written (four divisions).
+- **Cost**: measuring takes 0.8 ms of a frame at most, for some seconds, once per version of the game; the result
+  (outlines and grid, about 150 KB) is kept in `RealLifeOverhaul/minimap_base_<build>.bin` beside the saves. Every
+  load after that: one read, one drawing on a pool thread, one upload.
+- **Not seen running**: whether every piece of ground the city stands on has something solid under it far from
+  the player, and what the palette's dark blue looks like on the panel. The tests "minimap, buildings and water
+  alone" and "minimap, mark three buildings" are for judging both, and the two `Minimap check` lines say what was made.
 
 ## Economy: credit rating, lending and the Finance app
 
@@ -6692,18 +6796,19 @@ that pay for their staff, the people those hours take against the people there a
 the player presses a button. It keeps nothing in a save and has no Harmony patch.
 
 ```
-Economy/Company/        the first five are game-free and compiled by EconomyCheck
+Economy/Company/        the first six are game-free and compiled by EconomyCheck
   RotaModel               the planner's numbers (the game's limits among them) and its plain data: problem, plan, demand
   RotaSolver              the rota itself: limits and goals, the start, placing an hour, a demand met or not
   RotaSolver.Shifts       whole-week stations, shifts for those with a least number of hours or days, shifts by value
   RotaSolver.Improve      the improving pass under a fixed budget of moves, and the rating of a rota
   RotaAdvice              an hour's crew, the hours worth opening, what each hour at each station is worth, a week in
                           money, the people a week takes, a station that is missing
+  RotaLedger              what a fill may touch in a week that is there, what putting the week back restores, the stamp
   RotaGame                the places, what a business was worked out from, names; everything from the game is here
   RotaGame.Read           one business into plain numbers: stations, skills, the week it keeps, customers, worth, fees
   RotaGame.Demands        the game's rota demands, each asked of the demand itself
-  RotaGame.Write          the rota and hours written, the week as it was kept and put back
-  CompanyDirector.Rota    the list of places, the one business worked out and kept, the buttons, the Planner's row, tests
+  RotaGame.Write          the rota and hours written, the week as it was kept and put back, as RotaLedger decides
+  CompanyDirector.Rota    the list of places, the jobs that work a business out a few steps a frame, the buttons, tests
   CompanyApp.Rota         the tab: the places, one business's week, one day's hours
   RotaGuide               the Guide page's figures, from RotaModel
 ```
@@ -6734,8 +6839,12 @@ cannot be read for is left out for the session with one line in Player.log, and 
 - **Customers**: `GetInitialCustomers` and `GetCustomersByHour`, which hold capacity, the promotion figure and the
   type's day and hour factors. The city's economy, a campaign, overtime and a strike of the mod's change customers by
   writing that promotion figure (`BusinessGame.Footfall`, through `Wiring/CompanyLinks`), so the game's figure already
-  has them for today and they are not added again. A weekday on which a campaign or a strike will have ended or begun
-  is scaled by the company's own rules (`CompanyDirector.RotaScales`).
+  has them for today and they are not added again. A weekday on which a campaign, overtime, a strike or one of business
+  pressure's issues will have ended or begun is asked of the game's calculator with the promotion figure the mod will
+  have written by then. That figure comes from `BusinessCatalogue.Written`, the one function `BusinessGame.Footfall`
+  writes with (the issue's change and the ambient one each inside their own bounds, the result a promotion of 0 to
+  100), so a business already at 100 is forecast no gain from a campaign. The figure stands in the business's record
+  only for the length of the asking (`RotaGame.ReadCustomers`); `CompanyDirector.RotaDays` works it out.
 - **What a customer brings**: the business's `orderHistory` of the last 7 days (revenue, wholesale cost, customers);
   with fewer than 20 customers on it, the products on sale at their prices by the arithmetic of
   `CustomerEntriesCalculatorRetail`. The page says which.
@@ -6761,21 +6870,47 @@ its moves against a fixed budget, so the same business always gets the same rota
 ### What is written, and how it is undone
 
 Only on the player's button, after the game's own confirm dialogue where a rota is written over or hours change:
-`ScheduleDay.workShifts`, and with "Use these hours and fill the rota" `isOpen` and `openingHourSlots`. Then exactly
-what the game does after its own auto fill (`ScheduleAutoFiller.ApplyResult`, `ScheduleAutoFillerHelper.OnCompleted`)
-and when its schedule screen closes (`BizManSchedule.OnDisable`); a fill of the game's own still running for the
-business is stopped first (`AbortAutoFillForBusiness`). Delivery drivers' shifts are not touched. The week as it was
-is kept in memory until the Company app closes, and "Put the old rota back" restores it.
+`ScheduleDay.workShifts`, and with "Use these hours and fill the rota" `isOpen` and `openingHourSlots`. `RotaLedger`
+decides, and is checked offline:
+
+- **Left alone**: every shift of somebody the planner did not read (a delivery driver), and everybody who is "fixed":
+  whoever holds a headquarters desk, and whoever has a shift at a station that was not read (one that lacks a
+  furniture requirement). A fill only ever fills desks that are empty.
+- **Taken out**: every other shift of the people it read. **Written**: the plan's shifts, none for a station that is
+  not in the building at that moment, none for somebody not assigned there at that moment, none on a closed day.
+- **Afterwards** what the game does after its own auto fill (`ScheduleAutoFiller.ApplyResult`,
+  `ScheduleAutoFillerHelper.OnCompleted`) and when its schedule screen closes (`BizManSchedule.OnDisable`), with two
+  things left out on purpose: the game's `UpdateHQPlans` is never called, and `UnAssignWork` with the "idle" task is
+  taken only for somebody who had a shift and has none now and who holds no headquarters plan. The game has no call
+  that gives a headhunter's, a logistics manager's or a purchasing agent's plan back, so the planner never takes one.
+- **Put back**: the week kept (each day's switch, its opening hours, every shift) is restored where the person still
+  works there and the station still stands; shifts of those left alone stay as they are today. As a fill changes no
+  plan, that is everything a fill changed; the "idle" task of somebody who has a shift again is closed by the game.
+- **Never from a stale reading**: what was worked out carries a stamp of everything it was worked out from (every
+  assignable item by id and whether it lacks a requirement, prices, hours, shifts, everybody assigned with wage,
+  satisfaction, skills and demands). The stamp is compared again in the frame that writes; a business that changed
+  is read again, and after three such readings nothing is written and the player is told.
+- **Never in part**: a business with more than 64 stations (one bit each in the solver) or 120 employees is refused
+  with a sentence; nothing of it is read in part and nothing of its rota is touched. The game's building size data
+  is asset data and is not in the decompiled code, so the largest business the game allows is not known here.
+- **The late opening permit**: while licences are on and the business holds no permit, hours from 22:00 and before
+  05:00 are barred from the advice, so "Use these hours" can never put it in breach. The page says what the permit
+  would add (hours and money), and says so when the business opens late without one as it stands.
 
 ### Cost
 
-Nothing runs per frame, per second or per hour. The list of places is read on the day event, when the app opens and
-after a rota is written: one walk over the save's buildings and one over its employees. A business is worked out
-when it is picked on the tab and kept until something it was worked out from changes (`RotaGame.Stamp`). Measured by
+Nothing runs per frame, per second or per hour while nothing is asked. The list of places is read on the day event,
+when the app opens and after a rota is written: one walk over the save's buildings and one over its employees. A
+business is worked out when it is picked on the tab or a button is pressed, as a job: the game is read in one frame,
+then the arithmetic and the rota are made a few steps a frame, for 2 ms of each frame at most, by a coroutine that
+exists only while a job runs. `RotaSolver.Start`/`Step` and `RotaAdvisor.Begin`/`Step` do the same steps in the same
+order as their one-go forms, so the result is the same (checked on 100 generated businesses). Measured by
 `EconomyCheck` on the largest business it is asked to bear (40 stations, 60 employees, 7 days, 4,480 wanted hours): a
-rota in about 1.5 ms on average and under 2.5 ms at the slowest of forty runs, the whole advice with its rotas in under 3 ms,
-and nothing allocated once the arrays have grown. Those are figures of the .NET runtime the checker runs on; the game's
-Mono is slower and was not measured. The rota is made on the main thread: there is no worker thread to guard.
+rota is about 1,800 steps and 1.5 to 2 ms in all, its longest single step under 0.1 ms, the longest step of the
+advice under 0.1 ms; nothing is allocated once the arrays have grown. Those are figures of the .NET runtime the
+checker runs on. On a runtime eight times slower that is some seven frames of 2 ms for a rota, where one go would
+have held a frame for 15 ms or more. With "Developer diagnostics" on, "Company check (rota, ...)" and "Company: rota
+written for ..." say the real milliseconds, the frames and the longest share of a frame.
 
 ### Test tools
 
@@ -6784,16 +6919,22 @@ they were are kept), and put every rota back.
 
 ### Checks
 
-`EconomyCheck` compiles the five game-free files and runs 167 checks of them (`RotaChecks.cs`), 1,011 in all: every
-kind of demand; the limits on a shift and a day; one place at a time; skills; the headquarters rule; what gives way
-and what never does, with the reason told; no employees, no stations, closed all week, no customers; an hour's crew;
-the hours advised (never an hour that loses money, at most two blocks of two hours or more, a day's fee); cleaning;
-the people a week takes; a missing station; a week in money; the same business twice; the time of the largest
-business; and 240 generated businesses against a plain rota filled hour by hour in the order of the week. Against
-that plain rota it never covers less value. With every demand of high priority it never leaves more demands unmet,
-and covers at least as many hours in 116 of 120 businesses (in the other four it covers fewer hours that are worth
-more). With demands of every priority it covers more hours in 51 of 120 and leaves more demands unmet in 13 of them,
-each time for more value covered: optional demands give way to cover an hour, as they are meant to.
+`EconomyCheck` compiles the six game-free files (and `Business/BusinessCatalogue.cs`, for the promotion figure) and
+runs 253 checks of them (`RotaChecks.cs`, `RotaLedgerChecks.cs`), 1,097 in all: every kind of demand; the limits on
+a shift and a day as behaviour at each limit; one place at a time; skills; the headquarters rule; what gives way and
+what never does, with the reason told; no employees, no stations, closed all week, no customers; an hour's crew; the
+hours advised (never an hour that loses money, at most two blocks of two hours or more, a day's fee, no late block
+without the permit); cleaning; the people a week takes; a missing station; a week in money; who is left alone and
+what a fill takes out and writes (never a station or a person that is not there); that a week filled and put back
+is the week before, also when filled twice, and what is not restored when somebody left or a station was sold; that
+a headquarters desk holder whom no rota would give a desk keeps theirs; the stamp (a station swapped for another
+changes it); the promotion figure of a day ahead against the function that writes it, with its bounds and its stop
+at 100; that a rota and an advice made in steps are the ones made in one go; the time of the largest business and of
+its longest step; and 240 generated businesses against a plain rota filled hour by hour in the order of the week.
+Against that plain rota it never covers less value. With every demand of high priority it never leaves more demands
+unmet, and covers at least as many hours in 116 of 120 businesses (in the other four it covers fewer hours that are
+worth more). With demands of every priority it covers more hours in 51 of 120 and leaves more demands unmet in 13 of
+them, each time for more value covered: optional demands give way to cover an hour, as they are meant to.
 
 ### Not checked in the game (the game could not be run)
 
@@ -6801,4 +6942,6 @@ That six tabs fit the Company app's bar. That the week's box, with its lines and
 the white box, and that "Use these hours and fill the rota" fits a button. That the game's confirm dialogue shows over
 the phone. That each of the game's demands answers the made-up week as its decompiled code says. That the game's
 schedule screen shows a written rota as it shows its own. What the forecast is against a day really played. The
-milliseconds on the game's Mono.
+milliseconds on the game's Mono, and above all those of the one frame that reads a large business from the game (its
+stations' capacities, its staff's demands and 168 hours of the calculator), which is not cut into steps. That the
+coroutine runs while the phone is open (it waits a frame, not game time).
