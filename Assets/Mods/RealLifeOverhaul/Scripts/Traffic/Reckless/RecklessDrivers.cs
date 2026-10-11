@@ -28,6 +28,14 @@ namespace RealLifeOverhaul
     /// drives with no margin (and uses the debt up if a collision comes of it). So most of them get away
     /// with it, and accidents cannot come faster than they used to.
     ///
+    /// EVERY CAR THAT HITS SOMEBODY ENDS HERE. CarStrikes tells this director whenever a traffic car it watches
+    /// has thrown somebody down (Struck): the reckless car, the car somebody stepped out in front of, or any
+    /// ordinary car that could not stop (Traffic/Solid). One path from there: the debt is paid, and the
+    /// driver stops and waits for the scene or runs, with a patrol car after them if there are police. An
+    /// ordinary car is taken over at that moment to do it, exactly as the reckless one was taken over
+    /// earlier; if a reckless car is already out, the ordinary one is only remembered, and is given to the
+    /// scene if its driver has pulled up beside the person (GiveUpStriker).
+    ///
     /// ONE AT A TIME, AND NOT IN THE WAY. One reckless car at most, one person stepping out at most, and
     /// neither while an accident scene or any other large scene is on, the police have business with the
     /// player, or one of the mod's own uses of the road is under way (a driving test, a shift, a bus
@@ -43,7 +51,7 @@ namespace RealLifeOverhaul
     /// city is unloaded with the mod's root object (OnDestroy). Saving changes nothing: traffic is not
     /// saved, and after a load there is no car of ours.
     ///
-    /// COST. Nothing going on: two flag tests and one time comparison a frame, and every 20 seconds a
+    /// COST. Nothing going on: three flag tests and one time comparison a frame, and every 20 seconds a
     /// roll. Picking a car or a person to step out: one pass over the traffic list (and the pedestrians),
     /// on that look only. While a car is out: RecklessCar's own (four looks a second, a box test every
     /// other physics step), one pass over the pedestrians a second for the people in its way, and a
@@ -70,6 +78,9 @@ namespace RealLifeOverhaul
         private const float MarkFor = 15f;           // seconds a test's car is marked
         private const float BlamelessFor = 5f;       // seconds after it hit the player's car in which that crash is still its fault
         private const float HurtScene = 20f;         // seconds after it ran somebody down in which the scene round them has not begun or has only just
+        private const int CrowdMost = 10;            // people a test sends across the road at once
+        private const float StrikerFor = 20f;        // seconds an ordinary car that hit somebody is remembered for the scene
+        private const float StrikerSlow = 6f;        // km/h: slower than this its driver has pulled up
 
         private enum Phase { Idle, Driving, Settling, Stopping, Waiting, Fleeing, Chased }
 
@@ -86,6 +97,8 @@ namespace RealLifeOverhaul
         private readonly RoadsideStop _stop = new RoadsideStop();
         private readonly RoadChase _chase = new RoadChase();
         private readonly Jaywalker _jay = new Jaywalker();
+        private readonly Jaywalker[] _crowd = new Jaywalker[CrowdMost];   // a test's ten people crossing at once
+        private int _crowdOut;
         private readonly GameUi.GuideMark _mark = new GameUi.GuideMark();
         private RecklessCar _car;
         private ResponseUnit _patrol;
@@ -113,7 +126,10 @@ namespace RealLifeOverhaul
         private string _markLabel;
         private VehicleComponent _blameless;
         private float _blamelessUntil;
-        private VehicleComponent _jayCar;    // the car somebody last stepped out in front of
+        private VehicleComponent _striker;   // an ordinary car that hit somebody and was not taken over
+        private VehicleComponent _struckBy;  // the car CarStrikes has just named (Struck), until the next frame
+        private float _struckSpeed;
+        private bool _struck;
         private bool _test;              // a test button started this one: it is told when a part of it cannot be done
         private bool _easing;            // settled, and now pulling up to be handed back standing
         private float _hurtAt;           // when it last ran somebody down who did not get up; 0 if it has not
@@ -122,6 +138,10 @@ namespace RealLifeOverhaul
         private void Awake()
         {
             Instance = this;
+            for (int i = 0; i < _crowd.Length; i++)
+            {
+                _crowd[i] = new Jaywalker();
+            }
             _car = gameObject.AddComponent<RecklessCar>();
             _patrol = new ResponseUnit(gameObject);
             _nextCheck = Time.time + StreetRules.CheckSeconds * 2f;
@@ -139,7 +159,19 @@ namespace RealLifeOverhaul
         private void Update()
         {
             float now = Time.time;
-            if (_phase == Phase.Idle && !_jay.Active)
+            if (_struck)
+            {
+                _struck = false;
+                try
+                {
+                    OnHurt(now);
+                }
+                catch (Exception e)
+                {
+                    Fault(e);
+                }
+            }
+            if (_phase == Phase.Idle && !_jay.Active && _crowdOut == 0)
             {
                 if (now < _nextCheck)
                 {
@@ -161,6 +193,10 @@ namespace RealLifeOverhaul
                 if (_phase != Phase.Idle && _car.Struck != RecklessCar.Hit.None)
                 {
                     OnStruck(now);
+                }
+                if (_jay.Pending)
+                {
+                    _jay.Tick(now);   // at the kerb, waiting for the moment to step out: looked at every frame, for seconds
                 }
                 if (now >= _nextTick)
                 {
@@ -226,6 +262,17 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// True if somebody on foot is owed to the street: a whole one is in the bank, people can be hit at all,
+        /// and nothing else has the road. Traffic/Solid asks (only when a car it looks at can no longer stop for
+        /// somebody) before it lets that car reach them; with this false every ordinary car stops in time.
+        /// </summary>
+        public bool PersonOwed => _working && Settings.NaturalAccidents && Settings.TrafficAccidents && _peopleDue >= 1f
+                                  && PeopleCanBeHit() && Free() == TestRefusal.None;
+
+        /// <summary>People owing, for the log.</summary>
+        public float PeopleDue => _peopleDue;
+
         private static bool PeopleCanBeHit()
         {
             return Settings.PedestrianIncidents && Settings.Ragdolls && RagdollSystem.Instance != null && RagdollSystem.Instance.Working
@@ -262,7 +309,8 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- picking the car
 
         // Makes one traffic car the reckless one. car: that one, or null to pick. False if none could be had.
-        private bool Begin(VehicleComponent car, StreetRules.Kind kind, bool accidentDue, bool blind, bool never, bool test, float now)
+        // struck: it is an ordinary car that has this moment hit somebody, taken over so that its driver can stop or run.
+        private bool Begin(VehicleComponent car, StreetRules.Kind kind, bool accidentDue, bool blind, bool never, bool test, float now, bool struck = false)
         {
             if (_phase != Phase.Idle)
             {
@@ -301,11 +349,12 @@ namespace RealLifeOverhaul
             _presenceLooked = false;
             _chaseWanted = false;
             _complies = false;
-            _patrolAt = !test && Settings.Police && StreetRules.PatrolNotices(kind) && Random.value < PatrolSees ? now + Random.Range(4f, 10f) : 0f;
-            CarStrikes strikes = CarStrikes.Instance;
-            if (strikes != null)
+            _patrolAt = !test && !struck && Settings.Police && StreetRules.PatrolNotices(kind) && Random.value < PatrolSees ? now + Random.Range(4f, 10f) : 0f;
+            if (struck)
             {
-                strikes.TakeWatchedDown();
+                Logger?.Info($"Reckless driver: '{TrafficTools.Name(taken)}', an ordinary car that has just hit somebody {Vector3.Distance(player, taken.transform.position):F0} m from the player, "
+                             + "is taken over where it is: its driver stops for them or runs.");
+                return true;
             }
             Logger?.Info($"Reckless driver: '{TrafficTools.Name(taken)}' {Vector3.Distance(player, taken.transform.position):F0} m from the player is now a {kind}"
                          + $" ({(never ? "test: brakes for no vehicle" : accidentDue ? "an accident is due: no margin" : "with a margin: gets away with it unless somebody else errs")}"
@@ -395,10 +444,23 @@ namespace RealLifeOverhaul
             if (_jay.Active)
             {
                 _jay.Tick(now);
-                if (_phase == Phase.Idle)
+            }
+            if (_crowdOut > 0)
+            {
+                int still = 0;
+                for (int i = 0; i < _crowd.Length; i++)
                 {
-                    Stepped(now);
+                    if (_crowd[i].Active)
+                    {
+                        _crowd[i].Tick(now);
+                        still += _crowd[i].Active ? 1 : 0;
+                    }
                 }
+                if (still == 0)
+                {
+                    Logger?.Info("Jaywalker: the crowd a test sent across the road is all across or put back.");
+                }
+                _crowdOut = still;
             }
             if (_phase == Phase.Idle)
             {
@@ -418,10 +480,6 @@ namespace RealLifeOverhaul
                 case Phase.Driving:
                     _car.Tick(now);
                     Around(now);
-                    if (Hurt(now))
-                    {
-                        break;
-                    }
                     if (Seen(now))
                     {
                         break;
@@ -437,14 +495,20 @@ namespace RealLifeOverhaul
                     _car.Tick(now);
                     bool unseen = !InSight(_car.Car.transform.position);
                     bool standing = _car.Driver.Holding || !_car.Driver.Active;
-                    if (unseen || standing || (_easing && now >= _until))
+                    // On the move at the traffic's pace, in its lane, with clear road and no light holding it: it is handed
+                    // back as it drives, keeping its speed (TrafficTools.ReturnToTraffic says why the traffic system takes a
+                    // moving car), and nothing shows at all.
+                    bool rolling = !standing && !_easing && now >= _rollFrom && _car.CanRoll;
+                    if (unseen || standing || rolling || (_easing && now >= _until))
                     {
-                        Finish(now, false, unseen ? "out of view" : standing ? "standing: at a light, pulled up, or at the end of its road" : "it would not stop");
+                        Finish(now, false, rolling ? $"handed back on the move at {_car.Driver.Speed * 3.6f:F0} km/h" : unseen ? "out of view"
+                            : standing ? "standing: at a light, pulled up, or at the end of its road" : "it would not stop", rolling || (unseen && _car.CanRoll));
                     }
                     else if (!_easing && now >= _until)
                     {
-                        // Still in view and still moving: it pulls up first. (Traffic takes a car back from rest: handed over
-                        // at speed it would stop dead for a moment, which shows; a car that pulls up and drives on does not.)
+                        // Still in view, still moving, and never once with clear road ahead of it in all that time (traffic in
+                        // front, out of its lane): it pulls up first, since a car handed back behind another must start from
+                        // rest (the traffic system begins with no knowledge of what is ahead of it).
                         _easing = true;
                         _car.Driver.Brake();
                         _until = now + EaseMost;
@@ -471,7 +535,6 @@ namespace RealLifeOverhaul
                 case Phase.Fleeing:
                     _car.Tick(now);
                     Around(now);
-                    Hurt(now);
                     if (_chaseWanted && (_car.Car.transform.position - _scene).sqrMagnitude > StreetRules.ChaseAfter * StreetRules.ChaseAfter)
                     {
                         _chaseWanted = false;
@@ -490,7 +553,6 @@ namespace RealLifeOverhaul
                 case Phase.Chased:
                     _car.Tick(now);
                     Around(now);
-                    Hurt(now);
                     _stop.Tick(now);
                     if (_complies && _chase.Now == RoadChase.Step.Fleeing && _patrol.InUse && !_patrol.IsLost
                         && (_patrol.Car.transform.position - _car.Car.transform.position).sqrMagnitude < PullUpWithin * PullUpWithin)
@@ -566,35 +628,70 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- somebody run down
 
-        // True if it has just hurt somebody and what it does next was decided here (the phase has changed).
-        private bool Hurt(float now)
+        /// <summary>
+        /// Called by CarStrikes (from its physics step) when a traffic car it watches has thrown somebody down: the
+        /// reckless car, the car somebody stepped out in front of, or an ordinary car that could not stop. Only
+        /// noted here; what comes of it is decided in this director's next frame (OnHurt), on the one path every
+        /// such car takes.
+        /// </summary>
+        public void Struck(VehicleComponent car, float speed)
         {
-            CarStrikes strikes = CarStrikes.Instance;
+            _struckBy = car;
+            _struckSpeed = speed;
+            _struck = true;
+        }
+
+        // A traffic car has thrown somebody down. If they are hurt the debt is paid and the driver stops or runs: the
+        // reckless car as it is; an ordinary car taken over at this moment to do the same, or (a reckless car being out
+        // already, or its road too short to drive on) remembered, so that the scene takes it if it has pulled up.
+        private void OnHurt(float now)
+        {
+            VehicleComponent car = _struckBy;
+            float speed = _struckSpeed;
+            _struckBy = null;
             PedestrianIncidents incidents = PedestrianIncidents.Instance;
-            if (strikes == null || incidents == null || strikes.TakeWatchedDown() == 0)
+            if (incidents == null || car == null)
             {
-                return false;
+                return;
             }
             bool hurt = incidents.TrafficHurt != _hurtSeen;
             _hurtSeen = incidents.TrafficHurt;
+            bool ours = _phase != Phase.Idle && _car.InUse && _car.Car == car;
             if (!hurt)
             {
-                if (_phase == Phase.Driving)
+                if (ours && _phase == Phase.Driving)
                 {
                     Logger?.Info("Reckless driver: knocked somebody over at walking pace; they are getting up, and the driver has had a fright.");
                     Settle(now, "it knocked somebody over");
-                    return true;
                 }
-                return false;
+                else if (!ours)
+                {
+                    Logger?.Info($"Traffic check (struck): '{TrafficTools.Name(car)}' knocked somebody over at {speed * 3.6f:F0} km/h; they are getting up, and it drives on.");
+                }
+                return;
             }
             _peopleDue = Mathf.Max(0f, _peopleDue - 1f);
+            bool fatal = incidents.TrafficKilled;
+            if (!ours)
+            {
+                Logger?.Info($"Traffic check (struck): '{TrafficTools.Name(car)}' ran somebody down at {speed * 3.6f:F0} km/h ({(fatal ? "fatal" : "injured")}). Still owing: {_peopleDue:F2} pedestrian(s).");
+                _striker = car;
+                _jayAt = now;
+                if (_phase != Phase.Idle || !_working || !car.gameObject.activeInHierarchy || !CrimeCars.IsOrdinary(car)
+                    || !Begin(car, StreetRules.Kind.Tailgater, false, false, false, false, now, struck: true))
+                {
+                    Logger?.Info("Reckless driver: the car that hit them could not be taken over (" + (_phase != Phase.Idle ? "a reckless car is out already" : "no road ahead of it to drive on, or not an ordinary car")
+                                 + "); it is given to the scene if its driver has pulled up beside them.");
+                    return;
+                }
+                _striker = null;
+            }
             _hurtAt = now;
             if (_phase != Phase.Driving)
             {
                 Logger?.Info("Reckless driver: somebody else was run down as it ran.");
-                return false;
+                return;
             }
-            bool fatal = incidents.TrafficKilled;
             _scene = _car.Car.transform.position;
             if (StreetRules.Flees(_car.Kind, fatal, Random.Range(0, 100)))
             {
@@ -616,7 +713,6 @@ namespace RealLifeOverhaul
                 _patrolAt = 0f;
                 Logger?.Info($"Reckless driver: ran somebody down ({(fatal ? "fatal" : "injured")}) and is stopping; the car stays for the scene.");
             }
-            return true;
         }
 
         /// <summary>
@@ -637,11 +733,12 @@ namespace RealLifeOverhaul
                     Logger?.Info("Reckless driver: the driver who stopped is part of the scene now" + (car == null ? " (the car was no longer ours to give)." : "."));
                     return car;
                 }
-                // Somebody who stepped out: the ordinary car that hit them, if its driver has pulled up beside them.
-                VehicleComponent last = _jayCar;
-                if (_phase == Phase.Idle && last != null && now - _jayAt < 20f && CrimeCars.IsOrdinary(last) && last.GetCurrentSpeed() < 6f)
+                // An ordinary car that hit them and was not taken over, if its driver has pulled up beside them.
+                VehicleComponent last = _striker;
+                if (last != null && (_phase == Phase.Idle || _car.Car != last) && now - _jayAt < StrikerFor && last.gameObject.activeInHierarchy
+                    && CrimeCars.IsOrdinary(last) && last.GetCurrentSpeed() < StrikerSlow)
                 {
-                    _jayCar = null;
+                    _striker = null;
                     return last;
                 }
             }
@@ -842,6 +939,10 @@ namespace RealLifeOverhaul
                 return;
             }
             CallOff();
+            // What the cars keep for a moment after they met: what each had, or, for one that met something that
+            // does not give, a little of it back the way it came. Read before the car is handed over.
+            Vector3 own = hit == RecklessCar.Hit.Solid || hit == RecklessCar.Hit.Player ? _car.Velocity * -0.15f : _car.Velocity;
+            Vector3 theirs = _car.OtherVelocity;
             VehicleComponent mine = _car.HandOver();
             Idle(now);
             if (mine == null)
@@ -865,7 +966,7 @@ namespace RealLifeOverhaul
                 : hit == RecklessCar.Hit.Player ? "ran into the player's car"
                 : hit == RecklessCar.Hit.Bend ? "took a bend faster than the road holds"
                 : "ran into something fixed";
-            if (accidents != null && accidents.BeginAt(mine, other, closing, notice))
+            if (accidents != null && accidents.BeginAt(mine, other, closing, notice, own, theirs))
             {
                 _carsDue = Mathf.Max(0f, _carsDue - 1f);
                 Logger?.Info($"Reckless driver: the {kind} {what} at {closing * 3.6f:F0} km/h; the accident scene has both from here. Still owing: {_carsDue:F2} car accident(s).");
@@ -912,16 +1013,20 @@ namespace RealLifeOverhaul
             _phase = Phase.Settling;
             _easing = false;
             _until = now + SettleMost;
+            _rollFrom = now + RollAfter;
             _patrolAt = 0f;
             Logger?.Info("Reckless driver: settles down (" + why + "); it is an ordinary car again as soon as that will not show.");
         }
 
-        private void Finish(float now, bool remove, string how)
+        private void Finish(float now, bool remove, string how, bool rolling = false)
         {
-            _car.Release(resumeTraffic: true, remove: remove);
+            _car.Release(resumeTraffic: true, remove: remove, rolling: rolling && !remove);
             Idle(now);
             Logger?.Info("Reckless driver: over (" + how + ").");
         }
+
+        private const float RollAfter = 2.5f;        // seconds a settled car drives like anybody before it may be handed back on the move
+        private float _rollFrom;
 
         private void Idle(float now)
         {
@@ -945,10 +1050,19 @@ namespace RealLifeOverhaul
         {
             try
             {
-                bool anything = _phase != Phase.Idle || _jay.Active || (_patrol != null && _patrol.InUse);
+                bool anything = _phase != Phase.Idle || _jay.Active || _crowdOut > 0 || (_patrol != null && _patrol.InUse);
                 _stop.Clear();
                 _chase.Reset();
                 _jay.End(why);
+                for (int i = 0; i < _crowd.Length; i++)
+                {
+                    if (_crowd[i] != null)
+                    {
+                        _crowd[i].End(why);
+                    }
+                }
+                _crowdOut = 0;
+                _striker = null;
                 bool traffic = TrafficTools.Ready;
                 if (_patrol != null && _patrol.InUse)
                 {
@@ -983,7 +1097,10 @@ namespace RealLifeOverhaul
 
         // Sends somebody across the road in front of a car. mode 0: as it comes (a near miss, unless one is due);
         // 1: a test, any car that is coming; 2: a test that ends with them hit: they stop in the lane and the car is
-        // made the reckless one, blind to them. False if no pedestrian and car stand right for it.
+        // made the reckless one, blind to them; 3: a test, they wait at the kerb and step out close (a hard brake and
+        // the horn); 4: a test, they stand in the lane until the car behind them sounds its horn; 5: a test, they wait
+        // at the kerb and step out too late for the driver (an ordinary car: the hit is its own).
+        // False if no pedestrian and car stand right for it.
         private bool StepOut(bool late, int mode, float now, out float metres)
         {
             metres = 0f;
@@ -997,12 +1114,13 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            if (!_jay.Begin(walker, car, mode == 2 ? lane : across, mode == 2, now))
+            Jaywalker.Step step = mode == 2 ? Jaywalker.Step.Stay : mode == 3 ? Jaywalker.Step.Close : mode == 4 ? Jaywalker.Step.Dawdle
+                : mode == 5 ? Jaywalker.Step.Late : Jaywalker.Step.Across;
+            if (!_jay.Begin(walker, car, across, lane, step, now))
             {
                 return false;
             }
             metres = Vector3.Distance(player, walker.transform.position);
-            _jayCar = car;
             _jayAt = now;
             _nextTick = now;
             PedestrianIncidents incidents = PedestrianIncidents.Instance;
@@ -1011,7 +1129,12 @@ namespace RealLifeOverhaul
             if (strikes != null && Settings.Ragdolls)
             {
                 strikes.Watch(car);
-                strikes.TakeWatchedDown();
+            }
+            if ((late && mode == 0) || mode == 5)
+            {
+                // Somebody is to be hit by an ordinary car: Traffic/Solid lets this one car reach this one person
+                // (every other car still stops for them). Without that feature the car is not held back by anything.
+                SolidStreets.Owe(car, walker);
             }
             if (mode == 2 && !Begin(car, StreetRules.Kind.Tailgater, true, true, false, true, now))
             {
@@ -1021,40 +1144,56 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // While somebody is in the road and no reckless car is out: was the person hit by the car they stepped out in front of?
-        private void Stepped(float now)
+        // Sends up to ten of the people walking beside the road here straight across it, all at once. How many went.
+        private int Crowd(float now, out float metres)
         {
-            CarStrikes strikes = CarStrikes.Instance;
-            PedestrianIncidents incidents = PedestrianIncidents.Instance;
-            if (strikes == null || incidents == null || strikes.TakeWatchedDown() == 0)
+            metres = 0f;
+            Vector3 player = PlayerHelper.GetPosition();
+            SessionWatch.Mark("streets: a crowd to cross the road being picked");
+            int sent = 0;
+            for (int i = 0; i < _crowd.Length; i++)
             {
-                return;
+                if (_crowd[i].Active)
+                {
+                    continue;
+                }
+                // (Whoever is in the road for us already is passed over by the search itself: their own script is off.)
+                if (!Jaywalker.FindCrosser(player, 5f, 70f, out Pedestrian walker, out Vector3 across, out Vector3 lane))
+                {
+                    break;
+                }
+                if (_crowd[i].Begin(walker, null, across, lane, Jaywalker.Step.Across, now))
+                {
+                    metres = sent == 0 ? Vector3.Distance(player, walker.transform.position) : metres;
+                    sent++;
+                }
             }
-            _jayAt = now;
-            if (incidents.TrafficHurt != _hurtSeen)
+            _crowdOut = 0;
+            for (int i = 0; i < _crowd.Length; i++)
             {
-                _hurtSeen = incidents.TrafficHurt;
-                _peopleDue = Mathf.Max(0f, _peopleDue - 1f);
-                Logger?.Info($"Jaywalker: run down by the car they stepped out in front of ({(incidents.TrafficKilled ? "fatal" : "injured")}). Still owing: {_peopleDue:F2} pedestrian(s).");
+                _crowdOut += _crowd[i].Active ? 1 : 0;
             }
-            else
-            {
-                Logger?.Info("Jaywalker: knocked over at low speed by the car they stepped out in front of; they are getting up.");
-            }
+            _nextTick = now;
+            return sent;
         }
 
         // ---------------------------------------------------------------- the test buttons
 
-        public enum TestKind { Speeder, RedLight, Drunk, Jaywalker, HitSomeone, Crash, Patrol }
+        public enum TestKind { Speeder, RedLight, Drunk, Jaywalker, HitSomeone, Crash, Patrol, StepRoom, StepClose, Dawdle, StepLate, Crowd }
 
         /// <summary>Options-menu test buttons: one of the things this feature does, started here and now, or a notice saying why not.</summary>
         public void Test(TestKind kind)
         {
             try
             {
-                bool people = kind == TestKind.Jaywalker || kind == TestKind.HitSomeone;
+                bool solid = kind == TestKind.StepRoom || kind == TestKind.StepClose || kind == TestKind.Dawdle || kind == TestKind.StepLate || kind == TestKind.Crowd;
+                bool people = kind == TestKind.Jaywalker || kind == TestKind.HitSomeone || kind == TestKind.StepLate;
                 TestRefusal why = TestRefusals.Street();
-                if (why == TestRefusal.None && (!_working || !Settings.NaturalAccidents || (people && !PeopleCanBeHit()) || (kind == TestKind.Patrol && !Settings.Police)))
+                if (why == TestRefusal.None && solid && !SolidStreets.Working)
+                {
+                    why = TestRefusal.FeatureOff;   // these four show what "Traffic sees people in the road" does
+                }
+                if (why == TestRefusal.None && (!_working || (!solid && !Settings.NaturalAccidents) || (people && !PeopleCanBeHit()) || (kind == TestKind.Patrol && !Settings.Police)))
                 {
                     why = TestRefusal.FeatureOff;
                 }
@@ -1085,6 +1224,7 @@ namespace RealLifeOverhaul
                         started = Begin(null, StreetRules.Kind.Drunk, false, false, false, true, now);
                         break;
                     case TestKind.Jaywalker:
+                    case TestKind.StepRoom:
                         started = StepOut(false, 1, now, out metres);
                         none = "reallife_streets_test_no_pair";
                         break;
@@ -1094,6 +1234,30 @@ namespace RealLifeOverhaul
                         break;
                     case TestKind.Crash:
                         started = Begin(null, StreetRules.Kind.Tailgater, true, false, true, true, now);
+                        break;
+                    case TestKind.StepClose:
+                        started = StepOut(false, 3, now, out metres);
+                        none = "reallife_streets_test_no_pair";
+                        break;
+                    case TestKind.Dawdle:
+                        started = StepOut(false, 4, now, out metres);
+                        none = "reallife_streets_test_no_pair";
+                        break;
+                    case TestKind.StepLate:
+                        started = StepOut(true, 5, now, out metres);
+                        none = "reallife_streets_test_no_pair";
+                        break;
+                    case TestKind.Crowd:
+                        int sent = Crowd(now, out metres);
+                        started = sent > 0;
+                        none = "reallife_solid_test_no_crowd";
+                        if (started)
+                        {
+                            Logger?.Info($"Jaywalker: a test sent {sent} people across the road at once, the nearest {metres:F0} m from the player.");
+                            var crowd = new Dictionary<string, string>(1) { { "count", sent.ToString() } };   // the game keeps the toast's data
+                            Notifications.Show(NotificationType.Info, "reallife_solid_test_crowd", crowd, 8f);
+                            return;
+                        }
                         break;
                     case TestKind.Patrol:
                         started = Begin(null, StreetRules.Kind.Speeder, false, false, false, true, now);

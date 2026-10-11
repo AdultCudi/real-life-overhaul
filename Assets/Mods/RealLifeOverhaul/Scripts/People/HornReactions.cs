@@ -21,6 +21,12 @@ namespace RealLifeOverhaul
     /// or they are on a crossing whose light is theirs) stops, turns to the car and glares; somebody in
     /// the wrong breaks into a jog onwards, or back if they had only just stepped in; some of the people
     /// on the pavement look round. A reckless car's near miss makes people jump the same way (Scare).
+    /// Any other car's horn is answered exactly as the player's is (Sound, called by Traffic/Solid for a
+    /// traffic car that has braked hard for somebody or stands behind them), with that car's own light;
+    /// only what the police make of it stays the player's. The same director has three more things done to
+    /// one person through here, so that there is one place that changes a pedestrian and puts them back:
+    /// waiting at the kerb for a car that could not stop (Wait), being moved on out of a car's way (MoveOn),
+    /// and the shout of somebody a car has bumped at walking pace (Shout).
     /// The mod's own people never react: every one of them is somebody's cast (ActorPool, the living
     /// city, a job, the family), so they are in neither list and are never touched.
     /// Traffic is not hurried by the horn. The traffic system sets a car off the moment its light goes
@@ -269,13 +275,55 @@ namespace RealLifeOverhaul
             {
                 halfWidth = half.x;
             }
+            Blasted(origin, forward, halfWidth, LightOf(origin, forward), true, now);
+        }
 
-            // The car's own light: the stop line ahead of it in its lane, if it has not passed it yet.
-            StreetRules.Light light = StreetRules.Light.None;
+        /// <summary>
+        /// The light of the car that sounds a horn: the stop line ahead of it in its lane, if it has not passed it
+        /// yet (a grid lookup, no physics). None if there is no light within reach.
+        /// </summary>
+        internal static StreetRules.Light LightOf(Vector3 origin, Vector3 forward)
+        {
             if (RoadMap.Ensure() && RoadMap.LineAt(origin, forward, out int line, out float along) && along < LinePassed)
             {
-                light = RoadMap.Line(line).Point.stop ? StreetRules.Light.Red : StreetRules.Light.Green;
+                return RoadMap.Line(line).Point.stop ? StreetRules.Light.Red : StreetRules.Light.Green;
             }
+            return StreetRules.Light.None;
+        }
+
+        /// <summary>
+        /// A car that is not the player's has sounded its horn at somebody in its way: the people in earshot
+        /// answer it exactly as they answer the player's (in the wrong they hurry or step back, in the right they
+        /// stop and glare, others look round), by that car's own light. Nothing of the police follows from it.
+        /// Does nothing with the option off.
+        /// </summary>
+        /// <param name="forward">The way the car faces.</param>
+        public void Sound(Vector3 origin, Vector3 forward, float halfWidth)
+        {
+            try
+            {
+                forward.y = 0f;
+                if (!enabled || !Settings.HornReactions || forward.sqrMagnitude < 0.01f)
+                {
+                    return;
+                }
+                forward.Normalize();
+                if (_spawner == null)
+                {
+                    Lookup();
+                }
+                Blasted(origin, forward, halfWidth, LightOf(origin, forward), false, Time.time);
+            }
+            catch (Exception e)
+            {
+                Fault(e);
+            }
+        }
+
+        // One blast from one car: who hears it, where each is and whose light it is, and what each does about it.
+        // player: the player sounded it (the police may have something to say about a blast at people in the right).
+        private void Blasted(Vector3 origin, Vector3 forward, float halfWidth, StreetRules.Light light, bool player, float now)
+        {
             Crossings.Ensure();
 
             int heard = Gather(origin, forward);
@@ -290,7 +338,7 @@ namespace RealLifeOverhaul
                     rude = true;
                 }
             }
-            int rages = rude ? NoteRage(now) : 0;
+            int rages = rude && player ? NoteRage(now) : 0;
 
             int hurry = 0, back = 0, glare = 0, startle = 0;
             Vector3 right = Vector3.Cross(Vector3.up, forward);
@@ -322,12 +370,98 @@ namespace RealLifeOverhaul
                 }
             }
             Forget(heard);
-            Logger?.Info($"Horn: the car's light {light}, {heard} in earshot: {hurry} hurry on, {back} step back, {glare} stop and glare, {startle} look round"
-                         + (rude ? $"; sounded at people in the right ({rages} in the last minute)." : "."));
-            if (rude)
+            Logger?.Info($"Horn{(player ? string.Empty : " (a traffic car's)")}: the car's light {light}, {heard} in earshot: {hurry} hurry on, {back} step back, {glare} stop and glare, {startle} look round"
+                         + (!rude ? "." : player ? $"; sounded at people in the right ({rages} in the last minute)." : "; sounded at people in the right."));
+            if (rude && player)
             {
                 Police(origin, rages, now);
             }
+        }
+
+        // ---------------------------------------------------------------- one person, asked for by Traffic/Solid
+
+        /// <summary>
+        /// Somebody about to step out in front of a car that could no longer stop for them waits instead: they
+        /// stop where they are (or take a step back if they are a step into its way already), look at the car,
+        /// and walk on when it has gone by. False (and nothing changed) if they cannot: they are reacting to
+        /// something already, are not walking, or the game itself is holding them.
+        /// </summary>
+        /// <param name="back">They are a step into the car's way already: back to the kerb.</param>
+        public bool Wait(Pedestrian walker, Vector3 car, bool back, float seconds)
+        {
+            try
+            {
+                if (!Usable(walker) || Reacting(walker, null))
+                {
+                    return false;
+                }
+                NavMeshAgent agent = walker.tpc.navmeshAgent;
+                if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh || agent.isStopped)
+                {
+                    return false;
+                }
+                var person = new Heard { Walker = walker, At = walker.transform.position };
+                float now = Time.time;
+                return (back && Begin(ref person, StreetRules.Reaction.StepBack, car, StreetRules.Light.Green, 0, now))
+                       || Begin(ref person, StreetRules.Reaction.Startle, car, StreetRules.Light.Green, 0, now, seconds);
+            }
+            catch (Exception e)
+            {
+                Fault(e);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Somebody who has held a car up for too long is moved on: whatever they were doing about its horn ends,
+        /// and they jog on out of its way. False if they cannot be (they are not walking, or the game holds them).
+        /// </summary>
+        public bool MoveOn(Pedestrian walker, Vector3 car)
+        {
+            try
+            {
+                if (!Usable(walker))
+                {
+                    return false;
+                }
+                LetGo(walker);
+                var person = new Heard { Walker = walker, At = walker.transform.position };
+                return Begin(ref person, StreetRules.Reaction.Hurry, car, StreetRules.Light.Green, 0, Time.time);
+            }
+            catch (Exception e)
+            {
+                Fault(e);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Somebody a car has bumped at walking pace: they stop, turn on it and shout (the glare of somebody in the
+        /// right, which is what they are by now). One of the game's walkers or one of its standing figures.
+        /// </summary>
+        public bool Shout(Pedestrian walker, BaseHuman figure, Vector3 car)
+        {
+            try
+            {
+                if (walker != null ? !Usable(walker) || Reacting(walker, null) : figure == null || !figure.gameObject.activeInHierarchy || Reacting(null, figure))
+                {
+                    return false;
+                }
+                var person = new Heard { Walker = walker, Figure = figure, At = walker != null ? walker.transform.position : figure.transform.position };
+                return Begin(ref person, StreetRules.Reaction.Glare, car, StreetRules.Light.Red, 1, Time.time);
+            }
+            catch (Exception e)
+            {
+                Fault(e);
+                return false;
+            }
+        }
+
+        // True if one of the game's walkers is there to react at all: out, its own, not sitting, not thrown down.
+        private bool Usable(Pedestrian walker)
+        {
+            return enabled && Settings.HornReactions && walker != null && walker.isActiveAndEnabled && walker.tpc != null
+                   && walker.tpc.isSittingOn == null && !RagdollSystem.Holds(walker.tpc);
         }
 
         /// <summary>
@@ -462,7 +596,7 @@ namespace RealLifeOverhaul
 
         // On a marked crossing (and whose light it is), in the carriageway away from one, or on the pavement. A grid
         // lookup each; no physics.
-        private static StreetRules.Place PlaceOf(Vector3 at, out bool mayWalk)
+        internal static StreetRules.Place PlaceOf(Vector3 at, out bool mayWalk)
         {
             if (Crossings.At(at, out mayWalk))
             {
@@ -494,7 +628,8 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- one person's reaction
 
         // Starts it. False (and nothing changed) if there is no room or the person cannot do it as they are.
-        private bool Begin(ref Heard person, StreetRules.Reaction reaction, Vector3 car, StreetRules.Light light, int rages, float now)
+        // seconds: how long a look round lasts, if not the usual moment (somebody waiting for a car to go by).
+        private bool Begin(ref Heard person, StreetRules.Reaction reaction, Vector3 car, StreetRules.Light light, int rages, float now, float seconds = 0f)
         {
             Slot slot = null;
             for (int i = 0; i < _slots.Length && slot == null; i++)
@@ -587,7 +722,7 @@ namespace RealLifeOverhaul
                         slot.Turned = true;
                     }
                     slot.Turning = true;
-                    slot.Until = now + (glare ? StreetRules.GlareFor(rages) : StreetRules.StartleSeconds);
+                    slot.Until = now + (glare ? StreetRules.GlareFor(rages) : seconds > 0f ? seconds : StreetRules.StartleSeconds);
                     if (glare)
                     {
                         Gesture(slot, animator, StreetRules.Points(light, Random.Range(0, 100)) ? PointClip : AngryClip, BodyMask.Upper);

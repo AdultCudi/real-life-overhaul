@@ -140,6 +140,8 @@ namespace RealLifeOverhaul
                     v => Settings.HornReactions = v)
                 .AddToggle(Settings.NaturalAccidentsId, "reallife_natural_accidents", Settings.NaturalAccidents,
                     v => Settings.NaturalAccidents = v)
+                .AddToggle(Settings.SolidStreetsId, "reallife_solid_streets", Settings.SolidStreets,
+                    v => Settings.SolidStreets = v)
                 .AddToggle(Settings.PhoneContactsId, "reallife_phone_contacts", Settings.PhoneContacts,
                     v => Settings.PhoneContacts = v)
                 .AddToggle(Settings.PhoneSkinId, "reallife_phone_skin", Settings.PhoneSkin,
@@ -158,6 +160,12 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_streets_hit", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.HitSomeone))
                 .AddButton("reallife_test_streets_crash", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.Crash))
                 .AddButton("reallife_test_streets_patrol", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.Patrol))
+                .AddButton("reallife_test_solid_room", () => SolidStreets.Instance?.Test(SolidStreets.TestKind.Room))
+                .AddButton("reallife_test_solid_close", () => SolidStreets.Instance?.Test(SolidStreets.TestKind.Close))
+                .AddButton("reallife_test_solid_dawdle", () => SolidStreets.Instance?.Test(SolidStreets.TestKind.Dawdle))
+                .AddButton("reallife_test_solid_late", () => SolidStreets.Instance?.Test(SolidStreets.TestKind.Late))
+                .AddButton("reallife_test_solid_crowd", () => SolidStreets.Instance?.Test(SolidStreets.TestKind.Crowd))
+                .AddButton("reallife_test_solid_senses", () => SolidStreets.Instance?.Test(SolidStreets.TestKind.Senses))
                 .AddSplitter()
                 .AddHeader("reallife_crime_header")
                 .AddToggle(Settings.StreetCrimeId, "reallife_crime_enabled", Settings.StreetCrime,
@@ -782,6 +790,8 @@ namespace RealLifeOverhaul
             HornReactions.Logger = context.Logger;
             Crossings.Logger = context.Logger;
             RecklessDrivers.Logger = context.Logger;
+            SolidStreets.Logger = context.Logger;
+            SolidGame.Logger = context.Logger;
             Jaywalker.Logger = context.Logger;
             PlayerKnockdown.Logger = context.Logger;
             PhoneContacts.Logger = context.Logger;
@@ -827,6 +837,7 @@ namespace RealLifeOverhaul
             _root.AddComponent<CarStrikes>();
             _root.AddComponent<HornReactions>();     // people answer the player's horn (People/HornReactions)
             _root.AddComponent<RecklessDrivers>();   // reckless drivers and the accidents that come of them (Traffic/Reckless); after CarStrikes and TrafficAccidents
+            _root.AddComponent<SolidStreets>();      // traffic sees people in the road (Traffic/Solid); after HornReactions, CarStrikes and RecklessDrivers
             _root.AddComponent<PlayerKnockdown>();
             _root.AddComponent<CityLifeDirector>();   // people at work and about their day: its own pool of eight
             _root.AddComponent<JobDirector>();   // jobs the player takes themselves (Scripts/Jobs)

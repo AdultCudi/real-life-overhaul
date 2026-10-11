@@ -39,6 +39,7 @@ namespace RealLifeOverhaul
         public const string PedestrianIncidentsId = "ped_incidents";
         public const string HornReactionsId = "horn_reactions";
         public const string NaturalAccidentsId = "natural_accidents";
+        public const string SolidStreetsId = "solid_streets";
         public const string PhoneContactsId = "phone_contacts";
         public const string PhoneSkinId = "phone_skin";
         public const string CarSpeedId = "car_speed";           // the old single "car speed %" slider: dropped at load
@@ -215,6 +216,7 @@ namespace RealLifeOverhaul
         public static bool PedestrianIncidents = true;   // now and then a traffic car hits someone near the player
         public static bool HornReactions = true;         // people hurry, glare or look round when the player sounds the horn (People/HornReactions)
         public static bool NaturalAccidents = true;      // accidents come from reckless drivers on the road, in view (Traffic/Reckless); off: the old roll that stages them out of view
+        public static bool SolidStreets = true;          // traffic brakes for people in the road, sounds its horn and waits (Traffic/Solid); off: the game's cars drive through people
         public static bool PhoneContacts = true;
         public static bool CarTuning = true;         // each car gets the acceleration and top speed of its kind (Driving/CarCatalogue)
         public static int CarTopSpeed = 100;         // percent of the car's own target top speed
@@ -431,6 +433,7 @@ namespace RealLifeOverhaul
             PedestrianIncidents = Bool(modId, PedestrianIncidentsId, PedestrianIncidents);
             HornReactions = Bool(modId, HornReactionsId, HornReactions);
             NaturalAccidents = Bool(modId, NaturalAccidentsId, NaturalAccidents);
+            SolidStreets = Bool(modId, SolidStreetsId, SolidStreets);
             PhoneContacts = Bool(modId, PhoneContactsId, PhoneContacts);
             PhoneSkin = Bool(modId, PhoneSkinId, PhoneSkin);
             CarTuning = Bool(modId, CarTuningId, CarTuning);
