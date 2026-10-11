@@ -84,6 +84,15 @@ namespace RealLifeOverhaul
         private float _nextTry;
         private Transform _patch;
         private Transform _bucket;
+        // The spills that lie on the floor now: all of the floor's at once (as many as it has room for), the nearest being
+        // the one the panel stands over.
+        private readonly Vector3[] _laid = new Vector3[16];
+        private readonly Transform[] _laidProp = new Transform[16];
+        private readonly Vector3[] _taken = new Vector3[32];
+        private int _laidCount;
+        private int _target = -1;
+        private int _layTries;
+        private float _nextLay;
         private float _mopFrom;
         private float _mopShown = -1f;
         private bool _wasInside;
@@ -200,7 +209,7 @@ namespace RealLifeOverhaul
                 else
                 {
                     _step = Step.Floor;
-                    _nextTry = now + 0.6f;   // a moment for the shop to finish arriving round them
+                    _nextTry = _nextLay = now + 0.6f;   // a moment for the shop to finish arriving round them
                 }
             }
             switch (_step)
@@ -259,28 +268,38 @@ namespace RealLifeOverhaul
                 Conclude();
                 return;
             }
-            if (!_hasPatch)
+            LayMore(now);
+            if (_laidCount == 0)
             {
+                _hasPatch = false;
                 _panel.Hide();
                 Unmark();
-                if (now < _nextTry)
+                if (_layTries >= MostTries)
                 {
-                    return;
+                    // No clear floor left to work on in a shop this size: what was done is the job.
+                    _tries = MostTries;
+                    Ctx.Say("reallife_job_cleaner_small", 7f);
+                    Conclude();
                 }
-                _nextTry = now + 1f;
-                if (!NextPatch())
-                {
-                    if (++_tries >= MostTries)
-                    {
-                        // No clear floor left to work on in a shop this size: what was done is the job.
-                        Ctx.Say("reallife_job_cleaner_small", 7f);
-                        Conclude();
-                    }
-                    return;
-                }
-                _tries = 0;
-                Hint(2);
+                return;
             }
+            // The nearest of them is the one offered.
+            Vector3 here = Ctx.Player.transform.position;
+            int nearest = 0;
+            float best = float.MaxValue;
+            for (int i = 0; i < _laidCount; i++)
+            {
+                float flat = JobSpots.Flat(here, _laid[i]);
+                if (flat < best)
+                {
+                    best = flat;
+                    nearest = i;
+                }
+            }
+            _target = nearest;
+            _patchAt = _laid[nearest];
+            _patch = _laidProp[nearest];
+            _hasPatch = true;
             Mark(_patchAt, _patchLabel);
             bool onIt = JobSpots.Flat(Ctx.Player.transform.position, _patchAt) < PatchReach;
             if (onIt)
@@ -304,32 +323,76 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A clear piece of the shop's floor the player can walk to, away from the patches already done.
-        private bool NextPatch()
+        // One more spill laid on a clear piece of the shop's floor, away from those lying and those done: one a look, a
+        // quarter of a second apart, until all the floor's spills that are left lie there (or there is no more room).
+        private void LayMore(float now)
         {
-            if (!JobSites.FloorSpot(Ctx.Player.transform.position, _done, Mathf.Min(_hand, _done.Length), PatchesApart, out _patchAt))
+            if (now < _nextLay || _mopped + _laidCount >= _patches || _laidCount >= _laid.Length || _layTries >= MostTries)
             {
-                return false;
+                return;
             }
-            ClearPatch();
-            _patch = Ctx.Props.Take(PatchProp);
-            if (_patch != null)
+            _nextLay = now + 0.25f;
+            int taken = 0;
+            for (int i = 0; i < _hand && i < _done.Length && taken < _taken.Length; i++)
             {
-                _patch.SetPositionAndRotation(_patchAt + Vector3.up * 0.004f, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
-                _mopShown = -1f;
+                _taken[taken++] = _done[i];
             }
-            // The bucket stands at the edge of the patch, if there is floor for it there.
-            Vector3 beside = _patchAt + Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * Vector3.forward * 0.75f;
-            if (ShopFloor.Standable(beside, 0.3f, out Vector3 stood) && JobSpots.Flat(stood, _patchAt) > 0.55f)
+            for (int i = 0; i < _laidCount && taken < _taken.Length; i++)
             {
-                _bucket = Ctx.Props.Take(BucketProp);
-                if (_bucket != null)
+                _taken[taken++] = _laid[i];
+            }
+            if (!JobSites.FloorSpot(Ctx.Player.transform.position, _taken, taken, PatchesApart, out Vector3 spot))
+            {
+                _layTries++;
+                _nextLay = now + 1f;
+                return;
+            }
+            _layTries = 0;
+            Transform prop = Ctx.Props.Take(PatchProp);
+            if (prop != null)
+            {
+                prop.localScale = Vector3.one;
+                prop.SetPositionAndRotation(spot + Vector3.up * 0.004f, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
+            }
+            _laid[_laidCount] = spot;
+            _laidProp[_laidCount] = prop;
+            _laidCount++;
+            // The cleaner's bucket stands by the first of them, if there is floor for it there.
+            if (_bucket == null)
+            {
+                Vector3 beside = spot + Quaternion.Euler(0f, Random.Range(0f, 360f), 0f) * Vector3.forward * 0.75f;
+                if (ShopFloor.Standable(beside, 0.3f, out Vector3 stood) && JobSpots.Flat(stood, spot) > 0.55f)
                 {
-                    _bucket.SetPositionAndRotation(stood, Quaternion.identity);
+                    _bucket = Ctx.Props.Take(BucketProp);
+                    if (_bucket != null)
+                    {
+                        _bucket.SetPositionAndRotation(stood, Quaternion.identity);
+                    }
                 }
             }
-            _hasPatch = true;
-            return true;
+            if (Meta.Dev.Verbose && _mopped + _laidCount >= _patches)
+            {
+                Ctx.Logger?.Info("Jobs: cleaner: " + _laidCount + " spill(s) lie on the floor at once (" + _mopped + " of " + _patches + " already done).");
+            }
+        }
+
+        // The spill that was mopped goes from the floor; the others stay where they lie.
+        private void Lift(int index)
+        {
+            if (index < 0 || index >= _laidCount)
+            {
+                return;
+            }
+            if (_laidProp[index] != null)
+            {
+                Ctx.Props.Return(_laidProp[index]);
+            }
+            _laidCount--;
+            _laid[index] = _laid[_laidCount];
+            _laidProp[index] = _laidProp[_laidCount];
+            _laidProp[_laidCount] = null;
+            _patch = null;
+            _target = -1;
         }
 
         // The panel's first button was pressed (the game ran it on its key or on a click).
@@ -374,6 +437,7 @@ namespace RealLifeOverhaul
                 return;
             }
             _mopFrom = now;
+            _mopShown = -1f;
             _step = Step.Mopping;
             Unmark();
             Hint(3);
@@ -402,7 +466,7 @@ namespace RealLifeOverhaul
             _mopOver = now;
             _hint = -1;   // the count in the line has changed
             StopMopping();
-            ClearPatch();
+            Lift(_target);
             _hasPatch = false;
             _step = Step.Floor;
             _nextTry = now + 0.4f;
@@ -429,11 +493,18 @@ namespace RealLifeOverhaul
 
         private void ClearPatch()
         {
-            if (_patch != null)
+            for (int i = 0; i < _laidCount; i++)
             {
-                Ctx.Props.Return(_patch);
-                _patch = null;
+                if (_laidProp[i] != null)
+                {
+                    Ctx.Props.Return(_laidProp[i]);
+                    _laidProp[i] = null;
+                }
             }
+            _laidCount = 0;
+            _layTries = 0;
+            _target = -1;
+            _patch = null;
             if (_bucket != null)
             {
                 Ctx.Props.Return(_bucket);
