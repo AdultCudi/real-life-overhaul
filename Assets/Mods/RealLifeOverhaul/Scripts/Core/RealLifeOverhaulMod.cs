@@ -546,6 +546,25 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_econ_test_lender", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestLenderText()))
                 .AddButton("reallife_econ_test_ways", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestWaysOut()))
                 .AddButton("reallife_econ_test_back", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestBack()))
+                .AddHeader("reallife_macro_header")
+                .AddToggle(Settings.EconomyCityId, "reallife_macro_enabled", Settings.EconomyCity,
+                    v => Settings.EconomyCity = v)
+                .AddDropdown(Settings.EconomyCityLevelId, "reallife_macro_level",
+                    new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCityLevel,
+                    v => Settings.EconomyCityLevel = v)
+                .AddButton("reallife_macro_test_show", () => Economy.CityEconomyDirector.Instance?.TestShow())
+                .AddButton("reallife_macro_test_month", () => Economy.CityEconomyDirector.Instance?.TestMonth())
+                .AddButton("reallife_macro_test_boom", () => Economy.CityEconomyDirector.Instance?.TestCycle(Economy.CycleState.Boom))
+                .AddButton("reallife_macro_test_steady", () => Economy.CityEconomyDirector.Instance?.TestCycle(Economy.CycleState.Steady))
+                .AddButton("reallife_macro_test_slowdown", () => Economy.CityEconomyDirector.Instance?.TestCycle(Economy.CycleState.Slowdown))
+                .AddButton("reallife_macro_test_recession", () => Economy.CityEconomyDirector.Instance?.TestCycle(Economy.CycleState.Recession))
+                .AddButton("reallife_macro_test_shortage", () => Economy.CityEconomyDirector.Instance?.TestShock(true))
+                .AddButton("reallife_macro_test_glut", () => Economy.CityEconomyDirector.Instance?.TestShock(false))
+                .AddButton("reallife_macro_test_rate_up", () => Economy.CityEconomyDirector.Instance?.TestRate(Economy.MacroCatalogue.QuartersPerPoint))
+                .AddButton("reallife_macro_test_rate_down", () => Economy.CityEconomyDirector.Instance?.TestRate(-Economy.MacroCatalogue.QuartersPerPoint))
+                .AddButton("reallife_macro_test_district_up", () => Economy.CityEconomyDirector.Instance?.TestDistrict(100))
+                .AddButton("reallife_macro_test_district_down", () => Economy.CityEconomyDirector.Instance?.TestDistrict(-100))
+                .AddButton("reallife_macro_test_back", () => Economy.CityEconomyDirector.Instance?.TestBack())
                 .AddSplitter()
                 .AddHeader("reallife_nav_header")
                 .AddToggle(Settings.MinimapId, "reallife_nav_minimap", Settings.Minimap,

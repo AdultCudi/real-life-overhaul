@@ -685,11 +685,82 @@ namespace RealLifeOverhaul.Meta
                 .Fact("econ_bank_every", () => Whole(Economy.ProductCatalogue.BankruptEveryDays))
                 .Cleanup(() => Economy.EconomyDirector.Instance?.StopAll())
                 .ResetData(() => Economy.EconomyDirector.Instance?.Forget());   // the director opens a new file from the (now empty) save on its next second
+
+            // The city's economy. Off, the banks' rates, the wholesale prices and every business's footfall are the game's
+            // own and nothing is adjusted. It runs only while the economy core does. (Cleaned up before the core: order -1.)
+            Features.Add("economy_city", "reallife_meta_title_economy_city")
+                .Group("reallife_macro_header")
+                .About("reallife_guide_economy_city_about").Help("reallife_guide_economy_city")
+                .Owns(Settings.EconomyCityId)
+                .Preset(Settings.EconomyCityLevelId, Economy.MacroCatalogue.Relaxed, Economy.MacroCatalogue.Realistic, Economy.MacroCatalogue.Hardcore)   // (Standard is its default)
+                .Data(Economy.CityStore.Key, Economy.CityStore.TestKey)
+                .Fact("macro_month_least", () => Whole(Economy.MacroCatalogue.MonthDaysLeast))
+                .Fact("macro_base_low", () => CityPoints(-Economy.MacroCatalogue.BaseLeast))
+                .Fact("macro_base_high", () => CityPoints(Economy.MacroCatalogue.BaseMost))
+                .Fact("macro_move_most", () => CityPoints(Economy.MacroCatalogue.MoveMost))
+                .Fact("macro_target", () => CityHundredths(Economy.MacroCatalogue.InflationTarget))
+                .Fact("macro_inflation_low", () => CityHundredths(-Economy.MacroCatalogue.InflationLeast))
+                .Fact("macro_inflation_high", () => CityHundredths(Economy.MacroCatalogue.InflationMost))
+                .Fact("macro_state_least", () => Whole(Economy.MacroCatalogue.StateMonthsLeast))
+                .Fact("macro_state_most", () => Whole(Economy.MacroCatalogue.StateMonthsMost))
+                .Fact("macro_opening", () => Whole(Economy.MacroCatalogue.OpeningSteadyMonths))
+                .Fact("macro_states", CityStates)
+                .Fact("macro_income_low", () => Whole(Economy.MacroCatalogue.IncomeLeast / 10))
+                .Fact("macro_income_high", () => Whole(Economy.MacroCatalogue.IncomeMost / 10))
+                .Fact("macro_income_band", () => Whole(Economy.MacroCatalogue.IncomeBand / 10))
+                .Fact("macro_over_band", () => Whole(Economy.MacroCatalogue.OverBand / 10))
+                .Fact("macro_over_loss", () => Guide.Number(Economy.MacroCatalogue.OverLossPerPercent / 1000f))
+                .Fact("macro_over_most", () => Whole(Economy.MacroCatalogue.OverLossMost))
+                .Fact("macro_under_gain", () => Whole(Economy.MacroCatalogue.UnderGain))
+                .Fact("macro_footfall_low", () => Whole(-Economy.MacroCatalogue.FootfallLeast))
+                .Fact("macro_footfall_high", () => Whole(Economy.MacroCatalogue.FootfallMost))
+                .Fact("macro_factor_low", () => Whole(100 - Economy.MacroCatalogue.FactorLeast / 10))
+                .Fact("macro_factor_high", () => Whole(Economy.MacroCatalogue.FactorMost / 10 - 100))
+                .Fact("macro_shock_days_low", () => Whole(Economy.MacroCatalogue.ShockDaysLeast))
+                .Fact("macro_shock_days_high", () => Whole(Economy.MacroCatalogue.ShockDaysMost))
+                .Fact("macro_adjust_band", () => Whole(Economy.MacroCatalogue.AdjustQuiet / 10))
+                .Fact("macro_copycat_days", () => Whole(Economy.MacroCatalogue.CopycatDays))
+                .Fact("macro_copycat_rest", () => Whole(Economy.MacroCatalogue.CopycatRestDays))
+                .Fact("macro_swing_relaxed", () => Whole(Economy.MacroCatalogue.SwingPercent[Economy.MacroCatalogue.Relaxed]) + "%")
+                .Fact("macro_swing_realistic", () => Whole(Economy.MacroCatalogue.SwingPercent[Economy.MacroCatalogue.Realistic]) + "%")
+                .Fact("macro_swing_hardcore", () => Whole(Economy.MacroCatalogue.SwingPercent[Economy.MacroCatalogue.Hardcore]) + "%")
+                .Cleanup(() => Economy.CityEconomyDirector.Instance?.StopAll(), -1)
+                .ResetData(() => Economy.CityEconomyDirector.Instance?.Forget());   // the director opens a new economy from the (now empty) save on its next second
         }
 
         private static string Whole(int value)
         {
             return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        // Quarter points as points, and hundredths of a per cent as per cent, for the city's economy's page.
+        private static string CityPoints(int quarters)
+        {
+            return (quarters / (float)Economy.MacroCatalogue.QuartersPerPoint).ToString("0.##", CultureInfo.InvariantCulture);
+        }
+
+        private static string CityHundredths(int hundredths)
+        {
+            return (hundredths / 100f).ToString("0.#", CultureInfo.InvariantCulture) + "%";
+        }
+
+        // One line per state of the cycle, from the table the model itself reads.
+        private static string CityStates()
+        {
+            var text = new StringBuilder();
+            for (int s = 0; s < Economy.MacroCatalogue.StateCount; s++)
+            {
+                if (s == (int)Economy.CycleState.Steady)
+                {
+                    continue;   // the state everything is measured against
+                }
+                text.Append("- ").Append("reallife_guide_economy_city_state".GetLocalization()
+                    .Replace("{state}", Economy.CityText.StateKeys[s].GetLocalization())
+                    .Replace("{footfall}", Economy.CityText.Percent(Economy.MacroCatalogue.StateFootfall[s]))
+                    .Replace("{spend}", Economy.CityText.Change(Economy.MacroCatalogue.StateSpend[s]))
+                    .Replace("{property}", Economy.CityText.Change(Economy.MacroCatalogue.StateProperty[s]))).Append('\n');
+            }
+            return text.ToString();
         }
 
         // One line per level of "How hard not paying hits", from the table the lenders themselves count by.

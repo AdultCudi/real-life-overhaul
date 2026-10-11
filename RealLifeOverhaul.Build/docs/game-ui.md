@@ -699,3 +699,47 @@ Proven: the members. Inferred: how the game's panel lays out three long button t
   `BusinessIncomeStatement` per address: `TotalSales`, `TotalProfit`), which is what EconoView's business page reads.
 
 Proven: all of it, from the game's code. Not seen in a running game.
+
+## 27. A page inside a tab, and what the game computes about prices, customers and districts
+
+**A page that is no tab** (the Finance app's "The city"). The white box does not scroll and the tab bar's width is
+not known, so a sixth subject is a page of an existing tab, opened by a button in that tab's box: the same table and
+box are written again with other rows and other column titles (`AppShell.SetColumns` again, section 20), and
+`AppShell.ShowTab(-1)` leaves every tab clickable and unmarked, so the tab the page belongs to takes the player back.
+A button in the page's own box does the same.
+
+**What the game computes, and where a mod can reach it without patching**
+
+- **Districts.** `NeighborhoodHelper.NeighborhoodsData` is every `NeighborhoodData` (a ScriptableObject):
+  `neighbourhood` (the id, also a locale key), `workingClassPercentage`, `middleClassPercentage`,
+  `upperClassClassPercentage`, `realEstateMultiplier`, `baseBuildingPricePerSqm`, `customerDemandsWeight`,
+  `marketingStrength`. `ba:neighborhood_global` is the city as a whole. A business's district is
+  `BuildingRegistration.Neighborhood`; the one the player stands in is `NeighborhoodHelper.CurrentNeighborhood`.
+- **What customers pay.** `CitizenHelper.averagePriceIndicesInNeighborhoods` (a public dictionary, filled once) is
+  1.2, 1.4 and 1.7 weighted by the class shares. `ItemHelper.CalculateOptimalPriceByNeighborhood` is the item's
+  `DefaultMarketPrice` times it (plus 0.3 for a product only the player sells there); a customer of a class accepts up to
+  `CalculateMaxAcceptablePrice`. The dictionary also sets the prices rival shops are given
+  (`CompetitionHelper`), which are saved: read it, do not write it.
+- **A business's prices** are `BuildingRegistration.retailPrices` (`itemName`, `price`); an item with no entry sells
+  at its default market price (`ItemHelper.GetPrice`).
+- **How many customers come.** `CustomerEntriesCalculator.GetCustomersByHour` is the building's capacity times
+  `baseCustomerPromotionMultiplier + 0.75 x promotion / 100` times the business type's day and hour factors, where
+  the promotion is `BuildingRegistration.promotion.total` for the player (the building's traffic index plus
+  marketing, 0 to 100). `BusinessHelper.RunDaily` writes that figure afresh (`UpdatePromotion`) and then draws the
+  day's customers for every business of the player's, both before `GlobalEvents.onNewDay`. So a change to the figure
+  made on the day event needs the customers drawn again (`CustomerEntriesHelper.UpdateCustomerEntriesForPlayerBusiness`,
+  which throws away those still to come and draws them from the figure as it stands).
+- **Wholesale and import prices.** `ItemHelper.GetWholesalePrice(item)` is `item.wholesalePrice` (a public field of
+  the item's asset) times the market's `importPriceIndex` for it and `gameVariables.marketPriceMultiplier`; the shelf
+  sign, a purchase, `DeliveryContract.TotalPricePerDelivery` and the importer all call it when they need a price, and
+  multiply by the seller's own price index and by the game's own shortage or backorder multiplier
+  (`ProductMarketHelper.GetProductMarketEventMultiplier`). Items have no category: what kind of goods one is can only
+  be told from the business types that list it (`BusinessType.businessProducts`).
+- **The day's money.** Rent is `ba:transaction_rent` with the category `ba:transactioncategory_rent`, wages carry
+  `ba:transactioncategory_salaryexpenses`, a business's takings are `ba:transaction_revenue`; all three are dated on
+  the day that ended and are in the transaction queue when the day event comes (section 22). A purchase
+  (`ba:transaction_itempurchase`, `_deliverycontract`, `_importdelivery`) names the seller and never the goods.
+- **Property.** `Building.GetMarketValue()` is the size times the neighbourhood's price per square metre, the
+  building type's multiplier and the traffic index; the same inputs set the market rent the game saves on a building.
+
+Proven: all of it, from the game's code. Not seen in a running game.
