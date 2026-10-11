@@ -61,11 +61,35 @@ namespace RealLifeOverhaul.Economy
             return Math.Max(least, ProductCatalogue.Round(terms.Cap * (double)share, round));
         }
 
-        /// <summary>A product's rate in hundredths of a per cent a year: the bank's rate for the rating, the product's points, the game's multiplier.</summary>
+        /// <summary>
+        /// A product's rate in hundredths of a per cent a year by the rating alone: the bank's rate for the rating, the
+        /// product's points, the game's multiplier. The central bank's rate is not in it: an overdraft and a card
+        /// carry that day by day (<see cref="CreditAccount.RateNow"/>), and a purchase on finance takes it once, when
+        /// it is approved (<see cref="FixedRateBp"/>).
+        /// </summary>
         public static int RateBp(int score, int ownRate, int points, float multiplier)
         {
-            int rate = Math.Max(CreditCatalogue.RateFloor, LendingTerms.For(score, 0f, ownRate).AnnualRate + points);
+            int rate = Math.Max(CreditCatalogue.RateFloor, LendingTerms.For(score, 0f, ownRate, 0f).AnnualRate + points);
             return Math.Max(1, (int)Math.Round(rate * (double)Math.Max(0f, multiplier) * 100.0));
+        }
+
+        /// <summary>The central bank's rate in hundredths of a per cent a year, as an account is charged it: its points times the game's multiplier.</summary>
+        public static int BaseBp(float basePoints, float multiplier)
+        {
+            return (int)Math.Round(basePoints * (double)Math.Max(0f, multiplier) * 100.0, MidpointRounding.AwayFromZero);
+        }
+
+        /// <summary>A rate with the central bank's on top, never under the floor: what a fixed product is agreed at, and what a revolving one is charged today.</summary>
+        public static int WithBase(int rateBp, int baseBp, float multiplier)
+        {
+            int floor = Math.Max(1, (int)Math.Round(CreditCatalogue.RateFloor * (double)Math.Max(0f, multiplier) * 100.0));
+            return baseBp == 0 ? rateBp : Math.Max(Math.Min(floor, rateBp), rateBp + baseBp);
+        }
+
+        /// <summary>The rate a purchase on finance is approved at: by the rating, with the central bank's rate of the day. It is fixed from then on.</summary>
+        public static int FixedRateBp(int score, int ownRate, int points, float multiplier)
+        {
+            return WithBase(RateBp(score, ownRate, points, multiplier), BaseBp(LendingTerms.BasePoints, multiplier), multiplier);
         }
 
         /// <summary>The whole-point rate a business loan is made at: the bank's rate for the rating less a point, never under the floor.</summary>

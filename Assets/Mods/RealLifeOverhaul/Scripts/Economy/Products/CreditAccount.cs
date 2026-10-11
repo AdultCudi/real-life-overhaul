@@ -109,8 +109,11 @@ namespace RealLifeOverhaul.Economy
         /// <summary>What can still be drawn on a limit.</summary>
         public int Free => Closed || !ProductCatalogue.Revolving(Kind) ? 0 : Math.Max(0, Agreed - Owed);
 
+        /// <summary>The rate as agreed with the central bank's rate of the day on it: only an overdraft and a card follow that; anything else keeps the rate it was made at.</summary>
+        public int RateAgreedNow => ProductCatalogue.Revolving(Kind) ? ProductTerms.WithBase(RateBp, AccountRules.BaseBp, AccountRules.BaseMultiplier) : RateBp;
+
         /// <summary>The rate charged now, the penalty rate included.</summary>
-        public int RateNow => RateBp + (Ladder.Penalty ? ProductCatalogue.PenaltyPoints * 100 : 0);
+        public int RateNow => RateAgreedNow + (Ladder.Penalty ? ProductCatalogue.PenaltyPoints * 100 : 0);
     }
 
     /// <summary>What one day did to one account.</summary>
@@ -219,6 +222,14 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>The game's days in a year, for interest. Set by the economy's director; 60 is the game's own default.</summary>
         public static int DaysPerYear = 60;
+
+        /// <summary>
+        /// The central bank's rate in hundredths of a per cent a year, as an overdraft and a card are charged it today
+        /// (<see cref="CreditAccount.RateAgreedNow"/>), and the game's interest multiplier it was worked out with.
+        /// Nothing unless the city's economy (Economy/City) has set them.
+        /// </summary>
+        public static int BaseBp;
+        public static float BaseMultiplier = 1f;
 
         /// <summary>Opens an account of a kind with its terms. The caller gives it its id and puts it in the file.</summary>
         public static CreditAccount Open(ProductKind kind, int agreed, int rateBp, int today)

@@ -3,7 +3,9 @@
   <!-- Checks the economy's game-free parts outside the game: the credit rating's arithmetic, the lending terms and the
        phone's fee, the credit file's cap and folding, its line in the save across versions, how the game's loans
        are told apart, and (Checks2.cs) the credit products, what happens when payments are missed, consolidation,
-       the lender of last resort and the ways out of debt. Compiles the mod's own files, so it checks exactly what ships.
+       the lender of last resort and the ways out of debt, and (Checks3.cs) the city's economy: twenty years of the model
+       from many seeds, the central bank's rule, the adjustments, the rate the credit side reads and the save's line.
+       Compiles the mod's own files, so it checks exactly what ships.
        Run: dotnet run -c Release (from this folder). Exit code 0 = all checks passed. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -28,6 +30,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Products\LoanHolds.cs" Link="Mod\LoanHolds.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Debt\Shark.cs" Link="Mod\Shark.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Debt\Relief.cs" Link="Mod\Relief.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\MacroCatalogue.cs" Link="Mod\MacroCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityModel.cs" Link="Mod\CityModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityStore.cs" Link="Mod\CityStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityEconomy.cs" Link="Mod\CityEconomy.cs" />
   </ItemGroup>
 
 </Project>
