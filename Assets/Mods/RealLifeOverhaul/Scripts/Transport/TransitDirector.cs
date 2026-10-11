@@ -78,6 +78,7 @@ namespace RealLifeOverhaul
         private const float TickInterval = 0.25f;
         private const float DressRange = 190f;      // metres: well beyond the 110 m at which a place counts as in view, so that a stop is up before it is looked at, driving fast too
         private const float UndressRange = 230f;
+        private const float BlockedFor = 5f;        // seconds a stop waits for its pole's place to be free before it is put up all the same
         private const float HoldBackFor = 3f;       // seconds a stop in view is held back, for the player to look away, before it is put up as it is
         private const float ArrivedBeyond = 60f;    // metres between two passes that no walk or drive covers: the player was set down here
         private const float SolidWithin = 60f;      // metres: on foot this near, a dressed stop's boxes cut the navigation mesh
@@ -175,6 +176,8 @@ namespace RealLifeOverhaul
         private bool _streetClear = true;
         private bool _dressAtOnce = true;           // nothing has been put out for where the player now is: the first pass does not wait for them to look away
         private TransitStop _heldBack;
+        private TransitStop _blocked;               // the stop whose pole's place something stands at
+        private float _blockedSince;
         private float _heldSince;
         private Vector3 _dressedFrom;
         private float _minutesPerSecond = 1f;
@@ -515,14 +518,33 @@ namespace RealLifeOverhaul
                     _heldBack = null;
                 }
                 // What may have come to stand there since the stop was laid out: a parked car on the pavement, a cart, a cordon.
+                // It is waited for a few seconds and no longer: a stop that never comes is worse than a pole beside a bumper
+                // (beside a bay there is often a parked car within a hand of the pole, and the stop was never put up).
                 if (!SceneParking.IsFree(nearest.Sign, Quaternion.LookRotation(nearest.Along), 0.25f, 0.25f, 0.1f))
                 {
-                    if (waiting != null)
+                    if (_blocked != nearest)
                     {
-                        return;
+                        _blocked = nearest;
+                        _blockedSince = now;
                     }
-                    waiting = nearest;
-                    continue;
+                    if (now - _blockedSince < BlockedFor)
+                    {
+                        if (waiting != null)
+                        {
+                            return;
+                        }
+                        waiting = nearest;
+                        continue;
+                    }
+                    if (Meta.Dev.Verbose)
+                    {
+                        Logger?.Info("Transit check (stop dressed): " + StopLabel(nearest) + ": something stood at the pole's place for " + BlockedFor.ToString("F0")
+                                     + " s; the stop is put up all the same.");
+                    }
+                }
+                if (_blocked == nearest)
+                {
+                    _blocked = null;
                 }
                 if (_dressings[free] == null)
                 {
