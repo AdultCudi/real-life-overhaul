@@ -457,7 +457,7 @@ namespace RealLifeOverhaul
                     var horn = car.GetComponentInChildren<AiCarHorn>();
                     if (horn != null)
                     {
-                        horn.Hail(false);
+                        TrafficTools.Hoot(horn);
                     }
                     ActorPool pool = ActorPool.Instance;
                     if (pool != null)

@@ -393,6 +393,27 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>A vehicle's name for the log.</summary>
+        /// <summary>
+        /// Sounds a traffic car's horn through the game's own two short blasts, heard from where the car is. The game's
+        /// routine (AiCarHorn.Hail) is made for a taxi hailing the player and plays half of the sound without a place,
+        /// so a car at the far end of the street sounded as if it stood beside the player while the people answering
+        /// it were over there. The routine sets that in its first step and puts it back itself when it ends, so the
+        /// sound is given its place again here, straight after it starts. On a horn's blast only; nothing per frame.
+        /// </summary>
+        public static void Hoot(AiCarHorn horn)
+        {
+            if (horn == null)
+            {
+                return;
+            }
+            horn.Hail(false);
+            AudioSource source = horn.GetComponentInChildren<AudioSource>();
+            if (source != null)
+            {
+                source.spatialBlend = 1f;
+            }
+        }
+
         public static string Name(VehicleComponent car)
         {
             return car == null ? "nothing" : car.prefab != null ? car.prefab.name : car.name;

@@ -1870,7 +1870,7 @@ namespace RealLifeOverhaul
                 var horn = car.GetComponentInChildren<AiCarHorn>();
                 if (horn != null)
                 {
-                    horn.Hail(false);
+                    TrafficTools.Hoot(horn);
                 }
                 return;
             }

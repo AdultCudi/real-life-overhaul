@@ -407,7 +407,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            horn.Hail(false);
+            TrafficTools.Hoot(horn);
             return true;
         }
 

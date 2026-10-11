@@ -600,7 +600,7 @@ namespace RealLifeOverhaul
                 var horn = car.GetComponentInChildren<AiCarHorn>();
                 if (horn != null)
                 {
-                    horn.Hail(false);
+                    TrafficTools.Hoot(horn);
                 }
                 Logger?.Info($"Reckless driver: somebody {driver.Room:F0} m ahead of it at {speed * 3.6f:F0} km/h: a near miss, if it stops.");
             }
@@ -620,7 +620,7 @@ namespace RealLifeOverhaul
                 var horn = other.GetComponentInChildren<AiCarHorn>();
                 if (horn != null)
                 {
-                    horn.Hail(false);
+                    TrafficTools.Hoot(horn);
                     most--;
                 }
             }
