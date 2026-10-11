@@ -4,7 +4,7 @@ using RealLifeOverhaul.Economy;
 
 // Checks for the economy's game-free parts. A check that fails prints one line; the last line is
 // ALL CHECKS PASSED or the count that failed.
-internal static class Program
+internal static partial class Program
 {
     private static int _failed, _run;
     private static int _day;
@@ -76,6 +76,19 @@ internal static class Program
         SaveAndLoad();
         Identity();
         DailyRun();
+        Products();
+        Interest();
+        Instalments();
+        OverdraftCover();
+        CardCycle();
+        LadderSteps();
+        PaymentPlan();
+        Repossession();
+        Consolidation();
+        Shark();
+        WaysOut();
+        SaveVersionTwo();
+        LoanHoldsOnTheGamesFormula();
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }
@@ -99,7 +112,8 @@ internal static class Program
         Check(CreditCatalogue.GradeFrom[(int)CreditGrade.Fair] == CreditCatalogue.LendingThreshold, "the lending threshold is where 'fair' begins");
         Check(CreditCatalogue.GradeTo(CreditGrade.Poor) == 579 && CreditCatalogue.GradeTo(CreditGrade.Excellent) == 850, "the top of a grade");
         Check(CreditCatalogue.ScoreFor(0f) == 300 && CreditCatalogue.ScoreFor(100f) == 850 && CreditCatalogue.ScoreFor(-5f) == 300 && CreditCatalogue.ScoreFor(140f) == 850, "the scale runs from 300 to 850");
-        Check((int)CreditKind.Count == 16 && (int)CreditKind.TestAdjust == 15 && (int)CreditKind.Application == 8, "the kinds of event keep their numbers (they are in saves)");
+        Check((int)CreditKind.Count == 25 && (int)CreditKind.TestAdjust == 15 && (int)CreditKind.Application == 8 && (int)CreditKind.Consolidated == 16 && (int)CreditKind.Bankruptcy == 24,
+            "the kinds of event keep their numbers (they are in saves); the new ones follow the old");
     }
 
     private static void Start()
@@ -499,12 +513,12 @@ internal static class Program
         var data = new Dictionary<string, string>();
         CreditStore.Save(data, file);
         string line = data[CreditStore.Key];
-        Check(data.Count == 1 && line.StartsWith("v=1~h:"), "one line in the save, under reallife:economy, with its version first");
+        Check(data.Count == 1 && line.StartsWith("v=2~h:"), "one line in the save, under reallife:economy, with its version first");
         Check(line.IndexOf('\n') < 0 && line.Length < 8000, "the line is small (" + line.Length + " characters with a full file)");
         bool fresh;
         int version;
         CreditFile back = CreditStore.Load(data, out fresh, out version);
-        Check(back != null && !fresh && version == 1, "it loads");
+        Check(back != null && !fresh && version == 2, "it loads");
         Check(back != null && CreditStore.Write(back) == line, "a round trip writes the same line");
         if (back != null)
         {
@@ -516,11 +530,11 @@ internal static class Program
         }
 
         // A later version: a higher number, more fields at the end of records, and a part this version does not know.
-        string later = line.Replace("v=1~", "v=2~").Replace("~d:", "|77|new~x:something|new;more~d:") + "~z:1|2|3";
+        string later = line.Replace("v=2~", "v=3~").Replace("~d:", "|77|new~x:something|new;more~d:") + "~z:1|2|3";
         int laterVersion;
         CreditFile fromLater = CreditStore.Read(later, out laterVersion);
-        Check(fromLater != null && laterVersion == 2, "a save from a later version is read");
-        Check(fromLater != null && CreditStore.Write(fromLater) == line, "what this version knows of it is all there, written back as version 1");
+        Check(fromLater != null && laterVersion == 3, "a save from a later version is read");
+        Check(fromLater != null && CreditStore.Write(fromLater) == line, "what this version knows of it is all there, written back as this version");
 
         // Damage: nothing throws, and what cannot be read opens a fresh file.
         var damaged = new[] { "", "v=", "v=0~h:1", "nonsense", "v=1", "v=1~h:~d:~e:~f:~l:", "v=1~h:a|b|c~d:x|y;1|2~e:99|1|1;|||~f:x~l:a|b", "v=1~~~q~h:5", "v=1~e:" + new string(';', 400) };

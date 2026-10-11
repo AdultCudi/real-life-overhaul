@@ -19,6 +19,7 @@ namespace RealLifeOverhaul.Economy
     {
         public LoanNote Note;
         public LoanMark Mark;       // as the file had it before the comparison
+        public LoanMark Live;       // the file's own mark, where the loan is still there: what the mod keeps about the loan is on it
         public int Amount;          // the money the note is about
     }
 
@@ -73,7 +74,7 @@ namespace RealLifeOverhaul.Economy
                     marks.Add(mark);
                     if (!quiet && findings != null)
                     {
-                        findings.Add(new LoanFinding { Note = LoanNote.New, Mark = Copy(mark), Amount = (int)Math.Round(loan.Total) });
+                        findings.Add(new LoanFinding { Note = LoanNote.New, Mark = Copy(mark), Live = mark, Amount = (int)Math.Round(loan.Total) });
                     }
                     continue;
                 }
@@ -83,7 +84,7 @@ namespace RealLifeOverhaul.Economy
                     {
                         findings.Add(new LoanFinding { Note = LoanNote.ExtraPaid, Mark = Copy(mark), Amount = (int)Math.Round(mark.Remaining - loan.Remaining) });
                     }
-                    if (loan.Payment != mark.Payment)
+                    if (loan.Payment != mark.Payment && (mark.Held & LoanHold.Frozen) == 0)
                     {
                         findings.Add(new LoanFinding { Note = LoanNote.PaymentChanged, Mark = Copy(mark), Amount = loan.Payment });
                     }
@@ -105,7 +106,7 @@ namespace RealLifeOverhaul.Economy
                 int due = (int)Math.Round(Math.Min(mark.Payment, mark.Remaining));
                 if (!mark.Matched)
                 {
-                    findings.Add(new LoanFinding { Note = LoanNote.PaidOff, Mark = Copy(mark), Amount = due + mark.Interest });
+                    findings.Add(new LoanFinding { Note = LoanNote.PaidOff, Mark = Copy(mark), Live = mark, Amount = due + mark.Interest });
                     marks.RemoveAt(m);
                     continue;
                 }
@@ -120,11 +121,11 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (loan.Remaining < mark.Remaining - Cent)
                 {
-                    findings.Add(new LoanFinding { Note = LoanNote.Paid, Mark = Copy(mark), Amount = due + mark.Interest });
+                    findings.Add(new LoanFinding { Note = LoanNote.Paid, Mark = Copy(mark), Live = mark, Amount = due + mark.Interest });
                 }
                 else if (mark.Payment > 0 && mark.Remaining > Cent)
                 {
-                    findings.Add(new LoanFinding { Note = LoanNote.Missed, Mark = Copy(mark), Amount = due });
+                    findings.Add(new LoanFinding { Note = LoanNote.Missed, Mark = Copy(mark), Live = mark, Amount = due });
                 }
                 Take(mark, loan);
             }

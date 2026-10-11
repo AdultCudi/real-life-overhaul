@@ -37,9 +37,31 @@ namespace RealLifeOverhaul.Economy
         public float Remaining;
         public int Payment, Interest;
 
+        // What the mod keeps about a loan beside the game's own record of it (saved at the end of its record).
+        public readonly LadderState Ladder = new LadderState();
+        public int Held;            // bits of LoanHold: what the mod has changed on the loan in memory
+        public int OwnInterest;     // the loan's own daily interest, kept while Held is not nothing
+        public int OwnPayment;      // and its own daily payment
+        public int Purpose;         // LoanPurpose
+        public string Security = string.Empty;   // a business loan: the business's street and number as "street#number"
+
         [NonSerialized] public object Ref;
         [NonSerialized] internal bool Matched;   // during one comparison: its loan is in the game's list
         [NonSerialized] internal bool Gone;      // during one comparison: its loan has left the game's list
+    }
+
+    /// <summary>What the mod has changed on one of the game's loans in memory. Every bit is undone before the game writes a save.</summary>
+    public static class LoanHold
+    {
+        public const int None = 0;
+        public const int Penalty = 1;   // its daily interest carries the penalty points
+        public const int Frozen = 2;    // in a debt arrangement: no interest and no payment
+    }
+
+    /// <summary>What one of the game's loans was taken for, where the mod made it.</summary>
+    public static class LoanPurpose
+    {
+        public const int Plain = 0, Business = 1, Consolidation = 2;
     }
 
     /// <summary>A loan as it stands in the game now, read for one comparison.</summary>
@@ -96,6 +118,61 @@ namespace RealLifeOverhaul.Economy
         public readonly int[] FoldedCount = new int[(int)CreditKind.Count];
         public readonly long[] FoldedAmount = new long[(int)CreditKind.Count];
         public readonly List<LoanMark> Loans = new List<LoanMark>(4);
+
+        // The mod's own accounts, the lender of last resort and the ways out of debt (Economy/Products, Economy/Debt).
+        public readonly List<CreditAccount> Accounts = new List<CreditAccount>(6);
+        public readonly SharkDebt Shark = new SharkDebt();
+        public readonly Relief Relief = new Relief();
+        public int NextAccountId = 1;
+
+        /// <summary>Accounts the file keeps at most: closed ones are dropped first, oldest first.</summary>
+        public const int AccountsMost = 24;
+
+        /// <summary>The open account of a kind, or null. (A card, an overdraft and a leftover of fees are one of each; finance can be several.)</summary>
+        public CreditAccount Account(ProductKind kind)
+        {
+            for (int i = 0; i < Accounts.Count; i++)
+            {
+                if (Accounts[i].Kind == kind && !Accounts[i].Closed)
+                {
+                    return Accounts[i];
+                }
+            }
+            return null;
+        }
+
+        public CreditAccount AccountById(int id)
+        {
+            for (int i = 0; i < Accounts.Count; i++)
+            {
+                if (Accounts[i].Id == id)
+                {
+                    return Accounts[i];
+                }
+            }
+            return null;
+        }
+
+        /// <summary>Puts an account in the file with an id of its own.</summary>
+        public CreditAccount Add(CreditAccount account)
+        {
+            account.Id = NextAccountId++;
+            Accounts.Add(account);
+            Trim();
+            return account;
+        }
+
+        /// <summary>Closed accounts are forgotten: at once when there are too many, and all of them when asked.</summary>
+        public void Trim(bool allClosed = false)
+        {
+            for (int i = 0; i < Accounts.Count && (allClosed || Accounts.Count > AccountsMost); i++)
+            {
+                if (Accounts[i].Closed)
+                {
+                    Accounts.RemoveAt(i--);
+                }
+            }
+        }
 
         /// <summary>Adds a line and folds the oldest into the totals when there are more than the file keeps.</summary>
         public void Add(CreditEvent e)
