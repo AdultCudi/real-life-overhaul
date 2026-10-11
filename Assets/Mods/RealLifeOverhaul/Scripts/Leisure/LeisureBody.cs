@@ -203,6 +203,7 @@ namespace RealLifeOverhaul.Leisure
             }
             _animator = animator;
             _clip = true;
+            ClipLibrary.Played(clipName, "the player");
             return true;
         }
 
@@ -225,6 +226,7 @@ namespace RealLifeOverhaul.Leisure
             }
             _animator = animator;
             _clip = true;
+            ClipLibrary.Played(clipName, "the player");
             return true;
         }
 
@@ -281,6 +283,7 @@ namespace RealLifeOverhaul.Leisure
             }
             _animator = animator;
             _over = true;
+            ClipLibrary.Played(clipName, "the player");
             return true;
         }
 

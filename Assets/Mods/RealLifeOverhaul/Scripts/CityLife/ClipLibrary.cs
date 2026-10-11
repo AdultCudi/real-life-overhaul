@@ -103,6 +103,7 @@ namespace RealLifeOverhaul
 
         private static readonly Dictionary<string, CityClip> Clips = new Dictionary<string, CityClip>(96);
         private static readonly HashSet<string> MissingLogged = new HashSet<string>();
+        private static readonly HashSet<string> PlayedLogged = new HashSet<string>();
         private static State _state = State.NotStarted;
 
         /// <summary>True once the bundle has loaded (asynchronously, once); false while loading or if it failed.</summary>
@@ -142,6 +143,18 @@ namespace RealLifeOverhaul
         public static bool Has(string name)
         {
             return _state == State.Ready && name != null && Clips.ContainsKey(name);
+        }
+
+        /// <summary>
+        /// Said once per clip and kind of player, and only with the developer's verbose log on: the clip is now playing on
+        /// <paramref name="by"/> ("the player", "a street character"). Called by whoever starts a clip, after it has started.
+        /// </summary>
+        public static void Played(string name, string by)
+        {
+            if (Meta.Dev.Verbose && PlayedLogged.Add(name + "|" + by))
+            {
+                Logger?.Info("Clips: the '" + name + "' clip is played by " + by + " (said the first time only).");
+            }
         }
 
         /// <summary>A clip by name. False if the bundle is not ready or has no such clip.</summary>

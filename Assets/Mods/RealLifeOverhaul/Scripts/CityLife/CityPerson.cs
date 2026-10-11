@@ -303,6 +303,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             Playing = clipName;
+            ClipLibrary.Played(clipName, "a street character");
             return true;
         }
 
@@ -332,6 +333,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             PlayingOver = clipName;
+            ClipLibrary.Played(clipName, "a street character");
             return true;
         }
 
@@ -453,6 +455,18 @@ namespace RealLifeOverhaul
             for (int hand = 0; hand < Hands; hand++)
             {
                 _held[hand].LetGo();   // whatever they still hold is carried in one hand
+            }
+        }
+
+        /// <summary>
+        /// Sets the speed of the walking clip being played (<see cref="Work"/>) from how fast they are really going, so the
+        /// planted foot stays put: clipSpeed is the clip's own (<see cref="CityClip.Speed"/>). Call it from the owner's tick, never per frame.
+        /// </summary>
+        public void KeepStep(float clipSpeed)
+        {
+            if (_player != null && Playing != null && !Lost)
+            {
+                _player.MatchSpeed(Speed, clipSpeed);
             }
         }
 
