@@ -627,6 +627,14 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rota_test_open", () => Economy.CompanyDirector.Instance?.TestRotaOpen())
                 .AddButton("reallife_rota_test_fill", () => Economy.CompanyDirector.Instance?.TestRotaFillAll())
                 .AddButton("reallife_rota_test_back", () => Economy.CompanyDirector.Instance?.TestRotaBackAll())
+                .AddToggle(Settings.EconomyOnlineId, "reallife_online_enabled", Settings.EconomyOnline,
+                    v => Settings.EconomyOnline = v)
+                .AddButton("reallife_online_test_open", () => Economy.OnlineDirector.Instance?.TestOpen())
+                .AddButton("reallife_online_test_orders", () => Economy.OnlineDirector.Instance?.TestOrders())
+                .AddButton("reallife_online_test_late", () => Economy.OnlineDirector.Instance?.TestLate())
+                .AddButton("reallife_online_test_return", () => Economy.OnlineDirector.Instance?.TestReturn())
+                .AddButton("reallife_online_test_day", () => Economy.OnlineDirector.Instance?.TestDay())
+                .AddButton("reallife_online_test_back", () => Economy.OnlineDirector.Instance?.TestBack())
                 .AddSplitter()
                 .AddHeader("reallife_nav_header")
                 .AddToggle(Settings.MinimapId, "reallife_nav_minimap", Settings.Minimap,
@@ -876,6 +884,9 @@ namespace RealLifeOverhaul
             Economy.Ventures.VenturesDirector.Logger = context.Logger;
             Economy.Ventures.VenturesApp.Logger = context.Logger;
             _root.AddComponent<Economy.Ventures.VenturesDirector>();   // investors, the pitch, the stock market and the Ventures app (Scripts/Economy/Ventures)
+            Economy.OnlineDirector.Logger = context.Logger;
+            Economy.OnlineApp.Logger = context.Logger;
+            _root.AddComponent<Economy.OnlineDirector>();   // online shops: orders from the whole city, picked from real stock and delivered, and the Web shop app (Scripts/Economy/Online); before the company, so that its day comes first
             Economy.CompanyDirector.Logger = context.Logger;
             Economy.CompanyApp.Logger = context.Logger;
             _root.AddComponent<Economy.CompanyDirector>();   // running a business: staff, insurance, marketing, tax and licences, and the Company app (Scripts/Economy/Company)
