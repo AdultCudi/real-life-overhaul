@@ -20,3 +20,4 @@ Fixed
 - A car in the custom shop shot backwards when the shop closed.
 - The driving test marked things you could not help. Where it ends is now a box painted on the road.
 - A traffic car's horn sounded as if it were beside you when it was far away.
+- An unseen parked car could block the pavement while the "far districts" performance option was on.

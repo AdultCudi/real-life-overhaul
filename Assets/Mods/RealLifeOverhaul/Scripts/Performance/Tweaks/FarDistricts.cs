@@ -32,6 +32,13 @@ namespace RealLifeOverhaul
     /// a renderer while this held it, giving the square back would wrongly show it. It leaves alone everything on
     /// or under the components in <see cref="Switchers"/>, which is most of that risk, not all of it.
     ///
+    /// WHAT MOVES IS NEVER TAKEN. A square is where a renderer stood when the scenery was looked through. The game
+    /// keeps its parked cars in a pool (ParkingSimulator): a car parked in a far street is put away and parked again
+    /// at a kerb near the player, the same object with the same renderers. Taken with its far square, it stood at the
+    /// near kerb unseen, with its collider and its cut in the walking mesh: a block nobody could see. So nothing on
+    /// or under an object of a layer of things that move (<see cref="MovingLayers"/>) is ever sorted into a square,
+    /// and a renderer found outside its square when the square is taken is left alone (<see cref="Hold"/>).
+    ///
     /// Either way only renderers are touched: objects stay active, so businesses, colliders, navigation, lights,
     /// sound and every script keep running. Level-of-detail groups are not affected (they choose among their
     /// renderers by a mask of their own and never write either flag), nor is static batching. Shadows: the sun's
@@ -75,6 +82,9 @@ namespace RealLifeOverhaul
         };
 
         // Scenes that are not scenery standing in one place.
+        // Layers of things the game moves about, pooled or driven: never scenery, whatever scene they stand in.
+        private static readonly string[] MovingLayers = { "ParkedVehicles", "AiVehicles", "PlayerVehicles", "Vehicles", "Human" };
+
         private static readonly string[] NotScenery = { "MainScene", "UI", "Indoor", "LightsAndPostprocessing", "DontDestroyOnLoad" };
 
         private sealed class Cell
@@ -108,7 +118,7 @@ namespace RealLifeOverhaul
         private Camera _main;
         private Vector3 _lastChecked;
         private bool _hooked, _alarmed;
-        private int _heldRenderers, _heldCells, _scenery, _leftAlone;
+        private int _heldRenderers, _heldCells, _scenery, _leftAlone, _movingMask;
 
         /// <param name="byEnabled">False: the safe way (forceRenderingOff, every mesh renderer). True: the benchmark trial (enabled, minus what the game switches).</param>
         public FarDistricts(bool byEnabled)
@@ -270,7 +280,7 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 Transform transform = renderer.transform;
-                if (_byEnabled && (!renderer.enabled || GameSwitches(transform)))
+                if (Moves(transform) || (_byEnabled && (!renderer.enabled || GameSwitches(transform))))
                 {
                     _leftAlone++;
                     continue;
@@ -298,7 +308,7 @@ namespace RealLifeOverhaul
                 _surveyCursor = 0;
                 _settled = false;
                 PerfDirector.Logger?.Info("Performance: " + _id + " looked through the scenery: " + _scenery + " mesh renderers in " + _cells.Count + " squares of " + CellSize + " m"
-                                          + (_byEnabled ? "; " + _leftAlone + " left alone (disabled, or the game switches them itself)." : "."));
+                                          + "; " + _leftAlone + " left alone (of things that move" + (_byEnabled ? ", disabled, or the game switches them itself" : string.Empty) + ").");
             }
         }
 
@@ -310,9 +320,9 @@ namespace RealLifeOverhaul
             for (; cell.Cursor < end; cell.Cursor++)
             {
                 MeshRenderer renderer = cell.Scenery[cell.Cursor];
-                if (renderer == null)
+                if (renderer == null || !cell.Bounds.Contains(renderer.transform.position))
                 {
-                    continue;
+                    continue;   // (gone, or no longer where it was sorted: something moved it, and it may stand in view)
                 }
                 if (_byEnabled)
                 {
@@ -338,6 +348,23 @@ namespace RealLifeOverhaul
         }
 
         // True if the game's own code may enable or disable this renderer: it sits on or under one of the switchers.
+        // True if the renderer is on or under an object of a layer of things that move.
+        private bool Moves(Transform transform)
+        {
+            if (_movingMask == 0)
+            {
+                _movingMask = LayerMask.GetMask(MovingLayers);
+            }
+            for (Transform t = transform; t != null; t = t.parent)
+            {
+                if (((_movingMask >> t.gameObject.layer) & 1) != 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private bool GameSwitches(Transform transform)
         {
             for (Transform t = transform; t != null; t = t.parent)
@@ -512,6 +539,6 @@ namespace RealLifeOverhaul
         public override string Describe() => _cells.Count == 0
             ? "scenery not looked through yet"
             : "renderers out of the picture (" + (_byEnabled ? "disabled" : "forceRenderingOff") + "): " + _heldRenderers + " in " + _heldCells + " of " + _cells.Count + " squares; scenery " + _scenery
-              + (_byEnabled ? ", left alone " + _leftAlone : string.Empty);
+              + ", left alone " + _leftAlone;
     }
 }
