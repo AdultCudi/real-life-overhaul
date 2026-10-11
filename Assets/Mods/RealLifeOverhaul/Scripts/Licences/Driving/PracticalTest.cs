@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using BAModAPI;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UnityEngine;
 using UnityEngine.AI;
@@ -74,6 +75,16 @@ namespace RealLifeOverhaul
         private readonly TestRoute _route = new TestRoute();
         private readonly int[] _faults = new int[(int)TestFault.Count];
         private readonly StringBuilder _text = new StringBuilder(512);
+        private readonly SchoolScreens _screens;
+        private readonly GuideMark _mark = new GuideMark();
+        private readonly DoorPanel _park;
+        private readonly Action _onParked;
+        private readonly Action _onSheetClosed;
+        private ShiftCard _card;
+        private bool _parkWritten;
+        private bool _closingSheet;
+        private string _toldObjective;
+        private int _hudNext = -1, _hudMinor = -1, _hudSerious = -1, _hudSecs = -1;
 
         private Step _step = Step.None;
         private LicenceClass _class;
@@ -98,8 +109,7 @@ namespace RealLifeOverhaul
         private float _outSince = -1f;
         private float _farSince = -1f;
         private float _halfWidth = 0.9f, _halfLength = 2.1f;
-        private string _title, _objective, _status, _markerLabel, _prompt;
-        private int _statusMinor = -1, _statusSerious = -1;
+        private string _title, _objective, _markerLabel, _prompt;
         private bool _passed;
         private float _resultAt;
 
@@ -123,8 +133,12 @@ namespace RealLifeOverhaul
         private float _reversed;            // metres backed near the bay
         private Vector3 _lastPosition;
 
-        public PracticalTest(TestCar lender, Func<JobCast> cast, Transform parent, IModLogger logger)
+        public PracticalTest(TestCar lender, Func<JobCast> cast, Transform parent, IModLogger logger, SchoolScreens screens)
         {
+            _screens = screens;
+            _park = new DoorPanel(logger, "Licences check (parked panel)");
+            _onParked = _park.Press(ParkedClicked);
+            _onSheetClosed = SheetClosed;
             _lender = lender;
             _cast = cast;
             _parent = parent;
@@ -186,8 +200,12 @@ namespace RealLifeOverhaul
             _outSince = -1f;
             _farSince = -1f;
             _reversed = 0f;
-            _statusMinor = -1;
-            _statusSerious = -1;
+            if (_card == null || !_card.Alive)
+            {
+                _card = ShiftCard.Make(_logger);   // the game's job panel; null (one line says why) leaves the instruction to notifications
+            }
+            _hudNext = _hudMinor = _hudSerious = _hudSecs = -1;
+            _toldObjective = null;
             _title = Licences.T(lesson ? "reallife_lic_test_title_lesson" : "reallife_lic_test_title", "class", Licences.ClassName(kind));
             Hook(car);
             PutExaminer(centre);
@@ -263,52 +281,119 @@ namespace RealLifeOverhaul
             {
                 _nextTick = now + TickInterval;
                 Tick(now);
+                Hud(now);
             }
-            if (_step == Step.None || !LicenceHud.Exists)
+        }
+
+        // Five times a second: the job panel's lines (only the ones whose words changed), the game's destination marker, and the panel at the bay.
+        private void Hud(float now)
+        {
+            if (_step == Step.None)
             {
                 return;
             }
-            LicenceHud hud = LicenceHud.Instance;
-            if (ThirdPersonCamera.IsUiOpen())
+            if (_step == Step.Result || _step == Step.Leaving)
             {
-                hud.HideObjective();
-                hud.HideMarker();
-                hud.HidePrompt();
+                _card?.Show(false);
+                _mark.Hide();
+                _park.Hide("the drive is over");
                 return;
             }
-            hud.ShowObjective(_title, _objective);
-            if (_step == Step.Drive || _step == Step.Park)
+            bool driving = _step == Step.Drive || _step == Step.Park;
+            if (_card != null)
             {
-                if (_statusMinor != Minors || _statusSerious != Seriouses)
+                _card.Title(_title);
+                _card.Line(0, _objective, WorldPanel.White());
+                if (driving)
                 {
-                    _statusMinor = Minors;
-                    _statusSerious = Seriouses;
-                    _status = _lesson ? Licences.T("reallife_lic_status_lesson", "faults", (_statusMinor + _statusSerious).ToString())
-                        : Licences.T("reallife_lic_status_faults", "minor", _statusMinor.ToString(), "serious", _statusSerious.ToString());
+                    int minor = Minors;
+                    int serious = Seriouses;
+                    int done = _step == Step.Park ? _route.Checkpoints.Count : _next;
+                    if (done != _hudNext)
+                    {
+                        _hudNext = done;
+                        _card.Line(1, Licences.T("reallife_lic_card_checkpoints", "done", done.ToString(), "of", _route.Checkpoints.Count.ToString()), WorldPanel.White());
+                    }
+                    if (minor != _hudMinor || serious != _hudSerious)
+                    {
+                        _hudMinor = minor;
+                        _hudSerious = serious;
+                        if (_lesson)
+                        {
+                            _card.Line(2, Licences.T("reallife_lic_card_faults", "faults", (minor + serious).ToString()), serious > 0 ? WorldPanel.Red() : WorldPanel.White());
+                            _card.Line(3, null, WorldPanel.White());
+                        }
+                        else
+                        {
+                            _card.Line(2, Licences.T("reallife_lic_card_minor", "minor", minor.ToString(), "allowed", LicenceLaw.MinorsAllowed.ToString()), WorldPanel.White());
+                            _card.Line(3, Licences.T("reallife_lic_card_serious", "serious", serious.ToString()), serious > 0 ? WorldPanel.Red() : WorldPanel.White());
+                        }
+                    }
                 }
-                hud.ShowStatus(_status);
+                int secs = Mathf.Max(0, Mathf.CeilToInt(_stepEnd - now));
+                if (secs != _hudSecs)
+                {
+                    _hudSecs = secs;
+                    _card.Line(4, Licences.T("reallife_lic_card_time", "time", (secs / 60).ToString() + ":" + (secs % 60).ToString("00")), secs < 30 ? WorldPanel.Red() : WorldPanel.White());
+                }
+                _card.Show(true);
             }
-            else
+            else if (!ReferenceEquals(_objective, _toldObjective))
             {
-                hud.ShowStatus(null);
+                _toldObjective = _objective;
+                Licences.Toast(NotificationType.Info, "reallife_lic_toast", "text", _objective ?? string.Empty, 6f);
             }
             if (_markerLabel != null)
             {
-                PlayerController player = PlayerHelper.PlayerController;
-                hud.ShowMarkerAt(_markerLabel, _markerAt, _body != null && Driving ? _body.position : player != null ? player.transform.position : _markerAt);
+                _mark.Show(_markerAt, _markerLabel);
             }
             else
             {
-                hud.HideMarker();
+                _mark.Hide();
             }
-            if (_prompt != null)
+            if (_prompt != null && _body != null && _step == Step.Park)
             {
-                hud.ShowPrompt(_prompt);
+                if (!_parkWritten)
+                {
+                    _parkWritten = true;
+                    WorldPanel panel = _park.Panel;
+                    panel.Lines(Licences.T("reallife_lic_park_title"), Licences.T("reallife_lic_park_line"), null, WorldPanel.White());
+                    panel.Buttons("reallife_lic_park_button", _onParked, true, null, null, false);
+                    panel.Button(2, null, null, false, false);
+                    panel.Button(3, null, null, false, false);
+                }
+                _park.Show(_body.position, _body.position, 2.0f, null);
             }
             else
             {
-                hud.HidePrompt();
+                _park.Hide("the car is not still near the bay");
             }
+        }
+
+        private void ParkedClicked()
+        {
+            try
+            {
+                if (_step == Step.Park && _prompt != null)
+                {
+                    _park.Hide("the player said they have parked");
+                    JudgeParking();
+                    Conclude(Time.time, null);
+                }
+            }
+            catch (Exception e)
+            {
+                _logger?.Error(e);
+            }
+        }
+
+        /// <summary>Takes everything of the test's off the screen for good: the city is unloading.</summary>
+        public void Dispose()
+        {
+            _mark.Hide();
+            _park.Hide("the director went with the city");
+            _card?.Destroy();
+            _card = null;
         }
 
         private Vector3 _markerAt;
@@ -547,42 +632,14 @@ namespace RealLifeOverhaul
             Vector3 goal = _route.HasBay ? _route.BayCentre : _route.StopAt;
             bool near = JobSpots.Flat(position, goal) < 14f;
             bool still = _body.velocity.sqrMagnitude < 0.3f * 0.3f;
-            string prompt = near && still ? PromptText : null;
+            string prompt = near && still ? ParkedMark : null;
             if (!ReferenceEquals(prompt, _prompt))
             {
                 _prompt = prompt;
             }
         }
 
-        private string _promptText;
-        private int _promptKeys = -1;
-
-        private string PromptText
-        {
-            get
-            {
-                if (_promptText == null || _promptKeys != Keys.Version)
-                {
-                    _promptKeys = Keys.Version;
-                    _promptText = Licences.T("reallife_lic_test_prompt_parked", "key", Keys.Label(KeyAction.Interact));
-                }
-                return _promptText;
-            }
-        }
-
-        /// <summary>The interaction key: "I have parked", or putting the result sheet away.</summary>
-        public void Interact(float now)
-        {
-            if (_step == Step.Park && _prompt != null)
-            {
-                JudgeParking();
-                Conclude(now, null);
-            }
-            else if (_step == Step.Result && now >= _resultAt + 1f)
-            {
-                CloseSheet(now);
-            }
-        }
+        private const string ParkedMark = "parked";   // (a flag: the bay panel is up while the car stands still near the bay)
 
         // ---------------------------------------------------------------- what the examiner sees
 
@@ -964,7 +1021,10 @@ namespace RealLifeOverhaul
             }
             string title = _lesson ? Licences.T("reallife_lic_sheet_title_lesson")
                 : Licences.T(_passed ? "reallife_lic_sheet_title_pass" : "reallife_lic_sheet_title_fail");
-            LicenceHud.Instance.ShowSheet(title, _text.ToString(), null, Licences.T("reallife_lic_sheet_close", "key", Keys.Label(KeyAction.Interact)));
+            if (!_screens.Report(this, title, string.Empty, _text.ToString(), _onSheetClosed))
+            {
+                Licences.Toast(_passed ? NotificationType.Success : NotificationType.Info, "reallife_lic_toast", "text", title + "\n" + _text, 20f);   // no window: the report is the notification
+            }
             _objective = Licences.T("reallife_lic_test_over");
             _markerLabel = null;
             _step = Step.Result;
@@ -973,12 +1033,23 @@ namespace RealLifeOverhaul
                           + serious + " serious" + (_lesson ? "." : _passed ? ": PASSED, " + _class + " licence issued." : ": failed."));
         }
 
+        // The result page was closed by its Close entry or the cancel key: the examiner may go.
+        private void SheetClosed()
+        {
+            if (_step == Step.Result && !_closingSheet)
+            {
+                CloseSheet(Time.time);
+            }
+        }
+
         private void CloseSheet(float now)
         {
-            if (LicenceHud.Exists)
+            _closingSheet = true;
+            if (_screens.Window.OpenFor(this))
             {
-                LicenceHud.Instance.HideSheet();
+                _screens.Window.Close();
             }
+            _closingSheet = false;
             Licences.Toast(_passed ? NotificationType.Success : NotificationType.Info,
                 _lesson ? "reallife_lic_test_bye_lesson" : _passed ? "reallife_lic_test_bye_pass" : "reallife_lic_test_bye_fail", 8f);
             // The examiner gets out and walks back towards the desk; the car goes back once the player has left it.
@@ -1064,11 +1135,16 @@ namespace RealLifeOverhaul
             _lender.Return();
             _car = null;
             _body = null;
-            if (LicenceHud.Exists)
+            _card?.Show(false);
+            _mark.Hide();
+            _park.Hide("the test ended");
+            _parkWritten = false;
+            _closingSheet = true;
+            if (_screens.Window.OpenFor(this))
             {
-                LicenceHud.Instance.HideActivity();
-                LicenceHud.Instance.HidePrompt();
+                _screens.Window.Close();
             }
+            _closingSheet = false;
         }
 
         // ---------------------------------------------------------------- small parts

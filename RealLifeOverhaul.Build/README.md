@@ -4338,15 +4338,16 @@ school's car is taken off the save's vehicle list for the length of each seriali
 Licences/
   Licences          the one door for the rest of the mod: Licences.Driving.Has(LicenceClass), Licences.Law (ILawBridge), listeners
   LicenceState      classes, validity, points, suspension, retests: game-free rules and the modData line (LicenceLaw has every figure)
-  LicenceDirector   loads/saves, the first-run grant, the desks' prompt, the one test that is on, enforcement's tick, the test buttons
-  LicenceHud        objective panel, checkpoint marker, key prompt, the sheet (test paper, result, licence card)
+  LicenceDirector   loads/saves, the first-run grant, the desks' panel, the one test that is on, enforcement's tick, the test buttons
+  SchoolDesk        the game's panel at a desk and the school's list (services, the licence card as a second page)
+  SchoolScreens     the school's one list window (a GameUi.DeskList) and the plain report page
   LicenceProps      the things stood in the world, by id: the modelled prop if the bundle has it, else a plain-shape stand-in
-  TheoryTest        a written test on the sheet: no repeats, a question from every subject, 1/2/3 to answer
+  TheoryTest        a written test as a question card in the list: no repeats, a question from every subject, three answers and a way to give up
   Driving/
     DrivingSchool      what the school offers and when (DrivingSchool), the desks at the school buildings (LicenceDesks),
                        the Licensing Office contact (LicencePhone) and the conversation both use (DrivingSchoolDialog)
     DrivingQuestions   the 66 theory questions in seven subjects
-    PracticalTest      a lesson or test, driven: examiner, checkpoints, what is marked, the bay, the result sheet
+    PracticalTest      a lesson or test, driven: examiner, checkpoints, what is marked, the bay, the result page
     TestRoute          five to seven checkpoints along real lanes and a marked bay at the kerb
     TestCar            the school's car: made the game's way, never in a save, the player seen out of it when the drive ends (and again if they get back in), taken back with the game's own delete
     DrivingEnforcement penalty points, the licence asked for at a stop, impound, arrest, the routine roadside check
@@ -4393,6 +4394,28 @@ lesson or test is lawful and is never checked.
 
 Points count for 21 days. Twelve suspend every licence for 7 days, after which the record starts from zero.
 
+
+### The school in the game's own interface
+
+- Desk: the game's panel over a place (`GameUi.WorldPanel` through `GameUi.DoorPanel`) says whether the school is open
+  and has "Speak to the instructor" on the interact key. The list (`SchoolDesk`, a `GameUi.TravelList` on the shared
+  `SchoolScreens.Window`) has an entry per service with the fee and what is needed under its name and its button off,
+  with the reason, when it cannot be had (closed hours, the fee, a test still to pass, a wait after a failure). The
+  texts are the dialogue's own pitch lines. Renewals, the taxi endorsement and the motorcycle assessment are done at
+  once and the list stays; a test or a lesson closes it and starts as before. The licence card is a second page of
+  the same list (a note per licence, one for the points, one for a suspension, Back): a card is short facts with
+  names, which is what the list's entries are.
+- Written test: a question card. The headline is the test, the first info line the question, the second "Question 4
+  of 12"; three entries "Answer 1..3" carry the answers; "Give up the test" counts as a failed paper (new). The list
+  is `Locked`. An answer is a notification; the end is a page with the score and Close.
+- Driven test and lesson: a copy of the game's job panel (`Jobs/ShiftCard`, reused as it is) with the instruction,
+  the checkpoints passed, the faults and the time left, written five times a second only when a line changes; the
+  next checkpoint is the game's destination marker (`GameUi.GuideMark`); at the bay the panel over a place has "I have
+  parked" on the interact key; the result is a report page with Close. The school's car logic is unchanged.
+- Fallbacks: no window, no written test (the fee is returned), the desk speaks through the dialogue panel, results are
+  notifications. No job panel: each instruction is a notification.
+- Log lines: "Licences check (desk panel)", "(desk list)", "(theory): question 4 of 12 ...: PASS", "(report)", "(choice)".
+- Not checked in the game: any of it.
 ### The driven test
 
 The school's car (a Honza Mimic; a Mersaidi Dash for the commercial class) is put at the roadside near the desk, the
