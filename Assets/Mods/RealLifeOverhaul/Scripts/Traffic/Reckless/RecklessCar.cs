@@ -526,6 +526,20 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// It has hit something, but no scene of its own is to come of that (it had just run somebody down, and that
+        /// scene will take the car): it stays where it stopped, held still, and what it hit is forgotten.
+        /// </summary>
+        public void Stay()
+        {
+            Struck = Hit.None;
+            Other = null;
+            if (InUse && !_unit.IsLost)
+            {
+                _unit.Park();
+            }
+        }
+
         // ---------------------------------------------------------------- letting go
 
         /// <summary>Passes the car on as it stands to an accident scene (ResponseUnit.HandOver). Null if it was no longer ours.</summary>

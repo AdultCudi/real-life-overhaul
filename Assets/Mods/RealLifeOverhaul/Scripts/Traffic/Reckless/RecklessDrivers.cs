@@ -69,6 +69,7 @@ namespace RealLifeOverhaul
         private const float TestWithin = 200f;       // metres a test button looks for a car
         private const float MarkFor = 15f;           // seconds a test's car is marked
         private const float BlamelessFor = 5f;       // seconds after it hit the player's car in which that crash is still its fault
+        private const float HurtScene = 20f;         // seconds after it ran somebody down in which the scene round them has not begun or has only just
 
         private enum Phase { Idle, Driving, Settling, Stopping, Waiting, Fleeing, Chased }
 
@@ -115,6 +116,7 @@ namespace RealLifeOverhaul
         private VehicleComponent _jayCar;    // the car somebody last stepped out in front of
         private bool _test;              // a test button started this one: it is told when a part of it cannot be done
         private bool _easing;            // settled, and now pulling up to be handed back standing
+        private float _hurtAt;           // when it last ran somebody down who did not get up; 0 if it has not
         private float _jayAt;
 
         private void Awake()
@@ -295,6 +297,7 @@ namespace RealLifeOverhaul
             _nextHorn = now;
             _hurtSeen = incidents != null ? incidents.TrafficHurt : 0;
             _lightsSeen = 0;
+            _hurtAt = 0f;
             _presenceLooked = false;
             _chaseWanted = false;
             _complies = false;
@@ -585,6 +588,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             _peopleDue = Mathf.Max(0f, _peopleDue - 1f);
+            _hurtAt = now;
             if (_phase != Phase.Driving)
             {
                 Logger?.Info("Reckless driver: somebody else was run down as it ran.");
@@ -824,6 +828,19 @@ namespace RealLifeOverhaul
             VehicleComponent other = hit == RecklessCar.Hit.Car ? _car.Other : null;
             float closing = _car.Closing;
             StreetRules.Kind kind = _car.Kind;
+            if (_hurtAt > 0f && now - _hurtAt < HurtScene && hit != RecklessCar.Hit.Player)
+            {
+                // It had just run somebody down, and now it has hit something as well. One scene comes of the two, and it is
+                // the one round the person: a crash scene started here would be ended again the moment they come to rest
+                // (PedestrianIncidents lets nothing stand in the way of help). So the car stays where it stopped, and is
+                // taken into that scene as the car that hit them, whether its driver had meant to stop or not.
+                CallOff();
+                _car.Stay();
+                _phase = Phase.Waiting;
+                _waitUntil = now + WaitForScene;
+                Logger?.Info($"Reckless driver: having just run somebody down it hit something at {closing * 3.6f:F0} km/h and goes no further; it stays for the scene round them.");
+                return;
+            }
             CallOff();
             VehicleComponent mine = _car.HandOver();
             Idle(now);
@@ -911,6 +928,7 @@ namespace RealLifeOverhaul
             _phase = Phase.Idle;
             _nextCheck = now + StreetRules.CheckSeconds;
             _patrolAt = 0f;
+            _hurtAt = 0f;
             if (_marked)
             {
                 _marked = false;
@@ -943,6 +961,7 @@ namespace RealLifeOverhaul
                 _phase = Phase.Idle;
                 _nextCheck = Time.time + StreetRules.CheckSeconds;
                 _patrolAt = 0f;
+                _hurtAt = 0f;
                 if (_marked)
                 {
                     _marked = false;
