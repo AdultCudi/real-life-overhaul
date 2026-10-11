@@ -409,7 +409,12 @@ namespace RealLifeOverhaul
                     return;
                 }
                 _post.Stand(point.position);
-                _post.Work(SceneClips.DirectTraffic);   // facing the junction, directing it (they simply stand if the clip cannot be had)
+                // On watch at the corner, facing the junction. The lights are working and the traffic obeys them, so nobody
+                // is waved on: directing traffic is for an accident scene (People/SceneOfficer). Some are on the radio.
+                if (Random.value < 0.4f)
+                {
+                    _post.Work(SceneClips.RadioTalk, RadioPose, RadioProp);
+                }
                 _postOut = true;
                 _postUntil = now + Random.Range(100f, 220f);
                 _nextTick = Mathf.Min(_nextTick, now);
