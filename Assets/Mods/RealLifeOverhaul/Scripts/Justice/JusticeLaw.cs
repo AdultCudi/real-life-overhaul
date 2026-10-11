@@ -64,6 +64,8 @@ namespace RealLifeOverhaul
 
         // Caps. Nothing a court does goes past these, whatever is added up.
         public const int CustodyCapHours = 48;         // the station's own limit (Law bridge): never held longer without a prison sentence
+        public const string HoldRemand = "reallife_justice_hold_remand";      // why somebody is in the station's cell, for the Law bridge: until the court sits
+        public const string HoldSentence = "reallife_justice_hold_sentence";  // ...or serving hours of custody
         public const int PrisonCapDefault = 7;         // in-game days; the option runs 3 to 14
         public const int PrisonCapMin = 3;
         public const int PrisonCapMax = 14;

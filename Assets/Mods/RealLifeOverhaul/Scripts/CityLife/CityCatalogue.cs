@@ -105,13 +105,26 @@ namespace RealLifeOverhaul
                 Id = "phone_call", Name = "reallife_city_name_phone_call", Family = CityFamily.Everyday, Weight = 10, From = 8, To = 25,
                 Activity = new SoloActivity(new SoloSpec
                 {
-                    Place = SoloPlace.BackToWall, Wall = 0.6f, Room = 0.4f, UsesGamePose = true, GamePose = PermanentAnimationType.TalkingPhone, GameProp = "PhoneOff"
+                    Place = SoloPlace.BackToWall, Wall = 0.6f, Room = 0.4f, UsesGamePose = true, GamePose = PermanentAnimationType.TalkingPhone, GameProp = "PhoneOff",
+                    Ring = "phone_answer", WorkMin = 14f, WorkMax = 26f, RestMin = 5f, RestMax = 9f   // a call ends, the phone is pocketed, it rings again and is answered
                 })
             },
             new CityEntry
             {
                 Id = "coffee_break", Name = "reallife_city_name_coffee_break", Family = CityFamily.Everyday, Weight = 10, From = 7, To = 17,
                 Activity = new SoloActivity(new SoloSpec { Place = SoloPlace.BackToWall, Wall = 0.6f, Room = 0.4f, Work = "cup_hold", Now = "sip", NowMin = 8f, NowMax = 15f })
+            },
+            new CityEntry
+            {
+                // Lunch out of a carton by a wall: the carton on the left palm, a piece to the mouth every few seconds (eat_standing, with takeaway_box).
+                Id = "street_lunch", Name = "reallife_city_name_street_lunch", Family = CityFamily.Everyday, Weight = 9, From = 11, To = 15,
+                Activity = new SoloActivity(new SoloSpec { Place = SoloPlace.BackToWall, Wall = 0.6f, Room = 0.4f, Now = "eat_standing", HoldNow = true, NowMin = 4f, NowMax = 8f })
+            },
+            new CityEntry
+            {
+                // Somebody from a shop or an office on the doorstep with a mug: held at the hip, a drink now and then (drink_stand, with mug).
+                Id = "mug_break", Name = "reallife_city_name_mug_break", Family = CityFamily.Everyday, Weight = 8, From = 7, To = 17,
+                Activity = new SoloActivity(new SoloSpec { Place = SoloPlace.BackToWall, Wall = 0.6f, Room = 0.4f, Now = "drink_stand", HoldNow = true, NowMin = 7f, NowMax = 14f })
             },
             new CityEntry
             {
@@ -176,6 +189,11 @@ namespace RealLifeOverhaul
             },
             new CityEntry
             {
+                Id = "bench_chat", Name = "reallife_city_name_bench_chat", Family = CityFamily.Leisure, Cast = 2, Weight = 9, From = 9, To = 21, MinMinutes = 6f, MaxMinutes = 12f,
+                Activity = new BenchChatActivity()
+            },
+            new CityEntry
+            {
                 Id = "tai_chi", Name = "reallife_city_name_tai_chi", Family = CityFamily.Leisure, Weight = 9, From = 6, To = 10,
                 Activity = new SoloActivity(new SoloSpec { Room = 1.0f, Ahead = 0.9f, Work = "tai_chi" })
             },
@@ -202,7 +220,8 @@ namespace RealLifeOverhaul
             new CityEntry
             {
                 Id = "doorman", Name = "reallife_city_name_doorman", Family = CityFamily.Leisure, Weight = 8, From = 9, To = 26,
-                Activity = new SoloActivity(new SoloSpec { Look = CityLook.Doorman, Place = SoloPlace.BackToWall, Wall = 0.55f, Room = 0.4f, Work = "guard_stand" })
+                // (Somebody on foot in front of him is shown the way in: an open hand swept round to the door.)
+                Activity = new SoloActivity(new SoloSpec { Look = CityLook.Doorman, Place = SoloPlace.BackToWall, Wall = 0.55f, Room = 0.4f, Work = "guard_stand", Greet = "point_show" })
             },
             new CityEntry
             {

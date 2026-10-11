@@ -1267,12 +1267,22 @@ namespace RealLifeOverhaul
         // The customers served by hand, paid once at the end (the clock's were paid as each run of it ended).
         private void Settle()
         {
-            if (_paid || _hand <= 0 || Ctx == null)
+            if (!Owed(out PaySlip slip))
             {
                 return;
             }
             _paid = true;
-            var slip = new PaySlip
+            Ctx.Pay(this, slip, "reallife_job_vendor_slip");
+        }
+
+        protected override bool Owed(out PaySlip slip)
+        {
+            slip = default;
+            if (_paid || _hand <= 0 || Ctx == null)
+            {
+                return false;
+            }
+            slip = new PaySlip
             {
                 Units = _hand,
                 // A wage by the customer, rounded on the total; with a cart of their own, the takings less what the drinks cost.
@@ -1280,7 +1290,19 @@ namespace RealLifeOverhaul
                 Tips = Mathf.RoundToInt(_tips * Ctx.TipFactor),
                 Bonus = _misses == 0 && _served >= _customers ? Mathf.RoundToInt(_hand * Def.UnitPay * Ctx.Rate * 0.1f) : 0   // nobody kept waiting
             };
-            Ctx.Pay(this, slip, "reallife_job_vendor_slip");
+            return true;
+        }
+
+        // The cart runs the clock itself: the customers a run that is still going has served, at the clock's share, as that run pays them when it ends.
+        protected override bool ClockOwed(out PaySlip slip)
+        {
+            slip = default;
+            if (Ctx == null || _ending || _skip == null || _skipDone <= 0)
+            {
+                return false;
+            }
+            slip = new PaySlip { Units = _skipDone, Base = Mathf.RoundToInt(_skipDone * PayEach * ShiftRates.Share) };
+            return true;
         }
 
         public override void End(JobEnd why)

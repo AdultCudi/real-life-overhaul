@@ -56,6 +56,8 @@ namespace RealLifeOverhaul
         private float _nextFast;
         private int _lastHour = -1;
         private bool _routine;              // a custody or a prison term is being served
+        private bool _lawHolds;             // ...or the Law bridge is serving one in a station's cell, and has not said it is over
+        private Action _lawReleased;
         private bool _bailOpen;
         private bool _fileOpen;
         private bool _fileQueued;
@@ -480,7 +482,12 @@ namespace RealLifeOverhaul
             bool taken = false;
             try
             {
-                taken = Justice.Bridges.Law.Custody(hours, null);
+                if (_lawReleased == null)
+                {
+                    _lawReleased = () => _lawHolds = false;
+                }
+                _lawHolds = true;   // (before the call: a bridge that lets them out at once has said so by the time it returns)
+                taken = Justice.Bridges.Law.Custody(hours, toCourt ? JusticeLaw.HoldRemand : JusticeLaw.HoldSentence, _lawReleased);
             }
             catch (Exception e)
             {
@@ -488,7 +495,27 @@ namespace RealLifeOverhaul
             }
             if (!taken)
             {
+                _lawHolds = false;
                 StartCoroutine(Routine(_prison.Custody(hours, toCourt, null)));
+            }
+            if (Meta.Dev.Verbose)
+            {
+                Logger?.Info("Justice check (custody): " + hours + " h " + (toCourt ? "on remand" : "of custody") + ": "
+                             + (taken ? "served in the police station's cell (the Law bridge took it)" : "served as time passing (no station could take it)") + ": PASS.");
+            }
+        }
+
+        // The Law bridge's word on whether the player is in one of its cells (asked once an in-game hour, for a hearing that is running late).
+        private bool LawHolding()
+        {
+            try
+            {
+                return Justice.Bridges.Law.Holding;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return false;
             }
         }
 
@@ -552,9 +579,10 @@ namespace RealLifeOverhaul
             bool late = today > c.CourtDay || (today == c.CourtDay && hour >= JusticeLaw.CourtCloses);
             if (late)
             {
-                bool excused = JusticeState.InPrison || _routine || (_hearing != null && _hearing.Case == c) || JusticeState.HearNow == c.Number
+                bool inCell = _lawHolds || LawHolding();
+                bool excused = JusticeState.InPrison || _routine || inCell || (_hearing != null && _hearing.Case == c) || JusticeState.HearNow == c.Number
                                || Helpers.EnergyHelper.goingToHospital;
-                if (excused && (c.Postponed < 5 || JusticeState.InPrison || _routine))   // (nobody in a cell is ever counted absent)
+                if (excused && (c.Postponed < 5 || JusticeState.InPrison || _routine || _lawHolds))   // (nobody in a cell is ever counted absent)
                 {
                     c.Postponed++;
                     c.CourtDay = today + 1;

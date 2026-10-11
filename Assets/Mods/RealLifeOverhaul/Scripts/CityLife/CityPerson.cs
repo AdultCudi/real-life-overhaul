@@ -134,6 +134,68 @@ namespace RealLifeOverhaul
             }
         }
 
+        // ---------------------------------------------------------------- sitting (People/Seating)
+
+        private Transform _seat;            // the game's own sitting position they are on, or null
+        private Vector3 _stoodAt;           // where they stood before they sat down: on the navigation mesh, and where they stand up to
+        private Quaternion _stoodFacing;
+
+        /// <summary>True while they sit on one of the game's seats.</summary>
+        public bool Seated => _seat != null;
+
+        /// <summary>
+        /// Sits them on one of the game's own sitting positions (a chair, a sofa, a street bench: <see cref="Seating"/> finds
+        /// them) exactly as the game seats its own people (<c>ThirdPersonCharacter.SitOnChair</c>): the game's sitting pose,
+        /// made for its seats; the navigation agent switched off, since a seat is not on the mesh; the seat told that it is
+        /// taken, so the game offers it to nobody else. Whatever they held is the caller's to put away first. False, and
+        /// nothing changed, if they cannot (lost, seated already, no such pose on this character).
+        /// </summary>
+        public bool Sit(Transform seat)
+        {
+            if (Lost || seat == null || _seat != null || !Character.animator.HasParameter(PermanentAnimationType.Sitting.ToString()))
+            {
+                return false;
+            }
+            Idle(0.15f);
+            ClearPose();
+            StopOver(0.15f);
+            CityLifeDirector.StopFacing(this);
+            Stand();
+            _stoodAt = Character.transform.position;
+            _stoodFacing = Character.transform.rotation;
+            _seat = seat;
+            Character.SitOnChair(seat);
+            return true;
+        }
+
+        /// <summary>
+        /// Stands them up where they stood before they sat, by the game's own way off a seat (<c>ThirdPersonCharacter.Reset</c>:
+        /// the agent on again, the seat told that it is free, the pose off). Safe at any time, seated or not; every way a
+        /// person is moved, played or put away goes through it, so nobody is ever left sitting on nothing.
+        /// </summary>
+        public void Rise()
+        {
+            if (_seat == null)
+            {
+                return;
+            }
+            _seat = null;
+            if (!Valid)
+            {
+                return;
+            }
+            // There first, then the agent: switched on at the seat (off the mesh) the engine logs a warning.
+            Character.transform.SetPositionAndRotation(_stoodAt, _stoodFacing);
+            Character.Reset();
+            NavMeshAgent agent = Character.navmeshAgent;
+            if (agent.enabled)
+            {
+                agent.Warp(_stoodAt);
+            }
+            Character.transform.rotation = _stoodFacing;
+            Stand();
+        }
+
         /// <summary>Walks or jogs to a point on the navigation mesh. Any clip is ended first: nobody slides in a working pose.</summary>
         public bool WalkTo(Vector3 destination, bool jog = false)
         {
@@ -141,6 +203,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
+            Rise();
             Idle(0.2f);
             NavMeshAgent agent = Character.navmeshAgent;
             if (!agent.enabled || !agent.isOnNavMesh)
@@ -233,6 +296,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
+            Rise();   // (a whole-body clip is made for somebody on their feet: nobody plays one sitting on a seat of the game's)
             ClearPose();
             if (!_player.Play(clip.Clip, fade, 1f, end, startAt))
             {
@@ -466,6 +530,7 @@ namespace RealLifeOverhaul
         /// </summary>
         internal void Surrender(List<Transform> dropped)
         {
+            Rise();
             if (_player != null)
             {
                 _player.Dispose();
@@ -559,8 +624,10 @@ namespace RealLifeOverhaul
         {
             if (!Valid)
             {
+                _seat = null;
                 return;
             }
+            Rise();
             if (_player != null)
             {
                 _player.Dispose();

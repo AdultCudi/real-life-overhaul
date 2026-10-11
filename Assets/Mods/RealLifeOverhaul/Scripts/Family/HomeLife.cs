@@ -18,18 +18,22 @@ namespace RealLifeOverhaul.Family
     /// too, they are there as a real character: standing in the kitchen with a coffee, in
     /// front of the television, reading the paper, walking between those places on the
     /// floor's own navigation mesh; they greet the player at the door and can be talked to.
-    /// They only stand: the game's chairs and beds are driven by its customers' behaviour
-    /// trees and its own sleep activity, neither of which one of our characters can use
-    /// reliably, so asleep is a state (they are "in bed", not shown) and nobody sits.
+    /// Part of the time they sit: on a chair, an armchair or a sofa the player has put in the
+    /// home, seated as the game seats its own people (<see cref="Seating"/>), for a minute or two,
+    /// and they get up to walk on, to leave, or when the player speaks to them. Never on a seat
+    /// somebody is using. They do not lie down: the game's beds belong to its own sleep
+    /// activity, so asleep is a state (they are "in bed", not shown).
     ///
     /// Also here: moving in and out, the shared routines, their share of the rent, chores,
     /// looking after the player when they are ill or low, and evenings out.
     /// </summary>
     internal static class HomeLife
     {
-        private enum Mode { None, Standing, Walking, Leaving, Retiring, Talking }
+        private enum Mode { None, Standing, Walking, Leaving, Retiring, Talking, Sitting }
 
-        private const int MaxSpots = 4;
+        private const int MaxSpots = 6;
+        private const int MaxSeats = 2;            // of those, places beside something to sit on
+        private const int SeatKind = 3;
         private const float TalkReach = 2.3f;
 
         private static readonly string[] KitchenItems = { "stove", "fridge", "coffeemachine", "microwave", "kitchen", "sink", "oven" };
@@ -57,7 +61,9 @@ namespace RealLifeOverhaul.Family
 
         private static readonly Vector3[] Spots = new Vector3[MaxSpots];
         private static readonly Vector3[] Faces = new Vector3[MaxSpots];
-        private static readonly int[] Kinds = new int[MaxSpots];   // 0 kitchen, 1 living, 2 just a clear piece of floor
+        private static readonly int[] Kinds = new int[MaxSpots];   // 0 kitchen, 1 living, 2 just a clear piece of floor, 3 beside a seat
+        private static readonly ItemController[] Seats = new ItemController[MaxSpots];   // the seat of a place of kind 3
+        private static float _satAt;
         private static int _spotCount;
         private static int _at = -1;
         private static int _agentType;
@@ -290,6 +296,9 @@ namespace RealLifeOverhaul.Family
                         Standing(director, now, player);
                     }
                     break;
+                case Mode.Sitting:
+                    Sitting(director, now, player, where == Whereabouts.Home);
+                    break;
                 case Mode.Walking:
                     if ((_partner.Arrived && _partner.Near(Spots[_at], 0.7f)) || now >= _giveUp)
                     {
@@ -345,6 +354,7 @@ namespace RealLifeOverhaul.Family
             CityPerson person = Person;
             if (person != null)
             {
+                person.Rise();   // (a scene takes them standing)
                 person.PutAway(FamilyDirector.Instance.Cast.Props);
                 person.Idle(0.2f);
                 person.Stand();
@@ -387,8 +397,9 @@ namespace RealLifeOverhaul.Family
             _spotCount = 0;
             _at = -1;
             _agentType = -1;
+            Array.Clear(Seats, 0, Seats.Length);
             List<ItemController> items = manager.allItemControllers;
-            int kitchens = 0, livings = 0;
+            int kitchens = 0, livings = 0, seats = 0;
             for (int i = 0; items != null && i < items.Count && _spotCount < MaxSpots; i++)
             {
                 ItemController item = items[i];
@@ -396,8 +407,9 @@ namespace RealLifeOverhaul.Family
                 {
                     continue;
                 }
-                int kind = Is(item.itemName, KitchenItems) ? 0 : Is(item.itemName, LivingItems) ? 1 : -1;
-                if (kind < 0 || (kind == 0 && kitchens >= 2) || (kind == 1 && livings >= 2))
+                // Something to sit on (whatever the game calls it: a chair, an armchair, a sofa) is a place to sit; the rest are places to stand.
+                int kind = Seating.IsSeat(item) ? SeatKind : Is(item.itemName, KitchenItems) ? 0 : Is(item.itemName, LivingItems) ? 1 : -1;
+                if (kind < 0 || (kind == 0 && kitchens >= 2) || (kind == 1 && livings >= 2) || (kind == SeatKind && seats >= MaxSeats))
                 {
                     continue;
                 }
@@ -406,8 +418,14 @@ namespace RealLifeOverhaul.Family
                 {
                     continue;
                 }
+                Seats[_spotCount] = kind == SeatKind ? item : null;
                 Add(spot, at, kind, type);
-                if (kind == 0) kitchens++; else livings++;
+                if (kind == 0) kitchens++; else if (kind == 1) livings++; else seats++;
+            }
+            if (Meta.Dev.Verbose)
+            {
+                FamilyDirector.Logger?.Info("People check (seat): this home has " + seats + " place(s) to sit among " + _spotCount + " place(s) for the partner (the game's own seats, at most " + MaxSeats + "): "
+                                            + (seats > 0 ? "PASS" : "none: they stand") + ".");
             }
             // Clear floor a few steps in from the door, if the furniture gave nothing (or one place only).
             for (int ring = 0; ring < 2 && _spotCount < 2; ring++)
@@ -657,10 +675,73 @@ namespace RealLifeOverhaul.Family
             _partner.Stand();
             _mode = Mode.Standing;
             _nextMove = now + Random.Range(45f, 100f);
+            if (there && Kinds[_at] == SeatKind && SitDown(director, now))
+            {
+                return;
+            }
             if (there)
             {
                 director.Cast.Face(_partner, Faces[_at]);
                 Activity(director, _at);
+            }
+        }
+
+        // Onto the seat they have walked up to, if nobody is on it (the player least of all) and it is within a step.
+        private static bool SitDown(FamilyDirector director, float now)
+        {
+            ItemController item = Seats[_at];
+            Transform place = item != null ? Seating.Free(item) : null;
+            if (place == null || !Seating.InReach(_partner.Position, place))
+            {
+                Seating.Check(FamilyDirector.Logger, "the partner stays standing by " + (item != null ? item.itemName : "a seat that has gone") + " (in use, or out of reach)", true);
+                return false;
+            }
+            _partner.PutAway(director.Cast.Props);
+            float step = Mathf.Sqrt(CitySpots.Flat(place.position - _partner.Position));
+            if (!_partner.Sit(place))
+            {
+                Seating.Check(FamilyDirector.Logger, "the partner could not be seated on " + item.itemName, false);
+                return false;
+            }
+            _mode = Mode.Sitting;
+            _satAt = now;
+            _nextMove = now + Random.Range(70f, 160f);
+            Seating.Check(FamilyDirector.Logger, "the partner sat down on " + item.itemName + ", " + step.ToString("F2") + " m from where they stood, for " + (_nextMove - now).ToString("F0") + " s", true);
+            return true;
+        }
+
+        // Seated: they get up when it is time to move on or to go, when the seat is taken away, and when spoken to (StartTalk).
+        private static void Sitting(FamilyDirector director, float now, Vector3 player, bool staying)
+        {
+            ItemController item = _at >= 0 ? Seats[_at] : null;
+            Vector3 offset = _partner.Position - player;
+            float sqr = CitySpots.Flat(offset);
+            bool seatGone = item == null || !item.isActiveAndEnabled || !_partner.Seated;
+            if (!staying || seatGone || (now >= _nextMove && sqr > 2.5f * 2.5f))
+            {
+                GetUp(now, seatGone ? "the seat was taken away" : !staying ? "it is time to go" : "to walk on");
+                return;
+            }
+            PlayerController controller = PlayerHelper.PlayerController;
+            if (sqr < TalkReach * TalkReach && Mathf.Abs(offset.y) < 1.2f && controller != null
+                && Vector3.Dot(controller.Character.transform.forward, offset.normalized) > 0.45f)
+            {
+                director.Prompt("reallife_family_prompt_talk", Partner.Name, TalkAction, _partner.Valid ? _partner.Character.transform : null);
+            }
+        }
+
+        // On their feet where they stood before, and standing like anybody: the next second decides what they do.
+        private static void GetUp(float now, string why)
+        {
+            if (_partner == null)
+            {
+                return;
+            }
+            _partner.Rise();
+            if (_mode == Mode.Sitting)
+            {
+                _mode = Mode.Standing;
+                Seating.Check(FamilyDirector.Logger, "the partner got up after " + (now - _satAt).ToString("F0") + " s (" + why + ")", !_partner.Seated);
             }
         }
 
@@ -681,6 +762,7 @@ namespace RealLifeOverhaul.Family
                     }
                     break;
                 case 1:
+                case SeatKind:   // (standing by a seat that was not free: as in the living room)
                     if (!((TimeHelper.CurrentDay + at) % 2 == 0 ? _partner.Work("read_paper", props, 0.4f) : _partner.Work("watch_nod", props, 0.4f)))
                     {
                         _partner.Work("watch_nod", props, 0.4f);
@@ -695,6 +777,10 @@ namespace RealLifeOverhaul.Family
         private static void StartTalk()
         {
             FamilyDirector director = FamilyDirector.Instance;
+            if (_partner != null && !_partner.Lost && _mode == Mode.Sitting)
+            {
+                GetUp(Time.time, "the player spoke to them");   // they stand up to talk
+            }
             if (_partner == null || _partner.Lost || _mode != Mode.Standing)
             {
                 return;

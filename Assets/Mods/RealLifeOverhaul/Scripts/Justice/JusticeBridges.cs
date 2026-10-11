@@ -65,9 +65,14 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// Hold the player for some hours (never more than JusticeLaw.CustodyCapHours) and call <paramref name="released"/>
-        /// when they are out. Return false to leave it to the justice system's own plain time skip.
+        /// when they are out, however it ended. <paramref name="reasonKey"/> is the locale key of the sentence that says why
+        /// (<see cref="JusticeLaw.HoldRemand"/>, <see cref="JusticeLaw.HoldSentence"/>). Return false to leave it to the
+        /// justice system's own plain time skip.
         /// </summary>
-        bool Custody(int hours, Action released);
+        bool Custody(int hours, string reasonKey, Action released);
+
+        /// <summary>True while the player sits in a cell of theirs, or a save says they do and the stay has yet to be taken up again: nobody in a cell is counted absent from court.</summary>
+        bool Holding { get; }
 
         /// <summary>Where somebody let out of custody or prison is put down: the pavement outside a police station, and that station's name (what the player is told). False to use the courthouse.</summary>
         bool ReleaseSpot(out Vector3 spot, out string name);
@@ -109,7 +114,8 @@ namespace RealLifeOverhaul
         public void Convicted(string chargeId, int day, int caseNumber) { }
         public void Cleared(int caseNumber) { }
         public void RecordSealed() { }
-        public bool Custody(int hours, Action released) => false;
+        public bool Custody(int hours, string reasonKey, Action released) => false;
+        public bool Holding => false;
 
         public bool ReleaseSpot(out Vector3 spot, out string name)
         {

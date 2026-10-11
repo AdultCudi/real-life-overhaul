@@ -19,7 +19,8 @@ namespace RealLifeOverhaul
     ///    walk to the door together, the time inside passes with the game's own time machine,
     ///    and they are back on the pavement outside. After a coffee both come out with a cup.
     ///    Found shut, it becomes a walk.
-    ///  - a walk: the other person walks beside the player wherever they go, for 160 m.
+    ///  - a walk: the other person walks beside the player wherever they go, for 160 m. Passing one of the game's
+    ///    street benches, the two can sit down on it for a while (<see cref="Seating"/>); a rest counts as part of the walk.
     ///  - a drive, or a lift somewhere: the player pulls up, they walk to a rear door and get in
     ///    (the job passenger's clips and places), ride, and get out on the kerb.
     ///  - helping them move: three boxes carried from the old door to the new one.
@@ -29,7 +30,7 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class OutingScene : SocialScene
     {
-        private enum Step { Travel, Greeting, Talk, ToDoor, Inside, Walking, Boarding, Riding, PullOver, Boxes, Wrap, Parting }
+        private enum Step { Travel, Greeting, Talk, ToDoor, Inside, Walking, Boarding, Riding, PullOver, Boxes, Wrap, Parting, Bench }
         private enum Hello { Closing, Turning, Playing }
         private enum Toast { None, Closing, Turning, Raised, Done }
 
@@ -46,6 +47,9 @@ namespace RealLifeOverhaul
         private const float ToastGap = 1.05f;        // ...and `cheers`: two glasses meet bowl to bowl at this, and pass at 0.80
         private const float ToastSlack = 0.08f;
         private const float WalkGoal = 160f;         // metres walked together
+        private const float BenchReach = 4.5f;       // metres from a street bench at which sitting down on it is offered
+        private const float BenchRest = 40f;         // metres of the walk a rest on a bench counts as
+        private const float BenchMost = 90f;         // seconds they sit before the companion gets up of their own accord
         private const float DriveGoal = 650f;        // metres driven together
         private const float StopWithin = 17f;        // the car has "pulled up" when stopped this near
         private const float StoppedSpeed = 0.7f;
@@ -249,6 +253,7 @@ namespace RealLifeOverhaul
                     break;
                 case Step.Inside: Inside(now); break;
                 case Step.Walking: Walking(now); break;
+                case Step.Bench: OnBench(now); break;
                 case Step.Boarding: Boarding(now); break;
                 case Step.Riding: Riding(now, dt); break;
                 case Step.PullOver: PullOver(now); break;
@@ -725,6 +730,11 @@ namespace RealLifeOverhaul
         public override void Cut(SceneBreak why)
         {
             _cut = why;
+            if (_step == Step.Bench)
+            {
+                LeaveBench("the outing was cut");
+                BackToWalk(Time.time);
+            }
             string reason = WhyText(why);
             if (reason == null || Over || _settled || _step == Step.Parting || _greeted)
             {
@@ -759,6 +769,15 @@ namespace RealLifeOverhaul
             else if (_step == Step.Boxes)
             {
                 BoxKey(now);
+            }
+            else if (_step == Step.Walking && _bench != null)
+            {
+                SitOnBench(now);
+            }
+            else if (_step == Step.Bench)
+            {
+                LeaveBench("the player got up");
+                BackToWalk(now);
             }
         }
 
@@ -1098,12 +1117,139 @@ namespace RealLifeOverhaul
             }
         }
 
+        // ---------------------------------------------------------------- a bench on the way (People/Seating)
+
+        private readonly PlayerSeat _seat = new PlayerSeat();
+        private OutsideBenchController _bench;   // the bench that is offered, or sat on
+        private bool _benchKept;                 // the bench's own "seat a pedestrian here" as it was, put back when they get up
+        private bool _benchUsed;                 // one rest a walk
+        private bool _benchSaid;
+        private bool _friendSits;
+        private float _nextBench;
+
+        // Once every second and a half of a walk, while both are on foot and close: is one of the game's benches in reach?
+        private void LookForBench(float now, Vector3 player, float gap)
+        {
+            if (_benchUsed || now < _nextBench)
+            {
+                return;
+            }
+            _nextBench = now + 1.5f;
+            OutsideBenchController bench = D.OnFoot && gap < 6f && !_seat.Seated ? Seating.Bench(player, BenchReach) : null;
+            if (bench == _bench)
+            {
+                return;
+            }
+            _bench = bench;
+            if (bench != null)
+            {
+                Offer(SocialLife.Say("reallife_social_bench_prompt", SocialLife.Data(_who)), "reallife_social_button_sit", null);
+                Seating.Check(SocialDirector.Logger, "a street bench is " + Mathf.Sqrt((bench.sittingPosition.position - player).sqrMagnitude).ToString("F1") + " m from the player on a walk: sitting down is offered", true);
+            }
+            else
+            {
+                Prompt = null;
+            }
+        }
+
+        // The player on the bench's own place; the companion on its second place if the game has nobody there, else standing by.
+        private void SitOnBench(float now)
+        {
+            OutsideBenchController bench = _bench;
+            Prompt = null;
+            if (bench == null || !bench.isActiveAndEnabled || _friend == null || _friend.Lost)
+            {
+                _bench = null;
+                return;
+            }
+            _benchUsed = true;
+            if (_talkUntil > 0f)
+            {
+                _talkUntil = -1f;
+                _friend.StopOver(0.2f);
+            }
+            if (!_seat.Sit(PlayerHelper.PlayerController, bench.sittingPosition))
+            {
+                Seating.Check(SocialDirector.Logger, "the player could not be seated on the bench (in a car, hands full, or not on the ground)", false);
+                _bench = null;
+                return;
+            }
+            _benchKept = bench.spawnPedestrians;
+            bench.spawnPedestrians = false;   // the game seats nobody on top of the companion while they are here
+            _friendSits = Seating.SecondPlaceFree(bench) && Seating.InReach(_friend.Position, bench.aiSittingPosition) && _friend.Sit(bench.aiSittingPosition);
+            if (!_friendSits)
+            {
+                _friend.Stand();
+                _friend.Face(bench.sittingPosition.position);
+            }
+            _benchSaid = false;
+            Line = SocialLife.T("reallife_social_obj_bench", SocialLife.Data(_who));
+            Seating.Check(SocialDirector.Logger, "the player sat down on a street bench; the companion " + (_friendSits ? "sat down beside them" : "stands by (the bench's second place is taken or out of reach)"), true);
+            Go(Step.Bench, now, BenchMost + 30f);
+        }
+
+        private void OnBench(float now)
+        {
+            // Anything that wants the player (an arrest, a panel of the mod's, the hospital) or takes the bench away: up at once, and the walk
+            // goes on. (A time skip or a door cuts the scene, which gets them up too: see Cut.)
+            if (!_seat.Seated || _bench == null || !_bench.isActiveAndEnabled || Wiring.Scenes.PlayerHeld || EnergyHelper.goingToHospital)
+            {
+                LeaveBench("something else has the player");
+                BackToWalk(now);
+                return;
+            }
+            float sat = now - _stepFrom;
+            if (!_benchSaid && sat >= 4f)
+            {
+                _benchSaid = true;
+                Say(_who, SocialLines.Pick(SocialCatalogue.WalkTalk));
+                Offer(SocialLife.Say("reallife_social_bench_up_prompt", SocialLife.Data(_who)), "reallife_social_button_get_up", null);
+            }
+            if (sat >= BenchMost)
+            {
+                LeaveBench("they had sat long enough");
+                BackToWalk(now);
+            }
+        }
+
+        // Both on their feet where they stood, the bench as the game had it. Safe at any time, any number of times.
+        private void LeaveBench(string why)
+        {
+            bool sat = _seat.Seated;
+            _seat.Stand();
+            if (_friend != null && !_friend.Lost)
+            {
+                _friend.Rise();
+            }
+            if (sat && _bench != null)
+            {
+                _bench.spawnPedestrians = _benchKept;
+            }
+            _bench = null;
+            if (sat)
+            {
+                Prompt = null;
+                Seating.Check(SocialDirector.Logger, "up from the street bench (" + why + "): the player is free to walk", !_seat.Seated);
+            }
+        }
+
+        private void BackToWalk(float now)
+        {
+            _metres = Mathf.Min(WalkGoal, _metres + BenchRest);
+            _lastPlayer = D.PlayerPosition;
+            _apartSince = -1f;
+            _shownTens = -1;
+            ShowWalk();
+            Go(Step.Walking, now, 420f);
+        }
+
         private void Walking(float now)
         {
             Vector3 player = D.PlayerPosition;
             float moved = JobSpots.Flat(player, _lastPlayer);
             _lastPlayer = player;
             float gap = JobSpots.Flat(_friend.Position, player);
+            LookForBench(now, player, gap);
             if (D.OnFoot && gap < 8f && moved < 3f)
             {
                 _metres += moved;
@@ -1159,6 +1305,8 @@ namespace RealLifeOverhaul
             }
             if (_metres >= WalkGoal)
             {
+                _bench = null;
+                Prompt = null;
                 _friend.Stand();
                 _friend.Face(player);
                 Wrap(now, true);
@@ -2084,6 +2232,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
+            LeaveBench("the outing ended");
             SocialDirector.Talk = null;
             string reason = WhyText(_cut);
             if (_greeted && !_settled && !_test && why != SceneEnd.Fault)

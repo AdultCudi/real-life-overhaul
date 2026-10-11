@@ -868,16 +868,28 @@ namespace RealLifeOverhaul
 
         private void Settle()
         {
-            if (_paid || _songs <= 0 || Ctx == null || (_handSongs <= 0 && !(Ctx.Gig != null && _songs * 2 >= _songsWanted)))
+            if (!Owed(out PaySlip slip))
             {
                 return;
             }
             _paid = true;
-            // A booked set: the venue's fee on top of the hat, for a set played at least half through (songs played by hand or left to the clock).
-            // The clock's songs were paid as it ended, and earn no fee of their own.
-            var slip = new PaySlip { Units = _handSongs, Tips = _tips, Bonus = Ctx.Gig != null && _songs * 2 >= _songsWanted ? Ctx.Gig.Fee : 0 };
             Ctx.Pay(this, slip, "reallife_job_busker_slip");
         }
+
+        protected override bool Owed(out PaySlip slip)
+        {
+            slip = default;
+            if (_paid || _songs <= 0 || Ctx == null || (_handSongs <= 0 && !(Ctx.Gig != null && _songs * 2 >= _songsWanted)))
+            {
+                return false;
+            }
+            // A booked set: the venue's fee on top of the hat, for a set played at least half through (songs played by hand or left to the clock).
+            // The clock's songs were paid as it ended, and earn no fee of their own.
+            slip = new PaySlip { Units = _handSongs, Tips = _tips, Bonus = Ctx.Gig != null && _songs * 2 >= _songsWanted ? Ctx.Gig.Fee : 0 };
+            return true;
+        }
+
+        protected override ShiftClock Clocked => _clock;
 
         public override void End(JobEnd why)
         {

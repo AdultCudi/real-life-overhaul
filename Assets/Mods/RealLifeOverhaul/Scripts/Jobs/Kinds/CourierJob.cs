@@ -906,13 +906,26 @@ namespace RealLifeOverhaul
 
         private void Settle(bool beatTheClock)
         {
-            if (_paid || _delivered <= 0 || Ctx == null)
+            if (!Owed(beatTheClock, out PaySlip slip))
             {
                 return;
             }
             _paid = true;
+            Ctx.Pay(this, slip, "reallife_job_courier_slip");
+        }
+
+        // (A round that stops early has not beaten the clock.)
+        protected override bool Owed(out PaySlip slip) => Owed(false, out slip);
+
+        private bool Owed(bool beatTheClock, out PaySlip slip)
+        {
+            slip = default;
+            if (_paid || _delivered <= 0 || Ctx == null)
+            {
+                return false;
+            }
             int each = UnitPay();
-            var slip = new PaySlip
+            slip = new PaySlip
             {
                 Units = _delivered,
                 Base = _delivered * each,
@@ -922,7 +935,7 @@ namespace RealLifeOverhaul
                 // A crash shakes every parcel aboard, a stop holds the whole round up: each is counted against two doors' pay.
                 Penalty = Mathf.RoundToInt(each * (_crashes * JobCatalogue.CrashCut + _stops * JobCatalogue.PoliceStopCut) * 2f)
             };
-            Ctx.Pay(this, slip, "reallife_job_courier_slip");
+            return true;
         }
 
         public override void End(JobEnd why)

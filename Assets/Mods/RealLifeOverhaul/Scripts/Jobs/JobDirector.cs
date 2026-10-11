@@ -21,7 +21,9 @@ namespace RealLifeOverhaul
     /// times a second, keeps its figures on the HUD (<see cref="ShiftCard"/>), pays through the game's
     /// own transactions, and ends it cleanly whatever happens to the player meanwhile (hospital,
     /// custody, sleep, a time skip, going indoors, a vanilla mission, a load). It keeps the
-    /// experience, strikes and daily limits (<see cref="JobState"/>) in the save's modData.
+    /// experience, strikes and daily limits (<see cref="JobState"/>) in the save's modData, and with
+    /// them one line for a shift that is on when the game is saved (<see cref="JobSave"/>): a load
+    /// settles it at once, so nothing earned is lost and nothing is paid twice.
     ///
     /// With no job on, Update is two comparisons; once a second it looks at the day and the save
     /// hook. With one on, the per-frame work is keeping the card off the screen while a menu is open;
@@ -228,6 +230,7 @@ namespace RealLifeOverhaul
                 CareerState.Load(SaveGameManager.Current.modData);
                 CareerPhone.Setup();
                 CourierJob.ClearLeftovers(Logger);   // a parcel that was in the player's hands when the game was saved
+                SettleSaved(SaveGameManager.Current.modData);   // a shift that was on when the game was saved: paid what it was owed, once
                 Logger?.Info("Jobs: ready. Reference letter: " + JobState.HasReference + ", earned this week: " + JobState.EarnedThisWeek + ".");
             }
 
@@ -271,11 +274,102 @@ namespace RealLifeOverhaul
                     JobState.Save(SaveGameManager.Current.modData);
                     CareerState.Save(SaveGameManager.Current.modData);
                     _rental.Save(SaveGameManager.Current.modData);
+                    SaveGameManager.Current.modData[JobSave.Key] = LiveLine();   // empty when no shift is on: a line is never left over from an earlier save
                 }
             }
             catch (Exception e)
             {
                 Logger?.Error(e);
+            }
+        }
+
+        // ---------------------------------------------------------------- a shift across a save (JobSave)
+
+        private readonly SavedShift _saved = new SavedShift();   // one, written over at each save
+
+        // The line a save carries for the shift that is on: what it has been paid and what it is owed now, by the job's own
+        // rule for stopping early. Nothing of the shift changes: it goes on after the save. Empty for no shift, a test
+        // button's shift (it counts for nothing), or a job whose figures cannot be read.
+        private string LiveLine()
+        {
+            Job job = _job;
+            CareerShift shift = _context.Shift;
+            if (job == null || _broken || _context.Test || (shift != null && !shift.Counts))
+            {
+                return string.Empty;
+            }
+            try
+            {
+                _saved.JobId = job.Def.Id;
+                _saved.Day = TimeHelper.CurrentDay;
+                _saved.Minutes = TimeHelper.NowInMinutes();
+                _saved.Paid = job.Shift;
+                _saved.Owed = job.Unpaid();
+                _saved.Rota = shift != null;
+                _saved.Employer = shift != null ? shift.Employer.Id : string.Empty;
+                _saved.Hourly = shift != null ? shift.Hourly : 0f;
+                _saved.Late = shift != null && shift.Late;
+                _saved.StartMinutes = shift != null ? shift.StartMinutes : 0f;
+                string line = JobSave.Write(_saved);
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Jobs check (saved shift): '" + job.Def.Id + "' is on at the save: paid so far " + _saved.Paid.Total + " for " + _saved.Paid.Units + " unit(s), owed "
+                                 + _saved.Owed.Total + " for " + _saved.Owed.Units + (shift != null ? ", " + shift.Employer.Id + " at " + shift.Hourly.ToString("F1") + " an hour" : string.Empty)
+                                 + "; written to the save: " + (line.Length > 0 ? "PASS" : "FAIL") + ".");
+                }
+                return line;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return string.Empty;
+            }
+        }
+
+        // After a load: a shift that was on when the game was saved is settled, once, as one that ended early through
+        // nobody's fault. The line is emptied before anything is paid, so whatever happens below it is never settled twice.
+        private void SettleSaved(Dictionary<string, string> data)
+        {
+            if (data == null || !data.TryGetValue(JobSave.Key, out string line) || string.IsNullOrEmpty(line))
+            {
+                return;
+            }
+            data[JobSave.Key] = string.Empty;
+            try
+            {
+                JobDef def = JobSave.Read(line, out SavedShift saved) ? JobCatalogue.Find(saved.JobId) : null;
+                if (def == null)
+                {
+                    Logger?.Warn("Jobs check (saved shift): the save's line for a shift in progress does not add up and was dropped (" + line + "): FAIL.");
+                    return;
+                }
+                ShiftSettlement sum = JobSave.Settle(saved);
+                Employer employer = saved.Rota ? CareerCatalogue.Find(saved.Employer) : null;
+                // What was done and not paid: the game's own transaction, the energy, the skill, the level and the day's amount, as any slip.
+                PayOut(def, saved.Owed, def.Id == JobCatalogue.Lead && employer != null && employer.LeadSkill != null ? employer.LeadSkill : def.Skill, true);
+                if (saved.Rota)
+                {
+                    _career.SettleSaved(def, saved, sum);   // the basic wage for the hours clocked, and the shift on the rota's count
+                }
+                else if (sum.Worked && JobCatalogue.IndexOf(def.Id) >= 0)
+                {
+                    JobState.ShiftCut(def);   // a shift worked; the strikes stay as they were
+                }
+                var words = new Dictionary<string, string>(5)
+                {
+                    { "job", JobText.T(def.NameKey) }, { "amount", JobText.Money(sum.Total) }, { "units", sum.UnitsOwed.ToString() },
+                    { "hours", sum.Hours.ToString() }, { "employer", employer != null ? JobText.T(employer.NameKey) : string.Empty }
+                };
+                Notifications.Show(sum.Total > 0 ? NotificationType.Success : NotificationType.Info,
+                    saved.Rota && employer != null ? "reallife_job_saved_rota" : sum.Total > 0 ? "reallife_job_saved_paid" : "reallife_job_saved_nothing", words, 14f);
+                Logger?.Info("Jobs check (saved shift): settled '" + def.Id + "' saved on day " + saved.Day + ": paid " + sum.Work + " for " + sum.UnitsOwed + " unit(s) owed"
+                             + (saved.Rota ? ", basic wage " + sum.Wage + " for " + sum.Hours + " h at " + saved.Hourly.ToString("F1") : string.Empty)
+                             + "; " + saved.Paid.Total + " had been paid before the save; no strike, no mark: PASS.");
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                Logger?.Warn("Jobs check (saved shift): settling the saved shift failed (see above); its line is dropped: FAIL.");
             }
         }
 
@@ -749,35 +843,43 @@ namespace RealLifeOverhaul
             JobDef def = job.Def;
             int total = slip.Total;
             job.Shift.Add(slip);
+            // A shift in charge trains what the employer's line of work calls for (logistics at a depot, people elsewhere).
+            // Work done by a test button is paid (so the slip can be seen) but earns no experience.
+            PayOut(def, slip, def.Id == JobCatalogue.Lead && _context.Shift != null && _context.Shift.Employer.LeadSkill != null ? _context.Shift.Employer.LeadSkill : def.Skill,
+                !_context.Test);
+            // (one notification for the whole shift, when it ends: see SlipNote)
+            Logger?.Info("Jobs: '" + def.Id + "' paid " + total + " for " + JobText.T(titleKey) + " (base " + slip.Base + ", distance " + slip.Distance + ", tips " + slip.Tips
+                         + ", bonus " + slip.Bonus + ", penalties " + slip.Penalty + ") for " + slip.Units + " unit(s).");
+        }
+
+        // What a slip does, for a shift that is on and for one settled from a save: the money through the game's own
+        // transaction, the energy and the skill through the game's own systems, the units towards the level and the day.
+        private static void PayOut(JobDef def, in PaySlip slip, string skill, bool counts)
+        {
+            int total = slip.Total;
             if (total > 0)
             {
                 GameManager.ChangeMoneySafe(total, new TransactionInfo(def.TransactionKey, SalaryCategory), null, null, force: true);
             }
-            if (slip.Units > 0)
+            if (slip.Units <= 0)
             {
-                SpendEnergy(def.UnitEnergy * slip.Units);
-                // A shift in charge trains what the employer's line of work calls for (logistics at a depot, people elsewhere).
-                string skill = def.Id == JobCatalogue.Lead && _context.Shift != null && _context.Shift.Employer.LeadSkill != null
-                    ? _context.Shift.Employer.LeadSkill : def.Skill;
-                if (skill != null && def.UnitSkill > 0f)
+                return;
+            }
+            SpendEnergy(def.UnitEnergy * slip.Units);
+            if (skill != null && def.UnitSkill > 0f)
+            {
+                EmployeeInstance self = PlayerHelper.GetPlayerEmployeeInstance();
+                if (self != null)
                 {
-                    EmployeeInstance self = PlayerHelper.GetPlayerEmployeeInstance();
-                    if (self != null)
-                    {
-                        self.IncreaseSkill(skill, def.UnitSkill * slip.Units);
-                    }
-                }
-                // Work done by a test button is paid (so the slip can be seen) but earns no experience.
-                if (!_context.Test && JobState.Worked(def, slip.Units, total))
-                {
-                    int level = JobState.Level(def);
-                    JobText.Toast(NotificationType.Success,
-                        level == JobCatalogue.ReferenceLevel ? "reallife_job_level_reference" : "reallife_job_level_up", "level", level.ToString(), 10f);
+                    self.IncreaseSkill(skill, def.UnitSkill * slip.Units);
                 }
             }
-            // (one notification for the whole shift, when it ends: see SlipNote)
-            Logger?.Info("Jobs: '" + def.Id + "' paid " + total + " for " + JobText.T(titleKey) + " (base " + slip.Base + ", distance " + slip.Distance + ", tips " + slip.Tips
-                         + ", bonus " + slip.Bonus + ", penalties " + slip.Penalty + ") for " + slip.Units + " unit(s).");
+            if (counts && JobState.Worked(def, slip.Units, total))
+            {
+                int level = JobState.Level(def);
+                JobText.Toast(NotificationType.Success,
+                    level == JobCatalogue.ReferenceLevel ? "reallife_job_level_reference" : "reallife_job_level_up", "level", level.ToString(), 10f);
+            }
         }
 
         // Tiring, never dangerous: work stops short of the energy at which the game takes over.

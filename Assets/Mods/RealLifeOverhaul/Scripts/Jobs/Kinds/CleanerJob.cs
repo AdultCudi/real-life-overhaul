@@ -502,25 +502,36 @@ namespace RealLifeOverhaul
 
         private void Pay()
         {
-            if (_paid || Ctx == null)
-            {
-                return;
-            }
-            float share = HandShare;
-            if (share <= 0.0001f)
+            if (!Owed(out PaySlip slip))
             {
                 return;
             }
             _paid = true;
-            int fee = Mathf.RoundToInt(share * _units * UnitPay());
-            var slip = new PaySlip { Units = Mathf.Max(1, Mathf.RoundToInt(share * _units)), Base = fee };
             if (Meta.Dev.Verbose)
             {
-                Ctx.Logger?.Info("Jobs: cleaner: pay slip: " + Mathf.RoundToInt(share * 100f) + "% of the floor by hand (" + _units + " units at " + UnitPay() + ") = " + fee
+                Ctx.Logger?.Info("Jobs: cleaner: pay slip: " + Mathf.RoundToInt(HandShare * 100f) + "% of the floor by hand (" + _units + " units at " + UnitPay() + ") = " + slip.Base
                                  + "; the clock's " + _clockUnits + " units were paid " + _clockPay + " as they went.");
             }
             Ctx.Pay(this, slip, "reallife_job_cleaner_slip");
         }
+
+        protected override bool Owed(out PaySlip slip)
+        {
+            slip = default;
+            if (_paid || Ctx == null)
+            {
+                return false;
+            }
+            float share = HandShare;
+            if (share <= 0.0001f)
+            {
+                return false;
+            }
+            slip = new PaySlip { Units = Mathf.Max(1, Mathf.RoundToInt(share * _units)), Base = Mathf.RoundToInt(share * _units * UnitPay()) };
+            return true;
+        }
+
+        protected override ShiftClock Clocked => _clock;
 
         // ---------------------------------------------------------------- the rest of the floor by the clock
 

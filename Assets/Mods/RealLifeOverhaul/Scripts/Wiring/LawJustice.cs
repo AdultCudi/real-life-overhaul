@@ -37,6 +37,7 @@ namespace RealLifeOverhaul
             {
                 Forget();
                 Justice.Bridges.Law = Bridge;
+                Law.Bridges.CourtOn = CourtOn;
                 Record.Changed += OnRecord;
             }
 
@@ -44,8 +45,12 @@ namespace RealLifeOverhaul
             {
                 Record.Changed -= OnRecord;
                 Justice.Bridges.Law = null;
+                Law.Bridges.CourtOn = null;
                 Forget();
             }
+
+            // A hold in a station's cell that a court ordered lasts only while the courts are on.
+            private static readonly Func<bool> CourtOn = () => Justice.Active;
 
             private static void Forget()
             {
@@ -166,12 +171,12 @@ namespace RealLifeOverhaul
 
             /// <summary>
             /// What Scripts/Law does for the courts. Its record is the police's (tickets, stays,
-            /// escapes) and has no line for a conviction, no way to take one line off and no way
-            /// to hold somebody for a number of hours that is not one of its own charges; so the
+            /// escapes) and has no line for a conviction and no way to take one line off; so the
             /// convictions stay the courts' own list (asked together through
-            /// <see cref="Standing"/>), a custody sentence is the courts' own time skip, and what
-            /// this bridge gives is the place: the pavement outside the nearest precinct.
-            /// The three calls Law would need for more are listed in the README.
+            /// <see cref="Standing"/>). What this bridge gives is the cell and the place: hours a
+            /// court orders (remand, a term of custody) are served in the nearest precinct's holding
+            /// cell (<see cref="Custody.Hold"/>), and somebody let out of prison is put down on the
+            /// pavement outside it.
             /// </summary>
             private sealed class LawBridge : ILawBridge
             {
@@ -183,7 +188,23 @@ namespace RealLifeOverhaul
                 public void Cleared(int caseNumber) { }
                 public void RecordSealed() { }
 
-                public bool Custody(int hours, Action released) => false;
+                // Remand and a term of custody are served where an arrest is: the nearest precinct's cell. No bail: a court
+                // that holds somebody has already refused it, or the player chose to stay. False (custody is off, there is no
+                // precinct, somebody is already held) leaves it to the courts' own time skip.
+                public bool Custody(int hours, string reasonKey, Action released)
+                {
+                    try
+                    {
+                        return Law.Custody.Hold(hours, reasonKey, 0, released);
+                    }
+                    catch (Exception e)
+                    {
+                        Fault("Arrests.Custody", e);
+                        return false;
+                    }
+                }
+
+                public bool Holding => Law.Custody.Active || (LawState.Loaded && LawState.Custody.Active);
 
                 public bool ReleaseSpot(out Vector3 spot, out string name)
                 {

@@ -37,6 +37,8 @@ namespace RealLifeOverhaul.Law
     ///                  ends it at once; a lawyer, once, strikes off a third of what is left.
     ///   release        outside the door, facing the street, with the summary; the car is brought
     ///                  from the impound to a kerb space nearby (Driving/VehicleTow).
+    /// A court's order (<see cref="Hold"/>: remand, a term of custody) is served the same way, in the same cell, with no
+    /// arrest played, no charge sheet, no lawyer and no line on the police record.
     /// The stay is in the save (LawState.Custody): a load in the middle resumes what is left of
     /// it, or lets the player go if the time has passed. A watchdog in LawDirector lets them go
     /// if this ever stops making progress. Idle, this component does nothing at all: it has no
@@ -85,6 +87,8 @@ namespace RealLifeOverhaul.Law
         private int _clicked = -1;
         private Action<int> _onClick;
         private PlayerController _player;
+        private Action _released;            // whoever ordered a hold is told once, however it ends
+        private bool _moved;                 // the player was put down outside the precinct
 
         internal void Bind(Precincts precincts, StationInterior interior)
         {
@@ -459,9 +463,18 @@ namespace RealLifeOverhaul.Law
                 || PlayerHelper.IsUsingVehicle || BuildingManager.IsInsideBuilding || UndergroundParkingManager.IsInsideParking
                 || !PutOutside(_precincts.At(LawState.Custody.Precinct)))
             {
+                _moved = false;
+                if (LawState.Custody.Court)
+                {
+                    // A court's hours are not let off because a door could not be reached: they pass where the player is.
+                    Logger?.Warn("Law: the player could not be taken to the precinct (still in a vehicle or a building, or no way to the door); the court's hours are served where they are.");
+                    yield break;
+                }
                 Logger?.Warn("Law: the player could not be taken to the precinct (still in a vehicle or a building, or no way to the door); let go with the fines.");
                 Drop();
+                yield break;
             }
+            _moved = true;
         }
 
         // On the pavement in front of the precinct's door, facing the street. False if they could not be put there.
@@ -634,8 +647,15 @@ namespace RealLifeOverhaul.Law
                 _panel = new CustodyList(Logger);
             }
             int priors = Record.TimesHeld(LawBook.RepeatDays);
-            bool listed = _panel.Open(precinct != null ? precinct.Name : "reallife_law_precinct_city".Tr(), Sheet(state),
-                Fill(priors > 0 ? "reallife_law_cell_sentence_repeat" : "reallife_law_cell_sentence", "hours", state.Hours.ToString()), _onClick, _inCell);
+            string sheet = state.Court ? Order(state) : Sheet(state);
+            bool listed = _panel.Open(precinct != null ? precinct.Name : "reallife_law_precinct_city".Tr(), sheet,
+                Fill(state.Court ? "reallife_law_cell_order_term" : priors > 0 ? "reallife_law_cell_sentence_repeat" : "reallife_law_cell_sentence", "hours", state.Hours.ToString()),
+                _onClick, _inCell);
+            if (state.Court)
+            {
+                // A court's order: sitting it out, and bail only if the court set one. No lawyer shortens it.
+                _panel.Shape(state.Bail > 0 ? 2 : 1, "reallife_law_cell_order");
+            }
             int fee = LawyerFee;
             _panel.SetOption(0, "reallife_law_cell_wait".Tr(), "reallife_law_cell_wait_detail".Tr(), true);
             _panel.SetOption(1, state.Bail > 0 ? "reallife_law_cell_bail_name".Tr() : "reallife_law_cell_no_bail".Tr(),
@@ -661,7 +681,7 @@ namespace RealLifeOverhaul.Law
             }
             else
             {
-                _panel.SetStatus(Sheet(state));   // no list: the sentence is served, and the charges are told once
+                _panel.SetStatus(sheet);   // no list: the sentence is served, and the charges are told once
             }
             if (_faded)
             {
@@ -702,7 +722,7 @@ namespace RealLifeOverhaul.Law
                     }
                     _panel.SetStatus("reallife_law_cell_bail_short".Tr());
                 }
-                else if (choice == 2 && !state.Lawyer)
+                else if (choice == 2 && !state.Lawyer && !state.Court)
                 {
                     if (Crime.Pay(fee, "reallife_transaction_lawyer"))
                     {
@@ -730,6 +750,11 @@ namespace RealLifeOverhaul.Law
                     nextLook = Time.unscaledTime + 0.125f;
                     ShowClock(state);
                     Feed();
+                    if (state.Court && !Bridges.CourtStands)
+                    {
+                        Logger?.Info("Law: the courts were switched off with " + (left / 60f).ToString("F1") + " h of their hold left; the player is let out.");
+                        break;
+                    }
                 }
                 yield return null;
             }
@@ -852,8 +877,8 @@ namespace RealLifeOverhaul.Law
             _beat = Time.unscaledTime;
 
             int served = Mathf.Clamp(Mathf.RoundToInt((TimeHelper.NowInMinutes() - state.StartedAt) / 60f), 0, LawBook.MostHours);
-            Record.Close(_bailed ? Outcome.Bailed : Outcome.Served, served);
-            ModState.AddModifier(ModState.MoodDownBig);
+            bool court = state.Court;
+            Settle(court, served);
             if (announce && SaveGameManager.Current != null)
             {
                 var data = new Dictionary<string, string>(4)
@@ -863,9 +888,11 @@ namespace RealLifeOverhaul.Law
                     { "amount", ((float)state.Paid).ToCurrencyFormat() },
                     { "bail", ((float)state.Bail).ToCurrencyFormat() }
                 };
-                Notifications.Show(NotificationType.Info, _bailed ? "reallife_law_released_bail" : "reallife_law_released", data, 12f);
+                Notifications.Show(NotificationType.Info, court ? (_bailed ? "reallife_law_court_released_bail" : "reallife_law_court_released")
+                    : _bailed ? "reallife_law_released_bail" : "reallife_law_released", data, 12f);
             }
             Logger?.Info($"Law: released after {served} h ({(_bailed ? "bail" : "served")}).");
+            Check(court, "let out at the door of " + (precinct != null ? precinct.Name : "no precinct") + " after " + served + " h of " + state.Hours, true);
 
             string vehicleId = state.VehicleId;
             state.Clear();   // (the phase stays "releasing" until the routine's last line: no new arrest starts under this one)
@@ -900,8 +927,8 @@ namespace RealLifeOverhaul.Law
             _beat = Time.unscaledTime;
 
             int served = Mathf.Clamp(Mathf.RoundToInt((TimeHelper.NowInMinutes() - state.StartedAt) / 60f), 0, LawBook.MostHours);
-            Record.Close(_bailed ? Outcome.Bailed : Outcome.Served, served);
-            ModState.AddModifier(ModState.MoodDownBig);
+            bool court = state.Court;
+            Settle(court, served);
             if (announce && SaveGameManager.Current != null)
             {
                 var data = new Dictionary<string, string>(4)
@@ -911,9 +938,11 @@ namespace RealLifeOverhaul.Law
                     { "amount", ((float)state.Paid).ToCurrencyFormat() },
                     { "bail", ((float)state.Bail).ToCurrencyFormat() }
                 };
-                Notifications.Show(NotificationType.Info, _bailed ? "reallife_law_released_desk_bail" : "reallife_law_released_desk", data, 12f);
+                Notifications.Show(NotificationType.Info, court ? (_bailed ? "reallife_law_court_released_desk_bail" : "reallife_law_court_released_desk")
+                    : _bailed ? "reallife_law_released_desk_bail" : "reallife_law_released_desk", data, 12f);
             }
             Logger?.Info($"Law: released at the front desk after {served} h ({(_bailed ? "bail" : "served")}).");
+            Check(court, "signed out at the front desk of " + (precinct != null ? precinct.Name : "no precinct") + " after " + served + " h of " + state.Hours + ", then the door", true);
             string vehicleId = state.VehicleId;
             state.Clear();
             if (vehicleId != null)
@@ -1037,6 +1066,157 @@ namespace RealLifeOverhaul.Law
             }
         }
 
+        // ---------------------------------------------------------------- a court's order
+
+        /// <summary>True if the hold a court ordered last ended because its bail was paid. Read it from the "released" call.</summary>
+        public static bool HoldBailed { get; private set; }
+
+        /// <summary>
+        /// Holds the player by order of a court (remand, a term of custody): under the dark screen they are taken to the
+        /// nearest precinct exactly as after an arrest, into its holding cell where the station can be walked into and has
+        /// one (else held at the desk, else outside behind the full screen), the cell's list shows why and how long, the
+        /// game's own time skip serves the time, and they are let out at the station's door. Nothing is played in the
+        /// street, there is no charge sheet and no lawyer, and the police record gets no line: the conviction is the
+        /// courts' own.
+        /// </summary>
+        /// <param name="hours">Game hours; bounded to <see cref="LawBook.MostHours"/>, which is all a station ever holds anybody.</param>
+        /// <param name="reasonKey">The locale key of the sentence that says why (shown in the cell).</param>
+        /// <param name="bail">What walking out at once costs, or 0 when the court set no bail: the cell then offers none.</param>
+        /// <param name="released">Called once when the player is out, however it ended (served, bail, a fault, the scene going). Not kept across a save.</param>
+        /// <returns>False, with nothing done, if custody cannot take them now: the caller then holds them its own way.</returns>
+        public static bool Hold(float hours, string reasonKey, int bail, Action released)
+        {
+            Custody custody = Instance;
+            if (!Ready || hours <= 0f || !Bridges.CourtStands)
+            {
+                return false;
+            }
+            try
+            {
+                CustodyState state = LawState.Custody;
+                // In a station already (the bail decision is often put to them at its desk): that one. Otherwise the nearest.
+                Precinct precinct = LawDirector.Inside ?? custody._precincts.Nearest(PlayerHelper.GetPosition());
+                state.Clear();
+                state.Court = true;
+                state.Reason = reasonKey;
+                state.Hours = Mathf.Clamp(Mathf.CeilToInt(hours), LawBook.LeastHours, LawBook.MostHours);
+                state.Bail = Mathf.Max(0, bail);
+                state.Precinct = precinct != null ? precinct.Index : -1;
+                HoldBailed = false;
+                custody._bailed = false;
+                custody._released = released;
+                custody._phase = Phase.Transport;
+                custody._beat = Time.unscaledTime;
+                var data = new Dictionary<string, string>(2)
+                {
+                    { "hours", state.Hours.ToString() }, { "precinct", precinct != null ? precinct.Name : "reallife_law_precinct_city".Tr() }
+                };
+                Notifications.Show(NotificationType.Warning, "reallife_law_court_notice", data, 12f);
+                Logger?.Info($"Law: held by order of a court ({reasonKey}): {state.Hours} h at {(precinct != null ? precinct.Name : "no precinct")}, bail {state.Bail}.");
+                custody.StartCoroutine(custody.HoldRoutine(precinct));
+                return true;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                custody._released = null;   // (the caller is told by the answer: it holds them its own way)
+                LawState.Custody.Clear();
+                custody.Cleanup();
+                return false;
+            }
+        }
+
+        private IEnumerator HoldRoutine(Precinct precinct)
+        {
+            try
+            {
+                yield return new WaitForSecondsRealtime(1.2f);
+                _beat = Time.unscaledTime;
+                // Never over a dialog, a menu or another time skip: it waits, alive, and the hours start when it can.
+                float waited = 0f;
+                while (!LifeEvents.IsSafeForEvent() && waited < SafeWait)
+                {
+                    waited += Time.unscaledDeltaTime;
+                    _beat = Time.unscaledTime;
+                    yield return null;
+                }
+                if (SaveGameManager.Current == null)
+                {
+                    yield break;
+                }
+                // The car they are sitting in is remembered, as at an arrest: it is at the pound or brought round afterwards.
+                var gm = InstanceBehavior<GameManager>.Instance;
+                VehicleController car = gm != null ? gm.selectedVehicle : null;
+                if (car != null && PlayerHelper.IsUsingVehicle && car.vehicleType != null && !car.vehicleType.spawnInPlayerObject && car.vehicleInstance != null)
+                {
+                    LawState.Custody.VehicleId = car.vehicleInstance.id;
+                }
+                _faded = true;
+                yield return UiFader.Fade(0.7f, "reallife_crime_custody_fade");
+                _beat = Time.unscaledTime;
+                _moved = false;
+                if (InStation(precinct))
+                {
+                    PutInCell();
+                    Logger?.Info("Law: held in " + precinct.Name + (_inCell ? ": in the holding cell." : ": no cell in this room; held at the desk."));
+                }
+                else
+                {
+                    yield return Transport();
+                    if (_moved)
+                    {
+                        yield return GoInside();
+                    }
+                }
+                bool inside = InStation(precinct);
+                Check(true, "taken to " + (precinct != null ? precinct.Name : "no precinct") + ": "
+                            + (_inCell ? "in the holding cell" : inside ? "no cell in this room, held at the desk" : _moved ? "held outside the door" : "could not be moved, held where they are"),
+                    _inCell || inside || _moved);
+
+                LawState.Custody.StartedAt = TimeHelper.NowInMinutes();
+                LawState.Custody.ReleaseAt = LawState.Custody.StartedAt + LawState.Custody.Hours * 60f;
+                LawState.Custody.Active = true;
+                _phase = Phase.Held;
+                yield return Cell();
+                yield return Release(announce: true);
+            }
+            finally
+            {
+                Cleanup();
+            }
+        }
+
+        // What the cell's note says for a court's order: the caller's own sentence, or the plain one where it gave none.
+        private static string Order(CustodyState state)
+        {
+            string key = string.IsNullOrEmpty(state.Reason) ? "reallife_law_cell_order_plain" : state.Reason;
+            string text = key.Tr();
+            return string.IsNullOrEmpty(text) || text == key ? "reallife_law_cell_order_plain".Tr() : text;
+        }
+
+        // What a stay leaves behind when it ends. An arrest's goes on the police record and weighs on the mood; a court's
+        // is the courts' own business (their file has the conviction), so the record is left alone.
+        private void Settle(bool court, int served)
+        {
+            if (court)
+            {
+                HoldBailed = _bailed;
+                ModState.AddModifier(ModState.MoodDown);
+                return;
+            }
+            Record.Close(_bailed ? Outcome.Bailed : Outcome.Served, served);
+            ModState.AddModifier(ModState.MoodDownBig);
+        }
+
+        // One line per step of a court's hold, with "Developer diagnostics" on.
+        private static void Check(bool court, string what, bool pass)
+        {
+            if (court && Meta.Dev.Verbose)
+            {
+                Logger?.Info("Law check (court hold): " + what + ": " + (pass ? "PASS" : "FAIL") + ".");
+            }
+        }
+
         // ---------------------------------------------------------------- a load in the middle
 
         /// <summary>Called once the save has loaded with a stay still on it: what is left is served, or the player is let go.</summary>
@@ -1069,8 +1249,10 @@ namespace RealLifeOverhaul.Law
                 Precinct where = _precincts.At(state.Precinct);
                 bool inside = InStation(where);
                 bool sane = left > 1f && left <= LawBook.MostHours * 60f + 1f && Settings.LawCustody && where != null
-                            && (!BuildingManager.IsInsideBuilding || inside) && !PlayerHelper.IsUsingVehicle;
+                            && (!BuildingManager.IsInsideBuilding || inside) && !PlayerHelper.IsUsingVehicle
+                            && (!state.Court || Bridges.CourtStands);   // (a court's hold needs its court: gone or switched off, they are let out)
                 Logger?.Info($"Law: a stay in the cell was on the save with {left / 60f:F1} h left: {(sane ? "resumed" : "released")}.");
+                Check(state.Court, "a save made during the hold was loaded with " + (left / 60f).ToString("F1") + " h left: " + (sane ? "resumed" : "let out"), true);
                 if (sane)
                 {
                     _faded = true;
@@ -1125,9 +1307,14 @@ namespace RealLifeOverhaul.Law
             Logger?.Warn("Law: custody ended by the watchdog (" + why + "); the player is free where they stand.");
             StopAllCoroutines();
             bool wasHeld = LawState.Custody.Active;
+            bool court = LawState.Custody.Court;
             Cleanup();
-            Record.Close(wasHeld ? Outcome.Served : Outcome.Cited, wasHeld
-                ? Mathf.Clamp(Mathf.RoundToInt((TimeHelper.NowInMinutes() - LawState.Custody.StartedAt) / 60f), 0, LawBook.MostHours) : 0);
+            if (!court)
+            {
+                Record.Close(wasHeld ? Outcome.Served : Outcome.Cited, wasHeld
+                    ? Mathf.Clamp(Mathf.RoundToInt((TimeHelper.NowInMinutes() - LawState.Custody.StartedAt) / 60f), 0, LawBook.MostHours) : 0);
+            }
+            Check(court, "ended by the watchdog (" + why + "), the player free where they stand", true);
             LawState.Custody.Clear();
             if (SaveGameManager.Current != null)
             {
@@ -1162,6 +1349,24 @@ namespace RealLifeOverhaul.Law
                 Logger?.Error(e);
             }
             _phase = Phase.None;
+            // Whoever ordered a hold hears that it is over, once, on every way out (the last line: nothing of ours is left on).
+            Action released = _released;
+            _released = null;
+            if (released != null)
+            {
+                if (LawState.Custody.Court)
+                {
+                    LawState.Custody.Clear();   // (ended before its release ran: a fault, the scene going. Nothing is left to resume.)
+                }
+                try
+                {
+                    released();
+                }
+                catch (Exception e)
+                {
+                    Logger?.Error(e);
+                }
+            }
         }
 
         private void Rest(bool on)

@@ -108,6 +108,20 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>The job is stopping: the game's panel goes and nothing more is settled through it.</summary>
+        /// <summary>What a run of the clock that is still going has done and not been paid (it is paid when the run ends). Changes nothing.</summary>
+        public bool Owed(out PaySlip slip)
+        {
+            slip = default;
+            int count = Done;
+            if (_closed || count <= 0)
+            {
+                return false;
+            }
+            int pay = Mathf.RoundToInt(count * _shift.ClockPay * ShiftRates.Share);
+            slip = _asTips ? new PaySlip { Units = count, Tips = pay } : new PaySlip { Units = count, Base = pay };
+            return true;
+        }
+
         public void Close()
         {
             _closed = true;

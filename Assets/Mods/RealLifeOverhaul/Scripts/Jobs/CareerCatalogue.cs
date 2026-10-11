@@ -289,6 +289,24 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
+        /// The hours of basic wage a shift pays that ended so many game minutes after it was clocked on to: every hour
+        /// begun, one at least and <see cref="ShiftHours"/> at most, and one less for having clocked on late. The one
+        /// rule, for a shift that ends on the street and for one settled from a save (<see cref="JobSave.Settle"/>).
+        /// </summary>
+        public static int PaidHours(float elapsedMinutes, bool late)
+        {
+            int hours = (int)Math.Ceiling(elapsedMinutes / 60f);
+            hours = hours < 1 ? 1 : hours > ShiftHours ? ShiftHours : hours;
+            return hours - (late ? 1 : 0);
+        }
+
+        /// <summary>What so many hours of basic wage come to, in whole money.</summary>
+        public static int Wage(int hours, float hourly)
+        {
+            return hours > 0 ? (int)Math.Round(hours * hourly) : 0;
+        }
+
+        /// <summary>
         /// What employers pay someone who runs businesses of their own, as a factor: nothing off with none,
         /// then 15 % less for each, never under 55 %.
         /// </summary>

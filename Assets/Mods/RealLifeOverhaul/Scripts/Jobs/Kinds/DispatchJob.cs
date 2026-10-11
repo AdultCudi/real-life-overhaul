@@ -470,18 +470,28 @@ namespace RealLifeOverhaul
 
         private void Settle()
         {
-            if (_paid || _plan <= 0 || Ctx == null)
+            if (!Owed(out PaySlip slip))
             {
                 return;
             }
             _paid = true;
-            var slip = new PaySlip
+            Ctx.Pay(this, slip, "reallife_job_dispatch_slip");
+        }
+
+        protected override bool Owed(out PaySlip slip)
+        {
+            slip = default;
+            if (_paid || _plan <= 0 || Ctx == null)
+            {
+                return false;
+            }
+            slip = new PaySlip
             {
                 Units = _plan,
                 Base = _earned,
                 Bonus = _great >= Plans ? Mathf.RoundToInt(_earned * 0.1f) : 0   // every batch planned as well as it could be
             };
-            Ctx.Pay(this, slip, "reallife_job_dispatch_slip");
+            return true;
         }
 
         public override void End(JobEnd why)

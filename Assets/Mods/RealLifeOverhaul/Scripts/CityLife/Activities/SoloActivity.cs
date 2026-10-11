@@ -49,6 +49,8 @@ namespace RealLifeOverhaul
         public string Greet;               // a one-off clip, played when someone on foot comes by in front
         public string Now;                 // a one-off clip, played every so often (a photo, a sip)
         public float NowMin = 9f, NowMax = 16f;
+        public bool HoldNow;               // between its one-offs the last pose of Now is kept (a carton on the palm, a mug at the hip) and not the game's idle: Now ends as it starts
+        public string Ring;                // with a game pose that is a phone call: the call ends now and then, the phone is away for RestMin..RestMax, and this one-off answers the next one
 
         public bool UsesGamePose;          // instead of Work: one of the game's own looping poses
         public PermanentAnimationType GamePose;
@@ -77,6 +79,7 @@ namespace RealLifeOverhaul
         private float _until;
         private float _nextOnce;
         private float _nextGreet;
+        private bool _rang;                 // the one-off that is playing is Ring: its phone goes away when the game's pose takes over
 
         public SoloActivity(SoloSpec spec)
         {
@@ -179,14 +182,31 @@ namespace RealLifeOverhaul
                 case Doing.Once:
                     if (now >= _until)
                     {
-                        Settle(0.35f);
+                        if (_spec.HoldNow && !_rang)
+                        {
+                            _doing = Doing.Working;   // the one-off's last pose is held: that is how they stand until the next
+                        }
+                        else
+                        {
+                            Settle(0.35f);
+                        }
                     }
                     break;
 
                 case Doing.Resting:
                     if (now >= _until)
                     {
-                        Settle(0.45f);
+                        // The phone again: out of the pocket and to the ear, then the game's own call.
+                        if (_spec.Ring != null && _person.Work(_spec.Ring, Props, 0.25f, ClipEnd.Hold) && ClipLibrary.TryGet(_spec.Ring, out CityClip ring))
+                        {
+                            _rang = true;
+                            _doing = Doing.Once;
+                            _until = now + ring.Length;
+                        }
+                        else
+                        {
+                            Settle(0.45f);
+                        }
                     }
                     break;
 
@@ -206,6 +226,14 @@ namespace RealLifeOverhaul
                         _doing = Doing.Resting;
                         _until = now + Random.Range(_spec.RestMin, _spec.RestMax);
                     }
+                    else if (_spec.Ring != null && _spec.UsesGamePose && now >= _until)
+                    {
+                        // The call is over: the game's pose and its phone go, and they stand a while before it rings again.
+                        _person.ClearPose();
+                        _person.Idle(0.35f);
+                        _doing = Doing.Resting;
+                        _until = now + Random.Range(_spec.RestMin, _spec.RestMax);
+                    }
                     break;
             }
             return true;
@@ -214,6 +242,7 @@ namespace RealLifeOverhaul
         public override void End()
         {
             _person = null;
+            _rang = false;
             base.End();
         }
 
@@ -224,7 +253,23 @@ namespace RealLifeOverhaul
             _until = In(_spec.WorkMin, _spec.WorkMax);
             if (_spec.UsesGamePose)
             {
+                if (_rang)
+                {
+                    _rang = false;
+                    _person.PutAway(Props);   // the clip's phone: the game's pose brings its own
+                }
                 return _person.Pose(_spec.GamePose, _spec.GameProp);
+            }
+            if (_spec.HoldNow && _spec.Now != null)
+            {
+                // What they hold is held as the one-off holds it from the start: its first bite or sip, then its last pose.
+                if (!_person.Work(_spec.Now, Props, fade, ClipEnd.Hold) || !ClipLibrary.TryGet(_spec.Now, out CityClip held))
+                {
+                    return false;
+                }
+                _doing = Doing.Once;
+                _until = In(held.Length, held.Length);
+                return true;
             }
             if (_spec.Work == null)
             {

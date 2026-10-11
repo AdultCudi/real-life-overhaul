@@ -569,6 +569,50 @@ The director does the rest: when and where, out of view, never the same thing tw
 view, the test button (each press of a family's button puts its next activity just ahead of the player, and a
 press that starts nothing says which activity and exactly why: one sentence per `CityRefusal`). In the rain
 everything is taken in except entries marked `Rain`; `RainOnly` entries (people under umbrellas) start only then.
+### Clips nothing played
+
+`not-in-repo/tools/medium/clip_users.py` lists every clip the bundle's builder declares (`CityAssets/scripts/clips*.py`,
+160) and the ones no script names. There were 25. Six now have a home in the living city, each where the clip's own
+note says it belongs:
+
+| clip | where | how |
+|---|---|---|
+| `sit_chat_a`, `sit_chat_b` | new activity `bench_chat` (`BenchChatActivity`, Leisure, two people, 9:00 to 21:00) | a `precinct_bench` with its back to a wall (`CitySpots.Shopfront`, 0.45 m off it, pavement under both ends and in front); the two put exactly on the seat 0.55 m apart, as the chess players are on their stools; the talker on the right, since `_a` is turned to its left |
+| `eat_standing` (with `takeaway_box`) | new entry `street_lunch` (Everyday, 11:00 to 15:00) | `SoloSpec.HoldNow`: the one-off is played, its last pose (the carton on the palm) is held, and it is played again every 4 to 8 s |
+| `drink_stand` (with `mug`) | new entry `mug_break` (Everyday, 7:00 to 17:00) | the same, every 7 to 14 s |
+| `phone_answer` | the existing `phone_call` | `SoloSpec.Ring`: after 14 to 26 s the call ends (the game's pose and phone go), 5 to 9 s later the clip takes the phone to the ear, its phone is put away and the game's `TalkingPhone` takes over, as the clip's note asks |
+| `point_show` | the existing `doorman` | `Greet`: somebody on foot in front of him is shown the way in |
+
+`HoldNow` and `Ring` are two fields of `SoloSpec`, so another such person is still one catalogue entry. The budget is
+the director's and is unchanged (three sites, eight people); the Guide's count is `CityCatalogue.All.Length` (32 now);
+each start writes the director's own line, `City life: <id> started N m away; ...`. A clip or prop missing from the
+bundle leaves `bench_chat`, `street_lunch` and `mug_break` unstarted and the other two as they were.
+
+Nineteen stay unplayed. Each was looked at for a place among the features that exist:
+
+| clip | why not |
+|---|---|
+| `strap_hang` | made for standing in a moving bus: there is no bus interior |
+| `bonnet_check` | needs a car with its bonnet open: the game's cars do not open theirs, and no scene is a breakdown |
+| `refuel_hold` | emptying a `jerry_can` into a filler: the mod has no fuel and no scene of running out |
+| `oath_hand` | the raised hand of an oath: a hearing is pages in a list window and nobody is played in it |
+| `podium_speak` | needs a lectern 1.10 m up: none is modelled, and a rally's speaker has a placard |
+| `placard_hold_arm` | not needed by design: the code masks `placard_hold` itself to the right arm |
+| `throw_ball` | a free throw: no ball and no hoop are modelled |
+| `eat_sit` | seated at a table 0.75 m high whose edge is 0.20 m ahead: no seat in the game or the mod has a table at a known place in front of it |
+| `box_lift_with`, `_b` | two people lifting a box 1.20 m long: no such prop (the move's boxes are 0.45 m and carried one each) |
+| `browse_rack`, `try_on_turn` | belong at the clothes rack (`Leisure/Shops/ClothesBrowser`, `clothes_rack`: its rail is the 1.55 m the clip is made for), on the player's own body while the list is open. **Not wired in this pass** |
+| `collector_lean` | belongs to the collector of "Business pressure", leaning on the player's counter. **Not wired in this pass** |
+| `carry_suitcase_walk` | a traveller with a `suitcase`; a whole-body walking clip, which the living city's rules allow only with its speed matched to the ground. **Not wired in this pass** |
+| `cheer_once` | a listener when a busker's song ends, or the player on winning at chess. **Not wired in this pass** |
+| `hold_baby`, `rock_cot` | the partner at home with a child under three (the `cot` and `baby_bundle` are in the bundle, the cot already stands in the home). **Not wired in this pass** |
+| `slow_dance_a`, `_b` | a first dance at the wedding: two bodies 0.45 m apart, one of them the player's, started in the same frame. **Not wired in this pass** |
+
+The last six rows are work that has a place and was not done; the first ten have none among the features that exist.
+
+Not checked in the game: any of it. A screenshot of the bench with the two on it settles whether they sit on the
+seat and not in it (the seat is 0.46 m, the clips are made for 0.45) and whether the bench stands clear of the wall.
+
 ## Jobs
 
 The game has its own work: employer jobs (stand at a station in someone's shop while time is skipped,
@@ -821,6 +865,86 @@ it reads, that the box follows a walking passer-by, that the canvasser and clean
 a shop and on the open street without the player being moved, that the busker's idle pose and the stand sit well with
 the game's guitar performance, and the amounts the clock pays.
 
+
+### A shift across a save (`JobSave`, `PaySlip`)
+
+The game saves by itself every few minutes and at midnight (`GameManager.CheckAutoSave`), so a save in the middle of a
+shift is ordinary. What a shift had paid slip by slip was always in the save's money; what was lost on loading such a
+save was everything still to be settled at the end: the work done by hand since the last slip (most gigs pay it in one
+slip when they end), tips and bonuses its events had earned, the units of a clock run that was still going, and for an
+employer's shift the whole basic wage and the shift on the review's count.
+
+**The rule: every job is settled, none is resumed.** A shift cannot be taken up where it was: all nine kinds find
+their place, people and props on the street when they begin (a pitch, a client's shop, a pile of boxes, passengers,
+a round's doors), and none has a state that is only counts and a place. So:
+
+- **At a save** (`JobDirector.OnSaveGame` -> `LiveLine`) one line goes under `reallife:job_live`: the job, the day and
+  minute, what the shift has been paid (`job.Shift`), and what it is owed now (`Job.Unpaid()`), with the employer, the
+  hourly wage as it is being paid, the late flag and the clock-on time for a rota shift. Nothing of the shift changes
+  and it goes on. With no shift on, a test button's shift or a test rota shift, the line is written empty, so one is
+  never left over from an earlier save.
+- **What is owed** is the job's own word. `Job.Owed(out slip)` is the slip its settlement would pay if the shift
+  stopped now through nobody's fault; each kind's `Settle` / `Pay` is now `if (!Owed(out slip)) return; _paid = true;
+  Ctx.Pay(...)`, so the save's figure and the live pay are one piece of code. A round or a delivery stopped early has
+  not beaten the clock or shelved the whole delivery, so those bonuses are not in it (`CourierJob`, `StockerJob`).
+  `Unpaid()` adds the events' money to that slip, bounds it at nothing (`PaySlip.Bounded`, as `Director.Pay` bounds a
+  slip), and adds what a clock run that is still going has done (`ShiftClock.Owed`; the drinks cart's own clock in
+  `VendorJob.ClockOwed`). Ride-hail pays each fare as it ends and owes nothing; a fare in progress pays nothing, as on
+  any other way out.
+- **At a load** (`JobDirector.Slow`, once the jobs' state is loaded -> `SettleSaved`) the line is emptied first and then
+  settled (`JobSave.Settle`), as a shift that ended early through nobody's fault: the owed slip is paid through
+  `PayOut` (the game's transaction under the job's name, the energy, the skill, `JobState.Worked` for the level and the
+  day's amount: exactly what `Pay` does); a rota shift gets `CareerDirector.SettleSaved` (the basic wage for the hours
+  from clock-on to the save by `CareerCatalogue.PaidHours`, the rule `ShiftEnded` uses, and `CareerState.ShiftDone`
+  with no complaint, only if work was done and the player still works there); a gig counts as a shift worked
+  (`JobState.ShiftCut`). One notification says so (`reallife_job_saved_paid`, `_nothing`, `_rota`).
+
+What that rules out:
+
+| | how |
+|---|---|
+| lost earnings | the owed slip and the wage are paid on loading |
+| double pay | only `Owed` is ever paid; `Paid` is carried for the review's totals and the log. The line is emptied before the money moves, and every later save writes it afresh |
+| a free second shift | the units count towards the day's amount, and the rota day was handled when it was clocked on to (`CareerState.ClockOn`), so it is neither missed nor open again |
+| a strike or a mark for saving | none: it is an interruption, as going indoors or to hospital is |
+| a strike taken off for saving | none either: `ShiftCut` leaves the strikes alone (a shift that ends on the street by an interruption does take one off: that was left as it is) |
+| a shift with no work done | pays nothing and counts as nothing (no wage, no shift, no complaint) |
+| a line that does not add up | refused whole (`JobSave.Read`: a missing field, a figure below zero, not a number), logged, dropped |
+
+Nothing of a job is left in a save or stuck after a load, and that was so before: the uniform is drawn over the
+player's own clothes and never saved (`JobUniform`), the cleaner's dirt is taken off the client's registration for
+the moment of the save and its mop out of the hands (`CleanerJob.OnSaveGame`, `JobDirt.Suspend`), a sealed box in the
+hands or in a car is taken away after the load (`CourierJob.ClearLeftovers`: the courier's parcel and the stocker's
+box are the same item), a hired van is in its own line and is seen back (`JobRental`), and the hold on the player, the
+marker, the shift card, the panels and the people are objects of the session that a load does not bring back.
+
+"Prepare this save for removing the mod" and "Reset the mod's data" end the shift first (`JobDirector.Quit`: paid on
+its own terms) and then remove the key with the feature's others (`Features`: `.Data(..., "reallife:job_live")`).
+Without the mod the key is ignored by the game.
+
+**Home routines and leisure activities** carry nothing across a save and leave nothing behind: nothing of them is in
+modData while they run, they put no item in the player's hands, and their hold, clip, props and cards are objects of
+the session. After a load they are simply over, and what each gives when it ends is not given: cooking has taken
+its ingredients from the fridges when it began and gives no meal (`CookActivity.Prepare`, as "stopped cooking" does);
+coffee, tidying and exercise give nothing for the minutes spent (their effect is worked out in `End`); the waiting
+room does not open the doctor's visit; a chess game's stake of 10 is not returned (`ChessGame`: only a game that never
+got going refunds it); fishing has paid for its bait and the fish in the bucket are not sold (`Fishing`: sold when it
+ends); a drink at the bar is paid as it is bought and nothing more is lost. The dance floor, sightseeing and the jog
+were looked at only for what they keep (nothing in the save) and what they take at the start (nothing).
+
+Checked offline (`CatalogueCheck/SavedShiftCheck.cs`): 920 shifts (every gig, every rank of every employer, at random
+moments, some with nothing done, some sunk by a penalty) are written, read back field for field and settled; the
+work, the hours and the wage are compared with the live rules written out a second time; what had been paid before
+the save does not change what the load pays; `PaidHours` is compared hour by hour with the formula `ShiftEnded` had;
+a bounded slip plus the clock's pays what the two pay apart; fifteen bad lines are refused; the key is registered and
+the three sentences have their blanks.
+
+Log lines: `Jobs check (saved shift): '<job>' is on at the save: paid so far N for U unit(s), owed M for V ...: PASS`
+(diagnostics on), `Jobs check (saved shift): settled '<job>' saved on day D: paid M for V unit(s) owed ...: PASS`
+(always), `Careers: a shift at <employer> that was on at a save was settled: ...`.
+
+Not checked in the game: any of it; in particular that the game's save event reaches the hook during each kind of
+shift (the cleaner's own hook shows it does for one), and what the figures are at a real midnight autosave.
 
 ### Adding a job
 
@@ -1284,7 +1408,7 @@ walk in from out of view; otherwise they are waiting. See "Arriving, and what ho
 | the cinema | cinema, theater | 18 | 130 min | |
 | a workout | gym | 15 | 60 min, -14 energy | |
 | a look round your business | a business the player rents | | 30 min | friend |
-| a walk | outside any business | | 160 m walked with them beside the player; twice on the way they talk as they walk (`walk_talk` / `walk_talk_l` by the side they are on, upper body over the game's walk) | |
+| a walk | outside any business | | 160 m walked with them beside the player; twice on the way they talk as they walk (`walk_talk` / `walk_talk_l` by the side they are on, upper body over the game's walk); by one of the game's street benches the panel offers "Sit down", once a walk, and a rest counts as 40 m (Family, "Sitting") | |
 | a drive | outside any business | | 650 m driven with them in the back, then pull over | friend, a car |
 | a lift (favour) | from one address to another | | to the door they name; petrol money | |
 | helping them move (favour) | between two doors 22 to 75 m apart | | three boxes carried (`carry_box_hold`; the box is `moving_box` when the bundle has it, else `parcel_m`) | friend |
@@ -1350,8 +1474,10 @@ waits outside a door the player went through for as long as they would have wait
 whenever they give up or are cut off the player is told ("Dana saw you were busy and went on their way").
 
 There is no "bar", "restaurant" or "park" in the game's business types: drinks are at a nightclub, a meal at a
-fast food restaurant, and a walk is along the pavement wherever the player leads. Nobody sits: the game's chairs
-are indoors, where the cast does not go (so `sit_chat_a` / `_b`, which are delivered, have nowhere to be played).
+fast food restaurant, and a walk is along the pavement wherever the player leads. Indoors nobody sits: the game's
+chairs are there, where the cast does not go. On a walk the two can sit on a street bench (Family, "Sitting"), in the
+game's own sitting pose; `sit_chat_a` / `_b` are made for a seat of the mod's own and are played by the living city's
+two friends on a bench (`BenchChatActivity`).
 
 ### Talking, texts and calls
 
@@ -1433,11 +1559,10 @@ not); how the marker on somebody looks beside an incident's marker (they are sep
 
 **Delivered and played:** `social_handshake`, `social_hug`, `social_hug_a` / `_b`, `social_cheek_kiss`, `cheers`
 (with `wine_glass`), `walk_talk` / `walk_talk_l`, `goodbye_wave_walk`, and the prop `moving_box`. **Delivered, not
-played yet** (each needs a scene or a placement that does not exist): `sit_chat_a` / `_b` (nobody sits),
-`eat_standing` with `takeaway_box` (a meal is eaten inside, under the time skip), `point_show` (the look round a
-business happens indoors), `phone_answer` (a call is answered in the contacts app, with the game's own phone pose),
-`box_lift_with` / `_b` (the boxes of a move are carried one each), and the props `beer_bottle`, `popcorn_tub`,
-`gift_box`, `flowers_bunch`, `gym_bag`, `newspaper_ledger`.
+played by Social** (each needs a scene or a placement that does not exist here): `box_lift_with` / `_b` (the boxes of
+a move are carried one each), and the props `beer_bottle`, `popcorn_tub`, `gift_box`, `flowers_bunch`, `gym_bag`,
+`newspaper_ledger`. **Played by the living city instead** (see "Clips nothing played"): `sit_chat_a` / `_b`,
+`eat_standing` with `takeaway_box`, `point_show`, `phone_answer`.
 
 Clips (Humanoid, in place, from and back to the standing idle unless said):
 
@@ -1568,7 +1693,8 @@ good, one passable and one bad answer. Calls made well are the units paid and co
 | asks | `ICareerSickNote.Covers(day)` via `CareerLinks.Health` | sick notes; without it `ModState.IsSick` |
 | offers | `CareerLinks.EmployerId`, `TitleKey`, `ShiftDueToday(day)` | anybody who wants to know where the player works |
 
-State: one line, `reallife:career`, in modData (`CareerState`); a shift in progress is not saved.
+State: one line, `reallife:career`, in modData (`CareerState`). A shift in progress is carried by the jobs' own line
+(`reallife:job_live`, see "A shift across a save"): a load pays the basic wage for the hours clocked and counts the shift.
 
 Test buttons (options, Jobs): sign on with the next employer (cycles all six, on a rota that works tomorrow);
 work a shift at my current rank now; my review is due now (opens the review face to face); promote me one rank;
@@ -1844,6 +1970,14 @@ either, or the option off: hearings are held by video link from the Legal file.
 
 ### Prison
 
+**Custody in hours is not prison.** Everything a court orders in hours (remand until it sits, a custody sentence, a
+hold on an arrest by Licences: `JusticeState.JailHoursPending`, never more than `JusticeLaw.CustodyCapHours` = 48) is
+handed to the Law bridge (`JusticeDirector.BeginCustody`), which serves it in the nearest police station's holding
+cell (`Law.Custody.Hold`, see "A court's hold" under Law). Only when the bridge says no (custody or the stations
+switched off, no station, somebody already held) is it `PrisonStay.Custody`: the fade and the time skip below, where
+the player stands. Prison, in days, is always what follows here. `Justice check (custody): ... PASS` says which of
+the two served it.
+
 Presented as time passing, with the game's own time skip (the one its hospital uses): fade, the player out of their
 car and out of any building and put down on the pavement outside the courthouse (or wherever the Law bridge says),
 and then a day at a time. Each morning the panel: the **parole board** on the morning after two thirds are served
@@ -1895,7 +2029,7 @@ and may read `Justice.Wanted`, `Justice.OnProbation`, `Justice.DrivingSuspended`
 
 | bridge | set by | what it is asked | default |
 |---|---|---|---|
-| `Law` (`ILawBridge`) | `Scripts/Law` | `PriorConvictions`; told `Convicted`, `Cleared`, `RecordSealed`; `Custody(hours, released)`; `ReleaseSpot(out spot, out name)` (the spot, and the station's name that the release text uses: "at Midtown Precinct", else "at the courthouse") | the justice system's own record; a plain time skip; the courthouse front |
+| `Law` (`ILawBridge`) | `Scripts/Law` | `PriorConvictions`; told `Convicted`, `Cleared`, `RecordSealed`; `Custody(hours, reasonKey, released)` (remand and custody sentences: served in the station's cell, see "A court's hold" under Law); `Holding` (in a cell of the station's, or a save says so: never counted absent from court); `ReleaseSpot(out spot, out name)` (the spot, and the station's name that the release text uses: "at Midtown Precinct", else "at the courthouse") | the justice system's own record; a plain time skip; not held; the courthouse front |
 | `Licences` (`ILicenceBridge`) | `Scripts/Licences` | `SuspendDriving(untilDay)` (0 lifts it); `DrivingSuspended` | the date kept in `JusticeState` |
 | `Social` (`ISocialBridge`) | `Scripts/Social` | `CloseFriend(out name)`; told `Stood(name, visit)` | the mod's friend contact, if rung within the last 7 days |
 | `Transport` (`ITransportBridge`) | whoever keeps the cars | `ReturnCar(car, near, daysAway)` | `VehicleTow.BringNear` and a storage charge |
@@ -2182,6 +2316,62 @@ says held and nothing is running, or on any fault; a stay never takes more than 
 screen. If the player cannot be moved (the hospital has them, no way to the door) the arrest is dropped:
 the fines stand, the record keeps the line.
 
+#### A court's hold (`Custody.Hold`)
+
+```csharp
+// False, with nothing done, if custody cannot take them now (off, no precinct, somebody already held, the courts off).
+bool Law.Custody.Hold(float hours, string reasonKey, int bail, Action released);
+Law.Custody.HoldBailed            // read in "released": the hold ended because its bail was paid
+Law.Bridges.CourtOn = () => ...;  // asked whether whoever orders holds still stands behind them (Wiring: Justice.Active)
+```
+
+Hours ordered by a court are served exactly where an arrest's are, by the same code: the wait for a free screen, the
+dark screen, out of any car or building (`Transport`), the pavement outside the nearest precinct, through its door
+into the holding cell (`GoInside`, `PutInCell`), the cell's list, the game's own time skip to the release time, the
+front desk and the door (`Release`, `ReleaseInside`). A player who is already standing in a station is put in that
+station's cell without going out. What differs, all of it decided by `CustodyState.Court`:
+
+| | an arrest | a court's hold |
+|---|---|---|
+| in the street | the officer, hands up, cuffs | nothing is played: one notification, then the dark screen |
+| the note in the cell | CHARGE SHEET: the charges and what was paid | COURT ORDER: the caller's sentence (`reasonKey`: `JusticeLaw.HoldRemand`, `HoldSentence`) |
+| entries | sit it out, bail, a lawyer | sit it out; bail only if the caller set one (`CustodyList.Shape`); never a lawyer |
+| hours | `LawBook.Sentence` | the caller's, bounded to 1 to `LawBook.MostHours` (48) |
+| the police record | a line, closed with the hours served | no line: the conviction is the courts' own, and a second line would move the reputation twice for one offence. So it is not counted by `Record.TimesHeld` either |
+| mood | `MoodDownBig` | `MoodDown`, as the courts' own time skip gave |
+| could not be moved (at the wheel of a car that will not stop, no way to the door) | the arrest is dropped | the hours pass where the player is, behind the full-screen list: a court's hours are never let off |
+| the courts go (switched off, the feature at fault) | | the hold ends at the next look (eight a second, with the clock line) and at a load |
+
+A car the player was sitting in is remembered and treated as an arrest's: at the pound if they are let out inside,
+brought to a kerb space for the impound fee otherwise. `released` is called exactly once, last thing in `Cleanup`, on
+every way out (served, bail, the watchdog, a fault, the component destroyed); it is not kept in the save, so a hold
+resumed after a load ends without it, and `ILawBridge.Holding` is what the courts ask instead.
+
+Every guarantee of an arrest's stay holds for a court's because it is the same routine and the same state: the
+watchdog in `LawDirector` (25 s without a sign of life, "the save says held, nothing is running", any fault),
+`HeldMost` (seven real minutes on screen), `LeaveCell` and `OpenCell` for the bars, `Cleanup` on destroy.
+
+**The save.** `reallife:law_custody` has two fields more at its end: `|1|<reason key>` for a court's hold (`|0|` for
+an arrest). A line with nine fields, from before, is an arrest. `Active` on load is "has charges, or is a court's,
+and has a release time". A save made in the cell loads without the mod as the player standing in an empty unit (the
+base game ignores the key); with the mod they walk out and what is left is served, or they are let out if the time
+has passed, the option is off, or the courts are off. A build of the mod from before this reads the nine fields it
+knows, finds no charges and holds nobody.
+
+One thing can come out of order: a save made during **remand** and loaded has its hearing waiting too
+(`JusticeState.HearNow`). The courts' panel waits for `Custody.Active`, which is false from the load until the stay is
+taken up again (once the player is out of doors and the precincts are designated), so the hearing can be held first
+and the rest of the remand served after it. Neither is lost and nothing is stuck: the hearing pauses the game, and
+the stay waits for `LifeEvents.IsSafeForEvent`.
+
+Log lines with diagnostics on: `Law check (court hold): taken to <precinct>: in the holding cell: PASS` (or "no cell in
+this room, held at the desk", "held outside the door"; "could not be moved, held where they are" is the FAIL),
+`... signed out at the front desk of <precinct> after N h of M, then the door: PASS`, `... let out at the door of ...`,
+`... a save made during the hold was loaded with N h left: resumed`, `... ended by the watchdog (...)`.
+
+Not checked in the game: any of it. A screenshot of the cell with the COURT ORDER note and a single "Sit it out"
+entry settles the list; the log lines above settle the path.
+
 With "Custody" off, the two old routes fall back to what they did before (a 2 to 5 hour time skip where
 caught). With "Arrests for serious offences" off, a death is only an arrest if the player drove off, and
 911 calls about nothing only cost the fine.
@@ -2191,8 +2381,9 @@ Not wired, because the player cannot do them: stealing and violence on foot. `La
 
 ### Record and reputation
 
-- **Record** (`reallife:law_record`, at most 40 lines): every ticket, every stay in a cell (with its
-  hours, fines and how it ended) and every time the player got away after hurting somebody.
+- **Record** (`reallife:law_record`, at most 40 lines): every ticket, every stay in a cell after an arrest (with its
+  hours, fines and how it ended) and every time the player got away after hurting somebody. Hours a court ordered
+  are not a line here (they are in the Legal file with the conviction).
 - **Police reputation** (0 to 100, starts at 55): falls with each line by the amount in `LawBook` (a
   ticket 3, a fatal hit-and-run 25), rises 2 for every game day with nothing new on the record (up to 75)
   and with calls that led to an arrest.
@@ -2224,7 +2415,8 @@ Law.Record.CleanFor(14)          // nothing new in 14 game days (a job that want
 Law.Record.DaysSinceLastOffence  // -1 if none
 Law.Record.TimesHeld(30)         // stays in a cell in the last 30 game days
 Law.Record.Count, Law.Record.Entry(i)           // day, charges (bits), hours, fines, outcome
-Law.Custody.Active               // being arrested or held right now
+Law.Custody.Active               // being arrested or held right now (an arrest's stay or a court's)
+Law.Custody.Hold(hours, reasonKey, bail, released)   // a court's order served in the cell; false if it cannot be taken
 Law.LawDirector.NearestPrecinct(position)       // its Name, Door, Building; null before the city is ready
 Law.Arrests.FledStop / HitAndRun / StayedAtScene / WastedCall / Escaped / Cited   // the ways in
 ```
@@ -3586,8 +3778,8 @@ What was doubled before the wiring, and how each is now single:
 - **Driving while suspended fined twice** (1 500 at the window by Licences, and the same charge in court by
   `Justice.PoliceContact`): what was paid at the window is credited to that case (`LicenceLinks.SuspendedAtStop`).
 - **An arrest by Licences** (third time without a licence, second time suspended): served through the courts' custody
-  when they are on (`Justice.Hold`: put down outside the nearest precinct, counted as time served), through the old
-  roadside time skip when they are off. Never both.
+  when they are on (`Justice.Hold`: in the nearest precinct's cell like every hold of the courts', counted as time
+  served), through the old roadside time skip when they are off. Never both.
 - A death on the way to a ticket (`PoliceAttention.Ticket`) arrested but never charged: it now opens the same case a
   death after a pursuit does.
 - With a precinct holding the player, nobody told the paper or the player's friends (`News`, `SocialHooks.PlayerArrested`
@@ -3597,12 +3789,15 @@ Panels queue, they never stack: the precinct's cell runs behind the game's time 
 `LifeEvents.IsSafeForEvent` (no dialog, no time skip, not paused: the courts' panel pauses the game, so nothing starts
 behind it). The courts' own panel also waits for `Wiring.Scenes.PlayerHeld` (a test paper or driven test, a panel of the mod's own that needs the cursor).
 
-**For Scripts/Law (not edited here; three calls it would need for more):** `Record.Convict(day, name, caseNumber)` and
+**The cell is Law's for the courts too.** `Wiring.Arrests.LawBridge.Custody` hands a court's hours (remand, a custody
+sentence, an arrest by Licences) to `Law.Custody.Hold(hours, reasonKey, 0, released)`: no bail, because a court that
+holds somebody has refused it or the player chose to stay. `Law.Bridges.CourtOn` is `Justice.Active`, so a hold ends
+when the courts are switched off. `Holding` answers from `Custody.Active` and the saved stay.
+
+**For Scripts/Law (two calls it would need for more):** `Record.Convict(day, name, caseNumber)` and
 `Record.Remove(caseNumber)` so that a conviction and an acquittal can be lines of the police record (today
 `Convicted` / `Cleared` / `RecordSealed` do nothing there: a second line for the conviction would move the reputation
-twice for one offence, and there is no way to take one line off), and `Custody.Hold(hours, reasonKey, released)` so that
-a court's custody sentence and an arrest by Licences can be served in the precinct's cell with its panel (today they
-are the courts' own time skip, with the player put down outside the nearest precinct through `ReleaseSpot`).
+twice for one offence, and there is no way to take one line off). The custody path does not need them.
 
 ### One street scene at a time (`Wiring.Scenes`)
 
@@ -3825,7 +4020,8 @@ walks in, or come in at the door when it is not being looked at.
   short days if they are the one looking after small children.
 - **At home**: they stand by what the game calls a cooker, fridge, coffee machine (a cup held, a sip now
   and then), a sofa, television, armchair or bookshelf (reading the paper, or watching), or failing all
-  furniture on clear floor; every minute or so they walk to another of those places. They wave and greet
+  furniture on clear floor; every minute or so they walk to another of those places. Up to two of the places
+  are beside something to sit on, and there they sit down (see "Sitting" below). They wave and greet
   the player at the door (lines by the hour and by how the player is), and within reach, facing them, the
   interaction key opens a conversation: both stand, face each other and animate (`talk_a` / `talk_b`).
 - **Conversation**: a chat about what has really happened (the player ill, a shift worked today and what
@@ -3843,6 +4039,78 @@ walks in, or come in at the door when it is not being looked at.
 - **Evenings out**: Leisure bridge, else Social's outing, else dinner at the nearest real restaurant: the
   game's destination marker, a key prompt at its door, the bill (90), two hours skipped, and a line.
   Not turning up is noticed.
+
+### Sitting (`People/Seating.cs`): the partner at home, a bench on a walk
+
+**What the game has to sit on, and how it seats its own people.** Looked for in the decompiled game:
+
+- every chair, armchair, sofa, stool and indoor bench a player can place is a `Controllers.SeatController`
+  (an `ItemController`), with one or more sitting positions (`SittingPosition`: one that is free, or null) and its own
+  record of which are taken (`Occupied`, `OnSittingChanged`);
+- the city's street benches are `OutsideBenchController`, each with `sittingPosition` (the player's) and
+  `aiSittingPosition` (where the game itself seats a pedestrian while the bench is near, `_npc`);
+- a person is seated by `ThirdPersonCharacter.SitOnChair(seat)` (the game's own sitting pose, the navigation agent
+  off, the body on the seat's position and turned as it is, the seat told it is taken) and taken off it by
+  `ThirdPersonCharacter.Reset()`. Its customers, its employees and the player in its own activities all go through
+  those two.
+- beds are the game's sleep activity's and are not seats: nobody of the mod's lies down.
+
+So nobody of the mod's is posed on a seat by the mod. `Seating` uses the game's two calls, and adds what they leave
+open: where the person stood (they stand up there, on the mesh, and not wherever the agent lands), and what "free" is.
+
+```csharp
+bool   CityPerson.Sit(Transform seat)     // anybody from a cast: the family's partner, a companion, a city person
+void   CityPerson.Rise()                  // safe at any time; also done by WalkTo, Work, Reset and Surrender
+bool   CityPerson.Seated
+Seating.IsSeat(item)                      // an ItemController that is a SeatController
+Seating.Free(item)                        // a sitting position of it with nobody on ANY of its places, or null
+Seating.InReach(from, seat)               // within 2.4 m: near enough to sit down without being seen to jump
+Seating.Bench(near, within)               // the nearest OutsideBenchController (one physics query: on a slow timer only)
+Seating.SecondPlaceFree(bench)            // its pedestrian's place is empty (the game's own field, read when asked)
+new PlayerSeat().Sit(player, seat) / .Stand() / .Seated   // the player, held by the game's own RestActivity blocker
+```
+
+Rules kept: a whole-body clip is never played on somebody seated (`CityPerson.Work` stands them up first), nobody
+walks off a seat with the agent off (`WalkTo` stands them up first), and a person given back to a pool or knocked
+down is stood up first (`Reset`, `Surrender`), so every existing way out of every scene already gets people off seats.
+
+**The partner at home** (`HomeLife`). `Scan` makes up to two of the partner's six places "beside a seat": any
+`SeatController` in the home with a clear piece of floor by it that is not in the doorway (`Usable`: 1.6 m from the
+entry, 1.5 m from the other places, on the same mesh). When they have walked to such a place (`Settle`) they sit down
+if `Seating.Free` gives a position (so never on a seat the player, or anybody, is on) within reach, for 70 to 160
+seconds (`Mode.Sitting`); otherwise they stand there as in the living room. They get up (`GetUp`: back where they
+stood) when that time is over and the player is not right beside them, when it is time to leave or to go to bed,
+when the seat is switched off or taken away, when a scene takes them over (`Hand`), and when the player presses Talk:
+the panel is offered over them seated, and they stand up to talk. While seated they have the game's sitting pose and
+nothing in their hands.
+
+**A bench on a walk** (`OutingScene`). On a walk, every second and a half while both are on foot and within 6 m of
+each other, `Seating.Bench` looks 4.5 m round the player for a street bench; with one in reach the game's panel
+offers "Sit down" (`reallife_social_button_sit`), once a walk. On the button: the player is seated on the bench's own
+place (`PlayerSeat`); the companion on its second place if the game has no pedestrian there and it is in reach,
+otherwise they stand by, facing; the bench's `spawnPedestrians` is switched off meanwhile and put back, so the game
+seats nobody on top of them. After four seconds the companion says something and the panel offers "Get up"; after 90
+seconds they get up by themselves. A rest counts as 40 m of the walk's 160. They are got up at once by anything that
+wants the player (`Wiring.Scenes.PlayerHeld`: an arrest, a panel of the mod's; the hospital), when the scene is cut
+(a time skip, a door) and when it ends in any way (`LeaveBench` in `Cut` and `End`).
+
+Outings that go indoors are as they were: the door, the fade, the time passing. Nobody sits at a table, and the
+Guide says so.
+
+Cost: nothing per frame. The home is scanned once on entering, as before; the partner's tick is the family's
+once-a-second one; the bench query is one `OverlapSphereNonAlloc` every 1.5 s of a walk and nothing otherwise.
+
+Log lines with diagnostics on: `People check (seat): this home has N place(s) to sit among M ...`, `... the partner
+sat down on <item>, 0.00 m from where they stood, for N s: PASS`, `... the partner stays standing by <item> (in use, or
+out of reach)`, `... the partner got up after N s (<why>): PASS`, `... a street bench is N m from the player on a walk:
+sitting down is offered`, `... the player sat down on a street bench; the companion sat down beside them`, `... up from
+the street bench (<why>): the player is free to walk: PASS`.
+
+Not checked in the game: any of it. To look at first: that one of the mod's characters takes the game's sitting pose
+at all (they are the game's own character type, but from the mod's pool) and sits at the right height on each kind of
+seat; that the player seated outside the game's own activity keeps the camera and can click the panel's button; that
+standing up puts both back on the pavement; whether the game's bench panel ("rest") still opens on a click while the
+player sits there through the mod. A screenshot of the partner on a sofa and one of the two on a bench settle the look.
 
 ### Engagement and wedding
 
