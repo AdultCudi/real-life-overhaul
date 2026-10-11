@@ -52,6 +52,7 @@ namespace RealLifeOverhaul
         private readonly IModLogger _logger;
         private readonly List<Waypoint> _route = new List<Waypoint>(24);
         private CarController _car;
+        private int _tickets;   // parking tickets the game has written on the hired van, as last seen (LentVehicle)
         private string _id;             // of the hired van, or of one left by a saved hire
         private int _paidDay;           // the day the fee was last paid
         private bool _returning;        // the shift is over: taken back once the player is out of it
@@ -157,6 +158,7 @@ namespace RealLifeOverhaul
                 }
                 _car = car;
                 _id = instance.id;
+                _tickets = 0;
                 _returning = false;
                 _hooked = true;
                 _hookTries = 0f;
@@ -240,6 +242,7 @@ namespace RealLifeOverhaul
                         return;
                     }
                 }
+                LentVehicle.KeepFree(_car.vehicleInstance, ref _tickets);   // a hired van is never the player's to be ticketed for
                 if (_hooked && !_returning)
                 {
                     Unhook();

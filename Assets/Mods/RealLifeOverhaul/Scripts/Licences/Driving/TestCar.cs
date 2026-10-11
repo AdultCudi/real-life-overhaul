@@ -51,6 +51,7 @@ namespace RealLifeOverhaul
         private bool _wasLeft;          // the player has been out of it since it was due back
         private bool _seeingOut;
         private bool _failed;
+        private int _tickets;           // parking tickets the game has written on the lent car, as last seen (LentVehicle)
 
         public TestCar(MonoBehaviour host, IModLogger logger)
         {
@@ -113,6 +114,7 @@ namespace RealLifeOverhaul
                 }
                 _car = car;
                 _instance = instance;
+                _tickets = 0;
                 _returning = false;
                 SpawnedAt = Time.time;
                 _logger?.Info("Licences: the school's " + (van ? "van" : "car") + " ('" + type + "', id " + instance.id + ") stands "
@@ -186,6 +188,7 @@ namespace RealLifeOverhaul
                 {
                     DeleteLeftover();
                 }
+                LentVehicle.KeepFree(_instance, ref _tickets);   // the school's car is never the player's to be ticketed for
                 if ((object)_car != null && _car == null)
                 {
                     Forget();   // wrecked and removed by the game

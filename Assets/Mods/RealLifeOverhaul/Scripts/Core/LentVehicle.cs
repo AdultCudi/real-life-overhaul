@@ -1,0 +1,41 @@
+using Helpers;
+using UnityEngine;
+
+namespace RealLifeOverhaul
+{
+    /// <summary>
+    /// A vehicle the mod lends the player (the driving school's car, a hired job van) is on the save's vehicle list while it
+    /// is out, so the game's hourly parking round would ticket it like one of the player's own. It is not theirs to park:
+    /// whoever lends it calls <see cref="KeepFree"/> on its slow tick. The vehicle is kept legally parked with nothing owed,
+    /// and a ticket the game wrote all the same (its round can fall between two ticks) is paid back at once, under its own
+    /// name in the player's transactions. A few field writes a second while a vehicle is lent; nothing otherwise.
+    /// </summary>
+    public static class LentVehicle
+    {
+        public const float Ticket = 125f;   // what the game's parking round charges (Helpers.ParkingSimulator.RunHourly)
+        private const string RefundKey = "reallife_transaction_lent_ticket_refund";
+
+        /// <summary><paramref name="ticketsSeen"/>: the count the lender last saw on this vehicle (0 when it was made).</summary>
+        public static void KeepFree(VehicleInstance instance, ref int ticketsSeen)
+        {
+            if (instance == null)
+            {
+                return;
+            }
+            if (instance.parkingState != ParkingState.Legal)
+            {
+                instance.parkingState = ParkingState.Legal;
+            }
+            if (instance.unpaidParkingAmount != 0f)
+            {
+                instance.unpaidParkingAmount = 0f;
+            }
+            int tickets = instance.parkingTickets != null ? instance.parkingTickets.Count : 0;
+            if (tickets > ticketsSeen)
+            {
+                GameManager.ChangeMoneySafe(Ticket * (tickets - ticketsSeen), new TransactionInfo(RefundKey), null, null, force: true);
+            }
+            ticketsSeen = tickets;
+        }
+    }
+}
