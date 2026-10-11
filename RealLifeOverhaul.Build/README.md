@@ -124,7 +124,6 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       JobState       per-save experience, strikes, sackings, today's and this week's totals: one line in modData (game-free)
       JobDirector    the one job that is on: start, 0.2 s tick, interruptions (indoors only in the one building a job names), pay, the test buttons
       Job            the base every job derives from, the pay slip, what a job is handed each tick, text helpers
-      JobHud         objective panel (placed under the game's top bar, measured), the job's own marker, key prompt, a row of three choices, pay slip
       JobStand       a place of work taken by walking on to it: the last step, the turn, the hold, the working pose, stepping away
       JobUniform     work clothes over the player's own (the game's UpdateVisuals(list)); the director takes them off on every way out
       ShiftSkip      the rest of a shift left to the game's clock: one of the game's activities on the game's own panel, as its employer job
@@ -138,7 +137,7 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       JobAnimations  IJobAnimations and JobClip: the one door to a person's body; today played with the game's gestures
       JobProps       what a job puts in the player's hand that is not a game item (the flyer stack)
       Kinds/         the jobs: FlyerJob, CourierJob, TaxiJob
-    Driving/   the car the player drives: performance by kind of car, the eased throttle, speedometer, towing
+    Driving/   the car the player drives: performance by kind of car, the eased throttle, speedometer (a reading in the game's vehicle panel, SpeedReading), towing
       CarCatalogue   every vehicle type's targets (0-100 km/h time, top speed) and kind, and the rule for unknown types (game-free)
       CarModel       a car in a straight line as the game's physics moves it; finds the power, gearing and drag that meet a target (game-free)
       CarTuning      reads the driven car, applies what CarModel found, puts every value back; the eased pedal
@@ -709,8 +708,8 @@ down at ...`, `Jobs: cleaner: the floor reads 62% clean (was 55%) ...`, `Jobs: c
 
 ### The drinks cart: the model of a shift in the game's own interface (`Kinds/VendorJob`)
 
-The cart shift (an employee's rota shift at Uncle Lou's, or the gig) shows nothing of `JobHud`. `Job.NativeUi`
-is true for it, and the director then draws none of the mod's own job HUD and reads no key for it. What the
+The cart shift (an employee's rota shift at Uncle Lou's, or the gig) shows nothing of the mod's own. `Job.NativeUi`
+is true for it, and the director then reads no key for it. What the
 player sees and does is built from four shared pieces of `Scripts/Jobs`, each usable by any other job:
 
 - **`JobStand`: the place is taken by walking on to it.** `Place(post, facing, reach, idleClip)` names a zone;
@@ -811,8 +810,7 @@ game minutes a unit: four game hours over the units of the shift; the cart's twe
   back"; "Check on them", what to say, what to do about an incident). No clock: every call is a decision. The dispatch
   desk's board is the game's list window (`DispatchList`).
 
-`JobHud` keeps the plate, marker and prompt that the home's offers and the run for fitness call; its status, countdown,
-choices, target diamond and pay slip, and the director's drawing of them, are deleted. `JobKeys` is unchanged: every
+`JobHud` is deleted: its status, countdown, choices, target diamond, pay slip, plate, marker and prompt were moved to `ShiftCard`, `WorldPanel` and `GuideMark`, and the director's drawing of them is gone. `JobKeys` is unchanged: every
 member still has a caller outside the jobs.
 
 Not checked in the game (nothing here has been run): any of the above. In particular where each panel stands and how
@@ -3686,6 +3684,20 @@ text did not know (chinos, suit trousers, pencil skirt, evening dress, boots, lo
 Everyday), so the tier on the rack is the tier in the label. The evening dress was caught by the summer dress's
 `dress_` price (120); it now goes by its tier (Premium, 200). The seven first prices are unchanged.
 
+### On screen, everywhere: no canvas of the mod's but the options page
+
+The mod's shared layer (`Core/Hud`, `Jobs/JobHud` and each feature's own copy) is gone. What replaced it, and what is left:
+
+| was | now |
+|---|---|
+| the crosshair dot | `Camera/CrosshairDot`: one `Image`, a child of the game's own HUD canvas, made the first time mouse look is on |
+| the incident marker with its distance (street crime, events, accidents) | each feature's own `GameUi.GuideMark` (the game's destination marker). Only one feature can have the marker at a time: the one that asked first keeps it, the others ask again on their next tick |
+| the speed readout | `Driving/SpeedReading`: one more reading in the game's vehicle panel (a copy of its condition reading, after it, as `CarDash` does), written when the whole number changes. The game's panel has no speed of its own |
+| the font asset others read | `GameUi.GameFont.Asset` (the font of the first text the game's interface has, looked up once). `Core/Hud.cs` is now only a four-line class that forwards `Hud.Font` to it, because `Scripts/Transport` (not touched in this piece of work) still reads `Hud.Font`; delete the file when that reads `GameFont` |
+| the job panel's plate, marker and prompt | `ShiftCard`, `WorldPanel` and `GuideMark` |
+
+Canvases the mod still makes: `Meta/MetaUi` (the options page's own messages, also used in the main menu where there is no HUD). `ShiftCard` and `NavHud` each add one `Canvas` component to a copy of a game panel so that it batches by itself; that is not a canvas of the mod's own. None of this has been seen in the game.
+
 ### What the merged whole costs per frame
 
 Read through after the merge: 67 `Update` / `LateUpdate` / `FixedUpdate` methods, no `OnGUI`, no `InvokeRepeating`, and no
@@ -4044,7 +4056,7 @@ Performance is a requirement, not a nice-to-have.
   when a binding changes). A new key is one `KeyAction`, one row in `Keys.All` and its name in `en.json`.
 
 - Nothing allocates per frame. No `OnGUI`, no LINQ or string building in `Update`, no
-  `FindObjectsOfType` outside a one-off setup. Use the shared `Hud` for on-screen elements.
+  `FindObjectsOfType` outside a one-off setup. Put anything on screen through the game's own interface (see the next point); there is no shared canvas of the mod's. The one font asset others read is `GameUi.GameFont.Asset`.
 - Something offered at a place in the world is offered in the game's own interface, and the mod draws no key prompt
   or panel for it: a click on the object (`docs/game-ui.md`, sections 7 and 11), the game's panel over a place with
   its keys (`GameUi.WorldPanel`, section 9), a list in the game's own window (`GameUi.TravelList`, section 10), a

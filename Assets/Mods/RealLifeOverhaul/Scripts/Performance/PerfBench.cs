@@ -109,7 +109,7 @@ namespace RealLifeOverhaul
                 items.Add(new Item { Label = tweak.Id, Tweak = tweak, Pairs = tweak.Trial || tweak.Id == "far_props" ? 2 : 3, CountsVisible = tweak is FarDistricts || tweak is LayerCull });
             }
             items.Add(new Item { Label = "ref: no interface", Reference = Ref.NoUi, Pairs = 2, Meaning = "Every interface canvas disabled." });
-            foreach (string canvas in new[] { "Smartphone", "Topbar", "PlayerHUD", "IngameDebugConsole", "RealLifeOverhaul HUD" })
+            foreach (string canvas in new[] { "Smartphone", "Topbar", "PlayerHUD", "IngameDebugConsole" })
             {
                 items.Add(new Item { Label = "ref: canvas " + canvas, Reference = Ref.OneCanvas, Canvas = canvas, Pairs = 2, Meaning = "Only this canvas disabled: its share of the interface's cost." });
             }

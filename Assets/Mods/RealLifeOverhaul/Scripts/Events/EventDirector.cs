@@ -77,6 +77,7 @@ namespace RealLifeOverhaul.Events
         private StreetEventScene _street;
         private IEventScene _scene;
         private string _label;
+        private readonly RealLifeOverhaul.GameUi.GuideMark _mark = new RealLifeOverhaul.GameUi.GuideMark();
         private string _prompt;
         private float _markerUntil;
         private float _nextTick, _nextSecond, _nextRoll, _nextFlicker, _nextWarm, _nextHook;
@@ -164,7 +165,7 @@ namespace RealLifeOverhaul.Events
         {
             if (now < _markerUntil)
             {
-                Hud.Instance.ShowMarkerAt(_label, _scene.Focus);
+                _mark.Show(_scene.Focus, _label);
             }
             if (Effects.Burning && now >= _nextFlicker)
             {
@@ -206,10 +207,7 @@ namespace RealLifeOverhaul.Events
             if (_markerUntil > 0f && now >= _markerUntil)
             {
                 _markerUntil = 0f;   // hidden once: the marker is shared, and another scene may want it later
-                if (Hud.Exists)
-                {
-                    Hud.Instance.HideMarker();
-                }
+                _mark.Hide();
             }
             string prompt = _scene.Prompt(at);
             if (prompt != _prompt)
@@ -255,10 +253,7 @@ namespace RealLifeOverhaul.Events
                 Logger?.Error(e);
             }
             SafetyNet();
-            if (Hud.Exists)
-            {
-                Hud.Instance.HideMarker();
-            }
+            _mark.Hide();
             int reopened = Cordon.Recheck();
             Logger?.Info("City events: scene cleared (" + why + ")" + (reopened > 0 ? "; " + reopened + " road point(s) were still closed and are open again." : "."));
         }

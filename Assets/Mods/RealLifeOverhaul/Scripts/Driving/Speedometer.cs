@@ -4,7 +4,8 @@ namespace RealLifeOverhaul
 {
     /// <summary>
     /// Shows the speed of the vehicle being driven, in km/h or mph following the game's units
-    /// setting. Reads one velocity per frame; the text is only rebuilt when the whole number changes.
+    /// setting, as one more reading of the game's own vehicle panel (<see cref="SpeedReading"/>). Reads one velocity per frame; the text
+    /// is only rebuilt when the whole number changes.
     /// </summary>
     public class Speedometer : MonoBehaviour
     {
@@ -36,21 +37,21 @@ namespace RealLifeOverhaul
                 if (_shown)
                 {
                     _shown = false;
-                    Hud.Instance.HideSpeed();
+                    SpeedReading.Hide();
                 }
                 return;
             }
 
             _shown = true;
             float speed = _body.velocity.magnitude * (_imperial ? MetresPerSecondToMph : MetresPerSecondToKmh);
-            Hud.Instance.ShowSpeed(Mathf.RoundToInt(speed), _imperial ? "mph" : "km/h");
+            SpeedReading.Show(Mathf.RoundToInt(speed), _imperial ? "mph" : "km/h");
         }
 
         private void OnDestroy()
         {
-            if (_shown && Hud.Exists)
+            if (_shown)
             {
-                Hud.Instance.HideSpeed();
+                SpeedReading.Hide();
             }
         }
     }

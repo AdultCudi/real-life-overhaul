@@ -435,7 +435,7 @@ namespace RealLifeOverhaul
                 Shapes.Piece("Bed", sign, Shapes.Cube, Shapes.Paint(new Color(0.92f, 0.90f, 0.84f), 0.3f), new Vector3(0f, 0.95f, 0.055f), new Vector3(0.40f, 0.10f, 0.012f));
                 Shapes.Piece("Head", sign, Shapes.Cube, Shapes.Paint(new Color(0.92f, 0.90f, 0.84f), 0.3f), new Vector3(-0.17f, 1.03f, 0.055f), new Vector3(0.06f, 0.26f, 0.012f));
             }
-            TMP_FontAsset font = Hud.Font;
+            TMP_FontAsset font = GameUi.GameFont.Asset;
             if (font == null)
             {
                 return;

@@ -203,9 +203,9 @@ namespace RealLifeOverhaul
                 Logger?.Info($"Camera: mouse look {(look ? "on" : "off")} (uiOpen={IsUiOpen()} cursorFreed={CursorFreed} focused={Application.isFocused}).");
             }
             IsLooking = look;
-            if (look || Hud.Exists)
+            if (look || CrosshairDot.Exists)
             {
-                Hud.Instance.SetCrosshair(look);
+                CrosshairDot.Set(look);
             }
             if (look)
             {

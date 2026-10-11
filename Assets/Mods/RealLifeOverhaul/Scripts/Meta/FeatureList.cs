@@ -108,7 +108,7 @@ namespace RealLifeOverhaul.Meta
                 .Preset(Settings.JobPayId, 125, 100, 80)
                 .Data("reallife:jobs", "reallife:job_rental")
                 .Contact(JobPhone.ContactId)
-                .Objects("RealLifeOverhaul Job HUD", "RealLifeOverhaul Shift Card")
+                .Objects("RealLifeOverhaul Shift Card")
                 .Fact("vendor_quick", () => Guide.Number(VendorJob.QuickTip))
                 .Fact("vendor_wrong", () => Guide.Number(VendorJob.WrongCost))
                 .Fact("vendor_patience", () => Guide.Number(VendorJob.Patience))
@@ -161,10 +161,6 @@ namespace RealLifeOverhaul.Meta
                 .Cleanup(() =>
                 {
                     JobDirector.Instance?.Quit();   // the shift ends, its people and props go back, a hired van is handed in
-                    if (JobHud.Exists)
-                    {
-                        JobHud.Instance.HideAll();
-                    }
                 })
                 // Read from the (now empty) save here, not through the director: its own reload would forget a van still out.
                 .ResetData(() => JobState.Load(SaveGameManager.Current.modData, TimeHelper.CurrentDay))
@@ -178,7 +174,7 @@ namespace RealLifeOverhaul.Meta
                 .Test("reallife_test_event")
                 .Data("reallife:sick_until", "reallife:friend_day", "reallife:mom_day", "reallife:mom_gift_day", "reallife:modifiers",
                     "reallife:seen_events", "reallife:pending_fine", "reallife:pending_fine_due")
-                .Objects("RealLifeOverhaul HUD")
+                .Objects("RealLifeOverhaul Crosshair")
                 .Fact("life_count", () => LifeEventCatalogue.All.Length.ToString(CultureInfo.InvariantCulture))
                 .Fact("doctor_fee", () => Guide.Money(LifeEvents.DoctorFee))
                 .Fact("ambulance_fee", () => Guide.Money(LifeEvents.AmbulanceFee))
@@ -186,10 +182,6 @@ namespace RealLifeOverhaul.Meta
                 .Cleanup(() =>
                 {
                     LifeEvents.Instance?.Cure(null);   // the cold and its drain on energy end; no toast
-                    if (Hud.Exists)
-                    {
-                        Hud.Instance.HideMarker();
-                    }
                 })
                 .ResetData(() =>
                 {
@@ -382,7 +374,7 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_leisure_about").Help("reallife_guide_leisure")
                 .Owns(Settings.LeisureId, Settings.ClothesShopsId, Settings.NightLifeId, Settings.AmbientSoundId, Settings.PhotoModeId)
                 .Data("reallife:leisure_*")
-                .Objects("RealLifeOverhaul Leisure HUD")
+                .Objects("RealLifeOverhaul Shift Card", "RealLifeOverhaul Clothes")
                 .Rows("reallife_leisure_test_records")   // the records and landmarks card: the player's, not a test
                 .Fact("leisure_tipsy_from", () => Guide.Number(Leisure.BarDrinks.TipsyFrom))
                 .Cleanup(() =>
@@ -410,7 +402,7 @@ namespace RealLifeOverhaul.Meta
                 .Preset(Settings.SocialTextsMaxId, 2, 3, 4)
                 .Data("reallife:social", "reallife:social_*")
                 .Contact(SocialPhone.PeopleId, SocialPhone.LedgerId)
-                .Objects("RealLifeOverhaul Social HUD")
+                .Objects("RealLifeOverhaul Shift Card")
                 .Fact("social_cast", () => SocialRules.CastSize.ToString(CultureInfo.InvariantCulture))
                 .ResetData(() =>
                 {
@@ -436,7 +428,7 @@ namespace RealLifeOverhaul.Meta
                 .Owns(Settings.CareersId)
                 .Data("reallife:career")
                 .Contact(CareerPhone.ContactId)
-                .Objects("RealLifeOverhaul Dispatch Board")
+                .Objects("RealLifeOverhaul Dispatch")
                 .ResetData(() => CareerState.Load(SaveGameManager.Current.modData))
                 .Repair(CareerPhone.Setup);
 
@@ -474,7 +466,7 @@ namespace RealLifeOverhaul.Meta
                 .Preset(JusticeSettings.PrisonCapId, JusticeLaw.PrisonCapMin, JusticeLaw.PrisonCapDefault, 10)
                 .Data(JusticeState.Key)
                 .Contact(LegalPhone.ContactId)
-                .Objects("RealLifeOverhaul Justice HUD", "RealLifeOverhaul Justice Panel", "RealLifeOverhaul Courthouse Sign", "RealLifeOverhaul Litter")
+                .Objects("RealLifeOverhaul Justice", "RealLifeOverhaul Shift Card", "RealLifeOverhaul Courthouse Sign", "RealLifeOverhaul Litter")
                 .Fact("justice_fine_cap", () => Guide.Money(JusticeLaw.FineCap))
                 .Fact("justice_community_cap", () => JusticeLaw.CommunityCapHours.ToString(CultureInfo.InvariantCulture))
                 .Fact("justice_custody_cap", () => JusticeLaw.CustodyCapHours.ToString(CultureInfo.InvariantCulture))
@@ -551,7 +543,7 @@ namespace RealLifeOverhaul.Meta
                 .Rows("reallife_family_test_page")   // the Family page: with the phone contacts off it is the only way in, so it is the player's, not a test
                 .Data("reallife:family")
                 .Contact(Family.FamilyPhone.FamilyId, Family.FamilyPhone.PartnerId, Family.FamilyPhone.InLawId)
-                .Objects("RealLifeOverhaul Family HUD")
+                .Objects("RealLifeOverhaul Shift Card")
                 .Fact("family_dinner", () => Guide.Money(Family.FamilyBalance.DinnerCost))
                 .Fact("family_move_in_days", () => Family.FamilyBalance.MoveInDaysTogether.ToString(CultureInfo.InvariantCulture))
                 .Fact("family_sqm", () => Family.FamilyBalance.SqmForTwo.ToString(CultureInfo.InvariantCulture))

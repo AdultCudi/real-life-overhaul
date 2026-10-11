@@ -636,7 +636,6 @@ namespace RealLifeOverhaul.Family
                     if (phone) uis.smartphoneUI.gameObject.SetActive(false);
                     if (top) uis.topBar.gameObject.SetActive(false);
                 }
-                ShowCoreHud(false);
             }
             catch (Exception e)
             {
@@ -658,7 +657,6 @@ namespace RealLifeOverhaul.Family
                     if (phone) uis.smartphoneUI.gameObject.SetActive(true);
                     if (top) uis.topBar.gameObject.SetActive(true);
                 }
-                ShowCoreHud(true);
                 if (file != null)
                 {
                     Logger?.Info("Family: photograph written to " + file);
@@ -668,18 +666,6 @@ namespace RealLifeOverhaul.Family
             catch (Exception e)
             {
                 Logger?.Error(e);
-            }
-        }
-
-        private static void ShowCoreHud(bool show)
-        {
-            if (Hud.Exists && Hud.Instance.TryGetComponent(out Canvas canvas))
-            {
-                canvas.enabled = show;
-            }
-            if (JobHud.Exists && JobHud.Instance.TryGetComponent(out Canvas jobs))
-            {
-                jobs.enabled = show;
             }
         }
 

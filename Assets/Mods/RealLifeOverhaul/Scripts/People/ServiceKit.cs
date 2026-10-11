@@ -421,7 +421,7 @@ namespace RealLifeOverhaul
                 return;
             }
             Shapes.Piece("Plate", panel, Shapes.Cube, Shapes.Paint(cloth), Vector3.zero, new Vector3(width, height, 0.004f));
-            TMP_FontAsset font = Hud.Font;
+            TMP_FontAsset font = GameUi.GameFont.Asset;
             if (font == null)
             {
                 return;   // no lettering to be had: the plate alone

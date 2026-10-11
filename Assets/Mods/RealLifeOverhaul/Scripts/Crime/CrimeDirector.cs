@@ -58,6 +58,7 @@ namespace RealLifeOverhaul
 
         private ICrimeScene _scene;
         private string _markerLabel;
+        private readonly RealLifeOverhaul.GameUi.GuideMark _mark = new RealLifeOverhaul.GameUi.GuideMark();
         private string _lastId;
         private float _nextCheck;
         private float _nextTick;
@@ -171,11 +172,11 @@ namespace RealLifeOverhaul
 
             if (scene.ShowsMarker)
             {
-                Hud.Instance.ShowMarkerAt(_markerLabel, scene.Focus);
+                _mark.Show(scene.Focus, _markerLabel);   // the game's destination marker; another feature that has it keeps it
             }
-            else if (Hud.Exists)
+            else
             {
-                Hud.Instance.HideMarker();
+                _mark.Hide();
             }
 
             Vector3 at = player.transform.position;
@@ -208,10 +209,7 @@ namespace RealLifeOverhaul
                 if (scene != null)
                 {
                     scene.End();
-                    if (Hud.Exists)
-                    {
-                        Hud.Instance.HideMarker();
-                    }
+                    _mark.Hide();
                 }
             }
             catch (Exception e)
