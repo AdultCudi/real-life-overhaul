@@ -577,8 +577,9 @@ namespace RealLifeOverhaul.Economy
                     }
                     continue;
                 }
+                string name = debt.Name;   // (taken now: a loan the plan's last part pays off leaves the game's list)
                 int part = Mathf.Min(Mathf.Min(m.Ladder.PlanPerDay, m.Ladder.PlanLeft), debt.Owed);
-                if (m.Ladder.PlanLeft > 0 && part > 0 && !_wallet.Take(part, Money.Payment, debt.Name))
+                if (m.Ladder.PlanLeft > 0 && part > 0 && !_wallet.Take(part, Money.Payment, name))
                 {
                     if (consequences)
                     {
@@ -595,7 +596,7 @@ namespace RealLifeOverhaul.Economy
                 if (LadderRules.Paid(m.Ladder))
                 {
                     EndHold(m, LoanHold.Penalty, "three payments in a row");
-                    Note(NotificationType.Success, "reallife_econ_note_penalty_over", Data("account", debt.Name));
+                    Note(NotificationType.Success, "reallife_econ_note_penalty_over", Data("account", name));
                 }
             }
         }

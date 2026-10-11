@@ -332,28 +332,25 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // What a kind of credit is, in a sentence or two, with its figures from the catalogue.
+        // What a kind of credit is, in one sentence: the white box does not scroll, so the page keeps to its figures and
+        // the whole of the terms is in the game's question box before anything is agreed.
         private static string About(int product)
         {
             string text = FinanceText.T(AboutKeys[product]);
-            switch (product)
+            return product == Card ? text.Replace("{days}", ProductCatalogue.CardStatementDays.ToString())
+                : product == BusinessLoan ? text.Replace("{multiple}", ProductCatalogue.BusinessProfitMultiple.ToString()) : text;
+        }
+
+        // The terms of an overdraft or a card in full, for the question box.
+        private static string Detail(ProductKind kind)
+        {
+            if (kind == ProductKind.Overdraft)
             {
-                case Overdraft:
-                    return text.Replace("{float}", FinanceText.Money(ProductCatalogue.OverdraftFloat));
-                case Card:
-                    return text.Replace("{days}", ProductCatalogue.CardStatementDays.ToString()).Replace("{grace}", ProductCatalogue.CardGraceDays.ToString())
-                        .Replace("{fee}", Mathf.RoundToInt(ProductCatalogue.CardCashFeeShare * 100f) + "%").Replace("{least}", FinanceText.Money(ProductCatalogue.CardCashFeeLeast))
-                        .Replace("{share}", Mathf.RoundToInt(ProductCatalogue.CardMinimumShare * 100f) + "%").Replace("{minimum}", FinanceText.Money(ProductCatalogue.CardMinimumLeast));
-                case BusinessLoan:
-                    return text.Replace("{multiple}", ProductCatalogue.BusinessProfitMultiple.ToString()).Replace("{days}", ProductCatalogue.BusinessDaysOnRecord.ToString())
-                        .Replace("{share}", Mathf.RoundToInt(ProductCatalogue.BusinessDivertShare * 100f) + "%");
-                case CarFinance:
-                    return text.Replace("{share}", Mathf.RoundToInt(ProductCatalogue.RepossessionValueShare * 100f) + "%");
-                case Consolidate:
-                    return text.Replace("{fee}", Mathf.RoundToInt(ProductCatalogue.ConsolidateFeeShare * 100f) + "%").Replace("{least}", FinanceText.Money(ProductCatalogue.ConsolidateFeeLeast));
-                default:
-                    return text;
+                return FinanceText.T("reallife_econ_detail_overdraft", "float", FinanceText.Money(ProductCatalogue.OverdraftFloat));
             }
+            return FinanceText.Fill("reallife_econ_detail_card", "fee", Mathf.RoundToInt(ProductCatalogue.CardCashFeeShare * 100f) + "%", "least", FinanceText.Money(ProductCatalogue.CardCashFeeLeast),
+                "days", ProductCatalogue.CardStatementDays.ToString(), "grace", ProductCatalogue.CardGraceDays.ToString(),
+                "share", Mathf.RoundToInt(ProductCatalogue.CardMinimumShare * 100f) + "%", "minimum", FinanceText.Money(ProductCatalogue.CardMinimumLeast));
         }
 
         // An overdraft or a card: the limit and the rate on offer, or the one that is open.
@@ -378,7 +375,10 @@ namespace RealLifeOverhaul.Economy
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_offer_open", () =>
                 HudConfirm.Show("reallife_econ_confirm_open_title".Localize(new { kind = FinanceText.T(ProductKeys[_product]) }),
-                    "reallife_econ_confirm_open_body".Localize(new { kind = FinanceText.T(ProductKeys[_product]), limit = FinanceText.Money(offer.Most), rate = (offer.RateBp / 100f).ToString("0.#"), lender = offer.Bank.Name }),
+                    "reallife_econ_confirm_open_body".Localize(new
+                    {
+                        kind = FinanceText.T(ProductKeys[_product]), limit = FinanceText.Money(offer.Most), rate = (offer.RateBp / 100f).ToString("0.#"), lender = offer.Bank.Name, detail = Detail(kind)
+                    }),
                     () => UiClone.Safe(() =>
                     {
                         CreditAccount account;
@@ -532,7 +532,8 @@ namespace RealLifeOverhaul.Economy
                     (kind == ProductKind.Mortgage ? "reallife_econ_confirm_home" : "reallife_econ_confirm_car").Localize(new
                     {
                         amount = FinanceText.Money(amount), lender = offer.Bank.Name, deposit = deposit + "%", own = FinanceText.Money(own), days = term.ToString(),
-                        rate = (offer.RateBp / 100f).ToString("0.#"), day = (SaveGameManager.Current.Day + ProductCatalogue.ApprovalDays).ToString()
+                        rate = (offer.RateBp / 100f).ToString("0.#"), day = (SaveGameManager.Current.Day + ProductCatalogue.ApprovalDays).ToString(),
+                        share = Mathf.RoundToInt(ProductCatalogue.RepossessionValueShare * 100f) + "%"
                     }),
                     () => UiClone.Safe(() =>
                     {
