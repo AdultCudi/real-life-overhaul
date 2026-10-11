@@ -644,3 +644,58 @@ own amount fields (`UI.Components.InputField` with an integer content type, as i
 row in EconoView) are parts of those screens, each wired to its screen's script. The Finance app therefore offers a
 previous/next selector over round amounts (section 2's selector) and, for any other amount, the game's text box, with
 what was typed read as digits and checked against the least and the most.
+
+## 24. Lists in the table, one page in the box (the Finance app's Accounts and Borrow)
+
+The white box (`InfoBox`, section 2) is a vertical layout with no scroll view: what does not fit is cut off. The
+table beside it is the game's scroller and takes any number of rows. So a tab that has a list of things with actions
+puts the list in the table and shows in the box only the row that is picked:
+
+- A row that can be picked sets `FinanceRow.Pick`; `BaTable.allowRowSelection` and `onRowSelected` do the rest
+  (section 2), and `BaTableCellView.VisualizeSelected` colours it. Rows of different kinds share one table by their
+  id's prefix (`acct:`, `loan:`, `product:`, `lender:`).
+- The box's page for a row: a title, a few lines, at most three selectors, and one or two rows of buttons. A row of
+  buttons has the game's three kinds and no more (`InfoBox.Positive`, `Negative`, `Additional`): a fourth action is a
+  second `ButtonRow()`. Lines added after a `ButtonRow()` come under it, so the row is asked for last.
+- A fifth tab is `AppShell.SetTabCount(5)` (section 20): three copies of the first tab between the two the game has.
+- An amount that is not on a selector is typed in the game's text box (section 23). Anything that costs or cannot be
+  undone goes through `HudConfirm.Show`; its last argument makes the confirm button the game's red one.
+
+Proven: the members. Inferred: that five tabs fit the bar, how many lines the box holds before it cuts off.
+
+## 25. A conversation with three answers, and one opened without a call
+
+- A `DialogEntry` has three buttons at most: `OnConfirm` (its text `ConfirmTextOverride`, a localised holder, so it
+  can carry a figure), `OnSecondOption` (`SecondOptionTextOverride`, a key: no figure) and `OnCancel`
+  (`CancelTextOverride`, a key). Leaving `OnSecondOption` unset hides the second button. More than three choices are
+  a chain of entries (the private lender offers its sums one at a time; debt advice has a second page).
+- `OnCancel` is an `Action`, not an entry: a cancel that has to do something does it and then calls
+  `DialogController.current.CancelDialog()`.
+- A conversation is opened without a call by `UIs.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog)`,
+  as the game's counters open one (the taxi and the legal contact do the same). A notification's click can call it,
+  so a feature's conversation still works with "Phone contacts" off. It is not opened while another one is on
+  (`DialogController.current != null`) or the game's question box is up.
+- A contact made later in a save is made the same way as one made at load (`Contact.GetContact(..., create: true)`),
+  and its `callDialogTypeOverride` is set again on every load: the game does not save it.
+
+Proven: the members. Inferred: how the game's panel lays out three long button texts.
+
+## 26. What the game sells, and what a mod can tell of a purchase
+
+- **Vehicles**: `ShowcaseVehicleController.Purchase`, `ContractVehicleForSale.Purchase` and
+  `VehicleDeliveryHelper` charge the whole price with `ChangeMoneySafe` (no force: no cash, no sale), make a
+  `VehicleInstance` with a new `id` and book `ba:transaction_vehiclebought` with `vehicleName` (the type's name) in
+  its data. Only two of the three raise `ba:gameevent_purchasecompleted`, so a mod that has to know of every
+  purchase compares `GameInstance.VehicleInstances` with what it knew.
+- A vehicle is sold from its panel (`ItemPanelUI`): `ba:transaction_itemsold` with `itemSoldInfo` (the type's name),
+  then `VehicleInstance.Delete(controller)`, the same call that removes any vehicle of the player's.
+- **Buildings**: BizMan's presentation buys one outright if the cash is there (`Money < price` refuses):
+  `ba:transaction_buildingbought`, a `RealEstate` in `GameInstance.realEstate` (`address`, `purchasePrice`,
+  `purchaseDay`, `DailyIncome`). `RealEstateHelper.RunDaily` pays its rents in and, for a building put up for sale,
+  sells it to a competitor (`ba:transaction_buildingsold`, `address` in its data).
+- Cash may go under nothing: `ChangeMoneySafe(..., force: true)` does not test it (the game's own loan interest is
+  taken that way).
+- A business's daily figures are in `GameInstance.financialSummaries` (one `FinancialSummary` per day, each with a
+  `BusinessIncomeStatement` per address: `TotalSales`, `TotalProfit`), which is what EconoView's business page reads.
+
+Proven: all of it, from the game's code. Not seen in a running game.

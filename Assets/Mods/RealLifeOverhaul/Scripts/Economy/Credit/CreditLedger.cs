@@ -113,7 +113,7 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// The gate every lender asks before lending anything. Under the threshold the answer is no, whatever the
-        /// lender, the amount or the preset.
+        /// lender, the amount or the preset; and for a set number of days after a bankruptcy it is no whatever the score.
         /// </summary>
         public static bool CanBorrow(out CreditRefusal reason)
         {
@@ -122,7 +122,7 @@ namespace RealLifeOverhaul.Economy
                 reason = CreditRefusal.NotReady;
                 return false;
             }
-            reason = Score.Lends ? CreditRefusal.None : CreditRefusal.BelowThreshold;
+            reason = ReliefRules.NoCredit(File.Relief, Today) ? CreditRefusal.Bankrupt : Score.Lends ? CreditRefusal.None : CreditRefusal.BelowThreshold;
             return reason == CreditRefusal.None;
         }
 

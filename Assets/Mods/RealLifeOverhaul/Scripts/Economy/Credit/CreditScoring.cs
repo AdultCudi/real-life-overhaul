@@ -16,8 +16,12 @@ namespace RealLifeOverhaul.Economy
         public float OwedShare;             // owed against what could be borrowed, 0 to 1 and over
         public float ServiceShare;          // daily payments against daily income; -1 when there is no income to measure against
         public LegalStanding Legal;
+        public int Ceiling = CreditCatalogue.ScoreMax;   // the most it can be today (a bankruptcy, a debt arrangement); the top of the scale when nothing holds it
 
         public bool Lends => Value >= CreditCatalogue.LendingThreshold;
+
+        /// <summary>True while a bankruptcy or a debt arrangement is holding the score down.</summary>
+        public bool Held => Ceiling < CreditCatalogue.ScoreMax && Value >= Ceiling;
 
         /// <summary>Points of the score a factor still has to give.</summary>
         public float Room(CreditFactor factor)
@@ -37,6 +41,7 @@ namespace RealLifeOverhaul.Economy
             other.OwedShare = OwedShare;
             other.ServiceShare = ServiceShare;
             other.Legal = Legal;
+            other.Ceiling = Ceiling;
         }
     }
 
@@ -60,7 +65,9 @@ namespace RealLifeOverhaul.Economy
             {
                 total += CreditCatalogue.Weights[f] * into.Factor[f];
             }
-            into.Value = CreditCatalogue.Clamp(CreditCatalogue.ScoreFor(total) + file.TestOffset);
+            // A bankruptcy or a debt arrangement puts a ceiling on the rating, whatever the file would otherwise come to.
+            into.Ceiling = ReliefRules.Ceiling(file.Relief, today);
+            into.Value = CreditCatalogue.Clamp(Math.Min(CreditCatalogue.ScoreFor(total) + file.TestOffset, into.Ceiling));
             into.Grade = CreditCatalogue.GradeOf(into.Value);
         }
 

@@ -63,6 +63,19 @@ namespace RealLifeOverhaul.Economy
         /// <summary>What every bank together would let the player owe on its own terms.</summary>
         public static float OwnCapTotal { get; private set; }
 
+        /// <summary>
+        /// The bank the mod's own accounts are held with: the one with the largest cap of its own (the first by name
+        /// among equals). Null in a city without a bank.
+        /// </summary>
+        public static Lender House { get; private set; }
+
+        /// <summary>
+        /// What is owed on loans secured on a business at the banks that share these settings. A bank's cap in memory
+        /// is raised by it, so that a business loan does not use up what the bank lends the borrower unsecured. Set by
+        /// the credit desk; nothing while it is not set.
+        /// </summary>
+        public static System.Func<BankSettings, float> Secured;
+
         /// <summary>Finds the city's banks (one look through the game's special buildings) and notes each one's own terms. Returns how many.</summary>
         public static int Find()
         {
@@ -101,6 +114,14 @@ namespace RealLifeOverhaul.Economy
                 OwnCapTotal += Mathf.Max(0f, Originals[settings].Cap);
             }
             List.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));
+            House = null;
+            for (int i = 0; i < List.Count; i++)
+            {
+                if (House == null || OwnCap(List[i].Settings) > OwnCap(House.Settings))
+                {
+                    House = List[i];
+                }
+            }
             return List.Count;
         }
 
@@ -139,7 +160,25 @@ namespace RealLifeOverhaul.Economy
             {
                 return new LenderTerms { Lends = true, Cap = own.Cap, AnnualRate = own.Rate };
             }
-            return LendingTerms.For(score, own.Cap, own.Rate);
+            LenderTerms terms = LendingTerms.For(score, own.Cap, own.Rate);
+            if (terms.Lends && Secured != null)
+            {
+                terms.Cap += Mathf.Max(0f, Secured(settings));
+            }
+            return terms;
+        }
+
+        /// <summary>The lender at an address as the credit file writes one; null if the city has no bank there.</summary>
+        public static Lender At(string street, int number)
+        {
+            for (int i = 0; i < List.Count; i++)
+            {
+                if (List[i].Number == number && string.Equals(List[i].Street, street, System.StringComparison.Ordinal))
+                {
+                    return List[i];
+                }
+            }
+            return null;
         }
 
         /// <summary>
@@ -245,6 +284,8 @@ namespace RealLifeOverhaul.Economy
             List.Clear();
             Unique.Clear();
             OwnCapTotal = 0f;
+            House = null;
+            Secured = null;
         }
     }
 }

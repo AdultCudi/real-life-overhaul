@@ -583,8 +583,10 @@ namespace RealLifeOverhaul.Meta
             Features.Add("economy", "reallife_meta_title_economy")
                 .Group("reallife_econ_header")
                 .About("reallife_guide_economy_about").Help("reallife_guide_economy")
-                .Owns(Settings.EconomyId)
+                .Owns(Settings.EconomyId, Settings.EconomyProductsId, Settings.EconomySharkId, Settings.EconomyConsequencesId, Settings.EconomyLevelId)
+                .Preset(Settings.EconomyLevelId, Economy.ProductCatalogue.Relaxed, Economy.ProductCatalogue.Realistic, Economy.ProductCatalogue.Hardcore)   // (Standard is its default)
                 .Data(Economy.CreditStore.Key)
+                .Contact(Economy.DebtPhone.ContactIds)
                 .Fact("econ_min", () => Whole(Economy.CreditCatalogue.ScoreMin))
                 .Fact("econ_max", () => Whole(Economy.CreditCatalogue.ScoreMax))
                 .Fact("econ_threshold", () => Whole(Economy.CreditCatalogue.LendingThreshold))
@@ -612,6 +614,75 @@ namespace RealLifeOverhaul.Meta
                 .Fact("econ_week", () => Whole(Economy.CashFlow.PeriodDays[Economy.CashFlow.Week]))
                 .Fact("econ_month", () => Whole(Economy.CashFlow.PeriodDays[Economy.CashFlow.Month]))
                 .Fact("econ_top", () => Whole(Economy.CashFlow.TopMost))
+                // The credit products, what happens when payments are missed, the private lender and the ways out (Economy/Products/ProductCatalogue).
+                .Fact("econ_od_low", () => Guide.Percent(Economy.ProductCatalogue.OverdraftShareAtThreshold))
+                .Fact("econ_od_high", () => Guide.Percent(Economy.ProductCatalogue.OverdraftShareAtBest))
+                .Fact("econ_od_least", () => Guide.Money(Economy.ProductCatalogue.OverdraftLeast))
+                .Fact("econ_od_points", () => Whole(Economy.ProductCatalogue.OverdraftRatePoints))
+                .Fact("econ_od_float", () => Guide.Money(Economy.ProductCatalogue.OverdraftFloat))
+                .Fact("econ_card_low", () => Guide.Percent(Economy.ProductCatalogue.CardShareAtThreshold))
+                .Fact("econ_card_high", () => Guide.Percent(Economy.ProductCatalogue.CardShareAtBest))
+                .Fact("econ_card_least", () => Guide.Money(Economy.ProductCatalogue.CardLeast))
+                .Fact("econ_card_points", () => Whole(Economy.ProductCatalogue.CardRatePoints))
+                .Fact("econ_card_fee", () => Guide.Percent(Economy.ProductCatalogue.CardCashFeeShare))
+                .Fact("econ_card_fee_least", () => Guide.Money(Economy.ProductCatalogue.CardCashFeeLeast))
+                .Fact("econ_card_days", () => Whole(Economy.ProductCatalogue.CardStatementDays))
+                .Fact("econ_card_grace", () => Whole(Economy.ProductCatalogue.CardGraceDays))
+                .Fact("econ_card_min", () => Guide.Percent(Economy.ProductCatalogue.CardMinimumShare))
+                .Fact("econ_card_min_least", () => Guide.Money(Economy.ProductCatalogue.CardMinimumLeast))
+                .Fact("econ_biz_days", () => Whole(Economy.ProductCatalogue.BusinessDaysOnRecord))
+                .Fact("econ_biz_multiple", () => Whole(Economy.ProductCatalogue.BusinessProfitMultiple))
+                .Fact("econ_biz_points", () => Whole(-Economy.ProductCatalogue.BusinessRatePoints))
+                .Fact("econ_car_dep_low", () => Whole(Economy.ProductCatalogue.CarDepositLeast) + "%")
+                .Fact("econ_car_dep_high", () => Whole(Economy.ProductCatalogue.CarDepositMost) + "%")
+                .Fact("econ_car_term_low", () => Whole(Economy.ProductCatalogue.CarTermLeast))
+                .Fact("econ_car_term_high", () => Whole(Economy.ProductCatalogue.CarTermMost))
+                .Fact("econ_car_points", () => Whole(Economy.ProductCatalogue.CarRatePoints))
+                .Fact("econ_home_dep_low", () => Whole(Economy.ProductCatalogue.HomeDepositLeast) + "%")
+                .Fact("econ_home_dep_high", () => Whole(Economy.ProductCatalogue.HomeDepositMost) + "%")
+                .Fact("econ_home_term_low", () => Whole(Economy.ProductCatalogue.HomeTermLeast))
+                .Fact("econ_home_term_high", () => Whole(Economy.ProductCatalogue.HomeTermMost))
+                .Fact("econ_home_points", () => Whole(-Economy.ProductCatalogue.HomeRatePoints))
+                .Fact("econ_home_multiple", () => Whole(Economy.ProductCatalogue.HomeCapMultiple))
+                .Fact("econ_approval_days", () => Whole(Economy.ProductCatalogue.ApprovalDays))
+                .Fact("econ_cons_fee", () => Guide.Percent(Economy.ProductCatalogue.ConsolidateFeeShare))
+                .Fact("econ_cons_fee_least", () => Guide.Money(Economy.ProductCatalogue.ConsolidateFeeLeast))
+                .Fact("econ_ladder", EconomyLadder)
+                .Fact("econ_late_share", () => Guide.Percent(Economy.ProductCatalogue.LateFeeShare))
+                .Fact("econ_late_least", () => Guide.Money(Economy.ProductCatalogue.LateFeeLeast))
+                .Fact("econ_penalty_points", () => Whole(Economy.ProductCatalogue.PenaltyPoints))
+                .Fact("econ_penalty_run", () => Whole(Economy.ProductCatalogue.PenaltyClearRun))
+                .Fact("econ_plan_days", () => Whole(Economy.ProductCatalogue.PlanDays))
+                .Fact("econ_repo_share", () => Guide.Percent(Economy.ProductCatalogue.RepossessionValueShare))
+                .Fact("econ_divert", () => Guide.Percent(Economy.ProductCatalogue.BusinessDivertShare))
+                .Fact("econ_unsecured_days", () => Whole(Economy.ProductCatalogue.UnsecuredClaimDays))
+                .Fact("econ_claim_costs", () => Guide.Percent(Economy.ProductCatalogue.ClaimCostsShare))
+                .Fact("econ_claim_costs_least", () => Guide.Money(Economy.ProductCatalogue.ClaimCostsLeast))
+                .Fact("econ_shark_least", () => Guide.Money(Economy.ProductCatalogue.SharkLeast))
+                .Fact("econ_shark_most", () => Guide.Money(Economy.ProductCatalogue.SharkMost))
+                .Fact("econ_shark_days", () => Whole(Economy.ProductCatalogue.SharkIncomeDays))
+                .Fact("econ_shark_rate", () => Guide.Percent(Economy.ProductCatalogue.SharkDailyShare))
+                .Fact("econ_shark_due", () => Whole(Economy.ProductCatalogue.SharkDueDays))
+                .Fact("econ_shark_extend", () => Guide.Percent(Economy.ProductCatalogue.SharkExtendFeeShare))
+                .Fact("econ_shark_cap", () => Whole(Economy.ProductCatalogue.SharkCapMultiple))
+                .Fact("econ_shark_warn", () => Whole(Economy.ProductCatalogue.SharkWarnDay))
+                .Fact("econ_shark_assault", () => Whole(Economy.ProductCatalogue.SharkAssaultDay))
+                .Fact("econ_shark_damage", () => Whole(Economy.ProductCatalogue.SharkDamageDay))
+                .Fact("econ_shark_repeat", () => Whole(Economy.ProductCatalogue.SharkRepeatDays))
+                .Fact("econ_shark_bill_low", () => Guide.Money(Economy.ProductCatalogue.SharkDamageLeast))
+                .Fact("econ_shark_bill_high", () => Guide.Money(Economy.ProductCatalogue.SharkDamageMost))
+                .Fact("econ_advice_days", () => Whole(Economy.ProductCatalogue.AdviceOverdueDays))
+                .Fact("econ_arr_share", () => Guide.Percent(Economy.ProductCatalogue.ArrangementShare))
+                .Fact("econ_arr_least", () => Guide.Money(Economy.ProductCatalogue.ArrangementLeast))
+                .Fact("econ_arr_cap", () => Whole(Economy.ProductCatalogue.ArrangementScoreCap))
+                .Fact("econ_arr_after", () => Whole(Economy.ProductCatalogue.ArrangementCapDaysAfter))
+                .Fact("econ_arr_misses", () => Whole(Economy.ProductCatalogue.ArrangementMissesMost))
+                .Fact("econ_bank_keep", () => Guide.Money(Economy.ProductCatalogue.BankruptKeepCash))
+                .Fact("econ_bank_score", () => Whole(Economy.ProductCatalogue.BankruptScore))
+                .Fact("econ_bank_days", () => Whole(Economy.ProductCatalogue.BankruptNoCreditDays))
+                .Fact("econ_bank_from", () => Whole(Economy.ProductCatalogue.BankruptRebuildFrom))
+                .Fact("econ_bank_per_day", () => Whole(Economy.ProductCatalogue.BankruptRebuildPerDay))
+                .Fact("econ_bank_every", () => Whole(Economy.ProductCatalogue.BankruptEveryDays))
                 .Cleanup(() => Economy.EconomyDirector.Instance?.StopAll())
                 .ResetData(() => Economy.EconomyDirector.Instance?.Forget());   // the director opens a new file from the (now empty) save on its next second
         }
@@ -619,6 +690,32 @@ namespace RealLifeOverhaul.Meta
         private static string Whole(int value)
         {
             return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        // One line per level of "How hard not paying hits", from the table the lenders themselves count by.
+        private static string EconomyLadder()
+        {
+            var text = new StringBuilder();
+            string[] names = { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" };
+            for (int level = 0; level < names.Length; level++)
+            {
+                int[] counts = Economy.ProductCatalogue.Counts(level);
+                var last = Economy.ProductCatalogue.LastStep[level];
+                text.Append("- ").Append("reallife_guide_economy_ladder".GetLocalization()
+                    .Replace("{level}", names[level].GetLocalization())
+                    .Replace("{reminder}", Whole(counts[0])).Replace("{fee}", Whole(counts[1])).Replace("{rate}", Whole(counts[2])).Replace("{call}", Whole(counts[3])));
+                if (last >= Economy.LadderStep.Repossession)
+                {
+                    text.Append("reallife_guide_economy_ladder_security".GetLocalization().Replace("{count}", Whole(counts[4])));
+                }
+                text.Append((last >= Economy.LadderStep.Claim ? "reallife_guide_economy_ladder_claim" : "reallife_guide_economy_ladder_stop").GetLocalization().Replace("{count}", Whole(counts[5])));
+                if (level == Economy.ProductCatalogue.Relaxed)
+                {
+                    text.Append(' ').Append("reallife_guide_economy_ladder_half".GetLocalization());
+                }
+                text.Append('\n');
+            }
+            return text.ToString();
         }
 
         // One line per grade, from the catalogue the rating itself is graded by.

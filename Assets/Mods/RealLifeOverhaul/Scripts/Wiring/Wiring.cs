@@ -20,6 +20,8 @@ namespace RealLifeOverhaul
     ///     NavLinks        the minimap and the GPS with the scenes that take the screen, and the police stations
     ///     TaxiLinks       the taxi called from the phone with the holds, the weather, the GPS's roads and the minimap
     ///     EconomyLinks    the credit rating with the legal record and the fines; the Finance rows in the Planner
+    ///     DebtLinks       lenders with the courts (a civil claim for a debt), the private lender with the holds and the
+    ///                     injury of a mugging, a repossession with what the camera sees
     ///
     /// <see cref="Connect"/> is called once per city load, after every director has been added;
     /// <see cref="Disconnect"/> on unload puts every bridge back to its default. Nothing here
@@ -58,6 +60,7 @@ namespace RealLifeOverhaul
             Step("the minimap and the GPS", NavLinks.Connect);
             Step("the taxi by phone", TaxiLinks.Connect);
             Step("the economy", EconomyLinks.Connect);
+            Step("credit and debt", DebtLinks.Connect);
             Logger?.Info("Wiring: the features are connected.");
         }
 
@@ -69,6 +72,7 @@ namespace RealLifeOverhaul
             }
             Connected = false;
             Step("the taxi by phone", TaxiLinks.Disconnect);
+            Step("credit and debt", DebtLinks.Disconnect);
             Step("the economy", EconomyLinks.Disconnect);
             Step("the minimap and the GPS", NavLinks.Disconnect);
             Step("family life", FamilyLinks.Disconnect);

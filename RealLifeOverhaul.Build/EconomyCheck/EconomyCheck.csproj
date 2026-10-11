@@ -1,8 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <!-- Checks the economy's game-free parts outside the game: the credit rating's arithmetic, the lending terms and the
-       phone's fee, the credit file's cap and folding, its line in the save across versions, and how the game's loans
-       are told apart. Compiles the mod's own files, so it checks exactly what ships.
+       phone's fee, the credit file's cap and folding, its line in the save across versions, how the game's loans
+       are told apart, and (Checks2.cs) the credit products, what happens when payments are missed, consolidation,
+       the lender of last resort and the ways out of debt. Compiles the mod's own files, so it checks exactly what ships.
        Run: dotnet run -c Release (from this folder). Exit code 0 = all checks passed. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -20,6 +21,13 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Credit\CreditLedger.cs" Link="Mod\CreditLedger.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Credit\LoanBook.cs" Link="Mod\LoanBook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Lending\LendingTerms.cs" Link="Mod\LendingTerms.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Products\ProductCatalogue.cs" Link="Mod\ProductCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Products\ProductTerms.cs" Link="Mod\ProductTerms.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Products\CreditAccount.cs" Link="Mod\CreditAccount.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Products\Ladder.cs" Link="Mod\Ladder.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Products\LoanHolds.cs" Link="Mod\LoanHolds.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Debt\Shark.cs" Link="Mod\Shark.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Debt\Relief.cs" Link="Mod\Relief.cs" />
   </ItemGroup>
 
 </Project>

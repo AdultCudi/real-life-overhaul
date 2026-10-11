@@ -43,7 +43,16 @@ namespace RealLifeOverhaul.Economy
         DebtsCleared = 13,  // every overdue fine and court debt paid
         Started = 14,       // the file was opened, with the estimate it began at
         TestAdjust = 15,    // a test tool moved the rating (test only, taken out by "clear test entries")
-        Count = 16
+        Consolidated = 16,  // debts paid off by one new loan that replaces them: not an early pay-off
+        LateFee = 17,       // a late fee was added to a debt
+        PenaltyRate = 18,   // a debt went onto the penalty rate
+        Collections = 19,   // a debt was passed to collections
+        Repossessed = 20,   // the security of a debt was taken
+        ClaimFiled = 21,    // a lender filed a civil claim for a debt
+        PlanAgreed = 22,    // a payment plan was agreed with a lender
+        Arrangement = 23,   // a debt arrangement began
+        Bankruptcy = 24,    // the borrower was made bankrupt
+        Count = 25
     }
 
     /// <summary>Why nobody lends, for <see cref="CreditLedger.CanBorrow"/>.</summary>
@@ -51,7 +60,8 @@ namespace RealLifeOverhaul.Economy
     {
         None = 0,
         NotReady = 1,        // no save is loaded, or the economy is switched off
-        BelowThreshold = 2   // the rating is under the lending threshold
+        BelowThreshold = 2,  // the rating is under the lending threshold
+        Bankrupt = 3         // a bankruptcy in the last days: nobody lends, whatever the score
     }
 
     /// <summary>

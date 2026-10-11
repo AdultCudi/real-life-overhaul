@@ -93,13 +93,24 @@ namespace RealLifeOverhaul.Economy
                 return answer;
             }
             quote = Quote(lender, amount, score);
-            loan = new Loan(amount, quote.DailyInterest, quote.DailyPayment, lender.Address);
-            save.Loans.Add(loan);
+            loan = Make(lender, amount, quote.DailyInterest, quote.DailyPayment, quote.Fee);
+            return LoanAnswer.Approved;
+        }
+
+        /// <summary>
+        /// Makes one of the game's loans with these figures, as the bank's dialogue does: the loan in the save's list,
+        /// the amount paid out with the game's own transaction, the arrangement fee taken if there is one, and the
+        /// game's event. Whether the loan may be made is the caller's question.
+        /// </summary>
+        public static Loan Make(Lender lender, int amount, int dailyInterest, int dailyPayment, int fee)
+        {
+            var loan = new Loan(amount, dailyInterest, dailyPayment, lender.Address);
+            SaveGameManager.Current.Loans.Add(loan);
             GameManager.ChangeMoneySafe(amount, new TransactionInfo(PayoutTransaction, new Dictionary<string, string> { { "businessName", lender.Name } }), null, null, true);
             // (a dictionary each: the game keeps hold of a transaction's data for as long as it lists the transaction)
-            GameManager.ChangeMoneySafe(-quote.Fee, new TransactionInfo(FeeTransaction, LoanExpenses, new Dictionary<string, string> { { "businessName", lender.Name } }), null, null, true);
+            GameManager.ChangeMoneySafe(-fee, new TransactionInfo(FeeTransaction, LoanExpenses, new Dictionary<string, string> { { "businessName", lender.Name } }), null, null, true);
             GameEvent.Invoke(NewLoanEvent);
-            return LoanAnswer.Approved;
+            return loan;
         }
     }
 }
