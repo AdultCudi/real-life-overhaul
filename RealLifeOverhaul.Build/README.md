@@ -5402,9 +5402,12 @@ out of `level5`); nothing was seen running.
   meanwhile). **Two clicks on one spot within 0.4 s** make that spot the destination (a building: the same call as
   its card's button). One click is not used: it drags the map and selects buildings, and a destination must not be
   replaced by accident.
-- **Voogle Route** (another author's GPS mod): if its assembly is loaded, this mod's route, turns, arrival notice and
-  double click are all left off and only the minimap is shown; one warning says so. Two route lines and two sets of
-  instructions for one destination would contradict each other, and that mod has no minimap.
+- **Voogle Route** (another author's GPS mod, found by `Core/OtherMods`; see [docs/other-mods.md](docs/other-mods.md)):
+  if it is switched on, the city map is left to it. It draws its route there as lines in the world on the map's own
+  layer and has its own click, panels and markers on the map, so nothing of this mod's is added to the map: no route
+  object, no double click. This mod's route is then on its own minimap only, with its two lines, where that mod draws
+  nothing; the arrival notice and the end of the destination are that mod's. The option "Use the other mod's route line" (a row that is on the options page only while that mod is on;
+  off by default) leaves the route to it altogether: only the minimap is shown. One warning says which.
 
 ### Costs
 
@@ -5459,7 +5462,8 @@ The taxi called from the phone is checked in the same run too (`TaxiCheck.cs` wi
 - `Navigation: 41 m off the route for 2 s (driving, 310 m along it): looking for a new route.`
 - `Navigation: arrived at '...' (22 m from it, driving). ...`
 - `Navigation: destination set by a double click on the city map: ...`
-- Always logged: the Voogle Route warning, and every part left off because the game is not built as expected.
+- `Navigation check (other mod): Voogle Route is switched on: this mod's route is drawn on its own minimap only, and nothing of this mod's is on the city map (no object there: PASS).`
+- Always logged: the "Other mods:" warning for Voogle Route, and every part left off because the game is not built as expected.
 
 ### Not verified (the game could not be run)
 

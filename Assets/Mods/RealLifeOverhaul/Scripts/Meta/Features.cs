@@ -82,6 +82,9 @@ namespace RealLifeOverhaul.Meta
         public readonly List<ModOption> ExtraRows = new List<ModOption>(); // rows that are not on the original page
         public readonly List<KeyAction> DiagnosticKeys = new List<KeyAction>();
         public readonly Dictionary<string, Func<string>> Facts = new Dictionary<string, Func<string>>();
+        public readonly Dictionary<string, Func<bool>> RowPresent = new Dictionary<string, Func<bool>>();   // option id: whether its row is on the page at all
+        public readonly List<string> AsideOptions = new List<string>();   // option ids that do nothing while AsideWhy says so
+        public Func<string> AsideWhy;           // the sentence that says why, or null while they work
 
         public Action CleanupAction;            // take everything of mine off the street and stop what is running
         public Action ResetAction;              // forget what I remember of this save
@@ -250,6 +253,28 @@ namespace RealLifeOverhaul.Meta
         public Feature Diagnostic(params KeyAction[] actions)
         {
             DiagnosticKeys.AddRange(actions);
+            return this;
+        }
+
+        /// <summary>
+        /// A row that is on the options page only while something is true (another author's mod is switched on):
+        /// asked each time the page is drawn. The option keeps its saved value while its row is away.
+        /// </summary>
+        public Feature Present(string optionId, Func<bool> present)
+        {
+            RowPresent[optionId] = present;
+            return this;
+        }
+
+        /// <summary>
+        /// Options that do nothing for a while (another mod has what they steer). While <paramref name="why"/>
+        /// answers a sentence, their rows are drawn as the game draws a control that cannot be used, and the
+        /// section's button says the sentence after its name. Asked each time the page is drawn.
+        /// </summary>
+        public Feature StandsAside(Func<string> why, params string[] optionIds)
+        {
+            AsideWhy = why;
+            AsideOptions.AddRange(optionIds);
             return this;
         }
 

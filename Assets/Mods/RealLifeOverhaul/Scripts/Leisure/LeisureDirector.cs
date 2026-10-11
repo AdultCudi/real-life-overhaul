@@ -868,6 +868,83 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
+        /// <summary>
+        /// Test button: fishing without the walk to the water. The player is put at the water's edge nearest to them,
+        /// facing the water (where they stand, if that is such a place already), and the game of fishing starts, with
+        /// its meter on the game's bar. One clear sentence if it cannot be done.
+        /// </summary>
+        public void TestFishNearest()
+        {
+            const string test = "Fishing at the nearest water";
+            try
+            {
+                PlayerController player = PlayerHelper.PlayerController;
+                if (!ModState.Loaded || !LeisureState.Loaded || player == null)
+                {
+                    TestRefusals.Tell(Logger, test, TestRefusal.NotLoaded);
+                    return;
+                }
+                if (_broken || !Enabled(LeisureKind.Fishing))
+                {
+                    TestRefusals.Tell(Logger, test, TestRefusal.FeatureOff);
+                    return;
+                }
+                if (_activity != null)
+                {
+                    TestRefusals.Tell(Logger, test, TestRefusal.SceneActive);
+                    return;
+                }
+                if (BuildingManager.IsInsideBuilding)
+                {
+                    TestRefusals.Tell(Logger, test, TestRefusal.Indoors);
+                    return;
+                }
+                if (PlayerHelper.IsUsingVehicle)
+                {
+                    TestRefusals.Tell(Logger, test, TestRefusal.InVehicle);
+                    return;
+                }
+                if (!Free(LeisureKind.Fishing, out string busy))
+                {
+                    TestRefusals.TellKey(Logger, test, busy);
+                    return;
+                }
+                Vector3 position = player.transform.position;
+                LeisureVenues.FindLandmarks();
+                bool here = LeisureVenues.WatersideDistance(position) < 320f && LeisureVenues.WaterAhead(position, player.transform.forward, out _, out _);
+                if (!here)
+                {
+                    UnityEngine.AI.NavMeshAgent feet = player.Character != null ? player.Character.navmeshAgent : null;
+                    if (feet == null || !feet.isOnNavMesh)
+                    {
+                        TestRefusals.Tell(Logger, test, TestRefusal.NoPavement);
+                        return;
+                    }
+                    if (!LeisureVenues.WaterEdgeNear(position, out Vector3 stand, out Vector3 facing, out float metres))
+                    {
+                        TestRefusals.Tell(Logger, test, TestRefusal.NothingFits, 0, "no waterside landmark has a walkable edge with open water in front of it");
+                        return;
+                    }
+                    player.ResetNavigation();
+                    if (!feet.Warp(stand))
+                    {
+                        TestRefusals.Tell(Logger, test, TestRefusal.NoRoom, 0, "the player could not be put at " + stand.ToString("F0"));
+                        return;
+                    }
+                    player.transform.rotation = Quaternion.LookRotation(facing);
+                    Logger?.Info("Leisure test: the player is put at the water's edge " + metres.ToString("F0") + " m away, at " + stand.ToString("F0") + ", facing the water.");
+                }
+                if (!StartActivity(LeisureKind.Fishing, default, null, true, out string refusal))
+                {
+                    TestRefusals.TellKey(Logger, test, refusal);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
         public void TestNight()
         {
             if (PlayerHelper.PlayerController == null || TestRefusals.Street() != TestRefusal.None)

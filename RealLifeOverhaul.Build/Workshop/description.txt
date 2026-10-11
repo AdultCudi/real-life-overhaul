@@ -122,7 +122,7 @@ No frame-rate figures are claimed. Apart from the cameras, the mod's features do
 [*]Windows. The mod's models and animations are built for Windows only.
 [*]English only.
 [*]One DLL, one text file and three asset files. No game files are replaced.
-[*]It cannot run together with another camera mod such as "Immersion - RPG Camera" unless one of the two has its cameras switched off.
+[*]While another camera mod such as "Immersion - RPG Camera" drives the camera, this mod's cameras stand aside and come back when it stops.
 [*]It can be added to an existing save.
 [/list]
 

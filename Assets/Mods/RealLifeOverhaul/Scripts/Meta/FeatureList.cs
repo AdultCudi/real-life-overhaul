@@ -43,6 +43,10 @@ namespace RealLifeOverhaul.Meta
                 .Owns(Settings.CameraEnabledId, Settings.MouseLookId, Settings.MouseSensitivityId, Settings.EnterWithKeyId, Settings.CameraIndoorsId,
                     Settings.CameraPitchId, Settings.CameraDistanceId, Settings.CameraFovId, Settings.CameraHeightId, Settings.CarCameraId,
                     Settings.CarCameraDistanceId, Settings.CameraFollowId)
+                // While another author's mod drives the camera these do nothing, and the page says so (Camera/CameraYield).
+                .StandsAside(CameraYield.Sentence, Settings.CameraEnabledId, Settings.MouseLookId, Settings.MouseSensitivityId, Settings.CameraIndoorsId,
+                    Settings.CameraPitchId, Settings.CameraDistanceId, Settings.CameraFovId, Settings.CameraHeightId, Settings.CarCameraId,
+                    Settings.CarCameraDistanceId, Settings.CameraFollowId)
                 .Cleanup(() => ThirdPersonCamera.Focus = null);
 
             Features.Add("character", "reallife_meta_title_character")
@@ -534,7 +538,8 @@ namespace RealLifeOverhaul.Meta
             Features.Add("navigation", "reallife_meta_title_nav")
                 .Group("reallife_nav_header")
                 .About("reallife_guide_nav_about").Help("reallife_guide_nav")
-                .Owns(Settings.MinimapId, Settings.GpsId, Settings.MinimapRotateId, Settings.MinimapSizeId, Settings.MinimapZoomId, Settings.MinimapBaseId)
+                .Owns(Settings.MinimapId, Settings.GpsId, Settings.MinimapRotateId, Settings.MinimapSizeId, Settings.MinimapZoomId, Settings.MinimapBaseId, Settings.NavOtherRouteId)
+                .Present(Settings.NavOtherRouteId, () => OtherMods.VoogleRoute.Loaded)   // a row that is there only with that mod switched on
                 .Objects(Nav.NavHud.PanelName, Nav.NavCityMap.ObjectName)
                 .Fact("nav_arrive_foot", () => Nav.NavTracker.ArriveOnFoot.ToString("F0", CultureInfo.InvariantCulture))
                 .Fact("nav_arrive_car", () => Nav.NavTracker.ArriveDriving.ToString("F0", CultureInfo.InvariantCulture))

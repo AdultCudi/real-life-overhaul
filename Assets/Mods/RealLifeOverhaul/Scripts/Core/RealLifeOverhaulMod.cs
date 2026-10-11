@@ -73,6 +73,7 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.SmoothThrottleId, "reallife_car_smooth_throttle", Settings.SmoothThrottle,
                     v => Settings.SmoothThrottle = v)
                 .AddButton("reallife_car_measure", CarMeasure.Arm)
+                .AddButton("reallife_camera_test_pretend", CameraYield.TestPretend)
                 .AddToggle(Settings.SpeedometerId, "reallife_speedometer", Settings.Speedometer,
                     v => Settings.Speedometer = v)
                 .AddSlider(Settings.CameraFollowId, "reallife_camera_follow", 0, 10, Settings.CameraFollow,
@@ -317,6 +318,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_law_test_clear", () => Law.LawDirector.Instance?.TestClearRecord())
                 .AddSplitter()
                 .AddHeader("reallife_transport_header")
+                .AddButton("reallife_panel_test_beside", GameUi.WorldPanel.TestBeside)
                 .AddToggle(Settings.BusesId, "reallife_transport_buses", Settings.Buses,
                     v => Settings.Buses = v)
                 .AddToggle(Settings.TransitPeopleId, "reallife_transport_people", Settings.TransitPeople,
@@ -375,6 +377,7 @@ namespace RealLifeOverhaul
                     v => Settings.PhotoMode = v)
                 .AddButton("reallife_leisure_test_chess", () => Leisure.LeisureDirector.Instance?.TestStart(Leisure.LeisureKind.Chess))
                 .AddButton("reallife_leisure_test_fishing", () => Leisure.LeisureDirector.Instance?.TestStart(Leisure.LeisureKind.Fishing))
+                .AddButton("reallife_leisure_test_fishing_near", () => Leisure.LeisureDirector.Instance?.TestFishNearest())
                 .AddButton("reallife_leisure_test_dance", () => Leisure.LeisureDirector.Instance?.TestStart(Leisure.LeisureKind.Dance))
                 .AddButton("reallife_leisure_test_drinks", () => Leisure.LeisureDirector.Instance?.TestStart(Leisure.LeisureKind.Drinks))
                 .AddButton("reallife_leisure_test_sights", () => Leisure.LeisureDirector.Instance?.TestStart(Leisure.LeisureKind.Sightseeing))
@@ -630,6 +633,8 @@ namespace RealLifeOverhaul
                     v => Settings.Minimap = v)
                 .AddToggle(Settings.GpsId, "reallife_nav_gps", Settings.Gps,
                     v => Settings.Gps = v)
+                .AddToggle(Settings.NavOtherRouteId, "reallife_nav_other_route", Settings.NavOtherRoute,
+                    v => Settings.NavOtherRoute = v)
                 .AddToggle(Settings.MinimapRotateId, "reallife_nav_rotate", Settings.MinimapRotate,
                     v => Settings.MinimapRotate = v)
                 .AddSlider(Settings.MinimapSizeId, "reallife_nav_size", 60, 100, Settings.MinimapSize,
@@ -749,6 +754,9 @@ namespace RealLifeOverhaul
             }
             _running = context.ModId;
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on; warnings and errors always
+            OtherMods.Look(context.Logger);   // other authors' mods this one stands aside for: one walk over the loaded assemblies (Core/OtherMods)
+            CameraYield.Logger = context.Logger;
+            GameUi.WorldPanel.Logger = context.Logger;
             ThirdPersonCamera.Logger = context.Logger;
             VisualEnhancer.Logger = context.Logger;
             NearbyInteraction.Logger = context.Logger;
@@ -895,13 +903,6 @@ namespace RealLifeOverhaul
             PerfDirector.Logger = context.Logger;
             _root.AddComponent<PerfDirector>();   // performance tweaks for the base game, and the two measurements (their keys are development aids)
             _root.AddComponent<MapLinks>();   // every feature's places on the city map (World/MapLinks reads them; no feature knows of it)
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                if (assembly.GetName().Name == "Immersion")
-                {
-                    context.Logger.Warn("The 'Immersion - RPG Camera' mod is also loaded. Two camera mods fight over the camera: disable one of them.");
-                }
-            }
             Wiring.Connect(context.Logger, _root);   // every director is there: the bridges between the features are filled in (Scripts/Wiring)
             // The loading screen is still up: the people of the two street pools are made and dressed now, where the time
             // it takes is not seen (People/Looks). Each catches its own faults and falls back to making them as they are needed.

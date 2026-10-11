@@ -263,6 +263,24 @@ OverlayUI [VerticalLayoutGroup (padding 30/30/55/40, spacing 20), ContentSizeFit
   cart uses all four (`Jobs/Kinds/VendorJob`): three drinks and "Call out" while a customer orders, "Step away",
   "Let time pass" and "Call out" otherwise. Four buttons make the box about 320 units higher than its header.
 - The game's Cancel key is not sent to this box. A panel that must be left by a key needs a button for it.
+- **The building box.** The card that comes up over a shop's door while the pointer is on the shop is another object,
+  `UI.InGameUI.BuildingResume` (`UIs.Instance.buildingResume`, an overlay canvas of its own). Its `LateUpdate` puts its
+  private `panelRectTransform` over `entranceDoors[0]` every frame and switches it on while it has a target; nothing
+  announces it. The game has no rule between that box and this one (its own panels stand at filling stations and lifts,
+  where no building box comes up), so the kit has one, for every `WorldPanel` and `DoorPanel`
+  (`GameUi/PanelPlacement.cs`, the rule; `GameUi/WorldPanel.Beside.cs`, the part that touches the game): the building
+  box never moves; the panel steps to the side of it that has room on the screen, left or right first (the shorter
+  step), then above or below, 14 pixels away; with no side free it leaves the box and `Show` answers false with
+  `Waiting` true until the building box has gone or moved, as the game's small item card waits for its large one.
+  Once on a side it stays there while that side has room, and it goes home only when home is clear by 42 pixels.
+- **How the step is given.** `OverlayUI.Update` writes the box's place from `GetTargetPosition` every frame, so the step
+  is handed to the game as a step in the world: the answer is the place plus a vector across the camera's view that
+  is exactly the wanted pixels at the place's depth. The game then keeps the box beside the building box by itself.
+  The two rectangles are read (`GetWorldCorners`, into an array made once) only when the building box comes or goes,
+  when either has moved more than 6 pixels on the screen, or when the panel's words or buttons changed; the look is
+  on `Canvas.willRenderCanvases`, which runs after every `LateUpdate` and the interface's layout and before the
+  frame is drawn, so the two are never drawn over each other. The watch is on that event only while a panel of the
+  mod's is up. `WorldPanel.Name` ("stop") is the word in the log line.
 
 Proven: every member named above and the object's structure. Inferred: how the box looks with other content than
 the game's (the second line makes it wider; capitals on the right-hand word and the buttons).
@@ -344,6 +362,8 @@ With "Developer diagnostics" on, one session's Player.log shows whether everythi
 - `Garage check (bay): in a repair bay with ...: the game's panel has its 2 button(s) and 'Garage' on the game's confirm key, second line 'Due: service $120.00': PASS.`
 - `Garage check (custom shop list): the game's list is open left of the middle with 7 entries (...); 2.8 ms: PASS.`
 - `Car check (dash): 'SERVICE DUE' is in the game's vehicle panel, after its condition reading, in the game's orange: PASS.`
+- `Panel check (stop, beside a building box): moved to the left of it by 212 pixels: PASS.` and `... back over its own place: PASS.`
+- `Gauge check (fishing): the game's bar, 0.42 (a marker, the zone about 0.72): PASS.`
 - Every fallback is one `Game UI: ...` warning, logged whether or not diagnostics are on.
 
 ## 10. The HUD, and a panel on it (`Navigation/NavHud`)
@@ -934,3 +954,48 @@ The model has no Unity type in it and is checked offline (`EconomyCheck/TableChe
 Proven: every member and object named, from the game's code and its scene data. Inferred: that the copy of the
 drop-down works away from MyEmployees as it does there, where the filter stands on screen, and how seven or eight
 columns of text fit their widths.
+
+## 31. A bar (`GameUi.GameBar`)
+
+The game's bar is the needs bar of its top bar (section 16): `Canvases/Topbar/Container/Left Bar/PlayerStats/Energy`,
+412 x 56, an Image with the pill `StatBarBackground` at 30 % black and a child `EnergyFiller`, the same pill as a
+filled Image. The game has no other bar that is written while the game runs: the activity panel's progress bar is
+written once a game minute and the panel pauses the game (section 13).
+
+`GameBar.Make(parent, name)` copies `Energy` asleep, takes its `Button`, its hover script and its picture off, sets
+it to the game's size in the middle of `parent`, takes every raycast target off and gives it a canvas of its own. It
+shows one of two things:
+
+- **A quantity**: `Fill(value)` writes the filler's `fillAmount`, as the game does for its needs (a clock running down).
+- **A timing**: `Zone(centre, width, bestWidth)` marks a zone on the empty bar and `Mark(value)` puts a marker on it.
+  The zone, its better part and the marker are the filler's own picture three more times, whole (`Image.Type.Simple`),
+  placed in the filler's rectangle by shares of its width: the zone in the game's green at 45 %, the better part in
+  full green, the marker white, 12 wide and 8 higher than the bar above and below. A stretch of the pill is a rounded
+  band, which is why nothing has to be drawn.
+
+- **When it is written.** `Topbar.UpdateStatsBars` writes a bar only when it differs by more than 0.005 (energy) or
+  0.01, and always when it runs empty. `GameUi/BarRule.cs` is that rule with the finer step, for the filler and for
+  the marker: `Fill` and `Mark` may be called every frame and write one number to one object on a visible step, and
+  nothing at all while the value stands still. No text is made and nothing is laid out.
+- **Where it stands.** `ShiftCard.Bar()` gives the card's own bar, in the place of its last two lines (measured from
+  the lines), made the first time it is asked for. The leisure meters use it (`Leisure/LeisureScreen`): a cast and a
+  pull on the line while fishing, the beat on a dance floor, the chess clock.
+- Keep it at 412 x 56: the sprite has no border.
+- With "Developer diagnostics" on: `Gauge check (fishing): the game's bar, 0.42 (a marker, the zone about 0.72): PASS.`
+
+Proven: the objects, sizes and members. Inferred: how the zone and the marker look on the bar, and where the bar ends
+up on the card.
+
+## 32. Options that do nothing for a while, and a row that is not always there (`Meta/Features`)
+
+The mod API has no way to grey a row out or to leave one off. The rows are the game's own objects, though, made
+again each time the page is drawn, and `OptionsLayout` is told as each is made (its `RowTap`):
+
+- `Feature.StandsAside(why, optionIds...)`: while `why()` answers a sentence, every `Selectable` of those rows (the
+  game's toggle and slider) gets `interactable = false`, which is the game's own look for a control that cannot be
+  used, and the section's button says the sentence after its name: "Camera   (12 options, on, unavailable: the camera
+  is with ...)".
+- `Feature.Present(optionId, present)`: while `present()` is false the row is switched off and kept off for that
+  drawing, whatever section opens or search finds it, and is not counted in "5 options". The option keeps its value.
+
+Both are asked when the page is drawn, never per frame. See [other-mods.md](other-mods.md) for what uses them.

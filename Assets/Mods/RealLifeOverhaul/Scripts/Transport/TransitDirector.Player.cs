@@ -43,7 +43,7 @@ namespace RealLifeOverhaul
         private const string ButtonSit = "reallife_transit_button_sit";
         private const string ButtonStand = "reallife_transit_button_stand";
 
-        private readonly GameUi.WorldPanel _panel = new GameUi.WorldPanel();
+        private readonly GameUi.WorldPanel _panel = new GameUi.WorldPanel { Name = "stop" };
         private readonly List<TransitTrip> _trips = new List<TransitTrip>(64);
         private readonly bool[] _pointed = new bool[Dressings];
         private GameUi.TravelList _list;
@@ -192,13 +192,14 @@ namespace RealLifeOverhaul
                 over = at + Vector3.up * 2.1f;
             }
             _panel.Position = over;
-            int state = _panel.Show() ? 1 : 2;
+            int state = _panel.Show() ? 1 : _panel.Waiting ? 3 : 2;
             if (state != _panelState)
             {
                 _panelState = state;
                 Logger?.Info("Transit check (stop panel): at " + StopLabel(_served) + ", " + Mathf.Sqrt(CitySpots.Flat(_served.Sign - at)).ToString("F1") + " m from the pole (offered within "
                              + Reach.ToString("F0") + " m of the pole, the waiting place, the shelter or the standing bus): "
                              + (state == 1 ? "the game's own panel is up, bus: " + PanelWords() + (_booked != null ? ", the player's stop is " + StopLabel(_booked) : "") + ": PASS"
+                                 : state == 3 ? "the game's building box leaves the panel no room on any side, so it waits and is tried again while the player stands here: PASS"
                                  : "FAIL (the game's panel is showing another place, a filling station or a lift; it is tried again while the player stands here)") + ".");
             }
         }
