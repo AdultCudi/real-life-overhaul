@@ -9,7 +9,7 @@ This repository is the source. You only need it if you want to read the code, re
 
 ## Status
 
-Version 0.1.0 was the first public release; 0.2.2 is the current one. Much of it has had little play from start to finish. The in-game Guide has a "Known limits" page, and [the Workshop description](RealLifeOverhaul.Build/Workshop/description.txt) carries the short version.
+Version 0.1.0 was the first public release; 0.2.3 is the current one. Much of it has had little play from start to finish. The in-game Guide has a "Known limits" page, and [the Workshop description](RealLifeOverhaul.Build/Workshop/description.txt) carries the short version.
 
 Windows and English only.
 

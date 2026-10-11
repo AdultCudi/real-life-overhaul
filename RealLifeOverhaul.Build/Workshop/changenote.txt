@@ -1,23 +1,11 @@
-0.2.2
+0.2.3
 
 New
-- Traffic sees people in the road: cars brake, sound the horn and wait. People react to your horn too.
-- Accidents come from drivers you can watch go wrong, instead of appearing at a distance.
-- A rota planner in the Company app: a customer forecast, and a ladder of plans from the week as it is to the last person worth hiring.
-- The rota gives every employee the weekly hours they ask for, and puts shifts on the hours customers come.
+- The rota gives every employee the weekly hours they ask for, never fewer and never more, and puts shifts on the hours customers come.
 - The more skilled get their hours first. Staff the business has no hours for are named, so you can let them go.
-- New phone apps: Services (a shared cleaning crew, and selling a business), Brands (brands and franchises), Web shop (online shops), Property (buildings, an estate agency, hotels, car hire).
-- A roommate who pays a share of the rent and lives in your flat.
-- The minimap shows buildings and water.
-- The options page is in ten groups with short names; each option explains itself when you point at it, and test tools are tucked away under Troubleshooting.
-- Tables in Finance, Ventures, Company and the Planner sort, filter and total.
-- Panels no longer cover a building's info box. Fishing, dancing and chess use the game's own bar.
-- The mod's cameras stand aside for other camera mods, and its route keeps to the minimap beside Voogle Route.
+- Company app: raise an underpaid employee to the going rate at any time, without waiting for them to ask.
+- Company app: the buttons that answer a raise, a rival's offer, a strike or overtime are at the top of the page.
+- A test tool under Troubleshooting says what is blocking you where you stand.
 
 Fixed
-- The game froze for seconds when an ambulance crew stepped out.
-- Short freezes the first time you drove, at the start of a driving lesson, and at a petrol station.
-- A car in the custom shop shot backwards when the shop closed.
-- The driving test marked things you could not help. Where it ends is now a box painted on the road.
-- A traffic car's horn sounded as if it were beside you when it was far away.
 - An unseen parked car could block the pavement while the "far districts" performance option was on.
