@@ -43,6 +43,9 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Files a criminal case for tax kept back, for a sum. Returns the court's number; 0 with no court to file with. Default: 0.</summary>
         public static Func<int, int> TaxCase;
 
+        /// <summary>The footfall change, per cent, that one of business pressure's own issues has running at a business on a day; 0 with none then. Default: none.</summary>
+        public static Func<BuildingRegistration, int, int> IssueFootfall;
+
         public static void Reset()
         {
             Footfall = null;
@@ -54,6 +57,7 @@ namespace RealLifeOverhaul.Economy
             Rival = null;
             Leave = null;
             TaxCase = null;
+            IssueFootfall = null;
         }
     }
 

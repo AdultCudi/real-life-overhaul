@@ -36,23 +36,41 @@ namespace RealLifeOverhaul.Economy
         /// <summary>
         /// Reads one business into a sheet: its stations in groups, who may stand where and what they ask for, the
         /// customers of every hour of the week, what a customer is worth, and the rota it has now.
-        /// <paramref name="dayScale"/> is what the director knows of each weekday's customers against today's, in
-        /// thousandths; <paramref name="raise"/> answers what an employee is paid on top of the game's wage.
+        /// <paramref name="dayPromotion"/> (may be null) is the promotion figure the mod will have written on each
+        /// weekday, or less than nothing for "as it stands"; <paramref name="raise"/> answers what an employee is
+        /// paid on top of the game's wage. A business with more stations or employees than the planner keeps is
+        /// not read at all (<see cref="RotaSheet.TooLarge"/>).
         /// </summary>
-        public static void Read(RotaSheet sheet, RotaPlace place, int[] dayScale, Func<string, int> raise)
+        public static void Read(RotaSheet sheet, RotaPlace place, int[] dayPromotion, Func<string, int> raise)
         {
             BuildingRegistration reg = place.Reg;
             sheet.Place = place;
             sheet.Reg = reg;
             sheet.Shown = null;
             sheet.Late = false;
+            sheet.FixedCount = 0;
             ReadStations(sheet, reg);
             ReadWorkers(sheet, reg);
+            sheet.AllStations = sheet.Stations.Count;
+            sheet.AllWorkers = sheet.Workers.Count;
+            sheet.TooLarge = !RotaLedger.Fits(sheet.AllStations, sheet.AllWorkers);
+            if (sheet.TooLarge)
+            {
+                sheet.Stations.Clear();
+                sheet.Workers.Clear();
+                GroupKeys.Clear();
+            }
             int stations = sheet.Stations.Count, workers = sheet.Workers.Count;
             RotaShop shop = sheet.Shop;
             shop.Size(stations, GroupKeys.Count);
             RotaProblem problem = sheet.Problem;
             problem.Size(stations, workers);
+            sheet.Now.Size(stations);
+            sheet.Fixed = sheet.Fixed.Length < workers ? new bool[workers] : sheet.Fixed;
+            if (sheet.TooLarge)
+            {
+                return;
+            }
             bool hq = place.Type == RotaType.Headquarters;
             for (int g = 0; g < GroupKeys.Count; g++)
             {
@@ -66,10 +84,11 @@ namespace RealLifeOverhaul.Economy
                 problem.Kind[s] = cleans ? RotaKind.Cleaning : RotaKind.Work;
                 problem.Whole[s] = hq && !cleans;   // the game's rule at a headquarters: the same person at a desk for every open hour of the week (ScheduleHelper.AddWorkShift, ScheduleAutoFiller.AddHeadquartersConstraint)
             }
-            ReadSkillsAndDemands(sheet, reg, raise);
             ReadWeek(sheet, reg);
+            ReadSkillsAndDemands(sheet, reg, raise);
+            RotaLedger.Bench(problem, sheet.Fixed);
             shop.FixedHours = hq;   // (the game's schedule screen refuses to change a headquarters' hours: ScheduleHourToggle.OnPointerDown)
-            ReadCustomers(sheet, reg, place.Type == RotaType.Customers, dayScale);
+            ReadCustomers(sheet, reg, place.Type == RotaType.Customers, dayPromotion);
             ReadRoom(sheet, reg);
             ReadWorth(sheet, reg);
             ReadFees(shop, reg);
@@ -80,7 +99,9 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        // The stations, in the order the planner keeps them: those that serve customers group by group, then the rest, then cleaning.
+        // The stations, in the order the planner keeps them: those that serve customers group by group, then the rest, then
+        // cleaning. Each item's kind and what it serves is asked of the game once. A station that lacks something it requires
+        // is not read: the game's day simulation passes over it, so nobody is put at it, and whoever has a shift there is left as they are.
         private static void ReadStations(RotaSheet sheet, BuildingRegistration reg)
         {
             sheet.Stations.Clear();
@@ -91,69 +112,80 @@ namespace RealLifeOverhaul.Economy
             GroupKeys.Clear();
             GroupLimits.Clear();
             GroupKinds.Clear();
+            ItemKinds.Clear();
+            ItemCaps.Clear();
+            ItemKeys.Clear();
+            ItemLimits.Clear();
             reg.GetAssignableItems(Items);
             Items.Sort(ByNameThenId);
             bool office = CustomerEntriesCalculatorFactory.GetCustomerEntriesCalculator(reg) is CustomerEntriesCalculatorOffice;
-            for (int pass = 0; pass < 3; pass++)
+            for (int i = 0; i < Items.Count; i++)
             {
-                for (int i = 0; i < Items.Count && sheet.Stations.Count < RotaCatalogue.StationsMost; i++)
+                ItemInstance item = Items[i];
+                Item data = item != null ? item.ItemCached : null;
+                byte kind = NotRead;
+                int cap = 0;
+                string key = null, limit = null;
+                if (data != null && data.suitableSkills != null)
                 {
-                    ItemInstance item = Items[i];
-                    Item data = item != null ? item.ItemCached : null;
-                    if (data == null || data.suitableSkills == null)
-                    {
-                        continue;
-                    }
                     bool cleans = Array.IndexOf(data.suitableSkills, Cleaning) >= 0;   // (how the game's auto fill tells a cleaning shift: ScheduleAutoFiller.GetWorkStationInfo)
-                    int cap = 0;
-                    string key = data.itemName, limit = null;
-                    if (!cleans)
+                    key = cleans ? Cleaning : data.itemName;
+                    if (cleans)
                     {
-                        if (ItemHelper.HasAnyMissingRequirements(item))
+                        kind = RotaGroupKind.Cleaning;
+                    }
+                    else if (ItemHelper.HasAnyMissingRequirements(item))
+                    {
+                        if (sheet.Broken.Count < 2)
                         {
-                            // The game's day simulation passes over a station that lacks something it requires: nobody is rostered at it.
-                            if (pass == 0 && sheet.Broken.Count < 2)
-                            {
-                                sheet.Broken.Add(Name(item));
-                            }
-                            continue;
-                        }
-                        if (office)
-                        {
-                            cap = data.addedCustomersPerHour > 0 ? 1 : 0;   // an office serves one customer a staffed desk each hour (OfficeBusinessSimulator.SimulateCurrentHour)
-                            key = cap > 0 ? "desk" : key;
-                        }
-                        else
-                        {
-                            One.Clear();
-                            One.Add(item);
-                            foreach (Item.ItemCapacity capacity in One.GetItemsSortedByCapacity(reg, false, false))
-                            {
-                                cap = capacity.CustomersLimit;
-                                limit = capacity.itemName ?? string.Empty;
-                                key = string.IsNullOrEmpty(capacity.itemName) ? key : capacity.itemName;
-                                break;
-                            }
+                            sheet.Broken.Add(Name(item));
                         }
                     }
-                    byte kind = cleans ? RotaGroupKind.Cleaning : cap > 0 ? RotaGroupKind.Service : RotaGroupKind.Support;
-                    if (kind != pass)
+                    else if (office)
+                    {
+                        cap = data.addedCustomersPerHour > 0 ? 1 : 0;   // an office serves one customer a staffed desk each hour (OfficeBusinessSimulator.SimulateCurrentHour)
+                        key = cap > 0 ? "desk" : key;
+                        kind = cap > 0 ? RotaGroupKind.Service : RotaGroupKind.Support;
+                    }
+                    else
+                    {
+                        One.Clear();
+                        One.Add(item);
+                        foreach (Item.ItemCapacity capacity in One.GetItemsSortedByCapacity(reg, false, false))
+                        {
+                            cap = capacity.CustomersLimit;
+                            limit = capacity.itemName ?? string.Empty;
+                            key = string.IsNullOrEmpty(capacity.itemName) ? key : capacity.itemName;
+                            break;
+                        }
+                        kind = cap > 0 ? RotaGroupKind.Service : RotaGroupKind.Support;
+                    }
+                }
+                ItemKinds.Add(kind);
+                ItemCaps.Add(cap);
+                ItemKeys.Add(key);
+                ItemLimits.Add(limit);
+            }
+            for (byte pass = 0; pass < 3; pass++)
+            {
+                for (int i = 0; i < Items.Count; i++)
+                {
+                    if (ItemKinds[i] != pass)
                     {
                         continue;
                     }
-                    key = cleans ? Cleaning : key;
-                    int group = GroupKeys.IndexOf(key);
+                    int group = GroupKeys.IndexOf(ItemKeys[i]);
                     if (group < 0)
                     {
                         group = GroupKeys.Count;
-                        GroupKeys.Add(key);
-                        GroupLimits.Add(kind == RotaGroupKind.Service ? limit : null);
-                        GroupKinds.Add(kind);
-                        sheet.GroupNames.Add(Text(data.itemName));
+                        GroupKeys.Add(ItemKeys[i]);
+                        GroupLimits.Add(pass == RotaGroupKind.Service ? ItemLimits[i] : null);
+                        GroupKinds.Add(pass);
+                        sheet.GroupNames.Add(Text(Items[i].ItemCached.itemName));
                     }
-                    sheet.Stations.Add(item);
+                    sheet.Stations.Add(Items[i]);
                     GroupOf.Add(group);
-                    CapOf.Add(cap);
+                    CapOf.Add(ItemCaps[i]);
                 }
             }
             One.Clear();
@@ -196,7 +228,7 @@ namespace RealLifeOverhaul.Economy
             {
                 // No player employee to leave out.
             }
-            for (int i = 0; i < People.Count && sheet.Workers.Count < RotaCatalogue.WorkersMost; i++)
+            for (int i = 0; i < People.Count; i++)
             {
                 EmployeeInstance e = People[i];
                 if (e == null || ReferenceEquals(e, self) || string.IsNullOrEmpty(e.id) || e.IsCandidate || e.characterData == null || e.characterData.skills == null)
@@ -255,19 +287,20 @@ namespace RealLifeOverhaul.Economy
         private static void ReadWeek(RotaSheet sheet, BuildingRegistration reg)
         {
             RotaShop shop = sheet.Shop;
-            int stations = sheet.Stations.Count;
+            int stations = sheet.Stations.Count, workers = sheet.Workers.Count;
             Index(sheet);
-            sheet.Now.Size(stations);
+            Present.Clear();
+            Counted.Clear();
             List<ScheduleDay> week = reg.scheduleDays;
             for (int i = 0; i < week.Count; i++)
             {
                 ScheduleDay day = week[i];
                 int d = day != null ? (int)day.day - 1 : -1;
-                if (d < 0 || d >= RotaCatalogue.Days || !day.isOpen)
+                if (d < 0 || d >= RotaCatalogue.Days)
                 {
-                    continue;   // (the game counts no hours and pays no wages for a shift on a day that is closed: EmployeeInstance.GetWorkingHoursOnDay)
+                    continue;
                 }
-                for (int k = 0; day.openingHourSlots != null && k < day.openingHourSlots.Count; k++)
+                for (int k = 0; day.isOpen && day.openingHourSlots != null && k < day.openingHourSlots.Count; k++)
                 {
                     OpeningHourSlot slot = day.openingHourSlots[k];
                     for (int h = Mathf.Max(0, slot.startingHour); h < slot.endingHour && h < RotaCatalogue.Hours; h++)
@@ -278,26 +311,28 @@ namespace RealLifeOverhaul.Economy
                 for (int k = 0; day.workShifts != null && k < day.workShifts.Count; k++)
                 {
                     WorkShift shift = day.workShifts[k];
-                    int s, w;
-                    if (shift == null || string.IsNullOrEmpty(shift.employeeId) || shift.itemInstanceId == null || !StationAt.TryGetValue(shift.itemInstanceId, out s))
+                    if (shift == null || string.IsNullOrEmpty(shift.employeeId))
                     {
                         continue;
                     }
-                    bool ours = WorkerAt.TryGetValue(shift.employeeId, out w);
-                    for (int h = Mathf.Max(0, shift.startingHour); h < shift.endingHour && h < RotaCatalogue.Hours; h++)
+                    RotaShift coded = Coded(shift, reg, d);
+                    Present.Add(coded);
+                    if (day.isOpen)
                     {
-                        int cell = (d * RotaCatalogue.Hours + h) * stations + s;
-                        if (ours)
-                        {
-                            sheet.Now.At[cell] = (short)w;
-                        }
-                        else
-                        {
-                            shop.Taken[cell] = true;   // somebody the planner leaves alone stands there: the hour is theirs
-                        }
+                        Counted.Add(coded);   // (the game counts no hours and pays no wages for a shift on a day that is closed: EmployeeInstance.GetWorkingHoursOnDay)
                     }
                 }
             }
+            // Who is left exactly as they are, by every shift they have; then the week as it counts: the hours of those a fill
+            // may move are the rota to be rated, every other hour at a station is taken.
+            RotaLedger.Fixed(Present, sheet.Problem.Whole, workers, sheet.Fixed);
+            RotaLedger.Lay(Counted, sheet.Fixed, stations, sheet.Now.At, shop.Taken);
+            for (int w = 0; w < workers; w++)
+            {
+                sheet.FixedCount += sheet.Fixed[w] ? 1 : 0;
+            }
+            Present.Clear();
+            Counted.Clear();
         }
 
         // ---------------------------------------------------------------- customers
@@ -328,7 +363,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        private static void ReadCustomers(RotaSheet sheet, BuildingRegistration reg, bool walkIn, int[] dayScale)
+        private static void ReadCustomers(RotaSheet sheet, BuildingRegistration reg, bool walkIn, int[] dayPromotion)
         {
             RotaShop shop = sheet.Shop;
             shop.HasCustomers = false;
@@ -359,21 +394,33 @@ namespace RealLifeOverhaul.Economy
             }
             for (int d = 0; d < RotaCatalogue.Days; d++)
             {
+                // A weekday on which the mod will have written another promotion figure than today's is asked of the game's
+                // calculator with that figure in the business's record, which is put back before anything else can read it:
+                // the game's own arithmetic, cap and rounding and all, on the figure the mod's own writer will produce.
                 var day = (DayOfWeekOrdered)(d + 1);
-                int scale = dayScale != null ? dayScale[d] : 1000;
-                for (int h = 0; h < RotaCatalogue.Hours; h++)
+                int stands = reg.promotion != null ? reg.promotion.total : 0, then = dayPromotion != null ? dayPromotion[d] : -1;
+                bool other = reg.promotion != null && then >= 0 && then != stands;
+                try
                 {
-                    int customers = office ? Calculator.Office(reg, h, day, initial) : calculator.GetCustomersByHour(h, day, initial);
-                    // A shop's figure stops at what its stations serve (CustomerEntriesCalculatorRetail); the game's plain calculator gives the same figure without that stop.
-                    int wanting = retail ? Plain.GetCustomersByHour(h, day, initial) : customers;
-                    if (scale != 1000)
+                    if (other)
                     {
-                        customers = Mathf.RoundToInt(customers * (scale / 1000f));
-                        customers = retail && scale > 1000 && reg.customerCapacity > 0 ? Mathf.Min(customers, reg.customerCapacity) : customers;   // (the game's own cap for a shop)
-                        wanting = Mathf.RoundToInt(wanting * (scale / 1000f));
+                        reg.promotion.total = then;
                     }
-                    shop.Customers[d * RotaCatalogue.Hours + h] = Mathf.Max(0, customers);
-                    shop.Wanting[d * RotaCatalogue.Hours + h] = Mathf.Max(0, wanting);
+                    for (int h = 0; h < RotaCatalogue.Hours; h++)
+                    {
+                        int customers = office ? Calculator.Office(reg, h, day, initial) : calculator.GetCustomersByHour(h, day, initial);
+                        // A shop's figure stops at what its stations serve (CustomerEntriesCalculatorRetail); the game's plain calculator gives the same figure without that stop.
+                        int wanting = retail ? Plain.GetCustomersByHour(h, day, initial) : customers;
+                        shop.Customers[d * RotaCatalogue.Hours + h] = Mathf.Max(0, customers);
+                        shop.Wanting[d * RotaCatalogue.Hours + h] = Mathf.Max(0, wanting);
+                    }
+                }
+                finally
+                {
+                    if (other)
+                    {
+                        reg.promotion.total = stands;
+                    }
                 }
             }
         }

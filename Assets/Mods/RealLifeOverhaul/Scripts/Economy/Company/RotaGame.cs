@@ -71,7 +71,12 @@ namespace RealLifeOverhaul.Economy
         public readonly List<string> Broken = new List<string>(2);  // stations out of order, by name
         public bool FromBooks;              // what a customer is worth comes from the game's books of the last days; false: from its prices
         public bool RequirementsMet = true; // the game sends customers only to a business that meets its requirements
-        public bool Late;                   // the advised hours need the mod's late opening permit and the present ones do not
+        public bool Late;                   // it opens late or early now and holds no late opening permit (the advice never does: those hours are barred from it)
+        public bool Permit;                 // it holds the mod's late opening permit, or licences are switched off: no hour is barred
+        public bool TooLarge;               // more stations or employees than the planner keeps: nothing was read and nothing is written
+        public int AllStations, AllWorkers; // how many the game has there
+        public bool[] Fixed = new bool[0];  // [worker] left exactly as they are: the holder of a headquarters desk, or somebody with a shift at a station that was not read
+        public int FixedCount;
     }
 
     /// <summary>
@@ -88,8 +93,11 @@ namespace RealLifeOverhaul.Economy
     ///                THE MOD'S OWN CHANGES ARE ALREADY IN IT: the city's economy, a campaign, overtime and a strike
     ///                change customers by writing the business's promotion figure (Business/BusinessGame.Footfall,
     ///                see Wiring/CompanyLinks), which GetPromotionMultiplier reads. So nothing of the mod's is added
-    ///                here a second time; a day on which a campaign or a strike will have ended or begun is scaled by
-    ///                the director from the company's own rules (CompanyDirector.Rota.cs)
+    ///                here a second time. A weekday on which a campaign, a strike or one of business pressure's own
+    ///                changes will have ended or begun is asked of the game's calculator with the promotion figure the
+    ///                mod will have written by then: the director works that figure out with the very function that
+    ///                writes it (BusinessCatalogue.Written), and it stands in the business's record only for the
+    ///                length of the asking (ReadCustomers)
     ///   worth        a customer's takings and the cost of the goods from the business's own order history of the
     ///                last days (BuildingRegistration.orderHistory); with no history, from what it sells and its
     ///                prices by the game's own product arithmetic (CustomerEntriesCalculatorRetail)
@@ -106,8 +114,10 @@ namespace RealLifeOverhaul.Economy
     ///   cleaning     the game's dirt and cleaning figures (BuildingCleanliness)
     ///
     /// WRITTEN, and only on the player's button: ScheduleDay.workShifts, and with "use these hours" ScheduleDay.isOpen
-    /// and openingHourSlots, followed by exactly what the game's own auto fill and schedule screen do afterwards
-    /// (<see cref="Write"/>). Shifts of people the planner does not manage are left as they are.
+    /// and openingHourSlots, followed by what the game's own auto fill and schedule screen do afterwards
+    /// (<see cref="Write"/>, which says what of that is left out and why). Shifts of people the planner does not
+    /// manage are left as they are, and so is everybody who holds a headquarters desk. A business with more
+    /// stations or employees than the planner keeps is not read in part: it is refused, and nothing of it is touched.
     ///
     /// Nothing here runs on a timer: when the Rota tab is opened, when a business is picked, and on a button.
     /// Reading a business is in RotaGame.Read.cs, its employees' demands in RotaGame.Demands.cs, writing a rota and
@@ -126,7 +136,11 @@ namespace RealLifeOverhaul.Economy
 
         private static readonly List<ItemInstance> Items = new List<ItemInstance>(32), One = new List<ItemInstance>(1);
         private static readonly List<EmployeeInstance> People = new List<EmployeeInstance>(32);
-        private static readonly List<int> GroupOf = new List<int>(32), CapOf = new List<int>(32);
+        private static readonly List<int> GroupOf = new List<int>(32), CapOf = new List<int>(32), ItemCaps = new List<int>(32);
+        private static readonly List<byte> ItemKinds = new List<byte>(32);
+        private static readonly List<string> ItemKeys = new List<string>(32), ItemLimits = new List<string>(32);
+        private static readonly List<RotaShift> Present = new List<RotaShift>(64), Counted = new List<RotaShift>(64);
+        private const byte NotRead = 255;       // an assignable item that is no station of the planner's
         private static readonly List<string> GroupKeys = new List<string>(8), GroupLimits = new List<string>(8);
         private static readonly CustomerEntriesCalculator Plain = new CustomerEntriesCalculator();   // the game's plain calculator: a shop's figure before the cap at what its stations serve
         private static readonly List<byte> GroupKinds = new List<byte>(8);
@@ -267,79 +281,84 @@ namespace RealLifeOverhaul.Economy
         // ---------------------------------------------------------------- what a sheet was worked out from
 
         /// <summary>
-        /// A number that changes when anything the advice is worked out from does: the day, the business's customer
-        /// figures, its hours and shifts, its stations, and who works there for what and how content.
+        /// A number that changes when anything a sheet is worked out from does, so that a sheet kept is never used
+        /// for a business that has changed: the day, the customer figures (promotion, satisfaction, capacity), every
+        /// assignable item by its id and whether it lacks a requirement, the prices and what is on sale, the opening
+        /// hours and every shift, and everybody assigned there with their wage, satisfaction, skills and demands.
+        /// One walk over the building's items and one over the save's employees: a few thousand additions.
         /// </summary>
         public static long Stamp(RotaPlace place, int extra)
         {
             BuildingRegistration reg = place.Reg;
-            unchecked
+            long h = RotaLedger.StampStart;
+            h = RotaLedger.Mix(h, place.Place);
+            h = RotaLedger.Mix(h, Save != null ? Save.Day : 0);
+            h = RotaLedger.Mix(h, extra);
+            h = RotaLedger.Mix(h, reg.businessTypeName);
+            h = RotaLedger.Mix(h, reg.promotion != null ? reg.promotion.total : 0);
+            h = RotaLedger.Mix(h, reg.satisfaction != null ? reg.satisfaction.overall : 0);
+            h = RotaLedger.Mix(h, reg.customerCapacity);
+            h = RotaLedger.Mix(h, reg.temporarilyClosed ? 1 : 0);
+            h = RotaLedger.Mix(h, reg.orderHistory != null ? reg.orderHistory.Count : 0);
+            h = RotaLedger.Mix(h, reg.dirtSpots != null ? reg.dirtSpots.Count : 0);
+            h = RotaLedger.Mix(h, Save != null && Save.disabledLicensingFees != null ? Save.disabledLicensingFees.Count : 0);
+            foreach (KeyValuePair<string, ItemInstance> item in reg.itemInstances)
             {
-                long h = 1469598103934665603L;
-                h = Mix(h, Hash(place.Place));
-                h = Mix(h, Save != null ? Save.Day : 0);
-                h = Mix(h, extra);
-                h = Mix(h, reg.promotion != null ? reg.promotion.total : 0);
-                h = Mix(h, reg.satisfaction != null ? reg.satisfaction.overall : 0);
-                h = Mix(h, reg.customerCapacity);
-                h = Mix(h, reg.temporarilyClosed ? 1 : 0);
-                h = Mix(h, reg.itemInstances != null ? reg.itemInstances.Count : 0);
-                h = Mix(h, reg.retailPrices != null ? reg.retailPrices.Count : 0);
-                h = Mix(h, reg.orderHistory != null ? reg.orderHistory.Count : 0);
-                List<ScheduleDay> week = reg.scheduleDays;
-                for (int i = 0; week != null && i < week.Count; i++)
+                Item data = item.Value != null ? item.Value.ItemCached : null;
+                if (data != null && data.assignable)
                 {
-                    ScheduleDay day = week[i];
-                    h = Mix(h, day.isOpen ? 7 : 3);
-                    for (int k = 0; day.openingHourSlots != null && k < day.openingHourSlots.Count; k++)
-                    {
-                        h = Mix(h, day.openingHourSlots[k].startingHour * 32 + day.openingHourSlots[k].endingHour);
-                    }
-                    for (int k = 0; day.workShifts != null && k < day.workShifts.Count; k++)
-                    {
-                        WorkShift shift = day.workShifts[k];
-                        h = Mix(h, shift.startingHour * 32 + shift.endingHour);
-                        h = Mix(h, Hash(shift.employeeId));
-                        h = Mix(h, Hash(shift.itemInstanceId));
-                    }
+                    h = RotaLedger.Mix(h, item.Key);
+                    h = RotaLedger.Mix(h, ItemHelper.HasAnyMissingRequirements(item.Value) ? 1 : 2);
                 }
-                List<EmployeeInstance> staff = Save != null ? Save.EmployeeInstances : null;
-                for (int i = 0; staff != null && i < staff.Count; i++)
-                {
-                    EmployeeInstance e = staff[i];
-                    if (e == null || e.assignedAddress == null || e.assignedAddress.streetNumber != reg.StreetNumber || e.assignedAddress.streetName != reg.StreetName)
-                    {
-                        continue;
-                    }
-                    h = Mix(h, Hash(e.id));
-                    h = Mix(h, Mathf.RoundToInt(e.hourlyWage * 100f));
-                    h = Mix(h, Mathf.RoundToInt(e.satisfaction));
-                    h = Mix(h, e.demands != null ? e.demands.Count : 0);
-                    h = Mix(h, e.characterData != null && e.characterData.skills != null && e.characterData.skills.Count > 0 ? Mathf.RoundToInt(e.characterData.skills[0].value) : 0);
-                }
-                return h;
             }
-        }
-
-        private static long Mix(long h, int value)
-        {
-            unchecked
+            for (int i = 0; reg.retailPrices != null && i < reg.retailPrices.Count; i++)
             {
-                return (h ^ value) * 1099511628211L;
+                h = RotaLedger.Mix(h, reg.retailPrices[i].itemName);
+                h = RotaLedger.Mix(h, Mathf.RoundToInt(reg.retailPrices[i].price * 100f));
             }
-        }
-
-        private static int Hash(string text)
-        {
-            unchecked
+            for (int i = 0; reg.cachedAvailableProducts != null && i < reg.cachedAvailableProducts.Count; i++)
             {
-                int h = 17;
-                for (int i = 0; text != null && i < text.Length; i++)
-                {
-                    h = h * 31 + text[i];
-                }
-                return h;
+                h = RotaLedger.Mix(h, reg.cachedAvailableProducts[i]);
             }
+            List<ScheduleDay> week = reg.scheduleDays;
+            for (int i = 0; week != null && i < week.Count; i++)
+            {
+                ScheduleDay day = week[i];
+                h = RotaLedger.Mix(h, day.isOpen ? 7 : 3);
+                for (int k = 0; day.openingHourSlots != null && k < day.openingHourSlots.Count; k++)
+                {
+                    h = RotaLedger.Mix(h, day.openingHourSlots[k].startingHour * 32 + day.openingHourSlots[k].endingHour);
+                }
+                for (int k = 0; day.workShifts != null && k < day.workShifts.Count; k++)
+                {
+                    WorkShift shift = day.workShifts[k];
+                    h = RotaLedger.Mix(h, shift.startingHour * 32 + shift.endingHour);
+                    h = RotaLedger.Mix(h, shift.employeeId);
+                    h = RotaLedger.Mix(h, shift.itemInstanceId);
+                }
+            }
+            List<EmployeeInstance> staff = Save != null ? Save.EmployeeInstances : null;
+            for (int i = 0; staff != null && i < staff.Count; i++)
+            {
+                EmployeeInstance e = staff[i];
+                if (e == null || e.assignedAddress == null || e.assignedAddress.streetNumber != reg.StreetNumber || e.assignedAddress.streetName != reg.StreetName)
+                {
+                    continue;
+                }
+                h = RotaLedger.Mix(h, e.id);
+                h = RotaLedger.Mix(h, Mathf.RoundToInt(e.hourlyWage * 100f));
+                h = RotaLedger.Mix(h, Mathf.RoundToInt(e.satisfaction));
+                for (int k = 0; e.demands != null && k < e.demands.Count; k++)
+                {
+                    h = RotaLedger.Mix(h, e.demands[k]);
+                }
+                for (int k = 0; e.characterData != null && e.characterData.skills != null && k < e.characterData.skills.Count; k++)
+                {
+                    h = RotaLedger.Mix(h, e.characterData.skills[k].name);
+                    h = RotaLedger.Mix(h, Mathf.RoundToInt(e.characterData.skills[k].value));
+                }
+            }
+            return h;
         }
 
         // ---------------------------------------------------------------- names
