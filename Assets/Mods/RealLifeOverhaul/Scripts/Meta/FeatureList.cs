@@ -350,6 +350,32 @@ namespace RealLifeOverhaul.Meta
                     CarPhone.Setup();
                 });
 
+            // The taxi by phone shares the transport header. Nothing of it is in the save but its contact: a taxi that was coming is let go.
+            Features.Add("taxi", "reallife_meta_title_taxi")
+                .About("reallife_guide_taxi_about").Help("reallife_guide_taxi")
+                .Owns(Settings.TaxiCallId)
+                .Test("reallife_test_taxi_call", "reallife_test_taxi_bring", "reallife_test_taxi_cancel")
+                .Contact(TaxiPhone.ContactId)
+                .Fact("taxi_callout", () => Guide.Money(TaxiRules.CallOut))
+                .Fact("taxi_callout_night", () => Guide.Money(TaxiRules.NightCallOut))
+                .Fact("taxi_night_from", () => TaxiRules.NightFrom.ToString(CultureInfo.InvariantCulture) + ":00")
+                .Fact("taxi_night_until", () => TaxiRules.NightUntil.ToString("00", CultureInfo.InvariantCulture) + ":00")
+                .Fact("taxi_wet_extra", () => Guide.Percent(TaxiRules.WetExtra))
+                .Fact("taxi_start_least", () => Guide.Number(TaxiRules.StartLeast))
+                .Fact("taxi_start_most", () => Guide.Number(TaxiRules.StartMost))
+                .Fact("taxi_wet_start_least", () => Guide.Number(TaxiRules.WetStartLeast))
+                .Fact("taxi_wet_start_most", () => Guide.Number(TaxiRules.WetStartMost))
+                .Fact("taxi_road_within", () => Guide.Number(TaxiRules.RoadWithin))
+                .Fact("taxi_cancel_free", () => Guide.Number(TaxiRules.CancelFreeBeyond))
+                .Fact("taxi_cancel_share", () => Guide.Percent(TaxiRules.CancelShare))
+                .Fact("taxi_noshow_share", () => Guide.Percent(TaxiRules.NoShowShare))
+                .Fact("taxi_wait", () => Guide.Number(TaxiRules.WaitSeconds))
+                .Fact("taxi_grace", () => Guide.Number(TaxiRules.GraceSeconds))
+                .Fact("taxi_grace_within", () => Guide.Number(TaxiRules.GraceWithin))
+                .Fact("taxi_far", () => Guide.Number(TaxiRules.FarFromStop))
+                .Cleanup(() => TaxiDirector.Instance?.StopAll())
+                .Repair(TaxiPhone.Setup);
+
             // Leisure's records live in ModState's part of the save: "life" resets them (ModState.Reset).
             Features.Add("leisure", "reallife_meta_title_leisure")
                 .Group("reallife_leisure_header")

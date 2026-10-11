@@ -312,6 +312,8 @@ namespace RealLifeOverhaul
                     v => Settings.TransitPeople = v)
                 .AddToggle(Settings.SubwayJourneyId, "reallife_transport_subway", Settings.SubwayJourney,
                     v => Settings.SubwayJourney = v)
+                .AddToggle(Settings.TaxiCallId, "reallife_transport_taxi", Settings.TaxiCall,
+                    v => { Settings.TaxiCall = v; TaxiDirector.OptionChanged(); })
                 .AddToggle(Settings.CarOwnershipId, "reallife_transport_cars", Settings.CarOwnership,
                     v => Settings.CarOwnership = v)
                 .AddToggle(Settings.CarEasyId, "reallife_transport_cars_easy", Settings.CarEasy,
@@ -320,6 +322,9 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_transit_bus", () => TransitDirector.Instance?.TestBus())
                 .AddButton("reallife_test_transit_ride", () => TransitDirector.Instance?.TestRide())
                 .AddButton("reallife_test_transit_subway", () => TransitDirector.Instance?.TestSubway())
+                .AddButton("reallife_test_taxi_call", () => TaxiDirector.Instance?.TestCall())
+                .AddButton("reallife_test_taxi_bring", () => TaxiDirector.Instance?.TestBring())
+                .AddButton("reallife_test_taxi_cancel", () => TaxiDirector.Instance?.TestCancel())
                 .AddButton("reallife_test_car_fuel", () => CarOwnership.Instance?.TestFuel())
                 .AddButton("reallife_test_car_breakdown", () => CarOwnership.Instance?.TestBreakdown())
                 .AddButton("reallife_test_car_garage", () => CarOwnership.Instance?.TestGarage())
@@ -670,6 +675,7 @@ namespace RealLifeOverhaul
             JobDirector.Logger = context.Logger;
             Law.LawDirector.Logger = context.Logger;
             TransitDirector.Logger = context.Logger;
+            TaxiDirector.Logger = context.Logger;
             CarOwnership.Logger = context.Logger;
             Events.EventDirector.Logger = context.Logger;
             SocialDirector.Logger = context.Logger;
@@ -708,6 +714,7 @@ namespace RealLifeOverhaul
             _root.AddComponent<HomeDirector>();   // home life and health (Scripts/Home); after LifeEvents and the city life director, whose clip player it shares
             _root.AddComponent<Law.LawDirector>();   // precincts, custody, the record and reputation (Scripts/Law)
             _root.AddComponent<TransitDirector>();   // bus stops, buses and the subway journey (Scripts/Transport)
+            _root.AddComponent<TaxiDirector>();   // a taxi called from the phone: a real taxi of the game driven to the player's street (Scripts/Transport/Taxi)
             _root.AddComponent<CarOwnership>();   // servicing, wear, breakdowns, insurance, the word in the game's vehicle panel for what a car needs (Scripts/Transport)
             Leisure.LeisureDirector.Logger = context.Logger;
             _root.AddComponent<Leisure.LeisureDirector>();   // things to do for fun, the clothes rack, night life, the sound bed, photo mode (Scripts/Leisure)
