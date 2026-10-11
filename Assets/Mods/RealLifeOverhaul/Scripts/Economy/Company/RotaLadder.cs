@@ -24,6 +24,7 @@ namespace RealLifeOverhaul.Economy
         public const byte NoPay = 2;    // its customers bring less than the smallest crew is paid
         public const byte Barred = 3;   // no late opening permit
         public const byte Day = 4;      // the day's blocks of hours come to more without it
+        public const byte Fits = 5;     // opened so that somebody can be given the least hours they ask for
     }
 
     /// <summary>Why the ladder ends where it does.</summary>
@@ -58,10 +59,19 @@ namespace RealLifeOverhaul.Economy
         public long Will;       // and in the plan
     }
 
+    /// <summary>Somebody a plan gives no hours, because the least they ask for cannot be had there.</summary>
+    public struct RotaLeft
+    {
+        public int Worker, Least;
+        public int Room;        // the most hours they could be given in the plan's opening hours were nobody else there
+        public int Why;         // RotaClash
+        public int Asked, Held; // Shared: what those at the same stations ask for between them, and the hours those stations hold
+    }
+
     /// <summary>One plan of the ladder: its hours, its rota, and what its week comes to.</summary>
     public sealed class RotaRung
     {
-        public int Kind, Source;        // Source: 0 the week as it is, 1 the hours kept with a new rota, 2 those hours less the ones nobody can keep, 3 the hours worth opening
+        public int Kind, Source;        // Source: 0 the week as it is, 1 the hours kept with a new rota, 2 those hours less the ones nobody can keep, 3 the hours worth opening, 4 the hours kept and more, so that everybody's least hours fit
         public int Hires;
         public readonly int[] Hire = new int[RotaLadder.HiresMost];     // the group each person to hire is for
         public int Workers, Staff;      // in the rota, and of them the people there are now
@@ -77,6 +87,12 @@ namespace RealLifeOverhaul.Economy
         public long[] DemandCost = new long[0]; // [worker] what their unmet demands cost a week
         public int[] QuitHours = new int[0];    // [worker] hours until their satisfaction is at nothing; 0: it does not fall there
         public readonly List<RotaChange> Changes = new List<RotaChange>(RotaLadder.ChangesMost);
+        public readonly List<RotaLeft> Left = new List<RotaLeft>(4);    // whoever gets no hours because their least cannot be had
+        public int Out;                 // people at work whose hours are outside what they ask for (only the week as it is can have any)
+        public int FitsFor = -1;        // the employee the hours were lengthened for (Source 4)
+
+        /// <summary>True if everybody the plan gives hours works inside the range they ask for.</summary>
+        public bool Usable => Out == 0;
 
         internal void Size(int workers)
         {
@@ -95,6 +111,9 @@ namespace RealLifeOverhaul.Economy
             Array.Clear(Cost, 0, Cost.Length);
             Workers = workers;
             Sum = new RotaWeekSum();
+            Left.Clear();
+            Out = 0;
+            FitsFor = -1;
         }
     }
 
@@ -112,6 +131,7 @@ namespace RealLifeOverhaul.Economy
         public long StopGain, StopNeed;
         public readonly RotaPlan Fill = new RotaPlan();     // the rota for the hours kept now ("Fill the rota")
         public RotaWeekSum FillSum;
+        public readonly List<RotaLeft> FillLeft = new List<RotaLeft>(4);   // whoever that rota gives no hours, because the hours kept cannot hold their least
         public readonly int[] Hourly = new int[RotaCatalogue.Hours];   // the week's customers by the hour of the day
         public int Steps;                   // steps it took (the self-check)
 
@@ -187,7 +207,7 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static bool Writable(RotaRung rung)
         {
-            return rung != null && rung.Hires == 0 && rung.Kind == RotaRungKind.Best && rung.Source != 0;
+            return rung != null && rung.Hires == 0 && rung.Kind == RotaRungKind.Best && rung.Source != 0 && rung.Usable;
         }
 
         // ---------------------------------------------------------------- the game's arithmetic, a figure at a time
@@ -486,6 +506,9 @@ namespace RealLifeOverhaul.Economy
             Array.Copy(from.QuitHours, to.QuitHours, from.Workers);
             to.Changes.Clear();
             to.Changes.AddRange(from.Changes);
+            to.Left.AddRange(from.Left);
+            to.Out = from.Out;
+            to.FitsFor = from.FitsFor;
         }
     }
 }

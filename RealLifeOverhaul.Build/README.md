@@ -6935,6 +6935,49 @@ checked again by the director before the job and before the write); its page sho
 who to hire, at what wage, and where. Every hour a plan opens or closes is listed with its reason and what it comes to
 now and in the plan.
 
+### Hours a week are compulsory, and shifts follow the customers (`RotaFit.cs`)
+
+**The range.** The game's hours demand is `Entities.Employee.JobDemands.Requirements/HoursWorkingPerWeek.cs`: `MinHours`
+(:20) and `MaxHours` (:22) are the two ends of a slider from 0 to 50 (:17) kept in each demand's own asset
+(`jobdemand_parttime`, `jobdemand_fulltime`), and `Fulfilled` (:24) asks for the assigned hours to be inside both. The
+figures themselves are in the game's data, not its code, so they could not be read offline; the planner reads them
+from the game for every employee (`RotaGame.Demands.cs:89`) and uses whatever they are. The game's own auto fill
+gives exactly the least (:98).
+
+**The rule.** In every rota the planner makes (the one "Fill the rota" writes and every rung above the week as it
+is), whoever asks for hours a week works no fewer than the least and no more than the most, or is given no hours at
+all and is named with the reason. It holds in staff first and in lean, for every skill. How:
+- the most: every hours demand is given to the solver at the game's high priority, which never gives way
+  (`RotaLadder.Steps.cs`, `Build`);
+- the least: the hours people ask for are wanted at their stations, the busiest hours first, also where the station
+  would otherwise stand empty (`Lay`); cleaning hours are chosen by what they bring, lengthened to the cleaners'
+  least and made one shift a day around the busy hours (`CleanOne`, `CleanBlocks`); after the solver, `RotaFit.Reach`
+  gives whoever is still short an empty hour beside a shift they have (a wanted one first, then the busiest), or an
+  hour a colleague with more than their own least can spare at an end of a shift;
+- whoever still has some hours but fewer than their least is left out of that week, one person at a time, and the
+  week is made again without them (`Fitted`); nobody is ever written short.
+A rung says who it leaves without hours and why (`RotaLeft`): their own limits against the opening hours (with the
+hours open to them), the others at the same stations (what they ask for between them against what the stations
+hold), or the cleaning service. A rung may be used (`RotaRung.Usable`, `RotaLadder.Writable`) only if nobody in it
+works outside their range.
+
+**When the hours kept are too few.** The plan with the people then has one more candidate: the hours kept and more,
+the best paying hour beside an open one added one at a time (never an hour barred for want of a permit) until the
+opening hours hold the least hours of everybody who was left out (`Extend`). Its page lists those hours as "opened so
+that ... gets the hours they ask for" with what they earn or cost. Candidates are ranked first by how many people keep
+the rule, then by what the week comes to, so that plan may come to less than the week as it is: the page shows the
+difference. "Fill the rota" on hours that cannot hold somebody says so in its dialogue with the figures and offers
+that plan in its place.
+
+**Shifts follow the customers.** What an hour at a till is worth is its customers, so the busiest hours are covered
+first; hours given beyond need are valued by the customers of the hour. After the solver, `RotaFit` mends shifts of a
+single hour (lengthened, or given up where the holder stays in range) and then moves shifts towards the customers
+until no move is left: a shift an hour later or earlier, an end hour of a long shift to a busier hour beside another
+shift of the same person, and a break that a 12 hour shift forces moved to the quietest hour. So within a day a
+busier hour never has fewer people at the tills than a quieter one unless a rule forbids the move: skill, one place
+at a time, the 12 hour shift, the 14 hour day, the person's own demands, or whole shifts (no further piece of work on
+a day, none of a single hour).
+
 ### What the game does, as read from its code (decompiled `BigAmbitions`)
 
 - **An unmanned till sells nothing (away).** `Buildings.Retail.Simulation/RetailBusinessSimulator.cs:106`
@@ -7000,17 +7043,19 @@ Going wages 12.50 and 9.50; satisfaction 70, cleanliness 80; theft 0.23 a custom
 | Rung | Open | With the cashier | Staff hours | Served of those who come | Sales | Wages | Theft | Night | Demands | Week | Gain |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | As it is | 68 | 30 | 34 | 307 of 572 | 6,209.79 | 396.00 | 131.56 | 22.68 | 36.16 | 5,623.39 | |
-| Best with the people | 68 | 30 | 65 | 312 of 572 | 6,753.41 | 675.00 | 131.56 | 22.68 | 0 | 5,924.17 | 300.78 |
-| Hire 1 cashier | 67 | 67 | 101 | 563 of 563 | 12,130.79 | 1,128.50 | 129.49 | 22.68 | 307.37 | 10,542.75 | 4,618.58 |
-| Hire 2 cashiers | 109 | 109 | 144 | 728 of 728 | 15,667.43 | 1,662.50 | 167.44 | 19.44 | 0 | 13,818.05 | 3,275.30 |
-| Hire 3 cashiers | 147 | 147 | 182 | 786 of 786 | 16,933.10 | 2,137.50 | 180.78 | 0 | 0 | 14,614.82 | 796.77 |
+| Best with the people | 68 | 30 | 65 | 314 of 572 | 6,818.42 | 675.00 | 131.56 | 22.68 | 0 | 5,989.18 | 365.79 |
+| Hire 1 cashier | 70 | 69 | 104 | 587 of 592 | 12,598.60 | 1,162.50 | 136.16 | 22.68 | 0 | 11,277.26 | 5,288.08 |
+| Hire 2 cashiers | 109 | 108 | 143 | 725 of 726 | 15,380.07 | 1,650.00 | 166.98 | 16.20 | 0 | 13,546.89 | 2,269.63 |
+| Hire 3 cashiers | 145 | 143 | 178 | 782 of 784 | 16,512.57 | 2,088.00 | 180.32 | 3.24 | 0 | 14,241.01 | 694.12 |
 
-Read: as it is, 265 customers a week find nobody at the till in the 38 open hours without the cashier, and four hours
-of cleaning a week leave the floor costing 456 of sales. The best week with these two people keeps the hours, gives
-the cleaner the 35 hours asked for (the floor then costs 22) and leaves the cashier at 30: nothing more can be sold
-without somebody at the till. Each further cashier keeps about 40 more hours; the third still adds 796.77, over the
-5 per cent (690.90) a rung must add, because in this example a customer or two an hour through the night leave more
-than a cashier's wage. With no customers at night no plan opens those hours (checked).
+The best week with the people, as written: the cashier (asks 20 to 30, gets 30) stands at the till 11:00 to 14:00
+on Monday and Tuesday, 10:00 to 14:00 on Wednesday and 10:00 to 15:00 from Thursday to Sunday, the 30 busiest hours
+of the 68; the cleaner (asks 35 to 45, gets 35) works 10:00 to 15:00 every day, one shift around the busy hours. In
+every plan everybody is inside their range. As it is, 265 customers a week find nobody at the till in the 38 open
+hours without the cashier; nothing more can be sold without somebody at the till, so each further rung is a cashier
+of 40 hours. The third still adds 694.12, over the 5 per cent (677.34) a rung must add, because in this example a
+customer or two an hour through the night leave more than a cashier's wage. With no customers at night no plan opens
+those hours (checked).
 
 **Where this contradicts the earlier figures.** The earlier page said for this shop: now 6,008.02; "with the staff"
 13,021.36 at 90 hours; "with all it takes" 14,631.96 at 147 hours. The first left out theft, the night risk, the dirty
@@ -7038,8 +7083,9 @@ written for ..." say the real milliseconds, the frames and the longest share of 
 The ladder of plans is made by the same job, after the advice: `RotaLadder.Begin`/`Step`, the same steps as its
 one-go `Make` (checked on the example and on the largest business). A step is one piece of a candidate week (the
 worth of its hours, a day's worth of cleaning moves, one step of its rota, its valuation). For the largest business
-(40 stations, 60 employees) that is about 8,300 steps and 9 ms in all on the checker's runtime, the longest step
-about 0.4 ms; for the example shop about 1,650 steps. A small shop's ladder makes up to some fifteen candidate rotas,
+(40 stations, 60 employees) that is about 16,000 steps and 13 ms in all on the checker's runtime, the longest step
+about 0.2 to 0.5 ms (the check takes the best of five runs, since one run alone can be held up by the machine); for
+the example shop about 2,300 steps. A small shop's ladder makes up to some fifteen candidate rotas,
 so on a runtime eight times slower its page may take a second or so of frames at 2 ms each to appear; the page says
 the week is being worked out meanwhile. With "Developer diagnostics" on, "Company check (rota plans, ...)" gives the
 ladder in short form, the customers by the hour of the day and every rate it was valued with.
@@ -7052,8 +7098,14 @@ were are kept), and put every rota back.
 
 ### Checks
 
-`EconomyCheck` compiles the nine game-free files (and `Business/BusinessCatalogue.cs`, for the promotion figure) and
-runs 343 checks of them (`RotaChecks.cs`, `RotaLedgerChecks.cs`, and 90 in `RotaPlanChecks.cs` for the ladder: an
+`EconomyCheck` compiles the ten game-free files (and `Business/BusinessCatalogue.cs`, for the promotion figure) and
+runs 434 checks of them (`RotaChecks.cs`, `RotaLedgerChecks.cs`, 91 in `RotaPlanChecks.cs` for the ladder and 90 in
+`RotaRangeChecks.cs` for the hours rule: over 330 generated shops of one to four stations with part-time, full-time
+and no demand, short and long hours, everybody in every rota made is inside their range or without hours; no rota
+breaks a limit to get there; where the open hours hold every cashier's least hours none is left out (existence by
+counting, exact for one till and days of at most twelve open hours); whoever is left out has the true reason and no
+hours; no busier hour of a day has fewer people at the tills than a quieter one where a legal move could change it;
+no shift of a single hour; lengthened hours are the best paying ones; stepped is one-shot. The ladder's checks: an
 unmanned hour sells nothing and still costs its theft; a till's limit and a second till; that skill changes no
 count; theft, night risk, fees; cleanliness and the hour cleaned; the cleaning service's rule; what an unmet demand
 costs, figure by figure, and against the wages that meet it in both modes; the best week never worse than the week

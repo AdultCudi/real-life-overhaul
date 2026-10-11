@@ -136,7 +136,8 @@ namespace RealLifeOverhaul.Economy
                 row.Set(2, r.Hires > 0 ? CompanyText.T("reallife_rota_plan_staff_hire", "count", r.Staff.ToString(), "hire", r.Hires.ToString()) : r.Staff.ToString());
                 row.Set(3, shop.HasCustomers ? RotaMoney(r.Sum.Net) : RotaMoney(-r.Sum.Wages));
                 row.Set(4, i == 0 ? string.Empty : r.Gain > 0 ? CompanyText.T("reallife_rota_plan_gain", "amount", RotaMoney(r.Gain)) : CompanyText.T("reallife_rota_plan_gain_none"), r.Gain > 0 ? TableRow.Green : TableRow.Plain);
-                row.Set(5, RotaNeeds(sheet, r));
+                row.Set(5, RotaNeeds(sheet, r) + (r.Left.Count > 0 ? " " + CompanyText.T("reallife_rota_plan_leaves", "count", r.Left.Count.ToString()) : r.Out > 0 ? " " + CompanyText.T("reallife_rota_plan_outside", "count", r.Out.ToString()) : string.Empty),
+                    r.Left.Count > 0 || r.Out > 0 ? TableRow.Red : TableRow.Plain);
             }
             RotaYourPeople(sheet, l.Rungs[l.Recommended]);
             RotaStations(sheet);
@@ -267,7 +268,9 @@ namespace RealLifeOverhaul.Economy
                 row.Set(1, RotaGame.Skills(who));
                 row.Set(2, CompanyText.T("reallife_rota_person_wage", "wage", CompanyText.Wage(sheet.Problem.Worker[w].Wage)));
                 row.Set(3, w < sheet.Fixed.Length && sheet.Fixed[w] ? CompanyText.T("reallife_rota_person_fixed") : RotaAsks(sheet.Problem.Worker[w]));
-                row.Set(4, CompanyText.T("reallife_rota_person_hours", "now", RotaHoursOf(now, w).ToString(), "plan", RotaHoursOf(plan, w).ToString()));
+                int tone;
+                string range = RotaRange(sheet, plan, w, out tone);
+                row.Set(4, range ?? CompanyText.T("reallife_rota_person_hours", "now", RotaHoursOf(now, w).ToString(), "plan", RotaHoursOf(plan, w).ToString()), tone);
                 row.Set(5, RotaDemandState(sheet, plan, w), unmet ? TableRow.Yellow : TableRow.Plain);
             }
         }
@@ -332,15 +335,16 @@ namespace RealLifeOverhaul.Economy
                 RotaChange c = r.Changes[i];
                 TableRow row = Row("change" + i);
                 row.A = RotaDayName(c.Day);
-                row.B = CompanyText.T(c.Why == RotaWhy.Opened ? "reallife_rota_change_open" : "reallife_rota_change_close", "from", RotaHour(c.From), "to", RotaHour(c.To))
+                row.B = CompanyText.T(c.Why == RotaWhy.Opened || c.Why == RotaWhy.Fits ? "reallife_rota_change_open" : "reallife_rota_change_close", "from", RotaHour(c.From), "to", RotaHour(c.To))
                         + ". " + CompanyText.T("reallife_rota_change_money", "was", RotaMoney(c.Was), "will", RotaMoney(c.Will));
                 row.C = string.Empty;
                 row.D = c.Why == RotaWhy.Opened ? CompanyText.T("reallife_rota_change_why_open")
                     : c.Why == RotaWhy.NoCrew ? CompanyText.T("reallife_rota_change_why_crew", "station", RotaGroup(sheet, c.Group), "skill", RotaGame.GroupSkill(sheet, c.Group))
                     : c.Why == RotaWhy.NoPay ? CompanyText.T("reallife_rota_change_why_pay")
                     : c.Why == RotaWhy.Barred ? CompanyText.T("reallife_rota_change_why_barred")
+                    : c.Why == RotaWhy.Fits ? CompanyText.T("reallife_rota_change_why_fits", "name", c.Group >= 0 && c.Group < sheet.Workers.Count ? RotaGame.WorkerName(sheet.Workers[c.Group]) : "?")
                     : CompanyText.T("reallife_rota_change_why_day");
-                row.Tone = c.Why == RotaWhy.Opened ? TableRow.Green : TableRow.Yellow;
+                row.Tone = c.Why == RotaWhy.Opened || c.Why == RotaWhy.Fits ? TableRow.Green : TableRow.Yellow;
             }
             Say("who", CompanyText.T("reallife_rota_head_plan_people"));
             for (int w = 0; w < r.Workers; w++)
@@ -350,9 +354,10 @@ namespace RealLifeOverhaul.Economy
                 TableRow row = Row("who" + w);
                 row.A = hired ? CompanyText.T("reallife_rota_plan_hired", "skill", RotaGame.GroupSkill(sheet, group)) : RotaGame.WorkerName(sheet.Workers[w]);
                 row.B = hired ? CompanyText.T("reallife_rota_person_wage", "wage", CompanyText.Wage(RotaLadder.Going(shop, group))) : RotaAsks(sheet.Problem.Worker[w]);
-                row.C = CompanyText.T("reallife_rota_plan_person", "hours", RotaHoursOf(r, w).ToString(), "now", RotaHoursOf(now, w).ToString());
-                row.D = hired ? string.Empty : RotaDemandState(sheet, r, w);
-                row.Tone = !hired && RotaUnmetOf(sheet, r.Plan, w) != null ? TableRow.Yellow : hired ? TableRow.Green : TableRow.Plain;
+                int tone = TableRow.Plain;
+                string range = hired ? null : RotaRange(sheet, r, w, out tone);
+                row.Set(2, CompanyText.T("reallife_rota_plan_person", "hours", RotaHoursOf(r, w).ToString(), "now", RotaHoursOf(now, w).ToString()));
+                row.Set(3, hired ? string.Empty : range ?? RotaDemandState(sheet, r, w), range != null ? tone : !hired && RotaUnmetOf(sheet, r.Plan, w) != null ? TableRow.Yellow : hired ? TableRow.Green : TableRow.Plain);
             }
             RotaWaysOut(sheet, r);
             RotaGaps(sheet, r.Plan);
@@ -436,7 +441,7 @@ namespace RealLifeOverhaul.Economy
             }
             if (r.Kind == RotaRungKind.Best)
             {
-                return CompanyText.T(r.Source == 0 ? "reallife_rota_why_best_same" : r.Source == 1 ? "reallife_rota_why_best_rota" : r.Source == 2 ? "reallife_rota_why_best_cut" : "reallife_rota_why_best_hours");
+                return CompanyText.T(r.Source == 0 ? "reallife_rota_why_best_same" : r.Source == 1 ? "reallife_rota_why_best_rota" : r.Source == 2 ? "reallife_rota_why_best_cut" : r.Source == 4 ? "reallife_rota_why_best_fits" : "reallife_rota_why_best_hours");
             }
             RotaRung before = sheet.Ladder.Rungs[index - 1];
             return CompanyText.Fill("reallife_rota_why_hire", "who", RotaGame.GroupSkill(sheet, r.Hire[r.Hires - 1]), "hours", (r.Sum.Manned - before.Sum.Manned).ToString(),
@@ -521,7 +526,16 @@ namespace RealLifeOverhaul.Economy
                     : r.Served[cell] == 0 && r.Come[cell] > 0 ? CompanyText.T("reallife_rota_hour_nobody", "come", r.Come[cell].ToString())
                     : CompanyText.T("reallife_rota_hour_come", "come", r.Come[cell].ToString(), "cap", cap.ToString(), "served", r.Served[cell].ToString());
                 row.C = open || r.Cost[cell] != 0 ? CompanyText.T("reallife_rota_hour_money", "earn", RotaMoney(r.Earn[cell]), "cost", RotaMoney(r.Cost[cell])) : string.Empty;
-                row.D = open ? CompanyText.T("reallife_rota_hour_staff", "need", sheet.Outlook.Crew[cell].ToString(), "have", have.ToString()) : CompanyText.T("reallife_rota_closed");
+                string who = string.Empty;
+                for (int s = 0; s < stations; s++)
+                {
+                    int w = r.Plan.At[cell * stations + s];
+                    if (w >= 0)
+                    {
+                        who += (who.Length > 0 ? "; " : string.Empty) + RotaGame.Name(sheet.Stations[s]) + ": " + (w < sheet.Workers.Count ? RotaGame.WorkerName(sheet.Workers[w]) : CompanyText.T("reallife_rota_hour_new"));
+                    }
+                }
+                row.D = !open ? CompanyText.T("reallife_rota_closed") : who.Length > 0 ? who : CompanyText.T("reallife_rota_hour_nobody_at_work");
                 row.Tone = open != now ? (open ? TableRow.Green : TableRow.Yellow) : open && r.Served[cell] < r.Come[cell] ? TableRow.Red : TableRow.Plain;
             }
             box.Title(CompanyText.T("reallife_rota_day_title", "day", RotaDayName(d), "business", sheet.Place.Name));
@@ -663,6 +677,43 @@ namespace RealLifeOverhaul.Economy
                 words += one != null ? (words.Length > 0 ? "; " : string.Empty) + one : string.Empty;
             }
             return words.Length > 0 ? words : CompanyText.T("reallife_rota_asks_any");
+        }
+
+        // The hours a week somebody asks for against what a plan gives: inside the range in green; outside it, or left out because
+        // the least cannot be had, in red with the clash in a sentence and what would remove it. Null for somebody who asks for none.
+        private static string RotaRange(RotaSheet sheet, RotaRung r, int worker, out int tone)
+        {
+            int least, most, hours = RotaHoursOf(r, worker);
+            tone = TableRow.Plain;
+            RotaFit.Range(sheet.Problem.Worker[worker], out least, out most);
+            if ((least <= 0 && most == int.MaxValue) || (worker < sheet.Fixed.Length && sheet.Fixed[worker]))
+            {
+                return null;
+            }
+            string asks = most == int.MaxValue ? CompanyText.T("reallife_rota_asks_least", "least", least.ToString()) : CompanyText.T("reallife_rota_asks_between", "least", least.ToString(), "most", most.ToString());
+            for (int i = 0; i < r.Left.Count; i++)
+            {
+                RotaLeft left = r.Left[i];
+                if (left.Worker != worker)
+                {
+                    continue;
+                }
+                tone = TableRow.Red;
+                return left.Why == RotaClash.Service ? CompanyText.T("reallife_rota_range_service", "asks", asks)
+                    : left.Why == RotaClash.Shared ? CompanyText.Fill("reallife_rota_range_shared", "asks", asks, "asked", left.Asked.ToString(), "held", left.Held.ToString())
+                    : CompanyText.Fill("reallife_rota_range_hours", "asks", asks, "room", left.Room.ToString(), "short", (left.Least - left.Room).ToString());
+            }
+            if (hours > 0 && hours >= least && hours <= most)
+            {
+                tone = TableRow.Green;
+                return CompanyText.T("reallife_rota_range_in", "asks", asks, "hours", hours.ToString());
+            }
+            if (hours == 0 && least <= 0)
+            {
+                return CompanyText.T("reallife_rota_range_in", "asks", asks, "hours", hours.ToString());
+            }
+            tone = TableRow.Red;
+            return CompanyText.Fill("reallife_rota_range_out", "asks", asks, "hours", hours.ToString(), "off", (hours < least ? least - hours : hours - most).ToString());
         }
 
         // The first demand of somebody that a rota leaves unmet, in the game's own words; null if it meets them all.
