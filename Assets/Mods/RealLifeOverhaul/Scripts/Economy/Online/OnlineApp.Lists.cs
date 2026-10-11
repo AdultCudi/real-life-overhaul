@@ -8,18 +8,20 @@ namespace RealLifeOverhaul.Economy
     /// <summary>
     /// The Orders tab and the Catalogue tab.
     ///
-    /// Orders: the queue of every site, an order to a row: its number and district, its goods, the hour it is
-    /// promised for, and where it stands (waiting to be picked, packed and waiting for a van, on its way), in the
-    /// game's red once its promise has passed. The white box adds the queue up and says who is picking.
+    /// Orders: the queue of every site, an order to a row: its number, its site and district, its goods, what it is
+    /// worth, the hour it is promised for, and where it stands (waiting to be picked, packed and waiting for a van,
+    /// on its way), in the game's red once its promise has passed; and under them the returns on their way back. It
+    /// opens with the soonest promise first, and filters by state and by site. An order that has reached its door is
+    /// in the day's book and no longer a row. The white box adds the queue up and says who is picking.
     ///
-    /// Catalogue: one site's products with stock, online price and the week's sales, and under them what else the
-    /// place has in stock. A product that is picked has its page: the going price, the shop's price, the online price
+    /// Catalogue: one site's products with stock, the three prices and the week's sales, and under them what else the
+    /// place has in stock; it filters by in stock or not and by on the site or not. A product that is picked has its page: the going price, the shop's price, the online price
     /// on a selector from thirty per cent under the shop's price to thirty over, what that price does to its sales,
     /// and the button that puts it on or takes it off the site.
     /// </summary>
     public sealed partial class OnlineApp
     {
-        private const string OrderRow = "ord:", LineRow = "line:", AddRow = "add:";
+        private const string OrderRow = "ord:", ReturnRow = "ret:", LineRow = "line:", AddRow = "add:";
         private const int RowsMost = 120;           // orders the table lists
         private const int ShopPriceStep = 6;        // the selector's middle choice: the shop's own price
 
@@ -32,14 +34,17 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- the queue
 
-        private string[] WriteOrders(InfoBox box, OnlineState state, int day, int now)
+        private TableSpec WriteOrders(InfoBox box, OnlineState state, int day, int now)
         {
             IReadOnlyList<WebPlace> places = _director.Places;
             int waiting = 0, packed = 0, sent = 0, late = 0, pickers = 0, vans = 0;
+            List<string> sites = OnlineColumns.Orders.Filters[1].Names;   // the second filter's kinds: the sites, by name
+            sites.Clear();
             for (int i = 0; i < places.Count; i++)
             {
                 WebShop shop = places[i].Shop;
                 pickers += places[i].Pickers;
+                sites.Add(shop.Name);
                 for (int o = 0; o < shop.Orders.Count; o++)
                 {
                     WebOrder order = shop.Orders[o];
@@ -52,14 +57,32 @@ namespace RealLifeOverhaul.Economy
                     {
                         continue;
                     }
-                    FinanceRow row = Row(OrderRow + order.Id);
+                    TableRow row = Row(OrderRow + order.Id);
                     row.Pick = false;
-                    row.A = OnlineText.Fill("reallife_online_ord_what", "number", order.Id.ToString(), "district", OnlineText.District(order.District < state.Districts.Count ? state.Districts[order.District] : null),
-                        "site", shop.Name);
-                    row.B = Goods(shop, order);
-                    row.C = OnlineText.When(order.Due, day);
-                    row.D = overdue ? OnlineText.T("reallife_online_stage_late", "stage", OnlineText.Stage(order.Stage)) : OnlineText.Stage(order.Stage);
-                    row.Tone = overdue ? 2 : order.Stage == OrderStage.Waiting ? 1 : 0;
+                    row.Kind = overdue ? OnlineColumns.Late : order.Stage == OrderStage.Waiting ? OnlineColumns.Waiting : order.Stage == OrderStage.Picked ? OnlineColumns.Packed : OnlineColumns.Out;
+                    row.Kind2 = i;
+                    Count(row, 0, order.Id);
+                    row.Set(1, shop.Name);
+                    row.Set(2, OnlineText.District(order.District < state.Districts.Count ? state.Districts[order.District] : null));
+                    row.Set(3, Goods(shop, order));
+                    Cents(row, 4, order.Stage == OrderStage.Waiting ? order.Asked : order.Total);
+                    row.Set(5, OnlineText.When(order.Due, day), order.Due);
+                    row.Set(6, overdue ? OnlineText.T("reallife_online_stage_late", "stage", OnlineText.Stage(order.Stage)) : OnlineText.Stage(order.Stage), order.Due - now,
+                        overdue ? TableRow.Red : order.Stage == OrderStage.Waiting ? TableRow.Yellow : TableRow.Plain);
+                }
+                for (int r = 0; r < shop.Returns.Count && _rows.Count < RowsMost; r++)
+                {
+                    WebReturn back = shop.Returns[r];
+                    TableRow row = Row(ReturnRow + i + ":" + r);
+                    row.Pick = false;
+                    row.NoTotal = true;   // (a refund to come, not an order's worth)
+                    row.Kind = OnlineColumns.ComingBack;
+                    row.Kind2 = i;
+                    row.Set(1, shop.Name);
+                    row.Set(3, OnlineText.T("reallife_online_ord_goods", "units", back.Qty.ToString(), "product", _director.ItemName(back.Item)));
+                    Cents(row, 4, back.Refund);
+                    row.Set(5, FinanceText.Day(back.Day), back.Day * 24 + OnlineCatalogue.ReturnHour);
+                    row.Set(6, OnlineText.T("reallife_online_kind_back"), back.Day * 24 + OnlineCatalogue.ReturnHour - now);
                 }
             }
             for (int v = 0; v < state.Vans.Count; v++)
@@ -96,7 +119,7 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- the catalogue
 
-        private string[] WriteCatalogue(InfoBox box, OnlineState state, int day)
+        private TableSpec WriteCatalogue(InfoBox box, OnlineState state, int day)
         {
             IReadOnlyList<WebPlace> places = _director.Places;
             if (places.Count == 0)
@@ -122,12 +145,17 @@ namespace RealLifeOverhaul.Economy
             {
                 WebLine w = shop.Lines[l];
                 int stock = l < site.Stock.Length ? site.Stock[l] : 0;
-                FinanceRow row = Row(LineRow + w.Item);
-                row.A = w.On ? _director.ItemName(w.Item) : OnlineText.T("reallife_online_cat_off", "product", _director.ItemName(w.Item));
-                row.B = stock.ToString();
-                row.C = OnlineText.Price(l < site.Ask.Length ? site.Ask[l] : 0);
-                row.D = OnlineText.T("reallife_online_cat_sold", "units", w.SoldWeek.ToString());
-                row.Tone = w.On && stock == 0 ? 2 : w.MissedWeek > 0 ? 1 : 0;
+                TableRow row = Row(LineRow + w.Item);
+                row.Kind = stock > 0 ? OnlineColumns.InStock : OnlineColumns.OutOfStock;
+                row.Kind2 = w.On ? OnlineColumns.Offered : OnlineColumns.NotOffered;
+                row.Set(0, _director.ItemName(w.Item));
+                Count(row, 1, stock, w.On && stock == 0 ? TableRow.Red : TableRow.Plain);
+                Price(row, 2, _director.ShopPrice(place, w.Item));
+                Price(row, 3, l < site.Ask.Length ? site.Ask[l] : 0);
+                Price(row, 4, l < site.Going.Length ? site.Going[l] : 0);
+                Count(row, 5, w.SoldWeek);
+                Count(row, 6, w.MissedWeek, w.MissedWeek > 0 ? TableRow.Yellow : TableRow.Plain);
+                row.Set(7, OnlineText.T(w.On ? "reallife_online_state_offered" : "reallife_online_state_not_offered"));
                 on += w.On ? 1 : 0;
                 line = w.Item == pickedLine ? l : line;
             }
@@ -139,11 +167,14 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                FinanceRow row = Row(AddRow + _stocked[i]);
-                row.A = _director.ItemName(_stocked[i]);
-                row.B = _director.StockOf(place, _stocked[i]).ToString();
-                row.C = OnlineText.Price(_director.ShopPrice(place, _stocked[i]));
-                row.D = OnlineText.T("reallife_online_cat_not_on");
+                int stock = _director.StockOf(place, _stocked[i]);
+                TableRow row = Row(AddRow + _stocked[i]);
+                row.Kind = stock > 0 ? OnlineColumns.InStock : OnlineColumns.OutOfStock;
+                row.Kind2 = OnlineColumns.NotOffered;
+                row.Set(0, _director.ItemName(_stocked[i]));
+                Count(row, 1, stock);
+                Price(row, 2, _director.ShopPrice(place, _stocked[i]));
+                row.Set(7, OnlineText.T("reallife_online_cat_not_on"));
                 adding = _stocked[i] == pickedAdd ? _stocked[i] : adding;
             }
             _stocked.Clear();
@@ -231,6 +262,12 @@ namespace RealLifeOverhaul.Economy
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_online_button_on", () => _director.Offer(key, item, true));
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_online_button_back", ClosePick);
+        }
+
+        // A cell of a price kept in cents: written with its cents, ordered by its amount.
+        private static void Price(TableRow row, int column, int cents)
+        {
+            row.Set(column, OnlineText.Price(cents), cents / 100.0);
         }
 
         private static int StepPrice(int own, int step)

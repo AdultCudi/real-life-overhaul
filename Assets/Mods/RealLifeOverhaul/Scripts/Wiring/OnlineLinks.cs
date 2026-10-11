@@ -20,6 +20,11 @@ namespace RealLifeOverhaul
         ///   Road          the metres of road between two places over the road graph the GPS has made
         ///                 (Navigation.NavDirector.Roads), searched with a search of its own a slice at a time so that
         ///                 no call takes more than a few thousand points; nothing while the GPS has no graph
+        ///   Cost          every deductible cost of an online shop (set-up, hosting, courier fees, the vans' running
+        ///                 costs, advertising) is counted in the company's quarter as it is paid, by the company's own
+        ///                 public rule (TaxRules.Note on CompanyDirector.State.Tax), so that the accountant's rebate
+        ///                 counts it, once. The company has no kind of cost for selling online, so it goes under its
+        ///                 marketing costs. Nothing while the company's tax part is off
         ///   the Planner   a source of its own (<see cref="OnlineSource"/>): the rows the online shops have made
         ///
         /// Everything is read from what those features already keep in public or asked through an entry they already
@@ -79,6 +84,7 @@ namespace RealLifeOverhaul
                 OnlineBridges.Campaign = Campaign;
                 OnlineBridges.Season = Season;
                 OnlineBridges.Road = Road;
+                OnlineBridges.Cost = Cost;
                 PlannerDirector.Instance?.AddSource(Source);
                 _made = _search = null;
                 _begun = false;
@@ -109,6 +115,23 @@ namespace RealLifeOverhaul
                 {
                     Fault("OnlineLinks.Campaign", e);
                     return 0;
+                }
+            }
+
+            private static void Cost(int cents)
+            {
+                try
+                {
+                    CompanyDirector company = CompanyDirector.Instance;
+                    int amount = (cents + 50) / 100;
+                    if (company != null && amount > 0 && Settings.EconomyCompany && company.On(CompanyPart.Tax) && company.State != null)
+                    {
+                        TaxRules.Note(company.State.Tax, CostKind.Marketing, amount);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("OnlineLinks.Cost", e);
                 }
             }
 

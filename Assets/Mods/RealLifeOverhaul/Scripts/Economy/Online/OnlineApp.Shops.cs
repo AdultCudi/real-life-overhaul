@@ -8,35 +8,52 @@ namespace RealLifeOverhaul.Economy
 {
     /// <summary>
     /// The Shops tab. The table lists every site and, under them, the businesses and warehouses that have none. A
-    /// site that is picked has three pages in the white box: its figures for today and the week (orders, takings,
-    /// cost of goods, delivery, refunds, what is left, the queue), its rating with what is moving it and what sold
-    /// best and ran out, and its settings (who delivers, what is promised, a better site, advertising, hosting, its
-    /// name, closing it). A business that is picked has the page that opens a site for it.
+    /// site that is picked has four pages in the white box: its figures for today and the week (orders, takings,
+    /// cost of goods, delivery, refunds, what is left, the queue), the same day by day (the table then lists its last
+    /// seven days and today, with their totals), its rating with what is moving it and what sold best and ran out,
+    /// and its settings (who delivers, what is promised, a better site, advertising, hosting, its name, closing it).
+    /// A business that is picked has the page that opens a site for it.
     /// </summary>
     public sealed partial class OnlineApp
     {
         private const string ShopRow = "shop:", NewRow = "new:";
-        private const int PageFigures = 0, PageRating = 1, PageSettings = 2;
+        private const int PageFigures = 0, PageRating = 1, PageSettings = 2, PageDays = 3;
 
         private readonly List<BuildingRegistration> _candidates = new List<BuildingRegistration>(16);
         private int _quality = 1, _way = OnlineCatalogue.Courier, _promise = 1;   // what the page that opens a site is set to
 
-        private string[] WriteShops(InfoBox box, OnlineState state, int day, int now)
+        private TableSpec WriteShops(InfoBox box, OnlineState state, int day, int now)
         {
             IReadOnlyList<WebPlace> places = _director.Places;
             int orders = 0, takings = 0, paid = 0;
             WebPlace picked = null;
             string pickedShop = Picked(_picked, ShopRow), pickedNew = Picked(_picked, NewRow);
+            for (int i = 0; i < places.Count && picked == null; i++)
+            {
+                picked = places[i].Shop.Place == pickedShop ? places[i] : null;
+            }
+            if (picked != null && _page == PageDays)
+            {
+                WriteDays(box, picked, day);
+                return OnlineColumns.Days;
+            }
+            picked = null;
             for (int i = 0; i < places.Count; i++)
             {
                 WebPlace place = places[i];
                 WebShop shop = place.Shop;
-                FinanceRow row = Row(ShopRow + shop.Place);
-                row.A = shop.Name;
-                row.B = place.Business;
-                row.C = OnlineText.T("reallife_online_row_orders", "today", shop.Today.Orders.ToString(), "open", shop.Orders.Count.ToString());
-                row.D = shop.Offline ? OnlineText.T("reallife_online_row_offline") : OnlineText.T("reallife_online_row_stars", "stars", OnlineText.Stars(shop.Stars));
-                row.Tone = shop.Offline ? 1 : shop.Stars < OnlineCatalogue.PoorStars ? 2 : 0;
+                shop.WeekInto(_week, day);
+                TableRow row = Row(ShopRow + shop.Place);
+                row.Kind = OnlineColumns.HasShop;
+                row.Set(0, shop.Name);
+                row.Set(1, place.Business);
+                Count(row, 2, shop.Today.Orders);
+                Count(row, 3, shop.Orders.Count, shop.Overdue(now) > 0 ? TableRow.Red : TableRow.Plain);
+                Cents(row, 4, shop.Today.Takings);
+                Cents(row, 5, shop.Today.Profit, shop.Today.Profit < 0 ? TableRow.Red : TableRow.Plain);
+                Cents(row, 6, _week.Takings);
+                row.Set(7, shop.Offline ? OnlineText.T("reallife_online_row_offline") : OnlineText.T("reallife_online_row_stars", "stars", OnlineText.Stars(shop.Stars)), shop.Stars / 1000.0,
+                    shop.Offline ? TableRow.Yellow : shop.Stars < OnlineCatalogue.PoorStars ? TableRow.Red : TableRow.Plain);
                 orders += shop.Today.Orders;
                 takings += shop.Today.Takings;
                 paid += shop.Today.PaidIn;
@@ -47,10 +64,11 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < _candidates.Count; i++)
             {
                 string key = _director.KeyOf(_candidates[i]);
-                FinanceRow row = Row(NewRow + key);
-                row.A = _director.NameOf(_candidates[i]);
-                row.B = _director.TypeOf(_candidates[i]);
-                row.D = OnlineText.T("reallife_online_row_none");
+                TableRow row = Row(NewRow + key);
+                row.Kind = OnlineColumns.NoShop;
+                row.NoTotal = true;
+                row.Set(0, OnlineText.T("reallife_online_row_none"));
+                row.Set(1, OnlineText.T("reallife_online_row_business", "business", _director.NameOf(_candidates[i]), "type", _director.TypeOf(_candidates[i])));
                 opening = key == pickedNew ? _candidates[i] : opening;
             }
             if (_rows.Count == 0)
@@ -72,6 +90,7 @@ namespace RealLifeOverhaul.Economy
                 WriteOpen(box, opening, state);
                 return OnlineColumns.Shops;
             }
+            // (nothing is picked, or what was picked is no longer in the list)
             _picked = null;
             box.Title(OnlineText.T("reallife_online_app"));
             box.Line(OnlineText.T("reallife_online_about"));
@@ -107,7 +126,46 @@ namespace RealLifeOverhaul.Economy
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_online_button_rating", () => Page(PageRating));
             InfoBox.Button(buttons, InfoBox.Additional, "bizman_menu_settings", () => Page(PageSettings));
-            InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
+            Transform more = box.ButtonRow();
+            InfoBox.Button(more, InfoBox.Positive, "reallife_online_button_days", () => Page(PageDays));
+            InfoBox.Button(more, InfoBox.Additional, "common_close", ClosePick);
+        }
+
+        // ---------------------------------------------------------------- a site: day by day
+
+        // The table lists the site's last seven days and today, newest first, with their totals; the box says what the week came to.
+        private void WriteDays(InfoBox box, WebPlace place, int day)
+        {
+            WebShop shop = place.Shop;
+            for (int back = 7; back >= 0; back--)
+            {
+                DayBook book = back == 0 ? shop.Today : shop.Week[(day - back) % 7];
+                if (day - back <= 0 || book.Day != day - back)
+                {
+                    continue;   // (a day the site was not open, or not running)
+                }
+                TableRow row = Row("day:" + book.Day);
+                row.Pick = false;
+                row.Set(0, back == 0 ? OnlineText.T("reallife_online_days_today", "day", FinanceText.Day(book.Day)) : FinanceText.Day(book.Day), book.Day);
+                Count(row, 1, book.Orders);
+                Count(row, 2, book.Picked);
+                Cents(row, 3, book.Takings);
+                Cents(row, 4, book.Goods);
+                Cents(row, 5, book.Delivery);
+                Cents(row, 6, book.Refunds, book.Refunds > 0 ? TableRow.Yellow : TableRow.Plain);
+                Cents(row, 7, book.Profit, book.Profit < 0 ? TableRow.Red : TableRow.Plain);
+                int troubles = book.Late + book.Cancelled + book.Missing;
+                Count(row, 8, troubles, troubles > 0 ? TableRow.Red : TableRow.Plain);
+            }
+            shop.WeekInto(_week, day);
+            box.Title(OnlineText.T("reallife_online_days_title", "name", shop.Name));
+            box.Line(OnlineText.T("reallife_online_days_note"));
+            box.Line(OnlineText.Pair("reallife_online_fig_orders", _week.Orders.ToString()));
+            box.Line(OnlineText.Pair("reallife_online_fig_takings", OnlineText.Money(_week.Takings)));
+            box.Line(OnlineText.Pair("reallife_online_fig_profit", OnlineText.Money(_week.Profit)));
+            box.Line(OnlineText.Fill("reallife_online_rate_week", "good", _week.OnTime.ToString(), "late", _week.Late.ToString(), "short", _week.Short.ToString(), "lost", (_week.Cancelled + _week.Missing).ToString(),
+                "back", _week.Returned.ToString()));
+            InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_online_button_back", () => Page(PageFigures));
         }
 
         private static string Both(string labelKey, string today, string week)

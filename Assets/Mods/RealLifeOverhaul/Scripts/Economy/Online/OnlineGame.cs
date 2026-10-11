@@ -32,11 +32,18 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static Func<Vector3, Vector3, int> Road;
 
+        /// <summary>
+        /// Told of every deductible cost of an online shop as it is paid, in cents: whoever keeps a count of the
+        /// player's deductible costs adds it. Default: nobody is told (the game's own tax still deducts it).
+        /// </summary>
+        public static Action<int> Cost;
+
         public static void Reset()
         {
             Campaign = null;
             Season = null;
             Road = null;
+            Cost = null;
         }
     }
 
@@ -822,7 +829,12 @@ namespace RealLifeOverhaul.Economy
             {
                 info.SetTaxDeductibleName(DeductKey.GetLocalization());
             }
-            return GameManager.ChangeMoneySafe(-cents / 100f, info, day, place != null ? place.Address : null, force);
+            bool taken = GameManager.ChangeMoneySafe(-cents / 100f, info, day, place != null ? place.Address : null, force);
+            if (taken && deductible && OnlineBridges.Cost != null)
+            {
+                OnlineBridges.Cost(cents);
+            }
+            return taken;
         }
 
         // (a dictionary each: the game keeps hold of a transaction's data for as long as it lists the transaction)

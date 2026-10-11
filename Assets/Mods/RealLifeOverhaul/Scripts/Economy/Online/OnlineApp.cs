@@ -1,10 +1,8 @@
 using System.Collections.Generic;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
-using TMPro;
 using UI.Smartphone;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Economy
 {
@@ -22,8 +20,8 @@ namespace RealLifeOverhaul.Economy
     ///               price it or to put it on or off the site (OnlineApp.Lists.cs)
     ///
     /// A list goes in the table, which scrolls; the white box, which does not, shows only the one thing picked. The
-    /// table and its rows are the Finance app's (FinanceTable, the game's own BaTable); the columns are declared in
-    /// OnlineColumns.
+    /// table is the kit's (GameUi.DataTable over the game's own BaTable): it sorts by a click on a column heading,
+    /// filters by kind and ends in a line of totals. Every table is declared in OnlineColumns.
     ///
     /// Everything on it is the game's. Nothing runs while the app is closed: the rows and figures are made when it
     /// opens, when a tab is picked and when the player changes something in it.
@@ -35,12 +33,12 @@ namespace RealLifeOverhaul.Economy
         public static IModLogger Logger;
 
         private readonly OnlineDirector _director;
-        private readonly List<FinanceRow> _rows = new List<FinanceRow>(32);
-        private readonly List<FinanceRow> _pool = new List<FinanceRow>(32);
+        private readonly List<TableRow> _rows = new List<TableRow>(32);
+        private readonly List<TableRow> _pool = new List<TableRow>(32);
         private readonly DayBook _week = new DayBook();
 
         private AppShell _shell;
-        private FinanceTable _table;
+        private DataTable _table;
         private int _tab, _wanted = -1;
         private string _wantPick;
         private bool _ready;        // the director is running for this opening
@@ -60,14 +58,13 @@ namespace RealLifeOverhaul.Economy
         {
             SessionWatch.Mark("online shops: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
             _shell = AppShell.Make(menu, dormant, OnlineDirector.AppId);
-            if (_shell == null || !PrepareRow(_shell.RowPrefab) || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(OnlineColumns.Names, OnlineColumns.Shops, OnlineColumns.Widths, OnlineColumns.Flexible))
+            _table = DataTable.On(_shell, "Web shop");
+            if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(OnlineColumns.Off))
             {
                 return null;
             }
-            _table = _shell.List.gameObject.AddComponent<FinanceTable>();
-            _table.scroller = _shell.Scroller;
-            _table.prefab = _shell.RowPrefab.AddComponent<FinanceCellView>();
-            _table.allowRowSelection = true;
+            _table.Money = amount => FinanceText.Money((float)amount);
+            _table.SelectionLost = ClosePick;
             _table.onRowSelected.AddListener(row => UiClone.Safe(() => RowClicked(row)));
             for (int i = 0; i < TabKeys.Length; i++)
             {
@@ -76,40 +73,6 @@ namespace RealLifeOverhaul.Economy
                 UiClone.Rewire(_shell.Tabs[i], () => ShowTab(tab));
             }
             return _shell.Root;
-        }
-
-        // The game's employee row has a tick box and ten cells. Four are kept and renamed, as Finance and the Planner keep
-        // them: the name, the task (its warning sign hidden), the business and the satisfaction, which the game sets to the right.
-        private static bool PrepareRow(GameObject row)
-        {
-            Transform t = row.transform;
-            var layout = row.GetComponent<HorizontalLayoutGroup>();
-            Transform a = t.Find("EmployeeName"), b = t.Find("TaskInfo"), c = t.Find("BusinessName"), d = t.Find("Satisfaction");
-            if (layout == null || a == null || b == null || c == null || d == null || b.Find("Task") == null)
-            {
-                UiClone.Fallback("the game's employee row is not built as expected, so the Web shop app is not added");
-                return false;
-            }
-            UiClone.KeepOnly(t, "Background", "RaycastTarget", "EmployeeName", "TaskInfo", "BusinessName", "Satisfaction");
-            a.name = "A";
-            b.name = "B";
-            c.name = "C";
-            d.name = "D";
-            AppShell.RowLayout(layout);
-            AppShell.Width(a, OnlineColumns.WidthA, false);
-            AppShell.Width(b, OnlineColumns.WidthB, true);
-            AppShell.Width(c, OnlineColumns.WidthC, false);
-            AppShell.Width(d, OnlineColumns.WidthD, false);
-            AppShell.OneLine(a.GetComponent<TMP_Text>());
-            AppShell.OneLine(c.GetComponent<TMP_Text>());
-            AppShell.OneLine(d.GetComponent<TMP_Text>());
-            AppShell.OneLine(b.Find("Task").GetComponent<TMP_Text>());
-            Transform sign = b.Find("WarningIcon");
-            if (sign != null)
-            {
-                sign.gameObject.SetActive(false);
-            }
-            return true;
         }
 
         // ---------------------------------------------------------------- opening and the tabs
@@ -190,7 +153,7 @@ namespace RealLifeOverhaul.Economy
                 InfoBox box = _shell.Box;
                 box.Clear();
                 OnlineState state = _ready ? _director.State : null;
-                string[] columns = OnlineColumns.Shops;
+                TableSpec table = OnlineColumns.Off;
                 if (state == null || SaveGameManager.Current == null)
                 {
                     UiClone.Words(_shell.Header, OnlineText.T("reallife_online_app"));
@@ -209,14 +172,13 @@ namespace RealLifeOverhaul.Economy
                     UiClone.Words(_shell.Header, OnlineText.T("reallife_online_head", "sites", state.Shops.Count.ToString(), "orders", open.ToString()));
                     switch (_tab)
                     {
-                        case OnlineDirector.TabOrders: columns = WriteOrders(box, state, day, now); break;
-                        case OnlineDirector.TabCatalogue: columns = WriteCatalogue(box, state, day); break;
-                        default: columns = WriteShops(box, state, day, now); break;
+                        case OnlineDirector.TabOrders: table = WriteOrders(box, state, day, now); break;
+                        case OnlineDirector.TabCatalogue: table = WriteCatalogue(box, state, day); break;
+                        default: table = WriteShops(box, state, day, now); break;
                     }
                 }
-                _shell.SetColumns(OnlineColumns.Names, columns, OnlineColumns.Widths, OnlineColumns.Flexible);
                 box.Done();
-                _table.Show(_rows, _picked);
+                _table.Show(table, _rows, _picked);
                 if (Meta.Dev.Verbose)
                 {
                     Logger?.Info("Online shops: tab " + _tab + " written, " + _rows.Count + " row(s); " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms.");
@@ -228,9 +190,9 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        private FinanceRow Row(string id)
+        private TableRow Row(string id)
         {
-            FinanceRow row;
+            TableRow row;
             if (_pool.Count > 0)
             {
                 row = _pool[_pool.Count - 1];
@@ -238,24 +200,33 @@ namespace RealLifeOverhaul.Economy
             }
             else
             {
-                row = new FinanceRow();
+                row = new TableRow();
             }
-            row.Id = id;
-            row.A = row.B = row.C = row.D = null;
-            row.Info = false;
+            row.Reset(id);
             row.Pick = true;
             row.Index = _rows.Count;
-            row.Tone = 0;
             _rows.Add(row);
             return row;
         }
 
         private void Say(string words)
         {
-            FinanceRow row = Row("say:" + _rows.Count);
+            TableRow row = Row("say:" + _rows.Count);
             row.Info = true;
             row.Pick = false;
-            row.A = words;
+            row.Set(0, words);
+        }
+
+        // A cell of money kept in cents: written in whole units, ordered and summed by its amount.
+        private static void Cents(TableRow row, int column, int cents, int tone = TableRow.Plain)
+        {
+            row.Set(column, OnlineText.Money(cents), cents / 100.0, tone);
+        }
+
+        // A cell of a count.
+        private static void Count(TableRow row, int column, int count, int tone = TableRow.Plain)
+        {
+            row.Set(column, count.ToString(), count, tone);
         }
 
         // What follows a kind's mark in a row's id ("shop:Main%20St~12"), if the id is of that kind; null otherwise.
@@ -264,7 +235,7 @@ namespace RealLifeOverhaul.Economy
             return id != null && id.StartsWith(kind, System.StringComparison.Ordinal) ? id.Substring(kind.Length) : null;
         }
 
-        private void RowClicked(FinanceRow row)
+        private void RowClicked(TableRow row)
         {
             if (row == null || !row.Pick)
             {
