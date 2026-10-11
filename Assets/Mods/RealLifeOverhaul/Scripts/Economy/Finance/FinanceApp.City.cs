@@ -79,49 +79,49 @@ namespace RealLifeOverhaul.Economy
             box.Line(FinanceText.T("reallife_macro_page_note"));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_macro_back", HideCity);
 
-            // ---- districts
-            Say("city:districts", FinanceText.T("reallife_macro_rows_districts"));
+            // One table of four kinds of row, which the filter over it tells apart: each row's third and fourth cells
+            // carry the figure they are ordered by (an income level, a price against the usual, a share, a value).
+            _spec = FinanceTables.City;
+
+            // ---- districts: income level, and how it moved
+            string kind = FinanceText.T(FinanceTables.CityKinds[FinanceTables.District]);
             List<CityDistrict> districts = state.Districts;
             for (int i = 0; i < districts.Count; i++)
             {
                 CityDistrict d = districts[i];
                 int moved = d.Income - d.Before;
-                FinanceRow row = Row("district:" + i);
-                row.A = CityGame.Name(d.Name);
-                row.B = CityText.Income(d.Income);
-                row.C = moved == 0 ? FinanceText.T("reallife_macro_trend_flat") : FinanceText.T(moved > 0 ? "reallife_macro_trend_up" : "reallife_macro_trend_down", "points", CityText.Income(Mathf.Abs(moved)));
-                row.D = FinanceText.T(d.Income < IncomeLow ? "reallife_macro_income_low" : d.Income > IncomeHigh ? "reallife_macro_income_high" : "reallife_macro_income_middle");
+                TableRow row = CityRow("district:" + i, FinanceTables.District, CityGame.Name(d.Name), kind);
+                row.Set(2, CityText.Income(d.Income), d.Income);
+                row.Set(3, moved == 0 ? FinanceText.T("reallife_macro_trend_flat") : FinanceText.T(moved > 0 ? "reallife_macro_trend_up" : "reallife_macro_trend_down", "points", CityText.Income(Mathf.Abs(moved))), moved);
+                row.Set(4, FinanceText.T(d.Income < IncomeLow ? "reallife_macro_income_low" : d.Income > IncomeHigh ? "reallife_macro_income_high" : "reallife_macro_income_middle"));
             }
 
-            // ---- wholesale prices
-            Say("city:supply", FinanceText.T("reallife_macro_rows_supply"));
+            // ---- wholesale prices against the usual, and a shortage or a glut
+            kind = FinanceText.T(FinanceTables.CityKinds[FinanceTables.Supply]);
             for (int k = 0; k < MacroCatalogue.SupplyKinds; k++)
             {
                 SupplyLine line = state.Supply[k];
-                FinanceRow row = Row("supply:" + k);
-                row.A = CityText.KindTitle(k);
-                row.B = CityText.Change(CityModel.Wholesale(state, k));
+                int wholesale = CityModel.Wholesale(state, k);
+                TableRow row = CityRow("supply:" + k, FinanceTables.Supply, CityText.KindTitle(k), kind);
+                row.Set(2, CityText.Change(wholesale), wholesale);
+                bool shortage = line.Shock == SupplyShock.Shortage;
                 if (line.Announced(state.Age))
                 {
-                    row.C = FinanceText.T(line.Shock == SupplyShock.Shortage ? "reallife_macro_supply_shortage_tomorrow" : "reallife_macro_supply_glut_tomorrow",
-                        "percent", Mathf.Abs(CityModel.ShockPercent(line, level)).ToString(), "days", line.Days.ToString());
-                    row.Tone = line.Shock == SupplyShock.Shortage ? 2 : 1;
+                    int percent = Mathf.Abs(CityModel.ShockPercent(line, level));
+                    row.Set(3, FinanceText.T(shortage ? "reallife_macro_supply_shortage_tomorrow" : "reallife_macro_supply_glut_tomorrow", "percent", percent.ToString(), "days", line.Days.ToString()),
+                        shortage ? percent : -percent, shortage ? TableRow.Red : TableRow.Yellow);
                 }
                 else if (line.Running(state.Age))
                 {
-                    row.C = FinanceText.T(line.Shock == SupplyShock.Shortage ? "reallife_macro_supply_shortage_now" : "reallife_macro_supply_glut_now",
-                        "days", (line.From + line.Days - state.Age).ToString());
-                    row.Tone = line.Shock == SupplyShock.Shortage ? 2 : 1;
+                    row.Set(3, FinanceText.T(shortage ? "reallife_macro_supply_shortage_now" : "reallife_macro_supply_glut_now", "days", (line.From + line.Days - state.Age).ToString()),
+                        shortage ? Mathf.Abs(CityModel.ShockPercent(line, level)) : -Mathf.Abs(CityModel.ShockPercent(line, level)), shortage ? TableRow.Red : TableRow.Yellow);
                 }
-                row.D = (state.Buys & (1 << k)) != 0 ? FinanceText.T("reallife_macro_supply_stocked") : string.Empty;
+                row.Set(4, (state.Buys & (1 << k)) != 0 ? FinanceText.T("reallife_macro_supply_stocked") : string.Empty);
             }
 
-            // ---- the player's businesses, as they were read this morning
+            // ---- the player's businesses, as they were read this morning: customers, district, prices
+            kind = FinanceText.T(FinanceTables.CityKinds[FinanceTables.Shop]);
             IReadOnlyList<CityShop> shops = director.Shops;
-            if (shops.Count > 0)
-            {
-                Say("city:shops", FinanceText.T("reallife_macro_rows_shops"));
-            }
             float multiplier = save.gameVariables != null ? save.gameVariables.baseCustomerPromotionMultiplier : 0.5f;
             for (int i = 0; i < shops.Count; i++)
             {
@@ -130,19 +130,17 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                FinanceRow row = Row("shop:" + i);
-                row.A = string.IsNullOrEmpty(shop.Reg.BusinessName) ? shop.Reg.Address.ToFormattedString() : shop.Reg.BusinessName;
-                row.B = shop.District != null ? CityGame.Name(shop.District.Name) : string.Empty;
+                TableRow row = CityRow("shop:" + i, FinanceTables.Shop, string.IsNullOrEmpty(shop.Reg.BusinessName) ? shop.Reg.Address.ToFormattedString() : shop.Reg.BusinessName, kind);
                 int achieved = shop.Applied ? shop.Achieved(multiplier) : 0;
-                row.C = !shop.HasFigure && shop.Wanted != 0 ? FinanceText.T("reallife_macro_shop_no_figure")
-                    : achieved == 0 ? FinanceText.T("reallife_macro_shop_none") : FinanceText.T("reallife_macro_shop_customers", "percent", CityText.Percent(achieved));
-                row.D = shop.Against <= 0 ? string.Empty : FinanceText.T(shop.Over ? "reallife_macro_shop_over" : "reallife_macro_shop_suit");
-                row.Tone = shop.Over ? 2 : 0;
+                row.Set(2, !shop.HasFigure && shop.Wanted != 0 ? FinanceText.T("reallife_macro_shop_no_figure")
+                    : achieved == 0 ? FinanceText.T("reallife_macro_shop_none") : FinanceText.T("reallife_macro_shop_customers", "percent", CityText.Percent(achieved)), achieved);
+                row.Set(3, shop.District != null ? CityGame.Name(shop.District.Name) : string.Empty);
+                row.Set(4, shop.Against <= 0 ? string.Empty : FinanceText.T(shop.Over ? "reallife_macro_shop_over" : "reallife_macro_shop_suit"), shop.Over ? TableRow.Red : TableRow.Plain);
             }
 
             // ---- the buildings the player owns: what the game says each is worth, and what that comes to today
+            kind = FinanceText.T(FinanceTables.CityKinds[FinanceTables.Estate]);
             List<RealEstate> owned = save.realEstate;
-            bool head = false;
             for (int i = 0; owned != null && i < owned.Count; i++)
             {
                 RealEstate estate = owned[i];
@@ -151,19 +149,22 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                if (!head)
-                {
-                    Say("city:property", FinanceText.T("reallife_macro_rows_property"));
-                    head = true;
-                }
                 int factor = CityModel.Property(state, state.District(CityGame.DistrictOf(estate)), level);
-                FinanceRow row = Row("estate:" + i);
-                row.A = estate.address.ToFormattedString();
-                row.B = FinanceText.Money(value);
-                row.C = FinanceText.T("reallife_macro_property_today", "amount", FinanceText.Money(value * (factor / 1000f)));
-                row.D = CityText.Change(factor);
-                row.Tone = factor < 1000 ? 2 : 0;
+                float today = value * (factor / 1000f);
+                TableRow row = CityRow("estate:" + i, FinanceTables.Estate, estate.address.ToFormattedString(), kind);
+                row.Set(2, FinanceText.Money(value), value);
+                row.Set(3, FinanceText.T("reallife_macro_property_today", "amount", FinanceText.Money(today)), today);
+                row.Set(4, CityText.Change(factor), factor < 1000 ? TableRow.Red : TableRow.Plain);
             }
+        }
+
+        private TableRow CityRow(string id, int kind, string name, string kindName)
+        {
+            TableRow row = Row(id);
+            row.Kind = kind;
+            row.Set(0, name);
+            row.Set(1, kindName);
+            return row;
         }
 
         // A factor on the game's own figures in words: "as the game has them" inside the band where nothing is adjusted.

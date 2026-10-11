@@ -23,9 +23,14 @@ namespace RealLifeOverhaul.Economy
                     continue;
                 }
                 open += c.Stage == ClaimStage.Open ? 1 : 0;
-                Pick("claim:" + c.Id, CompanyText.T("reallife_co_row_claim", "cover", CompanyText.Cover(c.Kind)), c.Name, CompanyText.Insurer(c.Insurer),
-                    c.Stage == ClaimStage.Open ? CompanyText.T("reallife_co_row_claim_by", "day", (c.Day + CompanyCatalogue.ClaimWindowDays).ToString()) : CompanyText.T("reallife_co_row_claim_paid", "day", c.PayDay.ToString()),
+                // (the business first, as in every other row of this list, so that the column sorts as one)
+                int until = c.Stage == ClaimStage.Open ? c.Day + CompanyCatalogue.ClaimWindowDays : c.PayDay;
+                Pick("claim:" + c.Id, c.Name, CompanyText.T("reallife_co_row_claim", "cover", CompanyText.Cover(c.Kind)), CompanyText.Insurer(c.Insurer),
+                    c.Stage == ClaimStage.Open ? CompanyText.T("reallife_co_row_claim_by", "day", until.ToString()) : CompanyText.T("reallife_co_row_claim_paid", "day", until.ToString()),
                     c.Stage == ClaimStage.Open ? 2 : 1, ref selected);
+                Last.Kind = c.Kind;
+                Last.Kind2 = CompanyTables.IsClaim;
+                Last.Set(4, CompanyText.Day(until), until);
             }
             IReadOnlyList<CompanyShop> shops = _director.Shops;
             for (int i = 0; i < shops.Count; i++)
@@ -36,6 +41,14 @@ namespace RealLifeOverhaul.Economy
                     premiums += p.Active ? p.Premium : 0;
                     Pick("pol:" + shops[i].File.Place + ":" + k, shops[i].Name, CompanyText.Cover(k), p.Active ? CompanyText.Insurer(p.Insurer) : CompanyText.T("reallife_co_none"),
                         p.Active ? CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(p.Premium)) : CompanyText.T("reallife_co_row_uninsured"), 0, ref selected);
+                    TableRow row = Last;
+                    row.Kind = k;
+                    row.Kind2 = p.Active ? CompanyTables.Insured : CompanyTables.Uninsured;
+                    if (p.Active)
+                    {
+                        row.Key[3] = p.Premium;
+                        row.Set(4, CompanyText.Day(p.Until), p.Until);
+                    }
                 }
             }
             if (_rows.Count == 0)
