@@ -59,9 +59,9 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Every sky a volume or a static-lighting component in the loaded scenes can put in front of the camera.
         private const string SkySearch = "performance: the skies being listed (two searches of the whole scene, after scenes arrive)";
 
+        // Every sky a volume or a static-lighting component in the loaded scenes can put in front of the camera.
         private void Sweep()
         {
             _stale = false;
