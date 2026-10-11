@@ -777,19 +777,31 @@ namespace RealLifeOverhaul
                 _panel.Hide();
                 _clock?.Close();   // the game's activity panel goes; nothing more is settled through it
             }
-            if (Ctx == null || _paid || _taken <= 0 || why == JobEnd.Fault)
+            if (why == JobEnd.Fault || !Owed(out PaySlip slip))
             {
                 return;
             }
             _paid = true;
+            Ctx.Pay(this, slip, "reallife_job_flyers_slip");
+        }
+
+        protected override bool Owed(out PaySlip slip)
+        {
+            slip = default;
+            if (Ctx == null || _paid || _taken <= 0)
+            {
+                return false;
+            }
             float each = Def.UnitPay * Ctx.Rate;   // a flyer pays less than a whole unit of money: rounded on the total, not each
-            var slip = new PaySlip
+            slip = new PaySlip
             {
                 Units = _taken,
                 Base = Mathf.RoundToInt(_taken * each),
                 Bonus = Mathf.RoundToInt(_busy * each * BusyBonus + (DoneCount >= _bundle ? _taken * each * 0.1f : 0f))   // busy street; the whole bundle gone (the clock's flyers earn no bonus)
             };
-            Ctx.Pay(this, slip, "reallife_job_flyers_slip");
+            return true;
         }
+
+        protected override ShiftClock Clocked => _clock;
     }
 }

@@ -106,7 +106,7 @@ The mod is new, and parts of it have had little play.
 [*]A court hearing and prison are pages of text with choices.
 [*]Children are never seen as characters, and a partner at home stands and walks but never sits.
 [*]One incident at a time: no crime starts while an accident, a fire or a street event is on.
-[*]A job or activity in progress is not saved.
+[*]A job in progress ends when its save is loaded: you are paid what you were owed. A home routine or a leisure activity in progress is simply over.
 [/list]
 The Guide's "Known limits" page has the full list.
 

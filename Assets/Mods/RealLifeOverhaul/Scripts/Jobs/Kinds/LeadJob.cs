@@ -511,20 +511,30 @@ namespace RealLifeOverhaul
 
         private void Settle()
         {
-            if (_paid || _calls <= 0 || Ctx == null)
+            if (!Owed(out PaySlip slip))
             {
                 return;
             }
             _paid = true;
+            Ctx.Pay(this, slip, "reallife_job_lead_slip");
+        }
+
+        protected override bool Owed(out PaySlip slip)
+        {
+            slip = default;
+            if (_paid || _calls <= 0 || Ctx == null)
+            {
+                return false;
+            }
             int each = UnitPay();
-            var slip = new PaySlip
+            slip = new PaySlip
             {
                 Units = _good,
                 Base = _good * each,
                 Bonus = _good == _calls && _calls >= Incidents ? Mathf.RoundToInt(_good * each * 0.1f) : 0,   // every call the right one
                 Penalty = _bad * Mathf.RoundToInt(each * 0.5f)
             };
-            Ctx.Pay(this, slip, "reallife_job_lead_slip");
+            return true;
         }
 
         public override void End(JobEnd why)

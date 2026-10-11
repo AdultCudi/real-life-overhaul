@@ -15,38 +15,7 @@ namespace RealLifeOverhaul
         Fault          // the code met something unexpected
     }
 
-    /// <summary>
-    /// What a piece of work paid, line by line. Penalties only ever reduce what the job pays:
-    /// the total is never below zero, so a bad shift cannot cost the player money they had.
-    /// </summary>
-    public struct PaySlip
-    {
-        public int Units;      // fares, parcels or flyers this covers
-        public int Base;
-        public int Distance;
-        public int Tips;
-        public int Bonus;
-        public int Penalty;
-
-        public int Total
-        {
-            get
-            {
-                int total = Base + Distance + Tips + Bonus - Penalty;
-                return total > 0 ? total : 0;
-            }
-        }
-
-        public void Add(in PaySlip other)
-        {
-            Units += other.Units;
-            Base += other.Base;
-            Distance += other.Distance;
-            Tips += other.Tips;
-            Bonus += other.Bonus;
-            Penalty += other.Penalty;
-        }
-    }
+    // (PaySlip, what a piece of work paid line by line, is in Jobs/PaySlip.cs: game-free, so the offline check compiles it.)
 
     /// <summary>
     /// What the director hands a job each tick: who and where the player is, the car being
@@ -253,6 +222,49 @@ namespace RealLifeOverhaul
 
         /// <summary>True if stopping now, by choice, counts against the player (work was left undone).</summary>
         public virtual bool QuitIsFailure => false;
+
+        /// <summary>
+        /// What <see cref="End"/> would pay if the shift stopped now through nobody's fault, for work done by hand and not
+        /// yet paid: the slip the job's own settlement would hand over, and nothing else. It changes nothing (it is asked
+        /// when the game is saved, and the shift goes on). A job that pays each unit as it is done has nothing owed.
+        /// </summary>
+        protected virtual bool Owed(out PaySlip slip)
+        {
+            slip = default;
+            return false;
+        }
+
+        /// <summary>The clock the rest of this job's shift can be left to, or null: what it has done in a run that is still going is owed too.</summary>
+        protected virtual ShiftClock Clocked => null;
+
+        /// <summary>What the clock has done in a run that is still going, for a job that runs the clock itself (the drinks cart). Changes nothing.</summary>
+        protected virtual bool ClockOwed(out PaySlip slip)
+        {
+            slip = default;
+            ShiftClock clock = Clocked;
+            return clock != null && clock.Owed(out slip);
+        }
+
+        /// <summary>
+        /// Everything this shift has earned and not been paid, as one slip: the work done by hand with the tips and
+        /// bonuses its events earned (one slip, bounded at nothing, as the director pays it), and what the clock has done in
+        /// a run that is still going. Changes nothing: for the line a save carries (<see cref="JobSave"/>).
+        /// </summary>
+        public PaySlip Unpaid()
+        {
+            if (!Owed(out PaySlip slip))
+            {
+                slip = default;
+            }
+            slip.Tips += _eventTips;
+            slip.Bonus += _eventBonus;
+            slip = slip.Bounded();
+            if (ClockOwed(out PaySlip clock))
+            {
+                slip.Add(clock);
+            }
+            return slip;
+        }
 
         protected void Finish(JobEnd outcome)
         {

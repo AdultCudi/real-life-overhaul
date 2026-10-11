@@ -152,6 +152,16 @@ namespace RealLifeOverhaul
             return JobCatalogue.LevelFor(def, record.Units) > before;
         }
 
+        /// <summary>
+        /// A shift that was cut short by a save and a load (<see cref="JobSave"/>) and had work done on it: it counts as a
+        /// shift worked, and the strikes stay as they were. It is neither a failed shift nor a good one.
+        /// </summary>
+        public static void ShiftCut(JobDef def)
+        {
+            Of(def).Shifts++;
+            ShiftsThisWeek++;
+        }
+
         /// <summary>A shift came to its end. A good one takes a strike off; a failed one adds one. Returns true if that got the player sacked.</summary>
         public static bool ShiftEnded(JobDef def, bool failed, int day)
         {

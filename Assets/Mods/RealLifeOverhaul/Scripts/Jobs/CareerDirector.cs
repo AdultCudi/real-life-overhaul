@@ -738,10 +738,9 @@ namespace RealLifeOverhaul
                 int hours = 0;
                 if (!failed && job.Shift.Units > 0)   // (a job pays what was done before a fault, and its hours too)
                 {
-                    float elapsed = TimeHelper.NowInMinutes() - shift.StartMinutes;
-                    hours = Mathf.Clamp(Mathf.CeilToInt(elapsed / 60f), 1, CareerCatalogue.ShiftHours) - (shift.Late ? 1 : 0);
+                    hours = CareerCatalogue.PaidHours(TimeHelper.NowInMinutes() - shift.StartMinutes, shift.Late);
                 }
-                int wage = hours > 0 ? Mathf.RoundToInt(hours * shift.Hourly) : 0;
+                int wage = CareerCatalogue.Wage(hours, shift.Hourly);
                 if (wage > 0)
                 {
                     GameManager.ChangeMoneySafe(wage, new TransactionInfo(WageKey, SalaryCategory), null, null, force: true);
@@ -778,6 +777,27 @@ namespace RealLifeOverhaul
             {
                 _logger?.Error(e);
             }
+        }
+
+        /// <summary>
+        /// An employer's shift that was on when the game was saved, settled after the load (<see cref="JobSave"/>): the basic
+        /// wage for the hours clocked up to the save, by the rule a shift ends by, and the shift on the review's count if
+        /// any work was done on it. No complaint and no mark: the day was already handled when it was clocked on to, so the
+        /// rota does not take it for missed either. Nothing is counted for somebody who no longer works there.
+        /// </summary>
+        public void SettleSaved(JobDef def, SavedShift saved, in ShiftSettlement sum)
+        {
+            if (sum.Wage > 0)
+            {
+                GameManager.ChangeMoneySafe(sum.Wage, new TransactionInfo(WageKey, SalaryCategory), null, null, force: true);
+                JobState.Worked(def, 0, sum.Wage);
+            }
+            if (sum.Worked && CareerState.Employed && CareerState.Employer.Id == saved.Employer)
+            {
+                CareerState.ShiftDone(false, sum.Tips, sum.Earned);
+            }
+            _logger?.Info("Careers: a shift at " + saved.Employer + " that was on at a save was settled: " + sum.Hours + " h basic " + sum.Wage + ", work " + sum.Work
+                          + (sum.Worked ? "; counted as a shift worked." : "; no work had been done: not counted as a shift."));
         }
 
         // The payslip: what the work paid, the basic wage, and the tax line. The game takes no tax from wages (its own

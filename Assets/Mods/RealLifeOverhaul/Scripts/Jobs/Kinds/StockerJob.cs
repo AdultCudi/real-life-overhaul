@@ -484,20 +484,35 @@ namespace RealLifeOverhaul
 
         private void Settle(bool all)
         {
-            if (_paid || _hand <= 0 || Ctx == null)
+            if (!Owed(all, out PaySlip slip))
             {
                 return;
             }
             _paid = true;
+            Ctx.Pay(this, slip, "reallife_job_stocker_slip");
+        }
+
+        // (A delivery that stops early is not the whole delivery.)
+        protected override bool Owed(out PaySlip slip) => Owed(false, out slip);
+
+        private bool Owed(bool all, out PaySlip slip)
+        {
+            slip = default;
+            if (_paid || _hand <= 0 || Ctx == null)
+            {
+                return false;
+            }
             int each = UnitPay();
-            var slip = new PaySlip
+            slip = new PaySlip
             {
                 Units = _hand,
                 Base = _hand * each,
                 Bonus = all ? Mathf.RoundToInt(_hand * each * 0.1f) : 0   // (the clock's boxes earn no bonus)
             };
-            Ctx.Pay(this, slip, "reallife_job_stocker_slip");
+            return true;
         }
+
+        protected override ShiftClock Clocked => _clock;
 
         // ---------------------------------------------------------------- the rest of the boxes by the clock
 

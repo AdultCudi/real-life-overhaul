@@ -106,7 +106,7 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_jobs_about").Help("reallife_guide_jobs")
                 .Owns(Settings.JobsId)
                 .Preset(Settings.JobPayId, 125, 100, 80)
-                .Data("reallife:jobs", "reallife:job_rental")
+                .Data("reallife:jobs", "reallife:job_rental", "reallife:job_live")
                 .Contact(JobPhone.ContactId)
                 .Objects("RealLifeOverhaul Shift Card")
                 .Fact("vendor_quick", () => Guide.Number(VendorJob.QuickTip))

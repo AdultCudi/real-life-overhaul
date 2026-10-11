@@ -822,6 +822,86 @@ a shop and on the open street without the player being moved, that the busker's 
 the game's guitar performance, and the amounts the clock pays.
 
 
+### A shift across a save (`JobSave`, `PaySlip`)
+
+The game saves by itself every few minutes and at midnight (`GameManager.CheckAutoSave`), so a save in the middle of a
+shift is ordinary. What a shift had paid slip by slip was always in the save's money; what was lost on loading such a
+save was everything still to be settled at the end: the work done by hand since the last slip (most gigs pay it in one
+slip when they end), tips and bonuses its events had earned, the units of a clock run that was still going, and for an
+employer's shift the whole basic wage and the shift on the review's count.
+
+**The rule: every job is settled, none is resumed.** A shift cannot be taken up where it was: all nine kinds find
+their place, people and props on the street when they begin (a pitch, a client's shop, a pile of boxes, passengers,
+a round's doors), and none has a state that is only counts and a place. So:
+
+- **At a save** (`JobDirector.OnSaveGame` -> `LiveLine`) one line goes under `reallife:job_live`: the job, the day and
+  minute, what the shift has been paid (`job.Shift`), and what it is owed now (`Job.Unpaid()`), with the employer, the
+  hourly wage as it is being paid, the late flag and the clock-on time for a rota shift. Nothing of the shift changes
+  and it goes on. With no shift on, a test button's shift or a test rota shift, the line is written empty, so one is
+  never left over from an earlier save.
+- **What is owed** is the job's own word. `Job.Owed(out slip)` is the slip its settlement would pay if the shift
+  stopped now through nobody's fault; each kind's `Settle` / `Pay` is now `if (!Owed(out slip)) return; _paid = true;
+  Ctx.Pay(...)`, so the save's figure and the live pay are one piece of code. A round or a delivery stopped early has
+  not beaten the clock or shelved the whole delivery, so those bonuses are not in it (`CourierJob`, `StockerJob`).
+  `Unpaid()` adds the events' money to that slip, bounds it at nothing (`PaySlip.Bounded`, as `Director.Pay` bounds a
+  slip), and adds what a clock run that is still going has done (`ShiftClock.Owed`; the drinks cart's own clock in
+  `VendorJob.ClockOwed`). Ride-hail pays each fare as it ends and owes nothing; a fare in progress pays nothing, as on
+  any other way out.
+- **At a load** (`JobDirector.Slow`, once the jobs' state is loaded -> `SettleSaved`) the line is emptied first and then
+  settled (`JobSave.Settle`), as a shift that ended early through nobody's fault: the owed slip is paid through
+  `PayOut` (the game's transaction under the job's name, the energy, the skill, `JobState.Worked` for the level and the
+  day's amount: exactly what `Pay` does); a rota shift gets `CareerDirector.SettleSaved` (the basic wage for the hours
+  from clock-on to the save by `CareerCatalogue.PaidHours`, the rule `ShiftEnded` uses, and `CareerState.ShiftDone`
+  with no complaint, only if work was done and the player still works there); a gig counts as a shift worked
+  (`JobState.ShiftCut`). One notification says so (`reallife_job_saved_paid`, `_nothing`, `_rota`).
+
+What that rules out:
+
+| | how |
+|---|---|
+| lost earnings | the owed slip and the wage are paid on loading |
+| double pay | only `Owed` is ever paid; `Paid` is carried for the review's totals and the log. The line is emptied before the money moves, and every later save writes it afresh |
+| a free second shift | the units count towards the day's amount, and the rota day was handled when it was clocked on to (`CareerState.ClockOn`), so it is neither missed nor open again |
+| a strike or a mark for saving | none: it is an interruption, as going indoors or to hospital is |
+| a strike taken off for saving | none either: `ShiftCut` leaves the strikes alone (a shift that ends on the street by an interruption does take one off: that was left as it is) |
+| a shift with no work done | pays nothing and counts as nothing (no wage, no shift, no complaint) |
+| a line that does not add up | refused whole (`JobSave.Read`: a missing field, a figure below zero, not a number), logged, dropped |
+
+Nothing of a job is left in a save or stuck after a load, and that was so before: the uniform is drawn over the
+player's own clothes and never saved (`JobUniform`), the cleaner's dirt is taken off the client's registration for
+the moment of the save and its mop out of the hands (`CleanerJob.OnSaveGame`, `JobDirt.Suspend`), a sealed box in the
+hands or in a car is taken away after the load (`CourierJob.ClearLeftovers`: the courier's parcel and the stocker's
+box are the same item), a hired van is in its own line and is seen back (`JobRental`), and the hold on the player, the
+marker, the shift card, the panels and the people are objects of the session that a load does not bring back.
+
+"Prepare this save for removing the mod" and "Reset the mod's data" end the shift first (`JobDirector.Quit`: paid on
+its own terms) and then remove the key with the feature's others (`Features`: `.Data(..., "reallife:job_live")`).
+Without the mod the key is ignored by the game.
+
+**Home routines and leisure activities** carry nothing across a save and leave nothing behind: nothing of them is in
+modData while they run, they put no item in the player's hands, and their hold, clip, props and cards are objects of
+the session. After a load they are simply over, and what each gives when it ends is not given: cooking has taken
+its ingredients from the fridges when it began and gives no meal (`CookActivity.Prepare`, as "stopped cooking" does);
+coffee, tidying and exercise give nothing for the minutes spent (their effect is worked out in `End`); the waiting
+room does not open the doctor's visit; a chess game's stake of 10 is not returned (`ChessGame`: only a game that never
+got going refunds it); fishing has paid for its bait and the fish in the bucket are not sold (`Fishing`: sold when it
+ends); a drink at the bar is paid as it is bought and nothing more is lost. The dance floor, sightseeing and the jog
+were looked at only for what they keep (nothing in the save) and what they take at the start (nothing).
+
+Checked offline (`CatalogueCheck/SavedShiftCheck.cs`): 920 shifts (every gig, every rank of every employer, at random
+moments, some with nothing done, some sunk by a penalty) are written, read back field for field and settled; the
+work, the hours and the wage are compared with the live rules written out a second time; what had been paid before
+the save does not change what the load pays; `PaidHours` is compared hour by hour with the formula `ShiftEnded` had;
+a bounded slip plus the clock's pays what the two pay apart; fifteen bad lines are refused; the key is registered and
+the three sentences have their blanks.
+
+Log lines: `Jobs check (saved shift): '<job>' is on at the save: paid so far N for U unit(s), owed M for V ...: PASS`
+(diagnostics on), `Jobs check (saved shift): settled '<job>' saved on day D: paid M for V unit(s) owed ...: PASS`
+(always), `Careers: a shift at <employer> that was on at a save was settled: ...`.
+
+Not checked in the game: any of it; in particular that the game's save event reaches the hook during each kind of
+shift (the cleaner's own hook shows it does for one), and what the figures are at a real midnight autosave.
+
 ### Adding a job
 
 1. A row in `JobCatalogue.All` (and its id as a constant): needs, pay, energy, skill, daily units.
@@ -1568,7 +1648,8 @@ good, one passable and one bad answer. Calls made well are the units paid and co
 | asks | `ICareerSickNote.Covers(day)` via `CareerLinks.Health` | sick notes; without it `ModState.IsSick` |
 | offers | `CareerLinks.EmployerId`, `TitleKey`, `ShiftDueToday(day)` | anybody who wants to know where the player works |
 
-State: one line, `reallife:career`, in modData (`CareerState`); a shift in progress is not saved.
+State: one line, `reallife:career`, in modData (`CareerState`). A shift in progress is carried by the jobs' own line
+(`reallife:job_live`, see "A shift across a save"): a load pays the basic wage for the hours clocked and counts the shift.
 
 Test buttons (options, Jobs): sign on with the next employer (cycles all six, on a rota that works tomorrow);
 work a shift at my current rank now; my review is due now (opens the review face to face); promote me one rank;
