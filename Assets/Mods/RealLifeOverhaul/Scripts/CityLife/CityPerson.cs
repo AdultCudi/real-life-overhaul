@@ -458,6 +458,18 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// Sets the speed of the walking clip being played (<see cref="Work"/>) from how fast they are really going, so the
+        /// planted foot stays put: clipSpeed is the clip's own (<see cref="CityClip.Speed"/>). Call it from the owner's tick, never per frame.
+        /// </summary>
+        public void KeepStep(float clipSpeed)
+        {
+            if (_player != null && Playing != null && !Lost)
+            {
+                _player.MatchSpeed(Speed, clipSpeed);
+            }
+        }
+
         /// <summary>Holds one of the game's own looping poses (on the phone, texting); handObject is an optional game prop name.</summary>
         public bool Pose(PermanentAnimationType pose, string handObject = null)
         {

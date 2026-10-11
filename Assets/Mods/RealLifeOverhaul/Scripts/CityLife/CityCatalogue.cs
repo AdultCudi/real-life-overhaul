@@ -209,6 +209,12 @@ namespace RealLifeOverhaul
             },
             new CityEntry
             {
+                // A traveller with a cabin case, walking the pavements on the clip's own full-body walk (carry_suitcase_walk, suitcase), kept in step with the ground.
+                Id = "traveller", Name = "reallife_city_name_traveller", Family = CityFamily.Leisure, Weight = 8, From = 6, To = 23, MinMinutes = 3f, MaxMinutes = 6f,
+                Activity = new StrollActivity(StrollKind.Suitcase)
+            },
+            new CityEntry
+            {
                 Id = "pushchair", Name = "reallife_city_name_pushchair", Family = CityFamily.Leisure, Weight = 9, From = 8, To = 19, MinMinutes = 3f, MaxMinutes = 6f,
                 Activity = new StrollActivity(StrollKind.Pushchair)
             },
