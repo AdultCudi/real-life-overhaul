@@ -45,6 +45,19 @@ namespace RealLifeOverhaul.Economy.Ventures
             return true;
         }
 
+        // A test tool runs here: a fault in one switches Ventures off for the session like any other, and never reaches the options page.
+        private void Guarded(Action test)
+        {
+            try
+            {
+                test();
+            }
+            catch (Exception e)
+            {
+                Fault("a test tool", e);
+            }
+        }
+
         // The business of the player's with the best recent profit; null if they run none.
         private BuildingRegistration BestBusiness(out BusinessFigures figures)
         {
@@ -78,6 +91,11 @@ namespace RealLifeOverhaul.Economy.Ventures
 
         /// <summary>"Test: a tycoon's offer for my best business": the terms the rule gives, or the tycoon's smallest sum if the figures carry none. Marked as a test's.</summary>
         public void TestOffer()
+        {
+            Guarded(TestOfferNow);
+        }
+
+        private void TestOfferNow()
         {
             if (!TestReady("Tycoon's offer"))
             {
@@ -119,6 +137,11 @@ namespace RealLifeOverhaul.Economy.Ventures
         /// <summary>"Test: a meeting with an angel / a tycoon / a venture firm": about the best business, or with none about a business not yet open. Whatever it leads to is marked as a test's.</summary>
         public void TestPitch(int kind)
         {
+            Guarded(() => TestPitchNow(kind));
+        }
+
+        private void TestPitchNow(int kind)
+        {
             if (!TestReady("Meeting"))
             {
                 return;
@@ -155,6 +178,11 @@ namespace RealLifeOverhaul.Economy.Ventures
         /// <summary>"Test: list the investors and companies in the log".</summary>
         public void TestList()
         {
+            Guarded(TestListNow);
+        }
+
+        private void TestListNow()
+        {
             if (!TestReady("List"))
             {
                 return;
@@ -185,6 +213,11 @@ namespace RealLifeOverhaul.Economy.Ventures
         /// <summary>"Test: step the market 30 days": thirty market days at once, with today's news on the first. No dividend is paid. The market as it stood is kept, and is what a save keeps, until it is put back.</summary>
         public void TestMarket()
         {
+            Guarded(TestMarketNow);
+        }
+
+        private void TestMarketNow()
+        {
             if (!TestReady("Market"))
             {
                 return;
@@ -214,6 +247,11 @@ namespace RealLifeOverhaul.Economy.Ventures
         /// <summary>"Test: pay a dividend": every holding is paid its dividend now; with none held, ten test shares of the first company are given first.</summary>
         public void TestDividend()
         {
+            Guarded(TestDividendNow);
+        }
+
+        private void TestDividendNow()
+        {
             if (!TestReady("Dividend"))
             {
                 return;
@@ -228,6 +266,11 @@ namespace RealLifeOverhaul.Economy.Ventures
 
         /// <summary>"Test: an investor calls their money": a deal there is, or a test deal on the best business, becomes a sum called back at this level's pace.</summary>
         public void TestCall()
+        {
+            Guarded(TestCallNow);
+        }
+
+        private void TestCallNow()
         {
             if (!TestReady("Call"))
             {
@@ -267,6 +310,11 @@ namespace RealLifeOverhaul.Economy.Ventures
 
         /// <summary>"Test: put ventures back": the tests' offers, deals, promises and holdings go, and the market, the founder's name and the investors' days are as before the first test.</summary>
         public void TestBack()
+        {
+            Guarded(TestBackNow);
+        }
+
+        private void TestBackNow()
         {
             if (!TestReady("Put back"))
             {
