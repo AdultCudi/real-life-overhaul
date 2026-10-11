@@ -1,0 +1,418 @@
+using System.Collections.Generic;
+using Localizor;
+using RealLifeOverhaul.GameUi;
+using UI.Notification;
+using UI.Smartphone;
+using UnityEngine;
+
+namespace RealLifeOverhaul.Economy
+{
+    // A bank app's Loans and Card tabs. A list goes in the table (it scrolls); the white box shows the one thing picked,
+    // with at most three buttons to a row. Every payment is asked of the credit desk; paying a game loan off in whole is
+    // confirmed in the game's own question box first, as EconoView confirms it.
+    public sealed partial class BankApp
+    {
+        private readonly List<Debt> _work = new List<Debt>(16);
+        private string _picked;     // the row picked on the Loans tab
+
+        // ---------------------------------------------------------------- Loans
+
+        private string WriteLoans(InfoBox box)
+        {
+            CreditDesk desk = Desk;
+            CreditFile file = CreditLedger.File;
+            int today = SaveGameManager.Current.Day, perYear = Mathf.Max(1, AccountRules.DaysPerYear);
+            string selected = null;
+            Debt picked = default(Debt);
+            bool found = false;
+            _spec = _tables.Loans;
+            desk.Held(Bank, _debts);
+            for (int i = 0; i < _debts.Count; i++)
+            {
+                Debt d = _debts[i];
+                CreditAccount a = d.Account;
+                if (a != null && ProductCatalogue.Revolving(a.Kind))
+                {
+                    continue;   // an overdraft and a card have their own places: Accounts and Card
+                }
+                TableRow row;
+                if (a != null)
+                {
+                    row = Row("acct:" + a.Id);
+                    row.Kind = FinanceTables.Of(a.Kind);
+                    row.Set(0, CreditDesk.Name(a));
+                    row.Set(2, FinanceText.Money(a.Owed), a.Test ? double.NaN : a.Owed);   // (a test tool's account is in no total)
+                    if (a.RateBp > 0)
+                    {
+                        row.Set(3, FinanceApp.Rate(a.RateNow), a.RateNow / 100.0, a.Ladder.Penalty ? TableRow.Red : TableRow.Plain);
+                    }
+                    int next, day;
+                    FinanceApp.NextPayment(a, today, out next, out day);
+                    Payment(row, next, day, today);
+                    if (ProductCatalogue.Instalment(a.Kind) && a.Instalment > 0 && !a.Frozen)
+                    {
+                        int end = today + Mathf.CeilToInt(a.Owed / (float)a.Instalment);
+                        row.Set(6, FinanceText.Day(end), end);
+                    }
+                    row.Set(7, FinanceText.State(a), FinanceApp.Gravity(a.Ladder, a.Frozen), a.Ladder.InOrder && !a.Ladder.Penalty ? TableRow.Plain : TableRow.Red);
+                }
+                else
+                {
+                    LoanMark m = d.Mark;
+                    Loan loan = d.Loan;
+                    bool frozen = (m.Held & LoanHold.Frozen) != 0;
+                    row = Row("loan:" + file.Loans.IndexOf(m));
+                    row.Kind = FinanceTables.OfLoan(m.Purpose);
+                    row.Set(0, FinanceText.T(FinanceTables.DebtKinds[row.Kind]));
+                    row.Set(2, FinanceText.Money(loan.remainingAmount), loan.remainingAmount);
+                    float yearly = FinanceApp.YearlyRate(loan, perYear);
+                    if (yearly > 0f)
+                    {
+                        row.Set(3, FinanceText.T("reallife_econ_row_rate", "rate", yearly.ToString("0.#")), yearly, (m.Held & LoanHold.Penalty) != 0 ? TableRow.Red : TableRow.Plain);
+                    }
+                    Payment(row, frozen ? 0 : Mathf.RoundToInt(GameLoans.Due(loan)), today + 1, today);
+                    if (loan.dailyPayment > 0 && !frozen)
+                    {
+                        int end = today + Mathf.CeilToInt(loan.remainingAmount / loan.dailyPayment);
+                        row.Set(6, FinanceText.Day(end), end);
+                    }
+                    row.Set(7, FinanceText.State(m.Ladder, frozen, false), FinanceApp.Gravity(m.Ladder, frozen), m.Ladder.InOrder && !m.Ladder.Penalty ? TableRow.Plain : TableRow.Red);
+                }
+                row.Pick = true;
+                row.Set(1, FinanceText.T(FinanceTables.DebtKinds[row.Kind]));
+                if (row.Id == _picked)
+                {
+                    picked = d;
+                    found = true;
+                    selected = row.Id;
+                }
+            }
+            if (_rows.Count == 0)
+            {
+                Say("none", FinanceText.T("reallife_bank_row_no_loans", "bank", Bank.Name));
+            }
+            if (!found)
+            {
+                _picked = null;
+                BankSlice slice = desk.Slice(Bank, _work);
+                box.Title(FinanceText.T("reallife_bank_tab_loans"));
+                box.Line(FinanceText.Pair("reallife_bank_owed_here", FinanceText.Money(slice.Owed)));
+                box.Line(FinanceText.Pair("reallife_econ_over_leaves", FinanceText.Money(slice.Tomorrow)));
+                box.Line(FinanceText.T("reallife_bank_loans_pick"));
+                box.Line(FinanceText.T("reallife_bank_loans_finance"));
+                return null;
+            }
+            if (picked.Account != null)
+            {
+                WriteInstalments(box, desk, picked.Account, today);
+            }
+            else
+            {
+                WriteLoan(box, desk, picked.Mark, today);
+            }
+            return selected;
+        }
+
+        // The "next payment" and "due" cells of a row; left empty where nothing is due.
+        private static void Payment(TableRow row, int amount, int day, int today)
+        {
+            if (amount <= 0 || day <= 0)
+            {
+                return;
+            }
+            row.Set(4, FinanceText.Money(amount), amount);
+            row.Set(5, FinanceApp.DayWord(day, today), day, day < today ? TableRow.Red : TableRow.Plain);
+        }
+
+        // One of the game's loans at this bank: its figures, how it stands, paying part of it or all of it.
+        private void WriteLoan(InfoBox box, CreditDesk desk, LoanMark m, int today)
+        {
+            var loan = (Loan)m.Ref;
+            bool frozen = (m.Held & LoanHold.Frozen) != 0;
+            box.Title(FinanceText.T(FinanceTables.DebtKinds[FinanceTables.OfLoan(m.Purpose)]));
+            box.Line(FinanceText.T("reallife_tab_loan_about", "kind", FinanceText.T(FinanceTables.DebtKinds[FinanceTables.OfLoan(m.Purpose)]), "day", m.FirstDay.ToString()));
+            box.Line(FinanceText.Pair("reallife_econ_over_owed", FinanceText.T("reallife_econ_row_owed_of", "owed", FinanceText.Money(loan.remainingAmount), "total", FinanceText.Money(loan.totalAmount))));
+            float yearly = FinanceApp.YearlyRate(loan, Mathf.Max(1, AccountRules.DaysPerYear));
+            if (yearly > 0f)
+            {
+                box.Line(FinanceText.Pair("reallife_econ_offer_rate", FinanceText.T("reallife_econ_row_rate", "rate", yearly.ToString("0.#"))) + " " + FinanceText.T("reallife_tab_loan_rate_note"));
+            }
+            box.Line(FinanceText.Pair("reallife_econ_offer_payment", FinanceText.Money(loan.dailyPayment)) + "  " + FinanceText.Pair("reallife_econ_offer_interest", FinanceText.Money(loan.dailyInterest)));
+            if (loan.dailyPayment > 0 && !frozen)
+            {
+                int left = Mathf.CeilToInt(loan.remainingAmount / loan.dailyPayment);
+                box.Line(FinanceText.T("reallife_tab_loan_left", "days", left.ToString(), "day", (today + left).ToString()));
+            }
+            if (m.Purpose == LoanPurpose.Business)
+            {
+                BuildingRegistration shop = Books.Business(m.Security);
+                box.Line(shop != null ? FinanceText.T("reallife_econ_account_secured", "thing", shop.BusinessName) : FinanceText.T("reallife_econ_loan_unsecured"));
+            }
+            box.Line(FinanceText.Pair("reallife_econ_account_stands", FinanceText.State(m.Ladder, frozen, false)));
+            if (frozen)
+            {
+                return;   // in a debt arrangement: the arrangement pays it
+            }
+            FinanceApp.NextStepLine(box, m.Ladder, m.Purpose == LoanPurpose.Business && Books.Business(m.Security) != null);
+            Transform buttons = box.ButtonRow();
+            var debt = new Debt(m);
+            if (m.Ladder.CallDue)
+            {
+                CallButtons(buttons, desk, debt);
+                return;
+            }
+            int whole = Mathf.CeilToInt(loan.remainingAmount);
+            AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", Mathf.Min(whole, loan.dailyPayment), amount => PaidLoan(desk, m, amount));
+            InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_account_pay_off", () =>
+                HudConfirm.Show("reallife_bank_confirm_payoff_title".Localize(new { bank = Bank.Name }),
+                    "reallife_bank_confirm_payoff".Localize(new { amount = FinanceText.Money(whole), bank = Bank.Name }),
+                    () => UiClone.Safe(() => PaidLoan(desk, m, whole)), null, "reallife_econ_account_pay_off", "common_cancel", false, false));
+            InfoBox.Button(buttons, InfoBox.Additional, "reallife_bank_daily_payment", OpenEconoView);
+        }
+
+        // The game's own loans page, where the daily payment of one of its loans is changed.
+        private void OpenEconoView()
+        {
+            if (_menu != null)
+            {
+                _menu.ShowApp(AppName.EconoView);
+            }
+        }
+
+        private void PaidLoan(CreditDesk desk, LoanMark m, int amount)
+        {
+            int used;
+            string name = Bank.Name;
+            ProductAnswer answer = desk.PayLoan(m, amount, out used);
+            if (answer == ProductAnswer.Yes)
+            {
+                var loan = m.Ref as Loan;
+                bool gone = loan == null || loan.remainingAmount <= 0f;
+                Tell(NotificationType.Success, gone ? "reallife_bank_note_loan_paid_off" : "reallife_bank_note_loan_paid", new Dictionary<string, string>
+                {
+                    { "bank", name }, { "amount", FinanceText.Money(used) }, { "left", FinanceText.Money(gone ? 0f : loan.remainingAmount) }
+                });
+                if (gone)
+                {
+                    _picked = null;
+                }
+            }
+            Said(answer);
+        }
+
+        // Car finance, a mortgage or late fees owed to this bank: the figures, how it stands, paying it.
+        private void WriteInstalments(InfoBox box, CreditDesk desk, CreditAccount a, int today)
+        {
+            box.Title(CreditDesk.Name(a));
+            string about = FinanceApp.AboutKind(a.Kind);
+            if (about != null)
+            {
+                box.Line(about);
+            }
+            box.Line(FinanceText.Pair("reallife_econ_over_owed", a.Agreed > 0
+                ? FinanceText.T("reallife_econ_row_owed_of", "owed", FinanceText.Money(a.Owed), "total", FinanceText.Money(a.Agreed)) : FinanceText.Money(a.Owed)));
+            if (a.RateBp > 0)
+            {
+                box.Line(FinanceText.Pair("reallife_econ_offer_rate", FinanceApp.Rate(a.RateNow)) + " "
+                         + (a.Ladder.Penalty ? FinanceText.T("reallife_econ_account_penalty", "points", ProductCatalogue.PenaltyPoints.ToString(), "run", ProductCatalogue.PenaltyClearRun.ToString())
+                             : FinanceText.T("reallife_tab_account_rate_fixed")));
+            }
+            if (a.Kind == ProductKind.Arrears)
+            {
+                box.Line(FinanceText.T("reallife_econ_account_arrears"));
+            }
+            else
+            {
+                int due = AccountRules.DueTomorrow(a, today), left = a.Instalment > 0 ? Mathf.CeilToInt(a.Owed / (float)a.Instalment) : 0;
+                box.Line(FinanceText.T("reallife_econ_account_instalment", "payment", FinanceText.Money(due), "days", left.ToString()));
+                if (left > 0 && !a.Frozen)
+                {
+                    box.Line(FinanceText.Pair("reallife_tab_account_paid_off_day", FinanceText.Day(today + left)));
+                }
+                box.Line(FinanceText.T(a.Secured ? "reallife_econ_account_secured" : "reallife_econ_account_unsecured", "thing", CreditDesk.Thing(a)));
+            }
+            box.Line(FinanceText.Pair("reallife_econ_account_stands", FinanceText.State(a)));
+            if (a.Frozen)
+            {
+                return;
+            }
+            if (a.Owed > 0)
+            {
+                FinanceApp.NextStepLine(box, a.Ladder, a.Secured);
+            }
+            if (a.Ladder.PlanLeft > 0)
+            {
+                box.Line(FinanceText.T("reallife_econ_account_plan", "left", FinanceText.Money(a.Ladder.PlanLeft), "payment", FinanceText.Money(a.Ladder.PlanPerDay)));
+            }
+            Transform buttons = box.ButtonRow();
+            if (a.Ladder.CallDue)
+            {
+                CallButtons(buttons, desk, new Debt(a));
+                return;
+            }
+            if (a.Owed > 0)
+            {
+                AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", Mathf.Min(a.Owed, Mathf.Max(a.Ladder.Overdue, AccountRules.DueTomorrow(a, today))), amount => Paid(desk, a, amount));
+                InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_account_pay_off", () => Paid(desk, a, a.Owed));
+            }
+        }
+
+        private void Paid(CreditDesk desk, CreditAccount a, int amount)
+        {
+            int used;
+            string name = CreditDesk.Name(a);
+            ProductAnswer answer = desk.Pay(a, amount, out used);
+            if (answer == ProductAnswer.Yes)
+            {
+                Tell(NotificationType.Success, a.Closed ? "reallife_econ_note_paid_off" : "reallife_econ_note_paid", new Dictionary<string, string>
+                {
+                    { "account", name }, { "amount", FinanceText.Money(used) }, { "left", FinanceText.Money(a.Owed) }
+                });
+                if (a.Closed)
+                {
+                    _picked = null;
+                }
+            }
+            Said(answer);
+        }
+
+        // The collections call's answers, for a debt whose call is due: the same three the Finance app and the call give.
+        private void CallButtons(Transform buttons, CreditDesk desk, Debt debt)
+        {
+            InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_account_pay_overdue", () => Said(desk.PayOverdue(debt)));
+            if (!debt.Ladder.PlanUsed)
+            {
+                InfoBox.Button(buttons, InfoBox.Additional, "reallife_collect_plan", () => Said(desk.AgreePlan(debt)));
+            }
+            InfoBox.Button(buttons, InfoBox.Negative, "reallife_collect_cannot", () =>
+            {
+                desk.CannotPay(debt);
+                After();
+            });
+        }
+
+        // ---------------------------------------------------------------- Card
+
+        // A card held here: its figures, statement and buttons; the table is the card's own movements over a month.
+        private void WriteCard(InfoBox box, CreditScore score)
+        {
+            _spec = _tables.CardMoves;
+            CreditDesk desk = Desk;
+            CreditAccount card = HeldHere(ProductKind.CreditCard);
+            int today = SaveGameManager.Current.Day;
+            if (card == null)
+            {
+                box.Title(FinanceText.T("reallife_econ_kind_card"));
+                string other = HeldWith(ProductKind.CreditCard);
+                if (other != null)
+                {
+                    box.Line(FinanceText.T("reallife_bank_card_elsewhere", "other", other, "bank", Bank.Name));
+                }
+                else
+                {
+                    ProductOffer offer = desk.Offer(ProductKind.CreditCard, Bank);
+                    if (offer.Answer == ProductAnswer.Yes)
+                    {
+                        box.Line(FinanceText.T("reallife_bank_card_offer", "bank", Bank.Name, "limit", FinanceText.Money(offer.Most), "rate", (offer.RateBp / 100f).ToString("0.#")));
+                        InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_bank_apply_go", () => GoApply(BankTables.Card));
+                    }
+                    else
+                    {
+                        box.Line(Why(offer.Answer));
+                    }
+                }
+                Say("none", FinanceText.T("reallife_bank_row_no_card", "bank", Bank.Name));
+                return;
+            }
+            string name = CreditDesk.Name(card);
+            CardMovements(name, today);
+            box.Title(name);
+            box.Line(FinanceText.Pair("reallife_econ_offer_limit", FinanceText.Money(card.Agreed)) + "  " + FinanceText.Pair("reallife_bank_card_balance", FinanceText.Money(card.Owed)));
+            if (card.Agreed > 0)
+            {
+                box.Line(FinanceText.T("reallife_tab_account_used", "share", Mathf.RoundToInt(card.Owed * 100f / card.Agreed) + "%", "free", FinanceText.Money(card.Free)));
+            }
+            box.Line(FinanceText.Pair("reallife_econ_offer_rate", FinanceApp.Rate(card.RateNow)) + " "
+                     + (card.Ladder.Penalty ? FinanceText.T("reallife_econ_account_penalty", "points", ProductCatalogue.PenaltyPoints.ToString(), "run", ProductCatalogue.PenaltyClearRun.ToString())
+                         : FinanceText.T("reallife_tab_account_rate_moves", "agreed", FinanceApp.Rate(card.RateBp))));
+            box.Headline("reallife_bank_card_statement");
+            box.Line(card.DueDay > 0
+                ? FinanceText.T("reallife_econ_account_card_due", "minimum", FinanceText.Money(card.MinimumLeft), "day", card.DueDay.ToString(), "statement", FinanceText.Money(card.StatementLeft))
+                : FinanceText.T("reallife_econ_account_card_next", "day", card.NextDay.ToString()));
+            box.Line(FinanceText.Pair("reallife_econ_account_stands", FinanceText.State(card)));
+            if (card.Frozen)
+            {
+                return;
+            }
+            if (card.Owed > 0)
+            {
+                FinanceApp.NextStepLine(box, card.Ladder, false);
+            }
+            Transform buttons = box.ButtonRow();
+            if (card.Ladder.CallDue)
+            {
+                CallButtons(buttons, desk, new Debt(card));
+                return;
+            }
+            if (card.Owed > 0)
+            {
+                if (card.DueDay > 0 && card.MinimumLeft > 0)
+                {
+                    InfoBox.Button(buttons, InfoBox.Positive, "reallife_bank_card_pay_minimum", () => Paid(desk, card, card.MinimumLeft));
+                }
+                AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", Mathf.Max(card.MinimumLeft, Mathf.Min(card.Owed, card.StatementLeft)), amount => Paid(desk, card, amount));
+                InfoBox.Button(buttons, card.DueDay > 0 && card.MinimumLeft > 0 ? InfoBox.Additional : InfoBox.Positive, "reallife_econ_account_pay_off", () => Paid(desk, card, card.Owed));
+            }
+            Transform second = card.Owed > 0 ? box.ButtonRow() : buttons;
+            AskAmount(second, "reallife_econ_account_draw", "reallife_econ_account_draw_how_much", AccountRules.MostDraw(card), amount => Drew(desk, card, amount));
+            if (card.Owed == 0)
+            {
+                InfoBox.Button(second, InfoBox.Negative, "reallife_econ_account_close", () => Said(desk.CloseAccount(card)));
+            }
+        }
+
+        // The card's own movements over the last month: what was paid into it from cash and what was drawn on it.
+        private void CardMovements(string name, int today)
+        {
+            _flow.Read(CashFlow.Month, today);
+            for (int i = _flow.Entries.Count - 1; i >= 0; i--)
+            {
+                CashFlow.Entry entry = _flow.Entries[i];
+                string value;
+                if (entry.Data == null || !entry.Data.TryGetValue("name", out value) || !string.Equals(value, name, System.StringComparison.Ordinal))
+                {
+                    continue;
+                }
+                TableRow row = Row("card:" + i);
+                row.Set(0, FinanceText.Day(entry.Day), entry.Day);
+                row.Set(1, CashFlow.ItemName(entry.Type, entry.Data));
+                if (entry.Amount < 0f)
+                {
+                    row.Set(2, FinanceText.Money(-entry.Amount), -entry.Amount);   // cash paid into the card
+                }
+                else
+                {
+                    row.Set(3, FinanceText.Money(entry.Amount), entry.Amount, TableRow.Yellow);   // cash drawn on it
+                }
+            }
+            if (_rows.Count == 0)
+            {
+                Say("none", FinanceText.T("reallife_bank_row_card_quiet"));
+            }
+        }
+
+        private void Drew(CreditDesk desk, CreditAccount card, int amount)
+        {
+            int fee;
+            ProductAnswer answer = desk.Draw(card, amount, out fee);
+            if (answer == ProductAnswer.Yes)
+            {
+                Tell(NotificationType.Success, "reallife_econ_note_drawn", new Dictionary<string, string>
+                {
+                    { "amount", FinanceText.Money(amount) }, { "fee", FinanceText.Money(fee) }, { "owed", FinanceText.Money(card.Owed) }
+                });
+            }
+            Said(answer);
+        }
+    }
+}

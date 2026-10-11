@@ -803,6 +803,32 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>
+        /// For a bank app (Economy/Banks) as it opens, and after it pays a loan: the file is brought up to date with the
+        /// game as when the Finance app opens, and the banks' terms are written. What the Finance app's badge counts is
+        /// left for the Finance app to show.
+        /// </summary>
+        public bool BringUpToDate(string why)
+        {
+            if (!_running || _broken || Save == null)
+            {
+                return false;
+            }
+            try
+            {
+                SyncLoans(Save.Day);
+                CreditLedger.Touch();
+                KeepTerms(why);
+                Badge();
+                return true;
+            }
+            catch (Exception e)
+            {
+                Fault(why, e);
+                return false;
+            }
+        }
+
         private void Badge()
         {
             CreditFile file = CreditLedger.File;

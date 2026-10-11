@@ -16,6 +16,12 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>The name of its objects in the game's interface. The game opens an app by the name of its panel, so it must be no AppName.</summary>
         public string Id;
         public string TitleKey;
+        /// <summary>
+        /// What the title's names are filled with ("{bank}" in the text of <see cref="TitleKey"/>), as the game fills a
+        /// text's names (TextLocalizationComponent.Arguments, a dictionary of name and words, or an object with one field per name); null for a title without
+        /// names. The title then still follows a change of language.
+        /// </summary>
+        public object TitleArguments;
         /// <summary>Given one of the game's own app icons to model its picture on; may return null (the button then keeps the template's).</summary>
         public Func<Sprite, Sprite> Icon;
         /// <summary>Builds the app's panel asleep under the dormant holder it is given, from the game's own (GameUi.AppShell); null if it cannot.</summary>
@@ -138,8 +144,8 @@ namespace RealLifeOverhaul.GameUi
                     app.Remove();
                     return null;
                 }
-                Dress(hud, app._hudButton, def.TitleKey, icon, app.Open);
-                Dress(inMenu, app._menuButton, def.TitleKey, icon, app.Open);
+                Dress(hud, app._hudButton, def.TitleKey, def.TitleArguments, icon, app.Open);
+                Dress(inMenu, app._menuButton, def.TitleKey, def.TitleArguments, icon, app.Open);
                 app._hudButton.HideOutline();
                 app._hudButton.UpdateBadgeCount(0);
                 app._menuButton.HideSelectedIcon();
@@ -206,12 +212,16 @@ namespace RealLifeOverhaul.GameUi
             return all.Length > 0 ? all[0].transform : null;
         }
 
-        private static void Dress(Transform button, AppButton script, string titleKey, Sprite icon, Action click)
+        private static void Dress(Transform button, AppButton script, string titleKey, object titleArguments, Sprite icon, Action click)
         {
             var title = button.GetComponentInChildren<TextLocalizationComponent>(true);
             if (title != null)
             {
                 UiClone.Key(title, titleKey);
+                if (titleArguments != null)
+                {
+                    title.Arguments = titleArguments;   // (the component writes its text again with the names filled in)
+                }
             }
             if (icon != null)
             {
@@ -313,6 +323,8 @@ namespace RealLifeOverhaul.GameUi
             {
                 if (_menu != null && _menu.appNameLabel != null)
                 {
+                    // Names first: an app of the same title key (another bank's) only changes its names.
+                    _menu.appNameLabel.Arguments = _def.TitleArguments;
                     _menu.appNameLabel.Key = _def.TitleKey;
                 }
                 if (_menuButton != null)
@@ -340,6 +352,10 @@ namespace RealLifeOverhaul.GameUi
                 if (_menuButton != null)
                 {
                     _menuButton.HideSelectedIcon();
+                }
+                if (_def.TitleArguments != null && _menu != null && _menu.appNameLabel != null && ReferenceEquals(_menu.appNameLabel.Arguments, _def.TitleArguments))
+                {
+                    _menu.appNameLabel.Arguments = null;   // the game's own apps set only the key of the top bar: no names of this app's are left on it
                 }
                 _def.Closed?.Invoke();
             }

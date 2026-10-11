@@ -111,6 +111,7 @@ namespace RealLifeOverhaul
         public const string EconomyCleaningId = "economy_cleaning";
         public const string EconomySaleId = "economy_sale";
         public const string EconomyBrandsId = "economy_brands";
+        public const string EconomyBanksId = "economy_banks";
         public const string MinimapId = "nav_minimap";
         public const string GpsId = "nav_gps";
         public const string MinimapRotateId = "nav_rotate";
@@ -298,6 +299,7 @@ namespace RealLifeOverhaul
         public static bool EconomyCleaning = true;       // the cleaning service: cleaners shared between businesses on a daily round, and cleaning contracts with other businesses, in the Services app (off: no round, no contracts, nothing cleaned or charged by it) (Scripts/Economy/Services)
         public static bool EconomySale = true;           // selling a business: its value, the market, offers and a completed sale, in the Services app (off: nothing is offered, paid or charged by it) (Scripts/Economy/Services)
         public static bool EconomyBrands = true;         // brands and franchises: a brand made from a shop, its recognition and standards, franchising it, and a shop under a city chain, with the Brands app (off: none of it runs, nothing is paid and footfall is without it) (Scripts/Economy/Brands)
+        public static bool EconomyBanks = true;          // the bank apps: one app on the phone for each of the city's three largest banks, that bank's slice of the accounts, loans, card, offers and rating (off: no bank app; every account and loan stays as it is, and the Finance app still has everything) (Scripts/Economy/Banks)
         public static bool Minimap = true;               // the minimap on the HUD while out in the city (Scripts/Navigation)
         public static bool Gps = true;                   // a route along the roads to the game's destination, with the next turn
         public static bool MinimapRotate = true;         // the minimap turns with the player (off: north is up)
@@ -528,6 +530,7 @@ namespace RealLifeOverhaul
             EconomyCleaning = Bool(modId, EconomyCleaningId, EconomyCleaning);
             EconomySale = Bool(modId, EconomySaleId, EconomySale);
             EconomyBrands = Bool(modId, EconomyBrandsId, EconomyBrands);
+            EconomyBanks = Bool(modId, EconomyBanksId, EconomyBanks);
             Minimap = Bool(modId, MinimapId, Minimap);
             Gps = Bool(modId, GpsId, Gps);
             MinimapRotate = Bool(modId, MinimapRotateId, MinimapRotate);

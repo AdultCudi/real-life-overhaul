@@ -6134,6 +6134,103 @@ catches every way of buying a vehicle (showroom, contract, delivery). The sale t
 its scene is not loaded leaves nothing behind. The three contacts' pictures and their place in the phone's list.
 That a conversation opened from a notification (`dialogUI.ShowDialog`) behaves as one opened from a call.
 
+## Economy: bank apps
+
+`Scripts/Economy/Banks/`. One app on the game's phone for each of the city's three largest banks, under the game's
+own name for the bank, each that bank's slice of the player's money. The Finance app stays the one page for every
+lender at once. Option: Money > Bank apps (`economy_banks`, on by default). No save data.
+
+### Which banks, and how they differ
+
+The banks are the game's own (`BankTerms.Lenders`: every special-service building whose settings are a
+`BankSettings` and that has a registration). Branches with the same name are one bank. `BankRules.Rank` orders them
+by the most each lends on its own terms (`BankSettings.maxTotalLoanAmount` as first read, before the rating writes
+it), the largest first, by name among equals; `BankTerms.Banks` holds one branch of each in that order. The first is
+`BankTerms.House`, the bank the mod's accounts have always been held with. The game's New York has two banks
+(Vantander Bank, own cap 2,000,000 at 12%; Jensen Capital, 40,000 at 20%), so it has two bank apps; the log says so
+once per city ("Banks: 2 bank(s) in the city, 2 bank app(s) on the phone (the city has fewer than 3 banks)").
+
+| Rank | Rates | Card, overdraft, car finance, mortgage, business loan | Fee of a loan by phone |
+|---|---|---|---|
+| 0 (the largest) | as before | as before | as before (1.5%, at least 25) |
+| 1 | one point more | 125% | half the usual share |
+| 2 | one point less | 80% | three quarters of the usual share |
+| 3 and on | as rank 0 | as rank 0 | as rank 0 |
+
+The rule moves only the mod's own terms, and only inside the one desk that decides them: `CreditDesk.Offer(kind,
+bank)`, `Business(shop, bank, ...)`, `BusinessQuote`, `AgreedAt`, `RateAt`, `LimitAt` and `PhoneLending.Quote` (the
+fee). The Finance app asks the same desk, so its offers from a bank are that bank's in its app too; rank 0 keeps every
+figure exactly as before (checked for every rating). The game's own loan at the bank counter keeps the game's terms by
+the rating alone (`BankTerms.Apply`): the banks already differ there by their own settings. Under the lending
+threshold (580) every limit is 0 at every bank whatever its share, and the rating's gate (`CreditDesk.Gate`,
+`CreditLedger.CanBorrow`) is asked again at the moment anything is done: every app refuses in the bank's own words
+and shows no button that could lend.
+
+One overdraft and one card are held in all, as before, with the bank that opened them (the address on the account,
+`CreditAccount.Street` and `Number`, which every account has always carried: an older save's accounts are at the
+house bank already, so nothing is converted). A car or home approval records its bank (`Relief.ApprovedStreet`), and
+the account it becomes is held there. A game loan belongs to the bank at its own `Loan.bankAddress`.
+
+### The tabs
+
+- **Accounts**: the current account (the cash, held with the house bank; another bank's app says where it is), an
+  overdraft held here with pay, pay off and close, and the statement: every transaction of the game's history
+  (`CashFlow`) that is this bank's, over a day, a week or a month. The house bank's statement is every movement of
+  cash; another bank's is what names it (`businessName` on the game's loan transactions and the fees) or names an
+  account it holds (`name` on the accounts' transactions).
+- **Loans**: every loan owed to the bank, the game's own and the mod's (business, consolidation, car finance,
+  mortgage, late fees). Pick one: its figures, how it stands, the next step if payments are missed, and pay an
+  amount or pay it off. A game loan is paid as EconoView pays it (`LoanEntryUi.PayOffLoan`: the game's
+  `ba:transaction_loanpayoff` under the bank's name, the amount off `remainingAmount`, the loan out of the list
+  with `ba:gameevent_loanpaid` when nothing is left); the credit file then reads it as it reads a payment made in
+  EconoView (`EconomyDirector.BringUpToDate`). A collections call that waits shows its three answers here as well.
+  Changing a game loan's daily payment stays in EconoView (a button opens it).
+- **Card**: a card held here: limit, balance, the share used, the rate, the statement, the minimum and its due day;
+  pay the minimum, an amount or all of it; draw cash; close it at nothing owed. The table is the card's own
+  movements over 30 days.
+- **Apply**: the bank's loan, overdraft, card, business loan, car finance, mortgage and consolidation, each with
+  its figures today; a page for each with the same question boxes as the Finance app.
+- **Rating**: the bank's terms at five ratings from just under the threshold to the best terms, and the player's
+  own: a loan up to (its cap before income and wealth), its rate, the card, the overdraft and car finance; what the
+  next 50 points would bring at this bank; what would raise the rating.
+
+### The game's parts
+
+The panel is `GameUi.AppShell` (copied from MyEmployees) like the Finance app's; tables are `GameUi.DataTable` with
+one set of `TableSpec`s per app (`BankTables`), so an order or a filter is that app's. The app's name on its button
+and in the menu's top bar is one text key, `reallife_bank_app` ("{bank}"), filled through the game's own
+`TextLocalizationComponent.Arguments` (`PhoneAppDef.TitleArguments`, game-ui.md section 33): it still follows a
+change of language. The icon is the game's app icon painted in one of three plain colours by rank; no bank's real
+name, logo or colours are used.
+
+### Cost
+
+No Update. Once a second (the credit side's timer) `BanksDirector` compares the banks wanted with the apps on the
+phone: a few comparisons while nothing changes, and at most one app put on a second (each copies a few hundred of
+the game's objects, so they never land in one frame together). The badges (debts behind or with a call waiting) are
+counted after the credit side's hour and day: one pass over the file's accounts and loans per bank. A page costs one
+pass over the accounts and loans; the statement one pass over the game's transaction history (at most about a
+thousand). Nothing runs while an app is closed.
+
+### Checks
+
+EconomyCheck (`BankChecks.cs`): the three profiles differ pairwise in rate, limit and fee; rank 0 gives every limit,
+rate and fee exactly as before at every rating; under the threshold every bank's every limit is 0 and at or over it
+every bank lends; limits never fall and rates never rise as the rating rises, at every bank; no rate under the floor;
+the fees; the ranking of branches and banks; its cost. In the game: Options > Tests > "Check the bank apps against
+Finance" writes `Bank check (figures)`: what every bank's Loans tab adds up with what no bank holds, against the
+Finance app's total, and that every bank refuses under the threshold. "Open the first bank's app" opens it on Apply.
+With diagnostics on, every page writes `Banks: <bank>, tab N written` with its height against the white box
+(`InfoBox.Fit`), and a game loan paid from an app writes `Bank check (loan payment)`.
+
+### Not verified (the game could not be run)
+
+That five tabs fit the bar and the eight columns of the Loans table fit (the Finance app has seven); that the white
+box holds the Card page with two rows of buttons; that the top bar shows the bank's name when an app opens from the
+full menu and from the HUD phone, and the game's own app's name again after it; that `Icon-Coin` is among the
+phone's sprites (the next glyph is used if not). The statement's matching by name relies on the data keys of the
+game's loan transactions (`businessName`, read from the decompiled `LoanHelper` and `LoanEntryUi`).
+
 ## Economy: the city
 
 The third part of the economy (`Scripts/Economy/City`; options "The city's economy" and "How far the economy

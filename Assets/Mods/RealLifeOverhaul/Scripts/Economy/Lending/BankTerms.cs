@@ -17,6 +17,7 @@ namespace RealLifeOverhaul.Economy
         public int Number;
         public string Name;
         public BankSettings Settings;
+        public int Rank;            // the bank's place by what it lends on its own terms, the largest 0 (BankRules.Rank); branches of one name share it
     }
 
     /// <summary>
@@ -54,8 +55,16 @@ namespace RealLifeOverhaul.Economy
         private static readonly Dictionary<BankSettings, Own> Originals = new Dictionary<BankSettings, Own>();
         private static readonly List<Lender> List = new List<Lender>(8);
         private static readonly List<BankSettings> Unique = new List<BankSettings>(4);
+        private static readonly List<Lender> Firsts = new List<Lender>(4);
+        private static readonly List<string> RankNames = new List<string>(8);
+        private static readonly List<float> RankCaps = new List<float>(8);
+        private static readonly List<int> RankOrder = new List<int>(8);
+        private static int[] _ranks = new int[8];
 
         public static IReadOnlyList<Lender> Lenders => List;
+
+        /// <summary>One branch of each bank, by rank (the largest lender first): the banks the bank apps are for.</summary>
+        public static IReadOnlyList<Lender> Banks => Firsts;
 
         /// <summary>True while the terms in memory are this class's and not the banks' own.</summary>
         public static bool Applied { get; private set; }
@@ -114,6 +123,7 @@ namespace RealLifeOverhaul.Economy
                 OwnCapTotal += Mathf.Max(0f, Originals[settings].Cap);
             }
             List.Sort((a, b) => string.CompareOrdinal(a.Name, b.Name));
+            RankBanks();
             House = null;
             for (int i = 0; i < List.Count; i++)
             {
@@ -123,6 +133,53 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             return List.Count;
+        }
+
+        // Each branch's rank, and one branch of each bank in rank order (BankRules.Rank: the same rule the offline check holds).
+        private static void RankBanks()
+        {
+            RankNames.Clear();
+            RankCaps.Clear();
+            Firsts.Clear();
+            for (int i = 0; i < List.Count; i++)
+            {
+                RankNames.Add(List[i].Name);
+                RankCaps.Add(OwnCap(List[i].Settings));
+            }
+            if (_ranks.Length < List.Count)
+            {
+                _ranks = new int[List.Count];
+            }
+            int banks = BankRules.Rank(RankNames, RankCaps, _ranks, RankOrder);
+            for (int i = 0; i < List.Count; i++)
+            {
+                List[i].Rank = _ranks[i];
+            }
+            for (int r = 0; r < banks; r++)
+            {
+                for (int i = 0; i < List.Count; i++)
+                {
+                    if (List[i].Rank == r)
+                    {
+                        Firsts.Add(List[i]);
+                        break;
+                    }
+                }
+            }
+        }
+
+        /// <summary>The bank a branch at this address belongs to, as its first branch in <see cref="Banks"/>; null if the city has no bank there.</summary>
+        public static Lender BankOf(string street, int number)
+        {
+            Lender branch = At(street, number);
+            return branch != null && branch.Rank >= 0 && branch.Rank < Firsts.Count ? Firsts[branch.Rank] : null;
+        }
+
+        /// <summary>Whether the branch at this address is one of this bank's.</summary>
+        public static bool IsBank(Lender bank, string street, int number)
+        {
+            Lender branch = At(street, number);
+            return bank != null && branch != null && branch.Rank == bank.Rank;
         }
 
         public static float OwnCap(BankSettings settings)
@@ -283,6 +340,7 @@ namespace RealLifeOverhaul.Economy
         {
             List.Clear();
             Unique.Clear();
+            Firsts.Clear();
             OwnCapTotal = 0f;
             House = null;
             Secured = null;

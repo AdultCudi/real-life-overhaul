@@ -826,6 +826,13 @@ namespace RealLifeOverhaul.Meta
                 .Cleanup(() => Economy.Ventures.VenturesDirector.Instance?.StopAll())
                 .ResetData(() => Economy.Ventures.VenturesDirector.Instance?.Forget());   // the director opens a new file from the (now empty) save on its next second
 
+            // The bank apps: one for each of the city's three largest banks, each a front on the credit desk. They keep no data:
+            // off, no bank app is on the phone and every account and loan stays as it is. They run only while the economy core does.
+            Features.Add("economy_banks", "reallife_meta_title_economy_banks")
+                .About("reallife_guide_economy_banks_about").Help("reallife_guide_economy_banks")
+                .Owns(Settings.EconomyBanksId)
+                .Test("reallife_bank_test_check", "reallife_bank_test_open");
+
             // Running a business. Off, none of it runs, nothing is charged or paid and every business's footfall is
             // without it. It runs only while the economy core does. (Cleaned up before the city's economy and the core: order -2.)
             Economy.CompanyGuide.AddFacts(Features.Add("economy_company", "reallife_meta_title_economy_company")

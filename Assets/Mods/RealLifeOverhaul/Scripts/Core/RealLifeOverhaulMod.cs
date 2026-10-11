@@ -558,6 +558,10 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_econ_test_set_560", () => Economy.EconomyDirector.Instance?.TestSet(560))
                 .AddButton("reallife_econ_test_set_600", () => Economy.EconomyDirector.Instance?.TestSet(600))
                 .AddButton("reallife_econ_test_set_760", () => Economy.EconomyDirector.Instance?.TestSet(760))
+                .AddToggle(Settings.EconomyBanksId, "reallife_bank_enabled", Settings.EconomyBanks,
+                    v => Settings.EconomyBanks = v)
+                .AddButton("reallife_bank_test_check", () => Economy.BanksDirector.Instance?.TestCheck())
+                .AddButton("reallife_bank_test_open", () => Economy.BanksDirector.Instance?.TestOpen())
                 .AddButton("reallife_econ_test_clear", () => Economy.EconomyDirector.Instance?.TestClear())
                 .AddButton("reallife_econ_test_restore", () => Economy.EconomyDirector.Instance?.TestRestore())
                 .AddButton("reallife_econ_test_open", () => Economy.EconomyDirector.Instance?.DeskTest(d => d.TestOpen()))
@@ -928,6 +932,8 @@ namespace RealLifeOverhaul
             Economy.EconomyDirector.Logger = context.Logger;
             Economy.FinanceApp.Logger = context.Logger;
             _root.AddComponent<Economy.EconomyDirector>();   // the credit rating, the banks' terms by it, loans from the phone and the Finance app (Scripts/Economy)
+            Economy.BanksDirector.Logger = context.Logger;
+            _root.AddComponent<Economy.BanksDirector>();   // the bank apps: one for each of the city's three largest banks, a front on the same credit desk (Scripts/Economy/Banks)
             Economy.CityEconomyDirector.Logger = context.Logger;
             _root.AddComponent<Economy.CityEconomyDirector>();   // the city's economy: a central bank, prices, a cycle, districts and supply (Scripts/Economy/City)
             Economy.Ventures.VenturesDirector.Logger = context.Logger;
