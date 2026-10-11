@@ -4150,12 +4150,11 @@ TravelState      what a save remembers, one line in modData under "reallife:trav
 TravelBridges    the doors to Home, Social, Law, Transport and Leisure, each with a working default
 TravelEffects    money, hunger, energy and travel's own happiness modifiers, through the game's systems
 TravelText       lines from en.json with their {names} filled
-TravelUi         the full-screen panel (picture of plain shapes, text, buttons), the door prompt, the hotel marker
 Hotels           which buildings are hotels; sign, awning, luggage cart, the one doorman, the city-map icons
-HotelStay        reception (the game's dialogue panel), the room as a panel, sleep through the game's time skip, checkout
-Holidays         agencies, the agent, tickets, the trip in cards, the Hamptons weekend, burnout, the trade fair
+HotelStay        the room as a list, sleep through the game's time skip, checkout; HotelReception is the desk's list
+Holidays         agencies, the agent, tickets, the trip as a list, the Hamptons weekend, burnout, the trade fair
 TravelPhone      the "Trips" contact (the page) and the agency's own number
-TravelDirector   the component: save and load, ticks, the key at a door, the watchdog, the test buttons
+TravelDirector   the component: save and load, ticks, the game's panel at a door, the watchdog, the test buttons
 ```
 
 ### What the game has
@@ -4236,19 +4235,37 @@ the Meridian Tower at Second Avenue 14 (Hell's Kitchen). Seabreeze Cottages is a
 (Ocean Crest Road 1; failing that the cinema, then Seventh Avenue 5). The log line "Travel: hotels:" lists what was
 picked.
 
-At the door the interaction key opens reception (the door's own key stands aside there; clicking the building still
-does what the game does). With a room it goes straight up. The room is the travel panel: sleep until the wake-up
-call or nap, shower, room service or the vending machine, minibar, laundry, stay in and rest, check messages, the
-concierge (luxury), a beach walk and dinner in the village (cottages), extend, late checkout, check out, go out.
-The player never moves: they stand at the door behind the panel, held by a navigation block of the game's own.
+At a hotel's door the game's own panel over a place (`GameUi.WorldPanel`, through `GameUi.DoorPanel`) names the hotel and
+says what is on offer: "Reception" on the interact key (off while a room is held), and "Go up to your room" on the
+secondary key when the room is booked there. The mod's own door key stands aside while it is up. Reception is a
+`GameUi.TravelList` (`HotelReception`): page one has an entry per room type with tonight's rate, the week's rate and
+how many are left; a room goes to page two (Back, an entry that steps the nights, Pay now, Leave a deposit). The result
+is a notification, and a booked room is gone up to at once. The room is a list as well (`HotelStay`): an entry per
+choice with its cost or effect under the name and the button off, with the reason, when it cannot be done (sleep, nap,
+wake-up call, shower, room service or the vending machine, minibar, laundry, rest, messages, the concierge (luxury),
+a beach walk and dinner in the village (cottages), extend, late checkout, check out, go out). Sleep, nap and rest
+keep the game's own time skip; while it runs the list has one entry, "Get up now", and cannot be cancelled. What a
+choice did is a notification. The player never moves: they stand at the door, held by a navigation block of the
+game's own. The list is one window shared by reception, the room and a trip (`TravelDirector.Window`, a `DeskList`).
+The mark that points to a hotel is the game's destination marker (`GameUi.GuideMark`).
+
+If the game's list cannot be copied (one "Game UI:" line says so): reception is the game's dialogue panel as before,
+the room sleeps the night at once and puts the player outside, and a trip is played through taking it easy each day.
+
+Log lines (with Developer diagnostics on): "Travel check (door panel): ...: PASS", "Travel check (reception list): the
+game's list is open: ...: PASS", "Travel check (room list): ...", "Travel check (trip list): ...", "Travel check (choice): ...".
+
+Not checked in the game: any of the above. The wording of the panel and the list, how the game's list looks with 20
+entries of two lines, whether its tall entries (a trip's text) fit, whether Cancel closes the room list as meant, and
+that the marker takes the guider when no job has it.
 
 ### Holidays
 
 At an open travel agency's door, or by phone once one has been visited (from the start in a city with no agency).
 The Hamptons weekend is real: setting off books the cottage from that night and the player travels there themselves;
-a night slept there makes it a holiday. The others are played in the panel: departure, a card a day (take it easy,
+a night slept there makes it a holiday. The others are played in the same list: departure, a page a day (take it easy,
 explore, splurge; each with an event from a pool of 72 that does not repeat), a day of game time skipped after each,
-and a return card that reads what the businesses made from the game's accounts. Before booking the agent says what
+and a return page that reads what the businesses made from the game's accounts. Before booking the agent says what
 is being left: how many businesses, what they made a day over the last week, open problems, the rent that carries on.
 
 Burnout: every day with a business to run or a job taken counts; after 18 a friend says so, after 24 a mild

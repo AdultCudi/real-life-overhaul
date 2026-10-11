@@ -187,7 +187,7 @@ namespace RealLifeOverhaul
                    || HudConfirm.isOpen || Feedback.IsOpen || PlayerActivityUI.IsPanelOpen
                    || PurchaseUI.IsPanelOpen || PurchaseVehicleUI.IsPanelOpen || InteriorDesignerUI.IsOpen
                    || BlueprintsPanel.IsOpen || AcknowledgeWarning.isOpen
-                   || CustomColorPicker.isOpen || LoadScene.isLoading || TravelUi.PanelOpen
+                   || CustomColorPicker.isOpen || LoadScene.isLoading
                    || BigAmbitions.PlacementSystem.PlacementSystem.IsInPlacementMode
                    || GameManager.ShouldBlockKeyboardShortcuts()
                    || Law.CustodyPanel.IsOpen   // the holding cell has buttons
