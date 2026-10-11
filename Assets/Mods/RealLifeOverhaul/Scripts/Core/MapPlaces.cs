@@ -340,7 +340,8 @@ namespace RealLifeOverhaul
                     {
                         marker.SetPermanent(offered);
                     }
-                    bool hide = open && !category.On;
+                    // A row that is not ticked hides its places in the street as on the open map: "off" means off.
+                    bool hide = !category.On;
                     if (marker.hidden != hide)
                     {
                         marker.SetHidden(hide);
@@ -471,6 +472,15 @@ namespace RealLifeOverhaul
                 }
             }
             Logger?.Warn("Map places: the city map's filter list could not be given the mod's rows (" + why + "); the mod's places are always shown on the map instead.");
+            // Said to the player once, with the one switch that still works: without rows nothing on the map turns them off.
+            try
+            {
+                UI.Notification.Notifications.Show(UI.Notification.NotificationType.Warning, "reallife_map_rows_failed", null, 14f);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
             Refresh();
         }
 
