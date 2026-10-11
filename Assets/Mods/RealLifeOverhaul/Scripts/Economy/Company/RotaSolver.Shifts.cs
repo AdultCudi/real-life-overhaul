@@ -110,9 +110,9 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- 3: goals first
 
-        // Whoever wants a least number of hours or a number of days gets shifts first: the heaviest demand first, and for each
-        // the most valuable days at the stations they can stand at, until their least is reached.
-        private void Goals()
+        // Whoever wants a least number of hours or a number of days gets shifts first, the heaviest demand first: this puts
+        // them in that order and says how many they are.
+        private int GoalsOrder()
         {
             int n = 0;
             for (int w = 0; w < _w; w++)
@@ -130,37 +130,39 @@ namespace RealLifeOverhaul.Economy
                 _order[j] = w;
             }
             Array.Clear(_rare, 0, _rare.Length);
-            for (int k = 0; k < n; k++)
+            return n;
+        }
+
+        // One of them: the most valuable days at the stations they can stand at, until their least is reached.
+        private void GoalsFor(int w)
+        {
+            for (int i = 0; i < Days * _s; i++)
             {
-                int w = _order[k];
-                for (int i = 0; i < Days * _s; i++)
+                bool hours = _weekH[w] < _minHours[w], days = _wantDays[w] > 0 && _daysOn[w] < _wantDays[w];
+                if (!hours && !days)
                 {
-                    bool hours = _weekH[w] < _minHours[w], days = _wantDays[w] > 0 && _daysOn[w] < _wantDays[w];
-                    if (!hours && !days)
+                    break;
+                }
+                int lane = _lanes[i], s = lane % _s, d = lane / _s, x, y;
+                if (_p.Can[w * _s + s] == 0 || _need[lane] == 0 || _p.Whole[s])
+                {
+                    continue;
+                }
+                bool newDay = _dayH[w * Days + d] == 0;
+                if (newDay ? (_wantDays[w] > 0 && !days) : !hours)
+                {
+                    continue;   // (their days are made up: hours only on days they work already; their hours are made up: only a day that is still wanted)
+                }
+                _pre[0] = 0;
+                for (int h = 0; h < Hours; h++)
+                {
+                    _pre[h + 1] = _pre[h] + Math.Max(0, _p.Value[(d * Hours + h) * _s + s]);
+                }
+                if (Window(0, w, d, s, _need[lane], out x, out y))
+                {
+                    for (int h = x; h < y; h++)
                     {
-                        break;
-                    }
-                    int lane = _lanes[i], s = lane % _s, d = lane / _s, x, y;
-                    if (_p.Can[w * _s + s] == 0 || _need[lane] == 0 || _p.Whole[s])
-                    {
-                        continue;
-                    }
-                    bool newDay = _dayH[w * Days + d] == 0;
-                    if (newDay ? (_wantDays[w] > 0 && !days) : !hours)
-                    {
-                        continue;   // (their days are made up: hours only on days they work already; their hours are made up: only a day that is still wanted)
-                    }
-                    _pre[0] = 0;
-                    for (int h = 0; h < Hours; h++)
-                    {
-                        _pre[h + 1] = _pre[h] + Math.Max(0, _p.Value[(d * Hours + h) * _s + s]);
-                    }
-                    if (Window(0, w, d, s, _need[lane], out x, out y))
-                    {
-                        for (int h = x; h < y; h++)
-                        {
-                            Assign(w, d * Hours + h, s);
-                        }
+                        Assign(w, d * Hours + h, s);
                     }
                 }
             }
@@ -168,19 +170,11 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- 4 and 6: shifts
 
-        // Day and station by day and station, the uncovered runs go out in shifts. True if anything was placed.
-        private bool Shifts(int level, bool relaxed)
+        // One day at one station, the i-th most valuable: its uncovered runs go out in shifts. True if anything was placed.
+        private bool ShiftsLane(int level, bool relaxed, int i)
         {
-            bool any = false;
-            for (int i = 0; i < Days * _s; i++)
-            {
-                int lane = _lanes[i], s = lane % _s;
-                if (_need[lane] != 0 && !_p.Whole[s])
-                {
-                    any |= Lane(level, lane / _s, s, relaxed);
-                }
-            }
-            return any;
+            int lane = _lanes[i], s = lane % _s;
+            return _need[lane] != 0 && !_p.Whole[s] && Lane(level, lane / _s, s, relaxed);
         }
 
         private bool Lane(int level, int d, int s, bool relaxed)

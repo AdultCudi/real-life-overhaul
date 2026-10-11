@@ -354,11 +354,7 @@ namespace RealLifeOverhaul
                 }
                 int own = reg.promotion.total;
                 int ambient = Ambient != null ? Ambient(reg) : 0;
-                if (percent != 0 || ambient != 0)
-                {
-                    float baseMultiplier = SaveGameManager.Current.gameVariables.baseCustomerPromotionMultiplier;
-                    reg.promotion.total = BusinessCatalogue.PromotionFor(own, percent, ambient, baseMultiplier);
-                }
+                reg.promotion.total = BusinessCatalogue.Written(own, percent, ambient, SaveGameManager.Current.gameVariables.baseCustomerPromotionMultiplier);
                 LastOwn = own;
                 LastWritten = reg.promotion.total;
                 if (regenerate)

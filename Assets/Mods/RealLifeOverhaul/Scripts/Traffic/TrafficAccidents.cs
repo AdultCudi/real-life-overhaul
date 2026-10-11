@@ -15,8 +15,12 @@ namespace RealLifeOverhaul
     /// a severity, which decides how many cars are involved, how they end up (shunted, spun,
     /// or, for a car or an SUV, rolled onto its side or roof), the smoke, fire and debris, who attends (police always, an ambulance for
     /// the worse ones), how long the scene lasts and how it is cleared. Some are hit-and-runs:
-    /// one driver bolts when the patrol car turns up, and is chased. Every scene is planned to be gone
+    /// one driver bolts when the patrol car turns up, and is chased (the chase itself is RoadChase). Every scene is planned to be gone
     /// within three minutes, and runs past that (five at most) only for a casualty still being seen to.
+    /// Where an accident comes from: with "Reckless drivers and natural accidents" on, from the road itself
+    /// (Traffic/Reckless: a car that really met another is handed in at BeginAt, as it stands, and everything
+    /// from there on is the same scene); with it off, or if that feature has switched itself off, from the
+    /// roll this class has always made every 20 seconds, which places two cars as wrecks out of view.
     /// This class decides what happens and when; ResponseUnit drives the vehicles,
     /// SceneParking says where they may stand, SceneCordon closes and tapes off the road,
     /// TrafficEffects builds what the vehicles and wrecks wear, and AccidentCast and
@@ -84,7 +88,6 @@ namespace RealLifeOverhaul
 
         private const float CrewGrace = 14f;            // seconds a unit waits past its time for a crew still walking back
         private const float StretcherGrace = 40f;       // ...and for paramedics bringing someone back on the stretcher
-        private const float ArrestAllowance = 45f;      // extra seconds a stopped suspect is held while the arrest is played out (hands up, cuffed, into the patrol car)
 
         private enum Phase { None, Tumbling, Active }
 
@@ -95,7 +98,8 @@ namespace RealLifeOverhaul
         // while it is moving along a lane.
         private enum Stage { Idle, Waiting, EnRoute, Chasing, OnScene, Ready, Leaving, Done }
 
-        private enum Chase { None, Planned, Fleeing, Stopping, Held }
+        // Planned: one driver will bolt when the patrol car turns up. Running: they have, and RoadChase has the two cars.
+        private enum Chase { None, Planned, Running }
 
         // How the scene is reported once it clears; one is picked at random.
         private static readonly string[] MinorEndings =
@@ -239,9 +243,12 @@ namespace RealLifeOverhaul
         private ResponseUnit _suspect;
         private Waypoint _fleeAnchor;
         private Chase _chase = Chase.None;
-        private float _chaseEnd;
-        private float _chaseHoldMin;
-        private bool _chaseCaught;
+        private readonly RoadChase _pursuit = new RoadChase();
+
+        // A collision that happened on the road (BeginAt): the cars stay exactly where they met, and the
+        // scene is announced by what caused it.
+        private bool _inPlace;
+        private string _causeKey;
 
         // The people. Both are told what happens and ticked from here; neither runs by itself.
         private readonly AccidentCast _people = new AccidentCast();
@@ -312,7 +319,9 @@ namespace RealLifeOverhaul
                     return;
                 }
                 _nextCheck = Time.time + CheckInterval;
-                if (Settings.TrafficAccidents && ModState.Loaded && TrafficTools.Ready && LifeEvents.IsSafeForEvent()
+                // The roll is the source of accidents only while the road itself is not (Traffic/Reckless). It has never
+                // run with the player indoors (traffic is switched off there), so there is nothing else for it to cover.
+                if (Settings.TrafficAccidents && !RecklessDrivers.IsSource && ModState.Loaded && TrafficTools.Ready && LifeEvents.IsSafeForEvent()
                     && !Wiring.Scenes.Near(PlayerHelper.GetPosition(), Wiring.Scenes.Beside, Wiring.Scene.Accident)   // no other scene, no building site beside it
                     && Random.value < Settings.AccidentFrequency * 0.02f * Events.Weather.AccidentFactor)
                 {
@@ -345,7 +354,7 @@ namespace RealLifeOverhaul
             UpdateMarker();
             TickAttendance(_ambulance, now);
             TickAttendance(_police, now);
-            if (_chase == Chase.Fleeing || _chase == Chase.Stopping || _chase == Chase.Held)
+            if (_chase == Chase.Running)
             {
                 TickChase(now);
             }
@@ -573,8 +582,9 @@ namespace RealLifeOverhaul
         /// <param name="scene">Where the marker points and the vehicles head for.</param>
         /// <param name="car">The traffic car that hit them, which stops here with its hazards on until the scene clears; or null.</param>
         /// <param name="byPlayer">The player did it, so walking up to the scene earns no thanks.</param>
+        /// <param name="asItStands">The car has really just stopped there, in view (a driver who hit somebody and stayed): it is held exactly as it stands, not turned askew.</param>
         /// <returns>False if a scene is already running or traffic is not.</returns>
-        public bool StageCasualty(ICasualty casualty, Vector3 scene, VehicleComponent car, bool fatal, bool byPlayer)
+        public bool StageCasualty(ICasualty casualty, Vector3 scene, VehicleComponent car, bool fatal, bool byPlayer, bool asItStands = false)
         {
             try
             {
@@ -610,7 +620,7 @@ namespace RealLifeOverhaul
                     _involved.Add(car.rb);
                     Quaternion askew = _heading * Quaternion.Euler(0f, Random.Range(8f, 20f) * (Random.value < 0.5f ? -1f : 1f), 0f);
                     _leadWreck = Seize(car);
-                    Pin(_leadWreck, body.position, IsPoseFree(car, body.position, askew) ? askew : _heading);
+                    Pin(_leadWreck, body.position, !asItStands && IsPoseFree(car, body.position, askew) ? askew : _heading);
                     AddEffect(_leadWreck, TrafficEffects.CreateFlasher(car, "RealLifeOverhaul Hazard", TrafficEffects.BeaconHeight(car),
                         new Color(1f, 0.55f, 0.05f), new Color(1f, 0.55f, 0.05f), 0.5f));
                     _leadWreck.Towed = false;   // it drives off when the scene clears
@@ -682,8 +692,88 @@ namespace RealLifeOverhaul
             return roll < 0.40f ? Severity.Minor : roll < 0.78f ? Severity.Moderate : Severity.Severe;
         }
 
+        /// <summary>
+        /// A collision that has just happened on the road, in front of whoever is looking: the scene starts
+        /// round the two cars exactly where they met. Nothing is moved into place (the old staging puts its
+        /// second car behind its first, out of view; here both are in view and stay as they are), and the
+        /// severity is what the speed they met at makes it: low a bump, middling a crash, high a serious one
+        /// with the same roll, smoke and fire rules as any other. From there on it is the scene every accident
+        /// is: drivers out, wrecks dressed, the road closed, ambulance and patrol car, a driver who may bolt.
+        /// </summary>
+        /// <param name="first">The car that caused it. It may be one the caller was driving a moment ago (ResponseUnit.HandOver): any car still on the road will do.</param>
+        /// <param name="second">The car it met, if that is an ordinary traffic car; null for a crash on its own (a wall, a parked car, the player's car).</param>
+        /// <param name="closingSpeed">How fast the two were closing, in m/s.</param>
+        /// <param name="noticeKey">What is said about it, by its cause; null for the usual sentence of its severity.</param>
+        /// <returns>False if no scene could start (another is on, traffic is not running): the caller still has the car to let go.</returns>
+        public bool BeginAt(VehicleComponent first, VehicleComponent second, float closingSpeed, string noticeKey)
+        {
+            try
+            {
+                if (_phase != Phase.None || first == null || !first.gameObject.activeInHierarchy || !ModState.Loaded || !TrafficTools.Ready
+                    || Wiring.Scenes.AnyBut(Wiring.Scene.Accident))
+                {
+                    return false;
+                }
+                if (second != null && (second == first || !IsUsable(second)))
+                {
+                    second = null;   // a taxi, an ambulance, a car somebody else of the mod holds: it was hit, but it is nobody's wreck
+                }
+                if (_recheck)
+                {
+                    Recheck();
+                }
+                Vector3 player = PlayerHelper.GetPosition();
+                _severity = (Severity)StreetRules.Severity(closingSpeed);
+                _inPlace = true;
+                _causeKey = noticeKey;
+                Transform lead = first.transform;
+                _origin = lead.position;
+                _heading = lead.rotation;
+                _scene = _origin;
+                _side = Random.value < 0.5f ? -1f : 1f;
+                _playerHelped = false;
+                _attended = false;
+                _fled = false;
+                _lingerUntil = 0f;
+                _chase = Chase.None;
+
+                _involved.Clear();
+                _involved.Add(first.rb);
+                if (second != null)
+                {
+                    _involved.Add(second.rb);
+                }
+                // The roll of a severe crash, by the rule every accident has: a car or an SUV, clear road ahead, not on top of the player.
+                bool tumble = _severity == Severity.Severe && Random.value < TumbleChance && Rolls(first) && CanTumble(first, player);
+
+                _leadWreck = Seize(first);
+                if (second != null)
+                {
+                    Pin(Seize(second), second.transform.position, second.transform.rotation);
+                }
+                Logger?.Info($"Accident: a collision on the road, closing at {closingSpeed * 3.6f:F0} km/h: {_severity}, {_wrecks.Count} car(s), "
+                             + $"{Vector3.Distance(player, _scene):F0} m away, left where they met{(tumble ? ", lead car rolling" : "")}.");
+                if (tumble)
+                {
+                    BeginTumble(first);
+                    return true;
+                }
+                Pin(_leadWreck, _origin, _heading);
+                CompleteStaging(tumbled: false);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                Clear(resumeTraffic: true, announce: false);
+                return false;
+            }
+        }
+
         private void TryStageAccident()
         {
+            _inPlace = false;
+            _causeKey = null;
             Vector3 player = PlayerHelper.GetPosition();
             List<VehicleComponent> pool = Manager.GetVehicleList();
             VehicleComponent first = FindLeadCar(player);
@@ -965,9 +1055,10 @@ namespace RealLifeOverhaul
             Vector3 right = _heading * Vector3.right;
             VehicleComponent first = _leadWreck.Car;
 
+            // (A collision that happened on the road: the cars are where they met, and none of the placing below applies.)
             // The third car first (it is taken off the end of the list if there is no room for it): it
             // swerved and ended up alongside, further out if the lead car is lying across the road.
-            if (_wrecks.Count > 2)
+            if (_wrecks.Count > 2 && !_inPlace)
             {
                 float gap = tumbled ? Random.Range(3.6f, 4.4f) : Random.Range(2.3f, 2.9f);
                 Vector3 position = _scene - right * _side * gap - forward * Random.Range(0.5f, 3f);
@@ -977,7 +1068,7 @@ namespace RealLifeOverhaul
                     LetGo(_wrecks[2]);
                 }
             }
-            if (_wrecks.Count > 1)
+            if (_wrecks.Count > 1 && !_inPlace)
             {
                 // Rear-end shunt: the second car is jammed into the back of the first; if the road there is
                 // taken, the first ran into the back of it instead. A car with no room either way was not in it.
@@ -992,7 +1083,7 @@ namespace RealLifeOverhaul
                 }
             }
             bool alone = _wrecks.Count == 1;
-            if (alone && !tumbled)
+            if (alone && !tumbled && !_inPlace)
             {
                 // One car on its own left the lane: over towards the side it is skewed to, if there is room.
                 Transform body = first.transform;
@@ -1007,7 +1098,7 @@ namespace RealLifeOverhaul
             _seatsEmptied = false;
 
             // Said only now, when it is known how many cars are really in it.
-            string key = alone
+            string key = _causeKey != null ? _causeKey : alone
                 ? (_severity == Severity.Minor ? "reallife_accident_single_minor"
                     : _severity == Severity.Moderate ? "reallife_accident_single_moderate"
                     : "reallife_accident_single_severe")
@@ -1016,8 +1107,10 @@ namespace RealLifeOverhaul
                     : "reallife_accident_severe");
             Notifications.Show(_severity == Severity.Severe ? NotificationType.Error : NotificationType.Warning, key, null, 8f, "reallife_accident");
 
-            // Some accidents are hit-and-runs: the lead driver will bolt when the police turn up.
-            if (Settings.Police && !tumbled && _wrecks.Count > 1 && Random.value < HitAndRunChance)
+            // Some accidents are hit-and-runs: the lead driver will bolt when the police turn up. (Where the cars
+            // stand as they met, only if the other one is not in front of it: it cannot drive off through a wreck.)
+            if (Settings.Police && !tumbled && _wrecks.Count > 1 && Random.value < HitAndRunChance
+                && (!_inPlace || Vector3.Dot(_wrecks[1].Car.transform.position - first.transform.position, forward) < 0f))
             {
                 PlanChase(first);
             }
@@ -1076,7 +1169,7 @@ namespace RealLifeOverhaul
 
             News.Report(NewsKind.Accident, _scene, null, (int)_severity);
             SessionWatch.Mark("traffic: an accident being staged");
-            Logger?.Info($"Accident staged: {_severity}, {_wrecks.Count} car(s){(alone ? " (single vehicle)" : "")}, clears within {total:F0} s{(planned ? ", hit-and-run planned" : "")}.");
+            Logger?.Info($"Accident {(_inPlace ? "scene begun where it happened" : "staged")}: {_severity}, {_wrecks.Count} car(s){(alone ? " (single vehicle)" : "")}, clears within {total:F0} s{(planned ? ", hit-and-run planned" : "")}.");
         }
 
         // Where the damage was done: between the first two cars, or just ahead of the nose of one on its own.
@@ -2658,8 +2751,14 @@ namespace RealLifeOverhaul
         {
             try
             {
-                // The waypoint the car was driving towards: ahead of it, in its own lane.
-                Waypoint anchor = TrafficManager.Instance.GetTargetWaypoint(car.GetIndex());
+                // The waypoint the car was driving towards: ahead of it, in its own lane. (A car that came here in the mod's
+                // hands has not been the traffic system's for a while, and what that remembers of it is behind it: the
+                // lane point ahead of its nose is asked for instead. One walk of the road graph, on this event only.)
+                Vector3 nose = car.transform.forward;
+                nose.y = 0f;
+                Waypoint anchor = _inPlace && nose.sqrMagnitude > 0.01f
+                    ? TrafficTools.ClosestWaypointAlong(car.transform.position + nose.normalized * (Mathf.Max(1.5f, car.length * 0.5f) + 3f), nose.normalized * 2f, 12f)
+                    : TrafficManager.Instance.GetTargetWaypoint(car.GetIndex());
                 if (anchor == null || TrafficTools.WalkForward(anchor, FleeRouteLength, 500, _routeScratch) < FleeRouteMinimum)
                 {
                     return;
@@ -2713,86 +2812,22 @@ namespace RealLifeOverhaul
             patrol.Driver.CruiseSpeed = ChaseSpeed;
 
             _police.Stage = Stage.Chasing;
-            _chase = Chase.Fleeing;
+            _chase = Chase.Running;
             _fled = true;
-            _chaseCaught = Random.value < 0.55f;
-            _chaseEnd = Mathf.Min(now + Random.Range(20f, 45f), _deadline - 22f);
+            bool caught = Random.value < 0.55f;
+            _pursuit.Begin(_suspect, patrol, _arrest, caught, Mathf.Min(now + Random.Range(20f, 45f), _deadline - 22f), arrest: true, "reallife_chase_caught");
             News.Report(NewsKind.HitAndRun, _scene);
-            Logger?.Info($"Accident: hit-and-run, {car.prefab.name} is running; will be {(_chaseCaught ? "caught" : "lost")}.");
+            Logger?.Info($"Accident: hit-and-run, {car.prefab.name} is running; will be {(caught ? "caught" : "lost")}.");
             Notifications.Show(NotificationType.Warning, "reallife_chase_start", null, 8f, "reallife_accident");
         }
 
+        // The chase itself (when the suspect brakes, when the two are held, the arrest at the roadside, when it is
+        // over) is RoadChase, which a reckless driver the police have seen is chased by as well.
         private void TickChase(float now)
         {
-            ResponseUnit patrol = _police.Unit;
-            if (_suspect.IsLost || patrol.IsLost)
+            if (_pursuit.Tick(now, out bool caught))
             {
-                // One of the two cars was taken off the road under us: nothing left to chase.
-                EndChase(caught: _chase == Chase.Held, now);
-                return;
-            }
-
-            switch (_chase)
-            {
-                case Chase.Fleeing:
-                    // Out of time, or the suspect ran out of road.
-                    if (now >= _chaseEnd || !_suspect.Driver.Active)
-                    {
-                        if (_chaseCaught)
-                        {
-                            _suspect.Driver.Brake();
-                            _chase = Chase.Stopping;
-                            _chaseEnd = now + 7f;
-                        }
-                        else
-                        {
-                            EndChase(caught: false, now);
-                        }
-                    }
-                    break;
-
-                case Chase.Stopping:
-                    if (!_suspect.Driver.Active)
-                    {
-                        _suspect.Park();   // stopped: held still from now, not left standing on its springs until the patrol car is up
-                    }
-                    // Wait for the suspect to stop and the patrol car to pull up behind it.
-                    bool pulledUp = patrol.Driver.Speed < 0.5f
-                                    && (patrol.Car.transform.position - _suspect.Car.transform.position).sqrMagnitude < 30f * 30f;
-                    if ((!_suspect.Driver.Active && pulledUp) || now >= _chaseEnd)
-                    {
-                        _suspect.Park();
-                        patrol.Park();
-                        _chase = Chase.Held;
-                        _chaseHoldMin = now + Random.Range(8f, 14f);
-                        _chaseEnd = _chaseHoldMin;
-                        OnSuspectStopped(now);
-                    }
-                    break;
-
-                case Chase.Held:
-                    // Held for the usual few seconds, and beyond them until the arrest has been played out.
-                    if (now >= _chaseEnd || (now >= _chaseHoldMin && _arrest.Finished))
-                    {
-                        EndChase(caught: true, now);
-                    }
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// The fleeing car has been stopped and the patrol car is parked behind it. This is the
-        /// one place that knows it, so the arrest starts here: the driver out with their hands
-        /// up, an officer walking up from the patrol car.
-        /// </summary>
-        private void OnSuspectStopped(float now)
-        {
-            Notifications.Show(NotificationType.Info, "reallife_chase_caught", null, 8f, "reallife_accident");
-            if (StreetSpots.BesideCar(_suspect.Car, StreetSpots.Left, 1f, out Vector3 door)
-                && _arrest.Begin(_police.Unit.Car, door, arrest: true, now))
-            {
-                // Both cars wait for the people; the scene's own deadline still ends everything.
-                _chaseEnd = _chaseHoldMin + ArrestAllowance;
+                EndChase(caught, now);
             }
         }
 
@@ -2815,6 +2850,7 @@ namespace RealLifeOverhaul
                 _police.Stage = Stage.Done;
             }
             _chase = Chase.None;
+            _pursuit.Reset();
 
             // The scene the suspect left behind stays a little longer, then clears if nobody else is working there.
             _attended = true;
@@ -2920,9 +2956,12 @@ namespace RealLifeOverhaul
                 bool drive = why != "error";
                 SendOff(_ambulance, resumeTraffic, drive);
                 SendOff(_police, resumeTraffic, drive);
-                _suspect.Release(resumeTraffic, remove: _chase == Chase.Held);
+                _suspect.Release(resumeTraffic, remove: _pursuit.Now == RoadChase.Step.Held);
             }
             _chase = Chase.None;
+            _pursuit.Reset();
+            _inPlace = false;
+            _causeKey = null;
             _phase = Phase.None;
             _nextCheck = Time.time + CheckInterval * 3f;
         }

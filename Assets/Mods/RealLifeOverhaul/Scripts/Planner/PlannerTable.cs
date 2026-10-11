@@ -22,7 +22,8 @@ namespace RealLifeOverhaul.Planner
     /// <summary>
     /// The Planner's table is the game's own (BaTable): the game's scroller makes only the rows in view and reuses
     /// them, selects a row on a click and colours it (BaTable.GetCellView, SelectRow). This class says how tall a row
-    /// is and who a row is; the header names are not fields of PlannerRow, so no column sorts (the agenda is in time order).
+    /// is and who a row is. The header names are not fields of PlannerRow, so the game's own sort takes no part: the
+    /// order and the filter are worked out by GameUi.TableModel and the rows are handed over in that order (PlannerApp.ShowRows).
     /// </summary>
     public sealed class PlannerTable : BaTable<PlannerCellView, PlannerRow>
     {
@@ -62,6 +63,19 @@ namespace RealLifeOverhaul.Planner
         public void ClearSelection()
         {
             SelectRow(null, null);
+        }
+
+        /// <summary>Brings the row of an id into the middle of what shows (after the order or the filter has changed).</summary>
+        public void ScrollTo(string id)
+        {
+            for (int i = 0; id != null && _started && scroller != null && i < data.Count; i++)
+            {
+                if (data[i].Id == id)
+                {
+                    scroller.JumpToDataIndex(i, 0.5f, 0.5f);
+                    return;
+                }
+            }
         }
     }
 

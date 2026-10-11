@@ -24,6 +24,10 @@ namespace RealLifeOverhaul
     /// Six people at once can be down with physics on them (RagdollSystem.MaxActive); a seventh makes the one who has lain longest a still body, which stays as it
     /// lies. Fourteen places in all; the oldest still bodies are taken away out of view. With nobody down this is one time comparison per
     /// frame; otherwise they are moved along four times a second.
+    /// A traffic car can hit somebody for real as well (StruckByTraffic): the one car CarStrikes watches for
+    /// Traffic/Reckless. The same roll from its real speed decides what it did to them, and once they lie
+    /// still the same scene is asked for, with the car that hit them standing in it if its driver stopped.
+    /// While that feature is the source of accidents, the staged incidents (a roll every 20 seconds) are not made.
     /// </summary>
     public class PedestrianIncidents : MonoBehaviour
     {
@@ -83,7 +87,7 @@ namespace RealLifeOverhaul
                 _nextCheck = now + CheckInterval;
                 try
                 {
-                    if (Settings.PedestrianIncidents && CanStage() && LifeEvents.IsSafeForEvent()
+                    if (Settings.PedestrianIncidents && !RecklessDrivers.IsSource && CanStage() && LifeEvents.IsSafeForEvent()
                         && !Wiring.Scenes.AnyLargeSceneActive   // (an accident, a crime, a fire or street event, a rally: Wiring/Scenes)
                         && Random.value < Settings.AccidentFrequency * 0.02f * StagedShare)
                     {
@@ -139,11 +143,19 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 anyone = true;
-                // Help is called once it is clear where they have ended up.
-                if (casualty.ByPlayer && !casualty.SceneAsked && casualty.Result != Casualty.Outcome.Knocked && casualty.Resting)
+                // Help is called once it is clear where they have ended up. (Somebody a staged incident put down has
+                // had it asked for already; anybody else who was not the player's doing was hit by a car on the road.)
+                if (!casualty.SceneAsked && casualty.Result != Casualty.Outcome.Knocked && casualty.Resting)
                 {
                     casualty.SceneAsked = true;
-                    CallHelp(casualty);
+                    if (casualty.ByPlayer)
+                    {
+                        CallHelp(casualty);
+                    }
+                    else
+                    {
+                        CallHelpStruck(casualty);
+                    }
                 }
             }
             if (!anyone)
@@ -172,6 +184,7 @@ namespace RealLifeOverhaul
                 {
                     return Strike.NoRagdoll;
                 }
+                HornReactions.LetGo(pedestrian);   // a pace raised or a stop made for a horn is undone before they are taken over
                 if (casualty.BeginPedestrian(pedestrian, Launch(carVelocity, speed), Roll(speed), true, Time.time))
                 {
                     OnPlayerHit(casualty, speed, playerCar);
@@ -202,6 +215,7 @@ namespace RealLifeOverhaul
                 {
                     return Strike.NoRagdoll;
                 }
+                HornReactions.LetGo(figure);   // turned to look at a horn: turned back first
                 if (casualty.BeginFigure(figure, Launch(carVelocity, speed), Roll(speed), true, Time.time))
                 {
                     _figureFailures = 0;
@@ -256,6 +270,166 @@ namespace RealLifeOverhaul
                 Logger?.Error(e);
                 ClearAll();
                 return Strike.Failed;
+            }
+        }
+
+        // ---------------------------------------------------------------- hit by traffic, on the road
+
+        /// <summary>
+        /// A traffic car has run into one of the game's pedestrians (CarStrikes saw them inside its box). What
+        /// it did to them is rolled from its real speed exactly as for the player's car; nobody is charged.
+        /// </summary>
+        /// <param name="speed">Impact speed in m/s.</param>
+        public Strike StruckByTraffic(Pedestrian pedestrian, Vector3 carVelocity, float speed, VehicleComponent car)
+        {
+            try
+            {
+                Strike why = CanStrike(pedestrian != null ? pedestrian.tpc : null);
+                if (why != Strike.Down)
+                {
+                    return why;
+                }
+                Casualty casualty = FreeCasualty();
+                if (casualty == null)
+                {
+                    return Strike.NoRagdoll;
+                }
+                HornReactions.LetGo(pedestrian);
+                // Somebody the mod sent across the road is the game's again from this line on (its ground and its
+                // scripts as they were), so that the casualty takes over an ordinary pedestrian.
+                bool stepped = Jaywalker.Yield(pedestrian);
+                if (casualty.BeginPedestrian(pedestrian, Launch(carVelocity, speed), Roll(speed), false, Time.time))
+                {
+                    OnTrafficHit(casualty, speed, car);
+                    return Strike.Down;
+                }
+                if (stepped && pedestrian != null && pedestrian.isActiveAndEnabled && InstanceBehavior<CityManager>.IsInitialized)
+                {
+                    pedestrian.Release();   // neither thrown down nor walking anywhere: back to the pool, whose next use of it is an ordinary one
+                }
+                return Strike.Failed;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                ClearAll();
+                return Strike.Failed;
+            }
+        }
+
+        /// <summary>A traffic car has run into one of the game's standing figures (StreetPeople).</summary>
+        public Strike StruckByTraffic(BaseHuman figure, Vector3 carVelocity, float speed, VehicleComponent car)
+        {
+            try
+            {
+                Strike why = _figuresOff ? Strike.Failed : CanStrike(figure, seatedToo: true);
+                if (why != Strike.Down)
+                {
+                    return why;
+                }
+                Casualty casualty = FreeCasualty();
+                if (casualty == null)
+                {
+                    return Strike.NoRagdoll;
+                }
+                HornReactions.LetGo(figure);
+                if (casualty.BeginFigure(figure, Launch(carVelocity, speed), Roll(speed), false, Time.time))
+                {
+                    _figureFailures = 0;
+                    OnTrafficHit(casualty, speed, car);
+                    return Strike.Down;
+                }
+                if (++_figureFailures >= 3)
+                {
+                    _figuresOff = true;
+                    Logger?.Warn("Pedestrian collisions: the game's standing figures cannot be thrown down (three in a row refused); they are left alone for this session.");
+                }
+                return Strike.Failed;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                ClearAll();
+                return Strike.Failed;
+            }
+        }
+
+        /// <summary>A traffic car has run into one of the mod's own people.</summary>
+        public Strike StruckByTraffic(StreetActor actor, Vector3 carVelocity, float speed, VehicleComponent car)
+        {
+            try
+            {
+                if (actor == null || !actor.IsValid)
+                {
+                    return Strike.NotCounted;
+                }
+                Strike why = CanStrike(actor.Character);
+                if (why != Strike.Down)
+                {
+                    return why;
+                }
+                Casualty casualty = FreeCasualty();
+                if (casualty == null)
+                {
+                    return Strike.NoRagdoll;
+                }
+                if (casualty.BeginActor(actor, Launch(carVelocity, speed), Roll(speed), false, Time.time))
+                {
+                    OnTrafficHit(casualty, speed, car);
+                    return Strike.Down;
+                }
+                return Strike.Failed;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                ClearAll();
+                return Strike.Failed;
+            }
+        }
+
+        /// <summary>How many people traffic has put on the ground who did not get up again, since the session began: a reckless driver's tick reads it to know it has hurt somebody.</summary>
+        public int TrafficHurt { get; private set; }
+
+        /// <summary>Whether the last of those died.</summary>
+        public bool TrafficKilled { get; private set; }
+
+        private void OnTrafficHit(Casualty casualty, float speed, VehicleComponent car)
+        {
+            _anyone = true;
+            _nextTick = Time.time + TickInterval;
+            Logger?.Info($"Pedestrian hit by traffic ('{TrafficTools.Name(car)}') at {speed * 3.6f:F0} km/h: {casualty.Result}.");
+            if (casualty.Result == Casualty.Outcome.Knocked)
+            {
+                Notifications.Show(NotificationType.Warning, "reallife_streets_knocked", null, 6f);
+                return;
+            }
+            TrafficHurt++;
+            TrafficKilled = casualty.Dead;
+        }
+
+        // An ambulance and a patrol car for someone a traffic car has put on the ground, with that car standing in the
+        // scene if its driver stopped (the reckless drivers' director says, and lets go of it). Nobody is left without
+        // help because another scene is on: as for the player's own victims, any other incident gives way.
+        private void CallHelpStruck(Casualty casualty)
+        {
+            TrafficAccidents accidents = TrafficAccidents.Instance;
+            if (accidents == null || accidents.HasCasualty)
+            {
+                return;   // crews are already attending someone here; this one goes with the same ambulance
+            }
+            StreetCrime.EndActive();
+            TrafficAccidents.EndActive();
+            RecklessDrivers drivers = RecklessDrivers.Instance;
+            VehicleComponent car = drivers != null ? drivers.GiveUpStriker() : null;
+            if (accidents.StageCasualty(casualty, casualty.Position, car, casualty.Dead, byPlayer: false, asItStands: true))
+            {
+                Notifications.Show(casualty.Dead ? NotificationType.Error : NotificationType.Warning,
+                    StagedStarts[Random.Range(0, StagedStarts.Length)], null, 8f, "reallife_accident");
+            }
+            else if (car != null)
+            {
+                TrafficTools.ReturnToTraffic(car, "a driver who stopped for somebody they hit: no scene could start");
             }
         }
 

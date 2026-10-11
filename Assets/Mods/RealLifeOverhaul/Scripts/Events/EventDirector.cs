@@ -93,6 +93,15 @@ namespace RealLifeOverhaul.Events
         private VehicleComponent _crashCar;
         private float _crashUntil;
 
+        private bool PrewarmEffects()
+        {
+            if (Settings.CityFires)
+            {
+                Effects.Ready();   // false if the game has no smoke in memory yet: it looks again by itself, two minutes on
+            }
+            return true;
+        }
+
         private void Awake()
         {
             Instance = this;
@@ -100,6 +109,9 @@ namespace RealLifeOverhaul.Events
             People = new EventPeople(gameObject, Props);
             Cordon = new SceneCordon(transform);
             Effects = new FireEffects(transform);
+            // The fire's flames and smoke are copies of the game's smoke, found by going through everything in memory and
+            // then built: behind the loading screen, not in the frame the first fire starts.
+            ScenePrewarm.Add("events: the fire's flames and smoke being built", PrewarmEffects);
             Sky = new Fireworks(transform);
             Hose = new Hose(transform);
             Hold = gameObject.AddComponent<HoseHold>();

@@ -18,14 +18,20 @@ namespace RealLifeOverhaul.Economy
         private void WriteSale(InfoBox box, ServicesState state, int day, ref string selected)
         {
             SaleOffer bid = null;
+            bool isPicked;
+            _spec = ServicesTables.Sale;
             for (int i = 0; i < state.SaleOffers.Count; i++)
             {
                 SaleOffer o = state.SaleOffers[i];
                 SaleListing l = state.Listing(o.Place);
-                if (Pick("bid:" + o.Id, l != null ? l.Name : "?", ServicesText.Buyer(o), ServicesText.Money(o.Price), ServicesText.T("reallife_svc_row_answer_by", "day", o.Deadline.ToString()), 1, ref selected))
-                {
-                    bid = o;
-                }
+                TableRow row = Pick("bid:" + o.Id, ServicesTables.Bid, ref selected, out isPicked);
+                row.Set(0, l != null ? l.Name : "?");
+                row.Set(1, ServicesText.Buyer(o));
+                row.Set(3, ServicesText.Money(o.Price), o.Price);
+                row.Set(5, ServicesText.T("reallife_econ_day", "day", o.Deadline.ToString()), o.Deadline);
+                row.Set(6, ServicesText.T("reallife_svc_row_answer_by", "day", o.Deadline.ToString()), TableRow.Yellow);
+                row.NoTotal = true;   // (the total is what the businesses are worth)
+                bid = isPicked ? o : bid;
             }
             BuildingRegistration picked = null;
             ServicesGame.Sellable(_sellable);
@@ -35,11 +41,18 @@ namespace RealLifeOverhaul.Economy
                 string place = ServicesGame.Place(reg);
                 SaleListing l = state.Listing(place);
                 SaleBreakdown b = _director.Value(reg);
-                if (Pick("sell:" + place, ServicesGame.Name(reg), ServicesText.District(reg.Neighborhood), ServicesText.Money(b.Value),
-                    l != null ? ServicesText.T("reallife_svc_row_listed", "amount", ServicesText.Money(l.Asking), "count", state.OffersFor(place).ToString()) : ServicesText.T("reallife_svc_row_not_listed"), 0, ref selected))
+                TableRow row = Pick("sell:" + place, l != null ? ServicesTables.Listed : ServicesTables.Unlisted, ref selected, out isPicked);
+                row.Set(0, ServicesGame.Name(reg));
+                row.Set(1, ServicesText.District(reg.Neighborhood));
+                row.Set(2, ServicesText.Money(b.Value), b.Value);
+                if (l != null)
                 {
-                    picked = reg;
+                    int offers = state.OffersFor(place);
+                    row.Set(3, ServicesText.Money(l.Asking), l.Asking);
+                    row.Set(4, offers.ToString(), offers);
                 }
+                row.Set(6, ServicesText.T(l != null ? "reallife_svc_row_on_market" : "reallife_svc_row_not_listed"), l != null ? TableRow.Green : TableRow.Plain);
+                picked = isPicked ? reg : picked;
             }
             if (_sellable.Count == 0)
             {

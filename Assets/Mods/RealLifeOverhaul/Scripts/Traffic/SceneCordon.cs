@@ -66,6 +66,7 @@ namespace RealLifeOverhaul
         private const float BarrierOut = 0.7f;    // metres outside an end's tape that its barriers stand
         private const float BarrierWall = 1.22f;  // an end's wall, tape and barriers together: from just inside the tape to the barriers' far face
         private const float CarveWait = 0.8f;     // seconds after the walls go up before the navigation mesh is asked about them
+        private const float WallSame = 0.02f;     // metres: a wall asked to stand this close to where it stands is not moved (no second cut of the mesh)
         private const float GateOpenFor = 0.6f;   // seconds: long enough for the car at the front to set off
         private const int MaxPosts = 24;
         private const int MaxCones = TaperCones * 2;
@@ -105,6 +106,7 @@ namespace RealLifeOverhaul
         private float _outward;
         private float _carveAt;      // when the walls are looked for in the navigation mesh; 0 when there is nothing to look at
         private int _carveTries;
+        private int _wallsChanged;   // walls moved, put up or taken away by the last dressing: what the navigation mesh is cut again for
         private int _tapeBlocked;    // stretches of tape left out because something solid stood between their posts
         private string _blockedBy;
         private int _movedPosts;     // posts that could not stand on their line and were moved in
@@ -175,6 +177,43 @@ namespace RealLifeOverhaul
         public SceneCordon(Transform host)
         {
             _host = host;
+            ScenePrewarm.Add("cordon: its posts, tape, cones, barriers and walls being made", Prewarm);
+        }
+
+        private int _prewarmTries;
+
+        // The seventy-odd props of a cordon are made where it is not seen (behind the loading screen, or the game's black
+        // screen at a door once the modelled props have loaded), not in the frame the first tape of a city goes up.
+        // Given up after a few looks if the props never load: they are then made on first need, as before.
+        private bool Prewarm()
+        {
+            if (_failed || (_props != null && _modelled) || !Settings.TrafficAccidents && !Settings.CityFires && !Settings.StreetEvents)
+            {
+                return true;
+            }
+            if (Closed || Up)
+            {
+                return false;   // a scene is using what there is: looked at again the next time
+            }
+            if (!Shapes.Available || !PropLibrary.Ready)
+            {
+                return ++_prewarmTries >= 5;
+            }
+            try
+            {
+                if (_props != null)
+                {
+                    UnityEngine.Object.Destroy(_props);   // built from plain shapes before the modelled props had loaded
+                    _props = null;
+                }
+                Build();
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                _props = null;
+            }
+            return true;
         }
 
         /// <summary>True from Close to Open, if the road was shut: road points are switched off.</summary>
@@ -333,7 +372,9 @@ namespace RealLifeOverhaul
                 ClearStranded();
                 if (Shapes.Available)
                 {
+                    int dressing = SessionWatch.Mark("cordon: the tape, posts, barriers and walls being put up");
                     Dress(now);
+                    SessionWatch.Done(dressing);
                 }
             }
             catch (Exception e)
@@ -357,6 +398,7 @@ namespace RealLifeOverhaul
             if (_props != null && _props.activeSelf)
             {
                 _props.SetActive(false);   // the walls with them: people on foot can cross again
+                MeshCuts.Note("a cordon's walls taken down", _wallCount);
                 Logger?.Info("Cordon: tape, barriers and cones taken down; the road stays closed until the scene is cleared.");
             }
         }
@@ -1502,11 +1544,18 @@ namespace RealLifeOverhaul
 
             // The tape that went up, as walls for anyone on foot: the openings are simply where no tape runs.
             bool walled = !_crossing && _wallCount > 0;
+            _wallsChanged = 0;
             for (int i = 0; i < Walls; i++)
             {
                 bool used = walled && i < _wallCount && SetWall(i);
-                _walls[i].gameObject.SetActive(used);
+                GameObject box = _walls[i].gameObject;
+                if (box.activeSelf != used)
+                {
+                    _wallsChanged += used ? 0 : 1;   // (a wall that SetWall moved was counted there)
+                    box.SetActive(used);
+                }
             }
+            MeshCuts.Note("a cordon's walls", _wallsChanged);   // all in this one frame: the engine cuts the mesh once for the lot
             _props.SetActive(true);
             _carveAt = walled ? now + CarveWait : 0f;
             _carveTries = 0;
@@ -1590,12 +1639,25 @@ namespace RealLifeOverhaul
                 centre += _forward * (_wallOut[index] * (BarrierWall - WallThickness) * 0.5f);
             }
             NavMeshObstacle wall = _walls[index];
-            wall.carveOnlyStationary = true;
-            MeshCuts.Note("a cordon's walls");
-            wall.transform.SetPositionAndRotation(centre, Quaternion.LookRotation(run / length, Vector3.up));
+            GameObject box = wall.gameObject;
+            Transform stands = wall.transform;
+            Quaternion facing = Quaternion.LookRotation(run / length, Vector3.up);
             // From a metre under the road to two above it: the mesh need not lie exactly where the road's collider does.
+            var size = new Vector3(depth, 3f, length + (_wallOut[index] != 0f ? 0f : WallThickness));
+            // The tape run again round the crew's way finds most walls where they stand. A wall that has not moved is
+            // left exactly as it is, so the engine does not cut the mesh a second time for it; one that has is moved
+            // while switched off (a carving obstacle moved while it carves is un-cut and cut again).
+            if (box.activeSelf && (stands.position - centre).sqrMagnitude < WallSame * WallSame && Quaternion.Angle(stands.rotation, facing) < 0.5f
+                && (wall.size - size).sqrMagnitude < WallSame * WallSame)
+            {
+                return true;
+            }
+            box.SetActive(false);
+            wall.carveOnlyStationary = true;
+            stands.SetPositionAndRotation(centre, facing);
             wall.center = new Vector3(0f, 0.5f, 0f);
-            wall.size = new Vector3(depth, 3f, length + (_wallOut[index] != 0f ? 0f : WallThickness));
+            wall.size = size;
+            _wallsChanged++;
             return true;
         }
 
@@ -1635,6 +1697,7 @@ namespace RealLifeOverhaul
                         wall.carveOnlyStationary = false;
                         wall.gameObject.SetActive(false);
                         wall.gameObject.SetActive(true);
+                        MeshCuts.Note("a cordon's wall told to cut at once");
                     }
                     Report.Append(Report.Length > 0 ? ", " : "").Append(_wallOut[i] != 0f ? "end " : "side ")
                         .Append(wall.size.z.ToString("F1")).Append(whole ? " m NOT cut" : " m cut");

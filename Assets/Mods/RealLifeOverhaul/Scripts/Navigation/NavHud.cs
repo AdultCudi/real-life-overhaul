@@ -21,6 +21,8 @@ namespace RealLifeOverhaul.Nav
     ///     Headline       the task panel's headline: "Map", or where the route leads
     ///     Viewport       the task panel's mask
     ///       Ground       a tint under the roads
+    ///       Base         the city under the roads (NavBase: buildings and water): a square like the roads', turned
+    ///                    with it, with a window of its own on its own picture; off unless the option is on
     ///       Roads        the map picture: one square as wide as the view's diagonal, turned with the player; which
     ///                    part of the picture it shows is its texture window, set when the player has moved
     ///       Spin         turned and scaled like the roads; one unit inside it is one metre
@@ -65,6 +67,10 @@ namespace RealLifeOverhaul.Nav
         private readonly RectTransform _view;
         private readonly RectTransform _roads;
         private readonly RawImage _roadsImage;
+        private readonly RectTransform _base;
+        private readonly RawImage _baseImage;
+        private float _baseX, _baseZ, _baseWidth, _baseHeight;   // the piece of the world the base picture covers
+        private bool _alone;
         private readonly RectTransform _spin;
         private readonly RectTransform _world;
         private readonly NavRouteLine _route;
@@ -166,6 +172,11 @@ namespace RealLifeOverhaul.Nav
             Image groundImage = groundRect.gameObject.AddComponent<Image>();
             groundImage.color = ground;
             groundImage.raycastTarget = false;
+
+            _base = Child("Base", _view);
+            _baseImage = _base.gameObject.AddComponent<RawImage>();
+            _baseImage.raycastTarget = false;
+            _baseImage.enabled = false;   // until the picture is there (and never, with its option off)
 
             _roads = Child("Roads", _view);
             _roadsImage = _roads.gameObject.AddComponent<RawImage>();
@@ -407,8 +418,39 @@ namespace RealLifeOverhaul.Nav
         public void SetPicture(Texture picture)
         {
             _roadsImage.texture = picture;
-            _roadsImage.enabled = picture != null;
+            _roadsImage.enabled = picture != null && !_alone;
             _px = float.MaxValue;
+        }
+
+        /// <summary>
+        /// The city under the roads (buildings and water) and the piece of the world it covers, when it has been made;
+        /// null takes it away again, and the minimap is as it is without it.
+        /// </summary>
+        public void SetBase(Texture picture, float originX, float originZ, float worldWidth, float worldHeight)
+        {
+            if (_baseImage == null)
+            {
+                return;   // the panel's objects are destroyed with the scene before the director is
+            }
+            _baseX = originX;
+            _baseZ = originZ;
+            _baseWidth = worldWidth;
+            _baseHeight = worldHeight;
+            _baseImage.texture = picture;
+            _baseImage.enabled = picture != null && worldWidth > 0f && worldHeight > 0f;
+            _px = float.MaxValue;
+        }
+
+        /// <summary>For a test: the base picture with nothing over it but the player (no roads, route or markers), or everything again.</summary>
+        public void Alone(bool alone)
+        {
+            if (_alone == alone || _roadsImage == null || _spin == null)
+            {
+                return;
+            }
+            _alone = alone;
+            _roadsImage.enabled = !alone && _roadsImage.texture != null;
+            _spin.gameObject.SetActive(!alone);
         }
 
         /// <summary>
@@ -489,6 +531,7 @@ namespace RealLifeOverhaul.Nav
             _view.offsetMax = new Vector2(-ViewSide, -Head);
             float diagonal = Mathf.Ceil(Mathf.Sqrt(ViewWidth * ViewWidth + mapHeight * mapHeight)) + 2f;
             _roads.sizeDelta = new Vector2(diagonal, diagonal);
+            _base.sizeDelta = _roads.sizeDelta;
             PlaceLine(_line1, Foot + LineHeight + 4f, lines);
             PlaceLine(_line2, Foot + 4f, lines);
             _px = float.MaxValue;   // the view is another size: everything in it is written again
@@ -699,6 +742,7 @@ namespace RealLifeOverhaul.Nav
                 _turn = turn;
                 var angles = new Vector3(0f, 0f, turn);
                 _roads.localEulerAngles = angles;
+                _base.localEulerAngles = angles;
                 _spin.localEulerAngles = angles;
             }
             if (scaled)
@@ -719,6 +763,11 @@ namespace RealLifeOverhaul.Nav
                 NavView.Window(px, pz, _graph.OriginX, _graph.OriginZ, _graph.WorldWidth, _graph.WorldHeight, _roads.sizeDelta.x / _scale,
                                out float u, out float v, out float w, out float h);
                 _roadsImage.uvRect = new Rect(u, v, w, h);
+            }
+            if (_baseImage.enabled)
+            {
+                NavView.Window(px, pz, _baseX, _baseZ, _baseWidth, _baseHeight, _base.sizeDelta.x / _scale, out float u, out float v, out float w, out float h);
+                _baseImage.uvRect = new Rect(u, v, w, h);
             }
             if (_goalOn)
             {

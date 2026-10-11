@@ -43,6 +43,10 @@ namespace RealLifeOverhaul.Meta
                 .Owns(Settings.CameraEnabledId, Settings.MouseLookId, Settings.MouseSensitivityId, Settings.EnterWithKeyId, Settings.CameraIndoorsId,
                     Settings.CameraPitchId, Settings.CameraDistanceId, Settings.CameraFovId, Settings.CameraHeightId, Settings.CarCameraId,
                     Settings.CarCameraDistanceId, Settings.CameraFollowId)
+                // While another author's mod drives the camera these do nothing, and the page says so (Camera/CameraYield).
+                .StandsAside(CameraYield.Sentence, Settings.CameraEnabledId, Settings.MouseLookId, Settings.MouseSensitivityId, Settings.CameraIndoorsId,
+                    Settings.CameraPitchId, Settings.CameraDistanceId, Settings.CameraFovId, Settings.CameraHeightId, Settings.CarCameraId,
+                    Settings.CarCameraDistanceId, Settings.CameraFollowId)
                 .Cleanup(() => ThirdPersonCamera.Focus = null);
 
             Features.Add("character", "reallife_meta_title_character")
@@ -244,6 +248,26 @@ namespace RealLifeOverhaul.Meta
                     SceneObstacles.Clear();
                 }, 10);
 
+            Features.Add("streets", "reallife_meta_title_streets")
+                .About("reallife_guide_streets_about").Help("reallife_guide_streets")
+                .Owns(Settings.HornReactionsId, Settings.NaturalAccidentsId)
+                .Test("reallife_test_streets_speeder", "reallife_test_streets_redlight", "reallife_test_streets_drunk", "reallife_test_streets_jaywalker",
+                    "reallife_test_streets_hit", "reallife_test_streets_crash", "reallife_test_streets_patrol")
+                .Fact("horn_reach", () => Guide.Number(StreetRules.HornReach))
+                .Fact("horn_most", () => Guide.Number(StreetRules.HornMost))
+                .Fact("horn_officer", () => Guide.Number(StreetRules.OfficerWithin))
+                .Fact("horn_fine", () => Guide.Money(CrimeLaw.HornFine))
+                .Fact("reckless_least", () => Guide.Number(StreetRules.LastsLeast))
+                .Fact("reckless_most", () => Guide.Number(StreetRules.LastsMost))
+                .Fact("crash_minor", () => Guide.Number((float)System.Math.Round(StreetRules.MinorBelow * 3.6f)))
+                .Fact("crash_severe", () => Guide.Number((float)System.Math.Round(StreetRules.SevereFrom * 3.6f)))
+                .Cleanup(() =>
+                {
+                    // Before the accident scene's own cleanup: the car, the patrol car and whoever was in the road are given back first.
+                    RecklessDrivers.Instance?.EndNow("the options page's cleanup");
+                    HornReactions.Instance?.ReleaseAll("the options page's cleanup");
+                }, 5);
+
             Features.Add("visuals", "reallife_meta_title_visuals")
                 .Group("reallife_visuals_header")
                 .About("reallife_guide_visuals_about").Help("reallife_guide_visuals")
@@ -257,7 +281,8 @@ namespace RealLifeOverhaul.Meta
 
             Features.Add("performance", "reallife_meta_title_performance").As(FeatureKind.Performance)
                 .Group("reallife_perf_header")
-                .About("reallife_guide_performance_about").Help("reallife_guide_performance");
+                .About("reallife_guide_performance_about").Help("reallife_guide_performance")
+                .Test("reallife_perf_test_session", SessionWatch.TestSay);
             foreach (PerfTweak tweak in PerfTweaks.All)
             {
                 if (!tweak.Trial)
@@ -514,7 +539,8 @@ namespace RealLifeOverhaul.Meta
             Features.Add("navigation", "reallife_meta_title_nav")
                 .Group("reallife_nav_header")
                 .About("reallife_guide_nav_about").Help("reallife_guide_nav")
-                .Owns(Settings.MinimapId, Settings.GpsId, Settings.MinimapRotateId, Settings.MinimapSizeId, Settings.MinimapZoomId)
+                .Owns(Settings.MinimapId, Settings.GpsId, Settings.MinimapRotateId, Settings.MinimapSizeId, Settings.MinimapZoomId, Settings.MinimapBaseId, Settings.NavOtherRouteId)
+                .Present(Settings.NavOtherRouteId, () => OtherMods.VoogleRoute.Loaded)   // a row that is there only with that mod switched on
                 .Objects(Nav.NavHud.PanelName, Nav.NavCityMap.ObjectName)
                 .Fact("nav_arrive_foot", () => Nav.NavTracker.ArriveOnFoot.ToString("F0", CultureInfo.InvariantCulture))
                 .Fact("nav_arrive_car", () => Nav.NavTracker.ArriveDriving.ToString("F0", CultureInfo.InvariantCulture))
@@ -822,6 +848,7 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_economy_sale_about").Help("reallife_guide_economy_sale")
                 .Owns(Settings.EconomySaleId)
                 .Test("reallife_svc_test_offer", "reallife_svc_test_sale_paper", "reallife_svc_test_part"));
+            Roommates.RoommateGuide.Register();   // sharing the flat: the feature, its option, its save line, its tests and its Guide figures (Scripts/Home/Roommates)
         }
 
         private static string Whole(int value)

@@ -21,6 +21,8 @@ namespace RealLifeOverhaul.Economy
         private void WriteCleaning(InfoBox box, ServicesState state, int day, ref string selected)
         {
             CleaningClient picked = null;
+            bool isPicked;
+            _spec = ServicesTables.Cleaning;
             int now = ServicesGame.Now, planned = 0, left = 0;
             for (int i = 0; i < state.Clients.Count; i++)
             {
@@ -30,11 +32,29 @@ namespace RealLifeOverhaul.Economy
                     : c.NextStart >= 0 ? ServicesText.T(c.NextStart <= now ? "reallife_svc_row_in_now" : "reallife_svc_row_next", "time", ServicesText.Clock(c.NextStart), "name", c.NextBy)
                     : !c.Outside && !c.Open ? ServicesText.T("reallife_svc_row_closed") : ServicesText.T(c.Mode == ServicesCatalogue.ModeAsNeeded ? "reallife_svc_row_waiting" : "reallife_svc_row_done");
                 left += c.Unserved > 0 ? 1 : 0;
-                if (Pick("cli:" + c.Place, c.Name, ServicesText.T(need > 0 ? "reallife_svc_row_needs" : "reallife_svc_row_needs_unknown", "need", need.ToString(), "got", c.MinutesToday.ToString()),
-                    ServicesText.Trend(c.Now, c.CleanBefore), next, c.Unserved > 0 ? 2 : c.Now < ServicesCatalogue.CleanlinessWarn ? 1 : 0, ref selected))
+                TableRow row = Pick("cli:" + c.Place, c.Outside ? ServicesTables.Contract : ServicesTables.Own, ref selected, out isPicked);
+                row.Set(0, c.Name);
+                row.Set(1, ServicesText.District(c.District));
+                if (need > 0)
                 {
-                    picked = c;
+                    row.Set(2, need.ToString(), need);
                 }
+                else
+                {
+                    row.Set(2, ServicesText.T("reallife_svc_row_needs_unknown"));
+                }
+                row.Set(3, c.MinutesToday.ToString(), c.MinutesToday);
+                row.Set(4, ServicesText.Trend(c.Now, c.CleanBefore), c.Now, c.Now < ServicesCatalogue.CleanlinessWarn ? TableRow.Yellow : TableRow.Plain);
+                if (c.NextStart >= 0 && c.Unserved == 0)
+                {
+                    row.Set(5, next, c.NextStart);
+                }
+                else
+                {
+                    row.Set(5, next, c.Unserved > 0 ? TableRow.Red : TableRow.Plain);
+                }
+                row.Set(6, ServicesText.T(c.Outside ? "reallife_svc_row_contract" : "reallife_svc_row_on"));
+                picked = isPicked ? c : picked;
             }
             IReadOnlyList<DayVisit> visits = _director.Visits;
             for (int i = 0; i < visits.Count; i++)
@@ -46,11 +66,17 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < _shops.Count; i++)
             {
                 string place = ServicesGame.Place(_shops[i]);
-                if (state.Client(place) == null && Pick("add:" + place, ServicesGame.Name(_shops[i]), ServicesText.District(_shops[i].Neighborhood),
-                        ServicesGame.Cleanliness(_shops[i]).ToString(), ServicesText.T("reallife_svc_row_not_on"), 0, ref selected))
+                if (state.Client(place) != null)
                 {
-                    adding = _shops[i];
+                    continue;
                 }
+                int clean = ServicesGame.Cleanliness(_shops[i]);
+                TableRow row = Pick("add:" + place, ServicesTables.NotOn, ref selected, out isPicked);
+                row.Set(0, ServicesGame.Name(_shops[i]));
+                row.Set(1, ServicesText.District(_shops[i].Neighborhood));
+                row.Set(4, clean.ToString(), clean, clean < ServicesCatalogue.CleanlinessWarn ? TableRow.Yellow : TableRow.Plain);
+                row.Set(6, ServicesText.T("reallife_svc_row_not_on"));
+                adding = isPicked ? _shops[i] : adding;
             }
             _shops.Clear();
             if (_rows.Count == 0)
@@ -182,6 +208,8 @@ namespace RealLifeOverhaul.Economy
         private void WriteCrew(InfoBox box, ServicesState state, ref string selected)
         {
             EmployeeInstance picked = null;
+            bool isPicked;
+            _spec = ServicesTables.Crew;
             ServicesGame.Cleaners(_cleaners);
             for (int i = 0; i < _cleaners.Count; i++)
             {
@@ -189,11 +217,27 @@ namespace RealLifeOverhaul.Economy
                 string today = !_member.Present ? ServicesText.T("reallife_svc_crew_sick")
                     : _member.TodayFrom >= 0 ? ServicesText.T("reallife_svc_crew_shift", "from", ServicesText.Clock(_member.TodayFrom), "to", ServicesText.Clock(Mathf.Min(_member.TodayTo, 24 * 60 - 1)))
                     : ServicesText.T("reallife_svc_crew_no_shift");
-                if (Pick("emp:" + _member.Id, _member.Name, _member.Base != null ? _member.BaseName : ServicesText.T("reallife_svc_crew_no_base"), today,
-                    ServicesText.T(state.InCrew(_member.Id) ? "reallife_svc_crew_on" : "reallife_svc_crew_off"), state.InCrew(_member.Id) && (_member.Base == null || !_member.Present) ? 1 : 0, ref selected))
+                bool crew = state.InCrew(_member.Id);
+                int week = (int)((long)_member.Wage * _member.WeekHours / 100);
+                TableRow row = Pick("emp:" + _member.Id, crew ? ServicesTables.OnCrew : ServicesTables.OffCrew, ref selected, out isPicked);
+                row.Set(0, _member.Name);
+                row.Set(1, _member.Base != null ? _member.BaseName : ServicesText.T("reallife_svc_crew_no_base"));
+                row.Set(2, _member.Skill.ToString(), _member.Skill);
+                row.Set(3, _member.Mood + "%", _member.Mood);
+                row.Set(4, CompanyText.Wage(_member.Wage), _member.Wage / 100.0);
+                row.Set(5, _member.WeekHours.ToString(), _member.WeekHours);
+                row.Set(6, ServicesText.Money(week), week);
+                if (_member.Present && _member.TodayFrom >= 0)
                 {
-                    picked = _cleaners[i];
+                    row.Set(7, today, _member.TodayFrom);
                 }
+                else
+                {
+                    row.Set(7, today, crew ? TableRow.Yellow : TableRow.Plain);
+                }
+                row.Set(8, ServicesText.T(crew ? "reallife_svc_crew_on" : "reallife_svc_crew_off"), crew ? TableRow.Green : TableRow.Plain);
+                row.NoTotal = !crew;   // (the total is the crew's wages a week)
+                picked = isPicked ? _cleaners[i] : picked;
             }
             if (_cleaners.Count == 0)
             {
@@ -251,23 +295,39 @@ namespace RealLifeOverhaul.Economy
         {
             CleaningOffer offer = null;
             CleaningClient contract = null;
+            bool isPicked;
+            _spec = ServicesTables.Contracts;
             for (int i = 0; i < state.Offers.Count; i++)
             {
                 CleaningOffer o = state.Offers[i];
-                if (Pick("offer:" + o.Place, o.Name, ServicesText.District(o.District), ServicesText.T("reallife_svc_row_a_week", "amount", ServicesText.Money(o.Fee)),
-                    ServicesText.T("reallife_svc_row_answer_by", "day", o.Until.ToString()), 1, ref selected))
-                {
-                    offer = o;
-                }
+                TableRow row = Pick("offer:" + o.Place, ServicesTables.Offer, ref selected, out isPicked);
+                row.Set(0, o.Name);
+                row.Set(1, ServicesText.District(o.District));
+                row.Set(2, ServicesText.Money(o.Fee), o.Fee);
+                row.Set(3, o.Standard.ToString(), o.Standard);
+                row.Set(5, ServicesText.T("reallife_econ_day", "day", o.Until.ToString()), o.Until);
+                row.Set(6, ServicesText.T("reallife_svc_row_answer_by", "day", o.Until.ToString()), TableRow.Yellow);
+                row.NoTotal = true;   // (the total is the fees of the contracts that run)
+                offer = isPicked ? o : offer;
             }
             for (int i = 0; i < state.Clients.Count; i++)
             {
                 CleaningClient c = state.Clients[i];
-                if (c.Outside && Pick("con:" + c.Place, c.Name, ServicesText.District(c.District), ServicesText.T("reallife_svc_row_a_week", "amount", ServicesText.Money(c.Fee)),
-                        ServicesText.T("reallife_svc_row_standard", "now", c.Now.ToString(), "standard", c.Standard.ToString()), c.Now < c.Standard ? 2 : 0, ref selected))
+                if (!c.Outside)
                 {
-                    contract = c;
+                    continue;
                 }
+                int weekEnds = c.WeekFrom + ServicesCatalogue.ContractWeekDays;
+                TableRow row = Pick("con:" + c.Place, ServicesTables.Running, ref selected, out isPicked);
+                row.Set(0, c.Name);
+                row.Set(1, ServicesText.District(c.District));
+                row.Set(2, ServicesText.Money(c.Fee), c.Fee);
+                row.Set(3, c.Standard.ToString(), c.Standard);
+                row.Set(4, ServicesText.Trend(c.Now, c.CleanBefore), c.Now, c.Now < c.Standard ? TableRow.Red : TableRow.Plain);
+                row.Set(5, ServicesText.T("reallife_econ_day", "day", weekEnds.ToString()), weekEnds);
+                row.Set(6, ServicesText.T("reallife_svc_row_week", "under", c.DaysUnder.ToString(), "most", ServicesCatalogue.ContractDaysUnderMost.ToString()),
+                    c.DaysUnder > ServicesCatalogue.ContractDaysUnderMost ? TableRow.Red : TableRow.Plain);
+                contract = isPicked ? c : contract;
             }
             if (_rows.Count == 0)
             {

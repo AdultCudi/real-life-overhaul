@@ -22,6 +22,9 @@ namespace RealLifeOverhaul
     /// game keeps doing the positioning and zooming itself. With mouse look on, the
     /// cursor is locked and the mouse orbits the camera; the game's own hover/click
     /// raycast then runs from the screen centre, which acts as a crosshair.
+    ///
+    /// While another author's mod drives the camera (<see cref="CameraYield"/>) none of this is done: the game's
+    /// cameras have their own figures back and the pointer is free, until that mod stops.
     /// </summary>
     public class ThirdPersonCamera : MonoBehaviour
     {
@@ -40,6 +43,9 @@ namespace RealLifeOverhaul
 
         /// <summary>True while the look-behind key (the right mouse button unless rebound) is held to look behind the car.</summary>
         public static bool LookBehind { get; private set; }
+
+        /// <summary>True while one of the game's on-foot cameras carries this mod's figures (its offset, distance and lens).</summary>
+        public static bool Steering { get; private set; }
 
         /// <summary>
         /// While set, the camera watches this instead of the spot the player stands on: the body
@@ -88,6 +94,11 @@ namespace RealLifeOverhaul
         private bool _lockedByUs;
         private bool _loggedMouseDelta;
 
+        private void Awake()
+        {
+            CameraYield.Reset();   // a new city: nothing has been seen of another mod's camera in it yet
+        }
+
         private void Update()
         {
             var gm = InstanceBehavior<GameManager>.Instance;
@@ -96,6 +107,8 @@ namespace RealLifeOverhaul
                 SetLooking(false);
                 return;
             }
+            CameraYield.Observe();
+            bool mine = !CameraYield.StoodDown;   // false: another mod has the camera, and nothing below touches it
 
             if (_outdoor == null)
             {
@@ -110,8 +123,15 @@ namespace RealLifeOverhaul
             // The camera key (V unless rebound) switches between the third-person cameras and the game's normal camera.
             if (Keys.Down(KeyAction.CameraToggle) && !IsUiOpen())
             {
-                Settings.ToggleCamera();
-                Logger?.Info($"Camera: third person {(Settings.CameraEnabled ? "on" : "off")} ({Keys.Label(KeyAction.CameraToggle)} key).");
+                if (mine)
+                {
+                    Settings.ToggleCamera();
+                    Logger?.Info($"Camera: third person {(Settings.CameraEnabled ? "on" : "off")} ({Keys.Label(KeyAction.CameraToggle)} key).");
+                }
+                else
+                {
+                    CameraYield.Tell();   // the key does nothing now: the notice says why
+                }
             }
 
             if (_pitchSetting != Settings.CameraPitch)
@@ -121,8 +141,9 @@ namespace RealLifeOverhaul
             }
 
             Transform player = gm.playerController.transform;
-            Apply(_outdoor, Settings.CameraEnabled, player);
-            Apply(_indoor, Settings.CameraEnabled && Settings.CameraIndoors, player);
+            Apply(_outdoor, mine && Settings.CameraEnabled, player);
+            Apply(_indoor, mine && Settings.CameraEnabled && Settings.CameraIndoors, player);
+            Steering = (_outdoor != null && _outdoor.Applied) || (_indoor != null && _indoor.Applied);
 
             if (Keys.Down(KeyAction.FreeCursor))
             {
@@ -131,7 +152,7 @@ namespace RealLifeOverhaul
 
             // The pedestrian cameras are also used on scooters and hand trucks, so those get mouse look too.
             CamState active = ActiveState();
-            bool look = Settings.CameraEnabled && Settings.MouseLook && active != null && !CursorFreed
+            bool look = mine && Settings.CameraEnabled && Settings.MouseLook && active != null && !CursorFreed
                         && Application.isFocused && !IsUiOpen();
             SetLooking(look);
             UpdateLookBehind();
@@ -152,6 +173,7 @@ namespace RealLifeOverhaul
             SetLooking(false);
             Apply(_outdoor, false, null);
             Apply(_indoor, false, null);
+            Steering = false;
             DestroyTarget(_outdoor);
             DestroyTarget(_indoor);
 

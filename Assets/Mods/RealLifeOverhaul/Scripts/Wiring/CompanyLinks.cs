@@ -22,6 +22,8 @@ namespace RealLifeOverhaul
         ///   Close         business pressure's own closure for some hours, which it reopens itself (only while
         ///                 business pressure is on: off, it keeps no closure)
         ///   Dispute       business pressure's own "staff dispute" is open at a business: the company's strike waits
+        ///   IssueFootfall what one of business pressure's own issues changes a business's footfall by on a day (read
+        ///                 only: the staff rota planner's forecast of the days ahead)
         ///   Rival         the name of one of the game's rivals, as business pressure picks one
         ///   Leave         the game's own resignation, as business pressure has an employee leave
         ///   losses        a fire's repair bill (Events/FireLosses), a break-in's stock and repair (Crime/BreakIns) and
@@ -87,6 +89,7 @@ namespace RealLifeOverhaul
                 CompanyBridges.Audit = Audit;
                 CompanyBridges.TaxCase = TaxCases.File;
                 CompanyBridges.Inspect = Inspect;
+                CompanyBridges.IssueFootfall = IssueFootfall;
                 BusinessEvents.Closed += IssueClosed;
                 BusinessGame.Ambient = Ambient;
                 _paperBefore = News.Extra;
@@ -145,6 +148,21 @@ namespace RealLifeOverhaul
                 {
                     Fault("CompanyLinks.Dispute", e);
                     return false;
+                }
+            }
+
+            // What one of business pressure's issues changes a business's footfall by on a day: its own figure until the day it ends (BusinessDirector's daily pass ends it then).
+            private static int IssueFootfall(BuildingRegistration reg, int day)
+            {
+                try
+                {
+                    int at = BusinessState.Loaded && reg != null ? BusinessState.EffectAt(BusinessGame.Place(reg)) : -1;
+                    return at >= 0 && day < BusinessState.Effects[at].UntilDay ? BusinessState.Effects[at].Percent : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("CompanyLinks.IssueFootfall", e);
+                    return 0;
                 }
             }
 

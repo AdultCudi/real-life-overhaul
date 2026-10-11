@@ -688,6 +688,7 @@ namespace RealLifeOverhaul
                 Uniforms.Wear(appearance, look, actor.Dyes, cap, ref actor.Shirt);
             }
             appearance.UpdateVisuals();   // the one mesh merge for this outfit
+            Looks.Done();
             if (Equip(actor, look, cap) && actor.Kit.CapRefused)
             {
                 // Too much hair for the modelled cap, which hides none: the game's own hat after all (it
@@ -696,6 +697,7 @@ namespace RealLifeOverhaul
                 Uniforms.Wear(appearance, look, actor.Dyes, false, ref actor.Shirt);
                 Looks.Count("people: an officer's look being built again (the cap did not fit)");
                 appearance.UpdateVisuals();
+                Looks.Done();
                 Equip(actor, look, false);
             }
             if (Uniforms.Has(look))

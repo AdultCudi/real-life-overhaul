@@ -73,8 +73,7 @@ namespace RealLifeOverhaul
         // Every material in memory, used or not. Taking the list is one engine call; going through it is done in slices.
         private void Begin()
         {
-            SessionWatch.Mark("performance: listing the loaded materials (refraction check)");
-            _looking = Resources.FindObjectsOfTypeAll<Material>();
+            _looking = SceneFinds.InMemory<Material>("performance: listing the loaded materials (refraction check)");
             _materials = _looking.Length;
             _cursor = 0;
             _found.Clear();

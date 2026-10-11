@@ -109,7 +109,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        private static ProfilerRecorder Find(string name, ProfilerRecorderOptions options)
+        internal static ProfilerRecorder Find(string name, ProfilerRecorderOptions options)
         {
             foreach (ProfilerCategory category in Categories)
             {
