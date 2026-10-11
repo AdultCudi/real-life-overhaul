@@ -323,6 +323,7 @@ namespace RealLifeOverhaul.Meta
                     OptionsLayout.ApplyAll();
                 }))
                 .Row(new ButtonOption("reallife_meta_check_button", OptionsLayout.CheckSetup))
+                .Test("reallife_test_block_say", BlockTests.Say)
                 .Diagnostic(KeyAction.PerfProbe, KeyAction.PerfBench, KeyAction.PhoneDump, KeyAction.CharacterReport);
 
             Features.Add("tests", "reallife_meta_title_tests").As(FeatureKind.Tools).OpenAtFirst();

@@ -11733,5 +11733,7 @@
   "reallife_rota_hour_new": "to hire",
   "reallife_rota_hour_nobody_at_work": "Nobody",
   "reallife_rota_confirm_short_plan": "{name} asks for at least {least} hours a week and the hours you keep hold {room}, so a rota for these hours gives them none. The plan \"Best with the people you have\" gives everybody their hours: it is open {after} hours a week, against {now} now. Use that plan? The opening hours and the rota are written over. You can put the old rota back until you close the Company app.",
-  "reallife_rota_confirm_short": "{name} asks for at least {least} hours a week and the hours you keep hold {room}. No opening hours within the rules hold everybody, so this rota gives them none. People left without hours: {count}. Write it? You can put the old rota back until you close the Company app."
+  "reallife_rota_confirm_short": "{name} asks for at least {least} hours a week and the hours you keep hold {room}. No opening hours within the rules hold everybody, so this rota gives them none. People left without hours: {count}. Write it? You can put the old rota back until you close the Company app.",
+  "reallife_test_block_say": "Say what is blocking me here",
+  "reallife_test_block_said": "Written to Player.log: {obstacles} walking obstacles near you, {unseen} of them with nothing to see."
 }
