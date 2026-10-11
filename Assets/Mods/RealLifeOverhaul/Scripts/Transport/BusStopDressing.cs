@@ -70,6 +70,9 @@ namespace RealLifeOverhaul
         public TransitStop Stop { get; private set; }
         public Transform Sign => _sign;
 
+        /// <summary>The shelter's own object (switched off where the stop is a pole only): what points at the bench hangs under it.</summary>
+        public Transform Shelter => _shelter;
+
         /// <summary>True while the stop's boxes cut the navigation mesh.</summary>
         public bool IsSolid => _solid;
 

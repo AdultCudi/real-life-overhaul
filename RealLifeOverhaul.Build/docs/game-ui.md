@@ -200,8 +200,10 @@ An action there belongs in that panel as a button (its `emptyFridgeButton` is th
 `UpdateOverlay` rewrites its buttons each time it shows). That is not built yet, which is why a home with a fridge
 and no cooker still gets the mod's key prompt for cooking.
 
-The game shows no key hints on objects (`ActionKeyTooltip` is a tooltip on HUD tools), so a mod's key prompt has no
-native form: prefer the click.
+The game shows no key hints on objects themselves (`ActionKeyTooltip` is a tooltip on HUD tools): prefer the click.
+Where a key is wanted at a place, the game's form for it is the panel of section 9.
+
+An object of the mod's own can be pointed at as well (`Transport/TransitPointer`, section 11).
 
 ## 8. Pitfalls
 
@@ -215,7 +217,109 @@ native form: prefer the click.
 - A layout that should match another (rows and headers) must be set on both; the game's values differ between them.
 - Nothing in an app runs while it is closed: its panel is inactive, and so is everything under it, the scroller included.
 
-## 9. Diagnostics
+## 9. A panel over a place, with keys (`GameUi.WorldPanel`)
+
+The dark box with an arrow that stands over a petrol pump or a lift is `UI.Overlays.OverlayUI`
+(`UIs.Instance.overlayUI`, scene path `Canvases/PlayerHUD/OverlayUI`):
+
+```
+OverlayUI [VerticalLayoutGroup (padding 30/30/55/40, spacing 20), ContentSizeFitter, CanvasGroup]   pivot (0.5, 0)
+  Background      sprite Box-Dark-Wide-Arrow, alpha 0.86
+  Header
+    FirstLine     TMP 36, white
+    Splitter
+    SecondLine    LeftLabel TMP 32, white; RightLabel TMP 32, capitals, right-aligned (the game's "Open" in green)
+  Buttons
+    ButtonTemplate  min height 80; Container (sprite Gradient-Blue-Round) / Text (TMP 32, capitals)
+```
+
+- It shows whatever implements the public interface `UI.Overlays.IOverlay`: a world position, three `LabelInfo`
+  (a key or final words, a colour) and an array of `ButtonInfo` (name, text key, sprite name "blue", "gray" or
+  "yellow" looked up in `GlobalReferences.wsButtons`, action, `PlayerAction`, interactable).
+  `OverlayUI.Show(overlay)` and `OverlayUI.Hide(overlay)` are public and static.
+- `OverlayUI.Update` puts the box at `WorldToScreenPoint(GetTargetPosition())` every frame. Give it a point in front
+  of the camera: a point behind it comes out mirrored.
+- Each button's text gets the suffix `PlayerAction.AsSuffix()` (" [F]": the player's own binding), and
+  `GameManager` sends Interact, SecondaryInteract, SpecialInteract and Confirm to
+  `OverlayUI.OnPlayerActionPressed`, which resets the action and runs the button's `onClick`. A button is also a
+  real `Button`: a click runs it too. So the mod reads no key and draws no prompt.
+- The game's bindings (`PlayerInput`): Interact F, SecondaryInteract P, SpecialInteract O, Confirm Enter, Cancel
+  Esc; the Player map has keyboard and mouse bindings only. The UI map has a gamepad's south button on Click and
+  its east button on Cancel, so with a gamepad a button of this panel is clicked, not pressed by its key.
+- There is one box. The game uses it at filling stations, the private driver's garage and lifts
+  (`BuildingEntranceOverlay` exists but nothing shows it). `WorldPanel.Show` returns false while another panel has
+  the box and takes it when it is free; whoever owns a `WorldPanel` calls `Show` from its timer while it wants it up.
+- `OverlayUI.IsVisible` is static. It must not be left true when the city unloads (`WorldPanel.Hide` sees to it):
+  the mod's second interact key (E) stands aside while it is true.
+- Making the buttons again destroys and instantiates them (`SetUpButtons`), so a change of a line alone goes
+  through the private `SetUpHeader` (a delegate made once) and only a change of the buttons through
+  `RefreshButtons`.
+- While a `WorldPanel` with a button on Interact is up, the mod's own interact key must do nothing else:
+  `TransitDirector.TakesInteractKey` is true while it shows and in the frame its button ran.
+
+Proven: every member named above and the object's structure. Inferred: how the box looks with other content than
+the game's (the second line makes it wider; capitals on the right-hand word and the buttons).
+
+## 10. A list to travel from (`GameUi.TravelList`, copied from the subway's)
+
+`UIs.Instance.cityMapSubwayStations` is `Canvases/CityMap/SubwayStations` (775 wide, down the right of the map):
+
+```
+SubwayStations [CanvasGroup, CityMapSubwayStations, DraggableWindow]
+  Background        sprite grey-round-bordered
+  Headline          sprite darkgreybox-header@2x; Header TMP 32, dark, capitals, key "subwaystations"
+  Top Controls      VerticalLayoutGroup; InputField (the search field)
+  Scroll View       ScrollRect; Viewport/Content (VerticalLayoutGroup spacing 10, ContentSizeFitter)
+    Entry           tagged UiTemplate, 88.8 high: Image (off unless hovered), CityMapSubwayStationEntry
+      Label         TMP 26, white, capitals
+      DefaultButton Button, ButtonEffects; Container (Gradient-Blue-Round) / Text (TMP 26, key "common_travel")
+    Scrollbar Vertical
+  Cancel            Button; Container (Gradient-Yellow-Round) / Text (key "common_cancel", suffix " [ESC]")
+```
+
+- The game fills it in `CityManager` (`LoadStations`: one copy of `Entry` per station, named after it) and shows it
+  with the map in subway mode. A click on an entry travels (`SubwaySystem.TravelTo`).
+- `TravelList.Make` copies the window asleep, takes off every script of the game's except the ones that only draw
+  or sound, destroys the station entries and the search field, and moves the copy to the HUD's canvas
+  (`UIs.playerHUD`: the same scaler as the map's, so the same size), in the middle of the screen. The line of text
+  under the headline is a copy of an entry's label. An entry is made 104 high and its label writes the name in
+  capitals by a tag, with a smaller line under it.
+- Rows are made once and used again (`Begin`, `Add`, `Open`). After a click the clicked button is unselected: the
+  rows are used again for other places, and the interface's confirm key presses whatever is selected.
+- Cancel: the button, and the game's cancel key through a script on the window (`TravelListKeys`, order -31000),
+  which resets the action so that the game's own handler (`CancelButtonHandler.HandleEscapeClick`, which would
+  open the game's menu) does not see the press. Inferred, not proven: that the reset hides the press from a
+  handler later in the same frame.
+- While it is open `TravelList.AnyOpen` is true, which `ThirdPersonCamera.IsUiOpen` counts: the mouse is freed.
+  The game is not paused. Whoever opened it closes it when the player walks away or another screen opens.
+
+## 11. Making an object of the mod's own clickable (`Transport/TransitPointer`)
+
+Section 7 puts an action on an object of the game's. For an object the mod built (a bus stop), the object needs an
+`EntityController` of its own for the game's pointer to find:
+
+- `MouseController.Run` casts one ray a frame from the cursor on the layers InteractiveItems,
+  InteractiveItemsOutlined, Buildings, BuildingsOutlined, Vehicles, PlayerVehicles and Ground, up to 600 m, and
+  calls `OnIoEnter`, `OnIoExit` and `OnIoLeftClick` on the `EntityController` of the transform it hits. Traffic
+  (layer AiVehicles) is not among them. Under the mod's camera the cursor is locked to the middle of the screen
+  and still visible to the game, so the ray is the crosshair's.
+- The game's physics has queries hit triggers, and the layer InteractiveItems does not meet AiVehicles in the
+  collision matrix. So the collider is a **trigger** box on InteractiveItems: the pointer finds it, and it moves
+  nothing and stops nothing (people walk on the navigation mesh; the game's own trigger handlers test tags).
+- The component derives `EntityController` and overrides `Awake` and `Start` (the game's read places to walk to
+  that only its own objects have), `Interact`, `ShouldReactToIoEnter`, `OnIoExit` (as the game's, then the outlined
+  pieces go back to their own layers: the game's would leave them on InteractiveItems) and `OnDestroy`. It sets
+  `simpleOverlayType = ClickToAction`, `customOverlayHeaderKey` (a locale key: the name shown), `renderers` (what
+  is outlined: the game moves them to the outlined layer while the pointer is on the object) and `navMeshTargets`.
+- The action comes from an `ICtaBehavior` at the front of `CtaManager.CtaBehaviors`, as in section 7. `GetCta` is
+  asked about three times when the pointer comes onto the object and once per click: answer from fields.
+- The game offers a click from any distance and then walks the player over (`EntityController.WalkOverAndInteract`
+  with `PlayerController.SetGoal`, acting within 0.4 m of the place). `EntityController.MaxReachDistance` is 3 m.
+  A click action of the mod's does the same: act if the player is within reach, else `SetGoal(place, onReached)`.
+- Something added to a pooled object must come off again, so the bus has no component: a box of the director's is
+  put where the bus stands.
+
+## 12. Diagnostics
 
 With "Developer diagnostics" on, one session's Player.log shows whether everything was found:
 
@@ -224,4 +328,7 @@ With "Developer diagnostics" on, one session's Player.log shows whether everythi
 - `Planner: opened. note 2, sample off, tax 1, work 3, ...; 9 rows; 1.8 ms.`
 - `Planner: reminder sent for work 14 ('Shift: ...', Tomorrow, 09:00 to 13:00).` and `... not sent: its entry is Done.`
 - `Home: 'Click to cook' added to the game's click actions (12 in the list).`
+- `Transit check (pointer): the bus stops' click actions are in the game's list (12 entries): PASS.`
+- `Transit check (stop panel): at the M1 stop at ..., 2.1 m from the pole (...): the game's own panel is up, bus: 95 s (Timetable): PASS.`
+- `Transit check (stop list): the game's list is open at ...: 31 stops, 2 further along this line and 29 with a change of bus ...; 4.2 ms: PASS.`
 - Every fallback is one `Game UI: ...` warning, logged whether or not diagnostics are on.

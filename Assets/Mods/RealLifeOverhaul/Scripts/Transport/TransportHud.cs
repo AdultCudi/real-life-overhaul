@@ -5,10 +5,11 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// What transport puts on screen: an information panel (a stop's next buses, a list of
-    /// destinations, a station's service), a one-line key prompt, and the fuel gauge beside the
-    /// speedometer. A retained canvas built on first use; every text is set only when it
-    /// changes, and nothing here runs per frame.
+    /// What car ownership puts on screen: an information panel and a one-line key prompt (the
+    /// repair bay's list of what is due), and the fuel gauge beside the speedometer. A retained
+    /// canvas built on first use; every text is set only when it changes, and nothing here runs
+    /// per frame. The buses and the subway journey no longer draw here: they use the game's own
+    /// panel and list (Core/GameUi/WorldPanel, TravelList).
     /// </summary>
     public sealed class TransportHud : MonoBehaviour
     {
