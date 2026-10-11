@@ -10,6 +10,8 @@ Real Life Overhaul adds everyday life to the city of Big Ambitions: things happe
 [*]Car ownership: fuel, servicing, wear, breakdowns, insurance, registration and roadside help.
 [*]A custom shop in any repair bay: paint, lamps, underglow, fitted parts and performance parts.
 [*]Bicycles and motorbikes to hire or buy.
+[*]People react to your horn: someone in your way who should not be there hurries clear, and someone with the light in their favour stops and glares.
+[*]A fairer driving test: only what you could have helped is marked.
 [/list]
 
 [b]Accidents and emergency services[/b]
@@ -18,6 +20,8 @@ Real Life Overhaul adds everyday life to the city of Big Ambitions: things happe
 [*]People hit by a car fall and can be hurt or killed. So can you, short of dying: the worst is a trip to hospital.
 [*]Fires in cars, bins and shopfronts, with a fire engine and crew.
 [*]A 911 contact on your phone for accidents, crimes and fires.
+[*]Accidents come from drivers you can watch go wrong: speeders, red-light runners, late brakers and drunks at night. They may crash where it happens, run somebody down, drive off and be chased, or be pulled over.
+[*]Traffic sees people in the road: cars brake for anyone in their way, sound the horn, wait and drive on.
 [/list]
 
 [b]Police and courts[/b]
@@ -44,6 +48,7 @@ Real Life Overhaul adds everyday life to the city of Big Ambitions: things happe
 [*]Small things that happen to you, more than 300 of them, without repeats until all have been seen.
 [*]People to get to know, things to do together, and a morning paper about your city.
 [*]A partner who moves in, an engagement, a wedding, children and relatives.
+[*]A roommate: put up a notice or ask a friend. They pay a share of the rent every week and are at home when their hours say so.
 [/list]
 
 [b]Work and business[/b]
@@ -87,6 +92,18 @@ Real Life Overhaul adds everyday life to the city of Big Ambitions: things happe
 [*]A quarterly return, an accountant, and cash off the books with an audit risk that grows.
 [*]Licences that cost money and run out.
 [*]Company, an app on your phone for all of it.
+[*]A staff rota planner: the customer forecast for each hour, the opening hours that pay for their staff, who to hire, and a rota at a press.
+[*]A cleaning service: cleaners shared between your businesses on a round, and cleaning contracts from other businesses.
+[*]Selling a business for what it is worth, to buyers who make offers with their own terms.
+[/list]
+
+[b]Growing a business[/b]
+[list]
+[*]Brands: shops of one type trade under one name, with recognition in each district and standards they share.
+[*]Franchises: applicants open shops under your brand and pay an entry fee and a share of their takings.
+[*]Online shops: orders from the whole city, picked from your real stock by your staff and sent by your vans or a courier.
+[*]Property, an app on your phone: buy, let, repair and sell buildings, or run an estate agency.
+[*]Own or lease one of the city's hotels, and put your own cars out on hire.
 [/list]
 
 [b]Getting around[/b]
@@ -96,6 +113,7 @@ Real Life Overhaul adds everyday life to the city of Big Ambitions: things happe
 [*]A taxi called from your phone to where you are.
 [*]Hotels to stay in, and holidays booked at the travel agencies.
 [*]The mod's places on the city map, each with its own filter.
+[*]The minimap shows the city's buildings and water under the roads.
 [/list]
 
 [b]The mod's own tools[/b]
@@ -104,6 +122,7 @@ Real Life Overhaul adds everyday life to the city of Big Ambitions: things happe
 [*]Guide, an app on your phone with a page for every feature: what it is, how to start it, what it costs and which keys it uses.
 [*]Four presets (Relaxed, Standard, Realistic, Hardcore), settings export and import, and every key rebindable.
 [*]A tool that takes the mod out of a save, with a backup first.
+[*]Every table in Finance, Ventures, Company and the Planner sorts by its headings, filters by kind and ends in a line of totals.
 [/list]
 
 [h1]How to start[/h1]
