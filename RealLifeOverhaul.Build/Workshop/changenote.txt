@@ -4,6 +4,7 @@ New
 - Traffic sees people in the road: cars brake, sound the horn and wait. People react to your horn too.
 - Accidents come from drivers you can watch go wrong, instead of appearing at a distance.
 - A rota planner in the Company app: a customer forecast, and a ladder of plans from the week as it is to the last person worth hiring.
+- The rota gives every employee the weekly hours they ask for, and puts shifts on the hours customers come.
 - New phone apps: Services (a shared cleaning crew, and selling a business), Brands (brands and franchises), Web shop (online shops), Property (buildings, an estate agency, hotels, car hire).
 - A roommate who pays a share of the rent and lives in your flat.
 - The minimap shows buildings and water.
@@ -16,5 +17,5 @@ Fixed
 - The game froze for seconds when an ambulance crew stepped out.
 - Short freezes the first time you drove, at the start of a driving lesson, and at a petrol station.
 - A car in the custom shop shot backwards when the shop closed.
-- Hair could glow as bright as skin against a lamp and look bald.
-- The driving test marked things you could not help.
+- The driving test marked things you could not help. Where it ends is now a box painted on the road.
+- A traffic car's horn sounded as if it were beside you when it was far away.
