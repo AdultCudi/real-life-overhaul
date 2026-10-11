@@ -57,6 +57,9 @@ namespace RealLifeOverhaul.Nav
         public static IModLogger Logger;
         public static NavDirector Instance { get; private set; }
 
+        /// <summary>The city's road graph for driving once it is made, for whoever searches the same roads with a search of its own; null until then.</summary>
+        public static RouteSearch Roads => Instance != null && Instance._graph.Ready ? Instance._graph.Drive : null;
+
         private enum Phase { Idle, Searching, Routed, NoRoute }
 
         private readonly NavGraph _graph = new NavGraph();

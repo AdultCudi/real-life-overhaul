@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Localizor;
 
 namespace RealLifeOverhaul.Nav
@@ -14,6 +15,12 @@ namespace RealLifeOverhaul.Nav
 
         /// <summary>Makes the nearest police station the game's destination; false if there is none. Default: none (the test says so).</summary>
         public static Func<bool> GuideToStation;
+
+        /// <summary>
+        /// Adds places that move to the minimap's marks, each time they are gathered (every two seconds while the minimap
+        /// shows): a vehicle on its way to the player. Whoever fills it in adds to the list and nothing else. Default: none.
+        /// </summary>
+        public static Action<List<NavMark>> MoreMarks;
     }
 
     /// <summary>The feature's words: a line of en.json with its {placeholders} filled in. Called when a line changes, never per frame.</summary>

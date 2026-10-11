@@ -185,6 +185,7 @@ namespace RealLifeOverhaul.Nav
                     }
                 }
             }
+            NavBridges.MoreMarks?.Invoke(All);   // what moves (Wiring fills it in): a called taxi
         }
 
         private static void Add(Vector3 at, Sprite icon, Color32 colour)
