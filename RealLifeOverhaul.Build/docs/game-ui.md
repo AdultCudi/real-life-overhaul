@@ -1000,6 +1000,18 @@ again each time the page is drawn, and `OptionsLayout` is told as each is made (
 
 Both are asked when the page is drawn, never per frame. See [other-mods.md](other-mods.md) for what uses them.
 
+## 33. An app whose name has a name in it (`PhoneAppDef.TitleArguments`)
+
+The game names an app by a text key on a `TextLocalizationComponent` (its button's `AppButton.appTitle`, and
+`FullMenu.appNameLabel` in the top bar). That component also has `Arguments`: an object whose fields, or a
+dictionary whose entries, fill the text's names (`LocalizorManager.GetLocalization(key, arguments)`, in
+HGPlugins.dll), and it writes its text again when either changes and on a change of language. So an app named after
+something of the game's (a bank's name) is one key, "{bank}", and `TitleArguments` is a `Dictionary<string, string>`
+(read without reflection). `PhoneApp` sets the arguments after the key on both buttons and, when the app shows, on the
+top bar before its key (two apps with one key differ only by their arguments); when the app is hidden it takes its
+arguments off the top bar if they are still there, because the game's own apps set only the key. Used by the bank
+apps (Economy/Banks).
+
 ### What a row of the mod options page can do, and how the page is arranged (`Meta/OptionsTree`, `OptionsLayout`)
 
 Read from the decompiled game (`BigAmbitions.ModsInternal`):

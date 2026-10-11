@@ -47,16 +47,23 @@ namespace RealLifeOverhaul.Economy
 
         private int RateFor(ProductKind kind, Lender bank)
         {
-            // An overdraft and a card follow the central bank's rate day by day (CreditAccount.RateNow); finance takes it once, here.
-            return ProductCatalogue.Revolving(kind)
-                ? ProductTerms.RateBp(CreditLedger.Value, BankTerms.OwnRate(bank.Settings), ProductTerms.Points(kind), Multiplier)
-                : ProductTerms.FixedRateBp(CreditLedger.Value, BankTerms.OwnRate(bank.Settings), ProductTerms.Points(kind), Multiplier);
+            return AgreedAt(kind, CreditLedger.Value, bank);   // (Economy/Banks/CreditDesk.Banks.cs: the bank's own points are in it)
         }
 
-        /// <summary>The offer of an overdraft, a card, car finance or a mortgage as it stands now.</summary>
+        /// <summary>The offer of an overdraft, a card, car finance or a mortgage from the house bank as it stands now.</summary>
         public ProductOffer Offer(ProductKind kind)
         {
-            var offer = new ProductOffer { Answer = Gate(), Bank = BankTerms.House };
+            return Offer(kind, BankTerms.House);
+        }
+
+        /// <summary>
+        /// The offer of an overdraft, a card, car finance or a mortgage from one bank as it stands now. One overdraft and
+        /// one card are held in all, with whichever bank opened them: the answer is then AlreadyOpen, with that account and
+        /// its bank, whichever bank is asked.
+        /// </summary>
+        public ProductOffer Offer(ProductKind kind, Lender bank)
+        {
+            var offer = new ProductOffer { Answer = Gate(), Bank = bank ?? BankTerms.House };
             CreditAccount open = _file != null && ProductCatalogue.Revolving(kind) ? _file.Account(kind) : null;
             if (open != null)
             {
@@ -64,7 +71,12 @@ namespace RealLifeOverhaul.Economy
                 offer.Account = open;
                 offer.Most = open.Agreed;
                 offer.RateBp = open.RateNow;
+                offer.Bank = BankTerms.BankOf(open.Street, open.Number) ?? offer.Bank;
                 return offer;
+            }
+            if (offer.Answer == ProductAnswer.Yes && offer.Bank == null)
+            {
+                offer.Answer = ProductAnswer.NoBank;
             }
             if (offer.Answer != ProductAnswer.Yes)
             {
@@ -73,12 +85,13 @@ namespace RealLifeOverhaul.Economy
             int score = CreditLedger.Value;
             offer.AgreedBp = RateFor(kind, offer.Bank);
             offer.RateBp = ProductCatalogue.Revolving(kind) ? ProductTerms.WithBase(offer.AgreedBp, AccountRules.BaseBp, AccountRules.BaseMultiplier) : offer.AgreedBp;
+            offer.Most = LimitAt(kind, score, offer.Bank);
             switch (kind)
             {
-                case ProductKind.Overdraft: offer.Most = ProductTerms.OverdraftLimit(score, BankTerms.OwnCapTotal); break;
-                case ProductKind.CreditCard: offer.Most = ProductTerms.CardLimit(score, BankTerms.OwnCapTotal); break;
+                case ProductKind.Overdraft:
+                case ProductKind.CreditCard:
+                    break;
                 default:
-                    offer.Most = ProductTerms.FinanceMost(kind, score, BankTerms.OwnCap(offer.Bank.Settings));
                     if (_file.Relief.HasApproval || OpenAccounts() >= FinanceAccountsMost)
                     {
                         offer.Answer = ProductAnswer.Busy;
@@ -105,8 +118,14 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Opens an overdraft or a card on today's terms. It costs nothing to hold; the application goes on the credit file.</summary>
         public ProductAnswer OpenAccount(ProductKind kind, out CreditAccount account)
         {
+            return OpenAccount(kind, BankTerms.House, out account);
+        }
+
+        /// <summary>Opens an overdraft or a card with one bank, on its terms of today; it is held there.</summary>
+        public ProductAnswer OpenAccount(ProductKind kind, Lender bank, out CreditAccount account)
+        {
             account = null;
-            ProductOffer offer = Offer(kind);
+            ProductOffer offer = Offer(kind, bank);
             if (offer.Answer != ProductAnswer.Yes || !ProductCatalogue.Revolving(kind))
             {
                 return offer.Answer == ProductAnswer.Yes ? ProductAnswer.Off : offer.Answer;
@@ -224,9 +243,19 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public ProductOffer Business(BuildingRegistration shop, out float profit, out int days)
         {
+            return Business(shop, BankTerms.House, out profit, out days);
+        }
+
+        /// <summary>What a business can secure at one bank: the same record, that bank's share of the most (BankRules) and its points on the rate.</summary>
+        public ProductOffer Business(BuildingRegistration shop, Lender bank, out float profit, out int days)
+        {
             profit = 0f;
             days = 0;
-            var offer = new ProductOffer { Answer = Gate(), Bank = BankTerms.House };
+            var offer = new ProductOffer { Answer = Gate(), Bank = bank ?? BankTerms.House };
+            if (offer.Answer == ProductAnswer.Yes && offer.Bank == null)
+            {
+                offer.Answer = ProductAnswer.NoBank;
+            }
             if (offer.Answer != ProductAnswer.Yes)
             {
                 return offer;
@@ -252,8 +281,8 @@ namespace RealLifeOverhaul.Economy
             }
             profit = Books.AverageProfit(shop.Address, ProductCatalogue.BusinessDaysOnRecord, out days);
             int score = CreditLedger.Value;
-            offer.Most = ProductTerms.BusinessMost(score, profit);
-            offer.RateBp = Mathf.RoundToInt(ProductTerms.BusinessRate(score, BankTerms.OwnRate(offer.Bank.Settings)) * Multiplier * 100f);
+            offer.Most = BankRules.Most(ProductTerms.BusinessMost(score, profit), offer.Bank.Rank);
+            offer.RateBp = Mathf.RoundToInt(BusinessRate(score, offer.Bank) * Multiplier * 100f);
             if (days < ProductCatalogue.BusinessDaysOnRecord || offer.Most < CreditCatalogue.LoanLeast)
             {
                 offer.Answer = ProductAnswer.NoSecurity;
@@ -262,18 +291,24 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>What a business loan of an amount costs: the game's own figures, at the bank's rate for the rating less a point.</summary>
+        // The whole-point rate of a business loan at a bank: the rating's less a point, and the bank's own points; never under the floor.
+        private static int BusinessRate(int score, Lender bank)
+        {
+            return Mathf.Max(CreditCatalogue.RateFloor, ProductTerms.BusinessRate(score, BankTerms.OwnRate(bank.Settings)) + BankRules.Of(bank.Rank).RatePoints);
+        }
+
         public LoanQuote BusinessQuote(Lender bank, int amount)
         {
             int score = CreditLedger.Value;
             BankTerms.Apply(score);
-            int rate = ProductTerms.BusinessRate(score, BankTerms.OwnRate(bank.Settings));
+            int rate = BusinessRate(score, bank);
             var quote = new LoanQuote
             {
                 Amount = amount,
                 AnnualRate = rate * Multiplier,
                 DailyInterest = GameLoanMath.DailyInterest(amount, rate, Multiplier, bank.Settings.yearsToPayLoan, AccountRules.DaysPerYear),
                 DailyPayment = LoanHelper.CalculateDailyPayment(amount, bank.Settings),
-                Fee = LendingTerms.PhoneFee(amount)
+                Fee = BankRules.Fee(amount, bank.Rank)
             };
             quote.Days = quote.DailyPayment > 0 ? Mathf.CeilToInt(amount / (float)quote.DailyPayment) : 0;
             return quote;
@@ -282,10 +317,16 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Lends against a business. The loan is the game's own (EconoView lists it, the game collects it); the mod remembers which business secures it.</summary>
         public ProductAnswer BorrowOnBusiness(BuildingRegistration shop, int amount, out LoanQuote quote)
         {
+            return BorrowOnBusiness(shop, BankTerms.House, amount, out quote);
+        }
+
+        /// <summary>Lends against a business from one bank, on that bank's terms.</summary>
+        public ProductAnswer BorrowOnBusiness(BuildingRegistration shop, Lender bank, int amount, out LoanQuote quote)
+        {
             quote = default(LoanQuote);
             float profit;
             int days;
-            ProductOffer offer = Business(shop, out profit, out days);
+            ProductOffer offer = Business(shop, bank, out profit, out days);
             if (offer.Answer != ProductAnswer.Yes)
             {
                 return offer.Answer;
@@ -329,11 +370,17 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public ProductAnswer Approve(ProductKind kind, int amount, int depositPercent, int term)
         {
+            return Approve(kind, BankTerms.House, amount, depositPercent, term);
+        }
+
+        /// <summary>An approval from one bank, on its terms; the account it becomes is held with that bank.</summary>
+        public ProductAnswer Approve(ProductKind kind, Lender bank, int amount, int depositPercent, int term)
+        {
             if (!ProductCatalogue.Instalment(kind))
             {
                 return ProductAnswer.Off;
             }
-            ProductOffer offer = Offer(kind);
+            ProductOffer offer = Offer(kind, bank);
             if (offer.Answer != ProductAnswer.Yes)
             {
                 return offer.Answer;

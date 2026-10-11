@@ -37,13 +37,13 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- shared
 
-        private static string Rate(int rateBp)
+        internal static string Rate(int rateBp)
         {
             return FinanceText.T("reallife_econ_row_rate", "rate", (rateBp / 100f).ToString("0.#"));
         }
 
         /// <summary>Why a product is not on offer, as one sentence.</summary>
-        private static string Why(ProductAnswer answer)
+        internal static string Why(ProductAnswer answer)
         {
             switch (answer)
             {
@@ -87,7 +87,7 @@ namespace RealLifeOverhaul.Economy
         }
 
         // A whole amount read from what was typed (digits; the comma and the sign the game writes in "$5,000" are let through). False for anything else.
-        private static bool Whole(string text, out int amount)
+        internal static bool Whole(string text, out int amount)
         {
             amount = 0;
             bool digits = false;
@@ -351,7 +351,7 @@ namespace RealLifeOverhaul.Economy
         }
 
         // The terms of an overdraft or a card in full, for the question box.
-        private static string Detail(ProductKind kind)
+        internal static string Detail(ProductKind kind)
         {
             if (kind == ProductKind.Overdraft)
             {
@@ -794,7 +794,7 @@ namespace RealLifeOverhaul.Economy
 
         // What one of the mod's accounts takes next and on which day: an instalment tomorrow, a card's minimum on its
         // due day, an overdraft only what is over its limit. Nothing while it is in a debt arrangement.
-        private static void NextPayment(CreditAccount a, int today, out int amount, out int day)
+        internal static void NextPayment(CreditAccount a, int today, out int amount, out int day)
         {
             amount = day = 0;
             if (a.Closed || a.Frozen || a.Owed <= 0)
@@ -826,27 +826,27 @@ namespace RealLifeOverhaul.Economy
         }
 
         // A day as the game says it: "Today", "Tomorrow", else "Day 14".
-        private static string DayWord(int day, int today)
+        internal static string DayWord(int day, int today)
         {
             return day == today ? FinanceText.T("common_today") : day == today + 1 ? FinanceText.T("common_tomorrow") : FinanceText.Day(day);
         }
 
         // How grave a debt's standing is, as a number to order the "how it stands" column by: in order first, then
         // by payments missed, then the steps a lender takes, an arrangement last.
-        private static double Gravity(LadderState s, bool frozen)
+        internal static double Gravity(LadderState s, bool frozen)
         {
             return s.Misses + (s.Penalty ? 0.25 : 0) + (s.PlanLeft > 0 ? 0.5 : 0) + (s.RepoDay > 0 ? 20 : 0) + (s.CallDue ? 50 : 0) + (s.RepoPending ? 100 : 0) + (frozen ? 200 : 0);
         }
 
         // What one of the game's loans is charged a year, in per cent of the sum borrowed. The game keeps a loan's
         // daily interest, not its rate (LoanHelper.CalculateDailyInterestPayment), so the rate is read back from it.
-        private static float YearlyRate(Loan loan, int daysPerYear)
+        internal static float YearlyRate(Loan loan, int daysPerYear)
         {
             return loan.totalAmount > 0f ? loan.dailyInterest * (float)daysPerYear / loan.totalAmount * 100f : 0f;
         }
 
         // The app's own sentence about a kind of credit, for the page of an account of that kind.
-        private static string AboutKind(ProductKind kind)
+        internal static string AboutKind(ProductKind kind)
         {
             switch (kind)
             {
@@ -859,7 +859,7 @@ namespace RealLifeOverhaul.Economy
         }
 
         // What missing payments would bring next, from the ladder's own counts. Nothing is written where no step is left.
-        private static void NextStepLine(InfoBox box, LadderState s, bool secured)
+        internal static void NextStepLine(InfoBox box, LadderState s, bool secured)
         {
             string step;
             int away;

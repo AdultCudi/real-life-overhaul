@@ -279,6 +279,7 @@ namespace RealLifeOverhaul.Meta
                 S("credit").For("economy").Opts("economy").Also("bank borrow score finance"),
                 S("debt").Guide("economy").Need("economy").Opts("economy_products", "economy_shark", "economy_consequences", "economy_level")
                     .Also("borrow overdraft card collections repossession").Also("economy_products", "mortgage rent overdraft card finance"),
+                S("banks").For("economy_banks").Need("economy").Opts("economy_banks").Also("bank app current account statement card loan apply"),
                 S("cityeco").For("economy_city").Need("economy").Main("economy_city").Opts("economy_city_level").Also("prices rates boom recession inflation"),
                 S("ventures").For("ventures").Opts("ventures_investors", "ventures_market", "ventures_level").Also("shares stocks invest dividend")),
 

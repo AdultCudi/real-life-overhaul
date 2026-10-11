@@ -68,7 +68,7 @@ namespace RealLifeOverhaul.Economy
                 AnnualRate = LoanHelper.CalculateEffectiveAnnualInterestRate(lender.Settings),
                 DailyInterest = LoanHelper.CalculateDailyInterestPayment(amount, lender.Settings),
                 DailyPayment = LoanHelper.CalculateDailyPayment(amount, lender.Settings),
-                Fee = LendingTerms.PhoneFee(amount)
+                Fee = BankRules.Fee(amount, lender.Rank)   // (each bank's share of the usual fee: Economy/Banks/BankRules)
             };
             quote.Days = quote.DailyPayment > 0 ? Mathf.CeilToInt(amount / (float)quote.DailyPayment) : 0;
             return quote;
