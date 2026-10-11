@@ -218,6 +218,12 @@ namespace CharacterPreview
     /// Where the character stands and how it is lit.
     ///  - "city": the game's sun (13 500 lux, white: from the F9 report) under a physically based sky, on asphalt,
     ///    seen by the gameplay camera (field of view 63, 3.1 m away, from above).
+    ///  - "night": the same street after dark, seen by the mod's third-person camera (4 m behind the head, a little
+    ///    above it; the character is turned by the shot's yaw, 180 = its back to the camera), with no sun, a dim sky and
+    ///    one warm point light without shadows 3 m from the head at car-lamp height: stage parameter "lampAngle" is where
+    ///    it stands, in degrees round the character from the camera's side (0 = at the camera, lighting what the camera
+    ///    sees; 90 = beside; 180 = straight beyond the character, shining at the camera), "lampCandela", "lampColour",
+    ///    "lampHeight", "lampDistance" and "lampShadows" the rest. This is where hair is judged against a strong light.
     ///  - "creation": the character creation room (level2 of the game): its spot light and directional light at their
     ///    real positions, pale walls, the close-up camera (field of view 25, 1.15 m from the head).
     /// The exposure and tone mapping of the game are not readable from outside; they are calibrated against the
@@ -231,7 +237,8 @@ namespace CharacterPreview
         public Vector3 Focus;
 
         private readonly GameObject _city, _creation;
-        private readonly Light _sun, _roomSun, _roomSpot, _fill, _rim;
+        private readonly Light _sun, _roomSun, _roomSpot, _fill, _rim, _lamp;
+        private Vector3 _lampAt;
         private readonly Volume _volume;
         private readonly Exposure _exposure;
         private readonly VisualEnvironment _environment;
@@ -280,6 +287,10 @@ namespace CharacterPreview
             asphalt.SetFloat("_Smoothness", 0.25f);
             ground.GetComponent<Renderer>().sharedMaterial = asphalt;
 
+            // A car's lamp at night: the "night" stage places it (see Set).
+            _lamp = MakeLight(_city, "Street Lamp", HDLightTypeAndShape.Point, 1000f, LightUnit.Candela, Hex("FFB066"), false);
+            _lamp.range = 12f;
+
             // ---- character creation (level2: 'Lights' and 'PlayerDisplay/HumanDefinitionHigh')
             _creation = new GameObject("Creation");
             _roomSpot = MakeLight(_creation, "Point Light (1)", HDLightTypeAndShape.ConeSpot, 30000f, LightUnit.Candela, Color.white, true);
@@ -304,7 +315,8 @@ namespace CharacterPreview
         public void Set(string name, JObject parameters)
         {
             _name = name;
-            bool city = name == "city";
+            bool night = name == "night";
+            bool city = name == "city" || night;
             _city.SetActive(city);
             _creation.SetActive(!city);
             float exposure, sunPitch = 50f, sunYaw = 140f;
@@ -329,8 +341,34 @@ namespace CharacterPreview
                 exposure = 10.3f;
             }
             float skyLux = city ? 2500f : 1200f, contrast = city ? 10f : 0f, saturation = city ? 12f : 0f;
+            float sunLux = 13500f;
+            if (night)
+            {
+                // A lit street after dark: exposure for about 40 nits at white, a trace of sky, no sun.
+                exposure = 5f;
+                skyLux = 1.5f;
+                sunLux = 0f;
+            }
             int tonemap = (int)TonemappingMode.ACES;
             bool modLights = true;
+            float lampAngle = (float?)parameters?["lampAngle"] ?? 150f, lampDistance = (float?)parameters?["lampDistance"] ?? 3f;
+            float lampHeight = (float?)parameters?["lampHeight"] ?? 0.8f;
+            _lamp.gameObject.SetActive(night);
+            if (night)
+            {
+                HDAdditionalLightData lamp = _lamp.GetComponent<HDAdditionalLightData>();
+                lamp.SetIntensity((float?)parameters?["lampCandela"] ?? 1000f, LightUnit.Candela);
+                lamp.color = Hex((string)parameters?["lampColour"] ?? "FFB066");
+                lamp.EnableShadows((bool?)parameters?["lampShadows"] ?? false);
+                // Round the head, measured from the camera's side (the camera is at +Z of the character in this stage).
+                Vector3 head = CharacterPosition + Vector3.up * 1.58f;
+                float flat = Mathf.Sqrt(Mathf.Max(0.01f, lampDistance * lampDistance - (1.58f - lampHeight) * (1.58f - lampHeight)));
+                float radians = lampAngle * Mathf.Deg2Rad;
+                _lampAt = new Vector3(head.x + Mathf.Sin(radians) * flat, lampHeight, head.z + Mathf.Cos(radians) * flat);
+                _lamp.transform.position = _lampAt;
+            }
+            _sun.GetComponent<HDAdditionalLightData>().SetIntensity(sunLux, LightUnit.Lux);
+            _sun.gameObject.SetActive(sunLux > 0f);
             if (parameters != null)
             {
                 exposure = (float?)parameters["exposure"] ?? exposure;
@@ -341,7 +379,11 @@ namespace CharacterPreview
                 saturation = (float?)parameters["saturation"] ?? saturation;
                 tonemap = (int?)parameters["tonemap"] ?? tonemap;
                 modLights = (bool?)parameters["modLights"] ?? modLights;
-                _sun.GetComponent<HDAdditionalLightData>().SetIntensity((float?)parameters["sunLux"] ?? 13500f, LightUnit.Lux);
+                if (parameters["sunLux"] != null)
+                {
+                    _sun.GetComponent<HDAdditionalLightData>().SetIntensity((float)parameters["sunLux"], LightUnit.Lux);
+                    _sun.gameObject.SetActive((float)parameters["sunLux"] > 0f);
+                }
             }
             _sun.transform.rotation = Quaternion.Euler(sunPitch, sunYaw, 0f);
             bool shadows = (bool?)parameters?["shadows"] ?? true;
@@ -364,7 +406,15 @@ namespace CharacterPreview
         {
             Vector3 feet = CharacterPosition;
             Vector3 head = feet + Vector3.up * headHeight;
-            if (_name == "city")
+            if (_name == "night")
+            {
+                // The mod's third-person camera: 4 m behind the head and a little above it, looking slightly down at it.
+                Camera.fieldOfView = 63f;
+                Camera.transform.position = head + new Vector3(0f, 0.35f, 4f);
+                Camera.transform.LookAt(head + Vector3.down * 0.15f);
+                Focus = head;
+            }
+            else if (_name == "city")
             {
                 // The gameplay camera: 3.1 m from the player, looking down on them.
                 Vector3 chest = feet + Vector3.up * 1.25f;

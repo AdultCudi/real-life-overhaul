@@ -53,6 +53,10 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_looks_header")
                 .About("reallife_guide_character_about").Help("reallife_guide_character")
                 .Owns(Settings.CharacterHighDetailId, Settings.CharacterHairId, Settings.CharacterLightingId, Settings.CharacterNewLooksId)
+                .Test("reallife_test_hair_say", HairTests.Say)
+                .Test("reallife_test_hair_lamp", HairTests.Lamp)
+                .Test("reallife_test_hair_switch", HairTests.Switch)
+                .Cleanup(HairTests.Forget)
                 .Data("reallife:look_*")
                 .Objects("RealLifeOverhaul Character");
             foreach (CharacterCatalogue.Slot slot in CharacterCatalogue.Slots)

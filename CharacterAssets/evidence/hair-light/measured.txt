@@ -1,0 +1,203 @@
+Hair against a lamp, measured in the HDRP preview (hair_light.ps1): a white lamp of 900 candela 3 m from the head,
+no tone mapping, so a pixel is the light sent back. Every number is a share of LIT SKIN: the middle of the bald head
+lit from the camera's side.
+
+"Hair" is where the head with hair differs from the bald head (taken from the black, lit-from-the-camera shot of
+each style, so thin hair with skin showing through it counts as hair).
+  mean  how bright the hair is on average. Lit from the camera's side this is the hair's own colour; black hair that
+        covers the skull reads about 0.05 to 0.15, and more where skin shows through it.
+  glow  the brightest hundredth of the hair, counting only the light it adds to what the bald head shows at the same
+        spot under the same lamp (so skin seen through thin hair is not counted). With the lamp behind or beside the
+        head this is the hair lighting up against the lamp: the fault.
+
+MEN: lit skin = 0.117 (pixel value of the bald head's middle, lamp at the camera's side)
+style                  hair    finish  | lamp behind: mean glow | beside: mean glow | camera side: mean glow
+MaleHair01             black   game    |         0.13  1.23 |     0.07  0.07 |          0.17  0.02
+MaleHair01             black   before  |         0.07  0.59 |     0.04  0.02 |          0.10  0.00
+MaleHair01             black   after   |         0.02  0.01 |     0.03  0.00 |          0.09  0.00
+MaleHair01             brown   game    |         0.13  1.23 |     0.12  0.20 |          0.33  0.13
+MaleHair01             brown   before  |         0.10  0.84 |     0.09  0.20 |          0.27  0.08
+MaleHair01             brown   after   |         0.03  0.10 |     0.09  0.19 |          0.25  0.06
+MaleHair01             blond   game    |         0.15  1.38 |     0.60  1.91 |          1.86  1.76
+MaleHair01             blond   before  |         0.19  1.86 |     0.61  2.46 |          1.84  1.69
+MaleHair01             blond   after   |         0.08  0.80 |     0.60  2.44 |          1.84  1.69
+MaleHair01             grey    game    |         0.15  1.30 |     0.42  1.25 |          1.29  0.85
+MaleHair01             grey    before  |         0.16  1.60 |     0.42  1.65 |          1.26  0.83
+MaleHair01             grey    after   |         0.07  0.58 |     0.41  1.63 |          1.25  0.81
+
+MaleHair02             black   game    |         0.12  1.23 |     0.12  0.02 |          0.31  0.00
+MaleHair02             black   before  |         0.07  0.57 |     0.05  0.00 |          0.12  0.00
+MaleHair02             black   after   |         0.03  0.00 |     0.04  0.00 |          0.10  0.00
+MaleHair02             brown   game    |         0.12  1.24 |     0.14  0.04 |          0.38  0.00
+MaleHair02             brown   before  |         0.08  0.80 |     0.07  0.05 |          0.21  0.00
+MaleHair02             brown   after   |         0.03  0.03 |     0.06  0.03 |          0.19  0.00
+MaleHair02             blond   game    |         0.13  1.33 |     0.33  0.83 |          1.07  0.51
+MaleHair02             blond   before  |         0.13  1.54 |     0.30  0.97 |          1.02  0.63
+MaleHair02             blond   after   |         0.05  0.30 |     0.29  0.98 |          1.02  0.64
+MaleHair02             grey    game    |         0.13  1.29 |     0.26  0.51 |          0.81  0.32
+MaleHair02             grey    before  |         0.12  1.34 |     0.21  0.63 |          0.71  0.40
+MaleHair02             grey    after   |         0.04  0.22 |     0.21  0.63 |          0.70  0.40
+
+MaleHair03             black   game    |         0.08  0.94 |     0.10  0.20 |          0.34  0.10
+MaleHair03             black   before  |         0.04  0.36 |     0.03  0.00 |          0.11  0.00
+MaleHair03             black   after   |         0.02  0.01 |     0.03  0.00 |          0.10  0.00
+MaleHair03             brown   game    |         0.08  0.97 |     0.13  0.32 |          0.49  0.20
+MaleHair03             brown   before  |         0.05  0.53 |     0.07  0.13 |          0.27  0.01
+MaleHair03             brown   after   |         0.02  0.07 |     0.07  0.11 |          0.26  0.00
+MaleHair03             blond   game    |         0.09  1.16 |     0.47  1.72 |          1.94  1.78
+MaleHair03             blond   before  |         0.08  1.13 |     0.41  1.57 |          1.81  1.45
+MaleHair03             blond   after   |         0.04  0.43 |     0.41  1.57 |          1.81  1.44
+MaleHair03             grey    game    |         0.08  1.09 |     0.34  1.13 |          1.40  0.89
+MaleHair03             grey    before  |         0.07  0.97 |     0.28  1.03 |          1.24  0.70
+MaleHair03             grey    after   |         0.03  0.32 |     0.28  1.03 |          1.23  0.67
+
+MaleHair04             black   game    |         0.08  0.50 |     0.07  0.04 |          0.17  0.00
+MaleHair04             black   before  |         0.05  0.41 |     0.04  0.02 |          0.11  0.00
+MaleHair04             black   after   |         0.02  0.00 |     0.04  0.00 |          0.09  0.00
+MaleHair04             brown   game    |         0.08  0.52 |     0.11  0.16 |          0.32  0.08
+MaleHair04             brown   before  |         0.06  0.56 |     0.09  0.17 |          0.26  0.07
+MaleHair04             brown   after   |         0.02  0.07 |     0.08  0.15 |          0.25  0.06
+MaleHair04             blond   game    |         0.11  0.75 |     0.53  1.64 |          1.71  1.60
+MaleHair04             blond   before  |         0.12  1.25 |     0.54  1.74 |          1.70  1.66
+MaleHair04             blond   after   |         0.06  0.54 |     0.53  1.79 |          1.71  1.68
+MaleHair04             grey    game    |         0.10  0.63 |     0.37  1.06 |          1.20  0.85
+MaleHair04             grey    before  |         0.10  1.05 |     0.37  1.11 |          1.16  0.94
+MaleHair04             grey    after   |         0.05  0.37 |     0.37  1.13 |          1.17  0.97
+
+MaleHair05             black   game    |         0.24  2.11 |     0.11  0.36 |          0.31  0.10
+MaleHair05             black   before  |         0.12  1.11 |     0.05  0.06 |          0.12  0.00
+MaleHair05             black   after   |         0.02  0.02 |     0.04  0.00 |          0.11  0.00
+MaleHair05             brown   game    |         0.25  2.17 |     0.17  0.55 |          0.47  0.17
+MaleHair05             brown   before  |         0.16  1.60 |     0.10  0.30 |          0.29  0.10
+MaleHair05             brown   after   |         0.04  0.26 |     0.09  0.21 |          0.27  0.03
+MaleHair05             blond   game    |         0.30  2.74 |     0.67  2.56 |          1.96  2.04
+MaleHair05             blond   before  |         0.34  3.75 |     0.62  2.51 |          1.87  1.65
+MaleHair05             blond   after   |         0.15  1.76 |     0.61  2.42 |          1.86  1.64
+MaleHair05             grey    game    |         0.29  2.55 |     0.48  1.84 |          1.40  1.07
+MaleHair05             grey    before  |         0.29  3.13 |     0.43  1.69 |          1.29  0.84
+MaleHair05             grey    after   |         0.12  1.32 |     0.42  1.61 |          1.27  0.80
+
+MaleHair06             black   game    |         0.15  1.35 |     0.11  0.08 |          0.30  0.07
+MaleHair06             black   before  |         0.08  0.63 |     0.05  0.00 |          0.13  0.00
+MaleHair06             black   after   |         0.03  0.01 |     0.04  0.00 |          0.12  0.00
+MaleHair06             brown   game    |         0.15  1.37 |     0.17  0.28 |          0.48  0.15
+MaleHair06             brown   before  |         0.10  0.92 |     0.10  0.14 |          0.32  0.05
+MaleHair06             brown   after   |         0.03  0.09 |     0.10  0.10 |          0.30  0.03
+MaleHair06             blond   game    |         0.16  1.72 |     0.70  2.11 |          2.20  2.14
+MaleHair06             blond   before  |         0.17  1.98 |     0.66  1.94 |          2.10  1.88
+MaleHair06             blond   after   |         0.08  0.71 |     0.66  1.94 |          2.09  1.87
+MaleHair06             grey    game    |         0.16  1.61 |     0.50  1.35 |          1.56  1.30
+MaleHair06             grey    before  |         0.15  1.69 |     0.45  1.11 |          1.43  1.16
+MaleHair06             grey    after   |         0.06  0.58 |     0.45  1.07 |          1.43  1.16
+
+MaleHair07             black   game    |         0.12  0.66 |     0.17  0.02 |          0.44  0.00
+MaleHair07             black   before  |         0.07  0.41 |     0.07  0.00 |          0.19  0.00
+MaleHair07             black   after   |         0.04  0.00 |     0.07  0.00 |          0.18  0.00
+MaleHair07             brown   game    |         0.12  0.68 |     0.20  0.09 |          0.60  0.04
+MaleHair07             brown   before  |         0.09  0.62 |     0.12  0.08 |          0.37  0.03
+MaleHair07             brown   after   |         0.05  0.08 |     0.12  0.08 |          0.36  0.03
+MaleHair07             blond   game    |         0.14  0.86 |     0.58  1.24 |          2.06  1.94
+MaleHair07             blond   before  |         0.14  1.49 |     0.58  1.23 |          2.12  1.86
+MaleHair07             blond   after   |         0.08  0.65 |     0.58  1.23 |          2.11  1.85
+MaleHair07             grey    game    |         0.13  0.80 |     0.44  0.73 |          1.52  1.17
+MaleHair07             grey    before  |         0.13  1.26 |     0.41  0.67 |          1.47  1.10
+MaleHair07             grey    after   |         0.07  0.47 |     0.41  0.67 |          1.47  1.10
+
+MaleHair08             black   game    |         0.10  0.58 |     0.10  0.00 |          0.28  0.00
+MaleHair08             black   before  |         0.06  0.38 |     0.05  0.00 |          0.13  0.00
+MaleHair08             black   after   |         0.03  0.00 |     0.04  0.00 |          0.11  0.00
+MaleHair08             brown   game    |         0.10  0.60 |     0.14  0.06 |          0.45  0.03
+MaleHair08             brown   before  |         0.08  0.53 |     0.10  0.09 |          0.33  0.02
+MaleHair08             brown   after   |         0.03  0.06 |     0.10  0.08 |          0.31  0.02
+MaleHair08             blond   game    |         0.13  0.79 |     0.55  1.32 |          2.08  2.09
+MaleHair08             blond   before  |         0.15  1.37 |     0.58  1.39 |          2.22  2.18
+MaleHair08             blond   after   |         0.07  0.57 |     0.58  1.39 |          2.21  2.18
+MaleHair08             grey    game    |         0.12  0.65 |     0.40  0.48 |          1.48  1.28
+MaleHair08             grey    before  |         0.13  1.00 |     0.40  0.58 |          1.52  1.34
+MaleHair08             grey    after   |         0.06  0.40 |     0.40  0.58 |          1.51  1.34
+
+WOMEN: lit skin = 0.186 (pixel value of the bald head's middle, lamp at the camera's side)
+style                  hair    finish  | lamp behind: mean glow | beside: mean glow | camera side: mean glow
+FemHair01              black   game    |         0.07  0.59 |     0.09  0.20 |          0.22  0.23
+FemHair01              black   before  |         0.04  0.28 |     0.02  0.02 |          0.06  0.00
+FemHair01              black   after   |         0.01  0.00 |     0.02  0.01 |          0.04  0.00
+FemHair01              brown   game    |         0.07  0.59 |     0.13  0.30 |          0.34  0.36
+FemHair01              brown   before  |         0.05  0.44 |     0.07  0.12 |          0.19  0.10
+FemHair01              brown   after   |         0.01  0.04 |     0.06  0.10 |          0.17  0.09
+FemHair01              blond   game    |         0.09  0.76 |     0.55  1.28 |          1.49  1.78
+FemHair01              blond   before  |         0.11  0.97 |     0.51  1.20 |          1.36  1.64
+FemHair01              blond   after   |         0.05  0.42 |     0.50  1.20 |          1.36  1.62
+FemHair01              grey    game    |         0.09  0.69 |     0.40  0.90 |          1.06  1.19
+FemHair01              grey    before  |         0.09  0.80 |     0.34  0.80 |          0.93  1.05
+FemHair01              grey    after   |         0.04  0.29 |     0.34  0.80 |          0.92  1.04
+
+FemHair02              black   game    |         0.04  0.63 |     0.03  0.15 |          0.19  0.19
+FemHair02              black   before  |         0.02  0.29 |     0.01  0.03 |          0.09  0.00
+FemHair02              black   after   |         0.00  0.01 |     0.01  0.01 |          0.07  0.00
+FemHair02              brown   game    |         0.04  0.61 |     0.06  0.23 |          0.31  0.37
+FemHair02              brown   before  |         0.03  0.43 |     0.04  0.12 |          0.21  0.12
+FemHair02              brown   after   |         0.01  0.06 |     0.04  0.11 |          0.20  0.10
+FemHair02              blond   game    |         0.06  0.91 |     0.31  1.21 |          1.42  2.05
+FemHair02              blond   before  |         0.06  0.92 |     0.29  1.23 |          1.38  1.77
+FemHair02              blond   after   |         0.03  0.41 |     0.29  1.23 |          1.38  1.77
+FemHair02              grey    game    |         0.05  0.69 |     0.22  0.82 |          1.00  1.41
+FemHair02              grey    before  |         0.05  0.79 |     0.20  0.80 |          0.95  1.11
+FemHair02              grey    after   |         0.02  0.29 |     0.20  0.80 |          0.94  1.11
+
+FemHair03              black   game    |         0.46  2.14 |     0.11  0.28 |          0.18  0.15
+FemHair03              black   before  |         0.22  1.06 |     0.05  0.11 |          0.09  0.00
+FemHair03              black   after   |         0.02  0.04 |     0.02  0.03 |          0.06  0.00
+FemHair03              brown   game    |         0.49  2.19 |     0.19  0.42 |          0.27  0.26
+FemHair03              brown   before  |         0.33  1.51 |     0.14  0.32 |          0.19  0.10
+FemHair03              brown   after   |         0.07  0.25 |     0.11  0.22 |          0.16  0.08
+FemHair03              blond   game    |         0.74  2.82 |     0.91  1.96 |          1.12  1.64
+FemHair03              blond   before  |         0.83  3.32 |     0.94  2.06 |          1.12  1.55
+FemHair03              blond   after   |         0.46  1.66 |     0.91  1.90 |          1.08  1.54
+FemHair03              grey    game    |         0.65  2.55 |     0.64  1.37 |          0.81  1.11
+FemHair03              grey    before  |         0.67  2.80 |     0.65  1.42 |          0.78  0.99
+FemHair03              grey    after   |         0.33  1.16 |     0.61  1.28 |          0.74  0.98
+
+FemHair04              black   game    |         0.07  0.72 |     0.08  0.10 |          0.24  0.08
+FemHair04              black   before  |         0.04  0.30 |     0.04  0.00 |          0.12  0.00
+FemHair04              black   after   |         0.02  0.00 |     0.04  0.00 |          0.11  0.00
+FemHair04              brown   game    |         0.08  0.73 |     0.10  0.20 |          0.33  0.12
+FemHair04              brown   before  |         0.05  0.44 |     0.06  0.08 |          0.21  0.05
+FemHair04              brown   after   |         0.03  0.05 |     0.06  0.07 |          0.20  0.04
+FemHair04              blond   game    |         0.09  0.99 |     0.32  1.22 |          1.19  0.76
+FemHair04              blond   before  |         0.08  0.99 |     0.29  1.13 |          1.11  0.87
+FemHair04              blond   after   |         0.04  0.40 |     0.29  1.13 |          1.10  0.87
+FemHair04              grey    game    |         0.08  0.86 |     0.24  0.83 |          0.87  0.51
+FemHair04              grey    before  |         0.07  0.83 |     0.20  0.72 |          0.77  0.56
+FemHair04              grey    after   |         0.04  0.27 |     0.20  0.72 |          0.77  0.56
+
+FemHair05              black   game    |         0.05  0.60 |     0.06  0.12 |          0.22  0.12
+FemHair05              black   before  |         0.02  0.26 |     0.02  0.00 |          0.08  0.00
+FemHair05              black   after   |         0.01  0.00 |     0.02  0.00 |          0.07  0.00
+FemHair05              brown   game    |         0.05  0.60 |     0.09  0.26 |          0.34  0.26
+FemHair05              brown   before  |         0.03  0.36 |     0.05  0.13 |          0.21  0.11
+FemHair05              brown   after   |         0.01  0.04 |     0.05  0.12 |          0.20  0.09
+FemHair05              blond   game    |         0.06  0.68 |     0.37  1.39 |          1.48  1.51
+FemHair05              blond   before  |         0.06  0.78 |     0.34  1.49 |          1.39  1.47
+FemHair05              blond   after   |         0.03  0.31 |     0.34  1.46 |          1.39  1.46
+FemHair05              grey    game    |         0.06  0.65 |     0.27  0.97 |          1.05  1.03
+FemHair05              grey    before  |         0.05  0.66 |     0.24  0.98 |          0.95  0.97
+FemHair05              grey    after   |         0.02  0.22 |     0.23  0.97 |          0.95  0.96
+
+FemHair06              black   game    |         0.13  1.23 |     0.07  0.15 |          0.19  0.00
+FemHair06              black   before  |         0.07  0.62 |     0.04  0.01 |          0.11  0.00
+FemHair06              black   after   |         0.02  0.01 |     0.04  0.00 |          0.11  0.00
+FemHair06              brown   game    |         0.13  1.23 |     0.11  0.29 |          0.30  0.07
+FemHair06              brown   before  |         0.09  0.87 |     0.08  0.13 |          0.24  0.07
+FemHair06              brown   after   |         0.03  0.10 |     0.08  0.11 |          0.23  0.04
+FemHair06              blond   game    |         0.15  1.44 |     0.43  1.53 |          1.36  1.31
+FemHair06              blond   before  |         0.17  1.74 |     0.44  1.55 |          1.39  1.52
+FemHair06              blond   after   |         0.07  0.78 |     0.44  1.50 |          1.38  1.52
+FemHair06              grey    game    |         0.15  1.27 |     0.31  1.04 |          0.96  0.80
+FemHair06              grey    before  |         0.15  1.49 |     0.31  1.01 |          0.96  0.94
+FemHair06              grey    after   |         0.06  0.57 |     0.30  1.00 |          0.96  0.94
+
+The glow with the lamp behind or beside the head, worst style per colour (share of lit skin):
+  black   game 2.14 (FemHair03 behind)  before 1.11 (MaleHair05 behind)  after 0.04 (FemHair03 behind)
+  brown   game 2.19 (FemHair03 behind)  before 1.60 (MaleHair05 behind)  after 0.26 (MaleHair05 behind)
+  blond   game 2.82 (FemHair03 behind)  before 3.75 (MaleHair05 behind)  after 2.44 (MaleHair01 beside)
+  grey    game 2.55 (FemHair03 behind)  before 3.13 (MaleHair05 behind)  after 1.63 (MaleHair01 beside)

@@ -34,6 +34,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\OtherModName.cs" Link="Mod\OtherModName.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\EventHold.cs" Link="Mod\EventHold.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WorkRings.cs" Link="Mod\WorkRings.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Character\HairRules.cs" Link="Mod\HairRules.cs" />
   </ItemGroup>
 
 </Project>

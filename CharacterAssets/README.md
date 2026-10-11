@@ -7,7 +7,8 @@ What ships, both judged in the HDRP preview (see below) before going in:
   which is why black hair comes out streaked blond, thin hair looks bald from play distance and everything has a
   wig's sheen. A finished layer writes depth where its strands are solid (the shader's depth prepass, which the
   game's build has), carries strand maps (`hair_strand_mask`, `hair_strand_normal`: generated noise, two 512 px
-  textures for all hair) and takes its gloss and highlight colour from the hair colour. Sheets of every case, the
+  textures for all hair) and takes its gloss, highlight and back-light from the hair colour, bounded against lit skin
+  so that hair keeps its colour against a lamp (see "Hair against a strong light"). Sheets of every case, the
   game's look beside the finished one: `evidence\hair_*.jpg`, `evidencebeard_*.jpg`.
 - **A scalp underlay** for the player's hair: a smooth, matt, hair-coloured cap on the skull, worn under the game's
   own hair and cut to each hairstyle's footprint, so what shows between the strips of a thin style is more hair.
@@ -97,6 +98,55 @@ into the installed mod folder. Run it again after a game update that changes the
 `previews\under_<m|f>_<game mesh>.png` shows each hairstyle without (left pair) and with (right pair) its
 underlay. The game's strand textures are not part of the reference, so its strips are drawn as plain
 half-clear ribbons: good for seeing where the scalp shows, not for judging the look. That needs the game.
+
+## Hair against a strong light
+
+Reported twice ("See I am bald under light"): at night, with a car's lamps a few metres beyond the player's head, the
+head was a pale dome in the lamp's colour with a few bright flecks on it, and no hair to be seen.
+
+**Cause** (read from the shader's source, `Runtime/Material/Hair/Hair.hlsl` of HDRP 14.0.12 and the `HDRP/Hair` graph,
+and measured here). The game's hair is the "cards" Kajiya-Kay model. Per unit of light arriving, hair sends back:
+
+| | | depends on the hair colour |
+|---|---|---|
+| lit from the front | colour / pi | yes |
+| the highlight | 0.25 x Fresnel x (`_Specular` x (0.7 white + 0.3 `_SpecularColor`) + `_SecondarySpecular` x 0.5 x `_SpecularColor`) x (n + 2) / (2 pi) | no: 70% of it is white |
+| light coming through | `_TransmissionColor` x (S + `_TransmissionRim` x R), S for a light behind the hair, R on every outline | no |
+
+Fresnel is 0.05 head on and goes to 1 when the light is behind the hair as the camera sees it (0.26 with the lamp
+150 degrees round). Lit skin sends back about 0.16. The game gives every hair material the back-light colour `FFA45F`
+(1.0, 0.37, 0.11) and highlights of 0.31 and 0.60 at gloss 0.58: up to 0.55 through and 1.06 in the highlight, whatever the
+hair colour, against 0.004 for black hair lit from the front. The game never shows this: its detailed characters only
+appear in character creation, lit from the front. The mod puts one in the street with a camera behind it.
+The finish as it was (until 11 October) set the back-light to the hair colour lifted a quarter towards white, which for
+black hair is still 0.10 (two thirds of lit skin), left the highlight unbounded (0.92 at its worst), and left the
+scalp underlay with the game's orange back-light. From play distance, where the strands blur into one mass (the head
+is 36 pixels wide), all of that adds up to a head as bright as skin in the lamp's colour.
+
+**Fix** (`Scripts/Character/HairRules.cs`, pure arithmetic, checked offline in `RealLifeOverhaul.Build/NavCheck/HairCheck.cs`;
+applied by `HairFinish.Colour`, `HairFinish.Underlay` and `HairFinish.Through`):
+
+- light through hair takes the hair's own colour at a quarter of the brightness the hair has lit from the front, never
+  more than a quarter of lit skin for dark hair and half for any hair; a layer painted on the skull (the game's "Scalp" layers, the
+  mod's underlay) lets nothing through and has no outline glow;
+- the highlight is bounded at its worst angle: 0.2 of lit skin for black hair, up to 1.5 times the hair's own front-lit
+  brightness for paler hair and never above lit skin; the gloss comes down first (to 0.3 at the lowest), then the strength;
+- each strand texture gets its own alpha gain, from its alpha histogram when it is read back: the smallest from 3 to 6
+  at which 0.7 of its strands are solid (the thinnest, `T_MaleHair04_BC`, gets 4.5; most keep 3);
+- the game's one solid hair layer (the opaque scalp of `MaleHair08`) gets the bounded back-light too.
+
+**Seen and measured**: `hair_light.ps1` renders every style at night from the third-person camera (the "night" stage of
+`PreviewRunner`: 4 m behind the head, one shadowless lamp 3 m from the head at 0.8 m, 150, 90 and 20 degrees round from
+the camera) as the game's own hair, as the finish was ("before": `hair:bounded=0,want=0` and `underlay:old=1`) and as it
+is, in black, dark brown, blond and grey over light and dark skin. `evidence\hair-light\*.jpg` are the sheets (true
+game pixels, twice enlarged); `evidence\hair-light\measured.txt` the numbers from a second set without tone mapping.
+Black hair with the lamp behind, brightest hundredth of the hair as a share of lit skin, over all 14 styles: the game's
+own 0.50 to 2.14, before 0.26 to 1.11, after 0.00 to 0.04 (dark brown: after at most 0.26). `strong_lamp_behind.jpg` is the
+player's style under lamps 18, 70 and 280 times stronger, where lit skin is far past white: the game's and the earlier
+finish are a white-hot dome, the finish now a dim brown fuzz, which is the hair's own colour where strands face the lamp.
+`close_up_before_after.jpg` is the character creation view, to show the look close up is kept. The preview's lamp and exposure are chosen, not the game's:
+what a car's lamp does at night in the game is for the game to show (Options > Tests has "Test: a strong lamp beyond my
+head for 20 seconds").
 
 ## How it fits the game's character
 

@@ -177,7 +177,8 @@ namespace RealLifeOverhaul
                 }
 
                 // The finish waits for the bundle (its strand maps); if the bundle fails it goes ahead without them.
-                bool hair = Settings.CharacterHair && !_hairFailed && ModAssets.Settled;
+                // (HairTests.FinishOff: the test entry that switches it off for a look at the game's own hair.)
+                bool hair = Settings.CharacterHair && !HairTests.FinishOff && !_hairFailed && ModAssets.Settled;
                 if (hair != _hairOn)
                 {
                     _hairOn = hair;
@@ -358,6 +359,7 @@ namespace RealLifeOverhaul
         // Runs inside the game's own appearance update, so nothing may escape from it.
         private void Refresh(Managed managed)
         {
+            bool hairChanged = false;
             try
             {
                 AppearanceSetter character = managed.Character;
@@ -367,7 +369,7 @@ namespace RealLifeOverhaul
                 }
                 if (_hairOn && !_hairSuspended)
                 {
-                    HairLook.Apply(character);
+                    hairChanged = HairLook.Apply(character);
                 }
                 CharacterTools.SharpenTextures(character);
             }
@@ -378,6 +380,25 @@ namespace RealLifeOverhaul
             // Fails safe on its own: nothing escapes from it.
             ModLooks.Apply(managed.Character, !_stopped && !_hairSuspended && ShowsPlayer(managed));
             ApplySkin(managed);
+            SayHair(managed.Character, hairChanged);
+        }
+
+        // The self-check line of the hair finish: one per character per change of its hair, with diagnostics on, after
+        // the scalp underlay is on too (an underlay still on its way in from the bundle is said to be none).
+        private static void SayHair(AppearanceSetter character, bool changed)
+        {
+            if (!changed || character == null || !Meta.Dev.Verbose)
+            {
+                return;
+            }
+            try
+            {
+                Logger?.Info(HairLook.Describe(character));
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
         }
 
         // The skin finish, for the characters that show the player; the game's own maps for anyone else on the shop preview.
@@ -457,7 +478,7 @@ namespace RealLifeOverhaul
                 {
                     if (_characters[i].Character != null)
                     {
-                        HairLook.Apply(_characters[i].Character);
+                        SayHair(_characters[i].Character, HairLook.Apply(_characters[i].Character));
                     }
                 }
             }
@@ -539,6 +560,7 @@ namespace RealLifeOverhaul
                 _creatorLooks?.Dispose();
                 _creatorLooks = null;
                 HairLook.Shutdown();
+                HairTests.Forget();
                 ModLooks.Shutdown();
                 SkinLook.Shutdown();
                 CharacterTools.RestoreTextures();
