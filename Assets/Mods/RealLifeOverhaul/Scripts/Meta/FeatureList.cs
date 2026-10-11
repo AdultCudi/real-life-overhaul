@@ -283,7 +283,6 @@ namespace RealLifeOverhaul.Meta
                 .OnFrom(Settings.HomeIllnessId, Intensity.Standard)
                 .Data(HomeState.Key)
                 .Contact(HomePhone.ContactId)
-                .Objects("RealLifeOverhaul Home HUD")
                 .ResetData(() =>
                 {
                     HomeState.Reset();   // the director reads the (now empty) save again on its next second
@@ -311,7 +310,6 @@ namespace RealLifeOverhaul.Meta
                 .Preset(Settings.CarEasyId, 1, 0, 0)
                 .Data("reallife:transit", "reallife:garage")
                 .Contact(TransitPhone.ContactId, CarPhone.GarageId, CarPhone.RoadsideId)
-                .Objects("RealLifeOverhaul Transport HUD")
                 .Fact("car_policy_days", () => CarRules.PolicyDays.ToString(CultureInfo.InvariantCulture))
                 .ResetData(() =>
                 {
@@ -406,9 +404,8 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_garage_about").Help("reallife_guide_garage")
                 .Owns(Settings.GarageId, Settings.GarageCosmeticsId, Settings.GarageTuningId, Settings.GarageUnderglowId, Settings.TwoWheelersId)
                 .OnFrom(Settings.GaragePoliceId, Intensity.Standard)
-                .Rows("reallife_garage_test_vehicles")   // "My vehicles": a player's panel (a two-wheeler that cannot be reached is fetched from it), not a test
+                .Rows("reallife_garage_test_vehicles")   // "My vehicles": a list for the player (a two-wheeler that cannot be reached is fetched from it), not a test
                 .Data("reallife:garage_*")
-                .Objects("RealLifeOverhaul Garage UI")
                 .Fact("garage_resale", () => Guide.Percent(GarageCatalogue.Resale))
                 .Cleanup(GarageSummary.Close)
                 .ResetData(() => GarageState.Load(SaveGameManager.Current.modData));   // no builds in the save: the director takes them off the cars

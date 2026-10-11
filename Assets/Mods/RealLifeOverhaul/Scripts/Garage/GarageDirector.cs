@@ -4,6 +4,7 @@ using System.Text;
 using BAModAPI;
 using Helpers;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UI.Load;
 using UI.Notification;
 using UnityEngine;
@@ -14,18 +15,19 @@ namespace RealLifeOverhaul
     /// The Garage: the custom shop for cars (<see cref="GarageShop"/>), the builds on the player's cars
     /// (<see cref="GarageCar"/>, <see cref="GarageTuning"/>), and bicycles and motorbikes
     /// (<see cref="TwoWheelers"/>). This is the one component that ticks: per frame it compares what the
-    /// player is riding and, while a prompt is up, tests one key; four times a second it looks for a
-    /// prompt; once a second it puts builds on cars the game has spawned since, lights underglow after
-    /// dark and looks after the two-wheelers. Anything unexpected is logged once, everything is put back
-    /// and the Garage stays off for the session.
+    /// player is riding; four times a second it looks whether the game's panel is wanted at a dock, a rack or
+    /// a stand, and whether an open list may stay open; once a second it puts builds on cars the game has
+    /// spawned since, lights underglow after
+    /// dark and looks after the two-wheelers. Everything it shows is the game's own interface (the game's
+    /// panel at a repair bay, at a dock and at a stand, the game's list window, its colour picker, its
+    /// destination marker): it reads no key and draws nothing. Anything unexpected is logged once, everything
+    /// is put back and the Garage stays off for the session.
     /// </summary>
     public sealed class GarageDirector : MonoBehaviour
     {
         public static IModLogger Logger;
 
         public static GarageDirector Instance { get; private set; }
-
-        private static object _promptOwner;
 
         private GarageShop _shop;
         private TwoWheelers _bikes;
@@ -34,10 +36,20 @@ namespace RealLifeOverhaul
         private int _exhaustFineDay = -1;
         private float _nextPoliceLook;
         private bool _wet;
+        private VehicleController _shopWanted;   // the test button was pressed on the options page: the shop opens when the menus are closed
 
         public GarageShop Shop => _shop;
 
         public TwoWheelers Bikes => _bikes;
+
+        /// <summary>
+        /// True while the game's panel at a dock, a rack or a stand has its button on the game's interact key, and in
+        /// the frame that button ran: the mod's own interact key does nothing else then (World/NearbyInteraction).
+        /// </summary>
+        public static bool TakesInteractKey => Instance != null && !Instance._failed && Instance._bikes.TakesInteractKey;
+
+        /// <summary>False once the Garage has switched itself off for the session: its shop and lists are then not offered.</summary>
+        public static bool Working => Instance != null && !Instance._failed;
 
         private void Awake()
         {
@@ -45,6 +57,10 @@ namespace RealLifeOverhaul
             GarageState.Reset();
             _shop = new GarageShop(transform);
             _bikes = new TwoWheelers(transform);
+            GarageBay.Logger = Logger;
+            WorldPanel.Logger = Logger;
+            TravelList.Logger = Logger;
+            GuideMark.Logger = Logger;
             gameObject.AddComponent<GarageTuning>();
         }
 
@@ -62,25 +78,25 @@ namespace RealLifeOverhaul
             try
             {
                 _bikes.Frame(gm);
-                if ((_shop.PromptOn || _bikes.PromptOn) && Keys.Down(KeyAction.Garage) && !Leisure.PhotoMode.Active)   // (photo mode has the same key for its filters)
-                {
-                    if (_shop.PromptOn)
-                    {
-                        _shop.Use(gm);
-                    }
-                    else
-                    {
-                        _bikes.Use(gm);
-                    }
-                }
                 float now = Time.unscaledTime;
                 if (now >= _nextQuick)
                 {
                     _nextQuick = now + 0.25f;
                     if (GarageState.Loaded && !LoadScene.isLoading)
                     {
+                        GarageBay.Tick(gm);
+                        if (_shopWanted != null && !GarageList.MenuUp)
+                        {
+                            VehicleController wanted = _shopWanted;
+                            _shopWanted = null;
+                            if (!_shop.IsOpen && !_shop.Open(wanted))
+                            {
+                                TestRefusals.Tell(Logger, "Custom shop", TestRefusal.NothingFits, 0, "the shop could not be opened on " + wanted.name);
+                            }
+                        }
                         _shop.Tick(gm);
                         _bikes.Quick(gm);
+                        GarageSummary.Tick(gm);
                     }
                 }
                 if (now >= _nextSlow)
@@ -202,24 +218,6 @@ namespace RealLifeOverhaul
             Logger?.Info("Garage: noticed by the police (" + what + "): " + (handled ? "handed to the Crime feature." : "fined " + fine + "."));
         }
 
-        /// <summary>The one line at the bottom of the screen. Whoever put it up is the only one who can take it down.</summary>
-        public static void Prompt(object owner, string text)
-        {
-            if (text != null)
-            {
-                _promptOwner = owner;
-                GarageUi.Instance.Prompt(text);
-            }
-            else if (_promptOwner == owner)
-            {
-                _promptOwner = null;
-                if (GarageUi.Exists)
-                {
-                    GarageUi.Instance.Prompt(null);
-                }
-            }
-        }
-
         private System.Action _onSave;   // made once: Core/SaveHook compares it, it is never built again
 
         private void OnSaveGame()
@@ -248,11 +246,11 @@ namespace RealLifeOverhaul
         {
             SaveHook.Drop(_onSave);
             PutEverythingBack(true);
+            GarageList.Destroy();
             if (Instance == this)
             {
                 Instance = null;
             }
-            _promptOwner = null;
         }
 
         // Every car and scooter as the game made it. On the way out of the city, and if the Garage has to switch itself off.
@@ -264,11 +262,13 @@ namespace RealLifeOverhaul
                 GarageSummary.Close();
                 if (leaving)
                 {
+                    GarageBay.Remove();
                     _bikes.Dispose();
                 }
                 else
                 {
-                    _bikes.ClosePanel();
+                    _bikes.HideUi();
+                    GarageBay.CloseList("the Garage switched itself off");   // (the bay's panel stays: car ownership's service is still ordered there)
                 }
                 List<VehicleController> all = VehicleHelper.AllPlayerVehicles;
                 for (int i = 0; i < all.Count; i++)
@@ -289,7 +289,6 @@ namespace RealLifeOverhaul
                         mount.Detach();
                     }
                 }
-                Prompt(_promptOwner, null);
             }
             catch (Exception e)
             {
@@ -363,6 +362,13 @@ namespace RealLifeOverhaul
                 TestRefusals.Tell(Logger, "Custom shop", why, 20, detail);
                 return;
             }
+            if (GarageList.MenuUp)
+            {
+                // Pressed on the options page: the shop's list stands on the HUD, which is not shown under a menu.
+                _shopWanted = car;
+                Notifications.Show(NotificationType.Info, "reallife_garage_summary_waits", null, 6f);
+                return;
+            }
             if (!_shop.Open(car))
             {
                 TestRefusals.Tell(Logger, "Custom shop", TestRefusal.NothingFits, 0, "the shop could not be opened on " + car.name);
@@ -425,24 +431,30 @@ namespace RealLifeOverhaul
 
     /// <summary>
     /// "My vehicles": every car of the player's with what the custom shop has done to it and what that adds
-    /// to its worth, and every bicycle and motorbike with where it stands. Shown as a panel of the Garage's
-    /// own (from the shop, or the options button); <see cref="Lines"/> gives the same lines to any other
-    /// feature that has a garage page of its own to put them on.
+    /// to its worth, and every bicycle and motorbike with where it stands. Shown in the game's list window
+    /// (<see cref="GarageList"/>; from the workshop's list in a repair bay, or the options button): a car is an
+    /// entry to read, a two-wheeler has two, one whose button marks it and one whose button has it brought.
+    /// <see cref="Lines"/> gives the same lines to any other feature that has a garage page of its own to put
+    /// them on.
     /// </summary>
     public static class GarageSummary
     {
         private const int Rows = 8;
 
-        private static GameObject _panel;
+        private static readonly object Owner = new object();
         private static readonly List<string> Titles = new List<string>(Rows);
         private static readonly List<string> Details = new List<string>(Rows);
         private static readonly List<string> BikeIds = new List<string>(Rows);   // beside Titles: the two-wheeler of a row, null for a car
+        private static readonly Action<int> OnPick = Picked;
+        private static readonly Action OnClosed = Closed;
+        private static string _closing;
+        private static bool _wanted;     // asked for from the options page: opened when the menus are closed
 
-        public static bool IsOpen => _panel != null;
+        public static bool IsOpen => GarageList.OpenFor(Owner);
 
         public static void Toggle()
         {
-            if (_panel != null)
+            if (IsOpen || _wanted)
             {
                 Close();
             }
@@ -454,12 +466,112 @@ namespace RealLifeOverhaul
 
         public static void Close()
         {
-            if (_panel != null)
+            _wanted = false;
+            if (IsOpen)
             {
-                UnityEngine.Object.Destroy(_panel);
-                _panel = null;
-                GarageUi.GiveCursor();
+                GarageList.Close();
             }
+        }
+
+        /// <summary>Four times a second: an open list is closed when another screen comes up, and one asked for under a menu is opened when the menu has gone.</summary>
+        public static void Tick(GameManager gm)
+        {
+            if (_wanted && !GarageList.MenuUp)
+            {
+                Open();
+            }
+            else if (IsOpen && GarageList.MenuUp)
+            {
+                _closing = "another screen came up";
+                GarageList.Close();
+            }
+        }
+
+        public static void Open()
+        {
+            _wanted = false;
+            if (!GarageState.Loaded)
+            {
+                TestRefusals.Tell(GarageDirector.Logger, "My vehicles", TestRefusal.NotLoaded);
+                return;
+            }
+            if (GarageList.MenuUp)
+            {
+                // Asked for on the options page: the game's list stands on the HUD, which is not shown under a menu.
+                _wanted = true;
+                Notifications.Show(NotificationType.Info, "reallife_garage_summary_waits", null, 6f);
+                return;
+            }
+            float began = Time.realtimeSinceStartup;
+            TravelList list = GarageList.Take(Owner, false);
+            if (list == null)
+            {
+                return;   // (the game's window could not be copied: one "Game UI:" line says why)
+            }
+            Lines(Titles, Details, BikeIds);
+            var gm = InstanceBehavior<GameManager>.Instance;
+            Vector3 player = gm != null && gm.playerController != null ? gm.playerController.transform.position : Vector3.zero;
+            int bikes = 0;
+            for (int i = 0; i < BikeIds.Count; i++)
+            {
+                bikes += BikeIds[i] != null ? 1 : 0;
+            }
+            list.Begin(GarageText.T("reallife_garage_my_vehicles"), Titles.Count == 0 ? GarageText.T("reallife_garage_summary_none")
+                : GarageText.T("reallife_garage_summary_info", "cars", (Titles.Count - bikes).ToString(), "bikes", bikes.ToString()));
+            for (int i = 0; i < Titles.Count; i++)
+            {
+                string id = i < BikeIds.Count ? BikeIds[i] : null;
+                BikeRecord bike = id != null ? GarageState.Bike(id) : null;
+                // An entry's id: twice the row, plus one for "bring it here".
+                list.Add(i * 2, Titles[i], Details[i], "reallife_garage_summary_show", bike != null);
+                if (bike != null)
+                {
+                    // A two-wheeler can be marked, and stood in front of the player (free from close by, a small fee from further off).
+                    int fee = TwoWheelers.BringFee(TwoWheelers.Where(bike), player);
+                    list.Add(i * 2 + 1, fee > 0 ? GarageText.T("reallife_garage_summary_bring_fee", "price", GarageText.Money(fee)) : GarageText.T("reallife_garage_summary_bring"),
+                        GarageText.T("reallife_garage_summary_bring_detail", "name", GarageText.T(BikeCatalogue.Of(bike.Kind).Name)), "reallife_garage_list_bring", true);
+                }
+            }
+            _closing = null;
+            list.Open(OnPick, OnClosed);
+            if (Meta.Dev.Verbose)
+            {
+                GarageDirector.Logger?.Info("Garage check (my vehicles): the game's list is open with " + (Titles.Count - bikes) + " car(s) with a build and " + bikes + " two-wheeler(s); "
+                                            + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
+            }
+        }
+
+        private static void Picked(int id)
+        {
+            int row = id / 2;
+            string bike = row >= 0 && row < BikeIds.Count ? BikeIds[row] : null;
+            if (bike == null)
+            {
+                return;
+            }
+            bool bring = (id & 1) == 1;
+            if (Meta.Dev.Verbose)
+            {
+                GarageDirector.Logger?.Info("Garage check (choice): '" + (bring ? "Bring it here" : "Show me") + "' for two-wheeler " + bike + ", from 'My vehicles'.");
+            }
+            _closing = bring ? "a two-wheeler is brought" : "a two-wheeler is shown";
+            if (bring)
+            {
+                Bring(bike);
+            }
+            else
+            {
+                Show(bike);
+            }
+        }
+
+        private static void Closed()
+        {
+            if (Meta.Dev.Verbose)
+            {
+                GarageDirector.Logger?.Info("Garage check (my vehicles): closed (" + (_closing ?? "cancelled by the player, or another list of the Garage was opened") + ").");
+            }
+            _closing = null;
         }
 
         /// <summary>
@@ -544,51 +656,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        public static void Open()
-        {
-            Close();
-            if (!GarageState.Loaded)
-            {
-                TestRefusals.Tell(GarageDirector.Logger, "My vehicles", TestRefusal.NotLoaded);
-                return;
-            }
-            GarageUi ui = GarageUi.Instance;
-            Lines(Titles, Details, BikeIds);
-            var gm = InstanceBehavior<GameManager>.Instance;
-            Vector3 player = gm != null && gm.playerController != null ? gm.playerController.transform.position : Vector3.zero;
-            RectTransform panel = ui.Box("My Vehicles", ui.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(120f, 20f), new Vector2(900f, 640f), GarageUi.Plate);
-            _panel = panel.gameObject;
-            GarageUi.TakeCursor();
-            ui.TextAt(panel, 20f, 12f, 860f, 32f, 26f, Color.white, GarageText.T("reallife_garage_my_vehicles"));
-            if (Titles.Count == 0)
-            {
-                ui.TextAt(panel, 20f, 64f, 860f, 60f, 18f, GarageUi.Dim, GarageText.T("reallife_garage_summary_none"));
-            }
-            for (int i = 0; i < Titles.Count && i < Rows; i++)
-            {
-                float y = 56f + i * 64f;
-                ui.At("Row", panel, 20f, y, 860f, 58f, GarageUi.Row).GetComponent<UnityEngine.UI.Image>().raycastTarget = false;
-                string id = i < BikeIds.Count ? BikeIds[i] : null;
-                BikeRecord bike = id != null ? GarageState.Bike(id) : null;
-                float width = bike != null ? 500f : 836f;
-                ui.TextAt(panel, 32f, y + 5f, width, 24f, 19f, Color.white, Titles[i]);
-                ui.TextAt(panel, 32f, y + 31f, width, 22f, 14f, GarageUi.Dim, Details[i]);
-                if (bike != null)
-                {
-                    // A two-wheeler can be pointed at, and stood in front of the player (free from close by, a small fee from further off).
-                    int fee = TwoWheelers.BringFee(TwoWheelers.Where(bike), player);
-                    ui.ButtonAt(panel, 544f, y + 9f, 120f, 40f, GarageUi.Chosen, GarageText.T("reallife_garage_summary_show"), () => Show(id), 16f);
-                    ui.ButtonAt(panel, 672f, y + 9f, 200f, 40f, GarageUi.Go,
-                        fee > 0 ? GarageText.T("reallife_garage_summary_bring_fee", "price", GarageText.Money(fee)) : GarageText.T("reallife_garage_summary_bring"), () => Bring(id), 16f);
-                }
-            }
-            if (Titles.Count > Rows)
-            {
-                ui.TextAt(panel, 20f, 56f + Rows * 64f, 500f, 22f, 15f, GarageUi.Dim, GarageText.T("reallife_garage_summary_more", "n", (Titles.Count - Rows).ToString()));
-            }
-            ui.ButtonAt(panel, 680f, 588f, 200f, 40f, GarageUi.Stop, GarageText.T("reallife_garage_close"), Close, 18f);
-        }
-
+        // The list goes first: what is brought is stood in front of the player.
         // The panel goes first: the marker is not drawn under it, and what is brought is stood in front of the player.
         private static void Show(string id)
         {

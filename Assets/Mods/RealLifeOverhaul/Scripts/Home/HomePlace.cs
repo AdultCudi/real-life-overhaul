@@ -429,6 +429,37 @@ namespace RealLifeOverhaul
             return true;
         }
 
+        /// <summary>
+        /// The desk of the game's own doctor in the building the player is in (a SpecialEmployeeController; the
+        /// doctor's if there are several desks), for the panel that offers a consultation. False if the building has
+        /// no such desk. One pass over the building's furniture, when the player comes in.
+        /// </summary>
+        public static bool DoctorDesk(out Vector3 at)
+        {
+            at = default;
+            var manager = InstanceBehavior<BuildingManager>.Instance;
+            List<ItemController> items = manager != null ? manager.allItemControllers : null;
+            SpecialEmployeeController found = null;
+            for (int i = 0; items != null && i < items.Count; i++)
+            {
+                var desk = items[i] as SpecialEmployeeController;
+                if (desk == null || !desk.isActiveAndEnabled)
+                {
+                    continue;
+                }
+                if (found == null || desk.GetEmployeeType == SpecialEmployeeController.SpecialEmployeeType.LongevityDoctor)
+                {
+                    found = desk;
+                }
+            }
+            if (found == null)
+            {
+                return false;
+            }
+            at = found.transform.position;
+            return true;
+        }
+
         /// <summary>True in a hospital or a clinic.</summary>
         public static bool InHospital()
         {

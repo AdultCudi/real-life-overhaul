@@ -63,6 +63,30 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>How many entries have been made so far (for the log).</summary>
         public int Made => _rows.Count;
 
+        /// <summary>The window's own rectangle on the HUD's canvas, for an owner that stands it somewhere else than the middle or makes it wider. Null once the interface has gone.</summary>
+        public RectTransform Window => _root != null ? (RectTransform)_root.transform : null;
+
+        /// <summary>
+        /// For a list whose entries say more than a name and one line: how high an entry is, and whether the lines
+        /// under the name may run on to the next line. Call it before the first <see cref="Add"/>: entries already
+        /// made keep the shape they were made with.
+        /// </summary>
+        public void EntryShape(float height, bool wrap)
+        {
+            if (_template == null)
+            {
+                return;
+            }
+            var rect = (RectTransform)_template.transform;
+            rect.sizeDelta = new Vector2(rect.sizeDelta.x, height);
+            Transform label = _template.transform.Find("Label");
+            var text = label != null ? label.GetComponent<TMP_Text>() : null;
+            if (text != null)
+            {
+                text.textWrappingMode = wrap ? TextWrappingModes.Normal : TextWrappingModes.NoWrap;
+            }
+        }
+
         /// <summary>The window, asleep. Null, with one line in Player.log, if the game's window is not built as expected.</summary>
         public static TravelList Make(string name)
         {

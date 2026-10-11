@@ -144,15 +144,16 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       CarDrag        air drag on the driven car, one force per physics step, only while a tuned car is driven
       CarMeasure     the "Measure this car" button: times a full-throttle run, off otherwise
     Garage/    the custom shop for cars, and bicycles and motorbikes (see "Garage" below)
-      GarageDirector   the one component that ticks: builds onto spawned cars, underglow after dark, prompts, the test buttons; GarageSummary ("My vehicles")
+      GarageDirector   the one component that ticks: builds onto spawned cars, underglow after dark, the timers of the lists and panels, the test buttons; GarageSummary ("My vehicles", in the game's list)
+      GarageBay        the game's own panel in a repair bay with one more line and a "Garage" button (RepairBayOverlay); the workshop's list; GarageList (the one list window the Garage's screens share)
       GarageCatalogue  paint chart, finishes, performance parts with effects and trade-offs, every price; GarageBuild (one car's build, one line of text) (game-free)
       GarageState      the save's part: builds by vehicle id, which scooters are two-wheelers; GarageBridges (what other features may set or ask)
       GarageFit        every car body as measured (roof, boot deck, nose) and which fitted part goes on which car
       GarageCar        one car wearing its build: paint through the game's own property blocks, lamps, underglow, fitted parts, brakes, tyres, springs, weight; puts all of it back
       GarageTuning     power, gearing and drag for a build through CarModel; the hook for Driving/CarTuning; the shop's before-and-after figures
-      GarageShop       the repair bays, the turntable camera, the panel, the bill
-      GarageUi         the Garage's own canvas: plates, buttons, sliders, the key prompt; the drag surface of the turntable view
-      TwoWheelers      bicycles and motorbikes as re-bodied scooters: making, removing, hiring, buying, energy, helmet, falls
+      GarageShop       the repair bays, the turntable camera, the shop's pages in the game's list, the game's colour picker, the bill; GarageDragArea (the invisible drag surface of the turntable view)
+      GarageText       a locale key in, the line out
+      TwoWheelers      bicycles and motorbikes as re-bodied scooters: making, removing, hiring, buying, energy, helmet, falls; the game's panel at a dock, rack or stand, the stand's list, the game's marker on one
       BikeMount        one scooter as a bicycle or motorbike: body, numbers, the rider's seat, hands and feet; LegIk
       BikeBody         the four models (BikeCatalogue) and their stand-in bodies built from tubes and rings (MeshMaker)
       BikePlaces       bike-share docks, bicycle racks, motorbike stands: where they go and what stands there
@@ -179,9 +180,9 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       TransitBus       one bus: a van from the traffic pool with a route board, driven by the traffic system on a scripted route, stopped "in point" at the stop
       TransitRide      the ride itself (fade, the game's time machine, put down at the far end), for bus and subway; TransitState: day pass and ride counts in modData
       SubwayJourney    the prompt at each subway entrance, service by the clock (frequency, delays, a night closure), the City Transit contact
-      TransportHud     car ownership's panel and key prompt, the fuel gauge beside the speedometer (buses and the subway use Core/GameUi)
+      CarDash          what a car needs as one more reading in the game's own vehicle panel (a copy of its "Condition" reading)
       CarGarage        CarRecord (per owned car, in modData by vehicle id), CarRules (every price, interval and chance; game-free)
-      CarOwnership     the driven car: distance, wear felt through grip and brake torque, thirst, breakdowns, the garage bay, insurance payouts, the daily round
+      CarOwnership     the driven car: distance, wear felt through grip and brake torque, thirst, breakdowns, what is due in a repair bay (for Garage/GarageBay), the game's panel over a broken-down car, insurance payouts, the daily round
       CarRoadside      a mechanic who walks up, kneels at the car and walks off: breakdowns and fuel brought to the roadside
       CarPhone         the Garage page and Roadside Assistance contacts
     Leisure/   things to do for fun at real places, the mod's clothes as something bought, night life, the sound bed, photo mode (see "Leisure")
@@ -2198,7 +2199,7 @@ that one bus was either still crawling when the game was closed or its vehicle w
   `docs/game-ui.md`, sections 9 to 11), and nothing of it runs per frame.
   - *Pointing.* The pole, the shelter and the standing bus each have a `TransitPointer`: an `EntityController` of
     the mod's on a trigger box on the game's layer for interactive items, with one entry at the front of the game's
-    list of calls to action (`TransitCta`, as `HomeCookOffer`). The game outlines the stop, names it and offers
+    list of calls to action (`TransitCta`, as `HomeOffers`). The game outlines the stop, names it and offers
     "Click to choose a stop", "Click to sit down" or "Click to board" from anywhere in view, as it does for its own
     objects; a click from further off than reach walks the player over with the game's `PlayerController.SetGoal`
     and acts on arrival. The bus's box is the director's own, put where the bus stands (`TrafficTools.Footprint`)
@@ -2298,13 +2299,36 @@ from 780 (Ferdinand) to the ceiling of 2,500 (above 417,000).
 | insurance | per car, 28 days, renews itself; pays 80 % of a repair bill over the first 100 | 0.6 % of list price, 40 to 2,500, +25 % per claim (a claim is forgotten after 56 days) |
 | registration and inspection | once a game year (`daysPerYear`), renewable from 30 days before | 60 + 0.2 % (300 at most), 75 more when late |
 
-A service is asked for standing in a filling station's repair bay (the game's own bay, trucks in the truck bay): the
-panel lists what is due, one key has it all done behind a fade while 40 to 85 minutes pass, and tyres and brakes
-under 35 % are changed with it. Worn tyres and brakes act through the wheels' own grip figures and the brakes' own
+A service is asked for standing in a filling station's repair bay (the game's own bay, trucks in the truck bay). The
+game shows its own panel there ("Repair [F]", "Wash [P]": `GasStationOverlay` in the game's box over a place);
+`Garage/GarageBay` gives that panel a second line (what is due and what it comes to, `CarOwnership.BayLine`) and a
+third button, "Garage", on the game's confirm key. Its list (`GarageList`) has the service as its first entry with
+every part of the bill and the time; "Order" has it all done behind a fade while 40 to 85 minutes pass, and tyres and
+brakes under 35 % are changed with it. Worn tyres and brakes act through the wheels' own grip figures and the brakes' own
 torque; thirst through the fuel system's own multiplier; a breakdown through the car's own input hook (no pedal;
 the brakes work; hazard lights on). Each is recorded before it is touched and put back when the player gets out,
 changes car, switches the option off, or the mod unloads. "Easy car ownership" stops fuel use, wear and breakdowns.
-The gauge beside the speedometer shows the tank and one word for what needs attention.
+The tank is the game's to show (its vehicle panel has the figure, orange from 50 % and red from 30 %), so the mod
+draws no gauge. What the game does not know is one more reading in that panel, after "Condition" (`CarDash`, a copy
+of that reading made once per city): SERVICE DUE, TYRES WORN, BRAKES WORN in the game's orange, BREAKDOWN in its red,
+switched off while nothing needs attention. Broken down or out of fuel and standing still anywhere but in a bay, the
+game's panel over a place stands over the car (`GameUi.WorldPanel`) with roadside assistance or a can of fuel on the
+game's interact key; `CarOwnership.TakesInteractKey` is true while it is up.
+
+**How the game's bay panel is extended.** The game keeps one `GasStationOverlay` in a public field
+(`OverlayUI.gasStation`) and shows it through the interface `UI.Overlays.IOverlay`. `RepairBayOverlay` derives from
+the game's class and implements the interface again, so the box's questions (second line, buttons) are answered by
+the mod while everything the game does with its own object (which station, repair, wash, refuelling) stays the
+game's code. `GarageBay` puts one in the field the first time the box is down and puts the game's own back when the
+Garage goes. In a bay the game's first button is named `RepairVehicle`: that is how the mod knows it is one, and of
+the vehicle's kind. The game's interact keys are its own repair and wash and its special key also parks the car, so
+the workshop is on the confirm key; the game writes the key on the button, as on its own.
+
+With "Developer diagnostics" on: `Garage check (bay)` when the panel is extended and when the button is first
+offered in a bay, `(workshop)` when the list opens (with what is due) and closes (with why), `(choice)` for each
+entry used, `Car check (dash)` when the reading changes, `(roadside panel)` when the panel over the car comes up or
+goes. Not verified in the game: how the box looks with a second line and three buttons; that the confirm key is not
+taken by anything else while seated in a bay.
 
 ### Asset wish-list (drops in by id, no code change)
 
@@ -2504,22 +2528,30 @@ says so.
 ### The custom shop
 
 At every repair bay the game has (the `GasStationTrigger`s its `GasStationController`s list as repair stations:
-auto repair shops and truck garages). Drive a car of your own into a bay, stop, press the Garage key (K). The
-car is held where it stands (its pedals taken off the keys, its body frozen the way the car wash freezes it), the
-mod's own camera goes onto a turntable round it (drag on the free part of the screen to turn, wheel to move in
-and out), and a panel offers five tabs. Every choice is on the car at once; the bottom of the panel shows the
-bill and the car's figures before and after. **Pay** keeps the build, **Leave** (or getting out, or walking away)
-puts the car back as it came in, **All stock** takes everything off. Work is instant: the game has no notion of
+auto repair shops and truck garages). Drive a car of your own into a bay, stop, and use the "Garage" button of
+the game's panel there (see "Car ownership"); "Custom shop" is the second entry of its list. The car is held where
+it stands (its pedals taken off the keys, its body frozen the way the car wash freezes it), the mod's own camera goes
+onto a turntable round it (drag on the free part of the screen to turn, wheel to move in and out), and the game's
+list window stands left of the middle, clear of the game's task panel, phone and item panel, with the car seen
+to its right (the camera stands a fifth of its distance to the left of its line to the car) (`GarageList`: a copy of the window the game lists its subway stations
+in, 1,100 wide with entries of 150 so that an entry can say what a part does). Its first page has the bill ("Pay"),
+one entry per page below, and "All stock"; a page has "Back" and one entry per choice, whose button reads "Chosen"
+and is off for the one in the cart. Every choice is on the car at once; the lines under the headline show the money,
+the bill and the car's figures before and after. A colour of one's own is mixed in the game's own colour picker
+(`UIs.customColorPicker`, the one its interior designer uses: the car is repainted as the colour moves; its button
+keeps the colour, and also adds it to the game's list of the player's colours, which is what that picker does;
+closed any other way, the paint is as it was). **Pay** keeps the build; **Cancel** (the list's yellow button or the game's cancel key, or
+getting out, or walking away) puts the car back as it came in; **All stock** takes everything off. Work is instant: the game has no notion of
 a car that is away being worked on, and a car hidden or taken out of the save's vehicle list for a few hours
 would be a save the base game cannot account for.
 
-| tab | what | price |
+| page | what | price |
 |---|---|---|
-| Paint | 42 chart colours, the colour it was bought in, or any colour mixed with three sliders (hue, strength, brightness) | 600 chart, 900 mixed, times the body factor |
+| Paint | 42 chart colours in six families of seven shades (an entry per family, written in the shade chosen, whose button steps to the next shade), the colour it was bought in, or any colour mixed in the game's colour picker | 600 chart, 900 mixed, times the body factor |
 | Finish | gloss, satin, matte, metallic, pearl | 150 / 300 / 500 / 700 / 1 200, times the body factor |
 | Lights | lamp tint: standard, warm white, ice blue, rally yellow; underglow kit in seven colours | 150; 400 (another colour later 100) |
 | Body | boot spoiler, roof bars, bull bar: each only on the bodies it fits; other wheels when the prop bundle has them | 450, 350, 600; wheels 1 200 |
-| Parts | one part in each of eight slots (below) | a multiple of the part base |
+| Parts | one part in each of eight slots (below); an entry's button steps to the slot's next part | a multiple of the part base |
 
 Body factor: economy 1, saloon 1.2, utility 1.4, van 1.5, luxury, sports and trucks 2. Taking a fitted thing off
 costs 50. Half of everything spent on a car counts as value added (`GarageBridges.ValueAdded`).
@@ -2644,8 +2676,10 @@ on its bar. **A bicycle or motorbike here is one of those scooters**: made with
 
 Docks stand beside every other one of the game's scooter stands (eight at most), racks outside up to five
 supermarkets, stands outside up to four dealerships: found once per city load, in a fixed order, each on pavement
-with room for the whole thing. The Garage key hires, returns, or opens the stand's panel (buy, sell an owned one
-standing by for half its price). Holding the throttle is pedalling: it costs energy through the game's own
+with room for the whole thing. Within 3.5 m of one the game's panel over a place (`GameUi.WorldPanel`) names it and
+has one button on the game's interact key: "Hire" (with the fee), "Return" (seated on a hired bicycle that stands),
+or "Browse", which opens the game's list with what the rack or stand sells (buy, a helmet, sell an owned one standing
+by for half its price). `GarageDirector.TakesInteractKey` is true while the panel is up. Holding the throttle is pedalling: it costs energy through the game's own
 `EnergyHelper`, never below 14; a worn-out rider has half the push; letting go coasts. A motorbike asks
 `GarageBridges.HasMotorcycleLicence` (null: yes) only at the sale: the dealer warns in a sentence if it is no and sells all the same. Riding unlicensed is policed by Licences (the warning on getting on, the roadside check: fine, tow, arrest the third time). Coming off (most of the speed lost in one physics step, or
 the bike on its side while moving) calls `GarageBridges.RiderFalls(speed)` if a Ragdoll feature has set it,
@@ -2666,10 +2700,11 @@ a dealership wall could be made behind that wall, the likeliest reason the first
 - The game marks the player's cars on the map and, within 100 m, on the street (`CityMap.AddPoi`, set on
   `VehicleController.poi`); it leaves scooters out on purpose. `BikeMount.Mark` gives ours that same marker
   under their own name; the game hides it while it is ridden and destroys it with the vehicle.
-- On buying, hiring, a test button, "Show me" and "Bring it here" the mod's own marker (`Hud.ShowMarkerAt`)
-  points at the bike for 20 s (30 s for "Show me"), until the player is within 3 m, on it, or indoors; the
-  toast says how far and which way. The incidents come first: while an accident, crime or street event
-  is on, ours is not drawn. Per frame only while pointing.
+- On buying, hiring, a test button, "Show me" and "Bring it here" the game's own destination marker
+  (`GameUi.GuideMark`: the guider the game marks a job's destination with) is on the bike for 20 s (30 s for
+  "Show me"), until the player is within 3 m, on it, or indoors; the toast says how far and which way. A job
+  or an outing that has that marker keeps it, and the bike's is asked for again four times a second. Nothing
+  per frame.
 - "My vehicles" gives every two-wheeler its address, district and distance, with **Show me** and **Bring it
   here** (on foot, out of doors; free from within 25 m, otherwise 20; one the game no longer has in the world
   is made again, the same sort and colour).
@@ -2690,8 +2725,9 @@ they are scooters, and the game clears them away by its own rule once they have 
 that went that way is stood back where it was last left, the next time the save is loaded with the mod. A build
 is dropped from modData when its car is no longer in the save (sold).
 
-Not done: carrying a bicycle; a phone entry of its own for "My vehicles" (it is a panel of the Garage, from the
-shop and the options page, and `GarageSummary.Lines` for another feature's page). The item panel still calls
+Not done: carrying a bicycle; a phone entry of its own for "My vehicles" (it is one of the Garage's lists in the
+game's window, from the workshop's list and the options page, and `GarageSummary.Lines` for another feature's page; a
+car is an entry to read with its button off, a two-wheeler has an entry for "Show me" and one for "Bring it here"). The item panel still calls
 a two-wheeler an electric scooter, because to the game it is one. Not verified in the game (it could not be
 run): that the v0.35.0 motorbike was behind the wall (the code allows it and nothing else found does; the log
 line above settles it), whether the pavement's ground collider is on a layer the ground ray sees (hence
@@ -2724,7 +2760,17 @@ Options, "Custom shop and two-wheelers": open the custom shop on the current or 
 a random full build (free); restore to stock; "My vehicles"; a city bicycle, road bicycle, motorbike or sport
 motorbike 2.2 m ahead, side on, with the marker on it. A button that cannot do it says why (`Core/TestRefusal`: not loaded, option off, no
 car of yours within 20 m, not a car, a job's or hire company's vehicle, shop already open, in a vehicle, no clear
-ground, indoors, traffic not running). `Player.log` has one line for each thing applied.
+ground, indoors, traffic not running). `Player.log` has one line for each thing applied. The shop and "My vehicles"
+asked for on the options page open when the menus are closed (the game's list stands on the HUD, which is not shown
+under a menu), and a notification says so.
+
+With "Developer diagnostics" on: `Garage check (custom shop list)` when the shop's list opens, on each page and
+when it closes (with why); `(choice)` for every choice with the bill; `(place panel)` when the game's panel comes up
+or goes at a dock, rack or stand; `(stand list)`, `(my vehicles)` and `(marker)` likewise. Not verified in the game:
+how the list reads at 1,100 wide with entries of three lines; that a name written in a dark colour is readable (a
+colour darker than 22 % grey is lightened for the name only); that the game's colour picker draws over the HUD
+outside its interior designer; that the turntable's drag surface, the first object of the HUD's canvas, takes the
+drag where nothing of the HUD is in front of it.
 ## Meta: the guide, presets, the options page, save tools
 
 `Scripts/Meta` is the mod's part about itself. It names no feature outside one file, `FeatureList.cs`: everything
@@ -3229,9 +3275,10 @@ Read through after the merge: 67 `Update` / `LateUpdate` / `FixedUpdate` methods
 | `CityPeople.Update`, `ActorPool.Update` | off with nobody out; with people out, a distance and a dot product each to hide those out of view | left: it is what keeps unseen characters from being drawn |
 | `PlayerDouble.LateUpdate` | off by default; on: every bone copied | left: an option that says what it costs |
 | `CarStrikes.FixedUpdate` (driving above 5 km/h) | every other step: the car against walkers, standing figures and the mod's people | left: it is the hit test itself |
-| `NearbyInteraction.Update` | the option, ten `TakesInteractKey` flags, two key tests | left for whoever next touches that line: test the two keys first and the ten flags only on a press |
+| `NearbyInteraction.Update` | the option, thirteen `TakesInteractKey` flags, two key tests | left for whoever next touches that line: test the two keys first and the ten flags only on a press |
 | `TrafficAccidents.Update` -> `TrafficWatch` | 5 times a second: every pooled traffic car's body looked at | left: the bounce watchdog's whole purpose; it is the largest timed cost while idle |
 | `Wiring` | nothing: no component, no tick | adapters run when asked; `Wiring.Scenes` is four flag reads on a director's own roll timer |
+| `HomeDirector`, `CarOwnership`, `GarageDirector` (their interface moved to the game's own after this read-through) | a time comparison each; the Garage also compares what is ridden (`TwoWheelers.Frame`, one reference) | **before: a key test per frame while a prompt was up (Home, car ownership, Garage), the run's marker and the two-wheeler's marker drawn per frame, the custom shop's money text written four times a second. After: no key is read (the game runs its panels' buttons), the markers are the game's guider, set when they change, and a text is written only when what it says has changed.** The needs bars are three `fillAmount` writes a second at most, each only when its whole number changed; the bay panel's line and button are built when the game shows or refreshes its panel |
 | `Nav.NavDirector` (added after this read-through) | a time comparison and two flag tests; while the minimap shows, the player's place and heading compared with what was last written, and written (one quad's texture window, one position, up to 34 rotations) only when they differ | see "Minimap and GPS": its work is on a 0.25 s tick, and a route search takes 0.4 ms of a frame while one is under way |
 
 Not shared, on purpose: every director reads the player, the hour and "in a vehicle" for itself, but on its own slow
@@ -3257,7 +3304,6 @@ live bindings, its defaults if those cannot be read).
 | `PerfProbe`, `PerfBench` | F7, Shift+F7 | `Performance/PerfDirector` |
 | `PhoneDump`, `CharacterReport` | F8, F9 | the two development aids |
 | `PhotoMode` | F10 | `Leisure/Photo/PhotoMode`: into and out of photo mode (its other keys are fixed: `PhotoKeys`) |
-| `Garage` | K | `Garage/GarageDirector`: the custom shop in a repair bay; hire, return and buy at a dock, rack or stand |
 
 ## Family
 
@@ -3532,8 +3578,7 @@ brake, gears, handbrake) are in an NWH asset that is not in the decompiled code,
 
 | key | the game | the mod | verdict |
 |---|---|---|---|
-| B | BizMan, on foot and at the wheel | `Garage` (was the default) | **clash: the Garage default is now K** (a saved binding is kept) |
-| K | nothing | `Garage`; photo mode's filter key | never together: the Garage key is not read in photo mode |
+| Enter | Confirm: a question's yes, the game's panels | the "Garage" button of the game's panel in a repair bay | the game's own routing (`OverlayUI.OnPlayerActionPressed`); the mod reads no key for it. The Garage key (K, earlier B) is gone |
 | F | Interact | `Interact` | by design: the mod's prompts stand aside while the game shows its own (`TakesInteractKey`, and the game's overlay) |
 | E | rotate the camera right (the game's own pedestrian camera) | `InteractAlt` | only while the game shows no interaction of its own (`JobKeys.InteractDown`); the Events prompt lacked that test and has it now |
 | V, G | nothing | `CameraToggle`, `GentleThrottle` | free |
@@ -3559,8 +3604,10 @@ Performance is a requirement, not a nice-to-have.
   `FindObjectsOfType` outside a one-off setup. Use the shared `Hud` for on-screen elements.
 - Something offered at a place in the world is offered in the game's own interface, and the mod draws no key prompt
   or panel for it: a click on the object (`docs/game-ui.md`, sections 7 and 11), the game's panel over a place with
-  its keys (`GameUi.WorldPanel`, section 9), a list in the game's own window (`GameUi.TravelList`, section 10). The
-  buses and the subway journey are the model (`Transport/TransitDirector.Player.cs`, `SubwayJourney`).
+  its keys (`GameUi.WorldPanel`, section 9), a list in the game's own window (`GameUi.TravelList`, section 10), a
+  button in the panel the game opens on the object (section 13), a button more in the game's own panel at the place
+  (section 16), the game's destination marker (`GameUi.GuideMark`, section 17). The buses and the subway journey are
+  the model (`Transport/TransitDirector.Player.cs`, `SubwayJourney`); Home and the Garage use every one of these.
 - A handler on one of the game's event fields is kept there with `SaveHook.Keep` (the save) or `EventHold.Keep`
   (any other field: entering and leaving a building, the map, the game's events), never by taking it off and putting it
   back on a timer: each of those builds a new list of the game's handlers.
@@ -3855,14 +3902,16 @@ Scripts/Home/
   HomeState      per-save state: the three needs, fitness, sleep debt, five days of meals, the illness, a few dates: one line in modData (game-free)
   HomeBalance    every number (rates per game hour, thresholds, fees, odds), the game's food items by kind, the dishes (game-free)
   HomeCooking    what can be made from a list of what the fridges hold: a plan per dish, what is one unit short (game-free)
-  HomeCookPanel  the cooking panel: the dishes that can be made now, the leftovers, what is one ingredient short
+  HomeCookList   the cooking list, in the game's list window: the size, the leftovers, the dishes that can be made now, what is one ingredient short
+  HomeOffers     "Click to cook" on cookers and "Click to make a coffee" on coffee machines: one entry in the game's list of click actions
+  HomeFridgeButton  "Cook a meal" as a button in the game's own panel of a fridge
   HomeDirector   the one component: reads what the player is doing once a second, moves the needs, offers the routines, the test buttons
   HomeHealth     the rules: needs by activity, mood modifiers, fitness, sleep quality, the body, falling ill and getting over it
   HomePlace      HomeTidy (the flat's tidiness = the game's own floor dirt) and HomePlace (cookers, coffee machines, fridges and the food in them, a clear piece of floor)
-  HomeActivity   the mod's routines as activities on the game's own panel: a dish from the cooking panel, coffee, tidy, floor exercises, the doctor's waiting room
+  HomeActivity   the mod's routines as activities on the game's own panel: a dish from the cooking list, coffee, tidy, floor exercises, the doctor's waiting room
   JogRun         going for a run: a loop of six checkpoints
   HomePhone      the "Wellbeing" contact and its page (HomeReport), the doctor's consultation (DoctorVisit, ClinicDialog)
-  HomeHud        the needs strip
+  HomeNeedsBar   hygiene, stress and home as three more of the game's bars, in a tab under its top bar
 ```
 
 ### What the game already does (and the mod leaves alone)
@@ -3901,8 +3950,8 @@ player is doing from the activity that is on it; the game minutes that went by (
   -12 reading, -10 in the shower, -6 resting, -5 asleep, -8 to -14 exercising. *Home*: the tidiness of the player's home,
   which is **the game's own floor dirt** where the home has floor cells (living there puts a little on a third of the
   cells, never more than 60 a cell; the game's own mop takes it off; tidying up takes it off everywhere) and a figure in
-  the mod's state where it has none. -1.6 an hour at home awake. The strip shows the three at home, while hygiene is
-  under 35 or stress over 65, and while ill. "Easy needs" halves what wears a need down and every chance of illness.
+  the mod's state where it has none. -1.6 an hour at home awake. The three are shown at home, while hygiene is
+  under 35 or stress over 65, and while ill, as three more of the game's own bars (`HomeNeedsBar`, below). "Easy needs" halves what wears a need down and every chance of illness.
 - **Consequences** are mood only, each one of the mod's happiness modifiers held on while its cause lasts: Unwashed -6
   (under 25), Stressed -8 (over 75), Relaxed +4 (under 15), The flat is a mess -5 / A tidy home +4 (at home), Short of
   sleep -8 (more than 8 h owed), In good shape +4 (fitness 70), Eating well +4 / Living on junk food -5. Under hygiene
@@ -3913,8 +3962,8 @@ player is doing from the activity that is on it; the game minutes that went by (
   A morning summary once a day after three hours or more.
 - **Routines on the game's panel** (`HomeActivity`: the player walks there, a short watched sequence, then the game's
   own time skip indoors for anything longer than 14 minutes; the stop button, running out of energy and a click
-  elsewhere on the way all end it cleanly): *a dish* chosen on the cooking panel, from the food in the home's
-  fridges (see "Cooking" below); *coffee* at a coffee machine (10 min, 8 energy inside the game's daily limit
+  elsewhere on the way all end it cleanly): *a dish* chosen on the cooking list, from the food in the home's
+  fridges (see "Cooking" below); *coffee* at a coffee machine, by a click on it ("Click to make a coffee"; 10 min, 8 energy inside the game's daily limit
   for food and drink, three a day); *tidy up* (10 to 90 min, 1.1 points a minute); *stretching, push-ups, sit-ups*
   anywhere with 0.9 m of clear floor all round (1.0 m for push-ups; 10 to 60 min). The mod's floor clips are centred
   on the character and lie along the way they face (`pushup`: toes 0.79 m behind, crown 0.90 m ahead; `situp`: head
@@ -3936,11 +3985,14 @@ player is doing from the activity that is on it; the game minutes that went by (
   (`LifeEvents.MakeSick`: its modifier, its drain, its doctor on the phone, the hospital) with a name and a course, and a
   sickness a life event gives is taken up as a cold. A night of six hours or more takes six hours off; stretching eases
   a bad back; a prescription halves what is left and the extra drain.
-- **The doctor**: inside a hospital or clinic the key prompt offers a consultation (80): a wait of 20 to 35 minutes
+- **The doctor**: in a hospital or clinic, within 7 m of the desk of the game's own doctor (a
+  `SpecialEmployeeController`; where the building has none, of the place the player came in), the game's panel over a
+  place (`GameUi.WorldPanel`) offers a consultation (80) on the game's interact key: a wait of 20 to 35 minutes
   on the game's panel, then the conversation: the diagnosis, a prescription (45), a sick note (20: for 48 h a failed job
   shift is no strike, `HomeHealth.SickNoteActive`), or a check-up with advice for someone well.
 - **A run**: from the Wellbeing contact, out of doors on foot: six checkpoints 55 m apart on the pavement in a loop
-  back to the start (34 m and a quarter more gain where the game marks a park), a marker and a ring at the next one.
+  back to the start (34 m and a quarter more gain where the game marks a park), the game's own destination marker
+  (`GameUi.GuideMark`, named "Run: checkpoint 2 of 6") and a ring at the next one.
   Only the minutes spent actually running count. Rain: a fifth less, and soaked.
 - **The Wellbeing contact**: "How am I doing" (needs, illness, fitness and its trend, diet, sleep, one tip), and from
   it tidying, the exercises and the run.
@@ -4013,15 +4065,17 @@ eaten fills 0.6 as much, nothing is put by, a mood loss, and food poisoning 12 %
 one lot that carries the name of the dish cooked last and the average of what its portions fill
 (`HomeState.PutBy`; `gro`, `grd`, `grf` in the save's line); reheating one takes 8 minutes at a cooker and never burns.
 
-**What the player does.** At home, the interact key within 2.4 m of a cooker (an item whose name has `stove`,
-`pizzaoven` or `grill` in it) or a fridge (`FridgeController`) opens the cooking panel (`HomeCookPanel`, one of
-Meta's panels: `MetaUi` frees the cursor, closes on Esc, scrolls with the arrow keys and keeps the game's shortcuts
-off). The fridge's own use (the game's overlay on a click) is not touched. The panel reads the fridges once
-(`HomePlace.ReadPantry`) and lists: the leftovers; "Can be made now", one row per dish in the largest of the
-chosen size the fridges allow, with its items by the game's own names and counts (the most filling of a kind
-first); "One ingredient short", greyed, for a dish of two or more items that lacks one unit; and a note when there
-is no fridge, nothing in the fridges, nothing that makes a dish, or no cooker (then only what needs no cooking is
-listed). Keys 1, 2 and 3 choose the size. Choosing a dish closes the panel; as soon as the player is free the dish
+**What the player does.** At home, a click on a cooker (an item whose name has `stove`, `pizzaoven` or `grill` in
+it: the game offers "Click to cook", `HomeOffers`) or the button "Cook a meal" in the game's own panel of a fridge
+(`HomeFridgeButton`) opens the cooking list (`HomeCookList`: the window the game lists its subway stations in,
+`GameUi.TravelList`, 1,100 wide with entries of 150; the mod's camera frees the cursor while it is open, and the
+game's cancel key or the yellow button closes it). The fridge's own use (the game's panel on a click) is not
+touched. The list reads the fridges once (`HomePlace.ReadPantry`) and has: an entry for the size, whose button steps
+through normal, double and family size; the leftovers; one entry per dish in the largest size up to the chosen one
+that the fridges allow, with its items by the game's own names and counts (the most filling of a kind first); an
+entry with its button off for a dish of two or more items that lacks one unit, saying which; and, under the
+headline, what the fridges hold and a note when there is no fridge, nothing in the fridges, nothing that makes a
+dish, or no cooker (then only what needs no cooking is listed). Choosing a dish closes the list; as soon as the player is free the dish
 goes on the game's activity panel and is started for them two frames later (the game's panel has to see it waiting
 once), they walk to the nearest cooker (to the nearest fridge for what needs no cooking), the items leave the
 fridges on arrival (`HomePlace.Take`, all or nothing), `cook_stir` with `pan` plays at a cooker (the game's
@@ -4032,12 +4086,35 @@ is put by. Stopping early wastes the food.
 `IHomeBridge.CookTogether` has no implementation in Home (`FamilyBridges.Home` is never set), so Family's "cook
 together" is its own short scene, as before.
 
-Test buttons: "Test: open the cooking panel" and "Test: cook the first dish the fridges allow". Pressed on the
-options page, both wait up to 20 seconds for the menus to be closed. With diagnostics on, `Player.log` gets
-"Home: cooking panel opened: 1 fridge(s), 1 cooker(s); food by kind: Meat 2 Vegetable 3; 3 dish(es) possible, 1 one
-short, 0 wanting a cooker, leftovers 0." and a line when a dish is done.
+**The fridge's button.** The game's panel for a fridge is the object `FridgeDetailedOverlay`
+(`DecorativeItemHolderOverlay`): a vertical list with one button per kind of item, `EmptyFridgeButton`,
+`ChangeClothesButton` (a wardrobe's) and `AddItemButton`. The mod's button is a copy of `ChangeClothesButton` (the
+blue one), put under the items once per city. A component of the mod's on that list is enabled each time the game
+switches the panel on (it fills the panel first), and shows the button if the panel's `linkedController` is a
+fridge of the home the player is in. If the game's window for the list cannot be copied, a click cooks the first
+dish the fridges allow.
 
-Not verified in the game (it could not be run): that the panel's layout reads well at every resolution; that a
+**The needs bars** (`HomeNeedsBar`). The game's energy, hunger and happiness are three objects of 412 x 56 in
+`Topbar/Container/Left Bar/PlayerStats`, each the sprite `StatBarBackground` with a filled copy of it over it and a
+picture of 32; under the same bar hangs the accessories tab (`AccessoriesPanel`, 100 high). The mod's three are a
+copy of that tab holding a copy of `PlayerStats`, hung under the game's bars (beside the accessories tab while that
+is open: its place is measured), with their own colours, pictures and a word each (the game's bars have no word;
+three new ones without would have to be guessed). The copy is a child of the game's top bar and goes with it. A bar
+is written when its whole number changes, at most once a second; the illness and how long it has to run is a line
+beside the bars in the game's yellow.
+
+Test buttons: "Test: open the cooking list" and "Test: cook the first dish the fridges allow". Pressed on the
+options page, both wait up to 20 seconds for the menus to be closed. `Player.log` gets
+"Home: cooking list opened: 1 fridge(s), 1 cooker(s); food by kind: Meat 2 Vegetable 3; size 1; 3 dish(es) possible,
+1 one short, 0 wanting a cooker, leftovers 0." and a line when a dish is done. With "Developer diagnostics" on:
+`Home check (offer)` when the click actions and the fridge's button are in and for each piece of furniture marked,
+`(cooking list)` when the list opens (what it holds, the time it took) and closes (with why), `(choice)` for a
+click on a cooker, a coffee machine or the fridge's button, for the size and for the dish, `(needs bars)` when the
+bars are built, shown and hidden, `(doctor panel)` when the game's panel comes up or goes, `(run)` per checkpoint.
+
+Not verified in the game (it could not be run): how the list reads at 1,100 wide with entries of three lines; how
+the tab of three bars looks under the top bar and beside the accessories tab, and which of the game's pictures the
+bars got; that the fridge's button lays out under the items; that a
 routine now always sets off (the order of two end-of-frame coroutines started in the same frame is assumed to be
 the order they were started in, which the game's own activities rely on too; the second attempt does not depend on
 it); the look of `cook_stir` at each kind of cooker; that a fridge's standing place suits a routine; that raw
@@ -4355,6 +4432,12 @@ Core/GameUi/
   InfoBox         the white box as a page: title, lines, headlines, switches, previous/next selectors, buttons
   GameSprites     the game's pictures by name, found in memory
   AppIconPainter  an app icon in the game's manner, painted from one of the game's own
+  WorldPanel      the game's panel over a place, with buttons on the game's own keys (an IOverlay in the game's box)
+  TravelList      a list in the window the game lists its subway stations in: a name, lines and a button per entry;
+                  Window (its rectangle, for an owner that stands it aside or widens it) and EntryShape (higher
+                  entries whose lines wrap) for lists that say more than a station's name
+  GuideMark       a mark on a place that is no building, on the game's own destination guider (the job's), taken
+                  only while it is free and taken off only by whoever put it there
 Planner/
   PlannerModel    game-free: the clock as the game counts it, entries, order, clashes, states, "next", the badge
   PlannerStore    game-free: notes, reminders and settings; the save's three lines ("reallife:planner",
@@ -4394,9 +4477,13 @@ Planner/
 - **Not run in the game.** The build machine cannot start the game: the first play session should follow the list
   in the pull request, with "Developer diagnostics" on.
 
-Cooking at home is offered the same native way: "Click to cook" on a cooker is one of the game's own click actions
-(`Home/HomeCookOffer`, and section 7 of game-ui.md). The key prompt remains only in a home that has a fridge and no
-cooker.
+Home, the garage and car ownership are offered the same native way (their sections say how): a click on a cooker
+or a coffee machine and a button in the fridge's panel (`Home/HomeOffers`, `HomeFridgeButton`; sections 7 and 13 of
+game-ui.md), the cooking list, the workshop's list, the custom shop, "My vehicles" and a stand's list in the game's
+list window, three more bars under the game's needs (section 14), a reading in the game's vehicle panel (section
+15), the game's own repair-bay panel with a button more (section 16), its panel over a place at a dock, a stand, a
+broken-down car and the doctor's desk, and its destination marker (`GameUi.GuideMark`). Neither feature has a
+canvas, a prompt or a key of its own left.
 
 ## Minimap and GPS (`Scripts/Navigation`)
 

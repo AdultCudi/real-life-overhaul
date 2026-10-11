@@ -175,7 +175,7 @@ same layout (`AppShell.RowLayout`, `AppShell.Width`) so that cells stand under t
 - Base game dates read by the Planner: the tax bill (`TaxHelper.HasCurrentTaxesToPay`, `GetCurrentTaxesDueDay`,
   `GetCurrentTaxesToPay`; `TaxHelper.RunDaily` takes it by force the day after).
 
-## 7. An action on an object in the world (`Home/HomeCookOffer`)
+## 7. An action on an object in the world (`Home/HomeOffers`)
 
 The game offers actions on objects through `Player.HUD.ItemInfoOverlays`:
 
@@ -191,14 +191,12 @@ The game offers actions on objects through `Player.HUD.ItemInfoOverlays`:
 
 So a feature adds an action with one class deriving `ICtaBehavior`, inserted at the front of `CtaBehaviors` (by
 reflection), and `simpleOverlayType |= ClickToAction` on its objects; both are taken back when the feature goes
-(`HomeCookOffer.Remove`). `ShouldShow` is asked for whatever the pointer is on: answer with a type test and a
+(`HomeOffers.Remove`). `ShouldShow` is asked for whatever the pointer is on: answer with a type test and a
 look-up, nothing dearer.
 
 Do not take over an object whose click already opens a panel of the game's. The fridge is one: its call to action is
 "Click to use" with no action, and the click opens `DecorativeItemHolderOverlay` (what is in it, "empty", "add").
-An action there belongs in that panel as a button (its `emptyFridgeButton` is the template to copy; the panel's
-`UpdateOverlay` rewrites its buttons each time it shows). That is not built yet, which is why a home with a fridge
-and no cooker still gets the mod's key prompt for cooking.
+An action there belongs in that panel as a button: section 13 (`Home/HomeFridgeButton`).
 
 The game shows no key hints on objects themselves (`ActionKeyTooltip` is a tooltip on HUD tools): prefer the click.
 Where a key is wanted at a place, the game's form for it is the panel of section 9.
@@ -241,7 +239,8 @@ OverlayUI [VerticalLayoutGroup (padding 30/30/55/40, spacing 20), ContentSizeFit
   of the camera: a point behind it comes out mirrored.
 - Each button's text gets the suffix `PlayerAction.AsSuffix()` (" [F]": the player's own binding), and
   `GameManager` sends Interact, SecondaryInteract, SpecialInteract and Confirm to
-  `OverlayUI.OnPlayerActionPressed`, which resets the action and runs the button's `onClick`. A button is also a
+  `OverlayUI.OnPlayerActionPressed`, which resets the action and runs the button's `onClick` (in a vehicle
+  SpecialInteract also parks the car: section 16). A button is also a
   real `Button`: a click runs it too. So the mod reads no key and draws no prompt.
 - The game's bindings (`PlayerInput`): Interact F, SecondaryInteract P, SpecialInteract O, Confirm Enter, Cancel
   Esc; the Player map has keyboard and mouse bindings only. The UI map has a gamepad's south button on Click and
@@ -337,6 +336,12 @@ With "Developer diagnostics" on, one session's Player.log shows whether everythi
 - `Transit check (pointer): the bus stops' click actions are in the game's list (12 entries): PASS.`
 - `Transit check (stop panel): at the M1 stop at ..., 2.1 m from the pole (...): the game's own panel is up, bus: 95 s (Timetable): PASS.`
 - `Transit check (stop list): the game's list is open at ...: 31 stops, 2 further along this line and 29 with a change of bus ...; 4.2 ms: PASS.`
+- `Home check (offer): at home with 1 cooker(s), 1 coffee machine(s) and 1 fridge(s): click actions on, the fridge panel's button in: PASS.`
+- `Home check (cooking list): the game's list is open: 1 fridge(s), 1 cooker(s); food by kind: ...; 3 dish(es) possible, ... 6 entries made so far; 3.1 ms: PASS.`
+- `Home check (needs bars): built from the game's top bar: a copy of its accessories tab holding a copy of its three bars (1266 wide, ...): PASS.`
+- `Garage check (bay): in a repair bay with ...: the game's panel has its 2 button(s) and 'Garage' on the game's confirm key, second line 'Due: service $120.00': PASS.`
+- `Garage check (custom shop list): the game's list is open left of the middle with 7 entries (...); 2.8 ms: PASS.`
+- `Car check (dash): 'SERVICE DUE' is in the game's vehicle panel, after its condition reading, in the game's orange: PASS.`
 - Every fallback is one `Game UI: ...` warning, logged whether or not diagnostics are on.
 
 ## 10. The HUD, and a panel on it (`Navigation/NavHud`)
@@ -454,3 +459,113 @@ The lines are in capitals because the game's are. The game hides `playerHUD` dur
 with it.
 
 Proven: every object, size and member named in sections 13 and 14. Inferred: how the copies look.
+## 15. A button in the panel the game opens on an object (`Home/HomeFridgeButton`)
+
+A click on an object with no action opens the game's detailed panel over it (`Player.HUD.ItemInfoOverlays.DetailedOverlay`,
+scene path `Canvases/PlayerHUD/ItemOverlayManager/DetailedItemOverlay`). It is one object with a part per kind of
+content, each a script deriving `ItemInfoOverlays.IOverlay`; the part for a fridge or a wardrobe is:
+
+```
+FridgeDetailedOverlay [DecorativeItemHolderOverlay, VerticalLayoutGroup (spacing 10)]
+  ConsumeButtons        VerticalLayoutGroup; ConsumeButtonTemplate (tagged UiTemplate; sprite Gradient-Blue-Round; Text TMP 24, capitals)
+  EmptyFridgeButton     sprite Gradient-Yellow-Round; a saved click to OnEmptyFridgeClicked
+  ChangeClothesButton   tagged UiTemplate; sprite Gradient-Blue-Round
+  AddItemButton         tagged UiTemplate; sprite Gradient-Gray-Round
+```
+
+- `OverlayBase.UpdateOverlay` fills each part (`linkedController` is set, then the part's `UpdateOverlay`, then
+  `SetActive`), and only then does `OverlayManager.ShowDetailedOverlay` switch the whole panel on. The part's own
+  `UpdateOverlay` switches its own three buttons on and off and makes the item buttons again
+  (`ConsumeButtonTemplate.ResetTemplate()`, which destroys tagged siblings of the template only: nothing at the level
+  above it).
+- So a button of the mod's is a copy of `ChangeClothesButton`, made asleep and untagged (`UiClone.Asleep`), its click
+  replaced (`UiClone.Rewire`: the saved click points at the game's script), its words set through its own
+  `TextLocalizationComponent`, put in the list under `ConsumeButtons`. A small component of the mod's on the list's
+  object is enabled every time the panel is switched on, after it was filled: its `OnEnable` reads
+  `linkedController` and shows or hides the button. Nothing runs between two openings.
+- The game's own buttons of this panel close it first (`OverlayManager.HideDetailedOverlay`); so does the mod's.
+- `OverlayManager.blockPlayerNavigation` is true while the panel is up and for a moment after. It stops a click on the
+  floor from walking the player; it is not `PlayerController.NavigationDisabled`, and a walk order with a goal
+  (`SetGoal`) is not stopped by it.
+
+Proven: every object and member named. Inferred: that the copy lays out as one more row of the list.
+
+## 16. More needs bars (`Home/HomeNeedsBar`)
+
+`Canvases/Topbar/Container/Left Bar` (sprite `darkgreybox@2x`, 3,191 x 168) holds, left to right: `Avatar`,
+`PlayerStats`, `Money`, `Date`, `Time`, `TimeControls`, with `Splitter`s between. `PlayerStats` (1,314 wide) has no
+layout group: `Energy`, `Hunger` and `Happiness` are placed by hand at 233, 661 and 1,087, each 412 x 56:
+
+```
+Energy [Image StatBarBackground, black at 30 %; Button (opens Persona); ButtonEffects]
+  EnergyFiller   Image StatBarBackground, type Filled; the colour is the bar's (1, 0.63, 0.32)
+  EnergyIcon     32 x 32, 12 from the left
+```
+
+- `StatBarBackground` is 412 x 56 with no border: a bar of another size is a squeezed pill. Keep copies at that size.
+- `Topbar.UpdateStatsBars` writes `fillAmount` each frame only when it differs by more than 0.01.
+- The bars have no words and no tooltip. Hunger is (1, 0.33, 0.40), happiness (0.45, 0.86, 0.44).
+- There is no room in the row for more. Under the bar hangs `AccessoriesPanel` (anchored to the bar's bottom left,
+  521 x 100 at x 267, centre 38 below the bar's edge; the game shows it from the backpack button and keeps that in
+  the save): the game's own form for something more under the top bar.
+- So three more bars are a copy of `AccessoriesPanel`, emptied, holding a copy of `PlayerStats` (same spacing, same
+  size), hung under the game's bars, and beside the accessories tab while that is open. The copies lose their
+  `Button` and every raycast target. As children of the top bar they follow it: `Topbar` switches its own object off
+  while the full menu is open.
+- Texts in the top bar are TMP 36, white (`Date/Label` has a `TextLocalizationComponent`: the one copied for a word).
+
+Proven: the objects, sizes and members. Inferred: how the second tab looks, and which pictures are in memory
+(`Icon-Person`, `Icon-Building`, `Icon-Info-32` and `Icon-Address` are used by the UI scene; `Icon-Heart` is not).
+
+## 17. A reading in the vehicle panel (`Transport/CarDash`)
+
+While something is driven the game shows `Canvases/PlayerHUD/ItemPanelUI/Panel`; in its headline the object
+`VehicleInfo` (`UI.ItemPanel.VehicleInfoPanel`, public as `ItemPanelUI.vehicleInfo`) is a horizontal layout (spacing
+30) of `SteeringAssist`, `ParkingZone`, `Cargo`, `Fuel` and `Condition`. A reading is a horizontal layout (spacing 10)
+of `Icon` (32 x 32, a `LayoutElement`) and `Value` (TMP 28 in the headline's dark colour, no localisation component).
+
+- **The game shows the fuel**: `UpdateFuel` writes the tank as a whole percentage, orange from 50 and red from 30
+  (`GlobalReferences.colors.orange`, `red`), and tints the picture with it. A gauge of the mod's would say it twice.
+- `Initialize` switches `Fuel` and `Condition` on by the save's options and leaves other children alone.
+- One more reading is a copy of `Condition` put after it: it is laid out by the game's group and comes and goes with
+  the panel.
+
+## 18. One more line and button in a panel the game shows itself (`Garage/GarageBay`)
+
+At a filling station, a repair bay and the private driver's garage the game shows `UI.Overlays.GasStationOverlay` in
+its box over a place (section 9). There is one such object, in the public field `OverlayUI.gasStation`, and the box
+is taken while it is up, so a `WorldPanel` cannot stand there.
+
+- The class is not sealed and the box talks to it only through `UI.Overlays.IOverlay`. A class that derives from it
+  **and lists the interface again** (`class RepairBayOverlay : GasStationOverlay, IOverlay`) answers the interface's
+  questions with its own `new` methods and can call the game's (`base.GetButtons()`); everything the game calls on
+  its own object by name (`SetStationTrigger`, the repair, the wash) stays the game's code. Put in the field, it is
+  what the game's static `GasStationOverlay.Show` shows.
+- Change the field only while `OverlayUI.IsVisible` is false: the box hides an overlay by comparing references.
+  Put the game's own object back when the feature goes.
+- In a bay of the vehicle's kind, seated, the game's buttons are `RepairVehicle` (Interact) and `WashVehicle`
+  (SecondaryInteract); at a pump `FillUpVehicle` and `BuyJerryCan`. The first button's `name` says where the car is.
+- `GetButtons` is called when the panel is shown or refreshed and on every key the box is sent; the game's own
+  makes new arrays each time. The mod adds one array of three and reuses its two `ButtonInfo`.
+- The box is sent Interact, SecondaryInteract, SpecialInteract and Confirm (`GameManager`). **SpecialInteract also
+  parks the car** (`ItemPanelUI.ClickAutoPark`, when that button is active), so a third button in a vehicle goes on
+  Confirm.
+- The header is written only when the box is shown or one of its events fires (entering or leaving a vehicle, a
+  binding, vehicle variables): after changing what the second line says, show the overlay again.
+
+Proven: every member named, and that the compiler accepts the re-implemented interface. Inferred: that the game's
+runtime (Mono) dispatches the interface to the derived class's methods, as the C# language defines it.
+
+## 19. A destination marker, and a colour (`GameUi.GuideMark`; the Garage's paint)
+
+- `UI.Guiders.GuidersManager` has five guiders (Destination, MainQuest, SideQuest, JobDestination, PrivateDriver),
+  each a `DirectionGuider` with a marker over the place, on the map, and an arrow while it is out of view.
+  `SetGuiderTarget(position, name, sprite, colour, type)` marks a place that is no building; `ResetGuider(type)`
+  takes it off; `DirectionGuider.target` is null while it marks nothing. Guiders are hidden indoors.
+- Destination is the player's own and is saved: never take it for a moment's marker. The mod's jobs and outings use
+  JobDestination; `GuideMark` takes it only while its `target` is null (or is this mark's) and resets it only if it
+  still marks this mark's place.
+- A colour is picked in `UIs.customColorPicker` (`Canvases/CustomColorPicker`, its own canvas of order 11):
+  `Open(onColorChanged, initial)`, `onColorPick` for its button, `CustomColorPicker.isOpen`. Its Cancel calls back
+  with the first colour; the cancel key closes it with no call; its button also adds the colour to the player's
+  saved colours (`PlayerSettingsHelper.AddPlayerColor`).

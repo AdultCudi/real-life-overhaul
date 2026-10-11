@@ -28,17 +28,20 @@ namespace RealLifeOverhaul
     ///   brakes' own torque, each recorded before it is touched and put back exactly on getting
     ///   out, changing car, switching the option off and unloading;
     /// - fuel is used at the rate of the car's kind (the fuel system's own multiplier, put back
-    ///   the same way), and shown as a gauge beside the speedometer with a word under it for
-    ///   whatever needs attention;
+    ///   the same way); the game's own vehicle panel shows the tank, and beside its condition
+    ///   reading the mod adds one word for whatever needs attention (<see cref="CarDash"/>);
     /// - a neglected service can end in a breakdown: the engine no longer pulls (the pedal is
     ///   held at nothing through the car's own input hook), the hazard lights go on, and the
     ///   car coasts to a stop until roadside assistance, a tow or a garage has seen to it;
-    /// - standing in a station's repair bay, one key has everything that is due done;
+    ///   standing still, the game's panel over a place stands over the car with roadside
+    ///   assistance on the game's interact key (GameUi.WorldPanel);
+    /// - standing in a station's repair bay, the game's own panel there says what is due and
+    ///   has a "Garage" button, whose list has everything that is due done (Garage/GarageBay);
     /// - a repair of crash damage is noticed and, for an insured car, most of the bill refunded.
     ///
     /// Once a game day: premiums are taken, old claims forgotten, registrations reminded of.
     /// The budget: a timer twice a second while a car is driven, once a second otherwise (a few comparisons);
-    /// per frame only a key test, and only while a prompt is on screen. A fault puts the car
+    /// nothing per frame, and no key is read. A fault puts the car
     /// back as the game made it and switches the feature off for the session.
     /// </summary>
     public sealed class CarOwnership : MonoBehaviour
@@ -51,8 +54,11 @@ namespace RealLifeOverhaul
         public static IModLogger Logger;
         public static CarOwnership Instance { get; private set; }
 
-        /// <summary>True while one of this feature's key prompts is on screen.</summary>
-        public static bool TakesInteractKey => Instance != null && (Instance._promptOn || Instance._keyFrame == Time.frameCount);
+        /// <summary>
+        /// True while the game's panel over a broken-down or dry car is up with its button on the game's interact key,
+        /// and in the frame that button ran: the mod's own interact key does nothing else then.
+        /// </summary>
+        public static bool TakesInteractKey => Instance != null && (Instance._help.Showing || Instance._keyFrame == Time.frameCount);
 
         private readonly List<float> _stockSide = new List<float>(6);
         private readonly List<float> _stockAlong = new List<float>(6);
@@ -79,11 +85,16 @@ namespace RealLifeOverhaul
         private bool _cutting;
         private bool _hazards;
         private bool _lowFuelTold;
-        private bool _promptOn;
-        private int _promptKind;        // 1 the garage, 2 a breakdown, 3 out of fuel
-        private int _panelKey = int.MinValue;
+        private readonly GameUi.WorldPanel _help = new GameUi.WorldPanel();
+        private System.Action _onHelp;
+        private RoadsideJob _helpJob;
+        private int _helpKey = int.MinValue;
+        private int _helpState;         // 0 not up, 1 up, 2 refused by the game's own panel
+        private string _carName;
         private int _keyFrame = -1;
         private int _lastDay = -1;
+        private bool _dueService, _dueTyres, _dueBrakes, _dueRegistration;
+        private int _registrationLeft;
         private float _serviceTotal;
         private int _serviceItems;
         private bool _servicing;
@@ -100,6 +111,9 @@ namespace RealLifeOverhaul
             CarGarage.Reset();
             _roadside = new CarRoadside(this);
             _cut = CutPedal;
+            _onHelp = HelpClicked;
+            CarDash.Logger = Logger;
+            GameUi.WorldPanel.Logger = Logger;
         }
 
         private void OnDestroy()
@@ -108,6 +122,7 @@ namespace RealLifeOverhaul
             try
             {
                 Leave();
+                CarDash.Remove();
                 _roadside.Dispose();
                 if (_faded && isActiveAndEnabled)
                 {
@@ -151,11 +166,6 @@ namespace RealLifeOverhaul
             }
             try
             {
-                if (_promptOn && JobKeys.InteractDown())
-                {
-                    _keyFrame = Time.frameCount;
-                    Pressed();
-                }
                 float now = Time.time;
                 if (now < _nextTick)
                 {
@@ -198,6 +208,7 @@ namespace RealLifeOverhaul
                 Logger?.Info("Car ownership: records read" + (gone > 0 ? "; " + gone + " dropped for cars the save no longer has" : "") + ".");
             }
             SaveHook.Keep(_onSave ?? (_onSave = OnSaveGame));   // the mod's one relay in the game's save event (Core/SaveHook): nothing is allocated while that event has not changed
+            GarageBay.Tick(game);   // the game's panel in a repair bay keeps its extra line and button even if the Garage has switched itself off
 
             if (!Settings.CarOwnership)
             {
@@ -264,7 +275,8 @@ namespace RealLifeOverhaul
             }
             _enteredAt = now;
             _lowFuelTold = false;
-            _panelKey = int.MinValue;
+            _carName = car.vehicleType.vehicleTypeName.GetLocalization();
+            _helpKey = int.MinValue;
         }
 
         /// <summary>Everything this put on the driven car comes off, exactly. Safe to call with no car.</summary>
@@ -320,16 +332,8 @@ namespace RealLifeOverhaul
             _body = null;
             _fuel = null;
             _record = null;
-            HidePrompt();
-            if (TransportHud.Exists)
-            {
-                TransportHud.Instance.HideFuel();
-                if (_panelKey != int.MinValue)
-                {
-                    TransportHud.Instance.HidePanel();
-                }
-            }
-            _panelKey = int.MinValue;
+            HideHelp("the car was left, or car ownership was switched off");
+            CarDash.Hide();
         }
 
         // ---------------------------------------------------------------- at the wheel, twice a second
@@ -391,16 +395,17 @@ namespace RealLifeOverhaul
                 _vehicle.input.states.hazardLights = true;   // toggles
             }
 
-            // The gauge.
+            // The tank is the game's to show (its vehicle panel has the figure); what the car needs is one word beside it.
             bool fuelled = _fuel != null && _fuel.capacity > 0f && !save.gameVariables.disableVehicleFuel;
             float level = fuelled ? Mathf.Clamp01(_fuel.amount / _fuel.capacity) : 1f;
-            if (fuelled && !ThirdPersonCamera.IsUiOpen())
+            string note = Note(easy);
+            if (note != null)
             {
-                TransportHud.Instance.ShowFuel(Mathf.CeilToInt(level * 100f), Note(easy));
+                CarDash.Show(note, ReferenceEquals(note, _noteBroken));
             }
-            else if (TransportHud.Exists)
+            else
             {
-                TransportHud.Instance.HideFuel();
+                CarDash.Hide();
             }
             if (fuelled && !easy && !_lowFuelTold && level <= LowFuel && level > 0f)
             {
@@ -414,29 +419,18 @@ namespace RealLifeOverhaul
                 _lowFuelTold = false;
             }
 
-            // What the key would do, standing still: the garage, a breakdown, an empty tank.
-            bool still = speed < StoppedSpeed && !_servicing && !ThirdPersonCamera.IsUiOpen() && !JobDirector.TakesInteractKey && !TransitDirector.TakesInteractKey;
-            if (still && _record != null && InBay())
+            // Standing still with a breakdown or an empty tank, anywhere but in a repair bay (whose own panel has the workshop):
+            // the game's panel over the car, with roadside assistance on its interact key.
+            bool dry = fuelled && !easy && level <= 0.005f;
+            bool still = (broken || dry) && speed < StoppedSpeed && !_servicing && _record != null && !_roadside.Active && !JobDirector.TakesInteractKey && !TransitDirector.TakesInteractKey
+                         && (_help.Showing || !ThirdPersonCamera.IsUiOpen());
+            if (still && !InBay())
             {
-                ShowGarage(save);
+                Help(broken ? RoadsideJob.Breakdown : RoadsideJob.Fuel);
             }
             else
             {
-                if (_panelKey != int.MinValue)
-                {
-                    _panelKey = int.MinValue;
-                    TransportHud.Instance.HidePanel();
-                }
-                bool dry = fuelled && !easy && level <= 0.005f;
-                if (still && !_roadside.Active && _record != null && (broken || dry))
-                {
-                    Prompt(broken ? 2 : 3, TransitText.T(broken ? "reallife_car_prompt_breakdown" : "reallife_car_prompt_fuel",
-                        "amount", TransitText.Money(CarRoadside.Fee(broken ? RoadsideJob.Breakdown : RoadsideJob.Fuel, _record))));
-                }
-                else
-                {
-                    HidePrompt();
-                }
+                HideHelp("the car moves, help is on its way, the car is in a repair bay, or another screen is open");
             }
         }
 
@@ -615,90 +609,243 @@ namespace RealLifeOverhaul
             return record.RegisteredDay + year - TimeHelper.CurrentDay;
         }
 
-        // What a service would do now and what it costs; shown as a panel with the key that orders it.
-        private void ShowGarage(GameInstance save)
+        // ---------------------------------------------------------------- the repair bay (asked by Garage/GarageBay, for the game's panel there)
+
+        // Makes sure the timer has looked at this car, which may have been got into a moment ago. True if it is one with a record.
+        private bool Tracks(VehicleController car)
+        {
+            if (_failed || !Settings.CarOwnership || car == null)
+            {
+                return false;
+            }
+            if (!ReferenceEquals(_car, car))
+            {
+                try
+                {
+                    _nextTick = 0f;
+                    Tick(Time.time);
+                }
+                catch (Exception e)
+                {
+                    Logger?.Error(e);
+                    return false;
+                }
+            }
+            return _car != null && ReferenceEquals(_car, car) && _record != null;
+        }
+
+        /// <summary>True if this is a car of the player's that the service looks after.</summary>
+        public bool Looks(VehicleController car)
+        {
+            return Tracks(car);
+        }
+
+        // What a service would do now and what it costs.
+        private void Quote()
         {
             float since = _record.Km - _record.ServicedKm;
             float every = CarRules.ServiceEvery(_kind);
-            bool service = _record.Broken || since >= every * 0.6f;
-            bool tyres = _record.Tyres < CarRules.ReplaceBelow;
-            bool brakes = _record.Brakes < CarRules.ReplaceBelow;
-            int left = RegistrationLeft(_record);
-            bool registration = left <= CarRules.RegistrationEarly;
-            int key = (service ? 1 : 0) | (tyres ? 2 : 0) | (brakes ? 4 : 0) | (registration ? 8 : 0) | (left < 0 ? 16 : 0) | (_record.Broken ? 32 : 0) | (Mathf.RoundToInt(_price) << 6);
-            if (key == _panelKey)
+            _dueService = _record.Broken || since >= every * 0.6f;
+            _dueTyres = _record.Tyres < CarRules.ReplaceBelow;
+            _dueBrakes = _record.Brakes < CarRules.ReplaceBelow;
+            _registrationLeft = RegistrationLeft(_record);
+            _dueRegistration = _registrationLeft <= CarRules.RegistrationEarly;
+            _serviceItems = (_dueService ? 1 : 0) + (_dueTyres ? 1 : 0) + (_dueBrakes ? 1 : 0) + (_dueRegistration ? 1 : 0);
+            _serviceTotal = (_dueService ? CarRules.Service(_price) : 0f) + (_dueTyres ? CarRules.TyreSet(_price) : 0f) + (_dueBrakes ? CarRules.BrakeSet(_price) : 0f)
+                            + (_dueRegistration ? RegistrationCost() : 0f);
+        }
+
+        private float RegistrationCost()
+        {
+            return CarRules.Registration(_price) + (_registrationLeft < 0 ? CarRules.RegistrationLate : 0f);
+        }
+
+        /// <summary>
+        /// The second line of the game's panel in a repair bay: what is due on this car, and what it comes to. Both
+        /// null for a car the service does not look after. Builds strings: the game asks when it shows its panel.
+        /// </summary>
+        public void BayLine(VehicleController car, out string left, out string right)
+        {
+            left = null;
+            right = null;
+            if (!Tracks(car))
             {
                 return;
             }
-            _panelKey = key;
+            Quote();
+            if (_serviceItems == 0)
+            {
+                left = TransitText.T("reallife_garage_bay_nothing");
+                return;
+            }
             _text.Length = 0;
-            float total = 0f;
-            int items = 0;
-            if (service)
+            Word(_dueService, "reallife_garage_word_service");
+            Word(_dueTyres, "reallife_garage_word_tyres");
+            Word(_dueBrakes, "reallife_garage_word_brakes");
+            Word(_dueRegistration, "reallife_garage_word_registration");
+            left = TransitText.T("reallife_garage_bay_due", "what", _text.ToString());
+            right = TransitText.Money(_serviceTotal);
+        }
+
+        private void Word(bool due, string key)
+        {
+            if (due)
             {
-                total += Line("reallife_garage_line_service", CarRules.Service(_price), ref items);
+                if (_text.Length > 0)
+                {
+                    _text.Append(", ");
+                }
+                _text.Append(TransitText.T(key));
             }
-            if (tyres)
+        }
+
+        /// <summary>The same in plain words for Player.log.</summary>
+        public string DueWords(VehicleController car)
+        {
+            if (!Tracks(car))
             {
-                total += Line("reallife_garage_line_tyres", CarRules.TyreSet(_price), ref items);
+                return "not a car with a record";
             }
-            if (brakes)
+            Quote();
+            return _serviceItems == 0 ? "nothing due" : _serviceItems + " thing(s) due for " + _serviceTotal.ToString("F0") + (_record.Broken ? ", broken down" : string.Empty);
+        }
+
+        /// <summary>The service's entry in the workshop's list: what would be done, what each part costs, the total and how long it takes.</summary>
+        public void ListEntry(GameUi.TravelList list, int id, VehicleController car)
+        {
+            if (!Tracks(car))
             {
-                total += Line("reallife_garage_line_brakes", CarRules.BrakeSet(_price), ref items);
+                return;
             }
-            if (registration)
+            Quote();
+            _text.Length = 0;
+            if (_serviceItems == 0)
             {
-                total += Line("reallife_garage_line_registration", CarRules.Registration(_price) + (left < 0 ? CarRules.RegistrationLate : 0f), ref items);
-            }
-            _serviceTotal = total;
-            _serviceItems = items;
-            if (items == 0)
-            {
-                _text.Append(TransitText.T("reallife_garage_nothing_due", "km", Mathf.Max(0f, every - since).ToString("F0"), "tyres", Mathf.RoundToInt(_record.Tyres * 100f).ToString(),
+                float since = _record.Km - _record.ServicedKm;
+                _text.Append(TransitText.T("reallife_garage_nothing_due", "km", Mathf.Max(0f, CarRules.ServiceEvery(_kind) - since).ToString("F0"), "tyres", Mathf.RoundToInt(_record.Tyres * 100f).ToString(),
                     "brakes", Mathf.RoundToInt(_record.Brakes * 100f).ToString()));
-                HidePrompt();
             }
             else
             {
-                _text.Append('\n').Append(TransitText.T("reallife_garage_total", "amount", TransitText.Money(total)));
-                Prompt(1, TransitText.T("reallife_garage_prompt", "amount", TransitText.Money(total)));
+                Line(_dueService, "reallife_garage_line_service", CarRules.Service(_price));
+                Line(_dueTyres, "reallife_garage_line_tyres", CarRules.TyreSet(_price));
+                Line(_dueBrakes, "reallife_garage_line_brakes", CarRules.BrakeSet(_price));
+                Line(_dueRegistration, "reallife_garage_line_registration", RegistrationCost());
+                _text.Append(TransitText.T("reallife_garage_list_total", "amount", TransitText.Money(_serviceTotal), "minutes", ServiceMinutes(_serviceItems).ToString("F0")));
             }
-            TransportHud.Instance.ShowPanel(TransitText.T("reallife_garage_title"), _text.ToString());
+            list.Add(id, TransitText.T("reallife_garage_list_service"), _text.ToString(), "reallife_garage_list_order", _serviceItems > 0 && !_servicing);
         }
 
-        private float Line(string key, float cost, ref int items)
+        private void Line(bool due, string key, float cost)
         {
-            _text.Append(TransitText.T(key, "amount", TransitText.Money(cost))).Append('\n');
-            items++;
-            return cost;
+            if (due)
+            {
+                _text.Append(TransitText.T(key, "amount", TransitText.Money(cost))).Append(". ");
+            }
         }
 
-        private void Pressed()
+        private static float ServiceMinutes(int items)
         {
-            if (_car == null || _record == null || _servicing)
+            return 25f + 15f * items;
+        }
+
+        /// <summary>
+        /// Everything that is due is paid for and done, the car standing in a repair bay. False, with nothing taken,
+        /// if nothing is due, the car is not in a bay, a service is under way or the money is short (the game says so).
+        /// </summary>
+        public bool OrderService(VehicleController car)
+        {
+            if (!Tracks(car) || _servicing)
             {
-                return;
+                return false;
             }
-            if (_promptKind == 1)
+            Quote();
+            if (_serviceItems == 0 || !InBay())
             {
-                if (_serviceItems == 0 || !InBay())
+                return false;
+            }
+            if (!GameManager.ChangeMoneySafe(-_serviceTotal, new TransactionInfo("reallife_transaction_car_service"), null, null, force: false, showNotification: true))
+            {
+                Notifications.ShowInsufficientMoney();
+                return false;
+            }
+            StartCoroutine(Service(_car, _record, _kind, _serviceTotal, ServiceMinutes(_serviceItems)));
+            return true;
+        }
+
+        // ---------------------------------------------------------------- a breakdown or an empty tank, standing still
+
+        // The game's panel over the car: what is wrong, what help costs, and the button that calls it.
+        private void Help(RoadsideJob job)
+        {
+            float fee = CarRoadside.Fee(job, _record);
+            int key = (int)job | (Mathf.RoundToInt(fee) << 3);
+            if (key != _helpKey)
+            {
+                _helpKey = key;
+                _helpJob = job;
+                bool broken = job == RoadsideJob.Breakdown;
+                _help.Lines(_carName, TransitText.T(broken ? "reallife_car_help_breakdown" : "reallife_car_help_fuel"), TransitText.Money(fee), GameUi.WorldPanel.White());
+                _help.Buttons(broken ? "reallife_car_button_roadside" : "reallife_car_button_fuel", _onHelp, true, null, null, false);
+            }
+            Vector3 over = _car.transform.position + Vector3.up * 2.4f;
+            Camera camera = GameManager.GetMainCamera();
+            if (camera != null && Vector3.Dot(over - camera.transform.position, camera.transform.forward) < 0.5f)
+            {
+                over = camera.transform.position + camera.transform.forward * 6f;   // (a camera inside the car: the panel stands ahead of it)
+            }
+            _help.Position = over;
+            int state = _help.Show() ? 1 : 2;
+            if (state != _helpState)
+            {
+                _helpState = state;
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Car check (roadside panel): " + _carName + " stands still with " + (job == RoadsideJob.Breakdown ? "a breakdown" : "an empty tank") + ": "
+                                 + (state == 1 ? "the game's own panel is up over the car, help for " + fee.ToString("F0") + " on the game's interact key: PASS"
+                                     : "FAIL (the game's panel is showing another place, a filling station; it is tried again while the car stands)") + ".");
+                }
+            }
+        }
+
+        private void HideHelp(string why)
+        {
+            if (_helpState != 0)
+            {
+                bool was = _helpState == 1;
+                _helpState = 0;
+                _help.Hide();
+                if (was && Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Car check (roadside panel): closed (" + why + ").");
+                }
+            }
+        }
+
+        // The panel's button, on the game's interact key or a click.
+        private void HelpClicked()
+        {
+            try
+            {
+                _keyFrame = Time.frameCount;   // the key that pressed the button does nothing else this frame
+                if (_car == null || _record == null || _servicing)
                 {
                     return;
                 }
-                if (!GameManager.ChangeMoneySafe(-_serviceTotal, new TransactionInfo("reallife_transaction_car_service"), null, null, force: false, showNotification: true))
+                bool called = _roadside.Call(_helpJob, _car, _record, Time.time);
+                if (Meta.Dev.Verbose)
                 {
-                    Notifications.ShowInsufficientMoney();
-                    return;
+                    Logger?.Info("Car check (choice): " + (_helpJob == RoadsideJob.Breakdown ? "roadside assistance" : "a can of fuel") + " from the panel over the car: "
+                                 + (called ? "called: PASS" : "not called (the money is short, or help is already on its way)") + ".");
                 }
-                HidePrompt();
-                StartCoroutine(Service(_car, _record, _kind, _serviceTotal, 25f + 15f * _serviceItems));
+                if (called)
+                {
+                    HideHelp("help was called");
+                }
             }
-            else if (_promptKind == 2 || _promptKind == 3)
+            catch (Exception e)
             {
-                if (_roadside.Call(_promptKind == 2 ? RoadsideJob.Breakdown : RoadsideJob.Fuel, _car, _record, Time.time))
-                {
-                    HidePrompt();
-                }
+                Logger?.Error(e);
             }
         }
 
@@ -757,7 +904,7 @@ namespace RealLifeOverhaul
             finally
             {
                 _servicing = false;
-                _panelKey = int.MinValue;
+                GarageBay.Refresh();   // the game's panel in the bay says what is due now
                 if (_faded)
                 {
                     _faded = false;
@@ -765,26 +912,6 @@ namespace RealLifeOverhaul
                     {
                         StartCoroutine(UiFader.UnFade());
                     }
-                }
-            }
-        }
-
-        private void Prompt(int kind, string text)
-        {
-            _promptKind = kind;
-            _promptOn = true;
-            TransportHud.Instance.ShowPrompt(text);
-        }
-
-        private void HidePrompt()
-        {
-            if (_promptOn)
-            {
-                _promptOn = false;
-                _promptKind = 0;
-                if (TransportHud.Exists)
-                {
-                    TransportHud.Instance.HidePrompt();
                 }
             }
         }

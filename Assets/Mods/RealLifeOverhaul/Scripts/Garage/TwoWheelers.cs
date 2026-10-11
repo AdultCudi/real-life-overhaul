@@ -3,7 +3,10 @@ using System.Collections.Generic;
 using BAModAPI;
 using Helpers;
 using Localizor;
+using RealLifeOverhaul.GameUi;
+using UI.MiniMenu;
 using UI.Notification;
+using UI.Smartphone;
 using UnityEngine;
 using Vehicles.VehicleTypes;
 
@@ -24,6 +27,12 @@ namespace RealLifeOverhaul
     /// has half the push, letting go coasts. A motorbike needs a motorcycle licence and a helmet by law: the dealer
     /// says so at the sale if there is no licence (<see cref="GarageBridges.HasMotorcycleLicence"/>), and riding
     /// without one is for the roadside checks of Licences to find, as with a car.
+    ///
+    /// What the player sees is the game's own interface. At a dock, a rack or a stand the game's panel over a
+    /// place (GameUi.WorldPanel, the box it shows at a petrol pump) names the place and has one button on the
+    /// game's interact key: hire, return, or browse. Browsing opens the game's list (<see cref="GarageList"/>)
+    /// with what is for sale. A two-wheeler just handed over or asked for is marked with the game's own
+    /// destination marker (GameUi.GuideMark). No key is read here.
     /// </summary>
     public sealed class TwoWheelers
     {
@@ -44,12 +53,21 @@ namespace RealLifeOverhaul
         private float _nextPoliceLook;
         private bool _failed;
 
-        // the stand's panel
-        private GameObject _panel;
+        // the stand's list of what is for sale
+        private readonly List<Action> _acts = new List<Action>(8);
+        private readonly Action<int> _onPick;
+        private readonly Action _onListClosed;
         private BikePlace _panelPlace;
+        private string _listClosing;
 
+        // the game's panel at a dock, a rack or a stand
+        private readonly WorldPanel _world = new WorldPanel();
+        private readonly Action _onUse;
         private BikePlace _promptPlace;
-        private int _promptState;
+        private int _promptState;       // 1 hire, 2 return, 3 browse
+        private int _worldState;        // 0 not up, 1 up, 2 refused by the game's own panel
+        private int _keyFrame = -1;
+        private readonly GuideMark _mark = new GuideMark();
 
         // the marker that points at a two-wheeler just handed over or asked for
         private float _pointUntil;         // unscaled time; 0 = not pointing (the only thing the idle frame tests)
@@ -68,13 +86,22 @@ namespace RealLifeOverhaul
         {
             _owner = owner;
             _places = new BikePlaces(owner);
+            _onUse = UseClicked;
+            _onPick = Picked;
+            _onListClosed = ListClosed;
         }
+
+        /// <summary>
+        /// True while the game's panel at a dock, a rack or a stand is up with its button on the game's interact key,
+        /// and in the frame that button ran: the mod's own interact key does nothing else then.
+        /// </summary>
+        public bool TakesInteractKey => _world.Showing || _keyFrame == Time.frameCount;
 
         public BikePlaces Places => _places;
 
         public BikeMount Riding => _riding;
 
-        public bool PanelOpen => _panel != null;
+        public bool PanelOpen => GarageList.OpenFor(this);
 
         // ---------------------------------------------------------------- every frame: who is riding what
 
@@ -83,10 +110,6 @@ namespace RealLifeOverhaul
             if (_failed)
             {
                 return;
-            }
-            if (_pointUntil > 0f)
-            {
-                Point(gm);
             }
             VehicleController selected = gm.selectedVehicle;
             if (selected != _selected)
@@ -147,10 +170,10 @@ namespace RealLifeOverhaul
         private const float BringFreeWithin = 25f;
 
         /// <summary>
-        /// Points the mod's on-screen marker at a two-wheeler for a while: until the player is within three
-        /// metres of it, gets on it, goes indoors, or the time is up. The marker is the one the incidents use,
-        /// and theirs comes first: while an accident, a crime or a street event is on, this one is
-        /// not drawn (the game's own vehicle marker on the bike and on the map still is).
+        /// Marks a two-wheeler with the game's own destination marker for a while: until the player is within three
+        /// metres of it, gets on it, goes indoors, or the time is up. While a job or an outing has the game's marker
+        /// it is left to them, and asked for again four times a second (the game's own vehicle marker on the bike and
+        /// on the map is there either way).
         /// </summary>
         public void PointTo(BikeMount mount, Vector3 at, BikeDef def, float seconds = PointSeconds)
         {
@@ -158,14 +181,19 @@ namespace RealLifeOverhaul
             _pointAt = mount != null ? mount.transform.position : at;
             _pointLabel = GarageText.T("reallife_bike_marker", "name", GarageText.T(def.Name));
             _pointUntil = Time.unscaledTime + seconds;
+            bool shown = _mark.Show(_pointAt + Vector3.up * 1.4f, _pointLabel);
+            if (Meta.Dev.Verbose)
+            {
+                Logger?.Info("Garage check (marker): '" + _pointLabel + "' at " + _pointAt.ToString("F1") + " is " + (shown ? "on the game's destination marker: PASS" : "NOT marked yet (the game's marker is on a job or an outing): FAIL")
+                             + ".");
+            }
         }
 
-        // Per frame while pointing, and only then: a few comparisons and the HUD's own allocation-free marker.
+        // Four times a second while pointing, and only then: a few comparisons.
         private void Point(GameManager gm)
         {
-            bool incident = TrafficAccidents.IsActive || CrimeDirector.IsActive || Events.EventDirector.IsActive;
             bool tracked = !ReferenceEquals(_pointMount, null);
-            if (_pointMount != null)
+            if (_pointMount != null && (_pointMount.transform.position - _pointAt).sqrMagnitude > 1f)
             {
                 _pointAt = _pointMount.transform.position;
             }
@@ -174,16 +202,13 @@ namespace RealLifeOverhaul
                 || (tracked && (_pointMount == null || _pointMount.Ridden))
                 || CitySpots.Flat(player.transform.position - _pointAt) < PointNear * PointNear)
             {
-                StopPointing(incident);
+                StopPointing();
                 return;
             }
-            if (!incident)
-            {
-                Hud.Instance.ShowMarkerAt(_pointLabel, _pointAt);
-            }
+            _mark.Show(_pointAt + Vector3.up * 1.4f, _pointLabel);
         }
 
-        private void StopPointing(bool leaveMarker)
+        private void StopPointing()
         {
             if (_pointUntil <= 0f)
             {
@@ -191,9 +216,10 @@ namespace RealLifeOverhaul
             }
             _pointUntil = 0f;
             _pointMount = null;
-            if (!leaveMarker && Hud.Exists)
+            _mark.Hide();
+            if (Meta.Dev.Verbose)
             {
-                Hud.Instance.HideMarker();
+                Logger?.Info("Garage check (marker): taken off (reached, ridden, indoors, or its time was up).");
             }
         }
 
@@ -444,26 +470,40 @@ namespace RealLifeOverhaul
             Logger?.Warn("Two-wheelers: stood back where it was put and held there.");
         }
 
-        // ---------------------------------------------------------------- four times a second: the prompt
+        // ---------------------------------------------------------------- four times a second: the game's panel at a place
+
+        private const float PanelUp = 1.9f;   // metres over the place the panel stands
 
         public void Quick(GameManager gm)
         {
-            if (_failed || !_places.Found || gm.playerController == null)
+            if (_failed)
             {
                 return;
             }
-            if (_panel != null)
+            if (_pointUntil > 0f)
             {
-                if (!Settings.TwoWheelers || _panelPlace == null || gm.selectedVehicle != null
-                    || (gm.playerController.transform.position - _panelPlace.Position).sqrMagnitude > 7f * 7f)
+                Point(gm);
+            }
+            if (!_places.Found || gm.playerController == null)
+            {
+                return;
+            }
+            Vector3 at = gm.playerController.transform.position;
+            if (PanelOpen)
+            {
+                string why = !Settings.TwoWheelers || _panelPlace == null ? "two-wheelers were switched off" : gm.selectedVehicle != null ? "the player got on something"
+                    : (at - _panelPlace.Position).sqrMagnitude > 7f * 7f ? "the player walked away"
+                    : GarageList.MenuUp ? "another screen came up" : null;
+                if (why != null)
                 {
+                    _listClosing = why;
                     ClosePanel();
                 }
-                SetPrompt(null, 0);
+                SetPanel(null, 0, at);
                 return;
             }
-            BikePlace place = Settings.TwoWheelers && !BuildingManager.IsInsideBuilding && !ThirdPersonCamera.IsUiOpen()
-                ? _places.Near(gm.playerController.transform.position)
+            BikePlace place = Settings.TwoWheelers && !BuildingManager.IsInsideBuilding && !ThirdPersonCamera.IsUiOpen() && !JobDirector.TakesInteractKey && !TransitDirector.TakesInteractKey
+                ? _places.Near(at)
                 : null;
             int state = 0;
             if (place != null)
@@ -478,41 +518,87 @@ namespace RealLifeOverhaul
                     state = gm.selectedVehicle == null ? 3 : 0;
                 }
             }
-            SetPrompt(state != 0 ? place : null, state);
+            SetPanel(state != 0 ? place : null, state, at);
         }
 
-        private void SetPrompt(BikePlace place, int state)
+        // The game's panel over the place: written when the place or what it offers changes, asked for while the player stands there.
+        private void SetPanel(BikePlace place, int state, Vector3 player)
         {
-            if (place == _promptPlace && state == _promptState)
+            if (place == null)
             {
+                if (_promptPlace != null || _worldState != 0)
+                {
+                    bool was = _worldState == 1;
+                    _promptPlace = null;
+                    _promptState = 0;
+                    _worldState = 0;
+                    _world.Hide();
+                    if (was && Meta.Dev.Verbose)
+                    {
+                        Logger?.Info("Garage check (place panel): closed (its button was used, the player walked away, or another screen is open).");
+                    }
+                }
                 return;
             }
-            _promptPlace = place;
-            _promptState = state;
-            string text = null;
-            if (place != null)
+            if (place != _promptPlace || state != _promptState)
             {
-                text = state == 1 ? GarageText.T("reallife_bike_prompt_hire", "price", GarageText.Money(BikeCatalogue.DockFee))
-                    : state == 2 ? GarageText.T("reallife_bike_prompt_return")
-                    : place.Kind == BikePlaceKind.BicycleShop ? GarageText.T("reallife_bike_prompt_bicycles")
-                    : GarageText.T("reallife_bike_prompt_motorbikes");
+                _promptPlace = place;
+                _promptState = state;
+                string title = GarageText.T(place.Kind == BikePlaceKind.Dock ? "reallife_bike_place_dock" : place.Kind == BikePlaceKind.BicycleShop ? "reallife_bike_place_rack" : "reallife_bike_place_stand");
+                if (state == 1)
+                {
+                    _world.Lines(title, GarageText.T("reallife_bike_line_hire"), GarageText.Money(BikeCatalogue.DockFee), WorldPanel.White());
+                    _world.Buttons("reallife_bike_button_hire", _onUse, true, null, null, false);
+                }
+                else if (state == 2)
+                {
+                    _world.Lines(title, GarageText.T("reallife_bike_line_return"), null, WorldPanel.White());
+                    _world.Buttons("reallife_bike_button_return", _onUse, true, null, null, false);
+                }
+                else
+                {
+                    _world.Lines(title, GarageText.T(place.Kind == BikePlaceKind.BicycleShop ? "reallife_bike_panel_bicycles" : "reallife_bike_panel_motorbikes"), GarageText.T("reallife_bike_line_sale"), WorldPanel.Green());
+                    _world.Buttons("reallife_bike_button_browse", _onUse, true, null, null, false);
+                }
             }
-            GarageDirector.Prompt(this, text);
+            // Over the place; over the player's own head while the place is behind the camera.
+            Vector3 over = place.Position + Vector3.up * PanelUp;
+            Camera camera = GameManager.GetMainCamera();
+            if (camera != null && Vector3.Dot(over - camera.transform.position, camera.transform.forward) < 0.5f)
+            {
+                over = player + Vector3.up * 2.1f;
+            }
+            _world.Position = over;
+            int shown = _world.Show() ? 1 : 2;
+            if (shown != _worldState)
+            {
+                _worldState = shown;
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Garage check (place panel): at a " + place.Kind + ", " + Mathf.Sqrt(CitySpots.Flat(place.Position - player)).ToString("F1") + " m from it (offered within " + BikePlaces.Reach.ToString("F1") + " m): "
+                                 + (shown == 1 ? "the game's own panel is up with '" + (state == 1 ? "Hire" : state == 2 ? "Return" : "Browse") + "' on the game's interact key: PASS"
+                                     : "FAIL (the game's panel is showing another place; it is tried again while the player stands here)") + ".");
+                }
+            }
         }
 
-        public bool PromptOn => _promptPlace != null;
-
-        /// <summary>The Garage key, while the prompt is up.</summary>
-        public void Use(GameManager gm)
+        // The panel's button, on the game's interact key or a click.
+        private void UseClicked()
         {
             BikePlace place = _promptPlace;
-            if (place == null || _panel != null)
+            int state = _promptState;
+            _keyFrame = Time.frameCount;   // the key that pressed the button does nothing else this frame
+            if (place == null || PanelOpen)
             {
                 return;
             }
             try
             {
-                switch (_promptState)
+                if (Meta.Dev.Verbose)
+                {
+                    Logger?.Info("Garage check (choice): '" + (state == 1 ? "Hire" : state == 2 ? "Return" : "Browse") + "' at a " + place.Kind + ".");
+                }
+                switch (state)
                 {
                     case 1: Hire(place); break;
                     case 2: Return(); break;
@@ -523,7 +609,7 @@ namespace RealLifeOverhaul
             {
                 Logger?.Warn("Two-wheelers: that did not work. " + e);
             }
-            SetPrompt(null, 0);
+            SetPanel(null, 0, default);
         }
 
         // ---------------------------------------------------------------- once a second
@@ -875,17 +961,19 @@ namespace RealLifeOverhaul
             Notifications.Show(NotificationType.Success, "reallife_bike_returned", null, 6f);
         }
 
+        // What a rack or a stand sells, in the game's list: a name, what it does and costs, and a button.
         private void OpenPanel(BikePlace place)
         {
-            ClosePanel();
-            GarageUi ui = GarageUi.Instance;
+            float began = Time.realtimeSinceStartup;
+            TravelList list = GarageList.Take(this, false);
+            if (list == null)
+            {
+                return;   // (the game's window could not be copied: one "Game UI:" line says why)
+            }
             bool motor = place.Kind == BikePlaceKind.MotorbikeStand;
             _panelPlace = place;
-            RectTransform panel = ui.Box("Two-wheelers", ui.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 40f), new Vector2(560f, 372f), GarageUi.Plate);
-            _panel = panel.gameObject;
-            GarageUi.TakeCursor();
-            ui.TextAt(panel, 16f, 10f, 528f, 32f, 26f, Color.white, GarageText.T(motor ? "reallife_bike_panel_motorbikes" : "reallife_bike_panel_bicycles"));
-            float y = 54f;
+            _acts.Clear();
+            list.Begin(GarageText.T(motor ? "reallife_bike_panel_motorbikes" : "reallife_bike_panel_bicycles"), GarageText.T(motor ? "reallife_bike_list_info_motor" : "reallife_bike_list_info_bicycle"));
             foreach (BikeDef def in BikeCatalogue.All)
             {
                 if (def.Motor != motor)
@@ -896,26 +984,13 @@ namespace RealLifeOverhaul
                 string facts = def.Motor
                     ? GarageText.T("reallife_bike_facts_motor", "seconds", def.Seconds.ToString("F1"), "top", def.TopKmh.ToString("F0"))
                     : GarageText.T("reallife_bike_facts_bicycle", "speed", def.CruiseKmh.ToString("F0"));
-                ui.At("Row", panel, 16f, y, 528f, 56f, GarageUi.Row).GetComponent<UnityEngine.UI.Image>().raycastTarget = false;
-                ui.TextAt(panel, 28f, y + 5f, 330f, 24f, 19f, Color.white, GarageText.T(def.Name));
-                ui.TextAt(panel, 28f, y + 30f, 330f, 20f, 14f, GarageUi.Dim, facts);
-                ui.ButtonAt(panel, 372f, y + 8f, 164f, 40f, GarageUi.Go, GarageText.T("reallife_bike_buy", "price", GarageText.Money(def.Price)), () => Buy(model), 17f);
-                y += 62f;
+                Row(list, GarageText.T(def.Name), GarageText.T("reallife_bike_list_price", "price", GarageText.Money(def.Price)) + " " + facts, "reallife_bike_button_buy", true, () => Buy(model));
             }
             if (motor)
             {
-                ui.At("Row", panel, 16f, y, 528f, 56f, GarageUi.Row).GetComponent<UnityEngine.UI.Image>().raycastTarget = false;
-                ui.TextAt(panel, 28f, y + 5f, 330f, 24f, 19f, Color.white, GarageText.T("reallife_bike_helmet"));
-                ui.TextAt(panel, 28f, y + 30f, 330f, 20f, 14f, GarageUi.Dim, GarageText.T("reallife_bike_helmet_note"));
-                if (GarageState.Helmet)
-                {
-                    ui.TextAt(panel, 372f, y + 16f, 164f, 24f, 17f, GarageUi.Dim, GarageText.T("reallife_bike_owned"), TMPro.TextAlignmentOptions.Center);
-                }
-                else
-                {
-                    ui.ButtonAt(panel, 372f, y + 8f, 164f, 40f, GarageUi.Go, GarageText.T("reallife_bike_buy", "price", GarageText.Money(BikeCatalogue.HelmetPrice)), BuyHelmet, 17f);
-                }
-                y += 62f;
+                Row(list, GarageText.T("reallife_bike_helmet"), GarageState.Helmet ? GarageText.T("reallife_bike_list_helmet_owned")
+                        : GarageText.T("reallife_bike_list_price", "price", GarageText.Money(BikeCatalogue.HelmetPrice)) + " " + GarageText.T("reallife_bike_helmet_note"),
+                    "reallife_bike_button_buy", !GarageState.Helmet, BuyHelmet);
             }
             // One of the player's own of this sort standing by: it can be sold here.
             BikeMount near = OwnedNear(place.Position, motor, 12f);
@@ -923,20 +998,55 @@ namespace RealLifeOverhaul
             {
                 int offer = Mathf.RoundToInt(near.Def.Price * GarageCatalogue.Resale);
                 string id = near.Record.Id;
-                ui.ButtonAt(panel, 16f, y, 528f, 40f, GarageUi.Row,
-                    GarageText.T("reallife_bike_sell", "name", GarageText.T(near.Def.Name), "price", GarageText.Money(offer)), () => Sell(id, offer), 17f);
-                y += 46f;
+                Row(list, GarageText.T(near.Def.Name), GarageText.T("reallife_bike_sell", "name", GarageText.T(near.Def.Name), "price", GarageText.Money(offer)), "reallife_bike_button_sell", true, () => Sell(id, offer));
             }
-            ui.ButtonAt(panel, 16f, 320f, 528f, 40f, GarageUi.Stop, GarageText.T("reallife_garage_close"), ClosePanel, 18f);
+            _listClosing = null;
+            list.Open(_onPick, _onListClosed);
+            if (Meta.Dev.Verbose)
+            {
+                Logger?.Info("Garage check (stand list): the game's list is open at a " + place.Kind + " with " + _acts.Count + " entries" + (near != null ? " (one of them sells the player's own standing by)" : string.Empty) + "; "
+                             + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
+            }
+        }
+
+        private void Row(TravelList list, string name, string detail, string button, bool enabled, Action act)
+        {
+            _acts.Add(act);
+            list.Add(_acts.Count - 1, name, detail, button, enabled);
+        }
+
+        private void Picked(int id)
+        {
+            try
+            {
+                if (id >= 0 && id < _acts.Count && _acts[id] != null)
+                {
+                    _acts[id]();
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Two-wheelers: that did not work. " + e);
+                ClosePanel();
+            }
+        }
+
+        private void ListClosed()
+        {
+            if (Meta.Dev.Verbose)
+            {
+                Logger?.Info("Garage check (stand list): closed (" + (_listClosing ?? "cancelled by the player, or another list of the Garage was opened") + ").");
+            }
+            _listClosing = null;
+            _panelPlace = null;
+            _acts.Clear();
         }
 
         public void ClosePanel()
         {
-            if (_panel != null)
+            if (PanelOpen)
             {
-                UnityEngine.Object.Destroy(_panel);
-                _panel = null;
-                GarageUi.GiveCursor();
+                GarageList.Close();
             }
             _panelPlace = null;
         }
@@ -965,7 +1075,8 @@ namespace RealLifeOverhaul
                 Crime.Give(def.Price, "reallife_transaction_bike");
                 return;
             }
-            ClosePanel();   // first: the marker is not drawn under an open panel
+            _listClosing = "a " + def.Kind + " was bought";
+            ClosePanel();
             PointTo(mount, spot, def);
             SayWhere(NotificationType.Success, def.Motor && !GarageState.Helmet ? "reallife_bike_bought_where_no_helmet" : "reallife_bike_bought_where", def, spot, 12f);
             if (def.Motor && !GarageBridges.Licensed())
@@ -988,10 +1099,14 @@ namespace RealLifeOverhaul
             }
             GarageState.Helmet = true;
             GarageState.Touch();
+            if (Meta.Dev.Verbose)
+            {
+                Logger?.Info("Garage check (choice): a helmet was bought for " + BikeCatalogue.HelmetPrice + ".");
+            }
             BikePlace place = _panelPlace;
             if (place != null)
             {
-                OpenPanel(place);   // the row now says it is owned
+                OpenPanel(place);   // the entry now says it is owned
             }
         }
 
@@ -1005,6 +1120,7 @@ namespace RealLifeOverhaul
             Remove(id);
             Crime.Give(offer, "reallife_transaction_bike_sale");
             Notifications.Show(NotificationType.Success, "reallife_bike_sold", new Dictionary<string, string>(1) { { "amount", GarageText.Money(offer) } }, 7f);
+            _listClosing = "a two-wheeler was sold";
             ClosePanel();
         }
 
@@ -1060,10 +1176,17 @@ namespace RealLifeOverhaul
             }
         }
 
-        public void Dispose()
+        /// <summary>Everything this has on screen, off: the game's panel at a place, the stand's list, the marker. The two-wheelers stay.</summary>
+        public void HideUi()
         {
             ClosePanel();
-            StopPointing(false);
+            StopPointing();
+            SetPanel(null, 0, default);
+        }
+
+        public void Dispose()
+        {
+            HideUi();
             _watch = null;
             _watchAt = 0f;
             if (_riding != null)
