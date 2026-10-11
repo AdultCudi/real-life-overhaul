@@ -4,7 +4,7 @@ using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Ventures;
 
 // Checks for investors and the market (Scripts/Economy/Ventures): the cast, an offer that comes to the player, a deal
-// over a long run, the save line and the pitch.
+// over a long run, the save line, the pitch and the stock market.
 internal static partial class Program
 {
     private static readonly string[] FourRivals = { "North Star Holdings", "Bay Avenue Holdings", "Old Mill Holdings", "Summit Holdings" };
@@ -20,6 +20,8 @@ internal static partial class Program
         VenturesPitchTruth();
         VenturesPitchJudgement();
         VenturesPitchDecision();
+        VenturesMarket();
+        VenturesNoMoneyPrinter();
     }
 
     private static VenturesFile NewVentures(int seed, string[] rivals = null)
@@ -955,5 +957,309 @@ internal static partial class Program
         PitchFacts full = Founder();
         full.AvgProfit7 = 5000f;
         Check(held != null && Pitch.Decide(file, fund, full, "full#1", top, VenturesCatalogue.Standard, 10).Verdict == Verdict.NoRoom, "decision: a business with six tenths of its profit promised has no room for another investor");
+    }
+
+    // ---------------------------------------------------------------- the market
+
+    private const int MarketYear = 60;          // the game's default days in a year (DifficultySetting.daysPerYear)
+    private const int MarketYears = 10;
+    private const int MarketSeeds = 80;
+    private const int MarketCash = 1000000;
+
+    /// <summary>A day's news made up for the checks: about one day in three something happens, now and then two things, a policy or the bank rate.</summary>
+    private static void MadeUpNews(int seed, int day, List<MarketNews> into, VenturesFile file)
+    {
+        into.Clear();
+        var random = new VenturesRandom((int)VenturesRandom.Hash(seed, day, 31));
+        if (random.Below(100) < 35)
+        {
+            into.Add(new MarketNews { Cause = (MarketCause)random.Range(1, (int)MarketCause.Accident) });
+        }
+        if (random.Below(100) < 10)
+        {
+            into.Add(new MarketNews { Cause = (MarketCause)random.Range(1, (int)MarketCause.Accident) });
+        }
+        if (random.Below(100) < 6)
+        {
+            into.Add(new MarketNews { Cause = MarketCause.Policy, Lever = random.Below(13), Scale = random.Below(2) == 0 ? 100 : -100 });
+        }
+        if (random.Below(100) < 4)
+        {
+            into.Add(new MarketNews { Cause = MarketCause.BankRate, Scale = random.Below(2) == 0 ? 50 : -50 });
+        }
+        if (random.Below(100) < 5)
+        {
+            into.Add(new MarketNews { Cause = MarketCause.RivalMove, Company = file.Companies[8 + random.Below(4)].RivalName });
+        }
+        if (random.Below(100) < 2)
+        {
+            into.Add(new MarketNews { Cause = MarketCause.Election });
+        }
+    }
+
+    /// <summary>What a rule of thumb is worth after ten years: the cash and the shares sold at the last price, commission paid.</summary>
+    private static double Trade(int seed, int rule, out int trades)
+    {
+        VenturesFile file = NewVentures(seed);
+        var purse = new Purse { Money = MarketCash };
+        var news = new List<MarketNews>();
+        int slice = MarketCash / file.Companies.Count;
+        trades = 0;
+        for (int day = 1; day <= MarketYear * MarketYears; day++)
+        {
+            MadeUpNews(seed, day, news, file);
+            foreach (Company c in file.Companies)
+            {
+                Holding held = file.Holding(c.Id);
+                bool has = held != null && held.Shares > 0;
+                bool buy = false, sell = false;
+                int cause;
+                switch (rule)
+                {
+                    case 0:   // buy everything on the first day and hold it
+                        buy = day == 1;
+                        break;
+                    case 1:   // buy after a fall, sell after a rise
+                        buy = c.LastBp <= -150;
+                        sell = c.LastBp >= 150;
+                        break;
+                    case 2:   // buy after a rise, sell after a fall
+                        buy = c.LastBp >= 150;
+                        sell = c.LastBp <= -150;
+                        break;
+                    case 3:   // buy well under the thirty-day average, sell well over it
+                        {
+                            long sum = 0;
+                            for (int h = 0; h < c.HistoryCount; h++)
+                            {
+                                sum += c.History[h];
+                            }
+                            double mean = (double)sum / c.HistoryCount;
+                            buy = c.HistoryCount >= 20 && c.PriceCents < mean * 0.94;
+                            sell = c.PriceCents > mean * 1.04;
+                        }
+                        break;
+                    case 4:   // buy the day before a dividend, sell the day after
+                        buy = Market.DaysToDividend(file) == 1;
+                        sell = Market.DaysToDividend(file) == VenturesCatalogue.DividendEveryDays;
+                        break;
+                    case 5:   // read the paper before the market does: buy what today's news lifts, sell it tomorrow
+                        buy = Market.NewsFor(c, news, out cause) >= 40;
+                        sell = !buy;
+                        break;
+                    case 6:   // sell what today's news will knock, buy it back tomorrow
+                        sell = Market.NewsFor(c, news, out cause) <= -40;
+                        buy = !sell;
+                        break;
+                    case 7:   // hold everything, but sell what has run a tenth over its thirty-day average and buy it back under that average
+                        {
+                            long sum = 0;
+                            for (int h = 0; h < c.HistoryCount; h++)
+                            {
+                                sum += c.History[h];
+                            }
+                            double mean = (double)sum / c.HistoryCount;
+                            sell = c.PriceCents > mean * 1.10;
+                            buy = day == 1 || c.PriceCents < mean;
+                        }
+                        break;
+                }
+                if (sell && has)
+                {
+                    Market.Sell(file, c, held.Shares, purse);
+                    trades++;
+                }
+                else if (buy && !has)
+                {
+                    int shares = Math.Min(Market.MostBuyable(file, c, purse.Money), slice * 100 / c.PriceCents);
+                    if (shares > 0 && Market.Buy(file, c, shares, purse) == TradeAnswer.Done)
+                    {
+                        trades++;
+                    }
+                }
+            }
+            Market.Step(file, day, 0, news, null);
+            if (Market.DividendDue(file))
+            {
+                Market.PayDividends(file, purse);
+            }
+        }
+        double worth = purse.Money;
+        foreach (Holding h in file.Holdings)
+        {
+            int value = Market.Value(file.Company(h.CompanyId), h.Shares);
+            worth += value - Market.Commission(value);
+        }
+        return worth;
+    }
+
+    private static void VenturesMarket()
+    {
+        // The same seed and the same news give the same market, and each day depends only on the seed and its number.
+        VenturesFile a = NewVentures(555), b = NewVentures(555), other = NewVentures(556);
+        var news = new List<MarketNews>();
+        bool floor = true, history = true;
+        for (int day = 1; day <= 200; day++)
+        {
+            MadeUpNews(555, day, news, a);
+            Market.Step(a, day, 0, news, null);
+            Market.Step(b, day, 0, news, null);
+            Market.Step(other, day, 0, news, null);
+            foreach (Company c in a.Companies)
+            {
+                floor &= c.PriceCents >= VenturesCatalogue.PriceFloorCents;
+                history &= c.HistoryCount == Math.Min(VenturesCatalogue.HistoryDays, day + 1) && c.History[c.HistoryCount - 1] == c.PriceCents;
+            }
+        }
+        Check(VenturesStore.Write(a) == VenturesStore.Write(b), "market: the same seed and news give the same prices after two hundred days");
+        Check(VenturesStore.Write(a) != VenturesStore.Write(other), "market: another seed gives another market");
+        Check(floor && history && a.MarketSteps == 200 && a.MarketDay == 200, "market: no price under one unit, and thirty days of closing prices are kept");
+        var text = new System.Text.StringBuilder();
+        Market.Step(a, 201, 0, news, text);
+        Check(text.Length > 200 && text.ToString().Contains(a.Companies[0].Name), "market: a day's moves can be written out with their causes");
+
+        // The news: each piece moves the sectors it is about, all of it together is capped, and the cap is under the cost of selling and buying back.
+        Company transport = a.Companies[0], utilities = a.Companies[5], bank = a.Companies[6], rival = a.Companies[8];
+        int why;
+        var storm = new List<MarketNews> { new MarketNews { Cause = MarketCause.Storm } };
+        Check(Market.NewsFor(transport, storm, out why) == -60 && why == (int)MarketCause.Storm && Market.NewsFor(utilities, storm, out why) == 40 && Market.NewsFor(bank, storm, out why) == 0 && why == 0,
+            "market: a storm knocks transport, lifts the utilities and leaves the banks alone");
+        var policy = new List<MarketNews> { new MarketNews { Cause = MarketCause.Policy, Lever = 7, Scale = 100 } };
+        var relaxed = new List<MarketNews> { new MarketNews { Cause = MarketCause.Policy, Lever = 7, Scale = -100 } };
+        Check(Market.NewsFor(transport, policy, out why) == 40 && Market.NewsFor(transport, relaxed, out why) == -40, "market: a council policy moves its sectors one way when it is raised and the other when it is cut");
+        var rate = new List<MarketNews> { new MarketNews { Cause = MarketCause.BankRate, Scale = 50 } };
+        Check(Market.NewsFor(bank, rate, out why) == 20 && Market.NewsFor(a.Companies[1], rate, out why) == -15, "market: half a point on the bank rate lifts the banks and weighs on property");
+        var move = new List<MarketNews> { new MarketNews { Cause = MarketCause.RivalMove, Company = rival.RivalName } };
+        Check(rival.Rival && Market.NewsFor(rival, move, out why) == Market.RivalMoveBp && Market.NewsFor(a.Companies[9], move, out why) <= 0 && Market.NewsFor(a.Companies[2], move, out why) == -10,
+            "market: a rival's move lifts that rival's own shares and weighs on the other shops");
+        var everything = new List<MarketNews>();
+        for (int cause = 1; cause < (int)MarketCause.Count; cause++)
+        {
+            for (int n = 0; n < 4; n++)
+            {
+                everything.Add(new MarketNews { Cause = (MarketCause)cause, Lever = n * 3, Scale = 100 });
+            }
+        }
+        bool capped = true;
+        foreach (Company c in a.Companies)
+        {
+            capped &= Math.Abs(Market.NewsFor(c, everything, out why)) <= VenturesCatalogue.NewsCapBp;
+        }
+        Check(capped && VenturesCatalogue.NewsCapBp < 2 * VenturesCatalogue.CommissionBp, "market: all the news of a day moves a company by 1.5% at most, less than the 2% it costs to sell and buy back");
+        Check(Market.CauseKeys.Length == (int)MarketCause.Count && VenturesCatalogue.MarketSectorKeys.Length == (int)MarketSector.Count && VenturesCatalogue.MovesKeys.Length == (int)MarketSector.Count,
+            "market: a name for every cause and every sector");
+
+        // The climate: a boom lifts every price a little each day and a slowdown weighs on it.
+        VenturesFile boom = NewVentures(909), slow = NewVentures(909);
+        for (int day = 1; day <= 300; day++)
+        {
+            Market.Step(boom, day, 1, null, null);
+            Market.Step(slow, day, -1, null, null);
+        }
+        long boomSum = 0, slowSum = 0;
+        for (int i = 0; i < boom.Companies.Count; i++)
+        {
+            boomSum += boom.Companies[i].PriceCents;
+            slowSum += slow.Companies[i].PriceCents;
+        }
+        Check(boomSum > slowSum, "market: prices are higher after a long boom than after a long slowdown");
+
+        // Trading: the commission, the limit, and exact money.
+        Check(Market.Commission(100000) == 1000 && Market.Commission(120) == 5 && Market.Commission(501) == 6 && Market.Commission(0) == 0, "market: commission is 1%, rounded up, five at least");
+        VenturesFile file = NewVentures(321);
+        Company company = file.Companies[3];
+        company.PriceCents = 4321;
+        var purse = new Purse { Money = 100000 };
+        Check(Market.Cost(company, 100) == 4321 && Market.Cost(company, 7) == 303 && Market.Value(company, 7) == 302, "market: a purchase is rounded up to whole money and a sale down");
+        Check(Market.Buy(file, company, 100, purse) == TradeAnswer.Done && purse.Money == 100000 - 4321 - 44 && file.Holding(company.Id).Shares == 100 && file.Holding(company.Id).Cost == 4365,
+            "market: buying takes the price and the commission, and the holding remembers what it cost");
+        Check(Market.Buy(file, company, 5000, purse) == TradeAnswer.OverLimit && Market.Buy(file, company, 4000, purse) == TradeAnswer.NoCash && purse.Money == 95635,
+            "market: no more than five thousand shares of one company, and nothing bought without the cash for it and its commission");
+        int most = Market.MostBuyable(file, company, purse.Money);
+        Check(most > 0 && Market.Cost(company, most) + Market.Commission(Market.Cost(company, most)) <= purse.Money
+              && Market.Cost(company, most + 1) + Market.Commission(Market.Cost(company, most + 1)) > purse.Money, "market: the most that can be bought is what the cash carries (" + most + ")");
+        Check(Market.Sell(file, company, 101, purse) == TradeAnswer.NoShares && Market.Sell(file, file.Companies[4], 1, purse) == TradeAnswer.NoShares, "market: nobody sells what they do not hold");
+        company.PriceCents = 5000;
+        Check(Market.Sell(file, company, 40, purse) == TradeAnswer.Done && purse.Money == 95635 + 2000 - 20 && file.Holding(company.Id).Shares == 60 && file.Holding(company.Id).Cost == 2619,
+            "market: selling pays the price less the commission, and the cost of what is left is its part of the whole");
+        int cost;
+        Check(Market.Worth(file, out cost) == 3000 && cost == 2619, "market: the holdings' worth and cost add up");
+        Check(Market.Sell(file, company, 60, purse) == TradeAnswer.Done && file.Holdings.Count == 0, "market: a holding sold out is gone");
+        // Bought and sold at once, at one price: the player is down by the two commissions and nothing else.
+        purse.Money = 50000;
+        Market.Buy(file, company, 200, purse);
+        Market.Sell(file, company, 200, purse);
+        Check(purse.Money == 50000 - 100 - 100, "market: buying and selling at one price costs the two commissions, 2% in all");
+
+        // Dividends: every fifteen market days, on the price of the day.
+        VenturesFile paying = NewVentures(777);
+        var income = new Purse { Money = 500000 };
+        Company payer = paying.Companies[1];
+        Market.Buy(paying, payer, 1000, income);
+        int cash = income.Money, paid = 0, payouts = 0;
+        bool right = true, onlyThen = true;
+        for (int day = 1; day <= 90; day++)
+        {
+            Market.Step(paying, day, 0, null, null);
+            onlyThen &= Market.DividendDue(paying) == (day % VenturesCatalogue.DividendEveryDays == 0);
+            if (Market.DividendDue(paying))
+            {
+                int due = (int)(1000L * payer.PriceCents * payer.YieldBp / 1000000L);
+                int got = Market.PayDividends(paying, income);
+                right &= got == due && Market.Dividend(payer, 1000) == due;
+                paid += got;
+                payouts++;
+            }
+            right &= Market.DaysToDividend(paying) == VenturesCatalogue.DividendEveryDays - day % VenturesCatalogue.DividendEveryDays;
+        }
+        Check(onlyThen && payouts == 6 && right && income.Money == cash + paid && paying.Holding(payer.Id).Dividends == paid && paying.DividendsTotal == paid && paid > 0,
+            "market: a dividend every fifteen days, the company's yield on the price of that day (" + paid + " on a thousand shares in ninety days)");
+    }
+
+    /// <summary>
+    /// The market is no money printer. Ten game years (of the game's default sixty days) from eighty seeds, with news
+    /// made up at about the rate the city makes it: buying every company on the first day and holding gives a modest
+    /// return, and no rule of thumb does better than that by more than a small margin.
+    /// </summary>
+    private static void VenturesNoMoneyPrinter()
+    {
+        string[] names = { "buy and hold", "buy after a fall, sell after a rise", "buy after a rise, sell after a fall", "buy under the thirty-day average, sell over it",
+            "buy for the dividend, sell after it", "buy on the day's good news", "sell on the day's bad news", "hold, but sell what has run a tenth over its average" };
+        var mean = new double[names.Length];
+        double worst = double.MaxValue, best = 0;
+        int tradesAll = 0;
+        for (int rule = 0; rule < names.Length; rule++)
+        {
+            for (int seed = 1; seed <= MarketSeeds; seed++)
+            {
+                int trades;
+                double worth = Trade(seed * 104729, rule, out trades);
+                mean[rule] += worth / MarketSeeds;
+                tradesAll += rule > 0 ? trades : 0;
+                if (rule == 0)
+                {
+                    worst = Math.Min(worst, worth);
+                    best = Math.Max(best, worth);
+                }
+            }
+        }
+        double yearly = Math.Pow(mean[0] / MarketCash, 1.0 / MarketYears) - 1.0;
+        Check(yearly > 0.03 && yearly < 0.07, "no money printer: buying everything and holding it returns " + (yearly * 100).ToString("0.0") + "% a game year after commission, between 3% and 7%");
+        Check(worst > MarketCash * 1.2 && best < MarketCash * 2.2, "no money printer: after ten years the unluckiest of eighty holders has " + (worst / MarketCash).ToString("0.00")
+              + " times the money put in and the luckiest " + (best / MarketCash).ToString("0.00") + ": inside 1.2 and 2.2");
+        for (int rule = 1; rule < names.Length; rule++)
+        {
+            double edge = Math.Pow(mean[rule] / mean[0], 1.0 / MarketYears) - 1.0;
+            Check(edge < 0.01, "no money printer: '" + names[rule] + "' beats holding by " + (edge * 100).ToString("0.00") + "% a year: under 1%");
+        }
+        Check(tradesAll > 5000, "no money printer: the rules did trade (" + tradesAll + " trades)");
+        // The figures the README quotes, written out on every run.
+        var line = new System.Text.StringBuilder("Market over " + MarketYears + " years of " + MarketYear + " days, " + MarketSeeds + " seeds: holding returns " + (yearly * 100).ToString("0.00")
+                                                 + "% a year (" + (worst / MarketCash).ToString("0.00") + " to " + (best / MarketCash).ToString("0.00") + " times the money after ten years)");
+        for (int rule = 1; rule < names.Length; rule++)
+        {
+            line.Append("; '").Append(names[rule]).Append("' ").Append(((Math.Pow(mean[rule] / mean[0], 1.0 / MarketYears) - 1.0) * 100).ToString("+0.00;-0.00")).Append('%');
+        }
+        Console.WriteLine(line.Append('.').ToString());
     }
 }
