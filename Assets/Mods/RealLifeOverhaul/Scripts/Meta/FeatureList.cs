@@ -807,6 +807,16 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_economy_rota_about").Help("reallife_guide_economy_rota")
                 .Owns(Settings.EconomyRotaId)
                 .Test("reallife_rota_test_open", "reallife_rota_test_fill", "reallife_rota_test_back"));
+
+            // Online shops. Their rows stand under the company's header on the options page; the Web shop app is their own.
+            // Off, no orders come and nothing is charged or paid. They run only while the economy core does. (Cleaned up before the core: order -2.)
+            Economy.OnlineGuide.AddFacts(Features.Add("economy_online", "reallife_meta_title_economy_online")
+                .About("reallife_guide_economy_online_about").Help("reallife_guide_economy_online")
+                .Owns(Settings.EconomyOnlineId)
+                .Test("reallife_online_test_open", "reallife_online_test_orders", "reallife_online_test_late", "reallife_online_test_return", "reallife_online_test_day", "reallife_online_test_back")
+                .Data(Economy.OnlineStore.Key, Economy.OnlineStore.TestKey)
+                .Cleanup(() => Economy.OnlineDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Economy.OnlineDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
         }
 
         private static string Whole(int value)
