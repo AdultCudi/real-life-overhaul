@@ -574,6 +574,10 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyCompanyCover = v)
                 .AddToggle(Settings.EconomyCompanyMarketingId, "reallife_co_opt_marketing", Settings.EconomyCompanyMarketing,
                     v => Settings.EconomyCompanyMarketing = v)
+                .AddToggle(Settings.EconomyCompanyTaxId, "reallife_co_opt_tax", Settings.EconomyCompanyTax,
+                    v => Settings.EconomyCompanyTax = v)
+                .AddToggle(Settings.EconomyCompanyHideId, "reallife_co_opt_hide", Settings.EconomyCompanyHide,
+                    v => Settings.EconomyCompanyHide = v)
                 .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
                     v => Settings.EconomyCompanyLevel = v)

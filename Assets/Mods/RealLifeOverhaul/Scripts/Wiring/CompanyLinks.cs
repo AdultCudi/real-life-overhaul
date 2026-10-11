@@ -26,6 +26,8 @@ namespace RealLifeOverhaul
         ///   losses        a fire's repair bill (Events/FireLosses), a break-in's stock and repair (Crime/BreakIns) and
         ///                 an inspector's fine (Business/BusinessEvents) are told to the company, which opens a claim
         ///                 if a policy covers it. The loss is the other feature's own and is not changed
+        ///   Audit         business pressure's own tax audit, started through its own rules (BusinessDirector.StartIssue)
+        ///   TaxCase       a criminal case for tax kept back, opened as one of Justice's own (Justice/TaxCases)
         ///   the paper     a strike that starts today, in the City Ledger (News.Extra, after the city's economy's pieces)
         ///
         /// Everything is read from what those features already keep in public or asked through an entry they already
@@ -44,6 +46,8 @@ namespace RealLifeOverhaul
                 CompanyBridges.Dispute = Dispute;
                 CompanyBridges.Rival = Rival;
                 CompanyBridges.Leave = Leave;
+                CompanyBridges.Audit = Audit;
+                CompanyBridges.TaxCase = TaxCases.File;
                 BusinessGame.Ambient = Ambient;
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
@@ -154,6 +158,21 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     Fault("CompanyLinks.Fined", e);
+                }
+            }
+
+            // Business pressure's own tax audit, by its own rules (it may say no: a rest, an open issue, its switch).
+            private static bool Audit(BuildingRegistration reg)
+            {
+                try
+                {
+                    BusinessDirector director = BusinessDirector.Instance;
+                    return director != null && reg != null && director.StartIssue(BusinessCatalogue.Audit, reg);
+                }
+                catch (Exception e)
+                {
+                    Fault("CompanyLinks.Audit", e);
+                    return false;
                 }
             }
             private static void Paper(int day, List<NewsItem> into)

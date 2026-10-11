@@ -41,6 +41,12 @@ namespace RealLifeOverhaul.Economy
             return FinanceText.T(key, name, value, name2, value2, name3, value3);
         }
 
+        /// <summary>A text with any number of its names filled in: name, value, name, value.</summary>
+        public static string Fill(string key, params string[] pairs)
+        {
+            return FinanceText.Fill(key, pairs);
+        }
+
         public static string Money(float amount)
         {
             return FinanceText.Money(amount);

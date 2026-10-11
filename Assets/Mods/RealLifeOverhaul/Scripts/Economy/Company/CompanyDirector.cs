@@ -160,6 +160,7 @@ namespace RealLifeOverhaul.Economy
             {
                 mask |= On((CompanyPart)p) ? 1 << p : 0;
             }
+            mask |= Settings.EconomyCompanyHide ? 1 << (int)CompanyPart.Count : 0;   // (no part of its own: the tax part's cash off the books)
             return mask;
         }
 
