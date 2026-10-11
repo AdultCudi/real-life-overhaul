@@ -227,11 +227,12 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
-            int added = SharkRules.Grow(debt, day);
             if (!Settings.EconomyShark)
             {
-                return;   // switched off: the debt stands and can be paid, and nothing is done about it
+                debt.GrownDay = day;   // switched off: the debt stands as it is and can be paid; it does not grow and nothing is done about it
+                return;
             }
+            int added = SharkRules.Grow(debt, day);
             if (day == debt.DueDay)
             {
                 DebtPhone.Text(DebtPhone.Lender, "reallife_text_shark_due", Data("amount", FinanceText.Money(debt.Owed)), _openLender);
