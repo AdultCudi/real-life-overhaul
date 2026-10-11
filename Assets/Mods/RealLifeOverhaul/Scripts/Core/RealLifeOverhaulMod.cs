@@ -625,9 +625,14 @@ namespace RealLifeOverhaul
                     v => Settings.MinimapSize = v, Meta.SettingsTable.SliderPercent)
                 .AddSlider(Settings.MinimapZoomId, "reallife_nav_zoom", 50, 200, Settings.MinimapZoom,
                     v => Settings.MinimapZoom = v, Meta.SettingsTable.SliderPercent)
+                .AddToggle(Settings.MinimapBaseId, "reallife_nav_base", Settings.MinimapBase,
+                    v => Settings.MinimapBase = v)
                 .AddButton("reallife_nav_test_station", () => Nav.NavDirector.Instance?.TestStation())
                 .AddButton("reallife_nav_test_far", () => Nav.NavDirector.Instance?.TestFar())
                 .AddButton("reallife_nav_test_clear", () => Nav.NavDirector.Instance?.TestClear())
+                .AddButton("reallife_nav_test_base_alone", () => Nav.NavDirector.Instance?.TestBaseAlone())
+                .AddButton("reallife_nav_test_base_marks", () => Nav.NavDirector.Instance?.TestBaseMarks())
+                .AddButton("reallife_nav_test_base_again", () => Nav.NavDirector.Instance?.TestBaseAgain())
                 .AddSplitter()
                 .AddHeader("reallife_civic_header")
                 .AddToggle(Settings.CivicId, "reallife_civic_enabled", Settings.Civic,
@@ -847,6 +852,7 @@ namespace RealLifeOverhaul
             Nav.NavGraph.Logger = context.Logger;
             Nav.NavMarks.Logger = context.Logger;
             Nav.NavHud.Logger = context.Logger;
+            Nav.NavBase.Logger = context.Logger;
             Nav.NavCityMap.Logger = context.Logger;
             Nav.NavDirector.Logger = context.Logger;
             _root.AddComponent<Nav.NavDirector>();   // the minimap on the HUD and the GPS: a route along the roads to the game's destination (Scripts/Navigation)

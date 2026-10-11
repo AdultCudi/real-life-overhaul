@@ -106,6 +106,7 @@ namespace RealLifeOverhaul
         public const string MinimapRotateId = "nav_rotate";
         public const string MinimapSizeId = "nav_size";
         public const string MinimapZoomId = "nav_zoom";
+        public const string MinimapBaseId = "nav_base";
         public const string RoadsideChecksId = "roadside_checks";
         public const string ShowTestToolsId = "show_test_tools";       // Meta: the "Test tools" section of the options page
         public const string DevDiagnosticsId = "dev_diagnostics";      // Meta: the diagnostic keys (F7, Shift+F7, F8, F9) and the Info lines in the log
@@ -281,6 +282,7 @@ namespace RealLifeOverhaul
         public static bool MinimapRotate = true;         // the minimap turns with the player (off: north is up)
         public static int MinimapSize = 80;              // per cent of the width of the game's left column
         public static int MinimapZoom = 100;             // per cent: more is closer
+        public static bool MinimapBase = true;           // buildings and water on the minimap, under the roads (off: roads only, as before) (Scripts/Navigation/NavBase.cs)
         public static bool RoadsideChecks = true;        // now and then a patrol car pulls the player over only to see the licence
         public static bool ShowTestTools = false;        // the test buttons are on the options page
         public static bool DevDiagnostics = false;       // the diagnostic keys work and Info lines go to the log
@@ -498,6 +500,7 @@ namespace RealLifeOverhaul
             MinimapRotate = Bool(modId, MinimapRotateId, MinimapRotate);
             MinimapSize = Int(modId, MinimapSizeId, MinimapSize);
             MinimapZoom = Int(modId, MinimapZoomId, MinimapZoom);
+            MinimapBase = Bool(modId, MinimapBaseId, MinimapBase);
             RoadsideChecks = Bool(modId, RoadsideChecksId, RoadsideChecks);
             ShowTestTools = Bool(modId, ShowTestToolsId, ShowTestTools);
             DevDiagnostics = Bool(modId, DevDiagnosticsId, DevDiagnostics);
