@@ -1,6 +1,7 @@
 0.2.3
 
 New
+- Brazilian Portuguese: the mod follows the language the game is set to. A first translation; tell us what reads wrong.
 - The rota gives every employee the weekly hours they ask for, never fewer and never more, and puts shifts on the hours customers come.
 - The more skilled get their hours first. Staff the business has no hours for are named, so you can let them go.
 - Company app: raise an underpaid employee to the going rate at any time, without waiting for them to ask.
