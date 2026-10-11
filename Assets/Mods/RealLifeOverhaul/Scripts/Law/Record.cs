@@ -412,6 +412,8 @@ namespace RealLifeOverhaul.Law
         public int Bail;             // 0: none
         public bool Lawyer;          // already called
         public string VehicleId;     // the car left at the scene, or null
+        public bool Court;           // held by order of a court (Custody.Hold): no charge sheet, no lawyer, no line on the police record
+        public string Reason;        // ...and the locale key of why, as the court's side gave it
 
         public void Clear()
         {
@@ -425,6 +427,8 @@ namespace RealLifeOverhaul.Law
             Bail = 0;
             Lawyer = false;
             VehicleId = null;
+            Court = false;
+            Reason = null;
         }
     }
 
@@ -530,7 +534,10 @@ namespace RealLifeOverhaul.Law
                     Custody.Bail = Int(parts[6], 0);
                     Custody.Lawyer = parts[7] == "1";
                     Custody.VehicleId = parts[8].Length > 0 ? parts[8] : null;
-                    Custody.Active = Custody.Charges != 0 && Custody.ReleaseAt > 0f;
+                    // (Two fields more since the courts hold people here too; a line without them is an arrest's.)
+                    Custody.Court = parts.Length >= 11 && parts[9] == "1";
+                    Custody.Reason = Custody.Court && parts[10].Length > 0 ? parts[10] : null;
+                    Custody.Active = (Custody.Charges != 0 || Custody.Court) && Custody.ReleaseAt > 0f;
                 }
             }
             data.TryGetValue(KeyPrecincts, out PrecinctAddresses);
@@ -575,7 +582,8 @@ namespace RealLifeOverhaul.Law
                 Text(Reputation.DeedDay), Text(Reputation.Deeds), Text(Reputation.ThanksDay));
             data[KeyCustody] = Custody.Active
                 ? string.Join("|", Text(Custody.Precinct), Custody.ReleaseAt.ToString(CultureInfo.InvariantCulture), Custody.StartedAt.ToString(CultureInfo.InvariantCulture),
-                    Text(Custody.Charges), Text(Custody.Hours), Text(Custody.Paid), Text(Custody.Bail), Custody.Lawyer ? "1" : "0", Custody.VehicleId ?? string.Empty)
+                    Text(Custody.Charges), Text(Custody.Hours), Text(Custody.Paid), Text(Custody.Bail), Custody.Lawyer ? "1" : "0", Clean(Custody.VehicleId),
+                    Custody.Court ? "1" : "0", Clean(Custody.Reason))
                 : string.Empty;
             if (PrecinctAddresses != null)
             {

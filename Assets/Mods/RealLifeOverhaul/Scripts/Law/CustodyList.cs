@@ -45,6 +45,8 @@ namespace RealLifeOverhaul.Law
         private int _minutes = -1;
         private bool _docked;
         private bool _mounted;
+        private int _shown = Options;                       // how many of the entries this stay offers
+        private string _noteKey = "reallife_law_cell_sheet"; // the heading over the note
 
         public CustodyList(IModLogger logger)
         {
@@ -76,6 +78,8 @@ namespace RealLifeOverhaul.Law
             _sheet = sheet;
             _sentence = sentence;
             _docked = docked;
+            _shown = Options;
+            _noteKey = "reallife_law_cell_sheet";
             _clockFormat = "reallife_law_cell_clock".Tr().Replace("{hours}", "{0}").Replace("{minutes}", "{1}");
             _hours = -1;
             _minutes = -1;
@@ -84,6 +88,16 @@ namespace RealLifeOverhaul.Law
             window.anchorMin = window.anchorMax = window.pivot = at;
             window.anchoredPosition = docked ? new Vector2(-80f, 0f) : Vector2.zero;
             return true;
+        }
+
+        /// <summary>
+        /// A stay that is not an arrest's (a court's order): only the first <paramref name="options"/> entries are listed,
+        /// and the note has this heading. Call after <see cref="Open"/>, which puts both back to the arrest's.
+        /// </summary>
+        public void Shape(int options, string noteKey)
+        {
+            _shown = Mathf.Clamp(options, 1, Options);
+            _noteKey = string.IsNullOrEmpty(noteKey) ? "reallife_law_cell_sheet" : noteKey;
         }
 
         /// <summary>Shows what was set (call after the options and the clock). Locks the window: the way out is the sentence, bail or a lawyer.</summary>
@@ -200,8 +214,8 @@ namespace RealLifeOverhaul.Law
         private void Fill(TravelList list)
         {
             list.Begin(_title, InfoText());
-            list.AddNote("reallife_law_cell_sheet".Tr(), _sheet, list.HeightFor(_sheet.Length + 40 * CountLines(_sheet), false));
-            for (int i = 0; i < Options; i++)
+            list.AddNote(_noteKey.Tr(), _sheet, list.HeightFor(_sheet.Length + 40 * CountLines(_sheet), false));
+            for (int i = 0; i < _shown; i++)
             {
                 list.Add(i, _name[i], _detail[i], ButtonDo, _on[i]);
             }
@@ -220,7 +234,7 @@ namespace RealLifeOverhaul.Law
         private void Picked(int id)
         {
             Action<int> chosen = _chosen;
-            if (chosen != null && id >= 0 && id < Options && _on[id])
+            if (chosen != null && id >= 0 && id < _shown && _on[id])
             {
                 chosen(id);
             }

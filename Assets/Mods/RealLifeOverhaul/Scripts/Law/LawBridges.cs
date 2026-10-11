@@ -30,6 +30,33 @@ namespace RealLifeOverhaul.Law
         public const string CarBreakIn = "car";
         public const string Accident = "accident";
 
+        /// <summary>
+        /// The courts: asked whether whoever orders holds (<see cref="Custody.Hold"/>) still stands behind them. Null: yes.
+        /// Set by Scripts/Wiring; read when a hold begins, with the clock line while one is served (eight times a second), and when one is found on a save.
+        /// </summary>
+        public static Func<bool> CourtOn;
+
+        /// <summary>False when the courts have been switched off or have gone: a hold of theirs is not begun, and one that is on ends.</summary>
+        public static bool CourtStands
+        {
+            get
+            {
+                Func<bool> asked = CourtOn;
+                if (asked == null)
+                {
+                    return true;
+                }
+                try
+                {
+                    return asked();
+                }
+                catch (Exception)
+                {
+                    return false;   // nobody is held on the word of something that has just failed
+                }
+            }
+        }
+
         /// <summary>How many game days a report can still be asked for after what it is about.</summary>
         public const int ReportDays = 7;
 

@@ -1844,6 +1844,14 @@ either, or the option off: hearings are held by video link from the Legal file.
 
 ### Prison
 
+**Custody in hours is not prison.** Everything a court orders in hours (remand until it sits, a custody sentence, a
+hold on an arrest by Licences: `JusticeState.JailHoursPending`, never more than `JusticeLaw.CustodyCapHours` = 48) is
+handed to the Law bridge (`JusticeDirector.BeginCustody`), which serves it in the nearest police station's holding
+cell (`Law.Custody.Hold`, see "A court's hold" under Law). Only when the bridge says no (custody or the stations
+switched off, no station, somebody already held) is it `PrisonStay.Custody`: the fade and the time skip below, where
+the player stands. Prison, in days, is always what follows here. `Justice check (custody): ... PASS` says which of
+the two served it.
+
 Presented as time passing, with the game's own time skip (the one its hospital uses): fade, the player out of their
 car and out of any building and put down on the pavement outside the courthouse (or wherever the Law bridge says),
 and then a day at a time. Each morning the panel: the **parole board** on the morning after two thirds are served
@@ -1895,7 +1903,7 @@ and may read `Justice.Wanted`, `Justice.OnProbation`, `Justice.DrivingSuspended`
 
 | bridge | set by | what it is asked | default |
 |---|---|---|---|
-| `Law` (`ILawBridge`) | `Scripts/Law` | `PriorConvictions`; told `Convicted`, `Cleared`, `RecordSealed`; `Custody(hours, released)`; `ReleaseSpot(out spot, out name)` (the spot, and the station's name that the release text uses: "at Midtown Precinct", else "at the courthouse") | the justice system's own record; a plain time skip; the courthouse front |
+| `Law` (`ILawBridge`) | `Scripts/Law` | `PriorConvictions`; told `Convicted`, `Cleared`, `RecordSealed`; `Custody(hours, reasonKey, released)` (remand and custody sentences: served in the station's cell, see "A court's hold" under Law); `Holding` (in a cell of the station's, or a save says so: never counted absent from court); `ReleaseSpot(out spot, out name)` (the spot, and the station's name that the release text uses: "at Midtown Precinct", else "at the courthouse") | the justice system's own record; a plain time skip; not held; the courthouse front |
 | `Licences` (`ILicenceBridge`) | `Scripts/Licences` | `SuspendDriving(untilDay)` (0 lifts it); `DrivingSuspended` | the date kept in `JusticeState` |
 | `Social` (`ISocialBridge`) | `Scripts/Social` | `CloseFriend(out name)`; told `Stood(name, visit)` | the mod's friend contact, if rung within the last 7 days |
 | `Transport` (`ITransportBridge`) | whoever keeps the cars | `ReturnCar(car, near, daysAway)` | `VehicleTow.BringNear` and a storage charge |
@@ -2182,6 +2190,62 @@ says held and nothing is running, or on any fault; a stay never takes more than 
 screen. If the player cannot be moved (the hospital has them, no way to the door) the arrest is dropped:
 the fines stand, the record keeps the line.
 
+#### A court's hold (`Custody.Hold`)
+
+```csharp
+// False, with nothing done, if custody cannot take them now (off, no precinct, somebody already held, the courts off).
+bool Law.Custody.Hold(float hours, string reasonKey, int bail, Action released);
+Law.Custody.HoldBailed            // read in "released": the hold ended because its bail was paid
+Law.Bridges.CourtOn = () => ...;  // asked whether whoever orders holds still stands behind them (Wiring: Justice.Active)
+```
+
+Hours ordered by a court are served exactly where an arrest's are, by the same code: the wait for a free screen, the
+dark screen, out of any car or building (`Transport`), the pavement outside the nearest precinct, through its door
+into the holding cell (`GoInside`, `PutInCell`), the cell's list, the game's own time skip to the release time, the
+front desk and the door (`Release`, `ReleaseInside`). A player who is already standing in a station is put in that
+station's cell without going out. What differs, all of it decided by `CustodyState.Court`:
+
+| | an arrest | a court's hold |
+|---|---|---|
+| in the street | the officer, hands up, cuffs | nothing is played: one notification, then the dark screen |
+| the note in the cell | CHARGE SHEET: the charges and what was paid | COURT ORDER: the caller's sentence (`reasonKey`: `JusticeLaw.HoldRemand`, `HoldSentence`) |
+| entries | sit it out, bail, a lawyer | sit it out; bail only if the caller set one (`CustodyList.Shape`); never a lawyer |
+| hours | `LawBook.Sentence` | the caller's, bounded to 1 to `LawBook.MostHours` (48) |
+| the police record | a line, closed with the hours served | no line: the conviction is the courts' own, and a second line would move the reputation twice for one offence. So it is not counted by `Record.TimesHeld` either |
+| mood | `MoodDownBig` | `MoodDown`, as the courts' own time skip gave |
+| could not be moved (at the wheel of a car that will not stop, no way to the door) | the arrest is dropped | the hours pass where the player is, behind the full-screen list: a court's hours are never let off |
+| the courts go (switched off, the feature at fault) | | the hold ends at the next look (eight a second, with the clock line) and at a load |
+
+A car the player was sitting in is remembered and treated as an arrest's: at the pound if they are let out inside,
+brought to a kerb space for the impound fee otherwise. `released` is called exactly once, last thing in `Cleanup`, on
+every way out (served, bail, the watchdog, a fault, the component destroyed); it is not kept in the save, so a hold
+resumed after a load ends without it, and `ILawBridge.Holding` is what the courts ask instead.
+
+Every guarantee of an arrest's stay holds for a court's because it is the same routine and the same state: the
+watchdog in `LawDirector` (25 s without a sign of life, "the save says held, nothing is running", any fault),
+`HeldMost` (seven real minutes on screen), `LeaveCell` and `OpenCell` for the bars, `Cleanup` on destroy.
+
+**The save.** `reallife:law_custody` has two fields more at its end: `|1|<reason key>` for a court's hold (`|0|` for
+an arrest). A line with nine fields, from before, is an arrest. `Active` on load is "has charges, or is a court's,
+and has a release time". A save made in the cell loads without the mod as the player standing in an empty unit (the
+base game ignores the key); with the mod they walk out and what is left is served, or they are let out if the time
+has passed, the option is off, or the courts are off. A build of the mod from before this reads the nine fields it
+knows, finds no charges and holds nobody.
+
+One thing can come out of order: a save made during **remand** and loaded has its hearing waiting too
+(`JusticeState.HearNow`). The courts' panel waits for `Custody.Active`, which is false from the load until the stay is
+taken up again (once the player is out of doors and the precincts are designated), so the hearing can be held first
+and the rest of the remand served after it. Neither is lost and nothing is stuck: the hearing pauses the game, and
+the stay waits for `LifeEvents.IsSafeForEvent`.
+
+Log lines with diagnostics on: `Law check (court hold): taken to <precinct>: in the holding cell: PASS` (or "no cell in
+this room, held at the desk", "held outside the door"; "could not be moved, held where they are" is the FAIL),
+`... signed out at the front desk of <precinct> after N h of M, then the door: PASS`, `... let out at the door of ...`,
+`... a save made during the hold was loaded with N h left: resumed`, `... ended by the watchdog (...)`.
+
+Not checked in the game: any of it. A screenshot of the cell with the COURT ORDER note and a single "Sit it out"
+entry settles the list; the log lines above settle the path.
+
 With "Custody" off, the two old routes fall back to what they did before (a 2 to 5 hour time skip where
 caught). With "Arrests for serious offences" off, a death is only an arrest if the player drove off, and
 911 calls about nothing only cost the fine.
@@ -2191,8 +2255,9 @@ Not wired, because the player cannot do them: stealing and violence on foot. `La
 
 ### Record and reputation
 
-- **Record** (`reallife:law_record`, at most 40 lines): every ticket, every stay in a cell (with its
-  hours, fines and how it ended) and every time the player got away after hurting somebody.
+- **Record** (`reallife:law_record`, at most 40 lines): every ticket, every stay in a cell after an arrest (with its
+  hours, fines and how it ended) and every time the player got away after hurting somebody. Hours a court ordered
+  are not a line here (they are in the Legal file with the conviction).
 - **Police reputation** (0 to 100, starts at 55): falls with each line by the amount in `LawBook` (a
   ticket 3, a fatal hit-and-run 25), rises 2 for every game day with nothing new on the record (up to 75)
   and with calls that led to an arrest.
@@ -2224,7 +2289,8 @@ Law.Record.CleanFor(14)          // nothing new in 14 game days (a job that want
 Law.Record.DaysSinceLastOffence  // -1 if none
 Law.Record.TimesHeld(30)         // stays in a cell in the last 30 game days
 Law.Record.Count, Law.Record.Entry(i)           // day, charges (bits), hours, fines, outcome
-Law.Custody.Active               // being arrested or held right now
+Law.Custody.Active               // being arrested or held right now (an arrest's stay or a court's)
+Law.Custody.Hold(hours, reasonKey, bail, released)   // a court's order served in the cell; false if it cannot be taken
 Law.LawDirector.NearestPrecinct(position)       // its Name, Door, Building; null before the city is ready
 Law.Arrests.FledStop / HitAndRun / StayedAtScene / WastedCall / Escaped / Cited   // the ways in
 ```
@@ -3586,8 +3652,8 @@ What was doubled before the wiring, and how each is now single:
 - **Driving while suspended fined twice** (1 500 at the window by Licences, and the same charge in court by
   `Justice.PoliceContact`): what was paid at the window is credited to that case (`LicenceLinks.SuspendedAtStop`).
 - **An arrest by Licences** (third time without a licence, second time suspended): served through the courts' custody
-  when they are on (`Justice.Hold`: put down outside the nearest precinct, counted as time served), through the old
-  roadside time skip when they are off. Never both.
+  when they are on (`Justice.Hold`: in the nearest precinct's cell like every hold of the courts', counted as time
+  served), through the old roadside time skip when they are off. Never both.
 - A death on the way to a ticket (`PoliceAttention.Ticket`) arrested but never charged: it now opens the same case a
   death after a pursuit does.
 - With a precinct holding the player, nobody told the paper or the player's friends (`News`, `SocialHooks.PlayerArrested`
@@ -3597,12 +3663,15 @@ Panels queue, they never stack: the precinct's cell runs behind the game's time 
 `LifeEvents.IsSafeForEvent` (no dialog, no time skip, not paused: the courts' panel pauses the game, so nothing starts
 behind it). The courts' own panel also waits for `Wiring.Scenes.PlayerHeld` (a test paper or driven test, a panel of the mod's own that needs the cursor).
 
-**For Scripts/Law (not edited here; three calls it would need for more):** `Record.Convict(day, name, caseNumber)` and
+**The cell is Law's for the courts too.** `Wiring.Arrests.LawBridge.Custody` hands a court's hours (remand, a custody
+sentence, an arrest by Licences) to `Law.Custody.Hold(hours, reasonKey, 0, released)`: no bail, because a court that
+holds somebody has refused it or the player chose to stay. `Law.Bridges.CourtOn` is `Justice.Active`, so a hold ends
+when the courts are switched off. `Holding` answers from `Custody.Active` and the saved stay.
+
+**For Scripts/Law (two calls it would need for more):** `Record.Convict(day, name, caseNumber)` and
 `Record.Remove(caseNumber)` so that a conviction and an acquittal can be lines of the police record (today
 `Convicted` / `Cleared` / `RecordSealed` do nothing there: a second line for the conviction would move the reputation
-twice for one offence, and there is no way to take one line off), and `Custody.Hold(hours, reasonKey, released)` so that
-a court's custody sentence and an arrest by Licences can be served in the precinct's cell with its panel (today they
-are the courts' own time skip, with the player put down outside the nearest precinct through `ReleaseSpot`).
+twice for one offence, and there is no way to take one line off). The custody path does not need them.
 
 ### One street scene at a time (`Wiring.Scenes`)
 
