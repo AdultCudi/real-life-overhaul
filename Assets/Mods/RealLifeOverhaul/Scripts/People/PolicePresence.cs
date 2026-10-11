@@ -91,6 +91,12 @@ namespace RealLifeOverhaul
         /// <summary>True while a patrol car of ours is parked at the kerb.</summary>
         public bool CarOut => _carOut;
 
+        /// <summary>True if that parked patrol car is within so many metres of a place: its officers hear and see what goes on there.</summary>
+        public bool CarWithin(Vector3 place, float metres)
+        {
+            return _carOut && (_carAt - place).sqrMagnitude < metres * metres;
+        }
+
         private static bool Wanted => Settings.Police && Settings.People && Settings.PolicePresence > 0 && ModState.Loaded && TrafficTools.Ready;
 
         private void Update()
