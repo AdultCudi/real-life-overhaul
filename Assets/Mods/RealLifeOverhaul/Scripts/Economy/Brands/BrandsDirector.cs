@@ -24,7 +24,8 @@ namespace RealLifeOverhaul.Economy.Brands
     ///
     /// This class keeps it going. PER FRAME: NOTHING. It has no Update and no timer of its own. Once a second the
     /// credit side's timer calls <see cref="EachSecond"/>: while nothing has changed that is a dozen comparisons (the
-    /// save is there, the options are as they were, the map's markers are up to date) and no allocation. The credit
+    /// save is there, the options are as they were) and one number worked out from the franchised shops to see that
+    /// the map's markers are up to date (three multiplications for each shop), with no allocation. The credit
     /// side's own handlers of the game's hour and day events call <see cref="OnHour"/> and <see cref="OnDay"/> when
     /// their own work is done (EconomyDirector.AfterHour, AfterDay), after the city's economy and the company.
     ///
@@ -46,6 +47,9 @@ namespace RealLifeOverhaul.Economy.Brands
     ///   a shop       a franchised shop that is a business of the game's own stays one for as long as its agreement
     ///                runs, with the option off too (it is an ordinary business of the city's then: nothing is paid and
     ///                nothing is asked); when the agreement ends the game's own closure puts the building back to let
+    ///   a start day  the day the game has for a franchised shop's start is kept at today while its agreement runs,
+    ///                so that the game's own market does not close it (BrandsGame.Keep); for a shop that traded
+    ///                before the agreement the day it had is put back when the agreement ends
     ///   prices, hours   written when the player presses the button, as the game's own screens write them: the
     ///                player's own settings from then on, not taken back
     ///
@@ -100,6 +104,7 @@ namespace RealLifeOverhaul.Economy.Brands
         {
             Instance = this;
             BrandsGame.Logger = Logger;
+            BrandsGame.Forget();   // (a new city: the map's rows of the last one went with it)
             _second = EachSecond;
             _onSave = OnSave;
             _onHour = OnHour;
@@ -223,10 +228,25 @@ namespace RealLifeOverhaul.Economy.Brands
         private void Read(int day, out int left)
         {
             BrandsGame.ReadShops(_state, _shops, _pool, day, out left);
+            for (int i = 0; i < _shops.Count; i++)
+            {
+                // (a place the player has made another kind of business of is no shop of its brand any more)
+                BrandShop shop = _shops[i];
+                Brand of = shop.File != null ? _state.Brand(shop.File.BrandId) : null;
+                if (shop.File != null && (of == null || !string.Equals(of.Type, shop.Type, StringComparison.Ordinal)))
+                {
+                    BrandRules.Leave(_state, shop.Place);
+                    shop.File = null;
+                    left++;
+                }
+            }
             for (int i = 0; i < _state.Brands.Count; i++)
             {
-                _state.Brands[i].Standards = BrandRules.Standards(_state, _state.Brands[i]);
+                Brand b = _state.Brands[i];
+                b.Standards = BrandRules.Standards(_state, b);
+                b.Ticket = BrandRules.Ticket(_state, b);
             }
+            _sitesFor = 0;   // (the buildings to let are read again the next time an applicant's page asks)
             Recount();
         }
 
@@ -483,7 +503,6 @@ namespace RealLifeOverhaul.Economy.Brands
             for (int k = 0; k < _state.Brands.Count; k++)
             {
                 Brand b = _state.Brands[k];
-                b.Ticket = BrandRules.Ticket(_state, b);
                 int royalty = 0, levy = 0, support = 0, shops = 0;
                 for (int i = _state.Franchises.Count - 1; i >= 0; i--)
                 {
@@ -497,6 +516,7 @@ namespace RealLifeOverhaul.Economy.Brands
                         Gone(b, f, day);
                         continue;
                     }
+                    BrandsGame.Keep(f, b.Type, day);
                     if (f.Ask == Ask.Dispute && f.Suit != 0 && (BrandsBridges.ClaimOpen == null || !BrandsBridges.ClaimOpen(f.Suit)))
                     {
                         Logger?.Info("Brands: the court has dealt with claim " + f.Suit + " of " + f.Name + "; the dispute is over.");

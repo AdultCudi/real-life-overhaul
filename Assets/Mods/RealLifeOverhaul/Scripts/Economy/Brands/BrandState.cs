@@ -95,6 +95,7 @@ namespace RealLifeOverhaul.Economy.Brands
         public string Place = string.Empty;      // the building, written as a business's place is
         public string GameName = string.Empty;   // what the game calls the business there (its own name for it is kept: see BrandsGame)
         public Hold Hold = Hold.Books;
+        public int Born = -1;                    // the day the game has for the business's start as it was when a shop that already traded joined; put back when the agreement ends
         public int X, Z;
         public bool HasSpot;
         public int Base;                         // customers an ordinary day brings by the game's own formula for the building and the type
@@ -133,7 +134,7 @@ namespace RealLifeOverhaul.Economy.Brands
         public bool Seen;
     }
 
-    /// <summary>Everything brands and franchises keep for one save.</summary>
+    /// <summary>Everything brands and franchises keep for one save. Plain data: a look-up is a walk over a short list (six brands, forty-eight members, sixty franchises at most).</summary>
     public sealed class BrandsState
     {
         public int Seed;

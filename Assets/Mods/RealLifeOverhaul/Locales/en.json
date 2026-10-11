@@ -9852,5 +9852,6 @@
   "reallife_transaction_brand_chain_exit": "Fee for leaving a chain: {name}",
   "reallife_transaction_brand_chain_exit_label": "Fee for leaving a chain",
   "reallife_text_justice_suit_franchise": "One of your franchisees disputes the terms of the agreement and has filed a civil claim against you for {amount}. Answer by day {day} in your Legal file: settle, or contest it. If you do nothing, the court finds against you.",
-  "reallife_text_justice_suit_franchise_withdrawn": "The franchisee's civil claim for {amount} has been withdrawn."
+  "reallife_text_justice_suit_franchise_withdrawn": "The franchisee's civil claim for {amount} has been withdrawn.",
+  "reallife_brand_note_site_gone": "That building is no longer to let. Pick another."
 }

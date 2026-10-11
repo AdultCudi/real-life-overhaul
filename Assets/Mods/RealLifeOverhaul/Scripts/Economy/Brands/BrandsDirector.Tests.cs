@@ -229,7 +229,9 @@ namespace RealLifeOverhaul.Economy.Brands
                         f.X = existing.X;
                         f.Z = existing.Z;
                         f.Base = existing.Base;
+                        f.Born = existing.Born;
                     }
+                    Placed(b, f, Save.Day);
                     _sites.Clear();
                     TestDone(f.Name + " signed with '" + b.Name + "' in " + district + " (no entry fee paid): royalty " + f.RoyaltyBp + " and levy " + f.LevyBp + " ten-thousandths until day " + f.Until + "; the shop is " + f.Hold
                              + " at " + f.Place + (f.Hold != Hold.Books ? " as the game's '" + f.GameName + "'" : string.Empty) + ", " + f.Base + " customers on an ordinary day; the royalty of the days to come is real", TabAgreements, "fr:" + f.Id);

@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Economy.Brands
     ///   f  the franchises: id|brand|name|temperament|ability|district|place|the game's name|hold|x|z|has a spot|
     ///      customers|signed|until|term|entry fee|royalty|levy|exclusive|standards|seen|seen day|warnings|warned until|
     ///      retrained until|cash|ask|ask until|ask amount|ask rest|court number|waived until|takings|royalty paid
-    ///      yesterday|customers yesterday|paid in all|no renewal
+    ///      yesterday|customers yesterday|paid in all|no renewal|the business's own start day
     ///   t  the player's shops under a city chain: place|chain|from|until|days in breach|average royalty|paid
     ///
     /// Every figure is a whole number, so what is read back is exactly what was written. A NEWER VERSION adds fields at
@@ -31,6 +31,8 @@ namespace RealLifeOverhaul.Economy.Brands
     ///
     /// <see cref="TestKey"/> holds the same line as it was before the first test tool changed it, for as long as test
     /// changes are in place.
+    ///
+    /// COST: one string built when the game saves and one line read when a save is loaded; nothing else.
     /// </summary>
     public static class BrandStore
     {
@@ -110,7 +112,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 Join(t, (int)f.Temper, f.Ability);
                 t.Append('|').Append(Clean(f.District)).Append('|').Append(Clean(f.Place)).Append('|').Append(Clean(f.GameName)).Append('|');
                 Join(t, (int)f.Hold, f.X, f.Z, f.HasSpot ? 1 : 0, f.Base, f.Signed, f.Until, f.Term, f.EntryFee, f.RoyaltyBp, f.LevyBp, f.Exclusive ? 1 : 0, f.True, f.Seen, f.SeenDay, f.Warnings,
-                    f.WarnedUntil, f.RetrainedUntil, f.Health, (int)f.Ask, f.AskUntil, f.AskAmount, f.AskRest, f.Suit, f.WaivedUntil, f.Takings, f.Royalty, f.Customers, f.Paid, f.NoRenewal ? 1 : 0);
+                    f.WarnedUntil, f.RetrainedUntil, f.Health, (int)f.Ask, f.AskUntil, f.AskAmount, f.AskRest, f.Suit, f.WaivedUntil, f.Takings, f.Royalty, f.Customers, f.Paid, f.NoRenewal ? 1 : 0, f.Born);
             }
             t.Append("^t:");
             for (int i = 0; i < s.Taken.Count && i < BrandCatalogue.TakenMost; i++)
@@ -298,7 +300,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 Warnings = Math.Max(0, I(c, 23)), WarnedUntil = Math.Max(0, I(c, 24)), RetrainedUntil = Math.Max(0, I(c, 25)), Health = I(c, 26),
                 Ask = ask >= 0 && ask <= (int)Ask.BuyBrand ? (Ask)ask : Ask.None, AskUntil = Math.Max(0, I(c, 28)), AskAmount = Math.Max(0, I(c, 29)), AskRest = Math.Max(0, I(c, 30)),
                 Suit = Math.Max(0, I(c, 31)), WaivedUntil = Math.Max(0, I(c, 32)), Takings = Math.Max(0, I(c, 33)), Royalty = Math.Max(0, I(c, 34)), Customers = Math.Max(0, I(c, 35)),
-                Paid = Math.Max(0, I(c, 36)), NoRenewal = I(c, 37) != 0
+                Paid = Math.Max(0, I(c, 36)), NoRenewal = I(c, 37) != 0, Born = I(c, 38, -1)
             };
         }
 

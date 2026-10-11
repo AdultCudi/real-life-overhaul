@@ -105,6 +105,7 @@ namespace RealLifeOverhaul.Economy.Brands
     ///                (BuildingLogoSignController.UpdateSign, EstimatedWeeklyIncomeHelper line 167, which has no check
     ///                for a name it does not know and runs in the game's daily valuation), so a renamed one would lose
     ///                its sign and throw in the game's own day. The brand's name is on the mod's pages and on the map.
+    ///   its keeping  while an agreement runs the game's own market does not close the shop (see <see cref="Keep"/>)
     ///   prices       the price of a product the shop already sells, in its price list and its stored one, as the
     ///                game's own price cell writes both (InventoryProductCellView), then the game's own market update
     ///   hours        a day's opening hours and whether it is open, as the game's own hour switches leave them
@@ -114,7 +115,11 @@ namespace RealLifeOverhaul.Economy.Brands
     ///                out. No shift is touched: the Rota tab fills a rota for the new hours.
     /// Footfall is asked for through <see cref="BrandsBridges"/> and never written here.
     ///
-    /// Nothing here runs on a timer: when the feature starts, once a game day, and when the player presses a button.
+    /// COST: nothing per frame. The game is read when the feature starts, once a game day and when the app is opened
+    /// (one pass over the save's buildings; four figures, the newest order history entry, the price list and the
+    /// staff for each shop under a brand or a chain); everything else runs when the player presses a button. Once a
+    /// second <see cref="Marks"/> compares one number made from the franchised shops (three multiplications each)
+    /// with the last, and makes the map's markers again only when it differs.
     /// </summary>
     internal static class BrandsGame
     {
@@ -557,7 +562,7 @@ namespace RealLifeOverhaul.Economy.Brands
                         continue;
                     }
                     BuildingRegistration reg = BuildingHelper.GetBuildingRegistration(building.Address);
-                    if (reg == null || reg.RentedByPlayer || !reg.AvailableForRent || !reg.HasValidAddress || (!string.IsNullOrEmpty(reg.businessTypeName) && reg.businessTypeName != EmptyType))
+                    if (!Free(reg) || !reg.HasValidAddress)
                     {
                         continue;
                     }
@@ -675,7 +680,7 @@ namespace RealLifeOverhaul.Economy.Brands
             try
             {
                 AiBusinessDefault chosen = Default(type, reg);
-                if (chosen != null && reg != null && !reg.RentedByPlayer && reg.AvailableForRent)
+                if (chosen != null && Free(reg))
                 {
                     CompetitionHelper.StartNewCompetitorBusiness(type, reg, true, chosen, CompetitionHelper.GetRivalIdForBusinessDefault(chosen));
                     f.Hold = Hold.Opened;
@@ -707,6 +712,12 @@ namespace RealLifeOverhaul.Economy.Brands
                 : " in the mod's books only (the game has no business of this type that fits the building)") + "; " + f.Base + " customers on an ordinary day by the game's formula.");
         }
 
+        /// <summary>True while a building is still to let by the game's own list, empty and not the player's: what a franchised shop may open in.</summary>
+        public static bool Free(BuildingRegistration reg)
+        {
+            return reg != null && !reg.RentedByPlayer && !reg.BuildingOwnedByPlayer && reg.AvailableForRent && (string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == EmptyType);
+        }
+
         /// <summary>
         /// A business of the game's own of the brand's type that already trades in the district and is no franchised
         /// shop yet joins the brand as it stands: the file given is filled in and nothing of the game's is changed, so
@@ -732,6 +743,7 @@ namespace RealLifeOverhaul.Economy.Brands
                     f.Place = Place(reg);
                     f.Hold = Hold.Converted;
                     f.GameName = reg.BusinessName ?? string.Empty;
+                    f.Born = reg.creationDay;
                     Settle(f, building, type, reg);
                     return true;
                 }
@@ -807,12 +819,42 @@ namespace RealLifeOverhaul.Economy.Brands
         }
 
         /// <summary>
+        /// The city's own market leaves a franchised shop alone while its agreement runs. The game's daily run closes
+        /// a business of the city's that earns little, one or two a district every few days, but never one that
+        /// started within the last forty days (CompetitionHelper.TryShutdownBusinesses, line 685: its creationDay is
+        /// later than today - 40). So the day the game has for the shop's start is kept at today: one number, written
+        /// once a day, read by nothing else for a business that is not the player's. For a shop that traded before the
+        /// agreement the day it had is put back when the agreement ends (<see cref="Close"/>).
+        /// </summary>
+        public static void Keep(Franchise f, string type, int day)
+        {
+            if (f.Hold == Hold.Books)
+            {
+                return;
+            }
+            BuildingRegistration reg = RegAt(f.Place);
+            if (reg != null && !reg.RentedByPlayer && reg.businessTypeName == type)
+            {
+                reg.creationDay = day;
+            }
+        }
+
+        /// <summary>
         /// A franchised shop closes. One the game started for the brand is closed by the game's own closure, which
-        /// puts the building back to let; one that was trading before goes on trading as the business it is; one in
-        /// the books was never in the city.
+        /// puts the building back to let; one that was trading before goes on trading as the business it is, with the
+        /// start day it had; one in the books was never in the city.
         /// </summary>
         public static void Close(Franchise f, string type)
         {
+            if (f.Hold == Hold.Converted && Stands(f, type))
+            {
+                BuildingRegistration was = RegAt(f.Place);
+                if (was != null)
+                {
+                    was.creationDay = f.Born;
+                }
+                return;
+            }
             if (f.Hold != Hold.Opened || !Stands(f, type))
             {
                 return;

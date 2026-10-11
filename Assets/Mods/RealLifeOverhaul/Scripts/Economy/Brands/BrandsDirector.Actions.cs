@@ -339,6 +339,14 @@ namespace RealLifeOverhaul.Economy.Brands
                 }
                 IReadOnlyList<BrandSite> sites = SitesFor(a);
                 BrandSite picked = site >= 0 && site < sites.Count ? sites[site] : null;
+                if (picked != null && !BrandsGame.Free(picked.Reg))
+                {
+                    // (the list was read when the page was opened: the building has been let since)
+                    _sitesFor = 0;
+                    Say(NotificationType.Error, "reallife_brand_note_site_gone");
+                    Changed(false);
+                    return;
+                }
                 var existing = new Franchise();
                 bool canConvert = BrandsGame.Convert(existing, _state, a.District, b.Type);
                 if (picked == null && !canConvert)
@@ -360,7 +368,9 @@ namespace RealLifeOverhaul.Economy.Brands
                     f.X = existing.X;
                     f.Z = existing.Z;
                     f.Base = existing.Base;
+                    f.Born = existing.Born;
                 }
+                Placed(b, f, day);
                 _sitesFor = 0;
                 Pay(f.EntryFee, BrandsGame.EntryKey, f.Name, "the entry fee of " + b.Name + " at today's prices (" + index + ")");
                 Logger?.Info("Brands: signed with " + f.Name + " (" + f.Temper + ", ability " + f.Ability + ") for '" + b.Name + "' in " + f.District + ": entry fee " + f.EntryFee + ", royalty " + f.RoyaltyBp + " and levy " + f.LevyBp
@@ -373,6 +383,26 @@ namespace RealLifeOverhaul.Economy.Brands
                 _view?.Want(TabAgreements, "fr:" + f.Id);
                 Changed();
             });
+        }
+
+        // A shop that has just been placed: the game's market leaves it alone from today, and where the game's formula
+        // gives the building no customers for the type (a type whose customers the game counts another way) the member
+        // shops' own average of yesterday stands in.
+        private void Placed(Brand b, Franchise f, int day)
+        {
+            BrandsGame.Keep(f, b.Type, day);
+            if (f.Base > 0)
+            {
+                return;
+            }
+            int members = BrandRules.Members(_state, b, null);
+            long customers = 0;
+            for (int i = 0; i < _state.Members.Count; i++)
+            {
+                customers += _state.Members[i].BrandId == b.Id ? Math.Max(0, _state.Members[i].Customers) : 0;
+            }
+            f.Base = members > 0 ? (int)(customers / members) : 0;
+            Logger?.Info("Brands: the game's formula gives " + f.Place + " no customers for " + b.Type + "; the member shops' average of yesterday, " + f.Base + ", is used.");
         }
 
         // ---------------------------------------------------------------- keeping a franchisee to the standards

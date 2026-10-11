@@ -781,6 +781,7 @@ internal static partial class Program
         f.Place = "5th%20Avenue~12";
         f.GameName = "A shop; with | odd ^ marks";
         f.Hold = Hold.Opened;
+        f.Born = 12;
         f.X = -350;
         f.Z = 1200;
         f.HasSpot = true;
@@ -806,7 +807,7 @@ internal static partial class Program
               && bb.PushDistrict == Garment && bb.District(Midtown).Rec == 5123 && bb.District(Garment).Rec == 801, "the brand comes back with its recognition, its settings and its campaign");
         Franchise ff = back.Franchise(f.Id);
         Check(ff != null && ff.Place == "5th%20Avenue~12" && ff.GameName == "A shop  with   odd   marks" && ff.Hold == Hold.Opened && ff.X == -350 && ff.Z == 1200 && ff.HasSpot && ff.Health == -4000
-              && ff.Ask == Ask.Dispute && ff.Suit == 4 && ff.Exclusive && ff.RoyaltyBp == 800 && ff.LevyBp == 0 && ff.Seen == f.Seen && ff.True == f.True && ff.Term == f.Term,
+              && ff.Born == 12 && ff.Ask == Ask.Dispute && ff.Suit == 4 && ff.Exclusive && ff.RoyaltyBp == 800 && ff.LevyBp == 0 && ff.Seen == f.Seen && ff.True == f.True && ff.Term == f.Term,
             "the agreement comes back whole, and a name with the line's dividers in it could not break the line");
         Check(back.Members.Count == 3 && back.Applicants.Count == 1 && back.Applicants[0].Name == a.Name && back.Applicants[0].Capital == a.Capital && back.Taken.Count == 1 && back.Taken[0].Breach == 4
               && back.Taken[0].Chain == 2 && back.NextId == s.NextId && back.LastDay == 77 && back.Seed == 4242, "the members, the applicant, the shop under a chain and the header come back");
@@ -823,6 +824,9 @@ internal static partial class Program
         Check(BrandStore.Load(data, BrandStore.Key, out version) != null && BrandStore.Load(new Dictionary<string, string>(), BrandStore.Key, out version) == null && BrandStore.Load(null, BrandStore.Key, out version) == null,
             "a save made without the feature has no line, and that is no error");
         Check(BrandStore.Key == "reallife:economy_brands", "the save's key is the feature's own");
+        BrandsState old = BrandStore.Read("v=1^h:5|1|9|8^b:1|Kettle|type|Main~1^f:2|1|Harbour Lane Trading|0|60|d|p|g|1|0|0|0|150|1|61|60|15000|600|100|0", out version);
+        Check(old != null && old.Franchises.Count == 1 && old.Franchises[0].Born == -1 && old.Franchises[0].True == 6000 && old.Franchises[0].Seen == -1 && !old.Franchises[0].NoRenewal,
+            "an agreement written with fewer fields reads with the rest at their start");
     }
 
     // The balance the rules file writes down, worked from the rules themselves.

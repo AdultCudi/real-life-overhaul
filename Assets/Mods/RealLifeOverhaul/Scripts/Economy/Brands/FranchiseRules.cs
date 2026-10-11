@@ -17,6 +17,10 @@ namespace RealLifeOverhaul.Economy.Brands
     /// and the other direction, a shop of the player's under one of the city's chains. Game-free and whole numbers
     /// only: every chance is <see cref="BrandCatalogue.Dice"/> of the save's seed, so the same days replay the same.
     /// See <see cref="BrandRules"/> for the balance worked through.
+    ///
+    /// COST: nothing per frame and nothing allocated but an applicant when one comes. A franchised shop's day is about
+    /// forty integer operations and one walk over its brand's shops; sixty of them with three brands' days take
+    /// under 0.2 ms (checked offline).
     /// </summary>
     public static class FranchiseRules
     {

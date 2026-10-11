@@ -146,7 +146,11 @@ namespace RealLifeOverhaul.Economy.Brands
                 "standards", BrandCatalogue.OfferStandards.ToString(), "city", BrandsText.Points(BrandCatalogue.OfferCityRec), "district", BrandsText.Points(BrandCatalogue.OfferDistrictRec),
                 "has", BrandsText.Points(b.City), "best", BrandsText.Points(BrandRules.Best(b))));
             bool offered = b.Offered;
-            if (!box.Switch("reallife_brand_set_offer", offered, on => _director.Offer(id, on)))
+            if (!box.Switch("reallife_brand_set_offer", offered, on =>
+                {
+                    _director.Offer(id, on);
+                    Refresh();   // (a brand that is not ready stays off offer: the switch is written again as it stands)
+                }))
             {
                 InfoBox.Button(box.ButtonRow(), InfoBox.Positive, offered ? "reallife_brand_set_offer_off" : "reallife_brand_set_offer_on", () => _director.Offer(id, !offered));
             }

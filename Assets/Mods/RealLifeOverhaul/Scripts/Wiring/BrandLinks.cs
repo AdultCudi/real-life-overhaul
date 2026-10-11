@@ -31,6 +31,10 @@ namespace RealLifeOverhaul
         /// Read from the city's economy without a bridge, as every feature may: the cycle, a district's income and the
         /// price index (Economy/City/CityEconomy). Connected after the company and disconnected before it, so that the
         /// footfall answer it wrapped is put back as it was found.
+        ///
+        /// COST: nothing per frame and nothing allocated. An adapter runs when the feature that owns the bridge asks:
+        /// the footfall answer is a walk over the player's businesses each time a figure is written (once an hour for
+        /// a business with something asked for), the price answer one over the city's economy's list once a day.
         /// </summary>
         public static class BrandLinks
         {

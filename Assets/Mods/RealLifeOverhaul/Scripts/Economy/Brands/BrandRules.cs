@@ -8,6 +8,9 @@ namespace RealLifeOverhaul.Economy.Brands
     /// to a member shop's footfall, its campaigns and its scandals. Game-free and whole numbers only, so the same days
     /// always give the same history (checked by RealLifeOverhaul.Build/EconomyCheck/BrandChecks.cs).
     ///
+    /// COST: nothing per frame and nothing allocated. A brand's day is one walk over its shops for each district it
+    /// has a figure for (sixteen at most); a member shop's footfall is one walk over the franchised shops.
+    ///
     /// THE BALANCE, WORKED THROUGH (the figures of BrandCatalogue; a mid-game player; prices at 100, a steady economy)
     ///
     ///   A shop the player runs: takings of 6,000 a day, 1,500 of it profit after goods, wages and rent. Opening one
