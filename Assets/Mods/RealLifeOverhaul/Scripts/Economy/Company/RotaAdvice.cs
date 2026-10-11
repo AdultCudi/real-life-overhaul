@@ -75,6 +75,9 @@ namespace RealLifeOverhaul.Economy
         public bool Advised;            // hours were worked out; false where the business keeps the hours it has (see RotaShop)
         public long ProfitNow, ProfitStaffed, ProfitBest;
         public int HoursNow, HoursStaffed, HoursBest;
+        public bool Barred;             // hours that would pay were left out of the advice because the business may not open then (no late opening permit)...
+        public long ProfitFree;         // ...and this is what a week with them would come to, with all the staff it takes...
+        public int HoursFree;           // ...open for so many hours
         public int CustomersWeek;
         public readonly RotaPlan Plan = new RotaPlan();                 // the rota of the present staff for <see cref="Staffed"/>
         public readonly List<RotaRole> Roles = new List<RotaRole>(8);
@@ -98,7 +101,11 @@ namespace RealLifeOverhaul.Economy
     /// AN HOUR IS WORTH OPENING when the customers its best crew serves bring more than that crew's wages. A day's
     /// hours are advised as blocks: at most <see cref="RotaCatalogue.BlocksMost"/> of at least
     /// <see cref="RotaCatalogue.BlockLeast"/> hours, inside the day (the game's own hours never run past midnight),
-    /// and only if they bring more than the day's fee.
+    /// and only if they bring more than the day's fee. Hours the business may not open (no late opening permit) are
+    /// never advised; what they would add is worked out beside the advice.
+    ///
+    /// Cost: nothing unless asked. An advice is worked out in one go (<see cref="Advise"/>) or a few steps at a time
+    /// (<see cref="Begin"/> and <see cref="Step"/>), with the same result; nothing is allocated either way.
     /// </summary>
     public sealed class RotaAdvisor
     {
@@ -111,6 +118,17 @@ namespace RealLifeOverhaul.Economy
         private readonly bool[] _blocked = new bool[Cells];
         private readonly int[] _pre = new int[Hours + 1], _bad = new int[Hours + 1];
         private readonly int[] _firstValue = new int[Hours + 1], _firstFrom = new int[Hours + 1], _firstTo = new int[Hours + 1];
+        private readonly bool[] _free = new bool[Cells];      // the hours worth opening with no bar on any of them
+
+        // Where the working out of an advice stands, so that it can stop after any step and go on from there.
+        private const int StageHours = 0, StageFree = 1, StageBest = 2, StagePeople = 3, StageRota = 4, StageCut = 5, StageRotaAgain = 6, StageSums = 7, StageDone = 8;
+        private int _stage = StageDone;
+        private RotaShop _shop;
+        private RotaProblem _problem;
+        private RotaSolver _solver;
+        private RotaOutlook _into;
+        private short[] _present;
+        private bool[] _barred;
         private RotaShop _sorted;
         private int _sortedVersion;
 
@@ -672,54 +690,146 @@ namespace RealLifeOverhaul.Economy
         // ---------------------------------------------------------------- the whole advice
 
         /// <summary>
-        /// Everything the page shows for one business. <paramref name="present"/> is the rota it has now.
+        /// Everything the page shows for one business, in one go. <paramref name="present"/> is the rota it has now;
+        /// <paramref name="barred"/> (may be null) the hours it may not open, which are never advised.
         /// Afterwards <paramref name="problem"/> holds the worth of the hours of <see cref="RotaOutlook.Staffed"/>,
         /// and <see cref="RotaOutlook.Plan"/> the rota of the present staff for them.
         /// </summary>
-        public void Advise(RotaShop shop, RotaProblem problem, RotaSolver solver, short[] present, RotaOutlook into)
+        public void Advise(RotaShop shop, RotaProblem problem, RotaSolver solver, short[] present, bool[] barred, RotaOutlook into)
         {
-            Net(shop, into.Net, into.Crew);
-            into.Advised = shop.HasCustomers && !shop.FixedHours && shop.Margin > 0 && shop.Stations > 0;
-            into.CustomersWeek = 0;
+            Begin(shop, problem, solver, present, barred, into);
+            while (!Step(int.MaxValue))
+            {
+            }
+        }
+
+        /// <summary>
+        /// Begins the same advice, to be worked out a few steps at a time by <see cref="Step"/> (the director spreads
+        /// them over frames). The steps are the same in the same order, so the advice is the same. Nothing given
+        /// here may change until the last step is done.
+        /// </summary>
+        public void Begin(RotaShop shop, RotaProblem problem, RotaSolver solver, short[] present, bool[] barred, RotaOutlook into)
+        {
+            _shop = shop;
+            _problem = problem;
+            _solver = solver;
+            _present = present;
+            _barred = barred;
+            _into = into;
+            _stage = StageHours;
+        }
+
+        /// <summary>Does so many steps more: a step is one stage of the arithmetic, or one step of a rota. True when the advice is finished.</summary>
+        public bool Step(int steps)
+        {
+            while (steps-- > 0 && _stage != StageDone)
+            {
+                One();
+            }
+            return _stage == StageDone;
+        }
+
+        private void One()
+        {
+            RotaShop shop = _shop;
+            RotaOutlook into = _into;
+            switch (_stage)
+            {
+                case StageHours:
+                    Net(shop, into.Net, into.Crew);
+                    into.Advised = shop.HasCustomers && !shop.FixedHours && shop.Margin > 0 && shop.Stations > 0;
+                    into.CustomersWeek = 0;
+                    for (int cell = 0; cell < Cells; cell++)
+                    {
+                        into.CustomersWeek += shop.Customers[cell];
+                    }
+                    into.Barred = false;
+                    into.ProfitFree = 0;
+                    into.HoursFree = 0;
+                    if (into.Advised)
+                    {
+                        Blocks(into.Net, _barred, shop.DayFee, into.Best);
+                    }
+                    else
+                    {
+                        Array.Copy(shop.Open, into.Best, Cells);
+                    }
+                    _stage = into.Advised && _barred != null ? StageFree : StageBest;
+                    break;
+                case StageFree:
+                    // What the hours it may not open would add: the advice once more without the bar, if that opens any hour more.
+                    Blocks(into.Net, null, shop.DayFee, _free);
+                    for (int cell = 0; cell < Cells; cell++)
+                    {
+                        into.Barred |= _free[cell] != into.Best[cell];
+                    }
+                    if (into.Barred)
+                    {
+                        Grid(shop, _free, _problem);
+                        into.ProfitFree = Profit(shop, _problem, _free, null, true);
+                        into.HoursFree = Count(_free);
+                    }
+                    _stage = StageBest;
+                    break;
+                case StageBest:
+                    // With everybody the hours need.
+                    Grid(shop, into.Best, _problem);
+                    into.ProfitBest = Profit(shop, _problem, into.Best, null, true);
+                    _stage = StagePeople;
+                    break;
+                case StagePeople:
+                    Roles(shop, _problem, into.Roles);
+                    Missing(shop, into.Best, into.Missing);
+                    _solver.Start(_problem, into.Plan);
+                    _stage = StageRota;
+                    break;
+                case StageRota:
+                    _stage = _solver.Step(1) ? StageCut : StageRota;
+                    break;
+                case StageCut:
+                    // With the staff there are: an hour nobody can keep the smallest crew for is not opened, and the day's blocks are cut again without it.
+                    Array.Copy(into.Best, into.Staffed, Cells);
+                    bool cut = false;
+                    for (int cell = 0; into.Advised && cell < Cells; cell++)
+                    {
+                        bool uncrewed = into.Best[cell] && !Crewed(shop, cell, into.Plan.At);
+                        _blocked[cell] = uncrewed || (_barred != null && _barred[cell]);
+                        cut |= uncrewed;
+                    }
+                    if (cut)
+                    {
+                        Blocks(into.Net, _blocked, shop.DayFee, into.Staffed);
+                        Grid(shop, into.Staffed, _problem);
+                        _solver.Start(_problem, into.Plan);
+                    }
+                    _stage = cut ? StageRotaAgain : StageSums;
+                    break;
+                case StageRotaAgain:
+                    _stage = _solver.Step(1) ? StageSums : StageRotaAgain;
+                    break;
+                case StageSums:
+                    into.ProfitStaffed = Profit(shop, _problem, into.Staffed, into.Plan.At, false);
+                    into.ProfitNow = Profit(shop, _problem, shop.Open, _present, false);
+                    into.HoursNow = Count(shop.Open);
+                    into.HoursStaffed = Count(into.Staffed);
+                    into.HoursBest = Count(into.Best);
+                    _stage = StageDone;
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// The hours a business may not open without the mod's late opening permit: from
+        /// <see cref="CompanyCatalogue.LateHour"/> on, and before <see cref="CompanyCatalogue.EarlyHour"/>. A block
+        /// of hours that holds none of them is not late by <see cref="LicenceRules.IsLate"/>.
+        /// </summary>
+        public static void LateHours(bool[] barred)
+        {
             for (int cell = 0; cell < Cells; cell++)
             {
-                into.CustomersWeek += shop.Customers[cell];
+                int h = cell % Hours;
+                barred[cell] = h >= CompanyCatalogue.LateHour || h < CompanyCatalogue.EarlyHour;
             }
-            if (into.Advised)
-            {
-                Blocks(into.Net, null, shop.DayFee, into.Best);
-            }
-            else
-            {
-                Array.Copy(shop.Open, into.Best, Cells);
-            }
-
-            // With everybody the hours need.
-            Grid(shop, into.Best, problem);
-            into.ProfitBest = Profit(shop, problem, into.Best, null, true);
-            Roles(shop, problem, into.Roles);
-            Missing(shop, into.Best, into.Missing);
-
-            // With the staff there are: an hour nobody can keep the smallest crew for is not opened, and the day's blocks are cut again without it.
-            solver.Solve(problem, into.Plan);
-            Array.Copy(into.Best, into.Staffed, Cells);
-            bool cut = false;
-            for (int cell = 0; into.Advised && cell < Cells; cell++)
-            {
-                _blocked[cell] = into.Best[cell] && !Crewed(shop, cell, into.Plan.At);
-                cut |= _blocked[cell];
-            }
-            if (cut)
-            {
-                Blocks(into.Net, _blocked, shop.DayFee, into.Staffed);
-                Grid(shop, into.Staffed, problem);
-                solver.Solve(problem, into.Plan);
-            }
-            into.ProfitStaffed = Profit(shop, problem, into.Staffed, into.Plan.At, false);
-            into.ProfitNow = Profit(shop, problem, shop.Open, present, false);
-            into.HoursNow = Count(shop.Open);
-            into.HoursStaffed = Count(into.Staffed);
-            into.HoursBest = Count(into.Best);
         }
 
         /// <summary>True if the smallest crew stands in an hour: somebody at each service group, or at any work station where no group limits the customers.</summary>

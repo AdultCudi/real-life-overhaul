@@ -10,32 +10,21 @@ namespace RealLifeOverhaul.Economy
     {
         // ---------------------------------------------------------------- 5: improving
 
-        // Uncovered hours, the most valuable day and station first: each is covered if a move that loses nothing does it.
-        private bool Cover(int level)
+        // The uncovered hours of one day at one station (the driver takes them the most valuable first, and all of them a second
+        // time if anything was covered): each is covered if a move that loses nothing does it.
+        private bool CoverLane(int level, int i)
         {
-            bool ever = false;
-            for (int pass = 0; pass < 2; pass++)
+            int lane = _lanes[i], s = lane % _s, d = lane / _s;
+            uint need = _need[lane];
+            bool any = false;
+            for (int h = 0; need != 0 && !_p.Whole[s] && h < Hours && _steps > 0; h++)
             {
-                bool any = false;
-                for (int i = 0; i < Days * _s && _steps > 0; i++)
+                if (((need >> h) & 1u) != 0)
                 {
-                    int lane = _lanes[i], s = lane % _s, d = lane / _s;
-                    uint need = _need[lane];
-                    for (int h = 0; need != 0 && !_p.Whole[s] && h < Hours && _steps > 0; h++)
-                    {
-                        if (((need >> h) & 1u) != 0)
-                        {
-                            any |= CoverHour(level, d, h, s);
-                        }
-                    }
-                }
-                ever |= any;
-                if (!any)
-                {
-                    break;
+                    any |= CoverHour(level, d, h, s);
                 }
             }
-            return ever;
+            return any;
         }
 
         private bool CoverHour(int level, int d, int h, int s)
@@ -150,56 +139,53 @@ namespace RealLifeOverhaul.Economy
             return best;
         }
 
-        // Shift by shift: it goes to somebody else if that leaves fewer demands unmet, or the same and it costs less, or the same again and they do it better.
-        private void Hand(int level)
+        // One day at one station, shift by shift: a shift goes to somebody else if that leaves fewer demands unmet, or the same and it costs less, or the same again and they do it better.
+        private void HandLane(int level, int i)
         {
-            for (int i = 0; i < Days * _s && _steps > 0; i++)
+            int lane = _lanes[i], s = lane % _s, d = lane / _s;
+            if (_p.Whole[s])
             {
-                int lane = _lanes[i], s = lane % _s, d = lane / _s;
-                if (_p.Whole[s])
+                return;
+            }
+            for (int h = 0; h < Hours && _steps > 0;)
+            {
+                int holder = _at[(d * Hours + h) * _s + s];
+                if (holder < 0)
                 {
+                    h++;
                     continue;
                 }
-                for (int h = 0; h < Hours && _steps > 0;)
+                int x = h;
+                while (h < Hours && _at[(d * Hours + h) * _s + s] == holder)
                 {
-                    int holder = _at[(d * Hours + h) * _s + s];
-                    if (holder < 0)
+                    h++;
+                }
+                int y = h, best = -1, bestUnmet = 0, bestWage = 0;
+                int unmetHolder = Unmet(holder);
+                for (int k = _canStart[s]; k < _canStart[s + 1]; k++)
+                {
+                    int w = _canList[k];
+                    _steps--;
+                    if (w == holder || !CanTake(level, w, d, s, x, y))
                     {
-                        h++;
                         continue;
                     }
-                    int x = h;
-                    while (h < Hours && _at[(d * Hours + h) * _s + s] == holder)
+                    int before = unmetHolder + Unmet(w);
+                    Move(d, s, x, y, w);
+                    int unmet = Unmet(holder) + Unmet(w) - before;
+                    Move(d, s, x, y, holder);
+                    int wage = (_p.Worker[w].Wage - _p.Worker[holder].Wage) * (y - x);
+                    bool better = unmet < 0 || (unmet == 0 && (wage < 0 || (wage == 0 && _p.Can[w * _s + s] > _p.Can[holder * _s + s])));
+                    if (better && (best < 0 || unmet < bestUnmet || (unmet == bestUnmet && (wage < bestWage || (wage == bestWage && _p.Can[w * _s + s] > _p.Can[best * _s + s])))))
                     {
-                        h++;
+                        best = w;
+                        bestUnmet = unmet;
+                        bestWage = wage;
                     }
-                    int y = h, best = -1, bestUnmet = 0, bestWage = 0;
-                    int unmetHolder = Unmet(holder);
-                    for (int k = _canStart[s]; k < _canStart[s + 1]; k++)
-                    {
-                        int w = _canList[k];
-                        _steps--;
-                        if (w == holder || !CanTake(level, w, d, s, x, y))
-                        {
-                            continue;
-                        }
-                        int before = unmetHolder + Unmet(w);
-                        Move(d, s, x, y, w);
-                        int unmet = Unmet(holder) + Unmet(w) - before;
-                        Move(d, s, x, y, holder);
-                        int wage = (_p.Worker[w].Wage - _p.Worker[holder].Wage) * (y - x);
-                        bool better = unmet < 0 || (unmet == 0 && (wage < 0 || (wage == 0 && _p.Can[w * _s + s] > _p.Can[holder * _s + s])));
-                        if (better && (best < 0 || unmet < bestUnmet || (unmet == bestUnmet && (wage < bestWage || (wage == bestWage && _p.Can[w * _s + s] > _p.Can[best * _s + s])))))
-                        {
-                            best = w;
-                            bestUnmet = unmet;
-                            bestWage = wage;
-                        }
-                    }
-                    if (best >= 0)
-                    {
-                        Move(d, s, x, y, best);
-                    }
+                }
+                if (best >= 0)
+                {
+                    Move(d, s, x, y, best);
                 }
             }
         }

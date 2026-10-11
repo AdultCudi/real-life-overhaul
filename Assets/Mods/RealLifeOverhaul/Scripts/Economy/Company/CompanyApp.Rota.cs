@@ -48,7 +48,7 @@ namespace RealLifeOverhaul.Economy
             if (sheet == null)
             {
                 box.Title(at.Name);
-                box.Line(CompanyText.T(_director.RotaUnread(at.Place) ? "reallife_rota_cannot" : "reallife_rota_off"));
+                box.Line(CompanyText.T(_director.RotaUnread(at.Place) ? "reallife_rota_cannot" : _director.RotaWorking(at.Place) ? "reallife_rota_working" : "reallife_rota_off"));
                 BackButton(box);
                 return;
             }
@@ -134,7 +134,7 @@ namespace RealLifeOverhaul.Economy
             string refusal = CompanyDirector.RotaRefusal(sheet);
             if (at.Type == RotaType.Warehouse || sheet.Stations.Count == 0)
             {
-                box.Line(CompanyText.T(refusal));
+                box.Line(RotaRefused(refusal));
                 BackButton(box);
                 return;
             }
@@ -150,18 +150,27 @@ namespace RealLifeOverhaul.Economy
                 string note = !sheet.RequirementsMet ? CompanyText.T("reallife_rota_note_requirements")
                     : at.Shut ? CompanyText.T("reallife_rota_note_shut")
                     : !o.Advised ? CompanyText.T("reallife_rota_note_no_worth")
-                    : sheet.Late ? CompanyText.T("reallife_rota_note_late", "fee", CompanyText.Money(LicenceRules.Fee((int)LicenceKind.Late, _director.Index)), "days", CompanyCatalogue.LicenceTerm[(int)LicenceKind.Late].ToString())
                     : null;
                 if (note != null)
                 {
                     box.Line(note);
+                }
+                // The late opening permit, whenever it matters: the business opens late without one, or hours that would pay are kept out of the advice for want of one.
+                string fee = CompanyText.Money(LicenceRules.Fee((int)LicenceKind.Late, _director.Index)), term = CompanyCatalogue.LicenceTerm[(int)LicenceKind.Late].ToString();
+                if (sheet.Late)
+                {
+                    box.Line(CompanyText.T("reallife_rota_note_late", "fee", fee, "days", term));
+                }
+                if (o.Barred)
+                {
+                    box.Line(CompanyText.Fill("reallife_rota_note_permit", "fee", fee, "days", term, "hours", (o.HoursFree - o.HoursBest).ToString(), "amount", RotaMoney(o.ProfitFree - o.ProfitBest)));
                 }
             }
             else
             {
                 box.Line(CompanyText.T(at.Type == RotaType.Headquarters ? "reallife_rota_hq" : at.Type == RotaType.Work ? "reallife_rota_work" : "reallife_rota_no_customers"));
             }
-            box.Line(refusal != null ? CompanyText.T(refusal)
+            box.Line(refusal != null ? RotaRefused(refusal)
                 : CompanyText.T("reallife_rota_box_rota", "covered", sheet.Now.CoveredHours.ToString(), "wanted", sheet.Now.WantedHours.ToString(), "unmet", sheet.Now.UnmetCount.ToString()));
             var buttons = box.ButtonRow();
             if (refusal == null)
@@ -361,6 +370,12 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             return false;
+        }
+
+        // Why a rota cannot be filled, with the most the planner keeps where the sentence names it.
+        private static string RotaRefused(string key)
+        {
+            return CompanyText.T(key, "stations", RotaCatalogue.StationsMost.ToString(), "staff", RotaCatalogue.WorkersMost.ToString());
         }
 
         // Hundredths as the game writes money.
