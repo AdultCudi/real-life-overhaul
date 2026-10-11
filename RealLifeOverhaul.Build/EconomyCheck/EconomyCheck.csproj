@@ -3,7 +3,8 @@
   <!-- Checks the economy's game-free parts outside the game: the credit rating's arithmetic, the lending terms and the
        phone's fee, the credit file's cap and folding, its line in the save across versions, how the game's loans
        are told apart, and (Checks2.cs) the credit products, what happens when payments are missed, consolidation,
-       the lender of last resort and the ways out of debt. Compiles the mod's own files, so it checks exactly what ships.
+       the lender of last resort and the ways out of debt, and (VenturesChecks.cs) investors, the pitch, deals and the
+       stock market. Compiles the mod's own files, so it checks exactly what ships.
        Run: dotnet run -c Release (from this folder). Exit code 0 = all checks passed. -->
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -28,6 +29,12 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Products\LoanHolds.cs" Link="Mod\LoanHolds.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Debt\Shark.cs" Link="Mod\Shark.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Debt\Relief.cs" Link="Mod\Relief.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\VenturesCatalogue.cs" Link="Mod\VenturesCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\VenturesModel.cs" Link="Mod\VenturesModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\Cast.cs" Link="Mod\Cast.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\Deals.cs" Link="Mod\Deals.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\Market.cs" Link="Mod\Market.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\VenturesStore.cs" Link="Mod\VenturesStore.cs" />
   </ItemGroup>
 
 </Project>
