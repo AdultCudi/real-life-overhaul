@@ -5287,6 +5287,11 @@ Navigation/       (namespace RealLifeOverhaul.Nav: "Navigation" is a type of the
   NavRouteLine    a line as one ribbon of the interface (a Graphic), made when the route changes
   NavMarks        the places that matter, read from the game's markers and from Core/MapPlaces
   NavCityMap      the route on the game's city map, and the double click that sets a destination
+  NavBaseRules    game-free: the city under the roads (buildings and water): a place on the picture and back, a
+                  building's outline, the water grid and its settling, the drawing, the file the measured city is kept in
+  NavBaseGame     the only place of it that reads the game: a building's outline, one look down for water, the palette
+  NavBase         makes that picture once per city load: from the mod's folder, or by measuring the city in slices
+  NavDirector.Base  when it is made and shown, its two checks and its three tests
   NavBridges      what it asks of the rest of the mod (Wiring/NavLinks answers); NavText, the feature's words
   NavDirector     the one component: what shows, the destination, the search, following the route, the tests
 ```
@@ -5465,6 +5470,37 @@ markers read at 46 units; that the game's phone object is active whenever its HU
 when it is not); the panel's place beside the column on a narrow screen; that a double click on the map reaches
 this code and not only the map's drag; the names streets are given; how far the walking line lies from the
 pavement; every time quoted from outside the game.
+
+### The city under the roads (`NavBase`)
+
+The option "Buildings and water on the minimap" (on by default; off, the minimap is what it was: roads, route,
+markers, and nothing of this is made or kept).
+
+- **The game has no map picture.** Its city map is the city itself under a camera: `CityMap.Toggle` sets the main
+  camera's culling mask and switches to the map's Cinemachine camera (`CityMap.cs` 221 to 284), `CityMapCam` moves
+  that camera, and each building is drawn by its simple `lodVersion` mesh (`CityBuildingController.ToggleLodMode`,
+  230 to 244). No texture, sprite or render texture of the city exists in the game's code. So the base is drawn.
+- **Buildings**: `CityManager.cityBuildingControllers`. An outline is the convex outline, seen from above, of the
+  `lodVersion` renderer's box: the mesh's own box turned as the building is, or the engine's upright box when the
+  renderer is part of a static batch (its mesh is then the whole batch's); all the building's renderers if it has
+  no `lodVersion`.
+- **Water**: the game has no water object, layer or list (Leisure's fishing found the same). The city is asked on a
+  grid of 8 m squares, one look straight down each (`Physics.Raycast`), by the fishing rule: nothing there, or
+  something more than 0.8 m below the nearest road that is neither road, building nor walkable (the navigation
+  mesh), is open. Water is the open squares that reach the picture's edge without crossing ground, so a courtyard
+  or a lawn stays ground. A square within 8 m of a lane point or inside a building is ground without asking.
+- **Colours**: the game's interface palette (`GlobalReferences.colors`): buildings the roads' `lightGrey` at a third
+  of their strength, water `darkBlue`. The game's map has no flat colours of its own to read.
+- **The picture**: at most 2048 pixels on its long side, RGBA32, no smaller copies: 2048 x 1154 and 9.0 MB on the
+  graphics card for the game's city (3.6 km by 2 km), 1.77 m a pixel. It covers the road picture's piece of the
+  world from the same origin: pixel = (world - origin) x pixels a metre. One `RawImage` under the roads shows it,
+  as large and turned as the roads' square; when the player has moved its window is written (four divisions).
+- **Cost**: measuring takes 0.8 ms of a frame at most, for some seconds, once per version of the game; the result
+  (outlines and grid, about 150 KB) is kept in `RealLifeOverhaul/minimap_base_<build>.bin` beside the saves. Every
+  load after that: one read, one drawing on a pool thread, one upload.
+- **Not seen running**: whether every piece of ground the city stands on has something solid under it far from
+  the player, and what the palette's dark blue looks like on the panel. The tests "minimap, buildings and water
+  alone" and "minimap, mark three buildings" are for judging both, and the two `Minimap check` lines say what was made.
 
 ## Economy: credit rating, lending and the Finance app
 

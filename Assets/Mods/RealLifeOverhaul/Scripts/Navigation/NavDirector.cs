@@ -34,9 +34,12 @@ namespace RealLifeOverhaul.Nav
     ///   every two seconds     the places are read again
     /// With both options off nothing is built and the timer returns at once.
     ///
+    ///   while the city under the roads is being made (NavDirector.Base.cs, NavBase): one step of it a frame, 0.8 ms
+    ///                    at most; once it is made, one test a frame
+    ///
     /// A fault anywhere switches the feature off for the session with one line, and takes its objects off the HUD.
     /// </summary>
-    public sealed class NavDirector : MonoBehaviour
+    public sealed partial class NavDirector : MonoBehaviour
     {
         private const float Tick = 0.25f;
         private const float MarksEvery = 2f;
@@ -137,6 +140,7 @@ namespace RealLifeOverhaul.Nav
         {
             GlobalEvents.onCityMapToggle -= _onMap;
             Remove();
+            _base.Drop();
             _graph.Dispose();
             NavMarks.Reset();
             if (Instance == this)
@@ -162,6 +166,10 @@ namespace RealLifeOverhaul.Nav
                 if (_phase == Phase.Searching)
                 {
                     Search();
+                }
+                if (_base.Busy)
+                {
+                    _base.Step(SaveGameManager.Current != null && !LoadScene.isLoading);
                 }
                 if (_showing && Settings.Minimap)
                 {
@@ -254,6 +262,7 @@ namespace RealLifeOverhaul.Nav
         {
             bool wantMap = Settings.Minimap;
             bool wantGps = Settings.Gps && !_voogle;
+            BaseWanted(wantMap);
             if (!wantMap && !wantGps)
             {
                 if (_hud != null || _map != null || _hasGoal)
@@ -287,6 +296,7 @@ namespace RealLifeOverhaul.Nav
             {
                 _hud = null;   // the game rebuilt its HUD: the copy went with it
                 _pictureGiven = false;
+                _baseGiven = false;
             }
             if (_hud == null && !_hudGaveUp && _graph.Ready)
             {
@@ -307,6 +317,7 @@ namespace RealLifeOverhaul.Nav
                 _pictureGiven = true;
                 _hud.SetPicture(_graph.Picture);
             }
+            BaseShown(now);
             if (wantGps && _graph.Ready)
             {
                 Guide(now, outdoors);
@@ -996,6 +1007,8 @@ namespace RealLifeOverhaul.Nav
                 _map = null;
             }
             _pictureGiven = false;
+            _baseGiven = false;
+            _aloneUntil = 0f;
             _hudSaid = false;
         }
 

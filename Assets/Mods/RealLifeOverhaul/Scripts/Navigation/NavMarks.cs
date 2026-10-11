@@ -39,6 +39,9 @@ namespace RealLifeOverhaul.Nav
 
         public static readonly List<NavMark> All = new List<NavMark>(128);
 
+        /// <summary>Marks a test has put out for a while (the director's "mark three buildings"); empty otherwise.</summary>
+        public static readonly List<NavMark> Trial = new List<NavMark>(3);
+
         private static FieldInfo _blob, _icon, _iconImage, _words;
         private static bool _looked, _missing;
 
@@ -48,6 +51,7 @@ namespace RealLifeOverhaul.Nav
         public static void Reset()
         {
             All.Clear();
+            Trial.Clear();
             Blob = null;
             _looked = false;
             _missing = false;
@@ -184,6 +188,10 @@ namespace RealLifeOverhaul.Nav
                         Add(places[i].Position, kind.Icon, colour);
                     }
                 }
+            }
+            for (int i = 0; i < Trial.Count; i++)
+            {
+                All.Insert(i, Trial[i]);   // first, so that a full view cannot crowd them out
             }
             NavBridges.MoreMarks?.Invoke(All);   // what moves (Wiring fills it in): a called taxi
         }

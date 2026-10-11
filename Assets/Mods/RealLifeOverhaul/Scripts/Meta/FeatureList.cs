@@ -534,7 +534,7 @@ namespace RealLifeOverhaul.Meta
             Features.Add("navigation", "reallife_meta_title_nav")
                 .Group("reallife_nav_header")
                 .About("reallife_guide_nav_about").Help("reallife_guide_nav")
-                .Owns(Settings.MinimapId, Settings.GpsId, Settings.MinimapRotateId, Settings.MinimapSizeId, Settings.MinimapZoomId)
+                .Owns(Settings.MinimapId, Settings.GpsId, Settings.MinimapRotateId, Settings.MinimapSizeId, Settings.MinimapZoomId, Settings.MinimapBaseId)
                 .Objects(Nav.NavHud.PanelName, Nav.NavCityMap.ObjectName)
                 .Fact("nav_arrive_foot", () => Nav.NavTracker.ArriveOnFoot.ToString("F0", CultureInfo.InvariantCulture))
                 .Fact("nav_arrive_car", () => Nav.NavTracker.ArriveDriving.ToString("F0", CultureInfo.InvariantCulture))
