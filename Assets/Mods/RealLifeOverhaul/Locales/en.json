@@ -7794,5 +7794,8 @@
   "reallife_econ_factor_owed": "What you owe",
   "reallife_econ_factor_length": "Length of credit history",
   "reallife_econ_factor_legal": "Legal and public record",
-  "reallife_econ_factor_applications": "Recent applications"
+  "reallife_econ_factor_applications": "Recent applications",
+  "reallife_econ_account_loans": "Bank loans",
+  "reallife_transaction_loan_fee": "Loan arrangement fee: {businessName}",
+  "reallife_transaction_loan_fee_label": "Loan arrangement fee"
 }
