@@ -9,6 +9,7 @@ New
 - A test tool under Troubleshooting says what is blocking you where you stand.
 - Bank apps: each of the city's banks has its own app with your account, loans, card, offers and rating.
 - Contacts: real faces for people and logos for services, all from the game, and a search box.
+- Police stations are furnished with the game's own desks, computers, lockers, plants and lamps.
 
 Fixed
 - An unseen parked car could block the pavement while the "far districts" performance option was on.
