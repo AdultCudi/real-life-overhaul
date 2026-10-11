@@ -42,7 +42,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                AddIcon();
+                ContactPictures.Add(ContactId);   // the game's own logo shapes (Phone/Contacts)
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_jobs_desc", null, false, true);
                 var dialogType = (CallDialogType)ModEnumHash.GetSafeHash("reallife_jobs_calldialogtype");
                 contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
@@ -68,28 +68,6 @@ namespace RealLifeOverhaul
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash("reallife_jobs_calldialogtype");
             CallDialogFactory.RegisterDialog(dialogType, () => new JobLineDialog());
             InstanceBehavior<UI.UIs>.Instance.playerHUD.dialogUI.ShowDialog(dialogType, NavigationBlocker.SpecialEmployeeDialog);
-        }
-
-        // A plain coloured disc with a white middle, like the mod's other contacts; the game looks icons up by sprite name == contact id.
-        private static void AddIcon()
-        {
-            var references = InstanceBehavior<GlobalReferences>.Instance;
-            if (references == null || references.contactIcons == null)
-            {
-                return;
-            }
-            foreach (Sprite existing in references.contactIcons)
-            {
-                if (existing != null && existing.name == ContactId)
-                {
-                    return;
-                }
-            }
-            Sprite[] old = references.contactIcons;
-            var icons = new Sprite[old.Length + 1];
-            old.CopyTo(icons, 0);
-            icons[old.Length] = Icon;
-            references.contactIcons = icons;
         }
 
         private static Sprite MakeIcon()

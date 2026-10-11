@@ -145,6 +145,8 @@ namespace RealLifeOverhaul
                     v => Settings.SolidStreets = v)
                 .AddToggle(Settings.PhoneContactsId, "reallife_phone_contacts", Settings.PhoneContacts,
                     v => Settings.PhoneContacts = v)
+                .AddButton("reallife_contacts_test_pictures", ContactPictures.TestReport)
+                .AddButton("reallife_contacts_test_redraw", ContactPictures.TestRedraw)
                 .AddToggle(Settings.PhoneSkinId, "reallife_phone_skin", Settings.PhoneSkin,
                     v => Settings.PhoneSkin = v)
                 .AddButton("reallife_test_event", () => LifeEvents.Instance?.TriggerEventNow())
@@ -854,6 +856,8 @@ namespace RealLifeOverhaul
             Jaywalker.Logger = context.Logger;
             PlayerKnockdown.Logger = context.Logger;
             PhoneContacts.Logger = context.Logger;
+            ContactPictures.Logger = context.Logger;
+            ContactSearch.Logger = context.Logger;
             CityLifeDirector.Logger = context.Logger;
             ClipLibrary.Logger = context.Logger;
             ClipLibrary.Load(context);   // the mod's own animation clips, read in the background

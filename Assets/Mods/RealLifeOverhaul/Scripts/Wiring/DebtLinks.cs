@@ -23,7 +23,7 @@ namespace RealLifeOverhaul
         ///                  button, so nobody walks up: the consequences are applied and said
         ///   InView         whether the camera looks at a point from near (People/StreetSpots), so a vehicle is never taken in sight
         ///   KerbSpot       a free stretch of kerb for the test tools' car, found the way the driving school finds one
-        ///   ContactIcon    a contact's picture, drawn the way the mod's other contacts are (Transport's PhoneIcons)
+        ///   ContactIcon    a contact's picture, from the game's own assets, as every contact of the mod's (Phone/Contacts/ContactPictures)
         ///
         /// A business damaged by the private lender is a repair bill and nothing else: the business-pressure feature
         /// has no public way to raise an incident from outside (its issues are dealt from its own deck).
@@ -32,7 +32,6 @@ namespace RealLifeOverhaul
         {
             private const float HalfWidth = 1.05f, HalfLength = 2.7f;   // the test car's footprint, as the driving school's
 
-            private static readonly Dictionary<string, Sprite> Icons = new Dictionary<string, Sprite>(3);   // kept for the session: the game looks a contact's picture up by name
             private static readonly List<Waypoint> Route = new List<Waypoint>(24);
 
             internal static void Connect()
@@ -88,13 +87,7 @@ namespace RealLifeOverhaul
             {
                 try
                 {
-                    Sprite kept;
-                    Icons.TryGetValue(id, out kept);
-                    PhoneIcons.Add(id, colour, ref kept);
-                    if (kept != null)
-                    {
-                        Icons[id] = kept;
-                    }
+                    ContactPictures.Add(id);   // the catalogue's picture (Phone/Contacts): the colour asked for is the old disc's, not used
                 }
                 catch (Exception e)
                 {

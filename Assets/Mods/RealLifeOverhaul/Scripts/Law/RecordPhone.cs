@@ -21,8 +21,6 @@ namespace RealLifeOverhaul.Law
     {
         public const string ContactId = "reallife-records";
 
-        private static Sprite _icon;   // kept for the session: the game caches contact icons by sprite name
-
         public static void Setup(Sprite badge)
         {
             if (!Settings.PhoneContacts)
@@ -31,7 +29,7 @@ namespace RealLifeOverhaul.Law
             }
             try
             {
-                AddIcon(badge);
+                ContactPictures.Add(ContactId);   // the game's own logo shapes or portrait camera (Phone/Contacts)
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_records_desc", null, false, true);
                 var dialogType = (CallDialogType)ModEnumHash.GetSafeHash("reallife_records_calldialogtype");
                 contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
@@ -48,71 +46,6 @@ namespace RealLifeOverhaul.Law
             }
         }
 
-        // A police-blue disc with the badge star on it; the game looks icons up by sprite name == contact id.
-        private static void AddIcon(Sprite badge)
-        {
-            var references = InstanceBehavior<GlobalReferences>.Instance;
-            if (references == null || references.contactIcons == null)
-            {
-                return;
-            }
-            foreach (Sprite existing in references.contactIcons)
-            {
-                if (existing != null && existing.name == ContactId)
-                {
-                    return;
-                }
-            }
-            if (_icon == null)
-            {
-                _icon = MakeIcon(badge);
-            }
-            Sprite[] old = references.contactIcons;
-            var icons = new Sprite[old.Length + 1];
-            old.CopyTo(icons, 0);
-            icons[old.Length] = _icon;
-            references.contactIcons = icons;
-        }
-
-        private static Sprite MakeIcon(Sprite badge)
-        {
-            const int size = 96;
-            var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-            var pixels = new Color[size * size];
-            var colour = new Color(0.10f, 0.28f, 0.78f);
-            Texture2D star = badge != null ? badge.texture : null;
-            float radius = size / 2f - 2f;
-            for (int y = 0; y < size; y++)
-            {
-                for (int x = 0; x < size; x++)
-                {
-                    float distance = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(size / 2f, size / 2f));
-                    Color pixel = colour;
-                    if (star != null)
-                    {
-                        // The badge, two thirds the size of the disc, in the middle of it.
-                        float u = (x - size * 0.5f) / (size * 0.66f) + 0.5f;
-                        float v = (y - size * 0.5f) / (size * 0.66f) + 0.5f;
-                        if (u >= 0f && u < 1f && v >= 0f && v < 1f)
-                        {
-                            float white = star.GetPixel((int)(u * star.width), (int)(v * star.height)).a;
-                            pixel = Color.Lerp(colour, Color.white, white);
-                        }
-                    }
-                    else if (distance < radius * 0.42f)
-                    {
-                        pixel = Color.white;
-                    }
-                    pixel.a = Mathf.Clamp01(radius - distance);
-                    pixels[y * size + x] = pixel;
-                }
-            }
-            texture.SetPixels(pixels);
-            texture.Apply();
-            Sprite sprite = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
-            sprite.name = ContactId;
-            return sprite;
-        }
     }
 
     public class RecordsDialog : Dialog

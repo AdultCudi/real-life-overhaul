@@ -20,7 +20,6 @@ namespace RealLifeOverhaul
         public const string ContactId = "reallife-taxi";
         private const string DialogTypeName = "reallife_taxi_calldialogtype";
 
-        private static Sprite _icon;
         private static Contact _contact;
 
         /// <summary>True once the contact is on the phone in this city.</summary>
@@ -35,7 +34,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                PhoneIcons.Add(ContactId, new Color(0.96f, 0.76f, 0.08f), ref _icon);
+                ContactPictures.Add(ContactId);   // the game's own logo shapes (Phone/Contacts)
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_taxi_desc", null, false, true);
                 contact.callDialogTypeOverride = Register();   // not saved by the game, so set on every load
                 if (contact.messagesQueue == null || contact.messagesQueue.Count == 0)

@@ -35,7 +35,6 @@ namespace RealLifeOverhaul
         };
 
         // Kept alive for the whole session: the game caches contact icons by sprite name.
-        private static readonly List<Sprite> Icons = new List<Sprite>();
 
         /// <summary>Who is ringing the player right now (their index), or -1. Read by the dialog the call opens.</summary>
         public static int Incoming = -1;
@@ -78,19 +77,19 @@ namespace RealLifeOverhaul
                         {
                             continue;
                         }
-                        AddIcon(IdOf(person), Tint(person.Seed));
+                        ContactPictures.Person(IdOf(person), person.Female, person.Age, person.Seed);   // their own face, as SocialCast.Dress builds them
                         if (person.Met)
                         {
                             Add(person, person.Origin > SocialOrigin.OldFriend);
                         }
                     }
-                    AddIcon(PeopleId, new Color(0.96f, 0.52f, 0.42f));
+                    ContactPictures.Add(PeopleId);
                     Page(PeopleId, "reallife_social_people_desc", "reallife_people_calldialogtype", () => new PeopleDialog(), "reallife_social_people_welcome");
                     On = true;
                 }
                 if (Settings.SocialNewspaper)
                 {
-                    AddIcon(LedgerId, new Color(0.25f, 0.27f, 0.32f));
+                    ContactPictures.Add(LedgerId);
                     Page(LedgerId, "reallife_social_ledger_desc", "reallife_ledger_calldialogtype", () => new LedgerDialog(), "reallife_social_ledger_welcome");
                 }
                 var scene = (CallDialogType)ModEnumHash.GetSafeHash("reallife_socialscene_calldialogtype");
@@ -137,7 +136,7 @@ namespace RealLifeOverhaul
                 {
                     return;
                 }
-                AddIcon(LedgerId, new Color(0.25f, 0.27f, 0.32f));
+                ContactPictures.Add(LedgerId);
                 Contact ledger = Page(LedgerId, "reallife_social_ledger_desc", "reallife_ledger_calldialogtype", () => new LedgerDialog(), null);
                 for (int i = 0; i < News.Today.Count; i++)
                 {
@@ -202,65 +201,38 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A colour of their own for each person, steady for the save: from the seed of their look.
-        private static Color Tint(int seed)
+        /// <summary>The icon of a meeting place on the city map: a round marker as the map's own are (the People page's contact picture is the game's logo shape, Phone/Contacts).</summary>
+        public static Sprite Badge
         {
-            float hue = (seed & 0xFFFF) / 65535f;
-            return Color.HSVToRGB(hue, 0.55f, 0.82f);
-        }
-
-        /// <summary>The social life's badge: the People page's picture, and the icon of a meeting place on the city map.</summary>
-        public static Sprite Badge => Disc(PeopleId, new Color(0.96f, 0.52f, 0.42f));
-
-        // A plain coloured disc with a white middle, like the mod's other contacts; the game looks icons up by sprite name == contact id.
-        private static void AddIcon(string id, Color colour)
-        {
-            var references = InstanceBehavior<GlobalReferences>.Instance;
-            if (references == null || references.contactIcons == null)
+            get
             {
-                return;
-            }
-            foreach (Sprite existing in references.contactIcons)
-            {
-                if (existing != null && existing.name == id)
+                if (_badge == null)
                 {
-                    return;
-                }
-            }
-            Sprite sprite = Disc(id, colour);
-            Sprite[] old = references.contactIcons;
-            var icons = new Sprite[old.Length + 1];
-            old.CopyTo(icons, 0);
-            icons[old.Length] = sprite;
-            references.contactIcons = icons;
-        }
-
-        private static Sprite Disc(string id, Color colour)
-        {
-            Sprite sprite = Icons.Find(s => s != null && s.name == id);
-            if (sprite == null)
-            {
-                const int size = 96;
-                var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-                var pixels = new Color[size * size];
-                float radius = size / 2f - 2f;
-                for (int y = 0; y < size; y++)
-                {
-                    for (int x = 0; x < size; x++)
+                    const int size = 96;
+                    var colour = new Color(0.96f, 0.52f, 0.42f);
+                    var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+                    var pixels = new Color[size * size];
+                    float radius = size / 2f - 2f;
+                    for (int y = 0; y < size; y++)
                     {
-                        float distance = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(size / 2f, size / 2f));
-                        Color pixel = distance < radius * 0.42f ? Color.white : colour;
-                        pixel.a = Mathf.Clamp01(radius - distance);
-                        pixels[y * size + x] = pixel;
+                        for (int x = 0; x < size; x++)
+                        {
+                            float distance = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(size / 2f, size / 2f));
+                            Color pixel = distance < radius * 0.42f ? Color.white : colour;
+                            pixel.a = Mathf.Clamp01(radius - distance);
+                            pixels[y * size + x] = pixel;
+                        }
                     }
+                    texture.SetPixels(pixels);
+                    texture.Apply();
+                    _badge = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
+                    _badge.name = "RealLife meeting place";   // (not a contact's id: the Contacts app must never take it for a picture)
                 }
-                texture.SetPixels(pixels);
-                texture.Apply();
-                sprite = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
-                sprite.name = id;
-                Icons.Add(sprite);
+                return _badge;
             }
-            return sprite;
         }
+
+        private static Sprite _badge;   // kept for the session
+
     }
 }

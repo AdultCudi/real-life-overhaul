@@ -545,7 +545,6 @@ namespace RealLifeOverhaul
     {
         public const string ContactId = "reallife-transit";
 
-        private static Sprite _icon;
         private static Contact _contact;
 
         public static bool Ready => _contact != null;
@@ -559,7 +558,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                PhoneIcons.Add(ContactId, new Color(0.10f, 0.32f, 0.62f), ref _icon);
+                ContactPictures.Add(ContactId);   // the game's own logo shapes (Phone/Contacts)
                 Contact contact = Contact.GetContact(ContactId, ContactCategoryName.General, "reallife_contact_transit_desc", null, false, true);
                 var dialogType = (Dialogs.CallDialogType)ModEnumHash.GetSafeHash("reallife_transit_calldialogtype");
                 contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
@@ -624,49 +623,4 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>A contact's picture: a plain coloured disc with a white middle, like the mod's other contacts. The game looks icons up by sprite name == contact id.</summary>
-    public static class PhoneIcons
-    {
-        public static void Add(string id, Color colour, ref Sprite kept)
-        {
-            var references = InstanceBehavior<GlobalReferences>.Instance;
-            if (references == null || references.contactIcons == null)
-            {
-                return;
-            }
-            foreach (Sprite existing in references.contactIcons)
-            {
-                if (existing != null && existing.name == id)
-                {
-                    return;
-                }
-            }
-            if (kept == null)
-            {
-                const int size = 96;
-                var texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
-                var pixels = new Color[size * size];
-                float radius = size / 2f - 2f;
-                for (int y = 0; y < size; y++)
-                {
-                    for (int x = 0; x < size; x++)
-                    {
-                        float distance = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(size / 2f, size / 2f));
-                        Color pixel = distance < radius * 0.42f ? Color.white : colour;
-                        pixel.a = Mathf.Clamp01(radius - distance);
-                        pixels[y * size + x] = pixel;
-                    }
-                }
-                texture.SetPixels(pixels);
-                texture.Apply();
-                kept = Sprite.Create(texture, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
-                kept.name = id;
-            }
-            Sprite[] old = references.contactIcons;
-            var icons = new Sprite[old.Length + 1];
-            old.CopyTo(icons, 0);
-            icons[old.Length] = kept;
-            references.contactIcons = icons;
-        }
-    }
 }

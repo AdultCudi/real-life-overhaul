@@ -293,6 +293,12 @@ namespace RealLifeOverhaul.Family
         }
 
         // One mesh merge. The face, hair and build come from the seed with day clothes; dressing up changes the clothes only.
+        /// <summary>The partner's age, from their seed: the same in the city and on their contact's picture.</summary>
+        internal static int PartnerAge(int seed)
+        {
+            return 24 + (seed & 0x7fffffff) % 14;
+        }
+
         private static void Dress(CityPerson person, FamilyLook look)
         {
             AppearanceSetter appearance = person.Character.appearanceSetter;
@@ -307,7 +313,7 @@ namespace RealLifeOverhaul.Family
                 case FamilyLook.PartnerFormal:
                     seed = Partner.Seed != 0 ? Partner.Seed : 1;
                     female = Partner.Female;
-                    age = 24 + (seed & 0x7fffffff) % 14;
+                    age = PartnerAge(seed);
                     formal = look == FamilyLook.PartnerFormal;
                     break;
                 case FamilyLook.Mother:

@@ -58,17 +58,17 @@ namespace RealLifeOverhaul.Family
             try
             {
                 FamilyContact = Register(FamilyId, "reallife_contact_family_desc", "reallife_family_calldialogtype", () => new FamilyPageDialog(),
-                    "reallife_text_family_welcome", new Color(0.93f, 0.42f, 0.55f));
+                    "reallife_text_family_welcome");
                 if (!Partner.UsesSocial)
                 {
                     PartnerContact = Register(PartnerId, "reallife_contact_partner_desc", "reallife_partner_calldialogtype", () => new PartnerDialog(),
-                        "reallife_text_partner_welcome", new Color(0.86f, 0.22f, 0.30f));
+                        "reallife_text_partner_welcome");
                 }
                 else if (SaveGameManager.Current != null && SaveGameManager.Current.Contacts.Exists(c => c != null && c.id == PartnerId))
                 {
                     // The stand-in contact of an earlier session is not made again, but it still answers and says where the partner is now.
                     Register(PartnerId, "reallife_contact_partner_desc", "reallife_partner_calldialogtype", () => new PartnerDialog(),
-                        "reallife_text_partner_welcome", new Color(0.86f, 0.22f, 0.30f));
+                        "reallife_text_partner_welcome");
                 }
                 SetupInLaws();
             }
@@ -89,7 +89,7 @@ namespace RealLifeOverhaul.Family
             try
             {
                 InLawContact = Register(InLawId, "reallife_contact_inlaws_desc", "reallife_inlaws_calldialogtype", () => new InLawDialog(),
-                    "reallife_text_inlaws_welcome", new Color(0.36f, 0.55f, 0.80f));
+                    "reallife_text_inlaws_welcome");
             }
             catch (Exception e)
             {
@@ -97,9 +97,21 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        private static Contact Register(string id, string descriptionKey, string dialogTypeName, Func<Dialog> dialog, string welcomeKey, Color colour)
+        // A contact's picture from the game's own assets (Phone/Contacts): the partner's own face, as the family dresses them in
+        // the city (FamilyCast.Dress); the family and the in-laws from the contact catalogue.
+        private static void Picture(string id)
         {
-            AddIcon(id, colour);
+            if (id == PartnerId && Partner.Seed != 0)
+            {
+                ContactPictures.Person(PartnerId, Partner.Female, FamilyCast.PartnerAge(Partner.Seed), Partner.Seed);
+                return;
+            }
+            ContactPictures.Add(id);
+        }
+
+        private static Contact Register(string id, string descriptionKey, string dialogTypeName, Func<Dialog> dialog, string welcomeKey)
+        {
+            Picture(id);
             Contact contact = Contact.GetContact(id, ContactCategoryName.General, descriptionKey, null, false, true);
             var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(dialogTypeName);
             contact.callDialogTypeOverride = dialogType;   // not saved by the game, so set on every load
@@ -109,28 +121,6 @@ namespace RealLifeOverhaul.Family
                 contact.SendMessage(new TextMessage(welcomeKey), notify: false);
             }
             return contact;
-        }
-
-        // A plain coloured disc with a white middle, like the mod's other contacts; the game looks icons up by sprite name == contact id.
-        private static void AddIcon(string id, Color colour)
-        {
-            var references = InstanceBehavior<GlobalReferences>.Instance;
-            if (references == null || references.contactIcons == null)
-            {
-                return;
-            }
-            foreach (Sprite existing in references.contactIcons)
-            {
-                if (existing != null && existing.name == id)
-                {
-                    return;
-                }
-            }
-            Sprite[] old = references.contactIcons;
-            var icons = new Sprite[old.Length + 1];
-            old.CopyTo(icons, 0);
-            icons[old.Length] = Disc(id, colour);
-            references.contactIcons = icons;
         }
 
         private static Sprite Disc(string id, Color colour)

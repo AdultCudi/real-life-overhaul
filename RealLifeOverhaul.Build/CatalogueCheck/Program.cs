@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 namespace RealLifeOverhaul
 {
-    internal static class Program
+    internal static partial class Program
     {
         private static int _failures;
 
@@ -263,6 +263,7 @@ namespace RealLifeOverhaul
             if (smallest < 70) Fail("a common situation has fewer than 70 events (about what 10 hours of play can show)");
 
             CheckCrimes(src, locale);
+            CheckContacts(src);
             GigCheck.Run(Fail, locale);
             SavedShiftCheck.Run(Fail, locale, src);
             OptionsCheck.Run(Fail, locale, src);
