@@ -244,7 +244,7 @@ namespace RealLifeOverhaul.Meta
                     "crash_consequences", "ragdolls").Opt("player_knockdown", "ragdolls").Opt("ped_incidents", "ragdolls").Also("crash collision ambulance paramedics fire service"),
                 S("police").Guide("crime").Main("police").Opt("police_presence", "people").Opt("patrol_officers", "people").Opt("patrol_frequency", "patrol_officers")
                     .Opts("police_pursuit", "player_offences").Also("cop cops officers chase fine fines speeding"),
-                S("stations").For("law").Main("law_precincts").Opts("law_station").Opt("law_map_markers", "map_places_shown").Opts("law_custody").FreeOpts("law_arrests", "law_reputation")
+                S("stations").For("law").Main("law_precincts").Opts("law_station").Opt("law_station_furniture", "law_station").Opt("law_map_markers", "map_places_shown").Opts("law_custody").FreeOpts("law_arrests", "law_reputation")
                     .Also("precinct cell custody arrest record"),
                 S("crime").For("crime").Main("street_crime").Opts("crime_frequency").FreeOpts("crime_against_player").Also("robbery mugging thief theft burglar scam pickpocket"),
                 S("courts").For("justice").Main("justice").Opts("justice_lawyers", "justice_courthouse", "justice_no_prison", "justice_prison_cap", "justice_community",

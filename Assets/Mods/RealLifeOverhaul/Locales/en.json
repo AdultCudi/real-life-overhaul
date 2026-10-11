@@ -11817,5 +11817,7 @@
   "reallife_contacts_test_pictures": "Say what the contacts' pictures are",
   "reallife_contacts_test_redraw": "Draw the contacts' faces again",
   "reallife_contacts_test_said": "Contact pictures: {what}. Player.log lists each one.",
-  "reallife_contacts_test_redrawing": "Faces being drawn again: {what}. They appear one by one over the next minute."
+  "reallife_contacts_test_redrawing": "Faces being drawn again: {what}. They appear one by one over the next minute.",
+  "reallife_law_station_furniture": "Furnished police stations",
+  "reallife_opt_tip_law_station_furniture": "The station is furnished with the game's own desks, computers, lockers, plants and lamps, and the cell has a toilet. Off, only the counter, bench, desks and cell."
 }

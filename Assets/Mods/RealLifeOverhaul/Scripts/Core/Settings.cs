@@ -144,6 +144,7 @@ namespace RealLifeOverhaul
         public const string LawArrestsId = "law_arrests";
         public const string LawReputationId = "law_reputation";
         public const string LawStationId = "law_station";
+        public const string LawStationFurnitureId = "law_station_furniture";
         public const string LawMapMarkersId = "law_map_markers";
         public const string BusesId = "transit_buses";
         public const string TransitPeopleId = "transit_people";
@@ -350,6 +351,7 @@ namespace RealLifeOverhaul
         public static bool LawCustody = true;            // an arrest ends in a cell at the nearest precinct (off: the old time skip where caught)
         public static bool LawArrests = true;            // arrested for a death even when stopped, and for 911 calls about nothing; wanted after an escape
         public static bool LawReputation = true;         // the record and reputation have effects: scrutiny, thanks from passers-by
+        public static bool LawStationFurniture = true;   // ...furnished with the game's own furniture: lockers, desks with computers, a water cooler, plants, a clock, lamps, a toilet in the cell (off: the counter, bench, desks and cell only) (Scripts/Law/StationInterior.Furnish.cs)
         public static bool LawStation = true;            // a precinct can be walked into: front desk, waiting area, holding cell (off: the front desk answers at its door)
         public static bool LawMapMarkers = true;         // police stations on the city map and its filter list, and their markers in the street
         public static bool Buses = true;                 // bus stops near the player, buses that call at them, riding one
@@ -563,6 +565,7 @@ namespace RealLifeOverhaul
             LawArrests = Bool(modId, LawArrestsId, LawArrests);
             LawReputation = Bool(modId, LawReputationId, LawReputation);
             LawStation = Bool(modId, LawStationId, LawStation);
+            LawStationFurniture = Bool(modId, LawStationFurnitureId, LawStationFurniture);
             LawMapMarkers = Bool(modId, LawMapMarkersId, LawMapMarkers);
             Buses = Bool(modId, BusesId, Buses);
             TransitPeople = Bool(modId, TransitPeopleId, TransitPeople);

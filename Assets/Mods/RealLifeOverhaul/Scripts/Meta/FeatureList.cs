@@ -349,7 +349,7 @@ namespace RealLifeOverhaul.Meta
             Features.Add("law", "reallife_meta_title_law")
                 .Group("reallife_law_header")
                 .About("reallife_guide_law_about").Help("reallife_guide_law")
-                .Owns(Settings.LawPrecinctsId, Settings.LawCustodyId)
+                .Owns(Settings.LawPrecinctsId, Settings.LawCustodyId, Settings.LawStationFurnitureId)
                 .OnFrom(Settings.LawArrestsId, Intensity.Standard)
                 .OnFrom(Settings.LawReputationId, Intensity.Standard)
                 .Data("reallife:law_record", "reallife:law_reputation", "reallife:law_custody", "reallife:law_precincts")

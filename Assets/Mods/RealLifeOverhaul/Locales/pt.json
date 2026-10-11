@@ -11817,5 +11817,7 @@
   "reallife_contacts_test_pictures": "Dizer o que são as fotos dos contatos",
   "reallife_contacts_test_redraw": "Desenhar de novo os rostos dos contatos",
   "reallife_contacts_test_said": "Fotos dos contatos: {what}. O Player.log lista cada uma.",
-  "reallife_contacts_test_redrawing": "Rostos sendo desenhados de novo: {what}. Eles aparecem um a um no próximo minuto."
+  "reallife_contacts_test_redrawing": "Rostos sendo desenhados de novo: {what}. Eles aparecem um a um no próximo minuto.",
+  "reallife_law_station_furniture": "Delegacias mobiliadas",
+  "reallife_opt_tip_law_station_furniture": "A delegacia é mobiliada com mesas, computadores, armários, plantas e luminárias do próprio jogo, e a cela tem um vaso. Desligado, só o balcão, o banco, as mesas e a cela."
 }

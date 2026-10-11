@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Law
     /// wall's real surface. The furniture is cut out of the navigation mesh, so nobody walks
     /// through it. One set of objects, built once, switched off when the player leaves.
     /// </summary>
-    internal sealed class StationInterior
+    internal sealed partial class StationInterior
     {
         private const float Reach = 45f;
         private const float Step = 0.35f;
@@ -237,6 +237,7 @@ namespace RealLifeOverhaul.Law
             {
                 Show(_desks[i], _staffed[i]);
             }
+            Furnish(desk, bench, cell);   // the game's own furniture round all of it (StationInterior.Furnish.cs)
             _nextPeople = 0f;
             _logger?.Info($"Law: {precinct.Name}: inside: room {_length:F1} m deep from the door: {_fitted}.");
         }
@@ -356,6 +357,7 @@ namespace RealLifeOverhaul.Law
                 {
                     Show(_desks[i], false);
                 }
+                HideFurniture();
             }
             catch (Exception e)
             {
@@ -384,6 +386,7 @@ namespace RealLifeOverhaul.Law
         {
             End();
             DestroyPieces();
+            DestroyFurniture();
         }
 
         /// <summary>What went into the room the player is in, for the log.</summary>
@@ -595,6 +598,8 @@ namespace RealLifeOverhaul.Law
                 }
                 PutBars(_barsFront, At(back - deep, aside), -_in, wide / _barsSize.x);
                 SetCell(back, deep, aside);
+                _cellPanel = wide;
+                _cellSide = 0;
                 return true;
             }
             if (wide < panel + 0.8f)
@@ -626,6 +631,8 @@ namespace RealLifeOverhaul.Law
                 PutBars(_barsFront, At(back - deep, aside), -_in, panel / _barsSize.x);
                 PutBars(_barsSide, At(back - deep * 0.5f, side * (wall - panel)), _right * -side, deep / _barsSize.x);
                 SetCell(back, deep, aside);
+                _cellPanel = panel;
+                _cellSide = side;
                 cornerSide = side;
                 PlanEvidence(back, side * (wall - panel), -side, side < 0 ? right : left);
                 return true;
@@ -643,6 +650,9 @@ namespace RealLifeOverhaul.Law
 
         private void SetCell(float back, float deep, float aside)
         {
+            _cellBack = back;
+            _cellDeep = deep;
+            _cellAside = aside;
             Vector3 middle = At(back - deep * 0.5f, aside);
             CellSpot = NavMesh.SamplePosition(middle, out NavMeshHit hit, 0.6f, _filter) ? hit.position : middle;
             CellFace = CellSpot - _in * 4f;
