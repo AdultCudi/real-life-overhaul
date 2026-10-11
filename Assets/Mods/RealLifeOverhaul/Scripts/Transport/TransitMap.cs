@@ -341,112 +341,13 @@ namespace RealLifeOverhaul
 
         private static bool Drivable(Waypoint point)
         {
-            return point.allowedCars != null && point.allowedCars.Contains(VehicleTypes.Car);
+            return RoadGraph.Drivable(point);
         }
 
-        // The road graph as the search wants it: a lane's own next points, and the changes of lane the graph offers
-        // between two lanes that run the same way side by side.
+        // The road graph as the search wants it (Core/RoadGraph, which the GPS builds its own from as well).
         private static void BuildGraph()
         {
-            int count = _points.Length;
-            _graph = new RouteSearch(count);
-            var start = new int[count + 1];
-            int edges = 0;
-            int[] to = null;
-            float[] extra = null;
-            for (int pass = 0; pass < 2; pass++)
-            {
-                if (pass == 1)
-                {
-                    to = new int[edges];
-                    extra = new float[edges];
-                }
-                edges = 0;
-                for (int i = 0; i < count; i++)
-                {
-                    Waypoint point = _points[i];
-                    if (pass == 1)
-                    {
-                        start[i] = edges;
-                    }
-                    if (point == null)
-                    {
-                        continue;
-                    }
-                    if (pass == 0)
-                    {
-                        _graph.X[i] = point.position.x;
-                        _graph.Y[i] = point.position.y;
-                        _graph.Z[i] = point.position.z;
-                    }
-                    for (int k = 0; point.neighbors != null && k < point.neighbors.Count; k++)
-                    {
-                        int next = point.neighbors[k];
-                        if (next < 0 || next >= count || _points[next] == null || !Drivable(_points[next]))
-                        {
-                            continue;
-                        }
-                        if (pass == 1)
-                        {
-                            to[edges] = next;
-                            extra[edges] = 0f;
-                        }
-                        edges++;
-                    }
-                    for (int k = 0; point.otherLanes != null && k < point.otherLanes.Count; k++)
-                    {
-                        int beside = point.otherLanes[k];
-                        if (!LaneChange(point, beside))
-                        {
-                            continue;
-                        }
-                        if (pass == 1)
-                        {
-                            to[edges] = beside;
-                            extra[edges] = LaneChangeCost;
-                            _laneChanges++;
-                        }
-                        edges++;
-                    }
-                }
-            }
-            start[count] = edges;
-            _graph.SetEdges(start, to, extra);
-        }
-
-        // A change of lane a bus may make: between two plain lane points a few metres apart whose lanes run the same way.
-        private static bool LaneChange(Waypoint point, int beside)
-        {
-            if (beside < 0 || beside >= _points.Length)
-            {
-                return false;
-            }
-            Waypoint other = _points[beside];
-            if (other == null || !Drivable(other) || !Drivable(point) || !Plain(point) || !Plain(other)
-                || point.neighbors == null || point.neighbors.Count == 0 || other.neighbors == null || other.neighbors.Count == 0)
-            {
-                return false;
-            }
-            Waypoint ahead = Point(point.neighbors[0]);
-            Waypoint otherAhead = Point(other.neighbors[0]);
-            if (ahead == null || otherAhead == null)
-            {
-                return false;
-            }
-            Vector3 across = other.position - point.position;
-            if (Mathf.Abs(across.y) > 2f)
-            {
-                return false;
-            }
-            across.y = 0f;
-            Vector3 lane = Flat(ahead.position - point.position);
-            Vector3 otherLane = Flat(otherAhead.position - other.position);
-            if (across.sqrMagnitude < 1f || across.sqrMagnitude > 14f * 14f || lane.sqrMagnitude < 0.01f || otherLane.sqrMagnitude < 0.01f)
-            {
-                return false;
-            }
-            lane.Normalize();
-            return Vector3.Dot(lane, otherLane.normalized) > 0.7f && Vector3.Dot(lane, across) > -1f;
+            _graph = RoadGraph.Build(_points, LaneChangeCost, out _laneChanges);
         }
 
         // ---------------------------------------------------------------- the pairs, and the way between them
@@ -752,7 +653,7 @@ namespace RealLifeOverhaul
 
         private static bool Plain(Waypoint point)
         {
-            return point != null && !point.enter && !point.exit && !point.giveWay && !point.IsInIntersection() && TrafficManager.IsNotIntersection(point);
+            return RoadGraph.Plain(point);
         }
 
         private static bool IsPavement(Vector3 place, out Vector3 spot)
