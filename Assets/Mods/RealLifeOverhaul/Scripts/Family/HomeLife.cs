@@ -632,7 +632,7 @@ namespace RealLifeOverhaul.Family
             if (sqr < TalkReach * TalkReach && Mathf.Abs(offset.y) < 1.2f && controller != null
                 && Vector3.Dot(controller.Character.transform.forward, offset.normalized) > 0.45f)
             {
-                director.Prompt("reallife_family_prompt_talk", Partner.Name, TalkAction);
+                director.Prompt("reallife_family_prompt_talk", Partner.Name, TalkAction, _partner.Valid ? _partner.Character.transform : null);
                 return;
             }
             if (now >= _nextMove && _spotCount > 1 && sqr > 2.5f * 2.5f)

@@ -354,7 +354,7 @@ namespace RealLifeOverhaul.Family
                     }
                     if (CitySpots.Flat(player - _partner.Position) < 4f * 4f)
                     {
-                        _d.Prompt("reallife_family_prompt_kneel", Partner.Name, _kneel);
+                        _d.Prompt("reallife_family_prompt_kneel", Partner.Name, _kneel, _partner.Valid ? _partner.Character.transform : null);
                     }
                     else if (!_fromHome && CitySpots.Flat(player - _partner.Position) > 9f * 9f)
                     {

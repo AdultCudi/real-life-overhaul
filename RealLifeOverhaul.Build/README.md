@@ -267,7 +267,7 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       Relatives       Mom and the in-laws, the four family dinners of the game's year, next of kin
       HardTimes       arguments (a no-repeat pool with two answers), counselling, time apart, coming home, divorce and custody
       FamilyPhone     the Family, Someone special and in-laws contacts, everything that can be done from a conversation; FamilyPage (the five pages)
-      FamilyTalk / FamilyText / FamilyHud / FamilyCalendar  conversations and menus, text and its fillers, the prompt and objective, what happens by the hour and the day
+      FamilyTalk / FamilyText / FamilyCalendar  conversations and menus, text and its fillers, what happens by the hour and the day
     Diagnostics/ temporary F9 character report (remove before release)
       SessionWatch   the session record: with "Developer diagnostics" on, one line a minute (frame times, memory, the mod's objects) and one for every frame over 80 ms, naming what the mod was at (see "The session record")
     Performance/ fixes for the base game's frame rate, and the measuring that decides them
@@ -3693,6 +3693,20 @@ whole of it and one each for the partner being shown at home, engagement and wed
 relatives, and hard times (chores, arguments, separation, divorce: off, and none of them ever happen).
 Nothing depends on who anybody is: the partner is whoever the player is seeing, in any pairing, and the
 default introduction follows the "introduces you to" choice (anyone / women / men).
+
+**What family life puts on screen.** Everything is the game's own interface; the mod draws nothing of its own. A prompt
+("buy a pushchair", "talk to Sam", "go in to the scan") is the game's panel over a place (`GameUi.DoorPanel`, a `WorldPanel`
+with one button): over the partner when the prompt is about them (`Follow`), otherwise over the player. The first line says
+what it is, the button says the verb (`reallife_family_button_*`, one for each prompt key) and the game writes the player's key
+after it and runs it on that key or a click. The objective (where to be and until when, the pushchair walk, the aisle) is
+the headline and first line of a copy of the game's job panel at the top right (`ShiftCard`); one notification stands in if
+that copy cannot be made. The place markers were already the game's own destination marker (`FamilyPlaces.Guide`) and are
+unchanged. Cost: nothing per frame; the director's one-second tick (five a second in a scene) tells the panel only what changed,
+and the texts are rebuilt only when the prompt or the objective changes. A fault in the button's action switches family life
+off for the session with one log line, as before. If the game's panel is showing another place the prompt waits and is tried
+again on the next tick; there is no other fallback for a prompt, because the same errands are listed on the Family page and the
+objective still shows. Log lines with diagnostics on: `Family check (prompt panel): <prompt key>: the game's own panel is up: PASS`
+and `Family check (objective card): ... PASS`. None of this has been seen in the game.
 
 State is one JSON string in the save's modData (`reallife:family`, `FamilyState`); the moods are happiness
 modifiers with the mod's prefix, so `Core/ModState` takes them out of the save like the rest. A save made
