@@ -298,31 +298,36 @@ namespace RealLifeOverhaul.Economy.Ventures
         }
 
         /// <summary>
-        /// A business of this kind that a promise of money can start on: the newest one the player runs that has no
-        /// deal yet, once they run more of the kind than when the promise was made. Null until then.
+        /// A business of this kind that a promise of money can start on, once the player runs more of the kind than
+        /// when the promise was made: of those with no deal yet, the one the game has the fewest daily statements for
+        /// (the one just opened), and of two alike the one whose building was taken last. Null until then.
         /// </summary>
         public static BuildingRegistration Opened(VenturesFile file, Pledge pledge)
         {
+            if (CountOf(pledge.TypeName) <= pledge.Had)
+            {
+                return null;
+            }
             Books.Businesses(Scratch);
             BuildingRegistration found = null;
-            int count = 0;
+            int fewest = int.MaxValue;
             for (int i = 0; i < Scratch.Count; i++)
             {
                 BuildingRegistration r = Scratch[i];
-                if (r.businessTypeName != pledge.TypeName)
+                int deals;
+                if (r.businessTypeName != pledge.TypeName || file.ShareOn(Books.Key(r.Address), 0, out deals) > 0 || deals > 0)
                 {
                     continue;
                 }
-                count++;
-                int deals;
-                file.ShareOn(Books.Key(r.Address), 0, out deals);
-                if (deals == 0 && (found == null || r.creationDay > found.creationDay))
+                int onRecord = Figures(r).DaysOnRecord;
+                if (found == null || onRecord < fewest || (onRecord == fewest && r.creationDay > found.creationDay))
                 {
                     found = r;
+                    fewest = onRecord;
                 }
             }
             Scratch.Clear();
-            return count > pledge.Had ? found : null;
+            return found;
         }
 
         /// <summary>How many businesses of a kind the player runs now.</summary>

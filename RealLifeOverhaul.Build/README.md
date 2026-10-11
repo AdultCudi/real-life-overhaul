@@ -6136,7 +6136,8 @@ open). The phone is put away and the meeting is held in the game's list window, 
   to 100: the business is valued at 40 to 90 days of its true recent profit and the investor takes from the most to
   the least of their range; the sum is their share of that value inside their smallest and largest sums. A business
   not yet open gets 30% to 70% of its budget (from an angel or a firm), paid when the player runs one more business
-  of that kind than on the day of the promise, within 14 days; else the promise lapses and nothing is owed. An angel
+  of that kind than on the day of the promise, within 14 days (the deal starts on the one of that kind with no deal
+  and the fewest daily statements: the one just opened); else the promise lapses and nothing is owed. An angel
   backs a business under 30 days old with their smallest sum whatever its profit.
 - **Worked example**: an even-tempered tycoon (sums 25,000 to 750,000) asks 7 questions and the answers score
   8, 10, 7, 8, 6, 9, 8 = 56 of 70, a score of 80. They need 55, so "over" is 25 / 45 = 0.56: the business, making
