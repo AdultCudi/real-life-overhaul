@@ -244,6 +244,26 @@ namespace RealLifeOverhaul.Meta
                     SceneObstacles.Clear();
                 }, 10);
 
+            Features.Add("streets", "reallife_meta_title_streets")
+                .About("reallife_guide_streets_about").Help("reallife_guide_streets")
+                .Owns(Settings.HornReactionsId, Settings.NaturalAccidentsId)
+                .Test("reallife_test_streets_speeder", "reallife_test_streets_redlight", "reallife_test_streets_drunk", "reallife_test_streets_jaywalker",
+                    "reallife_test_streets_hit", "reallife_test_streets_crash", "reallife_test_streets_patrol")
+                .Fact("horn_reach", () => Guide.Number(StreetRules.HornReach))
+                .Fact("horn_most", () => Guide.Number(StreetRules.HornMost))
+                .Fact("horn_officer", () => Guide.Number(StreetRules.OfficerWithin))
+                .Fact("horn_fine", () => Guide.Money(CrimeLaw.HornFine))
+                .Fact("reckless_least", () => Guide.Number(StreetRules.LastsLeast))
+                .Fact("reckless_most", () => Guide.Number(StreetRules.LastsMost))
+                .Fact("crash_minor", () => Guide.Number((float)System.Math.Round(StreetRules.MinorBelow * 3.6f)))
+                .Fact("crash_severe", () => Guide.Number((float)System.Math.Round(StreetRules.SevereFrom * 3.6f)))
+                .Cleanup(() =>
+                {
+                    // Before the accident scene's own cleanup: the car, the patrol car and whoever was in the road are given back first.
+                    RecklessDrivers.Instance?.EndNow("the options page's cleanup");
+                    HornReactions.Instance?.ReleaseAll("the options page's cleanup");
+                }, 5);
+
             Features.Add("visuals", "reallife_meta_title_visuals")
                 .Group("reallife_visuals_header")
                 .About("reallife_guide_visuals_about").Help("reallife_guide_visuals")

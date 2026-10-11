@@ -37,6 +37,8 @@ namespace RealLifeOverhaul
         public const string RagdollsId = "ragdolls";
         public const string PlayerKnockdownId = "player_knockdown";
         public const string PedestrianIncidentsId = "ped_incidents";
+        public const string HornReactionsId = "horn_reactions";
+        public const string NaturalAccidentsId = "natural_accidents";
         public const string PhoneContactsId = "phone_contacts";
         public const string PhoneSkinId = "phone_skin";
         public const string CarSpeedId = "car_speed";           // the old single "car speed %" slider: dropped at load
@@ -209,6 +211,8 @@ namespace RealLifeOverhaul
         public static bool Ragdolls = true;          // people hit by a car fall as ragdolls and can be hurt or killed
         public static bool PlayerKnockdown = true;   // traffic can knock the player down when on foot
         public static bool PedestrianIncidents = true;   // now and then a traffic car hits someone near the player
+        public static bool HornReactions = true;         // people hurry, glare or look round when the player sounds the horn (People/HornReactions)
+        public static bool NaturalAccidents = true;      // accidents come from reckless drivers on the road, in view (Traffic/Reckless); off: the old roll that stages them out of view
         public static bool PhoneContacts = true;
         public static bool CarTuning = true;         // each car gets the acceleration and top speed of its kind (Driving/CarCatalogue)
         public static int CarTopSpeed = 100;         // percent of the car's own target top speed
@@ -421,6 +425,8 @@ namespace RealLifeOverhaul
             Ragdolls = Bool(modId, RagdollsId, Ragdolls);
             PlayerKnockdown = Bool(modId, PlayerKnockdownId, PlayerKnockdown);
             PedestrianIncidents = Bool(modId, PedestrianIncidentsId, PedestrianIncidents);
+            HornReactions = Bool(modId, HornReactionsId, HornReactions);
+            NaturalAccidents = Bool(modId, NaturalAccidentsId, NaturalAccidents);
             PhoneContacts = Bool(modId, PhoneContactsId, PhoneContacts);
             PhoneSkin = Bool(modId, PhoneSkinId, PhoneSkin);
             CarTuning = Bool(modId, CarTuningId, CarTuning);

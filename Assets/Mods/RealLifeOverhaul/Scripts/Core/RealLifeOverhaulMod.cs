@@ -136,6 +136,10 @@ namespace RealLifeOverhaul
                     v => Settings.PlayerKnockdown = v)
                 .AddToggle(Settings.PedestrianIncidentsId, "reallife_ped_incidents", Settings.PedestrianIncidents,
                     v => Settings.PedestrianIncidents = v)
+                .AddToggle(Settings.HornReactionsId, "reallife_horn_reactions", Settings.HornReactions,
+                    v => Settings.HornReactions = v)
+                .AddToggle(Settings.NaturalAccidentsId, "reallife_natural_accidents", Settings.NaturalAccidents,
+                    v => Settings.NaturalAccidents = v)
                 .AddToggle(Settings.PhoneContactsId, "reallife_phone_contacts", Settings.PhoneContacts,
                     v => Settings.PhoneContacts = v)
                 .AddToggle(Settings.PhoneSkinId, "reallife_phone_skin", Settings.PhoneSkin,
@@ -147,6 +151,13 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_accident_severe", () => TrafficAccidents.Instance?.StageAccidentNow(TrafficAccidents.Severity.Severe))
                 .AddButton("reallife_test_ragdoll", () => PedestrianIncidents.Instance?.TestNearest())
                 .AddButton("reallife_test_ped_incident", () => PedestrianIncidents.Instance?.StageNow())
+                .AddButton("reallife_test_streets_speeder", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.Speeder))
+                .AddButton("reallife_test_streets_redlight", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.RedLight))
+                .AddButton("reallife_test_streets_drunk", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.Drunk))
+                .AddButton("reallife_test_streets_jaywalker", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.Jaywalker))
+                .AddButton("reallife_test_streets_hit", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.HitSomeone))
+                .AddButton("reallife_test_streets_crash", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.Crash))
+                .AddButton("reallife_test_streets_patrol", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.Patrol))
                 .AddSplitter()
                 .AddHeader("reallife_crime_header")
                 .AddToggle(Settings.StreetCrimeId, "reallife_crime_enabled", Settings.StreetCrime,
@@ -758,6 +769,10 @@ namespace RealLifeOverhaul
             RagdollSystem.Logger = context.Logger;
             PedestrianIncidents.Logger = context.Logger;
             CarStrikes.Logger = context.Logger;
+            HornReactions.Logger = context.Logger;
+            Crossings.Logger = context.Logger;
+            RecklessDrivers.Logger = context.Logger;
+            Jaywalker.Logger = context.Logger;
             PlayerKnockdown.Logger = context.Logger;
             PhoneContacts.Logger = context.Logger;
             CityLifeDirector.Logger = context.Logger;
@@ -800,6 +815,8 @@ namespace RealLifeOverhaul
             _root.AddComponent<PolicePresence>();
             _root.AddComponent<PedestrianIncidents>();
             _root.AddComponent<CarStrikes>();
+            _root.AddComponent<HornReactions>();     // people answer the player's horn (People/HornReactions)
+            _root.AddComponent<RecklessDrivers>();   // reckless drivers and the accidents that come of them (Traffic/Reckless); after CarStrikes and TrafficAccidents
             _root.AddComponent<PlayerKnockdown>();
             _root.AddComponent<CityLifeDirector>();   // people at work and about their day: its own pool of eight
             _root.AddComponent<JobDirector>();   // jobs the player takes themselves (Scripts/Jobs)
