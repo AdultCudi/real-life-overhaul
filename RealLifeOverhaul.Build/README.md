@@ -269,6 +269,7 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       FamilyTalk / FamilyText / FamilyCalendar  conversations and menus, text and its fillers, what happens by the hour and the day
     Diagnostics/ temporary F9 character report (remove before release)
       SessionWatch   the session record: with "Developer diagnostics" on, one line a minute (frame times, memory, the mod's objects) and one for every frame over 80 ms, naming what the mod was at (see "The session record")
+      FrameSteps     where the frame before this one went, by engine step (scripts' Update, coroutines, physics, navigation, rendering...), for the long-frame line; in the engine's loop only while the record runs
     Performance/ fixes for the base game's frame rate, and the measuring that decides them
       PerfDirector   switches the tweaks as the options ask, gives each its timer tick; F7 probe, Shift+F7 benchmark
       PerfTweak      one optimisation: Apply records what it changes, Restore puts it back; a fault switches it off
@@ -432,15 +433,20 @@ moves. All of the mod's are `carveOnlyStationary`, placed while switched off and
 
 For reports of the kind "it stutters after a few minutes, or hours". `Diagnostics/SessionWatch` is a component on the
 mod's root object that is disabled unless "Developer diagnostics" is on (`Meta.Dev.Apply` switches it), so it costs
-nothing as shipped. On, it costs a few comparisons a frame and, once a minute, a walk over the mod's own objects.
+nothing as shipped. On, it costs a dozen reads of numbers the engine and the game already keep and as many comparisons
+a frame, about thirty reads of the clock for the step timing (`Diagnostics/FrameSteps`, under two microseconds), and,
+once a minute, a walk over the mod's own objects. Nothing is allocated except for a line that is written.
 
 One line for every minute of play (loading screens, pauses and time with the window in the background are left out):
 
 ```
 Session 12 min: frames 5210, average 11.5 ms, worst 61 ms, over 33 ms: 4, over 50 ms: 1; managed heap 412 MB of 610 MB,
-collections in the minute 3; engine memory 2950 MB; mod objects 345 (118 shown) under 6 roots; people 2 out, 12 made of 12;
-city people 3 out, 8 made of 8, city props made 14; looks built in the minute 1 (0 while playing), since the city loaded 23
-(2 while playing); on foot in the street, game hour 9.
+collections in the minute 3, grown by 31.0 MB in the minute (517 KB a second), the collector at work 212 ms in the minute
+and 3.1 ms at most in a frame; engine memory 2950 MB; mod objects 345 (118 shown) under 6 roots; people 2 out, 12 made of
+12; city people 3 out, 8 made of 8, city props made 14; looks built in the minute 1 (0 while playing), since the city
+loaded 23 (2 while playing); frames over 80 ms: 2, of them 2 behind the game's black screen (into or out of a building)
+and 0 seen; the mod's navigation obstacles changed in the minute 0; handlers put back on the game's events 0 (changed
+events looked into 3); searches of the whole scene 0 (0 while playing); on foot in the street, game hour 9.
 ```
 
 | part | what it is | what to look for over a session |
@@ -448,29 +454,86 @@ city people 3 out, 8 made of 8, city props made 14; looks built in the minute 1 
 | frames, average, worst | the minute's frame times | the average is the frame rate; the worst is the minute's longest stall |
 | over 33 ms, over 50 ms | frames longer than that in the minute | these are the stutters: how many a minute, and whether the number grows |
 | managed heap A of B | `GC.GetTotalMemory(false)` and the size the heap has grown to (`Profiler.GetMonoHeapSizeLong`) | B only ever grows; if it grows minute after minute something allocates on a timer (the game's code and every mod share this heap) |
-| collections in the minute | `GC.CollectionCount(0)` since the last line | more collections a minute at the same place and speed means more garbage a second; a long frame with a collection in it is that collection |
+| collections in the minute | `GC.CollectionCount(0)` since the last line | more collections a minute at the same place and speed means more garbage a second |
+| grown by N MB in the minute | the allocation budget: `GC.GetTotalMemory(false)` read every frame, and every rise added up (what a collection gives back in the same frame is not seen, so it is a little under what was allocated). The game's share and every mod's together | about 35 MB a minute in a busy city with the mod as it is now. A version of the mod that raises it by megabytes allocates on a timer somewhere |
+| the collector at work, and at most in a frame | the engine's own `GC.Collect` time (a profiler counter this build offers), summed over the minute and its largest frame | the game's collector works in slices of 3 ms (`gc-max-time-slice=3` in boot.config): "at most" near 3 ms is the collector as intended; tens of milliseconds is a collection that could not be sliced |
 | engine memory | `Profiler.GetTotalAllocatedMemoryLong`: meshes, textures, materials, audio | a steady climb between two midnights is normal for the game (it frees unused assets once a game day, at midnight); a climb across days is a leak |
 | mod objects (shown) under N roots | every object under a root object named `RealLifeOverhaul...`, and how many of them are switched on | everything of the mod's is pooled: the count rises while each kind of scene is met for the first time and then stands still. If it climbs all session, something is made per use and never put away |
 | people, city people, city props | the two pools of characters (12 and 8) and the living city's prop shelf | "made" stops at 12 and 8; "out" goes up and down |
 | looks built (while playing) | characters' looks built, a mesh merge each (`People/Looks`): in the minute and since the city loaded; in brackets those built while the game was neither loading nor paused | about twenty at the load, none of them while playing. After that a few an hour is the pools changing worn looks, one at a time. Several "while playing" in one minute, minute after minute, means scenes are asking for looks nobody on the shelf has |
+| frames over 80 ms: N, behind the game's black screen, seen | the long frames of the minute; "behind the black screen" are those with the game's fade up (`UI.UiFader.isFading`), which is its walk into or out of a building | every walk out of a building is a frame of about 225 ms and every walk in one of 85 to 630 ms, all the game's own and all behind its black screen (see below). "Seen" is the number that matters, and it should be 0 |
+| the mod's navigation obstacles changed | carving obstacles of the mod's made, moved or switched in the minute (`Core/MeshCuts`) | a handful when a bus stop, a cart or a cordon comes or goes while the player is on foot near it; never a steady number minute after minute |
+| handlers put back on the game's events | `Core/EventHold`: times a handler had to be put on one of the game's event fields, and times a changed field was looked into | a few after a load, then 0. Sixty a minute is a holder putting itself back every second |
+| searches of the whole scene (while playing) | `Core/SceneFinds`: every `FindObjectsByType` and `Resources.FindObjectsOfTypeAll` the mod makes | each is a frame of about 110 ms in this game. "While playing" must be 0: what a search finds is found behind the loading screen (`ScenePrewarm`) |
 
 One line for a frame longer than 80 ms (12 a minute at most; the rest are in the minute's count):
 
 ```
-Session: a frame of 96 ms; the mod was at: city life: a character's look being built (a mesh merge); a garbage collection ran in it; on foot in the street, game hour 9.
-Session: a frame of 140 ms; none of the mod's large pieces of work was under way; in a vehicle, game hour 14.
+Session: a frame of 231 ms; none of the mod's large pieces of work was under way; where it went: coroutines and timers
+204 ms, rendering 14 ms, the rest 13 ms; the collector: no collection (41 so far), at work 0.0 ms, heap 731 MB before and
+733 MB after; the game: its screen was black or fading (its own walk into or out of a building: not seen as a stutter),
+the player came out of a building in it, not saving, no scene loaded or unloaded; the mod's navigation obstacles changed
+in the second before it and in it: 0; the mod's last pieces of work: "people: a character being made" (3.1 ms) 41.0 s
+before, "transit: a bus stop being put out" (not timed) 80.2 s before; on foot in the street, game hour 7.
 ```
 
+How to read it:
+
+- **where it went** is the engine's own steps of that frame, timed by `Diagnostics/FrameSteps`. "navigation" is the step
+  in which the engine cuts the walkable mesh: a long frame with its time there is a cut, asked for half a second
+  earlier by a carving obstacle. "coroutines and timers" with the screen black is the game taking the player through a
+  door. "scripts' Update" is some script's Update, the game's or a mod's: the mod's share is the time beside the pieces
+  of work named "in it". "rendering" and "the rest" are the engine's.
+- **the collector** says whether a collection finished between the record's two looks, how long the engine's collector
+  worked in that frame, and the heap on both sides of it.
+- **the game** says whether its black screen was up, whether the player had just gone through a door, whether it was
+  saving (`SaveGameManager.SavingGameInProgress`) and whether a scene had just been loaded or unloaded.
+- **the mod's last pieces of work** are the last three named with `SessionWatch.Mark`, with how long each took where the
+  place that named it also called `SessionWatch.Done`, and when it was, seen from the long frame.
+
+The test "Test: write the session record's lines now" (Options, Tests, under Performance) writes both lines at once, so
+every part can be read without waiting for a stutter.
+
 "The mod was at" is the last piece of work named with `SessionWatch.Mark("...")` in the three frames before. `Mark` is
-two writes to static fields with a constant text (the same cost with diagnostics on or off). It is called where the mod
+a handful of writes into a fixed ring with a constant text and one read of the clock (the same cost with diagnostics on or off). It is called where the mod
 does something large in one go: a character made or given a look (`ActorPool.Dress`, `CityPeople.Dress`, the casts), a
 living-city site set up, a bus stop, a precinct front or a two-wheeler stand put out, an accident, a crime, a fire or a
 street event starting, the game saving (the mod's own share of the save is timed and written as its own `Session:`
 line), the performance tweaks listing the loaded materials. New code that builds something in one frame names it the
 same way; `Mark` is never called per frame and never with a text put together for the call.
 
-What the lines cannot say: which script a long frame was spent in when no work was named (the F7 probe splits a frame
-by engine step, not by script), and anything about the graphics card.
+What the lines cannot say: which script a long frame was spent in when its time is under "scripts' Update" or
+"coroutines and timers" and no work was named, and anything about the graphics card.
+
+### Long frames: what was found, and the rules that follow
+
+Three sessions of Player.log with the record on (83 frames over 80 ms) sort like this:
+
+- **The game's own, behind its black screen: about three in four.** `BuildingManager.ExitFromBuildingCoroutine` fades to black,
+  then calls `GlobalEvents.onExitBuilding`, on which every `CityMapHider` switches its part of the city back on in the
+  one frame (`CityMapHider.OnExitBuilding`; on the way in the same work is spread over frames): 215 to 280 ms every
+  time. `EnterBuildingCoroutine` loads the interior and its items under the same fade: 85 to 630 ms. Neither is the
+  mod's and neither is seen. The record now counts them apart.
+- **A search of the whole scene, in play: the mod's, about 110 ms each.** `Object.FindObjectsOfType` and its relations go
+  through every object the engine has in memory. The traffic system's `CurrentSceneData.GetSceneInstance()` is such a
+  search on every call, and five features called it: the line "Crime: road map built" was followed by a frame of 112 to
+  117 ms in all three sessions, and every driving lesson and test began with one of 126 to 146 ms. **Rule: no search of
+  the scene while the game is played.** `Core/RoadData` finds the road data once per city; `Core/SceneFinds` is the
+  only place that searches, names and times each search and says FAIL in the log for one made in play;
+  `ScenePrewarm` runs each feature's one-off search behind the loading screen (the game loads its mods after the city's
+  scenes and before its loading screen goes: `UI.Load.LoadingScreen.LoadAsyncScenes`).
+- **The collector: not a cause of a frame that is seen.** Four of those frames had a collection finish in them, all
+  four at a door (the game makes and destroys a whole interior there, and a collection that cannot keep up is finished
+  in one go: it made those frames an estimated 40 to 100 ms longer, behind the black screen). No long frame outside a
+  door had one: in ordinary play the collector works in slices of 3 ms, and the probe measured 3.09 ms as its longest
+  share of a frame.
+- **Cuts of the navigation mesh: not shown to be a cause.** Every long frame within 2.5 s of a cut asked for by the mod
+  was a walk through a door, or the frame the cordon itself was set out in. The step timing now proves or refutes it
+  per frame ("navigation"). The rules stand: a carving obstacle is moved only while switched off, everything of one
+  scene changes in one frame, and every change is noted in `Core/MeshCuts`.
+- **Handlers on the game's events.** `EventHold.Keep` with several holders on one event had each put itself back every
+  second for ever, because each one's putting back changed the event for the others (`Core/EventHold.cs` says how it is
+  kept now). It was a few kilobytes a second, not a long frame.
 
 ## Checks
 
@@ -483,8 +546,9 @@ file"), build it and run the DLL through the dotnet host instead:
 Run it after any change to the event catalogue or `en.json`.
 
 Three more check programs compile the mod's own game-free files and run them on made-up data: `PlannerCheck` (see
-"The Planner"), `NavCheck` (see "Minimap and GPS"; it also covers `Core/RouteSearch.cs`, which the bus network uses)
-and `EconomyCheck` (see "Economy"). Each ends with `ALL CHECKS PASSED`.
+"The Planner"), `NavCheck` (see "Minimap and GPS"; it also covers `Core/RouteSearch.cs`, which the bus network uses,
+and in `HitchCheck.cs` the keeper of handlers on the game's events, `Core/EventHold.cs`, and the session record's
+rings, `Core/WorkRings.cs`) and `EconomyCheck` (see "Economy"). Each ends with `ALL CHECKS PASSED`.
 
 ## Adding a crime
 
