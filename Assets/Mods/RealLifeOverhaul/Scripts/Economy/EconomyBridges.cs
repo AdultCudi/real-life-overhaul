@@ -94,5 +94,15 @@ namespace RealLifeOverhaul.Economy
                 director.Open(tab);
             }
         }
+
+        /// <summary>Opens the Finance app on the city's page (Overview's own page while the city's economy is off).</summary>
+        public static void OpenCity()
+        {
+            EconomyDirector director = EconomyDirector.Instance;
+            if (director != null)
+            {
+                director.OpenCity();
+            }
+        }
     }
 }

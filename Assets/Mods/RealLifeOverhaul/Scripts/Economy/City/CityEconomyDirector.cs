@@ -712,7 +712,7 @@ namespace RealLifeOverhaul.Economy
 
         private static void OpenCity()
         {
-            Finance.Open(Finance.Overview);
+            Finance.OpenCity();
         }
 
         /// <summary>

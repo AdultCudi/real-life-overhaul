@@ -759,6 +759,16 @@ namespace RealLifeOverhaul.Economy
             Open(Finance.Credit);
         }
 
+        /// <summary>The Finance app on the city's page.</summary>
+        public void OpenCity()
+        {
+            if (_app != null && _view != null && _running)
+            {
+                _view.WantCity();
+                _app.Open();
+            }
+        }
+
         /// <summary>The app has been opened: the file is brought up to date with the game, and what the badge counted has been seen.</summary>
         public bool AppOpened()
         {

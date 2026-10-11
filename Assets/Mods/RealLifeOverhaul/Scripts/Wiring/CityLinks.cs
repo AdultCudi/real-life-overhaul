@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Events;
+using RealLifeOverhaul.Planner;
 
 namespace RealLifeOverhaul
 {
@@ -21,12 +22,16 @@ namespace RealLifeOverhaul
         ///                 undercuts you", started through its own rules (BusinessDirector.StartIssue)
         ///   RollScale     the cycle's chance of a business trouble on business pressure's morning roll
         ///   WeightOf      rivals undercut more often in a slowdown or a recession
+        ///   the paper     up to two pieces a day in the City Ledger (News.Extra)
+        ///   the Planner   rows in the Finance source (<see cref="Rows"/>, called by EconomyLinks' source)
         ///
         /// Nothing per district is public in the mod's other features (crime, council building sites and street events
         /// are kept by place or by day, not by neighbourhood), so nothing of theirs pushes a district's income.
         /// </summary>
         public static class CityLinks
         {
+            private const int RowDecision = 20, RowSupply = 21;
+
             internal static void Connect()
             {
                 CityBridges.Day = Day;
@@ -35,6 +40,7 @@ namespace RealLifeOverhaul
                 BusinessGame.Ambient = CityEconomyDirector.FootfallOf;
                 BusinessDirector.RollScale = CityEconomyDirector.TroubleScale;
                 BusinessDirector.WeightOf = Weight;
+                News.Extra = Paper;
             }
 
             internal static void Disconnect()
@@ -43,6 +49,7 @@ namespace RealLifeOverhaul
                 BusinessGame.Ambient = null;
                 BusinessDirector.RollScale = null;
                 BusinessDirector.WeightOf = null;
+                News.Extra = null;
                 // The city is unloading or the mod is being switched off: the wholesale prices are the game's own again
                 // now, not only when the city's economy's own object is destroyed at the end of the frame.
                 CityGame.RestoreWholesale();
@@ -98,6 +105,76 @@ namespace RealLifeOverhaul
             private static int Weight(string kind, int own)
             {
                 return kind == BusinessCatalogue.Undercut ? own * CityEconomyDirector.UndercutScale() / 1000 : own;
+            }
+
+            private static void Paper(int day, List<NewsItem> into)
+            {
+                try
+                {
+                    CityEconomyDirector director = CityEconomyDirector.Instance;
+                    CityState state = director != null ? director.State : null;
+                    if (state == null)
+                    {
+                        return;
+                    }
+                    IReadOnlyList<CityNews> pieces = director.Paper(day);
+                    for (int i = 0; i < pieces.Count; i++)
+                    {
+                        Dictionary<string, string> data;
+                        string key = CityText.News(pieces[i], state.Base, CityGame.Name, out data);
+                        into.Add(new NewsItem { Key = key, Data = data });
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("CityLinks.Paper", e);
+                }
+            }
+
+            /// <summary>
+            /// The city's economy's rows in the Planner's Finance source: the central bank's decision on the day it
+            /// takes effect, once it is announced (id 20 with the day), and a shortage or a glut that starts tomorrow
+            /// in goods the player's businesses stock (id 21 with the kind of goods). It reads the model and changes
+            /// nothing.
+            /// </summary>
+            internal static void Rows(string source, int today, PlannerList into)
+            {
+                try
+                {
+                    CityEconomyDirector director = CityEconomyDirector.Instance;
+                    CityState state = director != null ? director.State : null;
+                    if (state == null)
+                    {
+                        return;
+                    }
+                    if (state.Pending && CityModel.DaysToTurn(state, director.MonthDays) == 1)
+                    {
+                        PlannerEntry e = into.Add(source, RowDecision, today + 1, PlannerCategory.Money, today + 1);
+                        if (e != null && into.WantText)
+                        {
+                            e.Title = PlannerText.T("reallife_macro_plan_rate_title");
+                            e.What = CityText.Decision(state.PendingMove, state.PendingReason, MacroCatalogue.Clamp(state.Base + state.PendingMove, MacroCatalogue.BaseLeast, MacroCatalogue.BaseMost));
+                        }
+                    }
+                    for (int k = 0; k < MacroCatalogue.SupplyKinds; k++)
+                    {
+                        SupplyLine line = state.Supply[k];
+                        if (!line.Announced(state.Age) || (state.Buys & (1 << k)) == 0)
+                        {
+                            continue;
+                        }
+                        PlannerEntry e = into.Add(source, RowSupply, k, PlannerCategory.Money, today + 1);
+                        if (e != null && into.WantText)
+                        {
+                            e.Title = PlannerText.T(line.Shock == SupplyShock.Shortage ? "reallife_macro_plan_shortage_title" : "reallife_macro_plan_glut_title", "kind", CityText.Kind(k));
+                            e.What = CityText.ShockEffect(line.Shock, CityModel.ShockPercent(line, director.Level), line.Days);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("CityLinks.Rows", e);
+                }
             }
         }
     }

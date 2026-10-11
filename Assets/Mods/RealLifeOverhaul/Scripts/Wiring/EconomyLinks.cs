@@ -112,7 +112,8 @@ namespace RealLifeOverhaul
             /// each payment that leaves tomorrow by account, a card's statement day and the day its minimum is taken,
             /// the day the private lender wants its money and the last day of an approval for finance. (A hearing for
             /// a debt claim is Justice's own row.) It reads the credit file and the accounts and changes nothing.
-            /// Ids: 1, 2 and 3 with the day; 10 to 13 with the account's number; 14 and 15 with nothing.
+            /// Ids: 1, 2 and 3 with the day; 10 to 13 with the account's number; 14 and 15 with nothing; 20 with the day
+            /// and 21 with the kind of goods are the city's economy's (<see cref="CityLinks.Rows"/>).
             /// </summary>
             private sealed class FinanceSource : IPlannerSource
             {
@@ -131,6 +132,7 @@ namespace RealLifeOverhaul
                         due += accounts[i].Key == GameLoans.AccountKey ? Math.Max(0f, accounts[i].PaymentDue) : 0f;   // (the mod's accounts have a row each, below)
                     }
                     Accounts(file, today, into);
+                    CityLinks.Rows(Id, today, into);   // the city's economy: tomorrow's rate decision, a shortage or a glut from tomorrow
                     if (due > 0f)
                     {
                         PlannerEntry e = into.Add(Id, 1, today + 1, PlannerCategory.Money, today + 1);
