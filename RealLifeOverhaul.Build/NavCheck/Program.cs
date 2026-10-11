@@ -11,8 +11,8 @@ using RealLifeOverhaul.Nav;
 // the map picture on that city (timings are printed, never judged). The bus bays are checked here too (BayCheck.cs); with
 // --bays as an argument each run of the model bus is printed with what it measured. And the rules of the taxi called from
 // the phone (TaxiCheck.cs), the rules of the horn and the reckless drivers (StreetCheck.cs),
-// the minimap's buildings and water (BaseCheck.cs), and the small rules of the panels, the bars and the
-// camera's stand-down (PolishCheck.cs).
+// the minimap's buildings and water (BaseCheck.cs), the small rules of the panels, the bars and the
+// camera's stand-down (PolishCheck.cs), and the arithmetic of the hair finish (HairCheck.cs).
 internal static partial class Program
 {
     private static int _failed, _run;
@@ -47,6 +47,7 @@ internal static partial class Program
         Taxi();
         Streets();
         Polish();
+        Hair();
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         if (_failed == 0 && args.Length > 0 && File.Exists(args[0]))
         {
