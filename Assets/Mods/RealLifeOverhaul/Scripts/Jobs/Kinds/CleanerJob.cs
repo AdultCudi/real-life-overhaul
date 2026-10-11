@@ -1,5 +1,6 @@
 using BigAmbitions.Characters;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -21,10 +22,23 @@ namespace RealLifeOverhaul
     ///
     /// The shift goes on inside that one building (<see cref="WorksInside"/>); going into any
     /// other ends it, and the player may step out and come back.
+    ///
+    /// IN THE GAME'S OWN INTERFACE. The player works in the cleaner's uniform (<see cref="JobUniform"/>). The game's panel
+    /// over a place (<see cref="JobPanel"/>) stands over the client's door with "Go in" and over each spill in reach
+    /// with "Mop it up" on the game's interact key and "Let time pass" beside it, which hands the rest of the floor to the
+    /// game's clock (<see cref="ShiftClock"/>): <see cref="ShiftRates"/> minutes a spill, at
+    /// <see cref="ShiftRates.Share"/> of a spill's pay, no bonus. The figures are on the HUD in a copy of the game's job
+    /// panel (<see cref="ShiftFigures"/>).
     /// </summary>
-    public sealed class CleanerJob : Job
+    public sealed class CleanerJob : Job, IClockedShift
     {
         private enum Step { ToClient, Floor, Mopping }
+
+        private const float Debounce = 0.7f;           // seconds after a spill is mopped in which the panel's "let time pass" does nothing
+        private const float PanelUp = 1.6f;            // metres over the door or spill the panel stands
+        private const string ButtonEnter = "reallife_job_button_enter";
+        private const string ButtonMop = "reallife_job_cleaner_button_mop";
+        private const string ButtonSkip = "reallife_job_button_skip";
 
         private const float ClientMin = 15f;
         private const float ClientMax = 260f;
@@ -47,8 +61,21 @@ namespace RealLifeOverhaul
         private DoorSpot _client;
         private string _clientName;
         private int _patches;          // how many the shift is
-        private int _mopped;
+        private int _mopped;           // by hand and by the clock
+        private int _hand;             // ...of which by hand
+        private int _clockPay;         // what the clock's patches were paid
         private float _endsAt;
+        private float _mopOver = -10f;
+        private bool _dressed;
+        private readonly JobPanel _panel;
+        private ShiftFigures _figures;
+        private ShiftClock _clock;
+        private string _panelDoor;
+        private string _panelSpill;
+        private string _panelHands;
+        private string _panelLeft;
+        private string _objClock;
+        private int _shownSeconds = int.MinValue;
         private Vector3 _patchAt;
         private bool _hasPatch;
         private int _tries;
@@ -62,13 +89,25 @@ namespace RealLifeOverhaul
         private int _hint = -1;
         private string _doorLabel;
         private string _patchLabel;
-        private string _promptEnter;
-        private string _promptMop;
+
+        public CleanerJob()
+        {
+            _panel = new JobPanel("cleaner panel", Act, OfferSkip);
+        }
 
         public override JobDef Def => _def;
 
+        public override bool PassingTime => _clock != null && _clock.Working;
+
+        /// <summary>While the panel is up its first button is on the game's interact key: the mod's own use of that key stands aside.</summary>
+        public override bool OwnsInteractKey => _panel.Up;
+
+        int IClockedShift.ClockLeft => Mathf.Max(0, _patches - _mopped);
+
+        float IClockedShift.ClockPay => UnitPay();
+
         /// <summary>Walking out on a floor that is mostly still dirty is a bad shift.</summary>
-        public override bool QuitIsFailure => _mopped > 0 && _mopped * 2 < _patches;
+        public override bool QuitIsFailure => _mopped > 0 && _mopped * 2 < _patches;   // (by hand or by the clock)
 
         public override bool WorksInside(Buildings.Building building)
         {
@@ -102,22 +141,44 @@ namespace RealLifeOverhaul
             _clientName = JobSites.NameOf(_client);
             _doorLabel = JobText.T("reallife_job_cleaner_marker_door");
             _patchLabel = JobText.T("reallife_job_cleaner_marker_patch");
-            _promptEnter = JobText.T("reallife_job_prompt_enter");
-            _promptMop = JobText.T("reallife_job_cleaner_prompt_mop");
+            _panelDoor = JobText.T("reallife_job_cleaner_panel_door", "place", _clientName);
+            _panelSpill = JobText.T("reallife_job_cleaner_panel_spill");
+            _panelHands = JobText.T("reallife_job_obj_hands");
+            _panelLeft = JobText.T("reallife_job_cleaner_panel_left");
+            _objClock = JobText.T("reallife_job_cleaner_obj_clock");
             _endsAt = now + Seconds + JobSpots.Flat(Ctx.PlayerPosition, _client.Front) * SecondsPerMetre;
             _step = Step.ToClient;
+            _figures = new ShiftFigures(Ctx, Def, "reallife_job_cleaner_card_done");
+            _clock = new ShiftClock(Ctx, this, this, "cleaner", "reallife_job_cleaner_unit", "reallife_job_cleaner_units", "reallife_job_cleaner_slip");
             Mark(_client.Front, _doorLabel);
             Hint(0);
+            Figures(now);
             Ctx.Logger?.Info("Jobs: cleaning at " + _clientName + " (" + _client.Name + "), " + _patches + " patches.");
+            if (Meta.Dev.Verbose)
+            {
+                Ctx.Logger?.Info("Jobs: cleaner: " + JobSpots.Flat(Ctx.PlayerPosition, _client.Front).ToString("F0") + " m to the client's door; shown in the game's own interface: job panel "
+                                 + (_figures.Shown ? "copied" : "NOT copied (the panels over the door and the spill are all there is)") + ", " + ShiftRates.Minutes(Def)
+                                 + " game minutes a patch by the clock at " + ShiftRates.Percent + "%.");
+            }
             return true;
         }
 
         public override void Tick(float now)
         {
-            ClockSeconds = Mathf.CeilToInt(_endsAt - now);
+            if (_clock.Hold())
+            {
+                Figures(now);   // the clock is doing the work (or the offer is up, with the game paused)
+                return;
+            }
+            if (!_dressed && !Ctx.Driving && !PlayerHelper.IsUsingVehicle && Ctx.Player.Character.visible)
+            {
+                _dressed = true;
+                Ctx.Uniform.Wear(Ctx.Player, CityLook.Cleaner);   // once: the director takes it off however the shift ends
+            }
             if (now >= _endsAt && _step != Step.Mopping)
             {
                 Ctx.Say("reallife_job_cleaner_time", 8f);
+                _panel.Hide();
                 Conclude();
                 return;
             }
@@ -145,21 +206,59 @@ namespace RealLifeOverhaul
                 case Step.Floor: Floor(now); break;
                 case Step.Mopping: Mopping(now); break;
             }
+            if (!Over)
+            {
+                Figures(now);
+            }
+        }
+
+        // The shift's figures on the card: each line is written only when what it says changes.
+        private void Figures(float now)
+        {
+            bool clock = _clock.Working;
+            if (clock)
+            {
+                Show(_objClock);
+            }
+            _figures.Objective(Objective);
+            _figures.Units(_mopped + _clock.Done, _patches);
+            int seconds = clock ? int.MaxValue : Mathf.Max(0, Mathf.CeilToInt(_endsAt - now));
+            if (seconds != _shownSeconds)
+            {
+                _shownSeconds = seconds;
+                _figures.Limit(clock ? null : JobText.T("reallife_job_card_time_left", "time", ShiftFigures.Clock(seconds)), seconds <= 60 ? WorldPanel.Yellow() : _panel.White);
+            }
+            _figures.Money(Mathf.RoundToInt(_hand * UnitPay()) + _clockPay, 0);
+            _figures.Time(Mathf.Max(0, _patches - _mopped - _clock.Done) * _clock.MinutesEach);
         }
 
         private void ToClient()
         {
             Mark(_client.Front, _doorLabel);
             Hint(_mopped > 0 ? 1 : 0);
-            bool atDoor = !Ctx.Driving && !PlayerHelper.IsUsingVehicle && JobSpots.Flat(Ctx.PlayerPosition, _client.Front) < DoorReach;
-            Prompt = atDoor ? _promptEnter : null;
+            if (!Ctx.Driving && !PlayerHelper.IsUsingVehicle && JobSpots.Flat(Ctx.PlayerPosition, _client.Front) < DoorReach)
+            {
+                _panel.Offer(_panelDoor, _panelLeft, JobText.Number(_patches - _mopped), _panel.White, ButtonEnter, true, null, false);
+                _panel.Show(_client.Front + Vector3.up * PanelUp, Ctx.Player);
+            }
+            else
+            {
+                _panel.Hide();
+            }
         }
 
         private void Floor(float now)
         {
+            if (_mopped >= _patches)
+            {
+                Ctx.Say("reallife_job_cleaner_done", 7f);   // (the last of them was done by the clock)
+                _panel.Hide();
+                Conclude();
+                return;
+            }
             if (!_hasPatch)
             {
-                Prompt = null;
+                _panel.Hide();
                 Unmark();
                 if (now < _nextTry)
                 {
@@ -181,13 +280,16 @@ namespace RealLifeOverhaul
             }
             Mark(_patchAt, _patchLabel);
             bool onIt = JobSpots.Flat(Ctx.Player.transform.position, _patchAt) < PatchReach;
-            Prompt = onIt && !PlayerHelper.IsHoldingItem ? _promptMop : null;
-            if (onIt && PlayerHelper.IsHoldingItem)
+            if (onIt)
             {
-                Hint(4);
+                bool hands = PlayerHelper.IsHoldingItem;
+                _panel.Offer(hands ? _panelHands : _panelSpill, _panelLeft, JobText.Number(_patches - _mopped), _panel.White, ButtonMop, !hands, hands ? null : ButtonSkip, true);
+                _panel.Show(_patchAt + Vector3.up * PanelUp, Ctx.Player);
+                Hint(hands ? 4 : 2);
             }
             else
             {
+                _panel.Hide();
                 Hint(2);
             }
         }
@@ -195,7 +297,7 @@ namespace RealLifeOverhaul
         // A clear piece of the shop's floor the player can walk to, away from the patches already done.
         private bool NextPatch()
         {
-            if (!JobSites.FloorSpot(Ctx.Player.transform.position, _done, Mathf.Min(_mopped, _done.Length), PatchesApart, out _patchAt))
+            if (!JobSites.FloorSpot(Ctx.Player.transform.position, _done, Mathf.Min(_hand, _done.Length), PatchesApart, out _patchAt))
             {
                 return false;
             }
@@ -220,15 +322,14 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        public override void Interact(float now)
+        // The panel's first button was pressed (the game ran it on its key or on a click).
+        private void Act(string action)
         {
-            if (Prompt == null)
+            if (Ctx == null || Over)
             {
                 return;
             }
-            string prompt = Prompt;
-            Prompt = null;
-            if (ReferenceEquals(prompt, _promptEnter))
+            if (ReferenceEquals(action, ButtonEnter))
             {
                 if (_client.Building != null)
                 {
@@ -236,10 +337,17 @@ namespace RealLifeOverhaul
                 }
                 return;
             }
-            if (_step != Step.Floor || !_hasPatch)
+            if (!ReferenceEquals(action, ButtonMop) || _step != Step.Floor || !_hasPatch || PlayerHelper.IsHoldingItem)
             {
                 return;
             }
+            _panel.Hide();
+            if (Meta.Dev.Verbose)
+            {
+                Ctx.Logger?.Info("Jobs: cleaner: mopping spill " + (_mopped + 1) + " of " + _patches + ", " + JobSpots.Flat(Ctx.Player.transform.position, _patchAt).ToString("F1")
+                                 + " m from its middle; " + Mathf.Max(0, Mathf.CeilToInt(_endsAt - Time.time)) + " s of the floor's time left.");
+            }
+            float now = Time.time;
             // Held on the patch, facing across it, and mopping: the mod's clip and mop if the bundle has them, else the game's own.
             Ctx.Self.Hold();
             bool mopping = Ctx.Self.Clip(MopClip);
@@ -275,17 +383,24 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            if (_mopped < _done.Length)
+            if (_hand < _done.Length)
             {
-                _done[_mopped] = _patchAt;
+                _done[_hand] = _patchAt;
             }
+            _hand++;
             _mopped++;
+            _mopOver = now;
             _hint = -1;   // the count in the line has changed
             StopMopping();
             ClearPatch();
             _hasPatch = false;
             _step = Step.Floor;
             _nextTry = now + 0.4f;
+            if (Meta.Dev.Verbose)
+            {
+                Ctx.Logger?.Info("Jobs: cleaner: spill mopped by hand in " + MopSeconds.ToString("F1") + " s; mopped " + _mopped + " of " + _patches + ", "
+                                 + Mathf.Max(0, Mathf.CeilToInt(_endsAt - now)) + " s of the floor's time left.");
+            }
             if (_mopped >= _patches)
             {
                 Ctx.Say("reallife_job_cleaner_done", 7f);
@@ -328,7 +443,7 @@ namespace RealLifeOverhaul
             {
                 case 0: Show(JobText.T("reallife_job_cleaner_obj_go", "place", _clientName)); break;
                 case 1: Show(JobText.T("reallife_job_cleaner_obj_back", "place", _clientName)); break;
-                case 2: Show(JobText.T("reallife_job_cleaner_obj_floor", "done", _mopped.ToString(), "count", _patches.ToString())); break;
+                case 2: Show(JobText.T("reallife_job_cleaner_obj_spill")); break;
                 case 3: Show(JobText.T("reallife_job_cleaner_obj_mopping")); break;
                 default: Show(JobText.T("reallife_job_obj_hands")); break;
             }
@@ -343,7 +458,7 @@ namespace RealLifeOverhaul
 
         private void Settle()
         {
-            if (_paid || _mopped <= 0 || Ctx == null)
+            if (_paid || _hand <= 0 || Ctx == null)
             {
                 return;
             }
@@ -351,11 +466,42 @@ namespace RealLifeOverhaul
             int each = UnitPay();
             var slip = new PaySlip
             {
-                Units = _mopped,
-                Base = _mopped * each,
-                Bonus = _mopped >= _patches ? Mathf.RoundToInt(_mopped * each * 0.1f) : 0   // the whole floor
+                Units = _hand,
+                Base = _hand * each,
+                Bonus = _mopped >= _patches ? Mathf.RoundToInt(_hand * each * 0.1f) : 0   // the whole floor (the clock's patches earn no bonus)
             };
             Ctx.Pay(this, slip, "reallife_job_cleaner_slip");
+        }
+
+        // ---------------------------------------------------------------- the rest of the floor by the clock
+
+        private void OfferSkip()
+        {
+            if (Ctx == null || Over || _step != Step.Floor || PlayerHelper.IsHoldingItem || Time.time - _mopOver < Debounce || !_clock.Offer())
+            {
+                return;
+            }
+            _panel.Hide();   // the game's activity panel has the keys while it is up
+        }
+
+        void IClockedShift.ClockStarted()
+        {
+            // The floor is cleared: the patch and the bucket go back, and the next patch is found when the clock is over.
+            ClearPatch();
+            _hasPatch = false;
+            Unmark();
+            _panel.Hide();
+        }
+
+        void IClockedShift.ClockEnded(int count, int pay, float away)
+        {
+            _mopped += count;
+            _clockPay += pay;
+            _endsAt += away;   // the minutes the clock took are not the floor's own time
+            _mopOver = Time.time;
+            _nextTry = Time.time + 0.4f;
+            _hint = -1;
+            _shownSeconds = int.MinValue;
         }
 
         public override void End(JobEnd why)
@@ -364,7 +510,8 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            Prompt = null;
+            _panel.Hide();
+            _clock?.Close();   // the game's activity panel goes; nothing more is settled through it
             Ctx.Self.Rest();
             Ctx.Self.Free();
             ClearPatch();

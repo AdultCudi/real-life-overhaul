@@ -18,20 +18,19 @@ namespace RealLifeOverhaul
     /// <summary>
     /// Jobs the player takes themselves: one at a time, found on the phone (<see cref="JobPhone"/>),
     /// played on the street. The director owns the job that is on: starts it, ticks it five
-    /// times a second, draws what it asks for (<see cref="JobHud"/>), pays through the game's
+    /// times a second, keeps its figures on the HUD (<see cref="ShiftCard"/>), pays through the game's
     /// own transactions, and ends it cleanly whatever happens to the player meanwhile (hospital,
     /// custody, sleep, a time skip, going indoors, a vanilla mission, a load). It keeps the
     /// experience, strikes and daily limits (<see cref="JobState"/>) in the save's modData.
     ///
     /// With no job on, Update is two comparisons; once a second it looks at the day and the save
-    /// hook. With one on, the per-frame work is the marker (one projection) and one key test;
+    /// hook. With one on, the per-frame work is keeping the card off the screen while a menu is open;
     /// everything else is on the 0.2 s tick. Anything unexpected is logged once, the job is
     /// ended with everything given back, and jobs stay off for the session.
     /// </summary>
     public class JobDirector : MonoBehaviour
     {
         private const float TickInterval = 0.2f;
-        private const float SlipSeconds = 9f;
         private const float CrashSpeed = 3f;         // m/s of closing speed that counts as a crash on the job
         private const float CrashGap = 2.5f;         // seconds between two crashes that both count
         private const float EnergyFloor = 12f;       // work never takes the player below this (the game faints them at zero)
@@ -42,10 +41,10 @@ namespace RealLifeOverhaul
         public static IModLogger Logger;
         public static JobDirector Instance { get; private set; }
 
-        /// <summary>True while a job's key prompt is on screen: the mod's own E/F (enter a door, get in a car) stands aside.</summary>
+        /// <summary>True while a job's panel has the interaction key (its first button): the mod's own E/F (enter a door, get in a car) stands aside.</summary>
         public static bool TakesInteractKey =>
             Instance != null && (Instance._interactFrame == Time.frameCount
-                                 || (Instance._job != null && (Instance._job.Prompt != null || Instance._job.OwnsInteractKey))
+                                 || (Instance._job != null && Instance._job.OwnsInteractKey)
                                  || (Instance._job == null && Instance._boards != null && Instance._boards.InReach)
                                  || (Instance._job == null && Instance._career != null && Instance._career.Near >= 0));
 
@@ -81,10 +80,9 @@ namespace RealLifeOverhaul
         private float _lastInside = -100f;   // when the player was last inside the building the job works in
         private float _guidedTime;
         private Job _job;
-        private string _title;
+        private int _interactFrame = -1;   // the frame in which a board's button took the key, whichever component runs first
         private float _nextTick;
         private float _nextSlow;
-        private float _slipUntil;
         private bool _broken;
         private bool _wasPulledOver;
         private float _momentAt = -1f;   // Time.time at which the job is owed its Moment; negative: none
@@ -93,7 +91,6 @@ namespace RealLifeOverhaul
         private bool _guided;            // the game's own job guider (arrow, city map) points at the job's marker
         private Vector3 _guidedAt;
         private bool _guiderBroken;
-        private int _interactFrame = -1;   // the frame in which a job took the key, whichever component runs first
 
         private void Awake()
         {
@@ -185,19 +182,6 @@ namespace RealLifeOverhaul
                 {
                     return;   // (at a board the game's own panel has the key: its button calls BoardClicked)
                 }
-                if (_job.Choices != null)
-                {
-                    int choice = JobKeys.ChoiceDown();
-                    if (choice >= 0 && !UiOpen())
-                    {
-                        _job.Choose(choice, Time.time);
-                    }
-                }
-                if ((_job.Prompt != null || _job.OwnsInteractKey) && InteractPressed())
-                {
-                    _interactFrame = Time.frameCount;
-                    _job.Interact(Time.time);
-                }
                 if (_momentAt >= 0f && Time.time >= _momentAt)
                 {
                     _momentAt = -1f;
@@ -220,10 +204,6 @@ namespace RealLifeOverhaul
                 _broken = true;
                 EndJob(JobEnd.Fault, null);
                 HideBoardPanel();
-                if (JobHud.Exists)
-                {
-                    JobHud.Instance.HideAll(true);
-                }
             }
         }
 
@@ -274,14 +254,6 @@ namespace RealLifeOverhaul
                 _career.Slow(gm.playerController.transform.position, false, true);   // the rota goes on while a job is worked
             }
 
-            if (_slipUntil > 0f && now >= _slipUntil)
-            {
-                _slipUntil = 0f;
-                if (JobHud.Exists)
-                {
-                    JobHud.Instance.HideSlip();
-                }
-            }
         }
 
         private System.Action _onSave;   // made once: Core/SaveHook compares it, it is never built again
@@ -495,17 +467,9 @@ namespace RealLifeOverhaul
             _boards.Away();
             HideBoardPanel();
             LastJobId = def.Id;
-            _title = shift != null
-                ? JobText.T("reallife_career_shift_title", "title", JobText.T(shift.Rank.TitleKey), "employer", JobText.T(shift.Employer.NameKey))
-                : JobText.T("reallife_job_title", "job", JobText.T(def.NameKey), "level", _context.Level.ToString());
             _wasPulledOver = PoliceAttention.PulledOver;
             _momentAt = -1f;
             _nextTick = 0f;
-            _slipUntil = 0f;
-            if (JobHud.Exists)
-            {
-                JobHud.Instance.HideSlip();
-            }
             Logger?.Info("Jobs: '" + def.Id + "' started" + (test ? " by the test button" : string.Empty) + ", level " + _context.Level + ", rate " + _context.Rate.ToString("F2") + ".");
             reasonKey = null;
             return true;
@@ -637,65 +601,12 @@ namespace RealLifeOverhaul
 
         private void Draw()
         {
-            if (_job.NativeUi)
+            // Everything of a job is in the game's own interface. The one thing done per frame is to keep its figures off
+            // the screen while a menu of the game's is open (two comparisons when nothing changes); they stay up behind the
+            // game's activity panel, which is the shift being worked.
+            if (_card != null)
             {
-                // Everything of this job is in the game's own interface. The one thing done per frame is to keep its
-                // figures off the screen while a menu of the game's is open (two comparisons when nothing changes);
-                // they stay up behind the game's activity panel, which is the shift being worked.
-                if (_card != null)
-                {
-                    _card.Show(!ThirdPersonCamera.IsUiOpen() || PlayerActivityUI.IsPanelOpen);
-                }
-                return;
-            }
-            JobHud hud = JobHud.Instance;
-            if (ThirdPersonCamera.IsUiOpen())
-            {
-                hud.HideAll(false);
-                return;
-            }
-            hud.ShowObjective(_title, _job.Objective);
-            if (_job.ClockSeconds >= 0)
-            {
-                hud.ShowClock(_job.ClockSeconds);
-            }
-            else
-            {
-                hud.ShowStatus(_job.Status);
-            }
-            if (_job.HasMarker && !_guided)   // the game's own guider is pointing at it otherwise
-            {
-                hud.ShowMarkerAt(_job.MarkerLabel, _job.MarkerAt, _context.Car != null ? _context.Car.transform.position : _context.Player.transform.position);
-            }
-            else
-            {
-                hud.HideMarker();
-            }
-            if (_job.Choices != null)
-            {
-                hud.ShowChoices(_job.Choices, _job.ChoiceLit);
-            }
-            else
-            {
-                hud.HideChoices();
-            }
-            if (_job.Prompt != null)
-            {
-                hud.ShowPrompt(_job.Prompt);
-                Transform over = _job.PromptOver;
-                if (over != null)
-                {
-                    hud.ShowTarget(over.position + Vector3.up * _job.PromptLift);   // one more projection, only while somebody is in reach
-                }
-                else
-                {
-                    hud.HideTarget();
-                }
-            }
-            else
-            {
-                hud.HidePrompt();
-                hud.HideTarget();
+                _card.Show(!ThirdPersonCamera.IsUiOpen() || PlayerActivityUI.IsPanelOpen);
             }
         }
 
@@ -751,12 +662,6 @@ namespace RealLifeOverhaul
                 _guiderBroken = true;
                 Logger?.Error(e);
             }
-        }
-
-        // The interaction key (JobKeys), never while a screen of the game's is open.
-        private static bool InteractPressed()
-        {
-            return JobKeys.InteractDown() && !UiOpen();
         }
 
         // A screen of the game's has the keys: its menus, and the face-to-face dialogue a board opens.
@@ -856,11 +761,8 @@ namespace RealLifeOverhaul
                         level == JobCatalogue.ReferenceLevel ? "reallife_job_level_reference" : "reallife_job_level_up", "level", level.ToString(), 10f);
                 }
             }
-            if (!job.NativeUi)
-            {
-                ShowSlip(JobText.T(titleKey), slip);   // (a job in the game's own interface has one notification for the whole shift, when it ends)
-            }
-            Logger?.Info("Jobs: '" + def.Id + "' paid " + total + " (base " + slip.Base + ", distance " + slip.Distance + ", tips " + slip.Tips
+            // (one notification for the whole shift, when it ends: see SlipNote)
+            Logger?.Info("Jobs: '" + def.Id + "' paid " + total + " for " + JobText.T(titleKey) + " (base " + slip.Base + ", distance " + slip.Distance + ", tips " + slip.Tips
                          + ", bonus " + slip.Bonus + ", penalties " + slip.Penalty + ") for " + slip.Units + " unit(s).");
         }
 
@@ -873,37 +775,6 @@ namespace RealLifeOverhaul
             {
                 EnergyHelper.SpentEnergyOnce(amount);
             }
-        }
-
-        private void ShowSlip(string title, in PaySlip slip)
-        {
-            _text.Length = 0;
-            Line("reallife_job_slip_base", slip.Base, false);
-            Line("reallife_job_slip_distance", slip.Distance, false);
-            Line("reallife_job_slip_tips", slip.Tips, false);
-            Line("reallife_job_slip_bonus", slip.Bonus, false);
-            Line("reallife_job_slip_penalty", slip.Penalty, true);
-            _text.Append('\n').Append(JobText.T("reallife_job_slip_total")).Append("   <b><color=#7CE08A>").Append(JobText.Money(slip.Total)).Append("</color></b>");
-            JobHud.Instance.ShowSlip(title, _text.ToString());
-            _slipUntil = Time.unscaledTime + SlipSeconds;
-        }
-
-        private void Line(string key, int amount, bool minus)
-        {
-            if (amount == 0)
-            {
-                return;
-            }
-            _text.Append(JobText.T(key)).Append("   ");
-            if (minus)
-            {
-                _text.Append("<color=#FF8A70>-").Append(JobText.Money(amount)).Append("</color>");
-            }
-            else
-            {
-                _text.Append("<color=#FFFFFF>").Append(JobText.Money(amount)).Append("</color>");
-            }
-            _text.Append('\n');
         }
 
         /// <summary>
@@ -988,15 +859,11 @@ namespace RealLifeOverhaul
             CareerShift shift = _context.Shift;
             _context.Shift = null;
             _context.Gig = null;
-            if (JobHud.Exists)
-            {
-                JobHud.Instance.HideAll(false);
-            }
             if (shift != null)
             {
                 _career.ShiftEnded(job, shift, why, failed);   // the basic wage and the payslip, after the work's own slip
             }
-            else if (job.NativeUi)
+            else
             {
                 try
                 {
@@ -1200,13 +1067,6 @@ namespace RealLifeOverhaul
                 return false;
             }
             return Free(out reasonKey) && StartJob(def, false, out reasonKey, null, gig);
-        }
-
-        /// <summary>The employer's payslip, in the place of the job's own slip and for a little longer.</summary>
-        public void ShowCareerSlip(string title, string body)
-        {
-            JobHud.Instance.ShowSlip(title, body);
-            _slipUntil = Time.unscaledTime + SlipSeconds + 4f;
         }
 
         // ---------------------------------------------------------------- test buttons for careers

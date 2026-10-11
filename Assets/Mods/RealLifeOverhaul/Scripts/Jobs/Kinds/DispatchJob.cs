@@ -1,6 +1,9 @@
+using System;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using UI.Notification;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
@@ -113,16 +116,29 @@ namespace RealLifeOverhaul
     /// <summary>
     /// A shift at the dispatch desk, a courier firm's third rank. Three batches of six parcels come
     /// in; each parcel is put on one of three vans (three parcels a van at most) with the choice
-    /// keys, against the clock, on a small map (<see cref="DispatchBoard"/>) that draws each van's
-    /// round as it grows. The interaction key takes the last parcel back. A plan is paid by how near
+    /// buttons, against the clock, on a small map (<see cref="DispatchBoard"/>) that draws each van's
+    /// round as it grows. A button takes the last parcel back. A plan is paid by how near
     /// it came to the best plan there was for that batch (found by trying all 729): better plans
     /// pay more, and two poor ones in a shift are a bad shift. Worked on foot at the depot; walking
     /// off ends it.
+    ///
+    /// IN THE GAME'S OWN INTERFACE. The game's panel over a place (<see cref="JobPanel"/>) stands over the desk (over the
+    /// player's head when they are not near it) with a button for each van and "Take one back", on the game's keys.
+    /// The shift's figures are on the HUD in a copy of the game's job panel (<see cref="ShiftFigures"/>). There is no
+    /// "Let time pass": a plan is a decision, not a wait. The player works in their own clothes.
     /// </summary>
     public sealed class DispatchJob : Job
     {
         private enum Step { Planning, Result }
 
+        /// <summary>Poor plans that make a bad shift (more than half the batches).</summary>
+        public const int PoorAllowed = Plans / 2 + 1;
+
+        private const float Debounce = 0.7f;        // seconds after a batch begins in which the panel's buttons do nothing (a key meant for the last parcel)
+        private const float DeskReach = 8f;         // metres from the desk within which the panel stands over it
+        private const float PanelUp = 1.8f;
+        private static readonly string[] ButtonVan = { "reallife_job_dispatch_button_van_a", "reallife_job_dispatch_button_van_b", "reallife_job_dispatch_button_van_c" };
+        private const string ButtonBack = "reallife_job_dispatch_button_back";
         private const int Plans = 3;
         private const float PlanSeconds = 55f;
         private const float ResultSeconds = 6f;
@@ -131,7 +147,6 @@ namespace RealLifeOverhaul
         private const string DeskClip = "clipboard_write";
         private const string WishClip = "desk_plan";
 
-        private static readonly string[] VanLabels = { "reallife_job_dispatch_van_a", "reallife_job_dispatch_van_b", "reallife_job_dispatch_van_c" };
         private static readonly string[] Great = { "reallife_job_dispatch_great_1", "reallife_job_dispatch_great_2" };
         private static readonly string[] Fair = { "reallife_job_dispatch_fair_1", "reallife_job_dispatch_fair_2" };
         private static readonly string[] Poor = { "reallife_job_dispatch_poor_1", "reallife_job_dispatch_poor_2" };
@@ -157,8 +172,27 @@ namespace RealLifeOverhaul
         private string _title;
         private float _fullSaid = -10f;
 
+        // The game's own interface.
+        private readonly JobPanel _panel;
+        private readonly Action[] _onVan = new Action[DispatchPlan.Vans];
+        private readonly string[] _asks = new string[DispatchPlan.Parcels];
+        private Action _onBack;
+        private ShiftFigures _figures;
+        private string _panelLoads;
+        private float _batchAt;
+        private int _panelState = int.MinValue;
+        private int _shownSeconds = int.MinValue;
+
+        public DispatchJob()
+        {
+            _panel = new JobPanel("dispatch panel");
+        }
+
         public override JobDef Def => _def;
-        public override bool OwnsInteractKey => _step == Step.Planning && !Over;
+
+        /// <summary>While the panel is up its first button is on the game's interact key: the mod's own use of that key stands aside.</summary>
+        public override bool OwnsInteractKey => _panel.Up;
+
         public override bool QuitIsFailure => _plan < Plans && _plan > 0 && _poor * 2 >= _plan;
 
         protected override bool OnBegin(float now)
@@ -175,8 +209,26 @@ namespace RealLifeOverhaul
             {
                 Ctx.Self.Over(DeskClip, BodyMask.Upper);
             }
+            for (int v = 0; v < DispatchPlan.Vans; v++)
+            {
+                int van = v;
+                _onVan[v] = () => Choose(van, Time.time);
+            }
+            _onBack = TakeBack;
+            for (int i = 0; i < DispatchPlan.Parcels; i++)
+            {
+                _asks[i] = JobText.T("reallife_job_dispatch_panel_ask", "parcel", (i + 1).ToString(), "count", DispatchPlan.Parcels.ToString());
+            }
+            _panelLoads = JobText.T("reallife_job_dispatch_panel_loads");
+            _figures = new ShiftFigures(Ctx, Def, "reallife_job_dispatch_card_done");
             NewBatch(now);
+            Figures(now);
             Ctx.Logger?.Info("Jobs: dispatcher shift, " + Plans + " batches of " + DispatchPlan.Parcels + ".");
+            if (Meta.Dev.Verbose)
+            {
+                Ctx.Logger?.Info("Jobs: dispatch: the desk is " + JobSpots.Flat(_desk, Ctx.PlayerPosition).ToString("F1") + " m from the player; shown in the game's own interface: job panel "
+                                 + (_figures.Shown ? "copied" : "NOT copied (the panel over the desk is all there is)") + ", no clock offered (a plan is a decision, not a wait).");
+            }
             return true;
         }
 
@@ -213,7 +265,8 @@ namespace RealLifeOverhaul
             _step = Step.Planning;
             _stepEnd = now + PlanSeconds;
             _title = JobText.T("reallife_job_dispatch_board", "plan", (_plan + 1).ToString(), "count", Plans.ToString());
-            Status = null;
+            _batchAt = now;
+            _panelState = int.MinValue;
             Refresh();
         }
 
@@ -223,24 +276,74 @@ namespace RealLifeOverhaul
             float cost = DispatchPlan.Cost(_where, _van, _rounds);
             string foot = JobText.T("reallife_job_dispatch_foot", "km", (cost * DispatchPlan.Kilometres).ToString("F1"));
             DispatchBoard.Instance.Draw(_title, foot, _where, _van, _rounds, _step == Step.Planning && _current < DispatchPlan.Parcels ? _current : -1);
+            _panelState = int.MinValue;
             if (_step == Step.Planning && _current < DispatchPlan.Parcels)
             {
-                var labels = new string[JobKeys.Choices];
-                for (int v = 0; v < DispatchPlan.Vans; v++)
-                {
-                    labels[v] = JobText.T(VanLabels[v], "load", _load[v].ToString(), "room", DispatchPlan.Capacity.ToString());
-                }
-                Choices = labels;
-                ChoiceLit = -1;
                 Show(JobText.T("reallife_job_dispatch_obj", "parcel", (_current + 1).ToString(), "count", DispatchPlan.Parcels.ToString()));
-            }
-            else
-            {
-                Choices = null;
             }
         }
 
         public override void Tick(float now)
+        {
+            Work(now);
+            if (!Over)
+            {
+                Figures(now);
+                Panel(now);
+            }
+        }
+
+        // The shift's figures on the card: each line is written only when what it says changes.
+        private void Figures(float now)
+        {
+            _figures.Objective(Objective);
+            _figures.Units(_plan, Plans);
+            int seconds = _step == Step.Planning ? Mathf.Max(0, Mathf.CeilToInt(_stepEnd - now)) : -1;
+            int key = (seconds + 1) | (_poor << 12);
+            if (key != _shownSeconds)
+            {
+                _shownSeconds = key;
+                string poor = JobText.T("reallife_job_dispatch_card_poor", "poor", _poor.ToString(), "most", PoorAllowed.ToString());
+                _figures.Limit(seconds < 0 ? poor : JobText.T("reallife_job_card_time_left", "time", ShiftFigures.Clock(seconds)) + ", " + poor,
+                    _poor >= PoorAllowed - 1 ? WorldPanel.Yellow() : _panel.White);
+            }
+            _figures.Money(_earned, 0);
+            _figures.Time(-1);
+        }
+
+        // A button for each van, and "Take one back": made only when a parcel, a van's load or the second changes.
+        private void Panel(float now)
+        {
+            if (_step != Step.Planning || _current >= DispatchPlan.Parcels)
+            {
+                _panel.Hide();
+                _panelState = int.MinValue;
+                return;
+            }
+            int seconds = Mathf.Clamp(Mathf.CeilToInt(_stepEnd - now), 0, 99);
+            int state = _current | (seconds << 4) | (_load[0] << 12) | (_load[1] << 14) | (_load[2] << 16);
+            if (state != _panelState)
+            {
+                _panelState = state;
+                _panel.Panel.Lines(_asks[_current], _panelLoads.Replace("{a}", _load[0].ToString()).Replace("{b}", _load[1].ToString()).Replace("{c}", _load[2].ToString()),
+                    ShiftFigures.Clock(seconds), seconds <= 10 ? WorldPanel.Red() : seconds <= 20 ? WorldPanel.Yellow() : _panel.White);
+                for (int v = 0; v < DispatchPlan.Vans; v++)
+                {
+                    _panel.Panel.Button(v, ButtonVan[v], _onVan[v], _load[v] < DispatchPlan.Capacity, true);
+                }
+                _panel.Panel.Button(3, ButtonBack, _onBack, _current > 0, false);
+            }
+            if (JobSpots.Flat(Ctx.PlayerPosition, _desk) < DeskReach)
+            {
+                _panel.Show(_desk + Vector3.up * PanelUp, Ctx.Player);
+            }
+            else
+            {
+                _panel.Show(Ctx.Player.transform, 2.1f, Ctx.Player);
+            }
+        }
+
+        private void Work(float now)
         {
             if (Ctx.Driving || JobSpots.Flat(Ctx.PlayerPosition, _desk) > LeaveReach)
             {
@@ -251,7 +354,6 @@ namespace RealLifeOverhaul
             }
             if (_step == Step.Planning)
             {
-                ClockSeconds = Mathf.CeilToInt(_stepEnd - now);
                 if (now >= _stepEnd)
                 {
                     // Out of time: what is left goes on whichever van has room, in order. Rarely a good plan.
@@ -289,7 +391,7 @@ namespace RealLifeOverhaul
 
         public override void Choose(int choice, float now)
         {
-            if (_step != Step.Planning || _current >= DispatchPlan.Parcels || choice < 0 || choice >= DispatchPlan.Vans)
+            if (Ctx == null || Over || _step != Step.Planning || _current >= DispatchPlan.Parcels || choice < 0 || choice >= DispatchPlan.Vans || now - _batchAt < Debounce)
             {
                 return;
             }
@@ -315,10 +417,10 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The interaction key takes the last parcel back off its van.
-        public override void Interact(float now)
+        // The panel's "Take one back": the last parcel comes off its van.
+        private void TakeBack()
         {
-            if (_step != Step.Planning || _current <= 0)
+            if (Ctx == null || Over || _step != Step.Planning || _current <= 0)
             {
                 return;
             }
@@ -345,9 +447,6 @@ namespace RealLifeOverhaul
             }
             _step = Step.Result;
             _stepEnd = now + ResultSeconds;
-            ClockSeconds = -1;
-            Status = JobText.Money(pay);
-            Choices = null;
             string km = (cost * DispatchPlan.Kilometres).ToString("F1");
             string best = (_best * DispatchPlan.Kilometres).ToString("F1");
             DispatchBoard.Instance.Draw(_title, JobText.T("reallife_job_dispatch_foot_done", "km", km, "best", best), _where, _van, _rounds, -1);
@@ -384,8 +483,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            Choices = null;
-            Prompt = null;
+            _panel.Hide();
             Ctx.Self.StopOver();
             if (why != JobEnd.Fault)
             {

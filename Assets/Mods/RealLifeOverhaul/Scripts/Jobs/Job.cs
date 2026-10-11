@@ -156,10 +156,12 @@ namespace RealLifeOverhaul
 
     /// <summary>
     /// A job the player can take: one small class per job. It is a list of steps the director
-    /// ticks five times a second; between ticks it does nothing. It says what to show (the
-    /// objective, a marker, a key prompt) by setting the fields below, and the director puts
-    /// them on screen. Whatever it puts on the street it takes back in <see cref="End"/>, which
-    /// the director calls exactly once on every way a job can stop.
+    /// ticks five times a second; between ticks it does nothing. It shows everything in the game's
+    /// own interface (<see cref="ShiftFigures"/> on a copy of the game's job panel, <see cref="JobPanel"/>
+    /// over the place of work, <see cref="ShiftClock"/> for the rest of a shift left to the game's
+    /// clock) and says where the game's guider points by setting a marker. Whatever it puts on the
+    /// street or on screen it takes back in <see cref="End"/>, which the director calls exactly once
+    /// on every way a job can stop.
     ///
     /// To add a job: a row in <see cref="JobCatalogue"/>, a class like this in Jobs/Kinds, one
     /// line in <see cref="JobDirector.Create"/>, its strings at the end of en.json.
@@ -170,30 +172,21 @@ namespace RealLifeOverhaul
 
         public abstract JobDef Def { get; }
 
-        // ------------------------------------------------ what the director shows; set only when it changes
+        // ------------------------------------------------ what the job says; set only when it changes
+        /// <summary>What to do now, in words: the job writes it on line 1 of its shift card (<see cref="ShiftFigures"/>).</summary>
         public string Objective { get; protected set; }
-        public string Status { get; protected set; }           // top right of the panel, as words...
-        public int ClockSeconds { get; protected set; } = -1;   // ...or a countdown; -1 = none
+
+        /// <summary>The place the game's own guider (arrow and city map) points at; the director keeps it where the job puts it.</summary>
         public bool HasMarker { get; protected set; }
         public Vector3 MarkerAt { get; protected set; }
         public string MarkerLabel { get; protected set; }
-        public string Prompt { get; protected set; }           // null = no key wanted right now
-        public Transform PromptOver { get; protected set; }    // whose head the prompt is about (a small marker is drawn over it); null = nobody
-        public float PromptLift { get; protected set; }        // metres above that transform the marker sits
 
         /// <summary>
-        /// True while the interaction key is this job's whether or not a prompt is showing: the
-        /// mod's own "enter a door, get in a car" key stands aside, and <see cref="Interact"/> is
-        /// called on every press (it says so itself when there is nothing in reach).
+        /// True while the interaction key is the job's panel's first button (<see cref="JobPanel"/>, the game's own box over a
+        /// place): the mod's own "enter a door, get in a car" key stands aside. The game runs the button on its key or
+        /// on a click; the mod reads no key.
         /// </summary>
         public virtual bool OwnsInteractKey => false;
-
-        /// <summary>
-        /// True for a job that shows everything in the game's own interface (the game's panel over a place, a copy of
-        /// its job panel, its activity panel, its notifications): the director then draws nothing of the mod's own
-        /// job HUD for it, and its pay slip is one of the game's notifications.
-        /// </summary>
-        public virtual bool NativeUi => false;
 
         /// <summary>
         /// True while the job itself has handed the shift to the game's clock (<see cref="ShiftSkip"/>): the game's
@@ -201,16 +194,7 @@ namespace RealLifeOverhaul
         /// </summary>
         public virtual bool PassingTime => false;
 
-        /// <summary>
-        /// Up to three things to pick from, shown as a row with their keys (an order's three
-        /// possible items, three songs); null when there is nothing to pick. Set only when it changes.
-        /// </summary>
-        public string[] Choices { get; protected set; }
-
-        /// <summary>Which of the choices is lit (the one last picked), or -1.</summary>
-        public int ChoiceLit { get; protected set; } = -1;
-
-        /// <summary>A choice key went down while <see cref="Choices"/> was showing: 0, 1 or 2.</summary>
+        /// <summary>One of the job's panel buttons that is a choice of several (a drink, a song, a van, what to say): 0, 1 or 2. Called by the button, never by a key.</summary>
         public virtual void Choose(int choice, float now)
         {
         }
@@ -243,11 +227,6 @@ namespace RealLifeOverhaul
 
         /// <summary>Five times a second while the job is on.</summary>
         public abstract void Tick(float now);
-
-        /// <summary>The interaction key, pressed while <see cref="Prompt"/> is shown (or at any time, for a job that <see cref="OwnsInteractKey"/>).</summary>
-        public virtual void Interact(float now)
-        {
-        }
 
         /// <summary>The time asked for with <see cref="JobContext.At"/> has come (called in the director's frame, not on its tick).</summary>
         public virtual void Moment(float now)
@@ -326,6 +305,18 @@ namespace RealLifeOverhaul
         public static string T(string key, string name, string value, string name2, string value2)
         {
             return JobKeys.Fill(key.GetLocalization()).Replace("{" + name + "}", value).Replace("{" + name2 + "}", value2);
+        }
+
+        private static readonly string[] Numbers = new string[100];
+
+        /// <summary>A small whole number as a text, made once each: for a panel that is written on every tick.</summary>
+        public static string Number(int number)
+        {
+            if (number < 0 || number >= Numbers.Length)
+            {
+                return number.ToString();
+            }
+            return Numbers[number] ?? (Numbers[number] = number.ToString());
         }
 
         public static string Money(float amount)

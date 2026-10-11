@@ -2,6 +2,7 @@ using System;
 using BigAmbitions.Items;
 using Characters.EmojiSystem;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 using Vehicles.DeliveryDriverJob;
 using Random = UnityEngine.Random;
@@ -26,10 +27,24 @@ namespace RealLifeOverhaul
     /// seen to change hands: a parcel in the recipient's arms, carried indoors, when the clip
     /// bundle has the clips for holding and walking with one; set down on the step in front of
     /// them and gone with them through the door when it has not.
+    ///
+    /// IN THE GAME'S OWN INTERFACE. The game's panel over a place (<see cref="JobPanel"/>) stands over the parcels'
+    /// door with "Collect the parcels", over the car with "Load the car" and "Take a parcel from the car", and over the
+    /// door (or the person waiting at it) with "Hand over the parcel" or "Leave the parcel at the door", each on the
+    /// game's interact key. The round's figures are on the HUD in a copy of the game's job panel
+    /// (<see cref="ShiftFigures"/>). There is no "Let time pass": the car would have to be moved by the clock. The
+    /// player works in their own clothes.
     /// </summary>
     public sealed class CourierJob : Job
     {
         private enum Step { ToDepot, ToCar, Round }
+
+        private const float PanelUp = 1.8f;          // metres over the door or the car the panel stands
+        private const string ButtonCollect = "reallife_job_courier_button_collect";
+        private const string ButtonLoad = "reallife_job_courier_button_load";
+        private const string ButtonTake = "reallife_job_courier_button_take";
+        private const string ButtonHand = "reallife_job_courier_button_hand";
+        private const string ButtonLeave = "reallife_job_courier_button_leave";
 
         private const string SealedBox = "ba:itemname_sealedcardboardbox";
         private const int MaxDrops = 5;
@@ -106,13 +121,26 @@ namespace RealLifeOverhaul
         private string _depotLabel;
         private string _carLabel;
         private string _doorLabel;
-        private string _promptCollect;
-        private string _promptLoad;
-        private string _promptTake;
-        private string _promptHand;
-        private string _promptLeave;
+
+        // The game's own interface.
+        private readonly JobPanel _panel;
+        private ShiftFigures _figures;
+        private string _panelDepot;
+        private string _panelHands;
+        private string _panelCar;
+        private string _panelLeft;
+        private bool _wanted;           // the panel is wanted somewhere on this tick
+        private int _shownSeconds = int.MinValue;
+
+        public CourierJob()
+        {
+            _panel = new JobPanel("courier panel", Act);
+        }
 
         public override JobDef Def => _def;
+
+        /// <summary>While the panel is up its first button is on the game's interact key: the mod's own use of that key stands aside.</summary>
+        public override bool OwnsInteractKey => _panel.Up;
 
         /// <summary>Giving up with most of a loaded round undelivered is a bad shift.</summary>
         public override bool QuitIsFailure => _step == Step.Round && _delivered * 2 < _count;
@@ -141,15 +169,21 @@ namespace RealLifeOverhaul
             _depotLabel = JobText.T("reallife_job_courier_marker_depot");
             _carLabel = JobText.T("reallife_job_courier_marker_car");
             _doorLabel = JobText.T("reallife_job_courier_marker_door");
-            _promptCollect = JobText.T("reallife_job_courier_prompt_collect");
-            _promptLoad = JobText.T("reallife_job_courier_prompt_load");
-            _promptTake = JobText.T("reallife_job_courier_prompt_take");
-            _promptHand = JobText.T("reallife_job_courier_prompt_hand");
-            _promptLeave = JobText.T("reallife_job_courier_prompt_leave");
+            _panelDepot = JobText.T("reallife_job_courier_panel_depot", "place", _depot.Name);
+            _panelHands = JobText.T("reallife_job_obj_hands");
+            _panelCar = JobText.T("reallife_job_courier_panel_car");
+            _panelLeft = JobText.T("reallife_job_courier_panel_left");
             _step = Step.ToDepot;
+            _figures = new ShiftFigures(Ctx, Def, "reallife_job_courier_card_done");
             Show(JobText.T("reallife_job_courier_obj_depot", "count", _count.ToString(), "place", _depot.Name));
             Mark(_depot.Front, _depotLabel);
+            Figures(now);
             Ctx.Logger?.Info("Jobs: courier round of " + _count + " from " + _depot.Name + ", " + _route.ToString("F0") + " m, " + _window.ToString("F0") + " s.");
+            if (Meta.Dev.Verbose)
+            {
+                Ctx.Logger?.Info("Jobs: courier: the depot is " + JobSpots.Flat(Ctx.PlayerPosition, _depot.Front).ToString("F0") + " m from the player, " + (_hired ? "in a hired van" : "in the player's own car")
+                                 + "; shown in the game's own interface: job panel " + (_figures.Shown ? "copied" : "NOT copied (the panels over the places are all there is)") + ", no clock offered (the car would have to be moved).");
+            }
             return true;
         }
 
@@ -219,12 +253,44 @@ namespace RealLifeOverhaul
                 return;
             }
             SeeIn(now);
+            _wanted = false;
             switch (_step)
             {
                 case Step.ToDepot: ToDepot(onFoot); break;
                 case Step.ToCar: ToCar(now, onFoot); break;
                 case Step.Round: Round(now, onFoot); break;
             }
+            if (!_wanted)
+            {
+                _panel.Hide();
+            }
+            if (!Over)
+            {
+                Figures(now);
+            }
+        }
+
+        // The panel over a place, with one button on the game's interact key.
+        private void Up(string first, string action, bool actionOn, Vector3 over)
+        {
+            _wanted = true;
+            _panel.Offer(first, _panelLeft, JobText.Number(_count - _delivered), _panel.White, action, actionOn, null, false);
+            _panel.Show(over, Ctx.Player);
+        }
+
+        // The round's figures on the card: each line is written only when what it says changes.
+        private void Figures(float now)
+        {
+            _figures.Objective(Objective);
+            _figures.Units(_delivered, _count);
+            int seconds = _step == Step.Round ? Mathf.Max(0, Mathf.CeilToInt(_endsAt - now)) : -1;
+            if (seconds != _shownSeconds)
+            {
+                _shownSeconds = seconds;
+                _figures.Limit(seconds < 0 ? null : JobText.T("reallife_job_card_time_left", "time", ShiftFigures.Clock(seconds)), seconds >= 0 && seconds <= 60 ? WorldPanel.Yellow() : _panel.White);
+            }
+            _figures.Money(_delivered * UnitPay() + (_count > 0 ? DistancePay(_route * _delivered / _count) : 0), Mathf.RoundToInt(_tips * Ctx.TipFactor));
+            _figures.Time(-1);
         }
 
         private void ToDepot(bool onFoot)
@@ -246,7 +312,10 @@ namespace RealLifeOverhaul
             bool reach = onFoot && away < HandReach;
             bool handsFull = PlayerHelper.IsHoldingItem;
             Hint(reach && handsFull ? 1 : 0, "reallife_job_courier_obj_hands", null);
-            Prompt = reach && !handsFull ? _promptCollect : null;
+            if (reach)
+            {
+                Up(handsFull ? _panelHands : _panelDepot, ButtonCollect, !handsFull, _depot.Front + Vector3.up * PanelUp);
+            }
         }
 
         private void ToCar(float now, bool onFoot)
@@ -273,12 +342,14 @@ namespace RealLifeOverhaul
             {
                 Unmark();
             }
-            Prompt = onFoot && car != null && BesideCar(car) ? _promptLoad : null;
+            if (onFoot && car != null && BesideCar(car))
+            {
+                Up(_panelCar, ButtonLoad, true, car.transform.position + Vector3.up * PanelUp);
+            }
         }
 
         private void Loaded(float now)
         {
-            Prompt = null;
             _endsAt = now + _window;
             _step = Step.Round;
             _hint = -1;
@@ -288,7 +359,6 @@ namespace RealLifeOverhaul
 
         private void Round(float now, bool onFoot)
         {
-            ClockSeconds = Mathf.CeilToInt(_endsAt - now);
             if (now >= _endsAt)
             {
                 Ctx.Say("reallife_job_courier_time", 8f);
@@ -352,16 +422,17 @@ namespace RealLifeOverhaul
 
             if (holding && atDoor)
             {
-                Prompt = _recipient != null && _recipientFor == _target ? _promptHand : _promptLeave;   // nobody at this door: it is left there
+                // Over the person waiting at the door, or the door itself when nobody is: then the parcel is left there.
+                bool someone = _recipient != null && _recipientFor == _target;
+                Up(_drops[_target].Spot.Name, someone ? ButtonHand : ButtonLeave, true, (someone ? _recipient.Position : door) + Vector3.up * PanelUp);
                 return;
             }
-            Prompt = null;
             if (!holding && onFoot && !PlayerHelper.IsHoldingItem)
             {
                 CarController car = JobDirector.NearestCar(8f);
                 if (car != null && BesideCar(car) && DoorNear(car.transform.position))
                 {
-                    Prompt = _promptTake;
+                    Up(_panelCar, ButtonTake, true, car.transform.position + Vector3.up * PanelUp);
                 }
             }
         }
@@ -402,15 +473,15 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- the key
 
-        public override void Interact(float now)
+        // The panel's button was pressed (the game ran it on its key or on a click).
+        private void Act(string action)
         {
-            if (Prompt == null)
+            if (Ctx == null || Over)
             {
                 return;
             }
-            string prompt = Prompt;
-            Prompt = null;
-            if (ReferenceEquals(prompt, _promptCollect))
+            float now = Time.time;
+            if (ReferenceEquals(action, ButtonCollect) && _step == Step.ToDepot && !PlayerHelper.IsHoldingItem)
             {
                 if (_clerk != null)
                 {
@@ -421,9 +492,13 @@ namespace RealLifeOverhaul
                     _step = Step.ToCar;
                     _hint = -1;
                     Show(JobText.T("reallife_job_courier_obj_car"));
+                    if (Meta.Dev.Verbose)
+                    {
+                        Ctx.Logger?.Info("Jobs: courier: the parcels are in the player's hands; the car is next.");
+                    }
                 }
             }
-            else if (ReferenceEquals(prompt, _promptLoad))
+            else if (ReferenceEquals(action, ButtonLoad) && _step == Step.ToCar)
             {
                 TakeBox();
                 CarController car = JobDirector.NearestCar(12f);
@@ -438,13 +513,13 @@ namespace RealLifeOverhaul
                 }
                 Loaded(now);
             }
-            else if (ReferenceEquals(prompt, _promptTake))
+            else if (ReferenceEquals(action, ButtonTake) && _step == Step.Round && _box == null)
             {
                 GiveBox();
             }
-            else if (_target >= 0 && !_drops[_target].Done)
+            else if ((ReferenceEquals(action, ButtonHand) || ReferenceEquals(action, ButtonLeave)) && _step == Step.Round && _box != null && _target >= 0 && !_drops[_target].Done)
             {
-                Deliver(now, ReferenceEquals(prompt, _promptHand));
+                Deliver(now, ReferenceEquals(action, ButtonHand));
             }
         }
 
@@ -453,6 +528,11 @@ namespace RealLifeOverhaul
             TakeBox();   // out of the player's hands first, so the arm is free to reach
             _drops[_target].Done = true;
             _delivered++;
+            if (Meta.Dev.Verbose)
+            {
+                Ctx.Logger?.Info("Jobs: courier: parcel " + _delivered + " of " + _count + " " + (toSomeone && _recipient != null ? "handed to someone at the door" : "left at the door") + " (" + _drops[_target].Spot.Name + "); "
+                                 + Mathf.Max(0, Mathf.CeilToInt(_endsAt - now)) + " s of the round left.");
+            }
             Ctx.TurnPlayer(toSomeone && _recipient != null ? _recipient.Position : _drops[_target].Spot.Door);
             if (toSomeone && _recipient != null)
             {
@@ -850,7 +930,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            Prompt = null;
+            _panel.Hide();
             DropParcel();
             Ctx.Cast.Release(_clerk);
             Ctx.Cast.Release(_recipient);

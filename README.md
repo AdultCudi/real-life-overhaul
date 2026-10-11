@@ -34,7 +34,7 @@ You need:
 - Big Ambitions installed through Steam. The build compiles against the game's own DLLs, which are not in this repository and must not be added to it.
 - The [.NET SDK](https://dotnet.microsoft.com/download), version 10 or later.
 
-Build and install into the game's local mods folder:
+Build:
 
 ```
 dotnet build RealLifeOverhaul.Build/RealLifeOverhaul.csproj -c Release "-p:GameManaged=<Steam>\steamapps\common\Big Ambitions\Big Ambitions_Data\Managed"

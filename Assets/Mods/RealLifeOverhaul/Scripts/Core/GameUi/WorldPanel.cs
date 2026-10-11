@@ -57,6 +57,15 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>The place in the world the box stands over. Read by the game every frame while the box is up.</summary>
         public Vector3 Position;
 
+        /// <summary>
+        /// A thing that moves (a passer-by) the box follows instead of <see cref="Position"/>: the game reads the position every
+        /// frame, so the box stays on them without the mod doing anything per frame. Null: <see cref="Position"/> is used.
+        /// </summary>
+        public Transform Follow;
+
+        /// <summary>Metres above <see cref="Follow"/> the box stands.</summary>
+        public float FollowLift;
+
         /// <summary>True while this panel is the one in the game's box. Two loads: fit for a per-frame test.</summary>
         public bool Showing => _current == this && OverlayUI.IsVisible;
 
@@ -225,7 +234,7 @@ namespace RealLifeOverhaul.GameUi
 
         Vector3 IOverlay.GetTargetPosition()
         {
-            return Position;
+            return Follow != null ? Follow.position + Vector3.up * FollowLift : Position;
         }
 
         LabelInfo IOverlay.GetFirstLineLabel()

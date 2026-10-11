@@ -32,8 +32,8 @@ namespace RealLifeOverhaul
     /// customer more comes to the cart, soon), annoyed (a red face and a gesture), or not at all.
     ///
     /// BY THE CLOCK. Another button hands the rest of the shift to the game's clock, as the game's own job does
-    /// it (<see cref="ShiftSkip"/>): <see cref="MinutesEach"/> game minutes a customer, at
-    /// <see cref="SkipShare"/> of the pay a customer, no tips and no bonus.
+    /// it (<see cref="ShiftSkip"/>): <see cref="ShiftRates.Minutes"/> game minutes a customer, at
+    /// <see cref="ShiftRates.Share"/> of the pay a customer, no tips and no bonus.
     ///
     /// THE FIGURES are on the HUD for the whole shift in a copy of the game's job panel
     /// (<see cref="ShiftCard"/>): served of the shift's total, walk-offs of the three allowed, takings and tips,
@@ -73,12 +73,6 @@ namespace RealLifeOverhaul
         private const string CupProp = "coffee_cup";
         private const string IdleClip = "counter_wipe";
 
-        /// <summary>Game minutes the clock takes for one customer: a shift of twelve is four game hours, the hours an employer pays basic wage for.</summary>
-        public const int MinutesEach = 20;
-
-        /// <summary>The share of a customer's pay the shift earns when the clock serves them (and no tips, no bonus).</summary>
-        public const float SkipShare = 0.85f;
-
         // Calling out. Every figure of its balance is here.
         public const float HawkCooldown = 10f;       // seconds between two calls
         public const float HawkWithin = 14f;         // metres from the cart at which a passer-by hears it
@@ -103,6 +97,7 @@ namespace RealLifeOverhaul
         private const string ButtonAway = "reallife_job_vendor_button_away";
 
         private readonly JobDef _def = JobCatalogue.Find(JobCatalogue.Vendor);
+        private readonly int _minutesEach = ShiftRates.Minutes(JobCatalogue.Find(JobCatalogue.Vendor));   // game minutes the clock takes for one customer (ShiftRates: a shift of twelve is four game hours)
         private readonly StreetActor[] _who = new StreetActor[JobCast.Size];
         private readonly Guest[] _state = new Guest[JobCast.Size];
         private readonly float[] _until = new float[JobCast.Size];
@@ -194,8 +189,6 @@ namespace RealLifeOverhaul
         private int _panelUp;         // 0 not up, 1 up, 2 refused by another panel
 
         public override JobDef Def => _def;
-
-        public override bool NativeUi => true;
 
         public override bool PassingTime => _skip != null && _skip.Working;
 
@@ -909,7 +902,7 @@ namespace RealLifeOverhaul
             }
             // The time on shift in steps of five game minutes (five seconds of play), and about how long is left at the clock's pace.
             int on = Mathf.Max(0, Mathf.FloorToInt((TimeHelper.NowInMinutes() - _startMinutes) / 5f)) * 5;
-            int left = Mathf.Max(0, LeftToServe - (clock ? _skipDone : 0)) * MinutesEach;
+            int left = Mathf.Max(0, LeftToServe - (clock ? _skipDone : 0)) * _minutesEach;
             int time = on | (left << 12);
             if (time != _cardTime)
             {
@@ -941,17 +934,17 @@ namespace RealLifeOverhaul
         string ISkippableShift.SkipTitle => Ctx != null && Ctx.Shift != null
             ? JobText.T("reallife_career_shift_title", "title", JobText.T(Ctx.Shift.Rank.TitleKey), "employer", JobText.T(Ctx.Shift.Employer.NameKey)) : _title;
 
-        int ISkippableShift.SkipMinutes => LeftToServe * MinutesEach;
+        int ISkippableShift.SkipMinutes => LeftToServe * _minutesEach;
 
         LabelInfo[] ISkippableShift.SkipLabels()
         {
             int left = LeftToServe;
-            int minutes = left * MinutesEach;
+            int minutes = left * _minutesEach;
             Color32 white = WorldPanel.White();
             var time = new LabelInfo("reallife_job_skip_info_time", new { count = left, hours = minutes / 60, minutes = minutes % 60 }, white);
             var pay = new LabelInfo("reallife_job_skip_info_pay", new
             {
-                share = Mathf.RoundToInt(SkipShare * 100f), amount = JobText.Money(Mathf.RoundToInt(left * PayEach * SkipShare))
+                share = Mathf.RoundToInt(ShiftRates.Share * 100f), amount = JobText.Money(Mathf.RoundToInt(left * PayEach * ShiftRates.Share))
             }, white);
             return Ctx.Shift != null
                 ? new[] { time, pay, new LabelInfo("reallife_job_skip_info_wage", null, white) }
@@ -981,14 +974,14 @@ namespace RealLifeOverhaul
             _skipDone = 0;
             if (Meta.Dev.Verbose)
             {
-                Ctx.Logger?.Info("Jobs: vendor: the rest of the shift is left to the clock: " + _skipLeft + " customers, " + (_skipLeft * MinutesEach) + " game minutes, at "
-                                 + Mathf.RoundToInt(SkipShare * 100f) + "% of " + PayEach.ToString("F2") + " a customer; the game's activity panel shows its progress.");
+                Ctx.Logger?.Info("Jobs: vendor: the rest of the shift is left to the clock: " + _skipLeft + " customers, " + (_skipLeft * _minutesEach) + " game minutes, at "
+                                 + Mathf.RoundToInt(ShiftRates.Share * 100f) + "% of " + PayEach.ToString("F2") + " a customer; the game's activity panel shows its progress.");
             }
         }
 
         void ISkippableShift.SkipWorked(int minutes)
         {
-            _skipDone = Mathf.Min(_skipLeft, minutes / MinutesEach);
+            _skipDone = Mathf.Min(_skipLeft, minutes / _minutesEach);
         }
 
         void ISkippableShift.SkipEnded(int minutes, bool whole)
@@ -997,7 +990,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            int count = whole ? _skipLeft : Mathf.Min(_skipLeft, minutes / MinutesEach);
+            int count = whole ? _skipLeft : Mathf.Min(_skipLeft, minutes / _minutesEach);
             _skipDone = 0;
             _skipLeft = 0;
             _nextArrival = Time.time + 2f;
@@ -1006,7 +999,7 @@ namespace RealLifeOverhaul
             int pay = 0;
             if (count > 0)
             {
-                pay = Mathf.RoundToInt(count * PayEach * SkipShare);
+                pay = Mathf.RoundToInt(count * PayEach * ShiftRates.Share);
                 _served += count;
                 _came = _served + _lost;
                 _clockPay += pay;
@@ -1014,7 +1007,7 @@ namespace RealLifeOverhaul
             }
             float energyAfter = SaveGameManager.Current != null ? SaveGameManager.Current.Energy : 0f;
             Ctx.Logger?.Info("Jobs: vendor: shift skipped by the clock: " + (minutes / 60f).ToString("F1") + " game hours (" + minutes + " min), " + count + " customers at "
-                             + Mathf.RoundToInt(SkipShare * 100f) + "%: pay " + pay + ", no tips, no bonus; energy " + energyBefore.ToString("F1") + " -> " + energyAfter.ToString("F1")
+                             + Mathf.RoundToInt(ShiftRates.Share * 100f) + "%: pay " + pay + ", no tips, no bonus; energy " + energyBefore.ToString("F1") + " -> " + energyAfter.ToString("F1")
                              + "; " + (whole ? "to the end of the shift" : "stopped early: " + LeftToServe + " customers are left to serve by hand") + ".");
         }
 

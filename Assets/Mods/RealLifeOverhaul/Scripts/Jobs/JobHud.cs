@@ -5,12 +5,11 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// What a job puts on the screen: the objective panel (job, what to do next, a timer or a
-    /// count), a marker pinned over the next place with the distance to it, the key prompt, and
-    /// the pay slip at the end. Its own retained canvas, built the first time a job starts and
-    /// switched off when none is on. Nothing here runs by itself; the director calls it, and
-    /// every text is rebuilt only when what it shows changes. The marker is the job's own (blue),
-    /// so an incident's orange one can be on screen at the same time.
+    /// A plate with a line of words, a marker pinned over a place with the distance to it, and a key prompt: the mod's
+    /// own small HUD, kept for the features that still use it (the home's offers, a run for fitness). The jobs no longer
+    /// do: they are shown in the game's own interface (a copy of its job panel, its panel over a place, its activity
+    /// panel and its notifications). Its own retained canvas, built the first time something asks. Nothing here runs by
+    /// itself, and every text is rebuilt only when what it shows changes.
     /// </summary>
     public sealed class JobHud : MonoBehaviour
     {
@@ -28,12 +27,8 @@ namespace RealLifeOverhaul
         private GameObject _panel;
         private TextMeshProUGUI _title;
         private TextMeshProUGUI _line;
-        private TextMeshProUGUI _status;
         private string _titleShown;
         private string _lineShown;
-        private string _statusShown;
-        private int _clockShown = int.MinValue;
-        private readonly char[] _clock = new char[8];
         private bool _panelOn;
 
         private RectTransform _marker;
@@ -48,24 +43,7 @@ namespace RealLifeOverhaul
         private string _promptShown;
         private bool _promptOn;
 
-        private RectTransform _target;
-        private TextMeshProUGUI _targetKey;   // the key named on it...
-        private int _keysVersion;             // ...as bound when it was last written (Keys.Version)
-        private bool _targetOn;
-
-        private GameObject _choices;
-        private readonly TextMeshProUGUI[] _choiceText = new TextMeshProUGUI[JobKeys.Choices];
-        private readonly Image[] _choicePlate = new Image[JobKeys.Choices];
-        private string[] _choicesShown;
-        private int _choiceLit = int.MinValue;
-        private bool _choicesOn;
-
-        private GameObject _slip;
-        private TextMeshProUGUI _slipTitle;
-        private TextMeshProUGUI _slipBody;
-        private bool _slipOn;
-
-        /// <summary>Created the first time a job needs it and destroyed with the city scene.</summary>
+        /// <summary>Created the first time something needs it and destroyed with the city scene.</summary>
         public static JobHud Instance
         {
             get
@@ -98,8 +76,6 @@ namespace RealLifeOverhaul
             Box("Stripe", panel, new Vector2(0f, 0.5f), new Vector2(3f, 0f), new Vector2(6f, 84f), Accent);
             _title = Text("Title", panel, 17f, Soft, TextAlignmentOptions.Left);
             Place(_title.rectTransform, new Vector2(22f, -8f), new Vector2(400f, 24f), new Vector2(0f, 1f));
-            _status = Text("Status", panel, 20f, Color.white, TextAlignmentOptions.Right);
-            Place(_status.rectTransform, new Vector2(-16f, -6f), new Vector2(220f, 26f), new Vector2(1f, 1f));
             _line = Text("Line", panel, 23f, Color.white, TextAlignmentOptions.Left);
             Place(_line.rectTransform, new Vector2(22f, -36f), new Vector2(586f, 40f), new Vector2(0f, 1f));
             _panel = panel.gameObject;
@@ -119,46 +95,6 @@ namespace RealLifeOverhaul
             Fill(_promptText.rectTransform);
             _prompt = prompt.gameObject;
             _prompt.SetActive(false);
-
-            // Whoever the prompt is about: a small diamond with the key on it, over their head.
-            _target = Box("Target", transform, Vector2.zero, Vector2.zero, new Vector2(34f, 34f), Ink);
-            _target.localRotation = Quaternion.Euler(0f, 0f, 45f);
-            RectTransform face = Box("Face", _target, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(28f, 28f), Accent);
-            TextMeshProUGUI key = Text("Key", face, 20f, Ink, TextAlignmentOptions.Center);
-            Fill(key.rectTransform);
-            key.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -45f);
-            key.SetText(JobKeys.Label);
-            _targetKey = key;
-            _keysVersion = Keys.Version;
-            _target.gameObject.SetActive(false);
-
-            // The choices: a row of three just above the prompt, each with its key.
-            RectTransform choices = Box("Choices", transform, new Vector2(0.5f, 0f), new Vector2(0f, 312f), new Vector2(800f, 50f), new Color(0f, 0f, 0f, 0f));
-            for (int i = 0; i < JobKeys.Choices; i++)
-            {
-                RectTransform choice = Box("Choice", choices, new Vector2(0.5f, 0.5f), new Vector2((i - 1) * 266f, 0f), new Vector2(258f, 46f), Plate);
-                _choicePlate[i] = choice.GetComponent<Image>();
-                RectTransform keyTag = Box("Key", choice, new Vector2(0f, 0.5f), new Vector2(23f, 0f), new Vector2(34f, 34f), Accent);
-                TextMeshProUGUI tagText = Text("Text", keyTag, 21f, Ink, TextAlignmentOptions.Center);
-                Fill(tagText.rectTransform);
-                tagText.SetText(JobKeys.ChoiceLabel(i));
-                _choiceText[i] = Text("Label", choice, 21f, Color.white, TextAlignmentOptions.Left);
-                Place(_choiceText[i].rectTransform, new Vector2(50f, 0f), new Vector2(200f, 40f), new Vector2(0f, 0.5f));
-            }
-            _choices = choices.gameObject;
-            _choices.SetActive(false);
-
-            // The pay slip: centre left, clear of the phone and of the middle of the road.
-            RectTransform slip = Box("Pay Slip", transform, new Vector2(0f, 0.5f), new Vector2(300f, 40f), new Vector2(430f, 330f), Plate);
-            Box("Stripe", slip, new Vector2(0.5f, 1f), new Vector2(0f, -3f), new Vector2(430f, 6f), Accent);
-            _slipTitle = Text("Title", slip, 26f, Color.white, TextAlignmentOptions.Left);
-            Place(_slipTitle.rectTransform, new Vector2(22f, -18f), new Vector2(390f, 34f), new Vector2(0f, 1f));
-            _slipBody = Text("Body", slip, 20f, Soft, TextAlignmentOptions.TopLeft);
-            Place(_slipBody.rectTransform, new Vector2(22f, -62f), new Vector2(390f, 256f), new Vector2(0f, 1f));
-            _slipBody.fontStyle = FontStyles.Normal;
-            _slipBody.lineSpacing = 12f;
-            _slip = slip.gameObject;
-            _slip.SetActive(false);
         }
 
         private void OnDestroy()
@@ -191,43 +127,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The figure at the top right of the panel as words (a count, a fare). Rebuilt only on change.</summary>
-        public void ShowStatus(string status)
-        {
-            if (_clockShown != int.MinValue || !ReferenceEquals(status, _statusShown))   // a countdown was showing, or the words changed
-            {
-                _statusShown = status;
-                _clockShown = int.MinValue;
-                _status.color = Color.white;
-                _status.SetText(status ?? string.Empty);
-            }
-        }
-
-        /// <summary>The same place as a countdown, m:ss. Rebuilt once a second, without garbage.</summary>
-        public void ShowClock(int seconds)
-        {
-            seconds = Mathf.Max(0, seconds);
-            if (seconds != _clockShown)
-            {
-                _clockShown = seconds;
-                _statusShown = null;
-                // Written into a buffer by hand: no string is made, and no number format of the text component is relied on.
-                int minutes = Mathf.Min(seconds / 60, 99);
-                int rest = seconds % 60;
-                int length = 0;
-                if (minutes >= 10)
-                {
-                    _clock[length++] = (char)('0' + minutes / 10);
-                }
-                _clock[length++] = (char)('0' + minutes % 10);
-                _clock[length++] = ':';
-                _clock[length++] = (char)('0' + rest / 10);
-                _clock[length++] = (char)('0' + rest % 10);
-                _status.SetCharArray(_clock, 0, length);
-                _status.color = seconds < 30 ? new Color(1f, 0.45f, 0.35f) : Color.white;
-            }
-        }
-
         public void HideObjective()
         {
             if (_panelOn)
@@ -235,7 +134,6 @@ namespace RealLifeOverhaul
                 _panelOn = false;
                 _panel.SetActive(false);
             }
-            _status.color = Color.white;
         }
 
         // ---------------------------------------------------------------- the marker
@@ -329,89 +227,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The small marker over the head of whoever the key prompt is about. Called per frame while
-        /// a prompt about a person is up: one projection, no text, nothing allocated.
-        /// </summary>
-        public void ShowTarget(Vector3 overHead)
-        {
-            Camera camera = GameManager.GetMainCamera();
-            if (camera == null)
-            {
-                HideTarget();
-                return;
-            }
-            Vector3 screen = camera.WorldToScreenPoint(overHead);
-            if (screen.z <= 0f)
-            {
-                HideTarget();   // behind the camera
-                return;
-            }
-            if (!_targetOn)
-            {
-                _targetOn = true;
-                if (_keysVersion != Keys.Version)
-                {
-                    // The interaction key was bound to something else since the diamond was made: it names the new one.
-                    _keysVersion = Keys.Version;
-                    _targetKey.SetText(JobKeys.Label);
-                }
-                _target.gameObject.SetActive(true);
-            }
-            _target.anchoredPosition = new Vector2(screen.x, screen.y) / _canvas.scaleFactor;
-        }
-
-        public void HideTarget()
-        {
-            if (_targetOn)
-            {
-                _targetOn = false;
-                _target.gameObject.SetActive(false);
-            }
-        }
-
-        // ---------------------------------------------------------------- the choices
-
-        /// <summary>Three things to pick from, each with its key; the one picked last is lit. Rebuilt only when the labels or the lit one change.</summary>
-        public void ShowChoices(string[] labels, int lit)
-        {
-            if (!_choicesOn)
-            {
-                _choicesOn = true;
-                _choices.SetActive(true);
-            }
-            if (!ReferenceEquals(labels, _choicesShown))
-            {
-                _choicesShown = labels;
-                for (int i = 0; i < JobKeys.Choices; i++)
-                {
-                    bool has = labels != null && i < labels.Length && labels[i] != null;
-                    _choicePlate[i].gameObject.SetActive(has);
-                    if (has)
-                    {
-                        _choiceText[i].SetText(labels[i]);
-                    }
-                }
-            }
-            if (lit != _choiceLit)
-            {
-                _choiceLit = lit;
-                for (int i = 0; i < JobKeys.Choices; i++)
-                {
-                    _choicePlate[i].color = i == lit ? new Color(0.10f, 0.30f, 0.48f, 0.94f) : Plate;
-                }
-            }
-        }
-
-        public void HideChoices()
-        {
-            if (_choicesOn)
-            {
-                _choicesOn = false;
-                _choices.SetActive(false);
-            }
-        }
-
         // Where the game's own top bar ends, in the units of this canvas (1080 high): the objective sits just under it,
         // whatever the interface scale. Measured once, from the bar itself; the usual figure if it cannot be found.
         private static float UnderTopBar()
@@ -445,39 +260,12 @@ namespace RealLifeOverhaul
 
         private static readonly Vector3[] Corners = new Vector3[4];
 
-        // ---------------------------------------------------------------- the pay slip
-
-        public void ShowSlip(string title, string body)
-        {
-            _slipOn = true;
-            _slip.SetActive(true);
-            _slipTitle.SetText(title ?? string.Empty);
-            _slipBody.SetText(body ?? string.Empty);
-        }
-
-        public void HideSlip()
-        {
-            if (_slipOn)
-            {
-                _slipOn = false;
-                _slip.SetActive(false);
-            }
-        }
-
-        public bool SlipShown => _slipOn;
-
-        /// <summary>Everything off: the job ended, or a screen that needs the whole display opened.</summary>
-        public void HideAll(bool slipToo)
+        /// <summary>Everything off: a screen that needs the whole display opened.</summary>
+        public void HideAll()
         {
             HideObjective();
             HideMarker();
             HidePrompt();
-            HideTarget();
-            HideChoices();
-            if (slipToo)
-            {
-                HideSlip();
-            }
         }
 
         // ---------------------------------------------------------------- building blocks

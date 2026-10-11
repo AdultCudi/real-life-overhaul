@@ -113,8 +113,16 @@ namespace RealLifeOverhaul.Meta
                 .Fact("vendor_wrong", () => Guide.Number(VendorJob.WrongCost))
                 .Fact("vendor_patience", () => Guide.Number(VendorJob.Patience))
                 .Fact("vendor_abandon", () => Guide.Number(VendorJob.AbandonAfter))
-                .Fact("vendor_minutes_each", () => VendorJob.MinutesEach.ToString(CultureInfo.InvariantCulture))
-                .Fact("vendor_skip_share", () => Guide.Percent(VendorJob.SkipShare))
+                .Fact("vendor_minutes_each", () => ShiftRates.Minutes(JobCatalogue.Find(JobCatalogue.Vendor)).ToString(CultureInfo.InvariantCulture))
+                .Fact("vendor_skip_share", () => Guide.Percent(ShiftRates.Share))
+                .Fact("skip_share", () => Guide.Percent(ShiftRates.Share))
+                .Fact("skip_minutes_flyers", () => ShiftRates.Minutes(JobCatalogue.Find(JobCatalogue.Flyers)).ToString(CultureInfo.InvariantCulture))
+                .Fact("skip_minutes_cleaner", () => ShiftRates.Minutes(JobCatalogue.Find(JobCatalogue.Cleaner)).ToString(CultureInfo.InvariantCulture))
+                .Fact("skip_minutes_stocker", () => ShiftRates.Minutes(JobCatalogue.Find(JobCatalogue.Stocker)).ToString(CultureInfo.InvariantCulture))
+                .Fact("skip_minutes_busker", () => ShiftRates.Minutes(JobCatalogue.Find(JobCatalogue.Busker)).ToString(CultureInfo.InvariantCulture))
+                .Fact("busker_abandon", () => Guide.Number(BuskerJob.AbandonAfter))
+                .Fact("busker_average", () => Guide.Percent(BuskerJob.AveragePlay))
+                .Fact("taxi_misses", () => TaxiJob.MissesAllowed.ToString(CultureInfo.InvariantCulture))
                 .Fact("vendor_hawk_within", () => Guide.Number(VendorJob.HawkWithin))
                 .Fact("vendor_hawk_extra", () => VendorJob.HawkExtraMost.ToString(CultureInfo.InvariantCulture))
                 .Fact("vendor_hawk_cooldown", () => Guide.Number(VendorJob.HawkCooldown))
@@ -135,7 +143,7 @@ namespace RealLifeOverhaul.Meta
                     JobDirector.Instance?.Quit();   // the shift ends, its people and props go back, a hired van is handed in
                     if (JobHud.Exists)
                     {
-                        JobHud.Instance.HideAll(true);
+                        JobHud.Instance.HideAll();
                     }
                 })
                 // Read from the (now empty) save here, not through the director: its own reload would forget a van still out.
