@@ -269,7 +269,7 @@ namespace RealLifeOverhaul
                 {
                     return;
                 }
-                _nextTick = now + TickInterval;
+                _nextTick = now + (TransitMap.PlacingStops && Settings.Buses && TrafficTools.Ready ? 0f : TickInterval);   // (placing stops: a 3 ms slice a frame until it is done)
                 _tick++;
                 Tick(now);
             }

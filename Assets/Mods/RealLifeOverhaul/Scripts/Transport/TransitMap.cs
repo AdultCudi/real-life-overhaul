@@ -122,6 +122,9 @@ namespace RealLifeOverhaul
 
         /// <summary>True once the network has been laid out (it may be empty: see the log).</summary>
         public static bool Ready { get; private set; }
+
+        /// <summary>True while the stops are being placed, a slice at a time: the director then comes back every frame, so that the stops are there in seconds and not in minutes.</summary>
+        public static bool PlacingStops => !Ready && _phase == 2;
         public static bool Failed { get; private set; }
 
         private static Waypoint[] _points;
