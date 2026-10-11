@@ -993,10 +993,10 @@ again each time the page is drawn, and `OptionsLayout` is told as each is made (
 
 - `Feature.StandsAside(why, optionIds...)`: while `why()` answers a sentence, every `Selectable` of those rows (the
   game's toggle and slider) gets `interactable = false`, which is the game's own look for a control that cannot be
-  used, and the section's button says the sentence after its name: "Camera   (12 options, on, unavailable: the camera
-  is with ...)".
+  used, and each of those rows says the sentence after its label: "Third-person camera   (unavailable: the camera
+  is with ...)". A row that needs another option on (`Meta/OptionsTree.cs`) is drawn the same way.
 - `Feature.Present(optionId, present)`: while `present()` is false the row is switched off and kept off for that
-  drawing, whatever section opens or search finds it, and is not counted in "5 options". The option keeps its value.
+  drawing, whatever section opens or search finds it, and is not counted in "5 of 6 on". The option keeps its value.
 
 Both are asked when the page is drawn, never per frame. See [other-mods.md](other-mods.md) for what uses them.
 
