@@ -55,6 +55,7 @@ namespace RealLifeOverhaul.GameUi
         private Component _info;
         private TextLocalizationComponent _cancel;
         private GameObject _cancelButton;
+        private Transform _home;
         private bool _locked;
         private ScrollRect _scroll;
         private Action<int> _onPick;
@@ -127,7 +128,7 @@ namespace RealLifeOverhaul.GameUi
                 root = UiClone.Asleep(uis.cityMapSubwayStations.gameObject, holder, name);
                 UiClone.StripGameScripts(root, script => Array.IndexOf(Harmless, script.GetType().Name) >= 0);
 
-                var list = new TravelList { _root = root };
+                var list = new TravelList { _root = root, _home = canvas };
                 Transform header = UiClone.Need(root.transform, "Headline/Header", name);
                 Transform top = UiClone.Need(root.transform, "Top Controls", name);
                 Transform content = UiClone.Need(root.transform, "Scroll View/Viewport/Content", name);
@@ -240,6 +241,21 @@ namespace RealLifeOverhaul.GameUi
                 }
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Stands the window on another canvas (the game's time skip hides the HUD but keeps a screen of its own), or back on the
+        /// HUD's with null. It stays the last thing drawn there. Does nothing if it is already there.
+        /// </summary>
+        public void MoveTo(Transform canvas)
+        {
+            Transform target = canvas != null ? canvas : _home;
+            if (_root == null || target == null || _root.transform.parent == target)
+            {
+                return;
+            }
+            _root.transform.SetParent(target, false);
+            _root.transform.SetAsLastSibling();
         }
 
         /// <summary>True while the window's objects are there (the game's interface is rebuilt with the city).</summary>

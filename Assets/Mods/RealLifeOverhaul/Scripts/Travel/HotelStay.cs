@@ -633,6 +633,12 @@ namespace RealLifeOverhaul
                 Plain(room, hotel);
                 return;
             }
+            if (_sleeping)
+            {
+                // The game's time skip switches the HUD off, and its own Cancel button is the way to get up: the list is put away until it ends.
+                _director.Window.Close();
+                return;
+            }
             if (_onPick == null)
             {
                 _onPick = _director.Pressed;
@@ -645,12 +651,7 @@ namespace RealLifeOverhaul
             string info = subtitle + "\n<size=80%>" + (_confirming ? CheckoutTerms(room) : TravelText.T(BodyKey(hotel.Tier, room))) + "</size>";
             list.Begin(TravelText.T(hotel.NameKey), info);
             int entries;
-            if (_sleeping)
-            {
-                list.Add(WakeNow, TravelText.T("reallife_travel_btn_wake_now"), TravelText.T("reallife_travel_list_wake_now"), ButtonDo, true);
-                entries = 1;
-            }
-            else if (_confirming)
+            if (_confirming)
             {
                 list.Add(Back, TravelText.T("reallife_travel_btn_back"), TravelText.T("reallife_travel_list_stay"), ButtonChoose, true);
                 list.Add(ConfirmOut, TravelText.T("reallife_travel_btn_checkout_confirm"), TravelText.T("reallife_travel_list_checkout_detail"), ButtonDo, true);
@@ -661,7 +662,6 @@ namespace RealLifeOverhaul
                 entries = Choices(list, hotel, room);
             }
             list.Open(_onPick, _onClosed);
-            list.Locked = _sleeping;   // while the time machine runs the way out is to get up
             if (opening && Meta.Dev.Verbose)
             {
                 _director.Log("Travel check (room list): the game's list is open: " + entries + " entries for the " + room.Id + " at " + hotel.Id + ", " + list.Made + " entries made so far; "

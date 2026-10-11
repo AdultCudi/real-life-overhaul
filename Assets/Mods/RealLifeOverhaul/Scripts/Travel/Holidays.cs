@@ -569,11 +569,6 @@ namespace RealLifeOverhaul
         private IEnumerator NextDayRoutine()
         {
             _skipping = true;
-            Trip skipping = TravelCatalogue.TripById(TravelState.TicketId);
-            if (skipping != null)
-            {
-                ShowWaiting(skipping);
-            }
             var goal = new Timestamp(TimeHelper.CurrentDay + 1, 9, 0f);
             EnergyHelper.RemoveEnergySpender("move");
             EnergyHelper.SetCurrentEnergyRegen(EnergyRegen.Bench);
@@ -656,19 +651,6 @@ namespace RealLifeOverhaul
             list.Open(_onPick, _onClosed);
             list.Locked = false;
             Said(trip, "cancelled at the gate", 1);
-        }
-
-        // The list while a day passes: the time machine is running, nothing to choose.
-        private void ShowWaiting(Trip trip)
-        {
-            TravelList list = _director.Window.OpenFor(this) ? Screen() : null;
-            if (list == null)
-            {
-                return;
-            }
-            list.Begin(TravelText.T(trip.NameKey), string.Empty);
-            list.AddNote(TravelText.T("reallife_travel_trip_skipping"), null, 0f);
-            list.Open(_onPick, _onClosed);
         }
 
         private void ShowStep()

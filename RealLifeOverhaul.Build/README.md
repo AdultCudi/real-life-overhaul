@@ -169,7 +169,8 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       Record         Record (the criminal record), Reputation (police and public, scrutiny) and LawState: their four lines in modData
       Precincts      which buildings are the precincts (one per district, fixed by address), their map markers, the dressed frontage
       Custody        one arrest: the scene on the street, the ride, the cell as a time skip, bail and lawyer, release, resume after a load
-      CustodyPanel   the holding cell on screen: charge sheet, release clock, three buttons
+      CustodyList    the holding cell on screen: the game's list window with the charge sheet, release clock, three entries
+      StationDesk    the front desk: the game's panel at the counter and the game's list window (DeskList), a second page for the record
       LawDirector    the one tick a second: load and save, dressing, the daily step, thanks from passers-by, the watchdog, test buttons;
                      Arrests: the one call each for whoever catches the player
       RecordPhone    the Police Records Desk contact: record, reputation, time since the last offence, nearest precinct
@@ -1902,10 +1903,10 @@ Furniture and bars are cut out of the navigation mesh. The sergeant is a pool ch
 the other three are presence characters. A room too small for any of it keeps the front desk service where
 the player stands.
 
-**The front desk** (`StationDesk`; the interaction key within 2.3 m of the counter): report a crime or an
+**The front desk** (`StationDesk`; within 2.3 m of the counter the game's panel over a place (`GameUi.DoorPanel`) offers "Speak to the desk officer" on the interact key, at a door that can be walked into "Go into the station"): the list has an entry for each thing, with the cost or state under its name and the button off, with the reason, when it cannot be had; answers are notifications. Report a crime or an
 accident (exactly what a 911 call would do about what is going on nearby, +2 police reputation for coming
-in, and never a "wasted call"); pay outstanding fines (`ModState.PendingFine`, +1); the record (both
-reputations, then line by line); collect a car from the pound (see custody; 250, brought to the kerb when the
+in, and never a "wasted call"); pay outstanding fines (`ModState.PendingFine`, +1); the record (a second page: both
+reputations, then a note for each line, newest first, and Back); collect a car from the pound (see custody; 250, brought to the kerb when the
 player steps outside); apply for a licence (only if `Law.Bridges.Licensing` is set); a police report after a
 break-in or a car break-in in the last seven days (15; reference `PR-<precinct>-<day>-<number>`; handed to
 `Law.Bridges.PoliceReport` if set); hand yourself in (see below); visiting hours.
@@ -1961,8 +1962,8 @@ What happens, in order (`Custody`):
 
 **At a precinct that can be walked into** (and with "Walk-in police stations" on), steps 3 to 5 go on
 inside: from the pavement the player is taken through the door by the game's own way in and put in the
-holding cell before the screen clears, facing the bars and kept there. The charge sheet is then a smaller
-plate at the right of the screen with the cell in view beside it, and the time skip runs without the game's
+holding cell before the screen clears, facing the bars and kept there. The cell's list is then at the
+right of the screen with the cell in view beside it, and the time skip runs without the game's
 blur. On release the screen goes dark for a moment, the player is at the front desk, is signed out by the
 sergeant and walks to the door, which the game takes them out of in the usual way: release is from the front
 door. The car left at the scene is then **at the pound** (`reallife:law_station`): any front desk has it
@@ -2036,6 +2037,23 @@ Law.Custody.Active               // being arrested or held right now
 Law.LawDirector.NearestPrecinct(position)       // its Name, Door, Building; null before the city is ready
 Law.Arrests.FledStop / HitAndRun / StayedAtScene / WastedCall / Escaped / Cited   // the ways in
 ```
+
+### The desk and the cell in the game's own interface
+
+- The panel at a station (door or counter) is `GameUi.WorldPanel` through `GameUi.DoorPanel`; the desk's menu is a
+  `GameUi.TravelList` made by a `GameUi.DeskList` ("RealLifeOverhaul Law"); the cell is a second `DeskList`
+  ("RealLifeOverhaul Custody") that is `Locked` (no Cancel button, the cancel key left to the game).
+- The game's time skip switches the HUD off, so the cell's window is moved onto the skip's own canvas
+  (`TravelList.MoveTo`) once the skip has started and back to the HUD's when it closes. The clock line is written only
+  when the minute changes. Number keys 1 to 3 no longer choose in the cell: the entries are clicked.
+- Fallbacks: if the game's list cannot be copied, the desk's panel has the report, the fines, the car and the police
+  report on its own four keys; the cell serves the sentence with the charges told once in a notification and no
+  bail or lawyer.
+- The licence entry shows only when `Law.Bridges.Licensing` is set; nothing in this build sets it.
+- Log lines: "Law check (desk panel): ...: PASS", "Law check (desk list): the game's list is open: ...: PASS",
+  "Law check (choice): ...", "Law check (cell list): ...".
+- Not checked in the game: any of it. In particular whether the list is drawn on the skip's canvas at the right size
+  and place (a screenshot settles it), and whether the cancel key is left alone by the locked list.
 
 ### Test buttons
 
@@ -4244,7 +4262,7 @@ is a notification, and a booked room is gone up to at once. The room is a list a
 choice with its cost or effect under the name and the button off, with the reason, when it cannot be done (sleep, nap,
 wake-up call, shower, room service or the vending machine, minibar, laundry, rest, messages, the concierge (luxury),
 a beach walk and dinner in the village (cottages), extend, late checkout, check out, go out). Sleep, nap and rest
-keep the game's own time skip; while it runs the list has one entry, "Get up now", and cannot be cancelled. What a
+keep the game's own time skip; that hides the HUD, so the list is put away while it runs and the skip's own Cancel button is the way to get up. What a
 choice did is a notification. The player never moves: they stand at the door, held by a navigation block of the
 game's own. The list is one window shared by reception, the room and a trip (`TravelDirector.Window`, a `DeskList`).
 The mark that points to a hotel is the game's destination marker (`GameUi.GuideMark`).

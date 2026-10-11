@@ -190,7 +190,7 @@ namespace RealLifeOverhaul
                    || CustomColorPicker.isOpen || LoadScene.isLoading
                    || BigAmbitions.PlacementSystem.PlacementSystem.IsInPlacementMode
                    || GameManager.ShouldBlockKeyboardShortcuts()
-                   || Law.CustodyPanel.IsOpen   // the holding cell has buttons
+
                    || Meta.MetaUi.AnyOpen        // the guide, the welcome panel, confirmations: all worked with the mouse
                    || JusticePanel.IsOpen        // bail, hearings, the Legal file
                    || GameUi.TravelList.AnyOpen; // the game's own list window, worked with the mouse: bus stops, the cooking list, the custom shop, "My vehicles", a two-wheeler stand
