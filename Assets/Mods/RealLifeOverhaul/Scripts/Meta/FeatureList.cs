@@ -732,7 +732,7 @@ namespace RealLifeOverhaul.Meta
             Features.Add("economy_company", "reallife_meta_title_economy_company")
                 .Group("reallife_co_header")
                 .About("reallife_guide_economy_company_about")
-                .Owns(Settings.EconomyCompanyId, Settings.EconomyCompanyStaffId)
+                .Owns(Settings.EconomyCompanyId, Settings.EconomyCompanyStaffId, Settings.EconomyCompanyCoverId)
                 .Preset(Settings.EconomyCompanyLevelId, Economy.CompanyCatalogue.Relaxed, Economy.CompanyCatalogue.Realistic, Economy.CompanyCatalogue.Hardcore)   // (Standard is its default)
                 .Data(Economy.CompanyStore.Key, Economy.CompanyStore.TestKey)
                 .Cleanup(() => Economy.CompanyDirector.Instance?.StopAll(), -2)

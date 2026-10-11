@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BigAmbitions.Rivals;
 using Entities;
+using RealLifeOverhaul.Events;
 using RealLifeOverhaul.Economy;
 
 namespace RealLifeOverhaul
@@ -22,6 +23,9 @@ namespace RealLifeOverhaul
         ///   Dispute       business pressure's own "staff dispute" is open at a business: the company's strike waits
         ///   Rival         the name of one of the game's rivals, as business pressure picks one
         ///   Leave         the game's own resignation, as business pressure has an employee leave
+        ///   losses        a fire's repair bill (Events/FireLosses), a break-in's stock and repair (Crime/BreakIns) and
+        ///                 an inspector's fine (Business/BusinessEvents) are told to the company, which opens a claim
+        ///                 if a policy covers it. The loss is the other feature's own and is not changed
         ///   the paper     a strike that starts today, in the City Ledger (News.Extra, after the city's economy's pieces)
         ///
         /// Everything is read from what those features already keep in public or asked through an entry they already
@@ -42,11 +46,17 @@ namespace RealLifeOverhaul
                 BusinessGame.Ambient = Ambient;
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
+                FireLosses.Billed += FireLoss;
+                BreakIns.Happened += BreakIn;
+                BusinessEvents.Fined += Fined;
             }
 
             internal static void Disconnect()
             {
                 CompanyBridges.Reset();
+                FireLosses.Billed -= FireLoss;
+                BreakIns.Happened -= BreakIn;
+                BusinessEvents.Fined -= Fined;
                 BusinessGame.Ambient = CityEconomyDirector.FootfallOf;   // (the city's economy's own pairing takes it off in a moment)
                 News.Extra = _paperBefore;
                 _paperBefore = null;
@@ -117,6 +127,34 @@ namespace RealLifeOverhaul
                 }
             }
 
+
+            // A fire's repair bill at a business of the player's: fire cover may pay some of it back (the bill itself is the fire's own).
+            private static void FireLoss(BuildingRegistration reg, int bill)
+            {
+                CompanyDirector.Instance?.Loss(reg, CoverKind.Fire, bill);
+            }
+
+            // A break-in: theft cover counts the stock taken and the repair together.
+            private static void BreakIn(BuildingRegistration reg, int stock, int repair)
+            {
+                CompanyDirector.Instance?.Loss(reg, CoverKind.Theft, Math.Max(0, stock) + Math.Max(0, repair));
+            }
+
+            // A fine from one of business pressure's inspections (health, fire safety): liability cover may pay some of it back.
+            private static void Fined(string kind, string place, int amount)
+            {
+                try
+                {
+                    if (kind == BusinessCatalogue.Health || kind == BusinessCatalogue.Fire)
+                    {
+                        CompanyDirector.Instance?.Loss(BusinessGame.Find(place), CoverKind.Liability, amount);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("CompanyLinks.Fined", e);
+                }
+            }
             private static void Paper(int day, List<NewsItem> into)
             {
                 try
