@@ -174,7 +174,7 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       TransitBus       one bus: a van from the traffic pool with a route board, driven by the traffic system on a scripted route, stopped "in point" at the stop
       TransitRide      the ride itself (fade, the game's time machine, put down at the far end), for bus and subway; TransitState: day pass and ride counts in modData
       SubwayJourney    the prompt at each subway entrance, service by the clock (frequency, delays, a night closure), the City Transit contact
-      TransportHud     the information panel, the key prompt, the fuel gauge beside the speedometer
+      TransportHud     car ownership's panel and key prompt, the fuel gauge beside the speedometer (buses and the subway use Core/GameUi)
       CarGarage        CarRecord (per owned car, in modData by vehicle id), CarRules (every price, interval and chance; game-free)
       CarOwnership     the driven car: distance, wear felt through grip and brake torque, thirst, breakdowns, the garage bay, insurance payouts, the daily round
       CarRoadside      a mechanic who walks up, kneels at the car and walks off: breakdowns and fuel brought to the roadside
@@ -2028,13 +2028,16 @@ that one bus was either still crawling when the game was closed or its vehicle w
   pavement, and this leaves it open.)
 - **The bench** has two seats (never one for two), the sitter's feet 0.30 m in front of the seat's middle line,
   facing the road: what `sit_bench`, `sit_wait` and `sit_bench_up` are made for (seat 0.46 m up, as the model's).
-  The player is offered "sit down" within 1.5 m of a free seat (`TransitSeat`): held by the game's own navigation
+  The player is offered "Sit down" within 1.5 m of a free seat, as a button of the stop's panel, and "Click to sit
+  down" on the shelter from anywhere in view (the game walks them to the seat first): `TransitSeat`, held by the game's own navigation
   blocker, moved the last step and turned over a third of a second, then the three clips on the animator the way
   leisure plays its clips; any key or click gets them up, and so does the bus arriving. The game's own seating is
   not used: it exists only inside its rest and entertainment activities, which run the clock. Somebody waiting may
   take the other seat (walks to it, sits, gets up when the bus stands); those standing wait by the pole, outside
   the shelter.
-- **Service**: the nearest dressed stop within 80 m that has stops after it is served: up to two people walk up from
+- **Service**: the nearest dressed stop within 80 m is served (a line's last stop too: the bus that ends there
+  takes riders on, see Riding), and a dressed stop the player walks up to on foot takes the service over from
+  another at once: up to two people walk up from
   out of view, and a bus comes every 150 s by day (from 0.1.4 never later than 20 minutes of the game clock, the drive in counted: `Wait`; and it stands up to 34 s for a player within 35 m), 100 s in the weekday rush (7 to 9, 16 to 19), 210 s in the
   evening, 220 s early, 360 s at night, a third longer in the rain. In the rush one bus in four is full.
 - **The bus** (`TransitBus`) is a vehicle of the traffic pool wearing the modelled `minibus` (hidden under it
@@ -2075,24 +2078,62 @@ that one bus was either still crawling when the game was closed or its vehicle w
   and the kerb. Somebody may get out and walk off; those waiting get up, walk to the door one at a time and step
   in (`board_step`; the van: `job_car_enter`); `(departure)` counts them. It follows the next 240 m of its line and
   is then taken off the road if nobody is looking, or handed back to the traffic AI as it is.
-- **Riding**: at the stop the panel shows the line and where it goes, the next bus and the next stops; the
-  interaction key boards while the bus stands (else sits on the bench, else buys a day pass: 7.50, buses and subway
-  until midnight): stops further along the line are listed three to a page (keys 1 to 3, the interaction key for
-  more; the bus waits up to 30 s), the fare (2.75 flat) is paid with `pay_tap`, and the ride is a fade with the
-  game's time machine exactly as the game's taxi does it (`TaxiSystem.TravelCoroutine`): 0.06 game minutes a metre
-  of line plus a minute a stop, times the game-speed setting. `Transit check (ride)` names the stops called at;
-  `(put-down)` how far from the far stop's waiting place the player stands and whether that is pavement. A bus
-  pulls away there. Walking off cancels; a bus that leaves first is a missed bus. A line's last stop is only got
-  off at. `strap_hang` is not used: there is no interior to stand in.
+- **Riding** (`TransitDirector.Player.cs`): everything the player is shown is the game's own interface (see
+  `docs/game-ui.md`, sections 9 to 11), and nothing of it runs per frame.
+  - *Pointing.* The pole, the shelter and the standing bus each have a `TransitPointer`: an `EntityController` of
+    the mod's on a trigger box on the game's layer for interactive items, with one entry at the front of the game's
+    list of calls to action (`TransitCta`, as `HomeCookOffer`). The game outlines the stop, names it and offers
+    "Click to choose a stop", "Click to sit down" or "Click to board" from anywhere in view, as it does for its own
+    objects; a click from further off than reach walks the player over with the game's `PlayerController.SetGoal`
+    and acts on arrival. The bus's box is the director's own, put where the bus stands (`TrafficTools.Footprint`)
+    and switched off when it goes: nothing is added to the pooled vehicle.
+  - *At the stop.* Within 3 m (`Reach`: the game's `EntityController.MaxReachDistance`) of the pole, the waiting
+    place, the shelter's middle or the standing bus's body, the game's panel over a place (`GameUi.WorldPanel`:
+    the box of a petrol pump) shows "Bus stop: name", the line (or "Your stop: name" once one is picked, or that the
+    line ends here) and, right, the minutes, "At the stop", "Full" or "Delayed". Its buttons carry the game's own
+    keys: "Choose a stop" on Interact ("Board: choose a stop" while a bus with room stands, "Change your stop" once
+    one is picked), "Sit down" on SecondaryInteract while a free seat is within 1.5 m, "Get up" while seated. The
+    earlier figures (panel at 13 m, boarding at 16 m, then 6 m from the bus) are gone.
+  - *Where to.* The list is the window the game lists its subway stations in (`GameUi.TravelList`). It offers
+    every stop of the network (`TransitTrips`), as the subway offers every station: first the stops further along
+    this line in the order the bus calls at them (the same bus: 0.06 game minutes a metre of line plus a minute a
+    stop, times the game-speed setting), then every other stop, nearest first, reached with a change of bus that
+    is not played out (the straight line times 1.35 at the same rate, a minute a stop at one per 330 m, and 6
+    minutes for the change). Not offered: the stop itself and a stop of another line within 150 m, which is
+    walked to. Each entry has the stop's name, its line and where that goes, the minutes and the fare; the first
+    entry sells the day pass (7.50, buses and subway until midnight). One fare (2.75) covers a ride, the change
+    included, as the subway's 3 covers any station.
+  - *Boarding.* Picked while a bus with room stands, the fare is paid (`pay_tap`) and the ride begins. Picked while
+    waiting, the stop is kept (`_booked`, a notice says so) and the player boards by themselves when a bus with
+    room has stood for a second and they are at the stop or the bus; it is forgotten when the service at the stop
+    ends (105 m away, or another stop walked up to). The bus waits up to 30 s under an open list.
+  - *The ride* is unchanged: a fade with the game's time machine exactly as the game's taxi does it
+    (`TaxiSystem.TravelCoroutine`), the put-down at the far stop's waiting place, a bus pulling away there.
+    `Transit check (ride)` names the stops called at, or says "with a change of bus" with the metres of road it
+    counted; `(put-down)` how far from the waiting place the player stands and whether that is pavement.
+  - *If the game's parts are not there* (one `Game UI:` or `Transit:` warning each): without the list of calls to
+    action the stops cannot be clicked and the panel still works; without the subway's window the game's own
+    yes/no question offers the one ride to the end of the line; if the game's panel is showing another place the
+    stop's is tried again every quarter second and `(stop panel)` says FAIL meanwhile.
+  `strap_hang` is not used: there is no interior to stand in.
 - **Test buttons**: "dress the nearest bus stop" (in view; its check line follows), "send a bus to the nearest stop
   now" (a stop within 100 m; out of view if it can, else in view far off; says exactly what stopped it otherwise),
   the ride, the subway journey.
 
 **Lines to judge a run by** (`Player.log`, one each): `Transit check (network)`, `(stop dressed)`, `(seat)`,
 `(bus assigned)`, `(en route)` each minute, `(re-plan)`, `(arrival)`, `(doors)`, `(departure)`, `(ride)`,
-`(put-down)`; and `Transit: no bus could be put on the road ... yet (try N): <why>`.
+`(put-down)`; for the player's side `(pointer)` (once when the click actions are added, then at every click on a
+stop, a bench or the bus), `(stop panel)` each time the panel comes up, `(stop list)` at every opening and
+closing, `(choice)` at every pick and for the day pass, `(subway list)`; and
+`Transit: no bus could be put on the road ... yet (try N): <why>`.
 
-**Not verified in the game** (it could not be run): that a cut in the mesh is wider than its box by the walker's
+**Not verified in the game** (it could not be run): everything about how the game's interface looks with the
+stop's content in it (where the panel stands over the pole, how wide its second line makes the box, the list in the
+middle of the HUD, two lines in an entry made for one); that the game's pointer reaches a trigger box under the
+mod's camera (the game's physics has queries hit triggers, and the cursor is locked to the middle of the screen, not
+hidden, so the game's own ray is cast from the crosshair); that the outline pass draws the mod's props when they
+are put on the game's outlined layer; that the cancel key taken by the list does not also open the game's menu
+(the list's script runs first and resets the action, as the game does); that a cut in the mesh is wider than its box by the walker's
 radius (if it is not, the bench's box is smaller than the bench by that much: `(stop dressed)` says "bench no");
 that the navigation blocker also holds the player against the mod's own direct controls (any movement key gets
 them up anyway); where on the vehicle its origin is (the body is stood on the lowest point of what the vehicle
@@ -2104,8 +2145,11 @@ reached by lanes at all (if not, its stations simply get no line, and the pairin
 
 ### Subway
 
-Standing at an entrance on foot, the interaction key offers the trip as a journey (the game's own click still opens
-its map). Service follows the game's clock, the same on every load of the same day: a train every 3 minutes in the
+Standing within 7.5 m of an entrance on foot, the game's panel over a place (`GameUi.WorldPanel`) shows the station,
+how often trains run and the state of the service, with "Take the subway" on the game's interact key; that opens the
+game's own list of stations (`GameUi.TravelList`, a second copy of the same window the buses use) with stops,
+minutes and fare for each, and the day pass as its first entry. The game's own click on the entrance still opens
+its map. Service follows the game's clock, the same on every load of the same day: a train every 3 minutes in the
 weekday rush, 5 by day, 7 from 20:00, 8 from 05:00, 12 at night; in one three-hour window in eight there are delays
 of 6 to 14 minutes; from 23:00 to 05:00 one station (a different one each night) is closed for track work. Delays
 and closures arrive as texts from the City Transit contact, which can also be called for the state of the service
@@ -3397,6 +3441,10 @@ Performance is a requirement, not a nice-to-have.
 
 - Nothing allocates per frame. No `OnGUI`, no LINQ or string building in `Update`, no
   `FindObjectsOfType` outside a one-off setup. Use the shared `Hud` for on-screen elements.
+- Something offered at a place in the world is offered in the game's own interface, and the mod draws no key prompt
+  or panel for it: a click on the object (`docs/game-ui.md`, sections 7 and 11), the game's panel over a place with
+  its keys (`GameUi.WorldPanel`, section 9), a list in the game's own window (`GameUi.TravelList`, section 10). The
+  buses and the subway journey are the model (`Transport/TransitDirector.Player.cs`, `SubwayJourney`).
 - A handler on one of the game's event fields is kept there with `SaveHook.Keep` (the save) or `EventHold.Keep`
   (any other field: entering and leaving a building, the map, the game's events), never by taking it off and putting it
   back on a timer: each of those builds a new list of the game's handlers.

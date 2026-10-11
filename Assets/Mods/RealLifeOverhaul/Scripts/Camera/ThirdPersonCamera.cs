@@ -194,7 +194,8 @@ namespace RealLifeOverhaul
                    || Law.CustodyPanel.IsOpen   // the holding cell has buttons
                    || Meta.MetaUi.AnyOpen        // the guide, the welcome panel, confirmations: all worked with the mouse
                    || HomeCookPanel.IsOpen       // the cooking panel (one of Meta's panels; named so that it is found here)
-                   || JusticePanel.IsOpen;       // bail, hearings, the Legal file
+                   || JusticePanel.IsOpen        // bail, hearings, the Legal file
+                   || GameUi.TravelList.AnyOpen; // the list of bus stops: the game's own window, worked with the mouse
         }
 
         private void SetLooking(bool look)

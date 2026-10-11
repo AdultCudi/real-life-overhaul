@@ -40,7 +40,7 @@ namespace RealLifeOverhaul
     ///
     /// - the three stops nearest the player (within 135 m) are dressed from three dressings that
     ///   exist (<see cref="BusStopDressing"/>: solid, with seats), out of view;
-    /// - the nearest of them within 80 m is the stop that is served: up to two people wait there
+    /// - the nearest of them within 80 m (or the one the player has walked up to) is the stop that is served: up to two people wait there
     ///   (walking in from out of view; one may take a seat the player has not), and a bus comes
     ///   at intervals that follow the hour, the day of the week and the weather
     ///   (<see cref="TransitBus"/>: one bus on the road for the stop, and one more only to be
@@ -54,20 +54,21 @@ namespace RealLifeOverhaul
     ///   DELAYED and why;
     /// - when the bus stands, somebody may get out and walk off, the people waiting get up, walk
     ///   to the door one at a time and get in, and it leaves, always;
-    /// - on foot at the stop the player is shown the line, where it goes and the next bus, may
-    ///   sit on the shelter's bench (<see cref="TransitSeat"/>), boards with the interaction key
-    ///   while the bus stands, picks a stop further along the line, pays, and is carried there
-    ///   (<see cref="TransitRide"/>).
+    /// - on foot at the stop the player is shown, in the game's own panel, the stop, the line and
+    ///   the next bus; may sit on the shelter's bench (<see cref="TransitSeat"/>); picks any stop
+    ///   of the network from the game's own list (<see cref="TransitTrips"/>), at once or while
+    ///   waiting; gets on when the bus stands, pays, and is carried there (<see cref="TransitRide"/>).
+    ///   All of that is in TransitDirector.Player.cs.
     ///
     /// Every step writes one "Transit check (...)" line with what was measured and PASS or FAIL,
     /// so that a run can be judged from Player.log alone.
     ///
-    /// The budget: a 0.25 s timer; per frame only two key tests while a prompt is on screen and
-    /// one while the player sits. Four people at most (two JobCast pairs of its own), made only
+    /// The budget: a 0.25 s timer; per frame only one key test while the player sits (the panel's
+    /// keys are the game's, read by the game). Four people at most (two JobCast pairs of its own), made only
     /// when first needed. Texts are built when what they say changes. A fault switches buses
     /// off for the session, after putting everything away.
     /// </summary>
-    public sealed class TransitDirector : MonoBehaviour
+    public sealed partial class TransitDirector : MonoBehaviour
     {
         private const float TickInterval = 0.25f;
         private const float DressRange = 190f;      // metres: well beyond the 110 m at which a place counts as in view, so that a stop is up before it is looked at, driving fast too
@@ -78,9 +79,6 @@ namespace RealLifeOverhaul
         private const float SolidKeep = 90f;        // ...and stay cut until this far off
         private const float ServeRange = 80f;
         private const float ServeKeep = 105f;
-        private const float PanelRange = 13f;
-        private const float BoardRange = 16f;
-        private const float DoorRange = 6f;          // metres from the standing bus within which boarding is offered: at its side, not from across the street
         private const float SitRange = 1.5f;         // metres from a seat's place at which sitting is offered
         private const float BusLead = 30f;           // seconds before it is due that a bus is put on the road
         private const float MostWaitMinutes = 20f;   // game minutes: nobody waits longer for a bus than this, whatever the hour
@@ -95,9 +93,6 @@ namespace RealLifeOverhaul
         private const float ChooseFor = 30f;         // seconds the bus waits for the player to pick a stop
         private const int Dressings = 3;
         private const int Waiters = 2;
-        private const int PageSize = 3;
-        private const float MinutesPerMetre = 0.06f; // the game's taxi takes 0.04
-        private const float MinutesPerStop = 1f;
 
         private enum RiderStep { None, Arriving, Waiting, Rising, Boarding, Entering, Exiting, Leaving }
         private enum PlayerStep { None, AtStop, Choosing, Riding }
@@ -118,15 +113,14 @@ namespace RealLifeOverhaul
         /// <summary>True while the player is aboard a bus (the ride hides the player and darkens the screen).</summary>
         public static bool Riding => Instance != null && Instance._ride != null && Instance._ride.Riding;
 
-        /// <summary>True while one of transport's key prompts is on screen: the mod's own enter-a-door key stands aside.</summary>
-        public static bool TakesInteractKey => Instance != null && (Instance._promptOn || Instance._keyFrame == Time.frameCount
+        /// <summary>True while the stop's panel (whose buttons are on the game's interact keys) or the subway's key prompt is on screen: the mod's own enter-a-door key stands aside.</summary>
+        public static bool TakesInteractKey => Instance != null && (Instance._panel.Showing || Instance._keyFrame == Time.frameCount
                                                                     || (Instance._subway != null && Instance._subway.TakesKey));
 
         private readonly BusStopDressing[] _dressings = new BusStopDressing[Dressings];
         private readonly Rider[] _waiting = new Rider[Waiters];
         private readonly Collider[] _touching = new Collider[12];
         private readonly StringBuilder _text = new StringBuilder(320);
-        private readonly List<TransitStop> _choices = new List<TransitStop>(16);
         private readonly TransitEta _eta = new TransitEta();
         private readonly TransitSeat _seat = new TransitSeat();
         private TransitBus _bus;
@@ -164,13 +158,9 @@ namespace RealLifeOverhaul
         private bool _boardable;         // the waiting people have a clear way to the door
         private bool _busFull;
         private bool _wasStanding;
-        private bool _promptOn;
         private int _keyFrame = -1;
         private PlayerStep _player;
-        private int _page;
         private int _panelKey = int.MinValue;
-        private int _panelMore;
-        private string _promptKey;
         private bool _failed;
         private bool _saveLoaded;
         private bool _streetClear = true;
@@ -206,6 +196,7 @@ namespace RealLifeOverhaul
             SaveHook.Drop(_onSave);
             try
             {
+                RemovePlayerUi();
                 _seat.Abort();
                 _ride.Abort();
                 ClearStreet(true);
@@ -264,11 +255,6 @@ namespace RealLifeOverhaul
                         _panelKey = int.MinValue;
                     }
                 }
-                else if (_promptOn || _player == PlayerStep.Choosing)
-                {
-                    ReadKeys();
-                }
-                _subway.Frame();
                 float now = Time.time;
                 if (now < _nextTick)
                 {
@@ -280,21 +266,28 @@ namespace RealLifeOverhaul
             }
             catch (Exception e)
             {
-                _failed = true;
-                Logger?.Error(e);
-                Logger?.Warn("Transit: buses and the subway journey are switched off for this session after the error above.");
-                try
-                {
-                    _seat.Abort();
-                    _ride.Abort();
-                    ClearStreet(true);
-                    HideHud();
-                    _subway.Hide();
-                }
-                catch (Exception again)
-                {
-                    Logger?.Error(again);
-                }
+                Fail(e);
+            }
+        }
+
+        // A fault, on the timer or in something the game called (a button of the panel, a click, an entry of the list):
+        // everything is put away and buses stay off for the session.
+        private void Fail(Exception e)
+        {
+            _failed = true;
+            Logger?.Error(e);
+            Logger?.Warn("Transit: buses and the subway journey are switched off for this session after the error above.");
+            try
+            {
+                _seat.Abort();
+                _ride.Abort();
+                ClearStreet(true);
+                HideHud();
+                _subway.Hide();
+            }
+            catch (Exception again)
+            {
+                Logger?.Error(again);
             }
         }
 
@@ -555,9 +548,14 @@ namespace RealLifeOverhaul
         // Which stop has people waiting and a bus coming: the nearest dressed one, kept until the player is well away.
         private void Serve(Vector3 at, float now)
         {
-            if (_served != null && (CitySpots.Flat(_served.Sign - at) > ServeKeep * ServeKeep || !Dressed(_served)) && _player != PlayerStep.Choosing && !_ride.Riding)
+            if (_served != null && _player != PlayerStep.Choosing && !_ride.Riding)
             {
-                EndService();
+                // Well away from it, or standing on foot at another dressed stop (the other side of the street, say): that one is served instead.
+                TransitStop stood = PlayerHelper.IsUsingVehicle || AtStop(_served, at) ? null : StoodAt(at);
+                if (CitySpots.Flat(_served.Sign - at) > ServeKeep * ServeKeep || !Dressed(_served) || (stood != null && stood != _served))
+                {
+                    EndService();
+                }
             }
             if (_served != null)
             {
@@ -568,9 +566,9 @@ namespace RealLifeOverhaul
             for (int i = 0; i < Dressings; i++)
             {
                 TransitStop stop = _dressings[i] != null ? _dressings[i].Stop : null;
-                if (stop == null || TransitMap.Onward(stop) == 0)
+                if (stop == null)
                 {
-                    continue;   // a line's last stop is only ever got off at
+                    continue;
                 }
                 float sqr = CitySpots.Flat(stop.Sign - at);
                 if (sqr < best)
@@ -583,9 +581,15 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            _served = nearest;
+            BeginService(nearest, now);
+        }
+
+        // A stop becomes the one that has people waiting and a bus coming. (A line's last stop too: the bus that ends there takes riders on.)
+        private void BeginService(TransitStop stop, float now)
+        {
+            _served = stop;
             // Arriving at a stop is arriving part of the way through an interval: the same part for the same stop in the same hour.
-            float part = Mathf.Abs((nearest.Id * 7919 + TimeHelper.CurrentDay * 104729 + TimeHelper.CurrentHour * 1299709) % 1000) / 1000f;
+            float part = Mathf.Abs((stop.Id * 7919 + TimeHelper.CurrentDay * 104729 + TimeHelper.CurrentHour * 1299709) % 1000) / 1000f;
             _eta.Timetable(Wait(Mathf.Max(BusLead + 4f, Headway() * (0.2f + 0.6f * part))));
             _refusals = 0;
             _nextTry = 0f;
@@ -730,11 +734,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        private bool AtDoor(Vector3 at)
-        {
-            return _bus.Car != null && CitySpots.Flat(_bus.Car.transform.position - at) < DoorRange * DoorRange;
-        }
-
         private bool PlayerAtStop(float within)
         {
             return _served != null && !PlayerHelper.IsUsingVehicle && !BuildingManager.IsInsideBuilding
@@ -835,8 +834,8 @@ namespace RealLifeOverhaul
             if (!_busFull && !_ride.Riding && PlayerAtStop(WaitsWithin))
             {
                 // Said once as it pulls in: the bus is a small one, and it is not obvious that it is theirs.
-                Notifications.Show(NotificationType.Info, "reallife_transit_bus_here",
-                    new Dictionary<string, string>(2) { { "route", TransitMap.Lines[_served.Line].Number }, { "key", JobKeys.Label } }, 8f);
+                Notifications.Show(NotificationType.Info, "reallife_transit_bus_in",
+                    new Dictionary<string, string>(1) { { "route", TransitMap.Lines[_served.Line].Number } }, 8f);
             }
             _doorFound = false;
             _boardable = false;
@@ -1294,463 +1293,7 @@ namespace RealLifeOverhaul
             _streetClear = true;
         }
 
-        // ---------------------------------------------------------------- the player
-
-        private void RunPlayer(float now, Vector3 at, bool onFoot)
-        {
-            if (_ride.Riding)
-            {
-                return;
-            }
-            if (_player == PlayerStep.Riding)
-            {
-                _player = PlayerStep.None;
-            }
-            bool free = onFoot && !ThirdPersonCamera.IsUiOpen() && !JobDirector.TakesInteractKey && !_subway.Showing;
-            bool near = _served != null && free && CitySpots.Flat(_served.Sign - at) < PanelRange * PanelRange;
-            bool atBus = near || (_served != null && free && _bus.State == TransitBus.Phase.Standing && _bus.Car != null
-                                  && CitySpots.Flat(_bus.Car.transform.position - at) < BoardRange * BoardRange);
-
-            // A free seat of a dressed shelter within reach (any dressed stop's, served or not).
-            _sitAt = null;
-            _sitSeat = -1;
-            if (free && !_seat.Active && _player != PlayerStep.Choosing)
-            {
-                for (int i = 0; i < Dressings && _sitAt == null; i++)
-                {
-                    BusStopDressing dressing = _dressings[i];
-                    int seat = dressing != null ? dressing.FreeSeat(at, SitRange) : -1;
-                    if (seat >= 0)
-                    {
-                        _sitAt = dressing;
-                        _sitSeat = seat;
-                    }
-                }
-                // (Asked only at a seat: whether the clips are there, and whether a menu, a dialog or a journey is in the way.)
-                if (_sitAt != null && (!TransitSeat.Possible || !TransitRide.CanStart()))
-                {
-                    _sitAt = null;
-                    _sitSeat = -1;
-                }
-            }
-
-            if (!near && !atBus)
-            {
-                if (_player != PlayerStep.None)
-                {
-                    _player = PlayerStep.None;
-                }
-                // At a line's last stop no bus picks up: the stop says so, and where the nearest one that does is.
-                TransitStop last = free ? LastStopAt(at) : null;
-                if (last != null)
-                {
-                    ShowLastStop(last, at);
-                }
-                else
-                {
-                    HidePanel();
-                }
-                // On a bench at a stop that is not the served one (a line's last stop): the prompt alone.
-                Prompt(_seat.Seated ? "reallife_transit_prompt_seated" : _sitAt != null ? "reallife_transit_prompt_sit" : null, null);
-                return;
-            }
-            if (_player == PlayerStep.Choosing)
-            {
-                if (_bus.State != TransitBus.Phase.Standing)
-                {
-                    _player = PlayerStep.AtStop;
-                }
-                else
-                {
-                    ShowChoices();
-                    return;
-                }
-            }
-            _player = PlayerStep.AtStop;
-            TransitLine line = TransitMap.Lines[_served.Line];
-            bool standing = _bus.State == TransitBus.Phase.Standing;
-            TransitEta.Mode mode = standing ? TransitEta.Mode.Here : _eta.State;
-            bool busOut = _bus.State == TransitBus.Phase.Approaching;
-            if (mode == TransitEta.Mode.Here && !standing)
-            {
-                mode = TransitEta.Mode.Timetable;   // (the tick between a bus leaving and the timetable being set)
-            }
-            // The figure, in game minutes: the clock's rate is measured and wobbles, the figure shown does not rise for that.
-            int minutes = Mathf.Max(1, Mathf.CeilToInt(_eta.Seconds * _minutesPerSecond));
-            if (_eta.Epoch == _shownEpoch && minutes > _shownMinutes)
-            {
-                minutes = _shownMinutes;
-            }
-            _shownEpoch = _eta.Epoch;
-            _shownMinutes = minutes;
-            int metres = busOut ? Mathf.Max(10, Mathf.RoundToInt(_bus.Remaining / 10f) * 10) : 0;
-            int hold = busOut ? (int)_bus.Waiting : 0;
-            int state = standing ? (_busFull ? 5 : 4) : (int)mode;
-            int key = _served.Id * 100000 + state * 10000 + (mode == TransitEta.Mode.Timetable || mode == TransitEta.Mode.EnRoute ? Mathf.Min(minutes, 999) : 0) * 10
-                      + (TransitState.HasPass ? 1 : 0) + (Raining() ? 2 : 0) + hold * 4;
-            int more = mode == TransitEta.Mode.Delayed || mode == TransitEta.Mode.EnRoute ? metres : 0;
-            if (key != _panelKey || more != _panelMore)
-            {
-                _panelKey = key;
-                _panelMore = more;
-                _text.Length = 0;
-                _text.Append(TransitText.T("reallife_transit_stop_line", "route", line.Number, "to", line.To)).Append('\n');
-                string next;
-                if (standing)
-                {
-                    next = TransitText.T(_busFull ? "reallife_transit_stop_full" : "reallife_transit_stop_here");
-                }
-                else if (mode == TransitEta.Mode.EnRoute)
-                {
-                    next = TransitText.T("reallife_transit_stop_coming", "metres", metres.ToString(), "minutes", minutes.ToString());
-                }
-                else if (mode == TransitEta.Mode.Delayed)
-                {
-                    next = !busOut ? TransitText.T("reallife_transit_stop_delayed_none")
-                        : TransitText.T(_bus.Waiting == TransitBus.Hold.Light ? "reallife_transit_stop_delayed_light"
-                            : _bus.Waiting == TransitBus.Hold.Traffic ? "reallife_transit_stop_delayed_traffic"
-                            : _bus.Waiting == TransitBus.Hold.Closure ? "reallife_transit_stop_delayed_closure" : "reallife_transit_stop_delayed_late", "metres", metres.ToString());
-                }
-                else
-                {
-                    next = TransitText.T("reallife_transit_stop_next", "minutes", minutes.ToString());
-                }
-                _text.Append(next).Append('\n');
-                int listed = 0;
-                for (int i = _served.Order + 1; i < line.Stops.Count && listed < 3; i++, listed++)
-                {
-                    _text.Append("  ").Append(StopName(line.Stops[i])).Append('\n');
-                }
-                if (line.Stops.Count - 1 - _served.Order > listed)
-                {
-                    _text.Append("  ").Append(TransitText.T("reallife_transit_stop_more", "count", (line.Stops.Count - 1 - _served.Order - listed).ToString())).Append('\n');
-                }
-                if (Raining())
-                {
-                    _text.Append(TransitText.T("reallife_transit_stop_rain")).Append('\n');
-                }
-                _text.Append(TransitState.HasPass
-                    ? TransitText.T("reallife_transit_stop_pass")
-                    : TransitText.T("reallife_transit_stop_fare", "fare", TransitText.Money(TransitState.BusFare), "pass", TransitText.Money(TransitState.DayPass)));
-                TransportHud.Instance.ShowPanel(TransitText.T("reallife_transit_stop_title", "name", StopName(_served)), _text.ToString());
-            }
-            // One prompt at a time: board while the bus stands; else the bench; else the pass.
-            string prompt = _seat.Active ? (_seat.Seated ? "reallife_transit_prompt_seated" : null)
-                : standing && !_busFull ? (AtDoor(at) ? "reallife_transit_prompt_board" : null)
-                : _sitAt != null && !standing ? "reallife_transit_prompt_sit"
-                : !TransitState.HasPass && !standing ? "reallife_transit_prompt_pass" : null;
-            Prompt(prompt, line);
-        }
-
-        private void Prompt(string prompt, TransitLine line)
-        {
-            if (prompt == null)
-            {
-                HidePrompt();
-            }
-            else if (prompt != _promptKey || !_promptOn)
-            {
-                _promptKey = prompt;
-                _promptOn = true;
-                TransportHud.Instance.ShowPrompt(TransitText.T(prompt, "route", line != null ? line.Number : string.Empty, "pass", TransitText.Money(TransitState.DayPass)));
-            }
-        }
-
-        private static string StopName(TransitStop stop)
-        {
-            return stop.Name ?? TransitText.T("reallife_transit_stop_number", "number", (stop.Order + 1).ToString());
-        }
-
-        // A stop for the log: its line and its name, in plain words whatever the game's language.
-        private static string StopLabel(TransitStop stop)
-        {
-            TransitLine line = stop.Line >= 0 && stop.Line < TransitMap.Lines.Count ? TransitMap.Lines[stop.Line] : null;
-            return "the " + (line != null ? line.Number + " " : "") + "stop at " + (stop.Name ?? "number " + (stop.Order + 1));
-        }
-
-        // The stops further along the line, three to a page.
-        private void ShowChoices()
-        {
-            TransitLine line = TransitMap.Lines[_served.Line];
-            int key = -1 - (_served.Id * 100 + _page);
-            if (key == _panelKey)
-            {
-                return;
-            }
-            _panelKey = key;
-            _choices.Clear();
-            for (int i = _served.Order + 1; i < line.Stops.Count; i++)
-            {
-                _choices.Add(line.Stops[i]);
-            }
-            int pages = Mathf.Max(1, (_choices.Count + PageSize - 1) / PageSize);
-            _page %= pages;
-            _text.Length = 0;
-            for (int i = 0; i < PageSize; i++)
-            {
-                int index = _page * PageSize + i;
-                if (index >= _choices.Count)
-                {
-                    break;
-                }
-                TransitStop stop = _choices[index];
-                _text.Append(TransitText.T("reallife_transit_choice", "choice", JobKeys.ChoiceLabel(i), "name", StopName(stop),
-                    "stops", (stop.Order - _served.Order).ToString(), "minutes", Mathf.CeilToInt(RideMinutes(_served, stop)).ToString())).Append('\n');
-            }
-            _text.Append('\n').Append(TransitText.T(TransitState.HasPass ? "reallife_transit_stop_pass" : "reallife_transit_choice_fare", "fare", TransitText.Money(TransitState.BusFare)));
-            TransportHud.Instance.ShowPanel(TransitText.T("reallife_transit_choice_title", "route", line.Number, "to", line.To), _text.ToString());
-            _promptKey = "reallife_transit_prompt_choose";
-            _promptOn = true;
-            TransportHud.Instance.ShowPrompt(TransitText.T(pages > 1 ? "reallife_transit_prompt_choose" : "reallife_transit_prompt_choose_one"));
-        }
-
-        /// <summary>Game minutes from one stop to another further along the same line.</summary>
-        public static float RideMinutes(TransitStop from, TransitStop to)
-        {
-            float speed = 1f;
-            try
-            {
-                speed = Mathf.Clamp(PlayerPrefSettings.GameSpeed, 0.25f, 4f);   // the game's taxi scales its journey the same way
-            }
-            catch (Exception)
-            {
-                speed = 1f;
-            }
-            return ((to.Metres - from.Metres) * MinutesPerMetre + (to.Order - from.Order - 1) * MinutesPerStop + 1f) * speed;
-        }
-
-        // Called per frame only while a prompt is on screen (and the player is not on the bench).
-        private void ReadKeys()
-        {
-            if (_ride.Riding || ThirdPersonCamera.IsUiOpen())
-            {
-                return;
-            }
-            if (_player == PlayerStep.Choosing)
-            {
-                if (_served == null)
-                {
-                    return;
-                }
-                int choice = JobKeys.ChoiceDown();
-                if (choice >= 0)
-                {
-                    int index = _page * PageSize + choice;
-                    if (index < _choices.Count)
-                    {
-                        Board(_choices[index]);
-                    }
-                    return;
-                }
-                if (JobKeys.InteractDown())
-                {
-                    _keyFrame = Time.frameCount;
-                    _page++;
-                    _panelKey = int.MinValue;
-                    ShowChoices();
-                }
-                return;
-            }
-            if (!_promptOn || !JobKeys.InteractDown())
-            {
-                return;
-            }
-            _keyFrame = Time.frameCount;
-            if (_served != null && _player == PlayerStep.AtStop && _bus.State == TransitBus.Phase.Standing && !_busFull && AtDoor(PlayerHelper.GetPosition()))
-            {
-                _player = PlayerStep.Choosing;
-                _page = 0;
-                _chooseUntil = Time.time + ChooseFor;
-                _panelKey = int.MinValue;
-                ShowChoices();
-            }
-            else if (_sitAt != null && _promptKey == "reallife_transit_prompt_sit")
-            {
-                BusStopDressing shelter = _sitAt;
-                bool sat = _seat.Sit(shelter, _sitSeat, out string why);
-                Logger?.Info("Transit check (seat): the player sits down on seat " + (_sitSeat + 1) + " of " + BusStopDressing.Seats + " at " + StopLabel(shelter.Stop) + ", seat "
-                             + BusStopDressing.BenchSeat.ToString("F2") + " m up as the clips are made for"
-                             + (sat ? "; feet " + _seat.FeetOff.ToString("F2") + " m from where the clip wants them: " + (_seat.FeetOff < 0.12f ? "PASS" : "FAIL (the mesh does not reach the seat's place)")
-                                 : ": FAIL (" + why + ")") + ".");
-                _sitAt = null;
-                HidePrompt();
-            }
-            else if (_served != null && _player == PlayerStep.AtStop && _promptKey == "reallife_transit_prompt_pass" && !TransitState.HasPass && TransitState.BuyPass())
-            {
-                Notifications.Show(NotificationType.Success, "reallife_transit_pass_bought", null, 6f);
-                _panelKey = int.MinValue;
-            }
-        }
-
-        // The fare is paid and the ride begins.
-        private void Board(TransitStop to)
-        {
-            if (!TransitRide.CanStart() || _bus.State != TransitBus.Phase.Standing)
-            {
-                return;
-            }
-            bool pass = TransitState.HasPass;
-            if (!TransitState.Pay(TransitState.BusFare, "reallife_transaction_bus_fare"))
-            {
-                return;
-            }
-            TransitStop from = _served;
-            StartRide(from, to, pass, "boards from the stop while the bus stands (" + _bus.Standing.ToString("F0") + " s)");
-        }
-
-        private void StartRide(TransitStop from, TransitStop to, bool pass, string how)
-        {
-            float minutes = RideMinutes(from, to);
-            TransitLine line = TransitMap.Lines[from.Line];
-            _rideTo = to;
-            _player = PlayerStep.Riding;
-            _seat.Abort();
-            HideHud();
-            TapCard();
-            TransitState.BusRides++;
-            _text.Length = 0;
-            for (int i = from.Order + 1; i <= to.Order && i < line.Stops.Count; i++)
-            {
-                _text.Append(i > from.Order + 1 ? ", " : "").Append(line.Stops[i].Name ?? "stop " + (i + 1));
-            }
-            bool sound = to.Line == from.Line && to.Order > from.Order && minutes >= 1f;
-            Logger?.Info("Transit check (ride): the player " + how + " and rides the " + line.Number + " from " + (from.Name ?? "stop " + (from.Order + 1)) + ", calling at " + _text
-                         + ": " + (to.Order - from.Order) + " stop(s), " + (to.Metres - from.Metres).ToString("F0") + " m, " + minutes.ToString("F0") + " game minutes, "
-                         + (pass ? "on a day pass" : "fare " + TransitState.BusFare.ToString("F2")) + ": " + (sound ? "PASS" : "FAIL (not a stop further along this line)") + ".");
-            _ride.Begin(minutes, to.Wait, "reallife_transit_ride_fade", RideFaded, RideArrived);
-        }
-
-        private void RideFaded()
-        {
-            // Nobody can see: the stop the player left is cleared, and the stop they will get off at is made ready.
-            ClearStreet(true);
-            _streetClear = false;
-        }
-
-        private void RideArrived()
-        {
-            TransitStop to = _rideTo;
-            _rideTo = null;
-            if (to == null)
-            {
-                return;
-            }
-            DressNear(to.Sign, true, Time.time);
-            // The bus that brought them pulls away: put on the lane while the screen is still dark (traffic may need a moment to start again).
-            _seeOff = to;
-            _seeOffBy = Time.time + 1.2f;
-            ModState.AddModifier(ModState.MoodUp);
-            Notifications.Show(NotificationType.Info, "reallife_transit_ride_arrived", new Dictionary<string, string>(1) { { "name", StopName(to) } }, 6f);
-            Vector3 at = PlayerHelper.GetPosition();
-            float off = Mathf.Sqrt(CitySpots.Flat(at - to.Wait));
-            bool onPavement = CitySpots.Pavement(at, 0.3f, out _);
-            Logger?.Info("Transit check (put-down): the player stands " + off.ToString("F1") + " m from the waiting place of " + StopLabel(to) + ", on the pavement: " + (onPavement ? "yes" : "no")
-                         + ", the stop dressed: " + (Dressed(to) ? "yes" : "no") + ": " + (off < 3f && onPavement ? "PASS" : "FAIL") + ".");
-        }
-
-        // The card on the reader: the upper body only, over whatever the legs are doing.
-        internal static void TapCard()
-        {
-            try
-            {
-                var game = InstanceBehavior<GameManager>.Instance;
-                Animator animator = game != null && game.playerController != null && game.playerController.Character != null ? game.playerController.Character.animator : null;
-                if (animator != null && ClipLibrary.TryGet("pay_tap", out CityClip tap))
-                {
-                    ActivityAnimator player = ActivityAnimators.For(animator);
-                    if (player != null && player.Usable)
-                    {
-                        player.PlayOver(tap.Clip, BodyMask.Upper, 0.15f);
-                    }
-                }
-                SfxManager sounds = InstanceBehavior<SfxManager>.Instance;
-                if (sounds != null && game != null && game.playerController != null)
-                {
-                    sounds.PlayAudio(BigAmbitions.SoundSystem.SoundType.PurchaseSuccess, game.playerController.transform.position);
-                }
-            }
-            catch (Exception e)
-            {
-                Logger?.Error(e);
-            }
-        }
-
-        private void HidePrompt()
-        {
-            if (_promptOn)
-            {
-                _promptOn = false;
-                _promptKey = null;
-                if (TransportHud.Exists)
-                {
-                    TransportHud.Instance.HidePrompt();
-                }
-            }
-        }
-
-        private void HidePanel()
-        {
-            if (_panelKey != int.MinValue)
-            {
-                _panelKey = int.MinValue;
-                if (TransportHud.Exists && !_subway.Showing)
-                {
-                    TransportHud.Instance.HidePanel();
-                }
-            }
-        }
-
-        // The dressed stop the player stands at where its line ends, or null.
-        private TransitStop LastStopAt(Vector3 at)
-        {
-            for (int i = 0; i < Dressings; i++)
-            {
-                TransitStop stop = _dressings[i] != null ? _dressings[i].Stop : null;
-                if (stop != null && TransitMap.Onward(stop) == 0 && CitySpots.Flat(stop.Sign - at) < PanelRange * PanelRange)
-                {
-                    return stop;
-                }
-            }
-            return null;
-        }
-
-        // Built once for as long as the player stands there (the panel's key is the stop).
-        private void ShowLastStop(TransitStop stop, Vector3 at)
-        {
-            int key = -1 - stop.Id;
-            if (key == _panelKey)
-            {
-                return;
-            }
-            _panelKey = key;
-            _panelMore = 0;
-            TransitStop board = null;
-            float best = float.MaxValue;
-            List<TransitStop> stops = TransitMap.Stops;
-            for (int i = 0; i < stops.Count; i++)
-            {
-                float sqr = CitySpots.Flat(stops[i].Sign - at);
-                if (sqr < best && TransitMap.Onward(stops[i]) > 0)
-                {
-                    best = sqr;
-                    board = stops[i];
-                }
-            }
-            _text.Length = 0;
-            _text.Append(TransitText.T("reallife_transit_stop_ends", "route", TransitMap.Lines[stop.Line].Number)).Append('\n');
-            if (board != null)
-            {
-                _text.Append(TransitText.T("reallife_transit_stop_board_at", "route", TransitMap.Lines[board.Line].Number, "name", StopName(board),
-                    "metres", (Mathf.Max(1, Mathf.RoundToInt(Mathf.Sqrt(best) / 10f)) * 10).ToString()));
-            }
-            TransportHud.Instance.ShowPanel(TransitText.T("reallife_transit_stop_title", "name", StopName(stop)), _text.ToString());
-        }
-
-        private void HideHud()
-        {
-            HidePrompt();
-            HidePanel();
-        }
+        // (The player's side, from pointing at a stop to the ride, is in TransitDirector.Player.cs.)
 
         // ---------------------------------------------------------------- the test buttons
 
@@ -1840,7 +1383,7 @@ namespace RealLifeOverhaul
             _streetClear = false;
         }
 
-        /// <summary>Options button: brings a bus to the nearest stop with a line onward now, or says exactly why it cannot.</summary>
+        /// <summary>Options button: brings a bus to the nearest stop now, or says exactly why it cannot.</summary>
         public void TestBus()
         {
             if (!TestReady("Bus", out Vector3 at))
@@ -1885,7 +1428,7 @@ namespace RealLifeOverhaul
             Notifications.Show(NotificationType.Info, "reallife_transit_test_bus", new Dictionary<string, string>(1) { { "name", StopName(stop) } }, 8f);
         }
 
-        /// <summary>Options button: rides from the nearest stop to the stop two further along its line (or its last), fare and all.</summary>
+        /// <summary>Options button: rides from the nearest stop to the stop two further along its line (or its last; from a line's last stop, to the nearest stop of another line), fare and all.</summary>
         public void TestRide()
         {
             if (!TestReady("Bus ride", out Vector3 at))
@@ -1903,8 +1446,14 @@ namespace RealLifeOverhaul
                 TestRefusals.Tell(Logger, "Bus ride", TestRefusal.SceneActive, 0, "a menu, a dialog or another journey is in the way");
                 return;
             }
-            TransitLine line = TransitMap.Lines[from.Line];
-            TransitStop to = line.Stops[Mathf.Min(from.Order + 2, line.Stops.Count - 1)];
+            // Two stops along the line where it has them; from a line's last stop, the nearest stop of another line.
+            int direct = TransitTrips.From(from, _trips);
+            if (_trips.Count == 0)
+            {
+                TestRefusals.Tell(Logger, "Bus ride", TestRefusal.NothingFits, 0, "the network has no other stop to ride to");
+                return;
+            }
+            TransitStop to = _trips[direct > 0 ? Mathf.Min(1, direct - 1) : 0].To;
             bool pass = TransitState.HasPass;
             if (!TransitState.Pay(TransitState.BusFare, "reallife_transaction_bus_fare"))
             {
@@ -1921,7 +1470,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < stops.Count; i++)
             {
                 float sqr = CitySpots.Flat(stops[i].Sign - at);
-                if (sqr < best && TransitMap.Onward(stops[i]) > 0)
+                if (sqr < best)
                 {
                     best = sqr;
                     nearest = stops[i];
