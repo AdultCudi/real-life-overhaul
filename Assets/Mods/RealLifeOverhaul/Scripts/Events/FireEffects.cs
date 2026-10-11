@@ -278,7 +278,7 @@ namespace RealLifeOverhaul.Events
         private GameObject FindTemplate()
         {
             ParticleSystemRenderer source = null;
-            foreach (ParticleSystemRenderer renderer in Resources.FindObjectsOfTypeAll<ParticleSystemRenderer>())
+            foreach (ParticleSystemRenderer renderer in SceneFinds.InMemory<ParticleSystemRenderer>("events: the game's smoke effect being looked for (everything in memory gone through)"))
             {
                 Material material = renderer.sharedMaterial;
                 if (material == null || material.name.IndexOf("smoke", StringComparison.OrdinalIgnoreCase) < 0 || renderer.GetComponent<ParticleSystem>() == null

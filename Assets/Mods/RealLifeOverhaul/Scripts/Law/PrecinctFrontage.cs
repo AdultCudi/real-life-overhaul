@@ -1043,6 +1043,7 @@ namespace RealLifeOverhaul.Law
                 _bollards[i].gameObject.SetActive(false);
                 _bollards[i].SetPositionAndRotation(at, Quaternion.LookRotation(_out, Vector3.up));
                 _bollards[i].gameObject.SetActive(true);
+                MeshCuts.Note("a precinct's bollards and flag pole");
                 _bollardsOut++;
             }
             if (_bollardsOut > 0)
@@ -1081,6 +1082,7 @@ namespace RealLifeOverhaul.Law
                 _pole.gameObject.SetActive(false);
                 _pole.SetPositionAndRotation(at, Quaternion.LookRotation(Vector3.Cross(fly, Vector3.up), Vector3.up));   // (the flag flies along the holder's +X)
                 _pole.gameObject.SetActive(true);
+                MeshCuts.Note("a precinct's bollards and flag pole");
                 Fit(Piece.Pole);
                 return;
             }
@@ -1248,6 +1250,7 @@ namespace RealLifeOverhaul.Law
             car.SetActive(false);   // moved while off, so the navigation mesh is cut once, in the right place
             car.transform.SetPositionAndRotation(at, facing);
             car.SetActive(true);
+            MeshCuts.Note("a precinct's parked car");
             _carOut[slot] = true;
             _carAt[slot] = at;
             _logger?.Info($"Law: {_dressed.Name}: patrol car {slot + 1} parked at the kerb {Mathf.Sqrt(CitySpots.Flat(at - _dressed.Door)):F0} m from the door.");

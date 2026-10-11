@@ -9503,5 +9503,8 @@
   "reallife_rota_plan_title": "The rota of {business} has gaps",
   "reallife_rota_plan_what": "Open hours this week with nobody at work: {hours}.",
   "reallife_changes_next_title": "Next",
-  "reallife_changes_next": "The Company app has a Rota tab. It shows the game's customer forecast for each hour, the opening hours that pay for their staff, and how many people a business needs. One button fills the week's rota by each employee's skills and demands, and another puts the old rota back. Fixed: the game froze for seconds when an ambulance crew stepped out. Fixed: a car in the custom shop shot backwards when the shop closed. The driving test now marks only what you could have helped: a tap of the brake, a light that changes on top of you and where the school left the car are no longer faults."
+  "reallife_changes_next": "The Company app has a Rota tab. It shows the game's customer forecast for each hour, the opening hours that pay for their staff, and how many people a business needs. One button fills the week's rota by each employee's skills and demands, and another puts the old rota back. Fixed: the game froze for seconds when an ambulance crew stepped out. Fixed: a car in the custom shop shot backwards when the shop closed. The driving test now marks only what you could have helped: a tap of the brake, a light that changes on top of you and where the school left the car are no longer faults.",
+  "reallife_perf_test_session": "Test: write the session record's lines now",
+  "reallife_perf_test_session_done": "The session record wrote its two lines to Player.log.",
+  "reallife_perf_test_session_off": "The session record is off. Switch on Developer diagnostics first."
 }

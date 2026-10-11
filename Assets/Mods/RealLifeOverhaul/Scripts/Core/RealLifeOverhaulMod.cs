@@ -785,6 +785,10 @@ namespace RealLifeOverhaul
             _root = new GameObject(RootName);
             SessionWatch.Logger = context.Logger;
             _root.AddComponent<SessionWatch>();   // the record of the session for "it stutters after a while": disabled unless "Developer diagnostics" is on
+            _root.AddComponent<ScenePrewarm>();   // one-off searches of the scene done behind the loading screen (Core/SceneFinds): disabled unless a piece is waiting
+            ScenePrewarm.Add("roads: the traffic system's road data being found for the city", RoadData.Prewarm);
+            ScenePrewarm.Add("traffic: the game's smoke effect being found for accidents and fires", TrafficEffects.Prewarm);
+            ScenePrewarm.Add("game UI: the game's font being found", FindFont);
             ClickWatch.Logger = context.Logger;
             _root.AddComponent<ClickWatch>();     // with "Developer diagnostics" on, what a left click in the city met: one flag test a frame otherwise
             _root.AddComponent<ThirdPersonCamera>();
@@ -885,9 +889,20 @@ namespace RealLifeOverhaul
             Looks.Reset();
             CityLifeDirector.Instance?.Prewarm();
             ActorPool.Instance?.Prewarm();
+            // And every search of the whole scene a feature would otherwise make the first time it needs its answer,
+            // a frame of over 100 ms each in the middle of play (Core/SceneFinds).
+            ScenePrewarm.Begin();
             Meta.MetaCity.Begin(context, _root);   // the check for leftovers, the guide's contact, the welcome panel
             context.Logger.Info("City features started.");
             return Task.CompletedTask;
+        }
+
+        // The game's font is found by a search of the scene for any text of the interface (Core/GameUi/GameFont) and kept
+        // for the session: asked for here, so that the search is not made when the first bus stop or sign is lettered.
+        private static bool FindFont()
+        {
+            _ = GameUi.GameFont.Asset;
+            return true;
         }
 
         public Task OnUnloadAsync()

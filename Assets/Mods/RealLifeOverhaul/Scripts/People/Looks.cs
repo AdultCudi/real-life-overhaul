@@ -41,6 +41,7 @@ namespace RealLifeOverhaul
 
         private static float _last = -1000f;
         private static int _lastFrame = -1;
+        private static int _mark;   // the session record's number for the look being built
 
         /// <summary>True while a long frame would not be seen as one: the loading screen is up, or the game is paused.</summary>
         public static bool Hidden => UI.Load.LoadScene.isLoading || Time.timeScale <= 0f;
@@ -71,7 +72,16 @@ namespace RealLifeOverhaul
             }
             _last = Time.unscaledTime;
             _lastFrame = Time.frameCount;
-            SessionWatch.Mark(what);
+            _mark = SessionWatch.Mark(what);
+        }
+
+        /// <summary>
+        /// Called by whoever built the look, just after: the merge's time is then written beside its name in the
+        /// session record's line for a long frame. One read of the clock.
+        /// </summary>
+        public static void Done()
+        {
+            SessionWatch.Done(_mark);
         }
 
         /// <summary>The city is loading: the counts start again.</summary>

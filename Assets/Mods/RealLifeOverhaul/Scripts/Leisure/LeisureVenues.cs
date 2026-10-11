@@ -163,6 +163,8 @@ namespace RealLifeOverhaul.Leisure
         /// searches here are the one-off setup the performance rules allow; whatever the city does not have is
         /// simply not on the list.
         /// </summary>
+        private const string LandmarkSearch = "leisure: one of the city's landmarks being looked for (a search of the whole scene, six of them once a city)";
+
         public static void FindLandmarks()
         {
             if (_landmarksTried)
@@ -178,7 +180,7 @@ namespace RealLifeOverhaul.Leisure
                 Scene<SwimmingPoolBuildingController>("swimming_pool", "reallife_leisure_landmark_swimming_pool", 40f, false);
                 Scene<BridgeController>("bridge", "reallife_leisure_landmark_bridge", 70f, true);
 
-                CasinoBuildingController[] casinos = UnityEngine.Object.FindObjectsByType<CasinoBuildingController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                CasinoBuildingController[] casinos = SceneFinds.All<CasinoBuildingController>(LandmarkSearch, FindObjectsInactive.Include);
                 if (casinos.Length > 0 && casinos[0] != null)
                 {
                     Transform at = casinos[0].ticketHouse != null ? casinos[0].ticketHouse.transform : casinos[0].transform;
@@ -225,7 +227,7 @@ namespace RealLifeOverhaul.Leisure
 
         private static void Scene<T>(string id, string nameKey, float radius, bool waterside) where T : Component
         {
-            T[] found = UnityEngine.Object.FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            T[] found = SceneFinds.All<T>(LandmarkSearch, FindObjectsInactive.Include);
             // The same one every time, whatever order the engine hands them over in: the most westerly.
             T pick = null;
             for (int i = 0; i < found.Length; i++)

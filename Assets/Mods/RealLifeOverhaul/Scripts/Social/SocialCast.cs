@@ -425,6 +425,7 @@ namespace RealLifeOverhaul
             appearance.data.fatness = Mathf.Min(appearance.data.fatness, MaxBuild);
             Looks.Count("social: a friend's look being built (a mesh merge)");
             appearance.UpdateVisuals();
+            Looks.Done();
         }
     }
 }
