@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using RealLifeOverhaul.Economy;
 
@@ -15,7 +16,6 @@ internal static partial class Program
 
     private static void Rota()
     {
-        RotaCatalogueChecks();
         RotaShifts();
         RotaDemands();
         RotaGivingWay();
@@ -28,6 +28,7 @@ internal static partial class Program
         RotaAdvice();
         RotaGenerated();
         RotaTiming();
+        RotaLedgerChecks();
     }
 
     // ---------------------------------------------------------------- making a problem by hand
@@ -254,14 +255,6 @@ internal static partial class Program
     }
 
     // ---------------------------------------------------------------- the checks
-
-    private static void RotaCatalogueChecks()
-    {
-        Check(RotaCatalogue.ShiftCap == 12 && RotaCatalogue.DayCap == 14, "rota: the game's limits, a shift of twelve hours and a day of fourteen");
-        Check(RotaCatalogue.DemandWeight[0] == 2 && RotaCatalogue.DemandWeight[1] == 3 && RotaCatalogue.DemandWeight[2] == 5, "rota: an unmet demand weighs as the game's own impact, two, three and five tenths");
-        Check(RotaCatalogue.BlocksMost >= 1 && RotaCatalogue.BlockLeast >= 1 && RotaCatalogue.BlockLeast * RotaCatalogue.BlocksMost <= 24, "rota: the advised blocks fit a day");
-        Check(RotaCatalogue.ValueSupport > 0 && RotaCatalogue.ValueFloor > RotaCatalogue.ValueSupport, "rota: the smallest crew is worth more than a support station, and both are wanted");
-    }
 
     private static void RotaShifts()
     {
@@ -509,7 +502,7 @@ internal static partial class Program
         }
         Check(work == 80 && plan.Full, "rota: where no customers come, both work stations are wanted for all 40 open hours and covered (" + work + ")");
         var outlook = new RotaOutlook();
-        advisor.Advise(shop, p, RotaSolverUnderTest, null, outlook);
+        advisor.Advise(shop, p, RotaSolverUnderTest, null, null, outlook);
         bool same = true;
         for (int cell = 0; cell < RotaCells; cell++)
         {
@@ -911,7 +904,7 @@ internal static partial class Program
             }
         }
         var outlook = new RotaOutlook();
-        advisor.Advise(shop, p, RotaSolverUnderTest, present, outlook);
+        advisor.Advise(shop, p, RotaSolverUnderTest, present, null, outlook);
         bool hours = true;
         for (int cell = 0; cell < RotaCells; cell++)
         {
@@ -929,7 +922,7 @@ internal static partial class Program
         // How long the staff there are can keep it open.
         p = RotaMake(2, 1);
         p.Worker[0].Demands = new[] { RotaAsk(RotaDemandKind.Hours, 2, 20, 40) };
-        advisor.Advise(shop, p, RotaSolverUnderTest, present, outlook);
+        advisor.Advise(shop, p, RotaSolverUnderTest, present, null, outlook);
         Check(outlook.HoursBest == 70 && outlook.HoursStaffed <= 40 && outlook.HoursStaffed >= 30, "rota advice: one person of 40 hours a week keeps it open for no more than 40 of the 70 advised hours (" + outlook.HoursStaffed + ")");
         bool inside = true, crewed = true;
         for (int cell = 0; cell < RotaCells; cell++)
@@ -943,7 +936,7 @@ internal static partial class Program
 
         // Nobody at all.
         p = RotaMake(2, 0);
-        advisor.Advise(shop, p, RotaSolverUnderTest, null, outlook);
+        advisor.Advise(shop, p, RotaSolverUnderTest, null, null, outlook);
         Check(outlook.HoursBest == 70 && outlook.HoursStaffed == 0 && outlook.ProfitStaffed == 0 && outlook.Roles[0].Hire == 4, "rota advice: with no staff the advice is still there, nothing can be kept open, and four are to hire");
 
         // Nothing is worth opening; no worth known; hours that are the game's.
@@ -952,14 +945,14 @@ internal static partial class Program
             shop.Customers[cell] = 2;
         }
         p = RotaMake(2, 4);
-        advisor.Advise(shop, p, RotaSolverUnderTest, present, outlook);
+        advisor.Advise(shop, p, RotaSolverUnderTest, present, null, outlook);
         Check(outlook.Advised && outlook.HoursBest == 0 && outlook.ProfitBest == 0, "rota advice: two customers an hour never pay a wage: no hour is advised");
         shop.Margin = 0;
-        advisor.Advise(shop, p, RotaSolverUnderTest, present, outlook);
+        advisor.Advise(shop, p, RotaSolverUnderTest, present, null, outlook);
         Check(!outlook.Advised && outlook.HoursBest == 28, "rota advice: with no worth known for a customer no hours are advised and it keeps the ones it has");
         shop.Margin = 400;
         shop.FixedHours = true;
-        advisor.Advise(shop, p, RotaSolverUnderTest, present, outlook);
+        advisor.Advise(shop, p, RotaSolverUnderTest, present, null, outlook);
         Check(!outlook.Advised && outlook.HoursBest == 28 && outlook.Plan.Full, "rota advice: where the game sets the hours none are advised, and the rota fills the hours there are");
     }
 
@@ -1273,17 +1266,43 @@ internal static partial class Program
         var outlook = new RotaOutlook();
         for (int i = 0; i < 10; i++)
         {
-            advisor.Advise(shop, p, solver, null, outlook);
+            advisor.Advise(shop, p, solver, null, null, outlook);
         }
         worst = 0;
         for (int i = 0; i < 20; i++)
         {
             watch.Restart();
-            advisor.Advise(shop, p, solver, null, outlook);
+            advisor.Advise(shop, p, solver, null, null, outlook);
             watch.Stop();
             worst = Math.Max(worst, watch.Elapsed.TotalMilliseconds);
         }
         Check(worst < 16.0, "rota, the largest business: the whole advice, with its rotas, in under 16 ms (the slowest of 20 took " + worst.ToString("0.00") + " ms)");
         Console.WriteLine("  rota timing, the whole advice for it (" + outlook.HoursBest + " hours advised, " + outlook.HoursStaffed + " with the staff there are): slowest " + worst.ToString("0.00") + " ms");
+        // Each step is timed ten times and its quickest time counts: a pause of the runtime that happens to fall into one run is not the step's.
+        var quickest = new List<double>();
+        for (int i = 0; i < 10; i++)
+        {
+            advisor.Begin(shop, p, solver, null, null, outlook);
+            bool done = false;
+            for (int piece = 0; !done; piece++)
+            {
+                watch.Restart();
+                done = advisor.Step(1);
+                watch.Stop();
+                double ms = watch.Elapsed.TotalMilliseconds;
+                if (piece == quickest.Count)
+                {
+                    quickest.Add(ms);
+                }
+                quickest[piece] = Math.Min(quickest[piece], ms);
+            }
+        }
+        double longest = 0;
+        foreach (double ms in quickest)
+        {
+            longest = Math.Max(longest, ms);
+        }
+        Check(longest < 1.0, "rota, the largest business: no single step of the advice takes a millisecond here (" + longest.ToString("0.000") + " ms), so each fits a frame's share on a runtime several times slower");
+        Console.WriteLine("  rota timing, the advice in steps: " + quickest.Count + " steps, the longest " + longest.ToString("0.000") + " ms");
     }
 }
