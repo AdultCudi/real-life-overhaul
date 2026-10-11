@@ -4,7 +4,9 @@
        phone's fee, the credit file's cap and folding, its line in the save across versions, how the game's loans
        are told apart, and (Checks2.cs) the credit products, what happens when payments are missed, consolidation,
        the lender of last resort and the ways out of debt, and (Checks3.cs) the city's economy: twenty years of the model
-       from many seeds, the central bank's rule, the adjustments, the rate the credit side reads and the save's line.
+       from many seeds, the central bank's rule, the adjustments, the rate the credit side reads and the save's line,
+       and (Checks5.cs) running a business: staff, insurance, marketing, tax and the accountant, cash off the books,
+       licences and its line in the save.
        Compiles the mod's own files, so it checks exactly what ships.
        Run: dotnet run -c Release (from this folder). Exit code 0 = all checks passed. -->
   <PropertyGroup>
@@ -34,6 +36,14 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityModel.cs" Link="Mod\CityModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityStore.cs" Link="Mod\CityStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityEconomy.cs" Link="Mod\CityEconomy.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\CompanyCatalogue.cs" Link="Mod\CompanyCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\CompanyState.cs" Link="Mod\CompanyState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\StaffRules.cs" Link="Mod\StaffRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\CoverRules.cs" Link="Mod\CoverRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\CampaignRules.cs" Link="Mod\CampaignRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\TaxRules.cs" Link="Mod\TaxRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\LicenceRules.cs" Link="Mod\LicenceRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\CompanyStore.cs" Link="Mod\CompanyStore.cs" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,262 @@
+using System;
+
+namespace RealLifeOverhaul.Economy
+{
+    /// <summary>The parts of running a business. Each has its own switch, its own tab and its own rules. Saved as a number in places: never renumber.</summary>
+    public enum CompanyPart
+    {
+        Staff = 0,
+        Cover = 1,
+        Marketing = 2,
+        Tax = 3,
+        Licences = 4,
+        Count = 5
+    }
+
+    /// <summary>What a policy covers. Saved as a number.</summary>
+    public enum CoverKind
+    {
+        Fire = 0,
+        Theft = 1,
+        Liability = 2
+    }
+
+    /// <summary>A campaign. Saved as a number.</summary>
+    public enum CampaignKind
+    {
+        Flyers = 0,
+        Radio = 1,
+        DiscountDay = 2,
+        Refit = 3
+    }
+
+    /// <summary>A licence or permit. Saved as a number.</summary>
+    public enum LicenceKind
+    {
+        Hygiene = 0,
+        Alcohol = 1,
+        Late = 2,
+        Signage = 3
+    }
+
+    /// <summary>A business cost of the mod's own that the return counts and the game's tax deducts. Saved as a number.</summary>
+    public enum CostKind
+    {
+        Wages = 0,      // agreed raises, sick pay, overtime, a strike's settlement
+        Premiums = 1,
+        Marketing = 2,
+        Licences = 3,
+        Accountant = 4,
+        Count = 5
+    }
+
+    /// <summary>
+    /// Every number of "running a business": staff, insurance, marketing, tax and the accountant, cash kept off the
+    /// books, licences. The rules, the director, the Company app, the Guide's page and the offline check all read
+    /// these; nothing else writes a figure of its own. Game-free: compiled as it is by RealLifeOverhaul.Build/EconomyCheck.
+    ///
+    /// Whole numbers throughout, so the same seed and the same days always give the same history and a save holds
+    /// exactly what was in memory: money in whole units, an hourly wage in hundredths, a share in thousandths unless
+    /// its name says per cent, the price index in tenths of a point (1000 at the start), a district's income in points.
+    /// </summary>
+    public static class CompanyCatalogue
+    {
+        // ---------------------------------------------------------------- strictness (the option's four steps, as the presets set them)
+
+        public const int Relaxed = 0, Standard = 1, Realistic = 2, Hardcore = 3;
+        public const int LevelDefault = Standard;
+
+        public static int Level(int level)
+        {
+            return level < Relaxed ? Relaxed : level > Hardcore ? Hardcore : level;
+        }
+
+        // ---------------------------------------------------------------- what is kept
+
+        public const int ShopsMost = 64;
+        public const int StaffMost = 400;
+        public const int ClaimsMost = 24;
+        public const int ReportsKept = 8;
+        public const int AlertsMost = 40;
+        public const int BooksDays = 45;            // how far back the game's daily statements are read in one day's pass
+        public const int IndexStart = 1000;
+        public const int IncomeMiddle = 100;
+
+        // ---------------------------------------------------------------- staff: the wage market
+
+        public const int WageIndexShare = 50;                               // per cent of the price index's rise or fall that the going rate follows
+        public static readonly int[] WageCycle = { 40, 0, -20, -50 };       // thousandths, by the cycle: boom, steady, slowdown, recession
+        public const int WageIncomePerPoint = 2;                            // thousandths for each point of district income over or under 100
+        public const int WageMarketLeast = 800, WageMarketMost = 1300;      // the going rate against the game's own wage formula
+
+        // ---------------------------------------------------------------- staff: raises asked for
+
+        public static readonly int[] RaiseGap = { 150, 100, 80, 60 };       // thousandths under the going rate that counts as underpaid, by strictness
+        public static readonly int[] RaiseDays = { 10, 7, 6, 5 };           // days underpaid before a raise is asked for
+        public const int RaiseAnswerDays = 4;                               // days to answer; no answer is a refusal
+        public const int RaiseRestDays = 14;                                // days before the same employee asks again
+        public const int RaiseLessShare = 50;                               // "offer less" closes this per cent of the gap
+
+        // ---------------------------------------------------------------- staff: standing (0 to 100, the mod's own figure)
+
+        public const int StandingStart = 60;
+        public const int StandingCalm = 65;         // paid fairly, standing climbs back to this by itself
+        public const int StandingMost = 100;
+        public const int StandAgree = 10;
+        public const int StandLess = -8;
+        public const int StandRefuse = -18;
+        public const int StandUnderDay = -1;        // each day underpaid
+        public const int StandFairDay = 1;          // each day paid fairly, up to StandingCalm
+        public const int StandMatch = 5;            // a rival's offer matched
+        public static readonly int[] SickShare = { 0, 500, 1000 };          // thousandths of the day's wages paid to somebody off sick: none, statutory, generous
+        public static readonly int[] SickStanding = { -3, 0, 2 };           // what a sick day does to that employee's standing under each policy
+        public const int SickPolicyDefault = 1;
+        public const int SickDayHours = 8;          // when the game has no weekly hours for somebody
+
+        // ---------------------------------------------------------------- staff: poaching by rivals
+
+        public static readonly int[] PoachChance = { 0, 15, 25, 40 };       // thousandths a day that a rival approaches somebody who fits; none on Relaxed
+        public const int PoachSkill = 50;           // the game's skill value from which a rival wants somebody
+        public const int PoachGap = 80;             // thousandths under the going rate
+        public const int PoachPremium = 50;         // the rival offers the going rate and this many thousandths more
+        public const int PoachAnswerDays = 3;
+        public const int PoachNoticeDays = 2;       // days worked after the offer is turned down or left unanswered
+        public const int PoachRestDays = 21;        // the same employee
+        public const int PoachCompanyRestDays = 7;  // anybody at all
+
+        // ---------------------------------------------------------------- staff: a strike
+
+        public static readonly int[] StrikeDays = { 0, 2, 3, 4 };           // its length by strictness; none on Relaxed
+        public const int StrikeStanding = 30;       // an employee at or under this stands low
+        public const int StrikeShare = 600;         // thousandths of a business's staff who stand low
+        public const int StrikeStaffLeast = 2;
+        public const int StrikeFootfall = -25;      // per cent of customers while it runs: the most business pressure lets any outside change take
+        public const int StrikeClosedHours = 8;     // and the doors are shut for these hours each strike morning
+        public const int StrikeHour = 9;
+        public const int StrikeRestDays = 21;
+        public const int StrikePayHours = 16;       // the one-off payment: this many hours' pay each
+        public const int StrikePayStanding = 25;
+        public const int StrikeRaiseStanding = 60;  // after a raise for all, nobody stands lower than this
+        public const int StrikeAfterStanding = 40;  // after sitting it out
+
+        // ---------------------------------------------------------------- staff: overtime
+
+        public const int OvertimeChance = 300;      // thousandths a day that staff offer it while the business is busy
+        public const int OvertimeAnswerDays = 2;
+        public const int OvertimeDays = 3;
+        public const int OvertimeHours = 2;         // extra hours a day each
+        public const int OvertimeRate = 1500;       // time and a half
+        public const int OvertimeFootfall = 4;      // per cent of customers
+        public const int OvertimeRestDays = 10;
+        public const int OvertimeStanding = 2;
+
+        // ---------------------------------------------------------------- insurance
+
+        public const int Insurers = 3;
+        public const int CoverKinds = 3;
+        public static readonly int[] InsurerPrice = { 850, 1000, 1250 };        // thousandths of the list premium
+        public static readonly int[] InsurerExcessShare = { 300, 150, 50 };     // thousandths of the loss that the holder bears
+        public static readonly int[] InsurerExcessLeast = { 200, 100, 50 };
+        public static readonly int[] InsurerPayDays = { 6, 4, 2 };              // days from a claim to its payment
+        public static readonly int[] InsurerClaimsMost = { 2, 3, 4 };           // claims in one term at which this insurer will not renew
+        public static readonly int[] CoverBase = { 12, 10, 8 };                 // a day, by kind: fire, theft, liability
+        public static readonly int[] CoverTakingsShare = { 4, 5, 3 };           // thousandths of an average day's takings, added to it
+        public static readonly int[] CoverMost = { 20000, 8000, 5000 };         // the most one claim is counted at
+        public static readonly int[] CoverIncomePerPoint = { 2, -3, 2 };        // thousandths for each point of district income over 100 (theft is dearer where incomes are low)
+        public const int CoverDistrictLeast = 850, CoverDistrictMost = 1150;
+        public const int ClaimLoading = 250;        // thousandths on the next term's premium for each claim in this one
+        public const int ClaimWindowDays = 5;       // days to put a claim in
+        public const int PremiumMissedMost = 3;     // days running a premium could not be taken before the policy lapses
+        public const int TermDaysLeast = 20;
+
+        /// <summary>A policy's term: a year of the game, twenty days at least.</summary>
+        public static int TermDays(int daysPerYear)
+        {
+            return Math.Max(TermDaysLeast, daysPerYear);
+        }
+
+        // ---------------------------------------------------------------- marketing
+
+        public const int CampaignKinds = 4;
+        public static readonly int[] CampaignCost = { 150, 1200, 0, 2500 };     // flyers, a radio spot, a discount day, a shop-window refit
+        public static readonly int[] CampaignDays = { 3, 6, 1, 20 };
+        public static readonly int[] CampaignFootfall = { 5, 8, 12, 3 };        // per cent of customers, before the district, the economy and repeats
+        public static readonly bool[] CampaignLocal = { true, false, true, true };   // a local one is stronger where the district suits the business
+        public const int CampaignMost = 12;         // per cent of customers: no campaign gives more
+        public const int DiscountShare = 150;       // thousandths of the day's takings given away on a discount day
+        public const int SuitPerPoint = 5;          // thousandths for each point of district income on the business's side
+        public const int SuitLeast = 800, SuitMost = 1200;
+        public static readonly int[] CampaignCycle = { 1100, 1000, 850, 700 };  // thousandths, by the cycle
+        public const int RepeatDays = 10;           // the same kind again at the same business within this many days is weaker
+        public const int RepeatLoss = 500;          // thousandths lost the day after the last one ended, less each day until RepeatDays
+
+        // ---------------------------------------------------------------- tax: the quarterly return
+
+        public const int QuarterMonths = 3;
+        public const int ReturnDays = 5;            // days to file
+        public const int PenaltyShare = 5;          // thousandths of the quarter's takings
+        public const int PenaltyLeast = 200, PenaltyMost = 5000;
+        public const int PenaltyRepeatDays = 5;     // unfiled, the penalty is charged again after each of these
+        public const int PenaltiesMost = 3;         // for one return
+        public const int LateForAudit = 2;          // late returns running that bring an audit
+
+        // ---------------------------------------------------------------- tax: the accountant
+
+        public const int Accountants = 3;
+        public static readonly int[] AccountantFee = { 300, 700, 1500 };        // a month
+        public static readonly int[] AccountantSaving = { 20, 40, 70 };         // thousandths of the quarter's deductible costs found as a rebate
+        public static readonly int[] AccountantRisk = { 1000, 800, 600 };       // thousandths of the audit risk with them on the books
+        public const int AccountantErrorChance = 200;                           // thousandths that the cheapest gets a return wrong
+        public const int AccountantErrorShare = 500;                            // the penalty for it, in thousandths of a late penalty
+        public const int AccountantHidingFee = 1500;                            // the cheapest's fee with cash off the books, thousandths
+
+        // ---------------------------------------------------------------- tax: cash kept off the books
+
+        public static readonly int[] HideSteps = { 0, 5, 10, 20, 30 };          // per cent of takings
+        public const int HideMostRelaxed = 10;
+        public const int RiskPerPercent = 2;        // ten-thousandths a day for each per cent hidden, summed over the businesses
+        public const int RiskDecay = 40;            // ten-thousandths a day while nothing is hidden
+        public const int RiskMost = 2500;           // a quarter: the chance of an audit a day is never more
+        public static readonly int[] FineShare = { 250, 500, 750, 1000 };       // thousandths of the back-tax, by strictness
+        public const int CourtSum = 5000;           // back-tax from which it goes to court (never on Relaxed)
+        public const int OwedTakeShare = 500;       // thousandths of the cash in hand that back-tax still owed takes a day
+
+        // ---------------------------------------------------------------- licences and permits
+
+        public const int LicenceKinds = 4;
+        public static readonly int[] LicenceFee = { 400, 900, 300, 150 };       // food hygiene, alcohol, late opening, signage
+        public static readonly int[] LicenceTerm = { 30, 30, 20, 40 };          // days
+        public const int LicenceRemindDays = 3;
+        public const int LicenceGraceDays = 5;      // a new business may trade this long before it needs them
+        public const int LicenceFineMultiple = 2;   // the fine for trading without one: this many times its fee
+        public const int LicenceClosedHours = 6;    // food hygiene and alcohol: shut for these hours as well
+        public const int LicenceCheckChance = 100;  // thousandths a day that an inspection is asked for where one is missing
+        public const int LateHour = 22;             // open at or past this hour, or before EarlyHour, needs the late opening permit
+        public const int EarlyHour = 5;
+
+        // ---------------------------------------------------------------- alerts
+
+        public const int LossRunDays = 3;           // days running at a loss before the Planner says so
+
+        // ---------------------------------------------------------------- helpers
+
+        public static int Clamp(int value, int least, int most)
+        {
+            return value < least ? least : value > most ? most : value;
+        }
+
+        /// <summary>An amount of money at today's prices, rounded to the nearest ten. The index is in tenths of a point.</summary>
+        public static int AtPrices(int amount, int index)
+        {
+            long priced = (long)amount * Clamp(index, 500, 4000);
+            return (int)((priced + 5000) / 10000 * 10);
+        }
+
+        /// <summary>a x b / 1000, rounded, without running over.</summary>
+        public static int Share(long amount, int thousandths)
+        {
+            long value = amount * thousandths;
+            return (int)Math.Max(int.MinValue / 2, Math.Min(int.MaxValue / 2, (value + (value >= 0 ? 500 : -500)) / 1000));
+        }
+    }
+}
