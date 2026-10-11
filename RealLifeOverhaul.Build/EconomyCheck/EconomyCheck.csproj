@@ -7,7 +7,8 @@
        from many seeds, the central bank's rule, the adjustments, the rate the credit side reads and the save's line,
        and (Checks5.cs) running a business: staff, insurance, marketing, tax and the accountant, cash off the books,
        licences and its line in the save, and (RotaChecks.cs) the staff rota planner: the rota itself, the hours worth
-       opening and the people a week takes.
+       opening and the people a week takes, and (OnlineChecks.cs) the online shops: demand, orders, picking, rounds,
+       lateness and the rating, returns, the day's book, the bound on what a site adds and its line in the save.
        Compiles the mod's own files, so it checks exactly what ships.
        the lender of last resort and the ways out of debt, and (VenturesChecks.cs) investors, the pitch, deals and the
        stock market. Compiles the mod's own files, so it checks exactly what ships.
@@ -59,6 +60,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaSolver.Shifts.cs" Link="Mod\RotaSolver.Shifts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaSolver.Improve.cs" Link="Mod\RotaSolver.Improve.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaAdvice.cs" Link="Mod\RotaAdvice.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Online\OnlineCatalogue.cs" Link="Mod\OnlineCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Online\OnlineModel.cs" Link="Mod\OnlineModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Online\OnlineRules.cs" Link="Mod\OnlineRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Online\OnlineStore.cs" Link="Mod\OnlineStore.cs" />
   </ItemGroup>
 
 </Project>
