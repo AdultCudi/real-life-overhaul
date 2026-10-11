@@ -5,6 +5,7 @@ using Entities;
 using Helpers;
 using UI.Notification;
 using UnityEngine;
+using UnityEngine.AI;
 using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul.Family
@@ -34,6 +35,10 @@ namespace RealLifeOverhaul.Family
         private const int MaxSpots = 6;
         private const int MaxSeats = 2;            // of those, places beside something to sit on
         private const int SeatKind = 3;
+        private const int CotKind = 4;             // beside the cot, at its long side: the one place that is not found among the furniture
+        private const float CotBeside = 0.68f;     // rock_cot: the cot's middle this far to one side of the feet, so its near rail is 0.35 m ahead
+        private const string HoldClip = "hold_baby";
+        private const string RockClip = "rock_cot";
         private const float TalkReach = 2.3f;
 
         private static readonly string[] KitchenItems = { "stove", "fridge", "coffeemachine", "microwave", "kitchen", "sink", "oven" };
@@ -59,10 +64,10 @@ namespace RealLifeOverhaul.Family
         private static int _lastGreet = -1, _lastEncourage = -1, _lastSick = -1, _lastCook = -1, _lastWatch = -1, _lastDinner = -1, _lastStood = -1,
             _lastMissing = -1, _lastSound = -1, _lastChore = -1, _lastThanks = -1, _lastSigh = -1;
 
-        private static readonly Vector3[] Spots = new Vector3[MaxSpots];
-        private static readonly Vector3[] Faces = new Vector3[MaxSpots];
-        private static readonly int[] Kinds = new int[MaxSpots];   // 0 kitchen, 1 living, 2 just a clear piece of floor, 3 beside a seat
-        private static readonly ItemController[] Seats = new ItemController[MaxSpots];   // the seat of a place of kind 3
+        private static readonly Vector3[] Spots = new Vector3[MaxSpots + 1];   // (the extra one is the cot's)
+        private static readonly Vector3[] Faces = new Vector3[MaxSpots + 1];
+        private static readonly int[] Kinds = new int[MaxSpots + 1];   // 0 kitchen, 1 living, 2 just a clear piece of floor, 3 beside a seat, 4 at the cot
+        private static readonly ItemController[] Seats = new ItemController[MaxSpots + 1];   // the seat of a place of kind 3
         private static float _satAt;
         private static int _spotCount;
         private static int _at = -1;
@@ -233,6 +238,7 @@ namespace RealLifeOverhaul.Family
                 _nextSound = now + Random.Range(40f, 90f);
                 Scan(manager, player);
                 Nursery(player);
+                CotPlace();
             }
 
             FamilySave s = FamilyState.S;
@@ -287,7 +293,7 @@ namespace RealLifeOverhaul.Family
                     else if (where != Whereabouts.Home)
                     {
                         FamilyText.Toast(NotificationType.Info, where == Whereabouts.Work ? "reallife_family_home_leaving_work" : "reallife_family_home_leaving_out", Args.Us, 6f);
-                        _partner.PutAway(director.Cast.Props);
+                        Lower(_partner, director.Cast.Props);
                         _mode = _partner.WalkTo(_entry) ? Mode.Leaving : Mode.Retiring;
                         _giveUp = now + 25f;
                     }
@@ -300,7 +306,7 @@ namespace RealLifeOverhaul.Family
                     Sitting(director, now, player, where == Whereabouts.Home);
                     break;
                 case Mode.Walking:
-                    if ((_partner.Arrived && _partner.Near(Spots[_at], 0.7f)) || now >= _giveUp)
+                    if ((_partner.Arrived && _partner.Near(Spots[_at], Kinds[_at] == CotKind ? 0.45f : 0.7f)) || now >= _giveUp)
                     {
                         Settle(director, now, _partner.Near(Spots[_at], 0.7f));
                     }
@@ -355,7 +361,7 @@ namespace RealLifeOverhaul.Family
             if (person != null)
             {
                 person.Rise();   // (a scene takes them standing)
-                person.PutAway(FamilyDirector.Instance.Cast.Props);
+                Lower(person, FamilyDirector.Instance.Cast.Props);
                 person.Idle(0.2f);
                 person.Stand();
             }
@@ -383,6 +389,7 @@ namespace RealLifeOverhaul.Family
             {
                 FamilyDirector.Instance?.Body.Release();
             }
+            Cradle(false);
             if (_partner != null && FamilyDirector.Instance != null)
             {
                 FamilyDirector.Instance.Cast.Release(_partner);
@@ -536,6 +543,42 @@ namespace RealLifeOverhaul.Family
             }
         }
 
+        // A place at the cot's long side for rocking it, while a baby lies in it: on the floor within a hand's breadth of
+        // where rock_cot has the feet (the rail then comes to the hands), either side, on the same mesh as the other places.
+        private static void CotPlace()
+        {
+            if (_cot == null || _spotCount == 0 || _spotCount > MaxSpots || !FamilyState.AnyUnder(FamilyBalance.BabyUntil) || !ClipLibrary.Has(RockClip))
+            {
+                return;
+            }
+            var filter = new NavMeshQueryFilter { agentTypeID = AgentType, areaMask = NavMesh.AllAreas };
+            for (int side = 1; side >= -1; side -= 2)
+            {
+                if (NavMesh.SamplePosition(_cot.position + _cot.right * (side * CotBeside), out NavMeshHit hit, 0.08f, filter))
+                {
+                    Spots[_spotCount] = hit.position;
+                    Faces[_spotCount] = _cot.position;
+                    Kinds[_spotCount] = CotKind;
+                    Seats[_spotCount] = null;
+                    _spotCount++;
+                    return;
+                }
+            }
+        }
+
+        // What they hold is put away, and a baby they held lies in the cot again.
+        private static void Lower(CityPerson person, CityProps props)
+        {
+            person.PutAway(props);
+            Cradle(false);
+        }
+
+        // The baby's bundle lies in the cot (a baby under a year old) unless the partner has it in their arms.
+        private static void Cradle(bool held)
+        {
+            FamilyProps.Tuck(_cot, !held && FamilyState.AnyUnder(FamilyBalance.BabyUntil));
+        }
+
         private static bool Taken(Vector3 spot)
         {
             for (int i = 0; i < _spotCount; i++)
@@ -621,7 +664,7 @@ namespace RealLifeOverhaul.Family
                 return;
             }
             s.LastGreetStamp = stamp;
-            _partner.PutAway(director.Cast.Props);
+            Lower(_partner, director.Cast.Props);
             director.Cast.Face(_partner, player);
             _partner.Work("wave_hello", director.Cast.Props, 0.25f);
             _nextMove = Mathf.Max(_nextMove, Time.time + 12f);
@@ -656,7 +699,7 @@ namespace RealLifeOverhaul.Family
             if (now >= _nextMove && _spotCount > 1 && sqr > 2.5f * 2.5f)
             {
                 int next = (_at + 1 + Random.Range(0, _spotCount - 1)) % _spotCount;
-                _partner.PutAway(director.Cast.Props);
+                Lower(_partner, director.Cast.Props);
                 if (_partner.WalkTo(Spots[next]))
                 {
                     _at = next;
@@ -681,6 +724,15 @@ namespace RealLifeOverhaul.Family
             }
             if (there)
             {
+                if (Kinds[_at] == CotKind)
+                {
+                    // The last few centimetres, on to where the rail comes to the hands (an agent stops a step short of its goal).
+                    NavMeshAgent agent = _partner.Character.navmeshAgent;
+                    if (agent != null && agent.enabled && agent.isOnNavMesh)
+                    {
+                        agent.Warp(Spots[_at]);
+                    }
+                }
                 director.Cast.Face(_partner, Faces[_at]);
                 Activity(director, _at);
             }
@@ -696,7 +748,7 @@ namespace RealLifeOverhaul.Family
                 Seating.Check(FamilyDirector.Logger, "the partner stays standing by " + (item != null ? item.itemName : "a seat that has gone") + " (in use, or out of reach)", true);
                 return false;
             }
-            _partner.PutAway(director.Cast.Props);
+            Lower(_partner, director.Cast.Props);
             float step = Mathf.Sqrt(CitySpots.Flat(place.position - _partner.Position));
             if (!_partner.Sit(place))
             {
@@ -753,8 +805,16 @@ namespace RealLifeOverhaul.Family
                 return;
             }
             CityProps props = director.Cast.Props;
+            bool holding = false;
             switch (Kinds[at])
             {
+                case CotKind:
+                    // Both hands on the rail, rocking: the baby is in the cot.
+                    if (!_partner.Work(RockClip, props, 0.4f))
+                    {
+                        _partner.Work("arms_crossed", props, 0.4f);
+                    }
+                    break;
                 case 0:
                     if (!_partner.Work("cup_hold", props, 0.4f))
                     {
@@ -763,15 +823,27 @@ namespace RealLifeOverhaul.Family
                     break;
                 case 1:
                 case SeatKind:   // (standing by a seat that was not free: as in the living room)
-                    if (!((TimeHelper.CurrentDay + at) % 2 == 0 ? _partner.Work("read_paper", props, 0.4f) : _partner.Work("watch_nod", props, 0.4f)))
+                    holding = (TimeHelper.CurrentDay + at) % 2 == 1 && HoldBaby(props);
+                    if (!holding && !((TimeHelper.CurrentDay + at) % 2 == 0 ? _partner.Work("read_paper", props, 0.4f) : _partner.Work("watch_nod", props, 0.4f)))
                     {
                         _partner.Work("watch_nod", props, 0.4f);
                     }
                     break;
                 default:
-                    _partner.Work("arms_crossed", props, 0.4f);
+                    holding = HoldBaby(props);
+                    if (!holding)
+                    {
+                        _partner.Work("arms_crossed", props, 0.4f);
+                    }
                     break;
             }
+            Cradle(holding);
+        }
+
+        // Standing with the baby in the crook of the left arm (hold_baby brings the bundle), while there is a baby under a year old. Whether it was done.
+        private static bool HoldBaby(CityProps props)
+        {
+            return FamilyState.AnyUnder(FamilyBalance.BabyUntil) && _partner.Work(HoldClip, props, 0.4f);
         }
 
         private static void StartTalk()
@@ -786,7 +858,7 @@ namespace RealLifeOverhaul.Family
                 return;
             }
             Vector3 player = PlayerHelper.GetPosition();
-            _partner.PutAway(director.Cast.Props);
+            Lower(_partner, director.Cast.Props);
             _partner.Stand();
             director.Cast.Face(_partner, player);
             _partner.Work("talk_a", director.Cast.Props, 0.3f);
