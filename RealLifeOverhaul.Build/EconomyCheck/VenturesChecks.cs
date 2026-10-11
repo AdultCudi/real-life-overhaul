@@ -4,7 +4,7 @@ using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Ventures;
 
 // Checks for investors and the market (Scripts/Economy/Ventures): the cast, an offer that comes to the player, a deal
-// over a long run, and the save line.
+// over a long run, the save line and the pitch.
 internal static partial class Program
 {
     private static readonly string[] FourRivals = { "North Star Holdings", "Bay Avenue Holdings", "Old Mill Holdings", "Summit Holdings" };
@@ -16,6 +16,10 @@ internal static partial class Program
         VenturesDeals();
         VenturesDealLadder();
         VenturesSave();
+        VenturesPitchBank();
+        VenturesPitchTruth();
+        VenturesPitchJudgement();
+        VenturesPitchDecision();
     }
 
     private static VenturesFile NewVentures(int seed, string[] rivals = null)
@@ -551,5 +555,405 @@ internal static partial class Program
         Market.Restore(file, file.Backup);
         file.Backup = null;
         Check(file.Companies[0].PriceCents == price && file.MarketSteps == steps && VenturesStore.Write(file) == line, "save: and the test tools put the market back as it was");
+    }
+
+    /// <summary>A founder with one modest business and nothing against them.</summary>
+    private static PitchFacts Founder(bool running = true)
+    {
+        return new PitchFacts
+        {
+            Running = running, Sector = Sector.Retail, SalesYesterday = 2400, SalesWeek = 16000, ProfitYesterday = 900, ProfitWeek = 850, AvgProfit7 = 850f, Staff = 2, AgeDays = 40,
+            ProfitableDays = 10, Cash = 12000, Owed = 20000, Payments = 400, Rating = 640, Convictions = 0, Businesses = 1, Missed = 1, Jobs = 1, OldestDays = 40, Budget = 50000
+        };
+    }
+
+    private static void VenturesPitchBank()
+    {
+        int facts = 0, plan = 0, founder = 0;
+        var keys = new HashSet<string>();
+        bool shaped = true;
+        for (int i = 0; i < Pitch.Bank.Length; i++)
+        {
+            Question q = Pitch.Bank[i];
+            facts += q.Kind == QuestionKind.Fact ? 1 : 0;
+            plan += q.Kind == QuestionKind.Judgement ? 1 : 0;
+            founder += q.Kind == QuestionKind.Founder ? 1 : 0;
+            shaped &= keys.Add(q.Key) && q.Id == i && (q.Kind == QuestionKind.Fact ? q.Fact != Fact.None && q.Answers == null : q.Answers != null && q.Answers.Length == 3);
+        }
+        Check(Pitch.Bank.Length >= 40 && facts == 14 && plan == 18 && founder == 9, "pitch: a bank of at least forty questions of three sorts (" + Pitch.Bank.Length + ")");
+        Check(shaped, "pitch: every question has its own text, and three answers unless it asks for a figure");
+
+        VenturesFile file = NewVentures(8086);
+        var drawn = new List<int>();
+        var again = new List<int>();
+        var scratch = new long[3];
+        bool counts = true, fit = true, same = true, mix = true;
+        var everAsked = new HashSet<int>();
+        for (int meeting = 1; meeting <= 120; meeting++)
+        {
+            foreach (Investor v in file.Investors)
+            {
+                PitchFacts f = Founder(meeting % 3 != 0);
+                Pitch.Draw(file.Seed, meeting, v, f, drawn);
+                Pitch.Draw(file.Seed, meeting, v, f, again);
+                counts &= drawn.Count == VenturesCatalogue.Questions[(int)v.Kind] && drawn.Count >= 6 && drawn.Count <= 8 && new HashSet<int>(drawn).Count == drawn.Count;
+                same &= string.Join(",", drawn) == string.Join(",", again);
+                int[] kinds = new int[3];
+                foreach (int index in drawn)
+                {
+                    Question q = Pitch.Bank[index];
+                    kinds[(int)q.Kind]++;
+                    fit &= Pitch.Askable(q, f, scratch);
+                    everAsked.Add(index);
+                }
+                int[] want = VenturesCatalogue.QuestionMix[(int)v.Kind];
+                mix &= kinds[0] == want[0] && kinds[2] == want[2] && kinds[1] == drawn.Count - want[0] - want[2];
+            }
+        }
+        Check(counts, "pitch: six to eight questions, by the kind of investor, none twice");
+        Check(mix, "pitch: a fund asks for more figures and an angel more about the founder");
+        Check(fit, "pitch: every question drawn fits the business");
+        Check(same, "pitch: the same meeting draws the same questions");
+        Check(everAsked.Count >= Pitch.Bank.Length - 1, "pitch: over many meetings the whole bank is asked (" + everAsked.Count + " of " + Pitch.Bank.Length + "; a clean record is never asked about as a figure)");
+        PitchFacts unopened = Founder(false);
+        bool noRunning = true;
+        for (int meeting = 1; meeting <= 60; meeting++)
+        {
+            Pitch.Draw(file.Seed, meeting, file.Investors[meeting % file.Investors.Count], unopened, drawn);
+            foreach (int index in drawn)
+            {
+                noRunning &= (Pitch.Bank[index].Fits & Question.New) != 0;
+            }
+        }
+        Check(noRunning, "pitch: nobody asks what a business not yet open took yesterday");
+        // With no debts, no record and no credit file there is less to ask for as a figure: the plan fills the meeting.
+        PitchFacts bare = Founder(false);
+        bare.Owed = 0;
+        bare.Payments = 0;
+        bare.Missed = 0;
+        bare.Rating = 0;
+        Investor fund = Find(file, InvestorKind.Firm);
+        Pitch.Draw(file.Seed, 5, fund, bare, drawn);
+        Check(drawn.Count == 8, "pitch: where few figures can be asked for, questions about the plan make up the number");
+
+        // The words: every question's line in en.json has the parts the meeting reads from it.
+        string locale = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales\en.json"));
+        Dictionary<string, string> words = System.IO.File.Exists(locale)
+            ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(System.IO.File.ReadAllText(locale).TrimStart('﻿')) : null;
+        Check(words != null, "pitch: en.json is where the checks look for it (" + locale + ")");
+        bool parts = true, named = true;
+        var topics = new HashSet<string>();
+        foreach (Question q in Pitch.Bank)
+        {
+            string line;
+            if (words == null || !words.TryGetValue(q.Key, out line))
+            {
+                parts = false;
+                continue;
+            }
+            string[] cut = line.Split('|');
+            parts &= cut.Length == (q.Kind == QuestionKind.Fact ? 2 : 5) && Array.TrueForAll(cut, part => part.Trim().Length > 0 && part == part.Trim());
+            parts &= cut[0].EndsWith("?") && topics.Add(cut[cut.Length - 1]);
+            named &= line.Contains("{business}") == (q.Kind == QuestionKind.Fact && q.Fits == Question.Running) || (q.Kind != QuestionKind.Fact && !line.Contains("{business}"));
+        }
+        Check(parts, "pitch: every question is a question, its answers and what it is about, and no two are about the same thing");
+        Check(named, "pitch: only a question that fits a running business alone names the business");
+    }
+
+    private static void VenturesPitchTruth()
+    {
+        var values = new long[3];
+        PitchFacts f = Founder();
+        Check(Pitch.Options(Fact.SalesYesterday, f, values) == 3 && values[0] == 2400 && values[1] == 3100 && values[2] == 4300, "pitch: takings are offered as the true figure and two that sound better (" + values[1] + ", " + values[2] + ")");
+        Check(Pitch.Options(Fact.Owed, f, values) == 3 && values[0] == 20000 && values[1] == 10000 && values[2] == 0, "pitch: a debt is offered as it is, as half of it and as none");
+        Check(Pitch.Options(Fact.Missed, f, values) == 2 && values[0] == 1 && values[1] == 0, "pitch: one missed payment can only be told or denied");
+        Check(Pitch.Options(Fact.Convictions, f, values) == 1, "pitch: a clean record is not asked about as a figure to improve");
+        Check(Pitch.Options(Fact.Rating, f, values) == 3 && values[0] == 640 && values[1] == 680 && values[2] == 740, "pitch: a credit rating and two better ones");
+        Check(Pitch.Options(Fact.ProfitableDays, f, values) == 3 && values[0] == 10 && values[1] == 13 && values[2] == 14, "pitch: profitable days never over fourteen");
+        f.ProfitYesterday = -361;
+        Check(Pitch.Options(Fact.ProfitYesterday, f, values) == 3 && values[0] == -360 && values[1] == 400 && values[2] == 1200, "pitch: a loss is offered as the loss it was, and as two profits");
+        f.Rating = 0;
+        Check(Pitch.Options(Fact.Rating, f, values) == 1, "pitch: with no credit file the rating is not asked for");
+        bool neverFatal = true, lieWorthMore = true, truthFirst = true;
+        for (int fact = 1; fact <= (int)Fact.Payments; fact++)
+        {
+            long worst = Pitch.LowerBetter((Fact)fact) ? 100000000 : -100000000;
+            neverFatal &= Pitch.FactPoints((Fact)fact, worst) == VenturesCatalogue.TruthBase;
+            neverFatal &= Pitch.FactPoints((Fact)fact, Pitch.LowerBetter((Fact)fact) ? 0 : 100000000) == VenturesCatalogue.PointsMost;
+            PitchFacts weak = Founder();
+            int count = Pitch.Options((Fact)fact, weak, values);
+            truthFirst &= values[0] == (Pitch.UnitOf((Fact)fact) == FactUnit.Money ? VenturesCatalogue.Round2(Pitch.Truth((Fact)fact, weak)) : Pitch.Truth((Fact)fact, weak));
+            for (int o = 1; o < count; o++)
+            {
+                lieWorthMore &= Pitch.FactPoints((Fact)fact, values[o]) >= Pitch.FactPoints((Fact)fact, values[o - 1]);
+                lieWorthMore &= Pitch.LowerBetter((Fact)fact) ? values[o] < values[o - 1] : values[o] > values[o - 1];
+            }
+        }
+        Check(neverFatal, "pitch: the weakest true figure still scores four of ten, and the strongest ten");
+        Check(truthFirst && lieWorthMore, "pitch: the first figure is the true one and each further one sounds better and would score at least as much");
+
+        // A meeting told nothing but the truth is never ended and closes nobody, however weak the figures.
+        VenturesFile file = NewVentures(1999);
+        PitchFacts poor = Founder();
+        poor.SalesYesterday = 150;
+        poor.SalesWeek = 900;
+        poor.ProfitYesterday = -400;
+        poor.ProfitWeek = -120;
+        poor.AvgProfit7 = -120f;
+        poor.ProfitableDays = 3;
+        poor.Owed = 400000;
+        poor.Missed = 9;
+        poor.Convictions = 3;
+        poor.Rating = 410;
+        bool honestEnds = true, honestFloor = true;
+        int day = 100;
+        foreach (Investor v in file.Investors)
+        {
+            int name = file.Reputation;
+            PitchState state = Pitch.Begin(file, v, poor, "a#1", "A", null, day);
+            while (!Pitch.Over(state))
+            {
+                Question q = Pitch.Bank[state.Questions[state.Index]];
+                AnswerResult r = Pitch.Answer(file, state, v, 0, VenturesCatalogue.Hardcore, day);
+                honestFloor &= q.Kind != QuestionKind.Fact || (r.Points >= VenturesCatalogue.TruthBase && !r.Untrue && r.Chance == 0);
+            }
+            honestEnds &= !state.Caught && state.Points.Count == state.Questions.Count && v.ClosedUntil == 0 && file.Reputation == name && v.PitchedDay == day;
+            day += 20;
+        }
+        Check(honestEnds && honestFloor, "pitch: the truth about weak figures costs points and never ends the meeting, closes nobody and harms no name");
+
+        // An untrue figure: the chance follows the investor's diligence and how far from the truth it is; caught, the meeting is over.
+        Investor angel = Find(file, InvestorKind.Angel), firm = Find(file, InvestorKind.Firm);
+        Check(Pitch.CatchChance(firm, VenturesCatalogue.Standard, 70, false) == firm.Diligence * 45 / 100 && Pitch.CatchChance(firm, VenturesCatalogue.Standard, 70, true) == firm.Diligence * 90 / 100,
+            "pitch: a figure a little better is caught at 45% of the investor's diligence, one much better at 90% (" + firm.Diligence + ")");
+        Check(Pitch.CatchChance(angel, VenturesCatalogue.Standard, 70, true) < Pitch.CatchChance(firm, VenturesCatalogue.Standard, 70, true), "pitch: a fund checks harder than an angel");
+        Check(Pitch.CatchChance(angel, VenturesCatalogue.Hardcore, 70, false) > Pitch.CatchChance(angel, VenturesCatalogue.Standard, 70, false)
+              && Pitch.CatchChance(angel, VenturesCatalogue.Relaxed, 70, false) < Pitch.CatchChance(angel, VenturesCatalogue.Standard, 70, false), "pitch: the level moves how hard everybody checks");
+        Check(Pitch.CatchChance(angel, VenturesCatalogue.Standard, 45, false) > Pitch.CatchChance(angel, VenturesCatalogue.Standard, 70, false), "pitch: a founder caught before is checked harder by everybody");
+        int caught = 0, lied = 0, meetings = 0;
+        bool endsIt = true, closes = true, costsName = true, noPoints = true;
+        for (int seed = 1; seed <= 400; seed++)
+        {
+            VenturesFile g = NewVentures(seed);
+            Investor v = g.Investors[seed % g.Investors.Count];
+            int name = g.Reputation;
+            PitchState state = Pitch.Begin(g, v, Founder(), "a#1", "A", null, 50);
+            meetings++;
+            bool wasCaught = false;
+            while (!Pitch.Over(state))
+            {
+                Question q = Pitch.Bank[state.Questions[state.Index]];
+                AnswerResult r = Pitch.Answer(g, state, v, q.Kind == QuestionKind.Fact ? 2 : 0, VenturesCatalogue.Standard, 50);
+                lied += r.Untrue ? 1 : 0;
+                if (r.Caught)
+                {
+                    caught++;
+                    wasCaught = true;
+                    endsIt &= Pitch.Over(state) && state.Caught;
+                    noPoints &= r.Points == 0 && r.Roll < r.Chance;
+                    AnswerResult after = Pitch.Answer(g, state, v, 0, VenturesCatalogue.Standard, 50);
+                    endsIt &= after.Points == 0 && state.Points.Count == state.Index;
+                }
+                else
+                {
+                    noPoints &= !r.Untrue || r.Roll >= r.Chance;
+                }
+            }
+            closes &= wasCaught ? v.ClosedUntil == 50 + VenturesCatalogue.CaughtCloseDays && !v.Open(109) && v.Open(110) : v.ClosedUntil == 0;
+            costsName &= g.Reputation == name + (wasCaught ? VenturesCatalogue.ReputationCaught : 0);
+        }
+        Check(caught > 60 && caught < lied, "pitch: some untrue figures are caught and some are not (" + caught + " of " + lied + " in " + meetings + " meetings)");
+        Check(endsIt && noPoints, "pitch: a caught figure always ends the meeting there, and scores nothing");
+        Check(closes && costsName, "pitch: the investor who caught it sees nobody for sixty days and the founder's name with all of them falls by twenty-five");
+        Investor open = file.Investors[0];
+        open.PitchedDay = 0;
+        open.ClosedUntil = 0;
+        Check(open.Open(5), "pitch: an investor never approached can be approached");
+        open.PitchedDay = 5;
+        Check(!open.Open(14) && open.Open(15) && open.OpenDay == 15, "pitch: one approach to an investor in ten days");
+    }
+
+    private static void VenturesPitchJudgement()
+    {
+        var angel = new Investor { Id = 90, Kind = InvestorKind.Angel, Temper = Temperament.Patient };
+        var tycoon = new Investor { Id = 91, Kind = InvestorKind.Tycoon, Temper = Temperament.Even };
+        var hardTycoon = new Investor { Id = 92, Kind = InvestorKind.Tycoon, Temper = Temperament.Demanding };
+        var fund = new Investor { Id = 93, Kind = InvestorKind.Firm, Temper = Temperament.Demanding };
+        Investor[] who = { angel, tycoon, hardTycoon, fund };
+        PitchFacts shop = Founder(), office = Founder();
+        office.Sector = Sector.Office;
+        var lists = new string[who.Length];
+        int[] firstBest = new int[3];
+        bool inRange = true, recklessNeverBest = true;
+        int planQuestions = 0, sectorMoves = 0;
+        for (int i = 0; i < Pitch.Bank.Length; i++)
+        {
+            Question q = Pitch.Bank[i];
+            if (q.Kind != QuestionKind.Judgement)
+            {
+                continue;
+            }
+            planQuestions++;
+            for (int w = 0; w < who.Length; w++)
+            {
+                int best = Pitch.Best(q, who[w], shop);
+                lists[w] += best;
+                firstBest[best]++;
+                recklessNeverBest &= q.Answers[best].Style != Style.Reckless;
+                for (int a = 0; a < 3; a++)
+                {
+                    int points = Pitch.Points(q, a, who[w], shop);
+                    inRange &= points >= 0 && points <= VenturesCatalogue.PointsMost;
+                }
+            }
+            sectorMoves += Pitch.Best(q, tycoon, shop) != Pitch.Best(q, tycoon, office) ? 1 : 0;
+        }
+        Check(inRange, "pitch: an answer about the plan is worth nothing to ten");
+        Check(lists[0] != lists[3] && lists[0] != lists[2] && lists[1] != lists[3] && lists[0] != lists[1], "pitch: the best answers are not the same list for every investor");
+        int differ = 0;
+        for (int i = 0; i < planQuestions; i++)
+        {
+            differ += lists[0][i] != lists[3][i] ? 1 : 0;
+        }
+        Check(differ >= planQuestions / 2, "pitch: a patient angel and a fund want a different answer to at least half the questions about the plan (" + differ + " of " + planQuestions + ")");
+        Check(firstBest[0] > 0 && firstBest[1] > 0 && firstBest[2] > 0, "pitch: no place in the list of answers is always the best one");
+        Check(recklessNeverBest, "pitch: a reckless answer is nobody's best");
+        Check(sectorMoves >= 2, "pitch: for some questions the best answer depends on the business's sector (" + sectorMoves + ")");
+        // The answers that are best for one investor score clearly worse with another.
+        int ownScore = 0, othersScore = 0;
+        for (int i = 0; i < Pitch.Bank.Length; i++)
+        {
+            Question q = Pitch.Bank[i];
+            if (q.Kind == QuestionKind.Judgement)
+            {
+                int best = Pitch.Best(q, angel, shop);
+                ownScore += Pitch.Points(q, best, angel, shop);
+                othersScore += Pitch.Points(q, best, fund, shop);
+            }
+        }
+        Check(othersScore * 100 < ownScore * 75, "pitch: the angel's best answers are worth less than three quarters as much to a fund (" + othersScore + " against " + ownScore + ")");
+
+        // The founder: an answer the record does not bear out is worth one point.
+        PitchFacts f = Founder();
+        Question before = null, missed = null, record = null, backers = null;
+        foreach (Question q in Pitch.Bank)
+        {
+            before = q.Key == "reallife_ven_q_p02" ? q : before;
+            missed = q.Key == "reallife_ven_q_p04" ? q : missed;
+            record = q.Key == "reallife_ven_q_p06" ? q : record;
+            backers = q.Key == "reallife_ven_q_p07" ? q : backers;
+        }
+        Check(Pitch.Points(before, 0, angel, f) > Pitch.Unsupported && Pitch.Points(before, 1, angel, f) == Pitch.Unsupported && Pitch.Points(before, 2, angel, f) == Pitch.Unsupported,
+            "founder: with one business forty days old, only 'my first business' is believed");
+        f.Businesses = 3;
+        f.OldestDays = 90;
+        Check(Pitch.Points(before, 0, fund, f) == Pitch.Unsupported && Pitch.Points(before, 1, fund, f) >= 9 && Pitch.Points(before, 2, fund, f) > Pitch.Unsupported,
+            "founder: with three businesses the same answers score the other way round");
+        Check(Pitch.Points(missed, 0, tycoon, f) == Pitch.Unsupported && Pitch.Points(missed, 1, tycoon, f) > 4, "founder: 'never missed a payment' is not believed of a file that shows one; owning up is");
+        f.Missed = 0;
+        Check(Pitch.Points(missed, 0, tycoon, f) >= 9 && Pitch.Points(missed, 1, tycoon, f) == Pitch.Unsupported, "founder: and with a clean file it is the other way round");
+        f.Bankruptcies = 1;
+        Check(Pitch.Points(missed, 0, tycoon, f) == Pitch.Unsupported, "founder: a bankruptcy on the credit file counts as having failed to pay");
+        Check(Pitch.Points(record, 0, fund, f) >= 8 && Pitch.Points(record, 1, fund, f) == Pitch.Unsupported, "founder: a clean record can be claimed, a conviction that is not there cannot be owned up to");
+        f.Convictions = 1;
+        Check(Pitch.Points(record, 0, fund, f) == Pitch.Unsupported && Pitch.Points(record, 1, fund, f) > Pitch.Unsupported, "founder: with a conviction it is the other way round");
+        Check(Pitch.Points(backers, 0, angel, f) > Pitch.Unsupported && Pitch.Points(backers, 1, angel, f) == Pitch.Unsupported, "founder: nobody can claim backers they do not have");
+        f.Backers = 2;
+        Check(Pitch.Points(backers, 1, angel, f) > Pitch.Unsupported && Pitch.Points(backers, 0, angel, f) == Pitch.Unsupported, "founder: nor deny the ones they have");
+        PitchFacts inOrder = Founder();
+        inOrder.Missed = 0;
+        Check(Pitch.Holds(Claim.Worked, Founder()) && !Pitch.Holds(Claim.GoodCredit, Founder()) && Pitch.Holds(Claim.BankInOrder, inOrder) && !Pitch.Holds(Claim.BankInOrder, Founder())
+              && !Pitch.Holds(Claim.SteadyProfit, Founder()),
+            "founder: a job held, a credit rating, a debt in order and a steady profit are read from the record");
+    }
+
+    private static void VenturesPitchDecision()
+    {
+        VenturesFile file = NewVentures(31415);
+        Investor angel = Find(file, InvestorKind.Angel), tycoon = Find(file, InvestorKind.Tycoon), fund = Find(file, InvestorKind.Firm);
+        Check(Pitch.Needed(angel, VenturesCatalogue.Standard) == 45 && Pitch.Needed(tycoon, VenturesCatalogue.Standard) == 55 && Pitch.Needed(fund, VenturesCatalogue.Hardcore) == 68
+              && Pitch.Needed(angel, VenturesCatalogue.Relaxed) == 40, "decision: each kind of investor wants its own score, moved by the level");
+        var points = new List<int> { 5, 5, 5, 5, 5, 5 };
+        var plain = new Investor { Id = 81, Kind = InvestorKind.Tycoon, Temper = Temperament.Even, ChequeLeast = 25000, ChequeMost = 750000, Diligence = 60 };
+        PitchFacts f = Founder();
+        Check(Pitch.Score(points, plain, f, 70) == 50 && Pitch.Score(points, plain, f, 45) == 45 && Pitch.Score(points, plain, f, 100) == 56, "decision: the score is the points of the most, moved by the founder's name");
+        var liking = new Investor { Id = 80, Kind = InvestorKind.Tycoon, Temper = Temperament.Even, Likes = 1 << (int)Sector.Retail, ChequeLeast = 25000, ChequeMost = 750000, Diligence = 60 };
+        Check(Pitch.Score(points, liking, f, 70) == 55, "decision: five more for a business in a sector the investor likes");
+
+        // Scores map to sums inside the investor's range and inside what the business's figures support.
+        bool inside = true, supported = true, shares = true, monotone = true, refusedBelow = true;
+        int invested = 0;
+        for (int profit = 500; profit <= 60000; profit += 1700)
+        {
+            long lastValue = -1;
+            int lastShare = int.MaxValue;
+            for (int each = 0; each <= 10; each++)
+            {
+                var p = new List<int> { each, each, each, each, each, each, each };
+                PitchFacts b = Founder();
+                b.AvgProfit7 = profit;
+                PitchDecision d = Pitch.Decide(file, plain, b, "x#1", p, VenturesCatalogue.Standard, 10);
+                if (d.Verdict != Verdict.Invest)
+                {
+                    refusedBelow &= d.Amount == 0 && d.ShareBp == 0 && (d.Score >= d.Needed || d.Verdict == Verdict.LowScore);
+                    continue;
+                }
+                refusedBelow &= d.Score >= d.Needed;
+                invested++;
+                inside &= d.Amount >= plain.ChequeLeast && d.Amount <= plain.ChequeMost;
+                supported &= d.Amount <= (long)profit * d.ValueDays * d.ShareBp / 10000 + 1 && d.ValueDays >= VenturesCatalogue.ValueDaysLeast && d.ValueDays <= VenturesCatalogue.ValueDaysMost;
+                shares &= d.ShareBp > 0 && d.ShareBp <= VenturesCatalogue.ShareMostBp[1];
+                monotone &= d.ValueDays >= lastValue && d.ShareBp <= lastShare;
+                lastValue = d.ValueDays;
+                lastShare = d.ShareBp;
+            }
+        }
+        Check(invested > 60, "decision: a good enough meeting about a profitable enough business brings money (" + invested + " of 396)");
+        Check(refusedBelow, "decision: under the score the investor wants there is no money");
+        Check(inside, "decision: the sum is never under the investor's smallest or over their largest");
+        Check(supported, "decision: the sum is never more than the investor's share of forty to ninety days of the true recent profit");
+        Check(shares, "decision: the share is inside the kind's range");
+        Check(monotone, "decision: a better score values the business higher and takes a smaller share");
+
+        // One meeting worked through by hand.
+        PitchFacts w = Founder();
+        w.AvgProfit7 = 4000f;
+        var meeting = new List<int> { 8, 10, 7, 8, 6, 9, 8 };
+        PitchDecision made = Pitch.Decide(file, plain, w, "y#2", meeting, VenturesCatalogue.Standard, 10);
+        Check(made.Verdict == Verdict.Invest && made.Score == 80 && made.Needed == 55 && made.ValueDays == 68 && made.ShareBp == 2389 && made.Amount == 64900 && made.Best == 1 && made.Worst == 4,
+            "decision: 56 of 70 points is 80; with 55 needed the business is valued at 68 days of 4,000 and a share of 23.89% brings 64,900 ("
+            + made.Score + ", " + made.ValueDays + ", " + made.ShareBp + ", " + made.Amount + ")");
+
+        // Figures that do not carry the smallest sum, no profit, and an angel backing a young business on its founder.
+        var top = new List<int> { 10, 10, 10, 10, 10, 10 };
+        PitchFacts small = Founder();
+        small.AvgProfit7 = 300f;
+        Check(Pitch.Decide(file, plain, small, "z#3", top, VenturesCatalogue.Standard, 10).Verdict == Verdict.TooSmall, "decision: a profit too small for the investor's smallest sum is said so");
+        small.AvgProfit7 = -50f;
+        Check(Pitch.Decide(file, plain, small, "z#3", top, VenturesCatalogue.Standard, 10).Verdict == Verdict.NoProfit, "decision: no profit, no valuation");
+        small.AgeDays = 12;
+        PitchDecision young = Pitch.Decide(file, angel, small, "z#3", top, VenturesCatalogue.Standard, 10);
+        Check(young.Verdict == Verdict.Invest && young.OnFounder && young.Amount == angel.ChequeLeast && young.ShareBp == VenturesCatalogue.ShareLeastBp[0],
+            "decision: an angel backs a business under thirty days old on its founder: their smallest sum");
+        small.AgeDays = 30;
+        Check(Pitch.Decide(file, angel, small, "z#3", top, VenturesCatalogue.Standard, 10).Verdict == Verdict.NoProfit, "decision: at thirty days it has to show a profit like any other");
+
+        // A business not yet open: a share of the budget.
+        PitchFacts unopened = Founder(false);
+        unopened.Budget = 100000;
+        PitchDecision least = Pitch.Decide(file, plain, unopened, null, new List<int> { 6, 5, 6, 5, 6, 5 }, VenturesCatalogue.Standard, 10);
+        PitchDecision most = Pitch.Decide(file, plain, unopened, null, top, VenturesCatalogue.Standard, 10);
+        Check(least.Verdict == Verdict.Invest && least.Score == 55 && least.Amount == 30000 && least.ShareBp == VenturesCatalogue.ShareMostBp[1] && most.Amount == 70000 && most.ShareBp == VenturesCatalogue.ShareLeastBp[1],
+            "decision: a business not yet open gets three to seven tenths of its budget (" + least.Amount + " to " + most.Amount + ")");
+        unopened.Budget = 10000;
+        Check(Pitch.Decide(file, fund, unopened, null, top, VenturesCatalogue.Standard, 10).Verdict == Verdict.TooSmall, "decision: a budget too small for a fund is said so");
+        unopened.Budget = 500000;
+        Check(Pitch.Decide(file, angel, unopened, null, top, VenturesCatalogue.Standard, 10).Amount == angel.ChequeMost, "decision: and nobody puts in more than their largest sum");
+
+        // No room: the business already has all the investors it may have.
+        Deal held = OfferRules.Accept(file, AddOffer(file, tycoon, "full#1", 50000, 6000), Steady(5000f), 5);
+        PitchFacts full = Founder();
+        full.AvgProfit7 = 5000f;
+        Check(held != null && Pitch.Decide(file, fund, full, "full#1", top, VenturesCatalogue.Standard, 10).Verdict == Verdict.NoRoom, "decision: a business with six tenths of its profit promised has no room for another investor");
     }
 }
