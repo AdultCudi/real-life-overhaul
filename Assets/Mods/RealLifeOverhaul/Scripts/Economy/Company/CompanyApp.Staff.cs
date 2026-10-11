@@ -149,6 +149,12 @@ namespace RealLifeOverhaul.Economy
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_co_emp_let_go", () => _director.AnswerOffer(id, false));
                 box.Line(CompanyText.T("reallife_co_emp_offer_choices", "raise", CompanyText.Wage(System.Math.Max(0, f.PoachOffer - f.Paid)), "days", CompanyCatalogue.PoachNoticeDays.ToString()));
             }
+            else if (f.LeaveDay == 0 && f.Going > f.Paid)
+            {
+                // Nobody has asked (or a request lapsed): the player may still bring them up to the going rate, the same as agreeing to a request.
+                box.Line(CompanyText.T("reallife_co_emp_give_what", "raise", CompanyText.Wage(f.Going - f.Paid)));
+                InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_co_emp_give", () => _director.GiveRaise(id));
+            }
             BackButton(box);
             box.Line(CompanyText.T("reallife_co_emp_works", "business", _director.ShopName(f.Place), "skill", skill));
             box.Line(FinanceText.Pair("reallife_co_emp_wage", CompanyText.Wage(f.Wage)));

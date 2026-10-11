@@ -301,6 +301,19 @@ namespace RealLifeOverhaul.Economy
             return cost;
         }
 
+        /// <summary>A raise to the going rate that nobody asked for: the request the rule would make, agreed at once.</summary>
+        public void GiveRaise(string id)
+        {
+            StaffFile f = On(CompanyPart.Staff) ? _state.Employee(id) : null;
+            if (f == null || f.AskDay != 0 || f.PoachDay != 0 || f.LeaveDay != 0 || f.Going <= f.Paid)
+            {
+                return;
+            }
+            f.AskDay = Save.Day;
+            f.AskTo = f.Going;
+            AnswerRaise(id, RaiseAnswer.Agree);
+        }
+
         public void AnswerRaise(string id, RaiseAnswer answer)
         {
             StaffFile f = On(CompanyPart.Staff) ? _state.Employee(id) : null;
