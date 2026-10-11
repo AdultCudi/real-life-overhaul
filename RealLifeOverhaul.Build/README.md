@@ -169,7 +169,8 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       Record         Record (the criminal record), Reputation (police and public, scrutiny) and LawState: their four lines in modData
       Precincts      which buildings are the precincts (one per district, fixed by address), their map markers, the dressed frontage
       Custody        one arrest: the scene on the street, the ride, the cell as a time skip, bail and lawyer, release, resume after a load
-      CustodyPanel   the holding cell on screen: charge sheet, release clock, three buttons
+      CustodyList    the holding cell on screen: the game's list window with the charge sheet, release clock, three entries
+      StationDesk    the front desk: the game's panel at the counter and the game's list window (DeskList), a second page for the record
       LawDirector    the one tick a second: load and save, dressing, the daily step, thanks from passers-by, the watchdog, test buttons;
                      Arrests: the one call each for whoever catches the player
       RecordPhone    the Police Records Desk contact: record, reputation, time since the last offence, nearest precinct
@@ -1924,10 +1925,10 @@ Furniture and bars are cut out of the navigation mesh. The sergeant is a pool ch
 the other three are presence characters. A room too small for any of it keeps the front desk service where
 the player stands.
 
-**The front desk** (`StationDesk`; the interaction key within 2.3 m of the counter): report a crime or an
+**The front desk** (`StationDesk`; within 2.3 m of the counter the game's panel over a place (`GameUi.DoorPanel`) offers "Speak to the desk officer" on the interact key, at a door that can be walked into "Go into the station"): the list has an entry for each thing, with the cost or state under its name and the button off, with the reason, when it cannot be had; answers are notifications. Report a crime or an
 accident (exactly what a 911 call would do about what is going on nearby, +2 police reputation for coming
-in, and never a "wasted call"); pay outstanding fines (`ModState.PendingFine`, +1); the record (both
-reputations, then line by line); collect a car from the pound (see custody; 250, brought to the kerb when the
+in, and never a "wasted call"); pay outstanding fines (`ModState.PendingFine`, +1); the record (a second page: both
+reputations, then a note for each line, newest first, and Back); collect a car from the pound (see custody; 250, brought to the kerb when the
 player steps outside); apply for a licence (only if `Law.Bridges.Licensing` is set); a police report after a
 break-in or a car break-in in the last seven days (15; reference `PR-<precinct>-<day>-<number>`; handed to
 `Law.Bridges.PoliceReport` if set); hand yourself in (see below); visiting hours.
@@ -1983,8 +1984,8 @@ What happens, in order (`Custody`):
 
 **At a precinct that can be walked into** (and with "Walk-in police stations" on), steps 3 to 5 go on
 inside: from the pavement the player is taken through the door by the game's own way in and put in the
-holding cell before the screen clears, facing the bars and kept there. The charge sheet is then a smaller
-plate at the right of the screen with the cell in view beside it, and the time skip runs without the game's
+holding cell before the screen clears, facing the bars and kept there. The cell's list is then at the
+right of the screen with the cell in view beside it, and the time skip runs without the game's
 blur. On release the screen goes dark for a moment, the player is at the front desk, is signed out by the
 sergeant and walks to the door, which the game takes them out of in the usual way: release is from the front
 door. The car left at the scene is then **at the pound** (`reallife:law_station`): any front desk has it
@@ -2058,6 +2059,23 @@ Law.Custody.Active               // being arrested or held right now
 Law.LawDirector.NearestPrecinct(position)       // its Name, Door, Building; null before the city is ready
 Law.Arrests.FledStop / HitAndRun / StayedAtScene / WastedCall / Escaped / Cited   // the ways in
 ```
+
+### The desk and the cell in the game's own interface
+
+- The panel at a station (door or counter) is `GameUi.WorldPanel` through `GameUi.DoorPanel`; the desk's menu is a
+  `GameUi.TravelList` made by a `GameUi.DeskList` ("RealLifeOverhaul Law"); the cell is a second `DeskList`
+  ("RealLifeOverhaul Custody") that is `Locked` (no Cancel button, the cancel key left to the game).
+- The game's time skip switches the HUD off, so the cell's window is moved onto the skip's own canvas
+  (`TravelList.MoveTo`) once the skip has started and back to the HUD's when it closes. The clock line is written only
+  when the minute changes. Number keys 1 to 3 no longer choose in the cell: the entries are clicked.
+- Fallbacks: if the game's list cannot be copied, the desk's panel has the report, the fines, the car and the police
+  report on its own four keys; the cell serves the sentence with the charges told once in a notification and no
+  bail or lawyer.
+- The licence entry shows only when `Law.Bridges.Licensing` is set; nothing in this build sets it.
+- Log lines: "Law check (desk panel): ...: PASS", "Law check (desk list): the game's list is open: ...: PASS",
+  "Law check (choice): ...", "Law check (cell list): ...".
+- Not checked in the game: any of it. In particular whether the list is drawn on the skip's canvas at the right size
+  and place (a screenshot settles it), and whether the cancel key is left alone by the locked list.
 
 ### Test buttons
 
@@ -2809,9 +2827,11 @@ Meta/
   OptionsLayout   puts the finished options page in order: sections, test tools, the buttons at the top; the set-up check
   OptionsSearch   the other half of that class: the search box under the page's first header, and the words features are also found by
   OptionsCaptions a third part of it: the word on each button of the page ("Open", "Close", "Run", "Apply")
-  MetaUi          the mod's own canvas (above the menus, off unless a panel is open) and its controls; messages and confirmations
-  Guide           the in-game guide (topics, facts, search) and its phone contact
-  Welcome         the first-run / after-update panel
+  MetaUi          the mod's own canvas (above the menus, off unless a panel is open) for the options page's messages and questions only
+  Guide           the guide's pages and texts (topics, facts, mark-up) and its phone contact
+  GuideApp        the Guide as an app on the game's phone (GameUi.PhoneApp), asked for from the options page, the contact and the welcome notice
+  GuideView       the app's panel in the game's frame (GameUi.AppShell): a table of pages, a table of the lines of a page
+  Welcome         the first-run / after-update notification, with a click that opens the Guide on "What changed"
   Changelog       what changed per version (guide page, "since last time")
   SaveTools       prepare a save for removing the mod, reset the mod's data, repair, the check after each load
   MetaCity        Meta's part of a city load; Dev: the "Developer diagnostics" switch
@@ -2982,10 +3002,31 @@ on in the very frame the features are destroyed, before any autosave can run), s
 writes a report. It refuses in a vehicle and during a hospital trip, custody, sleep or an activity. There is no
 "all saves" variant.
 
+
+### The Guide and the welcome in the game's own interface
+
+- The Guide is an app called Guide on the game's phone, built as the Planner is (`GameUi.PhoneApp.Install`, a panel
+  from `GameUi.AppShell`, an icon from `GameUi.AppIconPainter`, one more tile on the phone's pages). Tab "Pages" lists
+  the pages (the features, Presets, Known limits, Credits, What changed); a click opens tab "Reading", which has the
+  page's text a line to a row in the game's table, headings in the game's yellow and bullets as "-". The left box says
+  which page and has "All pages". The texts, the `{facts}` and `Changelog` are as they were (`Guide.Fill`, `Guide.Check`).
+- Asked for from the options page, the contact's call or a click on the welcome notice: the app opens at once if no
+  menu of the game's is up; under one a notification says it opens when the menu is closed, and it does (a quarter-second
+  timer that lasts only while the request waits). In the main menu there is no phone: a notification says so.
+- The welcome is the game's notification ("Real Life Overhaul 0.1.5: open the Guide on your phone to see what changed"),
+  once per version; a click opens the Guide on "What changed". The four presets it used to offer are on the options page.
+- Removed: the guide's keyboard search, the welcome panel, and their canvas panels. `MetaUi` stays for the options
+  page's messages and questions (reset, import, preset questions, the set-up check): that page is also in the main menu,
+  where there is no phone and no HUD, so `MetaUi.AnyOpen` stays and the camera still counts it.
+- If the phone is not built as expected, the app is left off with one line in Player.log; the texts remain in the mod.
+- Log lines: "Meta check (guide app): the Guide is on the phone: PASS", "opened on the list of 40 pages, 40 rows ...: PASS",
+  "Meta check (welcome notice): ...: PASS".
+- Not checked in the game: the app's look (row heights are a guess at the line length: a screenshot of a long page
+  settles it), the icon, the notice's click, and the wait for the menus.
 ### Test paths
 
-- Guide: options page "Open the Guide"; the phone contact "Real Life Overhaul Guide"; "Check the mod's set-up" renders every page and lists unfilled `{facts}` and missing texts.
-- Welcome: "Show the welcome panel again"; or delete `m:<mod>:meta_seen_version` from PlayerPrefs.
+- Guide: options page "Open the Guide on your phone" (the app opens when the menu is closed); the phone contact "Real Life Overhaul Guide"; "Check the mod's set-up" renders every page and lists unfilled `{facts}` and missing texts.
+- Welcome: "Show what changed" (opens the Guide on that page); or delete `m:<mod>:meta_seen_version` from PlayerPrefs.
 - Presets: the four buttons, then the guide's Presets page (the "Now" column) and the header "Preset in use".
 - Options page: open and close sections; "Show test tools" off hides the last section. Every button has a word on it ("Open", "Close", "Run", "Apply"), never "Your text here", and every slider its number beside it. Each section's label ends in its count ("(5 options, on)"); switch a feature's first toggle and the "on" becomes "off" at once. Open "Test tools": one closed group per feature; open one, close and reopen the page: it is still open.
 - Search (main menu and in a city, both): with "Test tools" closed, click the box under "Real Life Overhaul: Start here" and type `bus`: the page jumps to the top, only the transport section and its group of tests are left, the line under the box counts them; type on to `bus stop`: the rows that say so are left, and pressing a button among them works. `stop bus` (two words, any order) finds them too. `zzzz` says "Nothing found for 'zzzz'". Try `police`, `fps`, `bike`. A toggle and a slider among the results still work. While typing `v`, `f`, `b`, `x`, the camera, interaction and garage keys must do nothing, and nor must the game's own (Space, M, Tab). Empty the box with the x: every section is as it was before. In the city, Esc while typing empties the box and leaves the page open; on the main menu it also closes the page. Switch "Show test tools" off and search `test`: the tests are still found. `Player.log` must have no "Meta: the search box" line.
@@ -4172,12 +4213,11 @@ TravelState      what a save remembers, one line in modData under "reallife:trav
 TravelBridges    the doors to Home, Social, Law, Transport and Leisure, each with a working default
 TravelEffects    money, hunger, energy and travel's own happiness modifiers, through the game's systems
 TravelText       lines from en.json with their {names} filled
-TravelUi         the full-screen panel (picture of plain shapes, text, buttons), the door prompt, the hotel marker
 Hotels           which buildings are hotels; sign, awning, luggage cart, the one doorman, the city-map icons
-HotelStay        reception (the game's dialogue panel), the room as a panel, sleep through the game's time skip, checkout
-Holidays         agencies, the agent, tickets, the trip in cards, the Hamptons weekend, burnout, the trade fair
+HotelStay        the room as a list, sleep through the game's time skip, checkout; HotelReception is the desk's list
+Holidays         agencies, the agent, tickets, the trip as a list, the Hamptons weekend, burnout, the trade fair
 TravelPhone      the "Trips" contact (the page) and the agency's own number
-TravelDirector   the component: save and load, ticks, the key at a door, the watchdog, the test buttons
+TravelDirector   the component: save and load, ticks, the game's panel at a door, the watchdog, the test buttons
 ```
 
 ### What the game has
@@ -4258,19 +4298,37 @@ the Meridian Tower at Second Avenue 14 (Hell's Kitchen). Seabreeze Cottages is a
 (Ocean Crest Road 1; failing that the cinema, then Seventh Avenue 5). The log line "Travel: hotels:" lists what was
 picked.
 
-At the door the interaction key opens reception (the door's own key stands aside there; clicking the building still
-does what the game does). With a room it goes straight up. The room is the travel panel: sleep until the wake-up
-call or nap, shower, room service or the vending machine, minibar, laundry, stay in and rest, check messages, the
-concierge (luxury), a beach walk and dinner in the village (cottages), extend, late checkout, check out, go out.
-The player never moves: they stand at the door behind the panel, held by a navigation block of the game's own.
+At a hotel's door the game's own panel over a place (`GameUi.WorldPanel`, through `GameUi.DoorPanel`) names the hotel and
+says what is on offer: "Reception" on the interact key (off while a room is held), and "Go up to your room" on the
+secondary key when the room is booked there. The mod's own door key stands aside while it is up. Reception is a
+`GameUi.TravelList` (`HotelReception`): page one has an entry per room type with tonight's rate, the week's rate and
+how many are left; a room goes to page two (Back, an entry that steps the nights, Pay now, Leave a deposit). The result
+is a notification, and a booked room is gone up to at once. The room is a list as well (`HotelStay`): an entry per
+choice with its cost or effect under the name and the button off, with the reason, when it cannot be done (sleep, nap,
+wake-up call, shower, room service or the vending machine, minibar, laundry, rest, messages, the concierge (luxury),
+a beach walk and dinner in the village (cottages), extend, late checkout, check out, go out). Sleep, nap and rest
+keep the game's own time skip; that hides the HUD, so the list is put away while it runs and the skip's own Cancel button is the way to get up. What a
+choice did is a notification. The player never moves: they stand at the door, held by a navigation block of the
+game's own. The list is one window shared by reception, the room and a trip (`TravelDirector.Window`, a `DeskList`).
+The mark that points to a hotel is the game's destination marker (`GameUi.GuideMark`).
+
+If the game's list cannot be copied (one "Game UI:" line says so): reception is the game's dialogue panel as before,
+the room sleeps the night at once and puts the player outside, and a trip is played through taking it easy each day.
+
+Log lines (with Developer diagnostics on): "Travel check (door panel): ...: PASS", "Travel check (reception list): the
+game's list is open: ...: PASS", "Travel check (room list): ...", "Travel check (trip list): ...", "Travel check (choice): ...".
+
+Not checked in the game: any of the above. The wording of the panel and the list, how the game's list looks with 20
+entries of two lines, whether its tall entries (a trip's text) fit, whether Cancel closes the room list as meant, and
+that the marker takes the guider when no job has it.
 
 ### Holidays
 
 At an open travel agency's door, or by phone once one has been visited (from the start in a city with no agency).
 The Hamptons weekend is real: setting off books the cottage from that night and the player travels there themselves;
-a night slept there makes it a holiday. The others are played in the panel: departure, a card a day (take it easy,
+a night slept there makes it a holiday. The others are played in the same list: departure, a page a day (take it easy,
 explore, splurge; each with an event from a pool of 72 that does not repeat), a day of game time skipped after each,
-and a return card that reads what the businesses made from the game's accounts. Before booking the agent says what
+and a return page that reads what the businesses made from the game's accounts. Before booking the agent says what
 is being left: how many businesses, what they made a day over the last week, open problems, the rent that carries on.
 
 Burnout: every day with a business to run or a job taken counts; after 18 a friend says so, after 24 a mild
@@ -4325,15 +4383,16 @@ school's car is taken off the save's vehicle list for the length of each seriali
 Licences/
   Licences          the one door for the rest of the mod: Licences.Driving.Has(LicenceClass), Licences.Law (ILawBridge), listeners
   LicenceState      classes, validity, points, suspension, retests: game-free rules and the modData line (LicenceLaw has every figure)
-  LicenceDirector   loads/saves, the first-run grant, the desks' prompt, the one test that is on, enforcement's tick, the test buttons
-  LicenceHud        objective panel, checkpoint marker, key prompt, the sheet (test paper, result, licence card)
+  LicenceDirector   loads/saves, the first-run grant, the desks' panel, the one test that is on, enforcement's tick, the test buttons
+  SchoolDesk        the game's panel at a desk and the school's list (services, the licence card as a second page)
+  SchoolScreens     the school's one list window (a GameUi.DeskList) and the plain report page
   LicenceProps      the things stood in the world, by id: the modelled prop if the bundle has it, else a plain-shape stand-in
-  TheoryTest        a written test on the sheet: no repeats, a question from every subject, 1/2/3 to answer
+  TheoryTest        a written test as a question card in the list: no repeats, a question from every subject, three answers and a way to give up
   Driving/
     DrivingSchool      what the school offers and when (DrivingSchool), the desks at the school buildings (LicenceDesks),
                        the Licensing Office contact (LicencePhone) and the conversation both use (DrivingSchoolDialog)
     DrivingQuestions   the 66 theory questions in seven subjects
-    PracticalTest      a lesson or test, driven: examiner, checkpoints, what is marked, the bay, the result sheet
+    PracticalTest      a lesson or test, driven: examiner, checkpoints, what is marked, the bay, the result page
     TestRoute          five to seven checkpoints along real lanes and a marked bay at the kerb
     TestCar            the school's car: made the game's way, never in a save, the player seen out of it when the drive ends (and again if they get back in), taken back with the game's own delete
     DrivingEnforcement penalty points, the licence asked for at a stop, impound, arrest, the routine roadside check
@@ -4380,6 +4439,28 @@ lesson or test is lawful and is never checked.
 
 Points count for 21 days. Twelve suspend every licence for 7 days, after which the record starts from zero.
 
+
+### The school in the game's own interface
+
+- Desk: the game's panel over a place (`GameUi.WorldPanel` through `GameUi.DoorPanel`) says whether the school is open
+  and has "Speak to the instructor" on the interact key. The list (`SchoolDesk`, a `GameUi.TravelList` on the shared
+  `SchoolScreens.Window`) has an entry per service with the fee and what is needed under its name and its button off,
+  with the reason, when it cannot be had (closed hours, the fee, a test still to pass, a wait after a failure). The
+  texts are the dialogue's own pitch lines. Renewals, the taxi endorsement and the motorcycle assessment are done at
+  once and the list stays; a test or a lesson closes it and starts as before. The licence card is a second page of
+  the same list (a note per licence, one for the points, one for a suspension, Back): a card is short facts with
+  names, which is what the list's entries are.
+- Written test: a question card. The headline is the test, the first info line the question, the second "Question 4
+  of 12"; three entries "Answer 1..3" carry the answers; "Give up the test" counts as a failed paper (new). The list
+  is `Locked`. An answer is a notification; the end is a page with the score and Close.
+- Driven test and lesson: a copy of the game's job panel (`Jobs/ShiftCard`, reused as it is) with the instruction,
+  the checkpoints passed, the faults and the time left, written five times a second only when a line changes; the
+  next checkpoint is the game's destination marker (`GameUi.GuideMark`); at the bay the panel over a place has "I have
+  parked" on the interact key; the result is a report page with Close. The school's car logic is unchanged.
+- Fallbacks: no window, no written test (the fee is returned), the desk speaks through the dialogue panel, results are
+  notifications. No job panel: each instruction is a notification.
+- Log lines: "Licences check (desk panel)", "(desk list)", "(theory): question 4 of 12 ...: PASS", "(report)", "(choice)".
+- Not checked in the game: any of it.
 ### The driven test
 
 The school's car (a Honza Mimic; a Mersaidi Dash for the commercial class) is put at the roadside near the desk, the

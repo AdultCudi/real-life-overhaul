@@ -62,7 +62,7 @@ namespace RealLifeOverhaul
             /// </summary>
             public static bool PlayerHeld =>
                 Law.Custody.Active || JusticePanel.IsOpen || LicenceDirector.IsActive
-                || (LicenceHud.Exists && LicenceHud.Instance.SheetShown) || Meta.MetaUi.AnyOpen || ThirdPersonCamera.IsUiOpen();
+                || Meta.MetaUi.AnyOpen || ThirdPersonCamera.IsUiOpen();
         }
     }
 }

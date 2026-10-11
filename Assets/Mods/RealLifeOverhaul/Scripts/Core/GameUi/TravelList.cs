@@ -45,6 +45,7 @@ namespace RealLifeOverhaul.GameUi
             public Button Button;
             public string ButtonKey;
             public int Id;
+            public bool Note;
         }
 
         private readonly List<Row> _rows = new List<Row>(48);
@@ -53,12 +54,33 @@ namespace RealLifeOverhaul.GameUi
         private Component _title;
         private Component _info;
         private TextLocalizationComponent _cancel;
+        private GameObject _cancelButton;
+        private Transform _home;
+        private bool _locked;
         private ScrollRect _scroll;
         private Action<int> _onPick;
         private Action _onClosed;
         private int _used;
 
         public bool IsOpen { get; private set; }
+
+        /// <summary>
+        /// True while the window may not be left by the player: the Cancel button is out of sight and the game's cancel
+        /// key is left to the game (its own menu still opens). The owner can still <see cref="Close"/> it. Put back to
+        /// false by every closing, so a window handed to the next owner is an ordinary one.
+        /// </summary>
+        public bool Locked
+        {
+            get { return _locked; }
+            set
+            {
+                _locked = value;
+                if (_cancelButton != null && _cancelButton.activeSelf == value)
+                {
+                    _cancelButton.SetActive(!value);
+                }
+            }
+        }
 
         /// <summary>How many entries have been made so far (for the log).</summary>
         public int Made => _rows.Count;
@@ -106,7 +128,7 @@ namespace RealLifeOverhaul.GameUi
                 root = UiClone.Asleep(uis.cityMapSubwayStations.gameObject, holder, name);
                 UiClone.StripGameScripts(root, script => Array.IndexOf(Harmless, script.GetType().Name) >= 0);
 
-                var list = new TravelList { _root = root };
+                var list = new TravelList { _root = root, _home = canvas };
                 Transform header = UiClone.Need(root.transform, "Headline/Header", name);
                 Transform top = UiClone.Need(root.transform, "Top Controls", name);
                 Transform content = UiClone.Need(root.transform, "Scroll View/Viewport/Content", name);
@@ -183,6 +205,7 @@ namespace RealLifeOverhaul.GameUi
 
                 UiClone.Rewire(cancel, list.Close);
                 list._cancel = cancel.GetComponentInChildren<TextLocalizationComponent>(true);
+                list._cancelButton = cancel.gameObject;
 
                 var group = root.GetComponent<CanvasGroup>();
                 if (group != null)
@@ -220,6 +243,21 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
+        /// <summary>
+        /// Stands the window on another canvas (the game's time skip hides the HUD but keeps a screen of its own), or back on the
+        /// HUD's with null. It stays the last thing drawn there. Does nothing if it is already there.
+        /// </summary>
+        public void MoveTo(Transform canvas)
+        {
+            Transform target = canvas != null ? canvas : _home;
+            if (_root == null || target == null || _root.transform.parent == target)
+            {
+                return;
+            }
+            _root.transform.SetParent(target, false);
+            _root.transform.SetAsLastSibling();
+        }
+
         /// <summary>True while the window's objects are there (the game's interface is rebuilt with the city).</summary>
         public bool Alive => _root != null;
 
@@ -239,6 +277,33 @@ namespace RealLifeOverhaul.GameUi
 
         /// <summary>One entry: a name, a smaller line under it, and the button's word (a locale key, written by the game's component).</summary>
         public void Add(int id, string name, string detail, string buttonKey, bool enabled)
+        {
+            Entry(id, name, detail, buttonKey, enabled, 0f, false);
+        }
+
+        /// <summary>An entry taller than the list's others, for a detail line that runs to several lines (see <see cref="HeightFor"/>).</summary>
+        public void Add(int id, string name, string detail, string buttonKey, bool enabled, float height)
+        {
+            Entry(id, name, detail, buttonKey, enabled, height, false);
+        }
+
+        /// <summary>A line of text in the list's own lettering with no button: something to read before the choices.</summary>
+        public void AddNote(string name, string detail, float height)
+        {
+            Entry(0, name, detail, null, false, height, true);
+        }
+
+        /// <summary>A height, in the list's units, for an entry whose detail line is this long: a name line, then the lines of the detail at about this window's width.</summary>
+        public float HeightFor(int characters, bool button)
+        {
+            RectTransform window = Window;
+            float width = window != null ? window.sizeDelta.x : 775f;
+            float perLine = Mathf.Max(24f, (width - (button ? 420f : 150f)) / 13f);   // the smaller line is about 13 units a character
+            int lines = Mathf.Max(1, Mathf.CeilToInt(characters / perLine));
+            return Mathf.Max(_template != null ? ((RectTransform)_template.transform).sizeDelta.y : 104f, 58f + 28f * lines);
+        }
+
+        private void Entry(int id, string name, string detail, string buttonKey, bool enabled, float height, bool note)
         {
             Row row;
             if (_used < _rows.Count)
@@ -264,7 +329,7 @@ namespace RealLifeOverhaul.GameUi
             row.Id = id;
             UiClone.Words(row.Label, string.IsNullOrEmpty(detail) ? "<uppercase>" + name + "</uppercase>"
                 : "<uppercase>" + name + "</uppercase>\n<size=80%><color=#C9CED3>" + detail + "</color></size>");
-            if (!ReferenceEquals(row.ButtonKey, buttonKey))
+            if (!note && !ReferenceEquals(row.ButtonKey, buttonKey))
             {
                 row.ButtonKey = buttonKey;
                 UiClone.Key(row.ButtonLabel, buttonKey);
@@ -272,6 +337,17 @@ namespace RealLifeOverhaul.GameUi
             if (row.Button != null)
             {
                 row.Button.interactable = enabled;
+                if (row.Button.gameObject.activeSelf == note)
+                {
+                    row.Button.gameObject.SetActive(!note);   // (a note has none; an entry made from a note's has it back)
+                }
+            }
+            row.Note = note;
+            float high = height > 0f ? height : ((RectTransform)_template.transform).sizeDelta.y;
+            var rect = (RectTransform)row.Object.transform;
+            if (!Mathf.Approximately(rect.sizeDelta.y, high))
+            {
+                rect.sizeDelta = new Vector2(rect.sizeDelta.x, high);
             }
             if (!row.Object.activeSelf)
             {
@@ -320,6 +396,7 @@ namespace RealLifeOverhaul.GameUi
             }
             IsOpen = false;
             _open = Mathf.Max(0, _open - 1);
+            Locked = false;
             if (_root != null)
             {
                 _root.SetActive(false);
@@ -398,7 +475,7 @@ namespace RealLifeOverhaul.GameUi
             }
             try
             {
-                if (PlayerAction.Cancel.Pressed())
+                if (!Owner.Locked && PlayerAction.Cancel.Pressed())
                 {
                     PlayerAction.Cancel.Reset();
                     Owner.Close();

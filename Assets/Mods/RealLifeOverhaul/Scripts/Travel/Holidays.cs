@@ -8,6 +8,7 @@ using Dialogs;
 using Entities;
 using Helpers;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UI;
 using UI.Notification;
 using UnityEngine;
@@ -38,7 +39,7 @@ namespace RealLifeOverhaul
         private const int SetOff = 101, Relax = 102, Explore = 103, Splurge = 104, NextDay = 105, Home = 106, Close = 107;
 
         private readonly TravelDirector _director;
-        private readonly TravelCard _card = new TravelCard();
+        private bool _auto;
         private readonly List<Vector3> _agencyDoors = new List<Vector3>(8);
         private readonly List<BuildingRegistration> _agencies = new List<BuildingRegistration>(8);
         private int _agencyDay = -1;
@@ -57,6 +58,9 @@ namespace RealLifeOverhaul
         public BuildingRegistration AgencyInReach { get; private set; }
 
         public int AgencyCount => _agencies.Count;
+
+        /// <summary>The door of the agency the player stands at (meaningful while <see cref="AgencyInReach"/> is not null).</summary>
+        public Vector3 AgencyDoor { get; private set; }
 
         // ---------------------------------------------------------------- agencies
 
@@ -104,15 +108,18 @@ namespace RealLifeOverhaul
                 FindAgencies();
             }
             BuildingRegistration reach = null;
+            Vector3 door = default(Vector3);
             for (int i = 0; i < _agencyDoors.Count; i++)
             {
                 Vector3 offset = _agencyDoors[i] - player;
                 if (Mathf.Abs(offset.y) < 2.5f && CitySpots.Flat(offset) < DoorReach * DoorReach)
                 {
                     reach = _agencies[i];
+                    door = _agencyDoors[i];
                 }
             }
             AgencyInReach = reach;
+            AgencyDoor = door;
         }
 
         public void Away()
@@ -327,15 +334,7 @@ namespace RealLifeOverhaul
                 int refund = CancelTicket(TravelCatalogue.UninsuredRefund);
                 _cancelLine = reason + " " + TravelText.T(insured ? "reallife_travel_cancel_insured" : "reallife_travel_cancel_uninsured", "amount", TravelText.Money(refund));
                 _director.Seclude(true);
-                _card.Clear();
-                _card.Title = TravelText.T(trip.NameKey);
-                _card.Subtitle = TravelText.T("reallife_travel_cancel_title");
-                _card.Scene = TravelScene.Terminal;
-                _card.Body = _cancelLine;
-                _card.Side = null;
-                _card.Status = null;
-                _card.Add(Close, TravelText.T("reallife_travel_btn_close"));
-                Present();
+                ShowCancel(trip);
                 return true;
             }
             TravelState.Away = true;
@@ -421,6 +420,7 @@ namespace RealLifeOverhaul
                 TravelState.AddPast(TravelState.TicketId, TravelState.AwayStartDay, Mathf.Max(TimeHelper.CurrentDay - TravelState.AwayStartDay, 0));
             }
             _skipping = false;
+            _auto = false;
             _cancelLine = null;
             TravelState.ClearAway();
             TravelState.ClearTicket();
@@ -446,7 +446,7 @@ namespace RealLifeOverhaul
             {
                 _cancelLine = null;
                 _director.Seclude(false);
-                TravelUi.Instance.Hide();
+                _director.Window.Close();
                 return;
             }
             Trip trip = TravelState.Away ? TravelCatalogue.TripById(TravelState.TicketId) : null;
@@ -506,7 +506,7 @@ namespace RealLifeOverhaul
                 default:
                     if (!TravelEffects.Pay(trip.Splurge, "reallife_transaction_holiday_spending"))
                     {
-                        TravelUi.Instance.SetStatus(TravelText.T("reallife_travel_trip_no_money"));
+                        TravelText.Toast(NotificationType.Warning, TravelText.T("reallife_travel_trip_no_money"), 6f);
                         return;
                     }
                     TravelState.AwaySpent += trip.Splurge;
@@ -569,7 +569,6 @@ namespace RealLifeOverhaul
         private IEnumerator NextDayRoutine()
         {
             _skipping = true;
-            TravelUi.Instance.SetStatus(TravelText.T("reallife_travel_trip_skipping"));
             var goal = new Timestamp(TimeHelper.CurrentDay + 1, 9, 0f);
             EnergyHelper.RemoveEnergySpender("move");
             EnergyHelper.SetCurrentEnergyRegen(EnergyRegen.Bench);
@@ -591,6 +590,69 @@ namespace RealLifeOverhaul
             ShowStep();
         }
 
+        private const string ButtonDo = "reallife_travel_list_do";
+
+        private Action<int> _onPick;
+        private Action _onClosed;
+
+        /// <summary>True while a cancelled trip's notice is on the list.</summary>
+        public bool ShowingCancel => _cancelLine != null;
+
+        /// <summary>True while a trip is played through with no list (the game's window could not be copied).</summary>
+        public bool Auto => _auto;
+
+        /// <summary>The cancelled trip's notice is dropped (the way out of everything has been taken).</summary>
+        public void ClearCancel()
+        {
+            _cancelLine = null;
+            _auto = false;
+        }
+
+        // The window for this trip's screens, made ready; null if the game's list cannot be copied.
+        private TravelList Screen()
+        {
+            TravelList list = _director.Window.Take(this);
+            if (list != null && _onPick == null)
+            {
+                _onPick = _director.Pressed;
+                _onClosed = TripClosed;
+            }
+            return list;
+        }
+
+        // The list closed: for a cancelled trip's notice that ends it; a trip under way cannot be closed by the player (the list is locked).
+        private void TripClosed()
+        {
+            if (Meta.Dev.Verbose)
+            {
+                _director.Log("Travel check (trip list): closed" + (TravelState.Away ? " while the trip is under way (the watchdog ends the trip if nothing reopens it)." : "."));
+            }
+            if (_cancelLine != null)
+            {
+                _cancelLine = null;
+                _director.Seclude(false);
+            }
+        }
+
+        // A trip that fell through at the gate: one note and one entry to close it.
+        private void ShowCancel(Trip trip)
+        {
+            TravelList list = Screen();
+            if (list == null)
+            {
+                TravelText.Toast(NotificationType.Warning, _cancelLine, 12f);
+                _cancelLine = null;
+                _director.Seclude(false);
+                return;
+            }
+            list.Begin(TravelText.T(trip.NameKey), string.Empty);
+            list.AddNote(TravelText.T("reallife_travel_cancel_title"), _cancelLine, list.HeightFor(_cancelLine.Length, false));
+            list.Add(Close, TravelText.T("reallife_travel_btn_close"), null, ButtonDo, true);
+            list.Open(_onPick, _onClosed);
+            list.Locked = false;
+            Said(trip, "cancelled at the gate", 1);
+        }
+
         private void ShowStep()
         {
             Trip trip = TravelCatalogue.TripById(TravelState.TicketId);
@@ -598,77 +660,138 @@ namespace RealLifeOverhaul
             {
                 Abort();
                 _director.Seclude(false);
-                TravelUi.Instance.Hide();
+                _director.Window.Close();
                 return;
             }
+            TravelList list = Screen();
+            if (list == null)
+            {
+                Plain();
+                return;
+            }
+            float began = Time.realtimeSinceStartup;
+            bool opening = !list.IsOpen;
             int step = TravelState.AwayStep;
             int last = 1 + 2 * trip.Days;
             string with = TravelState.CompanionName;
-            _card.Clear();
-            _card.Title = TravelText.T(trip.NameKey);
-            _card.Scene = SceneOf(trip);
-            _card.Status = null;
-            _card.Side = TravelText.T(TravelState.TicketFirst ? "reallife_travel_trip_side_first" : "reallife_travel_trip_side_economy")
-                         + (with != null ? "  " + TravelText.T("reallife_travel_trip_side_with", "name", with) : string.Empty)
-                         + (TravelState.TicketInsured ? "  " + TravelText.T("reallife_travel_trip_side_insured") : string.Empty);
+            string side = TravelText.T(TravelState.TicketFirst ? "reallife_travel_trip_side_first" : "reallife_travel_trip_side_economy")
+                          + (with != null ? "  " + TravelText.T("reallife_travel_trip_side_with", "name", with) : string.Empty)
+                          + (TravelState.TicketInsured ? "  " + TravelText.T("reallife_travel_trip_side_insured") : string.Empty);
+            list.Begin(TravelText.T(trip.NameKey), side);
+            string heading;
+            string body;
+            int entries;
             if (step <= 0)
             {
-                _card.Scene = trip.Kind == TripKind.Real ? TravelScene.Cottage : TravelScene.Terminal;
-                _card.Subtitle = TravelText.T("reallife_travel_trip_departure");
-                _card.Body = TravelText.T(trip.DepartKey)
-                             + " " + TravelText.T(TravelState.Suitcase ? "reallife_travel_trip_packed" : "reallife_travel_trip_unpacked")
-                             + (with != null ? " " + TravelText.T("reallife_travel_trip_with", "name", with) : string.Empty);
-                _card.Add(SetOff, TravelText.T("reallife_travel_btn_set_off"));
+                heading = TravelText.T("reallife_travel_trip_departure");
+                body = TravelText.T(trip.DepartKey)
+                       + " " + TravelText.T(TravelState.Suitcase ? "reallife_travel_trip_packed" : "reallife_travel_trip_unpacked")
+                       + (with != null ? " " + TravelText.T("reallife_travel_trip_with", "name", with) : string.Empty);
+                list.AddNote(heading, body, list.HeightFor(body.Length, false));
+                list.Add(SetOff, TravelText.T("reallife_travel_btn_set_off"), TravelText.T("reallife_travel_list_set_off", "days", TravelText.Number(trip.Days)), ButtonDo, true);
+                entries = 1;
             }
             else if (step >= last)
             {
-                _card.Scene = TravelScene.Terminal;
-                _card.Subtitle = TravelText.T("reallife_travel_trip_home");
-                _card.Body = Summary(trip);
-                _card.Add(Home, TravelText.T("reallife_travel_btn_home"));
+                heading = TravelText.T("reallife_travel_trip_home");
+                body = Summary(trip);
+                list.AddNote(heading, body, list.HeightFor(body.Length, false));
+                list.Add(Home, TravelText.T("reallife_travel_btn_home"), TravelText.T("reallife_travel_list_home"), ButtonDo, true);
+                entries = 1;
             }
             else
             {
                 int day = (step - 1) / 2;
-                _card.Subtitle = TravelText.T("reallife_travel_trip_day", "day", TravelText.Number(day + 1), "days", TravelText.Number(trip.Days));
+                heading = TravelText.T("reallife_travel_trip_day", "day", TravelText.Number(day + 1), "days", TravelText.Number(trip.Days));
                 if (step % 2 == 1)
                 {
-                    _card.Body = TravelText.T(trip.DayKeys[Mathf.Min(day, trip.DayKeys.Length - 1)]);
+                    body = TravelText.T(trip.DayKeys[Mathf.Min(day, trip.DayKeys.Length - 1)]);
+                    list.AddNote(heading, body, list.HeightFor(body.Length, false));
                     bool afford = SaveGameManager.Current.Money >= trip.Splurge;
-                    _card.Add(Relax, TravelText.T("reallife_travel_btn_relax"));
-                    _card.Add(Explore, TravelText.T("reallife_travel_btn_explore"));
-                    _card.Add(Splurge, TravelText.T("reallife_travel_btn_splurge", "amount", TravelText.Money(trip.Splurge)), afford);
+                    list.Add(Relax, TravelText.T("reallife_travel_btn_relax"), TravelText.T("reallife_travel_list_relax"), ButtonDo, true);
+                    list.Add(Explore, TravelText.T("reallife_travel_btn_explore"), TravelText.T("reallife_travel_list_explore"), ButtonDo, true);
+                    list.Add(Splurge, TravelText.T("reallife_travel_btn_splurge", "amount", TravelText.Money(trip.Splurge)),
+                        TravelText.T(afford ? "reallife_travel_list_splurge" : "reallife_travel_list_no_splurge"), ButtonDo, afford);
+                    entries = 3;
                 }
                 else
                 {
                     string choice = TravelText.T(TravelState.AwayChoice == (int)TripChoice.Relax ? "reallife_travel_trip_did_relax"
                         : TravelState.AwayChoice == (int)TripChoice.Explore ? "reallife_travel_trip_did_explore" : "reallife_travel_trip_did_splurge");
                     string what = TravelState.AwayEvent != null ? TravelText.T(TravelState.AwayEvent, "name", with ?? string.Empty) : string.Empty;
-                    _card.Body = choice + " " + what;
-                    _card.Add(NextDay, TravelText.T(day + 1 >= trip.Days ? "reallife_travel_btn_head_home" : "reallife_travel_btn_next_day"));
+                    body = choice + " " + what;
+                    list.AddNote(heading, body, list.HeightFor(body.Length, false));
+                    bool final = day + 1 >= trip.Days;
+                    list.Add(NextDay, TravelText.T(final ? "reallife_travel_btn_head_home" : "reallife_travel_btn_next_day"),
+                        TravelText.T(final ? "reallife_travel_list_head_home" : "reallife_travel_list_next_day"), ButtonDo, true);
+                    entries = 1;
                 }
             }
-            Present();
-        }
-
-        private void Present()
-        {
-            TravelUi ui = TravelUi.Instance;
-            ui.Pressed = _director.Pressed;
-            ui.Show(_card);
-        }
-
-        private static TravelScene SceneOf(Trip trip)
-        {
-            switch (trip.Id)
+            list.Open(_onPick, _onClosed);
+            list.Locked = true;   // a trip is left by its own entries; the watchdog is what ends one that cannot go on
+            if (Meta.Dev.Verbose)
             {
-                case "miami": return TravelScene.Beach;
-                case "ski": return TravelScene.Mountains;
-                case "europe": return TravelScene.City;
-                case "cruise": return TravelScene.Ship;
-                case "tradefair": return TravelScene.Fair;
-                default: return TravelScene.Cottage;
+                _director.Log("Travel check (trip list): " + (opening ? "the game's list is open: " : "") + trip.Id + ", step " + step + " of " + last + ", " + entries + " choice(s), " + list.Made
+                              + " entries made so far; " + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
             }
+        }
+
+        private void Said(Trip trip, string what, int entries)
+        {
+            if (Meta.Dev.Verbose)
+            {
+                _director.Log("Travel check (trip list): " + trip.Id + ": " + what + ", " + entries + " choice(s): PASS.");
+            }
+        }
+
+        // No window to show: the trip is played through with the easy choice each day, so that a ticket can never trap anyone.
+        private void Plain()
+        {
+            if (_auto)
+            {
+                return;
+            }
+            _auto = true;
+            _director.Log("Travel check (trip list): the game's list could not be made; the trip is played through taking it easy each day: FAIL.");
+            _director.Run(AutoRoutine());
+        }
+
+        private IEnumerator AutoRoutine()
+        {
+            while (TravelState.Away && _auto)
+            {
+                Trip trip = TravelCatalogue.TripById(TravelState.TicketId);
+                if (trip == null)
+                {
+                    break;
+                }
+                int last = 1 + 2 * trip.Days;
+                int step = TravelState.AwayStep;
+                if (step <= 0)
+                {
+                    TravelState.AwayStep = 1;
+                }
+                else if (step >= last)
+                {
+                    ComeHome(trip);
+                    break;
+                }
+                else if (step % 2 == 1)
+                {
+                    Choose(trip, TripChoice.Relax);
+                }
+                else
+                {
+                    yield return NextDayRoutine();
+                }
+                yield return null;
+            }
+            if (_auto && TravelState.Away)
+            {
+                Abort();
+                _director.Seclude(false);
+            }
+            _auto = false;
         }
 
         // What the days away came to, read from the game's own daily accounts.
@@ -754,7 +877,7 @@ namespace RealLifeOverhaul
             TravelState.ClearAway();
             TravelState.ClearTicket();
             _director.Seclude(false);
-            TravelUi.Instance.Hide();
+            _director.Window.Close();
             TravelText.Toast(NotificationType.Success, TravelText.T("reallife_travel_welcome_back"), 8f);
         }
 

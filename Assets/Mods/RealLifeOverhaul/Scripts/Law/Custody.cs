@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Law
     ///   the ride       the screen goes dark; the player is put on the pavement outside the
     ///                  nearest precinct at once, so that whatever happens next (a save, the mod
     ///                  being removed) finds them standing in a street.
-    ///   the cell       a panel over the dark screen (CustodyPanel) while the game's own time
+    ///   the cell       the game's list window (CustodyList) while the game's own time
     ///                  skip runs the clock to the release time: businesses, bills and the rest of
     ///                  the simulation go on as in any time skip. Energy comes back as on a bench
     ///                  and food is brought, so nobody collapses in there. Bail (not for a death)
@@ -71,7 +71,7 @@ namespace RealLifeOverhaul.Law
         private readonly StringBuilder _text = new StringBuilder(256);
         private Precincts _precincts;
         private StationInterior _interior;
-        private CustodyPanel _panel;
+        private CustodyList _panel;
         private bool _inCell;                // the player is standing in a station's holding cell, in view
         private Phase _phase = Phase.None;
         private float _beat;                 // the last real time the routine was alive
@@ -101,6 +101,7 @@ namespace RealLifeOverhaul.Law
         private void OnDestroy()
         {
             Cleanup();
+            _panel?.Dispose();
             if (Instance == this)
             {
                 Instance = null;
@@ -630,23 +631,37 @@ namespace RealLifeOverhaul.Law
             Precinct precinct = _precincts.At(state.Precinct);
             if (_panel == null)
             {
-                _panel = CustodyPanel.Create(transform);
+                _panel = new CustodyList(Logger);
             }
             int priors = Record.TimesHeld(LawBook.RepeatDays);
-            _panel.Open(precinct != null ? precinct.Name : "reallife_law_precinct_city".Tr(), Sheet(state),
+            bool listed = _panel.Open(precinct != null ? precinct.Name : "reallife_law_precinct_city".Tr(), Sheet(state),
                 Fill(priors > 0 ? "reallife_law_cell_sentence_repeat" : "reallife_law_cell_sentence", "hours", state.Hours.ToString()), _onClick, _inCell);
-            _panel.SetOption(0, "reallife_law_cell_wait".Tr(), true);
-            _panel.SetOption(1, state.Bail > 0 ? Fill("reallife_law_cell_bail", "amount", ((float)state.Bail).ToCurrencyFormat()) : "reallife_law_cell_no_bail".Tr(), state.Bail > 0);
             int fee = LawyerFee;
-            _panel.SetOption(2, state.Lawyer ? "reallife_law_cell_lawyer_used".Tr() : Fill("reallife_law_cell_lawyer", "amount", ((float)fee).ToCurrencyFormat()), !state.Lawyer);
+            _panel.SetOption(0, "reallife_law_cell_wait".Tr(), "reallife_law_cell_wait_detail".Tr(), true);
+            _panel.SetOption(1, state.Bail > 0 ? "reallife_law_cell_bail_name".Tr() : "reallife_law_cell_no_bail".Tr(),
+                state.Bail > 0 ? Fill("reallife_law_cell_bail_detail", "amount", ((float)state.Bail).ToCurrencyFormat()) : null, state.Bail > 0);
+            _panel.SetOption(2, state.Lawyer ? "reallife_law_cell_lawyer_used".Tr() : "reallife_law_cell_lawyer_name".Tr(),
+                state.Lawyer ? null : Fill("reallife_law_cell_lawyer_detail", "amount", ((float)fee).ToCurrencyFormat()), !state.Lawyer);
             _clicked = -1;
             ShowClock(state);
+            if (listed)
+            {
+                _panel.Show();
+            }
 
             _resting = true;
             EnergyHelper.SetCurrentEnergyRegen(EnergyRegen.Hospital);   // a bench in a cell: a little rest, as in the game's own waiting rooms
             if (!Skip(state))
             {
                 yield break;
+            }
+            if (listed)
+            {
+                _panel.Mount();   // the skip hides the HUD: the list stands on the skip's own screen
+            }
+            else
+            {
+                _panel.SetStatus(Sheet(state));   // no list: the sentence is served, and the charges are told once
             }
             if (_faded)
             {
@@ -671,7 +686,7 @@ namespace RealLifeOverhaul.Law
                     break;   // served; or the game ended the skip for reasons of its own (it has the player now); or this has gone on too long
                 }
 
-                int choice = _clicked >= 0 ? _clicked : JobKeys.ChoiceDown();
+                int choice = _clicked;
                 _clicked = -1;
                 if (choice == 0)
                 {
@@ -695,7 +710,8 @@ namespace RealLifeOverhaul.Law
                         float now = TimeHelper.NowInMinutes();
                         state.ReleaseAt = now + LawBook.AfterLawyer(left);
                         Logger?.Info($"Law: lawyer called for {fee}: {left / 60f:F1} h left becomes {(state.ReleaseAt - now) / 60f:F1} h.");
-                        _panel.SetOption(2, "reallife_law_cell_lawyer_used".Tr(), false);
+                        _panel.SetOption(2, "reallife_law_cell_lawyer_used".Tr(), null, false);
+                        _panel.Refresh();
                         _panel.SetStatus("reallife_law_cell_lawyer_done".Tr());
                         StopSkip();
                         if (!Skip(state))
@@ -806,7 +822,7 @@ namespace RealLifeOverhaul.Law
                 save.Energy = Mathf.Max(save.Energy, LawBook.ReleaseEnergy);
                 save.Hunger = Mathf.Max(save.Hunger, LawBook.ReleaseHunger);
             }
-            bool shown = _panel != null && CustodyPanel.IsOpen;
+            bool shown = _panel != null && _panel.IsOpen;
             if (shown)
             {
                 _faded = true;

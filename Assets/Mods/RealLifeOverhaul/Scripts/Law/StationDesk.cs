@@ -1,25 +1,31 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using BAModAPI;
 using Extensions;
 using Helpers;
 using Localizor;
-using TMPro;
+using RealLifeOverhaul.GameUi;
+using UI;
+using UI.MiniMenu;
 using UI.Notification;
+using UI.Smartphone;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Law
 {
     /// <summary>
     /// The front desk of a police station: what the desk sergeant can do for somebody who walks
-    /// in (or, at a precinct that cannot be walked into, for somebody at its door).
+    /// in (or, at a precinct that cannot be walked into, for somebody at its door). It is the game's
+    /// own list (<see cref="TravelList"/>, a copy of the window the game lists its subway stations in):
+    /// an entry for each thing the desk offers today, with the cost or the state under its name and its
+    /// button off, with the reason, when it cannot be had.
     ///   report a crime     the same as a 911 call about what is going on nearby (the crime
     ///                      scene's own report, a traffic accident, a fire), with a little extra
     ///                      standing with the police for coming in; and never a "wasted call"
     ///   pay fines          whatever is still owed (Core/ModState's pending fine), now, before it
     ///                      is taken by itself
-    ///   the record         both reputations and the record, line by line
+    ///   the record         a second page: both reputations and the record, an entry for each line
     ///   the pound          a car the police are holding after an arrest is brought to the kerb
     ///                      outside for the impound fee
     ///   licences           handed to the Licences feature, if that is there (Bridges.Licensing)
@@ -27,8 +33,9 @@ namespace RealLifeOverhaul.Law
     ///                      paperwork bridge makes of it (Bridges.PoliceReport)
     ///   hand yourself in   for somebody who got away after hurting someone: half the time
     ///   visiting hours     a word about how the station works
-    /// One panel, built the first time it is wanted; while it is up the player stands still and
-    /// the cursor is free. Nothing here runs unless LawDirector calls it.
+    /// What the desk answers is a notification. While the list is up the player stands still; the game's
+    /// cancel key leaves it. If the game's window cannot be copied the panel at the desk has the four
+    /// commonest things on its own keys (<see cref="Quick"/>). Nothing here runs unless LawDirector calls it.
     /// </summary>
     internal sealed class StationDesk
     {
@@ -36,74 +43,40 @@ namespace RealLifeOverhaul.Law
         public const int TurnInDays = 7;             // how long after getting away somebody can still hand themselves in
 
         private const NavigationBlocker Blocker = NavigationBlocker.DoctorOperation;   // (as Custody: any blocker stops the player; nothing else on a street or in an empty unit sets this one)
+        private const string ButtonOpen = "reallife_law_list_open";
+        private const string ButtonDo = "reallife_law_list_do";
 
-        private enum Service { None, Report, Fines, Record, Impound, Licence, Paper, TurnIn, Hours, Leave, NextEntry, Back }
+        internal enum Service { None, Report, Fines, Record, Impound, Licence, Paper, TurnIn, Hours, Back }
 
         private readonly IModLogger _logger;
-        private readonly Transform _root;
         private readonly Precincts _precincts;
-        private readonly Service[] _slots = new Service[DeskPanel.Options];
+        private readonly DeskList _window = new DeskList("RealLifeOverhaul Law", 1100f, 150f);
         private readonly StringBuilder _text = new StringBuilder(256);
-        private DeskPanel _panel;
-        private Action<int> _onClick;
-        private int _clicked = -1;
+        private readonly Action<int> _onPick;
+        private readonly Action _onClosed;
         private Precinct _precinct;
         private bool _inside;
         private bool _held;
+        private bool _record;                // the second page (the record) is showing
         private PlayerController _player;
-        private int _recordLine = -1;        // the line of the record being read out, or -1
         private string _bringOnExit;         // a car asked for at a desk indoors: brought when the player steps outside
         private Precinct _bringTo;
-        private string _prompt;
-        private string _promptShown;
-        private int _promptKeys = -1;
+        private string _closing;
 
         public StationDesk(Transform root, Precincts precincts, IModLogger logger)
         {
-            _root = root;
             _precincts = precincts;
             _logger = logger;
-            _onClick = index => _clicked = index;
+            _onPick = Picked;
+            _onClosed = Closed;
+            TravelList.Logger = logger;
         }
 
-        /// <summary>True while the desk's panel is on screen.</summary>
-        public bool IsOpen => DeskPanel.IsOpen;
+        /// <summary>True while the desk's list is on screen.</summary>
+        public bool IsOpen => _window.IsOpen;
 
-        // ---------------------------------------------------------------- the prompt
-
-        /// <summary>The line at the foot of the screen that says what the interaction key does here ("talk to the desk sergeant"). Null takes it away.</summary>
-        public void Prompt(string key, string precinct)
-        {
-            if (key == null)
-            {
-                if (_promptShown != null)
-                {
-                    _promptShown = null;
-                    if (_panel != null)
-                    {
-                        _panel.HidePrompt();
-                    }
-                }
-                return;
-            }
-            // Built only when it changes (the place, or a key binding).
-            if (key != _prompt || _promptKeys != Keys.Version || _promptShown == null)
-            {
-                _prompt = key;
-                _promptKeys = Keys.Version;
-                _promptShown = key.Tr().Replace("{precinct}", precinct ?? string.Empty);
-                Panel().ShowPrompt(_promptShown);
-            }
-        }
-
-        private DeskPanel Panel()
-        {
-            if (_panel == null)
-            {
-                _panel = DeskPanel.Create(_root, _precincts.Icon);
-            }
-            return _panel;
-        }
+        /// <summary>True when the game's list could not be copied: the desk's panel then offers the commonest things on its own keys.</summary>
+        public bool Plain => _window.Failed;
 
         // ---------------------------------------------------------------- opening and closing
 
@@ -114,11 +87,17 @@ namespace RealLifeOverhaul.Law
             {
                 return;
             }
+            float began = Time.realtimeSinceStartup;
+            TravelList list = _window.Take(this);
+            if (list == null)
+            {
+                _logger?.Info("Law check (desk list): the game's list could not be made; the desk's panel has the commonest things on its own keys: FAIL.");
+                return;
+            }
             _precinct = precinct;
             _inside = inside;
-            _recordLine = -1;
-            _clicked = -1;
-            Prompt(null, null);
+            _record = false;
+            _closing = null;
             _player = PlayerHelper.PlayerController;
             if (_player != null && !_held)
             {
@@ -126,19 +105,48 @@ namespace RealLifeOverhaul.Law
                 _player.ResetNavigation();
                 _player.SetNavigationBlocker(Blocker);
             }
-            Panel().Open(precinct.Name, !inside, _onClick);
-            _panel.SetLine(Greeting());
-            Refresh();
+            int entries = Fill(list);
+            list.Open(_onPick, _onClosed);
             _logger?.Info("Law: front desk opened at " + precinct.Name + (inside ? " (inside)." : " (at the door)."));
+            if (Meta.Dev.Verbose)
+            {
+                _logger?.Info("Law check (desk list): the game's list is open: " + entries + " entries at " + precinct.Name + ", " + list.Made + " entries made so far; "
+                              + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
+            }
         }
 
         /// <summary>Takes the desk off the screen and lets the player walk. Safe at any time.</summary>
         public void Close()
         {
-            if (_panel != null)
+            if (_window.IsOpen)
             {
-                _panel.Close();
+                _window.Close();   // (its closing lets the player walk)
             }
+            else
+            {
+                Release();
+            }
+        }
+
+        public void Dispose()
+        {
+            Close();
+            _window.Destroy(e => _logger?.Error(e));
+        }
+
+        // The list was closed (a pick that leaves, the Cancel button, the game's cancel key, or the director).
+        private void Closed()
+        {
+            if (Meta.Dev.Verbose)
+            {
+                _logger?.Info("Law check (desk list): closed (" + (_closing ?? "cancelled by the player") + ").");
+            }
+            _closing = null;
+            Release();
+        }
+
+        private void Release()
+        {
             if (_held)
             {
                 _held = false;
@@ -155,21 +163,11 @@ namespace RealLifeOverhaul.Law
                 }
             }
             _precinct = null;
-            _recordLine = -1;
+            _record = false;
         }
 
-        public void Dispose()
-        {
-            Close();
-            if (_panel != null)
-            {
-                UnityEngine.Object.Destroy(_panel.gameObject);
-                _panel = null;
-            }
-        }
-
-        /// <summary>Every frame while the panel is up: what was clicked is done; the interaction key leaves the desk.</summary>
-        public void Frame()
+        /// <summary>Four times a second while the list is up: it ends if the save is gone, the player is held, or one of the game's own screens has come up over it.</summary>
+        public void Watch()
         {
             if (!IsOpen)
             {
@@ -177,17 +175,12 @@ namespace RealLifeOverhaul.Law
             }
             if (SaveGameManager.Current == null || _precinct == null || Custody.Active)
             {
+                _closing = "the player was taken away or the save went";
                 Close();
-                return;
             }
-            int clicked = _clicked;
-            _clicked = -1;
-            if (clicked >= 0 && clicked < _slots.Length)
+            else if (FullMenu.IsOpen || CityMap.IsOpen || MiniMenu.IsOpen || HudConfirm.isOpen)
             {
-                Do(_slots[clicked]);
-            }
-            else if (JobKeys.InteractDown())
-            {
+                _closing = "one of the game's own screens came up";
                 Close();
             }
         }
@@ -209,6 +202,28 @@ namespace RealLifeOverhaul.Law
             }
         }
 
+        /// <summary>One thing done at once, with no list (the panel's own keys, when the game's list could not be made).</summary>
+        public void Quick(Precinct precinct, bool inside, Service service)
+        {
+            if (precinct == null || IsOpen)
+            {
+                return;
+            }
+            _precinct = precinct;
+            _inside = inside;
+            try
+            {
+                Do(service);
+            }
+            finally
+            {
+                if (!IsOpen)
+                {
+                    _precinct = null;
+                }
+            }
+        }
+
         // ---------------------------------------------------------------- what is offered
 
         private string Greeting()
@@ -223,53 +238,67 @@ namespace RealLifeOverhaul.Law
         private static bool Wanted =>
             LawState.Loaded && LawState.WantedCharges != 0 && SaveGameManager.Current != null && TimeHelper.CurrentDay - LawState.WantedDay <= TurnInDays;
 
-        // The buttons, as things stand now. A service that cannot be had is shown greyed with the reason in its own words; one
-        // whose bridge is not there is not shown at all.
-        private void Refresh()
+        // The entries, as things stand now. A service that cannot be had is shown with its button off and the reason in its detail line;
+        // one whose bridge is not there is not shown at all. Returns how many.
+        private int Fill(TravelList list)
         {
-            int slot = 0;
-            if (_recordLine >= 0)
+            if (_record)
             {
-                Put(ref slot, _recordLine > 0 ? Service.NextEntry : Service.None, "reallife_records_next".Tr(), _recordLine > 0);
-                Put(ref slot, Service.Back, "reallife_law_desk_back".Tr(), true);
+                return FillRecord(list);
             }
-            else
+            list.Begin("reallife_law_desk_title".Tr(), Greeting() + "\n<size=80%>" + _precinct.Name + "</size>");
+            int count = 0;
+            list.Add((int)Service.Report, "reallife_law_desk_report".Tr(), "reallife_law_list_report".Tr(), ButtonDo, true); count++;
+            int owed = ModState.PendingFine;
+            list.Add((int)Service.Fines, "reallife_law_list_fines".Tr(), owed > 0 ? Custody.Fill("reallife_law_list_fines_owed", "amount", ((float)owed).ToCurrencyFormat()) : "reallife_law_list_fines_none".Tr(), ButtonDo, owed > 0); count++;
+            list.Add((int)Service.Record, "reallife_law_desk_record".Tr(), "reallife_law_list_record".Tr(), ButtonOpen, true); count++;
+            bool held = LawState.ImpoundVehicleId != null;
+            list.Add((int)Service.Impound, "reallife_law_list_impound".Tr(), held ? Custody.Fill("reallife_law_list_impound_fee", "amount", ((float)LawBook.ImpoundFee).ToCurrencyFormat()) : "reallife_law_list_impound_none".Tr(), ButtonDo, held); count++;
+            if (Bridges.Licensing != null)
             {
-                Put(ref slot, Service.Report, "reallife_law_desk_report".Tr(), true);
-                int owed = ModState.PendingFine;
-                Put(ref slot, Service.Fines, owed > 0 ? Custody.Fill("reallife_law_desk_fines", "amount", ((float)owed).ToCurrencyFormat()) : "reallife_law_desk_fines_none".Tr(), owed > 0);
-                Put(ref slot, Service.Record, "reallife_law_desk_record".Tr(), true);
-                bool held = LawState.ImpoundVehicleId != null;
-                Put(ref slot, Service.Impound, held ? Custody.Fill("reallife_law_desk_impound", "amount", ((float)LawBook.ImpoundFee).ToCurrencyFormat()) : "reallife_law_desk_impound_none".Tr(), held);
-                if (Bridges.Licensing != null)
-                {
-                    Put(ref slot, Service.Licence, (string.IsNullOrEmpty(Bridges.LicensingLabelKey) ? "reallife_law_desk_licence" : Bridges.LicensingLabelKey).Tr(), true);
-                }
-                bool incident = Bridges.HasIncident;
-                Put(ref slot, Service.Paper, incident ? Custody.Fill("reallife_law_desk_paper", "amount", ((float)PaperFee).ToCurrencyFormat()).Replace("{what}", IncidentName()) : "reallife_law_desk_paper_none".Tr(), incident);
-                if (Wanted)
-                {
-                    Put(ref slot, Service.TurnIn, "reallife_law_desk_turnin".Tr(), Custody.Ready);
-                }
-                Put(ref slot, Service.Hours, "reallife_law_desk_hours".Tr(), true);
-                Put(ref slot, Service.Leave, "reallife_law_desk_leave".Tr(), true);
+                list.Add((int)Service.Licence, (string.IsNullOrEmpty(Bridges.LicensingLabelKey) ? "reallife_law_desk_licence" : Bridges.LicensingLabelKey).Tr(), "reallife_law_list_licence".Tr(), ButtonOpen, true); count++;
             }
-            for (; slot < _slots.Length; slot++)
+            bool incident = Bridges.HasIncident;
+            list.Add((int)Service.Paper, "reallife_law_list_paper".Tr(),
+                incident ? Custody.Fill("reallife_law_list_paper_fee", "amount", ((float)PaperFee).ToCurrencyFormat()).Replace("{what}", IncidentName()) : "reallife_law_list_paper_none".Tr(), ButtonDo, incident); count++;
+            if (Wanted)
             {
-                _slots[slot] = Service.None;
-                _panel.SetOption(slot, null, false);
+                bool ready = Custody.Ready;
+                list.Add((int)Service.TurnIn, "reallife_law_list_turnin".Tr(), "reallife_law_list_turnin_detail".Tr() + (ready ? string.Empty : " " + "reallife_law_list_turnin_not_now".Tr()), ButtonDo, ready); count++;
             }
+            list.Add((int)Service.Hours, "reallife_law_desk_hours".Tr(), "reallife_law_list_hours".Tr(), ButtonDo, true); count++;
+            return count;
         }
 
-        private void Put(ref int slot, Service service, string label, bool available)
+        // The record: both standings in the info lines, then an entry for each line of it, newest first, and a way back.
+        private int FillRecord(TravelList list)
         {
-            if (slot >= _slots.Length || service == Service.None)
+            list.Begin("reallife_law_desk_record".Tr(), Summary());
+            list.Add((int)Service.Back, "reallife_law_desk_back".Tr(), "reallife_law_list_back".Tr(), ButtonOpen, true);
+            int count = Record.Count;
+            if (count == 0)
             {
-                return;
+                list.AddNote("reallife_law_desk_record".Tr(), "reallife_records_clean".GetLocalization(), 0f);
+                return 1;
             }
-            _slots[slot] = available ? service : Service.None;
-            _panel.SetOption(slot, label, available);
-            slot++;
+            for (int index = count - 1; index >= 0; index--)
+            {
+                RecordEntry line = Record.Entry(index);
+                string outcome;
+                switch (line.Outcome)
+                {
+                    case Outcome.Held: outcome = "reallife_records_outcome_held".GetLocalization(); break;
+                    case Outcome.Served: outcome = "reallife_records_outcome_served".GetLocalization().Replace("{hours}", line.Hours.ToString()); break;
+                    case Outcome.Bailed: outcome = "reallife_records_outcome_bailed".GetLocalization().Replace("{hours}", line.Hours.ToString()); break;
+                    case Outcome.Escaped: outcome = "reallife_records_outcome_escaped".GetLocalization(); break;
+                    default: outcome = "reallife_records_outcome_cited".GetLocalization(); break;
+                }
+                string what = "reallife_law_list_entry_detail".Tr().Replace("{charges}", Custody.ChargeNames(line.Charges, ", ")).Replace("{outcome}", outcome)
+                    .Replace("{amount}", ((float)line.Fines).ToCurrencyFormat());
+                list.AddNote("reallife_law_list_entry".Tr().Replace("{number}", (count - index).ToString()).Replace("{count}", count.ToString()).Replace("{day}", line.Day.ToString()),
+                    what, list.HeightFor(what.Length, false));
+            }
+            return count + 1;
         }
 
         private static string IncidentName()
@@ -285,40 +314,57 @@ namespace RealLifeOverhaul.Law
 
         // ---------------------------------------------------------------- what is done
 
+        private void Picked(int id)
+        {
+            Do((Service)id);
+        }
+
         private void Do(Service service)
         {
             try
             {
+                if (Meta.Dev.Verbose)
+                {
+                    _logger?.Info("Law check (choice): the desk at " + (_precinct != null ? _precinct.Name : "?") + ": " + service + ".");
+                }
                 switch (service)
                 {
                     case Service.Report: Report(); break;
                     case Service.Fines: PayFines(); break;
-                    case Service.Record: _recordLine = Record.Count; Say(Summary()); break;
-                    case Service.NextEntry: NextEntry(); break;
-                    case Service.Back: _recordLine = -1; Say(Greeting()); break;
+                    case Service.Record: _record = true; break;
+                    case Service.Back: _record = false; break;
                     case Service.Impound: Impound(); break;
                     case Service.Licence: Licence(); return;
                     case Service.Paper: Paper(); break;
                     case Service.TurnIn: TurnIn(); return;
                     case Service.Hours: Say("reallife_law_desk_hours_line".Tr()); break;
-                    case Service.Leave: Close(); return;
                     default: return;
                 }
                 if (IsOpen)
                 {
-                    Refresh();
+                    TravelList list = _window.Take(this);
+                    if (list != null)
+                    {
+                        Fill(list);
+                        list.Open(_onPick, _onClosed);   // (the entries that are no longer used are switched off)
+                    }
                 }
             }
             catch (Exception e)
             {
                 _logger?.Error(e);
+                _closing = "an error";
                 Close();
             }
         }
 
-        private void Say(string line)
+        // What the desk answers: the game's own notification.
+        private static void Say(string line)
         {
-            _panel.SetLine(line);
+            if (!string.IsNullOrEmpty(line))
+            {
+                Notifications.Show(NotificationType.Info, "reallife_law_desk_toast", new Dictionary<string, string>(1) { { "text", line } }, 10f);
+            }
         }
 
         // What a 911 call would do about whatever is going on near the player, said across a counter; with nothing going
@@ -386,33 +432,6 @@ namespace RealLifeOverhaul.Law
                 .Replace("{people}", Reputation.PublicWord.GetLocalization()).Replace("{peopleScore}", Reputation.Public.ToString())
                 .Replace("{count}", Record.Count.ToString()).Replace("{since}", last)
                 .Replace("{watch}", (Reputation.NoWarnings ? "reallife_records_watch_high" : Reputation.ScrutinyLevel > 0 ? "reallife_records_watch_some" : "reallife_records_watch_none").GetLocalization());
-        }
-
-        // The record, newest first, a line at a time.
-        private void NextEntry()
-        {
-            int index = Mathf.Min(_recordLine, Record.Count) - 1;
-            if (index < 0)
-            {
-                _recordLine = 0;
-                Say((Record.Count == 0 ? "reallife_records_clean" : "reallife_records_end").GetLocalization());
-                return;
-            }
-            _recordLine = index;
-            RecordEntry line = Record.Entry(index);
-            string outcome;
-            switch (line.Outcome)
-            {
-                case Outcome.Held: outcome = "reallife_records_outcome_held".GetLocalization(); break;
-                case Outcome.Served: outcome = "reallife_records_outcome_served".GetLocalization().Replace("{hours}", line.Hours.ToString()); break;
-                case Outcome.Bailed: outcome = "reallife_records_outcome_bailed".GetLocalization().Replace("{hours}", line.Hours.ToString()); break;
-                case Outcome.Escaped: outcome = "reallife_records_outcome_escaped".GetLocalization(); break;
-                default: outcome = "reallife_records_outcome_cited".GetLocalization(); break;
-            }
-            Say("reallife_records_line".GetLocalization()
-                .Replace("{number}", (Record.Count - index).ToString()).Replace("{count}", Record.Count.ToString()).Replace("{day}", line.Day.ToString())
-                .Replace("{charges}", Custody.ChargeNames(line.Charges, ", ")).Replace("{outcome}", outcome)
-                .Replace("{amount}", ((float)line.Fines).ToCurrencyFormat()));
         }
 
         // A car at the pound: brought to the kerb outside. Asked for indoors, it is there when the player steps out (the fee
@@ -523,304 +542,6 @@ namespace RealLifeOverhaul.Law
             {
                 Notifications.Show(NotificationType.Warning, "reallife_law_desk_turnin_refused", null, 8f);
             }
-        }
-    }
-
-    /// <summary>
-    /// The front desk as the player sees it: a plate with the precinct's name, what the sergeant
-    /// says, and a button for each thing that can be asked for. At a precinct's door (where there
-    /// is no room to walk into) it has the front office drawn behind it. It also owns the one
-    /// line at the foot of the screen that says what the interaction key does at a station.
-    /// Built the first time it is wanted and kept switched off between; a text is only set when
-    /// what it says has changed.
-    /// </summary>
-    internal sealed class DeskPanel : MonoBehaviour
-    {
-        public const int Options = 10;
-
-        private static readonly Color Dim = new Color(0.02f, 0.03f, 0.05f, 0.45f);
-        private static readonly Color Office = new Color(0.045f, 0.06f, 0.10f, 0.97f);
-        private static readonly Color Plate = new Color(0.085f, 0.10f, 0.135f, 0.97f);
-        private static readonly Color Accent = new Color(0.20f, 0.42f, 0.95f, 1f);
-        private static readonly Color Soft = new Color(0.66f, 0.72f, 0.82f);
-        private static readonly Color ButtonOn = new Color(0.16f, 0.20f, 0.28f, 1f);
-        private static readonly Color ButtonOff = new Color(0.10f, 0.11f, 0.13f, 1f);
-
-        /// <summary>True while the desk is on screen: the mouse cursor is needed (CustodyPanel.IsOpen answers for both).</summary>
-        public static bool IsOpen { get; private set; }
-
-        private GameObject _root;
-        private GameObject _office;
-        private GameObject _prompt;
-        private Image _backdrop;
-        private TMP_FontAsset _font;
-        private TextMeshProUGUI _precinct;
-        private TextMeshProUGUI _line;
-        private TextMeshProUGUI _promptText;
-        private readonly TextMeshProUGUI[] _optionText = new TextMeshProUGUI[Options];
-        private readonly Image[] _optionPlate = new Image[Options];
-        private readonly Button[] _optionButton = new Button[Options];
-        private readonly bool[] _optionOn = new bool[Options];
-        private Action<int> _chosen;
-        private Sprite _badge;
-
-        public static DeskPanel Create(Transform parent, Sprite badge)
-        {
-            var go = new GameObject("RealLifeOverhaul Front Desk");
-            go.transform.SetParent(parent, false);
-            var panel = go.AddComponent<DeskPanel>();
-            panel.Build(badge);
-            return panel;
-        }
-
-        private void Build(Sprite badge)
-        {
-            _badge = badge;
-            var canvas = gameObject.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 29000;   // over the game's own screens, under the holding cell
-            var scaler = gameObject.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 1f;
-            gameObject.AddComponent<GraphicRaycaster>();
-            _font = Hud.Font;
-
-            _root = new GameObject("Desk", typeof(RectTransform));
-            _root.transform.SetParent(transform, false);
-            var all = (RectTransform)_root.transform;
-            Stretch(all);
-            _backdrop = _root.AddComponent<Image>();
-            _backdrop.color = Dim;
-            _backdrop.raycastTarget = true;   // nothing under the desk can be clicked
-
-            // The front office, drawn: a wall with a blue band, the badge, a counter. Only at a precinct with no room to walk into.
-            _office = new GameObject("Office", typeof(RectTransform));
-            _office.transform.SetParent(all, false);
-            var office = (RectTransform)_office.transform;
-            Stretch(office);
-            Box("Band", office, new Vector2(0.5f, 1f), new Vector2(0f, -150f), new Vector2(2400f, 54f), new Color(0.06f, 0.17f, 0.45f, 0.9f));
-            Box("Rule", office, new Vector2(0.5f, 1f), new Vector2(0f, -182f), new Vector2(2400f, 4f), new Color(0.9f, 0.9f, 0.95f, 0.5f));
-            Box("Counter", office, new Vector2(0.5f, 0f), new Vector2(0f, 90f), new Vector2(2400f, 180f), new Color(0.05f, 0.11f, 0.26f, 1f));
-            Box("Counter Top", office, new Vector2(0.5f, 0f), new Vector2(0f, 186f), new Vector2(2400f, 14f), new Color(0.62f, 0.64f, 0.68f, 1f));
-            if (badge != null)
-            {
-                RectTransform big = Box("Badge", office, new Vector2(0.5f, 0.5f), new Vector2(0f, 40f), new Vector2(760f, 760f), new Color(1f, 1f, 1f, 0.045f));
-                big.GetComponent<Image>().sprite = badge;
-            }
-
-            RectTransform plate = Box("Plate", all, new Vector2(0.5f, 0.5f), new Vector2(0f, 10f), new Vector2(1100f, 690f), Plate);
-            Box("Stripe", plate, new Vector2(0.5f, 1f), new Vector2(0f, -4f), new Vector2(1100f, 8f), Accent);
-            RectTransform disc = Box("Disc", plate, new Vector2(0f, 1f), new Vector2(70f, -62f), new Vector2(72f, 72f), Accent);
-            if (badge != null)
-            {
-                RectTransform star = Box("Star", disc, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(48f, 48f), Color.white);
-                star.GetComponent<Image>().sprite = badge;
-            }
-            TextMeshProUGUI title = Text("Title", plate, 21f, Soft, TextAlignmentOptions.Left);
-            Place(title.rectTransform, new Vector2(40f, -26f), new Vector2(900f, 28f));
-            title.SetText("reallife_law_desk_title".Tr());
-            _precinct = Text("Precinct", plate, 38f, Color.white, TextAlignmentOptions.Left);
-            Place(_precinct.rectTransform, new Vector2(40f, -54f), new Vector2(900f, 50f));
-
-            _line = Text("Line", plate, 24f, Color.white, TextAlignmentOptions.TopLeft);
-            Place(_line.rectTransform, new Vector2(0f, -128f), new Vector2(1010f, 150f));
-#pragma warning disable CS0618
-            _line.enableWordWrapping = true;
-#pragma warning restore CS0618
-            _line.fontStyle = FontStyles.Normal;
-            _line.enableAutoSizing = true;
-            _line.fontSizeMin = 16f;
-            _line.fontSizeMax = 24f;
-
-            for (int i = 0; i < Options; i++)
-            {
-                int index = i;
-                RectTransform button = Box("Option", plate, new Vector2(0.5f, 1f), new Vector2((i % 2 == 0 ? -1 : 1) * 258f, -326f - (i / 2) * 68f), new Vector2(500f, 60f), ButtonOn);
-                _optionPlate[i] = button.GetComponent<Image>();
-                _optionPlate[i].raycastTarget = true;
-                _optionButton[i] = button.gameObject.AddComponent<Button>();
-                _optionButton[i].targetGraphic = _optionPlate[i];
-                _optionButton[i].onClick.AddListener(() => Click(index));
-                Box("Tab", button, new Vector2(0f, 0.5f), new Vector2(5f, 0f), new Vector2(6f, 44f), Accent);
-                _optionText[i] = Text("Label", button, 20f, Color.white, TextAlignmentOptions.Left);
-                _optionText[i].rectTransform.anchorMin = new Vector2(0f, 0f);
-                _optionText[i].rectTransform.anchorMax = new Vector2(1f, 1f);
-                _optionText[i].rectTransform.offsetMin = new Vector2(24f, 4f);
-                _optionText[i].rectTransform.offsetMax = new Vector2(-10f, -4f);
-#pragma warning disable CS0618
-                _optionText[i].enableWordWrapping = true;
-#pragma warning restore CS0618
-                _optionText[i].enableAutoSizing = true;
-                _optionText[i].fontSizeMin = 13f;
-                _optionText[i].fontSizeMax = 20f;
-            }
-            TextMeshProUGUI hint = Text("Hint", plate, 18f, Soft, TextAlignmentOptions.Center);
-            hint.rectTransform.anchorMin = new Vector2(0.5f, 0f);
-            hint.rectTransform.anchorMax = new Vector2(0.5f, 0f);
-            hint.rectTransform.pivot = new Vector2(0.5f, 0f);
-            hint.rectTransform.anchoredPosition = new Vector2(0f, 12f);
-            hint.rectTransform.sizeDelta = new Vector2(1000f, 24f);
-            hint.SetText("reallife_law_desk_hint".Tr());
-            _root.SetActive(false);
-
-            _prompt = new GameObject("Prompt", typeof(RectTransform));
-            _prompt.transform.SetParent(transform, false);
-            var prompt = (RectTransform)_prompt.transform;
-            prompt.anchorMin = new Vector2(0.5f, 0f);
-            prompt.anchorMax = new Vector2(0.5f, 0f);
-            prompt.pivot = new Vector2(0.5f, 0f);
-            prompt.anchoredPosition = new Vector2(0f, 168f);
-            prompt.sizeDelta = new Vector2(760f, 50f);
-            var promptPlate = _prompt.AddComponent<Image>();
-            promptPlate.color = new Color(0.05f, 0.07f, 0.11f, 0.88f);
-            promptPlate.raycastTarget = false;
-            Box("Tab", prompt, new Vector2(0f, 0.5f), new Vector2(4f, 0f), new Vector2(8f, 50f), Accent);
-            _promptText = Text("Text", prompt, 22f, Color.white, TextAlignmentOptions.Center);
-            Stretch(_promptText.rectTransform);
-            _promptText.enableAutoSizing = true;
-            _promptText.fontSizeMin = 14f;
-            _promptText.fontSizeMax = 22f;
-            _prompt.SetActive(false);
-        }
-
-        private void OnDestroy()
-        {
-            if (_root != null && _root.activeSelf)
-            {
-                IsOpen = false;
-            }
-        }
-
-        private void Click(int index)
-        {
-            if (index >= 0 && index < Options && _optionOn[index])
-            {
-                _chosen?.Invoke(index);
-            }
-        }
-
-        /// <summary>Puts the desk on screen. <paramref name="chosen"/> is told which button was clicked.</summary>
-        /// <param name="office">True at a precinct's door: the front office is drawn behind the plate. False inside one: the room is seen behind it.</param>
-        public void Open(string precinct, bool office, Action<int> chosen)
-        {
-            _chosen = chosen;
-            _precinct.SetText(precinct);
-            _office.SetActive(office);
-            _backdrop.color = office ? Office : Dim;
-            _prompt.SetActive(false);
-            _root.SetActive(true);
-            IsOpen = true;
-        }
-
-        public void Close()
-        {
-            _chosen = null;
-            if (_root != null && _root.activeSelf)
-            {
-                _root.SetActive(false);
-            }
-            IsOpen = false;
-        }
-
-        public void SetLine(string text)
-        {
-            _line.SetText(text ?? string.Empty);
-        }
-
-        /// <summary>What a button says, and whether it can be pressed. A null label takes the button away.</summary>
-        public void SetOption(int index, string label, bool available)
-        {
-            if (index < 0 || index >= Options)
-            {
-                return;
-            }
-            bool shown = label != null;
-            if (_optionButton[index].gameObject.activeSelf != shown)
-            {
-                _optionButton[index].gameObject.SetActive(shown);
-            }
-            _optionOn[index] = shown && available;
-            if (!shown)
-            {
-                return;
-            }
-            _optionText[index].SetText(label);
-            _optionText[index].color = available ? Color.white : Soft;
-            _optionPlate[index].color = available ? ButtonOn : ButtonOff;
-            _optionButton[index].interactable = available;
-        }
-
-        public void ShowPrompt(string text)
-        {
-            _promptText.SetText(text ?? string.Empty);
-            if (!_prompt.activeSelf && !IsOpen)
-            {
-                _prompt.SetActive(true);
-            }
-        }
-
-        public void HidePrompt()
-        {
-            if (_prompt != null && _prompt.activeSelf)
-            {
-                _prompt.SetActive(false);
-            }
-        }
-
-        private static RectTransform Box(string objectName, Transform parent, Vector2 anchor, Vector2 position, Vector2 size, Color colour)
-        {
-            var go = new GameObject(objectName, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            var rect = (RectTransform)go.transform;
-            rect.anchorMin = anchor;
-            rect.anchorMax = anchor;
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = position;
-            rect.sizeDelta = size;
-            var image = go.AddComponent<Image>();
-            image.color = colour;
-            image.raycastTarget = false;
-            return rect;
-        }
-
-        private TextMeshProUGUI Text(string objectName, Transform parent, float size, Color colour, TextAlignmentOptions alignment)
-        {
-            var go = new GameObject(objectName, typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            var text = go.AddComponent<TextMeshProUGUI>();
-            text.raycastTarget = false;
-            text.alignment = alignment;
-            text.fontSize = size;
-            text.fontStyle = FontStyles.Bold;
-            text.color = colour;
-            // The SDK's TextMeshPro is older than the game's: this property is the one both versions have.
-#pragma warning disable CS0618
-            text.enableWordWrapping = false;
-#pragma warning restore CS0618
-            if (_font != null)
-            {
-                text.font = _font;
-            }
-            return text;
-        }
-
-        // Anchored to the top centre of the parent, hanging down from the given offset.
-        private static void Place(RectTransform rect, Vector2 position, Vector2 size)
-        {
-            rect.anchorMin = new Vector2(0.5f, 1f);
-            rect.anchorMax = new Vector2(0.5f, 1f);
-            rect.pivot = new Vector2(0.5f, 1f);
-            rect.anchoredPosition = position;
-            rect.sizeDelta = size;
-        }
-
-        private static void Stretch(RectTransform rect)
-        {
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
         }
     }
 }

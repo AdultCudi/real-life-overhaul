@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -63,21 +64,32 @@ namespace RealLifeOverhaul
         }
     }
 
+
     /// <summary>
-    /// A written test on a sheet in the middle of the screen: so many questions from a pool,
-    /// three answers each, picked with 1, 2 or 3. No question comes twice in a paper, a paper
-    /// takes at least one from every subject, and questions asked earlier in the session wait
-    /// until the pool runs low. The player stands still for it. While one is on this reads
-    /// three keys a frame; otherwise it does nothing at all.
+    /// A written test as a question card in the game's own list window (<see cref="TravelList"/>): the question and
+    /// "Question 4 of 12" under the headline, an entry for each of the three answers, and "Give up the test". So many
+    /// questions from a pool; no question comes twice in a paper, a paper takes at least one from every subject, and
+    /// questions asked earlier in the session wait until the pool runs low. The list cannot be closed with the cancel key
+    /// until the paper is answered or given up (<see cref="TravelList.Locked"/>), and the player stands still for it.
+    /// An answer is a notification ("Correct." or "Wrong.") and the next question follows at once; the last one ends in a
+    /// page with the score and "Close". Giving up counts as a failed paper.
+    ///
+    /// Nothing runs by itself: a click on an entry does it all. If the game's window cannot be copied a paper does not
+    /// start (the director returns the fee).
     /// </summary>
     internal sealed class TheoryTest
     {
-        private const float ShowAnswer = 1.6f;    // seconds the picked answer stays lit before the next question
-        private const float StartGrace = 0.4f;    // the key that opened the test must not answer its first question
+        private const int GiveUp = 3;
+        private const string ButtonAnswer = "reallife_lic_list_answer";
+        private const string ButtonDo = "reallife_lic_list_do";
 
+        private readonly SchoolScreens _screens;
         private readonly List<int> _paper = new List<int>(16);
         private readonly string[] _options = new string[3];
         private readonly int[] _order = new int[3];
+        private readonly Action<int> _onPick;
+        private readonly Action _onClosed;
+        private readonly Action _onReportClosed;
 
         private QuestionPool _pool;
         private string _titleKey;
@@ -85,20 +97,28 @@ namespace RealLifeOverhaul
         private int _passMark;
         private int _index;
         private int _score;
-        private int _picked = -1;
-        private float _nextAt;
-        private float _readyAt;
         private bool _finished;
+        private bool _leaving;                  // closed by us: not a loss
         private string _question;
-        private string _title;
+
+        public TheoryTest(SchoolScreens screens)
+        {
+            _screens = screens;
+            _onPick = Picked;
+            _onClosed = Closed;
+            _onReportClosed = ReportClosed;
+        }
 
         public bool Active { get; private set; }
 
-        /// <summary>Starts a paper. False (and nothing changed) if the pool is too small or the player cannot be held.</summary>
+        /// <summary>True when the list was taken from under an unfinished paper (the street went away, a fault): the director aborts it and returns the fee.</summary>
+        public bool Lost { get; private set; }
+
+        /// <summary>Starts a paper. False (and nothing changed) if the pool is too small, the player cannot be held or the game's list cannot be made.</summary>
         public bool Begin(QuestionPool pool, int questions, int passMark, string titleKey, Action<bool, int, int> done)
         {
             PlayerController player = Helpers.PlayerHelper.PlayerController;
-            if (Active || pool == null || pool.Keys.Length < questions || player == null)
+            if (Active || pool == null || pool.Keys.Length < questions || player == null || _screens.Failed)
             {
                 return false;
             }
@@ -108,13 +128,19 @@ namespace RealLifeOverhaul
             _passMark = passMark;
             _index = 0;
             _score = 0;
-            _picked = -1;
             _finished = false;
+            _leaving = false;
+            Lost = false;
             Draw(pool, questions);
             LicenceHold.Hold(player);
             Active = true;
-            _readyAt = Time.unscaledTime + StartGrace;
-            Show();
+            if (!Show())
+            {
+                Active = false;
+                LicenceHold.Free();
+                _done = null;
+                return false;
+            }
             Licences.Logger?.Info("Licences: a written test of " + questions + " questions started (" + titleKey + ").");
             return true;
         }
@@ -168,9 +194,14 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The question on the sheet, its answers in a new order.
-        private void Show()
+        // The question on the card, its answers in a new order. False if the game's window cannot be made.
+        private bool Show()
         {
+            TravelList list = _screens.Window.Take(this);
+            if (list == null)
+            {
+                return false;
+            }
             string[] parts = Licences.T(_pool.Keys[_paper[_index]]).Split('|');
             _question = parts[0];
             for (int i = 0; i < 3; i++)
@@ -184,97 +215,141 @@ namespace RealLifeOverhaul
                 _order[i] = _order[j];
                 _order[j] = swap;
             }
+            float began = Time.realtimeSinceStartup;
+            bool opening = !list.IsOpen;
+            string progress = Licences.T("reallife_lic_theory_progress", "number", (_index + 1).ToString(), "of", _paper.Count.ToString());
+            list.Begin(Licences.T(_titleKey), _question + "\n<size=80%>" + progress + "</size>");
             for (int i = 0; i < 3; i++)
             {
                 int part = _order[i] + 1;
                 _options[i] = part < parts.Length ? parts[part] : "-";
+                list.Add(i, Licences.T("reallife_lic_theory_answer", "number", (i + 1).ToString()), _options[i], ButtonAnswer, true);
             }
-            _title = Licences.T(_titleKey, "number", (_index + 1).ToString(), "of", _paper.Count.ToString());
-            LicenceHud.Instance.ShowSheet(_title, _question, _options, Licences.T("reallife_lic_theory_foot"));
+            list.Add(GiveUp, Licences.T("reallife_lic_theory_give_up"), Licences.T("reallife_lic_theory_give_up_detail"), ButtonDo, true);
+            list.Open(_onPick, _onClosed);
+            list.Locked = true;
+            if (Meta.Dev.Verbose)
+            {
+                Licences.Logger?.Info("Licences check (theory): question " + (_index + 1) + " of " + _paper.Count + ", " + (opening ? "the game's list is open, " : string.Empty) + list.Made
+                                      + " entries made so far; " + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
+            }
+            return true;
         }
 
-        /// <summary>Once a frame while a paper is on: three key tests, and a timer after an answer.</summary>
-        public void Frame()
+        private void Picked(int id)
         {
-            if (!Active)
+            try
             {
-                return;
-            }
-            float now = Time.unscaledTime;
-            if (_finished)
-            {
-                if (now >= _readyAt && (JobKeys.InteractDown() || JobKeys.ChoiceDown() >= 0))
+                if (!Active || _finished)
                 {
-                    Close();
+                    return;
                 }
-                return;
-            }
-            if (_picked >= 0)
-            {
-                if (now >= _nextAt)
+                if (id == GiveUp)
                 {
-                    _picked = -1;
-                    _index++;
-                    if (_index >= _paper.Count)
-                    {
-                        Finish();
-                    }
-                    else
-                    {
-                        Show();
-                    }
+                    GaveUp();
+                    return;
                 }
-                return;
+                if (id < 0 || id > 2)
+                {
+                    return;
+                }
+                bool right = _order[id] == 0;   // the right answer is always the first one in the line
+                if (right)
+                {
+                    _score++;
+                }
+                Licences.Toast(right ? UI.Notification.NotificationType.Success : UI.Notification.NotificationType.Warning,
+                    right ? "reallife_lic_theory_right" : "reallife_lic_theory_wrong", 2.5f);
+                _index++;
+                if (_index >= _paper.Count)
+                {
+                    Finish();
+                }
+                else if (!Show())
+                {
+                    Lost = true;
+                }
             }
-            if (now < _readyAt || ThirdPersonCamera.IsUiOpen())
+            catch (Exception e)
             {
-                return;
+                Licences.Logger?.Error(e);
+                Lost = true;
             }
-            int choice = JobKeys.ChoiceDown();
-            if (choice < 0)
-            {
-                return;
-            }
-            bool right = _order[choice] == 0;   // the right answer is always the first one in the line
-            if (right)
-            {
-                _score++;
-            }
-            _picked = choice;
-            _nextAt = now + ShowAnswer;
-            LicenceHud.Instance.ShowSheet(_title, _question, _options,
-                Licences.T(right ? "reallife_lic_theory_right" : "reallife_lic_theory_wrong"), choice, right);
+        }
+
+        // The paper is marked as it stands: failed, and it can be sat again from tomorrow like any failed paper.
+        private void GaveUp()
+        {
+            _finished = true;
+            Licences.Logger?.Info("Licences check (theory): given up at question " + (_index + 1) + " of " + _paper.Count + " with " + _score + " right: counted as failed.");
+            Licences.Toast(UI.Notification.NotificationType.Warning, "reallife_lic_theory_gave_up", 9f);
+            Action<bool, int, int> done = _done;
+            _done = null;
+            Close();
+            done?.Invoke(false, _score, _paper.Count);
         }
 
         private void Finish()
         {
             _finished = true;
-            _readyAt = Time.unscaledTime + 1f;
             bool passed = _score >= _passMark;
-            LicenceHud.Instance.ShowSheet(
-                Licences.T(passed ? "reallife_lic_theory_passed" : "reallife_lic_theory_failed"),
-                Licences.T("reallife_lic_theory_result", "score", _score.ToString(), "of", _paper.Count.ToString()).Replace("{pass}", _passMark.ToString()),
-                null, Licences.T("reallife_lic_sheet_close", "key", Keys.Label(KeyAction.Interact)));
+            string body = Licences.T("reallife_lic_theory_result", "score", _score.ToString(), "of", _paper.Count.ToString()).Replace("{pass}", _passMark.ToString());
+            string title = Licences.T(passed ? "reallife_lic_theory_passed" : "reallife_lic_theory_failed");
+            Licences.Toast(passed ? UI.Notification.NotificationType.Success : UI.Notification.NotificationType.Warning,
+                passed ? "reallife_lic_theory_passed" : "reallife_lic_theory_failed", 9f);
+            if (!_screens.Report(this, title, Licences.T("reallife_lic_theory_score", "score", _score.ToString(), "of", _paper.Count.ToString()), body, _onReportClosed))
+            {
+                Close();
+            }
             Licences.Logger?.Info("Licences: written test finished, " + _score + " of " + _paper.Count + " (" + (passed ? "passed" : "failed") + ").");
             Action<bool, int, int> done = _done;
             _done = null;
             done?.Invoke(passed, _score, _paper.Count);
         }
 
+        private void ReportClosed()
+        {
+            if (Active && _finished)
+            {
+                Close();
+            }
+        }
+
+        // The list was closed: on the score page that is the end of the test; on a question it was taken from under the paper.
+        private void Closed()
+        {
+            if (!Active || _leaving)
+            {
+                return;
+            }
+            if (_finished)
+            {
+                Close();
+            }
+            else
+            {
+                Lost = true;
+            }
+        }
+
+        // The score page's Close button comes through the shared report page: its own closing is not ours, so the page is watched here.
         private void Close()
         {
+            _leaving = true;
             Active = false;
             LicenceHold.Free();
-            if (LicenceHud.Exists)
+            if (_screens.Window.OpenFor(this))
             {
-                LicenceHud.Instance.HideSheet();
+                _screens.Window.Close();
             }
+            _leaving = false;
         }
 
         /// <summary>Stopped from outside (the street went away, a fault). Nothing is marked; the caller says what happens to the fee.</summary>
         /// <returns>True if a paper was on and had not yet been marked.</returns>
         public bool Abort()
         {
+            Lost = false;
             if (!Active)
             {
                 return false;

@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Meta
     }
 
     /// <summary>
-    /// The in-game guide: a list of topics on the left, the page on the right, on the mod's own canvas. The
+    /// The in-game guide: the pages and their texts. The app on the game's phone that shows them is <see cref="GuideApp"/>. The
     /// fixed pages are texts in en.json; a feature's page is its registered description and help text followed
     /// by its options as they are set now and its test buttons, both read from the registry. Numbers in a
     /// page are {facts} read from the code's own constants when the page is opened, and keys are read from
@@ -39,8 +39,6 @@ namespace RealLifeOverhaul.Meta
     /// </summary>
     public static class Guide
     {
-        private static GuidePanel _panel;
-
         public static void Open()
         {
             Open(null);
@@ -48,21 +46,7 @@ namespace RealLifeOverhaul.Meta
 
         public static void Open(string topicId)
         {
-            try
-            {
-                MetaUi ui = MetaUi.Instance;
-                if (_panel == null || _panel.Root == null)
-                {
-                    _panel = new GuidePanel(ui);
-                }
-                _panel.Prepare(topicId);
-                ui.Show(_panel);
-            }
-            catch (Exception e)
-            {
-                MetaLog.Error(e);
-                MetaLog.Warn("the guide could not be opened.");
-            }
+            GuideApp.Open(topicId);
         }
 
         /// <summary>Opens the guide a moment from now: for the phone contact, whose call closes first.</summary>
@@ -329,190 +313,6 @@ namespace RealLifeOverhaul.Meta
                     }
                     found = body.IndexOf("reallife", found + 8, StringComparison.Ordinal);
                 }
-            }
-        }
-
-        // ---------------------------------------------------------------- the panel
-
-        private sealed class GuidePanel : MetaPanel
-        {
-            private sealed class Row
-            {
-                public GuideTopic Topic;
-                public GameObject Object;
-                public Image Plate;
-                public string Searchable;
-            }
-
-            private readonly MetaUi _ui;
-            private readonly List<Row> _rows = new List<Row>();
-            private readonly RectTransform _list;
-            private readonly TextMeshProUGUI _page;
-            private readonly TextMeshProUGUI _search;
-            private readonly StringBuilder _query = new StringBuilder(32);
-            private Row _selected;
-
-            public GuidePanel(MetaUi ui)
-            {
-                _ui = ui;
-                Root = ui.Frame("Guide", new Vector2(1640f, 960f), out RectTransform window);
-                RectTransform bar = ui.TitleBar(window, "reallife_guide_window_title".GetLocalization().Replace("{version}", Changelog.Version), out TextMeshProUGUI _);
-
-                Button close = ui.Button("Close", bar, "reallife_meta_close".GetLocalization(), () => _ui.Close(this), 40f, 18f);
-                var closeRect = (RectTransform)close.transform;
-                closeRect.anchorMin = closeRect.anchorMax = closeRect.pivot = new Vector2(1f, 0.5f);
-                closeRect.anchoredPosition = new Vector2(-12f, 0f);
-                closeRect.sizeDelta = new Vector2(170f, 40f);
-
-                _search = ui.Text("Search", bar, 19f, MetaUi.Soft, TextAlignmentOptions.MidlineRight, false);
-                _search.rectTransform.anchorMin = new Vector2(0.35f, 0f);
-                _search.rectTransform.anchorMax = new Vector2(1f, 1f);
-                _search.rectTransform.offsetMin = Vector2.zero;
-                _search.rectTransform.offsetMax = new Vector2(-200f, 0f);
-
-                ScrollRect list = ui.Scroll("Topics", window, out _list, 6f);
-                var listRect = (RectTransform)list.transform;
-                listRect.anchorMin = new Vector2(0f, 0f);
-                listRect.anchorMax = new Vector2(0f, 1f);
-                listRect.pivot = new Vector2(0f, 0.5f);
-                listRect.offsetMin = new Vector2(14f, 14f);
-                listRect.offsetMax = new Vector2(414f, -70f);
-
-                KeyScroll = ui.Scroll("Page", window, out RectTransform content, 0f);
-                MetaUi.Stretch((RectTransform)KeyScroll.transform, 426f, 14f, 14f, 70f);
-                _page = ui.Text("Text", content, 21f, MetaUi.Ink, TextAlignmentOptions.TopLeft, true);
-                _page.lineSpacing = 6f;
-            }
-
-            /// <summary>Before each showing: the topic list is made again (cheap), so it follows the registry and the language.</summary>
-            public void Prepare(string topicId)
-            {
-                string keep = topicId ?? (_selected != null ? _selected.Topic.Id : null);
-                foreach (Row row in _rows)
-                {
-                    if (row.Object != null)
-                    {
-                        row.Object.SetActive(false);
-                        UnityEngine.Object.Destroy(row.Object);
-                    }
-                }
-                _rows.Clear();
-                _selected = null;
-                foreach (GuideTopic topic in Topics())
-                {
-                    var row = new Row { Topic = topic };
-                    Button button = _ui.Button("Topic", _list, topic.Title, () => Select(row), 42f, 19f);
-                    row.Object = button.gameObject;
-                    row.Plate = button.GetComponent<Image>();
-                    TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>(true);
-                    label.alignment = TextAlignmentOptions.MidlineLeft;
-                    string body = string.Empty;
-                    try
-                    {
-                        body = topic.Body() ?? string.Empty;
-                    }
-                    catch (Exception e)
-                    {
-                        MetaLog.Error(e);
-                    }
-                    row.Searchable = topic.Title + "\n" + body;
-                    _rows.Add(row);
-                }
-                _query.Length = 0;
-                Filter();
-                Row first = _rows.Count > 0 ? _rows[0] : null;
-                foreach (Row row in _rows)
-                {
-                    if (row.Topic.Id == keep)
-                    {
-                        first = row;
-                    }
-                }
-                if (first != null)
-                {
-                    Select(first);
-                }
-            }
-
-            private void Select(Row row)
-            {
-                if (_selected != null && _selected.Plate != null)
-                {
-                    _selected.Plate.color = MetaUi.Plate;
-                }
-                _selected = row;
-                row.Plate.color = new Color(0.45f, 0.27f, 0.05f, 1f);
-                string text;
-                try
-                {
-                    text = "<size=140%><b>" + row.Topic.Title + "</b></size>\n\n" + Render(row.Topic);
-                }
-                catch (Exception e)
-                {
-                    MetaLog.Error(e);
-                    text = row.Topic.Title;
-                }
-                _page.text = text;
-                KeyScroll.velocity = Vector2.zero;
-                KeyScroll.verticalNormalizedPosition = 1f;
-            }
-
-            // Search as you type: there is no input box, the letters typed while the guide is open are the search.
-            public override void Tick()
-            {
-                string typed = Keys.PanelTyped();
-                if (string.IsNullOrEmpty(typed))
-                {
-                    return;
-                }
-                bool changed = false;
-                foreach (char c in typed)
-                {
-                    if (c == '\b')
-                    {
-                        if (_query.Length > 0)
-                        {
-                            _query.Length--;
-                            changed = true;
-                        }
-                    }
-                    else if (!char.IsControl(c) && _query.Length < 30 && (_query.Length > 0 || c != ' '))
-                    {
-                        _query.Append(c);
-                        changed = true;
-                    }
-                }
-                if (changed)
-                {
-                    Filter();
-                }
-            }
-
-            /// <summary>Esc clears a search first, and closes the guide when there is none.</summary>
-            public override bool Escape()
-            {
-                if (_query.Length == 0)
-                {
-                    return false;
-                }
-                _query.Length = 0;
-                Filter();
-                return true;
-            }
-
-            private void Filter()
-            {
-                string query = _query.ToString();
-                int shown = 0;
-                foreach (Row row in _rows)
-                {
-                    bool match = query.Length == 0 || row.Searchable.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0;
-                    row.Object.SetActive(match);
-                    shown += match ? 1 : 0;
-                }
-                _search.text = query.Length == 0
-                    ? "reallife_guide_search_hint".GetLocalization()
-                    : "reallife_guide_search".GetLocalization().Replace("{query}", query).Replace("{count}", shown.ToString(CultureInfo.InvariantCulture));
             }
         }
     }

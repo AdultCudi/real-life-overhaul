@@ -4,6 +4,7 @@ using BAModAPI;
 using Extensions;
 using GleyTrafficSystem;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using Streets;
 using Streets.Pedestrians;
 using UI.Guiders;
@@ -43,6 +44,15 @@ namespace RealLifeOverhaul.Law
         private Custody _custody;
         private StationInterior _interior;
         private StationDesk _desk;
+        private DoorPanel _door;
+        private Action _onSpeak;
+        private Action _onGo;
+        private Action _onQuickReport;
+        private Action _onQuickFines;
+        private Action _onQuickCar;
+        private Action _onQuickPaper;
+        private Func<string> _doorWhat;
+        private int _doorKey = -1;
         private Action<Address> _onEnter;
         private Action<Address> _onExit;
         private bool _entered;               // the game has just put the player inside a building (its event; acted on in Update)
@@ -74,7 +84,7 @@ namespace RealLifeOverhaul.Law
         }
 
         /// <summary>True while the interaction key is the station's (its prompt is on screen): World/NearbyInteraction leaves the key alone.</summary>
-        public static bool TakesInteractKey => Instance != null && (Instance._use != Use.None || DeskPanel.IsOpen);
+        public static bool TakesInteractKey => Instance != null && (Instance._door.TakesKey || Instance._desk.IsOpen);
 
         /// <summary>The precinct the player is standing inside, or null.</summary>
         public static Precinct Inside => Instance != null && Instance._interior != null && Instance._interior.Dressed ? Instance._interior.Precinct : null;
@@ -91,6 +101,15 @@ namespace RealLifeOverhaul.Law
             _precincts = new Precincts(transform, Logger);
             _interior = new StationInterior(transform, Logger);
             _desk = new StationDesk(transform, _precincts, Logger);
+            WorldPanel.Logger = Logger;
+            _door = new DoorPanel(Logger, "Law check (desk panel)");
+            _onSpeak = _door.Press(Speak);
+            _onGo = _door.Press(GoIn);
+            _onQuickReport = _door.Press(() => Quick(StationDesk.Service.Report));
+            _onQuickFines = _door.Press(() => Quick(StationDesk.Service.Fines));
+            _onQuickCar = _door.Press(() => Quick(StationDesk.Service.Impound));
+            _onQuickPaper = _door.Press(() => Quick(StationDesk.Service.Paper));
+            _doorWhat = () => _usePrecinct != null ? _usePrecinct.Name + (_use == Use.Door ? " (door)" : _use == Use.Desk ? " (desk)" : " (front desk at the door)") : "a station";
             _custody = gameObject.AddComponent<Custody>();
             _custody.Bind(_precincts, _interior);
         }
@@ -102,6 +121,7 @@ namespace RealLifeOverhaul.Law
             GlobalEvents.onExitBuilding -= _onExit;
             try
             {
+                _door.Hide("the director went with the city");
                 _desk.Dispose();
                 _interior.Dispose();
                 _precincts.Dispose();
@@ -125,14 +145,6 @@ namespace RealLifeOverhaul.Law
                 if (_entered || _exited)
                 {
                     Moved();
-                }
-                if (DeskPanel.IsOpen)
-                {
-                    _desk.Frame();
-                }
-                else if (_use != Use.None && JobKeys.InteractDown())
-                {
-                    Act();
                 }
                 if (Time.unscaledTime >= _nextLook)
                 {
@@ -243,7 +255,7 @@ namespace RealLifeOverhaul.Law
             Use use = Use.None;
             Precinct precinct = null;
             PlayerController player = PlayerHelper.PlayerController;
-            if (LawState.Loaded && _precincts.Count > 0 && Settings.LawPrecincts && player != null && !DeskPanel.IsOpen && !Custody.Active && !PlayerHelper.IsUsingVehicle
+            if (LawState.Loaded && _precincts.Count > 0 && Settings.LawPrecincts && player != null && !_desk.IsOpen && !Custody.Active && !PlayerHelper.IsUsingVehicle
                 && !player.NavigationDisabled && !JobDirector.TakesInteractKey && !JobDirector.OnShift && !ThirdPersonCamera.IsUiOpen() && SaveGameManager.Current != null)
             {
                 Vector3 at = player.transform.position;
@@ -267,13 +279,55 @@ namespace RealLifeOverhaul.Law
             }
             _use = use;
             _usePrecinct = precinct;
+            _desk.Watch();
             if (use == Use.None)
             {
-                _desk.Prompt(null, null);
+                _door.Hide(_desk.IsOpen ? "the desk's list is open" : "the player walked away or another screen is open");
+                _doorKey = -1;
             }
             else
             {
-                _desk.Prompt(use == Use.Desk ? "reallife_law_station_prompt_desk" : use == Use.Door ? "reallife_law_station_prompt_door" : "reallife_law_station_prompt_window", precinct.Name);
+                bool plain = use != Use.Door && _desk.Plain;
+                int key = ((int)use) | (plain ? 8 : 0) | (precinct.Index << 4) | (Wanted() ? 1 << 12 : 0);
+                if (key != _doorKey)
+                {
+                    _doorKey = key;
+                    WriteDoor(use, precinct, plain);
+                }
+                Vector3 place = use == Use.Desk ? _interior.ServiceSpot : precinct.Door;
+                _door.Show(place, player.transform.position, use == Use.Desk ? 2.2f : 2.4f, _doorWhat);
+            }
+        }
+
+        private static bool Wanted()
+        {
+            return LawState.Loaded && LawState.WantedCharges != 0;
+        }
+
+        // The game's panel at the desk or the door. At a desk: speak to the officer (the list). At a door that can be walked into: go in.
+        // If the game's list could not be made the desk's four commonest things are on the panel's own keys.
+        private void WriteDoor(Use use, Precinct precinct, bool plain)
+        {
+            WorldPanel panel = _door.Panel;
+            panel.Lines(precinct.Name, (use == Use.Door ? "reallife_law_door_station" : "reallife_law_door_desk").Tr(), use == Use.Door ? null : "reallife_law_door_open".Tr(), WorldPanel.Green());
+            if (use == Use.Door)
+            {
+                panel.Buttons("reallife_law_button_go", _onGo, true, null, null, false);
+                panel.Button(2, null, null, false, false);
+                panel.Button(3, null, null, false, false);
+            }
+            else if (plain)
+            {
+                panel.Button(0, "reallife_law_button_report", _onQuickReport, true, true);
+                panel.Button(1, "reallife_law_button_fines", _onQuickFines, ModState.PendingFine > 0, false);
+                panel.Button(2, "reallife_law_button_car", _onQuickCar, LawState.ImpoundVehicleId != null, false);
+                panel.Button(3, "reallife_law_button_paper", _onQuickPaper, Bridges.HasIncident, false);
+            }
+            else
+            {
+                panel.Buttons("reallife_law_button_speak", _onSpeak, true, null, null, false);
+                panel.Button(2, null, null, false, false);
+                panel.Button(3, null, null, false, false);
             }
         }
 
@@ -281,29 +335,66 @@ namespace RealLifeOverhaul.Law
         {
             _use = Use.None;
             _usePrecinct = null;
-            _desk.Prompt(null, null);
+            _door.Hide("the player moved on");
+            _doorKey = -1;
         }
 
-        // The interaction key, with the prompt on screen.
-        private void Act()
+        // The panel's buttons, on the game's keys or a click. Each makes sure the player is still where the panel was.
+        private bool Where(out Precinct precinct, out Use use)
         {
-            Use use = _use;
-            Precinct precinct = _usePrecinct;
-            Idle();
-            if (precinct == null)
+            precinct = _usePrecinct;
+            use = _use;
+            return precinct != null && use != Use.None && !_desk.IsOpen;
+        }
+
+        private void Speak()
+        {
+            try
             {
-                return;
-            }
-            if (use == Use.Door)
-            {
-                if (!EnterStation(precinct))
+                if (Where(out Precinct precinct, out Use use) && use != Use.Door)
                 {
-                    Notifications.Show(NotificationType.Warning, "reallife_law_station_no_entry", null, 6f);
+                    Idle();
+                    _desk.Open(precinct, use == Use.Desk);
                 }
             }
-            else
+            catch (Exception e)
             {
-                _desk.Open(precinct, use == Use.Desk);
+                Logger?.Error(e);
+            }
+        }
+
+        private void GoIn()
+        {
+            try
+            {
+                if (Where(out Precinct precinct, out Use use) && use == Use.Door)
+                {
+                    Idle();
+                    if (!EnterStation(precinct))
+                    {
+                        Notifications.Show(NotificationType.Warning, "reallife_law_station_no_entry", null, 6f);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
+        private void Quick(StationDesk.Service service)
+        {
+            try
+            {
+                if (Where(out Precinct precinct, out Use use) && use != Use.Door)
+                {
+                    _desk.Quick(precinct, use == Use.Desk, service);
+                    _doorKey = -1;   // (what the buttons say may have changed: a fine paid, a car brought)
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
             }
         }
 

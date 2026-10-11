@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BAModAPI;
 using Helpers;
+using RealLifeOverhaul.GameUi;
 using UI.Load;
 using UI.Notification;
 using UnityEngine;
@@ -30,13 +31,14 @@ namespace RealLifeOverhaul
 
         /// <summary>True while the interaction key is ours: at a desk, or while a test shows a prompt. The mod's own enter-a-door key stands aside.</summary>
         public static bool TakesInteractKey =>
-            Instance != null && (Instance._interactFrame == Time.frameCount || Instance._prompting || Instance._theory.Active
-                                 || Instance._practical.Prompting || (LicenceHud.Exists && LicenceHud.Instance.SheetShown));
+            Instance != null && (Instance._desk.TakesKey || Instance._theory.Active || Instance._practical.Prompting);
 
         /// <summary>True while a written or practical test (or a lesson) is on. Other large scenes may want to wait.</summary>
         public static bool IsActive => Instance != null && (Instance._theory.Active || Instance._practical.Active);
 
-        private readonly TheoryTest _theory = new TheoryTest();
+        private TheoryTest _theory;
+        private SchoolScreens _screens;
+        private SchoolDesk _desk;
         private PracticalTest _practical;
         private TestCar _car;
         private LicenceDesks _desks;
@@ -47,17 +49,12 @@ namespace RealLifeOverhaul
         private float _nextSlow;
         private float _nextFast;
         private bool _broken;
-        private bool _prompting;
-        private string _promptText;
-        private int _promptKeys = -1;
-        private int _interactFrame = -1;
         private int _lastDay = -1;
         private bool _pending;
         private SchoolService _pendingService;
         private int _pendingFee;
         private Vector3 _pendingDesk;
         private float _pendingSince;
-        private float _cardUntil;
         private VehicleController _lastDriven;
         private float _nextWarning;
 
@@ -92,8 +89,14 @@ namespace RealLifeOverhaul
         {
             Instance = this;
             LicenceState.Reset();
+            WorldPanel.Logger = Logger;
+            TravelList.Logger = Logger;
+            GuideMark.Logger = Logger;
+            _screens = new SchoolScreens();
+            _theory = new TheoryTest(_screens);
+            _desk = new SchoolDesk(this, _screens, Logger);
             _car = new TestCar(this, Logger);
-            _practical = new PracticalTest(_car, Cast, transform, Logger);
+            _practical = new PracticalTest(_car, Cast, transform, Logger, _screens);
             _desks = new LicenceDesks(transform, Logger);
             _enforcement = new DrivingEnforcement(this, Logger, IsSchoolCar);
             _enforcement.Attach();
@@ -116,6 +119,8 @@ namespace RealLifeOverhaul
                 Logger?.Error(e);
             }
             LicenceHold.Free();
+            _practical.Dispose();
+            _desk.Dispose();
             _car.Dispose();
             _desks.Dispose();
             if (_cast != null)
@@ -168,28 +173,20 @@ namespace RealLifeOverhaul
                 }
                 if (_theory.Active)
                 {
-                    _theory.Frame();
+                    if (_theory.Lost)
+                    {
+                        // The list was taken from under the paper: it is stopped, and the fee goes back.
+                        if (_theory.Abort())
+                        {
+                            Refund();
+                        }
+                        Licences.Toast(NotificationType.Warning, "reallife_lic_test_interrupted", 8f);
+                    }
                     return;
                 }
                 if (_practical.Active)
                 {
-                    if ((_practical.Prompting || (LicenceHud.Exists && LicenceHud.Instance.SheetShown)) && JobKeys.InteractDown() && !ThirdPersonCamera.IsUiOpen())
-                    {
-                        _interactFrame = Time.frameCount;
-                        _practical.Interact(Time.time);
-                    }
                     _practical.Frame(Time.time);
-                }
-                else if (_prompting && JobKeys.InteractDown() && !ThirdPersonCamera.IsUiOpen())
-                {
-                    _interactFrame = Time.frameCount;
-                    OpenDesk();
-                }
-                else if (_cardUntil > 0f && (now >= _cardUntil || JobKeys.InteractDown()))
-                {
-                    _cardUntil = 0f;
-                    _interactFrame = Time.frameCount;
-                    LicenceHud.Instance.HideSheet();
                 }
                 if (_pending && now - _pendingSince > 0.3f)
                 {
@@ -230,11 +227,8 @@ namespace RealLifeOverhaul
                 _enforcement.Detach();
                 _desks.Dispose();
                 LicenceHold.Free();
-                if (LicenceHud.Exists)
-                {
-                    LicenceHud.Instance.HideActivity();
-                    LicenceHud.Instance.HidePrompt();
-                }
+                _desk.Close("the school is off for the session");
+                _desk.HidePanel("the school is off for the session");
             }
             catch (Exception e)
             {
@@ -311,24 +305,9 @@ namespace RealLifeOverhaul
             {
                 _desks.Tick(player);
             }
-            bool prompting = _desks.At >= 0 && !ThirdPersonCamera.IsUiOpen() && _cardUntil <= 0f;
-            if (prompting != _prompting || (prompting && _promptKeys != Keys.Version))
-            {
-                _prompting = prompting;
-                if (prompting)
-                {
-                    if (_promptText == null || _promptKeys != Keys.Version)
-                    {
-                        _promptKeys = Keys.Version;
-                        _promptText = Licences.T("reallife_school_prompt", "key", Keys.Label(KeyAction.Interact));
-                    }
-                    LicenceHud.Instance.ShowPrompt(_promptText);
-                }
-                else if (LicenceHud.Exists && !_practical.Active)
-                {
-                    LicenceHud.Instance.HidePrompt();
-                }
-            }
+            // The game's panel at the desk the player stands at (a few compares a second when nothing has changed).
+            bool at = _desks.At >= 0 && !ThirdPersonCamera.IsUiOpen();
+            _desk.Offer(at, at ? _desks.Front(_desks.At) : player, player, at ? _desks.Address(_desks.At) : null);
         }
 
         private System.Action _onSave;   // made once: Core/SaveHook compares it, it is never built again
@@ -514,18 +493,14 @@ namespace RealLifeOverhaul
             return _desks.Nearest(from, out front, out _);
         }
 
-        private void OpenDesk()
-        {
-            if (!LifeEvents.IsSafeForEvent() || JobDirector.OnShift)
-            {
-                Licences.Toast(NotificationType.Warning, "reallife_lic_no_busy", 5f);
-                return;
-            }
-            _pendingDesk = _desks.At >= 0 ? _desks.Front(_desks.At) : PlayerHelper.GetPosition();
-            _prompting = false;
+        internal void OpenDesk()
+        {            _pendingDesk = _desks.At >= 0 ? _desks.Front(_desks.At) : PlayerHelper.GetPosition();
             _desks.Away();
-            LicenceHud.Instance.HidePrompt();
-            LicencePhone.OpenInPerson(null);
+            _desk.HidePanel("the desk was spoken to");
+            if (!_desk.Open())
+            {
+                LicencePhone.OpenInPerson(null);   // the game's list could not be made: the dialogue panel asks the same things
+            }
         }
 
         /// <summary>
@@ -596,7 +571,7 @@ namespace RealLifeOverhaul
             bool started;
             if (_pendingService == SchoolService.Theory)
             {
-                started = _theory.Begin(DrivingQuestions.Pool, LicenceLaw.TheoryQuestions, LicenceLaw.TheoryPass, "reallife_lic_theory_title", OnTheoryMarked);
+                started = _theory.Begin(DrivingQuestions.Pool, LicenceLaw.TheoryQuestions, LicenceLaw.TheoryPass, "reallife_lic_theory_headline", OnTheoryMarked);
             }
             else
             {
@@ -768,9 +743,10 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            LicenceHud.Instance.ShowSheet(Licences.T("reallife_lic_card_title"), DrivingSchool.CardText(), null,
-                Licences.T("reallife_lic_sheet_close", "key", Keys.Label(KeyAction.Interact)));
-            _cardUntil = Time.unscaledTime + 20f;
+            if (!_desk.ShowCard())
+            {
+                Licences.Toast(NotificationType.Info, "reallife_lic_toast", "text", DrivingSchool.CardText(), 20f);
+            }
         }
     }
 }

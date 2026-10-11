@@ -10,6 +10,7 @@ using UI.MiniMenu;
 using UI.Notification;
 using UI.Overlays;
 using UI.Smartphone;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -39,8 +40,10 @@ namespace RealLifeOverhaul
         private bool _loaded;
         private bool _failed;
         private bool _secluded;
-        private bool _promptOn;
-        private int _promptKind;            // 1 the desk, 2 the room, 3 the agent
+        private int _doorKind;              // what the door panel says: 1 reception, 2 reception and the room, 3 the agent
+        private HotelSite _doorSite;
+        private int _doorDay = -1;
+        private bool _doorRoom;
         private int _lastHour = -1;
         private int _lastDay = -1;
         private float _nextSecond;
@@ -54,15 +57,37 @@ namespace RealLifeOverhaul
         public HotelStay Stay { get; private set; }
         public Holidays Holidays { get; private set; }
 
-        /// <summary>True while a hotel or agency prompt is on screen: the mod's own door key (World/NearbyInteraction) stands aside.</summary>
-        public static bool TakesInteractKey => Instance != null && Instance._promptOn;
+        /// <summary>True while the game's panel at a hotel or agency door is up, and in the frame its button ran: the mod's own door key (World/NearbyInteraction) stands aside.</summary>
+        public static bool TakesInteractKey => Instance != null && Instance._door != null && Instance._door.TakesKey;
 
-        /// <summary>The panel's buttons all come here; a fault in one never reaches the game's UI code.</summary>
+        /// <summary>The list's entries all come here; a fault in one never reaches the game's UI code.</summary>
         public Action<int> Pressed { get; private set; }
+
+        /// <summary>The one list window every travel screen shares (reception, the room, a trip): a copy of the game's list of subway stations.</summary>
+        public readonly DeskList Window = new DeskList("RealLifeOverhaul Travel", 1100f, 150f);
+
+        private DoorPanel _door;
+        private GuideMark _mark;
+        private Action _onReception;
+        private Action _onRoom;
+        private Action _onAgent;
+        private Func<string> _doorWhat;
+
+        /// <summary>True while one of the travel screens is on the list window.</summary>
+        public bool ScreenOpen => Window.IsOpen;
 
         private void Awake()
         {
             Instance = this;
+            GameUi.WorldPanel.Logger = Logger;
+            GameUi.TravelList.Logger = Logger;
+            GameUi.GuideMark.Logger = Logger;
+            _door = new DoorPanel(Logger, "Travel check (door panel)");
+            _mark = new GuideMark();
+            _onReception = _door.Press(ReceptionClicked);
+            _onRoom = _door.Press(RoomClicked);
+            _onAgent = _door.Press(AgentClicked);
+            _doorWhat = DoorWhat;
             TravelState.Reset();
             TravelEffects.Register(Logger);   // before ModState reads the save, so a modifier stashed in it finds its type
             Hotels = new Hotels(transform, Logger);
@@ -87,10 +112,9 @@ namespace RealLifeOverhaul
             {
                 Logger?.Error(e);
             }
-            if (TravelUi.Exists)
-            {
-                Destroy(TravelUi.Instance.gameObject);
-            }
+            _door?.Hide("the director went with the city");
+            _mark?.Hide();
+            Window.Destroy(e => Logger?.Error(e));
             TravelBridges.Reset();
             TravelState.Reset();
             if (Instance == this)
@@ -118,11 +142,8 @@ namespace RealLifeOverhaul
                 try
                 {
                     ToStreet();
-                    HidePrompt();
-                    if (TravelUi.Exists)
-                    {
-                        TravelUi.Instance.HideMarker();
-                    }
+                    HidePrompt("travel was switched off after an error");
+                    _mark.Hide();
                 }
                 catch (Exception again)
                 {
@@ -198,22 +219,16 @@ namespace RealLifeOverhaul
                     Holidays.Away();
                 }
                 UpdatePrompt(gm);
-            }
-
-            if (_promptOn && (Keys.Down(KeyAction.Interact) || (Keys.Down(KeyAction.InteractAlt) && !OverlayUI.IsVisible)))
-            {
-                Interact(gm);
-            }
-
-            if (_marked != null)
-            {
-                if (now > _markUntil || !street || CitySpots.Flat(_marked.Desk - gm.playerController.transform.position) < 12f * 12f)
+                if (_marked != null)
                 {
-                    Unmark();
-                }
-                else
-                {
-                    TravelUi.Instance.ShowMarkerAt(_marked.Name, _marked.Desk);
+                    if (now > _markUntil || !street || CitySpots.Flat(_marked.Desk - gm.playerController.transform.position) < 12f * 12f)
+                    {
+                        Unmark();
+                    }
+                    else
+                    {
+                        _mark.Show(_marked.Desk, _marked.Name);   // the game's own destination marker; two compares when nothing changed
+                    }
                 }
             }
         }
@@ -350,7 +365,7 @@ namespace RealLifeOverhaul
             {
                 player.ResetNavigation();
                 player.SetNavigationBlocker(Block);
-                HidePrompt();
+                HidePrompt("the player is held in a room or on a trip");
                 Unmark();
             }
             else
@@ -362,27 +377,30 @@ namespace RealLifeOverhaul
         // Four times a second: anything that should not be true while the panel is up ends it.
         private void Watch()
         {
-            TravelUi ui = TravelUi.Exists ? TravelUi.Instance : null;
             if (!_secluded)
             {
-                if (ui != null && ui.IsOpen && !TravelState.InRoom && !TravelState.Away)
+                if (Window.IsOpen && !TravelState.InRoom && !TravelState.Away && !Holidays.ShowingCancel)
                 {
-                    ui.Hide(true);
+                    Window.Close();
                 }
                 return;
             }
+            bool open = Window.IsOpen;
             bool wrong = BuildingManager.IsInsideBuilding || PlayerHelper.IsUsingVehicle || EnergyHelper.goingToHospital || FuneralHelper.PlayerDead
                          || (TravelState.InRoom && !Settings.Hotels) || (TravelState.Away && !Settings.Holidays)
-                         || (ui == null || (!ui.IsOpen && !_skipping && !Stay.Busy && !Holidays.Busy));
+                         || (!open && !_skipping && !Stay.Busy && !Holidays.Busy && !Stay.PlainSleep && !Holidays.Auto);
             if (wrong)
             {
                 Logger?.Info("Travel: the watchdog ended a stay or trip (indoors=" + BuildingManager.IsInsideBuilding + " vehicle=" + PlayerHelper.IsUsingVehicle
-                             + " hospital=" + EnergyHelper.goingToHospital + " panel=" + (ui != null && ui.IsOpen) + ").");
+                             + " hospital=" + EnergyHelper.goingToHospital + " list=" + open + ").");
                 ToStreet();
                 return;
             }
-            // One of the game's own menus over the panel: the panel steps aside for it.
-            ui.Suspend(FullMenu.IsOpen || CityMap.IsOpen || MiniMenu.IsOpen || HudConfirm.isOpen);
+            // One of the game's own menus over the room's list: the room is left (kept), as the transit list is when a menu opens.
+            if (open && TravelState.InRoom && !Stay.Busy && (FullMenu.IsOpen || CityMap.IsOpen || MiniMenu.IsOpen || HudConfirm.isOpen))
+            {
+                Window.Close();
+            }
         }
 
         /// <summary>The way out of everything: no panel, no block, the game's energy as it was, the player in the street. The room and any unused ticket are kept.</summary>
@@ -404,11 +422,8 @@ namespace RealLifeOverhaul
             }
             HotelStay.EndSleepEffects();
             Seclude(false);
-            if (TravelUi.Exists)
-            {
-                TravelUi.Instance.Suspend(false);
-                TravelUi.Instance.Hide(true);
-            }
+            Holidays.ClearCancel();
+            Window.Close();   // (what the screen's closing does is already done: the stay and the trip are over)
         }
 
         private void OnPressed(int id)
@@ -496,13 +511,20 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- at the door
 
+        private const string ButtonReception = "reallife_travel_button_reception";
+        private const string ButtonRoom = "reallife_travel_button_room";
+        private const string ButtonAgent = "reallife_travel_button_agent";
+        private const float DoorReachUp = 2.2f;     // metres over the door the game's panel stands
+
+        // Once a second: the game's panel over a hotel's door or an agency's, with what is done there on the game's own keys.
         private void UpdatePrompt(GameManager gm)
         {
             int kind = 0;
+            HotelSite site = null;
             if (!_secluded && !JobDirector.TakesInteractKey && !ThirdPersonCamera.IsUiOpen() && !gm.playerController.NavigationDisabled
                 && !BuildingManager.IsInsideBuilding && DialogController.current == null)
             {
-                HotelSite site = Hotels.InReach;
+                site = Hotels.InReach;
                 if (site != null && Settings.Hotels)
                 {
                     kind = TravelState.HasRoom && TravelState.HotelId == site.Slot.Id ? 2 : 1;
@@ -510,58 +532,145 @@ namespace RealLifeOverhaul
                 else if (Holidays.AgencyInReach != null && Settings.Holidays)
                 {
                     kind = 3;
+                    site = null;
                 }
             }
             if (kind == 0)
             {
-                HidePrompt();
+                HidePrompt(Window.IsOpen ? "a list is open" : "the player walked away or another screen is open");
                 return;
             }
-            if (!_promptOn || kind != _promptKind)
+            int day = TimeHelper.CurrentDay;
+            bool room = TravelState.HasRoom;
+            if (kind != _doorKind || !ReferenceEquals(site, _doorSite) || day != _doorDay || room != _doorRoom)
             {
-                _promptOn = true;
-                _promptKind = kind;
-                TravelUi.Instance.ShowPrompt(TravelText.WithKey(kind == 2 ? "reallife_travel_prompt_room" : kind == 1 ? "reallife_travel_prompt_desk" : "reallife_travel_prompt_agent"));
+                _doorKind = kind;
+                _doorSite = site;
+                _doorDay = day;
+                _doorRoom = room;
+                WriteDoor(site, kind);
             }
+            Vector3 at = gm.playerController.transform.position;
+            Vector3 place = kind == 3 ? Holidays.AgencyDoor : site.Desk;
+            _door.Show(place, at, DoorReachUp, _doorWhat);
         }
 
-        private void HidePrompt()
+        // For the log line, built only when the game accepts or refuses the panel.
+        private string DoorWhat()
         {
-            if (_promptOn)
+            return _doorKind == 3 ? "at a travel agency's door" : "at " + (_doorSite != null ? _doorSite.Name : "a hotel") + " (" + (_doorKind == 2 ? "a room is booked here" : _doorRoom ? "a room is booked elsewhere" : "no room booked") + ")";
+        }
+
+        // The panel's words and buttons: reception on the interact key (not while a room is held), the room on the secondary one.
+        private void WriteDoor(HotelSite site, int kind)
+        {
+            WorldPanel panel = _door.Panel;
+            if (kind == 3)
             {
-                _promptOn = false;
-                if (TravelUi.Exists)
+                panel.Lines(TravelText.T("reallife_travel_door_agency"), TravelText.T("reallife_travel_door_agency_line"), null, WorldPanel.White());
+                panel.Buttons(ButtonAgent, _onAgent, true, null, null, false);
+                return;
+            }
+            string left;
+            if (kind == 2)
+            {
+                left = TravelText.T("reallife_travel_door_yours", "room", TravelText.T(TravelCatalogue.Room(TravelState.RoomId).NameKey));
+            }
+            else if (TravelState.HasRoom)
+            {
+                left = TravelText.T("reallife_travel_door_elsewhere", "hotel", TravelText.T(TravelCatalogue.Hotel(TravelState.HotelId).NameKey));
+            }
+            else
+            {
+                RoomType[] rooms = TravelCatalogue.Rooms(site.Slot.Tier);
+                int from = int.MaxValue;
+                for (int i = 0; i < rooms.Length; i++)
                 {
-                    TravelUi.Instance.HidePrompt();
+                    from = Mathf.Min(from, HotelStay.Tonight(site.Slot, rooms[i]));
                 }
+                left = TravelText.T("reallife_travel_door_from", "rate", TravelText.Money(from));
+            }
+            panel.Lines(site.Name, left, null, WorldPanel.White());
+            panel.Button(0, ButtonReception, _onReception, !TravelState.HasRoom, true);
+            panel.Button(1, kind == 2 ? ButtonRoom : null, kind == 2 ? _onRoom : null, kind == 2, false);
+            panel.Button(2, null, null, false, false);
+            panel.Button(3, null, null, false, false);
+        }
+
+        private void HidePrompt(string why)
+        {
+            if (_door != null && _door.Up)
+            {
+                _doorKind = 0;
+                _doorSite = null;
+                _door.Hide(why);
             }
         }
 
-        private void Interact(GameManager gm)
+        // The panel's three buttons, on the game's keys or a click. Each makes sure the player is still free to be served.
+        private bool Free(out GameManager gm)
         {
-            if (gm.selectedVehicle != null || PlayerHelper.IsUsingVehicle || gm.playerController.NavigationDisabled || ThirdPersonCamera.IsUiOpen()
-                || DialogController.current != null)
+            gm = InstanceBehavior<GameManager>.Instance;
+            return gm != null && gm.playerController != null && gm.selectedVehicle == null && !PlayerHelper.IsUsingVehicle && !gm.playerController.NavigationDisabled
+                   && !ThirdPersonCamera.IsUiOpen() && DialogController.current == null;
+        }
+
+        private void ReceptionClicked()
+        {
+            try
             {
-                return;
+                HotelSite site = Hotels.InReach;
+                if (!Free(out GameManager gm) || site == null)
+                {
+                    return;
+                }
+                HidePrompt("reception was chosen");
+                gm.playerController.ResetNavigation();
+                Stay.OpenDesk(site);
             }
-            int kind = _promptKind;
-            HotelSite site = Hotels.InReach;
-            HidePrompt();
-            gm.playerController.ResetNavigation();
-            if (kind == 3 && Holidays.AgencyInReach != null)
+            catch (Exception e)
             {
-                Holidays.OpenAgent(Holidays.AgencyInReach);
+                Fault(e);
             }
-            else if (kind == 2 && site != null)
+        }
+
+        private void RoomClicked()
+        {
+            try
             {
+                if (!Free(out GameManager gm) || Hotels.InReach == null)
+                {
+                    return;
+                }
+                HidePrompt("the room was chosen");
+                gm.playerController.ResetNavigation();
                 if (!Stay.EnterRoom(out TestRefusal why) && why != TestRefusal.None && why != TestRefusal.NothingFits)
                 {
                     TravelText.Toast(NotificationType.Info, TravelText.T("reallife_travel_room_not_now"), 5f);
                 }
             }
-            else if (kind == 1 && site != null)
+            catch (Exception e)
             {
-                Stay.OpenDesk(site);
+                Fault(e);
+            }
+        }
+
+        private void AgentClicked()
+        {
+            try
+            {
+                if (!Free(out GameManager gm) || Holidays.AgencyInReach == null)
+                {
+                    return;
+                }
+                BuildingRegistration agency = Holidays.AgencyInReach;
+                HidePrompt("the agent was chosen");
+                gm.playerController.ResetNavigation();
+                Holidays.OpenAgent(agency);
+            }
+            catch (Exception e)
+            {
+                Fault(e);
             }
         }
 
@@ -578,10 +687,7 @@ namespace RealLifeOverhaul
             if (_marked != null)
             {
                 _marked = null;
-                if (TravelUi.Exists)
-                {
-                    TravelUi.Instance.HideMarker();
-                }
+                _mark.Hide();
             }
         }
 

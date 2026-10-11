@@ -6,6 +6,7 @@ using Dialogs;
 using Entities;
 using Helpers;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 using UI;
 using UI.Notification;
 using UnityEngine;
@@ -32,14 +33,15 @@ namespace RealLifeOverhaul
             ConfirmOut = 20, Back = 21;
 
         private readonly TravelDirector _director;
-        private readonly TravelCard _card = new TravelCard();
-        private string _status;
+        private readonly HotelReception _reception;
+        private bool _plain;               // the game's list could not be made: the night is slept at once and the player is back outside
         private bool _sleeping;
         private bool _confirming;
 
         public HotelStay(TravelDirector director)
         {
             _director = director;
+            _reception = new HotelReception(this, director);
         }
 
         public bool Busy => _sleeping;
@@ -254,11 +256,8 @@ namespace RealLifeOverhaul
             }
             TravelState.InRoom = true;
             _confirming = false;
+            _plain = false;
             _director.Seclude(true);
-            if (_status == null)
-            {
-                _status = TravelText.T("reallife_travel_room_welcome");
-            }
             Morning();
             Show();
             return true;
@@ -273,9 +272,9 @@ namespace RealLifeOverhaul
             }
             TravelState.InRoom = false;
             _confirming = false;
-            _status = null;
+            _plain = false;
             _director.Seclude(false);
-            TravelUi.Instance.Hide();
+            _director.Window.Close();   // (the list's closing finds the room already left)
         }
 
         /// <summary>A save made up in the room was loaded: the panel comes back if it can, else the player is simply outside.</summary>
@@ -315,29 +314,28 @@ namespace RealLifeOverhaul
                     return;
                 case Wake:
                     TravelState.WakeHour = TravelState.WakeHour >= 10 ? 5 : TravelState.WakeHour + 1;
-                    _status = TravelText.T("reallife_travel_room_wake_set", "time", TravelText.Hour(TravelState.WakeHour));
                     break;
                 case Freshen:
                     if (TravelBridges.Home.Freshen(room.Quality))
                     {
-                        _status = TravelText.T("reallife_travel_room_fresh");
+                        Say(TravelText.T("reallife_travel_room_fresh"));
                     }
                     else if (TravelState.FreshDay != today)
                     {
                         TravelState.FreshDay = today;
                         TravelEffects.Mood(1);
-                        _status = TravelText.T(room.Quality == 0 ? "reallife_travel_room_fresh_shared" : "reallife_travel_room_fresh");
+                        Say(TravelText.T(room.Quality == 0 ? "reallife_travel_room_fresh_shared" : "reallife_travel_room_fresh"));
                     }
                     else
                     {
-                        _status = TravelText.T("reallife_travel_room_fresh_again");
+                        Say(TravelText.T("reallife_travel_room_fresh_again"));
                     }
                     break;
                 case RoomService:
                     int meal = MealPrice(hotel.Tier);
                     if (save.Hunger > 92f)
                     {
-                        _status = TravelText.T("reallife_travel_room_not_hungry");
+                        Say(TravelText.T("reallife_travel_room_not_hungry"));
                     }
                     else if (TravelEffects.Pay(meal, "reallife_transaction_hotel_extras"))
                     {
@@ -346,12 +344,12 @@ namespace RealLifeOverhaul
                         {
                             TravelEffects.Mood(1);
                         }
-                        _status = TravelText.T(hotel.Tier == HotelTier.Budget ? "reallife_travel_room_vending" : hotel.Tier == HotelTier.Luxury ? "reallife_travel_room_service_lux" : "reallife_travel_room_service",
-                            "amount", TravelText.Money(meal));
+                        Say(TravelText.T(hotel.Tier == HotelTier.Budget ? "reallife_travel_room_vending" : hotel.Tier == HotelTier.Luxury ? "reallife_travel_room_service_lux" : "reallife_travel_room_service",
+                            "amount", TravelText.Money(meal)));
                     }
                     else
                     {
-                        _status = TravelText.T("reallife_travel_room_no_money");
+                        Say(TravelText.T("reallife_travel_room_no_money"));
                     }
                     break;
                 case Minibar:
@@ -363,25 +361,25 @@ namespace RealLifeOverhaul
                     int snack = hotel.Tier == HotelTier.Luxury ? 18 : 12;
                     if (TravelState.MinibarCount >= 4)
                     {
-                        _status = TravelText.T("reallife_travel_room_minibar_empty");
+                        Say(TravelText.T("reallife_travel_room_minibar_empty"));
                     }
                     else if (TravelEffects.Pay(snack, "reallife_transaction_hotel_extras"))
                     {
                         TravelState.MinibarCount++;
                         TravelEffects.Feed(12f);
                         TravelEffects.Energy(3f);
-                        _status = TravelText.T("reallife_travel_room_minibar", "amount", TravelText.Money(snack), "left", TravelText.Number(4 - TravelState.MinibarCount));
+                        Say(TravelText.T("reallife_travel_room_minibar", "amount", TravelText.Money(snack), "left", TravelText.Number(4 - TravelState.MinibarCount)));
                     }
                     else
                     {
-                        _status = TravelText.T("reallife_travel_room_no_money");
+                        Say(TravelText.T("reallife_travel_room_no_money"));
                     }
                     break;
                 case Laundry:
                     int wash = hotel.Tier == HotelTier.Luxury ? 0 : hotel.Tier == HotelTier.Budget ? 8 : 25;
                     if (TravelState.LaundryDay == today)
                     {
-                        _status = TravelText.T("reallife_travel_room_laundry_again");
+                        Say(TravelText.T("reallife_travel_room_laundry_again"));
                     }
                     else if (TravelEffects.Pay(wash, "reallife_transaction_hotel_extras"))
                     {
@@ -390,18 +388,18 @@ namespace RealLifeOverhaul
                         {
                             TravelEffects.Mood(1);
                         }
-                        _status = wash > 0 ? TravelText.T("reallife_travel_room_laundry", "amount", TravelText.Money(wash)) : TravelText.T("reallife_travel_room_laundry_free");
+                        Say(wash > 0 ? TravelText.T("reallife_travel_room_laundry", "amount", TravelText.Money(wash)) : TravelText.T("reallife_travel_room_laundry_free"));
                     }
                     else
                     {
-                        _status = TravelText.T("reallife_travel_room_no_money");
+                        Say(TravelText.T("reallife_travel_room_no_money"));
                     }
                     break;
                 case Rest:
                     _director.Run(RestRoutine(room));
                     return;
                 case Messages:
-                    _status = MessagesLine();
+                    Say(MessagesLine());
                     break;
                 case GoOut:
                     LeaveRoom();
@@ -413,27 +411,25 @@ namespace RealLifeOverhaul
                     int fee = hotel.Tier == HotelTier.Luxury ? 0 : Mathf.RoundToInt(TravelState.NightRate * TravelCatalogue.LateCheckoutShare);
                     if (TravelState.LateCheckout)
                     {
-                        _status = TravelText.T("reallife_travel_room_late_already");
+                        Say(TravelText.T("reallife_travel_room_late_already"));
                     }
                     else if (TravelEffects.Pay(fee, "reallife_transaction_hotel_extras"))
                     {
                         TravelState.LateCheckout = true;
-                        _status = fee > 0
+                        Say(fee > 0
                             ? TravelText.T("reallife_travel_room_late", "amount", TravelText.Money(fee), "time", TravelText.Hour(TravelCatalogue.LateCheckoutHour))
-                            : TravelText.T("reallife_travel_room_late_free", "time", TravelText.Hour(TravelCatalogue.LateCheckoutHour));
+                            : TravelText.T("reallife_travel_room_late_free", "time", TravelText.Hour(TravelCatalogue.LateCheckoutHour)));
                     }
                     else
                     {
-                        _status = TravelText.T("reallife_travel_room_no_money");
+                        Say(TravelText.T("reallife_travel_room_no_money"));
                     }
                     break;
                 case CheckOut:
                     _confirming = true;
-                    _status = CheckoutTerms(room);
                     break;
                 case Back:
                     _confirming = false;
-                    _status = null;
                     break;
                 case ConfirmOut:
                     LeaveRoom();
@@ -446,28 +442,28 @@ namespace RealLifeOverhaul
                 case Table:
                     if (TravelState.DinnerDay == today)
                     {
-                        _status = TravelText.T("reallife_travel_room_table_again");
+                        Say(TravelText.T("reallife_travel_room_table_again"));
                     }
                     else if (TravelBridges.Social.TableBooked(TravelText.T(hotel.NameKey)))
                     {
                         TravelState.DinnerDay = today;
-                        _status = TravelText.T("reallife_travel_room_table_booked");
+                        Say(TravelText.T("reallife_travel_room_table_booked"));
                     }
                     else if (TravelEffects.Pay(85, "reallife_transaction_hotel_extras"))
                     {
                         TravelState.DinnerDay = today;
                         TravelEffects.Feed(100f);
                         TravelEffects.Mood(2);
-                        _status = TravelText.T("reallife_travel_room_table", "amount", TravelText.Money(85));
+                        Say(TravelText.T("reallife_travel_room_table", "amount", TravelText.Money(85)));
                     }
                     else
                     {
-                        _status = TravelText.T("reallife_travel_room_no_money");
+                        Say(TravelText.T("reallife_travel_room_no_money"));
                     }
                     break;
                 case Car:
                     HotelSite site = _director.Hotels.ById(hotel.Id);
-                    _status = TravelText.T(site != null && TravelBridges.Transport.CallCar(site.Front) ? "reallife_travel_room_car" : "reallife_travel_room_car_none");
+                    Say(TravelText.T(site != null && TravelBridges.Transport.CallCar(site.Front) ? "reallife_travel_room_car" : "reallife_travel_room_car_none"));
                     break;
                 case Walk:
                     _director.Run(WalkRoutine());
@@ -481,7 +477,7 @@ namespace RealLifeOverhaul
                         LeaveRoom();
                         return;
                     }
-                    _status = TravelText.T("reallife_travel_room_golf_none");
+                    Say(TravelText.T("reallife_travel_room_golf_none"));
                     break;
             }
             Show();
@@ -492,7 +488,7 @@ namespace RealLifeOverhaul
             HotelSite site = _director.Hotels.ById(TravelState.HotelId);
             if (TravelState.DinnerDay == today)
             {
-                _status = TravelText.T("reallife_travel_room_table_again");
+                Say(TravelText.T("reallife_travel_room_table_again"));
             }
             else if (site != null && TravelBridges.Leisure.DinnerOut(site.Front))
             {
@@ -504,11 +500,11 @@ namespace RealLifeOverhaul
                 TravelState.DinnerDay = today;
                 TravelEffects.Feed(100f);
                 TravelEffects.Mood(2);
-                _status = TravelText.T("reallife_travel_room_dinner", "amount", TravelText.Money(60));
+                Say(TravelText.T("reallife_travel_room_dinner", "amount", TravelText.Money(60)));
             }
             else
             {
-                _status = TravelText.T("reallife_travel_room_no_money");
+                Say(TravelText.T("reallife_travel_room_no_money"));
             }
         }
 
@@ -517,12 +513,12 @@ namespace RealLifeOverhaul
             int day = TravelState.CheckoutDay;
             if (TravelState.Package)
             {
-                _status = TravelText.T("reallife_travel_room_extend_package");
+                Say(TravelText.T("reallife_travel_room_extend_package"));
                 return;
             }
             if (TravelCatalogue.RoomsFree(hotel, room, day, TravelEffects.Weekday(day), TravelBridges.Leisure.DemandToday) <= 0)
             {
-                _status = TravelText.T("reallife_travel_room_extend_full");
+                Say(TravelText.T("reallife_travel_room_extend_full"));
                 return;
             }
             int rate = Mathf.RoundToInt(TravelCatalogue.NightRate(hotel, room, day, TravelEffects.Weekday(day), TravelBridges.Leisure.DemandToday)
@@ -533,7 +529,7 @@ namespace RealLifeOverhaul
             }
             else if (!TravelEffects.Pay(rate, "reallife_transaction_hotel"))
             {
-                _status = TravelText.T("reallife_travel_room_no_money");
+                Say(TravelText.T("reallife_travel_room_no_money"));
                 return;
             }
             else
@@ -542,7 +538,7 @@ namespace RealLifeOverhaul
             }
             TravelState.Nights++;
             TravelState.LateCheckout = false;   // a late checkout bought for the old last day does not move with it
-            _status = TravelText.T("reallife_travel_room_extended", "amount", TravelText.Money(rate), "day", TravelEffects.DayName(TravelState.CheckoutDay));
+            Say(TravelText.T("reallife_travel_room_extended", "amount", TravelText.Money(rate), "day", TravelEffects.DayName(TravelState.CheckoutDay)));
         }
 
         private static string CheckoutTerms(RoomType room)
@@ -606,10 +602,23 @@ namespace RealLifeOverhaul
             TravelEffects.Apply(treat);
             if (treat != null)
             {
-                _status = TravelText.T(treat.Key);
+                Say(TravelText.T(treat.Key));
             }
         }
 
+        // ---------------------------------------------------------------- the room's list
+
+        private const string ButtonDo = "reallife_travel_list_do";
+        private const string ButtonChange = "reallife_travel_list_change";
+        private const string ButtonChoose = "reallife_travel_list_choose";
+
+        private Action<int> _onPick;
+        private Action _onClosed;
+
+        /// <summary>True while the night is being slept with no list (the game's window could not be copied).</summary>
+        public bool PlainSleep => _plain;
+
+        /// <summary>The room's choices in the game's list window, one entry per thing to do with the cost or the effect under its name. Filled again whenever what it says may have changed.</summary>
         private void Show()
         {
             if (!TravelState.HasRoom || !TravelState.InRoom)
@@ -618,63 +627,140 @@ namespace RealLifeOverhaul
             }
             HotelSlot hotel = TravelCatalogue.Hotel(TravelState.HotelId);
             RoomType room = TravelCatalogue.Room(TravelState.RoomId);
-            _card.Clear();
-            _card.Title = TravelText.T(hotel.NameKey);
-            _card.Subtitle = TravelText.T("reallife_travel_room_subtitle", "room", TravelText.T(room.NameKey), "nights", TravelText.Number(NightsLeft()),
-                "day", TravelEffects.DayName(TravelState.CheckoutDay), "time", TravelText.Hour(CheckoutHour));
-            _card.Scene = hotel.Tier == HotelTier.Cottage ? TravelScene.Cottage : room.Quality == 0 ? TravelScene.Dorm : room.Quality == 3 ? TravelScene.Suite : TravelScene.Room;
-            _card.Body = TravelText.T(BodyKey(hotel.Tier, room));
-            _card.Side = TravelText.T(AmenitiesKey(hotel.Tier, room));
-            _card.Status = _status;
+            TravelList list = _director.Window.Take(this);
+            if (list == null)
+            {
+                Plain(room, hotel);
+                return;
+            }
             if (_sleeping)
             {
-                _card.Add(WakeNow, TravelText.T("reallife_travel_btn_wake_now"));
+                // The game's time skip switches the HUD off, and its own Cancel button is the way to get up: the list is put away until it ends.
+                _director.Window.Close();
+                return;
             }
-            else if (_confirming)
+            if (_onPick == null)
             {
-                _card.Add(ConfirmOut, TravelText.T("reallife_travel_btn_checkout_confirm"));
-                _card.Add(Back, TravelText.T("reallife_travel_btn_back"));
+                _onPick = _director.Pressed;
+                _onClosed = RoomClosed;
+            }
+            float began = Time.realtimeSinceStartup;
+            bool opening = !list.IsOpen;
+            string subtitle = TravelText.T("reallife_travel_room_subtitle", "room", TravelText.T(room.NameKey), "nights", TravelText.Number(NightsLeft()),
+                "day", TravelEffects.DayName(TravelState.CheckoutDay), "time", TravelText.Hour(CheckoutHour));
+            string info = subtitle + "\n<size=80%>" + (_confirming ? CheckoutTerms(room) : TravelText.T(BodyKey(hotel.Tier, room))) + "</size>";
+            list.Begin(TravelText.T(hotel.NameKey), info);
+            int entries;
+            if (_confirming)
+            {
+                list.Add(Back, TravelText.T("reallife_travel_btn_back"), TravelText.T("reallife_travel_list_stay"), ButtonChoose, true);
+                list.Add(ConfirmOut, TravelText.T("reallife_travel_btn_checkout_confirm"), TravelText.T("reallife_travel_list_checkout_detail"), ButtonDo, true);
+                entries = 2;
             }
             else
             {
-                bool budget = hotel.Tier == HotelTier.Budget;
-                _card.Add(Sleep, TravelText.T("reallife_travel_btn_sleep", "time", TravelText.Hour(TravelState.WakeHour)));
-                _card.Add(Nap, TravelText.T("reallife_travel_btn_nap"));
-                _card.Add(Wake, TravelText.T("reallife_travel_btn_wake", "time", TravelText.Hour(TravelState.WakeHour)));
-                _card.Add(Freshen, TravelText.T(room.Quality == 0 ? "reallife_travel_btn_freshen_shared" : "reallife_travel_btn_freshen"));
-                _card.Add(RoomService, TravelText.T(budget ? "reallife_travel_btn_vending" : "reallife_travel_btn_room_service", "amount", TravelText.Money(MealPrice(hotel.Tier))));
-                if (!budget)
-                {
-                    _card.Add(Minibar, TravelText.T("reallife_travel_btn_minibar", "amount", TravelText.Money(hotel.Tier == HotelTier.Luxury ? 18 : 12)));
-                }
-                _card.Add(Laundry, TravelText.T(budget ? "reallife_travel_btn_laundry_coin" : "reallife_travel_btn_laundry"));
-                _card.Add(Rest, TravelText.T("reallife_travel_btn_rest"));
-                _card.Add(Messages, TravelText.T("reallife_travel_btn_messages"));
-                if (hotel.Tier == HotelTier.Luxury)
-                {
-                    _card.Add(Table, TravelText.T("reallife_travel_btn_table"));
-                    if (TravelBridges.HasTransport)
-                    {
-                        _card.Add(Car, TravelText.T("reallife_travel_btn_car"));
-                    }
-                }
-                if (hotel.Tier == HotelTier.Cottage)
-                {
-                    _card.Add(Walk, TravelText.T("reallife_travel_btn_walk"));
-                    _card.Add(Dinner, TravelText.T("reallife_travel_btn_dinner"));
-                    if (TravelBridges.HasLeisure)
-                    {
-                        _card.Add(Golf, TravelText.T("reallife_travel_btn_golf"));
-                    }
-                }
-                _card.Add(Extend, TravelText.T("reallife_travel_btn_extend"), !TravelState.Package);
-                _card.Add(Late, TravelText.T("reallife_travel_btn_late", "time", TravelText.Hour(TravelCatalogue.LateCheckoutHour)), !TravelState.LateCheckout);
-                _card.Add(CheckOut, TravelText.T("reallife_travel_btn_checkout"));
-                _card.Add(GoOut, TravelText.T("reallife_travel_btn_go_out"));
+                entries = Choices(list, hotel, room);
             }
-            TravelUi ui = TravelUi.Instance;
-            ui.Pressed = _director.Pressed;
-            ui.Show(_card);
+            list.Open(_onPick, _onClosed);
+            if (opening && Meta.Dev.Verbose)
+            {
+                _director.Log("Travel check (room list): the game's list is open: " + entries + " entries for the " + room.Id + " at " + hotel.Id + ", " + list.Made + " entries made so far; "
+                              + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: PASS.");
+            }
+        }
+
+        // The main page. Each entry says what it costs or does; a button that cannot be used now is off, and its line says why.
+        private int Choices(TravelList list, HotelSlot hotel, RoomType room)
+        {
+            GameInstance save = SaveGameManager.Current;
+            int today = TimeHelper.CurrentDay;
+            bool budget = hotel.Tier == HotelTier.Budget;
+            int count = 0;
+            string wake = TravelText.Hour(TravelState.WakeHour);
+            list.Add(Sleep, TravelText.T("reallife_travel_btn_sleep", "time", wake), TravelText.T("reallife_travel_list_sleep"), ButtonDo, true); count++;
+            list.Add(Nap, TravelText.T("reallife_travel_btn_nap"), TravelText.T("reallife_travel_list_nap"), ButtonDo, true); count++;
+            list.Add(Wake, TravelText.T("reallife_travel_btn_wake", "time", wake), TravelText.T("reallife_travel_list_wake"), ButtonChange, true); count++;
+            list.Add(Freshen, TravelText.T(room.Quality == 0 ? "reallife_travel_btn_freshen_shared" : "reallife_travel_btn_freshen"), TravelText.T("reallife_travel_list_freshen"), ButtonDo, true); count++;
+            bool hungry = save.Hunger <= 92f;
+            list.Add(RoomService, TravelText.T(budget ? "reallife_travel_btn_vending" : "reallife_travel_btn_room_service", "amount", TravelText.Money(MealPrice(hotel.Tier))),
+                TravelText.T(hungry ? "reallife_travel_list_meal" : "reallife_travel_list_not_hungry"), ButtonDo, hungry); count++;
+            if (!budget)
+            {
+                bool left = TravelState.MinibarDay != today || TravelState.MinibarCount < 4;
+                list.Add(Minibar, TravelText.T("reallife_travel_btn_minibar", "amount", TravelText.Money(hotel.Tier == HotelTier.Luxury ? 18 : 12)),
+                    TravelText.T(left ? "reallife_travel_list_minibar" : "reallife_travel_list_minibar_empty"), ButtonDo, left); count++;
+            }
+            bool washed = TravelState.LaundryDay == today;
+            list.Add(Laundry, TravelText.T(budget ? "reallife_travel_btn_laundry_coin" : "reallife_travel_btn_laundry"),
+                TravelText.T(washed ? "reallife_travel_list_laundry_done" : hotel.Tier == HotelTier.Luxury ? "reallife_travel_list_laundry_free" : "reallife_travel_list_laundry", "amount", TravelText.Money(hotel.Tier == HotelTier.Luxury ? 0 : budget ? 8 : 25)), ButtonDo, !washed); count++;
+            list.Add(Rest, TravelText.T("reallife_travel_btn_rest"), TravelText.T("reallife_travel_list_rest"), ButtonDo, true); count++;
+            list.Add(Messages, TravelText.T("reallife_travel_btn_messages"), TravelText.T("reallife_travel_list_messages"), ButtonDo, true); count++;
+            bool dined = TravelState.DinnerDay == today;
+            if (hotel.Tier == HotelTier.Luxury)
+            {
+                list.Add(Table, TravelText.T("reallife_travel_btn_table"), TravelText.T(dined ? "reallife_travel_list_dined" : "reallife_travel_list_table", "amount", TravelText.Money(85)), ButtonDo, !dined); count++;
+                if (TravelBridges.HasTransport)
+                {
+                    list.Add(Car, TravelText.T("reallife_travel_btn_car"), TravelText.T("reallife_travel_list_car"), ButtonDo, true); count++;
+                }
+            }
+            if (hotel.Tier == HotelTier.Cottage)
+            {
+                bool walked = TravelState.WalkDay == today;
+                list.Add(Walk, TravelText.T("reallife_travel_btn_walk"), TravelText.T(walked ? "reallife_travel_list_walked" : "reallife_travel_list_walk"), ButtonDo, !walked); count++;
+                list.Add(Dinner, TravelText.T("reallife_travel_btn_dinner"), TravelText.T(dined ? "reallife_travel_list_dined" : "reallife_travel_list_dinner", "amount", TravelText.Money(60)), ButtonDo, !dined); count++;
+                if (TravelBridges.HasLeisure)
+                {
+                    list.Add(Golf, TravelText.T("reallife_travel_btn_golf"), TravelText.T("reallife_travel_list_golf"), ButtonDo, true); count++;
+                }
+            }
+            bool extend = !TravelState.Package;
+            list.Add(Extend, TravelText.T("reallife_travel_btn_extend"),
+                extend ? TravelText.T("reallife_travel_list_extend", "amount", TravelText.Money(ExtensionRate(hotel, room))) : TravelText.T("reallife_travel_list_extend_package"), ButtonDo, extend); count++;
+            int fee = hotel.Tier == HotelTier.Luxury ? 0 : Mathf.RoundToInt(TravelState.NightRate * TravelCatalogue.LateCheckoutShare);
+            list.Add(Late, TravelText.T("reallife_travel_btn_late", "time", TravelText.Hour(TravelCatalogue.LateCheckoutHour)),
+                TravelText.T(TravelState.LateCheckout ? "reallife_travel_list_late_done" : "reallife_travel_list_late", "amount", TravelText.Money(fee)), ButtonDo, !TravelState.LateCheckout); count++;
+            list.Add(CheckOut, TravelText.T("reallife_travel_btn_checkout"), TravelText.T("reallife_travel_list_checkout"), ButtonChoose, true); count++;
+            list.Add(GoOut, TravelText.T("reallife_travel_btn_go_out"), TravelText.T("reallife_travel_list_go_out"), ButtonDo, true); count++;
+            return count;
+        }
+
+        // What one more night costs at the rate of its day (the figure ExtendStay charges).
+        private static int ExtensionRate(HotelSlot hotel, RoomType room)
+        {
+            int day = TravelState.CheckoutDay;
+            return Mathf.RoundToInt(TravelCatalogue.NightRate(hotel, room, day, TravelEffects.Weekday(day), TravelBridges.Leisure.DemandToday)
+                                    * TravelCatalogue.LongStayFactor(TravelState.Nights + 1));
+        }
+
+        // The list was closed by the player (Cancel, or a menu opened over it): the room is kept, the player is outside.
+        private void RoomClosed()
+        {
+            if (Meta.Dev.Verbose)
+            {
+                _director.Log("Travel check (room list): closed" + (TravelState.InRoom ? " by the player." : "."));
+            }
+            if (TravelState.InRoom && !_sleeping)
+            {
+                LeaveRoom();
+            }
+        }
+
+        // No window to show: the night is slept, then the player is outside again, so that a stay can never trap anyone.
+        private void Plain(RoomType room, HotelSlot hotel)
+        {
+            if (_sleeping)
+            {
+                return;
+            }
+            if (!_plain)
+            {
+                _plain = true;
+                _director.Log("Travel check (room list): the game's list could not be made; the night is slept at once and the other choices are not offered: FAIL.");
+                _director.Run(SleepRoutine(room, hotel, SleepGoal(), true));
+                return;
+            }
+            LeaveRoom();
         }
 
         private static string BodyKey(HotelTier tier, RoomType room)
@@ -692,14 +778,12 @@ namespace RealLifeOverhaul
             }
         }
 
-        private static string AmenitiesKey(HotelTier tier, RoomType room)
+        /// <summary>A result or a word to the player: the game's own notification.</summary>
+        private static void Say(string text)
         {
-            switch (tier)
+            if (!string.IsNullOrEmpty(text))
             {
-                case HotelTier.Budget: return room.Quality == 0 ? "reallife_travel_room_amenities_dorm" : "reallife_travel_room_amenities_budget";
-                case HotelTier.Luxury: return "reallife_travel_room_amenities_luxury";
-                case HotelTier.Cottage: return "reallife_travel_room_amenities_cottage";
-                default: return "reallife_travel_room_amenities_mid";
+                TravelText.Toast(NotificationType.Info, text, 8f);
             }
         }
 
@@ -730,13 +814,12 @@ namespace RealLifeOverhaul
             float minutes = goal.GetMinutesFromNow();
             if (minutes < 10f)
             {
-                _status = TravelText.T("reallife_travel_room_sleep_no_time");
+                Say(TravelText.T("reallife_travel_room_sleep_no_time"));
                 Show();
                 yield break;
             }
             float before = TimeHelper.NowInMinutes();
             _sleeping = true;
-            _status = TravelText.T(night ? "reallife_travel_room_sleeping" : "reallife_travel_room_napping");
             Show();
             // What the game's own bed does (PlayerActivity.SleepActivity): stop the walking drain, switch the regeneration on, skip time.
             EnergyHelper.RemoveEnergySpender("move");
@@ -750,7 +833,7 @@ namespace RealLifeOverhaul
                 yield break;   // the watchdog took the stay away meanwhile
             }
             float slept = TimeHelper.NowInMinutes() - before;
-            _status = TravelText.T(TravelText.Pick(TravelCatalogue.SleptWell));
+            Say(TravelText.T(TravelText.Pick(TravelCatalogue.SleptWell)));
             if (night && slept >= 240f)
             {
                 TravelState.NightsSlept++;
@@ -764,13 +847,13 @@ namespace RealLifeOverhaul
                     }
                     if (rough != null)
                     {
-                        _status = TravelText.T(rough.Key);
+                        Say(TravelText.T(rough.Key));
                     }
                 }
                 else if (room.Quality == 3)
                 {
                     ModState.AddModifier(TravelEffects.Comfort);   // lasts into the next day
-                    _status = TravelText.T("reallife_travel_room_slept_lux");
+                    Say(TravelText.T("reallife_travel_room_slept_lux"));
                 }
             }
             if (TravelState.InRoom)
@@ -784,12 +867,11 @@ namespace RealLifeOverhaul
             Timestamp goal = Capped(TimeHelper.GetTimeInHours(2));
             if (goal.GetMinutesFromNow() < 10f)
             {
-                _status = TravelText.T("reallife_travel_room_sleep_no_time");
+                Say(TravelText.T("reallife_travel_room_sleep_no_time"));
                 Show();
                 yield break;
             }
             _sleeping = true;
-            _status = TravelText.T("reallife_travel_room_resting");
             Show();
             EnergyHelper.RemoveEnergySpender("move");
             EnergyHelper.SetCurrentEnergyRegen(EnergyRegen.Bench);
@@ -811,7 +893,7 @@ namespace RealLifeOverhaul
                 }
             }
             TravelState.RestDay = today;
-            _status = TravelText.T("reallife_travel_room_rested");
+            Say(TravelText.T("reallife_travel_room_rested"));
             if (TravelState.InRoom)
             {
                 Show();
@@ -824,19 +906,18 @@ namespace RealLifeOverhaul
             int today = TimeHelper.CurrentDay;
             if (TravelState.WalkDay == today)
             {
-                _status = TravelText.T("reallife_travel_room_walk_again");
+                Say(TravelText.T("reallife_travel_room_walk_again"));
                 Show();
                 yield break;
             }
             Timestamp goal = Capped(TimeHelper.GetTimeInHours(2));
             if (goal.GetMinutesFromNow() < 10f)
             {
-                _status = TravelText.T("reallife_travel_room_sleep_no_time");
+                Say(TravelText.T("reallife_travel_room_sleep_no_time"));
                 Show();
                 yield break;
             }
             _sleeping = true;
-            _status = TravelText.T("reallife_travel_room_walking");
             Show();
             yield return _director.Skip(goal, "reallife_travel_tm_walk");
             _sleeping = false;
@@ -851,7 +932,7 @@ namespace RealLifeOverhaul
             {
                 TravelState.Souvenirs++;
             }
-            _status = found != null ? TravelText.T(found.Key) : null;
+            Say(found != null ? TravelText.T(found.Key) : null);
             if (TravelState.InRoom)
             {
                 Show();
@@ -886,16 +967,20 @@ namespace RealLifeOverhaul
         {
             _sleeping = false;
             _confirming = false;
-            _status = null;
+            _plain = false;
             TravelState.InRoom = false;
             EndSleepEffects();
         }
 
         // ---------------------------------------------------------------- the desk
 
-        /// <summary>The reception conversation, in the game's own dialogue panel.</summary>
+        /// <summary>Reception: the game's list of rooms; if that window cannot be made, the game's own dialogue panel asks the same things one at a time.</summary>
         public void OpenDesk(HotelSite site)
         {
+            if (_reception.Open(site))
+            {
+                return;
+            }
             HotelDeskDialog.Site = site;
             HotelDeskDialog.Stay = this;
             HotelDeskDialog.Booked = false;
@@ -910,14 +995,19 @@ namespace RealLifeOverhaul
             if (HotelDeskDialog.Booked && TravelState.HasRoom && TravelDirector.Instance != null)
             {
                 HotelDeskDialog.Booked = false;
-                _status = TravelText.T("reallife_travel_room_welcome");
                 _director.Run(EnterSoon());
             }
         }
 
+        /// <summary>A room was just booked at the list: up to it once the list has closed.</summary>
+        public void GoUpSoon()
+        {
+            _director.Run(EnterSoon());
+        }
+
         private IEnumerator EnterSoon()
         {
-            yield return new WaitForSecondsRealtime(0.4f);   // the dialogue panel closes first
+            yield return new WaitForSecondsRealtime(0.4f);   // the dialogue panel or the list closes first
             EnterRoom(out _);
         }
     }
