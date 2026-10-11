@@ -608,6 +608,8 @@ namespace RealLifeOverhaul.Nav
 
         private void Arrive(float toPlace)
         {
+            GuidersManager guiders = InstanceBehavior<GuidersManager>.Instance;
+            bool own = guiders != null && _guider != null && ReferenceEquals(_guider, guiders.destinationGuider);
             _arrived = true;
             _phase = Phase.Idle;
             _route.Clear();
@@ -623,7 +625,11 @@ namespace RealLifeOverhaul.Nav
             if (Meta.Dev.Verbose)
             {
                 Logger?.Info("Navigation: arrived at '" + _goalName + "' (" + toPlace.ToString("F0") + " m from it, " + (_driving ? "driving" : "on foot")
-                             + "). The route is cleared; the game's marker stays until it is dismissed.");
+                             + "). The route is cleared" + (own ? " and the destination's marker with it." : "; a job's marker is the job's to take away."));
+            }
+            if (own)
+            {
+                GuidersManager.ResetGuider(DirectionGuiderType.Destination);   // the player's own destination is done with: its marker goes, as a navigator's does
             }
         }
 
