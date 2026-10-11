@@ -183,6 +183,102 @@ internal static partial class Program
         RotaSecondTill();
         RotaRangeNoWay();
         RotaRangeExtended();
+        RotaSkillFirst();
+    }
+
+    // The better at the job first; whoever has no hours gets the quiet ones where the stations have them; only who they have none for stays without.
+    private static void RotaSkillFirst()
+    {
+        // One till open 42 hours that may not open longer, two full-time cashiers: the stations hold one of them.
+        for (int better = 0; better < 2; better++)
+        {
+            RotaCase c = RotaShopCase(1, 0, 2);
+            c.Problem.Can[better] = 80;
+            c.Problem.Can[1 - better] = 45;
+            c.Problem.Worker[0].Wage = c.Problem.Worker[1].Wage = 1200;
+            c.Problem.Worker[0].Demands = new[] { RotaHoursAsk(RotaFull) };
+            c.Problem.Worker[1].Demands = new[] { RotaHoursAsk(RotaFull) };
+            c.Shop.Margin = 2000;
+            RotaOpenHours(c, 0x7F, 10, 16);
+            c.Barred = new bool[RotaCatalogue.Cells];
+            for (int cell = 0; cell < RotaCatalogue.Cells; cell++)
+            {
+                c.Barred[cell] = !c.Shop.Open[cell];
+            }
+            RotaLadderResult l = RotaClimb(c);
+            RotaRung best = l.Rungs[1];
+            int good = RotaHoursOf(best.Plan, better), poor = RotaHoursOf(best.Plan, 1 - better);
+            Check(good >= 30 && good <= 50 && poor == 0 && best.Left.Count == 1 && best.Left[0].Worker == 1 - better && best.Left[0].Why == RotaClash.Shared,
+                "rota skill: two full-time cashiers and a till that holds one: the more skilled has the week, the other is the one not needed (" + good + " and " + poor + ", the better is number " + better + ")");
+            Check(RotaHoursOf(l.Fill, better) >= 30 && RotaHoursOf(l.Fill, 1 - better) == 0, "rota skill: and so it is in the rota \"Fill the rota\" writes");
+        }
+
+        // The last try: somebody with no hours, a colleague on the busy half of the day, the quiet half empty.
+        RotaCase q = RotaShopCase(1, 0, 2);
+        q.Problem.Can[0] = 80;
+        q.Problem.Can[1] = 45;
+        q.Problem.Worker[0].Demands = new[] { RotaHoursAsk(RotaPart) };
+        q.Problem.Worker[1].Demands = new[] { RotaHoursAsk(RotaPart) };
+        RotaOpenHours(q, 0x7F, 8, 20);
+        var plan = new RotaPlan();
+        plan.Size(1);
+        int busiest = 0;
+        for (int h = 8; h < 20; h++)
+        {
+            busiest = q.Shop.Customers[h] > q.Shop.Customers[busiest] || busiest == 0 ? h : busiest;
+        }
+        int from = Math.Max(8, Math.Min(16, busiest - 2));
+        for (int d = 0; d < 7; d++)
+        {
+            for (int h = from; h < from + 4; h++)
+            {
+                plan.At[d * 24 + h] = 0;    // 28 hours around the busiest hour of every day
+            }
+        }
+        var fit = new RotaFit();
+        fit.Begin(q.Shop, q.Problem, q.Shop.Open, plan);
+        int given = fit.Rescue(2);
+        bool quiet = true, apart = true;
+        for (int cell = 0; cell < RotaCatalogue.Cells; cell++)
+        {
+            int h = cell % 24;
+            quiet &= plan.At[cell] != 1 || h < from || h >= from + 4 || fit.HoursOf(0) < 28;
+            apart &= plan.At[cell] != 0 || (h >= from - 0 && h < from + 4);
+        }
+        int single, split;
+        RotaPieces(plan, 2, out single, out split);
+        Check(given == 1 && fit.HoursOf(1) >= 10 && fit.HoursOf(1) <= 30, "rota skill: somebody with no hours is given a week on the hours nobody stands at (" + fit.HoursOf(1) + " hours)");
+        Check(fit.HoursOf(0) >= 10 && apart && quiet, "rota skill: those are the quieter hours: the colleague keeps the busy ones (" + fit.HoursOf(0) + " hours kept)");
+        Check(single == 0, "rota skill: and no shift of a single hour comes of it");
+
+        // Nothing to give: every open hour is a colleague's least. They stay without, and nothing of theirs is left behind.
+        q = RotaShopCase(1, 0, 2);
+        q.Problem.Can[0] = 80;
+        q.Problem.Can[1] = 45;
+        q.Problem.Worker[0].Demands = new[] { RotaHoursAsk(RotaFull) };
+        q.Problem.Worker[1].Demands = new[] { RotaHoursAsk(RotaPart) };
+        RotaOpenHours(q, 0x1F, 10, 16);     // thirty hours, all the first cashier's least
+        plan.Size(1);
+        for (int cell = 0; cell < RotaCatalogue.Cells; cell++)
+        {
+            plan.At[cell] = (short)(q.Shop.Open[cell] ? 0 : -1);
+        }
+        fit.Begin(q.Shop, q.Problem, q.Shop.Open, plan);
+        given = fit.Rescue(2);
+        Check(given == 0 && fit.HoursOf(1) == 0 && fit.HoursOf(0) == 30 && RotaHoursOf(plan, 1) == 0, "rota skill: where the stations have no hours for somebody they stay without, and the others keep theirs (" + fit.HoursOf(0) + " and " + fit.HoursOf(1) + ")");
+
+        // The order: with room for one part-time week only, the more skilled of two without hours has it.
+        q = RotaShopCase(1, 0, 2);
+        q.Problem.Can[0] = 45;
+        q.Problem.Can[1] = 80;
+        q.Problem.Worker[0].Demands = new[] { RotaHoursAsk(RotaPart) };
+        q.Problem.Worker[1].Demands = new[] { RotaHoursAsk(RotaPart) };
+        RotaOpenHours(q, 0x07, 10, 14);     // twelve hours
+        plan.Size(1);
+        fit.Begin(q.Shop, q.Problem, q.Shop.Open, plan);
+        given = fit.Rescue(2);
+        Check(given == 1 && fit.HoursOf(1) >= 10 && fit.HoursOf(0) == 0, "rota skill: of two without hours and room for one, the more skilled has the week (" + fit.HoursOf(0) + " and " + fit.HoursOf(1) + ")");
+        Check(RotaFit.Skill(q.Problem, 0) == 45 && RotaFit.Skill(q.Problem, 1) == 80, "rota skill: the skill is the game's percentage at the station they are best at");
     }
 
     private static void RotaFitUnits()
@@ -300,7 +396,7 @@ internal static partial class Program
     private static void RotaRangeGenerated(string what, bool longHours, int tillsMost, bool noCleaning)
     {
         const int cases = 55;
-        int outside = 0, wrong = 0, leftThoughRoom = 0, exact = 0, leftWrongReason = 0, curve = 0, curvePairs = 0, singles = 0, splits = 0, stepped = 0, unusable = 0, hireOutside = 0, quieterFirst = 0;
+        int outside = 0, wrong = 0, leftThoughRoom = 0, exact = 0, leftWrongReason = 0, curve = 0, curvePairs = 0, singles = 0, splits = 0, stepped = 0, unusable = 0, hireOutside = 0, quieterFirst = 0, lessSkilled = 0;
         for (int seed = 1; seed <= cases; seed++)
         {
             RotaCase c = RotaRangeCase(seed, longHours, tillsMost, noCleaning);
@@ -351,6 +447,16 @@ internal static partial class Program
             }
             foreach (RotaLeft left in best.Left)
             {
+                for (int v = 0; v < real && left.Why == RotaClash.Shared; v++)
+                {
+                    int least, most;
+                    RotaFit.Range(c.Problem.Worker[v], out least, out most);
+                    bool same = (c.Problem.Can[v * stations] != 0) == (c.Problem.Can[left.Worker * stations] != 0);
+                    lessSkilled += v != left.Worker && same && least >= left.Least && RotaHoursOf(best.Plan, v) > 0 && RotaFit.Skill(c.Problem, v) < RotaFit.Skill(c.Problem, left.Worker) ? 1 : 0;
+                }
+            }
+            foreach (RotaLeft left in best.Left)
+            {
                 bool right = left.Why == RotaClash.Hours ? left.Room < left.Least : left.Why == RotaClash.Shared && left.Room >= left.Least && left.Asked > 0;
                 leftWrongReason += right && RotaHoursOf(best.Plan, left.Worker) == 0 ? 0 : 1;
             }
@@ -394,6 +500,7 @@ internal static partial class Program
         Check(wrong == 0, "rota hours: no rota breaks a limit of a shift, a day or a demand to get there" + of + ": " + wrong + " do");
         Check(leftThoughRoom == 0, "rota hours: where the open hours hold every cashier's least hours, no cashier is left out (" + exact + " businesses where counting is exact)" + of + ": " + leftThoughRoom + " left out");
         Check(leftWrongReason == 0, "rota hours: whoever is left out has no hours at all, and the reason given is the true one" + of + ": " + leftWrongReason + " not");
+        Check(lessSkilled == 0, "rota skill: nobody is without hours while somebody less skilled who asks for as many works at the same stations" + of + ": " + lessSkilled);
         Check(curve == 0, "rota hours: no busier hour of a day has fewer people at the tills than a quieter one" + of + ": " + curve + " businesses, " + curvePairs + " pairs of hours");
         Check(quieterFirst >= 0, "rota hours: (counted, and covered by the check before: hours with two at the tills while a busier hour that needs two has one, whatever the reason" + of + ": " + quieterFirst + ")");
         Check(singles == 0, "rota hours: no shift of a single hour" + of + ": " + singles);

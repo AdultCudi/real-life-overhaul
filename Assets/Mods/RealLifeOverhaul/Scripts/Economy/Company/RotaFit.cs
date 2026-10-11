@@ -32,6 +32,11 @@ namespace RealLifeOverhaul.Economy
     /// that group of stations than the hour it would give up. So within a day a busier hour is never staffed thinner
     /// than a quieter one unless a rule above forbids the move.
     ///
+    /// THE BETTER FIRST: people are brought to their least hours in the order of how well they do the job (the game's
+    /// skill, a percentage), the best first, so the best has the first choice of the busiest hours that are left.
+    /// Whoever a week leaves with no hours is tried once more at the end (<see cref="Rescue"/>), in the same order,
+    /// on the hours nobody stands at: the quieter ones. Only somebody the stations have no hours for stays without.
+    ///
     /// Cost: nothing unless asked; a step is one person, or one pass of moves. Nothing is allocated once grown.
     /// </summary>
     public sealed class RotaFit
@@ -42,14 +47,22 @@ namespace RealLifeOverhaul.Economy
         private RotaProblem _p;
         private bool[] _open;
         private short[] _at;
-        private int _s, _w, _next;
+        private int _s, _w, _next, _rescueAt, _given;
         private bool _slid, _moved, _mended;
         private int _slideDay, _rounds;
         private int[] _hours = new int[0], _day = new int[0], _least = new int[0], _most = new int[0], _daysMost = new int[0], _frag = new int[0];
+        private int[] _order = new int[0];         // everybody, the better at the job first (the earlier of two as good)
         private ulong[] _free = new ulong[0], _not = new ulong[0], _kinds = new ulong[0];
+        private short[] _before = new short[0];    // the rota before a last try, to put back if it comes to nothing
         private short[] _where = new short[0];     // [worker * Cells + cell] the station they are at, plus one; 0: nowhere
 
         public int Moves;       // hours added, taken over or slid (the self-check)
+        public int Given => _given;     // people the last try gave a week
+
+        public void RescueBegin()
+        {
+            _rescueAt = _given = 0;
+        }
 
         /// <summary>The least and the most hours a week somebody asks for; 0 and a very large number where they ask for none.</summary>
         public static void Range(RotaWorker worker, out int least, out int most)
@@ -80,6 +93,17 @@ namespace RealLifeOverhaul.Economy
             return _hours[worker];
         }
 
+        /// <summary>How well somebody does the job: the game's skill at the station they are best at, a percentage; 0 for somebody who can stand nowhere.</summary>
+        public static int Skill(RotaProblem problem, int worker)
+        {
+            int skill = 0;
+            for (int s = 0; s < problem.Stations; s++)
+            {
+                skill = Math.Max(skill, problem.Can[worker * problem.Stations + s]);
+            }
+            return skill;
+        }
+
         /// <summary>Takes a rota and what it was made for. <paramref name="problem"/> holds the worth of the hours (a wanted hour has one) and everybody's demands.</summary>
         public void Begin(RotaShop shop, RotaProblem problem, bool[] open, RotaPlan plan)
         {
@@ -101,14 +125,12 @@ namespace RealLifeOverhaul.Economy
                 _most = new int[_w];
                 _daysMost = new int[_w];
                 _frag = new int[_w];
+                _order = new int[_w];
                 _free = new ulong[_w];
                 _not = new ulong[_w];
                 _kinds = new ulong[_w];
                 _where = new short[_w * Cells];
             }
-            Array.Clear(_hours, 0, _hours.Length);
-            Array.Clear(_day, 0, _day.Length);
-            Array.Clear(_where, 0, _where.Length);
             for (int w = 0; w < _w; w++)
             {
                 Range(problem.Worker[w], out _least[w], out _most[w]);
@@ -124,7 +146,24 @@ namespace RealLifeOverhaul.Economy
                     _not[w] |= d.Kind == RotaDemandKind.NoHours ? d.Mask : 0UL;
                     _kinds[w] |= d.Kind == RotaDemandKind.NoShiftKind ? d.Mask : 0UL;
                 }
+                // (the hours are counted below: until then that array holds the skill, for the order)
+                int skill = _hours[w] = Skill(problem, w), j = w;
+                while (j > 0 && _hours[_order[j - 1]] < skill)
+                {
+                    _order[j] = _order[j - 1];
+                    j--;
+                }
+                _order[j] = w;
             }
+            Count();
+        }
+
+        // Everybody's hours, days and places, counted from the rota as it stands.
+        private void Count()
+        {
+            Array.Clear(_hours, 0, _hours.Length);
+            Array.Clear(_day, 0, _day.Length);
+            Array.Clear(_where, 0, _where.Length);
             for (int cell = 0; cell < Cells; cell++)
             {
                 for (int s = 0; s < _s; s++)
@@ -145,7 +184,7 @@ namespace RealLifeOverhaul.Economy
         {
             if (_next < _w)
             {
-                Reach(_next++);
+                Reach(_order[_next++]);
                 return false;
             }
             if (!_mended)
@@ -295,6 +334,75 @@ namespace RealLifeOverhaul.Economy
                 _frag[w] = starts && need >= 2 ? best : -1;
                 Moves++;
             }
+        }
+
+        /// <summary>Takes every hour somebody has: they stand nowhere in this rota.</summary>
+        public void Drop(int w)
+        {
+            for (int cell = 0; cell < Cells && _hours[w] > 0; cell++)
+            {
+                int s = _where[w * Cells + cell] - 1;
+                if (s >= 0)
+                {
+                    Take(w, cell, s);
+                }
+            }
+            _frag[w] = -1;
+        }
+
+        /// <summary>
+        /// Whoever has no hours and asks for some, the better at the job first: the hours nobody stands at (the
+        /// quieter ones, the busier being taken) and the hours colleagues can spare, up to their least. Whoever
+        /// these do not bring to their least stays without, and the rota is as it was before they were tried: the
+        /// stations have no hours for them. Only the first
+        /// <paramref name="people"/> are looked at. Returns how many were given a week; if any, <see cref="Step"/>
+        /// has the passes towards the customers to do again.
+        /// </summary>
+        public int Rescue(int people)
+        {
+            _rescueAt = _given = 0;
+            while (!RescueStep(people))
+            {
+            }
+            return _given;
+        }
+
+        /// <summary>The same a person at a time, after <see cref="RescueBegin"/>. True when everybody has been looked at; <see cref="Given"/> says how many have a week of it.</summary>
+        public bool RescueStep(int people)
+        {
+            int given = 0;
+            for (; _rescueAt < _w && given == 0; _rescueAt++)
+            {
+                int w = _order[_rescueAt];
+                if (w >= people || _hours[w] > 0 || _least[w] <= 0)
+                {
+                    continue;
+                }
+                if (_before.Length < Cells * _s)
+                {
+                    _before = new short[Cells * _s];
+                }
+                Array.Copy(_at, _before, Cells * _s);
+                _frag[w] = -1;
+                Reach(w);
+                if (_hours[w] < _least[w])
+                {
+                    // (the hours colleagues gave up for nothing go back to them)
+                    Array.Copy(_before, _at, Cells * _s);
+                    Count();
+                    _frag[w] = -1;
+                    _rescueAt++;
+                    break;      // (a try that came to nothing is a step of its own)
+                }
+                given++;
+            }
+            _given += given;
+            if (_rescueAt >= _w && _given > 0)
+            {
+                _mended = _slid = _moved = false;
+                _slideDay = _rounds = 0;
+            }
+            return _rescueAt >= _w;
         }
 
         // True if a new shift begun at an hour could be lengthened by the hour before or after it.

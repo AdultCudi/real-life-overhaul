@@ -43,6 +43,8 @@ namespace RealLifeOverhaul.Economy
         private bool _hireAny;
         private readonly RotaFit _fit = new RotaFit();
         private bool[] _benched = new bool[0];
+        private bool _rescuing;             // whoever has no hours is having the last try, a person a step
+        private bool _rescued;              // the last try for whoever had no hours gave somebody a week: the fit is finishing once more
         private readonly bool[] _ext = new bool[Cells], _added = new bool[Cells];
         private int _benchRounds, _runExtra, _extFor;
         private bool _runStrict;
@@ -123,7 +125,14 @@ namespace RealLifeOverhaul.Economy
                     }
                     break;
                 case PhaseFit:
-                    if (_fit.Step())
+                    if (_rescuing)
+                    {
+                        if (_fit.RescueStep(_base.Workers))
+                        {
+                            Rescued();
+                        }
+                    }
+                    else if (_fit.Step())
                     {
                         Fitted();
                     }
@@ -145,38 +154,90 @@ namespace RealLifeOverhaul.Economy
         }
 
         // The rota has been brought to everybody's least hours as far as the rules allow. Whoever still has some hours but
-        // fewer than they ask for is left out of this week altogether, and the week is made again without them: nobody
-        // works outside the range they ask for. After three such rounds whoever is still short simply gets no hours.
+        // fewer than they ask for is left out of this week, and the week is made again without them: nobody works outside
+        // the range they ask for. Who is left out goes by how well they do the job: the least skilled of those short, or
+        // somebody less skilled still at the same stations where the short one's own limits are not what keeps them short.
+        // At the end whoever has no hours is tried once more on the hours nobody stands at, the better first: only who
+        // the stations have no hours for stays without.
         private void Fitted()
         {
             int stations = _work.Stations, real = _base.Workers;
-            // One at a time: whoever is furthest from their range (the later of two as far), since the hours they leave may be what the others lack.
-            int worst = -1, far = 0;
+            int worst = -1, low = int.MaxValue;
+            if (_rescued)
+            {
+                // (the last try gave somebody a week, and the shifts have been moved towards the customers once more)
+                _rescued = false;
+                _solver.Rate(_work, _plan);
+                _phase = PhaseCut;
+                return;
+            }
             for (int w = 0; w < real; w++)
             {
-                int least, most, hours = _fit.HoursOf(w);
-                RotaFit.Range(_base.Worker[w], out least, out most);
-                int off = hours == 0 ? 0 : hours < least ? least - hours : hours > most ? hours - most : 0;
-                if (off > 0 && off >= far && !_benched[w])
+                int hours = _fit.HoursOf(w), skill = RotaFit.Skill(_base, w);
+                if (hours != 0 && !RotaFit.Inside(_base.Worker[w], hours) && !_benched[w] && skill <= low)
                 {
-                    far = off;
+                    low = skill;
                     worst = w;
                 }
             }
             if (worst >= 0 && _benchRounds++ < BenchMost)
             {
+                int home = Home(_base, worst), least = Least(_base.Worker[worst]);
+                bool room = _fit.HoursOf(worst) < least && RotaFit.Room(_shop, _base, _open, worst) >= least;
+                for (int v = 0; room && v < real; v++)
+                {
+                    int skill = RotaFit.Skill(_base, v);
+                    if (v != worst && !_benched[v] && skill < low && _fit.HoursOf(v) > 0 && Least(_base.Worker[v]) > 0 && Home(_base, v) == home)
+                    {
+                        low = skill;
+                        worst = v;
+                    }
+                }
                 _benched[worst] = true;
                 Build(_hires, _runExtra, _runStrict);
                 _phase = PhaseGrid;
                 return;
             }
-            for (int i = 0; i < Cells * stations; i++)
+            bool tried = false;
+            for (int w = 0; w < real; w++)
             {
-                int w = _plan.At[i];
-                if (w >= 0 && w < real && !RotaFit.Inside(_base.Worker[w], _fit.HoursOf(w)))
+                if (!RotaFit.Inside(_base.Worker[w], _fit.HoursOf(w)))
                 {
-                    _plan.At[i] = -1;
+                    _fit.Drop(w);
                 }
+                // (whoever was left out may stand at their stations again for the last try)
+                for (int s = 0; _benched[w] && s < stations; s++)
+                {
+                    _work.Can[w * stations + s] = _base.Can[w * stations + s];
+                }
+                tried |= _fit.HoursOf(w) == 0;
+            }
+            if (tried)
+            {
+                _fit.RescueBegin();
+                _rescuing = true;   // (a person a step)
+                return;
+            }
+            _solver.Rate(_work, _plan);
+            _phase = PhaseCut;
+        }
+
+        // Everybody without hours has had the last try. Whoever was left out and still has none stands nowhere again.
+        private void Rescued()
+        {
+            int stations = _work.Stations;
+            _rescuing = false;
+            for (int w = 0; w < _base.Workers; w++)
+            {
+                for (int s = 0; _benched[w] && _fit.HoursOf(w) == 0 && s < stations; s++)
+                {
+                    _work.Can[w * stations + s] = 0;
+                }
+            }
+            if (_fit.Given > 0)
+            {
+                _rescued = true;    // (the fit goes on: its passes towards the customers, then Fitted once more)
+                return;
             }
             _solver.Rate(_work, _plan);
             _phase = PhaseCut;
@@ -346,6 +407,7 @@ namespace RealLifeOverhaul.Economy
             }
             Array.Clear(_benched, 0, _benched.Length);
             _benchRounds = 0;
+            _rescued = _rescuing = false;
             _runExtra = extra;
             _runStrict = mode == RotaMode.StaffFirst;
             Build(_hires, extra, _runStrict);
