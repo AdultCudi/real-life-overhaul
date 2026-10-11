@@ -229,7 +229,7 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       CareerDirector   where each employer is (a help-wanted board), its boss by the board, the rota, clocking on, payslip, reviews, booked sets
       CareerPhone      the Work contact and the same conversation face to face with a boss: sign on, rota, clock on, sick, notice, CV
       CareerLinks      the optional doors to other features: acquaintances (offered), law record and sick notes (asked for)
-      DispatchBoard    the dispatcher's planning map: drawn only when an assignment changes
+      DispatchList     the dispatcher's planning board: the game's list window, written only when a parcel is placed or taken back
     Business/  pressure on the businesses the player runs: rivals, a racket, inspections, staff, suppliers, customers, audit, opportunities
       BusinessCatalogue  every kind of issue and every number that bounds it (game-free)
       BusinessState      open issues, running footfall changes and closures with their end, the racket: one line in modData (game-free)
@@ -809,7 +809,7 @@ game minutes a unit: four game hours over the units of the shift; the cart's twe
 - **Ride-hail.** Card only; nothing in it is done on foot with a key. No clock.
 - **Dispatch desk and shift in charge.** Card and panel buttons for the choices (a button for each van and "Take one
   back"; "Check on them", what to say, what to do about an incident). No clock: every call is a decision. The dispatch
-  desk's map (`DispatchBoard`) is still the mod's own canvas.
+  desk's board is the game's list window (`DispatchList`).
 
 `JobHud` keeps the plate, marker and prompt that the home's offers and the run for fitness call; its status, countdown,
 choices, target diamond and pay slip, and the director's drawing of them, are deleted. `JobKeys` is unchanged: every
@@ -1547,9 +1547,9 @@ out from the catalogue's figures, not measured in play. **Owners are paid less:*
 employed, is multiplied by `CareerCatalogue.OwnerFactor`: 1 with no business, 0.85 with one, 0.70 with two, 0.55
 from three on.
 
-**The dispatcher's desk** (`DispatchJob`, `DispatchBoard`): three batches of six parcels round the depot; each
+**The dispatcher's desk** (`DispatchJob`, `DispatchList`): three batches of six parcels round the depot; each
 parcel goes on one of three vans (three a van) with the choice keys, 55 s a batch, the interaction key takes one
-back. The board draws every van's round as it grows. A plan's cost is the driving (nearest parcel first, then
+back. The board is the game's list window (`GameUi.DeskList`): the parcels still waiting as a note at the top (how far and which way from the depot), then an entry for each van with what it carries and how long its round is, and a button to send the next parcel on it, and an entry to take one back. The same choices stay on the game's panel over the desk (the keys). The window opens with each batch; the cancel key closes it for that batch. If the game's list window cannot be copied the panel is all there is (`Jobs check (dispatch list) ... FAIL`). The mod's own map is gone; nothing in this has been seen in the game. A plan's cost is the driving (nearest parcel first, then
 home) plus a fixed amount per van sent out; the best and worst of the 729 possible loadings are found by trying
 them all, and the plan is paid by where it falls between them. Two poor plans (under 0.4) are a bad shift.
 
