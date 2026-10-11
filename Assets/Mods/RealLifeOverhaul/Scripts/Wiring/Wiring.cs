@@ -23,6 +23,7 @@ namespace RealLifeOverhaul
     ///     DebtLinks       lenders with the courts (a civil claim for a debt), the private lender with the holds and the
     ///                     injury of a mugging, a repossession with what the camera sees
     ///     CityLinks       the city's economy with the calendar and the weather, business pressure (footfall, rivals) and the paper
+    ///     CompanyLinks    running a business with business pressure (footfall, closures, inspections, audits), fires, break-ins, the courts, the paper and the Planner
     ///
     /// <see cref="Connect"/> is called once per city load, after every director has been added;
     /// <see cref="Disconnect"/> on unload puts every bridge back to its default. Nothing here
@@ -63,6 +64,7 @@ namespace RealLifeOverhaul
             Step("the economy", EconomyLinks.Connect);
             Step("credit and debt", DebtLinks.Connect);
             Step("the city's economy", CityLinks.Connect);
+            Step("running a business", CompanyLinks.Connect);
             Logger?.Info("Wiring: the features are connected.");
         }
 
@@ -74,6 +76,7 @@ namespace RealLifeOverhaul
             }
             Connected = false;
             Step("the taxi by phone", TaxiLinks.Disconnect);
+            Step("running a business", CompanyLinks.Disconnect);
             Step("the city's economy", CityLinks.Disconnect);
             Step("credit and debt", DebtLinks.Disconnect);
             Step("the economy", EconomyLinks.Disconnect);

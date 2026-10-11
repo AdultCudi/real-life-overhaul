@@ -565,6 +565,14 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_macro_test_district_up", () => Economy.CityEconomyDirector.Instance?.TestDistrict(100))
                 .AddButton("reallife_macro_test_district_down", () => Economy.CityEconomyDirector.Instance?.TestDistrict(-100))
                 .AddButton("reallife_macro_test_back", () => Economy.CityEconomyDirector.Instance?.TestBack())
+                .AddHeader("reallife_co_header")
+                .AddToggle(Settings.EconomyCompanyId, "reallife_co_enabled", Settings.EconomyCompany,
+                    v => Settings.EconomyCompany = v)
+                .AddToggle(Settings.EconomyCompanyStaffId, "reallife_co_opt_staff", Settings.EconomyCompanyStaff,
+                    v => Settings.EconomyCompanyStaff = v)
+                .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
+                    new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
+                    v => Settings.EconomyCompanyLevel = v)
                 .AddSplitter()
                 .AddHeader("reallife_nav_header")
                 .AddToggle(Settings.MinimapId, "reallife_nav_minimap", Settings.Minimap,
@@ -790,6 +798,9 @@ namespace RealLifeOverhaul
             _root.AddComponent<Economy.EconomyDirector>();   // the credit rating, the banks' terms by it, loans from the phone and the Finance app (Scripts/Economy)
             Economy.CityEconomyDirector.Logger = context.Logger;
             _root.AddComponent<Economy.CityEconomyDirector>();   // the city's economy: a central bank, prices, a cycle, districts and supply (Scripts/Economy/City)
+            Economy.CompanyDirector.Logger = context.Logger;
+            Economy.CompanyApp.Logger = context.Logger;
+            _root.AddComponent<Economy.CompanyDirector>();   // running a business: staff, insurance, marketing, tax and licences, and the Company app (Scripts/Economy/Company)
             Nav.NavGraph.Logger = context.Logger;
             Nav.NavMarks.Logger = context.Logger;
             Nav.NavHud.Logger = context.Logger;
