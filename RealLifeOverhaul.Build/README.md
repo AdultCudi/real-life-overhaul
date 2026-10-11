@@ -571,13 +571,13 @@ is taken. They are found on the phone (the Gig Line) and at the help-wanted boar
 
 | job | needs | a unit is | pays | a day |
 |---|---|---|---|---|
-| Flyers | nothing | a flyer taken | 2.50, +40 % on a busy street, +10 % for the whole bundle | 48 (two bundles of 24) |
-| Cleaner | a business near that is open | a spill mopped, inside the client's premises | 7, +10 % for the whole floor | 24 (three floors of 8) |
-| Shelf stocker | a shop near that is open | a box carried in from the kerb and shelved | 12, +10 % for the whole delivery | 18 (three deliveries of 6) |
-| Drinks cart | a pavement with room for the cart | a customer served the drink they asked for | 6.50, tips of 1 to 3.50 for quick, +10 % if nobody walked off | 36 (three shifts of 12) |
-| Busker | a pavement | a song | tips only: about 6 a song, times 0.5 to 1.5 for how many are about, 0.4 to 1.4 for the hour, 0.85 to 1.25 for the song, by how it was played; 1 to 3 from each listener | 16 (two sets of 8) |
-| Courier | a car (own, or a van hired for 45 a day) | a parcel delivered | 18 + 0.03 a metre of the round, +15 % for beating the clock, tips | 15 (three rounds of 5) |
-| Ride-hail | a car (own or hired), a reference (level 2 in any job), no police stop on a job for 2 days | a fare | 8 + 0.07 a metre, tip up to 30 % by comfort | 14 |
+| Flyers | nothing | a flyer taken | 7, +40 % on a busy street, +10 % for the whole bundle | 48 (two bundles of 24) |
+| Cleaner | a business near that is open | an eighth of the client's floor cleaned (the game's own dirt, to 100 %) | 20, by the share of the dirt taken off | 24 (three floors of 8) |
+| Shelf stocker | a shop near that is open | a box carried in from the kerb and shelved | 33, +10 % for the whole delivery | 18 (three deliveries of 6) |
+| Drinks cart | a pavement with room for the cart | a customer served the drink they asked for | 18, tips of 2.75 to 9.50 for quick, +10 % if nobody walked off | 36 (three shifts of 12) |
+| Busker | a pavement | a song | tips only: about 17 a song, times 0.5 to 1.5 for how many are about, 0.4 to 1.4 for the hour, 0.85 to 1.25 for the song, by how it was played; 2.75 to 8.25 from each listener | 16 (two sets of 8) |
+| Courier | a car (own, or a van hired for 125 a day) | a parcel delivered | 50 + 0.085 a metre of the round, +15 % for beating the clock, tips of 5.50 to 16.50 | 15 (three rounds of 5) |
+| Ride-hail | a car (own or hired), a reference (level 2 in any job), no police stop on a job for 2 days | a fare | 22 + 0.195 a metre, tip up to 30 % by comfort | 14 |
 
 Every figure is in `JobCatalogue`, set against what the game itself pays (read from its data files by
 `JobAssets/scripts/extract_wages.py`: the one employer job, cashier, is 25 an hour; the game's own staff
@@ -587,6 +587,119 @@ boxes, 30 customers, 20 songs, 15 parcels, 12 fares; four levels) and by the "Jo
 a job pays; a slip never goes below zero. Three failed shifts in a job and it lets the player go for three
 days; a good shift takes a strike off. Work spends energy and trains a skill through the game's own
 systems, and never takes energy below 12.
+
+### Pay against the game's
+
+What the game pays and charges, read from its data files (`JobAssets/scripts/extract_wages.py`) and its code, and
+what the gigs were set against. One game hour is one minute of play; a gig shift is four game hours (the hours an
+employer pays basic wage for).
+
+| in the game | figure | where |
+|---|---|---|
+| the player's own job: cashier at El Gato Food Market | 25 an hour, 8 to 16, six days: 100 for a four-hour shift | `PlayerActivity/WorkActivity` pays `floor(hours x hourlySalary)` |
+| its staff at no skill | cleaning 12 an hour, customer service 16, delivery driver 18 | `SkillData.baseHourlyWage` |
+| its staff with skill | those times `1 + skill^1.05 / 100`: 19 to 29 at skill 50 | `EmployeeHelper.CalculateHourlyWageForSkill` |
+| the delivery van job | 100 a drop (150 at one depot), three drops, about three game hours: about 100 an hour | `Vehicles.DeliveryDriverJob` |
+| food delivery | 25 + 0.05 a metre within 500 m | `Player.FoodDeliveryJob` |
+| a taxi ride (the player pays) | 0.15 a metre: 90 for 600 m | `TaxiSystem.GetPrice` |
+
+The first release's gigs paid 14 to 22 an hour on foot (under the cashier's 25) and 30 to 55 with a car, which
+is what the owner found far too little against 48,500 in hand and 187 a day in costs. The new table raises every
+gig's unit pay by about 2.8 (unskilled 2.75 to 2.9, courier and ride-hail 2.8, the two desk shifts 3.0), which
+puts a shift played well at 40 to 55 an hour on foot (1.6 to 2.2 times the cashier) and about 95 to 105 an hour of
+play with a car (the van job's 100). Skilled work (courier, ride-hail, the desk shifts) pays more an hour than
+unskilled. Nothing is said to cost more energy or to level faster.
+
+| gig | unit pay before | unit pay now | whole shift before | whole shift now | an hour of the shift now |
+|---|---|---|---|---|---|
+| Flyers (24) | 2.50 | 7 | 60 | 168 | 42 |
+| Cleaner (8) | 7 | 20 | 56 | 160 | 40 |
+| Shelf stocker (6) | 12 | 33 | 72 | 198 | 50 |
+| Drinks cart (12) | 6.50 | 18 | 78 | 216 | 54 (and tips) |
+| Busker (8 songs, tips) | 6 | 17 | 4 to 16 a song | 11 to 45 a song | by the street and the hour |
+| Courier (5) | 18 + 0.03 a metre | 50 + 0.085 a metre | 110 to 130 | 310 to 340 | 78 to 85 (about 100 of play) |
+| Ride-hail (a 600 m fare) | 8 + 0.07 a metre = 50 | 22 + 0.195 a metre = 139 | 50 a fare | 139 a fare | about 100 of play |
+| Dispatch desk (3 plans) | 14 a plan | 42 a plan | up to 42 | up to 126 | plus the rank's salary |
+| Shift in charge (4 calls) | 12 a call | 36 a call | up to 48 | up to 144 | plus the rank's salary |
+
+Everything else that is money moved with it, so no ratio changed: the tips in the courier's, cart's and busker's
+code; the employers' basic wage by rank (gig ranks 4 to 9 an hour became 11 to 25, the salaried desk and lead
+ranks 18 to 30 became 36 to 60), the raise step (1 to 3), the cart rent (60 to 165) and the cart's takings and
+stock (11 and 3.5 to 30 and 9.5), the booked set's fee (45 to 125), the hired van's daily fee (45 to 125) and what a
+review counts a tip for (a point a dollar to a point for 3, twenty at most). The 85 % rate of the game's clock
+(`ShiftRates.Share`), the crash and police-stop cuts, the level bonus (8 % a level) and the "Job pay" option are
+shares or factors and needed no change. Every figure the Guide quotes (`job_table`, `job_van_fee`, and the pitches'
+`{pay}`, `{km}` and `{shift}`) is read from these constants.
+
+### No two shifts alike (`Jobs/GigOffers`, `Jobs/GigWords`)
+
+Everything that makes one shift of a gig differ from another is drawn in one place, `GigOffers.Draw`, once, from a
+seed made of the day, the hour and the gig (`Mix`, and a small xorshift `GigDice` that is the same on every machine).
+Asking again in the same hour gives the same offer, so the Gig Line's quote is the shift that is worked. The jobs roll
+none of this themselves; they read `JobContext.Offer`. The Gig Line (`JobPhone.Offer`, also read out at the boards) says
+the fee, the size and the reasons in one sentence; the first line of the shift's panel (`ShiftFigures`) repeats the
+reasons ("Gig Line, a generous client, a busy day"); each event is a notification when it happens. Employers' shifts,
+booked sets and the test buttons are flat: `GigOffer.Table`, the table's figures, none of this.
+
+| what | range | average | shown |
+|---|---|---|---|
+| the client | tight 80 to 95 % of the fee (40 % of offers), fair 95 to 107.5 % (40 %), generous 107.5 to 137.5 % (20 %) | exactly 100 % | the quote, the panel |
+| the day (which gigs are busy) | each day 2 or 3 of the 7 gigs are busy and pay 120 %; about one day in two one gig has nothing on and cannot be taken ("Nothing in that today"); every other offered shift pays 87.5 % | busy 2.5 and shut 0.5 a day; the fee over offered shifts exactly 100 % | the quote, the panel |
+| the size | flyers 18 to 30, cleaning 6 to 10 units of floor, stocker 4 to 8 boxes, cart 9 to 15 customers, busker 6 to 10 songs, courier 3 to 7 parcels (ride-hail has no set size) | the table's number | the pitch, the panel |
+| the street (flyers, cart, busker) | quiet 70 %, normal 100 %, rush 130 % (25 %, 50 %, 25 %): how many take a flyer, how soon customers come, what the hat holds | exactly 100 % | the panel |
+| a big tipper (cart, busker, courier, ride-hail, shelf stocker) | 25 % of shifts, at one unit of the shift, 1 to 2 units of pay (a share of the fare for ride-hail) | 0.375 units a shift | a notification, the slip's tips |
+| a speed bonus (flyers, cleaning, shelves) | 30 % of shifts, 0.5 to 1.5 units of pay if the work is done by hand in 60 % of the time allowed | 0.3 units a shift, taken as won | a notification at the start and at the end, the slip's bonus |
+| a difficult customer (cart, cleaning) | 20 % of shifts: the cart's customer sends the first right drink back (3 seconds off their patience, a new order); the client finds a patch missed and 30 % of the dirtied cells are dirty again at 80 % of their dirt | none in money; the pay follows the floor | a notification |
+| weather pay (outdoor gigs, weather option on) | rain +15 %, storm +25 %, heat wave or cold snap +10 %, ice +20 % | extra, only in bad weather | the quote, the panel |
+
+Fair means: for a shift played well in fair weather the pay averages the table's figure. The client's factor, the day's
+factor and the street's factor each average exactly 1, the size is symmetrical round the table's number, and the money
+the events are expected to add (a tip's and a speed bonus' chances times the middle of their ranges, as a share of the
+shift) is taken off every fee (`GigOffers.Calibration`, 0.94 to 1 by gig), so adding them back gives 1. That is why the
+quoted fee of a gig with events averages a little under 100 % (stocker 90 %). Weather pay is not taken off: it is a
+bonus for bad weather. The pay slip is the game's notification as before; tips and the speed bonus are on its lines.
+
+Checked offline by `CatalogueCheck` (`GigCheck.cs`), which draws about 5,500 seeded offers for each gig: the same
+day and hour give the same offer; the ranges above are kept; the client, day and crowd factors average 1 within 2 %;
+the size averages the table's within 3 %; a whole shift, events included, averages the table's within 2.5 %
+(measured 0.993 to 1.002 of the table, 0.998 over all gigs); the day's board has 2 or 3 busy and at most 1 shut gig a
+day and averages 2.49 and 0.51 over 3,000 days; a career shift gets the flat table; weather pay applies out of doors
+only. It also checks the pay table: every gig on foot pays at least 1.5 times the game's cashier an hour (the busker,
+whose pay is tips, at least the cashier's), courier and ride-hail more than the best unskilled gig and no more than
+the van job's 100 an hour, both desk units more than any unskilled gig's, and the own cart nets about the cart gig's pay.
+
+Log lines with "Developer diagnostics" on: `Jobs: offer for 'cleaner' (day 14, hour 9, seed ...): Generous client x1.2 ...`
+when a gig starts; `Jobs 'x' event: a big tipper at unit ...`, `... the client adds ... if the shift is done within ...`,
+`... speed bonus kept ...`, `Jobs: vendor event: a difficult customer sends the drink back ...`, `Jobs: cleaner event:
+a difficult client points out a missed patch ...`.
+
+### The cleaner works on the game's own dirt (`Kinds/CleanerJob`, `JobDirt`, `JobMop`)
+
+How the game cleans: every interior has a floor of `DirtSpotObject`s, each reading its dirtiness (0 to 100) from its
+place in `BuildingRegistration.dirtSpots`; `BuildingCleanliness.GetCleanliness()` is 100 minus the mean dirtiness
+minus the mean over spots of 5 or more (100 when none shows). The player takes a mop from a cleaning station
+(`CleaningStationController.OnCleaningStationClick`: `PlayerHelper.ItemInstanceInHands = ItemHelper.InitializeNewInstance("ba:itemname_mop")`),
+which shows the dirt highlighting (`MopController.AssignToPlayer`, `BuildingCleanlinessHelper.ShowDirtinessHighlighting`);
+clicking a dirt spot (`DirtSpotObject.Interact`, `BuildingManager.onFloorCellClick`) starts `MopController.FloorCellClick`,
+which cleans the clicked cell and those round it at 25 dirt a second shared among them, with the game's cleaning stance
+and a minimum of 0.2 s, and ends with the item panel's bar refreshed. The game's tasks list stops flagging dirty floors at
+90 %; the job asks 100 %, which is the game's own "no dirt shows" figure.
+
+In a business that is not the player's the objects exist but `dirtSpots` is empty or missing (`BuildingHelper.ResetRegistrationOnRent`
+makes it only for the player's), the click is hooked only in the player's own business, the item panel reads 100 % and the
+station refuses anyone but the owner. So `JobDirt` makes its own list for the client's floor (the same cells and order),
+puts dirt in it with `BuildingCleanliness.SetDirtiness` (patches, not single cells: some centres at random and the cells
+nearest them, at most six cells a unit, 55 plus 4 a unit above eight dirt each, 75 to 125 % of that), and hangs it on the
+client's registration while the player is inside; the game's floor objects, its mop and its percentage then work as in the
+player's shop. It is put back whenever the player leaves, when the job ends and while a save is written
+(`SaveHook`; the save is made on the main thread right after the event), so no job dirt is ever saved, and a business the
+player rents is refused outright. `JobMop` gives and takes the mop with the game's own calls, hooks the mop's
+click method to the floor click event for the length of the mop, and sets the item panel's bar to the real figure.
+If the game's dirt cannot be had (no floor cells, no floor object under the player, any exception), one line says why
+and the job uses the mod's own spills as before (`CleanerJob.Spills.cs`). Pay is the fee (units times the unit's pay) times
+the share of the dirt taken off, the whole fee at 100 %, half or more is a shift done; the clock cleans the rest at 85 %
+and sets that share of the dirt to nothing through the game's call. Log lines: `Jobs: cleaner: the game's own dirt is
+down at ...`, `Jobs: cleaner: the floor reads 62% clean (was 55%) ...`, `Jobs: cleaner: pay slip: ...`.
 
 ### The drinks cart: the model of a shift in the game's own interface (`Kinds/VendorJob`)
 

@@ -153,7 +153,7 @@ namespace RealLifeOverhaul
                 Refusal = "reallife_job_on_foot";
                 return false;
             }
-            _songsWanted = Ctx.FullShift ? Def.ShiftUnits : Mathf.Min(Def.ShiftUnits, JobState.LeftToday(Def));
+            _songsWanted = ShiftSize();   // the offer's set
             if (_songsWanted <= 0)
             {
                 Refusal = "reallife_job_no_daily";
@@ -549,7 +549,7 @@ namespace RealLifeOverhaul
         private float AverageTip()
         {
             float street = 0.5f + Mathf.Min(Crowd(), CrowdFull) / (float)CrowdFull;
-            return Def.UnitPay * Ctx.Rate * street * HourFactor(TimeHelper.CurrentHour) * Worth[1] * (0.3f + AveragePlay) * Ctx.TipFactor;
+            return Def.UnitPay * Ctx.Rate * street * HourFactor(TimeHelper.CurrentHour) * Worth[1] * (0.3f + AveragePlay) * Ctx.TipFactor * Ctx.Offer.CrowdFactor;
         }
 
         private void OfferSkip()
@@ -683,10 +683,11 @@ namespace RealLifeOverhaul
             float quality = Mathf.Clamp01((_beats > 0 ? (float)_hits / _beats : 0f) - _wrong * 0.06f);
             int crowd = Crowd();
             float street = 0.5f + Mathf.Min(crowd, CrowdFull) / (float)CrowdFull;
-            int tip = Mathf.RoundToInt(Def.UnitPay * Ctx.Rate * street * HourFactor(TimeHelper.CurrentHour) * Worth[_song] * (0.3f + quality) * Ctx.TipFactor);
+            int tip = Mathf.RoundToInt(Def.UnitPay * Ctx.Rate * street * HourFactor(TimeHelper.CurrentHour) * Worth[_song] * (0.3f + quality) * Ctx.TipFactor * Ctx.Offer.CrowdFactor);   // a quiet street or a rush, as the offer said
             _tips += tip;
             _songs++;
             _handSongs++;
+            UnitDone(_handSongs, UnitPay());   // the big tipper of the set, if the offer drew one
             _songOver = now;
             Ctx.Logger?.Info("Jobs: busking song " + _songs + ": " + _hits + " of " + _beats + " strums, " + _wrong + " wrong notes, " + crowd
                              + " people about, hour " + TimeHelper.CurrentHour + ": " + tip + " in the case.");
@@ -777,7 +778,7 @@ namespace RealLifeOverhaul
                     _listener.HandBack(to);
                     if (_playing)
                     {
-                        _tips += Mathf.Max(1, Mathf.RoundToInt(Random.Range(1f, 3f) * Ctx.Rate));
+                        _tips += Mathf.Max(1, Mathf.RoundToInt(Random.Range(2.75f, 8.25f) * Ctx.Rate));
                     }
                 }
                 else

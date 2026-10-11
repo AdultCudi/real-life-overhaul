@@ -686,6 +686,7 @@ namespace RealLifeOverhaul
             }
             slip.Tips = Mathf.RoundToInt(fare * tip * Ctx.TipFactor);
             slip.Penalty = Mathf.RoundToInt(fare * (_crashes * JobCatalogue.CrashCut + _stops * JobCatalogue.PoliceStopCut + (comfort < 30 ? 0.3f : 0f)));
+            UnitDone(_fares + 1, fare);   // the shift's big tipper, if the offer drew one: a share of the fare
             Ctx.Pay(this, slip, "reallife_job_taxi_slip");
 
             string[] lines = comfort >= 75 ? Good : comfort >= 45 ? Fair : Bad;

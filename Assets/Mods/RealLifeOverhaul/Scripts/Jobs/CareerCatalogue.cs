@@ -116,27 +116,29 @@ namespace RealLifeOverhaul
     ///
     /// Balance. One game hour is one minute of play; a rota shift is one run of the work, about four game
     /// hours. The game pays a cashier 25 an hour and its own staff 12 to 18 at no skill; its van job comes
-    /// to about 100 an hour. Freelance gigs (JobCatalogue) come to 10 to 18 an hour on foot and 45 to 80
+    /// to about 100 an hour. Freelance gigs (JobCatalogue) come to 40 to 55 an hour on foot and about 85
     /// with a car. An employer adds a basic hourly wage on top of the piece pay, for the hours of the shift
     /// (four at most), so that a rota shift is worth about a fifth to a third more than the same work
-    /// freelance, and the desk and lead ranks are salaried:
+    /// freelance, and the desk and lead ranks are salaried (the first release's wages, raised by 2.8 for the
+    /// gigs and 2 for the salaries, as the gigs' own pay was):
     ///
     ///   rank                         basic/h   work pays                      about, per game hour
-    ///   Leafleter / Cleaner            4         as the gig                     14 to 19
-    ///   Stocker / Vendor               5         as the gig                     21 to 24
-    ///   Courier                        6         as the gig                     50 to 66
-    ///   Senior courier                 9         7 parcels, firm's van, +10 %   65 to 80
-    ///   Dispatcher                    20         14 a plan x quality, 3 plans   27 to 31 (no car, no risk)
-    ///   Depot supervisor              30         12 a good call, 4 calls        36 to 42
-    ///   Crew / team / shift lead      18 to 20   10 a good call                 24 to 30
-    ///   Assistant manager             26         12 a good call                 32 to 38
-    ///   Cab driver                     5         4 fares, as the gig            55 to 85
-    ///   Premium driver                 8         fares +25 %, tips x2           80 to 120 (needs a Luxury car)
-    ///   Owner-operator                 0         fares +45 %, tips x2           90 to 130
-    ///   Own cart                       0         takings 11 a customer less 3.5 stock, 60 a day for the cart: 30 to 45
+    ///   Leafleter / Cleaner           11         as the gig                     51 to 53
+    ///   Stocker / Vendor              14         as the gig                     63 to 70
+    ///   Courier                       17         as the gig                     95 to 100
+    ///   Senior courier                25         7 parcels, firm's van, +10 %   130 to 150
+    ///   Dispatcher                    40         42 a plan x quality, 3 plans   65 to 72 (no car, no risk)
+    ///   Depot supervisor              60         36 a good call, 4 calls        100 to 105
+    ///   Crew / team / shift lead      36 to 40   36 a good call                 72 to 76
+    ///   Assistant manager             52         36 a good call, +20 %          90 to 95
+    ///   Cab driver                    14         4 fares, as the gig            110 to 120 (a fare is about 80 s of driving)
+    ///   Premium driver                22         fares +25 %, tips x2           170 to 190 (needs a Luxury car)
+    ///   Owner-operator                 0         fares +45 %, tips x2           190 to 200
+    ///   Own cart                       0         takings 30 a customer less 9.5 stock, 165 a day for the cart: 80 to 125 a shift
     ///
-    /// All of it stays under the van job except the two top cab ranks, which need a car costing tens of
-    /// thousands. Tax follows the game: it takes no tax from the player's wages (its one employer job pays
+    /// The figures that were money in the old scale are in the new one throughout: the raise step, the cart's
+    /// takings and rent, the booked set's fee, the van's daily fee and what a review counts a tip for. The
+    /// courier and cab ranks come to about the van job's 100 an hour of play, the top two cab ranks to about twice it (they need a car costing tens of thousands). Tax follows the game: it takes no tax from the player's wages (its one employer job pays
     /// the hourly rate in full), so the payslip's tax line reads zero and says so.
     /// Once the player runs businesses, employers pay less (<see cref="OwnerFactor"/>): work stays possible
     /// but is not a better use of an hour than a shop.
@@ -161,18 +163,20 @@ namespace RealLifeOverhaul
         public const int NoticeDays = 7;            // ...or this many days, whichever comes first
         public const int BanDays = 7;               // days an employer will not hear from someone it dismissed or who walked out
         public const int MaxRaises = 3;             // raises at one rank
-        public const float RaiseStep = 1f;          // basic wage per hour added by a raise
+        public const float RaiseStep = 3f;          // basic wage per hour added by a raise
         public const int HistoryMost = 8;           // lines of employment history kept
-        public const int CartRent = 60;             // a day's rent of the cart, own-cart licence
-        public const float CartTakings = 11f;       // what a customer pays at the player's own cart
-        public const float CartStock = 3.5f;        // ...and what the drink cost
+        public const int CartRent = 165;            // a day's rent of the cart, own-cart licence
+        public const float CartTakings = 30f;       // what a customer pays at the player's own cart
+        public const float CartStock = 9.5f;        // ...and what the drink cost
         public const int CabShiftFares = 4;         // fares in an employed cab shift
-        public const int GigFee = 45;               // a venue's fee for a booked set, on top of the hat
+        public const int GigFee = 125;              // a venue's fee for a booked set, on top of the hat
         public const float GigTipFactor = 1.3f;
         public const int GigNeedsLevel = 2;         // busker level at which the agency books sets
         public const float PromoteScore = 70f;      // review score for a promotion
         public const float RaiseScore = 55f;        // ...for a raise
         public const float WarnScore = 35f;         // ...below which the review is a warning (a mark)
+        public const float TipsPerPoint = 3f;        // dollars of tips a shift that earn a review point (twenty points at most)
+
         public const float PremiumHarsh = 0.7f;     // a premium passenger minds this share of what an ordinary one puts up with
 
         private const string Logistics = "ba:skill_logisticsmanager";
@@ -193,23 +197,23 @@ namespace RealLifeOverhaul
                     "reallife_career_promo_pitch", "reallife_career_promo_welcome", "reallife_career_promo_review", "reallife_career_promo_notice",
                     "reallife_career_promo_walkout"
                 }, JobCatalogue.Flyers, JobCatalogue.Vendor, 0, 4101, true, Hr, new[] { "marketingagency", "graphicdesigner", "eventplanning" },
-                new CareerRank("reallife_career_promo_rank_1", CareerWork.Gig, 4f),
-                new CareerRank("reallife_career_promo_rank_2", CareerWork.Lead, 18f)),
+                new CareerRank("reallife_career_promo_rank_1", CareerWork.Gig, 11f),
+                new CareerRank("reallife_career_promo_rank_2", CareerWork.Lead, 36f)),
             new Employer(Cleaning, new[]
                 {
                     "reallife_career_cleaning_name", "reallife_career_cleaning_boss", "reallife_career_cleaning_mate_1", "reallife_career_cleaning_mate_2",
                     "reallife_career_cleaning_pitch", "reallife_career_cleaning_welcome", "reallife_career_cleaning_review", "reallife_career_cleaning_notice",
                     "reallife_career_cleaning_walkout"
                 }, JobCatalogue.Cleaner, JobCatalogue.Stocker, 0, 4202, true, Hr, new[] { "interiorinstallation", "movingservice", "hospital" },
-                new CareerRank("reallife_career_cleaning_rank_1", CareerWork.Gig, 4f),
-                new CareerRank("reallife_career_cleaning_rank_2", CareerWork.Lead, 18f)),
+                new CareerRank("reallife_career_cleaning_rank_1", CareerWork.Gig, 11f),
+                new CareerRank("reallife_career_cleaning_rank_2", CareerWork.Lead, 36f)),
             new Employer(Food, new[]
                 {
                     "reallife_career_food_name", "reallife_career_food_boss", "reallife_career_food_mate_1", "reallife_career_food_mate_2",
                     "reallife_career_food_pitch", "reallife_career_food_welcome", "reallife_career_food_review", "reallife_career_food_notice",
                     "reallife_career_food_walkout"
                 }, JobCatalogue.Vendor, JobCatalogue.Flyers, 0, 4303, false, null, new[] { "fastfood", "coffeeshop", "wholesale" },
-                new CareerRank("reallife_career_food_rank_1", CareerWork.Gig, 5f),
+                new CareerRank("reallife_career_food_rank_1", CareerWork.Gig, 14f),
                 new CareerRank("reallife_career_food_rank_2", CareerWork.Gig, 0f, 1f, 1.2f, 0, CareerPerk.OwnCart)),
             new Employer(Retail, new[]
                 {
@@ -217,27 +221,27 @@ namespace RealLifeOverhaul
                     "reallife_career_retail_pitch", "reallife_career_retail_welcome", "reallife_career_retail_review", "reallife_career_retail_notice",
                     "reallife_career_retail_walkout"
                 }, JobCatalogue.Stocker, JobCatalogue.Cleaner, 1, 4404, false, Hr, new[] { "supermarket", "wholesale", "officesupply" },
-                new CareerRank("reallife_career_retail_rank_1", CareerWork.Gig, 5f),
-                new CareerRank("reallife_career_retail_rank_2", CareerWork.Lead, 20f),
-                new CareerRank("reallife_career_retail_rank_3", CareerWork.Lead, 26f, 1.2f)),
+                new CareerRank("reallife_career_retail_rank_1", CareerWork.Gig, 14f),
+                new CareerRank("reallife_career_retail_rank_2", CareerWork.Lead, 40f),
+                new CareerRank("reallife_career_retail_rank_3", CareerWork.Lead, 52f, 1.2f)),
             new Employer(Courier, new[]
                 {
                     "reallife_career_courier_name", "reallife_career_courier_boss", "reallife_career_courier_mate_1", "reallife_career_courier_mate_2",
                     "reallife_career_courier_pitch", "reallife_career_courier_welcome", "reallife_career_courier_review", "reallife_career_courier_notice",
                     "reallife_career_courier_walkout"
                 }, JobCatalogue.Courier, JobCatalogue.Taxi, 1, 4505, true, Logistics, new[] { "importexport", "truckgarage", "warehouse" },
-                new CareerRank("reallife_career_courier_rank_1", CareerWork.Gig, 6f),
-                new CareerRank("reallife_career_courier_rank_2", CareerWork.Gig, 9f, 1.1f, 1f, 2, CareerPerk.CompanyVan),
-                new CareerRank("reallife_career_courier_rank_3", CareerWork.Dispatch, 20f),
-                new CareerRank("reallife_career_courier_rank_4", CareerWork.Lead, 30f, 1.2f)),
+                new CareerRank("reallife_career_courier_rank_1", CareerWork.Gig, 17f),
+                new CareerRank("reallife_career_courier_rank_2", CareerWork.Gig, 25f, 1.1f, 1f, 2, CareerPerk.CompanyVan),
+                new CareerRank("reallife_career_courier_rank_3", CareerWork.Dispatch, 40f),
+                new CareerRank("reallife_career_courier_rank_4", CareerWork.Lead, 60f, 1.2f)),
             new Employer(Cab, new[]
                 {
                     "reallife_career_cab_name", "reallife_career_cab_boss", "reallife_career_cab_mate_1", "reallife_career_cab_mate_2",
                     "reallife_career_cab_pitch", "reallife_career_cab_welcome", "reallife_career_cab_review", "reallife_career_cab_notice",
                     "reallife_career_cab_walkout"
                 }, JobCatalogue.Taxi, JobCatalogue.Courier, 2, 4606, false, null, new[] { "cardealership", "gasstation", "truckgarage" },
-                new CareerRank("reallife_career_cab_rank_1", CareerWork.Gig, 5f, 1f, 1f, 0, CareerPerk.Shorter),
-                new CareerRank("reallife_career_cab_rank_2", CareerWork.Gig, 8f, 1.25f, 2f, 0, CareerPerk.Shorter | CareerPerk.Premium),
+                new CareerRank("reallife_career_cab_rank_1", CareerWork.Gig, 14f, 1f, 1f, 0, CareerPerk.Shorter),
+                new CareerRank("reallife_career_cab_rank_2", CareerWork.Gig, 22f, 1.25f, 2f, 0, CareerPerk.Shorter | CareerPerk.Premium),
                 new CareerRank("reallife_career_cab_rank_3", CareerWork.Gig, 0f, 1.45f, 2f, 0, CareerPerk.Shorter | CareerPerk.Premium))
         };
 
@@ -320,7 +324,7 @@ namespace RealLifeOverhaul
             if (shifts > 0)
             {
                 float perShift = tips / (float)shifts;
-                score += perShift >= 20f ? 20f : perShift;   // a point a dollar of tips a shift, twenty at most
+                score += perShift >= 20f * TipsPerPoint ? 20f : perShift / TipsPerPoint;   // a point for every TipsPerPoint of tips a shift, twenty at most
             }
             else
             {

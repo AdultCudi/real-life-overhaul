@@ -263,6 +263,7 @@ namespace RealLifeOverhaul
             if (smallest < 70) Fail("a common situation has fewer than 70 events (about what 10 hours of play can show)");
 
             CheckCrimes(src, locale);
+            GigCheck.Run(Fail, locale);
 
             Console.WriteLine(_failures == 0 ? "\nALL CHECKS PASSED" : $"\n{_failures} CHECK(S) FAILED");
             return _failures == 0 ? 0 : 1;

@@ -39,9 +39,10 @@ namespace RealLifeOverhaul
                 return;
             }
             _card.Title(JobText.T(ctx.Shift != null ? ctx.Shift.Rank.TitleKey : def.NameKey));
+            string offer = GigWords.List(ctx.Offer);   // the client, the day, the street and the weather, said once
             _card.Line(0, ctx.Shift != null
                 ? JobText.T("reallife_job_card_employer", "employer", JobText.T(ctx.Shift.Employer.NameKey), "time", CareerClock.Span(CareerState.RotaHour))
-                : JobText.T("reallife_job_card_gig"), _white);
+                : offer != null ? JobText.T("reallife_job_card_gig_offer", "offer", offer) : JobText.T("reallife_job_card_gig"), _white);
             for (int line = 1; line < ShiftCard.Lines; line++)
             {
                 _card.Line(line, string.Empty, _white);   // what the last shift left on the shared card
@@ -90,7 +91,7 @@ namespace RealLifeOverhaul
 
         private void Compose()
         {
-            _card.Line(2, string.IsNullOrEmpty(_limit) ? _units : _units + ", " + _limit, _limitColour);
+            _card.Line(2, string.IsNullOrEmpty(_limit) ? _units : string.IsNullOrEmpty(_units) ? _limit : _units + ", " + _limit, _limitColour);
         }
 
         /// <summary>Line 3: what the shift has earned and the tips in it.</summary>

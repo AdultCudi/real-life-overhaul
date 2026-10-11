@@ -16,6 +16,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Life\LifeEventDeck.cs" Link="Mod\LifeEventDeck.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Crime\CrimeDeck.cs" Link="Mod\CrimeDeck.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Crime\CrimeCatalogue.cs" Link="Mod\CrimeCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\JobCatalogue.cs" Link="Mod\JobCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\CareerCatalogue.cs" Link="Mod\CareerCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\GigOffers.cs" Link="Mod\GigOffers.cs" />
   </ItemGroup>
 
 </Project>

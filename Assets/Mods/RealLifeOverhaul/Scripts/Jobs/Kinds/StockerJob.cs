@@ -36,7 +36,7 @@ namespace RealLifeOverhaul
         private const string ButtonStock = "reallife_job_stocker_button_stock";
         private const string ButtonSkip = "reallife_job_button_skip";
 
-        private const int MaxBoxes = 6;
+        private const int MaxBoxes = 8;            // the most a delivery can be: the table's six and the offer's spread of two
         private const float ClientMin = 15f;
         private const float ClientMax = 260f;
         private const float DoorReach = 3.2f;
@@ -124,7 +124,7 @@ namespace RealLifeOverhaul
                 Refusal = "reallife_job_on_foot";
                 return false;
             }
-            _boxes = Ctx.FullShift ? MaxBoxes : Mathf.Min(MaxBoxes, JobState.LeftToday(Def));
+            _boxes = ShiftSize();   // the offer's delivery
             if (_boxes <= 0)
             {
                 Refusal = "reallife_job_no_daily";
@@ -148,6 +148,7 @@ namespace RealLifeOverhaul
             _panelLeft = JobText.T("reallife_job_stocker_panel_left");
             _objClock = JobText.T("reallife_job_stocker_obj_clock");
             _endsAt = now + Seconds + JobSpots.Flat(Ctx.PlayerPosition, _client.Front) * SecondsPerMetre;
+            BeginSpeed(now, _endsAt - now);
             _step = Step.ToPile;
             _figures = new ShiftFigures(Ctx, Def, "reallife_job_stocker_card_done");
             _clock = new ShiftClock(Ctx, this, this, "stocker", "reallife_job_stocker_unit", "reallife_job_stocker_units", "reallife_job_stocker_slip");
@@ -409,6 +410,7 @@ namespace RealLifeOverhaul
             }
             _stocked++;
             _hand++;
+            UnitDone(_hand, UnitPay());   // the shop's big tipper, if the offer drew one
             _shelvedAt = now;
             _hasShelf = false;
             _hint = -1;
@@ -471,7 +473,12 @@ namespace RealLifeOverhaul
 
         private void Conclude()
         {
-            Settle(_left <= 0 && _stocked >= _boxes);
+            bool all = _left <= 0 && _stocked >= _boxes;
+            if (all && _hand == _stocked)
+            {
+                EndSpeed(Time.time);   // the whole delivery by hand
+            }
+            Settle(all);
             Finish(_stocked * 2 >= _boxes ? JobEnd.Done : JobEnd.Failed);
         }
 
