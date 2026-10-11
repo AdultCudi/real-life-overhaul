@@ -20,19 +20,24 @@ namespace RealLifeOverhaul
     /// and nowhere else.
     ///
     /// Balanced against what the game itself pays, read from its data files by
-    /// JobAssets/scripts/extract_wages.py (one game hour is one minute of play):
-    ///  - the one employer job, cashier at El Gato Food Market: 25 an hour, 8 to 16, six days;
-    ///  - what the game pays its own staff at no skill: cleaning 12 an hour, customer service
-    ///    16, delivery driver 18 (times 1 + skill^1.05 / 100);
-    ///  - the delivery van job: 100 a drop (150 at one depot), three drops, about three game
-    ///    hours with the van to bring back: roughly 100 an hour, plus tips of about 5 a drop;
+    /// JobAssets/scripts/extract_wages.py and its decompiled code (one game hour is one minute of play, a shift is four
+    /// game hours):
+    ///  - the one employer job, cashier at El Gato Food Market: 25 an hour (WorkActivity pays floor(hours x salary)),
+    ///    8 to 16, six days: 100 for four hours;
+    ///  - what the game charges for its own staff at no skill: cleaning 12 an hour, customer service 16, delivery
+    ///    driver 18 (times 1 + skill^1.05 / 100, so 19 to 29 at skill 50);
+    ///  - the delivery van job: 100 a drop (150 at one depot), three drops, about three game hours with the van to
+    ///    bring back: roughly 100 an hour, plus tips of about 5 a drop;
     ///  - food delivery: 25 + 0.05 a metre within 500 m, so 25 to 50 a delivery, tips of about 3;
-    ///  - a taxi charges the player 0.15 a metre.
-    /// The jobs here need no diploma, building, stock or fixed hours, so the ones on foot pay
-    /// about what the game pays unskilled staff, a little under the cashier's 25 until a few
-    /// levels in: flyers about 10 to 15 an hour, cleaner 14, shelf stocker 18, vendor 16 plus
-    /// tips, busker 8 to 20 by where and when. The ones that need a car pay more, and less than
-    /// the van job for the same time: courier 45 to 60, ride-hail 50 to 80 once it is earned.
+    ///  - a taxi charges the player 0.15 a metre (TaxiSystem.GetPrice): 90 for 600 m.
+    /// A gig needs no diploma, building, stock or fixed hours, and the player does the work with their own hands, so a
+    /// shift played well pays clearly more an hour than the cashier's 25: the ones on foot come to about 40 to 55 an
+    /// hour (flyers 42, cleaner 40, shelf stocker 50, vendor 54 plus tips, busker by where and when), the ones that
+    /// need a car and a licence to about 85 (courier, ride-hail), a little under the van job's 100. The desk shifts
+    /// (Career) pay about 40 a plan or a call, and most of their pay is the rank's salary. These are the figures
+    /// of the first release raised by about 2.8, for an owner whose second day costs 187 and who holds 48,500; the
+    /// per-level bonus, the "Job pay" option and the owners' cut work on top as before. The shift's size and fee then
+    /// vary by offer (GigOffers) around exactly these figures.
     /// </summary>
     public sealed class JobDef
     {
@@ -98,27 +103,27 @@ namespace RealLifeOverhaul
         /// <summary>In the order the phone offers them: the first needs nothing, each later one something the earlier ones give.</summary>
         public static readonly JobDef[] All =
         {
-            // 24 flyers a bundle, about four minutes of walking up to people: about 60 for a bundle with a fair share taken.
+            // 24 flyers a bundle, about four minutes of walking up to people: 7 a flyer is 168 a bundle, 42 an hour (the cashier's 25).
             new JobDef(Flyers, "reallife_job_flyers_name", "reallife_job_flyers_pitch", "reallife_transaction_job_flyers",
-                JobNeed.Outdoors, 2.5f, 0f, 0.35f, 0.01f, CustomerService, 48, 40, 24),
-            // Eight patches of a client's floor, about four minutes with the walk in: 7 a patch is 56, cleaning's 12 an hour and a little over.
+                JobNeed.Outdoors, 7f, 0f, 0.35f, 0.01f, CustomerService, 48, 40, 24),
+            // A client's floor cleaned to 100 %, about four minutes with the walk in: eight units of 20 are 160 at 100 %, 40 an hour (the game's cleaners cost 12).
             new JobDef(Cleaner, "reallife_job_cleaner_name", "reallife_job_cleaner_pitch", "reallife_transaction_job_cleaner",
-                JobNeed.Outdoors, 7f, 0f, 0.9f, 0.03f, Cleaning, 24, 30, 8),
-            // Six boxes from the kerb to a shop's shelves, about four minutes: 12 a box is 72, 18 an hour.
+                JobNeed.Outdoors, 20f, 0f, 0.9f, 0.03f, Cleaning, 24, 30, 8),
+            // Six boxes from the kerb to a shop's shelves, about four minutes: 33 a box is 198, 50 an hour.
             new JobDef(Stocker, "reallife_job_stocker_name", "reallife_job_stocker_pitch", "reallife_transaction_job_stocker",
-                JobNeed.Outdoors, 12f, 0f, 1.3f, 0.02f, CustomerService, 18, 20, 6),
-            // Twelve customers at a pavement cart, about five minutes: 6.5 each is 78, customer service's 16 an hour, and tips for quick and right.
+                JobNeed.Outdoors, 33f, 0f, 1.3f, 0.02f, CustomerService, 18, 20, 6),
+            // Twelve customers at a pavement cart, about five minutes: 18 each is 216, 54 an hour, and tips for quick and right.
             new JobDef(Vendor, "reallife_job_vendor_name", "reallife_job_vendor_pitch", "reallife_transaction_job_vendor",
-                JobNeed.Outdoors, 6.5f, 0f, 0.6f, 0.04f, CustomerService, 36, 30, 12),
-            // Tips only: a song is 40 seconds and brings 4 to 16 by how busy the street is, the hour and how it was played.
+                JobNeed.Outdoors, 18f, 0f, 0.6f, 0.04f, CustomerService, 36, 30, 12),
+            // Tips only: a song is 40 seconds and brings 11 to 45 by how busy the street is, the hour and how it was played.
             new JobDef(Busker, "reallife_job_busker_name", "reallife_job_busker_pitch", "reallife_transaction_job_busker",
-                JobNeed.Outdoors, 6f, 0f, 0.7f, 0f, null, 16, 20, 8),
-            // Five parcels a round, about four minutes with a car: 18 a door plus the distance, about 110 to 130 a round.
+                JobNeed.Outdoors, 17f, 0f, 0.7f, 0f, null, 16, 20, 8),
+            // Five parcels a round, about four minutes with a car: 50 a door plus the distance, about 310 to 340 a round (the van job pays 100 an hour).
             new JobDef(Courier, "reallife_job_courier_name", "reallife_job_courier_pitch", "reallife_transaction_job_courier",
-                JobNeed.Outdoors | JobNeed.Car, 18f, 0.03f, 1.6f, 0.04f, DeliveryDriver, 15, 15, 5),
-            // A fare of 600 m: 8 + 42 = 50, with a tip of up to 30 % for a smooth, quick ride. A third of what a taxi charges the player.
+                JobNeed.Outdoors | JobNeed.Car, 50f, 0.085f, 1.6f, 0.04f, DeliveryDriver, 15, 15, 5),
+            // A fare of 600 m: 22 + 117 = 139, with a tip of up to 30 % for a smooth, quick ride. About one and a half times what a taxi charges the player for the trip (90): the driver also drives to the pick-up, and has the car, the endorsement and the reference.
             new JobDef(Taxi, "reallife_job_taxi_name", "reallife_job_taxi_pitch", "reallife_transaction_job_taxi",
-                JobNeed.Outdoors | JobNeed.Car | JobNeed.Reference | JobNeed.CleanRecord, 8f, 0.07f, 2.2f, 0.05f, CustomerService, 14, 12, 0)
+                JobNeed.Outdoors | JobNeed.Car | JobNeed.Reference | JobNeed.CleanRecord, 22f, 0.195f, 2.2f, 0.05f, CustomerService, 14, 12, 0)
         };
 
         public static JobDef Find(string id)
@@ -141,16 +146,16 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Shifts only an employer gives (Jobs/Career*): a unit is a plan made at the dispatch desk (14 for a perfect
-        /// one, less by how far from the best it was) or a call made well by the one in charge (12). Most of their pay
+        /// Shifts only an employer gives (Jobs/Career*): a unit is a plan made at the dispatch desk (42 for a perfect
+        /// one, less by how far from the best it was) or a call made well by the one in charge (36). Most of their pay
         /// is the rank's hourly salary. Not offered on the phone and not counted in JobState's levels.
         /// </summary>
         public static readonly JobDef[] Career =
         {
             new JobDef(Dispatch, "reallife_job_dispatch_name", "reallife_job_dispatch_name", "reallife_transaction_job_dispatch",
-                JobNeed.Outdoors, 14f, 0f, 0.8f, 0.06f, "ba:skill_logisticsmanager", 999, 0, 3),
+                JobNeed.Outdoors, 42f, 0f, 0.8f, 0.06f, "ba:skill_logisticsmanager", 999, 0, 3),
             new JobDef(Lead, "reallife_job_lead_name", "reallife_job_lead_name", "reallife_transaction_job_lead",
-                JobNeed.Outdoors, 12f, 0f, 0.7f, 0.05f, "ba:skill_hrmanager", 999, 0, 4)
+                JobNeed.Outdoors, 36f, 0f, 0.7f, 0.05f, "ba:skill_hrmanager", 999, 0, 4)
         };
 
         public static int IndexOf(string id)

@@ -569,13 +569,13 @@ is taken. They are found on the phone (the Gig Line) and at the help-wanted boar
 
 | job | needs | a unit is | pays | a day |
 |---|---|---|---|---|
-| Flyers | nothing | a flyer taken | 2.50, +40 % on a busy street, +10 % for the whole bundle | 48 (two bundles of 24) |
-| Cleaner | a business near that is open | a spill mopped, inside the client's premises | 7, +10 % for the whole floor | 24 (three floors of 8) |
-| Shelf stocker | a shop near that is open | a box carried in from the kerb and shelved | 12, +10 % for the whole delivery | 18 (three deliveries of 6) |
-| Drinks cart | a pavement with room for the cart | a customer served the drink they asked for | 6.50, tips of 1 to 3.50 for quick, +10 % if nobody walked off | 36 (three shifts of 12) |
-| Busker | a pavement | a song | tips only: about 6 a song, times 0.5 to 1.5 for how many are about, 0.4 to 1.4 for the hour, 0.85 to 1.25 for the song, by how it was played; 1 to 3 from each listener | 16 (two sets of 8) |
-| Courier | a car (own, or a van hired for 45 a day) | a parcel delivered | 18 + 0.03 a metre of the round, +15 % for beating the clock, tips | 15 (three rounds of 5) |
-| Ride-hail | a car (own or hired), a reference (level 2 in any job), no police stop on a job for 2 days | a fare | 8 + 0.07 a metre, tip up to 30 % by comfort | 14 |
+| Flyers | nothing | a flyer taken | 7, +40 % on a busy street, +10 % for the whole bundle | 48 (two bundles of 24) |
+| Cleaner | a business near that is open | an eighth of the client's floor cleaned (the game's own dirt, to 100 %) | 20, by the share of the dirt taken off | 24 (three floors of 8) |
+| Shelf stocker | a shop near that is open | a box carried in from the kerb and shelved | 33, +10 % for the whole delivery | 18 (three deliveries of 6) |
+| Drinks cart | a pavement with room for the cart | a customer served the drink they asked for | 18, tips of 2.75 to 9.50 for quick, +10 % if nobody walked off | 36 (three shifts of 12) |
+| Busker | a pavement | a song | tips only: about 17 a song, times 0.5 to 1.5 for how many are about, 0.4 to 1.4 for the hour, 0.85 to 1.25 for the song, by how it was played; 2.75 to 8.25 from each listener | 16 (two sets of 8) |
+| Courier | a car (own, or a van hired for 125 a day) | a parcel delivered | 50 + 0.085 a metre of the round, +15 % for beating the clock, tips of 5.50 to 16.50 | 15 (three rounds of 5) |
+| Ride-hail | a car (own or hired), a reference (level 2 in any job), no police stop on a job for 2 days | a fare | 22 + 0.195 a metre, tip up to 30 % by comfort | 14 |
 
 Every figure is in `JobCatalogue`, set against what the game itself pays (read from its data files by
 `JobAssets/scripts/extract_wages.py`: the one employer job, cashier, is 25 an hour; the game's own staff
@@ -585,6 +585,49 @@ boxes, 30 customers, 20 songs, 15 parcels, 12 fares; four levels) and by the "Jo
 a job pays; a slip never goes below zero. Three failed shifts in a job and it lets the player go for three
 days; a good shift takes a strike off. Work spends energy and trains a skill through the game's own
 systems, and never takes energy below 12.
+
+### Pay against the game's
+
+What the game pays and charges, read from its data files (`JobAssets/scripts/extract_wages.py`) and its code, and
+what the gigs were set against. One game hour is one minute of play; a gig shift is four game hours (the hours an
+employer pays basic wage for).
+
+| in the game | figure | where |
+|---|---|---|
+| the player's own job: cashier at El Gato Food Market | 25 an hour, 8 to 16, six days: 100 for a four-hour shift | `PlayerActivity/WorkActivity` pays `floor(hours x hourlySalary)` |
+| its staff at no skill | cleaning 12 an hour, customer service 16, delivery driver 18 | `SkillData.baseHourlyWage` |
+| its staff with skill | those times `1 + skill^1.05 / 100`: 19 to 29 at skill 50 | `EmployeeHelper.CalculateHourlyWageForSkill` |
+| the delivery van job | 100 a drop (150 at one depot), three drops, about three game hours: about 100 an hour | `Vehicles.DeliveryDriverJob` |
+| food delivery | 25 + 0.05 a metre within 500 m | `Player.FoodDeliveryJob` |
+| a taxi ride (the player pays) | 0.15 a metre: 90 for 600 m | `TaxiSystem.GetPrice` |
+
+The first release's gigs paid 14 to 22 an hour on foot (under the cashier's 25) and 30 to 55 with a car, which
+is what the owner found far too little against 48,500 in hand and 187 a day in costs. The new table raises every
+gig's unit pay by about 2.8 (unskilled 2.75 to 2.9, courier and ride-hail 2.8, the two desk shifts 3.0), which
+puts a shift played well at 40 to 55 an hour on foot (1.6 to 2.2 times the cashier) and about 95 to 105 an hour of
+play with a car (the van job's 100). Skilled work (courier, ride-hail, the desk shifts) pays more an hour than
+unskilled. Nothing is said to cost more energy or to level faster.
+
+| gig | unit pay before | unit pay now | whole shift before | whole shift now | an hour of the shift now |
+|---|---|---|---|---|---|
+| Flyers (24) | 2.50 | 7 | 60 | 168 | 42 |
+| Cleaner (8) | 7 | 20 | 56 | 160 | 40 |
+| Shelf stocker (6) | 12 | 33 | 72 | 198 | 50 |
+| Drinks cart (12) | 6.50 | 18 | 78 | 216 | 54 (and tips) |
+| Busker (8 songs, tips) | 6 | 17 | 4 to 16 a song | 11 to 45 a song | by the street and the hour |
+| Courier (5) | 18 + 0.03 a metre | 50 + 0.085 a metre | 110 to 130 | 310 to 340 | 78 to 85 (about 100 of play) |
+| Ride-hail (a 600 m fare) | 8 + 0.07 a metre = 50 | 22 + 0.195 a metre = 139 | 50 a fare | 139 a fare | about 100 of play |
+| Dispatch desk (3 plans) | 14 a plan | 42 a plan | up to 42 | up to 126 | plus the rank's salary |
+| Shift in charge (4 calls) | 12 a call | 36 a call | up to 48 | up to 144 | plus the rank's salary |
+
+Everything else that is money moved with it, so no ratio changed: the tips in the courier's, cart's and busker's
+code; the employers' basic wage by rank (gig ranks 4 to 9 an hour became 11 to 25, the salaried desk and lead
+ranks 18 to 30 became 36 to 60), the raise step (1 to 3), the cart rent (60 to 165) and the cart's takings and
+stock (11 and 3.5 to 30 and 9.5), the booked set's fee (45 to 125), the hired van's daily fee (45 to 125) and what a
+review counts a tip for (a point a dollar to a point for 3, twenty at most). The 85 % rate of the game's clock
+(`ShiftRates.Share`), the crash and police-stop cuts, the level bonus (8 % a level) and the "Job pay" option are
+shares or factors and needed no change. Every figure the Guide quotes (`job_table`, `job_van_fee`, and the pitches'
+`{pay}`, `{km}` and `{shift}`) is read from these constants.
 
 ### The drinks cart: the model of a shift in the game's own interface (`Kinds/VendorJob`)
 

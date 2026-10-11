@@ -559,7 +559,7 @@ namespace RealLifeOverhaul
                 Ctx.Cast.Emoji(_recipient, CharacterEmojiName.CommonGreenHappy, 2f);
                 if (Random.value < TipChance)
                 {
-                    _tips += Mathf.RoundToInt(Random.Range(2f, 6f) * Ctx.Rate);
+                    _tips += Mathf.RoundToInt(Random.Range(5.5f, 16.5f) * Ctx.Rate);
                 }
                 if (_delivered % 2 == 1)
                 {

@@ -777,7 +777,7 @@ namespace RealLifeOverhaul
                     _listener.HandBack(to);
                     if (_playing)
                     {
-                        _tips += Mathf.Max(1, Mathf.RoundToInt(Random.Range(1f, 3f) * Ctx.Rate));
+                        _tips += Mathf.Max(1, Mathf.RoundToInt(Random.Range(2.75f, 8.25f) * Ctx.Rate));
                     }
                 }
                 else

@@ -666,11 +666,11 @@ namespace RealLifeOverhaul
             _hand++;
             if (took <= QuickTip)
             {
-                tip = Mathf.RoundToInt(Random.Range(2f, 3.5f) * Ctx.Rate);
+                tip = Mathf.RoundToInt(Random.Range(5.5f, 9.5f) * Ctx.Rate);
             }
             else if (took <= FairTip && Random.value < 0.6f)
             {
-                tip = Mathf.RoundToInt(1f * Ctx.Rate);
+                tip = Mathf.RoundToInt(2.75f * Ctx.Rate);
             }
             _tips += tip;
             if (Meta.Dev.Verbose)
