@@ -569,6 +569,50 @@ The director does the rest: when and where, out of view, never the same thing tw
 view, the test button (each press of a family's button puts its next activity just ahead of the player, and a
 press that starts nothing says which activity and exactly why: one sentence per `CityRefusal`). In the rain
 everything is taken in except entries marked `Rain`; `RainOnly` entries (people under umbrellas) start only then.
+### Clips nothing played
+
+`not-in-repo/tools/medium/clip_users.py` lists every clip the bundle's builder declares (`CityAssets/scripts/clips*.py`,
+160) and the ones no script names. There were 25. Six now have a home in the living city, each where the clip's own
+note says it belongs:
+
+| clip | where | how |
+|---|---|---|
+| `sit_chat_a`, `sit_chat_b` | new activity `bench_chat` (`BenchChatActivity`, Leisure, two people, 9:00 to 21:00) | a `precinct_bench` with its back to a wall (`CitySpots.Shopfront`, 0.45 m off it, pavement under both ends and in front); the two put exactly on the seat 0.55 m apart, as the chess players are on their stools; the talker on the right, since `_a` is turned to its left |
+| `eat_standing` (with `takeaway_box`) | new entry `street_lunch` (Everyday, 11:00 to 15:00) | `SoloSpec.HoldNow`: the one-off is played, its last pose (the carton on the palm) is held, and it is played again every 4 to 8 s |
+| `drink_stand` (with `mug`) | new entry `mug_break` (Everyday, 7:00 to 17:00) | the same, every 7 to 14 s |
+| `phone_answer` | the existing `phone_call` | `SoloSpec.Ring`: after 14 to 26 s the call ends (the game's pose and phone go), 5 to 9 s later the clip takes the phone to the ear, its phone is put away and the game's `TalkingPhone` takes over, as the clip's note asks |
+| `point_show` | the existing `doorman` | `Greet`: somebody on foot in front of him is shown the way in |
+
+`HoldNow` and `Ring` are two fields of `SoloSpec`, so another such person is still one catalogue entry. The budget is
+the director's and is unchanged (three sites, eight people); the Guide's count is `CityCatalogue.All.Length` (32 now);
+each start writes the director's own line, `City life: <id> started N m away; ...`. A clip or prop missing from the
+bundle leaves `bench_chat`, `street_lunch` and `mug_break` unstarted and the other two as they were.
+
+Nineteen stay unplayed. Each was looked at for a place among the features that exist:
+
+| clip | why not |
+|---|---|
+| `strap_hang` | made for standing in a moving bus: there is no bus interior |
+| `bonnet_check` | needs a car with its bonnet open: the game's cars do not open theirs, and no scene is a breakdown |
+| `refuel_hold` | emptying a `jerry_can` into a filler: the mod has no fuel and no scene of running out |
+| `oath_hand` | the raised hand of an oath: a hearing is pages in a list window and nobody is played in it |
+| `podium_speak` | needs a lectern 1.10 m up: none is modelled, and a rally's speaker has a placard |
+| `placard_hold_arm` | not needed by design: the code masks `placard_hold` itself to the right arm |
+| `throw_ball` | a free throw: no ball and no hoop are modelled |
+| `eat_sit` | seated at a table 0.75 m high whose edge is 0.20 m ahead: no seat in the game or the mod has a table at a known place in front of it |
+| `box_lift_with`, `_b` | two people lifting a box 1.20 m long: no such prop (the move's boxes are 0.45 m and carried one each) |
+| `browse_rack`, `try_on_turn` | belong at the clothes rack (`Leisure/Shops/ClothesBrowser`, `clothes_rack`: its rail is the 1.55 m the clip is made for), on the player's own body while the list is open. **Not wired in this pass** |
+| `collector_lean` | belongs to the collector of "Business pressure", leaning on the player's counter. **Not wired in this pass** |
+| `carry_suitcase_walk` | a traveller with a `suitcase`; a whole-body walking clip, which the living city's rules allow only with its speed matched to the ground. **Not wired in this pass** |
+| `cheer_once` | a listener when a busker's song ends, or the player on winning at chess. **Not wired in this pass** |
+| `hold_baby`, `rock_cot` | the partner at home with a child under three (the `cot` and `baby_bundle` are in the bundle, the cot already stands in the home). **Not wired in this pass** |
+| `slow_dance_a`, `_b` | a first dance at the wedding: two bodies 0.45 m apart, one of them the player's, started in the same frame. **Not wired in this pass** |
+
+The last six rows are work that has a place and was not done; the first ten have none among the features that exist.
+
+Not checked in the game: any of it. A screenshot of the bench with the two on it settles whether they sit on the
+seat and not in it (the seat is 0.46 m, the clips are made for 0.45) and whether the bench stands clear of the wall.
+
 ## Jobs
 
 The game has its own work: employer jobs (stand at a station in someone's shop while time is skipped,
@@ -1430,8 +1474,10 @@ waits outside a door the player went through for as long as they would have wait
 whenever they give up or are cut off the player is told ("Dana saw you were busy and went on their way").
 
 There is no "bar", "restaurant" or "park" in the game's business types: drinks are at a nightclub, a meal at a
-fast food restaurant, and a walk is along the pavement wherever the player leads. Nobody sits: the game's chairs
-are indoors, where the cast does not go (so `sit_chat_a` / `_b`, which are delivered, have nowhere to be played).
+fast food restaurant, and a walk is along the pavement wherever the player leads. Indoors nobody sits: the game's
+chairs are there, where the cast does not go. On a walk the two can sit on a street bench (Family, "Sitting"), in the
+game's own sitting pose; `sit_chat_a` / `_b` are made for a seat of the mod's own and are played by the living city's
+two friends on a bench (`BenchChatActivity`).
 
 ### Talking, texts and calls
 
@@ -1513,11 +1559,10 @@ not); how the marker on somebody looks beside an incident's marker (they are sep
 
 **Delivered and played:** `social_handshake`, `social_hug`, `social_hug_a` / `_b`, `social_cheek_kiss`, `cheers`
 (with `wine_glass`), `walk_talk` / `walk_talk_l`, `goodbye_wave_walk`, and the prop `moving_box`. **Delivered, not
-played yet** (each needs a scene or a placement that does not exist): `sit_chat_a` / `_b` (nobody sits),
-`eat_standing` with `takeaway_box` (a meal is eaten inside, under the time skip), `point_show` (the look round a
-business happens indoors), `phone_answer` (a call is answered in the contacts app, with the game's own phone pose),
-`box_lift_with` / `_b` (the boxes of a move are carried one each), and the props `beer_bottle`, `popcorn_tub`,
-`gift_box`, `flowers_bunch`, `gym_bag`, `newspaper_ledger`.
+played by Social** (each needs a scene or a placement that does not exist here): `box_lift_with` / `_b` (the boxes of
+a move are carried one each), and the props `beer_bottle`, `popcorn_tub`, `gift_box`, `flowers_bunch`, `gym_bag`,
+`newspaper_ledger`. **Played by the living city instead** (see "Clips nothing played"): `sit_chat_a` / `_b`,
+`eat_standing` with `takeaway_box`, `point_show`, `phone_answer`.
 
 Clips (Humanoid, in place, from and back to the standing idle unless said):
 
