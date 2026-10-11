@@ -767,6 +767,8 @@ namespace RealLifeOverhaul
             Economy.EconomyDirector.Logger = context.Logger;
             Economy.FinanceApp.Logger = context.Logger;
             _root.AddComponent<Economy.EconomyDirector>();   // the credit rating, the banks' terms by it, loans from the phone and the Finance app (Scripts/Economy)
+            Economy.CityEconomyDirector.Logger = context.Logger;
+            _root.AddComponent<Economy.CityEconomyDirector>();   // the city's economy: a central bank, prices, a cycle, districts and supply (Scripts/Economy/City)
             Nav.NavGraph.Logger = context.Logger;
             Nav.NavMarks.Logger = context.Logger;
             Nav.NavHud.Logger = context.Logger;

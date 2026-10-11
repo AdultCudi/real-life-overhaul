@@ -92,6 +92,8 @@ namespace RealLifeOverhaul
         public const float CashShare = 0.06f;         // no single charge is more than this share of the cash in hand
         public const int MostDip = -12;               // percent of customers
         public const int MostBoost = 10;
+        public const int AmbientMostDip = -25;        // what the city's economy may add to that, in all (district, cycle and prices: Economy/City)...
+        public const int AmbientMostBoost = 15;       // ...kept apart from an issue's own change, which keeps its own bounds
         public const int MostClosedHours = 12;
         public const float SatisfactionFloor = 20f;   // an employee's satisfaction is never pushed below this (the game makes them resign under 10)
 
@@ -269,8 +271,20 @@ namespace RealLifeOverhaul
         /// </summary>
         public static int PromotionFor(int own, int percent, float baseMultiplier)
         {
+            return PromotionFor(own, percent, 0, baseMultiplier);
+        }
+
+        /// <summary>What the city's economy asks for, kept inside what it may do.</summary>
+        public static int ClampAmbient(int percent)
+        {
+            return percent < AmbientMostDip ? AmbientMostDip : percent > AmbientMostBoost ? AmbientMostBoost : percent;
+        }
+
+        /// <summary>The same with the city's economy on top: an issue's change and the ambient one are each kept to their own bounds and added.</summary>
+        public static int PromotionFor(int own, int percent, int ambient, float baseMultiplier)
+        {
             float multiplier = baseMultiplier + 0.75f * own / 100f;
-            float wanted = multiplier * (1f + ClampFootfall(percent) / 100f);
+            float wanted = multiplier * (1f + (ClampFootfall(percent) + ClampAmbient(ambient)) / 100f);
             float promotion = (wanted - baseMultiplier) / 0.75f * 100f;
             int rounded = (int)(promotion + 0.5f);
             return rounded < 0 ? 0 : rounded > 100 ? 100 : rounded;

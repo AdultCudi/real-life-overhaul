@@ -22,6 +22,7 @@ namespace RealLifeOverhaul
     ///     EconomyLinks    the credit rating with the legal record and the fines; the Finance rows in the Planner
     ///     DebtLinks       lenders with the courts (a civil claim for a debt), the private lender with the holds and the
     ///                     injury of a mugging, a repossession with what the camera sees
+    ///     CityLinks       the city's economy with the calendar and the weather, business pressure (footfall, rivals) and the paper
     ///
     /// <see cref="Connect"/> is called once per city load, after every director has been added;
     /// <see cref="Disconnect"/> on unload puts every bridge back to its default. Nothing here
@@ -61,6 +62,7 @@ namespace RealLifeOverhaul
             Step("the taxi by phone", TaxiLinks.Connect);
             Step("the economy", EconomyLinks.Connect);
             Step("credit and debt", DebtLinks.Connect);
+            Step("the city's economy", CityLinks.Connect);
             Logger?.Info("Wiring: the features are connected.");
         }
 
@@ -72,6 +74,7 @@ namespace RealLifeOverhaul
             }
             Connected = false;
             Step("the taxi by phone", TaxiLinks.Disconnect);
+            Step("the city's economy", CityLinks.Disconnect);
             Step("credit and debt", DebtLinks.Disconnect);
             Step("the economy", EconomyLinks.Disconnect);
             Step("the minimap and the GPS", NavLinks.Disconnect);

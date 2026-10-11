@@ -87,6 +87,8 @@ namespace RealLifeOverhaul
         public const string EconomySharkId = "economy_shark";
         public const string EconomyConsequencesId = "economy_consequences";
         public const string EconomyLevelId = "economy_level";
+        public const string EconomyCityId = "economy_city";
+        public const string EconomyCityLevelId = "economy_city_level";
         public const string MinimapId = "nav_minimap";
         public const string GpsId = "nav_gps";
         public const string MinimapRotateId = "nav_rotate";
@@ -248,6 +250,8 @@ namespace RealLifeOverhaul
         public static bool EconomyShark = true;          // the lender of last resort (off: it lends nothing and does nothing; a debt to it can still be paid)
         public static bool EconomyConsequences = true;   // what lenders do when payments are missed (off: only the rating is affected)
         public static int EconomyLevel = 1;              // how hard not paying hits: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Products/ProductCatalogue)
+        public static bool EconomyCity = true;           // the city's economy: a central bank, prices, a cycle, districts and supply (off: every figure is the game's own and the model stands still) (Scripts/Economy/City)
+        public static int EconomyCityLevel = 1;          // how far it swings: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/City/MacroCatalogue)
         public static bool Minimap = true;               // the minimap on the HUD while out in the city (Scripts/Navigation)
         public static bool Gps = true;                   // a route along the roads to the game's destination, with the next turn
         public static bool MinimapRotate = true;         // the minimap turns with the player (off: north is up)
@@ -451,6 +455,8 @@ namespace RealLifeOverhaul
             EconomyShark = Bool(modId, EconomySharkId, EconomyShark);
             EconomyConsequences = Bool(modId, EconomyConsequencesId, EconomyConsequences);
             EconomyLevel = Int(modId, EconomyLevelId, EconomyLevel);
+            EconomyCity = Bool(modId, EconomyCityId, EconomyCity);
+            EconomyCityLevel = Int(modId, EconomyCityLevelId, EconomyCityLevel);
             Minimap = Bool(modId, MinimapId, Minimap);
             Gps = Bool(modId, GpsId, Gps);
             MinimapRotate = Bool(modId, MinimapRotateId, MinimapRotate);

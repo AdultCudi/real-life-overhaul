@@ -39,6 +39,13 @@ namespace RealLifeOverhaul.Economy
         public static IModLogger Logger;
         public static EconomyDirector Instance { get; private set; }
 
+        /// <summary>
+        /// Called once a second on the real clock by this director's own timer, whatever state the credit side is in
+        /// (off, running or stopped by a fault): the city's economy (Economy/City) keeps its handlers in place with it
+        /// and has no timer of its own. A handler must not throw.
+        /// </summary>
+        public static Action Second;
+
         private readonly GameLoans _loans = new GameLoans();
         private readonly List<LoanView> _live = new List<LoanView>(8);
         private readonly List<LoanFinding> _findings = new List<LoanFinding>(8);
@@ -126,6 +133,7 @@ namespace RealLifeOverhaul.Economy
             while (true)
             {
                 yield return wait;
+                Second?.Invoke();
                 if (_broken)
                 {
                     continue;
