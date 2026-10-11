@@ -175,6 +175,8 @@ namespace RealLifeOverhaul.Economy.Ventures
         public const int PitchCooldownDays = 10;     // one approach to an investor in this many days
         public const int CaughtCloseDays = 60;       // an investor who catches an untrue figure sees nobody for this long
         public const int ReputationStart = 70, ReputationCaught = -25, ReputationMet = 3, ReputationBoughtOut = 2, ReputationClaim = -15;
+        public const int ReputationCold = -10;       // an investor lost interest before they had their money back
+        public const int ColdClosedDays = 100000;    // ...and sees the founder no more
         public static readonly int[] Questions = { 6, 7, 8 };             // by kind of investor
         public static readonly int[][] QuestionMix =                      // facts, judgement, the founder
         {

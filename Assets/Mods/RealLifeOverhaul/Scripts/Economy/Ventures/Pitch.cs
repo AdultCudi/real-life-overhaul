@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         public int Budget;           // a business not yet open: what the player says it will cost
     }
 
-    public enum Verdict { Invest, LowScore, TooSmall, NoProfit, NoRoom }
+    public enum Verdict { Invest, LowScore, TooSmall, NoProfit, NoRoom, NotOpen }
 
     public struct PitchDecision
     {
@@ -88,6 +88,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         public readonly List<int> Points = new List<int>(8);
         public int Index;
         public bool Caught;
+        public bool Test;            // held by the test tools: what it leads to is marked as a test's
     }
 
     /// <summary>
@@ -578,8 +579,9 @@ namespace RealLifeOverhaul.Economy.Ventures
         /// The decision. Under the score they want, no. At or over it: a business that is running is valued at 40 to
         /// 90 days of its true recent profit and the investor takes from the most to the least of their range of
         /// shares, both by how far over the score is; the sum is their share of that value, inside their smallest and
-        /// largest sums. A business not yet open gets 30% to 70% of its budget. An angel backs a business under
-        /// thirty days old with their smallest sum whatever its profit.
+        /// largest sums. A business not yet open gets 30% to 70% of its budget from an angel or a fund; a tycoon backs
+        /// none that is not open. An angel backs a business under thirty days old with their smallest sum whatever
+        /// its profit.
         /// </summary>
         public static PitchDecision Decide(VenturesFile file, Investor investor, in PitchFacts f, string place, List<int> points, int level, int day)
         {
@@ -588,6 +590,11 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 d.Best = d.Best < 0 || points[i] > points[d.Best] ? i : d.Best;
                 d.Worst = d.Worst < 0 || points[i] < points[d.Worst] ? i : d.Worst;
+            }
+            if (!f.Running && investor.Kind == InvestorKind.Tycoon)
+            {
+                d.Verdict = Verdict.NotOpen;   // a tycoon's money is for a business that already earns
+                return d;
             }
             if (d.Score < d.Needed)
             {

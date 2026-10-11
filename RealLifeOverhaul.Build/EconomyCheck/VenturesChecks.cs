@@ -244,8 +244,8 @@ internal static partial class Program
         var forNew = new Offer { Id = file.NextId++, InvestorId = patient.Id, TypeName = "ba:businesstype_webdevelopmentagency", Budget = 50000, Amount = 25000, ShareBp = 2500, TargetPct = 10, TargetDays = 30 };
         file.Offers.Add(forNew);
         Check(forNew.ForNew && OfferRules.Accept(file, forNew, default(BusinessFigures), 40) == null, "pledge: an offer for a business not yet open is not a deal yet");
-        Pledge pledge = OfferRules.Promise(file, forNew, 40);
-        Check(pledge != null && pledge.OpenBy == 54 && file.Pledges.Count == 1 && file.Offers.Count == 0 && file.InvestedTotal == before + second.Amount, "pledge: the money waits fourteen days for the business to open, and none has moved");
+        Pledge pledge = OfferRules.Promise(file, forNew, 40, 1);
+        Check(pledge != null && pledge.OpenBy == 54 && pledge.Had == 1 && file.Pledges.Count == 1 && file.Offers.Count == 0 && file.InvestedTotal == before + second.Amount, "pledge: the money waits fourteen days for the business to open, and none has moved");
         Deal opened = OfferRules.Open(file, pledge, "new#3", "Pixel Works", 45);
         Check(opened != null && file.Pledges.Count == 0 && opened.Amount == 25000 && opened.TargetProfit == OfferRules.YoungTarget && opened.TargetDay == 75, "pledge: opened in time, the deal starts with a first small target");
     }
@@ -312,7 +312,7 @@ internal static partial class Program
         var soldRelaxed = new Deal { Id = file.NextId++, InvestorId = patient.Id, Place = "c#3", Business = "C", Amount = 40000, ShareBp = 2000, PaidOut = 10000, Mood = 60 };
         file.Deals.Add(soldRelaxed);
         DealRules.RunDay(file, soldRelaxed, none, 10, VenturesCatalogue.Relaxed, purse, said, null);
-        Check(soldRelaxed.CallOwed == 15000, "deal: on Relaxed that is halved");
+        Check(soldRelaxed.CallOwed == 30000 && soldRelaxed.Stage == DealStage.Called, "deal: and the same on every level: a business sold is no way out of a deal");
         var repaid = new Deal { Id = file.NextId++, InvestorId = patient.Id, Place = "d#4", Business = "D", Amount = 40000, ShareBp = 2000, PaidOut = 45000, Mood = 60 };
         file.Deals.Add(repaid);
         Check(DealRules.RunDay(file, repaid, none, 10, VenturesCatalogue.Standard, purse, said, null) && file.Deal(repaid.Id) == null,
@@ -396,6 +396,33 @@ internal static partial class Program
             DealRules.RunDay(file, easy, flat, day, VenturesCatalogue.Relaxed, purse, said, court);
         }
         Check(calm.Stage == DealStage.Cold && calm.TargetDay == 0 && easy.Stage == DealStage.Cold, "ladder: they lose interest instead: the share goes on and no more targets are set");
+        Check(!patient.Open(100000) && patient.ClosedUntil > 100000 && file.Reputation == VenturesCatalogue.ReputationStart + 2 * VenturesCatalogue.ReputationCold,
+            "ladder: an investor who loses interest before they have had their money back will not back the founder again, and the founder's name falls (" + file.Reputation + ")");
+        patient.ClosedUntil = 0;
+        demanding.ClosedUntil = 0;
+        file.Reputation = VenturesCatalogue.ReputationStart;
+        Deal repaidCold = OfferRules.Accept(file, AddOffer(file, patient, "h#8", 30000, 2000), flat, 100);
+        repaidCold.PaidOut = 30000;
+        repaidCold.Misses = 2;
+        repaidCold.TargetDay = 101;
+        DealRules.RunDay(file, repaidCold, flat, 101, VenturesCatalogue.Standard, purse, said, court);
+        Check(repaidCold.Stage == DealStage.Cold && patient.ClosedUntil == 0 && file.Reputation == VenturesCatalogue.ReputationStart, "ladder: one who has had their money back loses interest with no hard feelings");
+        file.Deals.Remove(repaidCold);
+        Deal content = OfferRules.Accept(file, AddOffer(file, patient, "i#9", 30000, 2000), flat, 100);
+        content.PaidOut = 29700;
+        said.Clear();
+        for (day = 101; day <= 130; day++)
+        {
+            DealRules.RunDay(file, content, Steady(2600f), day, VenturesCatalogue.Standard, purse, said, court);
+        }
+        Check(content.Stage == DealStage.Quiet && content.TargetDay == 0 && content.TargetsMet == 1 && said.Exists(e => e.What == DealNews.PaidBack),
+            "ladder: an investor who has had their money back and sees a target met sets no more targets");
+        int quietCash = purse.Money;
+        DealRules.RunDay(file, content, Steady(2600f), 131, VenturesCatalogue.Standard, purse, said, court);
+        Check(quietCash - purse.Money == 520 && content.Stage == DealStage.Quiet, "ladder: and goes on taking their share");
+        file.Deals.Remove(content);
+        file.Reputation = VenturesCatalogue.ReputationStart;
+        file.TargetsMet = 0;
 
         // A target met.
         Deal growing = OfferRules.Accept(file, AddOffer(file, patient, "d#4", 50000, 2000), flat, 300);
@@ -492,7 +519,7 @@ internal static partial class Program
         open.Countered = true;
         var forNew = new Offer { Id = file.NextId++, InvestorId = angel.Id, Source = OfferSource.Pitch, TypeName = "ba:businesstype_webdevelopmentagency", Budget = 50000, Amount = 20000, ShareBp = 1500, TargetPct = 10, TargetDays = 30, MadeDay = 29, LapseDay = 34 };
         file.Offers.Add(forNew);
-        file.Pledges.Add(new Pledge { Id = file.NextId++, InvestorId = tycoon.Id, TypeName = "ba:businesstype_gym", Budget = 100000, Amount = 45000, ShareBp = 2200, TargetPct = 10, TargetDays = 30, MadeDay = 25, OpenBy = 39 });
+        file.Pledges.Add(new Pledge { Id = file.NextId++, InvestorId = tycoon.Id, TypeName = "ba:businesstype_gym", Budget = 100000, Amount = 45000, ShareBp = 2200, TargetPct = 10, TargetDays = 30, MadeDay = 25, OpenBy = 39, Had = 2 });
         var purse = new Purse { Money = 1000000 };
         for (int day = 1; day <= 40; day++)
         {
@@ -507,7 +534,8 @@ internal static partial class Program
         VenturesFile back = VenturesStore.Read(line, out version);
         Check(back != null && version == VenturesStore.Version && VenturesStore.Write(back) == line, "save: what is written reads back and writes the same line (" + line.Length + " characters)");
         Check(back != null && back.Investors.Count == file.Investors.Count && back.Deals.Count == 1 && back.Offers.Count == 2 && back.Pledges.Count == 1 && back.Companies.Count == 12
-              && back.Holdings.Count == 2 && back.Reputation == 62 && back.RateSeen == 5.25f && back.MarketSteps == 40, "save: every part comes back");
+              && back.Holdings.Count == 2 && back.Reputation == 62 && back.RateSeen == 5.25f && back.MarketSteps == 40 && back.Pledges[0].Had == 2
+              && back.Pledges[0].TypeName == "ba:businesstype_gym", "save: every part comes back");
         Deal read = back != null && back.Deals.Count == 1 ? back.Deals[0] : new Deal();
         Check(read.Place == "ba:street_mainstreet#12" && read.Business == "Tom's   Shop  and   more" && read.PaidOut == 4321 && read.BoardUntil == 55 && read.FollowOn && read.CostDay == 44,
             "save: a deal keeps its figures, and a name cannot break the line apart");
@@ -940,13 +968,17 @@ internal static partial class Program
         small.AgeDays = 30;
         Check(Pitch.Decide(file, angel, small, "z#3", top, VenturesCatalogue.Standard, 10).Verdict == Verdict.NoProfit, "decision: at thirty days it has to show a profit like any other");
 
-        // A business not yet open: a share of the budget.
+        // A business not yet open: a share of the budget from an angel or a fund; a tycoon backs none.
         PitchFacts unopened = Founder(false);
         unopened.Budget = 100000;
-        PitchDecision least = Pitch.Decide(file, plain, unopened, null, new List<int> { 6, 5, 6, 5, 6, 5 }, VenturesCatalogue.Standard, 10);
-        PitchDecision most = Pitch.Decide(file, plain, unopened, null, top, VenturesCatalogue.Standard, 10);
-        Check(least.Verdict == Verdict.Invest && least.Score == 55 && least.Amount == 30000 && least.ShareBp == VenturesCatalogue.ShareMostBp[1] && most.Amount == 70000 && most.ShareBp == VenturesCatalogue.ShareLeastBp[1],
+        var seed = new Investor { Id = 83, Kind = InvestorKind.Angel, Temper = Temperament.Even, ChequeLeast = 5000, ChequeMost = 100000, Diligence = 30 };
+        PitchDecision least = Pitch.Decide(file, seed, unopened, null, new List<int> { 5, 4, 5, 4, 5, 4 }, VenturesCatalogue.Standard, 10);
+        PitchDecision most = Pitch.Decide(file, seed, unopened, null, top, VenturesCatalogue.Standard, 10);
+        Check(least.Verdict == Verdict.Invest && least.Score == 45 && least.Amount == 30000 && least.ShareBp == VenturesCatalogue.ShareMostBp[0] && most.Amount == 70000 && most.ShareBp == VenturesCatalogue.ShareLeastBp[0],
             "decision: a business not yet open gets three to seven tenths of its budget (" + least.Amount + " to " + most.Amount + ")");
+        PitchDecision notOpen = Pitch.Decide(file, plain, unopened, null, top, VenturesCatalogue.Standard, 10);
+        Check(notOpen.Verdict == Verdict.NotOpen && notOpen.Amount == 0 && Pitch.Decide(file, tycoon, unopened, null, top, VenturesCatalogue.Hardcore, 10).Verdict == Verdict.NotOpen,
+            "decision: a tycoon puts no money into a business that is not open yet");
         unopened.Budget = 10000;
         Check(Pitch.Decide(file, fund, unopened, null, top, VenturesCatalogue.Standard, 10).Verdict == Verdict.TooSmall, "decision: a budget too small for a fund is said so");
         unopened.Budget = 500000;

@@ -70,6 +70,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         public int ShareBp;
         public int TargetPct, TargetDays;
         public int MadeDay, OpenBy;
+        public int Had;              // how many businesses of that kind the player ran when the promise was made: one more opens the deal
         public bool Test;
     }
 
@@ -79,7 +80,8 @@ namespace RealLifeOverhaul.Economy.Ventures
         Running = 0,   // a target is set
         Demand = 1,    // the investor has made a demand and waits for an answer
         Cold = 2,      // the investor has lost interest: they take their share and set no more targets
-        Called = 3     // they want their money back: the share has stopped and a daily sum is owed
+        Called = 3,    // they want their money back: the share has stopped and a daily sum is owed
+        Quiet = 4      // they have had their money back and a target was met: they take their share and set no more targets
     }
 
     /// <summary>An investor's stake in one business of the player's.</summary>

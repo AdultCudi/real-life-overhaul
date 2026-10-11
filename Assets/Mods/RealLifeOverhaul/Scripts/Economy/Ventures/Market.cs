@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         public MarketCause Cause;
         public int Scale;        // per cent of the table's effect, signed: -100 turns it round (a policy relaxed, the bank rate cut)
         public int Lever;        // a policy: which of the council's (the number of Civic's Lever)
-        public string Company;   // a rival's move: the listed name of the rival that made it
+        public string Company;   // a rival's move: the name of the rival that made it
     }
 
     /// <summary>The market as it stood before the test tools moved it, so that they can put it back and a save never keeps a test's prices.</summary>
@@ -91,7 +91,8 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 return 0;
             }
-            if (news.Cause == MarketCause.RivalMove && company.Rival && news.Company != null && news.Company == company.RivalName)
+            // (a rival is listed under a company name made from its own: the news names the rival)
+            if (news.Cause == MarketCause.RivalMove && company.Rival && !string.IsNullOrEmpty(news.Company) && company.RivalName.IndexOf(news.Company, StringComparison.Ordinal) >= 0)
             {
                 return RivalMoveBp;
             }

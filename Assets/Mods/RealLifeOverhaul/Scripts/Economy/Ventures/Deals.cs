@@ -178,8 +178,8 @@ namespace RealLifeOverhaul.Economy.Ventures
             return deal;
         }
 
-        /// <summary>An offer for a business not yet open, taken up: the money waits for one of that kind to be opened.</summary>
-        public static Pledge Promise(VenturesFile file, Offer offer, int day)
+        /// <summary>An offer for a business not yet open, taken up: the money waits for one of that kind to be opened ('had': how many of that kind the player runs already).</summary>
+        public static Pledge Promise(VenturesFile file, Offer offer, int day, int had = 0)
         {
             if (!offer.ForNew || file.Pledges.Count >= VenturesCatalogue.PledgesMost)
             {
@@ -189,7 +189,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             var pledge = new Pledge
             {
                 Id = file.NextId++, InvestorId = offer.InvestorId, TypeName = offer.TypeName, Budget = offer.Budget, Amount = offer.Amount, ShareBp = offer.ShareBp,
-                TargetPct = offer.TargetPct, TargetDays = offer.TargetDays, MadeDay = day, OpenBy = day + VenturesCatalogue.PledgeDays, Test = offer.Test
+                TargetPct = offer.TargetPct, TargetDays = offer.TargetDays, MadeDay = day, OpenBy = day + VenturesCatalogue.PledgeDays, Had = had, Test = offer.Test
             };
             file.Pledges.Add(pledge);
             return pledge;
@@ -221,7 +221,8 @@ namespace RealLifeOverhaul.Economy.Ventures
 
     public enum DealNews
     {
-        Paid, Short, TargetMet, Warned, Demanded, DemandDefault, PromiseKept, PromiseBroken, WentCold, Called, CallPaid, CallMissed, CallDone, Claimed, BusinessGone, Settled, BoardEnded
+        Paid, Short, TargetMet, Warned, Demanded, DemandDefault, PromiseKept, PromiseBroken, WentCold, Called, CallPaid, CallMissed, CallDone, Claimed, BusinessGone, Settled, BoardEnded,
+        PaidBack
     }
 
     public struct DealEvent
@@ -236,8 +237,10 @@ namespace RealLifeOverhaul.Economy.Ventures
     /// <summary>
     /// A deal's day: the investor's share of yesterday's profit (never of a loss), the target when its day comes,
     /// and what follows a miss: a warning, then a demand, then, for a demanding investor on a level that allows it,
-    /// their money called back. Game-free: money moves through the wallet it is given, and what happened is added to a
-    /// list for the director to say.
+    /// their money called back; anybody else loses interest (and, if they have not had their money back, will not back
+    /// the founder again). An investor who has had their money back and sees a target met sets no more targets.
+    /// Game-free: money moves through the wallet it is given, and what happened is added to a list for the director
+    /// to say.
     /// </summary>
     public static class DealRules
     {
@@ -256,7 +259,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 // The business has been sold or closed: the investor is owed what they put in, less what they have been paid.
                 int owed = Math.Max(0, deal.Amount - deal.PaidOut);
-                owed = level == VenturesCatalogue.Relaxed ? owed / 2 : owed;
                 if (owed <= 0)
                 {
                     Say(said, DealNews.Settled, deal, 0);
@@ -310,7 +312,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                 else
                 {
                     Say(said, DealNews.PromiseBroken, deal, deal.CostTarget);
-                    Miss(deal, temper, day, level, said);
+                    Miss(file, deal, investor, day, level, said);
                 }
             }
             if (deal.Stage == DealStage.Running && deal.TargetDay > 0 && day >= deal.TargetDay)
@@ -324,19 +326,31 @@ namespace RealLifeOverhaul.Economy.Ventures
                     file.MoveReputation(VenturesCatalogue.ReputationMet);
                     Mood(deal, VenturesCatalogue.MoodMet);
                     Say(said, DealNews.TargetMet, deal, deal.TargetProfit);
-                    OfferRules.SetTarget(deal, b.AvgProfit7, OfferRules.Growth(temper, level), VenturesCatalogue.TargetDays[(int)temper], day);
+                    if (deal.PaidOut >= deal.Amount)
+                    {
+                        // They have had their money back and the business does what they asked: no more targets, only their share.
+                        deal.Stage = DealStage.Quiet;
+                        deal.TargetDay = 0;
+                        Say(said, DealNews.PaidBack, deal, deal.PaidOut);
+                    }
+                    else
+                    {
+                        OfferRules.SetTarget(deal, b.AvgProfit7, OfferRules.Growth(temper, level), VenturesCatalogue.TargetDays[(int)temper], day);
+                    }
                 }
                 else
                 {
-                    Miss(deal, temper, day, level, said);
+                    Miss(file, deal, investor, day, level, said);
                 }
             }
             return false;
         }
 
         // A target missed (or a promise broken): a warning, then a demand, then the money called back or the investor gone cold.
-        private static void Miss(Deal deal, Temperament temper, int day, int level, List<DealEvent> said)
+        // An investor who goes cold before they have had their money back will not back this founder again, and the others hear of it.
+        private static void Miss(VenturesFile file, Deal deal, Investor investor, int day, int level, List<DealEvent> said)
         {
+            Temperament temper = investor != null ? investor.Temper : Temperament.Even;
             deal.Misses++;
             Mood(deal, VenturesCatalogue.MoodMissed);
             if (deal.Misses == 1)
@@ -361,7 +375,13 @@ namespace RealLifeOverhaul.Economy.Ventures
                 deal.Stage = DealStage.Cold;
                 deal.TargetDay = 0;
                 deal.CostDay = 0;
-                Say(said, DealNews.WentCold, deal, 0);
+                bool unpaid = deal.PaidOut < deal.Amount;
+                if (unpaid && investor != null)
+                {
+                    investor.ClosedUntil = day + VenturesCatalogue.ColdClosedDays;
+                    file.MoveReputation(VenturesCatalogue.ReputationCold);
+                }
+                Say(said, DealNews.WentCold, deal, unpaid ? 1 : 0);
             }
         }
 

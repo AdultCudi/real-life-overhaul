@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.Economy.Ventures
     ///   h  the header: the numbers of <see cref="VenturesFile"/>, in the order of <see cref="Write"/>
     ///   i  the investors: id|kind|temperament|first name|last name|sectors liked|smallest sum|largest sum|diligence|closed until|last approached
     ///   o  the offers open (four at most): thirteen numbers, then the business's key, its name and, for a business not yet open, its type
-    ///   p  money promised for a business not yet open (three at most): ten numbers, then the type
+    ///   p  money promised for a business not yet open (three at most): eleven numbers, then the type
     ///   d  the deals (eight at most): twenty-four numbers, then the business's key and its name
     ///   c  the companies (twelve): id|sector|rival|name index|price|ordinary move|dividend|last move|its cause, what it is
     ///      worth, a rival's name, and its last thirty closing prices divided by commas
@@ -101,7 +101,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 Pledge p = f.Pledges[i];
                 t.Append(i > 0 ? ";" : string.Empty);
-                Join(t, p.Id, p.InvestorId, p.Amount, p.ShareBp, p.TargetPct, p.TargetDays, p.MadeDay, p.OpenBy, p.Budget, p.Test ? 1 : 0);
+                Join(t, p.Id, p.InvestorId, p.Amount, p.ShareBp, p.TargetPct, p.TargetDays, p.MadeDay, p.OpenBy, p.Budget, p.Test ? 1 : 0, p.Had);
                 t.Append('|').Append(Clean(p.TypeName));
             }
             t.Append("~d:");
@@ -197,14 +197,15 @@ namespace RealLifeOverhaul.Economy.Ventures
                         foreach (string record in Records(body))
                         {
                             string[] c = record.Split('|');
-                            if (c.Length < 11 || I(c, 0) <= 0 || Count(c, 2) <= 0 || S(c, 10).Length == 0 || f.Pledges.Count >= VenturesCatalogue.PledgesMost)
+                            if (c.Length < 12 || I(c, 0) <= 0 || Count(c, 2) <= 0 || S(c, 11).Length == 0 || f.Pledges.Count >= VenturesCatalogue.PledgesMost)
                             {
                                 continue;
                             }
                             f.Pledges.Add(new Pledge
                             {
                                 Id = I(c, 0), InvestorId = I(c, 1), Amount = Count(c, 2), ShareBp = Math.Min(10000, Count(c, 3)), TargetPct = Count(c, 4),
-                                TargetDays = Math.Max(1, Count(c, 5)), MadeDay = I(c, 6), OpenBy = I(c, 7), Budget = Count(c, 8), Test = I(c, 9) != 0, TypeName = S(c, 10)
+                                TargetDays = Math.Max(1, Count(c, 5)), MadeDay = I(c, 6), OpenBy = I(c, 7), Budget = Count(c, 8), Test = I(c, 9) != 0, Had = Count(c, 10),
+                                TypeName = S(c, 11)
                             });
                         }
                         break;
@@ -213,7 +214,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                         {
                             string[] c = record.Split('|');
                             int stage = I(c, 13, -1);
-                            if (c.Length < 25 || I(c, 0) <= 0 || stage < 0 || stage > (int)DealStage.Called || S(c, 24).Length == 0 || f.Deals.Count >= VenturesCatalogue.DealsMost)
+                            if (c.Length < 25 || I(c, 0) <= 0 || stage < 0 || stage > (int)DealStage.Quiet || S(c, 24).Length == 0 || f.Deals.Count >= VenturesCatalogue.DealsMost)
                             {
                                 continue;
                             }
