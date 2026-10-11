@@ -95,6 +95,29 @@ namespace RealLifeOverhaul.Meta
         }
 
         /// <summary>
+        /// How many options a preset would change if it were applied now, and how many of those are switches:
+        /// what the question says before anything is written. One pass over the options, on a button press.
+        /// </summary>
+        public static int CountChanges(Intensity intensity, out int switches)
+        {
+            int changed = 0;
+            switches = 0;
+            if (Settings.ModId == null)
+            {
+                return 0;
+            }
+            foreach (OptionInfo info in SettingsTable.All)
+            {
+                if (TryValue(info, intensity, out int value) && SettingsTable.Current(info) != value)
+                {
+                    changed++;
+                    switches += info.Type == OptionType.Toggle ? 1 : 0;
+                }
+            }
+            return changed;
+        }
+
+        /// <summary>
         /// Sets every option the presets cover. The settings as they were are written to a file first, so a
         /// preset pressed by mistake can be undone with "Import". Returns the text to show the player.
         /// </summary>

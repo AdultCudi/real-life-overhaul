@@ -993,9 +993,27 @@ again each time the page is drawn, and `OptionsLayout` is told as each is made (
 
 - `Feature.StandsAside(why, optionIds...)`: while `why()` answers a sentence, every `Selectable` of those rows (the
   game's toggle and slider) gets `interactable = false`, which is the game's own look for a control that cannot be
-  used, and the section's button says the sentence after its name: "Camera   (12 options, on, unavailable: the camera
-  is with ...)".
+  used, and each of those rows says the sentence after its label: "Third-person camera   (unavailable: the camera
+  is with ...)". A row that needs another option on (`Meta/OptionsTree.cs`) is drawn the same way.
 - `Feature.Present(optionId, present)`: while `present()` is false the row is switched off and kept off for that
-  drawing, whatever section opens or search finds it, and is not counted in "5 options". The option keeps its value.
+  drawing, whatever section opens or search finds it, and is not counted in "5 of 6 on". The option keeps its value.
 
 Both are asked when the page is drawn, never per frame. See [other-mods.md](other-mods.md) for what uses them.
+
+### What a row of the mod options page can do, and how the page is arranged (`Meta/OptionsTree`, `OptionsLayout`)
+
+Read from the decompiled game (`BigAmbitions.ModsInternal`):
+
+- `ModOptionsViewController.Rebuild` (lines 43 to 58) destroys every row and makes each again from its prefab, for all mods on one page; a row that is none of the six kinds is asked to draw itself (`SpawnOption`, lines 84 to 96).
+- A row has a label and its control, nothing else: `ModOptionsToggleControl`, `ModOptionsSliderControl` (a second text for the number), `ModOptionsDropdownControl`, `ModOptionsButtonControl` (a text on the button that the game never fills), `ModOptionsHeaderControl`. No description, no tooltip, no disabled state, no indent, no sub-page.
+- Each control calls its handler with the saved value while it is made, and again on every change. That is how the page knows which switches are on without reading anything itself.
+
+What the mod adds, all with the game's own parts:
+
+- A sentence per option: the game's `BasicTooltip` (`TooltipTarget.OnPointerEnter`, a 0.1 s delay, then `TooltipSystem`) is added to the row with `descriptionKey` set to the key `reallife_opt_tip_<option id>`. It is added the first time the row's section is shown in a drawing, not for every row of the page.
+- Greyed rows: `Selectable.interactable = false` on the row's controls, the label at the control's own disabled alpha, and the reason in the label's `Suffix` ("needs: Credit rating and phone loans"). What a row needs is declared in `Meta/OptionsTree.cs`.
+- Groups and sections are button rows that switch the rows after them on and off; their label's `Suffix` carries "5 of 6 on", written when the page is drawn and on a click.
+- Questions go through `HudConfirm.Show` (the game uses it over its own options screen, `Scenes.MainMenu/Options.cs` line 530) and answers through `Notifications.Show`; with no HUD (the main menu) the answer is shown in the confirm dialog (`Meta/OptionsNotice`).
+- Test buttons are on the page only while "Show test tools" is on: the page is registered again with or without them (`OptionsService.Register`), so a player's page has about 300 rows fewer to make.
+
+A new option: add its row in `RealLifeOverhaulMod.cs` as before, name its id in a section of `Meta/OptionsTree.cs`, and give it a sentence in en.json. `CatalogueCheck` fails until all three are there.

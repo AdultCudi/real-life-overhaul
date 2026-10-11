@@ -21,6 +21,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\GigOffers.cs" Link="Mod\GigOffers.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\PaySlip.cs" Link="Mod\PaySlip.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\JobSave.cs" Link="Mod\JobSave.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\OptionsTree.cs" Link="Mod\OptionsTree.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\OptionsPlan.cs" Link="Mod\OptionsPlan.cs" />
   </ItemGroup>
 
 </Project>

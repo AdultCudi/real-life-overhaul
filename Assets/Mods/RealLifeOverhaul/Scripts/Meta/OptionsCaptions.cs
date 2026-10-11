@@ -25,8 +25,6 @@ namespace RealLifeOverhaul.Meta
         private const string CaptionRun = "reallife_opt_caption_run";
         private const string CaptionOpen = "reallife_opt_caption_open";
         private const string CaptionClose = "reallife_opt_caption_close";
-        private const string CaptionOpenAll = "reallife_opt_caption_open_all";
-        private const string CaptionCloseAll = "reallife_opt_caption_close_all";
         private const string CaptionFound = "reallife_opt_caption_found";
         private const string CaptionChange = "reallife_opt_caption_change";
 
@@ -34,6 +32,7 @@ namespace RealLifeOverhaul.Meta
         private static readonly Dictionary<string, string> CaptionByLabel = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             { "reallife_meta_guide_button", CaptionOpen },
+            { AboutKey, CaptionOpen },
             { "reallife_meta_welcome_button", CaptionOpen },
             { "reallife_meta_preset_button_relaxed", "reallife_opt_caption_apply" },
             { "reallife_meta_preset_button_standard", "reallife_opt_caption_apply" },
@@ -82,7 +81,6 @@ namespace RealLifeOverhaul.Meta
 
         private static readonly List<Caption> PlainCaptions = new List<Caption>();   // of this drawing: written again when the language changes
         private static readonly HashSet<GameObject> OwnCaption = new HashSet<GameObject>();   // rows whose word follows a state (sections)
-        private static Caption _allCaption;
         private static int _captionsFrom;
         private static bool _captionsWarned;
         private static bool _captionsFailed;
@@ -92,7 +90,6 @@ namespace RealLifeOverhaul.Meta
         {
             PlainCaptions.Clear();
             OwnCaption.Clear();
-            _allCaption = null;
             _captionsFrom = parent != null ? parent.childCount : 0;
             foreach (Section section in Sections)
             {
@@ -184,23 +181,6 @@ namespace RealLifeOverhaul.Meta
                 if (section.Header != null)
                 {
                     OwnCaption.Add(section.Header);
-                }
-            }
-            catch (Exception e)
-            {
-                CaptionsFailed(e);
-            }
-        }
-
-        // The "Open or close every section" button, as it is made.
-        private static void CaptionAll(GameObject row)
-        {
-            try
-            {
-                _allCaption = CaptionOf(row);
-                if (row != null)
-                {
-                    OwnCaption.Add(row);
                 }
             }
             catch (Exception e)

@@ -11,11 +11,11 @@ namespace RealLifeOverhaul.Meta
 {
     /// <summary>
     /// The search box of the options page: a text field under the page's first header. While two letters or more
-    /// stand in it, a row is shown only if every word typed is in its label, or in its section's name, what the
-    /// section's feature is (its "about" sentence) or the other words for it in <see cref="SearchWords"/>; a
-    /// section's button is shown only if one of its rows is; and the test tools are searched whether or not they
-    /// are shown otherwise. Emptying the box puts every section back as it was left: nothing here writes what is
-    /// open and closed.
+    /// stand in it, a row is shown only if every word typed begins a word of its label, of its sentence, of the
+    /// other words the table gives it, or of the name (and other words) of its section or its group
+    /// (<see cref="OptionsFind"/>); a section's button and its group's are shown above what was found in them,
+    /// which is how a found row says where it lives. Emptying the box puts every group back as it was left:
+    /// nothing here changes what is open and closed.
     ///
     /// Nothing runs per frame. The work is done when the field's text changes; the lower-case texts are made on
     /// the first letters typed after the page was drawn; rows are the game's own objects, switched on and off.
@@ -23,53 +23,6 @@ namespace RealLifeOverhaul.Meta
     /// </summary>
     public static partial class OptionsLayout
     {
-        // Other words for a feature. First who: the feature's id, or the header key of its group for one that is
-        // not registered (either may be listed, with spaces between). Then the words, in lower case.
-        // A word here finds every row of the feature, so only words that mean the whole of it.
-        private static readonly string[][] SearchWords =
-        {
-            new[] { "camera", "view third person chase cam zoom" },
-            new[] { "character reallife_looks_header", "hair clothes outfit wardrobe appearance looks" },
-            new[] { "citylife reallife_city_header", "pedestrians street workers passers-by" },
-            new[] { "crime", "robbery mugging thief theft burglar scam pickpocket criminal" },
-            new[] { "driving", "car steering throttle pedal" },
-            new[] { "jobs", "work employment shift" },
-            new[] { "life", "random events" },
-            new[] { "people", "police officers paramedics pedestrians cop cops" },
-            new[] { "traffic", "accident crash collision ambulance pursuit chase" },
-            new[] { "visuals", "graphics colour color grading" },
-            new[] { "keys", "keys key bindings shortcuts hotkeys rebind" },
-            new[] { "performance", "fps frame rate lag stutter slow optimisation optimization" },
-            new[] { "law reallife_law_header", "police cop cops officer arrest precinct station custody wanted" },
-            new[] { "justice reallife_justice_header", "court trial judge lawyer prison jail sentence bail" },
-            new[] { "licences reallife_licences_header", "driving licence license test theory examiner points" },
-            new[] { "garage reallife_garage_header", "car tuning paint parts bike motorbike motorcycle scooter two-wheeler" },
-            new[] { "transport reallife_transport_header", "bus buses subway metro train car ownership" },
-            new[] { "taxi", "taxi cab cabs hail call ride" },
-            new[] { "events reallife_events_header", "fire weather rain storm street" },
-            new[] { "family reallife_family_header", "partner spouse wife husband wedding marriage children kids baby" },
-            new[] { "social reallife_social_header", "friends dating date relationship career" },
-            new[] { "home reallife_home_header", "health sick illness sleep" },
-            new[] { "travel reallife_travel_header", "hotel holiday vacation lodging" },
-            new[] { "civic reallife_civic_header", "election vote mayor politics construction roadworks" },
-            new[] { "leisure reallife_leisure_header", "fun night life photo clothes" },
-            new[] { "business reallife_business_header", "company shop competition" },
-            new[] { "navigation reallife_nav_header", "gps minimap map route satnav directions destination" },
-            new[] { "savetools", "uninstall remove backup" },
-            new[] { "diagnostics", "debug log developer" },
-        };
-
-        private const int ShortestQuery = 2;   // one letter is in nearly every row: switching all of them on would be a hitch for nothing
-
-        /// <summary>A row of the page that is in no section (the buttons at the top, the headers between the parts).</summary>
-        private sealed class LooseRow
-        {
-            public string LabelKey;   // null: never found (a header, a splitter)
-            public GameObject Object;
-            public string Text;
-        }
-
-        private static readonly List<LooseRow> Loose = new List<LooseRow>();
         private static readonly List<string> Words = new List<string>();
         private static string _query = string.Empty;
         private static bool _indexed;
@@ -106,14 +59,6 @@ namespace RealLifeOverhaul.Meta
 
         // ---------------------------------------------------------------- the page being drawn
 
-        private static void AddLoose(ModOptions page, ModOption option, bool findable)
-        {
-            var loose = new LooseRow { LabelKey = findable ? option.Label : null };
-            Loose.Add(loose);
-            page.AddCustom(option);
-            page.AddCustom(new RowTap(parent => loose.Object = Last(parent)));
-        }
-
         // The first thing on every drawing of the page: the box is new and empty, so nothing is being searched for.
         private static void SearchDrawn(Transform parent)
         {
@@ -122,10 +67,6 @@ namespace RealLifeOverhaul.Meta
             _indexed = false;
             _box = null;
             _pageTop = Last(parent);
-            foreach (LooseRow loose in Loose)
-            {
-                loose.Object = null;
-            }
         }
 
         // One of the page's own buttons has been made below the box: the box takes its height, font and shape from it.
@@ -153,7 +94,7 @@ namespace RealLifeOverhaul.Meta
             Keys.Suspended = MetaUi.AnyOpen;
         }
 
-        // Hides the box for the rest of the session and puts the page back as the sections have it.
+        // Hides the box for the rest of the session and puts the page back as the groups have it.
         private static void SearchFailed(Exception e)
         {
             if (!_searchFailed)
@@ -185,42 +126,12 @@ namespace RealLifeOverhaul.Meta
         // Takes the box's text. True if what is searched for is now something else.
         private static bool SetQuery(string typed)
         {
-            string query = typed.Length < ShortestQuery ? string.Empty : typed.ToLowerInvariant();
+            string query = typed.Length < OptionsFind.ShortestQuery ? string.Empty : typed.Trim().ToLowerInvariant();
             if (query == _query)
             {
                 return false;
             }
-            _query = query;
-            Words.Clear();
-            int start = -1;
-            for (int i = 0; i <= query.Length; i++)
-            {
-                bool gap = i == query.Length || char.IsWhiteSpace(query[i]);
-                if (gap && start >= 0)
-                {
-                    Words.Add(start == 0 && i == query.Length ? query : query.Substring(start, i - start));
-                    start = -1;
-                }
-                else if (!gap && start < 0)
-                {
-                    start = i;
-                }
-            }
-            return true;
-        }
-
-        // Every word typed is in the row's own text or in its section's.
-        private static bool Matches(string rowText, string sectionText)
-        {
-            for (int i = 0; i < Words.Count; i++)
-            {
-                string word = Words[i];
-                if ((rowText == null || rowText.IndexOf(word, StringComparison.Ordinal) < 0)
-                    && (sectionText == null || sectionText.IndexOf(word, StringComparison.Ordinal) < 0))
-                {
-                    return false;
-                }
-            }
+            _query = OptionsFind.Split(typed, Words);
             return true;
         }
 
@@ -237,64 +148,28 @@ namespace RealLifeOverhaul.Meta
                 return;
             }
             _indexed = true;
-            foreach (LooseRow loose in Loose)
+            string tests = Lower("reallife_meta_title_tests");
+            foreach (Section section in Sections)   // parents before children, so a parent's texts are there
             {
-                loose.Text = loose.LabelKey != null ? Lower(loose.LabelKey) : null;
-            }
-            string tests = Lower("reallife_meta_title_tests") + " " + Lower("reallife_meta_tests_group") + " test";
-            foreach (Section section in Sections)
-            {
-                Feature feature = section.Feature;
-                string text = Title(feature).ToLowerInvariant() + " " + Lower(feature.AboutKey) + " " + OtherWords(feature);
-                section.Text = section.IsTests || section.Parent != null ? text + " " + tests : text;
+                section.Text = Lower(section.TitleKey) + " " + section.Words + (section.InTests ? " " + tests : string.Empty);
+                section.Above = section.Parent == null ? string.Empty : section.Parent.Above + " " + section.Parent.Text;
                 section.Texts.Clear();
-                // One object per row is what the game makes. Should a row have made none or several, the section is found as a whole.
-                if (section.Objects.Count == section.Rows.Count)
+                foreach (Row row in section.Infos)
                 {
-                    foreach (ModOption row in section.Rows)
-                    {
-                        section.Texts.Add(Lower(row.Label));
-                    }
+                    // A button that only opens the Guide is found with its section, never by itself.
+                    section.Texts.Add(row.LabelKey == AboutKey ? string.Empty
+                        : Lower(row.LabelKey) + " " + Lower(row.TipKey) + " " + row.Words);
                 }
             }
-        }
-
-        private static string OtherWords(Feature feature)
-        {
-            string words = string.Empty;
-            foreach (string[] entry in SearchWords)
-            {
-                foreach (string who in entry[0].Split(' '))
-                {
-                    if (who == feature.Id || feature.Groups.Contains(who))
-                    {
-                        words += " " + entry[1];
-                        break;
-                    }
-                }
-            }
-            return words;
         }
 
         // Shows what matches and hides the rest. Returns how many rows are shown.
         private static int Filter()
         {
             int found = 0;
-            foreach (LooseRow loose in Loose)
+            foreach (Section top in Top)
             {
-                bool match = loose.Text != null && Matches(loose.Text, null);
-                Show(loose.Object, match);
-                if (match)
-                {
-                    found++;
-                }
-            }
-            foreach (Section section in Sections)
-            {
-                if (section.Parent == null)
-                {
-                    found += Filter(section);
-                }
+                found += Filter(top);
             }
             return found;
         }
@@ -302,57 +177,36 @@ namespace RealLifeOverhaul.Meta
         private static int Filter(Section section)
         {
             int found = 0;
-            bool each = section.Texts.Count == section.Objects.Count;
-            bool whole = !each && Matches(null, section.Text);
+            bool whole = !section.Matched && OptionsFind.Matches(Words, null, section.Text, section.Above);
             for (int i = 0; i < section.Objects.Count; i++)
             {
-                bool match = each ? Matches(section.Texts[i], section.Text) : whole;
+                bool match = section.Matched ? section.Texts[i].Length > 0 && OptionsFind.Matches(Words, section.Texts[i], section.Text, section.Above) : whole;
                 Show(section.Objects[i], match);
                 if (match)
                 {
                     found++;
                 }
             }
-            foreach (Section group in section.Children)
+            if (found > 0)
             {
-                found += Filter(group);
+                Dress(section);
+            }
+            foreach (Section child in section.Children)
+            {
+                found += Filter(child);
             }
             Show(section.Header, found > 0);
             CaptionState(section, CaptionFound);
-            Label(section, section.Found);
+            Label(section);
             return found;
         }
 
-        // The page as the sections have it: after the box was emptied.
+        // The page as the groups have it: after the box was emptied.
         private static void ShowAll()
         {
-            foreach (LooseRow loose in Loose)
+            foreach (Section top in Top)
             {
-                Show(loose.Object, true);
-            }
-            foreach (Section section in Sections)
-            {
-                if (section.Parent == null)
-                {
-                    Apply(section);
-                }
-            }
-        }
-
-        // Something changed what may be shown while a search is on (the "Show test tools" switch among the results).
-        private static void SearchAgain()
-        {
-            try
-            {
-                int found = Filter();
-                if (_box != null)
-                {
-                    _box.Report(found);
-                }
-            }
-            catch (Exception e)
-            {
-                SearchFailed(e);
+                Apply(top);
             }
         }
 
@@ -665,6 +519,15 @@ namespace RealLifeOverhaul.Meta
                 catch (Exception e)
                 {
                     SearchFailed(e);
+                }
+            }
+
+            /// <summary>Puts a row of the page at the top of the view, once the page has laid its rows out again.</summary>
+            public void ScrollTo(GameObject row)
+            {
+                if (row != null)
+                {
+                    _top.Go(row);
                 }
             }
 

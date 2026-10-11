@@ -7,6 +7,7 @@ New
 - New phone apps: Services (a shared cleaning crew, and selling a business), Brands (brands and franchises), Web shop (online shops), Property (buildings, an estate agency, hotels, car hire).
 - A roommate who pays a share of the rent and lives in your flat.
 - The minimap shows buildings and water.
+- The options page is in ten groups with short names; each option explains itself when you point at it, and test tools are tucked away under Troubleshooting.
 - Tables in Finance, Ventures, Company and the Planner sort, filter and total.
 - Panels no longer cover a building's info box. Fishing, dancing and chess use the game's own bar.
 - The mod's cameras stand aside for other camera mods, and its route keeps to the minimap beside Voogle Route.
