@@ -73,6 +73,7 @@ Ask for help, report a bug, suggest an idea and see what is coming next on the R
 
 [h1]Source and contributions[/h1]
 The mod is open source under the MIT licence. Report problems and send changes here: https://github.com/AdultCudi/real-life-overhaul
+To play without the Workshop, download a zip from the Releases page there and follow INSTALL.md.
 
 [h1]Credits[/h1]
 The models, clothes and animations were made for this mod; nothing of the game's own files is included. Big Ambitions is made by Hovgaard Games; this mod is not made or endorsed by them.

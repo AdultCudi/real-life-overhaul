@@ -5,7 +5,11 @@ A mod for [Big Ambitions](https://store.steampowered.com/app/1331550/Big_Ambitio
 **To play it, subscribe on the Steam Workshop:**
 https://steamcommunity.com/sharedfiles/filedetails/?id=3816536560
 
-This repository is the source. You only need it if you want to read the code, report a problem in detail, or contribute.
+**Or install it without the Workshop:** download the zip from [the latest release](https://github.com/AdultCudi/real-life-overhaul/releases/latest) and follow [INSTALL.md](INSTALL.md).
+
+Questions, help and bug reports: [the Real Life Overhaul Discord](https://discord.gg/tzCh2VXs9E).
+
+This repository is the source. You only need it to read the code, report a problem in detail, or contribute.
 
 ## Status
 
