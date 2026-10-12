@@ -107,10 +107,14 @@ def main():
         print("catalogue: %d props, %d triangles in all" % (len(rows), sum(r["triangles"] for r in rows)))
     if "--no-preview" not in arguments:
         os.makedirs(kit.PREVIEWS, exist_ok=True)
+        by_name = {prop.name: prop for prop, _ in made}
         for prop, _ in made:
             preview(prop)
             if prop.name in props.SIDES:
-                kit.turnaround(prop, os.path.join(kit.PREVIEWS, prop.name + "_sides.png"), **props.SIDES[prop.name])
+                sides = dict(props.SIDES[prop.name])
+                # A SIDES entry may name the props the code puts on this one, (id, at, turn): those that were built with it.
+                sides["parts"] = [(by_name[name], at, turn) for name, at, turn in sides.get("parts", ()) if name in by_name]
+                kit.turnaround(prop, os.path.join(kit.PREVIEWS, prop.name + "_sides.png"), **sides)
         cordon(made)
 
 

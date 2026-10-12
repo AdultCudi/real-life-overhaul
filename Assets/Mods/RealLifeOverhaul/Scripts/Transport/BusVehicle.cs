@@ -68,7 +68,7 @@ namespace RealLifeOverhaul
 
         private enum Light { Head, Tail, Brake, Left, Right, Sign, Count }
 
-        private static readonly Color Livery = new Color(0.86f, 0.10f, 0.12f);    // the city's buses (the stops' flags are the same red)
+        private static readonly Color Livery = new Color(0.86f, 0.10f, 0.12f);    // the city's buses: the modelled body is the same red (paint_service.py, BUS_RED)
         private static readonly Color Skirt = new Color(0.18f, 0.18f, 0.20f);
         private static readonly Color Glass = new Color(0.07f, 0.09f, 0.11f);
         private static readonly Color Tyre = new Color(0.05f, 0.05f, 0.05f);
@@ -187,11 +187,15 @@ namespace RealLifeOverhaul
             Shapes.Piece("Rear Bumper", _shell, Shapes.Cube, skirt, new Vector3(0f, 0.45f, -Length * 0.5f - 0.02f), new Vector3(HalfWidth * 2f - 0.05f, 0.30f, 0.10f));
         }
 
-        // Four wheels, each on a pivot that spins it, the front two on one more that steers them. The modelled wheel stands on
-        // its own middle with its hub to +X; the left ones are turned round so their hubs face out.
+        // Four wheels, each on a pivot that spins it, the front two on one more that steers them. The modelled wheels stand on
+        // their own middle with the hub to +X: the rear pair is a mesh of its own where the bundle has it, else the front
+        // wheel drawn out to the pair's width. The left ones are turned round so their hubs face out.
         private void Wheels()
         {
             bool modelled = PropLibrary.TryGet("city_bus_wheel", out Mesh wheel, out Material paint) && wheel != null;
+            Mesh twin = null;
+            Material twinPaint = null;
+            bool pair = modelled && PropLibrary.TryGet("city_bus_wheel_twin", out twin, out twinPaint) && twin != null;
             for (int i = 0; i < 4; i++)
             {
                 bool front = i < 2;
@@ -215,7 +219,9 @@ namespace RealLifeOverhaul
                 face.localRotation = Quaternion.Euler(0f, left ? 180f : 0f, 0f);
                 if (modelled)
                 {
-                    Transform piece = Shapes.Piece(front ? "city_bus_wheel" : "city_bus_wheel_twin", face, wheel, paint, Vector3.zero, new Vector3(front ? 1f : TyreRear / TyreFront, 1f, 1f));
+                    bool own = !front && pair;
+                    Transform piece = Shapes.Piece(front ? "city_bus_wheel" : "city_bus_wheel_twin", face, own ? twin : wheel, own ? twinPaint : paint, Vector3.zero,
+                        new Vector3(front || own ? 1f : TyreRear / TyreFront, 1f, 1f));
                     piece.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.On;
                     continue;
                 }
@@ -243,7 +249,9 @@ namespace RealLifeOverhaul
                 _leaves[i].SetParent(_shell, false);
                 _leaves[i].localPosition = shut;
                 _leafShut[i] = shut;
-                _leafSlide[i] = side;
+                // The front door's forward leaf has only the metre to the nose to go into: it stops just short of the nose.
+                float room = i == 0 ? Length * 0.5f - 0.02f - (middle + DoorLeaf) : DoorSlide;
+                _leafSlide[i] = side * Mathf.Clamp01(room / DoorSlide);
                 if (modelled)
                 {
                     Shapes.Piece("city_bus_door", _leaves[i], leaf, paint, Vector3.zero, Vector3.one);
@@ -255,20 +263,32 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The lamps: the modelled ones where the bundle has them (each a mesh of the glow material), else small shapes that glow.
+        // The lamps: the modelled ones where the bundle has them (each a mesh of the glow material over its lamps in the
+        // modelled body), else small shapes that glow, in the same places and of the same sizes (PropAssets,
+        // props_service.py bus_lamps): the headlamps low at the front corners with the indicators outside them, indicator,
+        // brake and tail lamp one over another at each back corner, a brake lamp high on the back over the number (whose
+        // lettering is 2.52 to 2.72 m up), a repeater on each side between the front wheel and the front door.
         private void Lights()
         {
-            Lamp(Light.Head, "city_bus_light_head", new Color(1f, 0.95f, 0.85f), 3f, new[] { new Vector3(-0.85f, 0.62f, Length * 0.5f + 0.04f), new Vector3(0.85f, 0.62f, Length * 0.5f + 0.04f) }, new Vector3(0.32f, 0.16f, 0.03f));
-            Lamp(Light.Tail, "city_bus_light_tail", new Color(0.7f, 0.04f, 0.03f), 1.2f, new[] { new Vector3(-1.02f, 1.05f, -Length * 0.5f - 0.04f), new Vector3(1.02f, 1.05f, -Length * 0.5f - 0.04f) }, new Vector3(0.18f, 0.34f, 0.03f));
-            Lamp(Light.Brake, "city_bus_light_brake", new Color(1f, 0.05f, 0.04f), 4f, new[] { new Vector3(-1.02f, 1.42f, -Length * 0.5f - 0.05f), new Vector3(1.02f, 1.42f, -Length * 0.5f - 0.05f), new Vector3(0f, 2.62f, -Length * 0.5f - 0.04f) },
-                new Vector3(0.18f, 0.16f, 0.03f));
-            Lamp(Light.Left, "city_bus_light_left", Amber, 4f, new[] { new Vector3(-1.02f, 0.40f, Length * 0.5f + 0.03f), new Vector3(-1.02f, 1.70f, -Length * 0.5f - 0.04f), new Vector3(-HalfWidth - 0.02f, 0.75f, AxleFront + 0.8f) },
-                new Vector3(0.16f, 0.12f, 0.03f));
-            Lamp(Light.Right, "city_bus_light_right", Amber, 4f, new[] { new Vector3(1.02f, 0.40f, Length * 0.5f + 0.03f), new Vector3(1.02f, 1.70f, -Length * 0.5f - 0.04f), new Vector3(HalfWidth + 0.02f, 0.75f, AxleFront + 0.8f) },
-                new Vector3(0.16f, 0.12f, 0.03f));
+            float nose = Length * 0.5f + 0.03f;           // the shapes stand proud of the plain body's ends
+            float tail = -Length * 0.5f - 0.03f;
+            float repeater = AxleFront + 0.8f;
+            var cornerLamp = new Vector3(0.11f, 0.15f, 0.03f);
+            var frontTurn = new Vector3(0.08f, 0.15f, 0.03f);
+            var backTurn = new Vector3(0.11f, 0.12f, 0.03f);
+            var sideTurn = new Vector3(0.02f, 0.034f, 0.10f);
+            Lamp(Light.Head, "city_bus_light_head", new Color(1f, 0.95f, 0.85f), 3f, new[] { new Vector3(-0.61f, 0.74f, nose), new Vector3(0.61f, 0.74f, nose) }, new[] { new Vector3(0.21f, 0.12f, 0.03f) });
+            Lamp(Light.Tail, "city_bus_light_tail", new Color(0.7f, 0.04f, 0.03f), 1.2f, new[] { new Vector3(-0.90f, 1.00f, tail), new Vector3(0.90f, 1.00f, tail) }, new[] { cornerLamp });
+            Lamp(Light.Brake, "city_bus_light_brake", new Color(1f, 0.05f, 0.04f), 4f, new[] { new Vector3(-0.90f, 1.16f, tail), new Vector3(0.90f, 1.16f, tail), new Vector3(0f, 2.81f, tail) },
+                new[] { cornerLamp, cornerLamp, new Vector3(0.36f, 0.035f, 0.03f) });
+            Lamp(Light.Left, "city_bus_light_left", Amber, 4f, new[] { new Vector3(-0.77f, 0.74f, nose), new Vector3(-0.90f, 1.31f, tail), new Vector3(-HalfWidth - 0.01f, 0.80f, repeater) },
+                new[] { frontTurn, backTurn, sideTurn });
+            Lamp(Light.Right, "city_bus_light_right", Amber, 4f, new[] { new Vector3(0.77f, 0.74f, nose), new Vector3(0.90f, 1.31f, tail), new Vector3(HalfWidth + 0.01f, 0.80f, repeater) },
+                new[] { frontTurn, backTurn, sideTurn });
         }
 
-        private void Lamp(Light which, string model, Color colour, float glow, Vector3[] places, Vector3 size)
+        // One size for all of a group's lamps, or one for each.
+        private void Lamp(Light which, string model, Color colour, float glow, Vector3[] places, Vector3[] sizes)
         {
             List<Renderer> lamps = _lights[(int)which];
             if (PropLibrary.TryGet(model, out Mesh mesh, out Material paint) && mesh != null)
@@ -279,7 +299,7 @@ namespace RealLifeOverhaul
             Material lit = Shapes.Paint(colour, glow);
             for (int i = 0; i < places.Length; i++)
             {
-                lamps.Add(Shapes.Piece(which + " Lamp", _shell, Shapes.Cube, lit, places[i], size).GetComponent<Renderer>());
+                lamps.Add(Shapes.Piece(which + " Lamp", _shell, Shapes.Cube, lit, places[i], sizes[Mathf.Min(i, sizes.Length - 1)]).GetComponent<Renderer>());
             }
         }
 
