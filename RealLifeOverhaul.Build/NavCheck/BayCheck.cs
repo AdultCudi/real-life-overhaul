@@ -2,65 +2,81 @@ using System;
 using System.Collections.Generic;
 using RealLifeOverhaul;
 
-// Checks for the bus bays (Transport/BusBay.cs, compiled as it ships): the arithmetic of where a bus stands, the two
-// curves, and a bus driven in and out along them by a model of the mod's driver.
+// Checks for the bus bays (Transport/BusBay.cs and Transport/BusPath.cs, compiled as they ship): the arithmetic of where
+// the bus stands, the curves, the zone round a bay, and the mod's own bus driven in and out along them.
 //
-// THE MODEL is the part of Traffic/EmergencyDriver.FixedUpdate that steers and paces a vehicle along a route, written
-// out again here in plain numbers (that file needs the game's engine): the next point of the route is the first one
-// further off than the reach (the last one is driven up to 1.2 m); the vehicle is turned towards it at no more than
-// 120 degrees a second about its own origin; it gathers speed at 6 m/s2 and loses it at 24; within its last two points
-// it goes no faster than it can stop from at 4 m/s2, never under 1.5 m/s, and stops dead when the last is reached.
-// TransitBus adds what is modelled as it is there: the pace down to the bay's (2.5 m/s2 before the path), the tighter
-// reach from 6 m before it, and 1.5 m/s rising by 1.5 a second on the way out. What the model is not: the game's
-// physics (springs, a body pushed by another). Whether the real vehicle keeps to these numbers is for the game to
-// show, in the arrival line of Player.log.
+// THE MODEL is the bus as the game drives it, by the code that drives it there (BusPath): its front axle along a spline
+// through the route's points, its pace (each bend's limit planned back from it, every stop planned at the braking
+// passengers keep their feet at, a pull that eases in), and its rear axle drawn after the front at the wheelbase. What
+// BusDriver adds in the game (the physics step, the road's height, what is in its way) is not modelled, and nothing is in
+// the way here. TransitBus's part is written out again (that file needs the game's engine): the route it lays into a bay
+// (the curve in for the front axle, the run along the bay's line while the rear comes in, the standing place and the
+// point beyond it) and out of one (the curve out from where the bus really stands, then the lane), and its pace: down to
+// the bay's pace at 1.5 m/s2 before the path begins, out of the bay gently from rest.
+// Places are metres along the lane from the pole (ahead positive) and aside of the lane's line (towards the kerb positive).
 internal static partial class Program
 {
-    private const float BodyHalf = 3.33f;      // TransitBus.BodyLength / 2
-    private const float BodySide = 1.05f;      // TransitBus.BodyHalfWidth
-    private const float RouteReach = 4.5f;     // EmergencyDriver.PointReach
-    private const float FinalReach = 1.2f;     // EmergencyDriver.FinalReach, and TransitBus.FinalShort
     private const float Cruise = 11f;          // TransitBus.Cruise
-    private const float BayBraking = 2.5f;     // TransitBus.BayBraking
-    private const float BayLead = 6f;          // TransitBus.BayLead
+    private const float BayBraking = 1.5f;     // TransitBus.BayBraking
+    private const float BodySide = BusBay.BusSideHalf;
+    private const float BodyHalf = BusBay.BusLength * 0.5f;
 
-    private struct Pose
+    private struct Bus
     {
-        public float Along, Aside, Heading, Speed;   // of the point it is turned about; heading in radians, towards the kerb positive
+        public float Fx, Fz;    // its front axle (along, aside)
+        public float Rx, Rz;    // its rear axle
+        public float Speed;
+        public float Heading => (float)Math.Atan2(Fz - Rz, Fx - Rx);   // radians, towards the kerb positive
+        public float MiddleX => (Fx + Rx) * 0.5f;
+        public float MiddleZ => (Fz + Rz) * 0.5f;
     }
 
-    // What the body reaches, for a pose: the furthest any corner is towards the kerb, and from where to where along the
-    // lane its kerb side lies beyond the lane's edge (that length of the strip must be free; stripBack is above stripFront
-    // when none of it does).
-    private static void Corners(Pose pose, float middleAhead, out float kerbMost, out float stripBack, out float stripFront)
+    private static Bus Standing(float along, float aside, float degrees)
     {
-        float cos = (float)Math.Cos(pose.Heading), sin = (float)Math.Sin(pose.Heading);
-        float mx = pose.Along + cos * middleAhead, my = pose.Aside + sin * middleAhead;
+        float h = degrees * (float)Math.PI / 180f;
+        float c = (float)Math.Cos(h), s = (float)Math.Sin(h);
+        // (along and aside are its middle's; the axles are BusAxleFront either side of it)
+        return new Bus { Fx = along + c * BusBay.BusAxleFront, Fz = aside + s * BusBay.BusAxleFront, Rx = along - c * BusBay.BusAxleFront, Rz = aside - s * BusBay.BusAxleFront };
+    }
+
+    // What the body reaches, for a pose: the furthest any corner is towards the kerb and towards the far side, and from
+    // where to where along the lane its kerb side lies beyond the lane's edge (stripBack above stripFront when none does).
+    private static void Corners(Bus bus, out float kerbMost, out float laneLeast, out float stripBack, out float stripFront)
+    {
+        float hx = bus.Fx - bus.Rx, hz = bus.Fz - bus.Rz;
+        float d = (float)Math.Sqrt(hx * hx + hz * hz);
+        hx /= d;
+        hz /= d;
+        float rx = -hz, rz = hx;   // to its right, towards the kerb
         kerbMost = float.MinValue;
-        for (int end = -1; end <= 1; end += 2)
+        laneLeast = float.MaxValue;
+        for (int end = 0; end < 2; end++)
         {
+            float ahead = end == 0 ? BusBay.BusNoseAhead : -BusBay.BusTailBehind;
             for (int side = -1; side <= 1; side += 2)
             {
-                kerbMost = Math.Max(kerbMost, my + sin * end * BodyHalf + cos * side * BodySide);
+                float z = bus.Fz + hz * ahead + rz * side * BodySide;
+                kerbMost = Math.Max(kerbMost, z);
+                laneLeast = Math.Min(laneLeast, z);
             }
         }
-        float backX = mx - cos * BodyHalf - sin * BodySide, backY = my - sin * BodyHalf + cos * BodySide;
-        float frontX = mx + cos * BodyHalf - sin * BodySide, frontY = my + sin * BodyHalf + cos * BodySide;
+        float backX = bus.Fx - hx * BusBay.BusTailBehind + rx * BodySide, backZ = bus.Fz - hz * BusBay.BusTailBehind + rz * BodySide;
+        float frontX = bus.Fx + hx * BusBay.BusNoseAhead + rx * BodySide, frontZ = bus.Fz + hz * BusBay.BusNoseAhead + rz * BodySide;
         float edge = BusBay.LaneHalf;
         stripBack = float.MaxValue;
         stripFront = float.MinValue;
-        if (backY <= edge && frontY <= edge)
+        if (backZ <= edge && frontZ <= edge)
         {
             return;
         }
-        float crossX = Math.Abs(frontY - backY) > 0.0001f ? backX + (edge - backY) / (frontY - backY) * (frontX - backX) : backX;
-        stripBack = backY > edge ? backX : crossX;
-        stripFront = frontY > edge ? frontX : crossX;
+        float crossX = Math.Abs(frontZ - backZ) > 0.0001f ? backX + (edge - backZ) / (frontZ - backZ) * (frontX - backX) : backX;
+        stripBack = backZ > edge ? backX : crossX;
+        stripFront = frontZ > edge ? frontX : crossX;
     }
 
     private sealed class Drive
     {
-        public readonly List<float> X = new List<float>(), Y = new List<float>();
+        public readonly List<float> X = new List<float>(), Z = new List<float>();
         public int FirstOfBay;          // in: the first point of the bay's path; out: the first of the lane again
         public float BayRun;            // in: metres of route from the first point of the bay's path to its end
         public bool Leaving;
@@ -68,151 +84,107 @@ internal static partial class Program
         public float BaySpeed = BusBay.Speed;
 
         // Runs the model to the end of the route (or for so many seconds). Calls back with every pose.
-        public Pose Run(Pose pose, float seconds, Action<Pose> each)
+        public Bus Run(Bus bus, float seconds, Action<Bus> each)
         {
-            int next = 0;
-            int last = X.Count - 1;
-            float time = 0f;
-            float slowTick = 0f;
+            var path = new BusPath();
+            var heights = new List<float>(X.Count);
+            for (int i = 0; i < X.Count; i++)
+            {
+                heights.Add(0f);
+            }
+            path.Build(X, heights, Z, X.Count, bus.Fx, 0f, bus.Fz, bus.Fx - bus.Rx, bus.Fz - bus.Rz);
+            float s = 0f, pull = 0f, time = 0f, slowTick = 0f;
             float cruise = Leaving ? 1.5f : Cruise;
-            float reach = RouteReach;
             while (time < seconds)
             {
-                float hx = (float)Math.Cos(pose.Heading), hy = (float)Math.Sin(pose.Heading);
-                while (next <= last)
-                {
-                    float dx = X[next] - pose.Along, dy = Y[next] - pose.Aside;
-                    bool final = !Leaving && next == last;
-                    float r = final ? FinalReach : reach;
-                    if (dx * dx + dy * dy >= r * r && !(final && dx * hx + dy * hy < 0f))
-                    {
-                        break;
-                    }
-                    next++;
-                }
-                if (next > last)
-                {
-                    break;
-                }
-                // TransitBus.Drive, four times a second: the pace and the reach.
+                // TransitBus.Drive, four times a second: the pace.
                 if (time >= slowTick)
                 {
                     slowTick = time + 0.25f;
-                    float left = Left(pose, next);
                     if (!Leaving)
                     {
-                        float lead = left - BayRun;
+                        float lead = path.End - s - BayRun;
                         cruise = Math.Min(Cruise, (float)Math.Sqrt(BaySpeed * BaySpeed + 2f * BayBraking * Math.Max(0f, lead)));
-                        reach = lead <= BayLead ? BusBay.Reach : RouteReach;
-                    }
-                    else if (next >= FirstOfBay)
-                    {
-                        cruise = Cruise;
-                        reach = RouteReach;
                     }
                     else
                     {
-                        cruise = Math.Min(BaySpeed, 1.5f + 1.5f * time);
-                        reach = BusBay.Reach;
+                        cruise = path.NextPoint(s) >= FirstOfBay ? Cruise : Math.Min(BaySpeed, 1.5f + 1.5f * time);
                     }
                 }
-                float tx = X[next] - pose.Along, ty = Y[next] - pose.Aside;
-                float want = (float)Math.Atan2(ty, tx);
-                float turn = want - pose.Heading;
-                while (turn > Math.PI) turn -= 2f * (float)Math.PI;
-                while (turn < -Math.PI) turn += 2f * (float)Math.PI;
-                float most = 120f * (float)Math.PI / 180f * Step;
-                float wanted = Math.Abs(turn) > 22f * Math.PI / 180f ? Math.Min(6.5f, cruise) : cruise;
-                float toStop = float.MaxValue;
-                if (!Leaving)
-                {
-                    float toPoint = (float)Math.Sqrt(tx * tx + ty * ty);
-                    if (next == last)
-                    {
-                        toStop = toPoint;
-                    }
-                    else if (next == last - 1)
-                    {
-                        float lx = X[last] - X[next], ly = Y[last] - Y[next];
-                        toStop = toPoint + (float)Math.Sqrt(lx * lx + ly * ly);
-                    }
-                }
-                if (toStop < 30f)
-                {
-                    wanted = Math.Min(wanted, Math.Max(1.5f, (float)Math.Sqrt(2f * 4f * toStop)));
-                }
-                // (The engine turns the body at the end of the step: this step still moves along the old heading.)
-                float rate = (wanted < pose.Speed ? 24f : 6f) * Step;
-                pose.Speed += Math.Max(-rate, Math.Min(rate, wanted - pose.Speed));
-                pose.Along += hx * pose.Speed * Step;
-                pose.Aside += hy * pose.Speed * Step;
-                pose.Heading += Math.Max(-most, Math.Min(most, turn));
+                float room = path.End - s;
+                path.At(s, out _, out _, out _, out _, out _);
+                float wanted = Math.Min(cruise, Math.Min(path.LimitHere, BusPath.StopIn(room)));
+                bus.Speed = BusPath.Pace(bus.Speed, ref pull, wanted, Step);
+                float moved = Math.Min(bus.Speed * Step, Math.Max(0f, room));
+                s += moved;
+                path.At(s, out float fx, out _, out float fz, out _, out _);
+                bus.Fx = fx;
+                bus.Fz = fz;
+                BusPath.Trail(fx, fz, ref bus.Rx, ref bus.Rz, BusBay.BusWheelbase);
                 time += Step;
-                each?.Invoke(pose);
+                each?.Invoke(bus);
+                if (path.End - s <= 0.02f && bus.Speed < 0.25f)
+                {
+                    bus.Speed = 0f;
+                    break;
+                }
             }
-            return pose;
-        }
-
-        private float Left(Pose pose, int next)
-        {
-            float dx = X[next] - pose.Along, dy = Y[next] - pose.Aside;
-            float left = (float)Math.Sqrt(dx * dx + dy * dy);
-            for (int i = next + 1; i < X.Count; i++)
-            {
-                dx = X[i] - X[i - 1];
-                dy = Y[i] - Y[i - 1];
-                left += (float)Math.Sqrt(dx * dx + dy * dy);
-            }
-            return left;
+            return bus;
         }
     }
 
-    // The route TransitBus.RouteToBay lays: lane points 5 m apart, then the curve in, the standing place and the point beyond it.
-    private static Drive RouteIn(float offset, float middleAhead, out BusBay.Curve curve)
+    // The route TransitBus.RouteToBay lays for the front axle: lane points 5 m apart, the curve in, the run along the bay's
+    // line, the standing place and the point beyond it.
+    private static Drive RouteIn(float offset, out BusBay.Curve curve)
     {
-        curve = BusBay.In(offset, BodyHalf + middleAhead, BusBay.RunMost - Math.Max(0f, middleAhead));
+        curve = BusBay.Approach(offset);
         int points = curve.Points;
         var drive = new Drive();
-        float rest = -middleAhead;
-        float leaves = points * BusBay.Step + middleAhead + 0.5f;
+        float rest = -BusBay.BusMiddleAhead;
+        float leaves = points * BusBay.Step + BusBay.Settle + BusBay.BusMiddleAhead + 0.5f;
         for (float before = 80f; before > leaves; before -= 5f)
         {
             drive.X.Add(-before);
-            drive.Y.Add(0f);
+            drive.Z.Add(0f);
         }
         drive.FirstOfBay = drive.X.Count;
         for (int k = points; k >= 1; k--)
         {
             float d = k * BusBay.Step;
-            drive.X.Add(rest - d);
-            drive.Y.Add(offset - curve.Aside(d));
+            drive.X.Add(rest - d - BusBay.Settle);
+            drive.Z.Add(offset - curve.Aside(d));
+        }
+        for (float along = BusBay.Settle; along > 0.01f; along -= BusBay.Step)
+        {
+            drive.X.Add(rest - along);
+            drive.Z.Add(offset);
         }
         drive.X.Add(rest);
-        drive.Y.Add(offset);
-        drive.X.Add(rest + FinalReach);
-        drive.Y.Add(offset);
-        drive.BayRun = points * BusBay.Step + FinalReach;
+        drive.Z.Add(offset);
+        drive.X.Add(rest + BusPath.FinalShort);
+        drive.Z.Add(offset);
+        drive.BayRun = points * BusBay.Step + BusBay.Settle + BusPath.FinalShort;
         return drive;
     }
 
-    // The route TransitBus.PullOut lays from where the bus stands: the curve out, then lane points 5 m apart.
-    private static Drive RouteOut(Pose stands, float middleAhead, out BusBay.Curve curve)
+    // The route TransitBus.PullOut lays from where the front axle stands: the curve out, then lane points 5 m apart.
+    private static Drive RouteOut(Bus stands, out BusBay.Curve curve)
     {
-        curve = BusBay.Out(stands.Aside, BodyHalf - middleAhead, BusBay.RunMost - Math.Max(0f, stands.Along));
+        curve = BusBay.Out(stands.Fz, BusBay.BusLeave, BusBay.RunMost - Math.Max(0f, stands.Fx));
         int points = curve.Points;
         var drive = new Drive { Leaving = true };
         for (int k = 1; k <= points; k++)
         {
             float gone = k * BusBay.Step;
-            drive.X.Add(stands.Along + gone);
-            drive.Y.Add(stands.Aside - curve.Aside(gone));
+            drive.X.Add(stands.Fx + gone);
+            drive.Z.Add(stands.Fz - curve.Aside(gone));
         }
         drive.FirstOfBay = drive.X.Count;
-        float rejoins = stands.Along + points * BusBay.Step + 0.5f;
+        float rejoins = stands.Fx + points * BusBay.Step + 0.5f;
         for (float on = (float)Math.Ceiling(rejoins / 5f) * 5f + 0.01f; on < 90f; on += 5f)
         {
             drive.X.Add(on);
-            drive.Y.Add(0f);
+            drive.Z.Add(0f);
         }
         return drive;
     }
@@ -248,30 +220,33 @@ internal static partial class Program
 
     private static void Bays(bool print)
     {
+        // Where the bus stands: its door side KerbGap from the kerb, its side on the lane's edge at the narrowest bay.
         float needed = BusBay.KerbNeeded(BodySide);
-        Check(Near(needed, 4.10f), "a bay wants the kerb 4.10 m from the lane's line for a 2.10 m body, not " + needed);
+        Check(Near(needed, 4.20f), "a bay wants the kerb 4.20 m from the lane's line for the 2.40 m bus, not " + needed);
         Check(BusBay.Offset(needed - 0.02f, BodySide) == 0f, "a kerb 2 cm too near still gives a bay");
         Check(Near(BusBay.Offset(needed, BodySide), 2.85f), "at the least kerb the bus stands 2.85 m off the lane's line");
-        Check(Near(BusBay.Offset(4.60f, BodySide), 3.35f), "the bus keeps its 0.20 m from the kerb where the strip is wider");
-        Check(BusBay.Offset(needed, 1.25f) == 0f, "a vehicle 2.5 m wide is given the 2.1 m body's bay");
-        Check(Near(BusBay.LaneClear(2.85f, 0f, BodyHalf, BodySide), BusBay.Clear), "standing true at the least kerb the body is not 0.15 m clear of the lane's edge");
-        Check(Near(BusBay.KerbClear(4.10f, 2.85f, 0f, BodyHalf, BodySide), BusBay.KerbGap), "standing true the body is not 0.20 m from the kerb");
-        Check(BusBay.LaneClear(0f, 0f, BodyHalf, BodySide) < -2.6f, "a bus on the lane's line is not measured as in the lane");
+        Check(Near(BusBay.Offset(4.60f, BodySide), 3.25f), "the bus keeps its 0.15 m from the kerb where the strip is wider");
+        Check(BusBay.Offset(needed, 1.25f) == 0f, "a body 2.5 m wide is given the 2.40 m bus's bay");
+        Check(Near(BusBay.LaneClear(2.85f, 0f, BodyHalf, BodySide), BusBay.Clear), "standing true at the least kerb its side is not on the lane's edge");
+        Check(Near(BusBay.KerbClear(4.20f, 2.85f, 0f, BodyHalf, BodySide), BusBay.KerbGap), "standing true the bus is not 0.15 m from the kerb");
+        Check(BusBay.LaneClear(0f, 0f, BodyHalf, BodySide) < -2.8f, "a bus on the lane's line is not measured as in the lane");
         Check(BusBay.LaneClear(2.85f, 3f, BodyHalf, BodySide) < 0f, "three degrees askew at the least kerb is not measured as a corner in the lane");
-        Check(BusBay.LaneHalf + BusBay.Clear - BusBay.WidestHalf >= 0.5f, "a lorry on the lane's line does not pass half a metre from a bus in the narrowest bay");
+        // (A lorry on the lane's line passes a bus in the narrowest bay with a third of a metre, as on a street whose parking
+        // lane is narrow: the traffic slows beside it. Nothing of the bus itself is in the lane.)
+        Check(BusBay.LaneHalf + BusBay.Clear - BusBay.WidestHalf >= 0.33f, "a lorry on the lane's line passes a bus in the narrowest bay with less than a third of a metre");
         Zones();
 
         // The curves themselves.
-        foreach (float offset in new[] { 0.8f, 1.6f, 2.85f, 3.35f, 4.35f })
+        foreach (float offset in new[] { 0.8f, 1.6f, 2.85f, 3.25f, 4.35f })
         {
-            foreach (float lever in new[] { 1.7f, 3.33f, 4.95f })
+            foreach (float lever in new[] { 1.7f, 3.33f, 4.95f, BusBay.BusLeave })
             {
-                for (int which = 0; which < 2; which++)
+                for (int which = 0; which < 3; which++)
                 {
-                    BusBay.Curve curve = which == 0 ? BusBay.In(offset, lever) : BusBay.Out(offset, lever);
-                    string name = (which == 0 ? "in" : "out") + " to " + offset + " with a lever of " + lever;
+                    BusBay.Curve curve = which == 0 ? BusBay.In(offset, lever) : which == 1 ? BusBay.Out(offset, lever) : BusBay.Approach(offset);
+                    string name = (which == 0 ? "in" : which == 1 ? "out" : "the bus's approach") + " to " + offset + (which < 2 ? " with a lever of " + lever : "");
                     Check(curve.Aside(0f) == 0f && Near(curve.Aside(curve.Length), offset, 0.001f) && Near(curve.Aside(curve.Length + 5f), offset, 0.001f), "the curve " + name + " does not run from the bay's line to the lane's");
-                    Check(curve.Length > 3f && curve.Length <= BusBay.RunMost + 0.01f, "the curve " + name + " is " + curve.Length + " m long");
+                    Check(curve.Length > 3f && curve.Length <= (which == 2 ? BusBay.ApproachMost : BusBay.RunMost) + 0.01f, "the curve " + name + " is " + curve.Length + " m long");
                     bool rises = true, smooth = true;
                     float before = 0f;
                     for (float d = 0.05f; d <= curve.Length + 0.2f; d += 0.05f)
@@ -287,135 +262,122 @@ internal static partial class Program
             }
         }
 
-        // A bus driven in, stood and driven out again. The body on its van (the point it is turned about under its middle),
-        // on a van whose origin is a little behind that, and on a vehicle whose origin is under its rear axle.
-        float[] kerbs = { 4.10f, 4.15f, 4.60f, 5.60f };
-        float[] middles = { 0f, 0.4f, 1.62f };
-        for (int m = 0; m < middles.Length; m++)
+        // The bus driven in, stood and driven out again, at the kerbs the city has (4.18 to 5.48 m from the lane's line).
+        foreach (float kerb in new[] { 4.20f, 4.30f, 4.60f, 5.00f, 5.60f })
         {
-            for (int k = 0; k < kerbs.Length; k++)
-            {
-                BayRun(kerbs[k], middles[m], 0.02f, 0f, 0f, BusBay.Speed, print);
-            }
+            BayRun(kerb, 0.02f, 0f, 0f, BusBay.Speed, print);
         }
         // The same when things are not as planned: a step of the physics clock twice and half as long, a bus that comes up
         // 0.3 m off the lane's line and 3 degrees askew, a slower and a faster pace through the bay.
-        BayRun(4.15f, 0f, 0.04f, 0f, 0f, BusBay.Speed, print);
-        BayRun(4.15f, 0f, 0.01f, 0f, 0f, BusBay.Speed, print);
-        BayRun(4.15f, 0f, 0.02f, 0.3f, 3f, BusBay.Speed, print);
-        BayRun(4.15f, 0f, 0.02f, -0.3f, -3f, BusBay.Speed, print);
-        BayRun(4.15f, 0f, 0.02f, 0f, 0f, 3f, print);
-        BayRun(4.15f, 0f, 0.02f, 0f, 0f, 6f, print);
+        BayRun(4.30f, 0.04f, 0f, 0f, BusBay.Speed, print);
+        BayRun(4.30f, 0.01f, 0f, 0f, BusBay.Speed, print);
+        BayRun(4.30f, 0.02f, 0.3f, 3f, BusBay.Speed, print);
+        BayRun(4.30f, 0.02f, -0.3f, -3f, BusBay.Speed, print);
+        BayRun(4.30f, 0.02f, 0f, 0f, 3f, print);
+        BayRun(4.30f, 0.02f, 0f, 0f, 6f, print);
 
         // Held up on its way in, it stands askew part of the way across and must still get out: onto the lane's line, never
-        // further towards the kerb than it stood.
+        // much further towards the kerb than it stood.
         foreach (float aside in new[] { 0.9f, 1.6f, 2.4f })
         {
-            var stands = new Pose { Along = -6f, Aside = aside, Heading = 9f * (float)Math.PI / 180f };
-            Corners(stands, 0f, out float stoodKerb, out _, out _);
+            Bus stands = Standing(-6f, aside, 9f);
+            Corners(stands, out float stoodKerb, out _, out _, out _);
             float kerbMost = float.MinValue;
-            Drive leave = RouteOut(stands, 0f, out _);
-            Pose end = leave.Run(stands, 30f, pose =>
+            Drive leave = RouteOut(stands, out _);
+            Bus end = leave.Run(stands, 40f, bus =>
             {
-                Corners(pose, 0f, out float kerb, out _, out _);
+                Corners(bus, out float kerb, out _, out _, out _);
                 kerbMost = Math.Max(kerbMost, kerb);
             });
-            Check(Math.Abs(end.Aside) < 0.15f && Math.Abs(end.Heading) < 0.05f, "a bus that stood askew " + aside + " m across does not get back onto the lane's line (" + end.Aside + " m off it)");
+            Check(Math.Abs(end.MiddleZ) < 0.15f && Math.Abs(end.Heading) < 0.03f, "a bus that stood askew " + aside + " m across does not get back onto the lane's line (" + end.MiddleZ + " m off it)");
             Check(kerbMost <= stoodKerb + 0.15f, "a bus that stood askew " + aside + " m across swings " + (kerbMost - stoodKerb) + " m further towards the kerb as it leaves");
         }
     }
 
-    private static void BayRun(float kerb, float middleAhead, float step, float startAside, float startDegrees, float pace, bool print)
+    private static void BayRun(float kerb, float step, float startAside, float startDegrees, float pace, bool print)
     {
-        string name = "kerb " + kerb.ToString("F2") + ", turned about a point " + middleAhead.ToString("F2") + " m behind its middle"
-                      + (step != 0.02f ? ", steps of " + step : "") + (startAside != 0f ? ", coming up " + startAside + " m off the line" : "") + (pace != BusBay.Speed ? ", at " + pace + " m/s" : "");
-        float offset = BusBay.Offset(kerb, BodySide);
-        bool van = middleAhead < 0.5f;   // the body on a van: what a bay is laid out for
-
-        Drive enter = RouteIn(offset, middleAhead, out BusBay.Curve curveIn);
-        BusBay.Curve fits = BusBay.Out(offset, BodyHalf - middleAhead, BusBay.RunMost + Math.Min(0f, middleAhead));
-        float behind = BusBay.Behind(curveIn, middleAhead);
-        float ahead = BusBay.Ahead(fits, middleAhead);
-        if (curveIn.Cut || fits.Cut)
+        string name = "kerb " + kerb.ToString("F2") + (step != 0.02f ? ", steps of " + step : "") + (startAside != 0f ? ", coming up " + startAside + " m off the line" : "")
+                      + (pace != BusBay.Speed ? ", at " + pace + " m/s" : "");
+        if (!BusBay.Lay(kerb, out float offset, out BusBay.Curve layIn, out BusBay.Curve layOut, out float behind, out float ahead))
         {
-            // TransitBus.BayOpen gives such a vehicle the lane's line instead: there is nothing to drive.
-            Check(!van, name + ": the body on a van is refused its bay (the curve will not fit)");
-            if (print)
-            {
-                Console.WriteLine("bay  " + name + ": no bay for this vehicle here (its curve in would be " + curveIn.Length.ToString("F1") + " m with the exponential cut short): it stops in the lane.");
-            }
+            Check(false, name + ": no bay is laid out at a kerb the city has (" + (offset > 0f ? "a curve is cut short" : "too narrow") + ")");
             return;
         }
-        if (van && middleAhead == 0f)
-        {
-            // What TransitMap lays out for a stop is what the body on its van needs, and no more than a stop has of plain lane.
-            Check(behind <= 24f && ahead <= 24f && curveIn.Length + 1f <= 26f && fits.Length + 1f <= 26f, name + ": the bay is " + behind + " m behind and " + ahead + " m ahead of the pole");
-        }
-        Check(behind <= 23.5f, name + ": this vehicle needs " + behind + " m of bay behind the pole, more than a stop is ever looked at for");
+        // What TransitMap lays out for a stop is what the bus needs, within the plain lane a stop has.
+        Check(layIn.Length + BusBay.Settle + BusBay.BusMiddleAhead + 1f <= 33f && layOut.Length - BusBay.BusMiddleAhead + 1f <= 30f,
+            name + ": the bay's path leaves the lane " + (layIn.Length + BusBay.Settle + BusBay.BusMiddleAhead) + " m before the pole and rejoins it " + (layOut.Length - BusBay.BusMiddleAhead) + " m after");
+        Check(behind <= 32f && ahead <= 25f, name + ": the bay is " + behind + " m behind and " + ahead + " m ahead of the pole");
 
+        Drive enter = RouteIn(offset, out BusBay.Curve curveIn);
         enter.Step = step;
         enter.BaySpeed = pace;
         float kerbMost = float.MinValue, stripFrom = float.MaxValue, fastest = 0f, steepest = 0f;
-        var start = new Pose { Along = -85f, Aside = startAside, Heading = startDegrees * (float)Math.PI / 180f, Speed = Cruise };
-        Pose rest = enter.Run(start, 60f, pose =>
+        Bus start = Standing(-85f, startAside, startDegrees);
+        start.Speed = Cruise;
+        float pathFrom = -(curveIn.Points * BusBay.Step + BusBay.Settle) - BusBay.BusMiddleAhead;
+        Bus rest = enter.Run(start, 90f, bus =>
         {
-            Corners(pose, middleAhead, out float kerbSide, out float back, out _);
+            Corners(bus, out float kerbSide, out _, out float back, out _);
             kerbMost = Math.Max(kerbMost, kerbSide);
-            stripFrom = Math.Min(stripFrom, back);
-            if (pose.Along > -curveIn.Length - middleAhead)
+            if (bus.Fx > -70f)
             {
-                fastest = Math.Max(fastest, pose.Speed);
-                steepest = Math.Max(steepest, Math.Abs(pose.Heading));
+                stripFrom = Math.Min(stripFrom, back);   // (a bus that comes up askew towards the kerb is in the strip at once: from where it is under way)
+            }
+            if (bus.Fx > pathFrom)
+            {
+                fastest = Math.Max(fastest, bus.Speed);
+                steepest = Math.Max(steepest, Math.Abs(bus.Heading));
             }
         });
         float degrees = rest.Heading * 180f / (float)Math.PI;
-        float middle = rest.Along + middleAhead;
-        float aside = rest.Aside + (float)Math.Sin(rest.Heading) * middleAhead;
-        float toLane = BusBay.LaneClear(aside, degrees, BodyHalf, BodySide);
-        float toKerb = BusBay.KerbClear(kerb, aside, degrees, BodyHalf, BodySide);
+        float middle = rest.MiddleX;
+        float aside = rest.MiddleZ;
+        Corners(rest, out float standKerb, out float standLane, out _, out _);
+        float toLane = standLane - BusBay.LaneHalf;
+        float toKerb = kerb - standKerb;
         Check(Math.Abs(middle) <= 0.25f, name + ": it stands " + middle + " m from the pole");
-        Check(Math.Abs(aside - offset) <= 0.06f, name + ": it stands " + (aside - offset) + " m off the bay's line");
-        Check(Math.Abs(degrees) <= 2f, name + ": it stands " + degrees + " degrees askew");
-        Check(toLane >= 0f, name + ": a corner stands " + -toLane + " m in the lane");
+        Check(Math.Abs(aside - offset) <= 0.08f, name + ": its middle stands " + (aside - offset) + " m off the bay's line");
+        Check(Math.Abs(degrees) <= 1.5f, name + ": it stands " + degrees + " degrees askew");
+        // (Square to within a degree, its rear corner on the lane's side may stand a hand's breadth in the lane at the narrowest bay.)
+        Check(toLane >= -0.12f, name + ": a corner stands " + -toLane + " m in the lane");
         Check(toKerb >= 0.05f, name + ": a corner stands " + toKerb + " m from the kerb");
-        // The nose as it comes in: for the body on a van, never nearer the kerb than a hand's width. A vehicle turned about
-        // its rear axle has a longer nose than the bay is laid out for: it may swing up to the kerb's line, no further.
-        Check(kerbMost <= kerb - (van ? 0.10f : 0.03f), name + ": coming in, a corner swings to " + (kerb - kerbMost) + " m from the kerb");
-        Check(stripFrom >= -behind, name + ": coming in, it is beyond the lane's edge " + -stripFrom + " m before the pole, and the bay is kept free for " + behind);
+        // Coming in, its nose swings up to the kerb's edge and, in the widest strips, a few centimetres over it: over the
+        // kerb, not into it (the nose is a third of a metre up, the kerb a sixth).
+        Check(kerbMost <= kerb + 0.05f, name + ": coming in, a corner swings to " + (kerb - kerbMost) + " m from the kerb");
+        Check(stripFrom >= -behind - 0.05f, name + ": coming in, it is beyond the lane's edge " + -stripFrom + " m before the pole, and the bay is kept free for " + behind);
         Check(fastest <= pace + 1f, name + ": it is doing " + fastest + " m/s on the bay's path");
-        Check(curveIn.Points * BusBay.Step + middleAhead <= BusBay.RunMost + 1f, name + ": the path leaves the lane " + (curveIn.Points * BusBay.Step + middleAhead) + " m before the pole");
 
-        Drive leave = RouteOut(rest, middleAhead, out BusBay.Curve curveOut);
+        Drive leave = RouteOut(rest, out BusBay.Curve curveOut);
         leave.Step = step;
         leave.BaySpeed = pace;
         float leftKerbMost = float.MinValue, stripTo = float.MinValue, leastAside = float.MaxValue, onLaneAfter = -1f, time = 0f;
-        rest.Speed = 0f;
-        Pose gone = leave.Run(rest, 14f, pose =>
+        Bus gone = leave.Run(rest, 30f, bus =>
         {
             time += step;
-            Corners(pose, middleAhead, out float kerbSide, out _, out float front);
+            Corners(bus, out float kerbSide, out _, out _, out float front);
             leftKerbMost = Math.Max(leftKerbMost, kerbSide);
             stripTo = Math.Max(stripTo, front);
-            leastAside = Math.Min(leastAside, pose.Aside);
-            if (onLaneAfter < 0f && Math.Abs(pose.Aside) < 0.15f)
+            leastAside = Math.Min(leastAside, bus.Fz);
+            if (onLaneAfter < 0f && Math.Abs(bus.MiddleZ) < 0.15f)
             {
                 onLaneAfter = time;
             }
-            steepest = Math.Max(steepest, Math.Abs(pose.Heading));
+            steepest = Math.Max(steepest, Math.Abs(bus.Heading));
         });
-        Check(leftKerbMost <= kerb - 0.03f, name + ": pulling out, a corner swings to " + (kerb - leftKerbMost) + " m from the kerb");
-        Check(stripTo <= ahead, name + ": pulling out, it is still beyond the lane's edge " + stripTo + " m past the pole, and the bay is kept free for " + ahead);
-        Check(onLaneAfter > 0f && Math.Abs(gone.Aside) < 0.1f && Math.Abs(gone.Heading) < 0.03f, name + ": it does not end on the lane's line (" + gone.Aside + " m off it)");
-        Check(leastAside > -0.15f, name + ": pulling out, it swings " + -leastAside + " m over the lane's line to the far side");
-        Check(rest.Along + curveOut.Points * BusBay.Step <= BusBay.RunMost + 1f, name + ": the path rejoins the lane " + (rest.Along + curveOut.Points * BusBay.Step) + " m past the pole");
+        // Pulling out its tail swings towards the kerb as its body turns: no further than the kerb's edge.
+        Check(leftKerbMost <= kerb + 0.02f, name + ": pulling out, a corner swings to " + (kerb - leftKerbMost) + " m from the kerb");
+        Check(stripTo <= ahead + 0.05f, name + ": pulling out, it is still beyond the lane's edge " + stripTo + " m past the pole, and the bay is kept free for " + ahead);
+        Check(onLaneAfter > 0f && Math.Abs(gone.MiddleZ) < 0.1f && Math.Abs(gone.Heading) < 0.03f, name + ": it does not end on the lane's line (" + gone.MiddleZ + " m off it)");
+        Check(leastAside > -0.15f, name + ": pulling out, its front axle swings " + -leastAside + " m over the lane's line to the far side");
         Check(steepest <= 24f * Math.PI / 180f, name + ": it turns " + steepest * 180f / Math.PI + " degrees off the lane's direction");
         if (print)
         {
-            Console.WriteLine("bay  " + name + ": the bus " + offset.ToString("F2") + " m off the line; in over " + curveIn.Length.ToString("F1") + " m, stands " + middle.ToString("+0.00;-0.00") + " m along, "
-                              + (aside - offset).ToString("+0.000;-0.000") + " m off the bay's line, " + degrees.ToString("F2") + " degrees, " + toLane.ToString("F2") + " m clear of the lane's edge, "
-                              + toKerb.ToString("F2") + " m from the kerb (nearest it came: " + (kerb - kerbMost).ToString("F2") + "), beyond the lane's edge from " + stripFrom.ToString("F1") + " (kept free from "
-                              + (-behind).ToString("F1") + "); out over " + curveOut.Length.ToString("F1") + " m, nearest the kerb " + (kerb - leftKerbMost).ToString("F2") + ", beyond the lane's edge to "
-                              + stripTo.ToString("F1") + " (kept free to " + ahead.ToString("F1") + "), on the lane's line after " + onLaneAfter.ToString("F1") + " s; steepest " + (steepest * 180f / Math.PI).ToString("F0") + " degrees.");
+            Console.WriteLine("bay  " + name + ": the bus " + offset.ToString("F2") + " m off the line; in over " + curveIn.Length.ToString("F1") + " m and " + BusBay.Settle.ToString("F0")
+                              + " along the bay, stands " + middle.ToString("+0.00;-0.00") + " m along, " + (aside - offset).ToString("+0.000;-0.000") + " m off the bay's line, "
+                              + degrees.ToString("F2") + " degrees, " + toLane.ToString("F2") + " m clear of the lane's edge, " + toKerb.ToString("F2") + " m from the kerb (nearest it came: "
+                              + (kerb - kerbMost).ToString("F2") + "), beyond the lane's edge from " + stripFrom.ToString("F1") + " (kept free from " + (-behind).ToString("F1") + "); out over "
+                              + curveOut.Length.ToString("F1") + " m, nearest the kerb " + (kerb - leftKerbMost).ToString("F2") + ", beyond the lane's edge to " + stripTo.ToString("F1")
+                              + " (kept free to " + ahead.ToString("F1") + "), on the lane's line after " + onLaneAfter.ToString("F1") + " s; steepest " + (steepest * 180f / Math.PI).ToString("F0") + " degrees.");
         }
     }
 }

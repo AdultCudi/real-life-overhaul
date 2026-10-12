@@ -78,10 +78,11 @@ namespace RealLifeOverhaul
     /// waiting people stand. Vehicles are not looked at here (they come and go): they are
     /// tested when a stop is dressed and when a bus pulls up.
     ///
-    /// BAYS. A stop has a bay where the kerb is at least 4.10 m from the lane's line (the lane's
-    /// half, 0.15 m clear of its edge, the 2.10 m body, 0.20 m to the kerb: BusBay.KerbNeeded)
-    /// along the whole length a bus needs to come in and pull out (some 30 m, more where the
-    /// strip is wider), the lane runs straight and plain for that length with no other lane
+    /// BAYS. A stop has a bay where the kerb is at least 4.20 m from the lane's line (the lane's
+    /// half, the bus's side on its edge, the 2.40 m bus, 0.15 m to the kerb: BusBay.KerbNeeded)
+    /// along the whole length the bus needs to come in and pull out (some 48 m, from 28 m behind
+    /// the pole to 20 m beyond it, more where the strip is wider: BusBay.Lay, swept as the bus is
+    /// driven), the lane runs straight and plain for that length with no other lane
     /// between it and the kerb, the strip is level road, and the kerb keeps its line. The kerb is
     /// taken where the bus can come up to it: where something on the pavement reaches out over its
     /// edge, that far out (KerbLine). The length of strip is then the buses' own, a bus zone
@@ -116,7 +117,8 @@ namespace RealLifeOverhaul
         private const float BayBack = 50f;          // ...and before the place wanted: two stops are never nearer than StopSpacing less this
         private const float BayStraight = 0.35f;    // metres the lane's points may lie off its line along a bay
         private const float BayLevel = 0.30f;       // metres the strip may lie above or below the lane along a bay
-        private const float BayRoomMost = 23.5f;    // metres back from the pole the strip is looked at for a vehicle that needs more of it than the bus body on its van
+        private const float KerbLookBehind = 33f;   // metres behind the pole and ahead of it the kerb's edge is looked along: all a bay may take up (BusBay.Lay)
+        private const float KerbLookAhead = 26f;
         private const float BayAheadSlack = 1f;     // metres more of the strip ahead than the body on its van needs to pull out: a vehicle's own middle is seldom quite its origin
         private const int MaxExpansions = 400000;
         private const int MaxSearches = 48;         // in all: a city where nothing connects is given up on
@@ -792,27 +794,19 @@ namespace RealLifeOverhaul
             stop.BayAlong = along;
             float kerb = KerbAside(stop, right);
             stop.KerbAside = KerbLine(stop, right, kerb);
-            float half = TransitBus.BodyHalfWidth;
-            float halfLength = TransitBus.BodyLength * 0.5f;
-            float offset = BusBay.Offset(stop.KerbAside, half);
-            if (offset <= 0f)
+            if (!BusBay.Lay(stop.KerbAside, out float offset, out BusBay.Curve curveIn, out BusBay.Curve curveOut, out float behind, out float ahead))
             {
-                stop.NoBay = stop.KerbAside < kerb - 0.01f
-                    ? "narrow with what stands on the kerb's edge (the kerb " + kerb.ToString("F2") + " m out, the bus may come to " + stop.KerbAside.ToString("F2") + ")"
+                stop.NoBay = offset > 0f ? "too wide to cross in the plain lane there is"
+                    : stop.KerbAside < kerb - 0.01f ? "narrow with what stands on the kerb's edge (the kerb " + kerb.ToString("F2") + " m out, the bus may come to " + stop.KerbAside.ToString("F2") + ")"
                     : "narrow";
                 return;
             }
-            BusBay.Curve curveIn = BusBay.In(offset, halfLength);
-            BusBay.Curve curveOut = BusBay.Out(offset, halfLength);
-            if (curveIn.Cut || curveOut.Cut || curveIn.Length + 1f > JunctionClear || curveOut.Length + 1f > JunctionClear)
-            {
-                stop.NoBay = "too wide to cross in the plain lane there is";
-                return;
-            }
-            float behind = BusBay.Behind(curveIn, 0f);
-            float ahead = BusBay.Ahead(curveOut, 0f) + BayAheadSlack;
+            ahead += BayAheadSlack;
+            // The lane straight and plain from where the bus's front axle leaves it to where it is back on it.
+            float leaves = curveIn.Length + BusBay.Settle + BusBay.BusMiddleAhead + 1f;
+            float rejoins = curveOut.Length - BusBay.BusMiddleAhead + 1f;
             Zoning.Reset();
-            stop.NoBay = LaneBends(stop, line, right, curveIn.Length + 1f, curveOut.Length + 1f) ?? StripBad(stop, right, offset, -behind, ahead, Zoning)
+            stop.NoBay = LaneBends(stop, line, right, leaves, rejoins) ?? StripBad(stop, right, offset, -behind, ahead, Zoning)
                          ?? BusZones.Plan(stop, right, -behind, ahead, Zoning);
             if (stop.NoBay != null)
             {
@@ -826,19 +820,8 @@ namespace RealLifeOverhaul
             stop.BayOffset = offset;
             stop.BayBehind = behind;
             stop.BayAhead = ahead;
-            // Further back than the body on its van needs: for a vehicle with a longer nose (it comes in over a longer curve).
-            // The zone takes that length in too, where the strip and its parking allow it.
-            int clear = Zoning.Clear.Count;
-            int known = Zoning.Known.Count;
-            bool room = behind < BayRoomMost && LaneBends(stop, line, right, BayRoomMost + 2.5f, 0f) == null && StripBad(stop, right, offset, -BayRoomMost, -behind, Zoning) == null
-                        && BusZones.Plan(stop, right, -BayRoomMost, ahead, Zoning) == null;
-            if (!room)
-            {
-                Zoning.Trim(clear, known);
-                BusZones.Plan(stop, right, -behind, ahead, Zoning);   // (the counts for the log, for the shorter zone)
-            }
-            stop.BayRoom = room ? BayRoomMost : behind;
-            stop.Zone = Zoning.Copy(-stop.BayRoom, ahead, stop.KerbAside);
+            stop.BayRoom = behind;   // (one bus, the mod's own: what it needs is what is laid out)
+            stop.Zone = Zoning.Copy(-behind, ahead, stop.KerbAside);
             stop.Zone.Lanes = Zoning.Lanes;
             stop.Zone.Cut = Zoning.Cut;
             stop.Zone.Lost = Zoning.Lost;
@@ -970,8 +953,8 @@ namespace RealLifeOverhaul
         {
             float inner = kerb - 0.6f;
             float outer = kerb + 0.4f;
-            Vector3 centre = stop.Lane + right * ((inner + outer) * 0.5f) + Vector3.up * 1.15f;
-            int found = _propsLayer < 0 ? 0 : Physics.OverlapBoxNonAlloc(centre, new Vector3((outer - inner) * 0.5f, 0.8f, BayRoomMost + 2f), EdgeHits, Quaternion.LookRotation(stop.Along),
+            Vector3 centre = stop.Lane + stop.Along * ((KerbLookAhead - KerbLookBehind) * 0.5f) + right * ((inner + outer) * 0.5f) + Vector3.up * 1.15f;
+            int found = _propsLayer < 0 ? 0 : Physics.OverlapBoxNonAlloc(centre, new Vector3((outer - inner) * 0.5f, 0.8f, (KerbLookAhead + KerbLookBehind) * 0.5f), EdgeHits, Quaternion.LookRotation(stop.Along),
                 1 << _propsLayer, QueryTriggerInteraction.Ignore);
             float line = kerb;
             for (int i = 0; i < found; i++)

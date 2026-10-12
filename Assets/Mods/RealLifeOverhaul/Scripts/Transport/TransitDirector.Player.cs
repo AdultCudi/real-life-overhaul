@@ -155,7 +155,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            bool standing = _served != null && _bus.State == TransitBus.Phase.Standing && _bus.Car != null;
+            bool standing = _served != null && _bus.State == TransitBus.Phase.Standing && _bus.Vehicle != null;
             if (_served == null || !free || !(AtStop(_served, at) || (standing && AtBus(at))))
             {
                 if (listOpen)
@@ -202,7 +202,7 @@ namespace RealLifeOverhaul
                 {
                     return;
                 }
-                standing = _bus.State == TransitBus.Phase.Standing && _bus.Car != null;
+                standing = _bus.State == TransitBus.Phase.Standing && _bus.Vehicle != null;
             }
             if (_booked != null && standing && !_busFull && !_seat.Active && _bus.Standing >= 1f && TransitRide.CanStart())
             {
@@ -401,7 +401,7 @@ namespace RealLifeOverhaul
                 TransitPointer.Make(dressing.Shelter, TransitPointer.Kind.Bench, dressing, new Vector3(0f, 1.25f, 0f),
                     new Vector3(BusStopDressing.ShelterDepth, 2.5f, BusStopDressing.ShelterLength), true);
             }
-            BusPointer(_served != null && _bus.State == TransitBus.Phase.Standing && _bus.Car != null);
+            BusPointer(_served != null && _bus.State == TransitBus.Phase.Standing && _bus.Vehicle != null);
         }
 
         // The box round the standing bus: put where the bus has stopped, switched off when it goes. The bus itself is not touched.
@@ -420,7 +420,7 @@ namespace RealLifeOverhaul
                 }
                 return;
             }
-            TrafficTools.Footprint(_bus.Car, out _busCentre, out _busForward, out _busHalfLength, out _busHalfWidth);
+            _bus.Vehicle.Footprint(out _busCentre, out _busForward, out _busHalfLength, out _busHalfWidth);
             _busForward.y = 0f;
             _busForward = _busForward.sqrMagnitude > 0.01f ? _busForward.normalized : Vector3.forward;
             if (!TransitCta.Installed)
@@ -436,7 +436,7 @@ namespace RealLifeOverhaul
                 }
                 _busBox = _busPointer.GetComponent<BoxCollider>();
             }
-            _busPointer.transform.SetPositionAndRotation(new Vector3(_busCentre.x, _bus.Car.transform.position.y + 1.4f, _busCentre.z), Quaternion.LookRotation(_busForward, Vector3.up));
+            _busPointer.transform.SetPositionAndRotation(new Vector3(_busCentre.x, _bus.Vehicle.transform.position.y + 1.4f, _busCentre.z), Quaternion.LookRotation(_busForward, Vector3.up));
             _busBox.size = new Vector3(_busHalfWidth * 2f + 0.2f, 2.8f, _busHalfLength * 2f + 0.2f);
             _busPointer.gameObject.SetActive(true);
         }
