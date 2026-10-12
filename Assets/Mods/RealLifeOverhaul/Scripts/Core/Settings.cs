@@ -26,6 +26,8 @@ namespace RealLifeOverhaul
         public const string CrashConsequencesId = "crash_consequences";
         public const string TrafficAccidentsId = "traffic_accidents";
         public const string AccidentFrequencyId = "accident_frequency";
+        public const string AccidentNoticesId = "accident_notices";
+        public const string AccidentMarkerId = "accident_marker";
         public const string SirenId = "siren";
         public const string PoliceId = "police";
         public const string PolicePursuitId = "police_pursuit";
@@ -215,6 +217,8 @@ namespace RealLifeOverhaul
         public static int EventFrequency = 5;        // about this many random events per game week
         public static bool CrashConsequences = true;
         public static bool TrafficAccidents = true;
+        public static bool AccidentNotices = true;   // the notifications (and their sound) as an accident of other people's unfolds; off, it still happens
+        public static bool AccidentMarker = true;    // the game's destination marker on an accident, and so the route to it
         public static int AccidentFrequency = 2;     // 1 = rare, 10 = constant
         public static bool Siren = true;
         public static bool Police = true;            // patrol cars attend accidents and chase hit-and-run drivers
@@ -445,6 +449,8 @@ namespace RealLifeOverhaul
             EventFrequency = Int(modId, EventFrequencyId, EventFrequency);
             CrashConsequences = Bool(modId, CrashConsequencesId, CrashConsequences);
             TrafficAccidents = Bool(modId, TrafficAccidentsId, TrafficAccidents);
+            AccidentNotices = Bool(modId, AccidentNoticesId, AccidentNotices);
+            AccidentMarker = Bool(modId, AccidentMarkerId, AccidentMarker);
             AccidentFrequency = Int(modId, AccidentFrequencyId, AccidentFrequency);
             Siren = Bool(modId, SirenId, Siren);
             Police = Bool(modId, PoliceId, Police);
