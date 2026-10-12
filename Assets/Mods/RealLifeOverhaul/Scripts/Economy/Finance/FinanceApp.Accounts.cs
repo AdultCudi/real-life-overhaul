@@ -203,7 +203,7 @@ namespace RealLifeOverhaul.Economy
                 owed += a.Owed;
                 TableRow row = Row("account:" + a.Id);
                 DebtCells(row, CreditDesk.Name(a), FinanceTables.Of(a.Kind), a.Owed, AccountRules.DueTomorrow(a, today));
-                int tone = a.Ladder.Misses > 0 ? TableRow.Red : TableRow.Plain;
+                CellTone tone = a.Ladder.Misses > 0 ? TableRow.Red : TableRow.Plain;
                 if (ProductCatalogue.Instalment(a.Kind) && a.Instalment > 0)
                 {
                     int days = Mathf.CeilToInt(a.Owed / (float)a.Instalment);

@@ -218,13 +218,13 @@ namespace RealLifeOverhaul.Economy
         }
 
         // A cell of money kept in cents: written in whole units, ordered and summed by its amount.
-        private static void Cents(TableRow row, int column, int cents, int tone = TableRow.Plain)
+        private static void Cents(TableRow row, int column, int cents, CellTone tone = TableRow.Plain)
         {
             row.Set(column, OnlineText.Money(cents), cents / 100.0, tone);
         }
 
         // A cell of a count.
-        private static void Count(TableRow row, int column, int count, int tone = TableRow.Plain)
+        private static void Count(TableRow row, int column, int count, CellTone tone = TableRow.Plain)
         {
             row.Set(column, count.ToString(), count, tone);
         }

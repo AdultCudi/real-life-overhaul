@@ -28,7 +28,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 Brand b = state.Brands[i];
                 string type = BrandsText.Type(b.Type);
                 int best = BrandRules.Best(b);
-                int tone = b.Standards < BrandCatalogue.LowStandards ? TableRow.Red : b.Minimum > 0 && b.Standards < b.Minimum ? TableRow.Yellow : TableRow.Plain;
+                CellTone tone = b.Standards < BrandCatalogue.LowStandards ? TableRow.Red : b.Minimum > 0 && b.Standards < b.Minimum ? TableRow.Yellow : TableRow.Plain;
                 TableRow row = Row("brand:" + b.Id);
                 row.Kind = BrandsTables.IsBrand;
                 row.Set(0, b.Name);
@@ -74,7 +74,7 @@ namespace RealLifeOverhaul.Economy.Brands
         }
 
         // The five figures a brand's row and a district's row share (columns 2 to 6 of BrandsTables.Brands).
-        private static void WriteBrandCells(TableRow row, int shops, int rec, int city, int standards, int tone, int worth)
+        private static void WriteBrandCells(TableRow row, int shops, int rec, int city, int standards, CellTone tone, int worth)
         {
             row.Set(2, shops.ToString(), shops);
             row.Set(3, BrandsText.Points(rec), rec / 100.0);

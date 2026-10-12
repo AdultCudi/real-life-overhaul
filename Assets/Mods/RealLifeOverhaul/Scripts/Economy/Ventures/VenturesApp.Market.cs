@@ -111,7 +111,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         }
 
         // A gain in the game's green and a loss in its red, as EconoView colours an amount.
-        private static int Sign(int amount)
+        private static CellTone Sign(int amount)
         {
             return amount > 0 ? TableRow.Green : amount < 0 ? TableRow.Red : TableRow.Plain;
         }

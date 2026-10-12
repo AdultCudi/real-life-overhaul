@@ -284,7 +284,7 @@ namespace RealLifeOverhaul.Economy
             row.B = b;
             row.C = c;
             row.D = d;
-            row.Tone = tone;
+            row.Tone = (CellTone)tone;   // (0 plain, 1 yellow, 2 red)
             if (id == _pick)
             {
                 selected = id;
