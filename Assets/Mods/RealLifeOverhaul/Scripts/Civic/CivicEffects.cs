@@ -39,6 +39,25 @@ namespace RealLifeOverhaul
             return amount.ToCurrencyFormat();
         }
 
+        /// <summary>What a policy does, in words, with its amounts at today's prices.</summary>
+        public static string Effect(PolicyDef policy)
+        {
+            if (policy == null)
+            {
+                return string.Empty;
+            }
+            string text = T(policy.Effect);
+            if (text.IndexOf('{') < 0)
+            {
+                return text;
+            }
+            return text.Replace("{levy}", Money(Math.Abs(CivicCatalogue.LevyNow(policy))))
+                .Replace("{grant}", Money(Math.Abs(CivicCatalogue.GrantNow(policy.Dir))))
+                .Replace("{ticket}", Money(Math.Abs(CivicCatalogue.TicketExtraNow(policy.Dir))))
+                .Replace("{fare}", Money(Math.Abs(CivicCatalogue.FareExtraNow(policy.Dir))))
+                .Replace("{floor}", Money(CivicCatalogue.WageFloorNow(policy.Dir)));
+        }
+
         public static string Name(Candidate candidate)
         {
             return CivicCatalogue.FirstNames[candidate.First].GetLocalization() + " " + CivicCatalogue.LastNames[candidate.Last].GetLocalization();
@@ -338,7 +357,7 @@ namespace RealLifeOverhaul
             {
                 state.SeenTickets = tickets;
             }
-            int extra = CivicCatalogue.TicketExtra(state.Levers[(int)Lever.Parking]);
+            int extra = CivicCatalogue.TicketExtraNow(state.Levers[(int)Lever.Parking]);
             if (tickets > state.SeenTickets && extra != 0)
             {
                 int count = Mathf.Min(tickets - state.SeenTickets, 5);
@@ -394,7 +413,7 @@ namespace RealLifeOverhaul
                 return;
             }
             float newRides = rides - state.SeenRides;
-            int fareExtra = CivicCatalogue.FareExtra(state.Levers[(int)Lever.Transit]);
+            float fareExtra = CivicCatalogue.FareExtraNow(state.Levers[(int)Lever.Transit]);
             if (!lookOnly && newRides > 0.5f && !CivicBridges.FaresScaledAtSource && fareExtra != 0)
             {
                 int count = Mathf.Clamp(Mathf.RoundToInt(newRides / 3f), 1, 20);   // the game's subway ride is 3
@@ -477,7 +496,7 @@ namespace RealLifeOverhaul
                 PolicyDef policy = CivicCatalogue.Find((Lever)i, state.Levers[i]);
                 if (policy != null)
                 {
-                    account.Levy += policy.Levy;
+                    account.Levy += CivicCatalogue.LevyNow(policy);
                 }
             }
             account.Tax = state.OwedTax;
@@ -505,7 +524,7 @@ namespace RealLifeOverhaul
                     }
                 }
             }
-            account.Grants = -CivicCatalogue.GrantPerBusiness(state.Levers[(int)Lever.Grants]) * Mathf.Min(businesses, CivicCatalogue.GrantBusinesses);
+            account.Grants = -CivicCatalogue.GrantNow(state.Levers[(int)Lever.Grants]) * Mathf.Min(businesses, CivicCatalogue.GrantBusinesses);
             account.Rent = rents * 7f * CivicCatalogue.RentShare(state.Levers[(int)Lever.Rent]);
 
             float collected = 0f;
@@ -521,10 +540,12 @@ namespace RealLifeOverhaul
             }
             account.Landlord = -collected * 7f * CivicCatalogue.LandlordShare(state.Levers[(int)Lever.Rent]);
 
-            float floor = CivicCatalogue.WageFloor(state.Levers[(int)Lever.Wages]);
+            float floor = CivicCatalogue.WageFloorNow(state.Levers[(int)Lever.Wages]);
             float subsidy = CivicCatalogue.WageSubsidy(state.Levers[(int)Lever.Wages]);
             if ((floor > 0f || subsidy > 0f) && save.EmployeeInstances != null)
             {
+                float level = Economy.Prices.Level / 1000f;   // the city's cost of living pays every wage at today's prices (Economy/City)
+                Func<string, float> raise = CivicBridges.Raise;
                 for (int i = 0; i < save.EmployeeInstances.Count; i++)
                 {
                     EmployeeInstance employee = save.EmployeeInstances[i];
@@ -532,11 +553,13 @@ namespace RealLifeOverhaul
                     {
                         continue;
                     }
-                    if (floor > employee.hourlyWage)
+                    // What they are paid an hour now: the game's wage at today's prices, and any raise agreed on top (Economy/Company).
+                    float paid = employee.hourlyWage * level + (raise != null ? raise(employee.id) : 0f);
+                    if (floor > paid)
                     {
-                        account.Wages += (floor - employee.hourlyWage) * employee.assignedWeeklyHours;
+                        account.Wages += (floor - paid) * employee.assignedWeeklyHours;
                     }
-                    account.Wages -= employee.hourlyWage * employee.assignedWeeklyHours * subsidy;
+                    account.Wages -= paid * employee.assignedWeeklyHours * subsidy;
                 }
             }
             return account;

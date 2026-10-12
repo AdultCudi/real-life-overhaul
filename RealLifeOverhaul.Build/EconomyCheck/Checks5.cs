@@ -78,11 +78,15 @@ internal static partial class Program
     private static void CompanyWageMarket()
     {
         Check(StaffRules.Market(1000, CycleState.Steady, 100) == 1000, "prices at the start, a steady economy and a middling district: the going rate is the game's own formula");
-        Check(StaffRules.Market(1100, CycleState.Steady, 100) == 1050 && StaffRules.Market(900, CycleState.Steady, 100) == 950, "the going rate follows half of the price index's move");
+        Check(StaffRules.Market(1100, CycleState.Steady, 100) == 1100 && StaffRules.Market(900, CycleState.Steady, 100) == 900,
+            "the going rate is at today's prices: the city's cost of living pays every wage so, and pay is counted the same way");
         Check(StaffRules.Market(1000, CycleState.Boom, 100) == 1040 && StaffRules.Market(1000, CycleState.Slowdown, 100) == 980 && StaffRules.Market(1000, CycleState.Recession, 100) == 950,
             "a boom raises the going rate and bad times lower it");
         Check(StaffRules.Market(1000, CycleState.Steady, 140) == 1080 && StaffRules.Market(1000, CycleState.Steady, 60) == 920, "a rich district pays more and a poor one less");
-        Check(StaffRules.Market(2000, CycleState.Boom, 140) == CompanyCatalogue.WageMarketMost && StaffRules.Market(500, CycleState.Recession, 60) == CompanyCatalogue.WageMarketLeast, "the going rate stays inside its bounds");
+        Check(StaffRules.Market(1000, CycleState.Boom, 300) == CompanyCatalogue.WageMarketMost && StaffRules.Market(1000, CycleState.Recession, 10) == CompanyCatalogue.WageMarketLeast,
+            "the economy and the district move it within its bounds");
+        Check(StaffRules.Market(2000, CycleState.Boom, 300) == CompanyCatalogue.WageMarketMost * 2 && StaffRules.Market(500, CycleState.Recession, 10) == CompanyCatalogue.WageMarketLeast / 2,
+            "and today's prices on top of that");
         bool bounded = true, rises = true;
         for (int index = 400; index <= 3000; index += 50)
         {
@@ -91,12 +95,13 @@ internal static partial class Program
                 for (int income = 60; income <= 140; income += 10)
                 {
                     int m = StaffRules.Market(index, (CycleState)state, income);
-                    bounded &= m >= CompanyCatalogue.WageMarketLeast && m <= CompanyCatalogue.WageMarketMost;
+                    int priced = Math.Max(500, Math.Min(4000, index));   // (the index is read within its own bounds)
+                    bounded &= m >= (long)CompanyCatalogue.WageMarketLeast * priced / 1000 - 1 && m <= (long)CompanyCatalogue.WageMarketMost * priced / 1000 + 1;
                     rises &= StaffRules.Market(index + 50, (CycleState)state, income) >= m && StaffRules.Market(index, (CycleState)state, income + 10) >= m;
                 }
             }
         }
-        Check(bounded, "the going rate is inside its bounds for every index, state and district");
+        Check(bounded, "the going rate is inside its bounds at today's prices for every index, state and district");
         Check(rises, "the going rate never falls when prices or the district's income rise");
         Check(StaffRules.Going(1200, 1050) == 1260 && StaffRules.Going(-5, 1050) == 0, "the going rate for somebody is the game's formula by the market");
         Check(StaffRules.Gap(1260, 1134) == 100 && StaffRules.Gap(1000, 1100) == -100 && StaffRules.Gap(0, 500) == 0, "the gap is how far under the going rate somebody is paid, in thousandths");

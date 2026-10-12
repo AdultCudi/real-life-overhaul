@@ -40,15 +40,18 @@ namespace RealLifeOverhaul.Economy
         // ---------------------------------------------------------------- the wage market
 
         /// <summary>
-        /// The going rate against the game's own wage formula, thousandths: it follows half of the price index's
-        /// move, is higher in a boom and lower in bad times, and higher where the district's income is.
+        /// The going rate against the game's own wage formula, thousandths: higher in a boom and lower in bad times, and
+        /// higher where the district's income is, within the market's bounds; then at today's prices. The city's cost of
+        /// living pays every wage at today's prices (Economy/City: the game's wages times the price level), and what
+        /// somebody is paid is counted the same way (<see cref="StaffFile.Wage"/>), so prices moving make nobody underpaid
+        /// or overpaid by themselves.
         /// </summary>
         public static int Market(int index, CycleState cycle, int income)
         {
             int state = CompanyCatalogue.Clamp((int)cycle, 0, CompanyCatalogue.WageCycle.Length - 1);
-            int market = 1000 + (index - CompanyCatalogue.IndexStart) * CompanyCatalogue.WageIndexShare / 100 + CompanyCatalogue.WageCycle[state]
-                         + (income - CompanyCatalogue.IncomeMiddle) * CompanyCatalogue.WageIncomePerPoint;
-            return CompanyCatalogue.Clamp(market, CompanyCatalogue.WageMarketLeast, CompanyCatalogue.WageMarketMost);
+            int market = 1000 + CompanyCatalogue.WageCycle[state] + (income - CompanyCatalogue.IncomeMiddle) * CompanyCatalogue.WageIncomePerPoint;
+            market = CompanyCatalogue.Clamp(market, CompanyCatalogue.WageMarketLeast, CompanyCatalogue.WageMarketMost);
+            return (int)((long)market * CompanyCatalogue.Clamp(index, 500, 4000) / CompanyCatalogue.IndexStart);
         }
 
         /// <summary>The going hourly rate for somebody, hundredths, from what the game's own wage formula gives for their skill.</summary>

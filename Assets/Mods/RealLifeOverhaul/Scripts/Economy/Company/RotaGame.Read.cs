@@ -248,7 +248,8 @@ namespace RealLifeOverhaul.Economy
             for (int w = 0; w < sheet.Workers.Count; w++)
             {
                 EmployeeInstance e = sheet.Workers[w];
-                problem.Worker[w].Wage = Mathf.Max(0, Mathf.RoundToInt(e.hourlyWage * 100f) + (raise != null ? raise(e.id) : 0));
+                // What they cost an hour: the game's wage at today's prices (the city's cost of living pays it so) and any raise on top.
+                problem.Worker[w].Wage = Mathf.Max(0, CompanyCatalogue.Share(Mathf.RoundToInt(e.hourlyWage * 100f), Prices.Level) + (raise != null ? raise(e.id) : 0));
                 for (int s = 0; s < stations; s++)
                 {
                     problem.Can[w * stations + s] = HowWell(e, sheet.Stations[s].ItemCached);

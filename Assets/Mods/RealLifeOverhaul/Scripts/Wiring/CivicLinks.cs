@@ -32,6 +32,7 @@ namespace RealLifeOverhaul
                 CivicBridges.WeatherStopsWork = () => RainHelper.isRaining || Events.Weather.TakeCover;
                 CivicBridges.News = Story;
                 CivicBridges.CityPeopleOut = PeopleOut;
+                CivicBridges.Raise = RaiseOf;
             }
 
             internal static void Disconnect()
@@ -42,6 +43,13 @@ namespace RealLifeOverhaul
                 CivicBridges.WeatherStopsWork = null;
                 CivicBridges.News = null;
                 CivicBridges.CityPeopleOut = null;
+                CivicBridges.Raise = null;
+            }
+
+            private static float RaiseOf(string id)
+            {
+                Economy.CompanyDirector company = Economy.CompanyDirector.Instance;
+                return company != null ? company.RaiseOf(id) / 100f : 0f;
             }
 
             private static void Story(string headlineKey, string bodyKey)

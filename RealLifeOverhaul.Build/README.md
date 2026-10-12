@@ -3737,7 +3737,7 @@ CityHallPhone     the City Hall contact (four topics), the ballot and the site n
 | income tax | `gameVariables.taxPercentage`: a whole-percent int that is part of the save, read once a year when the bill is made, and reported by the options screen as a changed game rule | never touched. Each midnight `rate x yesterday's sales x 20 %` runs up on the weekly account, charged or paid back as "City business tax adjustment (policy)" |
 | sales tax | none exists | "trade levy": 0.5 % of sales charged, or 0.3 % paid back, weekly |
 | rent | `BuildingRegistration.RentPerDay`: fixed per lease, saved; no global multiplier; the formula's inputs also move sale prices and property tax | never touched. 6 % of the week's rents charged or returned as "City rent rules adjustment"; landlords get or lose 4 % of rent collected |
-| wages | `EmployeeInstance.hourlyWage`: per employee, saved. `employeeHourlySalaryMultiplier` is saved and only affects new candidates | never touched. A floor of 16 an hour is billed as the difference x rota hours; or 5 % of the wage bill is paid back |
+| wages | `EmployeeInstance.hourlyWage`: per employee, saved. `employeeHourlySalaryMultiplier` is saved and only affects new candidates | never touched. A floor of 16 an hour (at today's prices) is billed as the difference between it and what they are paid (the game's wage at today's prices, as the city's cost of living pays it, and any raise agreed in Company: `CivicBridges.Raise`) x rota hours; or 5 % of that wage bill is paid back |
 | footfall | `baseCustomerPromotionMultiplier` is saved; `Building.trafficIndex` also feeds rent and price; `promotion` is rebuilt nightly | not changed. A site next door is a notification and a mood, not fewer customers |
 | street parking | `NeighborhoodData.parkingPrice`: a field of a data asset, in memory only | scaled x1.5 / x0.6 while the policy stands, the value found put back exactly |
 | parking tickets, subway fare | constants compiled into the call sites (125, 3) | each ticket or ride found in the day's transactions is topped up or part-refunded under its own label (a ride whose fare a day pass gave back is not counted, nor any while a train is under way) |
@@ -3764,10 +3764,10 @@ back every value it changed.
 | Night life | licensed until 04:00 (bridge), crime x1.1 | until midnight (bridge), crime x0.92 |
 | Permits | sites x1.35 and until 19:00; complaints only noted | sites x0.75, 08:00 to 16:00; one complaint brings quiet hours |
 | Events | street events x1.5 (bridge), mood +2, levy +40 | x0.5, 30 returned |
-| Wages | floor of 16 an hour, billed as a top-up | the city pays 5 % of the wage bill |
+| Wages | floor of 16 an hour, against the wage at today's prices with any raise, billed as a top-up | the city pays 5 % of the wage bill |
 
 Money by the week is one settlement every seven days, a transaction per line; the phone shows the account
-as it stands. The texts in `en.json` state the same numbers: change `CivicCatalogue` and the `_fx` strings together.
+as it stands. Every amount above is at the start's prices and is charged and shown at today's (`CivicCatalogue.*Now`, `Economy/Prices`): the levies, grants and licence fee, the ticket and fare changes, the floor, donations, the fast-track threshold and the refit bids. The `_fx` strings take them as {levy}, {grant}, {ticket}, {fare} and {floor} (`CivicText.Effect`).
 
 ### Elections
 
@@ -6853,7 +6853,7 @@ price index of 100 where "at prices" is said, and follows `CityEconomy.PriceInde
 
 | What | Value |
 | --- | --- |
-| Going rate against the game's wage formula | follows 50% of the index's move; boom +4%, slowdown -2%, recession -5%; 0.2% for each point of district income from 100; between 80% and 130% |
+| Going rate against the game's wage formula | boom +4%, slowdown -2%, recession -5%; 0.2% for each point of district income from 100; between 80% and 130%; then at today's prices (the index's whole move). What somebody is paid is counted the same way: the game's wage at today's prices, as the city's cost of living pays it (`StaffFile.Wage`), and the raise on top, so prices moving make nobody underpaid by themselves |
 | Underpaid from, and for how long before asking | 15, 10, 8, 6% under; 10, 7, 6, 5 days |
 | A request | 4 days to answer; "offer less" gives half; 14 days before the same employee asks again |
 | Standing | starts 60, calm level 65; a day underpaid -1, a day paid fairly +1 up to calm; agree +10, less -8, refuse -18, an offer matched +5 |

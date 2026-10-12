@@ -224,7 +224,13 @@ namespace RealLifeOverhaul.Economy
 
         private int RotaRaise(string id)
         {
-            StaffFile f = On(CompanyPart.Staff) && _state != null ? _state.Employee(id) : null;
+            return RaiseOf(id);
+        }
+
+        /// <summary>The raise agreed for an employee on top of the game's wage, hundredths an hour; 0 for none (or with the staff part off).</summary>
+        public int RaiseOf(string id)
+        {
+            StaffFile f = On(CompanyPart.Staff) && _state != null && id != null ? _state.Employee(id) : null;
             return f != null ? f.Raise : 0;
         }
 

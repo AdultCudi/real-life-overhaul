@@ -1,3 +1,5 @@
+using System;
+
 namespace RealLifeOverhaul
 {
     /// <summary>The thirteen things a mayor can set. Each stands at -1, 0 (as the city came) or +1.</summary>
@@ -178,6 +180,29 @@ namespace RealLifeOverhaul
 
         /// <summary>The share of the wage bill the city pays.</summary>
         public static float WageSubsidy(int wages) => wages < 0 ? 0.05f : 0f;
+
+        // ---------------------------------------------------------------- money at today's prices (Economy/Prices: the figures here are the start's)
+
+        public static int LevyNow(PolicyDef policy) => policy != null ? Economy.Prices.At(policy.Levy) : 0;
+
+        public static int GrantNow(int grants) => Economy.Prices.At(GrantPerBusiness(grants));
+
+        public static int TicketExtraNow(int parking) => Economy.Prices.At(TicketExtra(parking));
+
+        public static float FareExtraNow(int transit) => Economy.Prices.At((float)FareExtra(transit));
+
+        public static float WageFloorNow(int wages) => Economy.Prices.At(WageFloor(wages));
+
+        public static int DonationStepNow => Economy.Prices.At(DonationStep);
+
+        public static int DonationCapNow => Economy.Prices.At(DonationCap);
+
+        /// <summary>Given to the winner's campaign, for each fast-track building permit (two at most), at the start's prices.</summary>
+        public const int FavourPer = 1000;
+
+        public static int FavourPerNow => Economy.Prices.At(FavourPer);
+
+        public static int RefitPriceNow(int bid) => Economy.Prices.At(RefitPrice[Math.Max(0, Math.Min(RefitPrice.Length - 1, bid))]);
 
         // ---------------------------------------------------------------- elections and government
 

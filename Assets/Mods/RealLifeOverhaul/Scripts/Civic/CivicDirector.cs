@@ -589,14 +589,15 @@ namespace RealLifeOverhaul
             {
                 return "reallife_civic_refit_none";
             }
-            if (!GameManager.ChangeMoneySafe(-CivicCatalogue.RefitPrice[bid], new TransactionInfo("reallife_transaction_civic_refit"), null, null, force: false, showNotification: true))
+            int price = CivicCatalogue.RefitPriceNow(bid);
+            if (!GameManager.ChangeMoneySafe(-price, new TransactionInfo("reallife_transaction_civic_refit"), null, null, force: false, showNotification: true))
             {
                 return "reallife_civic_refit_broke";
             }
             SiteState site = Works.StartAt(SiteKind.Refit, controller, TimeHelper.CurrentDay, true, CivicCatalogue.RefitHours[bid]);
             if (site == null)
             {
-                CivicEffects.Pay(CivicCatalogue.RefitPrice[bid], "reallife_transaction_civic_refit");   // somebody is already at work on that front: the money comes back
+                CivicEffects.Pay(price, "reallife_transaction_civic_refit");   // somebody is already at work on that front: the money comes back
                 return "reallife_civic_refit_busy";
             }
             return "reallife_civic_refit_ordered";

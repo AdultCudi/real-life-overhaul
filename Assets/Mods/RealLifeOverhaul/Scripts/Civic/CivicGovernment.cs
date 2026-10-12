@@ -428,7 +428,7 @@ namespace RealLifeOverhaul
                 PolicyDef now = CivicCatalogue.Find(lever, position);
                 if (now != null)
                 {
-                    CivicText.Toast(NotificationType.Info, "reallife_civic_policy_in_force", "policy", CivicText.T(now.Name), "effect", CivicText.T(now.Effect), 16f);
+                    CivicText.Toast(NotificationType.Info, "reallife_civic_policy_in_force", "policy", CivicText.T(now.Name), "effect", CivicText.Effect(now), 16f);
                 }
                 else
                 {
@@ -842,10 +842,11 @@ namespace RealLifeOverhaul
                 State.Council[seat++] = elected.Party;
             }
 
-            // Donations to the winner are remembered: a faster permit for every 1,000 given, two at most.
-            if (State.Donated[winner] >= 1000)
+            // Donations to the winner are remembered: a faster permit for every 1,000 given (at the start's prices), two at most.
+            int per = Mathf.Max(1, CivicCatalogue.FavourPerNow);
+            if (State.Donated[winner] >= per)
             {
-                State.Favours = Mathf.Min(2, State.Favours + State.Donated[winner] / 1000);
+                State.Favours = Mathf.Min(2, State.Favours + State.Donated[winner] / per);
             }
             State.Mayor.CopyFrom(elected);
             State.Mayor.Incumbent = true;
@@ -883,22 +884,23 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- what the player can do
 
-        /// <summary>One donation of 500 to a campaign. Returns the locale key of what the campaign says.</summary>
+        /// <summary>One donation of 500 (at the start's prices) to a campaign. Returns the locale key of what the campaign says.</summary>
         public string Donate(int candidate)
         {
             if (!Campaigning || candidate < 0 || candidate >= State.CandidateCount)
             {
                 return "reallife_civic_no_campaign";
             }
-            if (State.Donated[candidate] >= CivicCatalogue.DonationCap)
+            int step = CivicCatalogue.DonationStepNow;
+            if (State.Donated[candidate] >= CivicCatalogue.DonationCapNow)
             {
                 return "reallife_civic_donate_cap";
             }
-            if (!GameManager.ChangeMoneySafe(-CivicCatalogue.DonationStep, new TransactionInfo("reallife_transaction_civic_donation"), null, null, force: false, showNotification: true))
+            if (!GameManager.ChangeMoneySafe(-step, new TransactionInfo("reallife_transaction_civic_donation"), null, null, force: false, showNotification: true))
             {
                 return "reallife_civic_donate_broke";
             }
-            State.Donated[candidate] += CivicCatalogue.DonationStep;
+            State.Donated[candidate] += step;
             State.Momentum[candidate] += 0.04f;
             return "reallife_civic_donate_thanks";
         }
