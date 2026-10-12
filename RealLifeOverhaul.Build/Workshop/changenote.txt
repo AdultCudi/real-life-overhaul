@@ -6,3 +6,4 @@ New
 Fixed
 - The mod's bus and its other props showed the road's markings through them, as if they were glass.
 - A bus stop's painted box ran the whole length of the stop's zone, some 55 m; it now covers where the bus stands, some 24 m.
+- A business closed for want of power, water or an internet connection said nothing; it now tells you why and what opens it again. A bought building's temporary supply runs out after three days unless you apply for an account in person at the utilities office.
