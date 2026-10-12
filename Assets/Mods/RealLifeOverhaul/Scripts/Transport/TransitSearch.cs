@@ -7,9 +7,10 @@ namespace RealLifeOverhaul
     /// the game or the engine in it (it is run in a console test).
     ///
     /// The figure (<see cref="Seconds"/>) only ever goes down. Before a bus is on the road it
-    /// is the timetable's wait; with a bus on the road it is that bus's metres of line still
-    /// to drive over the speed it has been making while moving, and never more than was shown
-    /// before. When that cannot be kept (the bus stands for long, is much further off than
+    /// is the timetable's wait; with a bus on the road it is the bus's own reckoning of the time
+    /// it will take as it will drive (BusPath.SecondsLeft: its pace, its bends, the slower pace of
+    /// its bay), or, where there is none, its metres of line still to drive over the speed it has
+    /// been making while moving; and never more than was shown before. When that cannot be kept (the bus stands for long, is much further off than
     /// was promised, was lost, or none could set out) the panel says DELAYED and shows no
     /// figure; once the bus has been moving again for a moment the figure is set afresh from
     /// where it now is, once, and goes down from there.
@@ -78,8 +79,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>A bus has been put on the road, this many metres of line from the stop.</summary>
-        public void Assign(float metres)
+        /// <summary>A bus has been put on the road, this many metres of line from the stop, reckoning to take this many seconds (or -1: none).</summary>
+        public void Assign(float metres, float seconds = -1f)
         {
             HasBus = true;
             Speed = StartSpeed;
@@ -87,7 +88,7 @@ namespace RealLifeOverhaul
             _late = 0f;
             _still = 0f;
             _moving = 0f;
-            float raw = metres / StartSpeed;
+            float raw = seconds >= 0f ? seconds : metres / StartSpeed;
             if (State == Mode.Delayed)
             {
                 return;   // it stays DELAYED until this bus has been moving for a moment (Track)
@@ -109,8 +110,11 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The bus on the road, each tick: metres of line still to drive, and whether it is being held (a light, a closure, traffic).</summary>
-        public void Track(float dt, float metres, bool held)
+        /// <summary>
+        /// The bus on the road, each tick: metres of line still to drive, whether it is being held (a light, a closure,
+        /// traffic), and the seconds it reckons it will take from where it is (or -1: none).
+        /// </summary>
+        public void Track(float dt, float metres, bool held, float seconds = -1f)
         {
             if (dt <= 0f)
             {
@@ -136,7 +140,7 @@ namespace RealLifeOverhaul
                     Speed = LeastSpeed;
                 }
             }
-            float raw = metres / Speed;
+            float raw = seconds >= 0f ? seconds : metres / Speed;
             if (State == Mode.Delayed)
             {
                 _delayed += dt;

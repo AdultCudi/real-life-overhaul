@@ -674,7 +674,7 @@ namespace RealLifeOverhaul
                     break;
 
                 case TransitBus.Phase.Approaching:
-                    _eta.Track(TickInterval, _bus.Remaining, _bus.Waiting != TransitBus.Hold.None);
+                    _eta.Track(TickInterval, _bus.Remaining, _bus.Waiting != TransitBus.Hold.None, _bus.SecondsLeft);
                     Watch(now);
                     break;
 
@@ -721,7 +721,7 @@ namespace RealLifeOverhaul
             _busFull = !test && IsRush(TimeHelper.CurrentHour) && Random.value < 0.25f;
             _promised = _eta.Seconds;
             TransitEta.Mode was = _eta.State;
-            _eta.Assign(_bus.Remaining);
+            _eta.Assign(_bus.Remaining, _bus.SecondsLeft);
             _routeLogAt = now + 60f;
             _moveUpAt = now + MoveUpAfter;
             _refusals = 0;
@@ -734,7 +734,7 @@ namespace RealLifeOverhaul
             TransitLine line = TransitMap.Lines[_served.Line];
             Logger?.Info("Transit check (bus assigned): the " + line.Number + " to " + line.To + " for " + StopLabel(_served) + (test ? " (test button)" : "") + ": " + _bus.Chassis
                          + "; it starts " + _bus.StartedBack.ToString("F0") + " m of line before the stop, " + away.ToString("F0") + " m from the player, in view: " + (inView ? "yes" : "no")
-                         + "; " + _bus.Remaining.ToString("F0") + " m to drive, about " + (_bus.Remaining / TransitEta.StartSpeed).ToString("F0") + " s; the panel was showing "
+                         + "; " + _bus.Remaining.ToString("F0") + " m to drive, " + _bus.SecondsLeft.ToString("F0") + " s as it will drive it; the panel was showing "
                          + (was == TransitEta.Mode.Delayed ? "DELAYED" : _promised.ToString("F0") + " s") + "; "
                          + (_bus.InBay ? "it will stand in the stop's bay, " + _served.BayOffset.ToString("F2") + " m off the lane's line"
                              : _served.HasBay ? "it will stop in the lane (" + (_bus.BayNote ?? "the bay cannot be used") + ")"

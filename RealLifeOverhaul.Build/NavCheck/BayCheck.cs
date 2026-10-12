@@ -83,6 +83,20 @@ internal static partial class Program
         public float Step = 0.02f;
         public float BaySpeed = BusBay.Speed;
 
+        // What the bus reckons the route will take from where it is (TransitBus.SecondsLeft: BusPath.SecondsLeft at its
+        // cruise, the bay's pace over the bay's path): what the stop's panel counts down.
+        public float Reckoned(Bus bus)
+        {
+            var path = new BusPath();
+            var heights = new List<float>(X.Count);
+            for (int i = 0; i < X.Count; i++)
+            {
+                heights.Add(0f);
+            }
+            path.Build(X, heights, Z, X.Count, bus.Fx, 0f, bus.Fz, bus.Fx - bus.Rx, bus.Fz - bus.Rz);
+            return path.SecondsLeft(0f, bus.Speed, Cruise, Leaving || BayRun <= 0f ? float.MaxValue : path.Total - BayRun, BaySpeed);
+        }
+
         // Runs the model to the end of the route (or for so many seconds). Calls back with every pose.
         public Bus Run(Bus bus, float seconds, Action<Bus> each)
         {
@@ -315,8 +329,11 @@ internal static partial class Program
         Bus start = Standing(-85f, startAside, startDegrees);
         start.Speed = Cruise;
         float pathFrom = -(curveIn.Points * BusBay.Step + BusBay.Settle) - BusBay.BusMiddleAhead;
+        float reckoned = enter.Reckoned(start);
+        float took = 0f;
         Bus rest = enter.Run(start, 90f, bus =>
         {
+            took += step;
             Corners(bus, out float kerbSide, out _, out float back, out _);
             kerbMost = Math.Max(kerbMost, kerbSide);
             if (bus.Fx > -70f)
@@ -346,6 +363,8 @@ internal static partial class Program
         Check(kerbMost <= kerb + 0.05f, name + ": coming in, a corner swings to " + (kerb - kerbMost) + " m from the kerb");
         Check(stripFrom >= -behind - 0.05f, name + ": coming in, it is beyond the lane's edge " + -stripFrom + " m before the pole, and the bay is kept free for " + behind);
         Check(fastest <= pace + 1f, name + ": it is doing " + fastest + " m/s on the bay's path");
+        // What the stop's panel says is what the drive takes (nothing in the way here): within a second, or 5 per cent.
+        Check(Math.Abs(reckoned - took) <= Math.Max(1f, took * 0.05f), name + ": the bus reckoned " + reckoned + " s to its stop and took " + took);
 
         Drive leave = RouteOut(rest, out BusBay.Curve curveOut);
         leave.Step = step;
@@ -372,7 +391,7 @@ internal static partial class Program
         Check(steepest <= 24f * Math.PI / 180f, name + ": it turns " + steepest * 180f / Math.PI + " degrees off the lane's direction");
         if (print)
         {
-            Console.WriteLine("bay  " + name + ": the bus " + offset.ToString("F2") + " m off the line; in over " + curveIn.Length.ToString("F1") + " m and " + BusBay.Settle.ToString("F0")
+            Console.WriteLine("bay  " + name + ": reckoned " + reckoned.ToString("F1") + " s, took " + took.ToString("F1") + " s; the bus " + offset.ToString("F2") + " m off the line; in over " + curveIn.Length.ToString("F1") + " m and " + BusBay.Settle.ToString("F0")
                               + " along the bay, stands " + middle.ToString("+0.00;-0.00") + " m along, " + (aside - offset).ToString("+0.000;-0.000") + " m off the bay's line, "
                               + degrees.ToString("F2") + " degrees, " + toLane.ToString("F2") + " m clear of the lane's edge, " + toKerb.ToString("F2") + " m from the kerb (nearest it came: "
                               + (kerb - kerbMost).ToString("F2") + "), beyond the lane's edge from " + stripFrom.ToString("F1") + " (kept free from " + (-behind).ToString("F1") + "); out over "

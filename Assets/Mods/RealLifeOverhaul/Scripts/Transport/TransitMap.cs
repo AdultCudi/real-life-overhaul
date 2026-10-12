@@ -129,6 +129,19 @@ namespace RealLifeOverhaul
         public static readonly List<TransitLine> Lines = new List<TransitLine>(MaxRoutes * 2);
         public static readonly List<TransitStop> Stops = new List<TransitStop>(160);
 
+        // The lane points a planned closure may not take (Civic/RoadClosure): each line's own from GuardBefore metres before
+        // each of its stops to GuardAfter past it. Shut there, a stop is cut off: no bus can be put on the road before it
+        // out of sight, and the panel would say DELAYED for as long as the works stand.
+        private const float GuardBefore = 120f;
+        private const float GuardAfter = 40f;
+        private static readonly HashSet<int> Guarded = new HashSet<int>();
+
+        /// <summary>True if a lane point is on a bus line's way into or out of one of its stops: planned works do not shut it.</summary>
+        public static bool Guards(int lanePoint)
+        {
+            return Guarded.Contains(lanePoint);
+        }
+
         /// <summary>True once the network has been laid out (it may be empty: see the log).</summary>
         public static bool Ready { get; private set; }
 
@@ -175,6 +188,7 @@ namespace RealLifeOverhaul
             BusZones.Restore();   // (before the stops go: it marks their zones as not made)
             Lines.Clear();
             Stops.Clear();
+            Guarded.Clear();
             Stations.Clear();
             Terminals.Clear();
             Partners.Clear();
@@ -288,6 +302,14 @@ namespace RealLifeOverhaul
                     stop.Id = Stops.Count;
                     Stops.Add(stop);
                     Bays += stop.HasBay ? 1 : 0;
+                    for (int k = 0; k < line.Path.Length; k++)
+                    {
+                        float from = line.Metres[k] - stop.Metres;
+                        if (from >= -GuardBefore && from <= GuardAfter)
+                        {
+                            Guarded.Add(line.Path[k]);
+                        }
+                    }
                 }
             }
             Ready = true;
@@ -797,7 +819,7 @@ namespace RealLifeOverhaul
             if (!BusBay.Lay(stop.KerbAside, out float offset, out BusBay.Curve curveIn, out BusBay.Curve curveOut, out float behind, out float ahead))
             {
                 stop.NoBay = offset > 0f ? "too wide to cross in the plain lane there is"
-                    : stop.KerbAside < kerb - 0.01f ? "narrow with what stands on the kerb's edge (the kerb " + kerb.ToString("F2") + " m out, the bus may come to " + stop.KerbAside.ToString("F2") + ")"
+                    : stop.KerbAside < kerb - 0.01f ? "narrow with " + (_edgeWhat ?? "what stands") + " on the kerb's edge (the kerb " + kerb.ToString("F2") + " m out, the bus may come to " + stop.KerbAside.ToString("F2") + ")"
                     : "narrow";
                 return;
             }
@@ -946,7 +968,8 @@ namespace RealLifeOverhaul
         // buildings: a building's box is no guide to its walls where the streets do not run square to the world, and a
         // wall that does reach into the strip is found there (StripBad).
         private const float SideClear = 0.10f;
-        private const float TrunkHalf = 0.30f;
+        private const float TrunkHalf = 0.15f;   // a street tree's trunk, halved: some 0.3 m across, in a collider four times as broad
+        private static string _edgeWhat;         // what brought the kerb's line in, for the log
         private static readonly Collider[] EdgeHits = new Collider[24];
 
         private static float KerbLine(TransitStop stop, Vector3 right, float kerb)
@@ -957,6 +980,7 @@ namespace RealLifeOverhaul
             int found = _propsLayer < 0 ? 0 : Physics.OverlapBoxNonAlloc(centre, new Vector3((outer - inner) * 0.5f, 0.8f, (KerbLookAhead + KerbLookBehind) * 0.5f), EdgeHits, Quaternion.LookRotation(stop.Along),
                 1 << _propsLayer, QueryTriggerInteraction.Ignore);
             float line = kerb;
+            _edgeWhat = null;
             for (int i = 0; i < found; i++)
             {
                 Collider hit = EdgeHits[i];
@@ -970,7 +994,12 @@ namespace RealLifeOverhaul
                 {
                     continue;   // it stands in the road: the strip's own look deals with it (StripBad)
                 }
-                line = Mathf.Min(line, Reach(hit, stop.Lane, right, middle) + BusBay.KerbGap - SideClear);
+                float reach = Reach(hit, stop.Lane, right, middle) + BusBay.KerbGap - SideClear;
+                if (reach < line)
+                {
+                    line = reach;
+                    _edgeWhat = "'" + hit.name + "'";
+                }
             }
             return line;
         }

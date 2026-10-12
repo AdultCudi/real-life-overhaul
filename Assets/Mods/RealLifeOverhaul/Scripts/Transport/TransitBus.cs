@@ -78,6 +78,7 @@ namespace RealLifeOverhaul
         private readonly BusDriver _driver;
         private readonly List<Vector3> _route = new List<Vector3>(96);
         private readonly List<int> _routePoints = new List<int>(96);  // the lane point each is (an index into the road graph), -1 for a place of our own
+        private readonly List<float> _caps = new List<float>(96);       // the most it may be doing at each (a junction's pace), for its driver
         private readonly List<int> _starts = new List<int>(StartTries);
         private BusVehicle _made;        // the one bus this keeps, made the first time it is sent
         private TransitLine _line;
@@ -131,6 +132,12 @@ namespace RealLifeOverhaul
 
         /// <summary>Metres of its route still to drive (to its stop, while it is approaching).</summary>
         public float Remaining { get; private set; }
+
+        /// <summary>
+        /// Seconds it will take to stand at its stop as it will drive there from where it is (its own pace, its bends, its bay),
+        /// waits on the way not counted; -1 when it is not on its way to the stop. What the stop's panel counts down.
+        /// </summary>
+        public float SecondsLeft => State == Phase.Approaching ? _driver.SecondsLeft(Cruise, _bay ? _bayRun : 0f, BusBay.Speed) : -1f;
 
         /// <summary>Metres of line from the stop it was put on the road at.</summary>
         public float StartedBack { get; private set; }
@@ -578,7 +585,14 @@ namespace RealLifeOverhaul
             Waiting = Hold.None;
             // Held up on the last metres of a bay's path (somebody standing in the bay, a car nosing in), it stops there
             // and that is where it stands; on the lane it waits for the way to clear, as ever.
-            _driver.BeginRoute(Vehicle, _route, _bay && State != Phase.Leaving ? BayNear : 0f);
+            // A junction's pace is part of the path it drives (and of what it reckons the drive will take): not a change of mind as it comes up to one.
+            _caps.Clear();
+            for (int i = 0; i < _routePoints.Count; i++)
+            {
+                Waypoint point = _routePoints[i] >= 0 ? TransitMap.Point(_routePoints[i]) : null;
+                _caps.Add(point != null && !TrafficManager.IsNotIntersection(point) ? JunctionSpeed : float.MaxValue);
+            }
+            _driver.BeginRoute(Vehicle, _route, _bay && State != Phase.Leaving ? BayNear : 0f, _caps);
             _driver.CruiseSpeed = Cruise;
             _driver.NoKerb();
             _bayMode = false;   // (a drive begun is a driver reset: told again when it is next on the bay's path)
@@ -680,7 +694,6 @@ namespace RealLifeOverhaul
             int next = _driver.NextPoint;
             int gate = -1;
             Hold why = Hold.None;
-            bool junction = false;
             float ahead = 0f;
             for (int i = next; i < _route.Count; i++)
             {
@@ -712,7 +725,6 @@ namespace RealLifeOverhaul
                         break;
                     }
                 }
-                junction |= ahead < 16f && !TrafficManager.IsNotIntersection(point);
             }
             if (gate != _gate)
             {
@@ -720,7 +732,7 @@ namespace RealLifeOverhaul
                 _driver.PullUpAt(gate);
             }
             _gateWhy = why;
-            float cruise = junction ? JunctionSpeed : Cruise;
+            float cruise = Cruise;   // (a junction's pace is in the driver's path: Begin)
             float toGo = _driver.RouteLeft;
             if (State == Phase.Approaching && _bay)
             {

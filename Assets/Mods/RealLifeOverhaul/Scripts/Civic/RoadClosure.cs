@@ -113,6 +113,11 @@ namespace RealLifeOverhaul
                         Found.Clear();   // a junction in the stretch, or somebody else has this lane shut already: not here
                         return false;
                     }
+                    else if (TransitMap.Guards(point.listIndex))
+                    {
+                        Found.Clear();   // a bus line's way into or out of a stop: shut, the stop would be cut off; the works go elsewhere
+                        return false;
+                    }
                 }
                 if (Found.Count == 0)
                 {

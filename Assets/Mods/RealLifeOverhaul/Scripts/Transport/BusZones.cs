@@ -82,8 +82,11 @@ namespace RealLifeOverhaul
     /// </summary>
     public static class BusZones
     {
-        /// <summary>Metres of parking beyond a zone that may be given up with it (a zone in the middle of a run keeps the longer part).</summary>
-        public const float LossMost = 12f;
+        /// <summary>
+        /// Metres of parking beyond a zone that may be given up with it (a zone in the middle of a run keeps the longer part):
+        /// some four spaces. The zone itself is some 48 m (the bus's own: BusBay.Lay).
+        /// </summary>
+        public const float LossMost = 20f;
 
         private const float Margin = 1f;          // metres of strip kept clear beyond each end of a zone: no bumper over its line
         private const float BoxLeast = 0.02f;     // what is left of a parking box wholly in a zone, at its end
