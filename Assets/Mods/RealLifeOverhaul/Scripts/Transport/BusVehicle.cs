@@ -249,7 +249,9 @@ namespace RealLifeOverhaul
                 _leaves[i].SetParent(_shell, false);
                 _leaves[i].localPosition = shut;
                 _leafShut[i] = shut;
-                _leafSlide[i] = side;
+                // The front door's forward leaf has only the metre to the nose to go into: it stops just short of the nose.
+                float room = i == 0 ? Length * 0.5f - 0.02f - (middle + DoorLeaf) : DoorSlide;
+                _leafSlide[i] = side * Mathf.Clamp01(room / DoorSlide);
                 if (modelled)
                 {
                     Shapes.Piece("city_bus_door", _leaves[i], leaf, paint, Vector3.zero, Vector3.one);
