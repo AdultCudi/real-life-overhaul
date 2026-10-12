@@ -6,6 +6,7 @@ using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Ventures;
 using RealLifeOverhaul.Events;
 using RealLifeOverhaul.Markets;
+using RealLifeOverhaul.Planner;
 
 namespace RealLifeOverhaul
 {
@@ -30,6 +31,7 @@ namespace RealLifeOverhaul
         ///            breaking (polled once a second by the director)
         ///   Rivals   the game's named rivals (Ventures' reader of them)
         ///   Old      the old market's file (Ventures'): the live one while Ventures runs, else the save's copy
+        ///   Planner  results of the companies held or watched, dividends coming, a margin call, orders that lapse
         /// </summary>
         public static class MarketLinks
         {
@@ -50,6 +52,7 @@ namespace RealLifeOverhaul
                 MarketBridges.Poll = Poll;
                 News.Reported += Reported;
                 FireLosses.Billed += Fire;
+                PlannerDirector.Instance?.AddSource(Source);
                 _leversSeen = -1;
                 _electionsSeen = -1;
                 _storming = false;
@@ -336,6 +339,99 @@ namespace RealLifeOverhaul
                 {
                     Fault("MarketLinks.Old", e);
                     return new OldMarket();   // nothing is brought over, and nothing of the old file is touched
+                }
+            }
+
+            // ---------------------------------------------------------------- the Planner
+
+            private static readonly MarketSource Source = new MarketSource();
+
+            /// <summary>
+            /// The stock market's rows in the Planner: a quarter's results of a company the player holds or watches (on
+            /// the morning they come out, before the open), a dividend coming to the player (on its pay day), a margin
+            /// call (met by that day's close) and an order that lapses (on its last day). It reads the market and changes
+            /// nothing. Ids: 1 results, 2 a dividend (both with the company's id), 3 the margin call, 4 an order (its id).
+            /// </summary>
+            private sealed class MarketSource : IPlannerSource
+            {
+                public string Id => "markets";
+
+                public bool Available => Settings.Markets && MarketDirector.Instance != null && MarketDirector.Instance.State != null && SaveGameManager.Current != null;
+
+                public void Collect(int fromDay, int toDay, PlannerList into)
+                {
+                    MarketState s = MarketDirector.Instance.State;
+                    for (int i = 0; i < s.Stocks.Count; i++)
+                    {
+                        Stock k = s.Stocks[i];
+                        if (!k.Listed || k.ResultsDay <= 0 || (s.Position(k.Id) == null && !s.Watching(k.Id)))
+                        {
+                            continue;
+                        }
+                        PlannerEntry e = into.Add(Id, 1, k.Id, PlannerCategory.Money, k.ResultsDay);
+                        if (e == null)
+                        {
+                            continue;
+                        }
+                        e.Start = MarketCatalogue.ResultsMinute;
+                        if (into.WantText)
+                        {
+                            e.Title = PlannerText.T("reallife_mkt_plan_results_title", "name", k.Name);
+                            e.What = PlannerText.T("reallife_mkt_plan_results_what", "name", k.Name);
+                        }
+                    }
+                    for (int i = 0; i < s.Dues.Count; i++)
+                    {
+                        DividendDue due = s.Dues[i];
+                        Stock k = s.Stock(due.StockId);
+                        PlannerEntry e = into.Add(Id, 2, due.StockId, PlannerCategory.Money, due.PayDay);
+                        if (e == null || !into.WantText)
+                        {
+                            continue;
+                        }
+                        long money = due.Cents >= 0 ? due.Cents / 100 : (-due.Cents + 99) / 100;
+                        e.Title = PlannerText.T("reallife_mkt_plan_dividend_title", "name", k != null ? k.Name : string.Empty);
+                        e.What = PlannerText.T(due.Cents >= 0 ? "reallife_mkt_plan_dividend_what" : "reallife_mkt_plan_dividend_owed");
+                        e.Money = PlannerText.T(due.Cents >= 0 ? "reallife_planner_pays" : "reallife_planner_costs", "amount", MarketText.Money(money));
+                    }
+                    Account a = s.Account;
+                    if (a.Margin && a.CallDay > 0)
+                    {
+                        PlannerEntry e = into.Add(Id, 3, 0, PlannerCategory.Money, a.CallDay);
+                        if (e != null)
+                        {
+                            e.Deadline = true;
+                            e.End = MarketCatalogue.CloseMinute;
+                            if (into.WantText)
+                            {
+                                e.Title = PlannerText.T("reallife_mkt_plan_call_title");
+                                e.What = PlannerText.T("reallife_mkt_plan_call_what", "amount", MarketText.Money(a.CallAmount));
+                                e.Money = PlannerText.T("reallife_planner_costs", "amount", MarketText.Money(a.CallAmount));
+                                e.IfMissed = PlannerText.T("reallife_mkt_plan_call_missed");
+                            }
+                        }
+                    }
+                    for (int i = 0; i < s.Orders.Count; i++)
+                    {
+                        Markets.Order o = s.Orders[i];
+                        if (!o.IsOpen || o.Life != OrderLife.UntilCancelled || o.Forced)
+                        {
+                            continue;
+                        }
+                        PlannerEntry e = into.Add(Id, 4, o.Id, PlannerCategory.Money, o.ExpireDay);
+                        if (e == null)
+                        {
+                            continue;
+                        }
+                        e.Deadline = true;
+                        e.End = MarketCatalogue.CloseMinute;
+                        if (into.WantText)
+                        {
+                            Stock k = s.Stock(o.StockId);
+                            e.Title = PlannerText.T("reallife_mkt_plan_order_title", "name", k != null ? k.Name : string.Empty);
+                            e.What = PlannerText.T(o.Side == OrderSide.Buy ? "reallife_mkt_plan_order_buy" : "reallife_mkt_plan_order_sell", "count", o.Left.ToString("N0"));
+                        }
+                    }
                 }
             }
         }

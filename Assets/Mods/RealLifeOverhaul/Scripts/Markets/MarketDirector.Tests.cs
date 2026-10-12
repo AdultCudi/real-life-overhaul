@@ -83,5 +83,118 @@ namespace RealLifeOverhaul.Markets
             Behind = false;
             RemoveApp();
         }
+
+        // ---------------------------------------------------------------- the owner's test buttons
+
+        /// <summary>Test button: the Stocks app opened on the market's tab.</summary>
+        public void TestOpen()
+        {
+            const string Test = "Open the Stocks app";
+            if (!TestReady(Test, false))
+            {
+                return;
+            }
+            if (_view == null)
+            {
+                TestRefusals.TellKey(Logger, Test, "reallife_mkt_test_no_app");
+                return;
+            }
+            _view.Want(MarketApp.TabMarket);
+            OpenAppPartial();
+            Logger?.Info(Test + " test: the app is open on the market (" + State.Stocks.Count + " companies, day " + State.Day + ", phase " + State.Phase + ").");
+        }
+
+        /// <summary>
+        /// Test button: a crisis (or a windfall) at a company the player holds, else one they watch, else the largest
+        /// listed: the news is out at once, as a real one is (the notification, the app, tomorrow's City Ledger), and the
+        /// price follows at the next open.
+        /// </summary>
+        public void TestNews(bool crisis)
+        {
+            string test = crisis ? "A crisis at a company" : "A windfall at a company";
+            if (!TestReady(test, true))
+            {
+                return;
+            }
+            Stock k = TestCompany();
+            if (k == null || !_engine.NewsFor(k.Id, crisis))
+            {
+                TestRefusals.TellKey(Logger, test, "reallife_mkt_test_no_company");
+                return;
+            }
+            Logger?.Info(test + " test: " + k.Name + " (" + k.Ticker + "), outlook now " + k.Outlook.ToString("F3") + "; the price follows at the next open.");
+            OpenCompany(k.Id);
+        }
+
+        /// <summary>Test button: a takeover bid for a company the player holds, else one they watch, else the largest listed, made as a real one is.</summary>
+        public void TestBid()
+        {
+            const string Test = "A takeover bid";
+            if (!TestReady(Test, true))
+            {
+                return;
+            }
+            Stock k = TestCompany();
+            if (k == null || !_engine.BidFor(k.Id))
+            {
+                TestRefusals.TellKey(Logger, Test, "reallife_mkt_test_no_company");
+                return;
+            }
+            Logger?.Info(Test + " test: " + k.Name + " (" + k.Ticker + ") bid for at " + k.BidCents + " cents a share, to complete on day " + k.BidEndDay
+                         + (k.BidderId > 0 ? " by " + (State.Stock(k.BidderId) != null ? State.Stock(k.BidderId).Name : "?") : " by a private buyer") + ".");
+            OpenCompany(k.Id);
+        }
+
+        // A company a test can work on: listed and not under a bid, the player's own first, then a watched one, then the largest.
+        private Stock TestCompany()
+        {
+            MarketState s = State;
+            for (int i = 0; i < s.Positions.Count; i++)
+            {
+                Stock k = s.Stock(s.Positions[i].StockId);
+                if (k != null && k.Listed && k.BidCents == 0)
+                {
+                    return k;
+                }
+            }
+            for (int i = 0; i < s.Watch.Count; i++)
+            {
+                Stock k = s.Stock(s.Watch[i]);
+                if (k != null && k.Listed && k.BidCents == 0)
+                {
+                    return k;
+                }
+            }
+            Stock largest = null;
+            for (int i = 0; i < s.Stocks.Count; i++)
+            {
+                Stock k = s.Stocks[i];
+                if (k.Listed && k.BidCents == 0 && (largest == null || k.MarketValue > largest.MarketValue))
+                {
+                    largest = k;
+                }
+            }
+            return largest;
+        }
+
+        private bool TestReady(string test, bool settled)
+        {
+            if (!Settings.Markets)
+            {
+                TestRefusals.Tell(Logger, test, TestRefusal.FeatureOff);
+                return false;
+            }
+            if (!Running || Save == null)
+            {
+                TestRefusals.Tell(Logger, test, TestRefusal.NotLoaded);
+                return false;
+            }
+            if (settled && (Behind || _engine.Replaying))
+            {
+                TestRefusals.TellKey(Logger, test, "reallife_mkt_test_busy");
+                return false;
+            }
+            return true;
+        }
     }
 }

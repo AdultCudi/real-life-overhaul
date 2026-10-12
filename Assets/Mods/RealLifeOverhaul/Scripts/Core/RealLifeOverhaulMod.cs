@@ -624,6 +624,10 @@ namespace RealLifeOverhaul
                     v => Settings.Markets = v)
                 .AddToggle(Settings.MarketsMarginId, "reallife_mkt_opt_margin", Settings.MarketsMargin,
                     v => Settings.MarketsMargin = v)
+                .AddButton("reallife_mkt_test_open", () => Markets.MarketDirector.Instance?.TestOpen())
+                .AddButton("reallife_mkt_test_crisis", () => Markets.MarketDirector.Instance?.TestNews(true))
+                .AddButton("reallife_mkt_test_windfall", () => Markets.MarketDirector.Instance?.TestNews(false))
+                .AddButton("reallife_mkt_test_bid", () => Markets.MarketDirector.Instance?.TestBid())
                 .AddHeader("reallife_co_header")
                 .AddToggle(Settings.EconomyCompanyId, "reallife_co_enabled", Settings.EconomyCompany,
                     v => Settings.EconomyCompany = v)
