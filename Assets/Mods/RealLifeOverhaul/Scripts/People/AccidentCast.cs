@@ -28,6 +28,11 @@ namespace RealLifeOverhaul
     /// to stand comes from the mesh as it then is.
     /// The same crews attend someone knocked down by a car (BeginCasualty): that person is not
     /// one of this cast, only the patient.
+    /// The driver at fault (AtFault: the car that caused it) is arrested where they stand once the
+    /// officers have had a look: an officer leaves their round, the driver puts their hands up, is
+    /// cuffed, walked to the patrol car and put in the back (Crime/ArrestSequence, as at a traffic
+    /// stop), and the patrol car takes them away when it goes. A driver lying hurt goes with the
+    /// ambulance instead; one who has run is the chase's.
     /// </summary>
     public sealed class AccidentCast
     {
@@ -45,6 +50,8 @@ namespace RealLifeOverhaul
         private const float StretcherOut = 1.8f;    // ...and to the middle of the stretcher brought up beside them
         private const float TalkRange = 3.2f;       // people this close are talking to each other
         private const int MarkersWanted = 2;        // numbered markers an officer sets out at the point of impact
+        private const float ArrestAfterLeast = 12f;  // seconds after the officers are out before the driver at fault is arrested, at the soonest...
+        private const float ArrestAfterMost = 20f;   // ...and at the latest: they have had a look and a word first
 
         // The game has no lying-injured animation. This is the stand-in.
         private const PermanentAnimationType LyingPose = PermanentAnimationType.LayingInTowel01;
@@ -69,6 +76,15 @@ namespace RealLifeOverhaul
         private readonly SceneWitness _witness = new SceneWitness();
         private readonly SceneBrief _brief = new SceneBrief();
         private readonly LyingDriver _down;
+        private readonly ArrestSequence _arrest = new ArrestSequence();
+
+        private bool _faultA;              // the worst-hit car's driver is at fault (a reckless driver's own crash), else the other's
+        private bool _faultKnown;
+        private bool _arrestSettled;       // arrested, or found not to be had: decided once a scene
+        private float _arrestFrom;
+        private VehicleComponent _patrol;
+        private ActorRole _arrested;       // the driver under arrest: nothing else of the cast moves them
+        private SceneOfficer _arresting;   // ...and the officer making it, out of their round
 
         private bool _active;
         private float _nextTick;
@@ -208,6 +224,23 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
+        /// Which driver caused the crash: the worst-hit car's (a reckless driver's own crash, the car that knocked someone
+        /// down) or the other's. Once the officers have had a look they arrest that driver where they stand and put them
+        /// in the patrol car, which takes them away with it; a driver lying hurt goes with the ambulance instead.
+        /// </summary>
+        public void AtFault(bool worst)
+        {
+            _faultA = worst;
+            _faultKnown = true;
+        }
+
+        /// <summary>True while the driver at fault is being arrested: the patrol car does not leave from under it.</summary>
+        public bool Arresting => _arrest.Active;
+
+        /// <summary>True once the driver at fault has been arrested (or is being): their car does not drive off, it is taken away.</summary>
+        public bool FaultArrested => _arrested != null;
+
+        /// <summary>
         /// The scene is about someone knocked down and lying in the road, who is not one of this
         /// cast: the crews go to them instead of to a driver. If a traffic car hit them, its
         /// driver gets out, goes over and phones for help.
@@ -272,6 +305,12 @@ namespace RealLifeOverhaul
         /// <summary>Everyone leaves the street at once. Safe to call at any time, any number of times.</summary>
         public void Clear()
         {
+            _arrest.Clear();
+            _arrested = null;
+            _arresting = null;
+            _patrol = null;
+            _faultKnown = false;
+            _arrestSettled = false;
             ReleaseWay();
             _plan = null;
             _hasWreck = false;
@@ -365,11 +404,12 @@ namespace RealLifeOverhaul
             _arguing = false;
             _argueOn = false;
             _witness.Aside(_brief, now);
-            if (_driverA.Present && !_lying)
+            // (A driver under arrest is the arrest's to move: being walked to the patrol car, they are out of the road.)
+            if (_driverA.Present && !_lying && !ReferenceEquals(_arrested, _driverA))
             {
                 _driverA.Go(kerb, Pace.Walk, _scene, 40f);
             }
-            if (_driverB.Present)
+            if (_driverB.Present && !ReferenceEquals(_arrested, _driverB))
             {
                 _driverB.Go(kerb + _roadForward * 0.9f, Pace.Walk, _scene, 40f);
             }
@@ -407,10 +447,18 @@ namespace RealLifeOverhaul
                 if (_officers == Crew.Working)
                 {
                     _officers = Crew.Returning;
-                    _officerA.Stop();
-                    _officerB.Stop();
-                    _officerA.Role.Board(_patrolDoorA, Pace.Walk);
-                    _officerB.Role.Board(_patrolDoorB, Pace.Walk);
+                    // (The officer making an arrest finishes it: the arrest puts them in the car with the driver.)
+                    bool arresting = _arrest.Active;
+                    if (!arresting || !ReferenceEquals(_arresting, _officerA))
+                    {
+                        _officerA.Stop();
+                        _officerA.Role.Board(_patrolDoorA, Pace.Walk);
+                    }
+                    if (!arresting || !ReferenceEquals(_arresting, _officerB))
+                    {
+                        _officerB.Stop();
+                        _officerB.Role.Board(_patrolDoorB, Pace.Walk);
+                    }
                     Logger?.Info("People: officers called back to the patrol car.");
                 }
             }
@@ -465,6 +513,11 @@ namespace RealLifeOverhaul
         {
             if (police)
             {
+                if (_arrest.Active)
+                {
+                    _arrest.Clear();   // the patrol car is gone (taken off the road): the arrest goes with it
+                    _arrested?.Exit();
+                }
                 _officerA.Stop();
                 _officerB.Stop();
                 _officerA.Role.Exit();
@@ -559,6 +612,7 @@ namespace RealLifeOverhaul
                 _officerA.Role.Tick(now);
                 _officerB.Role.Tick(now);
             }
+            TickArrest(now);
 
             // Who an officer is actually standing with, if anyone: accounts are given to someone who is there.
             Vector3 officer = default;
@@ -572,6 +626,50 @@ namespace RealLifeOverhaul
             {
                 Argue();
             }
+        }
+
+        // ---------------------------------------------------------------- the driver at fault
+
+        // Once the officers have had a look: the driver at fault arrested where they stand, by the officer working the scene
+        // (the one on traffic only if they are alone). Decided once; a driver who is lying hurt, has run or never got out is
+        // not arrested here, and the log says which.
+        private void TickArrest(float now)
+        {
+            if (_arrest.Active)
+            {
+                _arrest.Tick(now, Helpers.PlayerHelper.GetPosition());
+                return;
+            }
+            if (!_faultKnown || _arrestSettled || _officers != Crew.Working || now < _arrestFrom || _patrol == null)
+            {
+                return;
+            }
+            _arrestSettled = true;
+            ActorRole driver = _faultA ? _driverA : _driverB;
+            if (!driver.Present || (_faultA && _lying))
+            {
+                Logger?.Info(_faultA && _lying
+                    ? "People: the driver at fault is the one lying hurt; they go with the ambulance, and nobody is arrested at the scene."
+                    : "People: the driver at fault is not out on the road (they never got out, or have gone); nobody is arrested at the scene.");
+                return;
+            }
+            SceneOfficer by = _officerA.Role.Present ? _officerA : _officerB.Role.Present ? _officerB : null;
+            if (by == null)
+            {
+                return;
+            }
+            if (_witness.Is(driver))
+            {
+                _witness.Stop();
+            }
+            _arguing = false;
+            _argueOn = false;
+            by.Stop();
+            _arrested = driver;
+            _arresting = by;
+            _arrest.BeginAtCar(driver, by.Role, _patrol, now);
+            Logger?.Info("People: an officer arrests the driver at fault (the " + (_patient != null ? "driver who knocked someone down" : _faultA ? "worst-hit car's" : "other car's")
+                         + ") and walks them to the patrol car.");
         }
 
         // ---------------------------------------------------------------- drivers
@@ -716,8 +814,8 @@ namespace RealLifeOverhaul
         private void TakeStatements(bool heard, Vector3 officer)
         {
             _statements = heard;
-            bool aTalks = _driverA.Present && !_lying && _patient == null && (officer - _driverA.Position).sqrMagnitude < TalkRange * TalkRange * 2f;
-            bool bTalks = _driverB.Present && !_witness.Active && (officer - _driverB.Position).sqrMagnitude < TalkRange * TalkRange * 2f;
+            bool aTalks = _driverA.Present && !_lying && _patient == null && !ReferenceEquals(_arrested, _driverA) && (officer - _driverA.Position).sqrMagnitude < TalkRange * TalkRange * 2f;
+            bool bTalks = _driverB.Present && !_witness.Active && !ReferenceEquals(_arrested, _driverB) && (officer - _driverB.Position).sqrMagnitude < TalkRange * TalkRange * 2f;
             if (!heard)
             {
                 if (!_lying && _patient == null)
@@ -1504,6 +1602,8 @@ namespace RealLifeOverhaul
 
             _statements = false;
             _officers = Crew.Working;
+            _patrol = patrol;
+            _arrestFrom = now + Random.Range(ArrestAfterLeast, ArrestAfterMost);
             Brief();
             _officerB.OnTraffic = gotB;
             _officerB.Alone = !gotA;

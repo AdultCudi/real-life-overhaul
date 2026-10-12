@@ -37,6 +37,9 @@ namespace RealLifeOverhaul
         /// <summary>True once they have been sent out of the scene.</summary>
         public bool SentAside => _act == Act.Aside;
 
+        /// <summary>True if this is the role the witness is played by.</summary>
+        public bool Is(ActorRole role) => role != null && ReferenceEquals(_role, role);
+
         public void Begin(ActorRole role, SceneBrief brief, float now)
         {
             _role = role;
