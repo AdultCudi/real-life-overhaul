@@ -75,7 +75,7 @@ namespace RealLifeOverhaul.Economy
             long net = 0;
             for (int day = 1; day <= days; day++)
             {
-                c.Season = (day - 1) / Math.Max(1, c.DaysPerYear / 4) % 4;
+                c.Season = CalendarRules.SeasonFromSpring(day, c.DaysPerYear);   // the weather's seasons, counted from spring
                 c.Weekday = (day - 1) % 7;
                 HotelNight n = HotelRules.Night(f, seed, day, c);
                 net += n.Takings - n.Costs - n.Lease - n.PipeCost - n.Fine;
@@ -100,7 +100,7 @@ namespace RealLifeOverhaul.Economy
             long net = 0;
             for (int day = 1; day <= days; day++)
             {
-                c.Season = (day - 1) / Math.Max(1, c.DaysPerYear / 4) % 4;
+                c.Season = CalendarRules.SeasonFromSpring(day, c.DaysPerYear);   // the weather's seasons, counted from spring
                 net -= HireRules.Premium(price, c);
                 if (car.State == (int)HireState.Out && day >= car.Day)
                 {

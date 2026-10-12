@@ -26,7 +26,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             GameInstance save = SaveGameManager.Current;
             List<RealEstate> owned = save.realEstate;
             int count = owned != null ? owned.Count : 0;
-            int year = Mathf.Max(1, save.gameVariables.daysPerYear);
+            int year = GameCalendar.DaysPerYear;
             double paid = 0;
             float week = 0f, month = 0f;
             RealEstate picked = null;

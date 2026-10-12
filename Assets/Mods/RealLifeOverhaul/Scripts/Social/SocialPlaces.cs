@@ -41,7 +41,7 @@ namespace RealLifeOverhaul
             get
             {
                 GameInstance save = SaveGameManager.Current;
-                int days = save != null && save.gameVariables != null ? save.gameVariables.daysPerYear : 60;
+                int days = GameCalendar.DaysPerYear;
                 return days < 8 ? 60 : days;
             }
         }

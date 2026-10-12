@@ -302,7 +302,7 @@ namespace RealLifeOverhaul.Family
         private static void Dress(CityPerson person, FamilyLook look)
         {
             AppearanceSetter appearance = person.Character.appearanceSetter;
-            int year = SaveGameManager.Current != null ? Mathf.Max(1, SaveGameManager.Current.gameVariables.daysPerYear) : 60;
+            int year = GameCalendar.DaysPerYear;
             int seed;
             bool female;
             int age;

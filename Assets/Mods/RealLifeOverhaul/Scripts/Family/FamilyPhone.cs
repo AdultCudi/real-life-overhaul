@@ -587,7 +587,7 @@ namespace RealLifeOverhaul.Family
                 }
             }
             // The next family dinner on the game's calendar.
-            int year = Mathf.Max(8, SaveGameManager.Current.gameVariables.daysPerYear);
+            int year = GameCalendar.DaysPerYear;
             int dayOfYear = (TimeHelper.CurrentDay - 1) % year;
             for (int k = 0; k < 5; k++)
             {

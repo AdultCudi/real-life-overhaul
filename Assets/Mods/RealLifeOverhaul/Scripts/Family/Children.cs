@@ -397,10 +397,10 @@ namespace RealLifeOverhaul.Family
                 }
             }
             int care = 0;
-            if (small > 0 && FamilyState.Care == Care.Nursery) care = FamilyBalance.NurseryPerMonth / 4 * small;
-            if (small > 0 && FamilyState.Care == Care.Nanny) care = FamilyBalance.NannyPerMonth / 4;
+            if (small > 0 && FamilyState.Care == Care.Nursery) care = FamilyBalance.NurseryPerDay * 7 * small;
+            if (small > 0 && FamilyState.Care == Care.Nanny) care = FamilyBalance.NannyPerDay * 7;
             care = Mathf.RoundToInt(care * Share);
-            int school = Mathf.RoundToInt(FamilyBalance.PrivateSchoolPerMonth / 4 * privateSchool * Share);
+            int school = Mathf.RoundToInt(FamilyBalance.PrivateSchoolPerDay * 7 * privateSchool * Share);
             if (care > 0)
             {
                 FamilyTalk.Move(-care, "reallife_transaction_family_childcare");

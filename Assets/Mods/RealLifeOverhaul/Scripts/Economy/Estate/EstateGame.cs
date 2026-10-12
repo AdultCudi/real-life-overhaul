@@ -125,7 +125,7 @@ namespace RealLifeOverhaul.Economy
         public static EstateClimate Climate(int day)
         {
             GameInstance save = Save;
-            int year = save != null && save.gameVariables != null && save.gameVariables.daysPerYear >= 8 ? save.gameVariables.daysPerYear : EstateCatalogue.DaysPerYearDefault;
+            int year = GameCalendar.DaysPerYear;
             return new EstateClimate
             {
                 Cycle = EstateCatalogue.Cycle(CityEconomy.State),

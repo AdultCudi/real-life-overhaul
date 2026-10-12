@@ -79,9 +79,15 @@ namespace RealLifeOverhaul.Family
         public const int ScanPrice = 120;
         public const int BirthPrice = 1800;
         public const int CheckupPrice = 80;
-        public const int NurseryPerMonth = 900;
-        public const int NannyPerMonth = 2200;
-        public const int PrivateSchoolPerMonth = 1500;
+        // Childcare and private school by the day (900, 2,200 and 1,500 over four weeks), paid a week at a time and named
+        // by the month of the calendar the player chose (GameCalendar.MonthDays), so that the length of the year changes
+        // nothing by the day.
+        public const int NurseryPerDay = 32;            // a child
+        public const int NannyPerDay = 79;              // the household
+        public const int PrivateSchoolPerDay = 54;      // a child
+        public static int NurseryPerMonth => GameCalendar.Monthly(NurseryPerDay);
+        public static int NannyPerMonth => GameCalendar.Monthly(NannyPerDay);
+        public static int PrivateSchoolPerMonth => GameCalendar.Monthly(PrivateSchoolPerDay);
         public const int PartyHomePrice = 150;
         public const int PartyVenuePrice = 600;
         public static readonly int[] PocketMoney = { 0, 10, 25, 50 };   // a week
@@ -95,7 +101,6 @@ namespace RealLifeOverhaul.Family
         public const float PocketFrom = 6f;
         public const float GrownUp = 18f;
         public const float WalkMetres = 220f;           // a pushchair walk
-        public const int MonthDays = 28;
 
         // ---------------------------------------------------------------- hard times
         public const float SettlementShare = 0.20f;     // of cash in hand, never of a business
