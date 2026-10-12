@@ -4780,6 +4780,21 @@ Money at the city's prices is `Prices.At(amount)`: an amount written at the star
 under 100, 5 under 1,000, 10 under 10,000, 50 above; at the start's level an amount is itself). While the city's
 economy is off the level stays at the start's.
 
+## The game's daily statement (`Economy/GameBooks.cs`)
+
+The game builds each day's statement (`GameInstance.financialSummaries`) first thing on the next day, before
+`onNewDay`: for each business, four lines of costs summed from that day's transactions by the business's address and
+the game's categories (salaries, rent, marketing, licensing fees), with goods, sales and theft from its own records.
+The game's bank sizes a loan by it (`PlayerHelper.CalculateDailyIncome`: the last seven days' profit), and EconoView
+and the daily summary show it. A cost of the mod's that is one of those lines carries the category and the address:
+Company's wages (raises, overtime, sick and strike pay), marketing and licences (`CompanyGame.Take`), and the
+business issues' marketing, licence and staff costs (`BusinessGame.Charge`). What is booked after midnight for the day
+that ended is put into that day's statement when the mod's day is done (`EconomyDirector.OnDay`, after `AfterDay`):
+the four lines summed again as the game sums them, and the totals with them (`GameBooks.Refresh`). Insurance,
+accountants, hosting and the city's weekly account have no line there and stay in the mod's own books (Finance). The
+city's cost of living adjusts the game's own rent and wages only (`CityGame.DayFigures` passes over the mod's own
+transactions, which are at today's prices already).
+
 ## Home life and health (`Scripts/Home`)
 
 ```
