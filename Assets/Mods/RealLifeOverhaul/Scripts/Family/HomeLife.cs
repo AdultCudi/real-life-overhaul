@@ -30,6 +30,9 @@ namespace RealLifeOverhaul.Family
     /// </summary>
     internal static class HomeLife
     {
+        /// <summary>What a home's power and water come to a day (Utilities, through Wiring/UtilityLinks); null: none known.</summary>
+        internal static Func<BuildingRegistration, float> Bills;
+
         private enum Mode { None, Standing, Walking, Leaving, Retiring, Talking, Sitting }
 
         private const int MaxSpots = 6;
@@ -1042,9 +1045,12 @@ namespace RealLifeOverhaul.Family
             {
                 return;   // no home just now: nothing to share the cost of
             }
-            // What the home costs a day: the game's rent at today's prices, as the city's cost of living charges it.
+            // What the home costs a day: the game's rent at today's prices, as the city's cost of living charges it, and its
+            // power and water (Utilities). With no bills to go by (the feature off) an owned home's are a set sum.
             float rent = Mathf.Max(0f, home.RentPerDay) * Prices.Level / 1000f;
-            float amount = rent > 0f ? Mathf.Min(rent * FamilyBalance.RentShare, Partner.Income * FamilyBalance.IncomeShare)
+            Func<BuildingRegistration, float> bills = Bills;
+            float cost = rent + (bills != null ? Mathf.Max(0f, bills(home)) : 0f);
+            float amount = rent > 0f || bills != null ? Mathf.Min(cost * FamilyBalance.RentShare, Partner.Income * FamilyBalance.IncomeShare)
                 : Mathf.Min(FamilyBalance.BillsCap, Partner.Income * 0.2f);
             if (FamilyState.Care == Care.Partner && FamilyState.AnyUnder(FamilyBalance.SchoolFrom))
             {

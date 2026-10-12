@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Economy
             new[] { "investment", "shares_", "venture_", "buildingbought", "buildingsold", "boatbought", "boatsold", "vehiclebought" },
             new[] { "loan", "interest", "credit_", "overdraft", "finance_", "consolidation", "arrangement", "bankruptcy", "late_fee", "repossession", "diverted" },
             new[] { "wage", "salary", "bonus", "overtime", "co_sick", "co_raise", "training", "healthinsurance", "replacement", "recruitment", "strike", "_job_", "prison_work" },
-            new[] { "rent" },
+            new[] { "rent", "util_" },   // rent and the bills of a place: power and water (Scripts/Utilities)
             new[] { "itempurchase", "deliverycontract", "importdelivery" },
             new[] { "revenue", "takings", "inventorysold", "itemsold", "exportedgoods", "bulkorder" },
             new[] { "marketing", "campaign", "voucher" },
