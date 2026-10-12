@@ -156,7 +156,9 @@ namespace RealLifeOverhaul
                     {
                         vehicle.poi.SetBackground(InstanceBehavior<GlobalReferences>.Instance.vehiclePOIBackgroundColor);
                     }
-                    if (vehicle is CarController car)
+                    // (The game's parking sign is the driven car's, on the dashboard: asked of any other car, it fails for want
+                    // of the dashboard's vehicle. Its state is set above.)
+                    if (vehicle is CarController car && InstanceBehavior<GameManager>.Instance != null && InstanceBehavior<GameManager>.Instance.selectedVehicle == vehicle)
                     {
                         car.UpdateParkingZone();
                     }
