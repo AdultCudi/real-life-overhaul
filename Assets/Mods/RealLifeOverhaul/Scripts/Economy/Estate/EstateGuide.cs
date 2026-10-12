@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Economy
                 .Fact("est_arrears_days", () => Whole(EstateCatalogue.NoticeArrearsDays))
                 .Fact("est_notice_days", () => Whole(EstateCatalogue.NoticeDays[1]))
                 .Fact("est_court_days", () => Whole(EstateCatalogue.CourtDays))
-                .Fact("est_court_fee", () => Guide.Money(EstateCatalogue.CourtFee))
+                .Fact("est_court_fee", () => Guide.Money(EstateRules.CourtFee(Prices.Level)))
                 .Fact("est_poor", () => Share(EstateCatalogue.ConditionPoor))
                 .Fact("est_unfit", () => Share(EstateCatalogue.ConditionUnfit))
                 .Fact("est_repair", () => Share(EstateCatalogue.RepairShare))

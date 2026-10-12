@@ -41,7 +41,7 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class JobRental
     {
-        public const int DailyFee = 125;                // charged once a day, however many shifts
+        public static int DailyFee => Prices.At(125);                // charged once a day, however many shifts
         private const string Key = "reallife:job_rental";
         private const string FallbackType = "ba:vehicletype_umcdesertdeliveryjob";
         private const string FeeTransaction = "reallife_transaction_job_rental";

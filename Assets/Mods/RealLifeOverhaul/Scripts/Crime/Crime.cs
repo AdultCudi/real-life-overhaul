@@ -64,7 +64,7 @@ namespace RealLifeOverhaul
                 return 0;
             }
             float cash = Cash;
-            int amount = Mathf.RoundToInt(Mathf.Clamp(cash * share, atLeast, atMost) / 5f) * 5;
+            int amount = Mathf.RoundToInt(Mathf.Clamp(cash * share, Prices.At(atLeast), Prices.At(atMost)) / 5f) * 5;   // (bounds at today's prices)
             amount = Mathf.Min(amount, Mathf.FloorToInt(cash));
             if (amount <= 0)
             {

@@ -2,7 +2,7 @@ using System;
 using RealLifeOverhaul;
 using RealLifeOverhaul.Economy;
 
-// The one calendar (Scripts/Core/CalendarRules.cs) and money at the city's prices (Scripts/Economy/Prices.cs): the
+// The one calendar (Scripts/Core/CalendarRules.cs) and money at the city's prices (Scripts/Core/Prices.cs): the
 // year from a save, the month as a twelfth of it whatever the player chose (60 to 365 days), the seasons as the
 // weather has them and as travel and property count them, a month's worth of a daily price, the price level from the
 // city's index, and how prices are rounded.
@@ -56,8 +56,14 @@ internal static partial class Program
 
     private static void PriceChecks()
     {
-        Check(PriceRules.Level(100f) == 1000 && PriceRules.Level(107.04f) == 1070 && PriceRules.Level(10f) == 500 && PriceRules.Level(900f) == 4000,
-            "prices: the level is the city's index in tenths of a point, within the index's own bounds");
+        Check(PriceRules.Level(1000) == 1000 && PriceRules.Level(1070) == 1070 && PriceRules.Level(100) == 500 && PriceRules.Level(9000) == 4000,
+            "prices: the level is the city's factor in tenths of a point, within the index's own bounds");
+        Check(PriceRules.Level(1009) == 1000 && PriceRules.Level(991) == 1000 && PriceRules.Level(1010) == 1010 && PriceRules.Quiet == MacroCatalogue.AdjustQuiet,
+            "prices: within the city's quiet band (1%) the level is the start's, as the city adjusts nothing there");
+        var city = new CityState { Index = 104567 };
+        Check(CityModel.Costs(city) == 1045 && PriceRules.Level(CityModel.Costs(city)) == 1045 && CityAdjust.Of(1000f, CityModel.Costs(city)) == 45
+              && PriceRules.At(1000, PriceRules.Level(CityModel.Costs(city))) == 1050,
+            "prices: the level is the very factor the city adjusts the game's own costs by (104.567 is 1045 for both)");
         Check(PriceRules.At(2.75f, 1000) == 2.75f && PriceRules.At(150, 1000) == 150 && PriceRules.At(25000, 1000) == 25000,
             "prices: at the start's level an amount is as written");
         Check(Near(PriceRules.At(2.75f, 1070), 2.95f) && Near(PriceRules.At(7.6f, 1070), 8.15f), "prices: under 10, to five cents (2.75 and 7.60 at 107)");

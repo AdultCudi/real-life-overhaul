@@ -165,17 +165,17 @@ namespace RealLifeOverhaul
         public const int MaxRaises = 3;             // raises at one rank
         public const float RaiseStep = 3f;          // basic wage per hour added by a raise
         public const int HistoryMost = 8;           // lines of employment history kept
-        public const int CartRent = 165;            // a day's rent of the cart, own-cart licence
+        public static int CartRent => Prices.At(165);            // a day's rent of the cart, own-cart licence
         public const float CartTakings = 30f;       // what a customer pays at the player's own cart
         public const float CartStock = 9.5f;        // ...and what the drink cost
         public const int CabShiftFares = 4;         // fares in an employed cab shift
-        public const int GigFee = 125;              // a venue's fee for a booked set, on top of the hat
+        public static int GigFee => Prices.At(125);              // a venue's fee for a booked set, on top of the hat
         public const float GigTipFactor = 1.3f;
         public const int GigNeedsLevel = 2;         // busker level at which the agency books sets
         public const float PromoteScore = 70f;      // review score for a promotion
         public const float RaiseScore = 55f;        // ...for a raise
         public const float WarnScore = 35f;         // ...below which the review is a warning (a mark)
-        public const float TipsPerPoint = 3f;        // dollars of tips a shift that earn a review point (twenty points at most)
+        public static float TipsPerPoint => 3f * Prices.Level / 1000f;        // dollars of tips a shift that earn a review point (twenty points at most)
 
         public const float PremiumHarsh = 0.7f;     // a premium passenger minds this share of what an ordinary one puts up with
 

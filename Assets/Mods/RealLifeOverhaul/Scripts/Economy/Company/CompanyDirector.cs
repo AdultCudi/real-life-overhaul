@@ -329,7 +329,7 @@ namespace RealLifeOverhaul.Economy
         // The game is read once: the businesses, yesterday's statements, the staff. The economy's figures are read with it.
         private void Read(int day, bool ranBefore, bool countLoss, out int added, out int dropped, out int gone)
         {
-            _index = Mathf.RoundToInt(CityEconomy.PriceIndex * 10f);
+            _index = Prices.Level;
             _cycle = CityEconomy.State;
             CompanyGame.ReadShops(_state, _shops, _pool, day, ranBefore, out added, out dropped);
             CompanyGame.ReadBooks(_shops, day);

@@ -30,7 +30,7 @@ namespace RealLifeOverhaul
         private const string EmptyBusinessType = "ba:businesstype_empty";
         private const float BreakInChance = 0.04f;     // per night, before security and the frequency option
         private const int BreakInRestDays = 6;
-        private const float BreakInValueCap = 2500f;
+        private static float BreakInValueCap => Prices.At(2500f);
         private const float BreakInStockShare = 0.25f; // of what is on the shelves, at most
         private const float CarChance = 0.03f;         // per night
         private const int CarRestDays = 7;

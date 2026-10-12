@@ -1,18 +1,35 @@
 using System;
 
-namespace RealLifeOverhaul.Economy
+namespace RealLifeOverhaul
 {
     /// <summary>
     /// Money at the city's prices. Every amount of the mod's is written at the prices of the start (the city's price
     /// index at 100) and asked for here when it is charged, paid or shown, so that all of it moves with the city's
-    /// price level (<see cref="CityEconomy.PriceIndex"/>, worked out by the city's economy once a month: inflation of
-    /// -1 % to 12 % a year, moved by the cycle, the central bank and events). While the city's economy is off the level
-    /// stays at the start's and every amount is as written. Game-free; the rules are <see cref="PriceRules"/>.
+    /// price level: the factor the city's economy adjusts the game's own rents, wages, shops and services by each night
+    /// (Economy/City, worked out once a month: inflation of -1 % to 12 % a year, moved by the cycle, the central bank and
+    /// events). While the city's economy is off the level stays at the start's and every amount is as written. Every
+    /// feature reads it, so it is the mod's and not the economy's (which no feature calls): game-free and on its own,
+    /// the factor handed in by Wiring/EconomyLinks, so that the checkers compile it with the catalogues. The rules are
+    /// <see cref="PriceRules"/>.
     /// </summary>
     public static class Prices
     {
+        /// <summary>
+        /// The factor the city's economy adjusts the game's own costs by, in tenths of a point (1000 at the start's
+        /// prices): set by the wiring (Economy.CityEconomy.CostFactor, the start's while the city's economy is off).
+        /// Null: the start's prices.
+        /// </summary>
+        public static Func<int> Factor;
+
         /// <summary>The city's price level in tenths of a point: 1000 at the start's prices.</summary>
-        public static int Level => PriceRules.Level(CityEconomy.PriceIndex);
+        public static int Level
+        {
+            get
+            {
+                Func<int> factor = Factor;
+                return factor != null ? PriceRules.Level(factor()) : PriceRules.Start;
+            }
+        }
 
         /// <summary>An amount written at the start's prices, at today's, rounded as prices are named.</summary>
         public static float At(float amount) => PriceRules.At(amount, Level);
@@ -25,14 +42,22 @@ namespace RealLifeOverhaul.Economy
     public static class PriceRules
     {
         public const int Start = 1000;       // the level at the start's prices, in tenths of a point
+        public const int Quiet = 10;         // within this of the start (1 %), the start's: the city adjusts nothing there either (CityAdjust.Of)
         public const int Least = 500;        // the level is read within these (the index runs from 50 to 400)
         public const int Most = 4000;
 
-        /// <summary>The level in tenths of a point from the city's index (100 at the start).</summary>
-        public static int Level(float index)
+        /// <summary>
+        /// The level from the city's factor for costs (CityModel.Costs, tenths of a point): the start's within the quiet
+        /// band, as the city adjusts nothing there, so a price of the mod's and the game's own one adjusted by the city
+        /// are always at the same level.
+        /// </summary>
+        public static int Level(int factor)
         {
-            int level = (int)Math.Round(index * 10f, MidpointRounding.AwayFromZero);
-            return level < Least ? Least : level > Most ? Most : level;
+            if (Math.Abs(factor - Start) < Quiet)
+            {
+                return Start;
+            }
+            return factor < Least ? Least : factor > Most ? Most : factor;
         }
 
         /// <summary>

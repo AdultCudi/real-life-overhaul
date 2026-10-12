@@ -77,7 +77,7 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>The late fee: a share of the instalment missed, never less than the least; halved on Relaxed.</summary>
         public const float LateFeeShare = 0.02f;
-        public const int LateFeeLeast = 15;
+        public static int LateFeeLeast => Prices.At(15);
 
         /// <summary>Points a year put on an account's rate from the third miss, until this many payments in a row are made.</summary>
         public const int PenaltyPoints = 5;
@@ -98,7 +98,7 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>The lender's costs added to a claim: a share of the balance, never less than the least.</summary>
         public const float ClaimCostsShare = 0.10f;
-        public const int ClaimCostsLeast = 50;
+        public static int ClaimCostsLeast => Prices.At(50);
 
         // ---------------------------------------------------------------- the overdraft
 
@@ -106,29 +106,29 @@ namespace RealLifeOverhaul.Economy
         public const float OverdraftShareAtThreshold = 0.02f;
         public const float OverdraftShareAtBest = 0.08f;
         public const int OverdraftRound = 50;
-        public const int OverdraftLeast = 200;
+        public static int OverdraftLeast => Prices.At(200);
         /// <summary>Points on the bank's rate for the rating.</summary>
         public const int OverdraftRatePoints = 8;
         /// <summary>Cash above this is used to pay the overdraft back at each day's end.</summary>
-        public const int OverdraftFloat = 500;
+        public static int OverdraftFloat => Prices.At(500);
 
         // ---------------------------------------------------------------- the credit card
 
         public const float CardShareAtThreshold = 0.03f;
         public const float CardShareAtBest = 0.12f;
         public const int CardRound = 50;
-        public const int CardLeast = 300;
+        public static int CardLeast => Prices.At(300);
         public const int CardRatePoints = 12;
         /// <summary>The fee for drawing cash: a share of the amount, never less than the least.</summary>
         public const float CardCashFeeShare = 0.03f;
-        public const int CardCashFeeLeast = 5;
+        public static int CardCashFeeLeast => Prices.At(5);
         public const int CardDrawLeast = 20;
         /// <summary>A statement every so many days; its minimum is taken this many days after it.</summary>
         public const int CardStatementDays = 7;
         public const int CardGraceDays = 3;
         /// <summary>The minimum payment: this share of the statement, never less than the least, or the whole of a smaller balance.</summary>
         public const float CardMinimumShare = 0.05f;
-        public const int CardMinimumLeast = 25;
+        public static int CardMinimumLeast => Prices.At(25);
 
         // ---------------------------------------------------------------- the business loan (one of the game's loans, with a business as security)
 
@@ -158,12 +158,12 @@ namespace RealLifeOverhaul.Economy
         // ---------------------------------------------------------------- consolidation
 
         public const float ConsolidateFeeShare = 0.01f;
-        public const int ConsolidateFeeLeast = 25;
+        public static int ConsolidateFeeLeast => Prices.At(25);
 
         // ---------------------------------------------------------------- the lender of last resort
 
-        public const int SharkLeast = 500;
-        public const int SharkMost = 5000;
+        public static int SharkLeast => Prices.At(500);
+        public static int SharkMost => Prices.At(5000);
         /// <summary>With an income the most is this many days of it, if that is more.</summary>
         public const int SharkIncomeDays = 10;
         public const int SharkStep = 500;
@@ -181,7 +181,8 @@ namespace RealLifeOverhaul.Economy
         public const float SharkInjuryEnergy = 8f;
         /// <summary>The repair bill of a damaged business: a share of the debt, between a least and a most.</summary>
         public const float SharkDamageShare = 0.10f;
-        public const int SharkDamageLeast = 150, SharkDamageMost = 1500;
+        public static int SharkDamageLeast => Prices.At(150);
+        public static int SharkDamageMost => Prices.At(1500);
 
         // ---------------------------------------------------------------- the ways out of debt
 
@@ -190,7 +191,7 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>A debt arrangement's daily payment: this share of the average daily income, never less than the least.</summary>
         public const float ArrangementShare = 0.20f;
-        public const int ArrangementLeast = 25;
+        public static int ArrangementLeast => Prices.At(25);
         /// <summary>The rating is held at no more than this while an arrangement runs and for some days after.</summary>
         public const int ArrangementScoreCap = 560;
         public const int ArrangementCapDaysAfter = 20;
@@ -198,7 +199,7 @@ namespace RealLifeOverhaul.Economy
         public const int ArrangementMissesMost = 3;
 
         /// <summary>Bankruptcy leaves this much cash; the rest goes to the creditors.</summary>
-        public const int BankruptKeepCash = 500;
+        public static int BankruptKeepCash => Prices.At(500);
         public const int BankruptScore = CreditCatalogue.ScoreMin;
         /// <summary>Nobody lends for this many days, whatever the score.</summary>
         public const int BankruptNoCreditDays = 60;

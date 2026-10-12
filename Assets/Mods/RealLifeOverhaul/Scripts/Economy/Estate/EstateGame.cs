@@ -129,7 +129,7 @@ namespace RealLifeOverhaul.Economy
             return new EstateClimate
             {
                 Cycle = EstateCatalogue.Cycle(CityEconomy.State),
-                Index = Mathf.RoundToInt(CityEconomy.PriceIndex * 10f),
+                Index = Prices.Level,
                 Quarters = Mathf.RoundToInt(CityEconomy.BasePoints * 4f),
                 RentLever = EstateBridges.RentLever != null ? EstateBridges.RentLever() : 0,
                 PermitLever = EstateBridges.PermitLever != null ? EstateBridges.PermitLever() : 0,

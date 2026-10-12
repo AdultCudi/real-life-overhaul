@@ -547,7 +547,7 @@ namespace RealLifeOverhaul
             float subsidy = CivicCatalogue.WageSubsidy(state.Levers[(int)Lever.Wages]);
             if ((floor > 0f || subsidy > 0f) && save.EmployeeInstances != null)
             {
-                float level = Economy.Prices.Level / 1000f;   // the city's cost of living pays every wage at today's prices (Economy/City)
+                float level = Prices.Level / 1000f;   // the city's cost of living pays every wage at today's prices (Economy/City)
                 Func<string, float> raise = CivicBridges.Raise;
                 for (int i = 0; i < save.EmployeeInstances.Count; i++)
                 {

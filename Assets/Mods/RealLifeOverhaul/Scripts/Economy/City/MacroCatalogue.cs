@@ -280,7 +280,7 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- rents, wages and takings
 
-        public const int AdjustQuiet = 10;          // within 1% of nothing, no adjustment is made
+        public const int AdjustQuiet = PriceRules.Quiet;   // within 1% of nothing, no adjustment is made (and every price is the start's: Core/Prices)
 
         // ---------------------------------------------------------------- rivals
 

@@ -71,7 +71,7 @@ namespace RealLifeOverhaul.Economy
             int costs = CityModel.Costs(state), takings = CityModel.Takings(state, level);
             box.Line(FinanceText.Pair("reallife_macro_page_costs", Adjusted(costs)));
             box.Line(FinanceText.Pair("reallife_macro_page_takings", Adjusted(takings)));
-            int carried = state.CarryRent + state.CarryWages + state.CarryTakings;
+            int carried = state.CarryRent + state.CarryWages + state.CarryTakings + state.CarryLiving;
             if (carried > 0)
             {
                 box.Line(FinanceText.Pair("reallife_macro_page_carried", FinanceText.Money(carried)));

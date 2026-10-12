@@ -12,16 +12,16 @@ namespace RealLifeOverhaul
     internal static class CrimeLaw
     {
         // Traffic offences by the player. A fine is only ever charged by an officer who has stopped them.
-        public const int RedLightFine = 250;
-        public const int SpeedingFine = 180;
-        public const int RecklessFine = 320;           // driving on the pavement or against the traffic
-        public const int JaywalkFine = 25;
-        public const int HornFine = 40;                // sounding the horn again and again at people who have the right of way, with an officer in earshot (People/HornReactions)
-        public const int DrunkDrivingFine = 900;       // at the wheel after two drinks or more (Leisure), found at any stop
-        public const int FleeingFine = 900;            // on top of the offence, for making them chase
-        public const int FleeingPerQuarterMinute = 120; // the longer the chase, the more it costs
-        public const int FleeingMost = 2000;
-        public const int WastedCallFine = 150;         // a third 911 call about nothing in one day
+        public static int RedLightFine => Prices.At(250);
+        public static int SpeedingFine => Prices.At(180);
+        public static int RecklessFine => Prices.At(320);           // driving on the pavement or against the traffic
+        public static int JaywalkFine => Prices.At(25);
+        public static int HornFine => Prices.At(40);                // sounding the horn again and again at people who have the right of way, with an officer in earshot (People/HornReactions)
+        public static int DrunkDrivingFine => Prices.At(900);       // at the wheel after two drinks or more (Leisure), found at any stop
+        public static int FleeingFine => Prices.At(900);            // on top of the offence, for making them chase
+        public static int FleeingPerQuarterMinute => Prices.At(120); // the longer the chase, the more it costs
+        public static int FleeingMost => Prices.At(2000);
+        public static int WastedCallFine => Prices.At(150);         // a third 911 call about nothing in one day
 
         // The chance that a patrol car happens to be near enough to see an offence nobody on foot saw.
         public const float RedLightSeen = 0.22f;

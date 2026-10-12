@@ -25,8 +25,8 @@ namespace RealLifeOverhaul
     {
         private const string SickEnergyDrain = "reallife_sick";
         private const float WakingHoursPerWeek = 112f;
-        public const int DoctorFee = 150;
-        public const int AmbulanceFee = 400;
+        public static int DoctorFee => Prices.At(150);
+        public static int AmbulanceFee => Prices.At(400);
 
         public static IModLogger Logger;
         public static LifeEvents Instance { get; private set; }

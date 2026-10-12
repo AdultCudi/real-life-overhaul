@@ -227,7 +227,7 @@ namespace RealLifeOverhaul.Economy
             _state = state;
             _running = true;
             _dayOpen = false;
-            _index = Mathf.RoundToInt(CityEconomy.PriceIndex * 10f);
+            _index = Prices.Level;
             OnlineGame.Districts(_state, _centres, _hasCentre);
             int gone = ReadPlaces();
             int missed = _state.LastHour < 0 ? 0 : now - _state.LastHour;
@@ -594,7 +594,7 @@ namespace RealLifeOverhaul.Economy
             {
                 float started = Time.realtimeSinceStartup;
                 int day = Save.Day;
-                _index = Mathf.RoundToInt(CityEconomy.PriceIndex * 10f);
+                _index = Prices.Level;
                 int gone = ReadPlaces(), booked = 0, waiting = 0, sales = 0, goods = 0, pruned = 0;
                 for (int i = 0; i < _places.Count; i++)
                 {

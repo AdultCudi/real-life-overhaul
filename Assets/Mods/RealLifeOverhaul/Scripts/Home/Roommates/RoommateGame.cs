@@ -146,7 +146,7 @@ namespace RealLifeOverhaul.Roommates
             try
             {
                 owned = home.BuildingOwnedByPlayer;
-                float level = Economy.Prices.Level / 1000f;
+                float level = Prices.Level / 1000f;
                 if (!owned && home.RentPerDay > 0f)
                 {
                     return home.RentPerDay * level;

@@ -73,8 +73,8 @@ namespace RealLifeOverhaul
         public const int CommunityCapHours = 24;
         public const int ProbationCapDays = 21;
         public const int SuspensionCapDays = 30;
-        public const int FineCap = 60000;              // absolute
-        public const int FineFloor = 250;              // a fine is never bounded below this
+        public static int FineCap => Prices.At(60000);              // absolute
+        public static int FineFloor => Prices.At(250);              // a fine is never bounded below this
         public const float FineShareOfCash = 0.35f;    // a court's fines in one case: at most this share of the cash in hand
         public const float FeeShareOfCash = 0.30f;     // a lawyer's fee likewise
         public const float BailShareOfCash = 0.20f;
@@ -85,7 +85,7 @@ namespace RealLifeOverhaul
         public const int CivilPlanDays = 10;
         public const int MissedInstalmentsMost = 5;    // after this many days it could not be paid, a debt is written off (fines: into community hours)
         public const int CashFloor = 50;               // an instalment is never taken if it would leave less than this
-        public const int WriteOffPerHour = 150;        // an unpaid fine becomes one hour of community service per this much...
+        public static int WriteOffPerHour => Prices.At(150);        // an unpaid fine becomes one hour of community service per this much...
         public const int WriteOffHoursMost = 12;       // ...and never more than this many hours
         public const int CommunityShiftHours = 4;      // one played shift
         public const int CommunityShiftPieces = 8;
@@ -93,10 +93,10 @@ namespace RealLifeOverhaul
         public const int WarrantSelfArrestDays = 3;    // a bench warrant nobody has acted on is served at the player's door after this long
         public const int AppealWindowDays = 3;
         public const int SealAfterCleanDays = 30;
-        public const int CompensationPerHour = 150;    // wrongful arrest: per hour held
-        public const int CompensationPerPrisonDay = 600;
-        public const int CompensationFlat = 400;
-        public const int PrisonWorkPay = 40;           // a day on the work detail
+        public static int CompensationPerHour => Prices.At(150);    // wrongful arrest: per hour held
+        public static int CompensationPerPrisonDay => Prices.At(600);
+        public static int CompensationFlat => Prices.At(400);
+        public static int PrisonWorkPay => Prices.At(40);           // a day on the work detail
         public const float DismissBelow = 0.34f;       // evidence weaker than this does not go to trial
         public const float CourtOpens = 9f;
         public const float CourtCloses = 17f;
@@ -326,6 +326,7 @@ namespace RealLifeOverhaul
                 prison = 0;
             }
 
+            fine *= Prices.Level / 1000f;   // the charges' fines are the start's: the sentence is at today's prices
             sentence.FineNominal = Round10(Math.Min(fine, FineCap));
             sentence.Fine = Bound(sentence.FineNominal, cash, FineShareOfCash, FineFloor);
             sentence.Bounded = sentence.Fine < sentence.FineNominal;

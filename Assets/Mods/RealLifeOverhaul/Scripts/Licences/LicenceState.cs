@@ -44,19 +44,19 @@ namespace RealLifeOverhaul
     /// <summary>Every figure of the driving licence rules: fees, validity, points, penalties.</summary>
     public static class LicenceLaw
     {
-        public const int TheoryFee = 60;
+        public static int TheoryFee => Prices.At(60);
         public const int TheoryQuestions = 10;
         public const int TheoryPass = 8;
         public const int TheoryValidDays = 30;       // a pass counts towards a practical test for this long
-        public const int LessonFee = 90;
-        public const int CarTestFee = 220;
-        public const int CommercialTestFee = 380;
-        public const int MotorcycleFee = 180;        // the ride assessment, recorded at the desk (the school has no motorbike to lend)
-        public const int RetestFee = 120;            // after a failed practical test (either class)
-        public const int TaxiFee = 180;
+        public static int LessonFee => Prices.At(90);
+        public static int CarTestFee => Prices.At(220);
+        public static int CommercialTestFee => Prices.At(380);
+        public static int MotorcycleFee => Prices.At(180);        // the ride assessment, recorded at the desk (the school has no motorbike to lend)
+        public static int RetestFee => Prices.At(120);            // after a failed practical test (either class)
+        public static int TaxiFee => Prices.At(180);
         public const int TaxiHeldDays = 7;           // a car licence held this long...
         public const int TaxiMostPoints = 5;         // ...with no more points than this
-        public const int RenewalFee = 90;
+        public static int RenewalFee => Prices.At(90);
         public const int ValidDays = 120;            // an in-game year or so
         public const int RenewFromDays = 14;         // renewable from this many days before it runs out
         public const int LapsedAfterDays = 30;       // expired longer than this: theory and practical again
@@ -66,12 +66,12 @@ namespace RealLifeOverhaul
         public const int PointsLimit = 12;
         public const int SuspensionDays = 7;
 
-        public const int NoLicenceFine = 800;
-        public const int WrongClassFine = 500;
-        public const int ExpiredFine = 250;          // expired but renewable: a fine and a warning, the car stays
-        public const int SuspendedFine = 1500;
-        public const int EvadedCheckFine = 400;      // drove on from a roadside check: added at the next stop
-        public const int ImpoundFee = Law.LawBook.ImpoundFee;   // the city pound's own (Law)
+        public static int NoLicenceFine => Prices.At(800);
+        public static int WrongClassFine => Prices.At(500);
+        public static int ExpiredFine => Prices.At(250);          // expired but renewable: a fine and a warning, the car stays
+        public static int SuspendedFine => Prices.At(1500);
+        public static int EvadedCheckFine => Prices.At(400);      // drove on from a roadside check: added at the next stop
+        public static int ImpoundFee => Law.LawBook.ImpoundFee;   // the city pound's own (Law)
         public const int ArrestFromCount = 3;        // the third time caught within the window is an arrest
         public const int RepeatWindowDays = 30;
         public const int ArrestHours = 6;

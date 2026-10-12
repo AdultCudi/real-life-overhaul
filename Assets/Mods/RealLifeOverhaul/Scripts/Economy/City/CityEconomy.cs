@@ -34,6 +34,9 @@ namespace RealLifeOverhaul.Economy
 
         public static float PriceIndex => Live != null ? Live.Index / 1000f : MacroCatalogue.IndexStart / 1000f;
 
+        /// <summary>What the game's own costs are adjusted by, in tenths of a point (the price level of every price of the mod's: Core/Prices).</summary>
+        public static int CostFactor => Live != null ? CityModel.Costs(Live) : PriceRules.Start;
+
         public static float InflationPercent => Live != null ? Live.Inflation / 100f : MacroCatalogue.InflationTarget / 100f;
 
         /// <summary>The month of the state the cycle is in, from 1.</summary>

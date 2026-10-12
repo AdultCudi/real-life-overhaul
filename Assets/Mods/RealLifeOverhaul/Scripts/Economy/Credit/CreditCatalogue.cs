@@ -193,10 +193,10 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>The fee for arranging a loan by phone: a share of the amount, and never less than the minimum. A bank in person charges none.</summary>
         public const float PhoneFeeShare = 0.015f;
-        public const int PhoneFeeLeast = 25;
+        public static int PhoneFeeLeast => Prices.At(25);
 
         /// <summary>The smallest loan the game's banks make (BankDialog.MinimumLoanAmount).</summary>
-        public const int LoanLeast = 500;
+        public static int LoanLeast => Prices.At(500);
 
         /// <summary>The score for a weighted total of the factors between 0 and 100.</summary>
         public static int ScoreFor(float total)

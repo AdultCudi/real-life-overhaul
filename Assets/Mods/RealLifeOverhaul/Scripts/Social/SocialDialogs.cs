@@ -252,7 +252,7 @@ namespace RealLifeOverhaul
     /// <summary>A call to (or from) somebody the player knows.</summary>
     public sealed class PersonDialog : Dialog
     {
-        private const int GiftPrice = 60;
+        private static int GiftPrice => Prices.At(60);
         private const int AskOutGapDays = 5;
 
         private readonly SocialPerson _p;

@@ -251,6 +251,7 @@ namespace RealLifeOverhaul
         {
             float fee = dailyIncome * share;
             fee = fee < floor ? floor : fee > ceiling ? ceiling : fee;
+            fee = Prices.At(fee);   // the game's income and the bounds are at the start's prices: the fee is at today's
             float most = cash > 0f ? cash * CashShare : 0f;
             if (fee > most)
             {

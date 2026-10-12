@@ -15,7 +15,8 @@ namespace RealLifeOverhaul
     public static class LentVehicle
     {
         public const float Ticket = 125f;   // what the game's parking round charges (Helpers.ParkingSimulator.RunHourly)
-        private const string RefundKey = "reallife_transaction_lent_ticket_refund";
+        public const string RefundKey = "reallife_transaction_lent_ticket_refund";   // the city's cost of living counts it as the game's ticket not paid (Wiring/EconomyLinks)
+        private const string PolicyKey = "reallife_transaction_lent_ticket_policy";
 
         /// <summary><paramref name="ticketsSeen"/>: the count the lender last saw on this vehicle (0 when it was made).</summary>
         public static void KeepFree(VehicleInstance instance, ref int ticketsSeen)
@@ -35,7 +36,14 @@ namespace RealLifeOverhaul
             int tickets = instance.parkingTickets != null ? instance.parkingTickets.Count : 0;
             if (tickets > ticketsSeen)
             {
-                GameManager.ChangeMoneySafe((Ticket + CivicPolicy.TicketExtra) * (tickets - ticketsSeen), new TransactionInfo(RefundKey), null, null, force: true);
+                // The game's ticket as the game took it, and apart what city policy added to it or took off.
+                int lent = tickets - ticketsSeen;
+                GameManager.ChangeMoneySafe(Ticket * lent, new TransactionInfo(RefundKey), null, null, force: true);
+                int policy = CivicPolicy.TicketExtra;
+                if (policy != 0)
+                {
+                    GameManager.ChangeMoneySafe(policy * lent, new TransactionInfo(PolicyKey), null, null, force: true);
+                }
             }
             ticketsSeen = tickets;
         }

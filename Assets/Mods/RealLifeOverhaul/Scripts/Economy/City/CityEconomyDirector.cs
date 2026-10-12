@@ -564,12 +564,13 @@ namespace RealLifeOverhaul.Economy
         // The day that has ended: the game's own rent, wages and takings of that day, each adjusted by one transaction.
         private void Adjust(int day)
         {
-            float rent, wages, takings;
-            CityGame.DayFigures(day, out rent, out wages, out takings);
+            float rent, wages, takings, living;
+            CityGame.DayFigures(day, out rent, out wages, out takings, out living);
             int costs = CityModel.Costs(_state), spend = CityModel.Takings(_state, _level);
             Settle(CityAdjust.Of(rent, costs), ref _state.CarryRent, CityGame.RentKey, day, costs, "rent", rent);
             Settle(CityAdjust.Of(wages, costs), ref _state.CarryWages, CityGame.WagesKey, day, costs, "wages", wages);
             Settle(-CityAdjust.Of(takings, spend), ref _state.CarryTakings, CityGame.TakingsKey, day, spend, "takings", takings);
+            Settle(CityAdjust.Of(living, costs), ref _state.CarryLiving, CityGame.LivingKey, day, costs, "the game's shops and services", living);
         }
 
         // A charge (more than nothing: the player pays) is taken as far as the cash goes and the rest carried; a refund is paid.
@@ -758,7 +759,7 @@ namespace RealLifeOverhaul.Economy
             {
                 if (_running)
                 {
-                    _state.CarryRent = _state.CarryWages = _state.CarryTakings = 0;   // what was carried is written off: nothing of the mod's is owed in a save that is leaving it
+                    _state.CarryRent = _state.CarryWages = _state.CarryTakings = _state.CarryLiving = 0;   // what was carried is written off: nothing of the mod's is owed in a save that is leaving it
                 }
                 StandDown("the save tools asked", true, true, false);
             }
@@ -836,7 +837,7 @@ namespace RealLifeOverhaul.Economy
                     text.Append(" Announced for the turn of the month: ").Append(_state.PendingMove == 0 ? "the rate is held" : "the rate moves by " + Quarters(_state.PendingMove)).Append(" (").Append(_state.PendingReason).Append(").");
                 }
                 text.Append(" Rents and wages x").Append((CityModel.Costs(_state) / 1000f).ToString("0.000")).Append(", takings x").Append((CityModel.Takings(_state, _level) / 1000f).ToString("0.000"))
-                    .Append("; carried: rent ").Append(_state.CarryRent).Append(", wages ").Append(_state.CarryWages).Append(", takings ").Append(_state.CarryTakings).Append(". Test changes in place: ")
+                    .Append("; carried: rent ").Append(_state.CarryRent).Append(", wages ").Append(_state.CarryWages).Append(", takings ").Append(_state.CarryTakings).Append(", shops and services ").Append(_state.CarryLiving).Append(". Test changes in place: ")
                     .Append(_beforeTests != null ? "yes" : "no").Append('.');
                 Logger?.Warn(text.ToString());
                 for (int i = 0; i < _state.Districts.Count; i++)
@@ -1034,6 +1035,7 @@ namespace RealLifeOverhaul.Economy
                 back.CarryRent = _state.CarryRent;      // what was really carried since is still owed
                 back.CarryWages = _state.CarryWages;
                 back.CarryTakings = _state.CarryTakings;
+                back.CarryLiving = _state.CarryLiving;
                 CityGame.Districts(back);
                 _state = back;
                 _beforeTests = null;

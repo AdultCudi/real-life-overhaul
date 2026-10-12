@@ -456,7 +456,7 @@ namespace RealLifeOverhaul
                         TravelState.DinnerDay = today;
                         Say(TravelText.T("reallife_travel_room_table_booked"));
                     }
-                    else if (TravelEffects.Pay(85, "reallife_transaction_hotel_extras"))
+                    else if (TravelEffects.Pay(Prices.At(85), "reallife_transaction_hotel_extras"))
                     {
                         TravelState.DinnerDay = today;
                         TravelEffects.Feed(100f);
@@ -502,7 +502,7 @@ namespace RealLifeOverhaul
                 TravelState.DinnerDay = today;
                 LeaveRoom();
             }
-            else if (TravelEffects.Pay(60, "reallife_transaction_hotel_extras"))
+            else if (TravelEffects.Pay(Prices.At(60), "reallife_transaction_hotel_extras"))
             {
                 TravelState.DinnerDay = today;
                 TravelEffects.Feed(100f);

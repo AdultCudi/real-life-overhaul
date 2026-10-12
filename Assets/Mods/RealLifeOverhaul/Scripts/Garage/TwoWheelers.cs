@@ -984,7 +984,7 @@ namespace RealLifeOverhaul
                 string facts = def.Motor
                     ? GarageText.T("reallife_bike_facts_motor", "seconds", def.Seconds.ToString("F1"), "top", def.TopKmh.ToString("F0"))
                     : GarageText.T("reallife_bike_facts_bicycle", "speed", def.CruiseKmh.ToString("F0"));
-                Row(list, GarageText.T(def.Name), GarageText.T("reallife_bike_list_price", "price", GarageText.Money(def.Price)) + " " + facts, "reallife_bike_button_buy", true, () => Buy(model));
+                Row(list, GarageText.T(def.Name), GarageText.T("reallife_bike_list_price", "price", GarageText.Money(def.Cost)) + " " + facts, "reallife_bike_button_buy", true, () => Buy(model));
             }
             if (motor)
             {
@@ -996,7 +996,7 @@ namespace RealLifeOverhaul
             BikeMount near = OwnedNear(place.Position, motor, 12f);
             if (near != null)
             {
-                int offer = Mathf.RoundToInt(near.Def.Price * GarageCatalogue.Resale);
+                int offer = Mathf.RoundToInt(near.Def.Cost * GarageCatalogue.Resale);
                 string id = near.Record.Id;
                 Row(list, GarageText.T(near.Def.Name), GarageText.T("reallife_bike_sell", "name", GarageText.T(near.Def.Name), "price", GarageText.Money(offer)), "reallife_bike_button_sell", true, () => Sell(id, offer));
             }
@@ -1063,16 +1063,17 @@ namespace RealLifeOverhaul
                 Notifications.Show(NotificationType.Warning, "reallife_bike_no_room", null, 7f);
                 return;
             }
-            if (!Crime.Pay(def.Price, "reallife_transaction_bike"))
+            int cost = def.Cost;
+            if (!Crime.Pay(cost, "reallife_transaction_bike"))
             {
                 Notifications.Show(NotificationType.Warning, "reallife_garage_cannot_afford",
-                    new Dictionary<string, string>(1) { { "amount", GarageText.Money(def.Price) } }, 7f);
+                    new Dictionary<string, string>(1) { { "amount", GarageText.Money(cost) } }, 7f);
                 return;
             }
             BikeMount mount = Spawn(def.Kind, spot, place.Rotation, true);
             if (mount == null)
             {
-                Crime.Give(def.Price, "reallife_transaction_bike");
+                Crime.Give(cost, "reallife_transaction_bike");
                 return;
             }
             _listClosing = "a " + def.Kind + " was bought";

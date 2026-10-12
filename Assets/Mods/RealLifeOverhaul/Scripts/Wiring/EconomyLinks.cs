@@ -19,6 +19,11 @@ namespace RealLifeOverhaul
         ///   OtherDebts   the same fines and court debts as lines for the Finance app's "what you owe"
         ///   the Planner  a source of its own (<see cref="FinanceSource"/>): tomorrow's payments by account, a missed
         ///                payment, a change of grade, a card's statement, the private lender's due day
+        ///   Prices       the level every price of the mod's is at (Core/Prices): what the city adjusts the game's own
+        ///                costs by
+        ///   GivenBack    the mod's refunds of a game charge (a ride the day pass covered, a lent vehicle's ticket), which
+        ///                the city's cost of living line counts against the game's charges of the day
+        ///   LifeAccounts a card of the mod's banks and an accountant, for the life events that need one
         ///   on unload    the banks' own terms are put back at once (Economy's own object goes at the end of the frame)
         ///
         /// Everything is read from what those features already keep in public; nothing of theirs is changed.
@@ -30,6 +35,8 @@ namespace RealLifeOverhaul
 
             internal static void Connect()
             {
+                Prices.Factor = () => Economy.CityEconomy.CostFactor;   // every price of the mod's follows the city's
+                EconomyBridges.GivenBack = GivenBack;
                 LifeAccounts.Card = HasCard;
                 LifeAccounts.Accountant = () => Economy.CompanyDirector.Instance != null && Economy.CompanyDirector.Instance.HasAccountant;
                 EconomyBridges.Legal = ReadLegal;
@@ -37,6 +44,8 @@ namespace RealLifeOverhaul
                 EconomyBridges.OtherDebts = AddDebts;
                 PlannerDirector.Instance?.AddSource(Source);
             }
+
+            private static bool GivenBack(string type) => type == CivicBridges.FareGivenBack || type == LentVehicle.RefundKey;
 
             // A credit card of the mod's banks, open and not one of the test buttons'.
             private static bool HasCard()
@@ -55,6 +64,7 @@ namespace RealLifeOverhaul
 
             internal static void Disconnect()
             {
+                Prices.Factor = null;
                 LifeAccounts.Card = null;
                 LifeAccounts.Accountant = null;
                 EconomyBridges.Reset();   // (the bridges of DebtLinks too) the Planner's director goes with the city, and its sources with it

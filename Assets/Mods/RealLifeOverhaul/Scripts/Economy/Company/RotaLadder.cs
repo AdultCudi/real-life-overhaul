@@ -196,7 +196,7 @@ namespace RealLifeOverhaul.Economy
         public const int HiresMost = 4;             // people one ladder advises hiring
         public const int RungsMost = 2 + HiresMost;
         public const int ShareLeast = 5;            // per cent of the week before that one more person must add...
-        public const long GainLeast = 5000;         // ...and never less than this, hundredths a week
+        public static long GainLeast => 5000L * Prices.Level / 1000;   // (at today's prices, as the wages the rota reads)         // ...and never less than this, hundredths a week
         public const int ReplaceDays = 7;           // days a post stands empty when somebody resigns (the planner's own figure: the game sends candidates over days, and the player has to see it, choose and agree a wage)
         public const int CleanMost = 56;            // cleaning hours a week chosen one at a time by what each brings
         public const int ChangesMost = 28;

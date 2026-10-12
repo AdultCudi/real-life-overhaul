@@ -77,9 +77,11 @@ namespace RealLifeOverhaul.Economy
     /// Only goods with a wholesale price are touched: an item of the game's that is a retail product. Each is of one
     /// kind (<see cref="MacroCatalogue.KindOfType"/>), told from the business types that sell it.
     ///
-    /// RENTS, WAGES AND TAKINGS are not changed anywhere: the game's own transactions of the day that has ended are
-    /// added up (<see cref="DayFigures"/>) and the difference is one dated transaction of the mod's own each
-    /// (<see cref="Book"/>), which EconoView and the Finance app list under its own name.
+    /// RENTS, WAGES, TAKINGS, SHOPS AND SERVICES are not changed anywhere: the game's own transactions of the day that
+    /// has ended are added up (<see cref="DayFigures"/>) and the difference is one dated transaction of the mod's own
+    /// each (<see cref="Book"/>), which EconoView and the Finance app list under its own name. Shops and services are
+    /// the game's charges at prices of its own (<see cref="LivingTypes"/>), less what the mod paid back of them
+    /// (EconomyBridges.GivenBack) and less what was bought at a wholesaler's, at today's prices already.
     ///
     /// Nothing here runs on a timer: once when the economy starts, once a game day, and when the app is opened.
     /// </summary>
@@ -88,6 +90,25 @@ namespace RealLifeOverhaul.Economy
         public const string RentKey = "reallife_transaction_macro_rent";
         public const string WagesKey = "reallife_transaction_macro_wages";
         public const string TakingsKey = "reallife_transaction_macro_takings";
+        public const string LivingKey = "reallife_transaction_macro_living";
+
+        // The game's own charges at prices of its own that never move: tickets, rides, the hospital, the doctor, gyms and
+        // entrance fees, shopping, fuel and stalls, fit-outs, training and hiring. (Not one under rent or salaries, adjusted
+        // on their own lines; not goods bought at a wholesaler's or delivered, whose prices the city writes at today's; not
+        // a building, vehicle or boat bought, nor loans, taxes, deposits or the casino.)
+        private static readonly HashSet<string> LivingTypes = new HashSet<string>
+        {
+            "ba:transaction_parkingticket", "ba:transaction_subwayride", "ba:transaction_taxiride", "ba:transaction_hospitalbill",
+            "ba:transaction_autotowservice", "ba:transaction_publicparking", "ba:transaction_doctorappointment", "ba:transaction_gymentrance",
+            "ba:transaction_healthinsurance", "ba:transaction_entrancefee", "ba:transaction_electricscooterfee", "ba:transaction_pierride",
+            "ba:transaction_casinoboatticket", "ba:transaction_purchaseattractionticket", "ba:transaction_purchasefromsellerstand",
+            "ba:transaction_tuitionfee", "ba:transaction_itempurchase", "ba:transaction_interiordesigner", "ba:transaction_furniturerecolor",
+            "ba:transaction_interiorinstallation", "ba:transaction_movingservice", "ba:transaction_employeetraining", "ba:transaction_hrtraining",
+            "ba:transaction_recruitmentcampaign", "ba:transaction_replacementfee", "ba:transaction_licensingfee", "ba:transaction_marketing",
+            "ba:transaction_boatyearlymaintenance", "ba:transaction_cleaningwage"
+        };
+        private const string PurchaseType = "ba:transaction_itempurchase";
+        private const string WholesaleType = "ba:businesstype_wholesalestore";
         private const string Global = "ba:neighborhood_global";
         private const string RentCategory = "ba:transactioncategory_rent";
         private const string SalaryCategory = "ba:transactioncategory_salaryexpenses";
@@ -455,37 +476,61 @@ namespace RealLifeOverhaul.Economy
         /// over the game's transaction history. The mod's own adjustments have no category and another type, so they
         /// are never counted.
         /// </summary>
-        public static void DayFigures(int day, out float rent, out float wages, out float takings)
+        public static void DayFigures(int day, out float rent, out float wages, out float takings, out float living)
         {
-            rent = wages = takings = 0f;
+            rent = wages = takings = living = 0f;
             GameInstance save = SaveGameManager.Current;
             if (save == null || save.Transactions == null)
             {
                 return;
             }
+            Func<string, bool> givenBack = EconomyBridges.GivenBack;
             foreach (Transaction t in save.Transactions)
             {
-                // (The mod's own costs under the game's categories, a raise say, are at today's prices already: the game's alone are adjusted.)
-                if (t == null || t.timestamp == null || t.timestamp.Day != day || GameBooks.Ours(t))
+                if (t == null || t.timestamp == null || t.timestamp.Day != day)
                 {
+                    continue;
+                }
+                // (The mod's own costs under the game's categories, a raise say, are at today's prices already: the game's alone are adjusted.)
+                if (GameBooks.Ours(t))
+                {
+                    if (t.amount > 0f && givenBack != null && givenBack(t.transactionType))
+                    {
+                        living -= t.amount;   // a game charge the mod paid back: not the player's to pay at all
+                    }
                     continue;
                 }
                 if (t.transactionType == RevenueType)
                 {
                     takings += Mathf.Max(0f, t.amount);
                 }
-                else if (t.amount < 0f && t.transactionCategories != null)
+                else if (t.amount < 0f)
                 {
-                    if (t.transactionCategories.Contains(RentCategory))
+                    if (t.transactionCategories != null && t.transactionCategories.Contains(RentCategory))
                     {
                         rent -= t.amount;
                     }
-                    else if (t.transactionCategories.Contains(SalaryCategory))
+                    else if (t.transactionCategories != null && t.transactionCategories.Contains(SalaryCategory))
                     {
                         wages -= t.amount;
                     }
+                    else if (LivingTypes.Contains(t.transactionType) && !AtWholesale(t))
+                    {
+                        living -= t.amount;
+                    }
                 }
             }
+        }
+
+        // Bought at a wholesaler's: at today's prices already, as the city writes the goods' wholesale prices (above).
+        private static bool AtWholesale(Transaction t)
+        {
+            if (t.transactionType != PurchaseType || t.address == null)
+            {
+                return false;
+            }
+            BuildingRegistration seller = BuildingHelper.GetBuildingRegistration(t.address);
+            return seller != null && seller.businessTypeName == WholesaleType;
         }
 
         /// <summary>Cash in hand, whole and never under nothing.</summary>

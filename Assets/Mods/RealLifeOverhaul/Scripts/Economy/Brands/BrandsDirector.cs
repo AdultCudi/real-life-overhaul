@@ -95,7 +95,7 @@ namespace RealLifeOverhaul.Economy.Brands
         public IReadOnlyList<BrandAlert> Alerts => _alerts;
 
         /// <summary>The price index as brands count it: tenths of a point, 1000 at the start and while the city's economy is off.</summary>
-        public static int Index => Mathf.RoundToInt(CityEconomy.PriceIndex * 10f);
+        public static int Index => Prices.Level;
 
         private static GameInstance Save => SaveGameManager.Current;
         private static bool Verbose => Meta.Dev.Verbose;
@@ -644,7 +644,7 @@ namespace RealLifeOverhaul.Economy.Brands
             }
             else if (step == 2)
             {
-                int fine = FranchiseRules.ChainFine(t);
+                int fine = FranchiseRules.ChainFine(t, Index);
                 Charge(fine, BrandsGame.ChainFineKey, shop.Name, "seven days outside what " + chain + " asks");
                 data["amount"] = BrandsText.Money(fine);
                 Tell(NotificationType.Error, "reallife_brand_note_chain_fined", data, TabShops, "shop:" + shop.Place);

@@ -11,7 +11,10 @@ namespace RealLifeOverhaul
         public string Prop;            // the modelled body: this id is the whole bike as one mesh, and <id>_frame, _fork, ... are its parts (PropAssets/README.md, "Garage")
         public string Ride, Coast, Stand;   // the rider's clips by what they are doing (CityAssets/README.md, "Garage"); Coast is a bicycle's only
         public bool Motor;
-        public int Price;
+        public int Price;                // at the start's prices: what it costs is Cost
+
+        /// <summary>What it costs today (Core/Prices).</summary>
+        public int Cost => Prices.At(Price);
         public int Colour;             // 0xRRGGBB of the frame or tank: the colour the modelled bike is painted in the atlas, and the tint of its paint parts
 
         // a bicycle: human-powered
@@ -39,12 +42,12 @@ namespace RealLifeOverhaul
     {
         public const float CrankLength = 0.17f;
         public const float PedalOut = 0.13f;      // a pedal's middle from the centre line
-        public const int HelmetPrice = 120;
-        public const int DockFee = 15;            // a hire from a bike-share dock, until the end of the next day
-        public const int LateFee = 25;            // a hired bicycle not brought back
-        public const int BringFee = 20;           // "Bring it here" from further off than a short walk
-        public const int HelmetFine = 60;
-        public const int ExhaustFine = 120;
+        public static int HelmetPrice => Prices.At(120);
+        public static int DockFee => Prices.At(15);            // a hire from a bike-share dock, until the end of the next day
+        public static int LateFee => Prices.At(25);            // a hired bicycle not brought back
+        public static int BringFee => Prices.At(20);           // "Bring it here" from further off than a short walk
+        public static int HelmetFine => Prices.At(60);
+        public static int ExhaustFine => Prices.At(120);
         public const float EnergyFloor = 14f;     // pedalling never takes the player below this (the game faints them near zero)
 
         // The game's scooter, as its prefab is built: where its two wheel controllers are.

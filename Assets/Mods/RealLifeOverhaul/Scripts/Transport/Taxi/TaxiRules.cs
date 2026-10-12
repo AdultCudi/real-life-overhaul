@@ -13,8 +13,8 @@ namespace RealLifeOverhaul
     public static class TaxiRules
     {
         // ---------------------------------------------------------------- money
-        public const float CallOut = 12f;            // the call-out by day
-        public const float NightCallOut = 18f;       // ...and by night
+        public static float CallOut => Prices.At(12f);            // the call-out by day
+        public static float NightCallOut => Prices.At(18f);       // ...and by night
         public const int NightFrom = 22;             // the night rate runs from 22:00
         public const int NightUntil = 6;             // ...to 05:59
         public const float WetExtra = 0.5f;          // in rain or a storm the call-out is this much more

@@ -116,7 +116,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         public const int ProfitWindowDays = 14;      // the days a business is judged over
         public const int ProfitDaysNeeded = 10;      // of those, the days it must have made a profit
         public const int AverageDays = 7;            // "recent profit": the mean of this many days
-        public const int OfferProfitFloor = 1500;    // that mean must be at least this
+        public static int OfferProfitFloor => Prices.At(1500);    // that mean must be at least this
         public const int OfferEveryDays = 7;         // the businesses are looked at this often
         public const int OfferChancePct = 25;        // the chance, each look, for a business that qualifies
         public const int LikedBonusPct = 15;         // added where an investor who is free likes its sector
@@ -199,7 +199,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         public const int RivalsListed = 4;           // of those, the game's own rivals at most
         public const int HistoryDays = 30;
         public const int CommissionBp = 100;         // 1% of every purchase and sale...
-        public const int CommissionLeast = 5;        // ...and never less than this
+        public static int CommissionLeast => Prices.At(5);        // ...and never less than this
         public const int HoldingMost = 5000;         // shares of one company
         public const int DividendEveryDays = 15;
         public const int DividendLeastBp = 40, DividendMostBp = 110;     // of the price, each payout

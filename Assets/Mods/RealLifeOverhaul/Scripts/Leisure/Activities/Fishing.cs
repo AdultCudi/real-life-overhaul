@@ -19,7 +19,7 @@ namespace RealLifeOverhaul.Leisure
     /// </summary>
     public sealed class Fishing : LeisureActivity
     {
-        public const int Bait = 6;
+        public static int Bait => Prices.At(6);
         private const int Casts = 5;
 
         private sealed class Fish

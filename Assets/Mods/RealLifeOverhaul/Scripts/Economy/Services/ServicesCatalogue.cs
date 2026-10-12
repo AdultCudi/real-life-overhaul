@@ -63,7 +63,7 @@ namespace RealLifeOverhaul.Economy
         public const int ContractDirtMost = 3000;    // hundredths a day at the busiest
         public const int ContractWageRef = 14;       // money an hour of cleaning is priced from at a price index of 100
         public const int ContractMarginPct = 220;    // the fee against the wages of the cleaning it takes
-        public const int ContractFeeLeast = 150;     // money a week
+        public static int ContractFeeLeast => Prices.At(150);     // money a week
         public const int ContractSkillRef = 4000;    // hundredths an hour: the cleaner a fee is worked out for (skill 50, satisfied 80%)
         public const int ContractStartDirt = 800;    // hundredths: how a client's floor stands when the contract begins
 

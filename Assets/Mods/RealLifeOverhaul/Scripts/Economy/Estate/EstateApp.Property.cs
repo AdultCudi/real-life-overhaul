@@ -155,11 +155,11 @@ namespace RealLifeOverhaul.Economy
             Transform buttons = box.ButtonRow();
             if (h.SaleDay > 0)
             {
-                box.Line(EstateText.T("reallife_estate_own_sale_agreed", "amount", EstateText.Money(h.SalePrice), "day", h.SaleDay.ToString(), "fee", EstateText.Money(EstateRules.AgentFee(h.SalePrice))));
+                box.Line(EstateText.T("reallife_estate_own_sale_agreed", "amount", EstateText.Money(h.SalePrice), "day", h.SaleDay.ToString(), "fee", EstateText.Money(EstateRules.AgentFee(h.SalePrice, c.Index))));
             }
             else if (h.Offer > 0)
             {
-                int fee = EstateRules.AgentFee(h.Offer), tax = EstateRules.GainsTax(h.Offer, fee, h.Paid, h.Spent, c.TaxPercent);
+                int fee = EstateRules.AgentFee(h.Offer, c.Index), tax = EstateRules.GainsTax(h.Offer, fee, h.Paid, h.Spent, c.TaxPercent);
                 box.Line(EstateText.T("reallife_estate_own_offer", "amount", EstateText.Money(h.Offer), "day", h.OfferLapse.ToString(), "asked", EstateText.Money(h.List)));
                 box.Line(EstateText.T("reallife_estate_own_offer_net", "fee", EstateText.Money(fee), "tax", EstateText.Money(tax), "amount", EstateText.Money(h.Offer - fee - tax)));
                 box.Line(EstateText.T("reallife_estate_own_offer_days", "days", EstateCatalogue.CompletionDays.ToString()));

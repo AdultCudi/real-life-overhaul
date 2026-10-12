@@ -224,18 +224,19 @@ namespace RealLifeOverhaul
                 return 0;
             }
             int amount;
+            // (The catalogue's figures are at the start's prices: what comes is at today's, Core/Prices.)
             if (outcome.MoneyPct != 0f)
             {
-                float share = Mathf.Clamp(Mathf.Max(money, 0f) * Mathf.Abs(outcome.MoneyPct), outcome.MoneyMin, outcome.MoneyMax);
+                float share = Mathf.Clamp(Mathf.Max(money, 0f) * Mathf.Abs(outcome.MoneyPct), Prices.At((float)outcome.MoneyMin), Prices.At((float)outcome.MoneyMax));
                 amount = Mathf.RoundToInt(share / 10f) * 10 * (outcome.MoneyPct < 0f ? -1 : 1);
             }
             else if (outcome.MoneyMin == outcome.MoneyMax)
             {
-                amount = outcome.MoneyMin;
+                amount = Prices.At(outcome.MoneyMin);
             }
             else
             {
-                amount = Mathf.RoundToInt(Random.Range(outcome.MoneyMin, outcome.MoneyMax + 1) / 5f) * 5;
+                amount = Prices.At(Mathf.RoundToInt(Random.Range(outcome.MoneyMin, outcome.MoneyMax + 1) / 5f) * 5);
             }
             // Never into debt, whatever happened to the player's money since the event was picked.
             return amount < 0 ? -Mathf.Min(-amount, Mathf.FloorToInt(Mathf.Max(money, 0f))) : amount;

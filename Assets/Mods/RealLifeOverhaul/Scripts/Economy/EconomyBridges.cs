@@ -23,6 +23,12 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The legal and public record. Default: spotless.</summary>
         public static Func<LegalStanding> Legal;
 
+        /// <summary>
+        /// Whether a transaction of the mod's pays back a game charge the player did not owe (a ride the day pass covered,
+        /// a ticket on a vehicle lent to them): the city's cost of living counts the game's charges of the day less these.
+        /// </summary>
+        public static Func<string, bool> GivenBack;
+
         /// <summary>False while the record cannot be read yet (its feature has not loaded this save). Default: ready.</summary>
         public static Func<bool> LegalReady;
 
@@ -67,6 +73,7 @@ namespace RealLifeOverhaul.Economy
         public static void Reset()
         {
             Legal = null;
+            GivenBack = null;
             LegalReady = null;
             OtherDebts = null;
             FileClaim = null;

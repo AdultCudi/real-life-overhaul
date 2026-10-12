@@ -50,7 +50,7 @@ namespace RealLifeOverhaul.Events
         private const float OperatorBehind = 0.75f;      // camera_operate: the operator's feet behind film_camera's pivot, on the lens's line
         private const float OperatorTolerance = 0.08f;   // and how far off that place the clip still meets the viewfinder
         private const int OperatorTries = 4;
-        private const int SnackPrice = 6;
+        private static int SnackPrice => Prices.At(6);
         private const float SnackEnergy = 6f;
 
         private struct Member

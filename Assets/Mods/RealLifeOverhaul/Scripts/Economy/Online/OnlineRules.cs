@@ -489,7 +489,8 @@ namespace RealLifeOverhaul.Economy
         /// <summary>What a courier charges for a parcel, cents: a base and so much a kilometre of road.</summary>
         public static int CourierFee(int metres)
         {
-            return OnlineCatalogue.CourierBase + (int)((long)OnlineCatalogue.CourierPerKm * Math.Max(0, metres) / 1000);
+            // (The catalogue's cents are the start's: at the city's price level, Core/Prices.)
+            return CompanyCatalogue.AtPrices(OnlineCatalogue.CourierBase + (int)((long)OnlineCatalogue.CourierPerKm * Math.Max(0, metres) / 1000), Prices.Level);
         }
 
         /// <summary>Hours from collection to the door.</summary>
@@ -507,7 +508,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>What a round there and back costs in fuel and wear, cents.</summary>
         public static int VanCost(int metres)
         {
-            return (int)(2L * Math.Max(0, metres) * OnlineCatalogue.VanCostPerKm / 1000);
+            return CompanyCatalogue.AtPrices((int)(2L * Math.Max(0, metres) * OnlineCatalogue.VanCostPerKm / 1000), Prices.Level);
         }
 
         /// <summary>

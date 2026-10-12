@@ -428,7 +428,7 @@ namespace RealLifeOverhaul
 
         public static int PartPrice(PartDef part, CarKind kind)
         {
-            return part == null ? 0 : Round(PartBase(kind) * part.Price);
+            return part == null ? 0 : Round(Prices.At(PartBase(kind) * part.Price));   // at today's prices
         }
 
         public static int PaintPrice(CarKind kind, bool custom)
@@ -450,13 +450,13 @@ namespace RealLifeOverhaul
             return Round(price * BodyFactor(kind));
         }
 
-        public const int LampPrice = 150;
-        public const int GlowPrice = 400;
-        public const int SpoilerPrice = 450;
-        public const int RackPrice = 350;
-        public const int BarPrice = 600;
-        public const int WheelsPrice = 1200;
-        public const int RemovalPrice = 50;   // taking a fitted part off again
+        public static int LampPrice => Prices.At(150);
+        public static int GlowPrice => Prices.At(400);
+        public static int SpoilerPrice => Prices.At(450);
+        public static int RackPrice => Prices.At(350);
+        public static int BarPrice => Prices.At(600);
+        public static int WheelsPrice => Prices.At(1200);
+        public static int RemovalPrice => Prices.At(50);   // taking a fitted part off again
 
         /// <summary>
         /// What it costs to turn one build into another: every choice that differs is paid for, taking a

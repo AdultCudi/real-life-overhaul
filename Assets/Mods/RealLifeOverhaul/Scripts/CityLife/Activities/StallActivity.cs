@@ -27,7 +27,7 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class StallActivity : CityActivity
     {
-        public const int Price = 4;
+        public static int Price => Prices.At(4);
 
         private const float Energy = 5f;            // of the game's hundred
         // Where the two stand is fixed by the hand-over clips (the vendor's cup goes down 0.78 m ahead of them, the

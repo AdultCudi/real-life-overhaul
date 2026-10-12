@@ -37,16 +37,16 @@ namespace RealLifeOverhaul
         private const float FineCheckInterval = 5f;
         private const float StopAllowance = 26f;        // extra seconds the patrol car waits while its officer is out
 
-        public const int CaughtFine = 600;              // on top of the damages
-        public const int EscapedFine = 900;             // on top of the damages, charged later
+        public static int CaughtFine => Prices.At(600);              // on top of the damages
+        public static int EscapedFine => Prices.At(900);             // on top of the damages, charged later
 
         // Hitting a person, per person. Stopping makes it an accident; driving off makes it a crime.
-        public const int InjuryFine = 1500;             // stopped at the scene
-        public const int DeathFine = 5000;
-        public const int InjuryRunFine = 6000;          // drove off and was caught
-        public const int DeathRunFine = 20000;
-        public const int InjuryEscapedFine = 8000;      // drove off and got away: charged later
-        public const int DeathEscapedFine = 25000;
+        public static int InjuryFine => Prices.At(1500);             // stopped at the scene
+        public static int DeathFine => Prices.At(5000);
+        public static int InjuryRunFine => Prices.At(6000);          // drove off and was caught
+        public static int DeathRunFine => Prices.At(20000);
+        public static int InjuryEscapedFine => Prices.At(8000);      // drove off and got away: charged later
+        public static int DeathEscapedFine => Prices.At(25000);
 
         private enum State { Idle, Window, Pursuit, Caught }
 

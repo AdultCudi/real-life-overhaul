@@ -92,7 +92,7 @@ namespace RealLifeOverhaul
         public const float FortnightFactor = 0.72f;      // fourteen or more
         public const int StampsForFreeNight = 8;
         public const int FreeNightCap = 250;             // the most a loyalty night is worth
-        public const int SuitcasePrice = 120;
+        public static int SuitcasePrice => Prices.At(120);
         public const float InsuranceShare = 0.08f;       // of the trip's price
         public const float CompanionShare = 0.7f;        // a second traveller costs this much more
         public const float CancelChance = 0.06f;         // a trip falls through at the gate
@@ -394,7 +394,7 @@ namespace RealLifeOverhaul
                 rate *= WeekendFactor;
             }
             rate *= Math.Min(Math.Max(demand, 0.8f), 1.6f);
-            return Math.Max(1, (int)Math.Round(rate));
+            return Math.Max(1, (int)Math.Round(Prices.At(rate)));   // at today's prices
         }
 
         public static float LongStayFactor(int nights)
@@ -440,7 +440,7 @@ namespace RealLifeOverhaul
             {
                 price *= 1f + InsuranceShare;
             }
-            return (int)Math.Round(price / 10f) * 10;
+            return (int)Math.Round(Prices.At(price) / 10f) * 10;   // at today's prices
         }
 
         private static uint Hash(string text)
