@@ -187,6 +187,7 @@ namespace RealLifeOverhaul
         private static readonly List<Category> Categories = new List<Category>(12);
         private static readonly Dictionary<CityBuildingController, MapPlace> ByBuilding = new Dictionary<CityBuildingController, MapPlace>();
         private static readonly Sprite[] Glyphs = new Sprite[(int)MapIcon.Custom];
+        private static readonly HashSet<string> Said = new HashSet<string>(StringComparer.Ordinal);
         private static Driver _driver;
         private static CityMapFilters _filters;       // the list the rows were added to (a new one after every load)
         private static bool _filterFailed;
@@ -316,6 +317,7 @@ namespace RealLifeOverhaul
         private static void Apply(Category category)
         {
             bool open = CityMap.IsOpen;
+            Follow(category, open);
             bool offered = category.Offered;
             IReadOnlyList<MapPlace> places = category.Places;
             for (int i = 0; i < places.Count; i++)
@@ -336,13 +338,18 @@ namespace RealLifeOverhaul
                 if (category.InStreet)
                 {
                     // One of the game's permanent markers: it shows and hides it by itself (on the map, and near the player).
+                    bool hide = !category.On;
                     if (marker.Permanent != offered)
                     {
-                        marker.SetPermanent(offered);
+                        marker.SetPermanent(offered);   // (switches the marker on, hidden or not)
+                        if (offered)
+                        {
+                            marker.SetHidden(hide);
+                            PermanentPointsOfInterest.UpdatePermanentPointsOfInterest();   // in the game's own list of permanent markers from the next frame
+                        }
                     }
                     // A row that is not ticked hides its places in the street as on the open map: "off" means off.
-                    bool hide = !category.On;
-                    if (marker.hidden != hide)
+                    if (marker.hidden != hide || hide && marker.gameObject.activeSelf)
                     {
                         marker.SetHidden(hide);
                     }
@@ -487,6 +494,11 @@ namespace RealLifeOverhaul
         // A row was ticked or unticked by the player.
         private static void Ticked(Category category, bool on)
         {
+            if (Said.Add("clicked " + category.Id))
+            {
+                Logger?.Info("Map places: the row '" + category.Id + "' " + (on ? "ticked" : "unticked") + " by the player (the first time this session); "
+                             + category.Places.Count + " place(s), " + (category.Offered ? "offered" : "not offered") + ".");
+            }
             Remember(category, on);
             Apply(category);
             try
@@ -529,6 +541,24 @@ namespace RealLifeOverhaul
                     Apply(category);
                 }
             }
+        }
+
+        // While the map is open the tick the player sees is what counts. A row's tick can be changed by a path that does
+        // not tell it (a switch over many rows, another mod's), and the markers then went on following the tick as it
+        // was remembered: unticked rows whose places stayed on the map. Said once a session per row, with what was seen.
+        private static void Follow(Category category, bool open)
+        {
+            Toggle toggle = category.Toggle;
+            if (!open || toggle == null || toggle.isOn == category.On)
+            {
+                return;
+            }
+            if (Said.Add(category.Id))
+            {
+                Logger?.Info("Map places: the row '" + category.Id + "' was " + (toggle.isOn ? "ticked" : "unticked")
+                             + " without telling it; its places follow the tick from here.");
+            }
+            Remember(category, toggle.isOn);
         }
 
         private static void Remember(Category category, bool on)
