@@ -197,6 +197,18 @@ namespace RealLifeOverhaul
             return -1;
         }
 
+        public static int ClosureAt(string place)
+        {
+            for (int i = 0; i < Closures.Count; i++)
+            {
+                if (Closures[i].Place == place)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         // ---------------------------------------------------------------- changes
 
         public static BusinessIssue Open(string kind, string place, int day, int dueDay, int dueHour)
@@ -399,7 +411,7 @@ namespace RealLifeOverhaul
             foreach (string entry in parts[5].Split(';'))
             {
                 string[] f = entry.Split(',');
-                if (f.Length >= 3 && Closures.Count < 8)
+                if (f.Length >= 3 && Closures.Count < BusinessCatalogue.MostClosures)
                 {
                     Closures.Add(new Closure { Place = f[0], Day = Int(f[1]), Hour = Int(f[2]) });
                 }

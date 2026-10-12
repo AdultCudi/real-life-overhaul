@@ -1,9 +1,10 @@
 using System;
+using System.Collections.Generic;
 using RealLifeOverhaul;
 using RealLifeOverhaul.Utilities;
 
 // The city's power and water (Scripts/Utilities): use, prices, bills, what follows an unpaid one, deposits, the
-// supply of a bought place, and the save.
+// supply of a bought place, the save, and the businesses a cut closes.
 internal static partial class Program
 {
     private static void Utilities()
@@ -105,5 +106,22 @@ internal static partial class Program
         Check(odd != null && odd.Accounts.Count == 1 && odd.Accounts[0].Service == Service.Internet && odd.Accounts[0].Kind == PlaceKind.Industry
               && odd.Accounts[0].State == SupplyState.Closed && odd.Accounts[0].OpenedDay == 0 && odd.Accounts[0].Deposit == 0,
             "utilities: figures out of range are brought within it");
+
+        // ---------------------------------------------------------------- the businesses a cut closes
+        // (Business/BusinessState) A cut may close every business the player has at once: each closure has to come back
+        // from the save, or nothing opens its business again.
+        BusinessState.Reset();
+        BusinessState.Load(null, 40);
+        for (int i = 0; i < 40; i++)
+        {
+            BusinessState.SetClosure("Fifth%20Avenue~" + i, 41, 9);
+        }
+        var saved = new Dictionary<string, string>();
+        BusinessState.Save(saved);
+        BusinessState.Load(saved, 41);
+        Check(BusinessState.Closures.Count == 40 && BusinessState.ClosureAt("Fifth%20Avenue~0") >= 0 && BusinessState.ClosureAt("Fifth%20Avenue~39") >= 0
+              && BusinessState.ClosureAt("Fifth%20Avenue~40") < 0 && BusinessState.Closures[39].Day == 41 && BusinessState.Closures[39].Hour == 9,
+            "utilities: forty businesses closed at once all come back from the save, each found by its place");
+        BusinessState.Reset();
     }
 }

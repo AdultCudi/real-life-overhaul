@@ -130,6 +130,7 @@ namespace RealLifeOverhaul
                 }
                 BusinessState.Load(save.modData, day);
                 BusinessDesk.Setup();
+                Unstick(save);
                 _lastHour = hour;   // nothing is decided in the first hour of a session
                 _lastDay = day;
                 Logger?.Info("Business pressure: ready. " + BusinessState.Issues.Count + " open issue(s), " + BusinessState.Effects.Count + " footfall change(s), "
@@ -188,17 +189,45 @@ namespace RealLifeOverhaul
 
         private static readonly Predicate<string> StillOwned = place => BusinessGame.Find(place) != null;
 
+        // A business the game gives no switch to open (a headquarters, a warehouse), found closed as the save is read
+        // with no closure of the mod's behind it, is opened again: the game itself never closes one, and the player cannot
+        // open it. A closure the utilities made on one used to be dropped unopened (its business was looked for among
+        // those that take money), so a save may have some left so. One still without power, water or a connection is
+        // closed again within the hour, and told why.
+        private static void Unstick(GameInstance save)
+        {
+            List<BuildingRegistration> all = save.BuildingRegistrations;
+            List<string> opened = null;
+            for (int i = 0; all != null && i < all.Count; i++)
+            {
+                BuildingRegistration reg = all[i];
+                if (reg == null || !reg.RentedByPlayer || !reg.HasEstablishedBusiness || !reg.HasValidAddress || !reg.temporarilyClosed || BusinessGame.HasSwitch(reg)
+                    || BusinessState.ClosureAt(BusinessGame.Place(reg)) >= 0)
+                {
+                    continue;
+                }
+                BusinessGame.Reopen(reg);
+                (opened ?? (opened = new List<string>(4))).Add(BusinessGame.Name(reg));
+            }
+            if (opened != null)
+            {
+                Logger?.Warn("Business pressure: opened again, each closed with nothing of the mod's keeping it so and no switch of the game's to open it: "
+                             + string.Join(", ", opened) + ".");
+            }
+        }
+
         // ---------------------------------------------------------------- once a game hour
 
         private void Hourly(int day, int hour, bool newDay)
         {
-            // Closures the mod made, reopened on their hour.
+            // Closures the mod made, reopened on their hour: whatever business it was (Held, not Find: the utilities
+            // close a headquarters too, which takes no money).
             for (int i = BusinessState.Closures.Count - 1; i >= 0; i--)
             {
                 Closure closure = BusinessState.Closures[i];
                 if (day > closure.Day || (day == closure.Day && hour >= closure.Hour))
                 {
-                    BusinessGame.Reopen(BusinessGame.Find(closure.Place));
+                    BusinessGame.Reopen(BusinessGame.Held(closure.Place));
                     BusinessState.Closures.RemoveAt(i);
                 }
             }
@@ -440,11 +469,15 @@ namespace RealLifeOverhaul
             BusinessGame.Footfall(reg, percent, true);
         }
 
-        /// <summary>Closes a business for a few hours with the game's own switch and remembers when to reopen it. False if it was closed already.</summary>
+        /// <summary>
+        /// Closes a business for a few hours with the game's own switch and remembers when to reopen it. False if it was
+        /// closed already, or if the reopening could not be kept: before the save's closures are read (reading them
+        /// starts the list afresh) or after a fault (nothing reopens anything then).
+        /// </summary>
         internal bool CloseFor(BuildingRegistration reg, int hours)
         {
             hours = Mathf.Clamp(hours, 1, BusinessCatalogue.MostClosedHours);
-            if (!BusinessGame.Close(reg))
+            if (_broken || !BusinessState.Loaded || !BusinessGame.Close(reg))
             {
                 return false;
             }
@@ -493,7 +526,7 @@ namespace RealLifeOverhaul
                 }
                 for (int i = BusinessState.Closures.Count - 1; i >= 0; i--)
                 {
-                    BusinessGame.Reopen(BusinessGame.Find(BusinessState.Closures[i].Place));
+                    BusinessGame.Reopen(BusinessGame.Held(BusinessState.Closures[i].Place));
                 }
             }
             catch (Exception e)
