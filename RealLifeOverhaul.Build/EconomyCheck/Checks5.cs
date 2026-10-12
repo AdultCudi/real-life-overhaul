@@ -352,7 +352,8 @@ internal static partial class Program
         Check(CoverRules.Premium(fire, 1, 2000, 100, 1, 1000) == 25 && CoverRules.Premium(fire, 1, 2000, 100, 2, 1000) == 30, "each claim of the term before adds a quarter");
         Check(CoverRules.Premium(theft, 1, 2000, 60, 0, 1000) == 22 && CoverRules.Premium(theft, 1, 2000, 140, 0, 1000) == 18, "theft cover is dearer in a poor district");
         Check(CoverRules.Premium(fire, 1, 2000, 140, 0, 1000) > CoverRules.Premium(fire, 1, 2000, 60, 0, 1000), "fire cover is dearer in a rich one");
-        Check(CoverRules.Premium(fire, 1, 2000, 100, 0, 1100) == 22, "premiums follow prices");
+        Check(CoverRules.Premium(fire, 1, 2200, 100, 0, 1100) == 22 && CoverRules.Premium(fire, 1, 2000, 100, 0, 1100) < 22,
+            "premiums follow prices: the base at today's prices, the takings (at today's in the game's statement) as they are");
         Check(CoverRules.Premium(liability, 1, 0, 100, 0, 1000) == 8 && CoverRules.Premium(liability, 1, 10000, 100, 0, 1000) == 38, "a bigger business pays more");
         Check(CoverRules.District(fire, 400) == CompanyCatalogue.CoverDistrictMost && CoverRules.District(theft, 400) == CompanyCatalogue.CoverDistrictLeast, "the district's part of a premium has bounds");
         bool positive = true, grows = true;

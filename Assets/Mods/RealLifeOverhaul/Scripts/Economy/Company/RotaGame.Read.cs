@@ -505,11 +505,14 @@ namespace RealLifeOverhaul.Economy
                     goods += entry.itemSales[k] != null ? entry.itemSales[k].totalWholesalePrice : 0f;
                 }
             }
+            // (The order history and the shop's prices are the game's own: what the city's takings line makes of them is
+            // today's, as the wages are; the goods are at today's wholesale prices already.)
+            double factor = CityEconomyDirector.TakingsFactor / 1000.0;
             if (customers >= RotaCatalogue.BooksCustomers && takings > 0)
             {
                 sheet.FromBooks = true;
-                shop.Takings = (int)Math.Round(takings * 100.0 / customers);
-                shop.Margin = (int)Math.Round((takings - goods) * 100.0 / customers);
+                shop.Takings = (int)Math.Round(takings * factor * 100.0 / customers);
+                shop.Margin = (int)Math.Round((takings * factor - goods) * 100.0 / customers);
                 return;
             }
             // No books yet: what one customer buys by the game's own arithmetic for the products on sale, at the prices set.
@@ -543,8 +546,8 @@ namespace RealLifeOverhaul.Economy
                     goods += (item.type & ItemType.ServiceProduct) != 0 ? 0f : sold * item.GetWholesalePrice();
                 }
             }
-            shop.Takings = (int)Math.Round(Math.Max(0.0, takings) * 100.0);
-            shop.Margin = (int)Math.Round((takings - goods) * 100.0);
+            shop.Takings = (int)Math.Round(Math.Max(0.0, takings * factor) * 100.0);
+            shop.Margin = (int)Math.Round((takings * factor - goods) * 100.0);
         }
 
         // The licensing fee the game takes on a day a cinema or a theatre opens: a screen each, or the stage (LicensingFeesHelper.PayLicensingFees).

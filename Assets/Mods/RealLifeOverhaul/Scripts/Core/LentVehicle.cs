@@ -38,7 +38,8 @@ namespace RealLifeOverhaul
             {
                 // The game's ticket as the game took it, and apart what city policy added to it or took off.
                 int lent = tickets - ticketsSeen;
-                GameManager.ChangeMoneySafe(Ticket * lent, new TransactionInfo(RefundKey), null, null, force: true);
+                // (Under the game's parking fees, as the ticket was: the day's statement nets them out.)
+                GameManager.ChangeMoneySafe(Ticket * lent, new TransactionInfo(RefundKey, "ba:transactioncategory_parkingfees"), null, null, force: true);
                 int policy = CivicPolicy.TicketExtra;
                 if (policy != 0)
                 {

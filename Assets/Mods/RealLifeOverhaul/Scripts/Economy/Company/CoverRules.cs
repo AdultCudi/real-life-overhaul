@@ -23,11 +23,12 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static int Premium(int kind, int insurer, int takings, int income, int claims, int index)
         {
-            long list = (long)CompanyCatalogue.CoverBase[kind] * 1000 + (long)Math.Max(0, takings) * CompanyCatalogue.CoverTakingsShare[kind];   // thousandths of money
+            // Thousandths of money: the base at today's prices, the share of the takings as they are (the game's statement has
+            // them at today's prices: the city's takings line is in it).
+            long list = (long)CompanyCatalogue.CoverBase[kind] * CompanyCatalogue.Clamp(index, 500, 4000) + (long)Math.Max(0, takings) * CompanyCatalogue.CoverTakingsShare[kind];
             list = list * CompanyCatalogue.InsurerPrice[insurer] / 1000;
             list = list * District(kind, income) / 1000;
             list = list * (1000 + (long)Math.Max(0, claims) * CompanyCatalogue.ClaimLoading) / 1000;
-            list = list * CompanyCatalogue.Clamp(index, 500, 4000) / 1000;
             return (int)Math.Max(1, Math.Min(int.MaxValue / 4, (list + 500) / 1000));
         }
 

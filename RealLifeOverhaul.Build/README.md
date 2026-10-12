@@ -4809,8 +4809,19 @@ at prices of its own (`CityGame.LivingTypes`: tickets, rides, the hospital and t
 shopping, fuel and stalls, fit-outs, training and hiring). A charge under rent or salaries stays on those lines; a
 purchase at a wholesaler's is left out, as the city writes those goods' prices at today's; and the mod's refunds of a
 game charge (`EconomyBridges.GivenBack`: a ride the day pass covered, a lent car's ticket) count against it.
-`CityGame.DayFigures` passes over the mod's own transactions, which are at today's prices already. The city's lines
-carry no address, so they are not yet in a business's statement.
+`CityGame.DayFigures` passes over the mod's own transactions, which are at today's prices already. Each of the city's
+lines is booked where the game's own figures were (`DayLine`: by address, by the category the statement keeps them
+under, and deductible where the game's tax deducts them), shared out by those figures in whole money that always sums
+to the line (`CityAdjust.Split`; a carried amount goes with the day it is taken). `GameBooks.Refresh`, called by the
+city once its lines are booked and again when the mod's day is done, sums the day's statement as the game sums it:
+a business's four lines by category, its takings as the game's sales and the city's line on them (the goods sold
+scaled row by row so that they still add up; left alone where the game booked no takings), a rented home's rent as
+its daily rent and the city's line on it, and the day's own figures (loans, health insurance, the headhunter, parking,
+salary income, and the wages of no business with the city's line on them). So the game's taxes (sales of the period
+from the statements, deductions as booked), its bank (`PlayerHelper.CalculateDailyIncome`) and EconoView see the
+city's lines. Readers of a statement take its takings as today's: an insurance premium's base is at today's prices and
+its share of the takings is not raised again (`CoverRules.Premium`); the rota planner, which reads the order history
+(the game's own prices), raises a customer's worth by the city's takings factor (`CityEconomyDirector.TakingsFactor`).
 
 ## Home life and health (`Scripts/Home`)
 

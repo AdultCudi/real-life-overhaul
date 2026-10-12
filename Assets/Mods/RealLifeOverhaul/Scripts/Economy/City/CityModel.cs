@@ -610,5 +610,58 @@ namespace RealLifeOverhaul.Economy
             carried = (int)Math.Min(want - take, int.MaxValue / 2);
             return take;
         }
+
+        /// <summary>
+        /// A whole amount shared out by weights (the parts' own figures), whole money each and summing to the amount
+        /// exactly: each part its share cut towards nothing, and the units left over to the parts whose shares lost the
+        /// most in the cutting. Weights of opposite signs (a refund among charges) take shares of opposite signs. With
+        /// nothing to share by (no weights, or weights that come to nothing), it is all the first part's.
+        /// </summary>
+        public static int[] Split(int amount, float[] weights)
+        {
+            int n = weights != null ? weights.Length : 0;
+            var parts = new int[n];
+            if (n == 0 || amount == 0)
+            {
+                return parts;
+            }
+            double total = 0.0;
+            for (int i = 0; i < n; i++)
+            {
+                total += weights[i];
+            }
+            if (Math.Abs(total) < 1e-6)
+            {
+                parts[0] = amount;
+                return parts;
+            }
+            var cut = new double[n];
+            long given = 0;
+            for (int i = 0; i < n; i++)
+            {
+                double exact = amount * (double)weights[i] / total;
+                double whole = Math.Truncate(exact);
+                parts[i] = (int)whole;
+                cut[i] = exact - whole;
+                given += parts[i];
+            }
+            long left = amount - given;
+            int step = left > 0 ? 1 : -1;
+            while (left != 0)
+            {
+                int best = 0;
+                for (int i = 1; i < n; i++)
+                {
+                    if (cut[i] * step > cut[best] * step)
+                    {
+                        best = i;
+                    }
+                }
+                parts[best] += step;
+                cut[best] -= step;
+                left -= step;
+            }
+            return parts;
+        }
     }
 }
