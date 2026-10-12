@@ -13,9 +13,10 @@ namespace RealLifeOverhaul.Economy
     ///   its plans      the ladder (RotaLadder): the week as it is, the best week the people there are can keep, and
     ///                  one plan for each further person worth hiring, each with its hours, its staff, what the week
     ///                  comes to, what it adds and what it needs. Under them the people, each with what they ask for
-    ///                  and what they get. The box: what a customer is worth and where that comes from, the customers
-    ///                  against what the stations serve, which plan is advised and why the ladder ends, the choice
-    ///                  between staff first and lean, and "Fill the rota". Pick a plan for
+    ///                  and what they get, and the goods that run out in the advised plan, each with when and what
+    ///                  would keep it on the shelves. The box: what a customer is worth and where that comes from, the
+    ///                  customers against what the stations serve, whether the goods keep up, which plan is advised and
+    ///                  why the ladder ends, the choice between staff first and lean, and "Fill the rota". Pick a plan for
     ///   one plan       its week day by day against the hours kept now, every change of hours with its reason, who
     ///                  works how much, and what is left unmet. The box: why, the week part by part, and "Use this
     ///                  plan" (or, for a plan that takes a hire, who to hire and where). Pick a day for
@@ -141,6 +142,7 @@ namespace RealLifeOverhaul.Economy
             }
             RotaYourPeople(sheet, l.Rungs[l.Recommended]);
             RotaStations(sheet);
+            RotaGoods(sheet, l.Rungs[l.Recommended], "goods", true);
 
             if (shop.HasCustomers)
             {
@@ -156,6 +158,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     box.Line(CompanyText.T("reallife_rota_box_unmanned", "hours", (now.Hours - now.Manned).ToString(), "customers", now.LostUnmanned.ToString()));
                 }
+                RotaGoodsLine(box, sheet);
                 string note = !sheet.RequirementsMet ? CompanyText.T("reallife_rota_note_requirements")
                     : at.Shut ? CompanyText.T("reallife_rota_note_shut")
                     : !o.Advised ? CompanyText.T("reallife_rota_note_no_worth")
@@ -174,6 +177,10 @@ namespace RealLifeOverhaul.Economy
                 if (o.Barred)
                 {
                     box.Line(CompanyText.Fill("reallife_rota_note_permit", "fee", fee, "days", term, "hours", (o.HoursFree - o.HoursBest).ToString(), "amount", RotaMoney(o.ProfitFree - o.ProfitBest)));
+                    if (l.Count > 0 && l.Rungs[l.Recommended].Sum.StockShort > 0)
+                    {
+                        box.Line(CompanyText.T("reallife_rota_note_permit_stock"));   // (that figure counts no stock: the goods already run out in the hours there are)
+                    }
                 }
             }
             else
@@ -215,6 +222,10 @@ namespace RealLifeOverhaul.Economy
             if (l.Stop == RotaEnd.TooLittle)
             {
                 box.Line(CompanyText.T("reallife_rota_stop_little", "skill", RotaGame.GroupSkill(sheet, l.StopGroup), "amount", RotaMoney(l.StopGain), "need", RotaMoney(l.StopNeed)));
+            }
+            else if (l.Stop == RotaEnd.Stock)
+            {
+                box.Line(CompanyText.T("reallife_rota_stop_stock", "skill", RotaGame.GroupSkill(sheet, l.StopGroup), "amount", RotaMoney(l.StopGain)));
             }
             else if (l.Stop == RotaEnd.Most)
             {
@@ -279,13 +290,15 @@ namespace RealLifeOverhaul.Economy
         private void RotaStations(RotaSheet sheet)
         {
             RotaOutlook o = sheet.Outlook;
+            RotaLadderResult l = sheet.Ladder;
+            bool runsOut = l.Count > 0 && l.Rungs[l.Recommended].Sum.StockShort > 0;   // (more customers would find the goods gone)
             for (int i = 0; i < o.Missing.Count; i++)
             {
                 RotaMissing missing = o.Missing[i];
                 TableRow row = Row("more" + i);
                 row.Set(0, CompanyText.T("reallife_rota_missing", "station", RotaGroup(sheet, missing.Group)));
                 row.Set(1, RotaDayName(missing.Day));
-                row.Set(5, CompanyText.T("reallife_rota_missing_what", "customers", missing.Customers.ToString()));
+                row.Set(5, CompanyText.T(runsOut ? "reallife_rota_missing_stock" : "reallife_rota_missing_what", "customers", missing.Customers.ToString()));
             }
             for (int i = 0; i < sheet.Broken.Count; i++)
             {
@@ -361,6 +374,7 @@ namespace RealLifeOverhaul.Economy
             }
             RotaWaysOut(sheet, r);
             RotaGaps(sheet, r.Plan);
+            RotaGoods(sheet, r, "pgoods", false);
 
             box.Title(CompanyText.T("reallife_rota_rung_title", "plan", RotaPlanName(sheet, r), "business", sheet.Place.Name));
             box.Line(RotaWhyPlan(sheet, r, index));
@@ -375,6 +389,10 @@ namespace RealLifeOverhaul.Economy
                 RotaSumLine(box, "reallife_rota_sum_night", s.Night);
                 RotaSumLine(box, "reallife_rota_sum_demands", s.Demands);
                 box.Line(FinanceText.Pair("reallife_rota_sum_net", RotaMoney(s.Net)));
+                if (s.StockShort > 0)
+                {
+                    box.Line(CompanyText.T("reallife_rota_sum_stock", "count", s.StockShort.ToString(), "amount", RotaMoney(s.StockLost)));
+                }
                 if (s.Clean > 0)
                 {
                     box.Line(CompanyText.T("reallife_rota_sum_clean", "amount", RotaMoney(s.Clean), "hours", s.CleanHours.ToString()));
@@ -750,6 +768,107 @@ namespace RealLifeOverhaul.Economy
             int quit = worker < r.QuitHours.Length ? r.QuitHours[worker] : 0;
             return unmet + ". " + (quit > 0 ? CompanyText.T("reallife_rota_person_quit", "days", System.Math.Max(1, quit / RotaCatalogue.Hours).ToString(), "amount", RotaMoney(cost))
                 : CompanyText.T("reallife_rota_person_settles", "amount", RotaMoney(cost)));
+        }
+
+        // ---------------------------------------------------------------- the goods
+
+        // Whether the goods keep up with the advised plan, and what the wholesalers are short of this week.
+        private static void RotaGoodsLine(InfoBox box, RotaSheet sheet)
+        {
+            RotaStock stock = sheet.Shop.Stock;
+            RotaLadderResult l = sheet.Ladder;
+            if (stock.Products == 0 || l.Count == 0)
+            {
+                return;
+            }
+            RotaWeekSum advised = l.Rungs[l.Recommended].Sum;
+            box.Line(!stock.Any ? CompanyText.T("reallife_rota_box_stock_hand")
+                : advised.StockShort > 0 ? CompanyText.T("reallife_rota_box_stock_short", "count", advised.StockShort.ToString(), "amount", RotaMoney(advised.StockLost))
+                : CompanyText.T("reallife_rota_box_stock_ok"));
+            for (int p = 0; p < stock.Products && p < sheet.Products.Count; p++)
+            {
+                if (stock.Backorder[p] || stock.Shortage[p])
+                {
+                    box.Line(CompanyText.T(stock.Backorder[p] ? "reallife_rota_stock_backorder" : "reallife_rota_stock_shortage", "product", RotaGame.Text(sheet.Products[p])));
+                }
+            }
+        }
+
+        // The goods that run out in a plan, each with when, what its customers would have spent, and what would keep it on the
+        // shelves; and the goods no delivery brings that would not last the week at the plan's sales. In the plans' table
+        // (plans) or in a week's.
+        private void RotaGoods(RotaSheet sheet, RotaRung r, string id, bool plans)
+        {
+            RotaStock stock = sheet.Shop.Stock;
+            int rows = 0;
+            for (int p = 0; p < stock.Products && p < sheet.Products.Count && rows < RotaRowsMost; p++)
+            {
+                string when, lift;
+                long lost = 0;
+                if (stock.Capped(p))
+                {
+                    if (r.Stock.Products == 0 || r.Stock.Out[p] < 0)
+                    {
+                        continue;
+                    }
+                    int cell = r.Stock.Out[p];
+                    when = CompanyText.T("reallife_rota_stock_out", "day", RotaDayName(cell / RotaCatalogue.Hours), "hour", RotaHour(cell % RotaCatalogue.Hours));
+                    lift = RotaLiftText(sheet, r, p);
+                    lost = r.Stock.Lost[p];
+                }
+                else
+                {
+                    int want = r.Stock.Products > 0 ? r.Stock.WantUnits(p) : (int)System.Math.Min(int.MaxValue, (long)r.Sum.Served * stock.PerCustomer[p] / 1000);
+                    int days = want > 0 ? (int)System.Math.Min(7L, (long)stock.OnSite[p] * 7 / want) : 7;
+                    if (days >= 7)
+                    {
+                        continue;
+                    }
+                    when = days == 0 ? CompanyText.T("reallife_rota_stock_none_now") : CompanyText.T("reallife_rota_stock_lasts", "days", days.ToString());
+                    lift = CompanyText.T("reallife_rota_stock_hand_row");
+                }
+                if (rows++ == 0)
+                {
+                    Say(id + "head", CompanyText.T("reallife_rota_head_goods"));
+                }
+                string name = RotaGame.Text(sheet.Products[p]), money = lost > 0 ? RotaMoney(-lost) : string.Empty;
+                TableRow row = Row(id + p);
+                if (plans)
+                {
+                    row.Set(0, name);
+                    row.Set(1, when, TableRow.Yellow);
+                    row.Set(3, money, TableRow.Red);
+                    row.Set(5, lift);
+                }
+                else
+                {
+                    row.A = name;
+                    row.B = lift;
+                    row.C = when;
+                    row.D = money;
+                    row.Tone = TableRow.Yellow;
+                }
+            }
+        }
+
+        // What would let a product that runs out sell to every customer, with the figures that say so.
+        private static string RotaLiftText(RotaSheet sheet, RotaRung r, int p)
+        {
+            RotaStock s = sheet.Shop.Stock;
+            RotaStockWeek w = r.Stock;
+            string want = w.WantUnits(p).ToString(), delivered = s.Weekly[p].ToString();
+            switch (RotaLift.Of(s, w, p))
+            {
+                case RotaLift.Room:
+                    return CompanyText.T("reallife_rota_lift_room", "refused", w.Refused[p].ToString());
+                case RotaLift.Target:
+                    string target = CompanyText.T("reallife_rota_lift_target", "target", s.Target[p].ToString(), "day", w.DayUnits(p).ToString());
+                    return s.Warehouse[p] < w.WantUnits(p) ? target + " " + CompanyText.T("reallife_rota_lift_warehouse", "warehouse", s.Warehouse[p].ToString()) : target;
+                case RotaLift.Second:
+                    return CompanyText.T("reallife_rota_lift_second", "delivered", delivered, "want", want);
+                default:
+                    return CompanyText.T("reallife_rota_lift_order", "delivered", delivered, "want", want, "percentage", sheet.UrgentPercent.ToString());
+            }
         }
 
         private static string RotaDayName(int d)

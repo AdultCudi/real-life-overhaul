@@ -91,6 +91,7 @@ namespace RealLifeOverhaul.Economy
             ReadCustomers(sheet, reg, place.Type == RotaType.Customers, dayPromotion);
             ReadRoom(sheet, reg);
             ReadWorth(sheet, reg);
+            ReadStock(sheet, reg);
             ReadFees(shop, reg);
             ReadCleaning(sheet, reg);
             for (int s = 0; s < stations; s++)

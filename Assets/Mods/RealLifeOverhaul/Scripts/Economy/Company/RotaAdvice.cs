@@ -40,6 +40,7 @@ namespace RealLifeOverhaul.Economy
         public int NightRisk;           // hundredths a night it is shut at one in the morning (the mod's break-ins come only to a shut shop)
         public bool Cleaned;            // the cleaning service cleans it on its round: no cleaning shift is wanted, and the floor is taken to stay as it is
         public int HireCost;            // hundredths paid once for each person taken on (the game asks nothing unless a signing bonus is offered)
+        public readonly RotaStock Stock = new RotaStock();  // its goods, product by product (RotaStock.cs); none where nothing is sold off a shelf
 
         public void Size(int stations, int groups)
         {
@@ -63,6 +64,7 @@ namespace RealLifeOverhaul.Economy
             Array.Clear(DayFee, 0, DayFee.Length);
             Margin = Takings = DirtEvents = CleanHours = 0;
             HasCustomers = FixedHours = false;
+            Stock.Clear();
         }
     }
 

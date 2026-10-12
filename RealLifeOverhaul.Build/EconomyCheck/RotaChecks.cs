@@ -31,6 +31,7 @@ internal static partial class Program
         RotaLedgerChecks();
         RotaPlanChecks();
         RotaRangeChecks();
+        RotaStockChecks();
     }
 
     // ---------------------------------------------------------------- making a problem by hand

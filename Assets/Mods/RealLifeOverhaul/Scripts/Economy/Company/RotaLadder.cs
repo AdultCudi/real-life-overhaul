@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.Economy
         public const int TooLittle = 1; // the next person would add less than the least a rung must
         public const int Most = 2;      // as many people as one ladder advises
         public const int NoAdvice = 3;  // nothing is advised here (no customers, hours set by the game, nothing known of a customer's worth)
+        public const int Stock = 4;     // the next person would add too little because the goods run out first
     }
 
     /// <summary>What a week of a plan comes to, part by part. Money in hundredths.</summary>
@@ -47,6 +48,8 @@ namespace RealLifeOverhaul.Economy
         public long Wages, Fees, Theft, Night, Demands;
         public long Net;
         public int StaffHours, CleanHours;
+        public long StockLost;              // what the customers would have left for goods that had run out (not in Sales: told, not taken off again)
+        public int StockShort;              // products that ran out in the week
     }
 
     /// <summary>A run of hours on one day that a plan opens or closes against the hours kept now.</summary>
@@ -88,6 +91,7 @@ namespace RealLifeOverhaul.Economy
         public int[] QuitHours = new int[0];    // [worker] hours until their satisfaction is at nothing; 0: it does not fall there
         public readonly List<RotaChange> Changes = new List<RotaChange>(RotaLadder.ChangesMost);
         public readonly List<RotaLeft> Left = new List<RotaLeft>(4);    // whoever gets no hours because their least cannot be had
+        public readonly RotaStockWeek Stock = new RotaStockWeek();      // the goods in the week counted, product by product
         public int Out;                 // people at work whose hours are outside what they ask for (only the week as it is can have any)
         public int FitsFor = -1;        // the employee the hours were lengthened for (Source 4)
 
@@ -112,6 +116,7 @@ namespace RealLifeOverhaul.Economy
             Workers = workers;
             Sum = new RotaWeekSum();
             Left.Clear();
+            Stock.Clear(0);
             Out = 0;
             FitsFor = -1;
         }
@@ -154,6 +159,10 @@ namespace RealLifeOverhaul.Economy
     ///               (RetailBusinessSimulator.ProcessCustomer leaves the order unpaid). The stations manned serve
     ///               their customers an hour and no more; whoever comes beyond that is lost. Skill does not change
     ///               how many a till serves
+    ///   goods       where a delivery or a logistics manager's round brings a product, the customers buy it only while
+    ///               it is on site (RotaStock.cs: the shelves are filled again from storage the moment they run empty,
+    ///               the round comes at 2, the delivery at 8 on a Monday, what finds no room goes back). The goods are
+    ///               run over two weeks, as the cleanliness is, and the second is the one counted
     ///   cleanliness each customer served dirties the floor, each hour of a cleaner's shift cleans, and the
     ///               cleanliness a customer finds is a quarter of the satisfaction that scales what customers buy
     ///               (BuildingCleanliness, BusinessHelper.UpdateSatisfaction). The week is run hour by hour, twice,
@@ -200,6 +209,7 @@ namespace RealLifeOverhaul.Economy
         private readonly bool[] _dayOpen = new bool[Days];
         private int[] _unmetWeight = new int[0], _unmetCount = new int[0];
         private long[] _value = new long[0];
+        private readonly RotaStockRun _stockRun = new RotaStockRun();
 
         /// <summary>
         /// True for a rung that may be written into the game: the best week of the people there are, when it is not
@@ -303,8 +313,15 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             bool model = shop.HasCustomers && shop.DirtPerCustomer > 0 && !shop.Cleaned;
+            RotaStock stock = shop.Stock;
+            bool goods = shop.HasCustomers && stock.Any;    // some goods sell only while they are there
+            into.Stock.Clear(goods ? stock.Products : 0);
+            if (goods)
+            {
+                _stockRun.Start(stock);
+            }
             int dirt = 0, spotless = Factor(shop, 0);
-            for (int pass = model ? 0 : 1; pass < 2; pass++)
+            for (int pass = model || goods ? 0 : 1; pass < 2; pass++)
             {
                 for (int cell = 0; cell < Cells; cell++)
                 {
@@ -331,11 +348,24 @@ namespace RealLifeOverhaul.Economy
                     int served = isOpen ? advisor.Served(shop, cell, at, null, false) : 0;
                     int factor = model ? Factor(shop, dirt) : 1000;
                     dirt = (int)Math.Min(100000L, dirt + (long)served * shop.DirtPerCustomer);
+                    long sales;
+                    bool shortHour = false;
+                    if (goods)
+                    {
+                        // What the round and the delivery bring at the start of the hour, then what its customers find.
+                        RotaStockWeek counted = pass == 1 ? into.Stock : null;
+                        _stockRun.Arrive(cell, counted);
+                        sales = _stockRun.Sell(cell, served, factor, counted);
+                        shortHour = _stockRun.Short;
+                    }
+                    else
+                    {
+                        sales = (long)served * shop.Margin * factor / 1000;
+                    }
                     if (pass == 0)
                     {
                         continue;
                     }
-                    long sales = (long)served * shop.Margin * factor / 1000;
                     long theft = isOpen ? Theft(shop, come) : 0;
                     bool manned = isOpen && advisor.Crewed(shop, cell, at);
                     sum.Hours += isOpen ? 1 : 0;
@@ -345,7 +375,9 @@ namespace RealLifeOverhaul.Economy
                     sum.LostUnmanned += served == 0 ? come : 0;
                     sum.LostFull += served > 0 ? come - served : 0;
                     sum.Sales += sales;
-                    sum.Clean += model ? (long)served * shop.Margin * (spotless - factor) / 1000 : 0;
+                    // What a spotless floor would add: nothing in an hour some goods ran out in (there was no more of them to sell).
+                    sum.Clean += !model || shortHour ? 0 : !goods ? (long)served * shop.Margin * (spotless - factor) / 1000
+                        : factor > 0 ? sales * (spotless - factor) / factor : (long)served * shop.Margin * spotless / 1000;
                     sum.Wages += wage;
                     sum.Theft += theft;
                     into.Come[cell] = come;
@@ -408,6 +440,11 @@ namespace RealLifeOverhaul.Economy
                 into.DemandCost[w] = cost;
                 into.QuitHours[w] = quit;
                 sum.Demands += cost;
+            }
+            if (goods)
+            {
+                sum.StockLost = into.Stock.LostAll;
+                sum.StockShort = into.Stock.Short;
             }
             sum.Net = sum.Sales - sum.Wages - sum.Fees - sum.Theft - sum.Night - sum.Demands;
             into.Sum = sum;
@@ -507,6 +544,7 @@ namespace RealLifeOverhaul.Economy
             to.Changes.Clear();
             to.Changes.AddRange(from.Changes);
             to.Left.AddRange(from.Left);
+            to.Stock.CopyFrom(from.Stock);
             to.Out = from.Out;
             to.FitsFor = from.FitsFor;
         }

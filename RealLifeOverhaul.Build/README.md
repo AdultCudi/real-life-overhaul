@@ -7035,9 +7035,9 @@ every rung a set of opening hours with a rota, all valued the same way (`RotaLad
 | Best with the people you have | the better of: the week as it is; the hours kept with a new rota; those hours less the ones nobody can keep the smallest crew for; the hours worth opening, cut to what the people can keep. Never worse than the week as it is, by construction |
 | Hire 1, Hire 2, ... | one more person at the going wage (`StaffRules.Going` of the game's wage formula for the station's skill at a middling value), for the group of stations where that adds most (up to three groups are tried), counted for a full week of 40 hours and no more. Kept only if it adds at least 5 per cent of the week before and at least 50.00 a week. The ladder ends at the first hire that does not, and at four hires |
 
-A week is: what the customers served leave (at the cleanliness they find), less wages, licensing fees, the game's
-hourly theft, the risk of a break-in on a night shut, and what unmet demands cost. So a week open round the clock is
-shown only if every step to it pays.
+A week is: what the customers served leave (at the cleanliness they find, and for goods only while there are some:
+see "Goods" below), less wages, licensing fees, the game's hourly theft, the risk of a break-in on a night shut, and
+what unmet demands cost. So a week open round the clock is shown only if every step to it pays.
 
 **Staff first or lean.** Staff first: every demand is a limit (the solver is given them all at the game's high
 priority, which never gives way), and the least hours people ask for are wanted at stations that would otherwise
@@ -7054,6 +7054,31 @@ dirtier than one hour cleans). Staff first, the hours a cleaner asks for beyond 
 backwards, spread evenly over the days. Where the mod's cleaning service cleans a business
 (`CompanyBridges.Cleaned`, set in `Wiring/ServicesLinks.cs` from `CleaningService.Covers`) no cleaning hour is wanted
 and the floor is taken to stay as it is.
+
+**Goods** (`RotaStock.cs`, read by `RotaGame.Stock.cs`). In a shop of the game's retail simulators, every product
+sold off a shelf (and, where the business type needs paper bags, the bags at the tills) is counted one by one: what
+its shelves hold (`CargoInstance.GetMaxStockCapacity`), what is on site (the shelves, the stock containers and any
+vehicle parked there, as `ReStockingHelper.CountAvailableStock` counts them), the box places of the business's
+storage less those other goods take, what a customer takes of it and what a unit leaves (by the same source as what a
+customer is worth: the books of the last days, else the game's own arithmetic for a customer's order), what the
+delivery contracts that repeat bring on a Monday (`DeliveryContractItem.amount`, with the weekly limit
+`Item.maxWholesaleOrderAmount`), and what the logistics managers' delivery plans top it up to each morning
+(`ItemAmountTarget.targetAmount`, read as `LogisticsManagerPlan.GetPlannedDeliveries` would run it, without its side
+effects). Each week of a plan is run hour by hour (`RotaStockRun`): the delivery plan at 2, the contract at 8 on a
+Monday (onto the shelves, then into storage a box at a time; what finds no room goes back, as
+`ItemHelper.DeliverCargoToBuilding` refunds it), then the hour's customers buy what is there. The shelves are filled
+again from storage the moment they run empty (`ItemHelper.SubtractFromStock`, `RefillSingleItemWithLimit`), so what
+sells out is everything on site. Without a bag nobody buys goods (`GetIdealPointOfSale`). The goods run two weeks, the
+first from what is there now, and the second is counted, so a plan comes to what it comes to week after week with the
+deliveries there are. An Urgent Order is a delivery once (the contract goes back to Mondays after it, and the game
+lowers its amount to what is left of the week's limit), so it is not counted; neither is a contract that does not
+repeat, a backorder or a shortage at the wholesaler (the page says those). A product nothing brings is not capped: it
+is taken to be restocked by hand, and the page says how long what is there lasts. A shelf whose item takes nothing on
+a sale (`producerSettings.ResourcesRequired` off) is no limit. With no product capped the week is valued exactly as
+before. The page lists each product that runs out in the advised plan with the hour, what its customers would have
+spent and what would lift it (`RotaLift`): room for the deliveries, a higher target for the delivery plan, a larger
+contract or an Urgent Order, or past the weekly limit a second wholesaler or a delivery plan from a warehouse. Where
+the next hire adds too little because the goods run out first, the ladder ends with that reason (`RotaEnd.Stock`).
 
 **What is written.** "Fill the rota" writes the rota for the hours kept (the ladder's `Fill`). "Use this plan" is on
 the page of the best week with the people when it differs from the week as it is; the confirm dialogue says the hours
@@ -7270,4 +7295,9 @@ a page opens at its first row (a different table is shown from the top: `DataTab
 row shows the three choices in the white box, and that a button set not to be pressed looks so. That an unmanned
 till sells nothing with the player inside as it does away. That the dirt and cleaning rates read from a real
 building give a believable week (the self-check line prints them). That theft in a played week is near the figure
-counted. The seven days a post is taken to stand empty are the planner's own figure. Stock is not counted.
+counted. The seven days a post is taken to stand empty are the planner's own figure.
+
+Of the goods: that what a real shop's shelves, storage, contracts and delivery plans are read as matches what the
+game shows in BizMan; that a product is seen to run out when the forecast says (the books undercount what a customer
+would take of a product that ran out in the days they cover, so the cap may come late rather than early); that the
+box places counted for storage match what a delivery really fits; and how the goods rows read in the plans table.
