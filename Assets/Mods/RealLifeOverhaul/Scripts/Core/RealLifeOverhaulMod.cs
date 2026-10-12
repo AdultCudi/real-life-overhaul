@@ -731,6 +731,14 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_civic_test_advance", () => CivicDirector.Instance?.TestAdvance())
                 .AddButton("reallife_civic_test_clear", () => CivicDirector.Instance?.TestClear())
                 .AddSplitter()
+                .AddHeader("reallife_util_header")
+                .AddToggle(Settings.UtilitiesId, "reallife_util_enabled", Settings.Utilities,
+                    v => Settings.Utilities = v)
+                .AddButton("reallife_util_test_bill", () => Utilities.UtilitiesDirector.Instance?.TestBill())
+                .AddButton("reallife_util_test_due", () => Utilities.UtilitiesDirector.Instance?.TestDue())
+                .AddButton("reallife_util_test_cut", () => Utilities.UtilitiesDirector.Instance?.TestCutHome())
+                .AddButton("reallife_util_test_restore", () => Utilities.UtilitiesDirector.Instance?.TestRestore())
+                .AddSplitter()
                 .AddHeader("reallife_family_header")
                 .AddToggle(Settings.FamilyId, "reallife_family_enabled", Settings.Family,
                     v => Settings.Family = v)
@@ -969,6 +977,9 @@ namespace RealLifeOverhaul
             Nav.NavDirector.Logger = context.Logger;
             _root.AddComponent<Nav.NavDirector>();   // the minimap on the HUD and the GPS: a route along the roads to the game's destination (Scripts/Navigation)
             _root.AddComponent<CivicDirector>();   // city government, elections and construction sites (Scripts/Civic): its own cast of five
+            Utilities.UtilitiesDirector.Logger = context.Logger;
+            Utilities.UtilitiesApp.Logger = context.Logger;
+            _root.AddComponent<Utilities.UtilitiesDirector>();   // power and water: the utilities office, the bills, a cut and the Utilities app (Scripts/Utilities)
             _root.AddComponent<Family.FamilyDirector>();   // a partner at home, engagement and wedding, children, relatives (Scripts/Family)
             Roommates.RoommateDirector.Attach(_root, context.Logger);   // a roommate who shares the flat and the rent (Scripts/Home/Roommates)
             CarTuning.Logger = context.Logger;

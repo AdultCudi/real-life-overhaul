@@ -4823,6 +4823,38 @@ city's lines. Readers of a statement take its takings as today's: an insurance p
 its share of the takings is not raised again (`CoverRules.Premium`); the rota planner, which reads the order history
 (the game's own prices), raises a customer's worth by the city's takings factor (`CityEconomyDirector.TakingsFactor`).
 
+## Power and water (`Scripts/Utilities`)
+
+Every place the player rents or owns (`BuildingRegistration.RentedByPlayer`, a home or a business) has an account for
+power (City Light and Power) and one for water (Riverside Water). The rules are game-free and checked by EconomyCheck
+(`UtilitiesCatalogue`, `UtilitiesRules`, `UtilitiesStore`); the director reads the game and does what they say.
+
+- **Accounts.** A rented place has the landlord's, supplied at once: the player just pays. A bought place
+  (`BuildingOwnedByPlayer`) is supplied for three days at half as much again (the temporary supply) and then cut,
+  unless an account is applied for in person at the office's desk; it connects the next morning. A poor credit rating
+  (Economy's grade, through `UtilitiesBridges.Grade`) asks for a deposit of one or two months' estimate, never a
+  refusal; it comes back after six bills paid by their due day in a row, or with the last bill. A place given up has its
+  last bill at once, the deposit set against it.
+- **Use.** Each morning yesterday's use is added to the month's, at that day's prices (`Prices.Level`): a home by its
+  floor (`Building.totalSqm`) and the people in it (the player, a partner who moved in, children at home, a roommate:
+  `UtilitiesBridges.Household`); a business by its floor and its kind (the game's business types, from offices to
+  industry), a quarter of it on a day it does not open (its week of opening hours); both by the season (the weather's).
+- **Bills.** At the turn of the month (a twelfth of the year) each account is billed, due in half a month (two to
+  fourteen days). Auto debit (the Utilities app) pays on the due day. A bill a day overdue has the late fee added once;
+  three days after its due day the supply is cut, and reconnecting at the desk costs a fee as well.
+- **A cut.** A business without power closes (Business's own switch, `UtilitiesBridges.CloseFor`, hour by hour), as one
+  without water does where it needs water (food and drink, salons, gyms). At home the shower and the sink give nothing
+  without water, screens and the mod's cooking nothing without power (`HomeTidy.HasPower`, `HasWater`), and a mood
+  modifier stands for each (`ModState.NoPower`, `NoWater`); hygiene and its colds follow by themselves.
+- **The office.** The largest office building of the city that no other feature has made its own (not the
+  courthouse), with a lettered sign by its door; the desk is the game's own list (`DeskList`, `UtilitiesDesk`): pay a
+  bill, apply for an account or a reconnection, the accounts that connect tomorrow. It lights up on the city map.
+- **The app.** Every account with where it stands, the month so far, what is owed and when, and auto debit; the white
+  box has the picked account's use, bills and deposit, the auto debit switch and "Pay now".
+
+The save line (`reallife:utilities`): the days added up, and each account's place (escaped) and figures. Nothing runs
+per frame but the office's panel check once a second; the effects once an hour, the books once a morning.
+
 ## Home life and health (`Scripts/Home`)
 
 ```

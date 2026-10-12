@@ -619,6 +619,25 @@ namespace RealLifeOverhaul.Meta
                 .Repair(CityHallPhone.Setup);
 
             // Its clean-up runs before the living city's: a wedding borrows up to four of the city's people and gives them back.
+            Features.Add("utilities", "reallife_meta_title_utilities")
+                .Group("reallife_util_header")
+                .About("reallife_guide_utilities_about").Help("reallife_guide_utilities")
+                .Owns(Settings.UtilitiesId)
+                .Data(Utilities.UtilitiesStore.Key)
+                .Fact("util_kwh", () => Guide.Money(Utilities.UtilitiesCatalogue.UnitCents[0] / 100f * Prices.Level / 1000f))
+                .Fact("util_m3", () => Guide.Money(Utilities.UtilitiesCatalogue.UnitCents[1] / 100f * Prices.Level / 1000f))
+                .Fact("util_standing_power", () => Guide.Money(Utilities.UtilitiesCatalogue.StandingCents[0] / 100f * Prices.Level / 1000f))
+                .Fact("util_standing_water", () => Guide.Money(Utilities.UtilitiesCatalogue.StandingCents[1] / 100f * Prices.Level / 1000f))
+                .Fact("util_temporary_days", () => Utilities.UtilitiesCatalogue.TemporaryDays.ToString(CultureInfo.InvariantCulture))
+                .Fact("util_surcharge", () => (Utilities.UtilitiesCatalogue.TemporarySurcharge / 10).ToString(CultureInfo.InvariantCulture) + "%")
+                .Fact("util_due", () => Utilities.UtilitiesRules.DueIn(GameCalendar.MonthDays).ToString(CultureInfo.InvariantCulture))
+                .Fact("util_cut_after", () => Utilities.UtilitiesCatalogue.CutAfterDays.ToString(CultureInfo.InvariantCulture))
+                .Fact("util_late_fee", () => Guide.Money(Utilities.UtilitiesCatalogue.LateFee))
+                .Fact("util_reconnect_fee", () => Guide.Money(Utilities.UtilitiesCatalogue.ReconnectFee))
+                .Fact("util_deposit_back", () => Utilities.UtilitiesCatalogue.DepositBackBills.ToString(CultureInfo.InvariantCulture))
+                .Fact("util_office", () => Utilities.UtilitiesDirector.Instance != null ? Utilities.UtilitiesDirector.Instance.OfficeName() : Utilities.UtilitiesText.T("reallife_util_office_unknown"))
+                .Objects("RealLifeOverhaul Utilities Sign");
+
             Features.Add("family", "reallife_meta_title_family")
                 .Group("reallife_family_header")
                 .About("reallife_guide_family_about").Help("reallife_guide_family")

@@ -44,6 +44,7 @@ namespace RealLifeOverhaul
         private static HomeDirector _host;
         private static string _closing;
         private static bool _failed;
+        private static bool _dark;
         private static bool _cooker;
         private static int _fridges;
         private static int _size;
@@ -79,7 +80,8 @@ namespace RealLifeOverhaul
                 }
                 _host = host;
                 _fridges = HomePlace.Fridges.Count;
-                _cooker = HomePlace.Cookers.Count > 0;
+                _dark = HomeTidy.Dark(HomeTidy.Home());   // a home whose power is cut has no cooker to cook on (Utilities)
+                _cooker = HomePlace.Cookers.Count > 0 && !_dark;
                 HomePlace.ReadPantry(Pantry);
                 string found = Fill();
                 _closing = null;
@@ -216,7 +218,8 @@ namespace RealLifeOverhaul
                     possible++;
                 }
             }
-            string note = _fridges == 0 ? "reallife_home_cookpanel_no_fridge"
+            string note = _dark ? "reallife_home_cookpanel_no_power"
+                : _fridges == 0 ? "reallife_home_cookpanel_no_fridge"
                 : units == 0 ? "reallife_home_cookpanel_empty"
                 : possible == 0 && needCooker == 0 ? "reallife_home_cookpanel_nothing"
                 : !_cooker ? (needCooker > 0 ? "reallife_home_cookpanel_no_cooker_more" : "reallife_home_cookpanel_no_cooker")

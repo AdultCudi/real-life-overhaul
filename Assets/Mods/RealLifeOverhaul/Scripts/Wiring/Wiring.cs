@@ -78,6 +78,7 @@ namespace RealLifeOverhaul
             Step("the cleaning service and selling a business", ServicesLinks.Connect);
             Step("brands and franchises", BrandLinks.Connect);
             Step("the roommate", RoommateLinks.Connect);
+            Step("power and water", UtilityLinks.Connect);
             Logger?.Info("Wiring: the features are connected.");
         }
 
@@ -92,6 +93,7 @@ namespace RealLifeOverhaul
             Step("property", EstateLinks.Disconnect);
             Step("the cleaning service and selling a business", ServicesLinks.Disconnect);
             Step("brands and franchises", BrandLinks.Disconnect);
+            Step("power and water", UtilityLinks.Disconnect);
             Step("the roommate", RoommateLinks.Disconnect);
             Step("running a business", CompanyLinks.Disconnect);
             Step("online shops", OnlineLinks.Disconnect);
