@@ -22,10 +22,14 @@ namespace RealLifeOverhaul
     ///   the game's panel over a place (<see cref="GameUi.WorldPanel"/>: the box it shows at a petrol pump) says
     ///   which stop this is, the line or the stop the player has picked, and when the bus comes, and has buttons
     ///   with their keys: choose a stop on the game's interact key, sit down on its secondary one.
-    /// - WHERE TO. The list is the window the game lists its subway stations in (<see cref="GameUi.TravelList"/>):
-    ///   every stop the buses reach from here (<see cref="TransitTrips"/>) with its line, the time and the fare, and
-    ///   the day pass as its first entry. Picked while the bus stands, the ride begins. Picked while waiting, the
-    ///   stop is kept and the player gets on by themselves when the bus stands, so nobody has to catch the moment.
+    /// - WHERE TO. On the city map, as the game offers its subway stations from an entrance (<see cref="GameUi.MapPicker"/>):
+    ///   every stop the buses reach from here (<see cref="TransitTrips"/>) is a marker on the map and an entry in the
+    ///   game's own window for its stations beside it, with its line, the time and the fare, searchable by name; the day
+    ///   pass is the window's first entry and the stop the player is at is marked in the game's red. A pick closes the
+    ///   map, and is taken up on the next tick once the game runs again (the map holds its clock still). Picked while the
+    ///   bus stands, the ride begins. Picked while waiting, the stop is kept and the player gets on by themselves when
+    ///   the bus stands, so nobody has to catch the moment. Should the game's window not be copied, the same list stands
+    ///   in the middle of the screen (<see cref="GameUi.TravelList"/>).
     ///
     /// Nothing here runs per frame. On the director's 0.25 s timer the place is tested, and a text is built only
     /// when what it says has changed. The game asks <see cref="Offer"/> only for what the pointer is on.
@@ -34,6 +38,9 @@ namespace RealLifeOverhaul
     {
         /// <summary>Metres at which the stop's panel and its keys are offered: the game's own reach of an object (EntityController.MaxReachDistance).</summary>
         public const float Reach = 3f;
+
+        /// <summary>The colour the bus stops are marked in on the map: their own row's (World/MapLinks) and the stops offered from one.</summary>
+        internal static readonly Color StopColour = new Color(0.05f, 0.56f, 0.62f);
         private const float PanelUp = 1.9f;          // metres up the pole the panel stands over: under the flag
         private const int PassRow = -1;              // the list's entry that sells the day pass
 
@@ -48,6 +55,10 @@ namespace RealLifeOverhaul
         private readonly bool[] _pointed = new bool[Dressings];
         private GameUi.TravelList _list;
         private bool _listFailed;
+        private GameUi.MapPicker _picker;
+        private bool _pickerFailed;
+        private TransitTrip _picked;        // the stop picked on the map: taken up once the map has closed and the game runs again
+        private bool _hasPicked;
         private string _listClosing;        // why the list is being closed, for the log; null when the player cancels it
         private TransitPointer _busPointer;
         private BoxCollider _busBox;
@@ -67,6 +78,8 @@ namespace RealLifeOverhaul
         private Action _onListClosed;
         private Action _onAsked;
         private Action<int> _onPick;
+        private Action<int> _onMapPick;
+        private Action _onMapClosed;
         private UnityAction _chooseOnArrival;
         private UnityAction _sitOnArrival;
         private int _panelMore;
@@ -81,12 +94,15 @@ namespace RealLifeOverhaul
             TransitCta.Logger = Logger;
             GameUi.WorldPanel.Logger = Logger;
             GameUi.TravelList.Logger = Logger;
+            GameUi.MapPicker.Logger = Logger;
             _onChoose = ChooseClicked;
             _onSit = SitClicked;
             _onStand = StandClicked;
             _onListClosed = ListClosed;
             _onAsked = AskedYes;
             _onPick = Picked;
+            _onMapPick = MapPicked;
+            _onMapClosed = MapClosed;
             _chooseOnArrival = ChooseOnArrival;
             _sitOnArrival = SitOnArrival;
         }
@@ -100,9 +116,9 @@ namespace RealLifeOverhaul
                 Wire();
             }
             Pointers();
-            if (_ride.Riding)
+            if (_ride.Riding || (_picker != null && _picker.IsOpen))
             {
-                return;
+                return;   // (the city map is up with the stops on it, and the game's clock stands still under it)
             }
             if (_player == PlayerStep.Riding)
             {
@@ -146,6 +162,12 @@ namespace RealLifeOverhaul
                 {
                     CloseList("the player left the stop");
                 }
+                if (_hasPicked && (_served == null || !(AtStop(_served, at) || (standing && AtBus(at)))))
+                {
+                    // (Only for leaving the stop: a screen still closing as the game runs again keeps the pick for the next tick.)
+                    _hasPicked = false;
+                    Logger?.Info("Transit check (stop map): the stop picked on the map is let go: the player is no longer at the stop.");
+                }
                 if (_player != PlayerStep.None)
                 {
                     _player = PlayerStep.None;
@@ -169,6 +191,19 @@ namespace RealLifeOverhaul
                 return;
             }
             _player = PlayerStep.AtStop;
+            if (_hasPicked)
+            {
+                // The stop picked on the map, now that the map has closed and the game runs again.
+                TransitTrip picked = _picked;
+                _hasPicked = false;
+                _picked = default(TransitTrip);
+                Chosen(picked);
+                if (_ride.Riding)
+                {
+                    return;
+                }
+                standing = _bus.State == TransitBus.Phase.Standing && _bus.Car != null;
+            }
             if (_booked != null && standing && !_busFull && !_seat.Active && _bus.Standing >= 1f && TransitRide.CanStart())
             {
                 // The stop was picked while waiting: the bus stands, so they get on.
@@ -418,7 +453,7 @@ namespace RealLifeOverhaul
 
         private string PointerOffer(TransitPointer pointer)
         {
-            if (_failed || !Settings.Buses || _ride.Riding || _seat.Active || (_list != null && _list.IsOpen) || PlayerHelper.IsUsingVehicle || BuildingManager.IsInsideBuilding)
+            if (_failed || !Settings.Buses || _ride.Riding || _seat.Active || (_list != null && _list.IsOpen) || (_picker != null && _picker.IsOpen) || PlayerHelper.IsUsingVehicle || BuildingManager.IsInsideBuilding)
             {
                 return null;
             }
@@ -639,11 +674,15 @@ namespace RealLifeOverhaul
 
         private void OpenList()
         {
-            if (_served == null || _ride.Riding || _seat.Active || (_list != null && _list.IsOpen))
+            if (_served == null || _ride.Riding || _seat.Active || (_list != null && _list.IsOpen) || (_picker != null && _picker.IsOpen))
             {
                 return;
             }
             float began = Time.realtimeSinceStartup;
+            if (OpenMap(began))
+            {
+                return;
+            }
             if ((_list == null || !_list.Alive) && !_listFailed)
             {
                 _list = GameUi.TravelList.Make("RealLifeOverhaul Bus Stops");
@@ -667,6 +706,113 @@ namespace RealLifeOverhaul
                          + (_trips.Count - direct) + " with a change of bus (none of another line within " + TransitTrips.WalkedTo.ToString("F0") + " m); the day pass "
                          + (TransitState.HasPass ? "is held" : "is its first entry") + "; " + _list.Made + " entries made so far; bus: " + PanelWords() + "; "
                          + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: " + (_trips.Count > 0 ? "PASS" : "FAIL (the network has no other stop)") + ".");
+        }
+
+        // The city map with the stops on it, as the game's subway entrance opens it for its stations. False if the game's
+        // window could not be copied (said once) or the game would not open its map now: the list is used then.
+        private bool OpenMap(float began)
+        {
+            if ((_picker == null || !_picker.Alive) && !_pickerFailed)
+            {
+                _picker = GameUi.MapPicker.Make("RealLifeOverhaul Bus Stops Map");
+                _pickerFailed = _picker == null;
+            }
+            if (_picker == null || !_picker.Alive)
+            {
+                return false;
+            }
+            bool standing = _bus.State == TransitBus.Phase.Standing;
+            Measure(standing);            // (the figure the window is about to show)
+            _panelKey = int.MinValue;     // ...and the panel is written again when it is next up
+            _hasPicked = false;
+            int direct = FillMap(standing);
+            if (!_picker.Open(_served.Sign, _onMapPick, _onMapClosed))
+            {
+                Logger?.Info("Transit check (stop map): the game would not open its map at " + StopLabel(_served) + " now; the list is used instead.");
+                return false;
+            }
+            _player = PlayerStep.Choosing;
+            _chooseUntil = Time.time + ChooseFor;
+            _listClosing = null;
+            HidePanel();
+            Logger?.Info("Transit check (stop map): the city map is open at " + StopLabel(_served) + " with the game's window for its stations beside it: " + _trips.Count + " stops, "
+                         + direct + " further along this line and " + (_trips.Count - direct) + " with a change of bus, each a marker on the map; the day pass "
+                         + (TransitState.HasPass ? "is held" : "is its first entry") + "; " + _picker.Made + " entries and " + _picker.Marked + " markers made so far; bus: " + PanelWords() + "; "
+                         + ((Time.realtimeSinceStartup - began) * 1000f).ToString("F1") + " ms: " + (_trips.Count > 0 ? "PASS" : "FAIL (the network has no other stop)") + ".");
+            return true;
+        }
+
+        // Every stop offered from the served one, written into the map's window and onto the map. Returns how many are on this line.
+        private int FillMap(bool standing)
+        {
+            int direct = TransitTrips.From(_served, _trips);
+            _picker.Begin(TransitText.T("reallife_transit_list_title", "name", StopName(_served)), MapPlaces.Glyph(MapIcon.Bus), StopColour);
+            _picker.Note(ListInfo(standing));
+            bool pass = TransitState.HasPass;
+            if (!pass)
+            {
+                _picker.Add(PassRow, TransitText.T("reallife_transit_list_pass"), TransitText.T("reallife_transit_list_pass_detail", "pass", TransitText.Money(TransitState.DayPass)),
+                    "reallife_transit_list_buy", true, false, Vector3.zero);
+            }
+            string fare = pass ? TransitText.T("reallife_transit_list_fare_pass") : TransitText.Money(TransitState.BusFare);
+            for (int i = 0; i < _trips.Count; i++)
+            {
+                TransitTrip trip = _trips[i];
+                TransitLine line = TransitMap.Lines[trip.To.Line];
+                _picker.Add(i, StopName(trip.To), TransitText.T(trip.Direct ? "reallife_transit_list_direct" : "reallife_transit_list_change", "route", line.Number, "to", line.To,
+                    "minutes", Mathf.CeilToInt(trip.Minutes).ToString(), "fare", fare), "common_travel", true, true, trip.To.Sign);
+            }
+            _picker.Here(_served.Sign, StopName(_served));
+            return direct;
+        }
+
+        // An entry or a marker of the map was clicked: the day pass is bought there and then; a stop closes the map.
+        private void MapPicked(int id)
+        {
+            try
+            {
+                _keyFrame = Time.frameCount;
+                if (_served == null || _picker == null)
+                {
+                    CloseList("no stop is served any more");
+                    return;
+                }
+                if (id == PassRow)
+                {
+                    bool bought = !TransitState.HasPass && TransitState.BuyPass();
+                    Logger?.Info("Transit check (choice): the day pass, from the map at " + StopLabel(_served) + ": " + (bought ? "bought for " + TransitState.DayPass.ToString("F2") + ": PASS" : "not bought (no money, or one is held): FAIL") + ".");
+                    if (bought)
+                    {
+                        Notifications.Show(NotificationType.Success, "reallife_transit_pass_bought", null, 6f);
+                        FillMap(_bus.State == TransitBus.Phase.Standing);   // the entry goes, and every fare now reads as the pass
+                        _picker.Open(_served.Sign, _onMapPick, _onMapClosed);
+                    }
+                    return;
+                }
+                if (id < 0 || id >= _trips.Count)
+                {
+                    return;
+                }
+                _picked = _trips[id];
+                _hasPicked = true;
+                CloseList("a stop was picked on the map");
+            }
+            catch (Exception e)
+            {
+                Fail(e);
+            }
+        }
+
+        // Runs once per closing of the map, whoever closed it (a pick, Cancel, the game's cancel key, or the director).
+        private void MapClosed()
+        {
+            _panelKey = int.MinValue;   // the panel comes back with what is true now
+            if (_player == PlayerStep.Choosing)
+            {
+                _player = PlayerStep.AtStop;
+            }
+            Logger?.Info("Transit check (stop map): closed (" + (_listClosing ?? "cancelled by the player") + ")" + (_hasPicked ? "; the stop picked is taken up when the game runs again" : string.Empty) + ".");
+            _listClosing = null;
         }
 
         // Every stop offered from the served one, written into the list. Returns how many are on this line.
@@ -758,6 +904,11 @@ namespace RealLifeOverhaul
             {
                 _listClosing = why;
                 _list.Close();
+            }
+            if (_picker != null && _picker.IsOpen)
+            {
+                _listClosing = why;
+                _picker.Close();
             }
         }
 
@@ -945,6 +1096,7 @@ namespace RealLifeOverhaul
             HidePanel();
             BusPointer(false);
             _booked = null;
+            _hasPicked = false;
         }
 
         // With the director itself: the list's window goes, and the buses' entry leaves the game's list of click actions.
@@ -956,6 +1108,8 @@ namespace RealLifeOverhaul
                 _panel.Hide();
                 _list?.Destroy();
                 _list = null;
+                _picker?.Destroy();
+                _picker = null;
                 _subway.Dispose();
                 TransitCta.Remove();
             }

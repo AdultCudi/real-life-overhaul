@@ -1,6 +1,6 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 using BAModAPI;
 using Entities;
 using Extensions;
@@ -13,50 +13,47 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The subway as a journey. The game already has the stations as places in the street: walk
-    /// up to an entrance, click it, pay 3, the map opens, pick a station, and a camera flies
-    /// there in a few seconds with no time passing. That is left exactly as it is. Beside it,
-    /// standing at an entrance on foot, the same trip is offered as a trip, in the game's own
-    /// interface: its panel over a place (<see cref="GameUi.WorldPanel"/>) gives the service at
-    /// this hour and a button on the game's interact key, which opens the window the game lists
-    /// its stations in (<see cref="GameUi.TravelList"/>) with how many stops and how long each
-    /// is; then the fare at the turnstile, the wait on the platform, the ride, and the clock
-    /// moved on by all of it.
+    /// The subway as a journey, on the game's own subway. The game has the stations as places in the street: click an
+    /// entrance and its subway map opens, pick a station, pay its fare of 3, and a camera flies there in a few seconds.
+    /// All of that is the game's and is left as it is. Beside it:
     ///
-    /// Service, by rule from the game's clock (so it is the same on every load of the same day):
-    /// a train every 3 minutes in the rush, 5 by day, 7 in the evening, 8 early, 12 at night;
-    /// in about one three-hour window in eight there are delays of 6 to 14 minutes; and from
-    /// 23:00 to 05:00 one station (a different one each night) is closed for track work. Delays
-    /// and closures are sent to the phone by the City Transit contact when they begin.
-    /// Ticked by <see cref="TransitDirector"/>; nothing of it runs per frame (the panel's key is the game's, read by the game).
+    /// - AT AN ENTRANCE, on foot, the game's panel over a place (<see cref="GameUi.WorldPanel"/>) says the station, how
+    ///   often trains run at this hour and the state of the service. It has no button: the game's own click on the
+    ///   entrance opens the game's own map.
+    /// - THE JOURNEY. Once the game's train has brought the player up at the far end, the clock moves on by what the
+    ///   trip takes (the wait for a train, the stops, any delay) less the minutes the game's ride took, under the bus
+    ///   ride's own fade (<see cref="TransitRide"/>), and a note says where the player came up and how long it took.
+    /// - THE DAY PASS covers the subway too: the game's fare is given back as its ride begins, under its own bank entry
+    ///   (<see cref="CivicBridges.FareGivenBack"/>: civic life does not count that ride as a fare paid).
+    ///
+    /// Service, by rule from the game's clock (so it is the same on every load of the same day): a train every 3 minutes
+    /// in the rush, 5 by day, 7 in the evening, 8 early, 12 at night; in about one three-hour window in eight there are
+    /// delays of 6 to 14 minutes, sent to the phone by the City Transit contact when they begin.
+    /// Ticked by <see cref="TransitDirector"/>; nothing of it runs per frame (the game's ride is seen by its own flag).
     /// </summary>
     public sealed class SubwayJourney
     {
         private const float Reach = 7.5f;            // metres from the middle of an entrance: its stairs are that long
         private const float MetresPerStop = 650f;
         private const float MinutesPerStop = 2f;
-        private const int PassRow = -1;
-        private const string ButtonTake = "reallife_subway_button_take";
+        private const float StartWithin = 10f;       // seconds after the game's ride in which the clock is moved on (another scene may be closing)
 
         private readonly MonoBehaviour _host;
         private readonly TransitRide _ride;
-        private readonly List<SubwayStation> _choices = new List<SubwayStation>(24);
-        private readonly StringBuilder _text = new StringBuilder(320);
         private readonly GameUi.WorldPanel _panel = new GameUi.WorldPanel();
-        private GameUi.TravelList _list;
-        private bool _listFailed;
-        private Action _onTake;
-        private Action _onListClosed;
-        private Action<int> _onPick;
-        private Comparison<SubwayStation> _nearestFirst;
-        private Vector3 _here;
         private SubwayStation _at;
-        private SubwayStation _to;
-        private bool _choosing;
         private int _shownKey = int.MinValue;
-        private int _keyFrame = -1;
         private int _tick;
+
+        // The game's own ride while it runs: from where, to where, and the game minute it began. Then what is still to be added.
+        private bool _gameRide;
+        private SubwayStation _rideFrom, _rideTo;
+        private int _rideBegan;
+        private SubwayStation _to;
         private float _minutes;
+        private float _more;
+        private int _took;
+        private float _startBy = -1f;
 
         public SubwayJourney(MonoBehaviour host, TransitRide ride)
         {
@@ -64,11 +61,8 @@ namespace RealLifeOverhaul
             _ride = ride;
         }
 
-        /// <summary>True while the station's panel or its list is on screen.</summary>
+        /// <summary>True while the station's panel is on screen.</summary>
         public bool Showing => _at != null;
-
-        /// <summary>True while the panel's button is on the game's interact key, and in the frame that key pressed it.</summary>
-        public bool TakesKey => _panel.Showing || _keyFrame == Time.frameCount;
 
         // ---------------------------------------------------------------- the service, from the clock
 
@@ -109,30 +103,6 @@ namespace RealLifeOverhaul
             return roll % 8 == 0 ? 6 + (roll >> 4) % 9 : 0;
         }
 
-        /// <summary>The station closed for track work tonight (23:00 to 05:00), or null.</summary>
-        public static SubwayStation Closed()
-        {
-            int hour = TimeHelper.CurrentHour;
-            CityManager city = InstanceBehavior<CityManager>.Instance;
-            if ((hour < 23 && hour >= 5) || city == null || city.subwayStations == null || city.subwayStations.Count < 4)
-            {
-                return null;
-            }
-            int night = hour >= 23 ? TimeHelper.CurrentDay : TimeHelper.CurrentDay - 1;
-            int wanted = Hash(night * 31 + 7) % city.subwayStations.Count;
-            // By the game's own station order, so that it is the same station on every load.
-            SubwayStation closed = null;
-            for (int i = 0; i < city.subwayStations.Count; i++)
-            {
-                SubwayStation station = city.subwayStations[i];
-                if (station != null && (int)station.stationName % city.subwayStations.Count == wanted)
-                {
-                    closed = station;
-                }
-            }
-            return closed;
-        }
-
         private static string Name(SubwayStation station)
         {
             return station.GetNameKey().GetLocalization();
@@ -160,18 +130,25 @@ namespace RealLifeOverhaul
             return (wait + StopsBetween(from, to) * MinutesPerStop) * speed;
         }
 
+        // The game's clock in minutes since its first day.
+        private static int Now()
+        {
+            return TimeHelper.CurrentDay * 1440 + TimeHelper.CurrentHour * 60 + (int)TimeHelper.CurrentMinute;
+        }
+
         // ---------------------------------------------------------------- ticking
 
         /// <summary>Four times a second.</summary>
         public void Tick(float now, Vector3 at, bool allowed)
         {
             _tick++;
+            WatchRide(now);   // (the day pass covers the game's ride whether or not journeys take time)
             if (!Settings.SubwayJourney)
             {
                 Hide();
                 return;
             }
-            if ((_tick & 3) != 0 && !_choosing)
+            if ((_tick & 3) != 0)
             {
                 return;
             }
@@ -179,13 +156,9 @@ namespace RealLifeOverhaul
             {
                 Announce();
             }
-            bool listOpen = _list != null && _list.IsOpen;
-            _choosing = listOpen;
-            // The list is one of the screens that free the mouse: while it is up, only the game's other screens close it.
-            bool screens = listOpen ? UI.Smartphone.FullMenu.IsOpen || CityMap.IsOpen || UI.MiniMenu.MiniMenu.IsOpen || HudConfirm.isOpen : ThirdPersonCamera.IsUiOpen();
             CityManager city = InstanceBehavior<CityManager>.Instance;
             SubwayStation nearest = null;
-            if (allowed && city != null && city.subwayStations != null && !screens && !JobDirector.TakesInteractKey && !SubwaySystem.IsRiding)
+            if (allowed && city != null && city.subwayStations != null && !ThirdPersonCamera.IsUiOpen() && !JobDirector.TakesInteractKey && !SubwaySystem.IsRiding && !_ride.Riding)
             {
                 float best = Reach * Reach;
                 for (int i = 0; i < city.subwayStations.Count; i++)
@@ -211,208 +184,113 @@ namespace RealLifeOverhaul
             }
             if (nearest != _at)
             {
-                if (listOpen)
-                {
-                    _list.Close();
-                    listOpen = false;
-                }
                 _at = nearest;
                 _shownKey = int.MinValue;
-            }
-            if (listOpen)
-            {
-                _panel.Hide();
-                return;
             }
             ShowStation();
         }
 
-        // The game's panel over the entrance: the station, how often trains run, the state of the service, and the button.
+        // The game's panel over the entrance: the station, how often trains run and the state of the service. No button:
+        // a click on the entrance opens the game's own subway map.
         private void ShowStation()
         {
-            SubwayStation closed = Closed();
             int delay = Delay();
-            int key = (int)_at.stationName * 4096 + Frequency() * 64 + delay * 2 + (closed == _at ? 1 : 0);
+            int key = (int)_at.stationName * 4096 + Frequency() * 64 + delay * 2;
             if (key != _shownKey)
             {
                 _shownKey = key;
-                if (_onTake == null)
-                {
-                    _onTake = TakeClicked;
-                    _onListClosed = ListClosed;
-                    _onPick = Picked;
-                }
-                if (closed == _at)
-                {
-                    _panel.Lines(TransitText.T("reallife_subway_title", "name", Name(_at)), TransitText.T("reallife_subway_closed_here"),
-                        TransitText.T("reallife_subway_status_closed"), GameUi.WorldPanel.Red());
-                    _panel.Buttons(null, null, false, null, null, false);
-                }
-                else
-                {
-                    _panel.Lines(TransitText.T("reallife_subway_title", "name", Name(_at)), TransitText.T("reallife_subway_frequency", "minutes", Frequency().ToString()),
-                        delay > 0 ? TransitText.T("reallife_subway_delays", "minutes", delay.ToString()) : TransitText.T("reallife_subway_good_service"),
-                        delay > 0 ? GameUi.WorldPanel.Yellow() : GameUi.WorldPanel.Green());
-                    _panel.Buttons(ButtonTake, _onTake, true, null, null, false);
-                }
+                _panel.Lines(TransitText.T("reallife_subway_title", "name", Name(_at)), TransitText.T("reallife_subway_frequency", "minutes", Frequency().ToString()),
+                    delay > 0 ? TransitText.T("reallife_subway_delays", "minutes", delay.ToString()) : TransitText.T("reallife_subway_good_service"),
+                    delay > 0 ? GameUi.WorldPanel.Yellow() : GameUi.WorldPanel.Green());
+                _panel.Buttons(null, null, false, null, null, false);
             }
             _panel.Position = _at.transform.position + Vector3.up * 2.2f;
             _panel.Show();
         }
 
-        // The panel's button: the game's list of stations, nearest first, with the stops and the time of each.
-        private void TakeClicked()
+        // The game's own ride. As it begins: from where to where, and the fare back on a day pass. Once it has brought the
+        // player up at the far end: the clock moves on by what the journey takes beyond the minutes the ride took.
+        private void WatchRide(float now)
         {
-            try
+            if (SubwaySystem.IsRiding)
             {
-                _keyFrame = Time.frameCount;   // the key that pressed the button does nothing else this frame
-                if (_at == null || _ride.Riding || Closed() == _at || (_list != null && _list.IsOpen))
+                if (!_gameRide)
                 {
-                    return;
+                    Began();
                 }
-                if ((_list == null || !_list.Alive) && !_listFailed)
-                {
-                    _list = GameUi.TravelList.Make("RealLifeOverhaul Subway Stations");
-                    _listFailed = _list == null;
-                }
-                if (_list == null || !_list.Alive)
-                {
-                    TransitDirector.Logger?.Warn("Transit: the game's list of stations could not be copied, so the subway journey cannot be chosen here. A click on the entrance still opens the game's own subway map.");
-                    return;
-                }
-                Fill();
-                _list.Open(_onPick, _onListClosed);
-                _choosing = true;
-                _panel.Hide();
-                TransitDirector.Logger?.Info("Transit check (subway list): the game's list is open at " + _at.stationName + ": " + _choices.Count + " stations, a train every " + Frequency()
-                                             + " min, delays " + Delay() + " min: " + (_choices.Count > 0 ? "PASS" : "FAIL (no other open station)") + ".");
+                return;
             }
-            catch (Exception e)
+            if (_gameRide)
             {
-                TransitDirector.Logger?.Error(e);
-                Hide();
+                _gameRide = false;
+                Landed(now);
+            }
+            if (_startBy < 0f || _ride.Riding)
+            {
+                return;
+            }
+            if (TransitRide.CanStart() && PlayerHelper.PlayerController != null)
+            {
+                _startBy = -1f;
+                _ride.Begin(_more, PlayerHelper.PlayerController.transform.position, Delay() > 0 ? "reallife_subway_fade_delayed" : "reallife_subway_fade", null, Arrived, tap: false);
+            }
+            else if (now > _startBy)
+            {
+                _startBy = -1f;
+                _minutes = _took;   // (the note says what it did take)
+                TransitDirector.Logger?.Info("Transit check (subway journey): the clock could not be moved on after the game's ride: another scene stood in the way for "
+                                             + StartWithin.ToString("F0") + " s: FAIL.");
+                Arrived();
             }
         }
 
-        private void Fill()
+        private void Began()
         {
-            _choices.Clear();
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            SubwayStation closed = Closed();
-            for (int i = 0; city != null && i < city.subwayStations.Count; i++)
-            {
-                SubwayStation station = city.subwayStations[i];
-                if (station != null && station != _at && station != closed)
-                {
-                    _choices.Add(station);
-                }
-            }
-            _here = _at.transform.position;
-            _choices.Sort(_nearestFirst ?? (_nearestFirst = NearestFirst));
-            int delay = Delay();
-            bool pass = TransitState.HasPass;
-            _text.Length = 0;
-            _text.Append(TransitText.T("reallife_subway_frequency", "minutes", Frequency().ToString())).Append(". ");
-            _text.Append(delay > 0 ? TransitText.T("reallife_subway_delays", "minutes", delay.ToString()) : TransitText.T("reallife_subway_good_service")).Append('.');
-            if (closed != null)
-            {
-                _text.Append(' ').Append(TransitText.T("reallife_subway_closed_other", "name", Name(closed))).Append('.');
-            }
-            _text.Append('\n').Append(pass ? TransitText.T("reallife_transit_stop_pass") : TransitText.T("reallife_subway_fare", "fare", TransitText.Money(TransitState.SubwayFare)));
-            _list.Begin(TransitText.T("reallife_subway_list_title", "name", Name(_at)), _text.ToString());
-            if (!pass)
-            {
-                _list.Add(PassRow, TransitText.T("reallife_transit_list_pass"), TransitText.T("reallife_transit_list_pass_detail", "pass", TransitText.Money(TransitState.DayPass)),
-                    "reallife_transit_list_buy", true);
-            }
-            string fare = pass ? TransitText.T("reallife_transit_list_fare_pass") : TransitText.Money(TransitState.SubwayFare);
-            for (int i = 0; i < _choices.Count; i++)
-            {
-                SubwayStation station = _choices[i];
-                _list.Add(i, Name(station), TransitText.T("reallife_subway_list_row", "stops", StopsBetween(_at, station).ToString(),
-                    "minutes", Mathf.CeilToInt(JourneyMinutes(_at, station, out _)).ToString(), "fare", fare), "common_travel", true);
-            }
-        }
-
-        private int NearestFirst(SubwayStation a, SubwayStation b)
-        {
-            return (a.transform.position - _here).sqrMagnitude.CompareTo((b.transform.position - _here).sqrMagnitude);
-        }
-
-        // An entry's button was clicked.
-        private void Picked(int id)
-        {
-            try
-            {
-                _keyFrame = Time.frameCount;
-                if (_at == null || _list == null)
-                {
-                    return;
-                }
-                if (id == PassRow)
-                {
-                    if (!TransitState.HasPass && TransitState.BuyPass())
-                    {
-                        Notifications.Show(NotificationType.Success, "reallife_transit_pass_bought", null, 6f);
-                        Fill();   // the entry goes, and every fare now reads as the pass
-                        _list.Open(_onPick, _onListClosed);
-                    }
-                    return;
-                }
-                if (id < 0 || id >= _choices.Count)
-                {
-                    return;
-                }
-                SubwayStation from = _at;
-                SubwayStation to = _choices[id];
-                _list.Close();   // (a journey does not begin under an open window)
-                Travel(from, to);
-            }
-            catch (Exception e)
-            {
-                TransitDirector.Logger?.Error(e);
-                Hide();
-            }
-        }
-
-        private void ListClosed()
-        {
-            _choosing = false;
-            _shownKey = int.MinValue;   // the panel comes back with what is true now
-        }
-
-        // Through the turnstile, onto the platform, and away.
-        private bool Travel(SubwayStation from, SubwayStation to)
-        {
-            if (!TransitRide.CanStart() || from == null || to == null || from == to)
-            {
-                return false;
-            }
-            if (Closed() == from || Closed() == to)
-            {
-                Notifications.Show(NotificationType.Warning, "reallife_subway_closed_toast", new Dictionary<string, string>(1) { { "name", Name(Closed()) } }, 8f);
-                return false;
-            }
-            if (!TransitState.HasPass)
-            {
-                // The game's own transaction for a subway ride, at the game's own price.
-                var info = new TransactionInfo("ba:transaction_subwayride");
-                info.SetTaxDeductibleName("ba:transaction_subwayride");
-                if (!GameManager.ChangeMoneySafe(-TransitState.SubwayFare, info, null, null, force: false, showNotification: true))
-                {
-                    Notifications.ShowInsufficientMoney();
-                    return false;
-                }
-            }
-            _minutes = JourneyMinutes(from, to, out int wait);
-            _to = to;
+            SubwaySystem system = city != null ? city.subwaySystem : null;
+            _gameRide = true;
+            _rideFrom = system != null ? system.lastSubwayStation : null;
+            _rideTo = system != null ? system.destinationSubwayStation : null;
+            _rideBegan = Now();
+            _startBy = -1f;   // (a ride begun while the last one's time was still to be added: that time is let go)
+            _to = null;
             Hide();
-            TransitDirector.TapCard();
             TransitState.SubwayRides++;
-            TransitDirector.Logger?.Info("Transit: subway from " + from.stationName + " to " + to.stationName + ": " + StopsBetween(from, to) + " stops, a wait of " + wait
-                                         + " min (a train every " + Frequency() + ", delays " + Delay() + "), " + _minutes.ToString("F0") + " game minutes in all.");
-            _ride.Begin(_minutes, to.GetNavMeshTargetPosition(), Delay() > 0 ? "reallife_subway_fade_delayed" : "reallife_subway_fade", null, Arrived);
-            return true;
+            bool pass = TransitState.HasPass;
+            if (pass)
+            {
+                // The game took its fare in the frame its ride began (SubwaySystem.TravelToCoroutine): the pass covers it.
+                GameManager.ChangeMoneySafe(SubwayStation.PricePerRide, new TransactionInfo(CivicBridges.FareGivenBack), null, null, force: true, showNotification: true);
+            }
+            TransitDirector.Logger?.Info("Transit: the game's subway ride from " + (_rideFrom != null ? _rideFrom.stationName.ToString() : "?") + " to "
+                                         + (_rideTo != null ? _rideTo.stationName.ToString() : "?") + " has begun" + (pass ? "; the day pass gives the game's fare back" : string.Empty) + ".");
+        }
+
+        private void Landed(float now)
+        {
+            SubwayStation from = _rideFrom, to = _rideTo;
+            _rideFrom = _rideTo = null;
+            if (from == null || to == null || !Settings.SubwayJourney)
+            {
+                return;
+            }
+            float all = JourneyMinutes(from, to, out int wait);
+            _took = Mathf.Max(0, Now() - _rideBegan);
+            _to = to;
+            _minutes = all;
+            _more = all - _took;
+            TransitDirector.Logger?.Info("Transit check (subway journey): the game's ride from " + from.stationName + " to " + to.stationName + " came up after " + _took
+                                         + " game minute(s); the journey takes " + all.ToString("F0") + " (" + StopsBetween(from, to) + " stop(s), a wait of " + wait
+                                         + " min, a train every " + Frequency() + ", delays " + Delay() + "): "
+                                         + (_more >= 1f ? "the clock moves on " + _more.ToString("F0") + " minutes more" : "nothing more to add") + ": PASS.");
+            if (_more >= 1f)
+            {
+                _startBy = now + StartWithin;
+            }
+            else
+            {
+                Arrived();
+            }
         }
 
         private void Arrived()
@@ -423,19 +301,12 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            try
-            {
-                HappinessHelper.AddModifier("ba:happinessmodifier_subway");   // what the game's own ride gives
-            }
-            catch (Exception e)
-            {
-                TransitDirector.Logger?.Error(e);
-            }
+            // (the game's own ride has given the good mood of a subway trip)
             Notifications.Show(NotificationType.Info, "reallife_subway_arrived",
                 new Dictionary<string, string>(2) { { "name", Name(to) }, { "minutes", Mathf.RoundToInt(_minutes).ToString() } }, 7f);
         }
 
-        // Delays and closures go to the phone when they begin: once per window, once per night.
+        // Delays go to the phone when they begin: once per window.
         private void Announce()
         {
             if (!TransitPhone.Ready || !TransitState.Loaded)
@@ -448,23 +319,11 @@ namespace RealLifeOverhaul
                 TransitState.ToldDelay = Window;
                 TransitPhone.Text("reallife_text_transit_delay", "minutes", delay.ToString());
             }
-            SubwayStation closed = Closed();
-            int night = TimeHelper.CurrentHour >= 23 ? TimeHelper.CurrentDay : TimeHelper.CurrentDay - 1;
-            if (closed != null && TransitState.ToldClosure != night)
-            {
-                TransitState.ToldClosure = night;
-                TransitPhone.Text("reallife_text_transit_closure", "name", Name(closed));
-            }
         }
 
-        /// <summary>The panel and the list, down.</summary>
+        /// <summary>The panel, down.</summary>
         public void Hide()
         {
-            if (_list != null && _list.IsOpen)
-            {
-                _list.Close();
-            }
-            _choosing = false;
             if (_at == null)
             {
                 return;
@@ -474,15 +333,15 @@ namespace RealLifeOverhaul
             _panel.Hide();
         }
 
-        /// <summary>With the director: the list's window goes too.</summary>
+        /// <summary>With the director: the panel goes too.</summary>
         public void Dispose()
         {
             try
             {
                 Hide();
                 _panel.Hide();
-                _list?.Destroy();
-                _list = null;
+                _startBy = -1f;
+                _gameRide = false;
             }
             catch (Exception e)
             {
@@ -490,15 +349,18 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Options button: the whole journey from the nearest station to the one after it in the game's list.</summary>
+        /// <summary>
+        /// Options button: a journey from the nearest station to the one after it in the game's list, by the game's own
+        /// subway (its map in subway mode, its fare, its ride), with the journey's time added when it comes up.
+        /// </summary>
         public void Test()
         {
             TestRefusal why = !ModState.Loaded || SaveGameManager.Current == null || PlayerHelper.PlayerController == null ? TestRefusal.NotLoaded
                 : BuildingManager.IsInsideBuilding ? TestRefusal.Indoors
                 : !Settings.SubwayJourney ? TestRefusal.FeatureOff
-                : _ride.Riding || !TransitRide.CanStart() ? TestRefusal.SceneActive : TestRefusal.None;
+                : _ride.Riding || SubwaySystem.IsRiding || !TransitRide.CanStart() ? TestRefusal.SceneActive : TestRefusal.None;
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            if (why == TestRefusal.None && (city == null || city.subwayStations == null || city.subwayStations.Count < 2))
+            if (why == TestRefusal.None && (city == null || city.subwayStations == null || city.subwayStations.Count < 2 || city.subwaySystem == null || city.cityMap == null))
             {
                 why = TestRefusal.NothingFits;
             }
@@ -510,29 +372,54 @@ namespace RealLifeOverhaul
             Vector3 at = PlayerHelper.PlayerController.transform.position;
             SubwayStation from = null;
             float best = float.MaxValue;
-            SubwayStation closed = Closed();
             for (int i = 0; i < city.subwayStations.Count; i++)
             {
                 SubwayStation station = city.subwayStations[i];
                 float sqr = station != null ? (station.transform.position - at).sqrMagnitude : float.MaxValue;
-                if (sqr < best && station != closed)
+                if (sqr < best)
                 {
                     best = sqr;
                     from = station;
                 }
             }
-            SubwayStation to = null;
-            for (int i = 0; from != null && i < city.subwayStations.Count && to == null; i++)
+            SubwayStation to = from != null ? city.subwayStations[(city.subwayStations.IndexOf(from) + 1) % city.subwayStations.Count] : null;
+            if (from == null || to == null || to == from || SaveGameManager.Current.Money < SubwayStation.PricePerRide)
             {
-                SubwayStation station = city.subwayStations[(city.subwayStations.IndexOf(from) + 1 + i) % city.subwayStations.Count];
-                if (station != null && station != from && station != closed)
-                {
-                    to = station;
-                }
+                TestRefusals.Tell(TransitDirector.Logger, "Subway", TestRefusal.NothingFits, 0, "no pair of stations, or no money for the game's fare");
+                return;
             }
-            if (from == null || to == null || !Travel(from, to))
+            // As the game's own entrance does it (SubwayStation.Interact), then the game's own pick of a station on its map
+            // once the map has opened, as a player picks one.
+            city.subwaySystem.lastSubwayStation = from;
+            if (!CityMap.IsOpen)
             {
-                TestRefusals.Tell(TransitDirector.Logger, "Subway", TestRefusal.NothingFits, 0, "no pair of open stations, or the fare could not be paid");
+                city.cityMap.Toggle();
+            }
+            if (!CityMap.IsOpen)
+            {
+                TestRefusals.Tell(TransitDirector.Logger, "Subway", TestRefusal.SceneActive, 0, "the game would not open its map now");
+                return;
+            }
+            city.cityMap.ToggleSubwayMode(true);
+            _host.StartCoroutine(PickOnMap(to));
+        }
+
+        // The game's map pauses the game's clock: this waits on the interface's.
+        private IEnumerator PickOnMap(SubwayStation to)
+        {
+            float until = Time.unscaledTime + 1.5f;
+            while (Time.unscaledTime < until)
+            {
+                yield return null;
+            }
+            CityManager city = InstanceBehavior<CityManager>.Instance;
+            if (city != null && CityMap.IsOpen && city.cityMap.isSubwayMode && !SubwaySystem.IsRiding)
+            {
+                city.subwaySystem.TravelTo(to);
+            }
+            else
+            {
+                TestRefusals.Tell(TransitDirector.Logger, "Subway", TestRefusal.SceneActive, 0, "the game's subway map was closed before a station was picked");
             }
         }
     }
@@ -595,7 +482,6 @@ namespace RealLifeOverhaul
         public TransitDialog()
         {
             npcNameKey = TransitPhone.ContactId;
-            SubwayStation closed = SubwayJourney.Closed();
             int delay = SubwayJourney.Delay();
             var entry = new DialogEntry
             {
@@ -603,7 +489,6 @@ namespace RealLifeOverhaul
                 {
                     frequency = SubwayJourney.Frequency().ToString(),
                     service = (delay > 0 ? "reallife_transit_call_delays" : "reallife_transit_call_good").GetLocalization().Replace("{minutes}", delay.ToString()),
-                    closed = closed != null ? "reallife_transit_call_closed".GetLocalization().Replace("{name}", closed.GetNameKey().GetLocalization()) : string.Empty,
                     fare = TransitText.Money(TransitState.BusFare),
                     pass = TransitText.Money(TransitState.DayPass)
                 }),

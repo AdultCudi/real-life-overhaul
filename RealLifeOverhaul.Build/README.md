@@ -182,7 +182,7 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       BusBay           the geometry of a bus bay and nothing else (game-free: NavCheck drives a model bus through it): where the bus stands, the curves in and out
       TransitBays      a bay on the street as it is now: whether its length of the strip is free; the game's parked cars standing in it out of view are taken in
       TransitRide      the ride itself (fade, the game's time machine, put down at the far end), for bus and subway; TransitState: day pass and ride counts in modData
-      SubwayJourney    the prompt at each subway entrance, service by the clock (frequency, delays, a night closure), the City Transit contact
+      SubwayJourney    the game's own subway taking a journey's time: the panel at each entrance, service by the clock (frequency, delays), the day pass, the City Transit contact
       CarDash          what a car needs as one more reading in the game's own vehicle panel (a copy of its "Condition" reading)
       CarGarage        CarRecord (per owned car, in modData by vehicle id), CarRules (every price, interval and chance; game-free)
       CarOwnership     the driven car: distance, wear felt through grip and brake torque, thirst, breakdowns, what is due in a repair bay (for Garage/GarageBay), the game's panel over a broken-down car, insurance payouts, the daily round
@@ -2791,7 +2791,14 @@ that one bus was either still crawling when the game was closed or its vehicle w
     keys: "Choose a stop" on Interact ("Board: choose a stop" while a bus with room stands, "Change your stop" once
     one is picked), "Sit down" on SecondaryInteract while a free seat is within 1.5 m, "Get up" while seated. The
     earlier figures (panel at 13 m, boarding at 16 m, then 6 m from the bus) are gone.
-  - *Where to.* The list is the window the game lists its subway stations in (`GameUi.TravelList`). It offers
+  - *Where to.* On the city map, as the game offers its subway stations from an entrance (`GameUi.MapPicker`): the
+    map opens over the stop, its filters are put away as the game puts them away for its stations, and so are the
+    mod's own places (`MapPlaces.Quiet`). A copy of the game's window for its stations stands where the game's does,
+    on the map's canvas, with the game's search field (it narrows the entries by name). Every stop offered is also
+    one of the game's markers on the map, in the bus stops' colour, named while pointed at and picked by a click; the
+    stop the player is at is marked in the game's red. Pointing at an entry glides the map to its stop after the
+    game's own delay (0.2 s), as the game's entries do. The map holds the game's clock still, so a pick closes the map
+    and is taken up on the director's next tick, once the game runs again. The window offers
     every stop of the network (`TransitTrips`), as the subway offers every station: first the stops further along
     this line in the order the bus calls at them (the same bus: 0.06 game minutes a metre of line plus a minute a
     stop, times the game-speed setting), then every other stop, nearest first, reached with a change of bus that
@@ -2803,14 +2810,17 @@ that one bus was either still crawling when the game was closed or its vehicle w
   - *Boarding.* Picked while a bus with room stands, the fare is paid (`pay_tap`) and the ride begins. Picked while
     waiting, the stop is kept (`_booked`, a notice says so) and the player boards by themselves when a bus with
     room has stood for a second and they are at the stop or the bus; it is forgotten when the service at the stop
-    ends (105 m away, or another stop walked up to). The bus waits up to 30 s under an open list.
+    ends (105 m away, or another stop walked up to). The bus waits up to 30 s under an open list, and for as long
+    as the map is open (the map stops the game's clock).
   - *The ride* is unchanged: a fade with the game's time machine exactly as the game's taxi does it
     (`TaxiSystem.TravelCoroutine`), the put-down at the far stop's waiting place, a bus pulling away there.
     `Transit check (ride)` names the stops called at, or says "with a change of bus" with the metres of road it
     counted; `(put-down)` how far from the waiting place the player stands and whether that is pavement.
   - *If the game's parts are not there* (one `Game UI:` or `Transit:` warning each): without the list of calls to
-    action the stops cannot be clicked and the panel still works; without the subway's window the game's own
-    yes/no question offers the one ride to the end of the line; if the game's panel is showing another place the
+    action the stops cannot be clicked and the panel still works; without the subway's window on the map (or when
+    the game will not open its map now: placement mode, say) the same list stands in the middle of the HUD
+    (`GameUi.TravelList`), and without that the game's own yes/no question offers the one ride to the end of the
+    line; if the game's panel is showing another place the
     stop's is tried again every quarter second and `(stop panel)` says FAIL meanwhile.
   `strap_hang` is not used: there is no interior to stand in.
 - **Test buttons**: "dress the nearest bus stop" (in view; its check line follows), "send a bus to the nearest stop
@@ -2820,13 +2830,15 @@ that one bus was either still crawling when the game was closed or its vehicle w
 **Lines to judge a run by** (`Player.log`, one each): `Transit check (network)`, `(stop dressed)`, `(seat)`,
 `(bus assigned)`, `(en route)` each minute, `(re-plan)`, `(arrival)`, `(doors)`, `(departure)`, `(ride)`,
 `(put-down)`; for the player's side `(pointer)` (once when the click actions are added, then at every click on a
-stop, a bench or the bus), `(stop panel)` each time the panel comes up, `(stop list)` at every opening and
-closing, `(choice)` at every pick and for the day pass, `(subway list)`; and
+stop, a bench or the bus), `(stop panel)` each time the panel comes up, `(stop map)` (or `(stop list)`) at every
+opening and closing, `(choice)` at every pick and for the day pass, `(subway journey)` when a ride of the game's
+comes up; and
 `Transit: no bus could be put on the road ... yet (try N): <why>`.
 
 **Not verified in the game** (it could not be run): everything about how the game's interface looks with the
 stop's content in it (where the panel stands over the pole, how wide its second line makes the box, the list in the
-middle of the HUD, two lines in an entry made for one); that the game's pointer reaches a trigger box under the
+middle of the HUD, two lines in an entry made for one; the copy of the map's window beside the game's own, the
+markers' name plates while pointed at, the glide); that the game's pointer reaches a trigger box under the
 mod's camera (the game's physics has queries hit triggers, and the cursor is locked to the middle of the screen, not
 hidden, so the game's own ray is cast from the crosshair); that the outline pass draws the mod's props when they
 are put on the game's outlined layer; that the cancel key taken by the list does not also open the game's menu
@@ -2957,19 +2969,23 @@ city's streets, most of which have parked cars at the kerb (then it stops in the
 
 ### Subway
 
-Standing within 7.5 m of an entrance on foot, the game's panel over a place (`GameUi.WorldPanel`) shows the station,
-how often trains run and the state of the service, with "Take the subway" on the game's interact key; that opens the
-game's own list of stations (`GameUi.TravelList`, a second copy of the same window the buses use) with stops,
-minutes and fare for each, and the day pass as its first entry. The game's own click on the entrance still opens
-its map. Service follows the game's clock, the same on every load of the same day: a train every 3 minutes in the
-weekday rush, 5 by day, 7 from 20:00, 8 from 05:00, 12 at night; in one three-hour window in eight there are delays
-of 6 to 14 minutes; from 23:00 to 05:00 one station (a different one each night) is closed for track work. Delays
-and closures arrive as texts from the City Transit contact, which can also be called for the state of the service
-and a day pass. Stations are listed nearest first with stops (one per 650 m, at least one) and minutes; the fare is
-the game's own 3 under the game's own transaction; the journey is the wait (a part of the interval, plus delays)
-and 2 minutes a stop, as a fade with the time machine, and ends at the destination's own entrance with the game's
-subway mood. No late-night crime is tied in: the crime system has no call for staging something on the player
-other than its test button.
+The game's own subway is left as it is: click an entrance, its map opens in subway mode, pick a station, pay its 3
+(`ba:transaction_subwayride`), and a camera flies there. Standing within 7.5 m of an entrance on foot, the game's
+panel over a place (`GameUi.WorldPanel`) shows the station, how often trains run and the state of the service. It has
+no button: an earlier version put a list of stations of its own on the interact key there, and players met that
+instead of the game's map. Service follows the game's clock, the same on every load of the same day: a train every 3
+minutes in the weekday rush, 5 by day, 7 from 20:00, 8 from 05:00, 12 at night; in one three-hour window in eight
+there are delays of 6 to 14 minutes, which arrive as texts from the City Transit contact (it can also be called for
+the state of the service and a day pass). The journey is the wait (a part of the interval, plus delays) and 2 minutes
+a stop (one per 650 m, at least one). When the game's ride is over (`SubwaySystem.IsRiding` falls; its two stations
+are read as it rises), what the journey takes beyond the minutes the game's ride took is run under the bus ride's
+fade with the time machine (`TransitRide`, without the card's tap), and a note says where the player came up and how
+long the journey took; the game's own ride gives its subway mood. A day pass gives the game's fare back as the ride
+begins (`reallife_transaction_subway_pass`); civic life counts such a ride as not paid for, and counts no ride while a
+train is under way. The night closure of a station for track work went with the mod's own list: the game's map offers
+every station and cannot be told that one is shut. With "Subway journeys take time" off the game's subway is as it is,
+and a day pass still gives its fare back. No late-night crime is tied in: the crime system has no call for staging
+something on the player other than its test button.
 
 ### Car ownership
 
@@ -3724,7 +3740,7 @@ CityHallPhone     the City Hall contact (four topics), the ballot and the site n
 | wages | `EmployeeInstance.hourlyWage`: per employee, saved. `employeeHourlySalaryMultiplier` is saved and only affects new candidates | never touched. A floor of 16 an hour is billed as the difference x rota hours; or 5 % of the wage bill is paid back |
 | footfall | `baseCustomerPromotionMultiplier` is saved; `Building.trafficIndex` also feeds rent and price; `promotion` is rebuilt nightly | not changed. A site next door is a notification and a mood, not fewer customers |
 | street parking | `NeighborhoodData.parkingPrice`: a field of a data asset, in memory only | scaled x1.5 / x0.6 while the policy stands, the value found put back exactly |
-| parking tickets, subway fare | constants compiled into the call sites (125, 3) | each ticket or ride found in the day's transactions is topped up or part-refunded under its own label |
+| parking tickets, subway fare | constants compiled into the call sites (125, 3) | each ticket or ride found in the day's transactions is topped up or part-refunded under its own label (a ride whose fare a day pass gave back is not counted, nor any while a train is under way) |
 | this mod's fines | `CrimeLaw` constants | each fine found in the day's transactions is topped up 50 % or refunded 30 % ("Traffic fine adjustment"); or Law multiplies by `CivicPolicy.FineScale` and sets `CivicBridges.FinesScaledAtSource` |
 | police, crime, accidents | the mod's own options (`Settings.PolicePresence`, `PatrolFrequency`, `CrimeFrequency`, `AccidentFrequency`) | scaled in memory (dithered by the hour so that 2 x 1.25 is 2.5 on average), never written to the options file, put back on revert; if the player moves the slider meanwhile, that becomes the new base |
 | sweepers | `CityCatalogue` entry `sweeper`, public `Weight` | x2.5 / x0.3, put back |
@@ -5306,6 +5322,8 @@ Core/GameUi/
   GameSprites     the game's pictures by name, found in memory
   AppIconPainter  an app icon in the game's manner, painted from one of the game's own
   WorldPanel      the game's panel over a place, with buttons on the game's own keys (an IOverlay in the game's box)
+  MapPicker       a choice of places on the open city map, in a copy of the game's window for its stations there:
+                  its search field, a marker of the game's per place (named while pointed at), the glide to an entry's place
   TravelList      a list in the window the game lists its subway stations in: a name, lines and a button per entry;
                   Window (its rectangle, for an owner that stands it aside or widens it) and EntryShape (higher
                   entries whose lines wrap) for lists that say more than a station's name
