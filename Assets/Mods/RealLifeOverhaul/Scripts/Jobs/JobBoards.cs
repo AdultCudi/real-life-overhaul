@@ -36,6 +36,7 @@ namespace RealLifeOverhaul
         private readonly List<string> _kindOf = new List<string>(Most);        // the kind of service building each board stands at
         private readonly List<Vector3> _outward = new List<Vector3>(Most);     // the way each board faces: away from its wall
         private readonly List<string> _names = new List<string>(Most);
+        private readonly List<CityBuildingController> _buildings = new List<CityBuildingController>(Most);   // the building each board stands at
         private int _next;                   // the next building to look at
         private bool _searched;
         private bool _failed;
@@ -71,6 +72,9 @@ namespace RealLifeOverhaul
 
         /// <summary>The address of the building a board stands at, as the game writes it.</summary>
         public string Address(int board) => _names[board];
+
+        /// <summary>The building a board stands at (it lights up on the city map while its row is ticked).</summary>
+        public CityBuildingController Building(int board) => _buildings[board];
 
         /// <summary>The board the player stands in front of, or -1.</summary>
         public int Near { get; private set; } = -1;
@@ -130,6 +134,7 @@ namespace RealLifeOverhaul
             _fronts.Clear();
             _kindOf.Clear();
             _names.Clear();
+            _buildings.Clear();
             _outward.Clear();
             InReach = false;
             Near = -1;
@@ -204,6 +209,7 @@ namespace RealLifeOverhaul
                 _fronts.Add(stand + outward * 0.5f);
                 _kindOf.Add(kind);
                 _names.Add(building.building.Address.ToFormattedString());
+                _buildings.Add(building);
                 _outward.Add(outward);
                 return true;
             }

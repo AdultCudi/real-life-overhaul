@@ -247,7 +247,11 @@ namespace RealLifeOverhaul
                 Fill = places =>
                 {
                     Courthouse court = JusticeDirector.Instance.Court;
-                    places.Add(new MapPlace(court.Front, At(T("reallife_map_row_courthouse"), court.Name)));
+                    places.Add(new MapPlace(court.Front, At(T("reallife_map_row_courthouse"), court.Name), court.Building)
+                    {
+                        CardTypeKey = "reallife_justice_card_type",
+                        CardStateKey = "reallife_justice_card_open"
+                    });
                 }
             });
             // Licences: the learner-plate boards at the school buildings (found a few buildings a second).
@@ -265,7 +269,7 @@ namespace RealLifeOverhaul
                     LicenceDesks desks = LicenceDirector.Instance.Desks;
                     for (int i = 0; i < desks.Count; i++)
                     {
-                        places.Add(new MapPlace(desks.Front(i), At(T("reallife_map_driving_school"), desks.Address(i))));
+                        places.Add(new MapPlace(desks.Front(i), At(T("reallife_map_driving_school"), desks.Address(i))) { Lit = desks.Building(i) });
                     }
                 }
             });
@@ -338,7 +342,7 @@ namespace RealLifeOverhaul
                     {
                         int employer = CareerDirector.On && jobs.Career != null ? jobs.Career.EmployerAt(b) : -1;
                         string what = employer >= 0 && employer < CareerCatalogue.All.Length ? T(CareerCatalogue.All[employer].NameKey) : T("reallife_map_help_wanted");
-                        places.Add(new MapPlace(boards.Front(b), At(what, boards.Address(b))));
+                        places.Add(new MapPlace(boards.Front(b), At(what, boards.Address(b))) { Lit = boards.Building(b) });
                     }
                 }
             });
@@ -360,7 +364,7 @@ namespace RealLifeOverhaul
                     {
                         if (districts[i] != null && districts[i].Polling != null)
                         {
-                            places.Add(new MapPlace(districts[i].Door, At(T("reallife_map_polling_place"), T(districts[i].Id))));
+                            places.Add(new MapPlace(districts[i].Door, At(T("reallife_map_polling_place"), T(districts[i].Id))) { Lit = districts[i].Polling });
                         }
                     }
                 }
@@ -407,7 +411,10 @@ namespace RealLifeOverhaul
                         {
                             what = T("reallife_map_row_construction");   // (a site from a save with a project this catalogue does not have)
                         }
-                        places.Add(new MapPlace(new Vector3(site.X, site.Y, site.Z), At(what, CivicCity.AddressText(site.Street, site.Number))));
+                        places.Add(new MapPlace(new Vector3(site.X, site.Y, site.Z), At(what, CivicCity.AddressText(site.Street, site.Number)))
+                        {
+                            Lit = CivicCity.Find(site.Street, site.Number)   // (the building being worked on; null for a plot with none)
+                        });
                     }
                 }
             });

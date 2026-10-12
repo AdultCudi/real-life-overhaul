@@ -26,8 +26,15 @@ namespace RealLifeOverhaul
         public Vector3 Position;
         /// <summary>Its name as shown: on the marker's name plate, on the destination marker, on the building's card.</summary>
         public string Name;
-        /// <summary>Optional: the building it is. The game's own card for that building (under the mouse, when picked on the map) then carries the place's name.</summary>
+        /// <summary>Optional: the building it is. The game's own card for that building (under the mouse, when picked on the map) then carries the place's name, and the building lights up as <see cref="Lit"/> says.</summary>
         public CityBuildingController Building;
+        /// <summary>
+        /// Optional: the building that lights up on the open map while the place's row is ticked, as the game's own
+        /// filters light theirs: its outline in the row's colour and its own marker with the row's icon, which stands
+        /// for the place there instead of the mod's marker. <see cref="Building"/> if that is given; given alone for a
+        /// place at a building that keeps its own card (a sign on a school's wall, a board at an employer's).
+        /// </summary>
+        public CityBuildingController Lit;
         /// <summary>Optional: its address, for anything that wants one (taken from the building if that is given).</summary>
         public Address Address;
         /// <summary>Optional, for a building: locale keys for the two lines of the card that would otherwise say what the unit is and that it is to let.</summary>
@@ -38,6 +45,10 @@ namespace RealLifeOverhaul
         internal PointOfInterest Marker;
         internal bool Labelled;
         internal MapPlaces.Category Owner;
+        internal int LitWhen;   // the look of the map it was last lit for (MapPlaces.Light)
+
+        /// <summary>The building that lights up for it, if any.</summary>
+        internal CityBuildingController LitBuilding => Lit != null ? Lit : Building;
 
         public MapPlace()
         {
@@ -186,6 +197,10 @@ namespace RealLifeOverhaul
 
         private static readonly List<Category> Categories = new List<Category>(12);
         private static readonly Dictionary<CityBuildingController, MapPlace> ByBuilding = new Dictionary<CityBuildingController, MapPlace>();
+        private static readonly List<MapPlace> Lights = new List<MapPlace>(64);   // the places that light up a building (MapPlace.Lit)
+        private static bool _lightFailed;
+        private static bool _gameLooking;   // the game's own look at every building was under way at the last frame
+        private static int _lightLook = 1;  // counts the looks of the map: a place lit for an older one is lit again
         private static readonly Sprite[] Glyphs = new Sprite[(int)MapIcon.Custom];
         private static readonly HashSet<string> Said = new HashSet<string>(StringComparer.Ordinal);
         private static Driver _driver;
@@ -285,6 +300,15 @@ namespace RealLifeOverhaul
                     place.Address = place.Building.building.Address;
                 }
             }
+            if (place.LitBuilding != null && !Lights.Contains(place))
+            {
+                Lights.Add(place);
+                place.LitWhen = 0;
+                if (_driver != null)
+                {
+                    _driver.enabled = true;
+                }
+            }
             if (_markFailed || _driver == null)
             {
                 return;
@@ -316,6 +340,10 @@ namespace RealLifeOverhaul
             if (!ReferenceEquals(place.Building, null) && ByBuilding.TryGetValue(place.Building, out MapPlace held) && held == place)
             {
                 ByBuilding.Remove(place.Building);
+            }
+            if (Lights.Remove(place) && CityMap.IsOpen && _filters != null)
+            {
+                _filters.ApplyFilters();   // the game looks at its buildings again, and puts the light out
             }
             if (place.Marker != null && !GameManager.isCitySceneBeingUnloaded)
             {
@@ -366,8 +394,9 @@ namespace RealLifeOverhaul
                             PermanentPointsOfInterest.UpdatePermanentPointsOfInterest();   // in the game's own list of permanent markers from the next frame
                         }
                     }
-                    // A row that is not ticked hides its places in the street as on the open map: "off" means off.
-                    hide |= _quiet && open;
+                    // A row that is not ticked hides its places in the street as on the open map: "off" means off. On the
+                    // open map a place whose building is lit has the building's own marker instead.
+                    hide |= open && (_quiet || Lighting(place));
                     if (marker.hidden != hide || hide && marker.gameObject.activeSelf)
                     {
                         marker.SetHidden(hide);
@@ -375,7 +404,7 @@ namespace RealLifeOverhaul
                 }
                 else
                 {
-                    bool show = open && offered && category.On && !_quiet;
+                    bool show = open && offered && category.On && !_quiet && !Lighting(place);
                     if (marker.gameObject.activeSelf != show)
                     {
                         marker.gameObject.SetActive(show);
@@ -734,11 +763,84 @@ namespace RealLifeOverhaul
             }
         }
 
+        // ---------------------------------------------------------------- the buildings lit on the map
+
+        // True if a place's building stands for it on the open map (lit as the game lights its own).
+        private static bool Lighting(MapPlace place)
+        {
+            return !_lightFailed && place.LitBuilding != null;
+        }
+
+        // The buildings of the ticked rows, lit on the open map as the game's own filters light theirs (CityMapFilters
+        // .ApplyFilters): the outline in the row's colour and the building's own marker with the row's icon. The game
+        // looks at every building again whenever a filter changes, a few a frame, and puts out every light that is not
+        // its own; a building of ours that it put out has its marker switched off, so it is lit again in the same frame,
+        // before anything is drawn. A building whose marker the game always shows (one of the player's own) cannot be
+        // told apart that way: it is lit again when each look is over. Nothing is lit where the game puts out all its
+        // own lights: its choice of a subway station, the phone's full menu over the map, a picture of a building being
+        // taken; nor while something is being picked on the map (Quiet). Once a frame while the map is open.
+        private static void Light()
+        {
+            CityManager city = InstanceBehavior<CityManager>.Instance;
+            var game = InstanceBehavior<GameManager>.Instance;
+            if (_quiet || _lightFailed || Lights.Count == 0 || city == null || city.cityMap == null || city.cityMap.isSubwayMode || UI.Smartphone.FullMenu.IsOpen
+                || (game != null && game.buildingOutdoorsCameraCaptureController != null && game.buildingOutdoorsCameraCaptureController.gameObject.activeSelf))
+            {
+                _gameLooking = false;
+                return;
+            }
+            bool looking = CityMapFilters.Work.HasPendingWork;
+            if (_gameLooking && !looking)
+            {
+                _lightLook++;   // the game's look at every building is over
+            }
+            _gameLooking = looking;
+            for (int i = 0; i < Lights.Count; i++)
+            {
+                MapPlace place = Lights[i];
+                Category category = place.Owner;
+                CityBuildingController building = place.LitBuilding;
+                if (category == null || building == null || !category.Shown)
+                {
+                    continue;
+                }
+                PointOfInterest poi = building.poi;
+                if (place.LitWhen == _lightLook && poi != null && (poi.Permanent || poi.gameObject.activeSelf))
+                {
+                    continue;   // lit, as far as can be seen
+                }
+                try
+                {
+                    if (poi == null)
+                    {
+                        building.CreatePOI();
+                    }
+                    else if (poi.Permanent)
+                    {
+                        poi.SetHidden(false);
+                    }
+                    building.SetHighlight(true, (Color32)category.Colour);
+                    building.poi.SetIcon(category.Icon, category.Colour);
+                    place.LitWhen = _lightLook;
+                }
+                catch (Exception e)
+                {
+                    _lightFailed = true;
+                    Logger?.Error(e);
+                    Logger?.Warn("Map places: a building of the mod's could not be lit on the map; the mod's places keep their own markers there instead.");
+                    Refresh();   // (their markers come back)
+                    return;
+                }
+            }
+        }
+
         // ---------------------------------------------------------------- the driver
 
         private static void OnMap(bool open)
         {
             _mapOpen = open;
+            _lightLook++;   // (every place is lit afresh on the map that has just opened)
+            _gameLooking = false;
             try
             {
                 for (int i = 0; i < Categories.Count; i++)
@@ -780,6 +882,9 @@ namespace RealLifeOverhaul
             }
             Categories.Clear();
             ByBuilding.Clear();
+            Lights.Clear();
+            _lightFailed = false;
+            _gameLooking = false;
             if (_onMap != null)
             {
                 GlobalEvents.onCityMapToggle -= _onMap;
@@ -795,8 +900,9 @@ namespace RealLifeOverhaul
         /// <summary>
         /// The one object behind the map places: a look a second (in real time: the map pauses the game) that hooks the
         /// map's own event again after a load, adds the rows once the game's filter list is there, and puts names on
-        /// markers that have appeared. Its only per-frame work is the building card's reference comparison, and it is
-        /// switched off altogether while no place is a building.
+        /// markers that have appeared. Its only per-frame work is the building card's reference comparison and, while
+        /// the map is open, a look at the buildings lit for the ticked rows (Light); it is switched off altogether while
+        /// no place is a building.
         /// </summary>
         private sealed class Driver : MonoBehaviour
         {
@@ -852,7 +958,7 @@ namespace RealLifeOverhaul
                 }
                 UIs uis = InstanceBehavior<UIs>.Instance;
                 _card = uis != null ? uis.buildingResume : null;
-                enabled = ByBuilding.Count > 0;
+                enabled = ByBuilding.Count > 0 || Lights.Count > 0;
                 if (!_filterFailed && uis != null && uis.mapFilters != null)
                 {
                     bool missing = !ReferenceEquals(_filters, uis.mapFilters);
@@ -908,9 +1014,22 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // After the game has written the card (it does so the moment a building comes under the mouse or is picked).
+            // After the game's own work of the frame: its look at the buildings (GameManager.Update), and the card it writes
+            // the moment a building comes under the mouse or is picked.
             private void LateUpdate()
             {
+                if (_mapOpen)
+                {
+                    try
+                    {
+                        Light();
+                    }
+                    catch (Exception e)
+                    {
+                        _lightFailed = true;
+                        Logger?.Error(e);
+                    }
+                }
                 if (ReferenceEquals(_card, null))
                 {
                     return;
