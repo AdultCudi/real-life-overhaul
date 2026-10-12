@@ -102,6 +102,12 @@ namespace RealLifeOverhaul
         /// <summary>Set by a feature that applies the subway fare change itself: civic life then leaves subway fares alone.</summary>
         public static bool FaresScaledAtSource;
 
+        /// <summary>
+        /// The bank entry a feature gives the game's subway fare back under (a ride on a day pass: Transport/SubwayJourney).
+        /// Civic life does not count such a ride as a fare paid, so the policy's change to the fare is not charged on it.
+        /// </summary>
+        public const string FareGivenBack = "reallife_transaction_subway_pass";
+
         /// <summary>Crimes and accidents other features have told civic life about since it last looked.</summary>
         internal static int Crimes, Accidents;
 

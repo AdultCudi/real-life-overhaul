@@ -356,7 +356,7 @@ namespace RealLifeOverhaul
         public static bool LawMapMarkers = true;         // police stations on the city map and its filter list, and their markers in the street
         public static bool Buses = true;                 // bus stops near the player, buses that call at them, riding one
         public static bool TransitPeople = true;         // people waiting at a stop, getting on and off
-        public static bool SubwayJourney = true;         // the subway as a trip with a wait and a ride, from a key at each entrance
+        public static bool SubwayJourney = true;         // the game's own subway ride takes the time of a journey: the wait for a train, the stops, any delay
         public static bool TaxiCall = true;              // the City Cabs contact: a taxi called from the phone comes to the player's street (Scripts/Transport/Taxi)
         public static bool CarOwnership = true;          // distance, servicing, wear, breakdowns, insurance, registration, the fuel gauge
         public static bool CarEasy = false;              // easy car ownership: no fuel use, no breakdowns, no wear

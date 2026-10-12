@@ -2,9 +2,11 @@
 
 New
 - The rota planner counts the goods: a plan sells a product only while there is some, and the page says what runs out, when, and what would keep it on the shelves.
+- Bus stops: Choose a stop opens the city map with the stops on it and the game's list of stations beside it, as a subway entrance does.
 
 Fixed
 - The search box in Contacts was out of sight to the left of the app; it now has its own line above the list.
 - The minimap turned with the way you walked; it now turns with the camera.
 - A car towed after a crash could stay behind as a shell you walked through; the whole car now goes to the space.
 - The game could freeze for two seconds as an ambulance crew got out with the stretcher; that is now a moment's work.
+- A subway entrance opened the mod's list of stations instead of the game's subway map; the game's map is back, and the journey still takes its time.

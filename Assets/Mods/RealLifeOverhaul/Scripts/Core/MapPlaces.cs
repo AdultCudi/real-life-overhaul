@@ -198,6 +198,24 @@ namespace RealLifeOverhaul
         private static Action<bool> _onMap;
         private static Action<bool> _mapSeen;
         private static bool _mapOpen;
+        private static bool _quiet;
+
+        /// <summary>
+        /// True while something is being picked on the open map (GameUi.MapPicker): the mod's own places are off it, as
+        /// the game takes its filters off the map for its subway stations. Put back to false when the picking ends.
+        /// </summary>
+        public static bool Quiet
+        {
+            get { return _quiet; }
+            set
+            {
+                if (_quiet != value)
+                {
+                    _quiet = value;
+                    Refresh();
+                }
+            }
+        }
 
         /// <summary>Every kind of place registered (read only: the minimap shows the ones that are <see cref="Category.Shown"/>).</summary>
         public static IReadOnlyList<Category> All => Categories;
@@ -349,6 +367,7 @@ namespace RealLifeOverhaul
                         }
                     }
                     // A row that is not ticked hides its places in the street as on the open map: "off" means off.
+                    hide |= _quiet && open;
                     if (marker.hidden != hide || hide && marker.gameObject.activeSelf)
                     {
                         marker.SetHidden(hide);
@@ -356,7 +375,7 @@ namespace RealLifeOverhaul
                 }
                 else
                 {
-                    bool show = open && offered && category.On;
+                    bool show = open && offered && category.On && !_quiet;
                     if (marker.gameObject.activeSelf != show)
                     {
                         marker.gameObject.SetActive(show);

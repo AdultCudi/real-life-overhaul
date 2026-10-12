@@ -24,7 +24,7 @@ namespace RealLifeOverhaul
         public static int BusRides;
         public static int SubwayRides;
         public static int ToldDelay = -1;     // the three-hour window whose delays were last sent to the phone
-        public static int ToldClosure = -1;   // the night whose closure was last sent
+        public static int ToldClosure = -1;   // the night whose closure was last sent (no station closes now: kept, so that the saved line keeps its shape)
 
         public static bool HasPass => PassDay > 0 && PassDay == TimeHelper.CurrentDay;
 
@@ -137,17 +137,18 @@ namespace RealLifeOverhaul
         /// <param name="fadeKey">The line under the fade, a complete locale key.</param>
         /// <param name="onFaded">Called once the screen is black (the bus drives off, people are taken in).</param>
         /// <param name="onArrived">Called with the player standing at the far end, before the screen clears.</param>
-        public void Begin(float minutes, Vector3 arrive, string fadeKey, Action onFaded, Action onArrived)
+        /// <param name="tap">The card was just tapped on the reader (TransitDirector.TapCard): the fade waits for the tap to land.</param>
+        public void Begin(float minutes, Vector3 arrive, string fadeKey, Action onFaded, Action onArrived, bool tap = true)
         {
             if (Riding || _host == null || !_host.isActiveAndEnabled)
             {
                 return;
             }
             Riding = true;
-            _host.StartCoroutine(Run(minutes, arrive, fadeKey, onFaded, onArrived));
+            _host.StartCoroutine(Run(minutes, arrive, fadeKey, onFaded, onArrived, tap));
         }
 
-        private IEnumerator Run(float minutes, Vector3 arrive, string fadeKey, Action onFaded, Action onArrived)
+        private IEnumerator Run(float minutes, Vector3 arrive, string fadeKey, Action onFaded, Action onArrived, bool tap)
         {
             var game = InstanceBehavior<GameManager>.Instance;
             UIs uis = InstanceBehavior<UIs>.Instance;
@@ -165,7 +166,7 @@ namespace RealLifeOverhaul
                 _player.SetNavigationBlocker(NavigationBlocker.Taxi);
                 _blocked = true;
                 // The card on the reader first (TransitDirector.TapCard was just started): the tap lands 0.7 s in.
-                float tapped = Time.unscaledTime + 1f;
+                float tapped = Time.unscaledTime + (tap ? 1f : 0f);
                 while (Time.unscaledTime < tapped)
                 {
                     yield return null;

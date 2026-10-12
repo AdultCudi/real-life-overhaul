@@ -325,13 +325,13 @@ namespace RealLifeOverhaul
             {
                 if (state.SeenDay > 0 && state.SeenDay == day - 1)
                 {
-                    Settle(state, save, state.SeenDay, false);
+                    Settle(state, save, state.SeenDay, false, true);
                 }
                 state.SeenDay = day;
                 state.SeenFines = 0f;
                 state.SeenRides = 0f;
             }
-            Settle(state, save, day, first);
+            Settle(state, save, day, first, false);
 
             int tickets = save.achievementsData != null ? save.achievementsData.parkingTickets : 0;
             if (state.SeenTickets < 0 || tickets < state.SeenTickets)
@@ -349,7 +349,8 @@ namespace RealLifeOverhaul
             state.SeenTickets = tickets;
         }
 
-        private static void Settle(GovState state, GameInstance save, int day, bool lookOnly)
+        // dayDone: the day is over (it is settled one last time on the next): what is in its books is all there will be.
+        private static void Settle(GovState state, GameInstance save, int day, bool lookOnly, bool dayDone)
         {
             float fines = 0f, rides = 0f;
             Queue<Transaction> all = save.Transactions;
@@ -357,17 +358,21 @@ namespace RealLifeOverhaul
             {
                 foreach (Transaction entry in all)
                 {
-                    if (entry == null || entry.timestamp == null || entry.timestamp.Day != day || entry.amount >= 0f)
+                    if (entry == null || entry.timestamp == null || entry.timestamp.Day != day)
                     {
                         continue;
                     }
-                    if (entry.transactionType == FineType)
+                    if (entry.amount < 0f && entry.transactionType == FineType)
                     {
                         fines -= entry.amount;
                     }
-                    else if (entry.transactionType == RideType)
+                    else if (entry.amount < 0f && entry.transactionType == RideType)
                     {
                         rides -= entry.amount;
+                    }
+                    else if (entry.amount > 0f && entry.transactionType == CivicBridges.FareGivenBack)
+                    {
+                        rides -= entry.amount;   // a ride the day pass covered: the game's fare was given back, so it was not paid
                     }
                 }
             }
@@ -382,6 +387,12 @@ namespace RealLifeOverhaul
             }
             state.SeenFines = Mathf.Max(state.SeenFines, fines);
 
+            // A ride is counted once its train is in: a day pass gives the game's fare back a moment after the game takes it,
+            // and the game takes it in the frame its ride begins, so by then both are in the books.
+            if (SubwaySystem.IsRiding && !dayDone)
+            {
+                return;
+            }
             float newRides = rides - state.SeenRides;
             int fareExtra = CivicCatalogue.FareExtra(state.Levers[(int)Lever.Transit]);
             if (!lookOnly && newRides > 0.5f && !CivicBridges.FaresScaledAtSource && fareExtra != 0)

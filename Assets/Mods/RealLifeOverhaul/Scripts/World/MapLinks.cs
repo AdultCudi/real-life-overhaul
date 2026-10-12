@@ -216,7 +216,7 @@ namespace RealLifeOverhaul
             // Transport: every stop of the network, not only the three that are dressed near the player.
             _links.Add(new Link
             {
-                Id = "bus_stops", TitleKey = "reallife_map_row_bus_stops", Colour = new Color(0.05f, 0.56f, 0.62f), Icon = MapIcon.Bus,
+                Id = "bus_stops", TitleKey = "reallife_map_row_bus_stops", Colour = TransitDirector.StopColour, Icon = MapIcon.Bus,
                 TickedByDefault = count => count <= ManyStops,
                 Enabled = () => Settings.Buses,
                 Stamp = () => TransitMap.Ready ? 1 + TransitMap.Stops.Count : 0,

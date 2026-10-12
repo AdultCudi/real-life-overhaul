@@ -117,9 +117,8 @@ namespace RealLifeOverhaul
         /// <summary>True while the player is aboard a bus (the ride hides the player and darkens the screen).</summary>
         public static bool Riding => Instance != null && Instance._ride != null && Instance._ride.Riding;
 
-        /// <summary>True while the stop's panel (whose buttons are on the game's interact keys) or the subway's key prompt is on screen: the mod's own enter-a-door key stands aside.</summary>
-        public static bool TakesInteractKey => Instance != null && (Instance._panel.Showing || Instance._keyFrame == Time.frameCount
-                                                                    || (Instance._subway != null && Instance._subway.TakesKey));
+        /// <summary>True while the stop's panel (whose buttons are on the game's interact keys) is on screen: the mod's own enter-a-door key stands aside.</summary>
+        public static bool TakesInteractKey => Instance != null && (Instance._panel.Showing || Instance._keyFrame == Time.frameCount);
 
         private readonly BusStopDressing[] _dressings = new BusStopDressing[Dressings];
         private readonly Rider[] _waiting = new Rider[Waiters];
