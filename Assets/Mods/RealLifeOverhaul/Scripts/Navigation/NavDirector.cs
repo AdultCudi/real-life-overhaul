@@ -211,7 +211,27 @@ namespace RealLifeOverhaul.Nav
             _heading = _follow.eulerAngles.y;
             float speed = _driving && _body != null ? _body.velocity.magnitude : 0f;
             _metres = NavView.Ease(_metres, NavView.MetresAcross(Settings.MinimapZoom, speed), Time.unscaledDeltaTime, 1.6f);
-            _hud.Frame(_px, _pz, _heading, _metres, Settings.MinimapRotate);
+            _hud.Frame(_px, _pz, _heading, ViewHeading(_heading), _metres, Settings.MinimapRotate);
+        }
+
+        // The way the camera looks, degrees clockwise from north: what is ahead on the screen. The mouse turns it; walking
+        // does not. A camera that looks straight down has its screen's up as its ahead. With no camera, the player's way.
+        private static float ViewHeading(float fallback)
+        {
+            Camera camera = GameManager.GetMainCamera();
+            if (camera == null)
+            {
+                return fallback;
+            }
+            Transform t = camera.transform;
+            Vector3 ahead = t.forward;
+            ahead.y = 0f;
+            if (ahead.sqrMagnitude < 0.0001f)
+            {
+                ahead = t.up;
+                ahead.y = 0f;
+            }
+            return ahead.sqrMagnitude < 0.0001f ? fallback : Mathf.Atan2(ahead.x, ahead.z) * Mathf.Rad2Deg;
         }
 
         // One slice of the search: steps until it is decided or the slice's time is up.

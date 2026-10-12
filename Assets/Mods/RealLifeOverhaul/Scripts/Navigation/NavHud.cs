@@ -710,22 +710,25 @@ namespace RealLifeOverhaul.Nav
         // ---------------------------------------------------------------- every frame
 
         /// <summary>
-        /// Moves the view to the player. <paramref name="heading"/> is degrees clockwise from north;
+        /// Moves the view to the player. <paramref name="heading"/> is the way the player (or the car) faces and
+        /// <paramref name="view"/> the way the camera looks, both degrees clockwise from north. With
+        /// <paramref name="turnWithView"/> the map turns with the camera, so that what is ahead on the screen is up on the
+        /// map, and the arrow shows the player's own way against it; otherwise north is up and the arrow turns.
         /// <paramref name="metresAcross"/> is how much of the city the view's width shows. Writes nothing when the
         /// player has not moved or turned and the view is as wide as it was.
         /// </summary>
-        public void Frame(float px, float pz, float heading, float metresAcross, bool turnWithPlayer)
+        public void Frame(float px, float pz, float heading, float view, float metresAcross, bool turnWithView)
         {
             if (!_mapOn || _mapHeight <= 0f)
             {
                 return;
             }
             float scale = ViewWidth / metresAcross;
-            float turn = turnWithPlayer ? heading : 0f;
+            float turn = turnWithView ? view : 0f;
             bool scaled = Mathf.Abs(scale - _scale) > _scale * 0.0005f;
             bool turned = Mathf.Abs(Mathf.DeltaAngle(turn, _turn == float.MaxValue ? turn + 180f : _turn)) > 0.1f;
             bool moved = Mathf.Abs(px - _px) > 0.02f || Mathf.Abs(pz - _pz) > 0.02f;
-            float arrow = turnWithPlayer ? 0f : -heading;
+            float arrow = -Mathf.DeltaAngle(turn, heading);   // the player's way on the map as it is turned
             if (Mathf.Abs(Mathf.DeltaAngle(arrow, _arrow == float.MaxValue ? arrow + 180f : _arrow)) > 0.5f)
             {
                 _arrow = arrow;

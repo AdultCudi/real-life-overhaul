@@ -5,3 +5,4 @@ New
 
 Fixed
 - The search box in Contacts was out of sight to the left of the app; it now has its own line above the list.
+- The minimap turned with the way you walked; it now turns with the camera.
