@@ -30,7 +30,7 @@ namespace RealLifeOverhaul
     {
         private const float MinMoveSpeed = 0.6f;   // m/s before the camera starts swinging behind
         private const float MinDistance = 2.5f;
-        private const float MinPitch = 4f;
+        private const float MinPitch = -60f;       // out of doors; under 0 the view looks up, to the tops of the buildings
         private const float MaxPitch = 80f;
 
         public static IModLogger Logger;
@@ -75,6 +75,8 @@ namespace RealLifeOverhaul
             public Transform LookAt;
             public float Fov;
             public Transform Target;                // our own orbit/look-at point at the player's upper body
+            public Transform Aim;                   // what the camera looks at: the target, or above it while the view looks up past the camera's lowest swing
+            public float Floor;                     // out of doors, the lowest the camera may swing (degrees of tilt, under 0 below the target), eased
             public bool Indoor;
             public float DistanceSpeed;
             public float Desired;                   // distance the player asked for, before walls pull the camera in
@@ -82,8 +84,16 @@ namespace RealLifeOverhaul
         }
 
         private const float IndoorMinDistance = 1f;
+        private const float IndoorMinPitch = 4f;   // interiors are built to be seen from above, and looking up there shows no ceiling
         private const float CollisionRadius = 0.25f;
         private static readonly RaycastHit[] CollisionHits = new RaycastHit[24];
+
+        // Out of doors the view may look up further than the camera can swing down: the camera stops over the ground
+        // and the rest of the tilt is a look upwards from where it stands (Orbit).
+        private const float GroundClearance = 0.45f;   // metres between the camera and the ground under it
+        private const float LowOrbit = 15f;            // degrees: at this tilt or steeper the camera is well over the ground, which is then not looked at
+        private const float FloorEase = 12f;           // per second, so that a kerb under the camera does not make it hop
+        private const float SinDeepest = 0.42261826f;  // sin 25 degrees: the deepest the camera swings under its target, over a drop
 
         private CamState _outdoor;
         private CamState _indoor;
@@ -195,7 +205,7 @@ namespace RealLifeOverhaul
         {
             if (state != null && state.Target != null)
             {
-                Destroy(state.Target.gameObject);
+                Destroy(state.Target.gameObject);   // the aim point goes with it: it is the target's child
             }
         }
 
@@ -263,7 +273,7 @@ namespace RealLifeOverhaul
             var delta = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"));
             float degreesPerUnit = Settings.MouseSensitivity * 0.25f;
             state.Cam.angle += delta.x * degreesPerUnit;
-            _pitch = Mathf.Clamp(_pitch - delta.y * degreesPerUnit, MinPitch, MaxPitch);
+            _pitch = Mathf.Clamp(_pitch - delta.y * degreesPerUnit, state.Indoor ? IndoorMinPitch : MinPitch, MaxPitch);
 
             if (!_loggedMouseDelta && delta != Vector2.zero)
             {
@@ -284,7 +294,8 @@ namespace RealLifeOverhaul
             var lens = vcam as CinemachineVirtualCamera;
             float fov = lens != null ? lens.m_Lens.FieldOfView : 0f;
             Logger?.Info($"Camera: {label} vanilla offset={cam.offset} minMax={cam.minMaxDistance} distance={cam.distance} "
-                         + $"fov={fov} follow={(vcam.Follow != null ? vcam.Follow.name : "none")} lookAt={(vcam.LookAt != null ? vcam.LookAt.name : "none")}");
+                         + $"fov={fov} near={(lens != null ? lens.m_Lens.NearClipPlane : 0f)} far={(lens != null ? lens.m_Lens.FarClipPlane : 0f)} "
+                         + $"follow={(vcam.Follow != null ? vcam.Follow.name : "none")} lookAt={(vcam.LookAt != null ? vcam.LookAt.name : "none")}");
             return new CamState
             {
                 Cam = cam,
@@ -332,21 +343,26 @@ namespace RealLifeOverhaul
                     state.Target = new GameObject("RealLifeOverhaul Camera Target").transform;
                     state.Target.SetParent(state.Follow, false);
                 }
+                if (state.Aim == null)
+                {
+                    state.Aim = new GameObject("RealLifeOverhaul Camera Aim").transform;
+                    state.Aim.SetParent(state.Target, false);
+                }
                 // Parented to the vanilla follow point so it moves with the player without a frame of lag.
                 Vector3 follow = Focus != null ? Focus.position : state.Follow.position;
                 state.Target.position = new Vector3(follow.x, player.position.y + Settings.CameraHeight / 10f, follow.z);
                 state.VCam.Follow = state.Target;
                 if (state.LookAt != null)
                 {
-                    state.VCam.LookAt = state.Target;
+                    state.VCam.LookAt = state.Aim;
                 }
             }
             SetFov(state, Settings.CameraFov);
 
-            // Keep the vanilla compass direction of the offset, only change how steeply it looks down.
+            // Keep the vanilla compass direction of the offset, only change how high the camera swings round.
             var flat = new Vector3(state.Offset.x, 0f, state.Offset.z);
             flat = flat.sqrMagnitude > 0.0001f ? flat.normalized : Vector3.back;
-            float pitch = _pitch * Mathf.Deg2Rad;
+            float pitch = Orbit(state, flat) * Mathf.Deg2Rad;
             state.Cam.offset = flat * Mathf.Cos(pitch) + Vector3.up * Mathf.Sin(pitch);
             float min = state.Indoor ? IndoorMinDistance : MinDistance;
             float max = Mathf.Max(state.MinMaxDistance.y, min + 1f);
@@ -370,6 +386,61 @@ namespace RealLifeOverhaul
             state.LastWritten = distance;
             state.Cam.distanceSpeed = state.Indoor ? 14f : state.DistanceSpeed;
             state.Applied = true;
+        }
+
+        /// <summary>
+        /// How high the camera swings round its target, in degrees of tilt as the mouse sets it, and what it looks at.
+        /// Indoors that is the tilt, never under <see cref="IndoorMinPitch"/>. Out of doors the view may look up to the
+        /// skyline, but the camera itself stops <see cref="GroundClearance"/> over the ground under it; past that it aims
+        /// at a point above the target instead, as high as makes the view's tilt the one asked for. One ray at most, and
+        /// only while the camera may swing low enough for the ground to matter.
+        /// </summary>
+        private float Orbit(CamState state, Vector3 flat)
+        {
+            if (state.Indoor || state.Target == null || state.Aim == null)
+            {
+                return Mathf.Max(_pitch, IndoorMinPitch);   // (with no target of our own there is nothing to aim above either)
+            }
+
+            Vector3 target = state.Target.position;
+            // The game eases the camera to its distance, so the distance that counts is where it is now.
+            float distance = Mathf.Max(Vector3.Distance(state.Cam.transform.position, target), 0.5f);
+
+            // The target's height over the ground under where the camera is going, for the camera being looked through only.
+            float above = Settings.CameraHeight / 10f;   // as on level ground
+            if (_pitch < LowOrbit && CinemachineCore.Instance.IsLive(state.VCam))
+            {
+                float planned = Mathf.Max(_pitch, state.Floor) * Mathf.Deg2Rad;
+                Vector3 spot = target + Quaternion.AngleAxis(state.Cam.angle, Vector3.up) * flat * (distance * Mathf.Cos(planned));
+                if (CitySpots.Ground(spot, out float ground))   // asked at the target's height: the ray starts 2.5 m over it
+                {
+                    above = target.y - ground;
+                }
+            }
+            float floor = LowestOrbit(above, GroundClearance, distance);
+            state.Floor = state.Applied ? Mathf.Lerp(state.Floor, floor, 1f - Mathf.Exp(-FloorEase * Time.unscaledDeltaTime)) : floor;
+            float orbit = Mathf.Max(_pitch, state.Floor);
+
+            // Nothing above the target while the camera can swing as far as the tilt, so nothing jumps where one gives way to the other.
+            float raise = 0f;
+            if (_pitch < orbit)
+            {
+                float swing = orbit * Mathf.Deg2Rad;
+                raise = distance * (Mathf.Cos(swing) * Mathf.Tan(-_pitch * Mathf.Deg2Rad) + Mathf.Sin(swing));
+            }
+            state.Aim.position = target + Vector3.up * raise;   // straight up in the world, whatever the player's own lean
+            return orbit;
+        }
+
+        /// <summary>
+        /// The lowest a camera may swing round its target and stay a clearance over the ground under it, in degrees of
+        /// tilt (under 0: below the target, looking up at it). <paramref name="above"/> is the target's height over that
+        /// ground and <paramref name="distance"/> the camera's from the target. Never deeper than 25 degrees under the
+        /// target, over a drop; ground that rises behind lifts it to 30 degrees at most. The chase camera's too.
+        /// </summary>
+        public static float LowestOrbit(float above, float clearance, float distance)
+        {
+            return -Mathf.Asin(Mathf.Clamp((above - clearance) / distance, -0.5f, SinDeepest)) * Mathf.Rad2Deg;
         }
 
         private static float Collide(CamState state, Transform player, float desired)
