@@ -727,7 +727,7 @@ namespace RealLifeOverhaul
             _refusals = 0;
             _wasStanding = false;
             _panelKey = int.MinValue;
-            Vector3 at = _bus.Car.transform.position;
+            Vector3 at = _bus.Vehicle.transform.position;
             float away = Mathf.Sqrt(CitySpots.Flat(at - PlayerHelper.GetPosition()));
             bool inView = CitySpots.InView(at);
             bool pass = away >= 60f && _bus.StartedBack >= 60f && (test || !inView);   // (the test button may start it in view, far off)
@@ -821,13 +821,13 @@ namespace RealLifeOverhaul
             _boardable = false;
             _boarded = 0;
             _alighted = 0;
-            VehicleComponent car = _bus.Car;
+            BusVehicle car = _bus.Vehicle;
             TransitLine line = TransitMap.Lines[_served.Line];
             // Where it stands. In its bay the measure is the bay's: nothing of it in the lane, nothing over the kerb, parallel
             // to it. On the lane's line it is the lane's, as it always was.
             _bus.Measure(out float along, out float aside, out float angle, out float toKerb, out float toLane);
             bool inBay = _bus.InBay;
-            bool placed = inBay ? Mathf.Abs(along) <= 2.5f && toLane >= 0f && toKerb >= 0f && angle <= 3f
+            bool placed = inBay ? Mathf.Abs(along) <= 2.5f && toLane >= -0.15f && toKerb >= 0f && angle <= 3f   // (its rear corner a hand's breadth in the lane at the narrowest bay: NavCheck)
                                 : Mathf.Abs(along) <= 2.5f && Mathf.Abs(aside) <= 1.2f && angle <= 12f;
             Logger?.Info("Transit check (arrival): the " + line.Number + " stands at " + StopLabel(_served) + (inBay ? " in its bay" : "") + " with its middle " + Mathf.Abs(along).ToString("F1") + " m "
                          + (along >= 0f ? "past" : "short of") + " the pole, " + Mathf.Abs(aside).ToString(inBay ? "F2" : "F1") + " m " + (aside >= 0f ? "towards the kerb" : "away from the kerb")
@@ -891,7 +891,7 @@ namespace RealLifeOverhaul
         }
 
         // Nothing but the bus stands on the straight way from the kerb to its door.
-        private bool WayClear(Vector3 from, Vector3 to, VehicleComponent bus)
+        private bool WayClear(Vector3 from, Vector3 to, BusVehicle bus)
         {
             int mask = TrafficTools.VehicleMask;
             if (mask == 0)
