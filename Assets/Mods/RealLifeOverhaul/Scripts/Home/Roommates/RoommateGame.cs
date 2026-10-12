@@ -136,6 +136,9 @@ namespace RealLifeOverhaul.Roommates
         /// nothing for) what the game says it would let for, at today's prices as the city's cost of living charges
         /// it. <paramref name="owned"/>: the roommate is a lodger.
         /// </summary>
+        /// <summary>What a home's power and water come to a day (Utilities, through Wiring/UtilityLinks); null: none known.</summary>
+        public static Func<BuildingRegistration, float> Bills;
+
         public static float RentPerDay(BuildingRegistration home, out bool owned)
         {
             owned = false;
@@ -147,12 +150,14 @@ namespace RealLifeOverhaul.Roommates
             {
                 owned = home.BuildingOwnedByPlayer;
                 float level = Prices.Level / 1000f;
+                Func<BuildingRegistration, float> billed = Bills;
+                float bills = billed != null ? Mathf.Max(0f, billed(home)) : 0f;   // the home's power and water a day (Utilities), shared with the rent
                 if (!owned && home.RentPerDay > 0f)
                 {
-                    return home.RentPerDay * level;
+                    return home.RentPerDay * level + bills;
                 }
                 Building building = home.BuildingCached;
-                return building != null ? building.GetBuildingDailyMarketRent() * level : 0f;
+                return (building != null ? building.GetBuildingDailyMarketRent() * level : 0f) + bills;
             }
             catch (Exception e)
             {

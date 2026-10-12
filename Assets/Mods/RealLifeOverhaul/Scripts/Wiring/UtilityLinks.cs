@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using RealLifeOverhaul.Planner;
 using RealLifeOverhaul.Utilities;
 
 namespace RealLifeOverhaul
@@ -14,6 +17,10 @@ namespace RealLifeOverhaul
         ///   Taken        the courthouse's building (Justice), which the office is not to be
         ///   Life         the electricity company's events need a power account of the player's (LifeAccounts.Power)
         ///   Home         a home without water has dry taps, one without power dark screens and no cooker (HomeTidy)
+        ///   shares       the partner's share and the roommate's are of the rent and the home's power and water
+        ///   Finance      power and water owed are among "what you owe" (EconomyLinks.AddDebts)
+        ///   the Planner  a source of its own: a bill's due day, the day an unpaid one is cut, the end of a temporary
+        ///                supply, the morning an account connects
         /// </summary>
         public static class UtilityLinks
         {
@@ -30,6 +37,9 @@ namespace RealLifeOverhaul
                 LifeAccounts.Power = () => UtilitiesDirector.HasPowerAccount;
                 HomeTidy.HasPower = reg => UtilitiesDirector.Supplied(reg, Service.Power);
                 HomeTidy.HasWater = reg => UtilitiesDirector.Supplied(reg, Service.Water);
+                Family.HomeLife.Bills = UtilitiesDirector.DayCost;
+                Roommates.RoommateGame.Bills = UtilitiesDirector.DayCost;
+                PlannerDirector.Instance?.AddSource(Source);
             }
 
             internal static void Disconnect()
@@ -38,6 +48,113 @@ namespace RealLifeOverhaul
                 LifeAccounts.Power = null;
                 HomeTidy.HasPower = null;
                 HomeTidy.HasWater = null;
+                Family.HomeLife.Bills = null;
+                Roommates.RoommateGame.Bills = null;
+            }
+
+            private static readonly UtilitiesSource Source = new UtilitiesSource();
+
+            /// <summary>Power and water owed, a line each, with the days the oldest bill is late.</summary>
+            internal static void AddDebts(List<Economy.DebtLine> into)
+            {
+                UtilitiesState state = UtilitiesDirector.Instance != null ? UtilitiesDirector.Instance.State : null;
+                if (state == null)
+                {
+                    return;
+                }
+                int today = UtilitiesGame.Today;
+                int[] owed = new int[UtilitiesCatalogue.Services], late = new int[UtilitiesCatalogue.Services];
+                for (int i = 0; i < state.Accounts.Count; i++)
+                {
+                    Account a = state.Accounts[i];
+                    if (a.Owed <= 0)
+                    {
+                        continue;
+                    }
+                    int s = (int)a.Service;
+                    owed[s] += a.Owed;
+                    if (a.DueDay > 0 && today > a.DueDay)
+                    {
+                        late[s] = Math.Max(late[s], today - a.DueDay);
+                    }
+                }
+                for (int s = 0; s < UtilitiesCatalogue.Services; s++)
+                {
+                    if (owed[s] > 0)
+                    {
+                        into.Add(new Economy.DebtLine { NameKey = s == 0 ? "reallife_econ_debt_util_power" : "reallife_econ_debt_util_water", Owed = owed[s], LateDays = late[s] });
+                    }
+                }
+            }
+
+            private sealed class UtilitiesSource : IPlannerSource
+            {
+                public string Id => "utilities";
+
+                public bool Available => Settings.Utilities && UtilitiesDirector.Instance != null && UtilitiesDirector.Instance.State != null && SaveGameManager.Current != null;
+
+                public void Collect(int fromDay, int toDay, PlannerList into)
+                {
+                    UtilitiesDirector d = UtilitiesDirector.Instance;
+                    UtilitiesState state = d.State;
+                    for (int i = 0; i < state.Accounts.Count; i++)
+                    {
+                        Account a = state.Accounts[i];
+                        int key = Key(a);
+                        if (a.Owed > 0 && a.DueDay >= fromDay && a.DueDay <= toDay)
+                        {
+                            Entry(into, 1, key, a.DueDay, a, d, "reallife_util_plan_due_title", "reallife_util_plan_due_what", a.AutoDebit ? "reallife_util_plan_due_auto" : "reallife_util_plan_due_missed");
+                        }
+                        int cut = a.DueDay + UtilitiesCatalogue.CutAfterDays;
+                        if (a.Owed > 0 && a.DueDay > 0 && a.State != SupplyState.Cut && a.State != SupplyState.Closed && cut >= fromDay && cut <= toDay)
+                        {
+                            Entry(into, 2, key, cut, a, d, "reallife_util_plan_cut_title", "reallife_util_plan_cut_what", null);
+                        }
+                        if (a.State == SupplyState.Temporary && a.TemporaryUntil >= fromDay && a.TemporaryUntil <= toDay)
+                        {
+                            Entry(into, 3, key, a.TemporaryUntil, a, d, "reallife_util_plan_temporary_title", "reallife_util_plan_temporary_what", null);
+                        }
+                        if (a.State == SupplyState.Pending && a.ConnectDay >= fromDay && a.ConnectDay <= toDay)
+                        {
+                            Entry(into, 4, key, a.ConnectDay, a, d, "reallife_util_plan_connect_title", "reallife_util_plan_connect_what", null);
+                        }
+                    }
+                }
+
+                private void Entry(PlannerList into, int kind, int key, int day, Account a, UtilitiesDirector d, string title, string what, string missed)
+                {
+                    PlannerEntry e = into.Add(Id, kind, key, PlannerCategory.Money, day);
+                    if (e == null || !into.WantText)
+                    {
+                        return;
+                    }
+                    string service = UtilitiesText.Service(a.Service), amount = UtilitiesText.Money(a.Owed);
+                    e.Title = UtilitiesText.T(title, "service", service);
+                    e.What = UtilitiesText.T(what, "place", d.NameOf(a), "amount", amount);
+                    if (a.Owed > 0 && kind <= 2)
+                    {
+                        e.Money = PlannerText.T("reallife_planner_costs", "amount", amount);
+                    }
+                    if (missed != null)
+                    {
+                        e.IfMissed = UtilitiesText.T(missed);
+                    }
+                }
+
+                // The same number for the same account in every session (it is kept with a reminder).
+                private static int Key(Account a)
+                {
+                    unchecked
+                    {
+                        int h = 17;
+                        string place = a.Place ?? string.Empty;
+                        for (int i = 0; i < place.Length; i++)
+                        {
+                            h = h * 31 + place[i];
+                        }
+                        return h * 4 + (int)a.Service;
+                    }
+                }
             }
 
             // The household lives at the player's first rented home (as HomeTidy.Home has it when they are out); the

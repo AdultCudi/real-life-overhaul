@@ -128,6 +128,7 @@ namespace RealLifeOverhaul
                     {
                         into.Add(new DebtLine { NameKey = "reallife_econ_debt_pending", Owed = ModState.PendingFine });
                     }
+                    UtilityLinks.AddDebts(into);   // power and water bills owed (Scripts/Utilities)
                 }
                 catch (Exception e)
                 {

@@ -287,6 +287,8 @@ internal static partial class Program
     {
         Check(CashCategory.Keys.Length == CashCategory.Count, "every category of money has a name");
         Check(CashCategory.For("ba:transaction_revenue") == CashCategory.Takings && CashCategory.For("reallife_transaction_macro_takings") == CashCategory.Takings, "a business's takings are takings");
+        Check(CashCategory.For("reallife_transaction_util_power") == CashCategory.Rent && CashCategory.For("reallife_transaction_util_deposit_back") == CashCategory.Rent,
+            "cash: power and water bills and their deposits go with the rent, as the bills of a place");
         Check(CashCategory.For("ba:transaction_rent") == CashCategory.Rent && CashCategory.For("ba:transaction_rentrevenue") == CashCategory.Rent, "rent paid and rent received are both rent");
         Check(CashCategory.For("ba:transaction_wage") == CashCategory.Wages && CashCategory.For("ba:transaction_playerjobsalary") == CashCategory.Wages
               && CashCategory.For("reallife_transaction_job_courier") == CashCategory.Wages && CashCategory.For("reallife_transaction_co_overtime") == CashCategory.Wages, "wages, a salary, a job's pay and overtime are wages");

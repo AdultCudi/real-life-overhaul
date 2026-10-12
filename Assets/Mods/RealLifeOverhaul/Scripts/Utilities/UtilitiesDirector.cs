@@ -103,6 +103,39 @@ namespace RealLifeOverhaul.Utilities
             return a == null || UtilitiesRules.Supplied(a, UtilitiesGame.Today);
         }
 
+        /// <summary>What a place's power and water come to a day now (money): today's use as supplied, at today's prices; nothing for a place not supplied.</summary>
+        public static float DayCost(BuildingRegistration reg)
+        {
+            UtilitiesDirector d = Instance;
+            if (d == null || !d._loaded || reg == null || !Settings.Utilities)
+            {
+                return 0f;
+            }
+            string key = UtilitiesGame.Place(reg);
+            int today = UtilitiesGame.Today, season = CalendarRules.Season(today, GameCalendar.DaysPerYear), level = Prices.Level;
+            for (int p = 0; p < d._places.Count; p++)
+            {
+                PlaceInfo place = d._places[p];
+                if (!string.Equals(place.Place, key, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+                float sum = 0f;
+                for (int s = 0; s < UtilitiesCatalogue.Services; s++)
+                {
+                    var service = (Service)s;
+                    Account a = d._state.Find(key, service);
+                    if (a != null && UtilitiesRules.Supplied(a, today))
+                    {
+                        long use = UtilitiesRules.Use(service, place.Kind, place.Sqm, UtilitiesGame.People(place), true, season);
+                        sum += UtilitiesRules.DayCents(service, use, level, a.State != SupplyState.Active) / 100f;
+                    }
+                }
+                return sum;
+            }
+            return 0f;
+        }
+
         private void Awake()
         {
             Instance = this;
