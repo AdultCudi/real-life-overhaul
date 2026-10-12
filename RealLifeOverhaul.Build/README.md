@@ -2693,9 +2693,14 @@ that one bus was either still crawling when the game was closed or its vehicle w
     the player's, a delivery van, a wreck or a cart leaves the bay taken, the bus stops on the lane's line as it
     used to, and the bay is looked at again for the next bus. It is looked at once more as the bus comes up, 16 m
     before its curve; taken by then, the end of its route is put back on the lane's line.
-  - *Marked.* A dressed stop with a bay has a yellow box on the road round where the bus stands and the words
-    BUS STOP (`reallife_transit_bay_marking`), read the way the traffic runs: four painted strips, as the
-    driving test's bay, laid to the road's own fall, made once per dressing and gone with it. Nothing solid.
+  - *Marked.* A dressed stop with a bay has a bus stop's box painted on the road round where the bus stands
+    (`BusStopDressing.Paint`, `RoadPaint`: decal projectors with copies of the game's own road paint material):
+    a broken yellow line along its lane side from 3 m behind the bus to 2 m ahead of it, a taper in to the kerb
+    over 4 m at each end (some 24 m in all) and the words BUS STOP between the line and the kerb, read the way the
+    traffic runs, laid to the road's own fall, made once per dressing and gone with it. The rest of the zone, where
+    the bus comes in and pulls out, has its parking cut back and no paint. Where the city has no road paint to copy,
+    four yellow strips. Nothing solid. (The mod's props are queued as HDRP queues its own lit materials, 2225, so the
+    paint lands on the road and not on a bus standing over it: `Shapes.TakesDecalsQueue`.)
   - *In the lane.* Where there is no bay, or it is taken, the bus stands on the lane's line as before, and for
     less time: 4 s where nobody is waiting or walking up, nobody gets out and the player is not within 35 m
     (`DwellEmpty`), 9 s otherwise, and up to 34 s only while the player is on foot within 35 m.

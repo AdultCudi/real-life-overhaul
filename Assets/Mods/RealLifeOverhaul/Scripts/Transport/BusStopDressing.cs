@@ -73,7 +73,9 @@ namespace RealLifeOverhaul
         private const float PaintWide = 0.17f;      // the broken line's decal, of which 0.15 m is paint (decals.py)
         private const float PaintOut = 0.25f;       // the line lies this far beyond the bus's side, towards the lane
         private const float PaintKerb = 0.15f;      // ...and its tapers end this far short of the kerb, clear of its face
-        private const float PaintTaper = 6f;        // metres along which a taper comes in from the line to the kerb
+        private const float PaintTaper = 4f;        // metres along which a taper comes in from the line to the kerb
+        private const float PaintBehind = 3f;       // the box reaches this far behind the standing bus's tail...
+        private const float PaintAhead = 2f;        // ...and this far ahead of its nose (it stands with its middle at the pole)
         private const float PaintPiece = 8f;        // the longest piece of line laid as one decal: the road's fall along it stays within the decal's depth
         private const float WordsWide = 1.9f;       // the words BUS STOP on the road
         private const float WordsLong = 4.6f;
@@ -294,13 +296,15 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // The zone painted: the broken line along its lane side, a taper in to the kerb at each end, and the words between
-        // the line and the kerb a little ahead of the pole (where a bus's front half stands).
+        // Painted as a bus stop's box is, round where the bus stands (some 24 m; the rest of the zone, where it comes in
+        // and pulls out, has its parking cut but no paint): the broken line along its lane side, a taper in to the kerb at
+        // each end, and the words between the line and the kerb a little ahead of the pole (where a bus's front half stands).
         private void Paint(TransitStop stop)
         {
             Vector3 right = Vector3.Cross(Vector3.up, stop.BayAlong);
-            float from = stop.Zone != null ? stop.Zone.From : -stop.BayBehind;
-            float to = stop.Zone != null ? stop.Zone.To : stop.BayAhead;
+            float half = BusBay.BusLength * 0.5f;
+            float from = Mathf.Max(stop.Zone != null ? stop.Zone.From : -stop.BayBehind, -(half + PaintBehind + PaintTaper));
+            float to = Mathf.Min(stop.Zone != null ? stop.Zone.To : stop.BayAhead, half + PaintAhead + PaintTaper);
             float kerb = stop.KerbAside - PaintKerb;
             float line = Mathf.Max(BusBay.LaneHalf + 0.12f, stop.BayOffset - TransitBus.BodyHalfWidth - PaintOut);
             float taper = Mathf.Min(PaintTaper, (to - from) * 0.25f);

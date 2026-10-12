@@ -233,7 +233,7 @@ namespace RealLifeOverhaul
                 Logger?.Warn("Props: the game's lit shader was not found; plain shapes are used.");
                 return null;
             }
-            made = new Material(shader) { name = glows ? "RealLifeOverhaul Props (glow)" : "RealLifeOverhaul Props" };
+            made = new Material(shader) { name = glows ? "RealLifeOverhaul Props (glow)" : "RealLifeOverhaul Props", renderQueue = Shapes.TakesDecalsQueue };   // (Tinted's copies keep it)
             made.SetColor(BaseColorId, Color.white);
             made.SetTexture(BaseColorMapId, _base);
             made.SetFloat(MetallicId, 0f);
