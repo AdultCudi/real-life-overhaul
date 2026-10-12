@@ -1,15 +1,8 @@
-0.3.1
+0.3.2
 
 New
-- A stock market of its own: some 136 of the city's companies in a new Stocks app, with candle charts, the usual analysis tools, each company's figures and every usual kind of order, priced from their business and moved by everything in the city.
-- The City Ledger is now a real newspaper, set in a serif with ruled columns and a stock table: subscribe on the phone to have it left at your door each morning, or buy a copy at a kiosk near your home.
-- The bus is the mod's own city bus, with doors that open at the stop, lamps and indicators, and the stop's countdown now matches when it pulls in.
-- At bus stops beside parking the buses have a zone of their own: the parking there is cut back, bins and barricades in the road are cleared, the zone is painted, and the bus pulls in to the kerb.
-- With mouse look you can look up past the horizon to the tops of the buildings, on foot and in the car.
-- The mod's clothes are in the game's own clothes screen: at home your wardrobe's Change clothes has what you bought, and the rack in a clothing store opens the same screen as a shop, with the prices and a Buy button.
+- You can switch off the notifications about accidents near you, and the waypoint to them, on the options page: the accidents still happen, without the messages and their sound, or without the marker.
 
 Fixed
-- The mod's apps went missing from the phone after a bank's app changed, and a stray set of page dots was left on the top bar. Every app now stays on a page, the top bar of the phone's full screen shares the apps out evenly, and the page dots sit level with the icons.
-- At home the wardrobe's key for the mod's clothes did nothing; they are in the wardrobe's own Change clothes now.
-- Short stutters while the stock market traded and when a car was towed are gone, and the bus no longer stalls the game as it sets out.
-- Planned road works no longer close the lane just before a bus stop, which left the stop saying DELAYED; and more stops keep their bay.
+- The mod's bus and its other props showed the road's markings through them, as if they were glass.
+- A bus stop's painted box ran the whole length of the stop's zone, some 55 m; it now covers where the bus stands, some 24 m.
