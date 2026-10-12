@@ -144,9 +144,9 @@ namespace RealLifeOverhaul
         public const float EnergyFloor = 12f;           // nothing here takes energy below this
 
         // ---- money
-        public const int ConsultationFee = 80;
-        public const int PrescriptionFee = 45;
-        public const int SickNoteFee = 20;
+        public static int ConsultationFee => Prices.At(80);
+        public static int PrescriptionFee => Prices.At(45);
+        public static int SickNoteFee => Prices.At(20);
         public const int SickNoteHours = 48;
 
         // ---- illness: hours

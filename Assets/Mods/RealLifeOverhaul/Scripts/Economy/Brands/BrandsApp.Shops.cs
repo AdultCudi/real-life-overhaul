@@ -171,7 +171,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 : BrandsText.T("reallife_brand_chain_no_prices"));
             box.Line(breach || t.Breach > 0
                 ? BrandsText.Fill("reallife_brand_chain_breach", "days", t.Breach.ToString(), "warn", BrandCatalogue.ChainWarnDays.ToString(), "fine", BrandCatalogue.ChainFineDays.ToString(), "end", BrandCatalogue.ChainEndDays.ToString(),
-                    "amount", BrandsText.Money(FranchiseRules.ChainFine(t)))
+                    "amount", BrandsText.Money(FranchiseRules.ChainFine(t, BrandsDirector.Index)))
                 : BrandsText.T("reallife_brand_chain_good"));
             int exit = _director.ChainExit(t);
             box.Line(BrandsText.Fill("reallife_brand_chain_money", "average", BrandsText.Money(t.Average), "paid", BrandsText.Money(t.Paid), "exit", BrandsText.Money(exit)));

@@ -19,6 +19,8 @@ namespace RealLifeOverhaul
     /// </summary>
     internal sealed class ShopIncidentScene : CrimeScene
     {
+        internal const float HoldUpShare = 0.04f;
+        internal const int HoldUpLeast = 40, HoldUpMost = 500;   // at the start's prices (Crime.Rob takes them at today's)
         private const int Entering = 0, Busy = 1, Running = 2, AtDoor = 3, Floored = 4, Out = 5;
 
         private readonly string _id;
@@ -217,7 +219,7 @@ namespace RealLifeOverhaul
             First.WalkOff(_outside, Pace.Run, 15f);
             if (_holdUp && _ownShop && Settings.CrimeAgainstPlayer && !Is("bungled"))
             {
-                int taken = Crime.Rob(0.04f, 40, 500, "reallife_transaction_robbery");
+                int taken = Crime.Rob(HoldUpShare, HoldUpLeast, HoldUpMost, "reallife_transaction_robbery");
                 if (taken > 0)
                 {
                     ModState.AddModifier(ModState.Robbed);

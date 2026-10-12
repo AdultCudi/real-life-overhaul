@@ -138,7 +138,7 @@ namespace RealLifeOverhaul
 
         public readonly string Id;
         public readonly bool IsChoice;
-        public readonly int Cost;            // paid when a choice is confirmed
+        public readonly int Cost;            // paid when a choice is confirmed, at the start's prices (CostNow is today's)
         public readonly string CostTxn;
         public readonly Outcome[] Outcomes;  // plain events
         public readonly Outcome[] Yes;       // choices
@@ -148,6 +148,18 @@ namespace RealLifeOverhaul
         public int FromHour { get; private set; } = -1;
         public int ToHour { get; private set; } = -1;
         public int MinMoney { get; private set; }
+
+        /// <summary>The choice's price at today's prices (the catalogue's figures are the start's: Core/Prices).</summary>
+        public int CostNow => Prices.At(Cost);
+
+        /// <summary>
+        /// The sum a choice's texts quote besides its price ({sum}): the first fixed payout among the yes answer's outcomes
+        /// (a stranger's odd job, a bet's winnings, the gift card that is now and then real), so that the text and the money
+        /// are one figure. Nothing when there is none.
+        /// </summary>
+        public int Quote { get; private set; }
+
+        public int QuoteNow => Prices.At(Quote);
         public int MaxMoney { get; private set; } = -1;
         public float Weight { get; private set; } = 1f;
 
@@ -240,9 +252,10 @@ namespace RealLifeOverhaul
 
         public bool Fits(in LifeContext context)
         {
-            // MinMoney 0 means "don't care": a player in debt still gets the events that cost nothing.
-            if ((Needs & context.Flags) != Needs || (MinMoney > 0 && context.Money < MinMoney)
-                || (MaxMoney >= 0 && context.Money > MaxMoney) || (Test != null && !Test()))
+            // MinMoney 0 means "don't care": a player in debt still gets the events that cost nothing. (The bounds are the
+            // start's, as every figure here: at today's prices.)
+            if ((Needs & context.Flags) != Needs || (MinMoney > 0 && context.Money < Prices.At(MinMoney))
+                || (MaxMoney >= 0 && context.Money > Prices.At(MaxMoney)) || (Test != null && !Test()))
             {
                 return false;
             }
@@ -293,6 +306,14 @@ namespace RealLifeOverhaul
             {
                 // Random events never put the player in debt: a plain loss keeps a small cushion.
                 MinMoney = Cost + worstLoss + (IsChoice ? 0 : 50);
+            }
+            foreach (Outcome o in Yes)
+            {
+                if (o.MoneyPct == 0f && o.MoneyMin == o.MoneyMax && o.MoneyMin > 0)
+                {
+                    Quote = o.MoneyMin;
+                    break;
+                }
             }
         }
     }

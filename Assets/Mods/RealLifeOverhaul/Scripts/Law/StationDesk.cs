@@ -39,7 +39,7 @@ namespace RealLifeOverhaul.Law
     /// </summary>
     internal sealed class StationDesk
     {
-        public const int PaperFee = 15;
+        public static int PaperFee => Prices.At(15);
         public const int TurnInDays = 7;             // how long after getting away somebody can still hand themselves in
 
         private const NavigationBlocker Blocker = NavigationBlocker.DoctorOperation;   // (as Custody: any blocker stops the player; nothing else on a street or in an empty unit sets this one)

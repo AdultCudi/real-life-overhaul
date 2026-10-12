@@ -1,3 +1,4 @@
+using Extensions;
 using Helpers;
 using UI.Notification;
 using UnityEngine;
@@ -27,7 +28,7 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class StallActivity : CityActivity
     {
-        public const int Price = 4;
+        public static int Price => Prices.At(4);
 
         private const float Energy = 5f;            // of the game's hundred
         // Where the two stand is fixed by the hand-over clips (the vendor's cup goes down 0.78 m ahead of them, the
@@ -301,7 +302,7 @@ namespace RealLifeOverhaul
                         _prompted = true;
                         // (Once per stall: the text names whatever the interaction key is bound to now.)
                         Notifications.Show(NotificationType.Info, "reallife_city_coffee_prompt",
-                            new System.Collections.Generic.Dictionary<string, string>(1) { { "key", Keys.Label(KeyAction.Interact) } }, 6f);
+                            new System.Collections.Generic.Dictionary<string, string>(2) { { "key", Keys.Label(KeyAction.Interact) }, { "price", ((float)Price).ToCurrencyFormat() } }, 6f);
                     }
                 }
             }

@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Family
         private static readonly string[] InLawAsks = { null, "reallife_family_inlaws_ask_lift", "reallife_family_inlaws_ask_loan", "reallife_family_inlaws_ask_move" };
         private static readonly string[] InLawThanks = { null, "reallife_family_inlaws_thanks_lift", "reallife_family_inlaws_thanks_loan", "reallife_family_inlaws_thanks_move" };
 
-        private const int HostCost = 120;
+        internal static int HostCost => Prices.At(120);
         private const int LoanAmount = 300;
 
         private static int _lastInvite = -1, _lastDinner = -1, _lastMissed = -1, _lastVisit = -1, _lastChat = -1;

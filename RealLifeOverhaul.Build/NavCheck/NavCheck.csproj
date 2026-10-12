@@ -28,6 +28,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Navigation\NavBaseRules.cs" Link="Mod\NavBaseRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusBay.cs" Link="Mod\BusBay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\Taxi\TaxiRules.cs" Link="Mod\TaxiRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\Prices.cs" Link="Mod\Prices.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\Reckless\StreetRules.cs" Link="Mod\StreetRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\PanelPlacement.cs" Link="Mod\PanelPlacement.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\BarRule.cs" Link="Mod\BarRule.cs" />

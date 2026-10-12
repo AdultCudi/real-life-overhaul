@@ -16,9 +16,9 @@ namespace RealLifeOverhaul
     internal sealed class PlayerMuggingScene : CrimeScene
     {
         private const int Approach = 0, Demand = 1, Getaway = 2;
-        private const float Share = 0.15f;
-        private const int Least = 20;
-        private const int Most = 400;
+        internal const float Share = 0.15f;
+        internal const int Least = 20;
+        internal const int Most = 400;
 
         private int _asked;        // goes up with every prompt, so an answer to an old one is ignored
         private bool _answered;
@@ -31,7 +31,7 @@ namespace RealLifeOverhaul
 
         protected override bool Stage(in CrimeSetup setup, float now)
         {
-            if (PlayerHelper.IsUsingVehicle || HudConfirm.isOpen || Crime.Cash < Least * 2
+            if (PlayerHelper.IsUsingVehicle || HudConfirm.isOpen || Crime.Cash < Prices.At(Least) * 2
                 || !StreetSpots.PavementAround(setup.Player, 10f, 18f, true, out Vector3 from)
                 || !First.Enter(from, ActorLook.Civilian, 3f, onRoad: true))
             {

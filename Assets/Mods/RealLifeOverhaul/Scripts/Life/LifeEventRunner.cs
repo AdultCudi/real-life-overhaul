@@ -4,6 +4,8 @@ using BigAmbitions.DayNightCycle;
 using Entities;
 using Extensions;
 using Helpers;
+using Localizor;
+using Localizor.LanguageChangeEvent;
 using Parking.UndergroundParking;
 using UI.Notification;
 using UnityEngine;
@@ -92,10 +94,15 @@ namespace RealLifeOverhaul
                 return;
             }
 
-            HudConfirm.Show(lifeEvent.HeaderKey, lifeEvent.BodyKey,
+            // The price and the sum the prompt's body quotes, at today's prices, as charged (the answers name no figure:
+            // the game's box takes a plain key for them).
+            int cost = lifeEvent.CostNow;
+            var figures = new { cost = ((float)cost).ToCurrencyFormat(), sum = ((float)lifeEvent.QuoteNow).ToCurrencyFormat() };
+            HudConfirm.Show(new LanguageChangeEventDataHolder { Key = lifeEvent.HeaderKey },
+                new LanguageChangeEventDataHolder { Key = lifeEvent.BodyKey, Arguments = figures },
                 () => Guarded(() =>
                 {
-                    if (lifeEvent.Cost > 0 && !GameManager.ChangeMoneySafe(-lifeEvent.Cost,
+                    if (cost > 0 && !GameManager.ChangeMoneySafe(-cost,
                             new TransactionInfo(LifeEvent.TransactionPrefix + lifeEvent.CostTxn), null, null, force: false, showNotification: true))
                     {
                         return;
@@ -193,7 +200,7 @@ namespace RealLifeOverhaul
             }
 
             // What the outcome's own {amount} was, or else what the player just paid for the choice.
-            int shown = amount != 0 ? Mathf.Abs(amount) : lifeEvent.Cost;
+            int shown = amount != 0 ? Mathf.Abs(amount) : lifeEvent.CostNow;
             var data = new Dictionary<string, string> { { "amount", ((float)shown).ToCurrencyFormat() } };
             string key = lifeEvent.TextKey(outcome);
 
@@ -224,18 +231,19 @@ namespace RealLifeOverhaul
                 return 0;
             }
             int amount;
+            // (The catalogue's figures are at the start's prices: what comes is at today's, Core/Prices.)
             if (outcome.MoneyPct != 0f)
             {
-                float share = Mathf.Clamp(Mathf.Max(money, 0f) * Mathf.Abs(outcome.MoneyPct), outcome.MoneyMin, outcome.MoneyMax);
+                float share = Mathf.Clamp(Mathf.Max(money, 0f) * Mathf.Abs(outcome.MoneyPct), Prices.At((float)outcome.MoneyMin), Prices.At((float)outcome.MoneyMax));
                 amount = Mathf.RoundToInt(share / 10f) * 10 * (outcome.MoneyPct < 0f ? -1 : 1);
             }
             else if (outcome.MoneyMin == outcome.MoneyMax)
             {
-                amount = outcome.MoneyMin;
+                amount = Prices.At(outcome.MoneyMin);
             }
             else
             {
-                amount = Mathf.RoundToInt(Random.Range(outcome.MoneyMin, outcome.MoneyMax + 1) / 5f) * 5;
+                amount = Prices.At(Mathf.RoundToInt(Random.Range(outcome.MoneyMin, outcome.MoneyMax + 1) / 5f) * 5);
             }
             // Never into debt, whatever happened to the player's money since the event was picked.
             return amount < 0 ? -Mathf.Min(-amount, Mathf.FloorToInt(Mathf.Max(money, 0f))) : amount;

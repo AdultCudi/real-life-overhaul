@@ -85,7 +85,7 @@ namespace RealLifeOverhaul.Roommates
         public const int CandidatesLeast = 2, CandidatesMost = 4;
         public const int AnswerHours = 36;          // game hours over which the answers to a notice come in ("a day or two")
         public const int AdDays = 5;                // days a notice stays up
-        public const int AdFee = 25;                // dollars: what putting the notice up costs
+        public static int AdFee => Prices.At(25);                // dollars: what putting the notice up costs
         public const int ShareLeast = 35, ShareMost = 55;   // per cent of the rent an applicant offers
         public const int SofaPct = 60;              // per cent of that for somebody who gets the sofa, not a bed
         public const float FriendAskTrust = 35f;    // a friend says yes from this much trust
@@ -105,7 +105,7 @@ namespace RealLifeOverhaul.Roommates
         public const int ChaseOdds = 5500;          // somebody late by nature pays at once when chased, this often (plus the level, a point a point)
         public const int BorrowOdds = 400, BorrowOddsLate = 800;
         public const int BorrowDays = 5;            // a loan is promised back in so many days
-        public const int FoodPrice = 8;             // dollars: what they put down for something they took, when asked
+        public static int FoodPrice => Prices.At(8);             // dollars: what they put down for something they took, when asked
 
         // ---- the home
         public const float TidyPerDay = 6f, MessPerDay = -5f, OneMorePerDay = -1f;   // points of a hundred of the home's tidiness

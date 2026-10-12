@@ -69,6 +69,7 @@ namespace RealLifeOverhaul.Economy
         public int Pressure;
         public int MonthChange;     // the last month's rise in prices, hundredths of a per cent
         public int CarryRent, CarryWages, CarryTakings;   // adjustments that could not be taken, carried to the next day
+        public int CarryLiving;                           // ...and of the game's own shops and services
         public int LastCopycatDay;
         public int Buys;            // the kinds of goods the player's businesses stock, a bit each (the last look)
         public readonly List<CityDistrict> Districts = new List<CityDistrict>(12);

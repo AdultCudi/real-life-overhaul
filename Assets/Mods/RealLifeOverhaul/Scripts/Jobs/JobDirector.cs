@@ -390,7 +390,9 @@ namespace RealLifeOverhaul
         /// </summary>
         public static float PayScale()
         {
-            return Mathf.Clamp(Settings.JobPay, 25, 300) / 100f * CareerCatalogue.OwnerFactor(BusinessGame.RevenueBusinesses());
+            // The pay option, less for somebody who runs businesses of their own, and at today's prices: pay follows the
+            // city's price level as every wage does (Core/Prices).
+            return Mathf.Clamp(Settings.JobPay, 25, 300) / 100f * CareerCatalogue.OwnerFactor(BusinessGame.RevenueBusinesses()) * Prices.Level / 1000f;
         }
 
         /// <summary>

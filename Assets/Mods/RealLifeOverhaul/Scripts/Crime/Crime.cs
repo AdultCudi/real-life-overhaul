@@ -64,7 +64,7 @@ namespace RealLifeOverhaul
                 return 0;
             }
             float cash = Cash;
-            int amount = Mathf.RoundToInt(Mathf.Clamp(cash * share, atLeast, atMost) / 5f) * 5;
+            int amount = Mathf.RoundToInt(Mathf.Clamp(cash * share, Prices.At(atLeast), Prices.At(atMost)) / 5f) * 5;   // (bounds at today's prices)
             amount = Mathf.Min(amount, Mathf.FloorToInt(cash));
             if (amount <= 0)
             {
@@ -98,9 +98,13 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>A toast whose text names a key as {key}: whatever that action is bound to now (Core/Keys).</summary>
-        public static void ShowKey(NotificationType type, string key, KeyAction action, float seconds = 8f)
+        public static void ShowKey(NotificationType type, string key, KeyAction action, float seconds = 8f, string name = null, string value = null)
         {
-            var data = new Dictionary<string, string>(1) { { "key", Keys.Label(action) } };
+            var data = new Dictionary<string, string>(2) { { "key", Keys.Label(action) } };
+            if (name != null)
+            {
+                data[name] = value ?? string.Empty;
+            }
             Notifications.Show(type, key, data, seconds);
         }
 

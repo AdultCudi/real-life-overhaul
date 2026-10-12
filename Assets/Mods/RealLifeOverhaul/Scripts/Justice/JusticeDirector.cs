@@ -742,7 +742,7 @@ namespace RealLifeOverhaul
             }
             else if (missed > 0)
             {
-                JusticeText.Toast(NotificationType.Warning, "reallife_justice_toast_instalment_missed", 9f);
+                JusticeText.Toast(NotificationType.Warning, "reallife_justice_toast_instalment_missed", "floor", JusticeText.Money(JusticeLaw.CashFloor), 9f);
             }
         }
 
@@ -1014,8 +1014,8 @@ namespace RealLifeOverhaul
             }
             JusticeLaw.BailKind kind = JusticeLaw.BailFor(c.Weight, Justice.Priors, c.Fled, c.Has(JusticeLaw.NoShow));
             float cash = Crime.Cash;
-            int amount = JusticeLaw.BailAmount(fines, cash);
-            int bond = Mathf.Max(50, JusticeLaw.Round10(amount * 0.1f));
+            int amount = JusticeLaw.BailAmount(Prices.At(fines), cash);   // the charges' fines at today's prices
+            int bond = Mathf.Max(Prices.At(50), JusticeLaw.Round10(amount * 0.1f));
             var names = new List<string>(c.Charges.Count);
             for (int i = 0; i < c.Charges.Count; i++)
             {

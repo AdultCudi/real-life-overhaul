@@ -62,7 +62,7 @@ namespace RealLifeOverhaul.Family
 
         public static int Total(WeddingPlan plan)
         {
-            float sum = FamilyBalance.VenuePrice[Mathf.Clamp(plan.Venue, 0, 3)];
+            float sum = FamilyBalance.Venue(Mathf.Clamp(plan.Venue, 0, 3));
             if (plan.Flowers) sum += FamilyBalance.FlowersPrice;
             if (plan.Music) sum += FamilyBalance.MusicPrice;
             if (plan.Catering) sum += FamilyBalance.CateringPerGuest * Guests(plan);
@@ -111,7 +111,7 @@ namespace RealLifeOverhaul.Family
                     continue;
                 }
                 string place = v == 1 ? FamilyText.T("reallife_family_venue_here") : Found[v].Name;
-                var fill = Args.Us.With(FamilyText.T(VenueNames[v])).At(place).Cost(FamilyBalance.VenuePrice[v]);
+                var fill = Args.Us.With(FamilyText.T(VenueNames[v])).At(place).Cost(FamilyBalance.Venue(v));
                 return FamilyTalk.Either(FamilyText.Say("reallife_family_plan_venue", fill), "reallife_family_plan_choose", () =>
                 {
                     _draft.Venue = v;

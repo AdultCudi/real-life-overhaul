@@ -657,7 +657,7 @@ namespace RealLifeOverhaul
             {
                 float money = SaveGameManager.Current != null ? SaveGameManager.Current.Money : 0f;
                 offer.Kind = SocialOffer.Loan;
-                offer.Amount = Mathf.Clamp(Mathf.RoundToInt(money * 0.02f / 10f) * 10, 40, 400);
+                offer.Amount = Mathf.Clamp(Mathf.RoundToInt(money * 0.02f / 10f) * 10, Prices.At(40), Prices.At(400));
                 offer.Expires = SocialLife.Now + 24f * 60f;
                 text = SocialCatalogue.TextLoanAsk;
             }

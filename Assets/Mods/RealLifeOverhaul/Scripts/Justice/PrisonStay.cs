@@ -780,7 +780,7 @@ namespace RealLifeOverhaul
                 {
                     return;
                 }
-                int storage = JusticeLaw.Bound(25 * Mathf.Max(1, _summaryServed), Crime.Cash, 0.10f, 0);
+                int storage = JusticeLaw.Bound(Prices.At(25) * Mathf.Max(1, _summaryServed), Crime.Cash, 0.10f, 0);
                 storage = Mathf.Min(storage, 300);
                 if (storage > 0)
                 {

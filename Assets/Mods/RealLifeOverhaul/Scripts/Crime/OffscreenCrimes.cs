@@ -30,11 +30,14 @@ namespace RealLifeOverhaul
         private const string EmptyBusinessType = "ba:businesstype_empty";
         private const float BreakInChance = 0.04f;     // per night, before security and the frequency option
         private const int BreakInRestDays = 6;
-        private const float BreakInValueCap = 2500f;
+        private static float BreakInValueCap => Prices.At(2500f);
         private const float BreakInStockShare = 0.25f; // of what is on the shelves, at most
         private const float CarChance = 0.03f;         // per night
         private const int CarRestDays = 7;
-        private const float CarRepairCap = 250f;
+        internal const float CarRepairCap = 250f;
+        internal const int RepairLeast = 60, RepairMost = 350;     // a break-in's repair bill, at the start's prices (Crime.Rob takes them at today's)
+        internal const int ScamLossLeast = 30, ScamLossMost = 400;
+        private static float ScamLeast => Prices.At(100f);   // a scam call needs this much on the player
         private const float CarDamageMost = 0.6f;      // never anywhere near broken down
         private const float ScamChance = 0.06f;        // per day
         private const int ScamRestDays = 5;
@@ -107,7 +110,8 @@ namespace RealLifeOverhaul
             if (!done)
             {
                 Notifications.Show(NotificationType.Warning,
-                    which == 0 ? "reallife_crime_none_breakin" : which == 1 ? "reallife_crime_none_car" : "reallife_crime_none_scam", null, 7f);
+                    which == 0 ? "reallife_crime_none_breakin" : which == 1 ? "reallife_crime_none_car" : "reallife_crime_none_scam",
+                    new System.Collections.Generic.Dictionary<string, string>(1) { { "least", ScamLeast.ToCurrencyFormat() } }, 7f);
             }
             else if (which == 0)
             {
@@ -153,7 +157,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             float taken = TakeStock(target, Mathf.Lerp(0.25f, 1f, exposure));
-            int repair = Crime.Rob(0.02f, 60, 350, "reallife_transaction_repair");
+            int repair = Crime.Rob(0.02f, RepairLeast, RepairMost, "reallife_transaction_repair");
             _breakInDay = TimeHelper.CurrentDay;
             Law.Bridges.NoteIncident(Law.Bridges.BreakIn);   // a police report can be asked for at a front desk
             _reportShop = target.BusinessName;
@@ -308,7 +312,7 @@ namespace RealLifeOverhaul
 
         private bool ScamCall()
         {
-            if (HudConfirm.isOpen || !LifeEvents.IsSafeForEvent() || Crime.Cash < 100f)
+            if (HudConfirm.isOpen || !LifeEvents.IsSafeForEvent() || Crime.Cash < ScamLeast)
             {
                 return false;
             }
@@ -341,7 +345,7 @@ namespace RealLifeOverhaul
                 }
                 else if (Random.value < 0.7f)
                 {
-                    int lost = Crime.Rob(0.08f, 30, 400, "reallife_transaction_scam");
+                    int lost = Crime.Rob(0.08f, ScamLossLeast, ScamLossMost, "reallife_transaction_scam");
                     ModState.AddModifier(ModState.Robbed);
                     Crime.ShowAmount(NotificationType.Error, "reallife_crime_scam_lost", lost);
                 }

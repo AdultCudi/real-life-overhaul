@@ -17,7 +17,7 @@ namespace RealLifeOverhaul
     /// </summary>
     public static class VehicleTow
     {
-        public const int Fee = 180;
+        public static int Fee => Prices.At(180);
 
         private const float SearchRadius = 80f;
 

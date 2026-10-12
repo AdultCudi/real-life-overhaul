@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Extensions;
 using RealLifeOverhaul.GameUi;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -79,6 +80,23 @@ namespace RealLifeOverhaul
     /// </summary>
     internal sealed class TheoryTest
     {
+        // The questions about money name today's fines (Core/Prices): the fine as charged, and the wrong answers a tenth and ten times it.
+        private static string Figures(string text)
+        {
+            if (text.IndexOf('{') < 0)
+            {
+                return text;
+            }
+            return Fine(Fine(Fine(text, "redlight", CrimeLaw.RedLightFine), "speeding", CrimeLaw.SpeedingFine), "injury", PolicePursuit.InjuryFine);
+        }
+
+        private static string Fine(string text, string name, int fine)
+        {
+            return text.Replace("{" + name + "}", ((float)fine).ToCurrencyFormat())
+                .Replace("{" + name + "_low}", PriceRules.Round(fine / 10f).ToCurrencyFormat())
+                .Replace("{" + name + "_high}", PriceRules.Round(fine * 10f).ToCurrencyFormat());
+        }
+
         private const int GiveUp = 3;
         private const string ButtonAnswer = "reallife_lic_list_answer";
         private const string ButtonDo = "reallife_lic_list_do";
@@ -202,7 +220,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            string[] parts = Licences.T(_pool.Keys[_paper[_index]]).Split('|');
+            string[] parts = Figures(Licences.T(_pool.Keys[_paper[_index]])).Split('|');
             _question = parts[0];
             for (int i = 0; i < 3; i++)
             {

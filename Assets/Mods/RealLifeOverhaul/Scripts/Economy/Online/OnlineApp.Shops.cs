@@ -222,7 +222,7 @@ namespace RealLifeOverhaul.Economy
             }
             box.Line(shop.Way == OnlineCatalogue.OwnVans
                 ? OnlineText.Fill(ready > 0 ? "reallife_online_set_vans" : "reallife_online_set_no_vans", "count", ready.ToString(), "from", OnlineCatalogue.DriveFrom.ToString("00"), "until", OnlineCatalogue.DriveUntil.ToString("00"))
-                : OnlineText.T("reallife_online_set_courier", "base", OnlineText.Price(OnlineCatalogue.CourierBase), "km", OnlineText.Price(OnlineCatalogue.CourierPerKm)));
+                : OnlineText.T("reallife_online_set_courier", "base", OnlineText.Price(CompanyCatalogue.AtPrices(OnlineCatalogue.CourierBase, Prices.Level)), "km", OnlineText.Price(CompanyCatalogue.AtPrices(OnlineCatalogue.CourierPerKm, Prices.Level))));
             if (!box.HasSelector || !box.Selector(2, shop.Promise, OnlineText.Promise, i => _director.SetPromise(key, i)))
             {
                 box.Line(OnlineText.Promise(shop.Promise));

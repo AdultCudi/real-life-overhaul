@@ -98,7 +98,7 @@ namespace RealLifeOverhaul.Economy
         public static int Now => Save != null ? Save.Hour * 60 + Mathf.Clamp(Mathf.FloorToInt(Save.Minute), 0, 59) : 0;
 
         /// <summary>The price index as these rules count it: tenths of a point, 1000 at the start (the city's economy's own figure; 1000 while that is off).</summary>
-        public static int Index => Mathf.RoundToInt(CityEconomy.PriceIndex * 10f);
+        public static int Index => Prices.Level;
 
         /// <summary>The economy as a business's value feels it: 1 a boom, 0 steady, -1 a slowdown or a recession.</summary>
         public static int Phase

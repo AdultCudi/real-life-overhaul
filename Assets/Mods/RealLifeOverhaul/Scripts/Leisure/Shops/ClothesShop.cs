@@ -38,7 +38,7 @@ namespace RealLifeOverhaul.Leisure
 
         public static int Price(string id)
         {
-            return CharacterCatalogue.PriceOf(id);
+            return Prices.At(CharacterCatalogue.PriceOf(id));   // the catalogue's price is the start's
         }
 
         public static string TierKey(ClothesTier tier)

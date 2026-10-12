@@ -235,7 +235,7 @@ namespace RealLifeOverhaul.Leisure
     /// </summary>
     public sealed class ChessGame : LeisureActivity
     {
-        public const int Stake = 10;
+        public static int Stake => Prices.At(10);
         private const int Moves = 5;
         private const float ThinkSeconds = 22f;
         private const float ReplySeconds = 3.6f;

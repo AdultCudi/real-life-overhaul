@@ -40,30 +40,32 @@ namespace RealLifeOverhaul.Family
         public const float HarmonyReconcile = 55f;
         public const float RentShare = 0.5f;            // of the day's rent, at most
         public const float IncomeShare = 0.35f;         // of their day's pay, at most
-        public const int BillsCap = 60;                 // a day, in a home that is owned (no rent)
-        public const int ContributionCap = 600;         // a day, whatever the rent
+        public static int BillsCap => Prices.At(60);                 // a day, in a home that is owned (no rent)
+        public static int ContributionCap => Prices.At(600);         // a day, whatever the rent
 
         // ---------------------------------------------------------------- outings
-        public const int DinnerCost = 90;
+        public static int DinnerCost => Prices.At(90);
         public const int DinnerHours = 2;
-        public const int CounsellingCost = 180;
+        public static int CounsellingCost => Prices.At(180);
 
         // ---------------------------------------------------------------- engagement and wedding
         public static readonly int[] RingPrice = { 0, 1200, 4500, 12000, 30000 };
+        public static int Ring(int tier) => Prices.At(RingPrice[tier]);   // at today's prices
         public static readonly float[] RingOdds = { 0f, 0.00f, 0.08f, 0.15f, 0.22f };
         public const int EngagementMinDays = 7;
         public static readonly int[] VenuePrice = { 500, 1500, 6000, 12000 };      // city hall, a place outdoors, restaurant, theatre
+        public static int Venue(int venue) => Prices.At(VenuePrice[venue]);
         public static readonly float[] TierFactor = { 1f, 1.8f, 3.2f };            // simple, classic, grand
-        public const int FlowersPrice = 800;
-        public const int MusicPrice = 1200;
+        public static int FlowersPrice => Prices.At(800);
+        public static int MusicPrice => Prices.At(1200);
         public const int CateringPerGuest = 85;
         public const float PlannerFee = 0.15f;          // of the whole, for an event planning agency
         public const float Deposit = 0.25f;             // paid when the plan is made, kept if it is called off
         public const float PostponeFee = 0.10f;
         public const int WeddingFromHour = 11;
         public const int WeddingToHour = 20;
-        public const int GiftPerGuest = 140;            // on average, times the tier
-        public const int HoneymoonCost = 2500;
+        public static int GiftPerGuest => Prices.At(140);            // on average, times the tier
+        public static int HoneymoonCost => Prices.At(2500);
         public const int HoneymoonDays = 3;
         public const int HoneymoonWindowDays = 60;      // after the wedding, for as long as the honeymoon is not taken it can be asked for from the Family contact
 
@@ -72,24 +74,24 @@ namespace RealLifeOverhaul.Family
         public const int WeeksPerChildYearDefault = 4;  // the options slider: one year of a child's age per so many in-game weeks
         public const float PregnancyYears = 0.75f;      // of a child's year: 21 days at the default scale
         public const float AdoptionYears = 0.6f;
-        public const int AdoptionFee = 1500;
-        public const int CotPrice = 450;
-        public const int PushchairPrice = 380;
-        public const int SuppliesPrice = 220;
-        public const int ScanPrice = 120;
-        public const int BirthPrice = 1800;
-        public const int CheckupPrice = 80;
+        public static int AdoptionFee => Prices.At(1500);
+        public static int CotPrice => Prices.At(450);
+        public static int PushchairPrice => Prices.At(380);
+        public static int SuppliesPrice => Prices.At(220);
+        public static int ScanPrice => Prices.At(120);
+        public static int BirthPrice => Prices.At(1800);
+        public static int CheckupPrice => Prices.At(80);
         // Childcare and private school by the day (900, 2,200 and 1,500 over four weeks), paid a week at a time and named
         // by the month of the calendar the player chose (GameCalendar.MonthDays), so that the length of the year changes
         // nothing by the day.
-        public const int NurseryPerDay = 32;            // a child
-        public const int NannyPerDay = 79;              // the household
-        public const int PrivateSchoolPerDay = 54;      // a child
+        public static int NurseryPerDay => Prices.At(32);            // a child
+        public static int NannyPerDay => Prices.At(79);              // the household
+        public static int PrivateSchoolPerDay => Prices.At(54);      // a child
         public static int NurseryPerMonth => GameCalendar.Monthly(NurseryPerDay);
         public static int NannyPerMonth => GameCalendar.Monthly(NannyPerDay);
         public static int PrivateSchoolPerMonth => GameCalendar.Monthly(PrivateSchoolPerDay);
-        public const int PartyHomePrice = 150;
-        public const int PartyVenuePrice = 600;
+        public static int PartyHomePrice => Prices.At(150);
+        public static int PartyVenuePrice => Prices.At(600);
         public static readonly int[] PocketMoney = { 0, 10, 25, 50 };   // a week
         public const int FundStep = 500;
         public const int FundFull = 40000;
@@ -104,7 +106,7 @@ namespace RealLifeOverhaul.Family
 
         // ---------------------------------------------------------------- hard times
         public const float SettlementShare = 0.20f;     // of cash in hand, never of a business
-        public const int SettlementCap = 250000;
+        public static int SettlementCap => Prices.At(250000);
         public const int DivorceAfterDays = 7;          // separated this long before either may file
         public const int PartnerFilesAfterDays = 28;    // with no word at all
         public const float SupportShare = 0.5f;         // of the children's costs, after a divorce

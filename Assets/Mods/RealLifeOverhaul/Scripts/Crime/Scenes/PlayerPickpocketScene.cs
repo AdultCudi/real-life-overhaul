@@ -15,9 +15,9 @@ namespace RealLifeOverhaul
     internal sealed class PlayerPickpocketScene : CrimeScene
     {
         private const int Approach = 0, Chase = 1, Unnoticed = 2, Caught = 3;
-        private const float Share = 0.06f;
-        private const int Least = 10;
-        private const int Most = 250;
+        internal const float Share = 0.06f;
+        internal const int Least = 10;
+        internal const int Most = 250;
         private const float GrabReach = 1.5f;
         private const float CatchReach = 2.3f;
 
@@ -31,7 +31,7 @@ namespace RealLifeOverhaul
 
         protected override bool Stage(in CrimeSetup setup, float now)
         {
-            if (PlayerHelper.IsUsingVehicle || Crime.Cash < Least * 3
+            if (PlayerHelper.IsUsingVehicle || Crime.Cash < Prices.At(Least) * 3
                 || !StreetSpots.PavementAround(setup.Player, 9f, 17f, true, out Vector3 from)
                 || !First.Enter(from, ActorLook.Civilian, 3f, onRoad: true))
             {

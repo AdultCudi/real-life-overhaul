@@ -752,9 +752,10 @@ internal static partial class Program
             steps.Add(FranchiseRules.ChainStep(t, true, day, 60));
         }
         Check(steps[2] == 1 && steps[6] == 2 && steps[13] == 3 && steps[0] == 0 && steps[3] == 0 && steps[12] == 0, "three days in breach and the chain writes, seven and it fines, fourteen and it ends the agreement");
-        Check(!FranchiseRules.ChainGives(t) && FranchiseRules.ChainFine(t) == t.Average * 5, "from the day it writes the name brings nothing; the fine is five days of royalty");
+        Check(!FranchiseRules.ChainGives(t) && FranchiseRules.ChainFine(t, 1000) == t.Average * 5, "from the day it writes the name brings nothing; the fine is five days of royalty");
         Check(FranchiseRules.ChainStep(t, false, 25, 60) == 0 && t.Breach == 0 && FranchiseRules.ChainGives(t), "a day back inside clears the count");
-        Check(FranchiseRules.ChainFine(new Taken()) == BrandCatalogue.ChainFineLeast, "a fine is never under 200");
+        Check(FranchiseRules.ChainFine(new Taken(), 1000) == BrandCatalogue.ChainFineLeast, "a fine is never under 200");
+        Check(FranchiseRules.ChainFine(new Taken(), 2000) == CompanyCatalogue.AtPrices(BrandCatalogue.ChainFineLeast, 2000), "a chain's least fine follows prices");
         FranchiseRules.ChainStep(t, false, 70, 60);
         Check(t.Until == 130, "the year renews itself");
         for (int i = 2; i <= 20; i++)

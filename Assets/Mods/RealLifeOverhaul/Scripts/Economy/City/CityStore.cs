@@ -49,7 +49,7 @@ namespace RealLifeOverhaul.Economy
             var t = new StringBuilder(256 + s.Districts.Count * 40);
             t.Append("v=").Append(Version).Append("~h:");
             Join(t, s.Seed, s.Age, s.LastDay, (int)s.Cycle, s.MonthsLeft, s.MonthsIn, s.Base, s.BaseBefore, s.Pending ? 1 : 0, s.PendingMove, (int)s.PendingReason,
-                s.LastMove, (int)s.LastReason, s.Index, s.Inflation, s.Pressure, s.MonthChange, s.CarryRent, s.CarryWages, s.CarryTakings, s.LastCopycatDay, s.Buys);
+                s.LastMove, (int)s.LastReason, s.Index, s.Inflation, s.Pressure, s.MonthChange, s.CarryRent, s.CarryWages, s.CarryTakings, s.LastCopycatDay, s.Buys, s.CarryLiving);
             t.Append("~d:");
             for (int i = 0; i < s.Districts.Count; i++)
             {
@@ -186,6 +186,7 @@ namespace RealLifeOverhaul.Economy
             s.CarryTakings = Math.Max(0, I(c, 19));
             s.LastCopycatDay = Math.Max(0, I(c, 20));
             s.Buys = I(c, 21) & ((1 << MacroCatalogue.SupplyKinds) - 1);
+            s.CarryLiving = Math.Max(0, I(c, 22));   // (none in a save from before it was kept)
         }
 
         private static RateReason Reason(int value)

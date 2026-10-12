@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
 using Entities;
+using Extensions;
 using GleyTrafficSystem;
 using Helpers;
 using Localizor;
@@ -225,7 +226,8 @@ namespace RealLifeOverhaul.Events
                 _prompt = prompt;
                 if (prompt != null)
                 {
-                    Crime.ShowKey(NotificationType.Info, prompt, KeyAction.Interact, 6f);
+                    // (A stall's snack is the one prompt here that names a price.)
+                    Crime.ShowKey(NotificationType.Info, prompt, KeyAction.Interact, 6f, "price", ((float)StreetEventScene.SnackPrice).ToCurrencyFormat());
                 }
             }
         }

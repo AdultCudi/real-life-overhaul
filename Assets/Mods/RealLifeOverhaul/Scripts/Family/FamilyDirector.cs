@@ -82,6 +82,7 @@ namespace RealLifeOverhaul.Family
         private bool _promptWanted;
         private string _promptKey;
         private string _promptFill;
+        private int _promptCost;
         private string _promptText;
         private Action _promptAction;
         private string _objectiveKey;
@@ -346,7 +347,7 @@ namespace RealLifeOverhaul.Family
         /// button, which the game labels with the player's key. Whoever wants one asks every tick; when nobody does it goes. The
         /// words are rebuilt only when the key or what fills it changes; the panel is told nothing when nothing changed.
         /// </summary>
-        internal void Prompt(string key, string fill, Action action, Transform over = null)
+        internal void Prompt(string key, string fill, Action action, Transform over = null, int cost = 0)
         {
             if (_promptWanted)
             {
@@ -354,11 +355,14 @@ namespace RealLifeOverhaul.Family
             }
             _promptWanted = true;
             _promptAction = action;
-            if (!ReferenceEquals(key, _promptKey) || fill != _promptFill)
+            if (!ReferenceEquals(key, _promptKey) || fill != _promptFill || cost != _promptCost)
             {
                 _promptKey = key;
                 _promptFill = fill;
-                string line = FamilyText.Fill(key.GetLocalization().Replace("{key}: ", string.Empty), new Args { Name = fill, Child = fill, Place = fill });
+                _promptCost = cost;
+                // (An errand that costs something names it, at today's prices: {amount}.)
+                string line = FamilyText.Fill(key.GetLocalization().Replace("{key}: ", string.Empty),
+                    new Args { Name = fill, Child = fill, Place = fill, Amount = cost > 0 ? FamilyText.Money(cost) : null });
                 _promptText = line.Length > 0 ? char.ToUpperInvariant(line[0]) + line.Substring(1) : line;
                 _promptButton = key.Replace("_prompt_", "_button_");
             }

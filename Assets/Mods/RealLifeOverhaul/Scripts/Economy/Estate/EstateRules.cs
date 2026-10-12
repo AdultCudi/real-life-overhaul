@@ -677,9 +677,10 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
-        public static int AgentFee(int price)
+        public static int AgentFee(int price, int index)
         {
-            return price <= 0 ? 0 : Math.Min(price, Math.Max(EstateCatalogue.AgentFeeLeast, EstateCatalogue.Share(price, EstateCatalogue.AgentFee)));
+            int least = EstateCatalogue.Share(EstateCatalogue.AgentFeeLeast, EstateCatalogue.Clamp(index, 500, 4000));
+            return price <= 0 ? 0 : Math.Min(price, Math.Max(least, EstateCatalogue.Share(price, EstateCatalogue.AgentFee)));
         }
 
         /// <summary>Tax on a gain: half the game's own rate on what the sale brought over the price paid, the works and the fee. Nothing on a loss.</summary>

@@ -215,7 +215,7 @@ namespace RealLifeOverhaul.Economy
                 h.SaleDay = day + 1;   // the player is standing inside it, as the game's own sale would not have it either: tomorrow
                 return false;
             }
-            int fee = EstateRules.AgentFee(price), tax = EstateRules.GainsTax(price, fee, h.Paid, h.Spent, _climate.TaxPercent);
+            int fee = EstateRules.AgentFee(price, _climate.Index), tax = EstateRules.GainsTax(price, fee, h.Paid, h.Spent, _climate.TaxPercent);
             Cost(fee, EstateGame.FeeKey, h.Name, null, "the agent's fee on a sale for " + price, true);
             Cost(tax, EstateGame.GainsKey, h.Name, null, "tax on the gain over " + h.Paid + " paid and " + h.Spent + " spent", true, false);
             _state.Holdings.Remove(h);

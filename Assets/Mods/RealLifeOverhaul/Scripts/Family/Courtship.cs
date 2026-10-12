@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Family
         {
             int tier = 1 + (index % 4 + 4) % 4;
             FamilySave s = FamilyState.S;
-            var fill = Args.Us.Cost(FamilyBalance.RingPrice[tier]).With(FamilyText.T(RingNames[tier]));
+            var fill = Args.Us.Cost(FamilyBalance.Ring(tier)).With(FamilyText.T(RingNames[tier]));
             string key = s.Ring == tier ? "reallife_family_rings_have" : s.Ring > 0 ? "reallife_family_rings_offer_again" : "reallife_family_rings_offer";
             return FamilyTalk.Either(FamilyText.Say(key, fill), "reallife_family_rings_buy", () => Buy(tier), "reallife_family_rings_next", () => Rings(index + 1));
         }
@@ -47,11 +47,11 @@ namespace RealLifeOverhaul.Family
             {
                 return FamilyTalk.Close("reallife_family_rings_already");
             }
-            if (!FamilyTalk.Pay(FamilyBalance.RingPrice[tier], "reallife_transaction_family_ring"))
+            if (!FamilyTalk.Pay(FamilyBalance.Ring(tier), "reallife_transaction_family_ring"))
             {
                 return null;
             }
-            FamilyState.MoneyOut(FamilyBalance.RingPrice[tier], 4);
+            FamilyState.MoneyOut(FamilyBalance.Ring(tier), 4);
             s.Ring = tier;
             return FamilyTalk.Close("reallife_family_rings_bought", Args.Us.With(FamilyText.T(RingNames[tier])));
         }

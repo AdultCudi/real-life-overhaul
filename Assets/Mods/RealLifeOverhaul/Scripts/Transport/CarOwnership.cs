@@ -678,7 +678,7 @@ namespace RealLifeOverhaul
 
         private float RegistrationCost()
         {
-            return CarRules.Registration(_price) + (_registrationLeft < 0 ? CarRules.RegistrationLate : 0f);
+            return CarRules.Registration(_price) + (_registrationLeft < 0 ? CarRules.RegistrationLateFee : 0f);
         }
 
         /// <summary>

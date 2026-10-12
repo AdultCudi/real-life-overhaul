@@ -13,9 +13,9 @@ namespace RealLifeOverhaul
     /// <summary>What the save remembers of the player's use of public transport: one line in modData.</summary>
     public static class TransitState
     {
-        public const float BusFare = 2.75f;
+        public static float BusFare => Prices.At(2.75f);
         public const float SubwayFare = 3f;      // the game's own price for a subway ride
-        public const float DayPass = 7.5f;       // unlimited buses and subway until midnight
+        public static float DayPass => Prices.At(7.5f);       // unlimited buses and subway until midnight
 
         private const string Key = "reallife:transit";
 

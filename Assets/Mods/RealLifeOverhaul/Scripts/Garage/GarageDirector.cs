@@ -644,7 +644,7 @@ namespace RealLifeOverhaul
                 BikeRecord bike = pair.Value;
                 BikeDef def = BikeCatalogue.Of(bike.Kind);
                 titles.Add(GarageText.T(bike.Owned ? "reallife_garage_summary_bike" : "reallife_garage_summary_hired", "name", GarageText.T(def.Name),
-                    "value", GarageText.Money(def.Price * GarageCatalogue.Resale)));
+                    "value", GarageText.Money(def.Cost * GarageCatalogue.Resale)));
                 // Where it stands now (where it was last left, if the game does not have it in the world), by address and district.
                 Vector3 at = TwoWheelers.Where(bike);
                 string metres = Mathf.RoundToInt(Vector3.Distance(player, at)).ToString();

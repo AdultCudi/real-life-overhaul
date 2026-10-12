@@ -194,7 +194,8 @@ namespace RealLifeOverhaul.Economy
         public const int QuarterMonths = 3;
         public const int ReturnDays = 5;            // days to file
         public const int PenaltyShare = 5;          // thousandths of the quarter's takings
-        public const int PenaltyLeast = 200, PenaltyMost = 5000;
+        public static int PenaltyLeast => Prices.At(200);   // (at today's prices, as the takings it is a share of)
+        public static int PenaltyMost => Prices.At(5000);
         public const int PenaltyRepeatDays = 5;     // unfiled, the penalty is charged again after each of these
         public const int PenaltiesMost = 3;         // for one return
         public const int LateForAudit = 2;          // late returns running that bring an audit
@@ -217,7 +218,7 @@ namespace RealLifeOverhaul.Economy
         public const int RiskDecay = 40;            // ten-thousandths a day while nothing is hidden
         public const int RiskMost = 2500;           // a quarter: the chance of an audit a day is never more
         public static readonly int[] FineShare = { 250, 500, 750, 1000 };       // thousandths of the back-tax, by strictness
-        public const int CourtSum = 5000;           // back-tax from which it goes to court (never on Relaxed)
+        public static int CourtSum => Prices.At(5000);           // back-tax from which it goes to court (never on Relaxed)
         public const int OwedTakeShare = 500;       // thousandths of the cash in hand that back-tax still owed takes a day
 
         // ---------------------------------------------------------------- licences and permits

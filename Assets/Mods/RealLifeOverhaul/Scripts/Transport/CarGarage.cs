@@ -51,13 +51,13 @@ namespace RealLifeOverhaul
         public static int PolicyDays => GameCalendar.MonthDays;
         private const float PremiumDays = 28f;        // the days the premium's figures are written for
         public const int ClaimForgottenAfter = 56;    // days without a claim after which one stops counting
-        public const float Excess = 100f;             // of a repair bill the owner always pays
+        public static float Excess => Prices.At(100f);             // of a repair bill the owner always pays
         public const float Cover = 0.8f;              // of the rest that the insurer pays
-        public const float RoadsideCallOut = 95f;     // a mechanic to a breakdown (half for an insured car)
-        public const float FuelCallOut = 34f;         // a can brought to the roadside...
+        public static float RoadsideCallOut => Prices.At(95f);     // a mechanic to a breakdown (half for an insured car)
+        public static float FuelCallOut => Prices.At(34f);         // a can brought to the roadside...
         public const float FuelLitres = 10f;
-        public const float FuelPerLitre = 2.6f;       // ...at twice the pump price
-        public const float TowFee = VehicleTow.Fee;   // the one tow of the mod's (Driving/VehicleTow)
+        public static float FuelPerLitre => Prices.At(2.6f);       // ...at twice the pump price
+        public static float TowFee => VehicleTow.Fee;   // the one tow of the mod's (Driving/VehicleTow)
         public const float ReplaceBelow = 0.35f;      // tyres and brakes are changed at a service when this worn
         public const float WarnBelow = 0.2f;
         public const float WearFrom = 0.3f;           // below this they begin to tell
@@ -70,14 +70,16 @@ namespace RealLifeOverhaul
             return Mathf.Round(Mathf.Clamp(price * share, least, most) / 5f) * 5f;
         }
 
-        public static float Service(float price) => Clamp(price, ServiceShare, ServiceLeast, ServiceMost);
-        public static float TyreSet(float price) => Clamp(price, TyresShare, TyresLeast, TyresMost);
-        public static float BrakeSet(float price) => Clamp(price, BrakesShare, BrakesLeast, BrakesMost);
-        public static float Registration(float price) => Mathf.Round(Mathf.Min(RegistrationMost, RegistrationBase + price * RegistrationShare) / 5f) * 5f;
+        // (The car's list price is the game's, at the start's prices: what it comes to is at today's, Core/Prices.)
+        public static float Service(float price) => Prices.At(Clamp(price, ServiceShare, ServiceLeast, ServiceMost));
+        public static float TyreSet(float price) => Prices.At(Clamp(price, TyresShare, TyresLeast, TyresMost));
+        public static float BrakeSet(float price) => Prices.At(Clamp(price, BrakesShare, BrakesLeast, BrakesMost));
+        public static float Registration(float price) => Prices.At(Mathf.Round(Mathf.Min(RegistrationMost, RegistrationBase + price * RegistrationShare) / 5f) * 5f);
+        public static float RegistrationLateFee => Prices.At(RegistrationLate);
 
         public static float Premium(float price, int claims)
         {
-            return Mathf.Round(Mathf.Clamp(price * PremiumShare, PremiumLeast, PremiumMost) * PolicyDays / PremiumDays * (1f + PremiumPerClaim * Mathf.Clamp(claims, 0, 6)) / 5f) * 5f;
+            return Prices.At(Mathf.Round(Mathf.Clamp(price * PremiumShare, PremiumLeast, PremiumMost) * PolicyDays / PremiumDays * (1f + PremiumPerClaim * Mathf.Clamp(claims, 0, 6)) / 5f) * 5f);
         }
 
         /// <summary>What the insurer pays towards a repair bill.</summary>

@@ -97,14 +97,23 @@ namespace RealLifeOverhaul
             {
                 if (e.IsChoice)
                 {
+                    // A prompt's body fills {cost} (the price) and {sum} (the payout it quotes), at today's prices; the answers
+                    // are plain keys of the game's box and name no figure.
                     foreach (string key in new[] { e.HeaderKey, e.BodyKey, e.ConfirmKey, e.CancelKey })
                     {
-                        if (locale.TryGetValue(key, out string t) && placeholder.IsMatch(t)) Fail($"{key}: prompts cannot fill placeholders");
+                        if (!locale.TryGetValue(key, out string t)) continue;
+                        bool fills = key == e.BodyKey;
+                        foreach (Match m in placeholder.Matches(t))
+                        {
+                            string name = m.Groups[1].Value;
+                            if (!fills || (name != "cost" && name != "sum")) Fail($"{key}: a prompt fills only {{cost}} and {{sum}}, in its body");
+                            else if (name == "cost" && e.Cost <= 0) Fail($"{key}: says {{cost}} but the choice costs nothing");
+                            else if (name == "sum" && e.Quote <= 0) Fail($"{key}: says {{sum}} but no answer pays a fixed sum");
+                        }
                     }
                     if (e.Cost > 0)
                     {
-                        string prompt = locale.GetValueOrDefault(e.BodyKey, "") + " | " + locale.GetValueOrDefault(e.ConfirmKey, "");
-                        if (!Regex.IsMatch(prompt, @"\$" + e.Cost + @"(?![0-9])")) Fail($"{e.Id}: costs ${e.Cost} but the prompt never says so");
+                        if (!locale.GetValueOrDefault(e.BodyKey, "").Contains("{cost}")) Fail($"{e.Id}: costs {e.Cost} but the prompt never says so");
                     }
                     if (e.Yes.Length == 0) Fail($"{e.Id}: choice without a yes outcome");
                     if ((e.Needs & Need.NotDriving) == 0 || (e.Needs & Need.CanPrompt) == 0) Fail($"{e.Id}: choice can fire while driving or with a prompt open");
@@ -135,6 +144,10 @@ namespace RealLifeOverhaul
                     if (o.Energy < -12f || o.HurtEnergy > 12f) Fail($"{key}: energy loss too large for a random event");
                 }
                 if (e.MinMoney < e.Cost + e.AllOutcomes.Max(o => o.MaxLoss)) Fail($"{e.Id}: can fire when the player cannot afford it");
+                foreach (string key in e.TextKeys())
+                {
+                    if (locale.TryGetValue(key, out string t) && Regex.IsMatch(t, @"\$[0-9]")) Fail($"{key}: names a fixed amount: prices are quoted at today's ({{cost}}, {{sum}}, {{amount}})");
+                }
                 if (e.Weight <= 0f) Fail($"{e.Id}: weight must be positive");
             }
             Console.WriteLine($"  longest outcome text: {longest} chars ({longestKey})");

@@ -599,9 +599,9 @@ namespace RealLifeOverhaul.Economy.Brands
             return t.Breach < BrandCatalogue.ChainWarnDays;
         }
 
-        public static int ChainFine(Taken t)
+        public static int ChainFine(Taken t, int index)
         {
-            return Math.Max(BrandCatalogue.ChainFineLeast, t.Average * BrandCatalogue.ChainFineDaysOfRoyalty);
+            return Math.Max(CompanyCatalogue.AtPrices(BrandCatalogue.ChainFineLeast, index), t.Average * BrandCatalogue.ChainFineDaysOfRoyalty);
         }
 
         /// <summary>What leaving costs: twenty ordinary days of royalty, and never less than half the fee at today's prices.</summary>
