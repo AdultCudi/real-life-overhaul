@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Utilities
 {
@@ -16,6 +17,9 @@ namespace RealLifeOverhaul.Utilities
 
         /// <summary>A business of the player's closed for some hours with the game's own switch (Business); false if it was closed already.</summary>
         public static Func<BuildingRegistration, int, bool> CloseFor;
+
+        /// <summary>A line in the Business desk's messages (Business), to read back: why a business is closed. Its key and its names.</summary>
+        public static Action<string, Dictionary<string, string>> Record;
 
         /// <summary>True for a building another feature has made its own (the courthouse), which the office is not to be.</summary>
         public static Func<CityBuildingController, bool> Taken;
@@ -35,6 +39,7 @@ namespace RealLifeOverhaul.Utilities
             Grade = null;
             Household = null;
             CloseFor = null;
+            Record = null;
             Taken = null;
         }
     }

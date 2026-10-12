@@ -37,6 +37,11 @@ namespace RealLifeOverhaul.Utilities
         private const int CatchUpDays = 7;          // a long jump (a stay in hospital, a trip) is added up day by day for at most a week
         private const int ClosedHours = 2;          // a business without what it needs is kept closed this long, hour by hour
 
+        // Each business closed for want of something, and what it was told it lacked: told once a spell, again only when the
+        // reason changes or the business has been open in between. (A headquarters has no switch of the game's to open it
+        // again by hand: without being told, the player saw "temporarily closed" and nothing more.)
+        private readonly Dictionary<string, string> _toldClosed = new Dictionary<string, string>(8);
+
         public static IModLogger Logger;
         public static UtilitiesDirector Instance { get; private set; }
 
@@ -950,10 +955,15 @@ namespace RealLifeOverhaul.Utilities
                 if (dark || (dry && needsWater) || offline)
                 {
                     Func<BuildingRegistration, int, bool> close = UtilitiesBridges.CloseFor;
-                    if (close != null && close(place.Reg, ClosedHours) && Meta.Dev.Verbose)
+                    if (close != null)
                     {
-                        Logger?.Info("Utilities: " + place.Name + " closed for want of " + (dark ? "power" : dry && needsWater ? "water" : "an internet connection") + ".");
+                        close(place.Reg, ClosedHours);
+                        TellClosed(place, dark ? power : dry && needsWater ? water : _state.Find(place.Place, Service.Internet), !dark && !(dry && needsWater), today, hour);
                     }
+                }
+                else
+                {
+                    _toldClosed.Remove(place.Place);   // open again: a later closure is told afresh
                 }
             }
             if (homeDark)
@@ -964,6 +974,41 @@ namespace RealLifeOverhaul.Utilities
             {
                 ModState.AddModifier(ModState.NoWater, ClosedHours);
             }
+        }
+
+        // Why a business is closed and what opens it again, the first time it is closed for that reason: a notification now,
+        // a line in the Business desk's messages to read back, and a line in Player.log.
+        private void TellClosed(PlaceInfo place, Account account, bool internet, int today, int hour)
+        {
+            string key;
+            if (internet)
+            {
+                key = account == null || account.State == SupplyState.Closed || account.State == SupplyState.Cut ? "reallife_util_closed_net_none"
+                    : account.State == SupplyState.Pending ? "reallife_util_closed_net_install"
+                    : "reallife_util_closed_net_outage";
+            }
+            else
+            {
+                key = account == null ? "reallife_util_closed_apply"
+                    : account.State == SupplyState.Cut ? (account.Owed > 0 ? "reallife_util_closed_cut" : "reallife_util_closed_apply")
+                    : account.State == SupplyState.Pending ? "reallife_util_closed_connecting"
+                    : "reallife_util_closed_apply";
+            }
+            if (_toldClosed.TryGetValue(place.Place, out string said) && said == key)
+            {
+                return;
+            }
+            _toldClosed[place.Place] = key;
+            var data = new Dictionary<string, string>(4)
+            {
+                { "place", place.Name },
+                { "service", (account != null ? UtilitiesText.Service(account.Service) : UtilitiesText.Service(Service.Power)).ToLowerInvariant() },   // (mid-sentence)
+                { "office", OfficeName() },
+                { "time", account != null && account.OutageUntil > hour ? (account.OutageUntil % 24).ToString("00") + ":00" : string.Empty }
+            };
+            UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T(key, "place", data["place"], "service", data["service"], "office", data["office"], "time", data["time"]), 14f);
+            UtilitiesBridges.Record?.Invoke(key, data);
+            Logger?.Info("Utilities: " + place.Name + " is closed (" + key + ", told), on day " + today + ".");
         }
 
         // The player's home they are in now, or null.
