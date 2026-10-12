@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Law
         public const int RepeatDays = 14;
         public const int LawyerFee = 750;
         public const int LawyerFeeLiked = 600;      // for somebody the city thinks well of (Reputation.Public of 70 or more)
-        public const int ImpoundFee = 250;
+        public const int ImpoundFee = 300;          // the city pound's, whatever the car was taken for (Licences charges the same)
         public const int WastedCallsForCustody = 5; // the fifth call about nothing in one day
 
         // What the cell does to the body: never worse than this on the way out.

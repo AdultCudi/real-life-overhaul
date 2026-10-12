@@ -434,7 +434,10 @@ namespace RealLifeOverhaul
             }
             float sales = SalesOn(save, day - 1);
             float rate = save.gameVariables != null ? save.gameVariables.taxPercentage / 100f : 0.1f;
-            state.OwedTax += sales * rate * CivicCatalogue.TaxShare(state.Levers[(int)Lever.BusinessTax]);
+            if (IncomeTaxed(day - 1))
+            {
+                state.OwedTax += sales * rate * CivicCatalogue.TaxShare(state.Levers[(int)Lever.BusinessTax]);
+            }
             state.OwedTrade += sales * CivicCatalogue.TradeShare(state.Levers[(int)Lever.TradeLevy]);
             if (state.SettleDay <= 0)
             {
@@ -563,6 +566,19 @@ namespace RealLifeOverhaul
                 }
             }
             return account;
+        }
+
+        // The game charges income tax at the end of its tax year only on a year of business sales (and gambling winnings) of
+        // 150,000 or more (TaxHelper.MeetsIncomeTaxThreshold): the city's share of it follows, on the tax year so far
+        // projected to a whole one, as the game's own EconoView projects it.
+        private static bool IncomeTaxed(int day)
+        {
+            int year = GameCalendar.DaysPerYear;
+            day = Math.Max(1, day);
+            int start = (day - 1) / year * year + 1;
+            int days = Math.Max(1, day - start + 1);
+            float projected = TaxCalculationHelper.GetBusinessSales(start, day) / days * year;
+            return TaxHelper.MeetsIncomeTaxThreshold(projected, TaxCalculationHelper.GetCurrentTaxableGamblingWinnings());
         }
 
         private static bool Owned(BuildingRegistration registration)

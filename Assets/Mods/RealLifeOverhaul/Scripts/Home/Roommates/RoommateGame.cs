@@ -133,7 +133,8 @@ namespace RealLifeOverhaul.Roommates
 
         /// <summary>
         /// What a day of the home costs: the rent the player pays, or for a home they own (or one the game charges
-        /// nothing for) what the game says it would let for. <paramref name="owned"/>: the roommate is a lodger.
+        /// nothing for) what the game says it would let for, at today's prices as the city's cost of living charges
+        /// it. <paramref name="owned"/>: the roommate is a lodger.
         /// </summary>
         public static float RentPerDay(BuildingRegistration home, out bool owned)
         {
@@ -145,12 +146,13 @@ namespace RealLifeOverhaul.Roommates
             try
             {
                 owned = home.BuildingOwnedByPlayer;
+                float level = Economy.Prices.Level / 1000f;
                 if (!owned && home.RentPerDay > 0f)
                 {
-                    return home.RentPerDay;
+                    return home.RentPerDay * level;
                 }
                 Building building = home.BuildingCached;
-                return building != null ? building.GetBuildingDailyMarketRent() : 0f;
+                return building != null ? building.GetBuildingDailyMarketRent() * level : 0f;
             }
             catch (Exception e)
             {

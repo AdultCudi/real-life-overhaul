@@ -1042,9 +1042,10 @@ namespace RealLifeOverhaul.Family
             {
                 return;   // no home just now: nothing to share the cost of
             }
-            float rent = Mathf.Max(0f, home.RentPerDay);
+            // What the home costs a day: the game's rent at today's prices, as the city's cost of living charges it.
+            float rent = Mathf.Max(0f, home.RentPerDay) * Economy.Prices.Level / 1000f;
             float amount = rent > 0f ? Mathf.Min(rent * FamilyBalance.RentShare, Partner.Income * FamilyBalance.IncomeShare)
-                : Mathf.Min(FamilyBalance.BillsCap, Partner.Income * 0.2f);
+                : Mathf.Min(Economy.Prices.At(FamilyBalance.BillsCap), Partner.Income * 0.2f);
             if (FamilyState.Care == Care.Partner && FamilyState.AnyUnder(FamilyBalance.SchoolFrom))
             {
                 amount *= 0.5f;   // short days at work

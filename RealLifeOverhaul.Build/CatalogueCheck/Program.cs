@@ -188,8 +188,16 @@ namespace RealLifeOverhaul
             seen.Clear(); last = null;
             int draws = 0, reshuffles = 0, early = 0, nothing = 0, firstRepeatAt = -1;
             var everDrawn = new HashSet<string>();
+            // What the player has (a card, an accountant, a power account) is part of a situation too.
+            bool hasCard = false, hasAccountant = false, hasPower = false;
+            LifeAccounts.Card = () => hasCard;
+            LifeAccounts.Accountant = () => hasAccountant;
+            LifeAccounts.Power = () => hasPower;
             for (int i = 0; i < 200000; i++)
             {
+                hasCard = rng.Next(2) == 0;
+                hasAccountant = rng.Next(2) == 0;
+                hasPower = rng.Next(2) == 0;
                 LifeContext c = RandomContext(rng);
                 List<LifeEvent> fitting = all.Where(e => e.Fits(c)).ToList();
                 bool exhausted = fitting.All(e => seen.Contains(e.Id));
@@ -206,9 +214,14 @@ namespace RealLifeOverhaul
                     if (firstRepeatAt < 0) firstRepeatAt = draws;
                     foreach (string id in before) if (!seen.Contains(id) && !fitting.Any(e => e.Id == id)) Fail("reshuffle forgot an event from another situation");
                 }
+                if ((drawn.Id == "mn20" && !hasCard) || (drawn.Id == "mn08" && !hasAccountant) || (drawn.Id == "mn26" && !hasPower))
+                {
+                    Fail($"{drawn.Id} dealt to somebody without what it is about");
+                }
                 everDrawn.Add(drawn.Id);
                 last = drawn.Id;
             }
+            LifeAccounts.Card = LifeAccounts.Accountant = LifeAccounts.Power = null;
             if (early > 0) Fail($"{early} events repeated while unseen fitting events remained");
             Console.WriteLine($"  200000 draws in random situations: {draws} dealt, {nothing} with nothing fitting, {early} early repeats, first repeat on draw {firstRepeatAt}");
             Console.WriteLine($"  events reached at least once: {everDrawn.Count}/{all.Length}");

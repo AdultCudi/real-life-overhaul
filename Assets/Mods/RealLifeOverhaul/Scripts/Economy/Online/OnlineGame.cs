@@ -353,14 +353,15 @@ namespace RealLifeOverhaul.Economy
             int rank = place.Reg != null && !place.Warehouse ? MacroCatalogue.TypeRank(place.Reg.businessTypeName) : -1;
             site.Kind = rank >= 0 ? MacroCatalogue.KindOfTypeIs[rank] : MacroCatalogue.General;
             float index = PriceIndex(state);
+            float level = Prices.Level / 1000f;   // the game's prices are the start's: the shop's own and the going price at today's, as its takings in the shop are
             List<ProductMarketEntry> market = Save != null ? Save.productMarketEntries : null;
             for (int l = 0; l < lines; l++)
             {
                 WebLine line = shop.Lines[l];
                 Item item = ItemsGetter.GetByName(line.Item, true);
-                int own = item != null && place.Reg != null ? Mathf.RoundToInt(ItemHelper.GetPrice(line.Item, place.Reg) * 100f) : 0;
-                site.Ask[l] = line.Price > 0 ? line.Price : own;
-                site.Going[l] = item != null ? Mathf.Max(1, Mathf.RoundToInt(item.DefaultMarketPrice * index * 100f)) : 0;
+                int own = item != null && place.Reg != null ? Mathf.RoundToInt(ItemHelper.GetPrice(line.Item, place.Reg) * level * 100f) : 0;
+                site.Ask[l] = line.Price > 0 ? line.Price : own;   // (a price set in the app is as it was set)
+                site.Going[l] = item != null ? Mathf.Max(1, Mathf.RoundToInt(item.DefaultMarketPrice * index * level * 100f)) : 0;
                 ProductMarketEntry entry = null;
                 for (int m = 0; market != null && m < market.Count && entry == null; m++)
                 {

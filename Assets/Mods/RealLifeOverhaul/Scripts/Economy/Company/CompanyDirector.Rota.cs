@@ -227,6 +227,9 @@ namespace RealLifeOverhaul.Economy
             return RaiseOf(id);
         }
 
+        /// <summary>True while an accountant is hired for the businesses.</summary>
+        public bool HasAccountant => On(CompanyPart.Tax) && _state != null && _state.Tax != null && _state.Tax.Accountant >= 0;
+
         /// <summary>The raise agreed for an employee on top of the game's wage, hundredths an hour; 0 for none (or with the staff part off).</summary>
         public int RaiseOf(string id)
         {

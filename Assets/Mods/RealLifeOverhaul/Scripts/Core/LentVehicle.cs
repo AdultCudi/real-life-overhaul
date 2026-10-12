@@ -8,7 +8,9 @@ namespace RealLifeOverhaul
     /// is out, so the game's hourly parking round would ticket it like one of the player's own. It is not theirs to park:
     /// whoever lends it calls <see cref="KeepFree"/> on its slow tick. The vehicle is kept legally parked with nothing owed,
     /// and a ticket the game wrote all the same (its round can fall between two ticks) is paid back at once, under its own
-    /// name in the player's transactions. A few field writes a second while a vehicle is lent; nothing otherwise.
+    /// name in the player's transactions: the game's charge and what city policy adds to (or takes off) a ticket, which
+    /// civic life charges on every ticket the game counts (Civic/CivicEffects). A few field writes a second while a
+    /// vehicle is lent; nothing otherwise.
     /// </summary>
     public static class LentVehicle
     {
@@ -33,7 +35,7 @@ namespace RealLifeOverhaul
             int tickets = instance.parkingTickets != null ? instance.parkingTickets.Count : 0;
             if (tickets > ticketsSeen)
             {
-                GameManager.ChangeMoneySafe(Ticket * (tickets - ticketsSeen), new TransactionInfo(RefundKey), null, null, force: true);
+                GameManager.ChangeMoneySafe((Ticket + CivicPolicy.TicketExtra) * (tickets - ticketsSeen), new TransactionInfo(RefundKey), null, null, force: true);
             }
             ticketsSeen = tickets;
         }
