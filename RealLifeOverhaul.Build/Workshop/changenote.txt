@@ -2,3 +2,6 @@
 
 New
 - The rota planner counts the goods: a plan sells a product only while there is some, and the page says what runs out, when, and what would keep it on the shelves.
+
+Fixed
+- The search box in Contacts was out of sight to the left of the app; it now has its own line above the list.

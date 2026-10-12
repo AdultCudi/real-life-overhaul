@@ -17,8 +17,10 @@ namespace RealLifeOverhaul
     /// <summary>
     /// A search box in the game's Contacts app: what is typed narrows the list to the contacts whose name or description
     /// has every word of it, ignoring case and accents, within the category that is picked. The box is a copy of the
-    /// game's own text field (the one of its text input window, TextInputUI.inputField), put beside the app's own
-    /// "mark all as read" button in its row, and it is read by the game's own placeholder text.
+    /// game's own text field (the one of its text input window, TextInputUI.inputField), on a line of its own under the
+    /// app's "mark all as read" and "delete all" buttons, as wide as the list of contacts, with the game's own
+    /// placeholder text. The game places that row by hand and its two buttons fill it, so the box does not go in it; the
+    /// list starts a line lower instead, and is put back where the game had it if the box goes.
     ///
     /// HOW THE LIST IS NARROWED. The game makes the list in ContactsApp.LoadContactsList: it fills the scroller's
     /// public list of rows (ContactScrollerController.data) and reloads it. A search asks the game to make the list as
@@ -34,7 +36,7 @@ namespace RealLifeOverhaul
     public sealed class ContactSearch : MonoBehaviour
     {
         private const int Longest = 24;                 // characters
-        private const float WidthOfButtons = 2.2f;      // the box is as wide as this many of the row's button
+        private const float Gap = 16f;                  // between the buttons, the box and the list, on the game's canvas
 
         public static IModLogger Logger;
 
@@ -49,6 +51,9 @@ namespace RealLifeOverhaul
         private ContactModel _first;
         private bool _typing;
         private Predicate<ContactModel> _misses;
+        private RectTransform _list;                    // the game's list of contacts, moved down a line for the box
+        private Vector2 _listTopWas;
+        private static readonly Vector3[] Corners = new Vector3[4];
 
         /// <summary>Puts the box in the game's Contacts app, once per city. Safe to call again; says in Player.log if the app is not built as expected.</summary>
         public static void Install()
@@ -99,27 +104,59 @@ namespace RealLifeOverhaul
             return field != null ? field.GetValue(owner) as T : null;
         }
 
-        // The box in the row: before the game's button, as high as it, a little over two of it wide, with the game's placeholder words.
+        // The box on its own line: under the row of the game's buttons, as high as they are and as wide as the list, which
+        // starts below it. Everything is measured from the game's own pieces in the panel they share, so it holds at any
+        // screen size.
         private void Dress(Button mark, Transform row)
         {
             var markRect = (RectTransform)mark.transform;
+            var rowRect = row as RectTransform;
+            var panel = row.parent as RectTransform;
             var rect = (RectTransform)transform;
-            transform.SetSiblingIndex(mark.transform.GetSiblingIndex());
-            float height = Mathf.Max(40f, markRect.rect.height), width = Mathf.Max(220f, markRect.rect.width * WidthOfButtons);
-            bool laidOut = row.GetComponent<HorizontalOrVerticalLayoutGroup>() != null;
-            LayoutElement layout = GetComponent<LayoutElement>() ?? gameObject.AddComponent<LayoutElement>();
-            layout.preferredWidth = width;
-            layout.preferredHeight = height;
-            layout.flexibleWidth = 0f;
-            layout.minWidth = width * 0.6f;
-            if (!laidOut)
+            RectTransform list = ListOf(panel);
+            float height = Mathf.Max(40f, markRect.rect.height);
+            string where;
+            if (rowRect != null && panel != null && list != null)
             {
-                // A row the game places by hand: the box stands just before the button, on the same line.
-                rect.anchorMin = markRect.anchorMin;
-                rect.anchorMax = markRect.anchorMax;
-                rect.pivot = new Vector2(1f, markRect.pivot.y);
-                rect.sizeDelta = new Vector2(width, height);
-                rect.anchoredPosition = new Vector2(markRect.anchoredPosition.x - markRect.rect.width * markRect.pivot.x - 12f, markRect.anchoredPosition.y);
+                rowRect.GetWorldCorners(Corners);
+                float rowBottom = panel.InverseTransformPoint(Corners[0]).y;
+                list.GetWorldCorners(Corners);
+                float listLeft = panel.InverseTransformPoint(Corners[0]).x, listRight = panel.InverseTransformPoint(Corners[2]).x, listTop = panel.InverseTransformPoint(Corners[1]).y;
+                float top = Mathf.Min(rowBottom, listTop + height + Gap) - Gap;
+                rect.SetParent(panel, false);
+                rect.SetSiblingIndex(list.GetSiblingIndex());
+                rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
+                rect.pivot = new Vector2(0f, 1f);
+                rect.sizeDelta = new Vector2(Mathf.Max(220f, listRight - listLeft), height);
+                rect.anchoredPosition = new Vector2(listLeft - panel.rect.xMin, top - panel.rect.yMax);
+                float shift = listTop - (top - height - Gap);
+                if (shift > 0f)
+                {
+                    _list = list;
+                    _listTopWas = list.offsetMax;
+                    list.offsetMax = new Vector2(list.offsetMax.x, list.offsetMax.y - shift);   // (its top edge down, its bottom where it was)
+                }
+                where = "under '" + row.name + "', as wide as the list (" + rect.sizeDelta.x.ToString("0") + " x " + height.ToString("0") + "), the list " + Mathf.Max(0f, shift).ToString("0") + " lower";
+            }
+            else
+            {
+                // Not the panel the game has now: in the row after its last button, in what room is left.
+                float right = 0f;
+                for (int i = 0; i < row.childCount; i++)
+                {
+                    var child = row.GetChild(i) as RectTransform;
+                    if (child != null && child != rect && child.gameObject.activeSelf)
+                    {
+                        right = Mathf.Max(right, child.anchoredPosition.x + child.rect.width * (1f - child.pivot.x));
+                    }
+                }
+                float room = rowRect != null ? rowRect.rect.width - right - Gap : 0f;
+                rect.anchorMin = rect.anchorMax = markRect.anchorMin;
+                rect.pivot = new Vector2(0f, markRect.pivot.y);
+                rect.sizeDelta = new Vector2(Mathf.Max(220f, room), height);
+                rect.anchoredPosition = new Vector2(right + Gap, markRect.anchoredPosition.y);
+                where = "in '" + row.name + "' after its buttons (" + rect.sizeDelta.x.ToString("0") + " x " + height.ToString("0") + ")";
+                UiClone.Fallback("the Contacts app's list is not where it was, so the search box goes in the row of its buttons");
             }
             _input.onValueChanged.RemoveAllListeners();
             _input.onEndEdit.RemoveAllListeners();
@@ -135,9 +172,19 @@ namespace RealLifeOverhaul
             }
             if (Meta.Dev.Verbose)
             {
-                Logger?.Info("Contacts check (search box): in '" + row.name + "' before '" + mark.name + "' (" + (laidOut ? "the row lays it out" : "placed by hand beside the button") + "), "
-                             + width.ToString("0") + " x " + height.ToString("0") + ", copied from the game's text input window: PASS");
+                Logger?.Info("Contacts check (search box): " + where + ", copied from the game's text input window: PASS");
             }
+        }
+
+        // The game's list of contacts as a piece of the panel the buttons are in: the scroller's own object, or the one it hangs under there.
+        private RectTransform ListOf(RectTransform panel)
+        {
+            Transform t = _app != null && _app.contactScrollerController != null ? _app.contactScrollerController.transform : null;
+            while (t != null && panel != null && t.parent != panel)
+            {
+                t = t.parent;
+            }
+            return t as RectTransform;
         }
 
         private void Changed(string text)
@@ -221,6 +268,10 @@ namespace RealLifeOverhaul
             if (_installed == this)
             {
                 _installed = null;
+            }
+            if (_list != null)
+            {
+                _list.offsetMax = _listTopWas;   // the list back where the game had it
             }
             if (_typing)
             {
