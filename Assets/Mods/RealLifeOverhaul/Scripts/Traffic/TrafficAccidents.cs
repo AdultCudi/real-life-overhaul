@@ -262,6 +262,7 @@ namespace RealLifeOverhaul
         // The people. Both are told what happens and ticked from here; neither runs by itself.
         private readonly AccidentCast _people = new AccidentCast();
         private readonly RoadsideStop _arrest = new RoadsideStop();
+        private Wreck _faultWreck;   // the car whose driver is at fault: once they are arrested it is towed, not driven off
 
         // Scene control: the road closed round the wrecks at once, taped off when the police arrive.
         private SceneCordon _cordon;
@@ -649,6 +650,11 @@ namespace RealLifeOverhaul
                 _deadline = now + Mathf.Min(Random.Range(120f, 165f), MaxSceneTime);
                 _single = false;
                 _people.BeginCasualty(casualty, _scene, car, fatal, now);
+                if (car != null)
+                {
+                    _people.AtFault(worst: true);   // the driver who knocked them down
+                    _faultWreck = _leadWreck;
+                }
                 PlanResponse(now, true, Settings.Police, now + Random.Range(4f, 10f), now + Random.Range(3f, 14f), casualty, shut: true);
                 News.Report(NewsKind.PedestrianHit, _scene, null, fatal ? 1 : 0);
                 Logger?.Info($"Accident: pedestrian down ({(fatal ? "fatal" : "injured")}{(car != null ? ", traffic car held" : "")}), clears within {_deadline - now:F0} s.");
@@ -1281,6 +1287,13 @@ namespace RealLifeOverhaul
             _otherWreck = planned ? _leadWreck : _wrecks.Count > 1 ? _wrecks[1] : null;
             VehicleComponent otherCar = _otherWreck != null ? _otherWreck.Car : null;
             _people.Begin(_severity, _scene, worst.Car, otherCar, planned, now);
+            if (!planned)
+            {
+                // The car that caused it is the lead car, and here the worst-hit one (a reckless driver's own crash, the staged
+                // crash's first car): its driver is arrested at the scene. A hit-and-run's runner is the chase's.
+                _people.AtFault(worst: true);
+                _faultWreck = worst;
+            }
 
             // Each unit is sent after its own delay, so who gets there first varies. A minor bump closes nothing.
             PlanResponse(now, _severity != Severity.Minor, police, now + Random.Range(5f, 13f),
@@ -2003,7 +2016,9 @@ namespace RealLifeOverhaul
                     // The ambulance never drives off from under its own crew: with the stretcher out it waits until they are
                     // aboard, however long the way back is (the scene's own hard limit is the only thing that ends that).
                     bool waitsForCrew = !attendance.Police && _people.CrewOut && now < _hardLimit - CrewLastCall;
-                    if ((aboard && (attendance.Recalled || finished)) || (attendance.Recalled && now >= attendance.At && !waitsForCrew))
+                    // ...and the patrol car never from under an arrest: the officer making it comes aboard with the driver.
+                    bool waitsForArrest = attendance.Police && _people.Arresting && now < _hardLimit - CrewLastCall;
+                    if ((aboard && (attendance.Recalled || finished)) || (attendance.Recalled && now >= attendance.At && !waitsForCrew && !waitsForArrest))
                     {
                         Depart(attendance, now);
                     }
@@ -3049,7 +3064,13 @@ namespace RealLifeOverhaul
             _cordon.Open();
             SceneObstacles.Clear();
 
-            // Then the people: they go in every case, whatever state the cars are in.
+            // Then the people: they go in every case, whatever state the cars are in. (A car whose driver was arrested has
+            // nobody to drive it: it is towed.)
+            if (_faultWreck != null && _people.FaultArrested)
+            {
+                _faultWreck.Towed = true;
+            }
+            _faultWreck = null;
             _people.Clear();
             _arrest.Clear();
             CollectCasualty();   // nobody is left lying in the road once the scene is over
