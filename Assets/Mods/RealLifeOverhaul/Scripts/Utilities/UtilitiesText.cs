@@ -43,12 +43,46 @@ namespace RealLifeOverhaul.Utilities
 
         public static string Service(Service service)
         {
-            return T(service == Utilities.Service.Power ? "reallife_util_power" : "reallife_util_water");
+            return T(service == Utilities.Service.Power ? "reallife_util_power" : service == Utilities.Service.Water ? "reallife_util_water" : "reallife_util_internet");
         }
 
-        public static string Provider(Service service)
+        /// <summary>Who supplies an account: the city's for power and water, its own provider for the internet.</summary>
+        public static string ProviderOf(Account a)
         {
-            return T(service == Utilities.Service.Power ? "reallife_util_provider_power" : "reallife_util_provider_water");
+            if (a.Service == Utilities.Service.Internet)
+            {
+                Provider p = InternetRules.Get(a.Provider);
+                return p != null ? T(p.NameKey) : T("reallife_net_none");
+            }
+            return T(a.Service == Utilities.Service.Power ? "reallife_util_provider_power" : "reallife_util_provider_water");
+        }
+
+        /// <summary>The providers for the Guide: each by name and kind, and where it reaches if not everywhere in the city.</summary>
+        public static string Providers()
+        {
+            var text = new System.Text.StringBuilder(200);
+            for (int i = 0; i < InternetCatalogue.Providers.Length; i++)
+            {
+                Provider p = InternetCatalogue.Providers[i];
+                text.Append(i == 0 ? string.Empty : i == InternetCatalogue.Providers.Length - 1 ? T("reallife_net_list_last") : ", ");
+                text.Append(T(p.NameKey)).Append(" (").Append(T(p.KindKey));
+                if (p.Districts.Length < 6)
+                {
+                    text.Append(", ");
+                    for (int d = 0; d < p.Districts.Length; d++)
+                    {
+                        text.Append(d == 0 ? string.Empty : d == p.Districts.Length - 1 ? T("reallife_net_list_last") : ", ").Append(p.Districts[d].GetLocalization());
+                    }
+                }
+                text.Append(')');
+            }
+            return text.ToString();
+        }
+
+        /// <summary>An hour of the day as the game writes it (10:00).</summary>
+        public static string Hour(int hour)
+        {
+            return (((hour % 24) + 24) % 24).ToString("00", System.Globalization.CultureInfo.InvariantCulture) + ":00";
         }
 
         public static string Day(int day)

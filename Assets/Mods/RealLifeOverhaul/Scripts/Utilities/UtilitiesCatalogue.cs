@@ -4,7 +4,8 @@ namespace RealLifeOverhaul.Utilities
     public enum Service
     {
         Power = 0,
-        Water = 1
+        Water = 1,
+        Internet = 2     // from rival providers, bought online (InternetCatalogue)
     }
 
     /// <summary>What kind of place an account supplies: a home, or a business by what it uses most.</summary>
@@ -38,7 +39,8 @@ namespace RealLifeOverhaul.Utilities
     /// </summary>
     public static class UtilitiesCatalogue
     {
-        public const int Services = 2;
+        public const int Services = 2;           // the city's own: power and water, which every place has
+        public const int AllServices = 3;        // ...and the internet, which a place has if it is bought
 
         // ---------------------------------------------------------------- tariffs, cents at the start's prices
         public static readonly int[] UnitCents = { 15, 200 };          // a kWh of power, a cubic metre of water

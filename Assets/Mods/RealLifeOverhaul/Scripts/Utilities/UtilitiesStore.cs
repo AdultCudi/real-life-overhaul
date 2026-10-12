@@ -32,7 +32,13 @@ namespace RealLifeOverhaul.Utilities
         public static string Write(UtilitiesState s)
         {
             var t = new StringBuilder(64 + s.Accounts.Count * 64);
-            t.Append("v=").Append(Version).Append("~h:").Append(s.LastDay.ToString(Inv)).Append('|').Append(s.MonthStart.ToString(Inv)).Append("~a:");
+            t.Append("v=").Append(Version).Append("~h:").Append(s.LastDay.ToString(Inv)).Append('|').Append(s.MonthStart.ToString(Inv))
+                .Append('|').Append(s.Seed.ToString(Inv)).Append('|').Append(s.Month.ToString(Inv));
+            for (int p = 0; p < s.Promo.Length; p++)
+            {
+                t.Append('|').Append(s.Promo[p].ToString(Inv));
+            }
+            t.Append("~a:");
             bool first = true;
             for (int i = 0; i < s.Accounts.Count; i++)
             {
@@ -46,7 +52,8 @@ namespace RealLifeOverhaul.Utilities
                 int[] figures =
                 {
                     (int)a.Service, (int)a.Kind, (int)a.State, a.Owned ? 1 : 0, a.AutoDebit ? 1 : 0, a.OpenedDay, a.ConnectDay, a.TemporaryUntil,
-                    a.Deposit, a.Accrued, a.Units, a.Owed, a.DueDay, a.LateCharged ? 1 : 0, a.LastBill, a.LastBillDay, a.OnTime, a.CutForDebt ? 1 : 0
+                    a.Deposit, a.Accrued, a.Units, a.Owed, a.DueDay, a.LateCharged ? 1 : 0, a.LastBill, a.LastBillDay, a.OnTime, a.CutForDebt ? 1 : 0,
+                    a.Provider, a.Plan, a.BusinessPlan ? 1 : 0, a.ContractUntil, a.PriceCents, a.OutageFrom, a.OutageUntil
                 };
                 for (int f = 0; f < figures.Length; f++)
                 {
@@ -77,6 +84,13 @@ namespace RealLifeOverhaul.Utilities
                     string[] c = section.Substring(2).Split('|');
                     s.LastDay = Math.Max(0, I(c, 0));
                     s.MonthStart = Math.Max(0, I(c, 1));
+                    s.Seed = I(c, 2);
+                    s.Month = Math.Max(0, I(c, 3));
+                    for (int p = 0; p < s.Promo.Length; p++)
+                    {
+                        int promo = I(c, 4 + p);
+                        s.Promo[p] = promo <= 0 ? 1000 : Clamp(promo, InternetCatalogue.PromoLeast, InternetCatalogue.PromoMost);   // (none in a line from before the internet)
+                    }
                 }
                 else if (section.StartsWith("a:", StringComparison.Ordinal) && section.Length > 2)
                 {
@@ -108,7 +122,7 @@ namespace RealLifeOverhaul.Utilities
             return new Account
             {
                 Place = place,
-                Service = (Service)Clamp(I(c, 1), 0, UtilitiesCatalogue.Services - 1),
+                Service = (Service)Clamp(I(c, 1), 0, UtilitiesCatalogue.AllServices - 1),
                 Kind = (PlaceKind)Clamp(I(c, 2), 0, (int)PlaceKind.Industry),
                 State = (SupplyState)Clamp(I(c, 3), 0, (int)SupplyState.Closed),
                 Owned = I(c, 4) != 0,
@@ -125,7 +139,14 @@ namespace RealLifeOverhaul.Utilities
                 LastBill = Math.Max(0, I(c, 15)),
                 LastBillDay = Math.Max(0, I(c, 16)),
                 OnTime = Math.Max(0, I(c, 17)),
-                CutForDebt = I(c, 18) != 0   // (none in a line from before it was kept)
+                CutForDebt = I(c, 18) != 0,  // (none in a line from before it was kept)
+                Provider = c.Length > 19 ? Clamp(I(c, 19), -1, InternetCatalogue.Providers.Length - 1) : -1,
+                Plan = Math.Max(0, I(c, 20)),
+                BusinessPlan = I(c, 21) != 0,
+                ContractUntil = Math.Max(0, I(c, 22)),
+                PriceCents = Math.Max(0, I(c, 23)),
+                OutageFrom = Math.Max(0, I(c, 24)),
+                OutageUntil = Math.Max(0, I(c, 25))
             };
         }
 

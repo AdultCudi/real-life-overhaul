@@ -25,6 +25,13 @@ namespace RealLifeOverhaul.Utilities
         public int LastBillDay;
         public int OnTime;               // bills paid by their due day in a row
         public bool CutForDebt;          // cut because a bill went unpaid: reconnecting costs the fee
+        // ---- the internet
+        public int Provider = -1;        // InternetCatalogue.Providers
+        public int Plan;
+        public bool BusinessPlan;
+        public int ContractUntil;        // the first day out of contract (0: month by month)
+        public int PriceCents;           // the month's price: held for a contract, set again each month without one
+        public int OutageFrom, OutageUntil;   // an outage, in hours from the save's first day (day * 24 + hour)
 
         public bool IsHome => Kind == PlaceKind.Home;
     }
@@ -35,6 +42,9 @@ namespace RealLifeOverhaul.Utilities
         public readonly List<Account> Accounts = new List<Account>();
         public int LastDay;              // the last day whose use was added up (0: none yet)
         public int MonthStart;           // the first day of the month being added up
+        public int Seed;                 // the internet's outages and prices are drawn from it (InternetRules.Draw)
+        public int Month;                // months turned since the internet began, for its prices
+        public readonly int[] Promo = { 1000, 1000, 1000, 1000 };   // each provider's month, thousandths of its list
 
         public Account Find(string place, Service service)
         {
