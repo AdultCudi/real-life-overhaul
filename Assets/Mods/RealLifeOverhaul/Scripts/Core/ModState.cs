@@ -38,6 +38,8 @@ namespace RealLifeOverhaul
         public const string InShape = "reallife_happinessmodifier_in_shape";
         public const string GoodDiet = "reallife_happinessmodifier_good_diet";
         public const string PoorDiet = "reallife_happinessmodifier_poor_diet";
+        public const string NoPower = "reallife_happinessmodifier_no_power";     // at a home of the player's whose power is cut (Utilities)
+        public const string NoWater = "reallife_happinessmodifier_no_water";
         public const string BackPain = "reallife_happinessmodifier_back_pain";
         public const string Burnout = "reallife_happinessmodifier_burnout";
         public const string HomeCooked = "reallife_happinessmodifier_home_cooked";
@@ -72,7 +74,7 @@ namespace RealLifeOverhaul
             (Sick, -15, 36), (Injured, -12, 24), (Lucky, 10, 12), (Generous, 8, 24),
             (Robbed, -12, 12), (Social, 8, 12), (Family, 10, 24), (Helped, 8, 24), (Remorse, -15, 72),
             (MoodUp, 4, 8), (MoodUpBig, 8, 12), (MoodDown, -4, 8), (MoodDownBig, -8, 12),
-            (Unwashed, -6, 12), (Stressed, -8, 12), (Relaxed, 4, 12), (MessyHome, -5, 12), (CosyHome, 4, 12),
+            (Unwashed, -6, 12), (NoPower, -8, 2), (NoWater, -10, 2), (Stressed, -8, 12), (Relaxed, 4, 12), (MessyHome, -5, 12), (CosyHome, 4, 12),
             (WellRested, 6, 10), (Groggy, -5, 6), (ShortOfSleep, -8, 12), (InShape, 4, 12), (GoodDiet, 4, 12), (PoorDiet, -5, 12),
             (BackPain, -8, 48), (Burnout, -12, 72), (HomeCooked, 5, 8), (Tipsy, 3, 3),
             (CivicClean, 3, 3), (CivicLitter, -3, 3), (CivicFestive, 2, 3), (CivicNoise, -3, 2), (CivicVoted, 5, 24)

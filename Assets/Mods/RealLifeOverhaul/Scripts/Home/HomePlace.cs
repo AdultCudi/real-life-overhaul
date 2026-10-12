@@ -34,6 +34,23 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>True while the player stands in a home of their own.</summary>
+        /// <summary>Whether a home has power, and water, now (Utilities, through Wiring/UtilityLinks); null: always.</summary>
+        public static Func<BuildingRegistration, bool> HasPower, HasWater;
+
+        /// <summary>True if this home's power is cut.</summary>
+        public static bool Dark(BuildingRegistration home)
+        {
+            Func<BuildingRegistration, bool> has = HasPower;
+            return home != null && has != null && !has(home);
+        }
+
+        /// <summary>True if this home's water is cut.</summary>
+        public static bool Dry(BuildingRegistration home)
+        {
+            Func<BuildingRegistration, bool> has = HasWater;
+            return home != null && has != null && !has(home);
+        }
+
         public static bool AtHome()
         {
             if (!BuildingManager.IsInsideBuilding)

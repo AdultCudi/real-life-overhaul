@@ -254,6 +254,26 @@ namespace RealLifeOverhaul
                     });
                 }
             });
+            // Utilities: the office where power and water are applied for in person.
+            _links.Add(new Link
+            {
+                Id = "utilities_office", TitleKey = "reallife_map_row_utilities", Colour = new Color(0.98f, 0.76f, 0.20f), Icon = MapIcon.Flag, InStreet = true,
+                Enabled = () => Settings.Utilities,
+                Stamp = () =>
+                {
+                    Utilities.UtilitiesDirector utilities = Utilities.UtilitiesDirector.Instance;
+                    return utilities != null && utilities.Office != null && utilities.Office.Usable ? 2 : 0;
+                },
+                Fill = places =>
+                {
+                    Utilities.UtilitiesOffice office = Utilities.UtilitiesDirector.Instance.Office;
+                    places.Add(new MapPlace(office.Front, At(T("reallife_map_row_utilities"), office.Name), office.Building)
+                    {
+                        CardTypeKey = "reallife_util_card_type",
+                        CardStateKey = "reallife_util_card_open"
+                    });
+                }
+            });
             // Licences: the learner-plate boards at the school buildings (found a few buildings a second).
             _links.Add(new Link
             {

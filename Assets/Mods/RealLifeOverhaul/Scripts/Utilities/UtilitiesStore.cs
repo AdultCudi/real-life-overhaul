@@ -1,0 +1,161 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
+
+namespace RealLifeOverhaul.Utilities
+{
+    /// <summary>
+    /// The utilities' accounts in the save (GameInstance.modData), one line: "v=1~h:" the days, "~a:" the accounts, each
+    /// its place (escaped, so that no divider can break the line) and its figures. A line that cannot be read gives no
+    /// state (the director starts afresh from the player's places); figures out of range are brought within it.
+    /// </summary>
+    public static class UtilitiesStore
+    {
+        public const string Key = "reallife:utilities";
+        public const int Version = 1;
+
+        private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+
+        /// <summary>The state of this save; null if the save has none or it cannot be read.</summary>
+        public static UtilitiesState Load(Dictionary<string, string> data, out int version)
+        {
+            version = 0;
+            string text;
+            if (data == null || !data.TryGetValue(Key, out text) || string.IsNullOrEmpty(text))
+            {
+                return null;
+            }
+            return Read(text, out version);
+        }
+
+        public static string Write(UtilitiesState s)
+        {
+            var t = new StringBuilder(64 + s.Accounts.Count * 64);
+            t.Append("v=").Append(Version).Append("~h:").Append(s.LastDay.ToString(Inv)).Append('|').Append(s.MonthStart.ToString(Inv)).Append("~a:");
+            bool first = true;
+            for (int i = 0; i < s.Accounts.Count; i++)
+            {
+                Account a = s.Accounts[i];
+                if (a == null || string.IsNullOrEmpty(a.Place))
+                {
+                    continue;
+                }
+                t.Append(first ? string.Empty : ";").Append(Escape(a.Place));
+                first = false;
+                int[] figures =
+                {
+                    (int)a.Service, (int)a.Kind, (int)a.State, a.Owned ? 1 : 0, a.AutoDebit ? 1 : 0, a.OpenedDay, a.ConnectDay, a.TemporaryUntil,
+                    a.Deposit, a.Accrued, a.Units, a.Owed, a.DueDay, a.LateCharged ? 1 : 0, a.LastBill, a.LastBillDay, a.OnTime, a.CutForDebt ? 1 : 0
+                };
+                for (int f = 0; f < figures.Length; f++)
+                {
+                    t.Append('|').Append(figures[f].ToString(Inv));
+                }
+            }
+            return t.ToString();
+        }
+
+        public static UtilitiesState Read(string text, out int version)
+        {
+            version = 0;
+            if (string.IsNullOrEmpty(text) || !text.StartsWith("v=", StringComparison.Ordinal))
+            {
+                return null;
+            }
+            string[] sections = text.Split('~');
+            if (!int.TryParse(sections[0].Substring(2), NumberStyles.Integer, Inv, out version) || version < 1)
+            {
+                return null;
+            }
+            var s = new UtilitiesState();
+            for (int i = 1; i < sections.Length; i++)
+            {
+                string section = sections[i];
+                if (section.StartsWith("h:", StringComparison.Ordinal))
+                {
+                    string[] c = section.Substring(2).Split('|');
+                    s.LastDay = Math.Max(0, I(c, 0));
+                    s.MonthStart = Math.Max(0, I(c, 1));
+                }
+                else if (section.StartsWith("a:", StringComparison.Ordinal) && section.Length > 2)
+                {
+                    foreach (string record in section.Substring(2).Split(';'))
+                    {
+                        Account a = Account(record);
+                        if (a != null && s.Find(a.Place, a.Service) == null)
+                        {
+                            s.Accounts.Add(a);
+                        }
+                    }
+                }
+            }
+            return s;
+        }
+
+        private static Account Account(string record)
+        {
+            string[] c = record.Split('|');
+            if (c.Length < 18)
+            {
+                return null;
+            }
+            string place = Unescape(c[0]);
+            if (string.IsNullOrEmpty(place))
+            {
+                return null;
+            }
+            return new Account
+            {
+                Place = place,
+                Service = (Service)Clamp(I(c, 1), 0, UtilitiesCatalogue.Services - 1),
+                Kind = (PlaceKind)Clamp(I(c, 2), 0, (int)PlaceKind.Industry),
+                State = (SupplyState)Clamp(I(c, 3), 0, (int)SupplyState.Closed),
+                Owned = I(c, 4) != 0,
+                AutoDebit = I(c, 5) != 0,
+                OpenedDay = Math.Max(0, I(c, 6)),
+                ConnectDay = Math.Max(0, I(c, 7)),
+                TemporaryUntil = Math.Max(0, I(c, 8)),
+                Deposit = Math.Max(0, I(c, 9)),
+                Accrued = Math.Max(0, I(c, 10)),
+                Units = Math.Max(0, I(c, 11)),
+                Owed = Math.Max(0, I(c, 12)),
+                DueDay = Math.Max(0, I(c, 13)),
+                LateCharged = I(c, 14) != 0,
+                LastBill = Math.Max(0, I(c, 15)),
+                LastBillDay = Math.Max(0, I(c, 16)),
+                OnTime = Math.Max(0, I(c, 17)),
+                CutForDebt = I(c, 18) != 0   // (none in a line from before it was kept)
+            };
+        }
+
+        /// <summary>A place written so that none of the line's dividers (~ | ;) can be in it; read back exactly.</summary>
+        public static string Escape(string place)
+        {
+            return Uri.EscapeDataString(place ?? string.Empty).Replace("~", "%7E");
+        }
+
+        public static string Unescape(string text)
+        {
+            try
+            {
+                return Uri.UnescapeDataString(text ?? string.Empty);
+            }
+            catch (UriFormatException)
+            {
+                return null;
+            }
+        }
+
+        private static int I(string[] c, int at)
+        {
+            int value;
+            return at < c.Length && int.TryParse(c[at], NumberStyles.Integer, Inv, out value) ? value : 0;
+        }
+
+        private static int Clamp(int value, int least, int most)
+        {
+            return value < least ? least : value > most ? most : value;
+        }
+    }
+}

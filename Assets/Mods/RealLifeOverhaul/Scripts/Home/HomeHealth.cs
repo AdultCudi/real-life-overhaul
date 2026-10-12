@@ -55,6 +55,18 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- minute by minute
 
         /// <summary>The needs move with what the player is doing. Called once a second; <paramref name="minutes"/> is game time.</summary>
+        private static float _cutSaid = -999f;
+
+        // Says once a minute at most that the supply is cut, as the player tries to use it.
+        private static void Cut(string key)
+        {
+            if (Time.unscaledTime - _cutSaid > 60f)
+            {
+                _cutSaid = Time.unscaledTime;
+                Notifications.Show(NotificationType.Warning, key, null, 7f);
+            }
+        }
+
         public static void Advance(float minutes, Doing doing, bool atHome, bool onFootOutside, float boost)
         {
             if (minutes <= 0f)
@@ -68,11 +80,22 @@ namespace RealLifeOverhaul
             {
                 float hygiene = asleep ? HomeBalance.HygieneAsleep : HomeBalance.HygieneAwake;
                 float stress = asleep ? HomeBalance.StressSleep : HomeBalance.StressAwake;
+                // A home whose water is cut has dry taps, one whose power is cut dark screens (Utilities).
+                BuildingRegistration home = atHome ? HomeTidy.Home() : null;
+                bool dry = HomeTidy.Dry(home), dark = HomeTidy.Dark(home);
+                if (dry && (doing == Doing.Showering || doing == Doing.Washing))
+                {
+                    Cut("reallife_home_no_water");
+                }
+                else if (dark && (doing == Doing.Screen || doing == Doing.HomeRoutine))
+                {
+                    Cut("reallife_home_no_power");
+                }
                 switch (doing)
                 {
-                    case Doing.Showering: hygiene = HomeBalance.HygieneShower; stress = HomeBalance.StressShower; break;
-                    case Doing.Washing: hygiene = HomeState.Hygiene < HomeBalance.SinkMost ? HomeBalance.HygieneSink : 0f; break;
-                    case Doing.Screen: stress = HomeBalance.StressScreen; break;
+                    case Doing.Showering: if (!dry) { hygiene = HomeBalance.HygieneShower; stress = HomeBalance.StressShower; } break;
+                    case Doing.Washing: if (!dry) { hygiene = HomeState.Hygiene < HomeBalance.SinkMost ? HomeBalance.HygieneSink : 0f; } break;
+                    case Doing.Screen: if (!dark) { stress = HomeBalance.StressScreen; } break;
                     case Doing.Reading: stress = HomeBalance.StressReading; break;
                     case Doing.Resting: stress = HomeBalance.StressResting; break;
                     case Doing.Workout: hygiene = HomeBalance.HygieneWorkout; stress = HomeBalance.StressWorkout; break;
@@ -81,7 +104,7 @@ namespace RealLifeOverhaul
                     case Doing.Jogging: hygiene = HomeBalance.HygieneJog; stress = HomeBalance.StressJog * boost; break;
                     case Doing.Working: stress = HomeBalance.StressWorking; break;
                     case Doing.Studying: stress = HomeBalance.StressStudying; break;
-                    case Doing.HomeRoutine: stress = HomeBalance.StressRoutine; break;
+                    case Doing.HomeRoutine: if (!dark) { stress = HomeBalance.StressRoutine; } break;
                 }
                 if (doing == Doing.Nothing || doing == Doing.Toilet)
                 {

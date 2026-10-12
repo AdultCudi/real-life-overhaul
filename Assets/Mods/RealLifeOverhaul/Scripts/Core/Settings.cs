@@ -69,6 +69,7 @@ namespace RealLifeOverhaul
         public const string JobsId = "jobs";
         public const string JobPayId = "job_pay";
         public const string FamilyId = "family";
+        public const string UtilitiesId = "utilities";
         public const string FamilyAtHomeId = "family_at_home";
         public const string FamilyWeddingId = "family_wedding";
         public const string FamilyChildrenId = "family_children";
@@ -258,6 +259,7 @@ namespace RealLifeOverhaul
         public static bool Jobs = true;                  // jobs the player can take themselves, from the Gig Line contact on the phone
         public static int JobPay = 100;                  // percent of what the job catalogue pays
         public static bool Family = true;                // a partner who moves in, engagement and wedding, children, relatives (Scripts/Family)
+        public static bool Utilities = true;             // power and water bills, the utilities office and the Utilities app (Scripts/Utilities)
         public static bool FamilyAtHome = true;          // the partner is shown as a character in the home (off: they still live there, as notices and conversations)
         public static bool FamilyWedding = true;         // rings, the proposal, planning and holding a wedding
         public static bool FamilyChildren = true;        // deciding to have children, pregnancy and adoption, growing up
@@ -490,6 +492,7 @@ namespace RealLifeOverhaul
             Jobs = Bool(modId, JobsId, Jobs);
             JobPay = Int(modId, JobPayId, JobPay);
             Family = Bool(modId, FamilyId, Family);
+            Utilities = Bool(modId, UtilitiesId, Utilities);
             FamilyAtHome = Bool(modId, FamilyAtHomeId, FamilyAtHome);
             FamilyWedding = Bool(modId, FamilyWeddingId, FamilyWedding);
             FamilyChildren = Bool(modId, FamilyChildrenId, FamilyChildren);
