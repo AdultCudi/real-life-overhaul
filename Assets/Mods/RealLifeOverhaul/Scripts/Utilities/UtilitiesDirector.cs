@@ -962,8 +962,10 @@ namespace RealLifeOverhaul.Utilities
                     Func<BuildingRegistration, int, bool> close = UtilitiesBridges.CloseFor;
                     if (close != null)
                     {
-                        close(place.Reg, ClosedHours);   // closed, or kept closed longer: asked again each hour, it stays closed while the want lasts
-                        if (place.Reg.temporarilyClosed)
+                        // Closed, or kept closed longer: asked again each hour, it stays closed while the want lasts. Told only
+                        // when it is the mod that keeps it closed: one the player closed by hand is theirs to open, so "it
+                        // opens again by itself" would not be true of it.
+                        if (close(place.Reg, ClosedHours))
                         {
                             TellClosed(place, dark ? power : dry && needsWater ? water : _state.Find(place.Place, Service.Internet), !dark && !(dry && needsWater), today, hour);
                         }
