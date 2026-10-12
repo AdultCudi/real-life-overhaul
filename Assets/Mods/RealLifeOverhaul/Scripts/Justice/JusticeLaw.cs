@@ -84,7 +84,7 @@ namespace RealLifeOverhaul
         public const int FeePlanDays = 6;
         public const int CivilPlanDays = 10;
         public const int MissedInstalmentsMost = 5;    // after this many days it could not be paid, a debt is written off (fines: into community hours)
-        public const int CashFloor = 50;               // an instalment is never taken if it would leave less than this
+        public static int CashFloor => Prices.At(50);               // an instalment is never taken if it would leave less than this
         public static int WriteOffPerHour => Prices.At(150);        // an unpaid fine becomes one hour of community service per this much...
         public const int WriteOffHoursMost = 12;       // ...and never more than this many hours
         public const int CommunityShiftHours = 4;      // one played shift
@@ -213,8 +213,8 @@ namespace RealLifeOverhaul
         /// <summary>A firm's fee for a case of this weight, before the bound against cash: 600 / 1800 / 3500 times 0.8 (one star) to 2.0 (five).</summary>
         public static int FirmFee(ChargeClass weight, int stars)
         {
-            int basis = weight == ChargeClass.Grave ? 3500 : weight == ChargeClass.Felony ? 1800 : 600;
-            return Round10(basis * (0.5f + 0.3f * Math.Min(Math.Max(stars, 1), 5)));
+            int basis = weight == ChargeClass.Grave ? 3500 : weight == ChargeClass.Felony ? 1800 : 600;   // at the start's prices
+            return Round10(Prices.At(basis * (0.5f + 0.3f * Math.Min(Math.Max(stars, 1), 5))));
         }
 
         /// <summary>An amount bounded to a share of cash, never below a floor (so that it is still something) and never above itself.</summary>
@@ -242,10 +242,11 @@ namespace RealLifeOverhaul
             return weight == ChargeClass.Misdemeanour && priors == 0 && !fled ? BailKind.OwnRecognisance : BailKind.Bail;
         }
 
-        /// <summary>A quarter of the charges' fines, at least 200, at most a fifth of the cash in hand (but never under 200).</summary>
+        /// <summary>A quarter of the charges' fines (at today's prices), at least 200, at most a fifth of the cash in hand (but never under 200); the 200 at today's prices too.</summary>
         public static int BailAmount(int finesOfCharges, float cash)
         {
-            return Bound(Math.Max(200, finesOfCharges / 4), cash, BailShareOfCash, 200);
+            int least = Prices.At(200);
+            return Bound(Math.Max(least, finesOfCharges / 4), cash, BailShareOfCash, least);
         }
 
         /// <summary>Days from the arrest to the hearing.</summary>
@@ -361,17 +362,19 @@ namespace RealLifeOverhaul
             return Clamp(0.15f + (0.6f - evidence) * 0.5f + Clamp(quality, 0f, 1f) * 0.2f, 0.05f, 0.60f);
         }
 
-        /// <summary>A tenth of the fine, at least 300, bounded to 15 % of cash (but never under 300).</summary>
+        /// <summary>A tenth of the fine, at least 300 (at today's prices), bounded to 15 % of cash (but never under the least).</summary>
         public static int AppealFee(int fine, float cash)
         {
-            return Bound(Math.Max(300, fine / 10), cash, 0.15f, 300);
+            int least = Prices.At(300);
+            return Bound(Math.Max(least, fine / 10), cash, 0.15f, least);
         }
 
-        /// <summary>What a victim sues for: bounded to a fifth of the cash in hand, never under 300.</summary>
+        /// <summary>What a victim sues for (the damages at today's prices, as the crash worked them out): bounded to a fifth of the cash in hand, never under 300 at today's prices.</summary>
         public static int CivilClaim(int damages, int injured, int killed, float cash)
         {
-            int nominal = damages / 2 + injured * 3000 + killed * 12000;
-            return Bound(Math.Max(300, nominal), cash, CivilShareOfCash, 300);
+            int least = Prices.At(300);
+            int nominal = damages / 2 + injured * Prices.At(3000) + killed * Prices.At(12000);
+            return Bound(Math.Max(least, nominal), cash, CivilShareOfCash, least);
         }
 
         /// <summary>Good behaviour: one day off for every four points, never more than a third of the term.</summary>

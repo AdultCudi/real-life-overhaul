@@ -742,7 +742,7 @@ namespace RealLifeOverhaul
             }
             else if (missed > 0)
             {
-                JusticeText.Toast(NotificationType.Warning, "reallife_justice_toast_instalment_missed", 9f);
+                JusticeText.Toast(NotificationType.Warning, "reallife_justice_toast_instalment_missed", "floor", JusticeText.Money(JusticeLaw.CashFloor), 9f);
             }
         }
 

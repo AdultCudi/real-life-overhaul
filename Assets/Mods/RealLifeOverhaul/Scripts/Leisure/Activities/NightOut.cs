@@ -171,7 +171,9 @@ namespace RealLifeOverhaul.Leisure
         public const float TipsyFrom = 2f;
         public const float ServedUpTo = 4f;
 
-        private static readonly int[] DrinkPrices = { 8, 14, 4 };
+        private static readonly int[] DrinkPrices = { 8, 14, 4 };   // beer, cocktail, soft drink, at the start's prices
+
+        internal static int DrinkPrice(int drink) => Prices.At(DrinkPrices[drink]);
         private static readonly float[] Units = { 0.8f, 1.2f, 0f };
         private static readonly string[] NameKeys = { "reallife_leisure_drink_beer", "reallife_leisure_drink_cocktail", "reallife_leisure_drink_soft" };
 

@@ -1,3 +1,4 @@
+using Extensions;
 using Helpers;
 using UI.Notification;
 using UnityEngine;
@@ -301,7 +302,7 @@ namespace RealLifeOverhaul
                         _prompted = true;
                         // (Once per stall: the text names whatever the interaction key is bound to now.)
                         Notifications.Show(NotificationType.Info, "reallife_city_coffee_prompt",
-                            new System.Collections.Generic.Dictionary<string, string>(1) { { "key", Keys.Label(KeyAction.Interact) } }, 6f);
+                            new System.Collections.Generic.Dictionary<string, string>(2) { { "key", Keys.Label(KeyAction.Interact) }, { "price", ((float)Price).ToCurrencyFormat() } }, 6f);
                     }
                 }
             }

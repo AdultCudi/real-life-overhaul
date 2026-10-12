@@ -224,7 +224,7 @@ namespace RealLifeOverhaul
                     weight = JusticeState.Cases[i].Weight;
                 }
             }
-            return JusticeLaw.Bound(JusticeLaw.FirmFee(weight, firm.Stars), Crime.Cash, JusticeLaw.FeeShareOfCash, 200);
+            return JusticeLaw.Bound(JusticeLaw.FirmFee(weight, firm.Stars), Crime.Cash, JusticeLaw.FeeShareOfCash, Prices.At(200));
         }
 
         /// <summary>Retains a firm: a quarter of the fee now if it can be afforded, the rest (or all of it) over six days.</summary>

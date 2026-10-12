@@ -248,7 +248,8 @@ namespace RealLifeOverhaul
                 {
                     float price = BusinessGame.DeliveryPrice(BusinessGame.NextDelivery(reg));
                     bool late = issue.Kind == BusinessCatalogue.SupplierLate;
-                    float fee = late ? Mathf.Clamp(price * BusinessCatalogue.ExpressShare, 20f, 400f) : Mathf.Clamp(price * BusinessCatalogue.SurchargeShare, 15f, 500f);
+                    // (The delivery is at today's wholesale prices: the bounds are too.)
+                    float fee = late ? Mathf.Clamp(price * BusinessCatalogue.ExpressShare, Prices.At(20f), Prices.At(400f)) : Mathf.Clamp(price * BusinessCatalogue.SurchargeShare, Prices.At(15f), Prices.At(500f));
                     issue.A = Mathf.RoundToInt(Mathf.Min(fee, Mathf.Max(1f, BusinessGame.Cash * BusinessCatalogue.CashShare)));
                     if (late)
                     {
@@ -269,7 +270,7 @@ namespace RealLifeOverhaul
                     break;
 
                 case BusinessCatalogue.Audit:
-                    issue.A = Mathf.Clamp(Mathf.RoundToInt(BusinessGame.DailyRevenue(reg) * BusinessCatalogue.AuditAccountantShare), 100, 800);   // chosen, so not cash-capped: it only has to be affordable
+                    issue.A = Prices.At(Mathf.Clamp(Mathf.RoundToInt(BusinessGame.DailyRevenue(reg) * BusinessCatalogue.AuditAccountantShare), 100, 800));   // chosen, so not cash-capped: it only has to be affordable
                     issue.B = BusinessGame.Fee(reg, BusinessCatalogue.AuditAdjustShare, 100, 1500);
                     issue.C = Mathf.Clamp(Mathf.RoundToInt(BusinessGame.DailyRevenue(reg) * BusinessCatalogue.AuditRefundShare), 20, 500);
                     break;

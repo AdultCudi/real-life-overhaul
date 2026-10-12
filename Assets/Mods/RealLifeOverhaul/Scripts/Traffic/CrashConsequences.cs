@@ -15,6 +15,7 @@ namespace RealLifeOverhaul
     /// </summary>
     public class CrashConsequences : MonoBehaviour
     {
+        internal const float LiabilityLeast = 150f, LiabilityMost = 3000f;   // damages to another car, at the start's prices
         // Impact speeds in m/s (relative velocity of the two colliders).
         private const float LiabilitySpeed = 7f;    // ~25 km/h
         private const float InjurySpeed = 10f;      // ~36 km/h
@@ -94,7 +95,7 @@ namespace RealLifeOverhaul
             }
             else if (hitTraffic)
             {
-                int liability = Mathf.RoundToInt(Mathf.Clamp(speed * speed * 2.5f, 150f, 3000f) / 10f) * 10;
+                int liability = Mathf.RoundToInt(Prices.At(Mathf.Clamp(speed * speed * 2.5f, LiabilityLeast, LiabilityMost)) / 10f) * 10;   // (at today's prices)
 
                 // With police on, the player first gets the chance to stop; the bill comes when
                 // they do, or the police come if they don't.

@@ -258,6 +258,30 @@ namespace RealLifeOverhaul
             Colours("feet_f_boot", LookKind.Feet, LookSex.Female, LookTier.Smart, 150, Boot),
             Colours("feet_f_loafer", LookKind.Feet, LookSex.Female, LookTier.Smart, 130, Loafer));
 
+        /// <summary>The cheapest and the dearest piece the racks sell, at today's prices (the tables are the start's).</summary>
+        public static int CheapestPiece => Prices.At(PieceBound(true));
+        public static int DearestPiece => Prices.At(PieceBound(false));
+
+        private static int PieceBound(bool least)
+        {
+            int bound = least ? int.MaxValue : 0;
+            foreach (Slot slot in Slots)
+            {
+                if (slot.Prices == null)
+                {
+                    continue;
+                }
+                foreach (int price in slot.Prices)
+                {
+                    if (price > 0)
+                    {
+                        bound = least ? System.Math.Min(bound, price) : System.Math.Max(bound, price);
+                    }
+                }
+            }
+            return bound == int.MaxValue ? 0 : bound;
+        }
+
         public static readonly Slot[] Slots =
         {
             // Option id, savegame key, label key, kind, sex; a garment slot also has its colour dropdown's id and label.

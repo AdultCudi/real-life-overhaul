@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Extensions;
 using GleyTrafficSystem;
 using Helpers;
 using UI.Notification;
@@ -50,7 +51,7 @@ namespace RealLifeOverhaul.Events
         private const float OperatorBehind = 0.75f;      // camera_operate: the operator's feet behind film_camera's pivot, on the lens's line
         private const float OperatorTolerance = 0.08f;   // and how far off that place the clip still meets the viewfinder
         private const int OperatorTries = 4;
-        private static int SnackPrice => Prices.At(6);
+        internal static int SnackPrice => Prices.At(6);
         private const float SnackEnergy = 6f;
 
         private struct Member
@@ -1033,7 +1034,8 @@ namespace RealLifeOverhaul.Events
             var save = SaveGameManager.Current;
             if (save == null || save.Money < SnackPrice)
             {
-                Notifications.Show(NotificationType.Warning, "reallife_event_snack_broke", null, 5f);
+                Notifications.Show(NotificationType.Warning, "reallife_event_snack_broke",
+                    new System.Collections.Generic.Dictionary<string, string>(1) { { "price", ((float)SnackPrice).ToCurrencyFormat() } }, 5f);
                 return;
             }
             try

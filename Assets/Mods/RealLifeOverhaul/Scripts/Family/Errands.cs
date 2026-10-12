@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.Family
             public bool AtHome;
             public string Title;         // the line under the top bar: {place} is the venue's name, {text} the last hour
             public string Prompt;        // at the door: {name} is the child or the partner
+            public Func<int> Cost;       // what it costs, at today's prices, where the prompt names it ({amount})
             public Action<Errand> Do;
             public Action<Errand> Missed;
         }
@@ -51,7 +52,7 @@ namespace RealLifeOverhaul.Family
             new Spec { Kind = Wedding, Title = "reallife_family_errand_wedding", Prompt = "reallife_family_prompt_wedding", Do = e => WeddingDay.Begin(), Missed = e => WeddingDay.Missed() },
             new Spec { Kind = Birth, Places = FamilyPlaces.Hospital, Title = "reallife_family_errand_birth", Prompt = "reallife_family_prompt_birth", Do = Children.Birth, Missed = Children.BirthMissed },
             new Spec { Kind = Dinner, Places = FamilyPlaces.Restaurant, Title = "reallife_family_errand_dinner", Prompt = "reallife_family_prompt_dinner", Do = HomeLife.Dinner, Missed = e => HomeLife.StoodThemUp() },
-            new Spec { Kind = Scan, Places = FamilyPlaces.Hospital, Title = "reallife_family_errand_scan", Prompt = "reallife_family_prompt_scan", Do = Children.Appointment, Missed = Children.AppointmentMissed },
+            new Spec { Kind = Scan, Places = FamilyPlaces.Hospital, Title = "reallife_family_errand_scan", Prompt = "reallife_family_prompt_scan", Cost = () => FamilyBalance.ScanPrice, Do = Children.Appointment, Missed = Children.AppointmentMissed },
             new Spec { Kind = BirthClass, Places = FamilyPlaces.Hospital, Title = "reallife_family_errand_class", Prompt = "reallife_family_prompt_class", Do = Children.Appointment, Missed = Children.AppointmentMissed },
             new Spec { Kind = Checkup, Places = FamilyPlaces.Hospital, Title = "reallife_family_errand_checkup", Prompt = "reallife_family_prompt_checkup", Do = Children.Checkup, Missed = Children.CheckupMissed },
             new Spec { Kind = AdoptFile, Places = FamilyPlaces.Agency, Title = "reallife_family_errand_adopt_file", Prompt = "reallife_family_prompt_adopt_file", Do = Children.AdoptFile },
@@ -62,10 +63,10 @@ namespace RealLifeOverhaul.Family
             new Spec { Kind = SchoolPlay, Places = FamilyPlaces.Theatre, Title = "reallife_family_errand_school_play", Prompt = "reallife_family_prompt_school_play", Do = Children.SchoolPlay, Missed = Children.SchoolEventMissed },
             new Spec { Kind = Party, Places = FamilyPlaces.Restaurant, Title = "reallife_family_errand_party", Prompt = "reallife_family_prompt_party", Do = Children.VenueParty, Missed = Children.PartyMissed },
             new Spec { Kind = Counselling, Places = FamilyPlaces.Hospital, Title = "reallife_family_errand_counselling", Prompt = "reallife_family_prompt_counselling", Do = HardTimes.Session, Missed = HardTimes.SessionMissed },
-            new Spec { Kind = Holiday, AtHome = true, Title = "reallife_family_errand_holiday", Prompt = "reallife_family_prompt_holiday", Do = Relatives.Dinner, Missed = Relatives.DinnerMissed },
-            new Spec { Kind = BuyCot, Places = FamilyPlaces.Furniture, Prompt = "reallife_family_prompt_buy_cot", Do = Children.Buy },
-            new Spec { Kind = BuyPushchair, Places = FamilyPlaces.BabyShop, Prompt = "reallife_family_prompt_buy_pushchair", Do = Children.Buy },
-            new Spec { Kind = BuySupplies, Places = FamilyPlaces.Supplies, Prompt = "reallife_family_prompt_buy_supplies", Do = Children.Buy },
+            new Spec { Kind = Holiday, AtHome = true, Title = "reallife_family_errand_holiday", Prompt = "reallife_family_prompt_holiday", Cost = () => Relatives.HostCost, Do = Relatives.Dinner, Missed = Relatives.DinnerMissed },
+            new Spec { Kind = BuyCot, Places = FamilyPlaces.Furniture, Prompt = "reallife_family_prompt_buy_cot", Cost = () => FamilyBalance.CotPrice, Do = Children.Buy },
+            new Spec { Kind = BuyPushchair, Places = FamilyPlaces.BabyShop, Prompt = "reallife_family_prompt_buy_pushchair", Cost = () => FamilyBalance.PushchairPrice, Do = Children.Buy },
+            new Spec { Kind = BuySupplies, Places = FamilyPlaces.Supplies, Prompt = "reallife_family_prompt_buy_supplies", Cost = () => FamilyBalance.SuppliesPrice, Do = Children.Buy },
             new Spec { Kind = Flowers, Places = FamilyPlaces.Florist, Prompt = "reallife_family_prompt_flowers", Do = WeddingPlanner.OrderFlowers }
         };
 
@@ -213,7 +214,7 @@ namespace RealLifeOverhaul.Family
                 director.Objective("reallife_family_objective_title", spec.Title, Where(due, spec), Who(due));
                 if (Reached(due, spec, player))
                 {
-                    director.Prompt(spec.Prompt, Who(due), At(due, spec));
+                    director.Prompt(spec.Prompt, Who(due), At(due, spec), null, spec.Cost != null ? spec.Cost() : 0);
                     return;
                 }
             }
@@ -253,7 +254,7 @@ namespace RealLifeOverhaul.Family
                 }
                 if (here)
                 {
-                    director.Prompt(spec.Prompt, Who(e), At(e, spec));
+                    director.Prompt(spec.Prompt, Who(e), At(e, spec), null, spec.Cost != null ? spec.Cost() : 0);
                     return;
                 }
             }

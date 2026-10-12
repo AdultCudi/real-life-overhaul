@@ -26,6 +26,7 @@ namespace RealLifeOverhaul
     /// </summary>
     public class CrimeDirector : MonoBehaviour
     {
+        internal const int CashLeast = 60;   // a crime against the player needs this much on them, at the start's prices
         private const float CheckInterval = 20f;
         private const float TickInterval = 0.25f;
         private const float WatchInterval = 1f;
@@ -272,7 +273,7 @@ namespace RealLifeOverhaul
             if (Settings.Police) have |= CrimeNeed.PatrolCars;
             if (TrafficTools.Ready) have |= CrimeNeed.Traffic;
             if (Settings.Ragdolls) have |= CrimeNeed.Ragdolls;
-            if (Crime.Cash >= 60f) have |= CrimeNeed.Cash;
+            if (Crime.Cash >= Prices.At(CashLeast)) have |= CrimeNeed.Cash;   // (at today's prices)
             if (forced || (Settings.CrimeAgainstPlayer && TimeHelper.CurrentDay - _lastPlayerCrimeDay >= PlayerCrimeRestDays))
             {
                 have |= CrimeNeed.AgainstPlayer;

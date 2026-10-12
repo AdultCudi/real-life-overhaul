@@ -509,6 +509,7 @@ internal static partial class Program
         }
         Check(fell > 70 && fell < 130 && fellRecession > 210 && fellRecession < 290, "one agreed sale in ten falls through, one in four in a recession (" + fell + " and " + fellRecession + " of 1000)");
         Check(EstateRules.AgentFee(1000000, 1000) == 15000 && EstateRules.AgentFee(10000, 1000) == 500 && EstateRules.AgentFee(300, 1000) == 300 && EstateRules.AgentFee(0, 1000) == 0, "the selling fee is 1.5% of the price, 500 at least, never more than the price");
+        Check(EstateRules.AgentFee(10000, 2000) == 1000 && EstateRules.AgentFee(1000000, 2000) == 15000, "the selling fee's least follows prices; its share of the price does by itself");
         Check(EstateRules.GainsTax(1000000, 15000, 700000, 85000, 20) == 20000, "tax on a gain: half the game's rate on the price less the fee, the price paid and the improvements");
         Check(EstateRules.GainsTax(700000, 15000, 700000, 0, 20) == 0 && EstateRules.GainsTax(1000000, 0, 0, 0, 0) == 0 && EstateRules.GainsTax(1000000, 0, 0, 0, 500) == 500000, "nothing on a loss, nothing at no rate, and the rate is a rate");
     }

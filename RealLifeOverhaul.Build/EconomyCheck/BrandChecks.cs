@@ -755,6 +755,7 @@ internal static partial class Program
         Check(!FranchiseRules.ChainGives(t) && FranchiseRules.ChainFine(t, 1000) == t.Average * 5, "from the day it writes the name brings nothing; the fine is five days of royalty");
         Check(FranchiseRules.ChainStep(t, false, 25, 60) == 0 && t.Breach == 0 && FranchiseRules.ChainGives(t), "a day back inside clears the count");
         Check(FranchiseRules.ChainFine(new Taken(), 1000) == BrandCatalogue.ChainFineLeast, "a fine is never under 200");
+        Check(FranchiseRules.ChainFine(new Taken(), 2000) == CompanyCatalogue.AtPrices(BrandCatalogue.ChainFineLeast, 2000), "a chain's least fine follows prices");
         FranchiseRules.ChainStep(t, false, 70, 60);
         Check(t.Until == 130, "the year renews itself");
         for (int i = 2; i <= 20; i++)

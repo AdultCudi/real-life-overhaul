@@ -1348,6 +1348,7 @@ namespace RealLifeOverhaul.Events
     /// </summary>
     internal static class FireDamage
     {
+        internal const float RepairLeast = 350f, RepairMost = 1800f;   // a fire's repair bill, at the start's prices
         private const int GraceDays = 10;
 
         /// <summary>The business closed by a fire, as "street|number", and the game minute it reopens; null when there is none. Kept in modData.</summary>
@@ -1380,7 +1381,7 @@ namespace RealLifeOverhaul.Events
                 float security = business.securityLevelPercentage > 1f ? business.securityLevelPercentage / 100f : business.securityLevelPercentage;
                 float relief = 1f - Mathf.Clamp01(security) * 0.4f - (warned ? 0.15f : 0f) - (called ? 0.1f : 0f);
                 int hours = Mathf.Clamp(Mathf.RoundToInt(Mathf.Lerp(3f, 10f, slow) * relief), 2, 10);
-                int bill = Mathf.RoundToInt(Mathf.Lerp(350f, 1800f, slow) * relief / 10f) * 10;
+                int bill = Mathf.RoundToInt(Prices.At(Mathf.Lerp(RepairLeast, RepairMost, slow) * relief) / 10f) * 10;   // (at today's prices)
                 GameManager.ChangeMoneySafe(-bill, new TransactionInfo("reallife_transaction_fire_repair"), null, business.Address, force: true);
                 FireLosses.Raise(business, bill);   // (for whoever insures it: Events/FireLosses.cs)
                 bool closedByUs = false;

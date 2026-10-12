@@ -4758,7 +4758,7 @@ What the game's map allowed, and what a category therefore gets:
 Unverified (the game could not be run): how the name plate looks beside a marker; that a click on a marker's
 blob reaches the button added to it rather than the building under it; the row's place in the list.
 
-## The calendar and the price level (`Core/CalendarRules.cs`, `Core/GameCalendar.cs`, `Economy/Prices.cs`)
+## The calendar and the price level (`Core/CalendarRules.cs`, `Core/GameCalendar.cs`, `Core/Prices.cs`)
 
 The game counts days and has a year of so many of them, chosen when a game is started (60 to 365;
 `gameVariables.daysPerYear`, 60 in a save that says nothing), but no months, seasons or dates. Every part of the mod
@@ -4775,10 +4775,22 @@ reads the calendar from `GameCalendar` (the rules, game-free and checked by Econ
   two thirds, autumn to eleven twelfths, winter again), counted from spring where travel and property count theirs
   (`SeasonFromSpring`). `EventCalendar` and `Weather.SeasonOf` read them from here.
 
-Money at the city's prices is `Prices.At(amount)`: an amount written at the start's prices (the city's price index at
-100), at today's (`CityEconomy.PriceIndex`, monthly), rounded as prices are named (five cents under 10, fifty cents
-under 100, 5 under 1,000, 10 under 10,000, 50 above; at the start's level an amount is itself). While the city's
-economy is off the level stays at the start's.
+Money at the city's prices is `Prices.At(amount)` (`Core/Prices.cs`: the mod's, not the economy's, as every feature
+reads it): an amount written at the start's prices (the city's price index at 100), at today's, rounded as prices are
+named (five cents under 10, fifty cents under 100, 5 under 1,000, 10 under 10,000, 50 above; at the start's level an
+amount is itself). The level is the very factor the city adjusts the game's own rents, wages, shops and services by
+(`CityModel.Costs`, handed in by `Wiring/EconomyLinks` as `Prices.Factor`), so a price of the mod's and a game charge
+adjusted by the city are always at one level; within 1% of the start (`PriceRules.Quiet`, the city's own
+`AdjustQuiet`) it is the start's. While the city's economy is off the level stays at the start's.
+
+Every fixed amount of the mod's goes through it: fines, fees, fares, bail, lawyers and court costs, garage and car
+costs, bikes, clothes, drinks, family costs, hotels and trips, the banks' floors and caps, job and gig pay, the bounds
+of what a crime or an event can take, and the cash an event or a crime needs on the player. The features with an
+index of their own (Brands, Company, Estate, Online, Services) read `Prices.Level`. Texts name no amounts: the Guide's
+figures are `.Fact`s read from the code; a life event's prompt fills `{cost}` (its price, `LifeEvent.CostNow`) and
+`{sum}` (the first fixed payout of its yes answer, `LifeEvent.Quote`) in its body, its answers being plain keys of the
+game's box (CatalogueCheck fails an event text that names a `$` figure); prompts and toasts are filled by the code
+that shows them; the licence quiz fills today's fines (`TheoryTest.Figures`).
 
 ## The game's daily statement (`Economy/GameBooks.cs`)
 
@@ -4792,8 +4804,13 @@ business issues' marketing, licence and staff costs (`BusinessGame.Charge`). Wha
 that ended is put into that day's statement when the mod's day is done (`EconomyDirector.OnDay`, after `AfterDay`):
 the four lines summed again as the game sums them, and the totals with them (`GameBooks.Refresh`). Insurance,
 accountants, hosting and the city's weekly account have no line there and stay in the mod's own books (Finance). The
-city's cost of living adjusts the game's own rent and wages only (`CityGame.DayFigures` passes over the mod's own
-transactions, which are at today's prices already).
+city's cost of living adjusts the game's own rent and wages, and on a line of its own the game's shops and services
+at prices of its own (`CityGame.LivingTypes`: tickets, rides, the hospital and the doctor, gyms and entrance fees,
+shopping, fuel and stalls, fit-outs, training and hiring). A charge under rent or salaries stays on those lines; a
+purchase at a wholesaler's is left out, as the city writes those goods' prices at today's; and the mod's refunds of a
+game charge (`EconomyBridges.GivenBack`: a ride the day pass covered, a lent car's ticket) count against it.
+`CityGame.DayFigures` passes over the mod's own transactions, which are at today's prices already. The city's lines
+carry no address, so they are not yet in a business's statement.
 
 ## Home life and health (`Scripts/Home`)
 

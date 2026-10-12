@@ -339,6 +339,10 @@ namespace RealLifeOverhaul
             return null;
         }
 
+        /// <summary>The dorm bed's and the corner suite's own rates (before the hotel's district, the day and the season), at today's prices.</summary>
+        public static int DormRate => Prices.At(Dorm.Rate);
+        public static int SuiteRate => Prices.At(Suite.Rate);
+
         public static Trip TripById(string id)
         {
             for (int i = 0; i < Trips.Length; i++)
