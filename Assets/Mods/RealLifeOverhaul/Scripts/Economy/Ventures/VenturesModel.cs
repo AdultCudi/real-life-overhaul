@@ -200,6 +200,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         public int ElectionSeen = -1;    // the number of elections counted as last seen
         public float RateSeen = -1f;     // the bank rate as last seen
         public int Unseen;               // offers and demands the app has not shown yet
+        public bool MarketMoved;         // the shares held and the companies have gone to the city's stock market (Scripts/Markets): nothing of a market is kept here any more
         public MarketBackup Backup;      // the market before the test tools moved it; never saved (the save keeps this, not a test's prices)
 
         public readonly List<Investor> Investors = new List<Investor>(VenturesCatalogue.InvestorsMost);

@@ -11837,5 +11837,19 @@
   "reallife_justice_card_type": "Courthouse",
   "reallife_justice_card_open": "Hearings from 9:00 to 17:00",
   "reallife_transaction_macro_living": "Shops and services, cost of living adjustment ({percent})",
-  "reallife_transaction_lent_ticket_policy": "Parking ticket adjustment undone (city policy): the vehicle was lent to you"
+  "reallife_transaction_lent_ticket_policy": "Parking ticket adjustment undone (city policy): the vehicle was lent to you",
+  "reallife_transaction_shares_dividend_owed": "Dividend owed on shares sold short: {name}",
+  "reallife_transaction_shares_dividend_owed_label": "Dividend owed on shares sold short",
+  "reallife_transaction_shares_payout": "Paid for shares of a company leaving the market: {name}",
+  "reallife_transaction_shares_payout_label": "Paid for shares of a company leaving the market",
+  "reallife_transaction_shares_margin_interest": "Interest on the margin loan",
+  "reallife_transaction_shares_margin_interest_label": "Interest on the margin loan",
+  "reallife_transaction_shares_borrow_fee": "Fee for borrowing shares: {name}",
+  "reallife_transaction_shares_borrow_fee_label": "Fee for borrowing shares",
+  "reallife_transaction_shares_deposit": "Paid into the margin account",
+  "reallife_transaction_shares_deposit_label": "Paid into the margin account",
+  "reallife_transaction_shares_withdrawal": "Taken out of the margin account",
+  "reallife_transaction_shares_withdrawal_label": "Taken out of the margin account",
+  "reallife_transaction_shares_shortfall": "Owed to the broker after a forced sale",
+  "reallife_transaction_shares_shortfall_label": "Owed to the broker after a forced sale"
 }

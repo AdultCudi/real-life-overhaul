@@ -80,7 +80,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             Join(t, f.Seed, f.StartDay, f.Reputation, f.NextId, f.Pitches, f.OfferDay, f.SettledDay, f.Backup != null ? f.Backup.Steps : f.MarketSteps,
                 f.Backup != null ? f.Backup.Day : f.MarketDay, f.DividendsTotal, f.PaidOutTotal,
                 f.InvestedTotal, f.TargetsMet, f.LeversSeen, f.ElectionSeen, f.Unseen);
-            t.Append('|').Append(f.RateSeen.ToString("R", Inv));
+            t.Append('|').Append(f.RateSeen.ToString("R", Inv)).Append('|').Append(f.MarketMoved ? 1 : 0);
             t.Append("~i:");
             for (int i = 0; i < f.Investors.Count; i++)
             {
@@ -305,6 +305,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             f.Unseen = Count(c, 15);
             float rate;
             f.RateSeen = c.Length > 16 && float.TryParse(c[16], NumberStyles.Float, Inv, out rate) && !float.IsNaN(rate) && !float.IsInfinity(rate) ? rate : -1f;
+            f.MarketMoved = I(c, 17) != 0;
         }
 
         private static string[] Records(string body)

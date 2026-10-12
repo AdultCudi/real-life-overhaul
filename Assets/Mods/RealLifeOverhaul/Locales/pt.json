@@ -11837,5 +11837,19 @@
   "reallife_justice_card_type": "Tribunal",
   "reallife_justice_card_open": "Audiências das 9:00 às 17:00",
   "reallife_transaction_macro_living": "Lojas e serviços, reajuste pelo custo de vida ({percent})",
-  "reallife_transaction_lent_ticket_policy": "Ajuste de multa de estacionamento desfeito (política da cidade): o veículo foi emprestado a você"
+  "reallife_transaction_lent_ticket_policy": "Ajuste de multa de estacionamento desfeito (política da cidade): o veículo foi emprestado a você",
+  "reallife_transaction_shares_dividend_owed": "Dividendo devido por ações vendidas a descoberto: {name}",
+  "reallife_transaction_shares_dividend_owed_label": "Dividendo devido por ações vendidas a descoberto",
+  "reallife_transaction_shares_payout": "Pagamento por ações de uma empresa que saiu da bolsa: {name}",
+  "reallife_transaction_shares_payout_label": "Pagamento por ações de uma empresa que saiu da bolsa",
+  "reallife_transaction_shares_margin_interest": "Juros do empréstimo da conta margem",
+  "reallife_transaction_shares_margin_interest_label": "Juros do empréstimo da conta margem",
+  "reallife_transaction_shares_borrow_fee": "Taxa de aluguel de ações: {name}",
+  "reallife_transaction_shares_borrow_fee_label": "Taxa de aluguel de ações",
+  "reallife_transaction_shares_deposit": "Depósito na conta margem",
+  "reallife_transaction_shares_deposit_label": "Depósito na conta margem",
+  "reallife_transaction_shares_withdrawal": "Saque da conta margem",
+  "reallife_transaction_shares_withdrawal_label": "Saque da conta margem",
+  "reallife_transaction_shares_shortfall": "Dívida com a corretora após uma venda forçada",
+  "reallife_transaction_shares_shortfall_label": "Dívida com a corretora após uma venda forçada"
 }
