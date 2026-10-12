@@ -95,6 +95,7 @@ namespace RealLifeOverhaul
         public const int AmbientMostDip = -25;        // what the city's economy may add to that, in all (district, cycle and prices: Economy/City)...
         public const int AmbientMostBoost = 15;       // ...kept apart from an issue's own change, which keeps its own bounds
         public const int MostClosedHours = 12;
+        public const int MostClosures = 256;          // closures read back from a save: the utilities may close every business the player has at once
         public const float SatisfactionFloor = 20f;   // an employee's satisfaction is never pushed below this (the game makes them resign under 10)
 
         // ---- rivals
