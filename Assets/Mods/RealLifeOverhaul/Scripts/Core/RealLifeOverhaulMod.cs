@@ -117,6 +117,10 @@ namespace RealLifeOverhaul
                     v => Settings.TrafficAccidents = v)
                 .AddSlider(Settings.AccidentFrequencyId, "reallife_accident_frequency", 1, 10, Settings.AccidentFrequency,
                     v => Settings.AccidentFrequency = v, Meta.SettingsTable.SliderValue)
+                .AddToggle(Settings.AccidentNoticesId, "reallife_accident_notices", Settings.AccidentNotices,
+                    v => Settings.AccidentNotices = v)
+                .AddToggle(Settings.AccidentMarkerId, "reallife_accident_waypoint", Settings.AccidentMarker,
+                    v => Settings.AccidentMarker = v)
                 .AddToggle(Settings.PoliceId, "reallife_police", Settings.Police,
                     v => Settings.Police = v)
                 .AddSlider(Settings.PolicePresenceId, "reallife_police_presence", 0, 10, Settings.PolicePresence,

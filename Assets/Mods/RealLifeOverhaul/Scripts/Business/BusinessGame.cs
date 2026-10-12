@@ -33,6 +33,7 @@ namespace RealLifeOverhaul
         public const string Licensing = "ba:transactioncategory_licensingfees";
         public const string Salaries = "ba:transactioncategory_salaryexpenses";
         private const string EmptyType = "ba:businesstype_empty";
+        private const string FactoryType = "ba:businesstype_factory";
         private const string NegotiationSkill = "ba:skill_negotiation";
 
         public static IModLogger Logger;
@@ -119,6 +120,25 @@ namespace RealLifeOverhaul
         /// <summary>The player's business at a remembered place, or null if it is no longer theirs (sold, closed down).</summary>
         public static BuildingRegistration Find(string place)
         {
+            BuildingRegistration reg = At(place);
+            return IsBusiness(reg) ? reg : null;
+        }
+
+        /// <summary>
+        /// The player's building at a remembered place whatever business is in it, or null if it is no longer theirs.
+        /// A closure is looked up by this and not by <see cref="Find"/>: the utilities close any business of the
+        /// player's for want of power, water or a connection (a headquarters, a warehouse or a factory as well as a
+        /// shop), and whatever was closed has to be found again to be opened.
+        /// </summary>
+        public static BuildingRegistration Held(string place)
+        {
+            BuildingRegistration reg = At(place);
+            return reg != null && reg.RentedByPlayer ? reg : null;
+        }
+
+        // The building registered at a remembered place, whoever has it; null if there is none.
+        private static BuildingRegistration At(string place)
+        {
             GameInstance save = SaveGameManager.Current;
             if (save == null || save.BuildingRegistrations == null || !BusinessState.SplitPlace(place, out string street, out int number))
             {
@@ -130,7 +150,7 @@ namespace RealLifeOverhaul
                 BuildingRegistration reg = all[i];
                 if (reg != null && reg.StreetNumber == number && reg.StreetName == street)
                 {
-                    return IsBusiness(reg) ? reg : null;
+                    return reg;
                 }
             }
             return null;
@@ -393,6 +413,25 @@ namespace RealLifeOverhaul
             {
                 reg.TemporarilyClose(false);
                 Logger?.Info("Business: " + Name(reg) + " reopened.");
+            }
+        }
+
+        /// <summary>
+        /// True if the game gives a business its own "temporarily closed" switch, so that the player may have closed it
+        /// by hand (the game's own test, BizManBusiness.ShouldShowTemporarilyClosedToggle: a type that generates
+        /// revenue, or a factory). A headquarters or a warehouse has none: the game never closes either, and the player
+        /// cannot open one.
+        /// </summary>
+        public static bool HasSwitch(BuildingRegistration reg)
+        {
+            try
+            {
+                BusinessType type = BusinessTypeHelper.GetData(reg);
+                return type == null || type.HasTag(TagRef.Businesstag.generatesrevenue) || reg.businessTypeName == FactoryType;
+            }
+            catch (Exception)
+            {
+                return true;   // if it cannot be told, a closure is left as it is
             }
         }
 

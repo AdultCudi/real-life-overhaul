@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Utilities
 {
@@ -14,8 +15,18 @@ namespace RealLifeOverhaul.Utilities
         /// <summary>The people living at a home of the player's besides the player: a partner who moved in, children at home, a roommate.</summary>
         public static Func<BuildingRegistration, int> Household;
 
-        /// <summary>A business of the player's closed for some hours with the game's own switch (Business); false if it was closed already.</summary>
+        /// <summary>
+        /// A business of the player's kept closed for at least some hours with the game's own switch, as the utilities'
+        /// own closure (Business): closed, or one of the mod's closures already on it made to last. False if it is closed
+        /// by someone else, or cannot be kept so.
+        /// </summary>
         public static Func<BuildingRegistration, int, bool> CloseFor;
+
+        /// <summary>A business that has what it lacked again: the utilities' closure on it ended now (Business). Another feature's may still keep it closed.</summary>
+        public static Action<BuildingRegistration> Release;
+
+        /// <summary>A line in the Business desk's messages (Business), to read back: why a business is closed. Its key and its names.</summary>
+        public static Action<string, Dictionary<string, string>> Record;
 
         /// <summary>True for a building another feature has made its own (the courthouse), which the office is not to be.</summary>
         public static Func<CityBuildingController, bool> Taken;
@@ -35,6 +46,8 @@ namespace RealLifeOverhaul.Utilities
             Grade = null;
             Household = null;
             CloseFor = null;
+            Release = null;
+            Record = null;
             Taken = null;
         }
     }

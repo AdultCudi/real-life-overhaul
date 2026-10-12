@@ -249,7 +249,7 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_traffic_about").Help("reallife_guide_traffic")
                 .Fact("crash_least", () => Guide.Money(Prices.At(CrashConsequences.LiabilityLeast)))
                 .Fact("crash_most", () => Guide.Money(Prices.At(CrashConsequences.LiabilityMost)))
-                .Owns(Settings.TrafficAccidentsId, Settings.SirenId, Settings.PoliceId)
+                .Owns(Settings.TrafficAccidentsId, Settings.AccidentNoticesId, Settings.AccidentMarkerId, Settings.SirenId, Settings.PoliceId)
                 .Preset(Settings.AccidentFrequencyId, 1, 3, 4)
                 .Preset(Settings.CrashConsequencesId, 0, 1, 1)
                 .Preset(Settings.PolicePursuitId, 0, 1, 1)
