@@ -147,6 +147,9 @@ namespace RealLifeOverhaul
                     }
 
                     Teleport(vehicle, position, rotation);
+                    Rigidbody moved = vehicle.TryGetComponent(out NWH.VehiclePhysics2.VehicleController drives) ? drives.vehicleRigidbody : null;
+                    float apart = moved != null ? Vector3.Distance(moved.position, vehicle.transform.position) : 0f;
+                    Logger?.Info("Tow check (one car): the model and the map's marker stand " + apart.ToString("0.00") + " m from the car's body after the move" + (apart < 0.5f ? ": PASS" : ": FAIL"));
                     vehicle.vehicleInstance.parkingState = ParkingState.Legal;
                     vehicle.vehicleInstance.SetStreetData(string.Empty, 0);
                     if (vehicle.poi != null)
@@ -166,10 +169,14 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // The game's teleport stops the car by setting its body's velocities (twice: in the helper and in the car's
-        // own Reset). A parked car's body is held still (kinematic), and the engine refuses each of the four with a
-        // warning. The body is let go for the call, so that they mean something, and held again: no physics step
-        // comes between, so nothing moves.
+        // The game's own move, as its tow does it (VehicleHelper.TeleportVehicleToGround: the body to the ground under the
+        // space, the car's reset, its wheels and its engine), then the car is put there as one: the game moves only the
+        // body, and the model and the map's marker, which go with the car's transform, follow at the next physics step
+        // for a car that is moving. A parked car's body is held still (kinematic); it is let go for the game's call (the
+        // velocities the game sets would otherwise be refused, with a warning each) and held again before any physics
+        // step, so the transform never followed: the model and the marker stayed at the crash site while the collision
+        // and the car's door went to the space, and the player walked through a car they could not get into. So the
+        // transform is set to where the body went, and the body to it, before the car is held again.
         private static void Teleport(VehicleController vehicle, Vector3 position, Quaternion rotation)
         {
             Rigidbody body = vehicle.TryGetComponent(out NWH.VehiclePhysics2.VehicleController physics) ? physics.vehicleRigidbody : null;
@@ -184,9 +191,18 @@ namespace RealLifeOverhaul
             }
             finally
             {
-                if (held && body != null)
+                if (body != null)
                 {
-                    body.isKinematic = true;
+                    Vector3 at = body.position;
+                    Quaternion turn = body.rotation;
+                    vehicle.transform.SetPositionAndRotation(at, turn);
+                    body.position = at;
+                    body.rotation = turn;
+                    Physics.SyncTransforms();
+                    if (held)
+                    {
+                        body.isKinematic = true;
+                    }
                 }
             }
         }
