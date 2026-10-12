@@ -38,7 +38,7 @@ public static class PropBundleBuilder
     {
         public string name;
         public string file;
-        public string type;     // color | mask
+        public string type;     // color | mask | decal (colour with its alpha: road paint laid by a decal projector)
         public int maxSize;
     }
 
@@ -268,14 +268,14 @@ public static class PropBundleBuilder
     private static void ConfigureTexture(string path, TextureEntry entry)
     {
         var importer = (TextureImporter)AssetImporter.GetAtPath(path);
-        bool mask = entry.type == "mask";
-        Check(mask || entry.type == "color", "texture '" + entry.name + "' has unknown type '" + entry.type + "'");
+        bool mask = entry.type == "mask", decal = entry.type == "decal";
+        Check(mask || decal || entry.type == "color", "texture '" + entry.name + "' has unknown type '" + entry.type + "'");
         int size = entry.maxSize > 0 ? entry.maxSize : 1024;
 
         importer.textureType = TextureImporterType.Default;
         importer.sRGBTexture = !mask;
-        importer.alphaSource = mask ? TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None;
-        importer.alphaIsTransparency = false;
+        importer.alphaSource = mask || decal ? TextureImporterAlphaSource.FromInput : TextureImporterAlphaSource.None;
+        importer.alphaIsTransparency = decal;          // (the paint's edges keep its colour where it thins out)
         importer.mipmapEnabled = true;
         importer.streamingMipmaps = false;
         importer.isReadable = false;

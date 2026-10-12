@@ -75,6 +75,7 @@ namespace RealLifeOverhaul
         private static readonly Dictionary<string, Prop> Props = new Dictionary<string, Prop>(48);
         private static readonly HashSet<string> MissingLogged = new HashSet<string>();
         private static readonly Dictionary<int, Material> Tints = new Dictionary<int, Material>(8);   // by 0xBBGGRR: see Tinted
+        private static readonly Dictionary<string, Texture2D> Pictures = new Dictionary<string, Texture2D>(4);   // the bundle's other textures (road paint: see Texture)
         private static State _state = State.NotStarted;
         private static Texture2D _base;
         private static Texture2D _mask;
@@ -108,6 +109,15 @@ namespace RealLifeOverhaul
             {
                 Fail("the asset bundle could not be opened", e);
             }
+        }
+
+        /// <summary>
+        /// One of the bundle's textures that is not the props' own atlas, by name (the road paint that RoadPaint lays:
+        /// "decal_bus_stop", "decal_dash"). Null while the bundle is loading, or if it has none of that name.
+        /// </summary>
+        public static Texture2D Texture(string name)
+        {
+            return _state == State.Ready && name != null && Pictures.TryGetValue(name, out Texture2D picture) ? picture : null;
         }
 
         /// <summary>
@@ -294,6 +304,10 @@ namespace RealLifeOverhaul
                         {
                             _mask = texture;
                         }
+                        else
+                        {
+                            Pictures[texture.name] = texture;
+                        }
                     }
                     else if (asset is TextAsset text && text.name == CatalogueName)
                     {
@@ -332,7 +346,7 @@ namespace RealLifeOverhaul
                 }
                 _state = State.Ready;
                 Logger?.Info("Props: " + Props.Count + " loaded from the asset bundle (" + triangles + " triangles in all, one " + _base.width + " x " + _base.height
-                             + " atlas" + (_mask != null ? " with a mask map" : "") + ").");
+                             + " atlas" + (_mask != null ? " with a mask map" : "") + (Pictures.Count > 0 ? ", and " + Pictures.Count + " picture(s) of road paint" : "") + ").");
             }
             catch (Exception e)
             {

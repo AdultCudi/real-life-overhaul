@@ -196,5 +196,65 @@ namespace RealLifeOverhaul
             double angle = Math.Abs(degrees) * Math.PI / 180.0;
             return kerbAside - aside - halfLength * (float)Math.Sin(angle) - sideHalf * (float)Math.Cos(angle);
         }
+
+        // ---------------------------------------------------------------- a bay's zone (BusZones, BusStopDressing)
+
+        /// <summary>
+        /// What is left of a run of the game's kerbside parking beside a bus zone, in metres along the lane: the part
+        /// before the zone or the part after it, whichever the zone leaves whole. Where the zone lies in the middle of
+        /// the run the longer part is kept, and the other is <paramref name="lost"/> (parking given up beyond the zone).
+        /// A run wholly in the zone keeps nothing: both ends are then the zone's end. False if the run does not reach
+        /// into the zone at all, and nothing is to be done to it.
+        /// </summary>
+        public static bool Keep(float start, float end, float from, float to, out float keepStart, out float keepEnd, out float lost)
+        {
+            keepStart = start;
+            keepEnd = end;
+            lost = 0f;
+            if (end <= from || start >= to)
+            {
+                return false;
+            }
+            bool before = start < from;
+            bool after = end > to;
+            if (before && after)
+            {
+                if (from - start >= end - to)
+                {
+                    keepEnd = from;
+                    lost = end - to;
+                }
+                else
+                {
+                    keepStart = to;
+                    lost = from - start;
+                }
+            }
+            else if (before)
+            {
+                keepEnd = from;
+            }
+            else if (after)
+            {
+                keepStart = to;
+            }
+            else
+            {
+                keepStart = to;
+                keepEnd = to;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// How many times a broken line's pattern (a dash and its gap, of which <paramref name="paint"/> is the dash's
+        /// share) is laid along a line <paramref name="length"/> metres long, for a pattern <paramref name="repeat"/>
+        /// metres long, so that the line begins and ends with paint: a whole number of patterns and one dash more,
+        /// stretched or squeezed a little to fit. A line shorter than a dash is one dash.
+        /// </summary>
+        public static float Dashes(float length, float repeat, float paint)
+        {
+            return Math.Max(0f, (float)Math.Round(length / repeat - paint)) + paint;
+        }
     }
 }

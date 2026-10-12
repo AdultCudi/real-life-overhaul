@@ -217,6 +217,35 @@ internal static partial class Program
         return drive;
     }
 
+    // A bay's zone: what is left of the game's parking beside it, and the broken line painted round it.
+    private static void Zones()
+    {
+        // A zone from 10 m to 47 m along the lane, and runs of parking that reach into it in every way there is.
+        Check(!BusBay.Keep(-30f, 10f, 10f, 47f, out _, out _, out _) && !BusBay.Keep(47f, 90f, 10f, 47f, out _, out _, out _),
+            "a run of parking that only touches the zone is cut");
+        Check(BusBay.Keep(30f, 120f, 10f, 47f, out float k0, out float k1, out float lost) && Near(k0, 47f) && Near(k1, 120f) && lost == 0f,
+            "a run that begins in the zone does not keep its part after it (" + k0 + " to " + k1 + ", " + lost + " lost)");
+        Check(BusBay.Keep(-40f, 25f, 10f, 47f, out k0, out k1, out lost) && Near(k0, -40f) && Near(k1, 10f) && lost == 0f,
+            "a run that ends in the zone does not keep its part before it (" + k0 + " to " + k1 + ", " + lost + " lost)");
+        Check(BusBay.Keep(12f, 40f, 10f, 47f, out k0, out k1, out lost) && Near(k0, 47f) && Near(k1, 47f) && lost == 0f,
+            "a run wholly in the zone keeps some of it (" + k0 + " to " + k1 + ")");
+        Check(BusBay.Keep(0f, 150f, 10f, 47f, out k0, out k1, out lost) && Near(k0, 47f) && Near(k1, 150f) && Near(lost, 10f),
+            "a zone in the middle of a run does not keep the longer part and give up the shorter (" + k0 + " to " + k1 + ", " + lost + " lost)");
+        Check(BusBay.Keep(-100f, 55f, 10f, 47f, out k0, out k1, out lost) && Near(k0, -100f) && Near(k1, 10f) && Near(lost, 8f),
+            "a zone near the end of a run does not give up the short part beyond it (" + k0 + " to " + k1 + ", " + lost + " lost)");
+
+        // The broken line: a dash of 1 m and a gap of 0.5 m, beginning and ending with paint, for any length.
+        const float repeat = 1.5f;
+        const float paint = 2f / 3f;
+        foreach (float length in new[] { 0.4f, 1f, 6f, 6.5f, 20.3f, 37f, 51.2f })
+        {
+            float dashes = BusBay.Dashes(length, repeat, paint);
+            float whole = dashes - paint;
+            Check(Math.Abs(whole - Math.Round(whole)) < 0.001f && whole >= 0f, "a broken line " + length + " m long does not begin and end with paint (" + dashes + " patterns)");
+            Check(length < repeat || Math.Abs(length / dashes - repeat) <= repeat * 0.25f, "a broken line " + length + " m long has its pattern stretched to " + (length / dashes) + " m");
+        }
+    }
+
     private static void Bays(bool print)
     {
         float needed = BusBay.KerbNeeded(BodySide);
@@ -230,6 +259,7 @@ internal static partial class Program
         Check(BusBay.LaneClear(0f, 0f, BodyHalf, BodySide) < -2.6f, "a bus on the lane's line is not measured as in the lane");
         Check(BusBay.LaneClear(2.85f, 3f, BodyHalf, BodySide) < 0f, "three degrees askew at the least kerb is not measured as a corner in the lane");
         Check(BusBay.LaneHalf + BusBay.Clear - BusBay.WidestHalf >= 0.5f, "a lorry on the lane's line does not pass half a metre from a bus in the narrowest bay");
+        Zones();
 
         // The curves themselves.
         foreach (float offset in new[] { 0.8f, 1.6f, 2.85f, 3.35f, 4.35f })

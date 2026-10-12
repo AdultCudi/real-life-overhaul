@@ -7771,7 +7771,6 @@
   "reallife_map_rows_failed": "Real Life Overhaul could not add its places to the map's filter list, so they are always shown. To hide them, switch off \"The mod's places on the map\" on the mod's options page.",
   "reallife_changes_001_6_title": "0.1.6",
   "reallife_changes_001_6": "The rest of the mod's own boxes are replaced by the game's interface. Jobs: every gig and shift has the game's job panel and the game's panel over the place you work at, and most can be left to the game's clock at 85% of the pay. At the drinks cart you take your place by walking behind it, wear a uniform and can call out to passers-by, and carts are solid. The cleaner's spills are all on the floor at once. Shift times show a start and an end. Home: hygiene, stress and home are bars under the game's own, and cooking is a list opened from a cooker or from the fridge's panel. Garage: a repair bay's own panel says what is due and has a Garage button for the service, the custom shop and your vehicles. The Garage key is gone. Hotels, the police station's desk and cell, and the driving school with its theory test use the game's panel and list. The Guide is an app on the phone, and the welcome is a notice. On the map, an unticked row hides its places in the street too.",
-  "reallife_transit_bay_marking": "BUS STOP",
   "reallife_job_cleaner_button_take": "Take the mop",
   "reallife_job_cleaner_panel_clean": "Cleanliness",
   "reallife_job_cleaner_panel_target": "Clean to",

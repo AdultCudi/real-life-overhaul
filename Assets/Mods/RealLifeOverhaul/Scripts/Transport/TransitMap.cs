@@ -39,6 +39,7 @@ namespace RealLifeOverhaul
         public float BayAhead;    // ...and on from it, to pull out
         public float BayRoom;     // metres back from Bay for which the strip will do: BayBehind at the least, more where a longer-nosed vehicle can come in too
         public string NoBay;      // why it has none, for the log
+        public BusZone Zone;      // where it has one, what its zone needs done to the street (BusZones)
 
         /// <summary>The length of strip the bay takes up.</summary>
         public float BayLength => BayBehind + BayAhead;
@@ -81,11 +82,17 @@ namespace RealLifeOverhaul
     /// half, 0.15 m clear of its edge, the 2.10 m body, 0.20 m to the kerb: BusBay.KerbNeeded)
     /// along the whole length a bus needs to come in and pull out (some 30 m, more where the
     /// strip is wider), the lane runs straight and plain for that length with no other lane
-    /// between it and the kerb, the strip is level road with nothing fixed standing in it, and
-    /// the kerb keeps its line. Of the places that will do for a stop, one with a bay is taken
-    /// before one without: first in the 140 m, then up to 60 m further on, then up to 50 m
-    /// before the place wanted (two stops are then never nearer than 210 m along the line),
-    /// and only then the first place without one. Parked cars are not looked at here either.
+    /// between it and the kerb, the strip is level road, and the kerb keeps its line. The kerb is
+    /// taken where the bus can come up to it: where something on the pavement reaches out over its
+    /// edge, that far out (KerbLine). The length of strip is then the buses' own, a bus zone
+    /// (BusZones): the game's parking there is cut back, and street furniture standing in the
+    /// strip itself is switched off. So a bay is refused only for what a zone cannot change: a
+    /// building, something that is not plain furniture, parking that is not a plain run along the
+    /// kerb, or a run that would lose more than BusZones.LossMost metres beyond the zone. Of the
+    /// places that will do for a stop, one with a bay is taken before one without: first in the
+    /// 140 m, then up to 60 m further on, then up to 50 m before the place wanted (two stops are
+    /// then never nearer than 210 m along the line), and only then the first place without one.
+    /// Parked cars are not looked at here either: the zone takes them in when it is made.
     ///
     /// The work is done in slices from the director's timer, a search at a time and then stops
     /// one after another for no more than three milliseconds a slice, in the first seconds out
@@ -155,12 +162,15 @@ namespace RealLifeOverhaul
         private static int _staticMask;
         private static int _doorMask;
         private static int _parkingMask;
+        private static int _propsLayer = -1;
+        private static readonly BusZone Zoning = new BusZone();   // what the bay being laid out would need done: kept for the stop when it has one
 
         /// <summary>How many of the stops have a bay.</summary>
         public static int Bays { get; private set; }
 
         public static void Reset()
         {
+            BusZones.Restore();   // (before the stops go: it marks their zones as not made)
             Lines.Clear();
             Stops.Clear();
             Stations.Clear();
@@ -357,6 +367,7 @@ namespace RealLifeOverhaul
             _staticMask = LayerMask.GetMask("StreetProps", "Buildings", "BuildingsOutlined", "BuildingWalls");
             _doorMask = LayerMask.GetMask("InteractiveItems", "InteractiveItemsOutlined");
             _parkingMask = LayerMask.GetMask("ParkingArea");
+            _propsLayer = LayerMask.NameToLayer("StreetProps");
 
             Stations.Clear();
             for (int i = 0; i < city.subwayStations.Count; i++)
@@ -779,13 +790,16 @@ namespace RealLifeOverhaul
             Vector3 lane = stop.Lane;
             Vector3 along = stop.Along;
             stop.BayAlong = along;
-            stop.KerbAside = KerbAside(stop, right);
+            float kerb = KerbAside(stop, right);
+            stop.KerbAside = KerbLine(stop, right, kerb);
             float half = TransitBus.BodyHalfWidth;
             float halfLength = TransitBus.BodyLength * 0.5f;
             float offset = BusBay.Offset(stop.KerbAside, half);
             if (offset <= 0f)
             {
-                stop.NoBay = "narrow";
+                stop.NoBay = stop.KerbAside < kerb - 0.01f
+                    ? "narrow with what stands on the kerb's edge (the kerb " + kerb.ToString("F2") + " m out, the bus may come to " + stop.KerbAside.ToString("F2") + ")"
+                    : "narrow";
                 return;
             }
             BusBay.Curve curveIn = BusBay.In(offset, halfLength);
@@ -797,7 +811,9 @@ namespace RealLifeOverhaul
             }
             float behind = BusBay.Behind(curveIn, 0f);
             float ahead = BusBay.Ahead(curveOut, 0f) + BayAheadSlack;
-            stop.NoBay = LaneBends(stop, line, right, curveIn.Length + 1f, curveOut.Length + 1f) ?? StripBad(stop, right, offset, -behind, ahead);
+            Zoning.Reset();
+            stop.NoBay = LaneBends(stop, line, right, curveIn.Length + 1f, curveOut.Length + 1f) ?? StripBad(stop, right, offset, -behind, ahead, Zoning)
+                         ?? BusZones.Plan(stop, right, -behind, ahead, Zoning);
             if (stop.NoBay != null)
             {
                 return;
@@ -811,8 +827,21 @@ namespace RealLifeOverhaul
             stop.BayBehind = behind;
             stop.BayAhead = ahead;
             // Further back than the body on its van needs: for a vehicle with a longer nose (it comes in over a longer curve).
-            stop.BayRoom = behind < BayRoomMost && LaneBends(stop, line, right, BayRoomMost + 2.5f, 0f) == null && StripBad(stop, right, offset, -BayRoomMost, -behind) == null
-                ? BayRoomMost : behind;
+            // The zone takes that length in too, where the strip and its parking allow it.
+            int clear = Zoning.Clear.Count;
+            int known = Zoning.Known.Count;
+            bool room = behind < BayRoomMost && LaneBends(stop, line, right, BayRoomMost + 2.5f, 0f) == null && StripBad(stop, right, offset, -BayRoomMost, -behind, Zoning) == null
+                        && BusZones.Plan(stop, right, -BayRoomMost, ahead, Zoning) == null;
+            if (!room)
+            {
+                Zoning.Trim(clear, known);
+                BusZones.Plan(stop, right, -behind, ahead, Zoning);   // (the counts for the log, for the shorter zone)
+            }
+            stop.BayRoom = room ? BayRoomMost : behind;
+            stop.Zone = Zoning.Copy(-stop.BayRoom, ahead, stop.KerbAside);
+            stop.Zone.Lanes = Zoning.Lanes;
+            stop.Zone.Cut = Zoning.Cut;
+            stop.Zone.Lost = Zoning.Lost;
         }
 
         // The lane along a bay: straight for so far back and on from the stop, and nothing of the road between it and the
@@ -845,11 +874,12 @@ namespace RealLifeOverhaul
         }
 
         // The strip from one place along the stop's lane to another (metres from the pole): road at the lane's level right
-        // up to where the bus's door side will be, the kerb keeping its line, and nothing fixed standing in it. Null if so,
-        // else why not. Two rays and a sample every four metres or so, and one box.
-        private static readonly Collider[] StripHits = new Collider[1];
+        // up to where the bus's door side will be, the kerb keeping its line, and nothing fixed standing in it that the
+        // zone cannot take away. Null if so, else why not; what the zone is to switch off is put in it. Two rays and a
+        // sample every four metres or so, and one box.
+        private static readonly Collider[] StripHits = new Collider[24];
 
-        private static string StripBad(TransitStop stop, Vector3 right, float offset, float from, float to)
+        private static string StripBad(TransitStop stop, Vector3 right, float offset, float from, float to, BusZone zone)
         {
             Vector3 lane = stop.Lane;
             Vector3 along = stop.Along;
@@ -875,13 +905,112 @@ namespace RealLifeOverhaul
             float width = stop.KerbAside - BusBay.KerbGap - near;
             Vector3 centre = lane + along * ((from + to) * 0.5f) + right * (near + width * 0.5f);
             int found = Physics.OverlapBoxNonAlloc(centre + Vector3.up * 1.15f, new Vector3(width * 0.5f, 0.8f, (to - from) * 0.5f), StripHits, Quaternion.LookRotation(along), _staticMask, QueryTriggerInteraction.Ignore);
-            if (found == 0)
+            string bad = found >= StripHits.Length ? "more stands in the strip than can be counted" : null;
+            for (int i = 0; i < found; i++)
             {
+                Collider hit = StripHits[i];
+                StripHits[i] = null;
+                if (bad == null && hit != null)
+                {
+                    bad = Standing(stop, right, hit, zone);
+                }
+            }
+            return bad;
+        }
+
+        // Something fixed found in a bay's strip. Null if the zone deals with it: street furniture standing in the road is
+        // switched off with the zone; a street tree on the pavement only seems to reach out (its collider is a capsule
+        // twice as broad as its trunk) and is left. Else why not, naming it.
+        private static string Standing(TransitStop stop, Vector3 right, Collider hit, BusZone zone)
+        {
+            if (hit.attachedRigidbody != null)
+            {
+                return null;   // a thing that moves: looked at when the bay is used (TransitBays.Free)
+            }
+            string what = "'" + hit.name + "' on " + LayerMask.LayerToName(hit.gameObject.layer);
+            if (hit.gameObject.layer != _propsLayer)
+            {
+                return "a building stands in the strip: " + what;
+            }
+            float middle = Vector3.Dot(Flat(hit.bounds.center - stop.Lane), right);
+            if (middle >= stop.KerbAside - 0.05f)
+            {
+                if (hit.GetComponentInParent<TreeController>() == null)
+                {
+                    return "something on the kerb's edge reaches into the strip: " + what;
+                }
+                if (!zone.Known.Contains(hit))
+                {
+                    zone.Known.Add(hit);
+                }
                 return null;
             }
-            Collider first = StripHits[0];
-            StripHits[0] = null;
-            return "something stands in the strip: '" + (first != null ? first.name + "' on " + LayerMask.LayerToName(first.gameObject.layer) : "?'");
+            GameObject prop = BusZones.PropOf(hit);
+            if (prop == null)
+            {
+                return "something stands in the strip that is not plain street furniture: " + what;
+            }
+            if (!zone.Clear.Contains(prop))
+            {
+                zone.Clear.Add(prop);
+            }
+            return null;
+        }
+
+        // How near the lane's line a bus may come at the kerb: the kerb's edge, or nearer where street furniture on the
+        // pavement reaches out over it (a sign or a bin on the very edge); the bus's side then keeps SideClear from it.
+        // Looked at along all the length a bay may take up, in one box. A street tree is taken at its trunk. Not the
+        // buildings: a building's box is no guide to its walls where the streets do not run square to the world, and a
+        // wall that does reach into the strip is found there (StripBad).
+        private const float SideClear = 0.10f;
+        private const float TrunkHalf = 0.30f;
+        private static readonly Collider[] EdgeHits = new Collider[24];
+
+        private static float KerbLine(TransitStop stop, Vector3 right, float kerb)
+        {
+            float inner = kerb - 0.6f;
+            float outer = kerb + 0.4f;
+            Vector3 centre = stop.Lane + right * ((inner + outer) * 0.5f) + Vector3.up * 1.15f;
+            int found = _propsLayer < 0 ? 0 : Physics.OverlapBoxNonAlloc(centre, new Vector3((outer - inner) * 0.5f, 0.8f, BayRoomMost + 2f), EdgeHits, Quaternion.LookRotation(stop.Along),
+                1 << _propsLayer, QueryTriggerInteraction.Ignore);
+            float line = kerb;
+            for (int i = 0; i < found; i++)
+            {
+                Collider hit = EdgeHits[i];
+                EdgeHits[i] = null;
+                if (hit == null || hit.attachedRigidbody != null)
+                {
+                    continue;
+                }
+                float middle = Vector3.Dot(Flat(hit.bounds.center - stop.Lane), right);
+                if (middle < kerb - 0.05f)
+                {
+                    continue;   // it stands in the road: the strip's own look deals with it (StripBad)
+                }
+                line = Mathf.Min(line, Reach(hit, stop.Lane, right, middle) + BusBay.KerbGap - SideClear);
+            }
+            return line;
+        }
+
+        // The nearest a thing on the pavement comes to the lane's line, in metres aside of it.
+        private static float Reach(Collider hit, Vector3 lane, Vector3 right, float middle)
+        {
+            if (hit.GetComponentInParent<TreeController>() != null)
+            {
+                return middle - TrunkHalf;
+            }
+            if (hit is BoxCollider || hit is SphereCollider || hit is CapsuleCollider || (hit is MeshCollider mesh && mesh.convex))
+            {
+                return Vector3.Dot(Flat(hit.ClosestPoint(hit.bounds.center - right * 8f) - lane), right);
+            }
+            Bounds box = hit.bounds;   // (a mesh that is not convex: its box, which is never smaller than it)
+            float least = float.MaxValue;
+            for (int corner = 0; corner < 4; corner++)
+            {
+                var at = new Vector3((corner & 1) == 0 ? box.min.x : box.max.x, box.center.y, (corner & 2) == 0 ? box.min.z : box.max.z);
+                least = Mathf.Min(least, Vector3.Dot(Flat(at - lane), right));
+            }
+            return least;
         }
 
         // How far the kerb is from the lane's line: the pavement's edge as the navigation mesh has it, or, where the

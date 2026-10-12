@@ -21,6 +21,8 @@ TOTAL_BUDGET = 130000       # triangles, every prop together (README, "Budgets":
 TEXTURES = [
     {"name": "props_base", "file": "textures/props_base.png", "type": "color", "maxSize": 4096},
     {"name": "props_mask", "file": "textures/props_mask.png", "type": "mask", "maxSize": 2048},
+    {"name": "decal_bus_stop", "file": "textures/decal_bus_stop.png", "type": "decal", "maxSize": 1024},   # decals.py: road paint
+    {"name": "decal_dash", "file": "textures/decal_dash.png", "type": "decal", "maxSize": 256},
 ]
 
 

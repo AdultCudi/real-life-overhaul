@@ -2,6 +2,7 @@
 Rebuilds every street prop of the mod from nothing:
 
     scripts\atlas.py        --> build\textures (the shared atlas) and build\atlas.json
+    scripts\decals.py       --> build\textures\decal_*.png (road paint laid by decal projectors: a bus stop's lettering, its broken line)
     scripts\build_props.py  --> build\meshes, build\catalogue.json and previews\ (renders to look at)
     scripts\check_life.py   --> fails if a handle or a height that an animation clip relies on has moved
     scripts\scenes.py       --> previews\scene_<name>.png: whole scenes (a precinct frontage, a bus stop, a fire, ...)
@@ -41,8 +42,9 @@ if (-not (Test-Path (Join-Path $pylib 'PIL'))) {
     Step 'Python library (Pillow)' { & $python -m pip install --quiet --target $pylib Pillow }
 }
 
-# 2. The atlas, then the props mapped onto it.
+# 2. The atlas, the road paint laid as decals, then the props mapped onto the atlas.
 Step 'Atlas' { & $python (Join-Path $scripts 'atlas.py') }
+Step 'Decals' { & $python (Join-Path $scripts 'decals.py') }
 $extra = @()
 if ($SkipPreviews) { $extra = @('--', '--no-preview') }
 Step 'Props' { & $Blender -b -P (Join-Path $scripts 'build_props.py') @extra | Select-String -Pattern '^mesh |^catalogue|OVER BUDGET|Traceback|Error' }
