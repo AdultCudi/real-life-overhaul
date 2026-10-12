@@ -129,6 +129,19 @@ namespace RealLifeOverhaul
         public static readonly List<TransitLine> Lines = new List<TransitLine>(MaxRoutes * 2);
         public static readonly List<TransitStop> Stops = new List<TransitStop>(160);
 
+        // The lane points a planned closure may not take (Civic/RoadClosure): each line's own from GuardBefore metres before
+        // each of its stops to GuardAfter past it. Shut there, a stop is cut off: no bus can be put on the road before it
+        // out of sight, and the panel would say DELAYED for as long as the works stand.
+        private const float GuardBefore = 120f;
+        private const float GuardAfter = 40f;
+        private static readonly HashSet<int> Guarded = new HashSet<int>();
+
+        /// <summary>True if a lane point is on a bus line's way into or out of one of its stops: planned works do not shut it.</summary>
+        public static bool Guards(int lanePoint)
+        {
+            return Guarded.Contains(lanePoint);
+        }
+
         /// <summary>True once the network has been laid out (it may be empty: see the log).</summary>
         public static bool Ready { get; private set; }
 
@@ -175,6 +188,7 @@ namespace RealLifeOverhaul
             BusZones.Restore();   // (before the stops go: it marks their zones as not made)
             Lines.Clear();
             Stops.Clear();
+            Guarded.Clear();
             Stations.Clear();
             Terminals.Clear();
             Partners.Clear();
@@ -288,6 +302,14 @@ namespace RealLifeOverhaul
                     stop.Id = Stops.Count;
                     Stops.Add(stop);
                     Bays += stop.HasBay ? 1 : 0;
+                    for (int k = 0; k < line.Path.Length; k++)
+                    {
+                        float from = line.Metres[k] - stop.Metres;
+                        if (from >= -GuardBefore && from <= GuardAfter)
+                        {
+                            Guarded.Add(line.Path[k]);
+                        }
+                    }
                 }
             }
             Ready = true;
