@@ -32,6 +32,11 @@ namespace RealLifeOverhaul
         private const int MostPoses = 400;
         private const float FarOff = 5f;            // metres from the whole way beyond which a clearance is only said to be "at least"
 
+        // Metres from the middle of the bed to the furthest of the crew in any pose: whoever pushes is an arm and half a
+        // bed behind it along the way (no further in a straight line, however the way bends) and as wide as somebody
+        // walking; the bed's own corners and whoever walks beside its leading end are nearer.
+        private static readonly float Extent = Math.Max(Lead + Body, Math.Max(Hypot(BedHalfLength, BedHalfWidth), Hypot(SecondAhead, SecondOut) + Body));
+
         private readonly float[] _x = new float[Most];
         private readonly float[] _z = new float[Most];
         private readonly float[] _y = new float[Most];
@@ -66,6 +71,21 @@ namespace RealLifeOverhaul
 
         /// <summary>How many points the line is kept as, for whoever gives each its ground height.</summary>
         public int Samples => _count;
+
+        /// <summary>How many poses a clearance is measured against, the swings included (for the checks).</summary>
+        internal int PoseCount => _poses;
+
+        /// <summary>One of those poses: whoever pushes, the middle of the bed, the way it points (for the checks).</summary>
+        internal void PoseOf(int index, out float pusherX, out float pusherZ, out float bedX, out float bedZ, out float headingX, out float headingZ)
+        {
+            int at = Math.Max(0, Math.Min(_poses - 1, index)) * 2;
+            pusherX = _poseP[at];
+            pusherZ = _poseP[at + 1];
+            bedX = _poseC[at];
+            bedZ = _poseC[at + 1];
+            headingX = _poseH[at];
+            headingZ = _poseH[at + 1];
+        }
 
         public void Clear()
         {
@@ -141,10 +161,16 @@ namespace RealLifeOverhaul
                 float fromX = _sx[i] - inX * tangent, fromZ = _sz[i] - inZ * tangent;
                 Emit(fromX, fromZ);
                 int pieces = Math.Max(2, (int)Math.Ceiling(round * angle / Fine));
+                // Turned a piece at a time (the sine and cosine of the angle so far, from those of one piece), and the last
+                // exactly: the arc ends where the next stretch begins.
+                double pieceSin = Math.Sin(angle / pieces), pieceCos = Math.Cos(angle / pieces);
+                double turnSin = 0.0, turnCos = 1.0;
                 for (int j = 1; j <= pieces; j++)
                 {
-                    float turned = angle * j / pieces;
-                    float sin = (float)Math.Sin(turned), cos = (float)Math.Cos(turned);
+                    double nextSin = turnSin * pieceCos + turnCos * pieceSin;
+                    turnCos = turnCos * pieceCos - turnSin * pieceSin;
+                    turnSin = nextSin;
+                    float sin = j == pieces ? (float)Math.Sin(angle) : (float)turnSin, cos = j == pieces ? (float)Math.Cos(angle) : (float)turnCos;
                     Emit(fromX + round * (sin * inX + (1f - cos) * towardsX), fromZ + round * (sin * inZ + (1f - cos) * towardsZ));
                 }
             }
@@ -334,10 +360,27 @@ namespace RealLifeOverhaul
             {
                 return outside - 1.5f;
             }
+            // The nearest middle of the bed first. The crew in a pose comes no nearer than its bed's middle less Extent, and
+            // the bed itself no further than its middle: only the poses with the middle within Extent of the nearest one
+            // can be the nearest, and only those are measured. (A millimetre more, for the rounding of the two.)
+            float nearest = float.MaxValue;
+            for (int i = 0; i < _poses; i++)
+            {
+                int at = i * 2;
+                float offX = x - _poseC[at], offZ = z - _poseC[at + 1];
+                nearest = Math.Min(nearest, offX * offX + offZ * offZ);
+            }
+            float bound = (float)Math.Sqrt(nearest) + Extent + 0.001f;
+            float boundSqr = bound * bound;
             float least = float.MaxValue;
             for (int i = 0; i < _poses; i++)
             {
                 int at = i * 2;
+                float offX = x - _poseC[at], offZ = z - _poseC[at + 1];
+                if (offX * offX + offZ * offZ > boundSqr)
+                {
+                    continue;
+                }
                 least = Math.Min(least, PoseClearance(_poseP[at], _poseP[at + 1], _poseC[at], _poseC[at + 1], _poseH[at], _poseH[at + 1], Side, x, z));
                 if (least <= 0f)
                 {
@@ -393,24 +436,123 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// The part of a straight line (a length of tape, say) that the crew comes within a distance of, as
-        /// fractions of it from its first end to its second. False if no part of it is that near.
+        /// fractions of it from its first end to its second: from the first such place to the last. False if no part
+        /// of it is that near. Worked out, not looked for: in each pose the crew is the bed and two people, and the part
+        /// of a line within a distance of a box or of a person is found exactly, so a pose costs a few sums and a pose
+        /// too far from the line costs one test. (It was asked point by point, every 10 cm of the line against every pose
+        /// of the way: some 60,000 askings a way, and the crew's planning tries hundreds of ways in one frame.)
         /// </summary>
         public bool Crossing(float fromX, float fromZ, float toX, float toZ, float within, out float low, out float high)
         {
             low = 1f;
             high = 0f;
-            float length = Hypot(toX - fromX, toZ - fromZ);
-            int pieces = Math.Max(1, (int)Math.Ceiling(length / 0.1f));
-            for (int i = 0; i <= pieces; i++)
+            if (_poses == 0 || within <= 0f)
             {
-                float t = (float)i / pieces;
-                if (Clearance(fromX + (toX - fromX) * t, fromZ + (toZ - fromZ) * t) < within)
+                return false;   // (nothing of the crew is nearer than no distance at all)
+            }
+            float runX = toX - fromX, runZ = toZ - fromZ;
+            float lengthSqr = runX * runX + runZ * runZ;
+            if (lengthSqr < 1e-8f)
+            {
+                if (Clearance(fromX, fromZ) < within)
                 {
-                    low = Math.Min(low, t);
-                    high = Math.Max(high, t);
+                    low = 0f;
+                    high = 1f;
                 }
+                return high >= low;
+            }
+            // Nowhere near the whole way: no part of it.
+            float reach = Extent + within;
+            if (Math.Max(fromX, toX) < _minX - reach || Math.Min(fromX, toX) > _maxX + reach
+                || Math.Max(fromZ, toZ) < _minZ - reach || Math.Min(fromZ, toZ) > _maxZ + reach)
+            {
+                return false;
+            }
+            float reachSqr = reach * reach;
+            float person = Body + within;
+            for (int i = 0; i < _poses; i++)
+            {
+                int at = i * 2;
+                float bedX = _poseC[at], bedZ = _poseC[at + 1];
+                // The point of the line nearest the bed's middle: nothing of the crew in this pose is further than Extent from that middle.
+                float t = ((bedX - fromX) * runX + (bedZ - fromZ) * runZ) / lengthSqr;
+                t = t < 0f ? 0f : t > 1f ? 1f : t;
+                float offX = fromX + runX * t - bedX, offZ = fromZ + runZ * t - bedZ;
+                if (offX * offX + offZ * offZ >= reachSqr)
+                {
+                    continue;
+                }
+                float headingX = _poseH[at], headingZ = _poseH[at + 1];
+                // The bed, grown by the distance: lengthened, widened, and a disc at each of its corners.
+                Box(fromX, fromZ, runX, runZ, bedX, bedZ, headingX, headingZ, BedHalfLength + within, BedHalfWidth, ref low, ref high);
+                Box(fromX, fromZ, runX, runZ, bedX, bedZ, headingX, headingZ, BedHalfLength, BedHalfWidth + within, ref low, ref high);
+                for (int c = 0; c < 4; c++)
+                {
+                    float along = (c & 1) == 0 ? BedHalfLength : -BedHalfLength;
+                    float across = (c & 2) == 0 ? BedHalfWidth : -BedHalfWidth;
+                    Disc(fromX, fromZ, runX, runZ, lengthSqr, bedX + headingX * along + headingZ * across, bedZ + headingZ * along - headingX * across, within, ref low, ref high);
+                }
+                // Whoever pushes, and whoever walks beside the leading end.
+                Disc(fromX, fromZ, runX, runZ, lengthSqr, _poseP[at], _poseP[at + 1], person, ref low, ref high);
+                Disc(fromX, fromZ, runX, runZ, lengthSqr, bedX + headingX * SecondAhead + headingZ * (Side * SecondOut), bedZ + headingZ * SecondAhead - headingX * (Side * SecondOut),
+                    person, ref low, ref high);
             }
             return high >= low;
+        }
+
+        // The part of the line from (fromX, fromZ) by (runX, runZ) that is inside a box on the ground (its middle, the way
+        // its length runs, half its length and half its width), as fractions of the line, taken into low and high.
+        private static void Box(float fromX, float fromZ, float runX, float runZ, float midX, float midZ, float alongX, float alongZ,
+            float halfLength, float halfWidth, ref float low, ref float high)
+        {
+            float offX = fromX - midX, offZ = fromZ - midZ;
+            float first = 0f, last = 1f;
+            // (Across the way it points is (alongZ, -alongX), as PoseClearance measures it.)
+            if (Slab(offX * alongX + offZ * alongZ, runX * alongX + runZ * alongZ, halfLength, ref first, ref last)
+                && Slab(offX * alongZ - offZ * alongX, runX * alongZ - runZ * alongX, halfWidth, ref first, ref last))
+            {
+                low = Math.Min(low, first);
+                high = Math.Max(high, last);
+            }
+        }
+
+        // Narrows first..last to where start + t * run lies within half of nothing. False if that leaves nothing.
+        private static bool Slab(float start, float run, float half, ref float first, ref float last)
+        {
+            if (Math.Abs(run) < 1e-9f)
+            {
+                return Math.Abs(start) < half && first < last;
+            }
+            float a = (-half - start) / run, b = (half - start) / run;
+            if (a > b)
+            {
+                float swap = a;
+                a = b;
+                b = swap;
+            }
+            first = Math.Max(first, a);
+            last = Math.Min(last, b);
+            return first < last;
+        }
+
+        // The part of the line that is nearer a point than the radius, as fractions of the line, taken into low and high.
+        private static void Disc(float fromX, float fromZ, float runX, float runZ, float lengthSqr, float x, float z, float radius, ref float low, ref float high)
+        {
+            float offX = fromX - x, offZ = fromZ - z;
+            float half = offX * runX + offZ * runZ;   // half the middle term of the square to be solved
+            float rest = offX * offX + offZ * offZ - radius * radius;
+            float spread = half * half - lengthSqr * rest;
+            if (spread <= 0f)
+            {
+                return;
+            }
+            float root = (float)Math.Sqrt(spread);
+            float first = Math.Max(0f, (-half - root) / lengthSqr), last = Math.Min(1f, (-half + root) / lengthSqr);
+            if (first < last)
+            {
+                low = Math.Min(low, first);
+                high = Math.Max(high, last);
+            }
         }
 
         /// <summary>
