@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.GameUi
         private SmartphoneAppButton _hudButton;
         private FullMenuAppButton _menuButton;
         private PhoneGridPager _pager;
+        private PhoneGridPager _strip;
         private Transform _dormant;
         private int _badge;
 
@@ -156,6 +157,10 @@ namespace RealLifeOverhaul.GameUi
                 Transform selected = menuTemplate.Find("SelectedIcon");
                 Image dot = selected != null ? selected.GetComponent<Image>() : null;
                 app._pager = PhoneGridPager.On(hudTemplate.parent, hudTemplate, dot != null ? dot.sprite : null);
+                // The full menu's row of buttons ends at the money, the date and the time beside it ("RightData").
+                Transform bar = menuTemplate.parent.parent;
+                app._strip = PhoneGridPager.OnStrip(menuTemplate.parent, menuTemplate, dot != null ? dot.sprite : null,
+                                                    bar != null ? bar.Find("RightData") as RectTransform : null);
 
                 if (Meta.Dev.Verbose)
                 {
@@ -163,6 +168,7 @@ namespace RealLifeOverhaul.GameUi
                     Logger?.Info("Game UI: app '" + def.Id + "' is on the phone. Button copied from " + templateUsed + " (HUD) and " + menuTemplateUsed
                                  + " (full menu); place " + place + " of " + (app._pager != null ? app._pager.Count : 0) + " apps, "
                                  + (app._pager == null ? "no pages" : app._pager.SteppedAside ? "pages left to another mod" : app._pager.Pages + " page(s)")
+                                 + "; full menu row " + (app._strip == null ? "not paged" : app._strip.SteppedAside ? "paged by another mod" : app._strip.Pages + " page(s)")
                                  + "; icon " + (icon == null ? "the template's" : icon.name) + ".");
                 }
                 return app;
@@ -335,6 +341,10 @@ namespace RealLifeOverhaul.GameUi
                         all[i].HideSelectedIcon();
                     }
                     _menuButton.ShowSelectedIcon();
+                    if (_strip != null)
+                    {
+                        _strip.ShowPageOf(_menuButton.transform);   // opened from the HUD phone or a link: its button in sight
+                    }
                 }
                 _def.Opened?.Invoke();
             }
@@ -388,9 +398,14 @@ namespace RealLifeOverhaul.GameUi
             {
                 UnityEngine.Object.Destroy(_pager);   // shows again whatever it had on another page
             }
+            if (_strip != null)
+            {
+                UnityEngine.Object.Destroy(_strip);
+            }
             _hudButton = null;
             _menuButton = null;
             _pager = null;
+            _strip = null;
             _dormant = null;
             Root = null;
         }

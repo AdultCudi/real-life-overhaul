@@ -48,6 +48,18 @@ off like any other; the panel's `PhoneAppRoot` then takes the mod's dot away. Th
 Proven: every member named above, and both templates' structure. Inferred: that a copy made after `Awake`/`Start`
 lays out as the ninth child (it is an ordinary child of a layout group).
 
+### Pages in the full menu's top bar (`PhoneGridPager.OnStrip`)
+
+The full menu's row of app buttons (`Topbar/AppButtons`, a HorizontalLayoutGroup of spacing 20, upper centre, in a
+box 1400 wide at x 1650 of the 3840 canvas) is centred for the game's own seven apps, which already run a little past
+both ends of the box. Every further button grew it both ways, under the money, the date and the time
+(`Topbar/RightData`) and off the screen. The same pager pages that row: the room runs from where the game's own apps
+begin (as the game's alignment places them) to the left edge of the money less 60, measured when the menu opens and
+when a button is added; the apps are shared out evenly over as few pages as fit, each page centred in the room by the
+row's left padding with the alignment set to upper left, and the dots stand after the page level with the icons. The
+wheel over the row or a dot turns the page; opening an app shows its page. The row's alignment and padding are put
+back when the pager goes or steps aside. Measured offline from `level4`; not seen in the game yet.
+
 ### Pages on the HUD phone (`GameUi.PhoneGridPager`)
 
 A ninth button has no room, so the home screen gets pages of eight: the wheel over the grid or a dot under it turns
