@@ -342,7 +342,7 @@ That is not changing." Two causes. The picks were read from PlayerPrefs at game 
 in what some other game had last picked; and `ModLooks` drew the mod's piece over whatever piece of that kind the
 game showed, so a click on one of the game's own entries changed the game's data and nothing on screen.
 
-Now (`CharacterCatalogue`, `ModLooks.Apply`, `CreatorLooks`):
+Now (`CharacterCatalogue`, `ModLooks.Apply`, `GridLooks`):
 
 - **A pick belongs to one character.** Character creation starts with none (`BeginCreator`) and writes each pick
   straight into the new game's `modData`; a loaded save's picks are read from its `modData` and from nowhere else
@@ -370,7 +370,7 @@ Now (`CharacterCatalogue`, `ModLooks.Apply`, `CreatorLooks`):
 
 **What the game's creator allowed.** Entries can be appended to its grids safely, so there is no panel of the mod's
 own. `CharacterCustomizer` raises `onSubCategoryChanged` when it has filled the grid (`ElementPicker.SetList`);
-`CreatorLooks` then adds one tile per starter garment to the Torso, Legs and Feet grids as copies of the grid's own
+`GridLooks` then adds one tile per starter garment to the Torso, Legs and Feet grids as copies of the grid's own
 entry template (so they lay out, scroll and are cleared exactly as the game's entries are: the game destroys every
 copy of the template when it refills the grid), hands the grid's "selected" mark to and fro, and fills the game's
 colour row through its public `AppearanceColorPicker.SetList` with the garment's colourways. Three private fields are

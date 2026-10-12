@@ -8,6 +8,7 @@ using Character.Customization;
 using Extensions;
 using Helpers;
 using Localizor;
+using RealLifeOverhaul.Leisure;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -15,10 +16,20 @@ using UnityEngine.UI;
 
 namespace RealLifeOverhaul
 {
+    /// <summary>Which of the game's character screens a grid of the mod's tiles is in, and so what it offers.</summary>
+    internal enum GridMode
+    {
+        Off,        // the screen shows something else (a uniform, an employee): no tiles
+        Creator,    // character creation: the starter garments; a click is the new character's pick
+        Wardrobe,   // the game's clothes screen at home: what the player owns, kept only if the screen's Save is pressed
+        Shop        // the same screen at the Real Life Overhaul rack: every garment with its price, bought with the Save button
+    }
+
     /// <summary>
-    /// The mod's starter garments and shoes as entries of the game's own character creator: in the grid of the
-    /// Torso, Legs and Feet categories, after the game's pieces, one tile per garment (a swatch of its cloth, its
-    /// name and an "RLO" tag), with the garment's colourways in the game's colour row.
+    /// The mod's garments and shoes as entries of the game's own character screens (CharacterCustomizer: character
+    /// creation, and the clothes screen a wardrobe opens): in the grid of the Torso, Legs and Feet categories, after
+    /// the game's pieces, one tile per garment (its picture, its name, and the mod's tag or its price), with the
+    /// garment's colourways in the game's colour row.
     ///
     /// What the game allows, and what this rests on (all read from its code):
     ///  - <c>CharacterCustomizer</c> raises <c>onSubCategoryChanged</c> each time it has filled the grid
@@ -30,13 +41,17 @@ namespace RealLifeOverhaul
     ///    this hands it our tile's mark when a look of ours is picked, and hands the game's back when it is not.
     ///  - <c>AppearanceColorPicker.SetList(sprites, callback, selected)</c> is public: the colour row shows our
     ///    swatches while a garment of ours is the pick. The game fills it again itself on its own clicks.
-    /// A click on a tile is a pick like any other (<see cref="CharacterCatalogue.Pick"/>); a click on one of the
-    /// game's entries takes the mod's look of that kind off (<see cref="CharacterCatalogue.Observe"/>).
+    ///
+    /// What a click does depends on the screen (<see cref="Mode"/>): in character creation it is the new character's
+    /// pick (<see cref="CharacterCatalogue.Pick"/>); in the clothes screen it is handed to the screen
+    /// (<see cref="ClothesScreen"/>), which shows it on the preview and keeps it only if the game's Save is pressed.
+    /// The wardrobe offers what the player owns, colour by colour; the shop offers everything, the game's own
+    /// entries of these three kinds put away, each tile with its price or "Owned".
     ///
     /// Everything happens on a click or a change of category; nothing runs per frame. If any of the game's parts is
-    /// not as expected this logs once and leaves the creator exactly as the game made it.
+    /// not as expected this logs once and leaves the screen exactly as the game made it.
     /// </summary>
-    internal sealed class CreatorLooks
+    internal sealed class GridLooks
     {
         private const BindingFlags Any = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         private const int SwatchSize = 48;
@@ -50,6 +65,7 @@ namespace RealLifeOverhaul
             public GameObject Object;
             public GameObject Mark;  // the entry's "selected" outline
             public Image Icon;
+            public TMP_Text Corner;  // the mod's tag, or (in the shop) the price
         }
 
         // The two colours of the shoes whose colourway is more than one (the shoes' colour is in their textures, not a tint).
@@ -74,8 +90,10 @@ namespace RealLifeOverhaul
         private readonly UnityEvent<AppearanceElementType> _categoryShown;
         private readonly UnityAction<AppearanceElementType> _onCategoryShown;
         private readonly UnityAction<int> _onColour;
+        private readonly Action<CharacterCatalogue.Slot, int> _choose;
         private readonly List<Tile> _tiles = new List<Tile>(8);
         private readonly List<Sprite> _colourRow = new List<Sprite>(32);
+        private readonly List<int> _rowEntries = new List<int>(32);   // the slot's entry each swatch of the colour row stands for
         private readonly Dictionary<string, Sprite> _swatches = new Dictionary<string, Sprite>(64);
         private readonly Color32[] _pixels = new Color32[SwatchSize * SwatchSize];
         private readonly string _tag;
@@ -86,15 +104,23 @@ namespace RealLifeOverhaul
         private bool _hasCategory;
         private bool _colourRowOurs;
         private bool _failed;
+        private GridMode _mode;
 
-        /// <summary>Null (and one log line) if the creator is not there or not built as expected.</summary>
-        public static CreatorLooks Attach(CharacterCustomizer customizer, AppearanceSetter character, IModLogger logger)
+        /// <summary>
+        /// Null (and one log line) if the screen is not there or not built as expected. <paramref name="character"/> is
+        /// the one the screen dresses (the creator's, or the clothes screen's preview); <paramref name="choose"/> takes
+        /// a click on one of the mod's entries in every mode but the creator's.
+        /// </summary>
+        public static GridLooks Attach(CharacterCustomizer customizer, AppearanceSetter character, IModLogger logger, GridMode mode,
+            Action<CharacterCatalogue.Slot, int> choose = null)
         {
+            string screen = mode == GridMode.Creator ? "character creator" : "clothes screen";
             try
             {
-                if (customizer == null || character == null || customizer.appearanceSetter != character || customizer.appearanceColorPicker == null)
+                // (The clothes screen is handed its preview character as it opens: only the creator has its own already.)
+                if (customizer == null || character == null || (mode == GridMode.Creator && customizer.appearanceSetter != character) || customizer.appearanceColorPicker == null)
                 {
-                    logger?.Info("Looks: the game's character creator was not found as expected; the mod's garments are not added to its grids (the options page still has them).");
+                    logger?.Info("Looks: the game's " + screen + " was not found as expected; the mod's garments are not added to its grids (the options page still has them).");
                     return null;
                 }
                 var picker = typeof(CharacterCustomizer).GetField("elementPicker", Any)?.GetValue(customizer) as ElementPicker;
@@ -104,20 +130,20 @@ namespace RealLifeOverhaul
                 if (picker == null || shown == null || template == null || template.parent == null || mark == null || mark.FieldType != typeof(GameObject)
                     || template.Find("Selected") == null || template.GetComponent<Button>() == null)
                 {
-                    logger?.Info("Looks: the creator's grid is not built as this version of the mod expects; the mod's garments are not added to it (the options page still has them).");
+                    logger?.Info("Looks: the " + screen + "'s grid is not built as this version of the mod expects; the mod's garments are not added to it (the options page still has them).");
                     return null;
                 }
-                return new CreatorLooks(customizer, character, logger, picker, template, mark, shown);
+                return new GridLooks(customizer, character, logger, picker, template, mark, shown, mode, choose);
             }
             catch (Exception e)
             {
-                logger?.Warn("Looks: the mod's garments could not be added to the creator's grids (" + e.Message + "); the creator is left as the game made it.");
+                logger?.Warn("Looks: the mod's garments could not be added to the " + screen + "'s grids (" + e.Message + "); it is left as the game made it.");
                 return null;
             }
         }
 
-        private CreatorLooks(CharacterCustomizer customizer, AppearanceSetter character, IModLogger logger, ElementPicker picker, Transform template, FieldInfo markField,
-            UnityEvent<AppearanceElementType> categoryShown)
+        private GridLooks(CharacterCustomizer customizer, AppearanceSetter character, IModLogger logger, ElementPicker picker, Transform template, FieldInfo markField,
+            UnityEvent<AppearanceElementType> categoryShown, GridMode mode, Action<CharacterCatalogue.Slot, int> choose)
         {
             _customizer = customizer;
             _character = character;
@@ -126,13 +152,35 @@ namespace RealLifeOverhaul
             _template = template;
             _markField = markField;
             _categoryShown = categoryShown;
+            _mode = mode;
+            _choose = choose;
             _onCategoryShown = OnCategoryShown;
             _onColour = OnColour;
             _tag = "reallife_creator_tag".GetLocalization();
             TMP_Text sample = customizer.GetComponentInChildren<TMP_Text>(true);
             _font = sample != null ? sample.font : null;
             _categoryShown.AddListener(_onCategoryShown);
-            logger?.Info("Looks: the mod's starter garments are added to the creator's Torso, Legs and Feet grids, after the game's own pieces.");
+            logger?.Info(mode == GridMode.Creator
+                ? "Looks: the mod's starter garments are added to the creator's Torso, Legs and Feet grids, after the game's own pieces."
+                : "Looks: the mod's clothes are added to the Torso, Legs and Feet grids of the game's clothes screen whenever it opens for the player (the wardrobe at home, the rack in a clothing store).");
+        }
+
+        /// <summary>What the grid offers from here on; the tiles follow at once if a category is showing.</summary>
+        public GridMode Mode
+        {
+            get => _mode;
+            set
+            {
+                if (_mode == value)
+                {
+                    return;
+                }
+                _mode = value;
+                if (_hasCategory)
+                {
+                    Rebuild();
+                }
+            }
         }
 
         public void Dispose()
@@ -185,8 +233,11 @@ namespace RealLifeOverhaul
             try
             {
                 RemoveTiles();
-                CharacterCatalogue.Observe(_character);   // a click on one of the game's entries has taken our look of that kind off
-                if (!Settings.CharacterNewLooks || !ModAssets.Ready || _picker == null || !_picker.gameObject.activeInHierarchy || _character == null
+                if (_mode == GridMode.Creator)
+                {
+                    CharacterCatalogue.Observe(_character);   // a click on one of the game's entries has taken our look of that kind off
+                }
+                if (_mode == GridMode.Off || !Settings.CharacterNewLooks || !ModAssets.Ready || _picker == null || !_picker.gameObject.activeInHierarchy || _character == null
                     || _character.data == null || !KindOf(_category, out LookKind kind))
                 {
                     ReleaseColourRow();
@@ -207,11 +258,15 @@ namespace RealLifeOverhaul
                         {
                             next++;
                         }
-                        if (CharacterCatalogue.Starter(slot, first) && ModAssets.Find(slot.Ids[first]) != null)
+                        if (Offered(slot, first) && ModAssets.Find(slot.Ids[first]) != null)
                         {
                             _tiles.Add(MakeTile(slot, first, next - first));
                         }
                     }
+                }
+                if (_mode == GridMode.Shop)
+                {
+                    PutGameEntriesAway();
                 }
                 ShowPick(kind);
             }
@@ -219,6 +274,52 @@ namespace RealLifeOverhaul
             {
                 Fail(e);
             }
+        }
+
+        // Whether a garment has a tile here: a new character's starter garments; what the player owns (any of its colours);
+        // everything the bundle has, in the shop.
+        private bool Offered(CharacterCatalogue.Slot slot, int first)
+        {
+            switch (_mode)
+            {
+                case GridMode.Creator: return CharacterCatalogue.Starter(slot, first);
+                case GridMode.Wardrobe: return ClothesShop.HasAny(slot, first);
+                case GridMode.Shop: return ClothesShop.InStock(slot.Ids[first]);
+                default: return false;
+            }
+        }
+
+        // Whether one colourway of a garment is offered: in the wardrobe only those owned.
+        private bool Offered(CharacterCatalogue.Slot slot, int first, int entry)
+        {
+            return _mode == GridMode.Wardrobe ? ClothesShop.Has(slot.Ids[entry]) : _mode != GridMode.Shop || ClothesShop.InStock(slot.Ids[entry]);
+        }
+
+        // The shop sells the mod's garments: the game's own entries of the category (which the wardrobe gives anyway) are put away.
+        private void PutGameEntriesAway()
+        {
+            Transform grid = _template.parent;
+            for (int i = 0; i < grid.childCount; i++)
+            {
+                Transform child = grid.GetChild(i);
+                if (child == _template || !child.gameObject.activeSelf || !child.CompareTag(_template.tag) || Ours(child.gameObject))
+                {
+                    continue;
+                }
+                child.gameObject.SetActive(false);
+            }
+        }
+
+        private bool Ours(GameObject entry)
+        {
+            for (int i = 0; i < _tiles.Count; i++)
+            {
+                if (_tiles[i].Object == entry)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static bool KindOf(AppearanceElementType category, out LookKind kind)
@@ -242,7 +343,7 @@ namespace RealLifeOverhaul
             tile.Icon = icon != null ? icon.GetComponent<Image>() : entry.GetComponent<Image>();
             if (tile.Icon != null)
             {
-                tile.Icon.sprite = Swatch(slot, EntryOf(tile));
+                tile.Icon.sprite = Picture(tile);
                 tile.Icon.color = Color.white;
             }
             Transform sports = entry.Find("SportsIcon");
@@ -252,16 +353,27 @@ namespace RealLifeOverhaul
             }
             tile.Mark.SetActive(false);
 
-            // The garment's name along the foot of the tile, and the mod's tag in its corner.
+            // The garment's name along the foot of the tile, and the mod's tag (or the price) in its corner.
             string name = ShortName(slot.Paired ? slot.Garments[(first - 1) / CharacterCatalogue.Palette.Length].LabelKey : RowKey(slot, first));
-            Band(entry, new Vector2(0f, 0f), new Vector2(1f, 0.36f), name, 15f, TextAlignmentOptions.Center);
-            Band(entry, new Vector2(0f, 0.80f), new Vector2(0.46f, 1f), _tag, 12f, TextAlignmentOptions.Center);
+            Band(entry, new Vector2(0f, 0f), new Vector2(1f, 0.30f), name, 15f, TextAlignmentOptions.Center);
+            tile.Corner = Band(entry, new Vector2(0f, 0.80f), new Vector2(_mode == GridMode.Shop ? 0.62f : 0.46f, 1f), CornerText(tile), 12f, TextAlignmentOptions.Center);
             tile.Mark.transform.SetAsLastSibling();
 
             Button button = entry.GetComponent<Button>();
             button.onClick.AddListener(() => OnTile(tile));
             entry.gameObject.SetActive(true);
             return tile;
+        }
+
+        // In the shop: the price of the colourway the tile stands for, or that it is the player's already. Elsewhere the mod's tag.
+        private string CornerText(Tile tile)
+        {
+            if (_mode != GridMode.Shop)
+            {
+                return _tag;
+            }
+            string id = tile.Slot.Ids[EntryOf(tile)];
+            return ClothesShop.Has(id) ? "reallife_clothes_screen_owned".GetLocalization() : JobText.Money(ClothesShop.Price(id));
         }
 
         // A shoe's label is that of its colourway ("Court sneakers, white and navy"): the style is what stands before the comma.
@@ -290,7 +402,7 @@ namespace RealLifeOverhaul
             return cut > 0 ? text.Substring(0, cut) : text;
         }
 
-        private void Band(Transform entry, Vector2 from, Vector2 to, string words, float size, TextAlignmentOptions alignment)
+        private TMP_Text Band(Transform entry, Vector2 from, Vector2 to, string words, float size, TextAlignmentOptions alignment)
         {
             var band = new GameObject(OurName + " band", typeof(RectTransform));
             band.layer = entry.gameObject.layer;
@@ -302,7 +414,7 @@ namespace RealLifeOverhaul
             rect.offsetMax = Vector2.zero;
             band.AddComponent<LayoutElement>().ignoreLayout = true;
             var back = band.AddComponent<Image>();
-            back.color = new Color(0.07f, 0.08f, 0.10f, 0.78f);
+            back.color = new Color(0.07f, 0.08f, 0.10f, 0.62f);
             back.raycastTarget = false;
 
             var label = new GameObject(OurName + " text", typeof(RectTransform));
@@ -327,6 +439,7 @@ namespace RealLifeOverhaul
             text.fontSizeMin = 8f;
             text.fontSizeMax = size;
             text.raycastTarget = false;
+            return text;
         }
 
         private void RemoveTiles()
@@ -359,15 +472,28 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- what is picked
 
-        // The entry of the slot that a tile stands for now: the colourway worn, or the one its garment would come in.
-        private static int EntryOf(Tile tile)
+        // The entry of the slot that a tile stands for now: the colourway worn, or the one its garment would come in (in
+        // the wardrobe, one the player owns).
+        private int EntryOf(Tile tile)
         {
             CharacterCatalogue.Slot slot = tile.Slot;
             if (slot.Index >= tile.First && slot.Index < tile.First + tile.Count)
             {
                 return slot.Index;
             }
-            return tile.First + (slot.Paired ? Mathf.Clamp(slot.ColourIndex, 0, tile.Count - 1) : 0);
+            int entry = tile.First + (slot.Paired ? Mathf.Clamp(slot.ColourIndex, 0, tile.Count - 1) : 0);
+            if (Offered(slot, tile.First, entry))
+            {
+                return entry;
+            }
+            for (int i = 0; i < tile.Count; i++)
+            {
+                if (Offered(slot, tile.First, tile.First + i))
+                {
+                    return tile.First + i;
+                }
+            }
+            return tile.First;
         }
 
         private Tile TileOf(string id)
@@ -384,17 +510,27 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        // Marks the tile of the look that is worn in this category, if any, and shows its colourways.
+        // Marks the tile of the look that is worn in this category, if any, and shows its colourways. In the clothes
+        // screen a look of ours counts as worn only while the preview shows it (a piece of the game's being tried in
+        // this screen is what shows, until one of ours is picked again).
         private void ShowPick(LookKind kind)
         {
             string worn = CharacterCatalogue.Selected(kind, _character.data.gender);
+            if (worn != null && _mode != GridMode.Creator && !CharacterCatalogue.Shows(kind, _character.data))
+            {
+                worn = null;
+            }
             var current = _markField.GetValue(_picker) as GameObject;
             for (int i = 0; i < _tiles.Count; i++)
             {
                 _tiles[i].Mark.SetActive(false);
                 if (_tiles[i].Icon != null)
                 {
-                    _tiles[i].Icon.sprite = Swatch(_tiles[i].Slot, EntryOf(_tiles[i]));
+                    _tiles[i].Icon.sprite = Picture(_tiles[i]);
+                }
+                if (_tiles[i].Corner != null)
+                {
+                    _tiles[i].Corner.text = CornerText(_tiles[i]);
                 }
             }
             _picked = TileOf(worn);
@@ -426,11 +562,28 @@ namespace RealLifeOverhaul
             _picked.Mark.SetActive(true);
             _markField.SetValue(_picker, _picked.Mark);
             _colourRow.Clear();
+            _rowEntries.Clear();
+            int selected = 0;
             for (int i = 0; i < _picked.Count; i++)
             {
-                _colourRow.Add(Swatch(_picked.Slot, _picked.First + i));
+                int entry = _picked.First + i;
+                if (!Offered(_picked.Slot, _picked.First, entry))
+                {
+                    continue;
+                }
+                if (entry == _picked.Slot.Index)
+                {
+                    selected = _rowEntries.Count;
+                }
+                _rowEntries.Add(entry);
+                _colourRow.Add(Swatch(_picked.Slot, entry));
             }
-            _customizer.appearanceColorPicker.SetList(_colourRow, _onColour, _picked.Slot.Index - _picked.First);
+            if (_rowEntries.Count < 2)
+            {
+                ReleaseColourRow();   // one colour to have: nothing to choose
+                return;
+            }
+            _customizer.appearanceColorPicker.SetList(_colourRow, _onColour, selected);
             _colourRowOurs = true;
         }
 
@@ -452,7 +605,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                CharacterCatalogue.Pick(tile.Slot, EntryOf(tile), LookSource.Creator);
+                Choose(tile.Slot, EntryOf(tile));
                 if (KindOf(_category, out LookKind kind))
                 {
                     ShowPick(kind);
@@ -466,22 +619,38 @@ namespace RealLifeOverhaul
 
         private void OnColour(int colour)
         {
-            if (_failed || _picked == null)
+            if (_failed || _picked == null || _rowEntries.Count == 0)
             {
                 return;
             }
             try
             {
                 Tile tile = _picked;
-                CharacterCatalogue.Pick(tile.Slot, tile.First + Mathf.Clamp(colour, 0, tile.Count - 1), LookSource.Creator);
+                Choose(tile.Slot, _rowEntries[Mathf.Clamp(colour, 0, _rowEntries.Count - 1)]);
                 if (tile.Icon != null)
                 {
-                    tile.Icon.sprite = Swatch(tile.Slot, EntryOf(tile));
+                    tile.Icon.sprite = Picture(tile);
+                }
+                if (tile.Corner != null)
+                {
+                    tile.Corner.text = CornerText(tile);
                 }
             }
             catch (Exception e)
             {
                 Fail(e);
+            }
+        }
+
+        private void Choose(CharacterCatalogue.Slot slot, int entry)
+        {
+            if (_mode == GridMode.Creator || _choose == null)
+            {
+                CharacterCatalogue.Pick(slot, entry, LookSource.Creator);
+            }
+            else
+            {
+                _choose(slot, entry);
             }
         }
 
@@ -492,7 +661,7 @@ namespace RealLifeOverhaul
                 return;
             }
             _failed = true;
-            _logger?.Warn("Looks: the mod's entries in the creator's grids are switched off for this session (" + error.Message + "); the game's own entries are untouched. (Logged once.)");
+            _logger?.Warn("Looks: the mod's entries in the game's character screens are switched off for this session (" + error.Message + "); the game's own entries are untouched. (Logged once.)");
             _logger?.Error(error);
             try
             {
@@ -505,12 +674,21 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- swatches
+        // ---------------------------------------------------------------- pictures
+
+        // A tile's picture: the garment's photograph from the bundle (the game's own character wearing it, framed as the
+        // game frames its own pieces), else a swatch of the colourway it stands for.
+        private Sprite Picture(Tile tile)
+        {
+            int entry = EntryOf(tile);
+            Sprite photo = ModAssets.Photo(tile.Slot.Meshes[entry]);
+            return photo != null ? photo : Swatch(tile.Slot, entry);
+        }
 
         /// <summary>
         /// A small picture of one colourway: the cloth's colour with its print drawn in (the three colours are the
         /// item's own tints from the bundle's catalogue; nothing is read from a texture). Made once per colourway
-        /// shown, 48 px, and destroyed with the creator.
+        /// shown, 48 px, and destroyed with the screen.
         /// </summary>
         private Sprite Swatch(CharacterCatalogue.Slot slot, int entry)
         {

@@ -728,6 +728,53 @@ namespace RealLifeOverhaul
             Set(slot, index, source);
         }
 
+        /// <summary>Every slot's pick as it stands, for <see cref="Restore"/>: what a screen of the game's that may be left without saving began with.</summary>
+        public static int[] Snapshot()
+        {
+            var picks = new int[Slots.Length];
+            for (int i = 0; i < Slots.Length; i++)
+            {
+                picks[i] = Slots[i].Index;
+            }
+            return picks;
+        }
+
+        /// <summary>Whether any pick is other than in the snapshot.</summary>
+        public static bool Differs(int[] snapshot)
+        {
+            if (snapshot == null || snapshot.Length != Slots.Length)
+            {
+                return false;
+            }
+            for (int i = 0; i < Slots.Length; i++)
+            {
+                if (Slots[i].Index != snapshot[i])
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>Puts every slot back as the snapshot had it (what was tried in a screen left without saving comes off). Each change is logged.</summary>
+        public static void Restore(int[] snapshot, LookSource source)
+        {
+            if (snapshot == null || snapshot.Length != Slots.Length)
+            {
+                return;
+            }
+            for (int i = 0; i < Slots.Length; i++)
+            {
+                Set(Slots[i], Mathf.Clamp(snapshot[i], 0, Slots[i].Ids.Length - 1), source);
+            }
+        }
+
+        /// <summary>The game's element a kind of look is worn over.</summary>
+        public static AppearanceElementType ElementOf(LookKind kind)
+        {
+            return Elements[(int)kind];
+        }
+
         /// <summary>Puts exactly this entry on this slot and touches no other (an outfit being put on piece by piece, a tried piece coming off).</summary>
         public static void Wear(Slot slot, int index, LookSource source = LookSource.Wardrobe)
         {

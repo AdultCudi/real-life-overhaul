@@ -122,7 +122,7 @@ namespace RealLifeOverhaul
 
         private readonly List<Managed> _characters = new List<Managed>(3);
         private CharacterLighting _lighting;
-        private CreatorLooks _creatorLooks;
+        private GridLooks _creatorLooks;
         private bool _hairOn;
         private bool _hairSuspended;
         private bool _hairFailed;
@@ -264,7 +264,7 @@ namespace RealLifeOverhaul
                 camera != null ? camera.transform : null, transform, Logger);
             CharacterCatalogue.SetCreator(shown);   // before it is looked after: its pieces are what the picks are made over
             Manage(shown);
-            _creatorLooks = CreatorLooks.Attach(customizer, shown, Logger);   // the mod's starter garments in the game's own grids
+            _creatorLooks = GridLooks.Attach(customizer, shown, Logger, GridMode.Creator);   // the mod's starter garments in the game's own grids
             return true;
         }
 

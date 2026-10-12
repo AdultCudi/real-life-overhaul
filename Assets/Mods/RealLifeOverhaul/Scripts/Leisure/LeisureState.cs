@@ -8,7 +8,7 @@ namespace RealLifeOverhaul.Leisure
     public sealed class SavedOutfit
     {
         public bool Used;
-        public int Name;                                   // index into Wardrobe.OutfitNames
+        public int Name;                                   // which of six outfit names (kept with the save: the wardrobe is the game's own screen now, which has no outfits)
         public readonly string[] Ids = new string[8];      // in the order of CharacterCatalogue.Slots; null or empty: the game's own
     }
 

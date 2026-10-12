@@ -394,7 +394,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_leisure_test_drinks", () => Leisure.LeisureDirector.Instance?.TestStart(Leisure.LeisureKind.Drinks))
                 .AddButton("reallife_leisure_test_sights", () => Leisure.LeisureDirector.Instance?.TestStart(Leisure.LeisureKind.Sightseeing))
                 .AddButton("reallife_leisure_test_rack", () => Leisure.LeisureDirector.Instance?.TestStart(Leisure.LeisureKind.Rack))
-                .AddButton("reallife_leisure_test_wardrobe", () => Leisure.LeisureDirector.Instance?.TestStart(Leisure.LeisureKind.Wardrobe))
+                .AddButton("reallife_leisure_test_wardrobe", () => Leisure.LeisureDirector.Instance?.TestWardrobe())
                 .AddButton("reallife_leisure_test_night", () => Leisure.LeisureDirector.Instance?.TestNight())
                 .AddButton("reallife_leisure_test_sound", Leisure.LeisureSound.Test)
                 .AddButton("reallife_leisure_test_photo", () => Leisure.PhotoMode.Instance?.Test())

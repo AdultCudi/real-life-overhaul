@@ -91,7 +91,7 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
     Character/ character quality: detailed player in the city, a scalp under its hair, character-screen lighting
       CharacterQuality  entry points (city, character creation); hair, looks and textures on every change of look, options
       CharacterCatalogue the new looks on offer (one row each); the picks, which belong to one character (the one being created, or the loaded save's: never PlayerPrefs) and give way, per kind, to a piece picked in the game's own screens
-      CreatorLooks      the mod's starter garments as entries of the game's own creator grids (Torso, Legs, Feet) with their colourways in its colour row
+      GridLooks         the mod's garments as entries of the game's own grids (Torso, Legs, Feet) with their colourways in its colour row: the creator's starter garments, the clothes screen's wardrobe and shop
       ModAssets         the asset bundle: read once in the background, bind poses taken from the game's head mesh
       ModLooks          puts the scalp underlay (and any picked look) on the characters that show the player; undoes itself
       PlayerDouble      the player drawn with the game's detailed character set, posed from the player's skeleton
@@ -656,8 +656,6 @@ A second pass wired eight more, each where its clip's own note says it belongs:
 
 | clip | where | how it starts, how it ends, what it falls back to |
 |---|---|---|
-| `browse_rack` | the player at a clothes rack (`ClothesBrowser`, rack only, not the wardrobe) | played over the game's legs (the clip is upper body, `LeisureBody.Over`) from the moment the list opens; the director takes it off on every way out. Without the clip the player stands as before |
-| `try_on_turn` | the same, when a garment is tried on | whole body, once: the player is held on the spot for its 3 s (`LeisureBody.Hold`, `Play`), then `Rest`, `Free` and the rail again, on the activity's own 5 times a second tick. A second try-on during the turn is not turned for. Without the clip the garment simply goes on |
 | `carry_suitcase_walk` (with `suitcase`) | new entry `traveller` (Leisure, 6:00 to 23:00), `StrollActivity` with `StrollKind.Suitcase`: three or four stretches of pavement, 16 to 30 m each | the clip is a whole-body walk made for 1.3 m/s, so it is played only while the agent is really moving and its speed is set from the agent's (`CityPerson.KeepStep`, `ActivityAnimator.MatchSpeed`, as the crews are kept in step) once a second on the director's tick; held up (under 0.2 m/s, two seconds after setting off) they go back to the game's own walk with the case in one hand. No landmark is known to the catalogue, so it is placed like the pushchair. Without the clip or the case the entry does not start |
 | `cheer_once` | the listener at the busker (`BuskerJob`) | the song just played was good (the quality of the "good" toast); when the listener is about to leave, instead of leaving at once they cheer once (the game's pedestrian, the mod's clip, 1.8 s), and the clip is taken off with `ActivityAnimators.Forget` before they are handed back, on every way (the pedestrian is pooled). If the clip cannot be played they leave as before |
 | `cheer_once` | an onlooker at the street chess table (`ChessCorner`) | a third person from the pool, to the side of the table (`watch_nod`), only where the pool has three free after the opponent; when the player wins (7 of 10) they cheer once and go back to watching on the corner's own second tick. Taken in with the table |
@@ -1138,7 +1136,7 @@ Leisure/
   LeisureProps      pooled props: from PropLibrary by id, else a stand-in of plain shapes (see the wish-list)
   LeisureVenues     what the game's city has: the items of the building the player is in, landmarks, the water's edge
   Activities/       ChessGame (+ ChessCorner, the chess player on the pavement), Fishing, NightOut (DanceFloor, BarDrinks, Sightseeing)
-  Shops/            ClothesShop (prices, what is owned, the rule), ClothesRack (the prop in a store), ClothesBrowser (rack and wardrobe)
+  Shops/            ClothesShop (prices, what is owned, the rule), ClothesRack (the prop in a store), ClothesScreen (the game's clothes screen: the shop at the rack, the wardrobe at home)
   Night/            NightLife (two people outside an open venue in the evening), TipsyDriving
   Sound/            LeisureSound (the four ambient loops, the cue tones, the radio's name on the HUD)
   Photo/            PhotoMode
@@ -1152,8 +1150,8 @@ scene's MonoBehaviours); nothing is guessed at run time beyond what is listed un
 | the game has | leisure uses it for |
 |---|---|
 | nightclubs (`ba:businesstype_nightclub`) with dance floor items, cocktail bar items (`ba:itemname_*cocktailbar*`) and nine player dances (`BaseHuman.SetDance`) | the dance floor (a rhythm game on the game's own dances) and drinks at the bar |
-| clothing stores (`ba:businesstype_clothingstore`) with `ba:itemname_clothingrack*`; no way to buy clothes to wear (clothing is retail stock; the wardrobe changes outfits for free) | the Real Life Overhaul rack: the mod's garments, tried on and bought |
-| wardrobe and dresser furniture (`ba:itemname_wardrobe*`, `ba:itemname_dresser*`) in homes | the mod's own clothes and three saved outfits, at the same furniture |
+| clothing stores (`ba:businesstype_clothingstore`) with `ba:itemname_clothingrack*`; no way to buy clothes to wear (clothing is retail stock; the wardrobe changes outfits for free) | the Real Life Overhaul rack: the game's clothes screen as a shop of the mod's garments, tried on and bought |
+| the clothes screen of wardrobe and dresser furniture in homes (`ChangeCharacterClothesUI`) | the mod's clothes the player owns, in its grids after the game's pieces |
 | cinemas and theatres where the game itself seats the player and passes the time ("watch show", with its own mood) | only what was missing: a programme (what is on today) and a verdict on what was watched |
 | the pier's big wheel and rides, the casino boat's pier, golf course, tennis courts, swimming pool, bridges, twenty named subway stations, the hospital | landmarks to see and tick off; the waterside ones also say where a line can be cast |
 | pavements (through `CitySpots`) and the mod's own `chess_table` prop and `chess_sit` clip | the chess player on the pavement |
@@ -1234,12 +1232,15 @@ nothing of the shop's inside its footprint, walkable to from the door; a carving
 with it), or, in a store with no such floor, the nearest of the store's own racks. The game has no shoe shop:
 shoes are on the same rack.
 
-Browsing is a list (keys 1 and 2 up and down, 3 the next section: tops, trousers, shoes, and dresses for a woman)
-and the interaction key: once to **try on** (on the player themselves, through the catalogue, exactly as the
-options page would put it on: the game's shop preview character is a uniform editor and is not used), again to
-**buy**. At a rack the player's upper body goes through the rail while the list is open (`browse_rack`) and turns round once in a garment
-tried on (`try_on_turn`, held on the spot for its 3 s). Walking away closes the list and whatever was tried and not bought comes off, back to what they came in
-wearing. The catalogue has no tier field, so the price goes by the garment:
+The rack's key opens the **game's own clothes screen** (`ChangeCharacterClothesUI`, what a wardrobe's "Change
+clothes" opens: the player's preview, the categories, a grid of pieces, a row of colours and Save) as a shop
+(`Leisure/Shops/ClothesScreen`): the Torso, Legs and Feet grids hold the mod's garments in every colour, each tile
+with its price or "Owned" (`Character/GridLooks`, the tiles the character creator has too), and the game's own
+pieces of those three kinds are put away. A click tries a garment on the preview; Save reads "Buy (price)" for what
+is tried and not owned, greyed while the money is not there. Buying pays (`LeisureMoney`) and keeps it on; closing
+the screen without buying takes off what was tried, back to what they came in wearing. A Save is told from a
+closing by the save's list of the player's pieces: the game's SaveClothes puts a new one in its place. The price
+goes by the garment:
 
 | garment | tier | price |
 |---|---|---|
@@ -1261,10 +1262,12 @@ anything picked on the options page that is not owned is taken off again with a 
 unowned entries "(not bought yet)": the game builds a dropdown from the array it was given at start, so entries
 cannot be removed from it, only renamed.
 
-At home, a **wardrobe or dresser** offers the same list with what is owned, plus "Outfits": three slots, each
-saved from what is worn now (saving again over a slot gives it the next of six names: Everyday, Work, Night out,
-Smart, Weekend, Sport) and put on in one go. There is no text entry in the game's HUD for a mod to use, so the
-names are picked, not typed.
+At home the mod asks nothing of a **wardrobe or dresser**: its own "Change clothes" opens the same screen, and what
+the player owns of the mod's is in its Torso, Legs and Feet grids after the game's pieces, in the colours bought.
+Save keeps what was picked; closing without saving puts back what was worn (the game asks first, as it does for its
+own pieces). The screen dresses employees in uniforms too: then nothing of the mod's is in it. (Until 0.3.0 a key at
+the furniture opened a list of the mod's own with three saved outfits; the game's panel was often showing another
+place there, so the key did nothing. The outfits saved then are still in the save; the game's screen has none.)
 
 ### Night life
 
@@ -1314,12 +1317,12 @@ The mod draws nothing of its own for leisure (`LeisureHud` is gone; everything i
 
 | screen | what it is now | if it cannot be made |
 |---|---|---|
-| a place where chess, fishing, a dance, a drink, the rack, the wardrobe or a view is on offer | the game's panel over the place (`GameUi.DoorPanel`): the offer as the first line, "Go ahead" on the button | tried again once a second while the game's panel shows another place |
+| a place where chess, fishing, a dance, a drink, the rack or a view is on offer | the game's panel over the place (`GameUi.DoorPanel`): the offer as the first line, "Go ahead" on the button | tried again once a second while the game's panel shows another place |
 | the objective and the figures of an activity | the headline and lines of a copy of the game's job panel at the top right (`ShiftCard`): the activity's name, what to do, the status | what is asked is sent as a notification each time it changes |
 | the prompt ("cast", "strike", "pull in the green", "on the beat") and the choices (the chess moves, the drinks, "pack up") | buttons of the game's panel over the player: the prompt on the first, each choice on the next ones, the game writing each key and running it on that key or a click. A button's words are a locale key filled from the activity's text (`reallife_leisure_button`) | as above |
 | the marker | the game's destination marker (`GameUi.GuideMark`) | not shown while a job or an outing has the marker |
 | the timing meter (fishing: cast and pull; the dance beat) and the chess clock | two lines of the job panel: what it asks with the zone as percentages, and a gauge of twenty cells in plain letters (`=` good, `#` best, `|` the cursor; for the clock `#` is what is left). The action is the panel's button. Timings, windows and judging are the activities' own and untouched | no gauge without the job panel; the button and the words still work through the notification |
-| the clothes browser (rack and wardrobe) | the game's list window (`GameUi.DeskList`): a first entry for the next section (or back to the garments), then an entry for each garment, colour or outfit with its price or state under its name and the verb on its button (Colours, Wear, Take off, Try on, Buy, Use). Closing the list ends the activity as walking away did | the rack and the wardrobe are not offered (`Leisure check (clothes list) ... FAIL`) |
+| the rack's shop and the wardrobe | the game's own clothes screen (`ChangeCharacterClothesUI`): the mod's garments as tiles of its grids (copies of its own entries) and colours in its colour row; in the shop its Save reads "Buy (price)" | the screen is left as the game made it (`Clothes: the mod's clothes are left out of the game's clothes screen ...`); the options page still has the clothes |
 | what a game or a visit adds up to; the records; the radio's station and song | one of the game's notifications | none needed |
 
 Why the meter is not the game's activity panel. `PlayerActivityUI` was read: showing an activity pauses the game (`gameSpeed.SetPause(true)`), and its progress bar is written only by `SetUpProgressBar`, which runs when a whole minute of game time has passed (`OnActivityRunning`) or inside `UpdateActivityDisplay`, which also makes its labels and buttons again. A cursor that crosses in about a second cannot be a progress bar there and could not be moved without remaking the panel every frame. The job panel's line with a text gauge was used instead, as the fallback allowed.
@@ -1371,8 +1374,9 @@ throws, logs once, puts back what it changed and stays off for the session.
 All drop in by id with no code change (`LeisureProps.Take` prefers `PropLibrary`; `ClipLibrary.Has` gates each
 clip), except where a line says what to change. **Delivered and played:** `cast_rod`, `fish_wait`, `reel_in`,
 `fish_land`, `drink_bar`, `chess_move_player`, and the props `fishing_rod`, `fishing_float`, `fishing_line`,
-`drink_glass`, `clothes_rack`. `browse_rack` and `try_on_turn` are played on the player at the rack (see "Clothes"). **Delivered, not played yet:** `throw_ball`,
-`cocktail_glass`, `beer_bottle` and `shopping_bag`.
+`drink_glass`, `clothes_rack`. **Delivered, not played yet:** `throw_ball`,
+`cocktail_glass`, `beer_bottle` and `shopping_bag`; and `browse_rack` and `try_on_turn`, played at the rack until it
+opened the game's clothes screen (which pauses the game and shows the preview, not the player).
 
 | clip | length | loop | what it is |
 |---|---|---|---|

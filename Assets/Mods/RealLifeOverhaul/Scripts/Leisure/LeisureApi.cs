@@ -14,8 +14,7 @@ namespace RealLifeOverhaul.Leisure
         Dance,         // the dance floor of a nightclub
         Drinks,        // the bar of a nightclub
         Sightseeing,   // taking in the view at a landmark
-        Rack,          // the Real Life Overhaul rack in a clothing store
-        Wardrobe       // the mod's clothes at a wardrobe at home
+        Rack           // the Real Life Overhaul rack in a clothing store: the game's clothes screen as a shop (ClothesScreen)
     }
 
     public static class LeisureKinds
@@ -31,7 +30,6 @@ namespace RealLifeOverhaul.Leisure
                 case LeisureKind.Drinks: return "drinks";
                 case LeisureKind.Sightseeing: return "sights";
                 case LeisureKind.Rack: return "rack";
-                case LeisureKind.Wardrobe: return "wardrobe";
                 default: return "none";
             }
         }

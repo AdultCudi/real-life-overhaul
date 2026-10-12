@@ -114,6 +114,7 @@ namespace RealLifeOverhaul.Leisure
             _screen = new LeisureScreen(Logger, PressInteract, PressChoose, PressAccept);
             LeisureSound.Logger = Logger;
             PhotoMode.Logger = Logger;
+            ClothesScreen.Logger = Logger;
             _props = new LeisureProps(transform);
             _body = new LeisureBody(_props, Logger);
             _tipsy = gameObject.AddComponent<TipsyDriving>();
@@ -145,6 +146,7 @@ namespace RealLifeOverhaul.Leisure
             _night.Clear();
             _rack.TakeIn(_props);
             _props.Dispose();
+            ClothesScreen.Shutdown();
             ClothesShop.Trying = false;
             ClothesShop.RestoreLabels();
             LeisureVenues.Reset();
@@ -310,6 +312,10 @@ namespace RealLifeOverhaul.Leisure
                 }
             }
             ClothesShop.Enforce();
+            if (Settings.ClothesShops)
+            {
+                ClothesScreen.Install();   // (once per city: the mod's clothes in the game's clothes screen)
+            }
 
             bool indoors = BuildingManager.IsInsideBuilding;
             BuildingManager manager = indoors ? InstanceBehavior<BuildingManager>.Instance : null;
@@ -321,7 +327,7 @@ namespace RealLifeOverhaul.Leisure
             {
                 _rack.Tick(manager, _props, position);
             }
-            else if (_activity == null || _activity.Kind != LeisureKind.Rack)
+            else
             {
                 _rack.TakeIn(_props);
             }
@@ -358,13 +364,10 @@ namespace RealLifeOverhaul.Leisure
         {
             if (indoors)
             {
+                // (A wardrobe at home needs nothing of the mod's: its own "Change clothes" opens the game's screen, which has the mod's clothes in it.)
                 if (Settings.ClothesShops && business == LeisureVenues.ClothingStore && _rack.Find(position, out Vector3 rack) && CitySpots.Flat(rack - position) < 2.6f)
                 {
                     SetOffer(LeisureKind.Rack, rack, "rack");
-                }
-                else if (Settings.ClothesShops && LeisureVenues.IsHome(manager) && LeisureVenues.Nearest(LeisureVenues.Wardrobes, position, 2.4f) is ItemController wardrobe)
-                {
-                    SetOffer(LeisureKind.Wardrobe, wardrobe.transform.position, "wardrobe");
                 }
                 else if (Settings.LeisureNightOut && business == LeisureVenues.Nightclub && LeisureVenues.Nearest(LeisureVenues.Bars, position, 2.8f) is ItemController bar)
                 {
@@ -431,7 +434,6 @@ namespace RealLifeOverhaul.Leisure
                     case LeisureKind.Dance: _offerText = JobText.T("reallife_leisure_offer_dance"); break;
                     case LeisureKind.Drinks: _offerText = JobText.T("reallife_leisure_offer_drinks"); break;
                     case LeisureKind.Rack: _offerText = JobText.T("reallife_leisure_offer_rack"); break;
-                    case LeisureKind.Wardrobe: _offerText = JobText.T("reallife_leisure_offer_wardrobe"); break;
                     default:
                         Landmark mark = LeisureVenues.LandmarkAt(_lastPosition);
                         _offerText = JobText.T("reallife_leisure_offer_sights", "place", mark != null ? JobText.T(mark.NameKey) : string.Empty);
@@ -448,7 +450,9 @@ namespace RealLifeOverhaul.Leisure
         {
             LeisureKind kind = _offer;
             Vector3 place = _offerPlace;
-            if (!StartActivity(kind, place, null, false, out string refusal) && refusal != null)
+            string refusal;
+            bool begun = kind == LeisureKind.Rack ? ClothesScreen.OpenShop(out refusal) : StartActivity(kind, place, null, false, out refusal);
+            if (!begun && refusal != null)
             {
                 Notifications.Show(NotificationType.Warning, refusal, null, 6f);
             }
@@ -587,7 +591,7 @@ namespace RealLifeOverhaul.Leisure
             {
                 refusalKey = "reallife_leisure_no_vehicle";
             }
-            else if (SaveGameManager.Current.Energy <= 13f && kind != LeisureKind.Rack && kind != LeisureKind.Wardrobe)
+            else if (SaveGameManager.Current.Energy <= 13f && kind != LeisureKind.Rack)
             {
                 refusalKey = "reallife_leisure_no_energy";
             }
@@ -607,8 +611,7 @@ namespace RealLifeOverhaul.Leisure
                 case LeisureKind.Dance:
                 case LeisureKind.Drinks: return Settings.LeisureNightOut;
                 case LeisureKind.Sightseeing: return Settings.LeisureSights;
-                case LeisureKind.Rack:
-                case LeisureKind.Wardrobe: return Settings.ClothesShops;
+                case LeisureKind.Rack: return Settings.ClothesShops;
                 default: return false;
             }
         }
@@ -633,7 +636,7 @@ namespace RealLifeOverhaul.Leisure
             _context.Player = gm.playerController;
             _body.Bind(gm.playerController);
             bool indoors = BuildingManager.IsInsideBuilding;
-            if (!indoors && !TrafficTools.Ready && kind != LeisureKind.Rack && kind != LeisureKind.Wardrobe)
+            if (!indoors && !TrafficTools.Ready)
             {
                 refusalKey = "reallife_test_refused_traffic_off";
                 return false;
@@ -646,8 +649,6 @@ namespace RealLifeOverhaul.Leisure
                 case LeisureKind.Dance: activity = new DanceFloor(); break;
                 case LeisureKind.Drinks: activity = new BarDrinks(); break;
                 case LeisureKind.Sightseeing: activity = new Sightseeing(); break;
-                case LeisureKind.Rack: activity = new ClothesBrowser(false, place == default ? _context.Position : place); break;
-                case LeisureKind.Wardrobe: activity = new ClothesBrowser(true, place == default ? _context.Position : place); break;
                 default:
                     refusalKey = "reallife_test_refused_nothing_fits";
                     return false;
@@ -726,24 +727,23 @@ namespace RealLifeOverhaul.Leisure
             {
                 return true;
             }
-            bool browsing = _activity.Kind == LeisureKind.Rack || _activity.Kind == LeisureKind.Wardrobe;
             if (FuneralHelper.PlayerDead || EnergyHelper.goingToHospital || uis.timeMachine.isRunning || PlayerActivityUI.IsPanelOpen
                 || PoliceAttention.IsBusy || JobDirector.OnShift || PlayerHelper.IsUsingVehicle || !Enabled(_activity.Kind)
                 || RagdollSystem.Holds(gm.playerController.Character))
             {
-                reasonKey = browsing ? null : "reallife_leisure_end_interrupted";
+                reasonKey = "reallife_leisure_end_interrupted";
                 return true;
             }
             bool indoors = BuildingManager.IsInsideBuilding;
             if (indoors != _activity.Indoors
                 || (indoors && !ReferenceEquals(InstanceBehavior<BuildingManager>.Instance.building, _context.Building)))
             {
-                reasonKey = browsing ? null : "reallife_leisure_end_left";
+                reasonKey = "reallife_leisure_end_left";
                 return true;
             }
             if (_activity.Leash > 0f && CitySpots.Flat(gm.playerController.transform.position - _activity.Anchor) > _activity.Leash)
             {
-                reasonKey = browsing ? null : "reallife_leisure_end_left";
+                reasonKey = "reallife_leisure_end_left";
                 return true;
             }
             return false;
@@ -862,9 +862,37 @@ namespace RealLifeOverhaul.Leisure
                 Notifications.Show(NotificationType.Info, "reallife_leisure_chess_set_up", null, 8f);
                 return;
             }
+            if (kind == LeisureKind.Rack)
+            {
+                // Where the player stands, the rack's screen: the game's clothes screen as a shop.
+                if (!ClothesScreen.OpenShop(out string why))
+                {
+                    TestRefusals.TellKey(Logger, "Leisure " + kind, why);
+                }
+                return;
+            }
             if (!StartActivity(kind, default, null, true, out string refusal))
             {
                 TestRefusals.TellKey(Logger, "Leisure " + kind, refusal);
+            }
+        }
+
+        /// <summary>Test button: the game's clothes screen as a wardrobe at home opens it, with what the player owns of the mod's in it.</summary>
+        public void TestWardrobe()
+        {
+            if (!ModState.Loaded || !LeisureState.Loaded || PlayerHelper.PlayerController == null)
+            {
+                TestRefusals.Tell(Logger, "Leisure wardrobe", TestRefusal.NotLoaded);
+                return;
+            }
+            if (_broken || !Settings.Leisure || !Settings.ClothesShops)
+            {
+                TestRefusals.Tell(Logger, "Leisure wardrobe", TestRefusal.FeatureOff);
+                return;
+            }
+            if (!ClothesScreen.OpenWardrobe(out string why))
+            {
+                TestRefusals.TellKey(Logger, "Leisure wardrobe", why);
             }
         }
 
