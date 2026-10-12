@@ -4729,6 +4729,20 @@ What the game's map allowed, and what a category therefore gets:
 - **Markers** are the game's own (`CityMap.AddPoi`), shown on the open map while the row is ticked. The game's
   filters only ever switch *buildings* on and off (by type, business or address), so the markers are switched by
   the facility itself, on the map's own events (opened, closed, a row ticked): nothing per frame.
+- **Buildings lit.** A place that is a building (`MapPlace.Building`), or stands at one that keeps its own card
+  (`MapPlace.Lit`: a sign on a school's wall, a help-wanted board, a polling place, a construction site), has the
+  building lit on the open map while its row is ticked, exactly as the game's own filters light theirs
+  (`CityMapFilters.ApplyFilters`): `SetHighlight` in the row's colour and the building's own marker with the row's
+  icon, which stands for the place there instead of the mod's marker (in the street the mod's marker stays). The game
+  looks at every building again whenever a filter changes, a few a frame from `GameManager.Update`, and puts out
+  every light that is not its own; a lit building of ours that it put out has its marker switched off, so the
+  driver's `LateUpdate` lights it again in the same frame, before it is drawn. A building whose marker the game
+  always shows (the player's own) is lit again when each look is over (`CityMapFilters.Work.HasPendingWork` falls).
+  Nothing is lit where the game puts out its own lights: its choice of a subway station, the phone's full menu over
+  the map, a picture of a building being taken (`buildingOutdoorsCameraCaptureController` active), nor while
+  something is picked on the map (`MapPlaces.Quiet`). The cost: a look at some forty buildings a frame while the map
+  is open. Not lit: the custom shop's repair stations (the game's filling stations are not buildings it can light),
+  bus stops, bike places, sights and what is on (no building). The courthouse's card names it with its hours.
 - **Names.** A game marker has a name plate that the game shows only for directions (destination, delivery).
   It is switched on for the mod's places (its "dismiss" button hidden), so every marker carries its name.
 - **Set destination.** The game offers "set destination" only on a *building's* card. A place that is a building

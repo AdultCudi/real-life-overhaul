@@ -54,6 +54,9 @@ namespace RealLifeOverhaul
 
         public Address Address { get; private set; }
 
+        /// <summary>The building that is the courthouse; null until found (it lights up on the city map: MapPlaces).</summary>
+        public CityBuildingController Building { get; private set; }
+
         /// <summary>The address as the game writes it; empty until found.</summary>
         public string Name { get; private set; } = string.Empty;
 
@@ -96,6 +99,7 @@ namespace RealLifeOverhaul
                     return;
                 }
                 Address = picked.building.Address;
+                Building = picked;
                 Name = Address.ToFormattedString();
                 bool placed = Place(picked);
                 if (!placed && JobSpots.Front(picked, out Vector3 door))

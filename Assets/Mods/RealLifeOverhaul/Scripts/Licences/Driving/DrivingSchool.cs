@@ -260,6 +260,7 @@ namespace RealLifeOverhaul
         private readonly List<Transform> _signs = new List<Transform>(Most);
         private readonly List<Vector3> _fronts = new List<Vector3>(Most);
         private readonly List<string> _addresses = new List<string>(Most);
+        private readonly List<CityBuildingController> _buildings = new List<CityBuildingController>(Most);
         private int _next;
         private bool _searched;
         private bool _failed;
@@ -280,6 +281,9 @@ namespace RealLifeOverhaul
 
         /// <summary>The address of the school a desk stands at, for the city map (World/MapLinks).</summary>
         public string Address(int index) => _addresses[index];
+
+        /// <summary>The school a desk stands at (it lights up on the city map while its row is ticked; its card stays the game's).</summary>
+        public CityBuildingController Building(int index) => _buildings[index];
 
         public void Away()
         {
@@ -351,6 +355,7 @@ namespace RealLifeOverhaul
             _signs.Clear();
             _fronts.Clear();
             _addresses.Clear();
+            _buildings.Clear();
             At = -1;
         }
 
@@ -407,6 +412,7 @@ namespace RealLifeOverhaul
                 _signs.Add(sign);
                 _fronts.Add(stand + outward * 0.6f);
                 _addresses.Add(building.building.Address.ToFormattedString());
+                _buildings.Add(building);
                 return;
             }
         }

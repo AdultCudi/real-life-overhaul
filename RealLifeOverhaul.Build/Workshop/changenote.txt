@@ -3,6 +3,7 @@
 New
 - The rota planner counts the goods: a plan sells a product only while there is some, and the page says what runs out, when, and what would keep it on the shelves.
 - Bus stops: Choose a stop opens the city map with the stops on it and the game's list of stations beside it, as a subway entrance does.
+- On the city map, the mod's buildings light up when their row is ticked, as the game's own do: police stations, the courthouse, hotels, driving schools and more.
 
 Fixed
 - The search box in Contacts was out of sight to the left of the app; it now has its own line above the list.
