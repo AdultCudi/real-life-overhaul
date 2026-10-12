@@ -77,6 +77,8 @@ namespace RealLifeOverhaul.Economy
         public bool TooLarge;               // more stations or employees than the planner keeps: nothing was read and nothing is written
         public int AllStations, AllWorkers; // how many the game has there
         public bool[] Fixed = new bool[0];  // [worker] left exactly as they are: the holder of a headquarters desk, or somebody with a shift at a station that was not read
+        public readonly List<string> Products = new List<string>(8);    // the game's names of the goods in Shop.Stock, in its order
+        public int UrgentPercent;           // the surcharge of the game's Urgent Order, per cent
         public int FixedCount;
     }
 
@@ -303,6 +305,7 @@ namespace RealLifeOverhaul.Economy
             h = RotaLedger.Mix(h, reg.orderHistory != null ? reg.orderHistory.Count : 0);
             h = RotaLedger.Mix(h, reg.dirtSpots != null ? reg.dirtSpots.Count : 0);
             h = RotaLedger.Mix(h, Save != null && Save.disabledLicensingFees != null ? Save.disabledLicensingFees.Count : 0);
+            h = StockStamp(h, reg);
             foreach (KeyValuePair<string, ItemInstance> item in reg.itemInstances)
             {
                 Item data = item.Value != null ? item.Value.ItemCached : null;

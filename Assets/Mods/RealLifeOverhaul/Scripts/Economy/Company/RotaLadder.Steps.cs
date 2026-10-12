@@ -605,7 +605,8 @@ namespace RealLifeOverhaul.Economy
             long need = Math.Max(GainLeast, before.Sum.Net > 0 ? before.Sum.Net * ShareLeast / 100 : 0);
             if (gain < need)
             {
-                r.Stop = RotaEnd.TooLittle;
+                // Where the goods ran out more with that person than without, it is the stock that holds the plans back.
+                r.Stop = _hireBest.Sum.StockShort > 0 && _hireBest.Sum.StockLost > before.Sum.StockLost ? RotaEnd.Stock : RotaEnd.TooLittle;
                 r.StopGroup = _hireGroup;
                 r.StopGain = gain;
                 r.StopNeed = need;

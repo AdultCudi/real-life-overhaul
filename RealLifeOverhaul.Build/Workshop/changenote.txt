@@ -1,10 +1,4 @@
-0.2.4
+0.2.5
 
 New
-- Bank apps: each of the city's banks has its own app with your account, loans, card, offers and rating.
-- Contacts: real faces for people and logos for services, all from the game, and a search box.
-- Police stations are furnished with the game's own desks, computers, lockers, plants and lamps.
-
-Fixed
-- The row of apps at the top of the full screen menu ran under the money and off the screen; it now has pages.
-- On the city map, the mod's rows (Courthouse, Custom shops and the rest) could be unticked while their places stayed on the map.
+- The rota planner counts the goods: a plan sells a product only while there is some, and the page says what runs out, when, and what would keep it on the shelves.
