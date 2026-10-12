@@ -71,7 +71,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (Verbose && note != StaffNote.None)
                 {
-                    Logger?.Info("Company check (staff, " + f.Name + "): the game's wage " + f.Wage + ", agreed raise " + f.Raise + ", the going rate " + f.Going + " (hundredths an hour), "
+                    Logger?.Info("Company check (staff, " + f.Name + "): the game's wage at today's prices " + f.Wage + ", agreed raise " + f.Raise + ", the going rate " + f.Going + " (hundredths an hour), "
                                  + StaffRules.Gap(f.Going, f.Paid) + " thousandths under it for " + f.UnderDays + " day(s), strictness " + _level + ", standing " + standing + " to " + f.Standing + ": " + note + ": PASS");
                 }
                 if (StaffRules.OfferLapsed(f, day))

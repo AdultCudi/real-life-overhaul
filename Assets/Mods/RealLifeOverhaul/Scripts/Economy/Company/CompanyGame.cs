@@ -486,7 +486,7 @@ namespace RealLifeOverhaul.Economy
                 f.Seen = true;
                 f.Place = shop.File.Place;
                 f.Name = e.characterData.name ?? "?";
-                f.Wage = Mathf.RoundToInt(e.hourlyWage * 100f);
+                f.Wage = CompanyCatalogue.Share(Mathf.RoundToInt(e.hourlyWage * 100f), index);   // at today's prices: the city's cost of living pays it so
                 f.Skill = Mathf.RoundToInt(skill.value);
                 f.Mood = Mathf.RoundToInt(Mathf.Clamp(e.satisfaction, 0f, 100f));
                 f.Sick = e.isAbsent;

@@ -84,10 +84,9 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- staff: the wage market
 
-        public const int WageIndexShare = 50;                               // per cent of the price index's rise or fall that the going rate follows
         public static readonly int[] WageCycle = { 40, 0, -20, -50 };       // thousandths, by the cycle: boom, steady, slowdown, recession
         public const int WageIncomePerPoint = 2;                            // thousandths for each point of district income over or under 100
-        public const int WageMarketLeast = 800, WageMarketMost = 1300;      // the going rate against the game's own wage formula
+        public const int WageMarketLeast = 800, WageMarketMost = 1300;      // the going rate against the game's own wage formula, before today's prices
 
         // ---------------------------------------------------------------- staff: raises asked for
 

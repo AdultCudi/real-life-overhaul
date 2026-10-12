@@ -102,6 +102,9 @@ namespace RealLifeOverhaul
         /// <summary>Set by a feature that applies the subway fare change itself: civic life then leaves subway fares alone.</summary>
         public static bool FaresScaledAtSource;
 
+        /// <summary>The raise agreed for an employee (by the game's id) on top of the game's wage, money an hour. Default: none (Economy/Company sets it).</summary>
+        public static Func<string, float> Raise;
+
         /// <summary>
         /// The bank entry a feature gives the game's subway fare back under (a ride on a day pass: Transport/SubwayJourney).
         /// Civic life does not count such a ride as a fare paid, so the policy's change to the fare is not charged on it.

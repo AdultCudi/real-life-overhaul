@@ -5,6 +5,7 @@ New
 - Bus stops: Choose a stop opens the city map with the stops on it and the game's list of stations beside it, as a subway entrance does.
 - On the city map, the mod's buildings light up when their row is ticked, as the game's own do: police stations, the courthouse, hotels, driving schools and more.
 - One calendar: a month is a twelfth of the year you chose, and the seasons are the weather's everywhere. Car insurance runs a month; childcare and school fees follow that month at the same cost by the day.
+- Wages follow prices once: rising prices no longer make staff ask for raises on top of the city's cost of living. The city's wage floor counts raises, and the city government's levies, grants and fees move with prices.
 
 Fixed
 - The search box in Contacts was out of sight to the left of the app; it now has its own line above the list.

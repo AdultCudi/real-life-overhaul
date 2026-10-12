@@ -123,7 +123,7 @@ namespace RealLifeOverhaul
 
         internal static string PolicyLine(PolicyDef policy)
         {
-            return "- " + CivicText.T(policy.Name) + ": " + CivicText.T(policy.Effect);
+            return "- " + CivicText.T(policy.Name) + ": " + CivicText.Effect(policy);
         }
 
         internal static string Platform(Candidate candidate)
@@ -299,7 +299,7 @@ namespace RealLifeOverhaul
                 {
                     promised |= state.Mayor.Platform[i] == CivicCatalogue.IndexOf(policy);
                 }
-                string text = CivicText.T(promised ? "reallife_civic_policy_page_promised" : "reallife_civic_policy_page", "policy", CivicText.T(policy.Name), "effect", CivicText.T(policy.Effect));
+                string text = CivicText.T(promised ? "reallife_civic_policy_page_promised" : "reallife_civic_policy_page", "policy", CivicText.T(policy.Name), "effect", CivicText.Effect(policy));
                 int next = index + 1;
                 return CityHallPhone.Page(text, "reallife_civic_button_next", () => Policies(next), "reallife_civic_button_back", () => Topic(0));
             }
@@ -320,7 +320,7 @@ namespace RealLifeOverhaul
                         PolicyDef policy = CivicCatalogue.Find((Lever)change.Lever, change.Position);
                         PolicyDef old = CivicCatalogue.Find((Lever)change.Lever, state.Levers[change.Lever]);
                         text.Append('\n').Append(policy != null
-                            ? CivicText.T("reallife_civic_pending_line", "days", Mathf.Max(0, change.Day - Day).ToString(), "policy", CivicText.T(policy.Name), "effect", CivicText.T(policy.Effect))
+                            ? CivicText.T("reallife_civic_pending_line", "days", Mathf.Max(0, change.Day - Day).ToString(), "policy", CivicText.T(policy.Name), "effect", CivicText.Effect(policy))
                             : CivicText.T("reallife_civic_pending_ends", "days", Mathf.Max(0, change.Day - Day).ToString(), "policy", old != null ? CivicText.T(old.Name) : string.Empty));
                     }
                 }
@@ -378,13 +378,14 @@ namespace RealLifeOverhaul
             switch (option)
             {
                 case 0:
-                    return CityHallPhone.Page(CivicText.T("reallife_civic_donate_offer").Replace("{name}", name).Replace("{amount}", CivicText.Money(CivicCatalogue.DonationStep))
-                            .Replace("{cap}", CivicText.Money(CivicCatalogue.DonationCap)).Replace("{given}", CivicText.Money(state.Donated[candidate])),
+                    return CityHallPhone.Page(CivicText.T("reallife_civic_donate_offer").Replace("{name}", name).Replace("{amount}", CivicText.Money(CivicCatalogue.DonationStepNow))
+                            .Replace("{cap}", CivicText.Money(CivicCatalogue.DonationCapNow)).Replace("{given}", CivicText.Money(state.Donated[candidate]))
+                            .Replace("{per}", CivicText.Money(CivicCatalogue.FavourPerNow)),
                         "reallife_civic_button_donate", () =>
                         {
                             string result = Gov != null ? Gov.Donate(candidate) : "reallife_civic_closed";
                             return result == "reallife_civic_donate_broke" ? null
-                                : CityHallPhone.Page(CivicText.T(result, "name", name, "amount", CivicText.Money(CivicCatalogue.DonationStep)), "reallife_civic_button_back", () => CandidatePage(candidate));
+                                : CityHallPhone.Page(CivicText.T(result, "name", name, "amount", CivicText.Money(CivicCatalogue.DonationStepNow)), "reallife_civic_button_back", () => CandidatePage(candidate));
                         },
                         "reallife_civic_button_next_option", () => Support(candidate, next));
                 case 1:
@@ -670,7 +671,7 @@ namespace RealLifeOverhaul
                 return Topic(2);
             }
             string address = shop.Address.ToFormattedStringSafe();
-            int price = CivicCatalogue.RefitPrice[bid], hours = CivicCatalogue.RefitHours[bid], next = bid + 1;
+            int price = CivicCatalogue.RefitPriceNow(bid), hours = CivicCatalogue.RefitHours[bid], next = bid + 1;
             string text = CivicText.T("reallife_civic_refit_bid").Replace("{address}", address).Replace("{contractor}", CivicText.T(CivicCatalogue.Contractors[(bid * 3 + 1) % CivicCatalogue.Contractors.Length]))
                 .Replace("{amount}", CivicText.Money(price)).Replace("{days}", Mathf.CeilToInt(hours / 10f).ToString()).Replace("{bid}", (bid + 1).ToString());
             return CityHallPhone.Page(text, "reallife_civic_button_accept_bid", () =>
@@ -693,7 +694,7 @@ namespace RealLifeOverhaul
             GovState state = gov.State;
             PolicyDef policy = CivicCatalogue.All[state.PetitionPolicy];
             string text = CivicText.T(state.PetitionMine ? "reallife_civic_petition_page_mine" : "reallife_civic_petition_page")
-                .Replace("{policy}", CivicText.T(policy.Name)).Replace("{effect}", CivicText.T(policy.Effect))
+                .Replace("{policy}", CivicText.T(policy.Name)).Replace("{effect}", CivicText.Effect(policy))
                 .Replace("{signed}", state.PetitionSigned.ToString("N0")).Replace("{needed}", state.PetitionNeeded.ToString("N0"))
                 .Replace("{days}", Mathf.Max(0, state.PetitionEnds - Day).ToString());
             if (state.PetitionISigned)
@@ -727,7 +728,7 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 int next = index + 1;
-                return CityHallPhone.Page(CivicText.T("reallife_civic_petition_propose", "policy", CivicText.T(policy.Name), "effect", CivicText.T(policy.Effect)),
+                return CityHallPhone.Page(CivicText.T("reallife_civic_petition_propose", "policy", CivicText.T(policy.Name), "effect", CivicText.Effect(policy)),
                     "reallife_civic_button_start_this", () =>
                     {
                         string result = Gov != null ? Gov.StartPetition(index, Day) : "reallife_civic_closed";
