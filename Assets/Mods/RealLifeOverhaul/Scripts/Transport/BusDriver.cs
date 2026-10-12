@@ -97,6 +97,16 @@ namespace RealLifeOverhaul
         /// <summary>The first point of the route as given that its front axle has not yet reached.</summary>
         public int NextPoint => _path.NextPoint(_s);
 
+        /// <summary>
+        /// Seconds it will take to come to rest at the end of its route as it will drive it (BusPath.SecondsLeft): at
+        /// <paramref name="cruise"/>, and no faster than <paramref name="slowSpeed"/> over the last <paramref name="slowRun"/>
+        /// metres of its route (a bay's path; 0 for none). 0 when it is not driving.
+        /// </summary>
+        public float SecondsLeft(float cruise, float slowRun, float slowSpeed)
+        {
+            return Active ? _path.SecondsLeft(_s, _speed, cruise, slowRun > 0f ? _path.Total - slowRun : float.MaxValue, slowSpeed) : 0f;
+        }
+
         private static int Mask
         {
             get
@@ -135,7 +145,8 @@ namespace RealLifeOverhaul
         /// this driver last put them (Take put them where the bus was placed): exact, not read back from the body.
         /// </summary>
         /// <param name="nearEnough">Held up with no more than this left, it stands where it is and that is the end; 0 for never.</param>
-        public void BeginRoute(BusVehicle bus, List<Vector3> route, float nearEnough)
+        /// <param name="caps">The most it may be doing at each of the route's points (a junction), or null.</param>
+        public void BeginRoute(BusVehicle bus, List<Vector3> route, float nearEnough, List<float> caps = null)
         {
             if (_bus != bus)
             {
@@ -162,7 +173,7 @@ namespace RealLifeOverhaul
                 _rz.Add(route[i].z);
             }
             Vector3 facing = Flat(_front - _rear);
-            _path.Build(_rx, _ry, _rz, route.Count, _front.x, _front.y, _front.z, facing.x, facing.z);
+            _path.Build(_rx, _ry, _rz, route.Count, _front.x, _front.y, _front.z, facing.x, facing.z, caps);
             _s = 0f;
             Active = _path.Count >= 2 && _path.End > 0.01f;
             if (!Active)

@@ -35,6 +35,7 @@ namespace RealLifeOverhaul
         public const float BrakingMost = 3.5f;      // ...and the most it brakes with, for what comes into its way
         public const float BendGrip = 1.3f;         // m/s2 sideways through a bend
         public const float Crawl = 1.5f;            // m/s no bend holds it under
+        public const float CapReach = 8f;           // metres either side of a route point that point's own limit holds over
 
         public readonly List<float> X = new List<float>(512);
         public readonly List<float> Y = new List<float>(512);
@@ -61,9 +62,11 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// The path from the front axle's place (fx, fy, fz), facing (hx, hz), through the route's points in order (the first
-        /// is the next one ahead). A point less than 0.3 m on from the last one kept is the same place.
+        /// is the next one ahead). A point less than 0.3 m on from the last one kept is the same place. <paramref name="caps"/>,
+        /// where given, is the most the bus may be doing at each of the route's points (a junction), held over CapReach
+        /// either side of it and planned back from like a bend: null for none.
         /// </summary>
-        public void Build(IList<float> rx, IList<float> ry, IList<float> rz, int count, float fx, float fy, float fz, float hx, float hz)
+        public void Build(IList<float> rx, IList<float> ry, IList<float> rz, int count, float fx, float fy, float fz, float hx, float hz, IList<float> caps = null)
         {
             X.Clear();
             Y.Clear();
@@ -182,6 +185,22 @@ namespace RealLifeOverhaul
                 }
                 Limit.Add(most);
             }
+            for (int r = 0; caps != null && r < count && r < caps.Count && r < PointArc.Count; r++)
+            {
+                float cap = caps[r];
+                if (cap >= float.MaxValue)
+                {
+                    continue;
+                }
+                float at = PointArc[r];
+                for (int i = 0; i < n; i++)
+                {
+                    if (Arc[i] >= at - CapReach && Arc[i] <= at + CapReach)
+                    {
+                        Limit[i] = Math.Min(Limit[i], cap);
+                    }
+                }
+            }
             for (int i = n - 2; i >= 0; i--)
             {
                 float step = Arc[i + 1] - Arc[i];
@@ -252,6 +271,51 @@ namespace RealLifeOverhaul
                 i++;
             }
             return i;
+        }
+
+        /// <summary>
+        /// Seconds the bus will take from <paramref name="from"/> metres along the path to where it is to stand, driven as it
+        /// is driven: from the speed it has, gathering speed at Pickup, never faster than <paramref name="cruise"/>, its bends
+        /// or its stop allow, and from <paramref name="slowAt"/> metres on no faster than <paramref name="slowSpeed"/> (a bay's
+        /// pace), slowed to it at Braking. What it may wait for on the way (a light, the traffic) is not in it. A walk over the
+        /// path's points from where it is: a few hundred sums.
+        /// </summary>
+        public float SecondsLeft(float from, float speed, float cruise, float slowAt, float slowSpeed)
+        {
+            int n = X.Count;
+            if (n < 2 || from >= End - 0.01f)
+            {
+                return 0f;
+            }
+            float seconds = 0f;
+            float v = Math.Max(0f, speed);
+            float at = from;
+            int i = 1;
+            while (i < n && Arc[i] <= from)
+            {
+                i++;
+            }
+            while (at < End - 0.01f && i <= n)
+            {
+                float next = i < n ? Math.Min(Arc[i], End) : End;
+                float step = next - at;
+                if (step > 0.0001f)
+                {
+                    float most = Math.Min(cruise, Math.Min(i < n ? Limit[i] : float.MaxValue, StopIn(End - next)));
+                    if (slowAt < float.MaxValue)
+                    {
+                        most = Math.Min(most, next >= slowAt ? slowSpeed : (float)Math.Sqrt(slowSpeed * slowSpeed + 2f * Braking * (slowAt - next)));
+                    }
+                    float gathered = (float)Math.Sqrt(v * v + 2f * Pickup * step);
+                    float braked = (float)Math.Sqrt(Math.Max(0f, v * v - 2f * BrakingMost * step));   // (it cannot lose speed faster than it brakes)
+                    float end = Math.Min(gathered, Math.Max(most, braked));
+                    seconds += step / Math.Max(0.3f, (v + end) * 0.5f);   // (the last metres of a stop come to a mean, not to nothing)
+                    v = end;
+                    at = next;
+                }
+                i++;
+            }
+            return seconds;
         }
 
         /// <summary>The fastest it may be doing with so many metres to a place it must stand at, its stop planned at Braking.</summary>
