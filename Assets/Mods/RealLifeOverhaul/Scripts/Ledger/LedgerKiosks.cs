@@ -21,6 +21,11 @@ namespace RealLifeOverhaul.Ledger
     /// is one object with a shared mesh and material and no script; near the player on foot it is cut out of the pavement's
     /// navigation mesh (SolidFootprint), so nobody walks through it. On the city map each is a place of the "Newspaper
     /// kiosks" row (World/MapLinks), and the building it stands in front of lights up.
+    ///
+    /// The cost: once a second, a distance to each kiosk (two) and, while the search for a new home's kiosks is under way,
+    /// three buildings looked at (a few dozen physics and navigation queries); per frame nothing at all unless the player
+    /// was within 15 m of a kiosk at the last second's look, and then the distance to two counters and, at a counter, the
+    /// game's panel kept up to date (it rewrites nothing unless what it offers has changed). Nothing is allocated per frame.
     /// </summary>
     public sealed class LedgerKiosks
     {
@@ -200,6 +205,12 @@ namespace RealLifeOverhaul.Ledger
             int offer = !LedgerRules.KioskOpen(save.Hour) ? 0 : !LedgerRules.OnSale(state, save.Day, save.Hour) ? 1 : LedgerRules.BoughtCopy(state) ? 3 : save.Money < price ? 4 : 2;
             if (offer != _offer || kiosk != _near)
             {
+                if (_offer < 0 && Meta.Dev.Verbose)
+                {
+                    LedgerDirector.Logger?.Info("City Ledger check (kiosk counter): the player is " + Mathf.Sqrt(CitySpots.Flat(_fronts[kiosk] - player)).ToString("F1")
+                                                + " m from the counter (offered within " + Reach.ToString("F1") + " m); it offers " + (offer == 0 ? "nothing (shut)" : offer == 1 ? "nothing (not in yet)"
+                                                : offer == 3 ? "the copy bought" : offer == 4 ? "the paper, but there is not the money" : "today's paper") + ": PASS.");
+                }
                 _offer = offer;
                 _near = kiosk;
                 string title = LedgerText.T("reallife_ledger_kiosk_title");

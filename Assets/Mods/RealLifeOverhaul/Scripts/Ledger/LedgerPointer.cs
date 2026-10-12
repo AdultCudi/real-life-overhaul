@@ -11,7 +11,8 @@ namespace RealLifeOverhaul.Ledger
     /// The copy at home as a thing the player can point at, the way the game's own objects are (as Transport/TransitPointer
     /// and Home/HomeOffers do it): a trigger box on the game's layer for interactive items with this component on it. The
     /// game's pointer outlines the paper, shows "The City Ledger" with the call to action in the game's blue under it, and
-    /// a left click opens the page. The box is a trigger, so it is hit by the pointer's ray and by nothing else.
+    /// a left click opens the page. The box is a trigger, so it is hit by the pointer's ray and by nothing else. It has no
+    /// Update: the game asks it only when the pointer comes onto it, leaves it or clicks.
     /// </summary>
     public sealed class LedgerPointer : EntityController
     {

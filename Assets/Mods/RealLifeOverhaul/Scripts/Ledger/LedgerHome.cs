@@ -10,6 +10,8 @@ namespace RealLifeOverhaul.Ledger
     /// door, where the player comes in. Pointing at it is the game's own call to action, "Read the City Ledger", and a click
     /// opens the page (<see cref="LedgerPointer"/>). It is one object with a shared mesh and material and a trigger box on the
     /// game's layer for things that can be pointed at; it goes when the player leaves, and when the copy is old news.
+    /// The cost: once a second two reference comparisons while it lies there; putting it down is a few navigation queries,
+    /// once each time the player comes home with a copy. Nothing per frame.
     /// </summary>
     public sealed class LedgerHome
     {
