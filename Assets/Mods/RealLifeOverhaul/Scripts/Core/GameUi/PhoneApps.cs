@@ -397,39 +397,42 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>Takes everything this app added off the phone. Safe to call twice, and after the game's interface has gone.</summary>
+        /// <summary>
+        /// Takes everything this app added off the phone. Safe to call twice, and after the game's interface has gone.
+        /// The pages are the grid's and the row's, shared by every app on them: they stay, and page what is left.
+        /// </summary>
         public void Remove()
         {
-            if (_hudButton != null)
-            {
-                UnityEngine.Object.Destroy(_hudButton.gameObject);
-            }
-            if (_menuButton != null)
-            {
-                UnityEngine.Object.Destroy(_menuButton.gameObject);
-            }
-            if (Root != null)
-            {
-                UnityEngine.Object.Destroy(Root);
-            }
-            if (_dormant != null)
-            {
-                UnityEngine.Object.Destroy(_dormant.gameObject);
-            }
-            if (_pager != null)
-            {
-                UnityEngine.Object.Destroy(_pager);   // shows again whatever it had on another page
-            }
-            if (_strip != null)
-            {
-                UnityEngine.Object.Destroy(_strip);
-            }
+            Retire(_hudButton != null ? _hudButton.gameObject : null);
+            Retire(_menuButton != null ? _menuButton.gameObject : null);
+            Retire(Root);
+            Retire(_dormant != null ? _dormant.gameObject : null);
             _hudButton = null;
             _menuButton = null;
             _pager = null;
             _strip = null;
             _dormant = null;
             Root = null;
+        }
+
+        // Out of its grid or container at once, under another name, then destroyed: an app of the same name may be put
+        // on again in the same frame (the game finds an app's panel by its name, and Install refuses a second one), and
+        // the pager counts at once what is left (a destroyed object stays a child until the frame is over).
+        private static void Retire(GameObject thing)
+        {
+            if (thing == null)
+            {
+                return;
+            }
+            if (GameManager.isCitySceneBeingUnloaded)
+            {
+                UnityEngine.Object.Destroy(thing);   // (the interface is being taken down: nothing is moved in it)
+                return;
+            }
+            thing.SetActive(false);
+            thing.name = "RealLife Gone";
+            thing.transform.SetParent(null, false);
+            UnityEngine.Object.Destroy(thing);
         }
     }
 
