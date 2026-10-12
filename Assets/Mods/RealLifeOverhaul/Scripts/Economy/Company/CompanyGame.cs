@@ -570,10 +570,14 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- money
 
+        // The game's category of each kind of cost that has a line of the game's daily statement (Economy/GameBooks); null for none.
+        private static readonly string[] StatementLines = { GameBooks.Salaries, null, GameBooks.Marketing, GameBooks.Licensing, null };
+
         /// <summary>
         /// Takes an amount as a transaction of the mod's own at a business (or at none). With a kind of cost it is
-        /// marked deductible as the game marks its own. Unless <paramref name="force"/>, the game's call refuses a
-        /// charge the cash does not cover: false, and nothing is taken.
+        /// marked deductible as the game marks its own, and a kind that has a line of the game's daily statement (wages,
+        /// marketing, licences) is booked under it at the business, so that the statement counts it. Unless
+        /// <paramref name="force"/>, the game's call refuses a charge the cash does not cover: false, and nothing is taken.
         /// </summary>
         public static bool Take(int amount, string key, string name, CompanyShop shop, int? day, int deductible, bool force)
         {
@@ -585,7 +589,10 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            TransactionInfo info = Info(key, name);
+            string line = shop != null && shop.Address != null && deductible >= 0 && deductible < StatementLines.Length ? StatementLines[deductible] : null;
+            TransactionInfo info = line != null
+                ? new TransactionInfo(key, line, new Dictionary<string, string>(2) { { "name", name ?? string.Empty } })
+                : Info(key, name);
             if (deductible >= 0 && deductible < DeductibleKeys.Length)
             {
                 info.SetTaxDeductibleName(DeductibleKeys[deductible].GetLocalization());

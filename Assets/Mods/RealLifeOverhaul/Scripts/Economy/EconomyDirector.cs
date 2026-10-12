@@ -436,6 +436,18 @@ namespace RealLifeOverhaul.Economy
                 Fault("the day", e);
             }
             AfterDay?.Invoke();
+            try
+            {
+                // The game built yesterday's statement before the mod's day: the costs booked for it since are put into it.
+                if (GameBooks.Refresh(Save.Day - 1) && Verbose)
+                {
+                    Logger?.Info("Economy check (books): the game's statement of day " + (Save.Day - 1) + " brought up to date with the mod's costs booked for it after it was made: PASS.");
+                }
+            }
+            catch (Exception e)
+            {
+                Fault("the game's statement", e);
+            }
         }
 
         // The loans as they are now against the file's marks: what the player did since the last look.

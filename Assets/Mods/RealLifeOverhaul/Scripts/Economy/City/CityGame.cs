@@ -465,7 +465,8 @@ namespace RealLifeOverhaul.Economy
             }
             foreach (Transaction t in save.Transactions)
             {
-                if (t == null || t.timestamp == null || t.timestamp.Day != day)
+                // (The mod's own costs under the game's categories, a raise say, are at today's prices already: the game's alone are adjusted.)
+                if (t == null || t.timestamp == null || t.timestamp.Day != day || GameBooks.Ours(t))
                 {
                     continue;
                 }
