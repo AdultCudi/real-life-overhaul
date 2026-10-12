@@ -23,7 +23,8 @@ namespace RealLifeOverhaul.Economy
     /// game's daily rent and the city's line on it), and the day's own figures (loans, health insurance, the headhunter,
     /// parking, salary income, the wages of staff of no business), each summed as the game sums them. So the game's taxes,
     /// its bank and EconoView count them. The mod's own takings at a business are among its takings too: its online
-    /// orders less refunds (Economy/Online, which puts each product's sales among the statement's rows itself) and, from
+    /// orders less refunds (Economy/Online, which puts each product's sales among the statement's rows itself), the
+    /// estate agency's commissions at its office (Economy/Estate) and, from
     /// another feature, the broadband company's bills at its headquarters (EconomyBridges.Takings), with its network's
     /// cost as a row among the goods (EconomyBridges.CostRow). A statement's takings are summed afresh each time from what
     /// the save keeps (the day's transactions, and the order book where the game booked no takings of its own: a
@@ -135,7 +136,8 @@ namespace RealLifeOverhaul.Economy
                 {
                     line[CityRent] -= amount;
                 }
-                else if (t.transactionType == OnlineGame.TakingsKey || t.transactionType == OnlineGame.RefundsKey || (takings != null && Ours(t) && takings(t.transactionType)))
+                else if (t.transactionType == OnlineGame.TakingsKey || t.transactionType == OnlineGame.RefundsKey || t.transactionType == EstateGame.CommissionKey
+                         || (takings != null && Ours(t) && takings(t.transactionType)))
                 {
                     line[OwnSales] += amount;   // (a refund is negative)
                 }

@@ -4817,8 +4817,8 @@ city once its lines are booked and again when the mod's day is done, sums the da
 a business's four lines by category, its takings as the game's sales and the city's line on them (the goods sold
 scaled row by row so that they still add up; where the game booked no takings of its own, the sales of its order book:
 a factory's exports) and the mod's own takings there (online orders less refunds, `OnlineGame` putting each product's
-sales among the rows itself; the broadband company's bills at the headquarters, `EconomyBridges.Takings`, with its
-network as a row among the goods, `EconomyBridges.CostRow`), every sum made afresh from what the save keeps and never
+sales among the rows itself; the estate agency's commissions at its office; the broadband company's bills at the
+headquarters, `EconomyBridges.Takings`, with its network as a row among the goods, `EconomyBridges.CostRow`), every sum made afresh from what the save keeps and never
 from the statement itself, so that a second refresh counts nothing twice and loses nothing entered between the two;
 a rented home's rent as its daily rent and the city's line on it, and the day's own figures (loans, health insurance, the headhunter, parking,
 salary income, and the wages of no business with the city's line on them). So the game's taxes (sales of the period
@@ -4826,6 +4826,11 @@ from the statements, deductions as booked), its bank (`PlayerHelper.CalculateDai
 city's lines. Readers of a statement take its takings as today's: an insurance premium's base is at today's prices and
 its share of the takings is not raised again (`CoverRules.Premium`); the rota planner, which reads the order history
 (the game's own prices), raises a customer's worth by the city's takings factor (`CityEconomyDirector.TakingsFactor`).
+The property business's hotels and car hire are in no statement (a hotel is held in the mod's books, the hire lot is
+no business of the game's), so they pay their own tax when the game's tax year turns, on the same day as the game's:
+its rate on the year's takings less their running costs, nothing on a loss, and nothing while the year's business
+income in all is under the game's threshold (`EstateRules.TradingTax`, `EstateDirector.TradingYear`). Their running
+costs are counted there and are not marked deductible, so nothing is deducted twice.
 
 ## Power and water (`Scripts/Utilities`)
 

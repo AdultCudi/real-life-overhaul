@@ -538,6 +538,15 @@ namespace RealLifeOverhaul.Economy
                         PartFault(EstatePart.Hire, "the day", e);
                     }
                 }
+                try
+                {
+                    TradingYear(day);
+                }
+                catch (Exception e)
+                {
+                    Logger?.Error(e);   // (the year's figures are kept: the next morning tries again)
+                    Logger?.Warn("Estate: the tax on the hotels and car hire could not be settled today; it is tried again tomorrow.");
+                }
                 Changed();
                 if (Verbose)
                 {
@@ -566,6 +575,46 @@ namespace RealLifeOverhaul.Economy
             {
                 PartFault(part, where, e);
             }
+        }
+
+        // The game's tax year turns (TaxHelper: at the end of each day that is a multiple of the year, on the same day as
+        // the game's own tax): the year's trading of the hotels and car hire, which no daily statement holds, is taxed as
+        // the game taxes a business (EstateRules.TradingTax), and the next year is counted from tomorrow. A jump over a
+        // turn settles every day counted so far at the first pass after it.
+        private void TradingYear(int day)
+        {
+            int year = Math.Max(1, _climate.DaysPerYear);
+            if (_state.TaxFrom <= 0)
+            {
+                _state.TaxFrom = EstateRules.TaxYearFirst(day, year);
+            }
+            int last = EstateRules.TaxYearLast(_state.TaxFrom, year);
+            if (day < last)
+            {
+                return;
+            }
+            long sales = EstateGame.BusinessSales(last - year + 1, last);
+            int profit = _state.TaxTakings - _state.TaxCosts;
+            int tax = EstateRules.TradingTax(_state.TaxTakings, _state.TaxCosts, sales, _climate.TaxPercent);
+            if (tax > 0)
+            {
+                Cost(tax, EstateGame.TradingTaxKey, EstateText.T("reallife_estate_trading_year", "day", last.ToString()), null,
+                    "tax on the year's hotels and car hire: " + _climate.TaxPercent + "% of " + _state.TaxTakings + " taken less " + _state.TaxCosts + " spent", true, false);
+                Tell(NotificationType.Info, "reallife_estate_note_trading_tax", Data("amount", EstateText.Money(tax), "profit", EstateText.Money(profit), "rate", _climate.TaxPercent + "%"), TabHotel, null);
+            }
+            if (Verbose)
+            {
+                Logger?.Info("Estate check (the tax year to day " + last + "): the hotels and car hire took " + _state.TaxTakings + " and spent " + _state.TaxCosts + "; the businesses' statements "
+                             + sales + "; the game's threshold " + EstateCatalogue.TaxThreshold + "; tax " + tax + " at " + _climate.TaxPercent + "%: PASS");
+            }
+            _state.TaxTakings = _state.TaxCosts = 0;
+            _state.TaxFrom = day / year * year + 1;
+        }
+
+        // The hotels' and car hire's money, counted for their own tax (TradingYear) and so never among the game's deductions.
+        private static bool Trading(string key)
+        {
+            return key == EstateGame.HotelTakingsKey || key == EstateGame.HotelCostsKey || key == EstateGame.HireRentKey || key == EstateGame.HireCostsKey;
         }
 
         // The year's figures begin again.
@@ -631,10 +680,19 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- money
 
-        /// <summary>A cost of the property business: taken as a transaction of its own, marked deductible. Unless 'force', false (and nothing is taken) if the cash does not cover it.</summary>
+        /// <summary>
+        /// A cost of the property business: taken as a transaction of its own, marked deductible (a hotel's or the car
+        /// hire's running cost is deducted in their own tax instead: TradingYear). Unless 'force', false (and nothing is
+        /// taken) if the cash does not cover it.
+        /// </summary>
         internal bool Cost(int amount, string key, string name, string place, string how, bool force = false, bool deductible = true)
         {
-            bool taken = EstateGame.Take(amount, key, name, place, deductible, force);
+            bool trading = Trading(key);
+            bool taken = EstateGame.Take(amount, key, name, place, deductible && !trading, force);
+            if (taken && trading && deductible && amount > 0 && _state != null)
+            {
+                _state.TaxCosts = (int)Math.Min(int.MaxValue / 4, (long)_state.TaxCosts + amount);
+            }
             if (Verbose && amount > 0)
             {
                 Logger?.Info("Estate check (transaction, " + key + ", " + name + "): " + amount + (taken ? " taken" : " could not be taken: the cash does not cover it") + "; " + how + ": PASS");
@@ -642,10 +700,14 @@ namespace RealLifeOverhaul.Economy
             return taken;
         }
 
-        /// <summary>Money paid to the player.</summary>
+        /// <summary>Money paid to the player (a hotel's or the car hire's takings counted for their own tax: TradingYear).</summary>
         internal void Pay(int amount, string key, string name, string place, string how)
         {
             EstateGame.Give(amount, key, name, place);
+            if (Trading(key) && amount > 0 && _state != null)
+            {
+                _state.TaxTakings = (int)Math.Min(int.MaxValue / 4, (long)_state.TaxTakings + amount);
+            }
             if (Verbose && amount > 0)
             {
                 Logger?.Info("Estate check (transaction, " + key + ", " + name + "): " + amount + " paid to the player; " + how + ": PASS");

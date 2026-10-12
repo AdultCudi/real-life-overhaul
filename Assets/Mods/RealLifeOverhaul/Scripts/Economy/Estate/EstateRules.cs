@@ -683,6 +683,35 @@ namespace RealLifeOverhaul.Economy
             return price <= 0 ? 0 : Math.Min(price, Math.Max(least, EstateCatalogue.Share(price, EstateCatalogue.AgentFee)));
         }
 
+        /// <summary>The last day of the game's tax year that a day is in: the game's year turns at the end of each day that is a multiple of its length.</summary>
+        public static int TaxYearLast(int day, int daysPerYear)
+        {
+            int year = Math.Max(1, daysPerYear);
+            return (Math.Max(1, day) + year - 1) / year * year;
+        }
+
+        /// <summary>The first day of the game's tax year that a day is in.</summary>
+        public static int TaxYearFirst(int day, int daysPerYear)
+        {
+            return TaxYearLast(day, daysPerYear) - Math.Max(1, daysPerYear) + 1;
+        }
+
+        /// <summary>
+        /// Tax on a year of the property business's trading (its hotels and car hire), which is in no business's daily
+        /// statement, as the game taxes a business's: its own rate on the takings less the running costs, nothing on a
+        /// loss, and nothing while the year's business income in all (the statements' sales and this trading) is under
+        /// the game's threshold.
+        /// </summary>
+        public static int TradingTax(int takings, int costs, long yearSales, int taxPercent)
+        {
+            long profit = (long)takings - costs;
+            if (profit <= 0 || yearSales + Math.Max(0, takings) < EstateCatalogue.TaxThreshold)
+            {
+                return 0;
+            }
+            return (int)Math.Min(int.MaxValue / 4, profit * EstateCatalogue.Clamp(taxPercent, 0, 100) / 100);
+        }
+
         /// <summary>Tax on a gain: half the game's own rate on what the sale brought over the price paid, the works and the fee. Nothing on a loss.</summary>
         public static int GainsTax(int price, int fee, int paid, int spent, int taxPercent)
         {

@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Economy
         {
             var t = new StringBuilder(256 + s.Holdings.Count * 160 + s.Hire.Cars.Count * 90);
             t.Append("v=").Append(Version).Append("^h:");
-            Join(t, s.Seed, s.FirstDay, s.LastDay, s.Real, s.Months, s.YearFrom);
+            Join(t, s.Seed, s.FirstDay, s.LastDay, s.Real, s.Months, s.YearFrom, s.TaxFrom, s.TaxTakings, s.TaxCosts);
             t.Append("^p:");
             for (int i = 0; i < s.Holdings.Count && i < EstateCatalogue.HoldingsMost; i++)
             {
@@ -155,6 +155,9 @@ namespace RealLifeOverhaul.Economy
                             s.Real = EstateCatalogue.Clamp(I(c, 3, EstateCatalogue.RealStart), EstateCatalogue.RealLeast, EstateCatalogue.RealMost);
                             s.Months = Math.Max(0, I(c, 4));
                             s.YearFrom = Math.Max(0, I(c, 5));
+                            s.TaxFrom = Math.Max(0, I(c, 6));     // (none in a line from before the trading tax: counted from the day it is read)
+                            s.TaxTakings = Math.Max(0, I(c, 7));
+                            s.TaxCosts = Math.Max(0, I(c, 8));
                             header = true;
                             break;
                         }

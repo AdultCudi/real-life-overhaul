@@ -228,6 +228,8 @@ namespace RealLifeOverhaul.Economy
         public int Real = EstateCatalogue.RealStart;   // the property market against prices
         public int Months;                              // months the market has moved
         public int YearFrom;                            // the day the running year's figures began
+        public int TaxFrom;                             // the first day of the game's tax year being counted (0: not yet)
+        public int TaxTakings, TaxCosts;                // the hotels' and car hire's takings and running costs in it: taxed when it turns
         public readonly List<EstateHolding> Holdings = new List<EstateHolding>(8);
         public readonly AgencyFile Agency = new AgencyFile();
         public readonly List<HotelFile> Hotels = new List<HotelFile>(2);
