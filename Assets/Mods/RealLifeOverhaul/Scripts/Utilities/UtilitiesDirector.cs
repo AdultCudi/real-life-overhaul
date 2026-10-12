@@ -23,8 +23,10 @@ namespace RealLifeOverhaul.Utilities
     ///              month. Auto debit (the Utilities app) pays on the due day. A bill a day overdue has the late fee
     ///              added; three days after its due day the supply is cut, and reconnecting costs a fee.
     ///   a cut      a business without power closes, as one without water does where it needs water (food and
-    ///              drink, salons, gyms); a home without power has no screens or cooking, without water no shower
-    ///              or sink (Home/HomeHealth, through Wiring/UtilityLinks), and either weighs on the player's mood.
+    ///              drink, salons, gyms), and stays closed until it has them again, whether or not business events are
+    ///              on (the closure is the utilities' own, kept by Business/BusinessDirector); a home without power has
+    ///              no screens or cooking, without water no shower or sink (Home/HomeHealth, through
+    ///              Wiring/UtilityLinks), and either weighs on the player's mood.
     ///
     /// The office stands a sign at its door; the desk is the game's own list (DeskList, UtilitiesDesk). The Utilities
     /// app (UtilitiesApp) shows every account, its bills and auto debit. Nothing runs per frame but a few checks: the
@@ -35,7 +37,7 @@ namespace RealLifeOverhaul.Utilities
         public const string AppId = "RealLifeOverhaulUtilities";
         private static readonly string[] AppGlyphs = { "Icon-Electricity", "Icon-Energy", "Icon-Lightbulb", "Icon-Building" };
         private const int CatchUpDays = 7;          // a long jump (a stay in hospital, a trip) is added up day by day for at most a week
-        private const int ClosedHours = 2;          // a business without what it needs is kept closed this long, hour by hour
+        private const int ClosedHours = 2;          // a business without what it needs is kept closed this long, asked again each hour: closed while it lacks it
 
         // Each business closed for want of something, and what it was told it lacked: told once a spell, again only when the
         // reason changes or the business has been open in between. (A headquarters has no switch of the game's to open it
@@ -47,6 +49,9 @@ namespace RealLifeOverhaul.Utilities
 
         /// <summary>True while the office's panel is up, or its button was pressed this frame.</summary>
         public static bool TakesInteractKey => Instance != null && Instance._door != null && Instance._door.TakesKey;
+
+        /// <summary>True once the utilities have stopped for the session after an error (nothing more is billed or cut).</summary>
+        public static bool Failed => Instance != null && Instance._failed;
 
         private UtilitiesState _state;
         private GameInstance _save;
@@ -281,7 +286,7 @@ namespace RealLifeOverhaul.Utilities
         {
             _failed = true;
             Logger?.Error(e);
-            Logger?.Warn("Utilities: switched off for this session after an error in " + where + ". Nothing more is billed or cut; every place keeps its supply.");
+            Logger?.Warn("Utilities: switched off for this session after an error in " + where + ". Nothing more is billed or cut; every place keeps its supply, and a business closed for want of one opens again.");
             try
             {
                 Stop("an error");
@@ -957,13 +962,17 @@ namespace RealLifeOverhaul.Utilities
                     Func<BuildingRegistration, int, bool> close = UtilitiesBridges.CloseFor;
                     if (close != null)
                     {
-                        close(place.Reg, ClosedHours);
-                        TellClosed(place, dark ? power : dry && needsWater ? water : _state.Find(place.Place, Service.Internet), !dark && !(dry && needsWater), today, hour);
+                        close(place.Reg, ClosedHours);   // closed, or kept closed longer: asked again each hour, it stays closed while the want lasts
+                        if (place.Reg.temporarilyClosed)
+                        {
+                            TellClosed(place, dark ? power : dry && needsWater ? water : _state.Find(place.Place, Service.Internet), !dark && !(dry && needsWater), today, hour);
+                        }
                     }
                 }
                 else
                 {
                     _toldClosed.Remove(place.Place);   // open again: a later closure is told afresh
+                    UtilitiesBridges.Release?.Invoke(place.Reg);   // it has what it lacked: the utilities' closure on it ends now, not on its hour
                 }
             }
             if (homeDark)
@@ -1008,7 +1017,7 @@ namespace RealLifeOverhaul.Utilities
             };
             UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T(key, "place", data["place"], "service", data["service"], "office", data["office"], "time", data["time"]), 14f);
             UtilitiesBridges.Record?.Invoke(key, data);
-            Logger?.Info("Utilities: " + place.Name + " is closed (" + key + ", told), on day " + today + ".");
+            Logger?.Warn("Utilities: " + place.Name + " is closed (" + key + ", told), on day " + today + ".");   // (a warning, so that it is there without Developer diagnostics: once a reason, a business)
         }
 
         // The player's home they are in now, or null.
