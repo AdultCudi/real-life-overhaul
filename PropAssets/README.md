@@ -68,16 +68,16 @@ occlusion, and nothing else: no Blender-only shading.
 | triangles, each prop | its own budget, beside its maker in the `PROPS` lists | see the tables below |
 | triangles, all props together | 130 000 | 118 104 (240 props: the two-wheelers are in the bundle whole and in parts, the city bus in parts) |
 | materials | 2, shared by everything | 2 |
-| textures | one atlas: 4096 x 2048 colour + 2048 x 1024 mask, BC7 (the bundle check fails on anything else) | 13.3 MB of video memory (10.7 + 2.7), 248 regions, 87 % of the atlas used |
-| meshes in memory | | 6.9 MB |
-| bundle on disk | 16 MB | 10.8 MB, loaded once per session, asynchronously |
+| textures | one atlas: 4096 x 2048 colour + 2048 x 1024 mask, BC7 (the bundle check fails on anything else); the two road paint pictures | 14.0 MB of video memory (10.7 + 2.7, and 0.7 for the road paint), 248 regions, 87 % of the atlas used |
+| meshes in memory | | 6.6 MB |
+| bundle on disk | 16 MB | 10.6 MB, loaded once per session, asynchronously |
 
 **Why the ceilings went up** (they were 30 000 triangles, a 2048 x 2048 atlas and 9 MB for 77 props). The first two
 rounds were things in a hand and a cordon. The later rounds are a police station's frontage, bus stops and a bus,
 a fire engine, hotels, street events, home and social life, a garage and a building site: 240 props, among
 them vehicle bodies of 3 700 to 6 300 triangles. None of it is drawn unless a feature places it, a placed prop is one
 instanced draw call with one of two materials, and a scene shows a dozen at most: the totals are what sits in memory,
-not what is rendered. Memory is the real cost: about 6.9 MB of meshes and 13.3 MB of texture, where the game's own
+not what is rendered. Memory is the real cost: about 6.6 MB of meshes and 14.0 MB of texture, where the game's own
 city uses gigabytes. The atlas doubled in width only (BC7 keeps it at one byte a pixel); `PropLibrary` reads exactly
 one bundle with one colour and one mask texture, so a second bundle or a second atlas would have needed code and a
 third material. If the atlas fills again, 4096 x 4096 is the next step (27 MB); nothing else changes.
