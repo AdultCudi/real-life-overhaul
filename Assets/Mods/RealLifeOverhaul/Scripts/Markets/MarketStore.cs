@@ -1,0 +1,679 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
+
+namespace RealLifeOverhaul.Markets
+{
+    /// <summary>
+    /// The market in the save: one line of the save's modData under <see cref="Key"/>. Game-free.
+    ///
+    ///     v=1~h:...~e:...~k:...~p:...~o:...~t:...~w:...~a:...~n:...~d:...~x:...~y:...
+    ///
+    /// Parts are divided by '~' and begin with a letter and a colon; records by ';', fields by '|'.
+    ///   h  the header: the playthrough's id, the clock, the frontier, the market's mood, the indices' divisor...
+    ///   e  the city as the market last saw it
+    ///   k  the companies: their price (what the market expects of them and its mood), their business, this quarter,
+    ///      results, dividends, events, and their history (candles written small: MarketCodec). Today's step candles are
+    ///      kept only for the companies the player watches, holds or has an order in (the others' start again at the load)
+    ///   p  positions, o orders, t the account's history, w the watch list, a the account, n the last days' news,
+    ///   d dividends owed, x the city's index and its history, y the sectors
+    ///
+    /// No secret of the market's chance is ever in it: those are on the tape (<see cref="MarketTape"/>). A newer
+    /// version adds fields at the end of a record or a part with a new letter; this reader takes the fields it knows,
+    /// skips parts it does not, keeps every figure inside its bounds, and drops a record it cannot read. A line that
+    /// cannot be read at all is left alone and the market opens afresh. A company of the catalogue missing from a line
+    /// (it was damaged) is made again at its catalogue price, so a holding never points at nothing.
+    /// </summary>
+    public static class MarketStore
+    {
+        public const string Key = "reallife:markets";
+        public const int Version = 1;
+
+        private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+
+        public static MarketState Load(Dictionary<string, string> data, out int version)
+        {
+            version = 0;
+            string text;
+            if (data == null || !data.TryGetValue(Key, out text) || string.IsNullOrEmpty(text))
+            {
+                return null;
+            }
+            try
+            {
+                return Read(text, out version);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        public static void Save(Dictionary<string, string> data, MarketState state)
+        {
+            if (data != null && state != null)
+            {
+                data[Key] = Write(state);
+            }
+        }
+
+        // ---------------------------------------------------------------- writing
+
+        public static string Write(MarketState s)
+        {
+            var t = new StringBuilder(64 * 1024);
+            t.Append("v=").Append(Version).Append("~h:");
+            t.Append(s.Id.ToString("X16", Inv));
+            Join(t, s.CreatedDay, s.YearDays, s.Day, s.Phase, s.FrontierDay, s.FrontierPhase);
+            D(t, s.Variance);
+            D(t, s.LastShock);
+            D(t, s.IndexDivisor);
+            Join(t, s.ListingId, s.ListingDay, s.NextOrderId, s.CarriedOver ? 1 : 0, s.RateSeenBp, s.ElectionsSeen, s.BusinessDay, s.IndexOpen, s.IndexHigh,
+                s.IndexLow, s.IndexLast, s.IndexPrevClose, s.HeldDay, s.HeldPhase);
+            D(t, s.DayZ);
+            D(t, s.DayVar);
+            t.Append("~e:");
+            MarketTape.WriteEnv(t, s.Env);
+            t.Append("~k:");
+            for (int i = 0; i < s.Stocks.Count; i++)
+            {
+                if (i > 0)
+                {
+                    t.Append(';');
+                }
+                Stock(t, s, s.Stocks[i]);
+            }
+            t.Append("~p:");
+            for (int i = 0, n = 0; i < s.Positions.Count; i++)
+            {
+                Position p = s.Positions[i];
+                if (p.Shares == 0)
+                {
+                    continue;
+                }
+                t.Append(n++ > 0 ? ";" : string.Empty).Append(p.StockId.ToString(Inv));
+                L(t, p.Shares, p.Cost, p.Dividends, p.Realised);
+                Join(t, p.Test ? 1 : 0, p.OpenedDay);
+            }
+            t.Append("~o:");
+            for (int i = 0, n = 0; i < s.Orders.Count; i++)
+            {
+                Order o = s.Orders[i];
+                t.Append(n++ > 0 ? ";" : string.Empty).Append(o.Id.ToString(Inv));
+                Join(t, o.StockId, (int)o.Side, (int)o.Type, (int)o.Life);
+                L(t, o.Qty, o.Filled, o.FilledValue);
+                Join(t, o.LimitCents, o.StopCents, o.PlacedDay, o.PlacedPhase, o.ExpireDay, (int)o.State, (int)o.Why, o.Triggered ? 1 : 0, o.Test ? 1 : 0, o.Forced ? 1 : 0);
+            }
+            t.Append("~t:");
+            for (int i = 0; i < s.Trades.Count; i++)
+            {
+                Trade r = s.Trades[i];
+                t.Append(i > 0 ? ";" : string.Empty).Append(r.Day.ToString(Inv));
+                Join(t, r.Phase, r.StockId, (int)r.Kind);
+                L(t, r.Qty);
+                Join(t, r.PriceCents);
+                L(t, r.Value, r.Fee);
+                Join(t, r.Test ? 1 : 0);
+            }
+            t.Append("~w:");
+            for (int i = 0; i < s.Watch.Count; i++)
+            {
+                t.Append(i > 0 ? "," : string.Empty).Append(s.Watch[i].ToString(Inv));
+            }
+            Account a = s.Account;
+            t.Append("~a:").Append(a.Margin ? 1 : 0);
+            L(t, a.Cash);
+            Join(t, a.CallDay);
+            L(t, a.CallAmount, a.Commission, a.Interest, a.BorrowFees, a.Dividends, a.DividendsPaid, a.Realised, a.Payouts);
+            Join(t, a.OpenedDay);
+            t.Append("~n:");
+            for (int i = 0; i < s.News.Count; i++)
+            {
+                MarketNews n = s.News[i];
+                t.Append(i > 0 ? ";" : string.Empty).Append(n.Day.ToString(Inv));
+                Join(t, (int)n.Kind, n.Stock, n.A, n.B, n.C);
+            }
+            t.Append("~d:");
+            for (int i = 0; i < s.Dues.Count; i++)
+            {
+                DividendDue d = s.Dues[i];
+                t.Append(i > 0 ? ";" : string.Empty).Append(d.StockId.ToString(Inv));
+                L(t, d.Cents);
+                Join(t, d.PayDay, d.Test ? 1 : 0);
+            }
+            t.Append("~x:");
+            MarketCodec.Write(t, s.IndexDaily);
+            t.Append('|');
+            MarketCodec.Write(t, s.IndexMonthly);
+            t.Append('|');
+            MarketCodec.Write(t, s.IndexBars, s.IndexBarCount);
+            t.Append('|');
+            MarketCodec.Write(t, s.IndexLastBars, s.IndexLastBarCount);
+            Join(t, s.IndexLastBarsDay);
+            t.Append("~y:");
+            for (int sec = 0; sec < (int)MarketSector.Count; sec++)
+            {
+                if (sec > 0)
+                {
+                    t.Append(';');
+                }
+                t.Append(s.SectorVar[sec].ToString("R", Inv));
+                D(t, s.SectorShock[sec]);
+                Join(t, s.ManiaDays[sec]);
+                D(t, s.ManiaAdded[sec]);
+                D(t, s.SectorDivisor[sec]);
+                Join(t, s.SectorLast[sec], s.SectorPrevClose[sec]);
+                t.Append('|');
+                Ints(t, s.SectorDaily[sec]);
+                D(t, s.SectorDayZ[sec]);
+            }
+            return t.ToString();
+        }
+
+        // Today's step candles are kept for the companies the player follows: watched, held or with an order in.
+        private static bool Followed(MarketState state, int id)
+        {
+            if (state.Watching(id) || state.Held(id) != 0)
+            {
+                return true;
+            }
+            for (int i = 0; i < state.Orders.Count; i++)
+            {
+                if (state.Orders[i].StockId == id && state.Orders[i].IsOpen)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static void Stock(StringBuilder t, MarketState state, Stock k)
+        {
+            t.Append(k.Id.ToString(Inv));
+            Join(t, (int)k.Status, k.ListedDay, k.GoneDay, (int)k.Reason, k.GoneCents);
+            t.Append('|').Append(MarketCatalogue.IsRival(k.Id) ? Clean(k.Name) : string.Empty).Append('|').Append(Clean(k.RivalId));
+            D(t, k.LogFair);
+            D(t, k.Mis);
+            D(t, k.Sent);
+            D(t, k.Outlook);
+            L(t, k.Shares);
+            D(t, k.Impact);
+            Join(t, k.PrevClose, k.Open, k.High, k.Low, k.Last);
+            L(t, k.DayVolume);
+            D(t, k.Rev);
+            D(t, k.Margin);
+            D(t, k.Growth);
+            D(t, k.MarginShift);
+            D(t, k.MarginTarget);
+            D(t, k.GrowthTarget);
+            D(t, k.Debt);
+            D(t, k.DebtRate);
+            D(t, k.Equity);
+            D(t, k.Distress);
+            D(t, k.Competition);
+            Join(t, k.Quarter);
+            D(t, k.QRev);
+            D(t, k.QNi);
+            Join(t, k.PendingQuarter);
+            D(t, k.PendingRev);
+            D(t, k.PendingNi);
+            Join(t, k.ResultsDay, k.DpsCents, k.DeclaredCents, k.RecordDay, k.PayDay, k.ExDone ? 1 : 0, k.LastExDay);
+            D(t, k.Adv);
+            Join(t, k.SplitDay, k.SplitRatio, k.BidDay, k.BidEndDay, k.BidCents, k.BidderId, k.ResultsBoostDay, k.LowDays);
+            t.Append('|');
+            for (int i = 0; i < k.Results.Count; i++)
+            {
+                QuarterResult r = k.Results[i];
+                t.Append(i > 0 ? ":" : string.Empty).Append(r.Quarter.ToString(Inv)).Append(',').Append(r.Day.ToString(Inv)).Append(',').Append(r.RevenueK.ToString(Inv)).Append(',')
+                    .Append(r.ProfitK.ToString(Inv)).Append(',').Append(r.Eps.ToString(Inv)).Append(',').Append(r.Consensus.ToString(Inv)).Append(',').Append(r.DpsCents.ToString(Inv));
+            }
+            t.Append('|');
+            MarketCodec.Write(t, k.Daily);
+            t.Append('|');
+            MarketCodec.Write(t, k.Monthly);
+            bool followed = Followed(state, k.Id);
+            t.Append('|');
+            MarketCodec.Write(t, k.Bars, followed ? k.BarCount : 0);
+            t.Append('|');
+            MarketCodec.Write(t, k.LastBars, followed ? k.LastBarCount : 0);
+            Join(t, k.LastBarsDay);
+        }
+
+        // ---------------------------------------------------------------- reading
+
+        public static MarketState Read(string text, out int version)
+        {
+            version = 0;
+            string[] parts = text.Split('~');
+            if (parts.Length == 0 || !parts[0].StartsWith("v=", StringComparison.Ordinal) || !int.TryParse(parts[0].Substring(2), NumberStyles.Integer, Inv, out version) || version < 1)
+            {
+                return null;
+            }
+            var s = new MarketState();
+            bool header = false;
+            for (int p = 1; p < parts.Length; p++)
+            {
+                string part = parts[p];
+                if (part.Length < 2 || part[1] != ':')
+                {
+                    continue;
+                }
+                string body = part.Substring(2);
+                switch (part[0])
+                {
+                    case 'h': header = Header(s, body.Split('|')); break;
+                    case 'e': MarketEnv env; if (MarketTape.ReadEnv(body, out env)) s.Env = env; break;
+                    case 'k':
+                        foreach (string record in Records(body))
+                        {
+                            Stock k = ReadStock(record.Split('|'), s.YearDays);
+                            if (k != null && s.Stock(k.Id) == null && s.Stocks.Count < MarketCatalogue.CompaniesMost)
+                            {
+                                s.Stocks.Add(k);
+                            }
+                        }
+                        break;
+                    case 'p':
+                        foreach (string record in Records(body))
+                        {
+                            string[] c = record.Split('|');
+                            if (c.Length >= 5 && I(c, 0) > 0 && L(c, 1) != 0 && s.Position(I(c, 0)) == null)
+                            {
+                                s.Positions.Add(new Position { StockId = I(c, 0), Shares = L(c, 1), Cost = Math.Max(0, L(c, 2)), Dividends = L(c, 3), Realised = L(c, 4), Test = I(c, 5) != 0, OpenedDay = I(c, 6) });
+                            }
+                        }
+                        break;
+                    case 'o':
+                        foreach (string record in Records(body))
+                        {
+                            string[] c = record.Split('|');
+                            if (c.Length < 18 || I(c, 0) <= 0 || L(c, 5) <= 0 || s.Orders.Count >= MarketCatalogue.OrdersMost * 2)
+                            {
+                                continue;
+                            }
+                            var o = new Order
+                            {
+                                Id = I(c, 0), StockId = I(c, 1), Side = (OrderSide)Clamp(I(c, 2), 0, 1), Type = (OrderType)Clamp(I(c, 3), 0, 2), Life = (OrderLife)Clamp(I(c, 4), 0, 1),
+                                Qty = L(c, 5), Filled = Math.Max(0, Math.Min(L(c, 5), L(c, 6))), FilledValue = Math.Max(0, L(c, 7)), LimitCents = Math.Max(0, I(c, 8)), StopCents = Math.Max(0, I(c, 9)),
+                                PlacedDay = I(c, 10), PlacedPhase = I(c, 11), ExpireDay = I(c, 12), State = (OrderState)Clamp(I(c, 13), 0, 4), Why = (OrderWhy)Clamp(I(c, 14), 0, (int)OrderWhy.Count - 1),
+                                Triggered = I(c, 15) != 0, Test = I(c, 16) != 0, Forced = I(c, 17) != 0
+                            };
+                            if ((o.Type == OrderType.Limit && o.LimitCents <= 0) || (o.Type == OrderType.Stop && o.StopCents <= 0))
+                            {
+                                continue;
+                            }
+                            s.Orders.Add(o);
+                        }
+                        break;
+                    case 't':
+                        foreach (string record in Records(body))
+                        {
+                            string[] c = record.Split('|');
+                            if (c.Length >= 9 && s.Trades.Count < MarketCatalogue.TradesKept)
+                            {
+                                s.Trades.Add(new Trade { Day = I(c, 0), Phase = I(c, 1), StockId = I(c, 2), Kind = (TradeKind)Clamp(I(c, 3), 0, 9), Qty = L(c, 4), PriceCents = I(c, 5), Value = L(c, 6), Fee = L(c, 7), Test = I(c, 8) != 0 });
+                            }
+                        }
+                        break;
+                    case 'w':
+                        foreach (string id in body.Length > 0 ? body.Split(',') : Array.Empty<string>())
+                        {
+                            int value;
+                            if (int.TryParse(id, NumberStyles.Integer, Inv, out value) && value > 0 && !s.Watch.Contains(value) && s.Watch.Count < MarketCatalogue.WatchMost)
+                            {
+                                s.Watch.Add(value);
+                            }
+                        }
+                        break;
+                    case 'a':
+                        {
+                            string[] c = body.Split('|');
+                            Account a = s.Account;
+                            a.Margin = I(c, 0) != 0;
+                            a.Cash = L(c, 1);
+                            a.CallDay = Math.Max(0, I(c, 2));
+                            a.CallAmount = Math.Max(0, L(c, 3));
+                            a.Commission = Math.Max(0, L(c, 4));
+                            a.Interest = Math.Max(0, L(c, 5));
+                            a.BorrowFees = Math.Max(0, L(c, 6));
+                            a.Dividends = Math.Max(0, L(c, 7));
+                            a.DividendsPaid = Math.Max(0, L(c, 8));
+                            a.Realised = L(c, 9);
+                            a.Payouts = L(c, 10);
+                            a.OpenedDay = I(c, 11);
+                            if (!a.Margin)
+                            {
+                                a.Cash = 0;
+                            }
+                        }
+                        break;
+                    case 'n':
+                        foreach (string record in Records(body))
+                        {
+                            string[] c = record.Split('|');
+                            if (c.Length >= 6 && I(c, 1) >= 0 && I(c, 1) < (int)MarketNewsKind.Count && s.News.Count < MarketCatalogue.NewsKept)
+                            {
+                                s.News.Add(new MarketNews { Day = I(c, 0), Kind = (MarketNewsKind)I(c, 1), Stock = I(c, 2), A = I(c, 3), B = I(c, 4), C = I(c, 5) });
+                            }
+                        }
+                        break;
+                    case 'd':
+                        foreach (string record in Records(body))
+                        {
+                            string[] c = record.Split('|');
+                            if (c.Length >= 3 && I(c, 0) > 0 && L(c, 1) != 0 && s.Dues.Count < 200)
+                            {
+                                s.Dues.Add(new DividendDue { StockId = I(c, 0), Cents = L(c, 1), PayDay = I(c, 2), Test = I(c, 3) != 0 });
+                            }
+                        }
+                        break;
+                    case 'x':
+                        {
+                            string[] c = body.Split('|');
+                            if (c.Length > 0)
+                            {
+                                MarketCodec.Read(c[0], s.IndexDaily, MarketCatalogue.DailyKept);
+                            }
+                            if (c.Length > 1)
+                            {
+                                MarketCodec.Read(c[1], s.IndexMonthly, MarketCatalogue.MonthlyKept);
+                            }
+                            s.IndexBarCount = c.Length > 2 ? MarketCodec.Read(c[2], s.IndexBars) : 0;
+                            s.IndexLastBarCount = c.Length > 3 ? MarketCodec.Read(c[3], s.IndexLastBars) : 0;
+                            s.IndexLastBarsDay = I(c, 4);
+                        }
+                        break;
+                    case 'y':
+                        {
+                            string[] records = body.Split(';');
+                            for (int sec = 0; sec < records.Length && sec < (int)MarketSector.Count; sec++)
+                            {
+                                string[] c = records[sec].Split('|');
+                                s.SectorVar[sec] = Clamp(F(c, 0, 1.0), MarketCatalogue.VarianceLeast, MarketCatalogue.VarianceMost);
+                                s.SectorShock[sec] = Clamp(F(c, 1, 0.0), -50.0, 50.0);
+                                s.ManiaDays[sec] = Math.Max(0, I(c, 2));
+                                s.ManiaAdded[sec] = Clamp(F(c, 3, 0.0), 0.0, 5.0);
+                                s.SectorDivisor[sec] = Math.Max(0.0, F(c, 4, 0.0));
+                                s.SectorLast[sec] = Math.Max(0, I(c, 5));
+                                s.SectorPrevClose[sec] = Math.Max(0, I(c, 6));
+                                ReadInts(c.Length > 7 ? c[7] : null, s.SectorDaily[sec], MarketCatalogue.DailyKept);
+                                s.SectorDayZ[sec] = Clamp(F(c, 8, 0.0), -100.0, 100.0);
+                            }
+                        }
+                        break;
+                }
+            }
+            if (!header || s.Stocks.Count == 0)
+            {
+                return null;
+            }
+            Repair(s);
+            return s;
+        }
+
+        private static bool Header(MarketState s, string[] c)
+        {
+            ulong id;
+            if (c.Length < 6 || !ulong.TryParse(c[0], NumberStyles.HexNumber, Inv, out id))
+            {
+                return false;
+            }
+            s.Id = id;
+            s.CreatedDay = Math.Max(1, I(c, 1));
+            s.YearDays = Clamp(I(c, 2, 60), 8, 400);
+            s.Day = Math.Max(1, I(c, 3));
+            s.Phase = Clamp(I(c, 4), 0, MarketCatalogue.PhaseClose);
+            s.FrontierDay = Math.Max(0, I(c, 5));
+            s.FrontierPhase = Clamp(I(c, 6), 0, MarketCatalogue.PhaseClose);
+            s.Variance = Clamp(F(c, 7, 1.0), MarketCatalogue.VarianceLeast, MarketCatalogue.VarianceMost);
+            s.LastShock = Clamp(F(c, 8, 0.0), -50.0, 50.0);
+            s.IndexDivisor = Math.Max(0.0, F(c, 9, 0.0));
+            s.ListingId = Math.Max(0, I(c, 10));
+            s.ListingDay = Math.Max(0, I(c, 11));
+            s.NextOrderId = Math.Max(1, I(c, 12, 1));
+            s.CarriedOver = I(c, 13) != 0;
+            s.RateSeenBp = I(c, 14, -1);
+            s.ElectionsSeen = I(c, 15, -1);
+            s.BusinessDay = Math.Max(0, I(c, 16));
+            s.IndexOpen = Math.Max(0, I(c, 17));
+            s.IndexHigh = Math.Max(0, I(c, 18));
+            s.IndexLow = Math.Max(0, I(c, 19));
+            s.IndexLast = Math.Max(0, I(c, 20));
+            s.IndexPrevClose = Math.Max(0, I(c, 21));
+            s.HeldDay = Math.Max(0, I(c, 22));
+            s.HeldPhase = Clamp(I(c, 23), 0, MarketCatalogue.PhaseClose);
+            s.DayZ = Clamp(F(c, 24, 0.0), -100.0, 100.0);
+            s.DayVar = Clamp(F(c, 25, 0.0), 0.0, 10.0);
+            if (MarketState.Time(s.FrontierDay, s.FrontierPhase) < s.Now)
+            {
+                s.FrontierDay = s.Day;
+                s.FrontierPhase = s.Phase;
+            }
+            return true;
+        }
+
+        private static Stock ReadStock(string[] c, int year)
+        {
+            int id = I(c, 0);
+            CompanyDef def = MarketCatalogue.Find(id);
+            if (def == null || c.Length < 54)
+            {
+                return null;
+            }
+            var k = new Stock
+            {
+                Id = id, Def = def, Name = MarketCatalogue.IsRival(id) ? S(c, 6) : def.Name, Ticker = def.Ticker, Sector = def.Sector, Size = def.Size,
+                Status = I(c, 1) == (int)StockStatus.Gone ? StockStatus.Gone : StockStatus.Listed, ListedDay = I(c, 2), GoneDay = I(c, 3), Reason = (GoneReason)Clamp(I(c, 4), 0, 3),
+                GoneCents = Math.Max(0, I(c, 5)), RivalId = S(c, 7).Length > 0 ? S(c, 7) : null
+            };
+            if (MarketCatalogue.IsRival(id) && string.IsNullOrEmpty(k.Name))
+            {
+                return null;
+            }
+            k.LogFair = Clamp(F(c, 8, 0.0), -10.0, 15.0);
+            k.Mis = Clamp(F(c, 9, 0.0), -3.0, 3.0);
+            k.Sent = Clamp(F(c, 10, 0.0), -3.0, 3.0);
+            k.Outlook = Clamp(F(c, 11, 0.0), -8.0, 8.0);
+            k.Shares = Math.Max(1000, L(c, 12));
+            k.Impact = Math.Max(0.0, F(c, 13, 0.0));
+            k.PrevClose = Math.Max(1, I(c, 14, 1));
+            k.Open = Math.Max(1, I(c, 15, 1));
+            k.High = Math.Max(1, I(c, 16, 1));
+            k.Low = Math.Max(1, I(c, 17, 1));
+            k.Last = Math.Max(1, I(c, 18, 1));
+            k.DayVolume = Math.Max(0, L(c, 19));
+            k.Rev = Math.Max(1.0, F(c, 20, def.RevenueM * 1e6));
+            k.Margin = Clamp(F(c, 21, def.MarginBp / 10000.0), -0.5, 0.8);
+            k.Growth = Clamp(F(c, 22, def.GrowthBp / 10000.0), -0.25, 0.4);
+            k.MarginShift = Clamp(F(c, 23, 0.0), -0.3, 0.9);
+            k.MarginTarget = Clamp(F(c, 24, k.Margin), -1.0, 1.0);
+            k.GrowthTarget = Clamp(F(c, 25, MarketCatalogue.LongRealGrowth), -0.25, 0.4);
+            k.Debt = Math.Max(0.0, F(c, 26, 0.0));
+            k.DebtRate = Clamp(F(c, 27, 0.05), 0.0, 0.5);
+            k.Equity = F(c, 28, 0.0);
+            k.Distress = Clamp(F(c, 29, 0.0), 0.0, 1.0);
+            k.Competition = Clamp(F(c, 30, 0.0), 0.0, MarketInputs.CompetitionMost);
+            k.Quarter = I(c, 31, -1);
+            k.QRev = F(c, 32, 0.0);
+            k.QNi = F(c, 33, 0.0);
+            k.PendingQuarter = I(c, 34, -1);
+            k.PendingRev = F(c, 35, 0.0);
+            k.PendingNi = F(c, 36, 0.0);
+            k.ResultsDay = Math.Max(0, I(c, 37));
+            k.DpsCents = Math.Max(0, I(c, 38));
+            k.DeclaredCents = Math.Max(0, I(c, 39));
+            k.RecordDay = Math.Max(0, I(c, 40));
+            k.PayDay = Math.Max(0, I(c, 41));
+            k.ExDone = I(c, 42, 1) != 0;
+            k.LastExDay = I(c, 43);
+            k.Adv = Math.Max(1.0, F(c, 44, 1000.0));
+            k.SplitDay = Math.Max(0, I(c, 45));
+            k.SplitRatio = Clamp(I(c, 46), 0, 10);
+            k.BidDay = Math.Max(0, I(c, 47));
+            k.BidEndDay = Math.Max(0, I(c, 48));
+            k.BidCents = Math.Max(0, I(c, 49));
+            k.BidderId = Math.Max(0, I(c, 50));
+            k.ResultsBoostDay = I(c, 51);
+            k.LowDays = Math.Max(0, I(c, 52));
+            if (k.SplitDay > 0 && k.SplitRatio < 2)
+            {
+                k.SplitDay = 0;
+            }
+            if (k.BidCents > 0 && k.BidEndDay <= 0)
+            {
+                k.BidCents = 0;
+            }
+            foreach (string r in S(c, 53).Length > 0 ? c[53].Split(':') : Array.Empty<string>())
+            {
+                string[] f = r.Split(',');
+                if (f.Length >= 7 && k.Results.Count < MarketCatalogue.QuartersKept)
+                {
+                    k.Results.Add(new QuarterResult { Quarter = Int(f[0]), Day = Int(f[1]), RevenueK = Long(f[2]), ProfitK = Long(f[3]), Eps = Int(f[4]), Consensus = Int(f[5]), DpsCents = Math.Max(0, Int(f[6])) });
+                }
+            }
+            if (c.Length > 54)
+            {
+                MarketCodec.Read(c[54], k.Daily, MarketCatalogue.DailyKept);
+            }
+            if (c.Length > 55)
+            {
+                MarketCodec.Read(c[55], k.Monthly, MarketCatalogue.MonthlyKept);
+            }
+            k.BarCount = c.Length > 56 ? MarketCodec.Read(c[56], k.Bars) : 0;
+            k.LastBarCount = c.Length > 57 ? MarketCodec.Read(c[57], k.LastBars) : 0;
+            k.LastBarsDay = I(c, 58);
+            if (double.IsNaN(k.LogFair) || double.IsNaN(k.Mis) || double.IsInfinity(k.LogFair + k.Mis))
+            {
+                k.LogFair = Math.Log(k.Last / 100.0);
+                k.Mis = k.Sent = 0.0;
+            }
+            return k;
+        }
+
+        // What points at something that is not there: a holding or an order of a company missing from the line has its
+        // company made again at its catalogue price (a line that lost a record), an order of an unknown company goes.
+        private static void Repair(MarketState s)
+        {
+            MarketEnv env = s.Env;
+            for (int i = 0; i < s.Positions.Count; i++)
+            {
+                int id = s.Positions[i].StockId;
+                CompanyDef def = MarketCatalogue.Find(id);
+                if (s.Stock(id) == null && def != null && !MarketCatalogue.IsRival(id))
+                {
+                    Stock made = MarketLife.Make(def, null, s.Day, env, s.YearDays, MarketRandom.Mix64(s.Id ^ (ulong)id), 0);
+                    made.ListedDay = MarketSetup.ListedLongAgo(s.Day, s.YearDays);
+                    s.Stocks.Add(made);
+                }
+            }
+            s.Positions.RemoveAll(p => s.Stock(p.StockId) == null);
+            s.Orders.RemoveAll(o => s.Stock(o.StockId) == null);
+            s.Watch.RemoveAll(w => s.Stock(w) == null);
+            for (int i = 0; i < s.Stocks.Count; i++)
+            {
+                if (s.Stocks[i].Listed && s.Stocks[i].Quarter < 0)
+                {
+                    s.Stocks[i].Quarter = MarketCatalogue.QuarterOf(s.Day, s.YearDays);
+                }
+            }
+        }
+
+        // ---------------------------------------------------------------- the small parts
+
+        private static string[] Records(string body)
+        {
+            return body.Length == 0 ? Array.Empty<string>() : body.Split(';');
+        }
+
+        private static void Join(StringBuilder t, params int[] values)
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                t.Append('|').Append(values[i].ToString(Inv));
+            }
+        }
+
+        private static void L(StringBuilder t, params long[] values)
+        {
+            for (int i = 0; i < values.Length; i++)
+            {
+                t.Append('|').Append(values[i].ToString(Inv));
+            }
+        }
+
+        private static void D(StringBuilder t, double value)
+        {
+            t.Append('|').Append(double.IsNaN(value) || double.IsInfinity(value) ? "0" : value.ToString("R", Inv));
+        }
+
+        private static void G(StringBuilder t, double value)
+        {
+            t.Append('|').Append(double.IsNaN(value) || double.IsInfinity(value) ? "0" : value.ToString("G6", Inv));
+        }
+
+        private static void Ints(StringBuilder t, List<int> values)
+        {
+            MarketCodec.WriteInts(t, values);
+        }
+
+        private static void ReadInts(string text, List<int> into, int most)
+        {
+            if (string.IsNullOrEmpty(text) || !MarketCodec.ReadInts(text, into, most))
+            {
+                into.Clear();
+            }
+        }
+
+        private static int I(string[] c, int at, int fallback = 0)
+        {
+            int value;
+            return at < c.Length && int.TryParse(c[at], NumberStyles.Integer, Inv, out value) ? value : fallback;
+        }
+
+        private static long L(string[] c, int at, long fallback = 0)
+        {
+            long value;
+            return at < c.Length && long.TryParse(c[at], NumberStyles.Integer, Inv, out value) ? value : fallback;
+        }
+
+        private static double F(string[] c, int at, double fallback)
+        {
+            double value;
+            return at < c.Length && double.TryParse(c[at], NumberStyles.Float, Inv, out value) && !double.IsNaN(value) && !double.IsInfinity(value) ? value : fallback;
+        }
+
+        private static string S(string[] c, int at)
+        {
+            return at < c.Length ? c[at] : string.Empty;
+        }
+
+        private static int Int(string text)
+        {
+            int value;
+            return int.TryParse(text, NumberStyles.Integer, Inv, out value) ? value : 0;
+        }
+
+        private static long Long(string text)
+        {
+            long value;
+            return long.TryParse(text, NumberStyles.Integer, Inv, out value) ? value : 0;
+        }
+
+        private static int Clamp(int value, int least, int most)
+        {
+            return value < least ? least : value > most ? most : value;
+        }
+
+        private static double Clamp(double value, double least, double most)
+        {
+            return value < least ? least : value > most ? most : value;
+        }
+
+        /// <summary>A text with the dividers taken out, so that it can never break the line apart.</summary>
+        public static string Clean(string text)
+        {
+            return string.IsNullOrEmpty(text) ? string.Empty : text.Replace('|', ' ').Replace(';', ' ').Replace('~', ' ').Replace(':', ' ').Replace(',', ' ');
+        }
+    }
+}

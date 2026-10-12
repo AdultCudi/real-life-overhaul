@@ -10,16 +10,15 @@ namespace RealLifeOverhaul.Economy.Ventures
 {
     /// <summary>
     /// What the Ventures app shows, in the game's frame (GameUi.AppShell, copied from MyEmployees) as Finance, the
-    /// Planner and the Guide are. Four tabs over the table on the right, and on the left the white box:
+    /// Planner and the Guide are. Two tabs over the table on the right, and on the left the white box:
     ///
     ///   Investors   offers waiting for an answer, money promised, deals; pick one to answer it, counter it, buy the
     ///               investor out or answer a demand; "Raise money" leads through three pages (the business, for a new
     ///               one its kind and budget, the investor) to a meeting (VenturesApp.Investors.cs)
-    ///   Market      the listed companies with price, today's move and the thirty-day trend; pick one to buy or sell
-    ///   Portfolio   the shares held with their worth and gain or loss; pick one for its company's page
-    ///               (VenturesApp.Market.cs)
     ///   Property    the buildings the player owns as the game lets them: cost, rent, yield, mortgage
     ///               (VenturesApp.Property.cs)
+    ///
+    /// (Shares are the Stocks app's: Scripts/Markets.)
     ///
     /// A list goes in the table, which scrolls; the white box, which does not, shows only the one thing picked, and a
     /// tab that needs more than one page has pages with a Back button. The table and its rows are the Finance app's
@@ -31,7 +30,7 @@ namespace RealLifeOverhaul.Economy.Ventures
     /// </summary>
     public sealed partial class VenturesApp
     {
-        private static readonly string[] TabKeys = { "reallife_ven_tab_investors", "reallife_ven_tab_market", "reallife_ven_tab_portfolio", "reallife_ven_tab_property" };
+        private static readonly string[] TabKeys = { "reallife_ven_tab_investors", "reallife_ven_tab_property" };
         public static IModLogger Logger;
 
         private readonly VenturesDirector _director;
@@ -154,8 +153,6 @@ namespace RealLifeOverhaul.Economy.Ventures
                 int day = SaveGameManager.Current.Day;
                 switch (_tab)
                 {
-                    case VenturesPhone.Market: table = WriteMarket(box, file); break;
-                    case VenturesPhone.Portfolio: table = WritePortfolio(box, file); break;
                     case VenturesPhone.Property: table = WriteProperty(box, file, day); break;
                     default: table = WriteInvestors(box, file, day); break;
                 }
@@ -213,9 +210,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 return;
             }
-            // (a holding's row leads to its company's page)
-            _picked = row.Id.StartsWith(HoldRow, System.StringComparison.Ordinal) ? CompanyRow + row.Index : row.Id;
-            _shareStep = 0;
+            _picked = row.Id;
             Refresh();
         }
 

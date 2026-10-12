@@ -41,7 +41,8 @@ namespace RealLifeOverhaul
     /// paper from it. Any feature reports with one call, <see cref="Report"/>: it stores a few
     /// numbers in a slot of a fixed array (nothing is allocated, no text is built, nothing is
     /// looked up) and returns at once when the paper is switched off or no save is loaded.
-    /// Streets are worked out when the paper is written, once a day.
+    /// Streets are worked out when the paper is written, once a day. The City Ledger (Scripts/Ledger,
+    /// through Wiring/LedgerLinks) prints what is written here as a newspaper, for a player who has a copy.
     /// </summary>
     public static class News
     {
@@ -85,12 +86,31 @@ namespace RealLifeOverhaul
         public static IReadOnlyList<NewsItem> Today => Paper;
 
         /// <summary>
+        /// Raised for every report while a save is loaded, whether or not the paper prints it (the stock market hears
+        /// of a crime, a break-in or an accident the moment it is reported: Wiring/MarketLinks). With the kind, the
+        /// report's detail and its amount. A handler must not throw; one that does is logged and the report goes on.
+        /// </summary>
+        public static event Action<NewsKind, string, int> Reported;
+
+        /// <summary>
         /// Something happened that a newspaper would print. Safe to call from anywhere at any
         /// time: it does nothing until a save is loaded, or while the paper is switched off.
         /// </summary>
         /// <param name="detail">An id or a name that already exists as a string (never one built for this call).</param>
         public static void Report(NewsKind kind, Vector3 where, string detail = null, int amount = 0)
         {
+            Action<NewsKind, string, int> heard = Reported;
+            if (heard != null && SaveGameManager.Current != null)
+            {
+                try
+                {
+                    heard(kind, detail, amount);
+                }
+                catch (Exception e)
+                {
+                    SocialDirector.Logger?.Error(e);
+                }
+            }
             if (!_ready || (!Settings.SocialNewspaper && !Settings.Social))
             {
                 return;
@@ -312,8 +332,8 @@ namespace RealLifeOverhaul
             int printed = 0;
             NewsKind lastKind = (NewsKind)(-1);
             int sameKind = 0;
-            // Six pieces at most under the masthead: two events, or on a busy day the worst one and a count of the rest.
-            int events = fresh >= 4 ? 1 : 2;
+            // Four events at most for the city's pages: on a busy day the worst three and a count of the rest.
+            int events = fresh > 4 ? 3 : 4;
             for (int pass = 0; pass < events; pass++)
             {
                 int best = -1;
@@ -354,7 +374,7 @@ namespace RealLifeOverhaul
             {
                 Paper.Add(Item(SocialLines.Pick(SocialCatalogue.NewsQuiet)));
             }
-            else if (fresh >= 4)
+            else if (fresh > 4)
             {
                 Paper.Add(Item(SocialLines.Pick(SocialCatalogue.NewsTally), "accidents", accidents.ToString(), "arrests", arrests.ToString(), "crimes", crimes.ToString()));
             }
@@ -385,7 +405,8 @@ namespace RealLifeOverhaul
 
             // ---- colour: never the same piece twice until all have run
             Paper.Add(Filler());
-            if (Paper.Count < 6)
+            Paper.Add(Filler());
+            if (Paper.Count < 9)
             {
                 Paper.Add(Filler());
             }

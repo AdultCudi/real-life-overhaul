@@ -466,11 +466,11 @@ namespace RealLifeOverhaul.Meta
             Features.Add("social", "reallife_meta_title_social")
                 .Group("reallife_social_header")
                 .About("reallife_guide_social_about").Help("reallife_guide_social")
-                .Owns(Settings.SocialId, Settings.SocialMeetingsId, Settings.SocialOutingsId, Settings.SocialNewspaperId)
+                .Owns(Settings.SocialId, Settings.SocialMeetingsId, Settings.SocialOutingsId)
                 .OnFrom(Settings.SocialRelationshipsId, Intensity.Standard)
                 .Preset(Settings.SocialTextsMaxId, 2, 3, 4)
                 .Data("reallife:social", "reallife:social_*")
-                .Contact(SocialPhone.PeopleId, SocialPhone.LedgerId)
+                .Contact(SocialPhone.PeopleId)
                 .Objects("RealLifeOverhaul Shift Card")
                 .Fact("social_cast", () => SocialRules.CastSize.ToString(CultureInfo.InvariantCulture))
                 .ResetData(() =>
@@ -479,6 +479,28 @@ namespace RealLifeOverhaul.Meta
                     News.Reset();
                 })
                 .Repair(() => SocialPhone.Setup(SocialDirector.Logger));
+
+            // The City Ledger: the morning paper as a newspaper, for a player who has it delivered or buys it at a kiosk. Its
+            // words are the city's paper (Social/News, which the social life's data keeps) and the market's close; its contact
+            // is the subscriptions desk. Off: no paper, no kiosk, no delivery and nothing charged; a subscription is kept as it is.
+            Features.Add("ledger", "reallife_meta_title_ledger")
+                .Group("reallife_ledger_header")
+                .About("reallife_guide_ledger_about").Help("reallife_guide_ledger")
+                .Owns(Settings.SocialNewspaperId, Settings.LedgerKiosksId)
+                .Data(Ledger.LedgerStore.Key)
+                .Contact(SocialPhone.LedgerId)
+                .Objects("RealLifeOverhaul Ledger Copy")
+                .Fact("ledger_copy", () => Guide.Money(Prices.At(Ledger.LedgerCatalogue.CopyAtStart)))
+                .Fact("ledger_week", () => Guide.Money(Prices.At(Ledger.LedgerCatalogue.WeekAtStart)))
+                .Fact("ledger_days", () => Whole(Ledger.LedgerCatalogue.WeekDays))
+                .Fact("ledger_delivery", () => MarketsTime(Ledger.LedgerCatalogue.DeliveryHour * 60))
+                .Fact("ledger_open", () => MarketsTime(Ledger.LedgerCatalogue.KioskOpenHour * 60))
+                .Fact("ledger_close", () => MarketsTime(Ledger.LedgerCatalogue.KioskCloseHour * 60))
+                .Fact("ledger_kiosks", () => Whole(Ledger.LedgerCatalogue.KiosksWanted))
+                .Fact("ledger_far", () => Whole((int)Ledger.LedgerCatalogue.KioskFurthest))
+                .Fact("ledger_chart", () => Whole(Ledger.LedgerCatalogue.ChartDays))
+                .Cleanup(() => Ledger.LedgerDirector.Instance?.StopAll())
+                .ResetData(() => Ledger.LedgerDirector.Instance?.Forget());   // the director reads the (now empty) save again on its next second
 
             Features.Add("travel", "reallife_meta_title_travel")
                 .Group("reallife_travel_header")
@@ -842,15 +864,15 @@ namespace RealLifeOverhaul.Meta
                 .Fact("macro_swing_hardcore", () => Whole(Economy.MacroCatalogue.SwingPercent[Economy.MacroCatalogue.Hardcore]) + "%")
                 .Cleanup(() => Economy.CityEconomyDirector.Instance?.StopAll(), -1)
                 .ResetData(() => Economy.CityEconomyDirector.Instance?.Forget());   // the director opens a new economy from the (now empty) save on its next second
-            // Investors and the market. Its rows stand under the economy's header on the options page; its file is its own
-            // line in the save. Nothing of it is in the game's business or property records: removing the line removes it.
+            // Investors. Its rows stand under the economy's header on the options page; its file is its own line in the
+            // save. Nothing of it is in the game's business or property records: removing the line removes it.
             Features.Add("ventures", "reallife_meta_title_ventures")
                 .About("reallife_guide_ventures_about").Help("reallife_guide_ventures")
-                .Owns(Settings.VenturesInvestorsId, Settings.VenturesMarketId, Settings.VenturesLevelId)
+                .Owns(Settings.VenturesInvestorsId, Settings.VenturesLevelId)
                 .Preset(Settings.VenturesLevelId, Economy.Ventures.VenturesCatalogue.Relaxed, Economy.Ventures.VenturesCatalogue.Realistic, Economy.Ventures.VenturesCatalogue.Hardcore)   // (Standard is its default)
                 .Data(Economy.Ventures.VenturesStore.Key)
                 .Test("reallife_ven_test_offer", "reallife_ven_test_pitch_angel", "reallife_ven_test_pitch_tycoon", "reallife_ven_test_pitch_firm", "reallife_ven_test_list",
-                    "reallife_ven_test_market", "reallife_ven_test_dividend", "reallife_ven_test_call", "reallife_ven_test_back")
+                    "reallife_ven_test_call", "reallife_ven_test_back")
                 .Fact("ven_profit_days", () => Whole(Economy.Ventures.VenturesCatalogue.ProfitDaysNeeded))
                 .Fact("ven_window", () => Whole(Economy.Ventures.VenturesCatalogue.ProfitWindowDays))
                 .Fact("ven_average_days", () => Whole(Economy.Ventures.VenturesCatalogue.AverageDays))
@@ -894,17 +916,46 @@ namespace RealLifeOverhaul.Meta
                 .Fact("ven_levels", VenturesLevels)
                 .Fact("ven_buy_out_days", () => Whole(Economy.Ventures.VenturesCatalogue.BuyOutDays))
                 .Fact("ven_buy_out_floor", () => Whole(Economy.Ventures.VenturesCatalogue.BuyOutFloorPct) + "%")
-                .Fact("ven_companies", () => Whole(Economy.Ventures.VenturesCatalogue.Companies))
-                .Fact("ven_commission", () => Guide.Percent(Economy.Ventures.VenturesCatalogue.CommissionBp / 10000f))
-                .Fact("ven_commission_least", () => Guide.Money(Economy.Ventures.VenturesCatalogue.CommissionLeast))
-                .Fact("ven_holding", () => Economy.Ventures.VenturesCatalogue.HoldingMost.ToString("N0", CultureInfo.InvariantCulture))
-                .Fact("ven_dividend_days", () => Whole(Economy.Ventures.VenturesCatalogue.DividendEveryDays))
-                .Fact("ven_dividend_least", () => Guide.Percent(Economy.Ventures.VenturesCatalogue.DividendLeastBp / 10000f))
-                .Fact("ven_dividend_most", () => Guide.Percent(Economy.Ventures.VenturesCatalogue.DividendMostBp / 10000f))
-                .Fact("ven_news_cap", () => Guide.Percent(Economy.Ventures.VenturesCatalogue.NewsCapBp / 10000f))
-                .Fact("ven_history", () => Whole(Economy.Ventures.VenturesCatalogue.HistoryDays))
                 .Cleanup(() => Economy.Ventures.VenturesDirector.Instance?.StopAll())
                 .ResetData(() => Economy.Ventures.VenturesDirector.Instance?.Forget());   // the director opens a new file from the (now empty) save on its next second
+
+            // The city's stock market and the Stocks app. Its market is one line in the save; its tape is a file of the game's
+            // data folder (one for each playthrough, outside every save). Shares are not in the plain game: the save tools
+            // settle every holding at today's price before the mod is removed.
+            Features.Add("markets", "reallife_meta_title_markets")
+                .Group("reallife_mkt_header")
+                .About("reallife_guide_markets_about").Help("reallife_guide_markets")
+                .Owns(Settings.MarketsId, Settings.MarketsMarginId)
+                .Data(Markets.MarketStore.Key)
+                .Fact("mkt_companies", () => Whole(MarketsListed()))
+                .Fact("mkt_sectors", () => Whole((int)Markets.MarketSector.Count))
+                .Fact("mkt_open", () => MarketsTime(Markets.MarketCatalogue.OpenMinute))
+                .Fact("mkt_close", () => MarketsTime(Markets.MarketCatalogue.CloseMinute))
+                .Fact("mkt_step", () => Whole(Markets.MarketCatalogue.StepMinutes))
+                .Fact("mkt_record_days", () => Whole(Markets.MarketCatalogue.DividendRecordDays))
+                .Fact("mkt_pay_days", () => Whole(Markets.MarketCatalogue.DividendPayDays))
+                .Fact("mkt_split", () => Guide.Money(Markets.MarketCatalogue.SplitAboveCents / 100f))
+                .Fact("mkt_premium_least", () => Guide.Percent((float)Markets.MarketCatalogue.TakeoverPremiumLeast))
+                .Fact("mkt_premium_most", () => Guide.Percent((float)Markets.MarketCatalogue.TakeoverPremiumMost))
+                .Fact("mkt_fail", () => Guide.Percent((float)Markets.MarketCatalogue.TakeoverFailChance))
+                .Fact("mkt_penny", () => Guide.Money(Prices.At(Markets.MarketCatalogue.PennyCents / 100f)))
+                .Fact("mkt_penny_days", () => Whole(Markets.MarketCatalogue.PennyDays))
+                .Fact("mkt_good_till", () => Whole(Markets.MarketCatalogue.GoodTillDays))
+                .Fact("mkt_commission", () => Guide.Percent(Markets.MarketCatalogue.CommissionBp / 10000f))
+                .Fact("mkt_commission_least", () => Guide.Money(Prices.At(Markets.MarketCatalogue.CommissionLeastAtStart)))
+                .Fact("mkt_order_share", () => Whole(Markets.MarketCatalogue.OrderShareOfVolumePct) + "%")
+                .Fact("mkt_holding", () => Guide.Percent(Markets.MarketCatalogue.HoldingShareBp / 10000f))
+                .Fact("mkt_margin_open", () => Guide.Money(Prices.At(Markets.MarketCatalogue.MarginOpenLeastAtStart)))
+                .Fact("mkt_initial", () => Whole(Markets.MarketCatalogue.InitialMarginPct) + "%")
+                .Fact("mkt_maintenance_long", () => Whole(Markets.MarketCatalogue.MaintenanceLongPct) + "%")
+                .Fact("mkt_maintenance_short", () => Whole(Markets.MarketCatalogue.MaintenanceShortPct) + "%")
+                .Fact("mkt_risky_extra", () => Whole(Markets.MarketCatalogue.MaintenanceRiskyExtraPct) + "%")
+                .Fact("mkt_forced", () => Whole(Markets.MarketCatalogue.ForcedBelowPct) + "%")
+                .Fact("mkt_margin_rate", () => Guide.Percent(Markets.MarketCatalogue.MarginRateOverBp / 10000f))
+                .Fact("mkt_borrow_least", () => Guide.Percent(Markets.MarketCatalogue.BorrowFeeLeastBp / 10000f))
+                .Fact("mkt_borrow_most", () => Guide.Percent(Markets.MarketCatalogue.BorrowFeeMostBp / 10000f))
+                .Cleanup(() => Markets.MarketDirector.Instance?.StopAll())
+                .ResetData(() => Markets.MarketDirector.Instance?.Forget());   // the director opens a new market from the (now empty) save on its next second
 
             // The bank apps: one for each of the city's three largest banks, each a front on the credit desk. They keep no data:
             // off, no bank app is on the phone and every account and loan stays as it is. They run only while the economy core does.
@@ -979,6 +1030,22 @@ namespace RealLifeOverhaul.Meta
         private static string Whole(int value)
         {
             return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        // The companies listed when a market opens, and a time of the market's day as the game writes the time.
+        private static int MarketsListed()
+        {
+            int listed = 0;
+            for (int i = 0; i < Markets.MarketCatalogue.All.Length; i++)
+            {
+                listed += Markets.MarketCatalogue.All[i].Pipeline ? 0 : 1;
+            }
+            return listed;
+        }
+
+        private static string MarketsTime(int minute)
+        {
+            return (minute / 60).GetFormattedTime(minute % 60);
         }
 
         // Quarter points as points, and hundredths of a per cent as per cent, for the city's economy's page.

@@ -14,7 +14,9 @@
        what a visit does, contracts, a business's value, the market and the money on the day, and (BrandChecks.cs) brands and franchises: recognition, standards, a
        franchised shop's day, every way an agreement ends, a shop under a city chain and the save's line, and (EstateChecks.cs) property:
        the market, a purchase on the existing mortgage, tenancies, works, a sale, the agency, a hotel's night, car hire,
-       the yearly returns and the save's line.
+       the yearly returns and the save's line, and (MarketChecks.cs) the city's stock market: prices over thousands of days,
+       trading and what it costs, orders, dividends, splits, failures, candles, the analysis tools, the tape and the save's line, and
+       (LedgerChecks.cs) the City Ledger: what each piece is, its headline, the subscription's round, the copy, the page's choices and the save's line.
        Compiles the mod's own files, so it checks exactly what ships.
        the lender of last resort and the ways out of debt, and (VenturesChecks.cs) investors, the pitch, deals and the
        stock market. Compiles the mod's own files, so it checks exactly what ships.
@@ -115,6 +117,25 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaFit.cs" Link="Mod\RotaFit.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Business\BusinessCatalogue.cs" Link="Mod\BusinessCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banks\BankRules.cs" Link="Mod\BankRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketCatalogue.cs" Link="Mod\MarketCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketRandom.cs" Link="Mod\MarketRandom.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketModel.cs" Link="Mod\MarketModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketInputs.cs" Link="Mod\MarketInputs.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketValuation.cs" Link="Mod\MarketValuation.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketTrading.cs" Link="Mod\MarketTrading.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketHistory.cs" Link="Mod\MarketHistory.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketIndicators.cs" Link="Mod\MarketIndicators.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketTape.cs" Link="Mod\MarketTape.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketLife.cs" Link="Mod\MarketLife.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.cs" Link="Mod\MarketEngine.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketSetup.cs" Link="Mod\MarketSetup.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketCarryOver.cs" Link="Mod\MarketCarryOver.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketCodec.cs" Link="Mod\MarketCodec.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketStore.cs" Link="Mod\MarketStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerModel.cs" Link="Mod\LedgerModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerCatalogue.cs" Link="Mod\LedgerCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerRules.cs" Link="Mod\LedgerRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerStore.cs" Link="Mod\LedgerStore.cs" />
   </ItemGroup>
 
 </Project>

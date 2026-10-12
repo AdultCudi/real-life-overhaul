@@ -94,7 +94,8 @@ namespace RealLifeOverhaul
         public const string EconomyCityId = "economy_city";
         public const string EconomyCityLevelId = "economy_city_level";
         public const string VenturesInvestorsId = "ventures_investors";
-        public const string VenturesMarketId = "ventures_market";
+        public const string MarketsId = "ventures_market";        // (the old market's option: kept, so that a player's choice carries over to the city's stock market)
+        public const string MarketsMarginId = "markets_margin";
         public const string VenturesLevelId = "ventures_level";
         public const string EconomyCompanyId = "economy_company";
         public const string EconomyCompanyLevelId = "economy_company_level";
@@ -183,6 +184,7 @@ namespace RealLifeOverhaul
         public const string SocialTextsId = "social_texts";
         public const string SocialTextsMaxId = "social_texts_max";
         public const string SocialNewspaperId = "social_newspaper";
+        public const string LedgerKiosksId = "ledger_kiosks";
         public const string HotelsId = "travel_hotels";
         public const string HolidaysId = "travel_holidays";
         public const string TravelExtrasId = "travel_extras";
@@ -284,7 +286,8 @@ namespace RealLifeOverhaul
         public static bool EconomyCity = true;           // the city's economy: a central bank, prices, a cycle, districts and supply (off: every figure is the game's own and the model stands still) (Scripts/Economy/City)
         public static int EconomyCityLevel = 1;          // how far it swings: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/City/MacroCatalogue)
         public static bool VenturesInvestors = true;     // investors: offers for a business that does well, the pitch, deals (off: no new offers or meetings; deals that exist carry on) (Scripts/Economy/Ventures)
-        public static bool VenturesMarket = true;        // the city's stock market (off: prices stand still, nothing is traded and no dividend is paid; shares held are kept)
+        public static bool Markets = true;               // the city's stock market and the Stocks app (off: the market stands still and nothing is traded; shares held are kept) (Scripts/Markets)
+        public static bool MarketsMargin = true;         // a margin account may be opened: borrowing against shares and selling short, with margin calls (off: no new account; one that is open can only be wound down)
         public static int VenturesLevel = 1;             // how demanding investors are: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Ventures/VenturesCatalogue)
         public static bool EconomyCompany = true;        // running a business: staff, insurance, marketing, tax and licences, with the Company app (off: none of it runs and nothing is charged) (Scripts/Economy/Company)
         public static int EconomyCompanyLevel = 1;       // how strict it is: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Company/CompanyCatalogue)
@@ -391,7 +394,8 @@ namespace RealLifeOverhaul
         public static bool SocialContact = true;         // they get in touch themselves: invitations, favours, news, a visit at the shop
         public static bool SocialTexts = true;           // text messages from people (off: only what must be said is shown, as a notification)
         public static int SocialTextsMax = 3;            // texts a day from everybody together, 1 to 6
-        public static bool SocialNewspaper = true;       // the City Ledger: a morning paper on the phone, written from what happened
+        public static bool SocialNewspaper = true;       // the City Ledger: a morning newspaper, delivered to subscribers' homes and sold at kiosks (Scripts/Ledger)
+        public static bool LedgerKiosks = true;          // newspaper kiosks near the player's home sell the paper (off: subscribers only)
         public static bool Hotels = true;                // eight places to stay: reception at the door, the room as a panel (Scripts/Travel)
         public static bool Holidays = true;              // trips bought at the game's travel agencies; burnout after weeks without a break
         public static bool TravelExtras = true;          // suitcase, travel insurance, a companion, trade fair invitations
@@ -517,7 +521,8 @@ namespace RealLifeOverhaul
             EconomyCity = Bool(modId, EconomyCityId, EconomyCity);
             EconomyCityLevel = Int(modId, EconomyCityLevelId, EconomyCityLevel);
             VenturesInvestors = Bool(modId, VenturesInvestorsId, VenturesInvestors);
-            VenturesMarket = Bool(modId, VenturesMarketId, VenturesMarket);
+            Markets = Bool(modId, MarketsId, Markets);
+            MarketsMargin = Bool(modId, MarketsMarginId, MarketsMargin);
             VenturesLevel = Int(modId, VenturesLevelId, VenturesLevel);
             EconomyCompany = Bool(modId, EconomyCompanyId, EconomyCompany);
             EconomyCompanyLevel = Int(modId, EconomyCompanyLevelId, EconomyCompanyLevel);
@@ -606,6 +611,7 @@ namespace RealLifeOverhaul
             SocialTexts = Bool(modId, SocialTextsId, SocialTexts);
             SocialTextsMax = Int(modId, SocialTextsMaxId, SocialTextsMax);
             SocialNewspaper = Bool(modId, SocialNewspaperId, SocialNewspaper);
+            LedgerKiosks = Bool(modId, LedgerKiosksId, LedgerKiosks);
             Hotels = Bool(modId, HotelsId, Hotels);
             Holidays = Bool(modId, HolidaysId, Holidays);
             TravelExtras = Bool(modId, TravelExtrasId, TravelExtras);

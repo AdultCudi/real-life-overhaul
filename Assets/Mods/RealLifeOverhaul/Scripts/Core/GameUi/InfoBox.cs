@@ -195,25 +195,44 @@ namespace RealLifeOverhaul.GameUi
 
         public void Title(string words)
         {
-            UiClone.Words(Add(_title).transform, words);
+            Title(words, null);
+        }
+
+        /// <summary>A title in the box, or (with a parent) anywhere else: the copy of the box's own.</summary>
+        public TMP_Text Title(string words, Transform parent)
+        {
+            GameObject title = Add(_title, parent);
+            UiClone.Words(title.transform, words);
+            return title.GetComponent<TMP_Text>();
         }
 
         /// <summary>A line of text. The game's lines read "Label: value" with the value in bold; mark-up in 'words' does the same.</summary>
         public TMP_Text Line(string words)
         {
-            GameObject line = Add(_line);
+            return Line(words, null);
+        }
+
+        /// <summary>A line of text in the box, or (with a parent) anywhere else: the copy of the box's own, in its font and colour.</summary>
+        public TMP_Text Line(string words, Transform parent)
+        {
+            GameObject line = Add(_line, parent);
             UiClone.Words(line.transform, words);
             return line.GetComponent<TMP_Text>();
         }
 
         public void Headline(string key)
         {
+            Headline(key, null);
+        }
+
+        /// <summary>A headline over a grey rule, in the box or (with a parent) anywhere else. Returns what was made.</summary>
+        public Transform Headline(string key, Transform parent)
+        {
             if (_headline == null)
             {
-                Line("<b>" + key.GetLocalization() + "</b>");
-                return;
+                return Line("<b>" + key.GetLocalization() + "</b>", parent).transform;
             }
-            GameObject headline = Add(_headline);
+            GameObject headline = Add(_headline, parent);
             var text = headline.GetComponentInChildren<TMP_Text>(true);
             if (text != null)
             {
@@ -224,6 +243,7 @@ namespace RealLifeOverhaul.GameUi
                     text.transform.GetChild(i).gameObject.SetActive(false);
                 }
             }
+            return headline.transform;
         }
 
         /// <summary>A switch with its label. False if the game's switch row could not be had: the caller leaves the choice out.</summary>
@@ -249,11 +269,17 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public bool Selector(int count, int index, Func<int, string> text, Action<int> changed)
         {
+            return Selector(count, index, text, changed, null);
+        }
+
+        /// <summary>The same in the box, or (with a parent) anywhere else.</summary>
+        public bool Selector(int count, int index, Func<int, string> text, Action<int> changed, Transform parent)
+        {
             if (_selector == null || count < 1)
             {
                 return false;
             }
-            GameObject row = Add(_selector);
+            GameObject row = Add(_selector, parent);
             Transform header = row.transform.Find("Header");
             var left = header.Find("LeftButton").GetComponent<Button>();
             var right = header.Find("RightButton").GetComponent<Button>();

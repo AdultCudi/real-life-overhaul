@@ -28,6 +28,11 @@ namespace RealLifeOverhaul.GameUi
         public Func<FullMenu, Transform, GameObject> Build;
         public Action Opened;
         public Action Closed;
+        /// <summary>
+        /// An app the mod opens itself and the player never picks (a newspaper picked up, a counter's page): its panel is
+        /// among the game's own app panels and opens as they do, with no button on either phone.
+        /// </summary>
+        public bool NoButtons;
     }
 
     /// <summary>
@@ -56,7 +61,7 @@ namespace RealLifeOverhaul.GameUi
         private int _badge;
 
         public GameObject Root { get; private set; }
-        public bool Installed => Root != null && _hudButton != null && _menuButton != null;
+        public bool Installed => Root != null && (_def.NoButtons || (_hudButton != null && _menuButton != null));
         public bool Showing => Root != null && Root.activeInHierarchy;
         public PhoneGridPager Pager => _pager;
 
@@ -119,6 +124,14 @@ namespace RealLifeOverhaul.GameUi
                 }
                 root.AddComponent<PhoneAppRoot>().App = app;
                 app.Root = root;
+                if (def.NoButtons)
+                {
+                    if (Meta.Dev.Verbose)
+                    {
+                        Logger?.Info("Game UI: app '" + def.Id + "' is among the phone's apps without a button: the mod opens it itself.");
+                    }
+                    return app;
+                }
 
                 Sprite like = null;
                 SmartphoneAppButton persona;
@@ -344,6 +357,15 @@ namespace RealLifeOverhaul.GameUi
                     if (_strip != null)
                     {
                         _strip.ShowPageOf(_menuButton.transform);   // opened from the HUD phone or a link: its button in sight
+                    }
+                }
+                else if (_def.NoButtons && _menu != null)
+                {
+                    // No button of its own: none of the others is shown as the one open.
+                    FullMenuAppButton[] all = _menu.GetComponentsInChildren<FullMenuAppButton>(false);
+                    for (int i = 0; i < all.Length; i++)
+                    {
+                        all[i].HideSelectedIcon();
                     }
                 }
                 _def.Opened?.Invoke();

@@ -210,60 +210,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             Tell(NotificationType.Info, "reallife_ven_test_listed", null, "investors", _file.Investors.Count.ToString(), "companies", _file.Companies.Count.ToString());
         }
 
-        /// <summary>"Test: step the market 30 days": thirty market days at once, with today's news on the first. No dividend is paid. The market as it stood is kept, and is what a save keeps, until it is put back.</summary>
-        public void TestMarket()
-        {
-            Guarded(TestMarketNow);
-        }
-
-        private void TestMarketNow()
-        {
-            if (!TestReady("Market"))
-            {
-                return;
-            }
-            if (_file.Backup == null)
-            {
-                _file.Backup = Market.Backup(_file);
-            }
-            int days = 0;
-            float rate = _file.RateSeen;
-            int levers = _file.LeversSeen, elections = _file.ElectionSeen;
-            GatherNews();
-            _file.RateSeen = rate;   // (what the real day will compare with is left as it was)
-            _file.LeversSeen = levers;
-            _file.ElectionSeen = elections;
-            int phase = VenturesBridges.Climate.Phase, day = Save.Day;
-            for (int n = 0; n < 30; n++)
-            {
-                _log.Length = 0;
-                Market.Step(_file, day, phase, n == 0 ? _news : null, _log);
-                Logger?.Warn("Ventures check (test market day " + _file.MarketSteps + "): " + _log + ".");
-                days++;
-            }
-            Tell(NotificationType.Info, "reallife_ven_test_stepped", () => Open(VenturesPhone.Market), "days", days.ToString());
-        }
-
-        /// <summary>"Test: pay a dividend": every holding is paid its dividend now; with none held, ten test shares of the first company are given first.</summary>
-        public void TestDividend()
-        {
-            Guarded(TestDividendNow);
-        }
-
-        private void TestDividendNow()
-        {
-            if (!TestReady("Dividend"))
-            {
-                return;
-            }
-            if (_file.Holdings.Count == 0 && _file.Companies.Count > 0)
-            {
-                _file.Holdings.Add(new Holding { CompanyId = _file.Companies[0].Id, Shares = 10, Test = true });
-            }
-            PayDividends(Save.Day);
-            Logger?.Warn("Ventures check (test dividend): paid on " + _file.Holdings.Count + " holding(s); in all so far " + _file.DividendsTotal + ".");
-        }
-
         /// <summary>"Test: an investor calls their money": a deal there is, or a test deal on the best business, becomes a sum called back at this level's pace.</summary>
         public void TestCall()
         {

@@ -11,8 +11,9 @@ namespace RealLifeOverhaul
     /// <summary>
     /// The social life's side of the phone: a contact for everybody the player has met (Mom and
     /// Alex keep the contacts they always had and get the new conversation), a "People" contact
-    /// that reads out how things stand with each of them, and the "City Ledger", which sends the
-    /// morning paper as messages and reads it out when called.
+    /// that reads out how things stand with each of them, and the "City Ledger", the paper's
+    /// subscriptions desk when called (the paper itself is a newspaper the player has delivered to
+    /// their home or buys at a kiosk: Scripts/Ledger, through Wiring/LedgerLinks).
     ///
     /// Contacts are made exactly as Phone/PhoneContacts makes its own: the game's own Contact,
     /// in the save's own contact list, with an id and a description key and nothing else. A
@@ -41,6 +42,9 @@ namespace RealLifeOverhaul
 
         /// <summary>True once this save's contacts have been set up with the social life on.</summary>
         public static bool On { get; private set; }
+
+        /// <summary>The City Ledger's desk: the first line of a call to its contact (set by Wiring/LedgerLinks; null says the desk is not open).</summary>
+        public static Func<DialogEntry> LedgerDesk;
 
         public static string IdOf(SocialPerson person)
         {
@@ -127,27 +131,22 @@ namespace RealLifeOverhaul
             return contact;
         }
 
-        /// <summary>The morning paper, as messages from the City Ledger: one notification for the lot.</summary>
-        public static void DeliverPaper(IModLogger logger)
+        /// <summary>A message from the City Ledger (its subscriptions desk: a payment, a subscription that has stopped), with the game's notification.</summary>
+        public static void LedgerMessage(string key, Dictionary<string, string> data)
         {
             try
             {
-                if (SaveGameManager.Current == null || News.Today.Count == 0)
+                if (SaveGameManager.Current == null || !Settings.SocialNewspaper || string.IsNullOrEmpty(key))
                 {
                     return;
                 }
                 ContactPictures.Add(LedgerId);
                 Contact ledger = Page(LedgerId, "reallife_social_ledger_desc", "reallife_ledger_calldialogtype", () => new LedgerDialog(), null);
-                for (int i = 0; i < News.Today.Count; i++)
-                {
-                    NewsItem item = News.Today[i];
-                    // (A copy of the data: the game keeps what a message is given, and the paper keeps its own.)
-                    ledger.SendMessage(new TextMessage(item.Key, item.Data != null ? new Dictionary<string, string>(item.Data) : null), notify: i == 0, sendNotificationInstantly: i == 0);
-                }
+                ledger.SendMessage(new TextMessage(key, data), notify: true, sendNotificationInstantly: true);
             }
             catch (Exception e)
             {
-                logger?.Error(e);
+                SocialDirector.Logger?.Error(e);
             }
         }
 

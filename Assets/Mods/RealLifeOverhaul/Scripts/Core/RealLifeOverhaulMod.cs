@@ -447,8 +447,6 @@ namespace RealLifeOverhaul
                     v => Settings.SocialTexts = v)
                 .AddSlider(Settings.SocialTextsMaxId, "reallife_social_texts_max", 1, 6, Settings.SocialTextsMax,
                     v => Settings.SocialTextsMax = v, Meta.SettingsTable.SliderValue)
-                .AddToggle(Settings.SocialNewspaperId, "reallife_social_newspaper", Settings.SocialNewspaper,
-                    v => Settings.SocialNewspaper = v)
                 .AddButton("reallife_social_test_meet", () => SocialDirector.Instance?.TestMeet())
                 .AddButton("reallife_social_test_person", () => SocialDirector.Instance?.TestPerson())
                 .AddButton("reallife_social_test_advance", () => SocialDirector.Instance?.TestAdvance())
@@ -467,8 +465,22 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_social_test_business", () => SocialDirector.Instance?.TestOuting(PlanKind.Business))
                 .AddButton("reallife_social_test_lift", () => SocialDirector.Instance?.TestOuting(PlanKind.Lift))
                 .AddButton("reallife_social_test_moving", () => SocialDirector.Instance?.TestOuting(PlanKind.Moving))
-                .AddButton("reallife_social_test_paper", () => SocialDirector.Instance?.TestPaper())
                 .AddButton("reallife_social_test_stop", () => SocialDirector.Instance?.TestStop())
+                .AddSplitter()
+                .AddHeader("reallife_ledger_header")
+                .AddToggle(Settings.SocialNewspaperId, "reallife_social_newspaper", Settings.SocialNewspaper,
+                    v => Settings.SocialNewspaper = v)
+                .AddToggle(Settings.LedgerKiosksId, "reallife_ledger_opt_kiosks", Settings.LedgerKiosks,
+                    v => Settings.LedgerKiosks = v)
+                .AddButton("reallife_ledger_test_open", () => Ledger.LedgerDirector.Instance?.TestOpen())
+                .AddButton("reallife_social_test_paper", () =>
+                {
+                    SocialDirector.Instance?.TestPaper();   // the city's paper written again from its log...
+                    Ledger.LedgerDirector.Instance?.TestDeliver();   // ...printed as the City Ledger, a copy at the door
+                })
+                .AddButton("reallife_ledger_test_kiosk", () => Ledger.LedgerDirector.Instance?.TestKiosk())
+                .AddButton("reallife_ledger_test_find", () => Ledger.LedgerDirector.Instance?.TestFindKiosks())
+                .AddButton("reallife_ledger_test_back", () => Ledger.LedgerDirector.Instance?.TestBack())
                 .AddSplitter()
                 .AddHeader("reallife_travel_header")
                 .AddToggle(Settings.HotelsId, "reallife_travel_hotels", Settings.Hotels,
@@ -597,8 +609,6 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_macro_test_back", () => Economy.CityEconomyDirector.Instance?.TestBack())
                 .AddToggle(Settings.VenturesInvestorsId, "reallife_ven_investors", Settings.VenturesInvestors,
                     v => Settings.VenturesInvestors = v)
-                .AddToggle(Settings.VenturesMarketId, "reallife_ven_market", Settings.VenturesMarket,
-                    v => Settings.VenturesMarket = v)
                 .AddDropdown(Settings.VenturesLevelId, "reallife_ven_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.VenturesLevel,
                     v => Settings.VenturesLevel = v)
@@ -607,10 +617,17 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_ven_test_pitch_tycoon", () => Economy.Ventures.VenturesDirector.Instance?.TestPitch((int)Economy.Ventures.InvestorKind.Tycoon))
                 .AddButton("reallife_ven_test_pitch_firm", () => Economy.Ventures.VenturesDirector.Instance?.TestPitch((int)Economy.Ventures.InvestorKind.Firm))
                 .AddButton("reallife_ven_test_list", () => Economy.Ventures.VenturesDirector.Instance?.TestList())
-                .AddButton("reallife_ven_test_market", () => Economy.Ventures.VenturesDirector.Instance?.TestMarket())
-                .AddButton("reallife_ven_test_dividend", () => Economy.Ventures.VenturesDirector.Instance?.TestDividend())
                 .AddButton("reallife_ven_test_call", () => Economy.Ventures.VenturesDirector.Instance?.TestCall())
                 .AddButton("reallife_ven_test_back", () => Economy.Ventures.VenturesDirector.Instance?.TestBack())
+                .AddHeader("reallife_mkt_header")
+                .AddToggle(Settings.MarketsId, "reallife_mkt_enabled", Settings.Markets,
+                    v => Settings.Markets = v)
+                .AddToggle(Settings.MarketsMarginId, "reallife_mkt_opt_margin", Settings.MarketsMargin,
+                    v => Settings.MarketsMargin = v)
+                .AddButton("reallife_mkt_test_open", () => Markets.MarketDirector.Instance?.TestOpen())
+                .AddButton("reallife_mkt_test_crisis", () => Markets.MarketDirector.Instance?.TestNews(true))
+                .AddButton("reallife_mkt_test_windfall", () => Markets.MarketDirector.Instance?.TestNews(false))
+                .AddButton("reallife_mkt_test_bid", () => Markets.MarketDirector.Instance?.TestBid())
                 .AddHeader("reallife_co_header")
                 .AddToggle(Settings.EconomyCompanyId, "reallife_co_enabled", Settings.EconomyCompany,
                     v => Settings.EconomyCompany = v)
@@ -956,7 +973,13 @@ namespace RealLifeOverhaul
             _root.AddComponent<Economy.CityEconomyDirector>();   // the city's economy: a central bank, prices, a cycle, districts and supply (Scripts/Economy/City)
             Economy.Ventures.VenturesDirector.Logger = context.Logger;
             Economy.Ventures.VenturesApp.Logger = context.Logger;
-            _root.AddComponent<Economy.Ventures.VenturesDirector>();   // investors, the pitch, the stock market and the Ventures app (Scripts/Economy/Ventures)
+            _root.AddComponent<Economy.Ventures.VenturesDirector>();   // investors, the pitch and the Ventures app (Scripts/Economy/Ventures)
+            Markets.MarketDirector.Logger = context.Logger;
+            Markets.MarketTapeFile.Logger = context.Logger;
+            Markets.MarketApp.Logger = context.Logger;
+            _root.AddComponent<Markets.MarketDirector>();   // the city's stock market and the Stocks app (Scripts/Markets): after Ventures, whose old market it takes over
+            Ledger.LedgerDirector.Logger = context.Logger;
+            _root.AddComponent<Ledger.LedgerDirector>();   // the City Ledger: the morning paper delivered or bought at a kiosk, and read as a newspaper (Scripts/Ledger)
             Economy.OnlineDirector.Logger = context.Logger;
             Economy.OnlineApp.Logger = context.Logger;
             _root.AddComponent<Economy.OnlineDirector>();   // online shops: orders from the whole city, picked from real stock and delivered, and the Web shop app (Scripts/Economy/Online); before the company, so that its day comes first

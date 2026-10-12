@@ -231,7 +231,9 @@ namespace RealLifeOverhaul.Meta
                 S("family").For("family").Main("family").Opts("family_at_home", "family_wedding", "family_children", "family_relatives", "family_friction",
                     "family_interest", "family_year_weeks").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
                 S("social").For("social").Main("social").Opts("social_meetings", "social_relationships", "social_outings", "social_contact", "social_texts")
-                    .Opt("social_texts_max", "social_texts").Opts("social_newspaper").Also("friends dating date people"),
+                    .Opt("social_texts_max", "social_texts").Also("friends dating date people"),
+                S("ledger").For("ledger").Main("social_newspaper").Opts("ledger_kiosks")
+                    .Also("newspaper paper news kiosk subscription delivery"),
                 S("leisure").For("leisure").Main("leisure").Opt("leisure_chess", "city_life").Opts("leisure_fishing", "leisure_night_out", "leisure_sights", "leisure_cinema")
                     .Opt("night_life", "city_life").Opts("photo_mode").Buttons("reallife_leisure_test_records").Also("fun hobby nightclub bar"),
                 S("lifeevents").For("life").Main("life_events").Opts("life_frequency").Also("random luck surprise"),
@@ -283,7 +285,8 @@ namespace RealLifeOverhaul.Meta
                     .Also("borrow overdraft card collections repossession").Also("economy_products", "mortgage rent overdraft card finance"),
                 S("banks").For("economy_banks").Need("economy").Opts("economy_banks").Also("bank app current account statement card loan apply"),
                 S("cityeco").For("economy_city").Need("economy").Main("economy_city").Opts("economy_city_level").Also("prices rates boom recession inflation"),
-                S("ventures").For("ventures").Opts("ventures_investors", "ventures_market", "ventures_level").Also("shares stocks invest dividend")),
+                S("ventures").For("ventures").Opts("ventures_investors", "ventures_level").Also("invest investor pitch deal"),
+                S("markets").For("markets").Main("ventures_market").Opts("markets_margin").Also("shares stocks invest dividend broker trading candles chart margin short")),
 
             G("business",
                 S("company").For("economy_company").Need("economy").Main("economy_company").Opts("economy_company_staff", "economy_company_cover",
