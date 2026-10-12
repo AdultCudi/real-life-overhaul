@@ -1,17 +1,10 @@
-0.2.3
+0.2.4
 
 New
-- Brazilian Portuguese: the mod follows the language the game is set to. A first translation; tell us what reads wrong.
-- The rota gives every employee the weekly hours they ask for, never fewer and never more, and puts shifts on the hours customers come.
-- The more skilled get their hours first. Staff the business has no hours for are named, so you can let them go.
-- Company app: raise an underpaid employee to the going rate at any time, without waiting for them to ask.
-- Company app: the buttons that answer a raise, a rival's offer, a strike or overtime are at the top of the page.
-- A test tool under Troubleshooting says what is blocking you where you stand.
 - Bank apps: each of the city's banks has its own app with your account, loans, card, offers and rating.
 - Contacts: real faces for people and logos for services, all from the game, and a search box.
 - Police stations are furnished with the game's own desks, computers, lockers, plants and lamps.
 
 Fixed
-- An unseen parked car could block the pavement while the "far districts" performance option was on.
 - The row of apps at the top of the full screen menu ran under the money and off the screen; it now has pages.
 - On the city map, the mod's rows (Courthouse, Custom shops and the rest) could be unticked while their places stayed on the map.
