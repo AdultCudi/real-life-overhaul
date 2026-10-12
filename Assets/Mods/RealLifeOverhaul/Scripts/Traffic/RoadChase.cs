@@ -149,7 +149,7 @@ namespace RealLifeOverhaul
         {
             if (_stoppedNotice != null)
             {
-                Notifications.Show(NotificationType.Info, _stoppedNotice, null, 8f, "reallife_accident");
+                TrafficAccidents.Notice(NotificationType.Info, _stoppedNotice, 8f);
             }
             if (_stop != null && StreetSpots.BesideCar(_suspect.Car, StreetSpots.Left, 1f, out Vector3 door)
                 && _stop.Begin(_patrol.Car, door, _arrest, now))

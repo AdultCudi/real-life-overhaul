@@ -401,7 +401,7 @@ namespace RealLifeOverhaul
             Logger?.Info($"Pedestrian hit by traffic ('{TrafficTools.Name(car)}') at {speed * 3.6f:F0} km/h: {casualty.Result}.");
             if (casualty.Result == Casualty.Outcome.Knocked)
             {
-                Notifications.Show(NotificationType.Warning, "reallife_streets_knocked", null, 6f);
+                TrafficAccidents.Notice(NotificationType.Warning, "reallife_streets_knocked", 6f, null);
                 return;
             }
             TrafficHurt++;
@@ -424,8 +424,7 @@ namespace RealLifeOverhaul
             VehicleComponent car = drivers != null ? drivers.GiveUpStriker() : null;
             if (accidents.StageCasualty(casualty, casualty.Position, car, casualty.Dead, byPlayer: false, asItStands: true))
             {
-                Notifications.Show(casualty.Dead ? NotificationType.Error : NotificationType.Warning,
-                    StagedStarts[Random.Range(0, StagedStarts.Length)], null, 8f, "reallife_accident");
+                TrafficAccidents.Notice(casualty.Dead ? NotificationType.Error : NotificationType.Warning, StagedStarts[Random.Range(0, StagedStarts.Length)], 8f);
             }
             else if (car != null)
             {
@@ -621,8 +620,7 @@ namespace RealLifeOverhaul
             _anyone = true;
             _nextTick = now + TickInterval;
             Logger?.Info($"Pedestrian incident staged: {(dead ? "fatal" : "injury")}, {Vector3.Distance(PlayerHelper.GetPosition(), body.position):F0} m away.");
-            Notifications.Show(dead ? NotificationType.Error : NotificationType.Warning,
-                StagedStarts[Random.Range(0, StagedStarts.Length)], null, 8f, "reallife_accident");
+            TrafficAccidents.Notice(dead ? NotificationType.Error : NotificationType.Warning, StagedStarts[Random.Range(0, StagedStarts.Length)], 8f);
             return true;
         }
 

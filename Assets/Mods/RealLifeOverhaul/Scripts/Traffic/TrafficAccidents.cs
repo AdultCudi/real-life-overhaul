@@ -1230,7 +1230,7 @@ namespace RealLifeOverhaul
                 : (_severity == Severity.Minor ? "reallife_accident_minor"
                     : _severity == Severity.Moderate ? "reallife_accident_moderate"
                     : "reallife_accident_severe");
-            Notifications.Show(_severity == Severity.Severe ? NotificationType.Error : NotificationType.Warning, key, null, 8f, "reallife_accident");
+            Notice(_severity == Severity.Severe ? NotificationType.Error : NotificationType.Warning, key, 8f);
 
             // Some accidents are hit-and-runs: the lead driver will bolt when the police turn up. (Where the cars
             // stand as they met, only if the other one is not in front of it: it cannot drive off through a wreck.)
@@ -1906,9 +1906,28 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Pins the accident marker over the scene, or to the screen edge when the scene is out of view.
+        /// <summary>
+        /// One of the notifications about an accident of other people's (its start, the road closed, a unit on its way, a
+        /// chase, the road open again): told only while the option for them is on. What the player did themselves (helped,
+        /// hit somebody) is told whatever it is.
+        /// </summary>
+        public static void Notice(NotificationType type, string key, float seconds, string group = "reallife_accident")
+        {
+            if (Settings.AccidentNotices)
+            {
+                Notifications.Show(type, key, null, seconds, group);
+            }
+        }
+
+        // Pins the accident marker over the scene, or to the screen edge when the scene is out of view (and so the route
+        // to it); with the option for it off, there is none.
         private void UpdateMarker()
         {
+            if (!Settings.AccidentMarker)
+            {
+                _mark.Hide();
+                return;
+            }
             if (_markerLabel == null)
             {
                 _markerLabel = "reallife_accident_marker".GetLocalization();
@@ -2767,15 +2786,15 @@ namespace RealLifeOverhaul
             {
                 _cordon.Raise(now);
                 _people.OnCordonRaised(_cordon);
-                Notifications.Show(NotificationType.Info, "reallife_accident_closed", null, 6f, "reallife_accident");
+                Notice(NotificationType.Info, "reallife_accident_closed", 6f);
             }
             else if (attendance.Police)
             {
-                Notifications.Show(NotificationType.Info, "reallife_accident_police", null, 6f, "reallife_accident");
+                Notice(NotificationType.Info, "reallife_accident_police", 6f);
             }
             else
             {
-                Notifications.Show(NotificationType.Info, "reallife_accident_paramedics", null, 6f, "reallife_accident");
+                Notice(NotificationType.Info, "reallife_accident_paramedics", 6f);
             }
             LayTaper();
             ParkedCheck();
@@ -2943,7 +2962,7 @@ namespace RealLifeOverhaul
             _pursuit.Begin(_suspect, patrol, _arrest, caught, Mathf.Min(now + Random.Range(20f, 45f), _deadline - 22f), arrest: true, "reallife_chase_caught");
             News.Report(NewsKind.HitAndRun, _scene);
             Logger?.Info($"Accident: hit-and-run, {car.prefab.name} is running; will be {(caught ? "caught" : "lost")}.");
-            Notifications.Show(NotificationType.Warning, "reallife_chase_start", null, 8f, "reallife_accident");
+            Notice(NotificationType.Warning, "reallife_chase_start", 8f);
         }
 
         // The chase itself (when the suspect brakes, when the two are held, the arrest at the roadside, when it is
@@ -2962,7 +2981,7 @@ namespace RealLifeOverhaul
         {
             if (!caught)
             {
-                Notifications.Show(NotificationType.Info, "reallife_chase_escaped", null, 8f, "reallife_accident");
+                Notice(NotificationType.Info, "reallife_chase_escaped", 8f);
             }
             _arrest.Clear();
             _suspect.Release(resumeTraffic: true, remove: caught);
@@ -3010,7 +3029,7 @@ namespace RealLifeOverhaul
                         : SevereEndings;
                     ending = endings[Random.Range(0, endings.Length)];
                 }
-                Notifications.Show(NotificationType.Info, ending, null, 7f, "reallife_accident");
+                Notice(NotificationType.Info, ending, 7f);
             }
 
             if (_phase == Phase.Active && _attended && _ambulance != null)
