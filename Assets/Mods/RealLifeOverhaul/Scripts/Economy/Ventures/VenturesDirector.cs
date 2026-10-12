@@ -11,19 +11,20 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy.Ventures
 {
     /// <summary>
-    /// Investors and the market: investors who put money into the player's businesses for a share of the profit, a
-    /// pitch that wins or loses that money, a stock market of the city's companies, and a page on what the game's own
-    /// lettings bring in. See the README ("Economy: investors and the market").
+    /// Investors: investors who put money into the player's businesses for a share of the profit, a pitch that wins or
+    /// loses that money, and a page on what the game's own lettings bring in. See the README ("Economy: investors").
+    /// The stock market that used to be here is the city's own now (Scripts/Markets): the shares a save held in it go
+    /// over to that market once, and this file keeps none.
     ///
     /// This class keeps it going and nothing more. It has no Update. A one-second timer on the real clock waits for
     /// the save, puts the app on the phone and keeps the three event handlers in place (the game empties its events
     /// on every load). The work itself is done on the game's own events: the day (each deal's share of yesterday's
-    /// profit, targets, offers that lapse, the weekly look at the businesses, the market's day and its dividends), the
-    /// hour (only while money is promised for a business not yet open: has it been opened), the save, and when the
-    /// app is opened or something in it is clicked.
+    /// profit, targets, offers that lapse, the weekly look at the businesses), the hour (only while money is promised
+    /// for a business not yet open: has it been opened), the save, and when the app is opened or something in it is
+    /// clicked.
     ///
-    /// The rules are game-free classes in this folder (Cast, OfferRules, DealRules, Pitch, Market); this class reads
-    /// the game's figures for them (VenturesGame), moves the money they name (VenturesWallet) and says what happened.
+    /// The rules are game-free classes in this folder (Cast, OfferRules, DealRules, Pitch); this class reads the
+    /// game's figures for them (VenturesGame), moves the money they name (VenturesWallet) and says what happened.
     /// Nothing is ever written into the game's own business or property records.
     ///
     /// A fault anywhere switches Ventures off for the session with one line and leaves the game, its daily run and
@@ -40,7 +41,6 @@ namespace RealLifeOverhaul.Economy.Ventures
         private readonly VenturesWallet _wallet = new VenturesWallet();
         private readonly List<BuildingRegistration> _businesses = new List<BuildingRegistration>(16);
         private readonly List<DealEvent> _said = new List<DealEvent>(8);
-        private readonly List<MarketNews> _news = new List<MarketNews>(8);
         private readonly List<string> _names = new List<string>(VenturesCatalogue.RivalsListed);
         private readonly StringBuilder _log = new StringBuilder(600);
 
@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         private bool _running;         // the file is open
         private bool _broken;          // a fault: off for the session
         private bool _gaveUp;          // the game's phone is not built as expected: the app is left off, the rest runs
-        private Action _onSave, _onHour, _onDay, _hourSeen, _daySeen, _openInvestors, _openPortfolio;
+        private Action _onSave, _onHour, _onDay, _hourSeen, _daySeen, _openInvestors;
         private Func<int, int> _fileClaim;
 
         public bool Running => _running && !_broken;
@@ -74,7 +74,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             _onHour = OnHour;
             _onDay = OnDay;
             _openInvestors = () => Open(VenturesPhone.Investors);
-            _openPortfolio = () => Open(VenturesPhone.Portfolio);
             _fileClaim = amount => EconomyBridges.FileClaim != null ? EconomyBridges.FileClaim(amount) : 0;
             StartCoroutine(Tick());
         }
@@ -122,14 +121,14 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
-        // Once a second: start when the save is ready, stand down when both options go off, hold the handlers, the app on the phone.
+        // Once a second: start when the save is ready, stand down when the option goes off, hold the handlers, the app on the phone.
         private void Slow()
         {
             if (Save == null || LoadScene.isLoading || !ModState.Loaded)
             {
                 return;
             }
-            if (!Settings.VenturesInvestors && !Settings.VenturesMarket)
+            if (!Settings.VenturesInvestors)
             {
                 if (_running)
                 {
@@ -346,10 +345,6 @@ namespace RealLifeOverhaul.Economy.Ventures
                 }
                 _wallet.BookDay = day - 1;   // the game books its daily run on the day that has ended
                 InvestorsDay(day);
-                if (Settings.VenturesMarket)
-                {
-                    MarketDay(day);
-                }
                 _file.SettledDay = day;
                 _wallet.BookDay = null;
                 Badge();
@@ -562,91 +557,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
-        // The market's day: the news the bridges hand over and what has changed at city hall and the bank, then every price, then dividends when they are due.
-        private void MarketDay(int day)
-        {
-            GatherNews();
-            _log.Length = 0;
-            Market.Step(_file, day, VenturesBridges.Climate.Phase, _news, Verbose ? _log : null);
-            if (Verbose)
-            {
-                Logger?.Info("Ventures check (market day " + _file.MarketSteps + ", game day " + day + "): " + _news.Count + " piece(s) of news" + NewsLine() + ", climate "
-                             + VenturesBridges.Climate.Phase + ". " + _log + ".");
-            }
-            if (Market.DividendDue(_file))
-            {
-                PayDividends(day);
-            }
-        }
-
-        private void GatherNews()
-        {
-            _news.Clear();
-            Action<List<MarketNews>> dayNews = VenturesBridges.DayNews;
-            if (dayNews != null)
-            {
-                dayNews(_news);
-            }
-            Func<int, int> lever = VenturesBridges.Lever;
-            if (lever != null)
-            {
-                int packed = 0, seen = _file.LeversSeen;
-                for (int i = VenturesBridges.Levers - 1; i >= 0; i--)
-                {
-                    packed = packed * 3 + Mathf.Clamp(lever(i), -1, 1) + 1;
-                }
-                for (int i = 0, rest = seen, now = packed; seen >= 0 && i < VenturesBridges.Levers; i++, rest /= 3, now /= 3)
-                {
-                    int moved = now % 3 - rest % 3;
-                    if (moved != 0)
-                    {
-                        _news.Add(new MarketNews { Cause = MarketCause.Policy, Lever = i, Scale = moved * 100 });
-                    }
-                }
-                _file.LeversSeen = packed;
-            }
-            int elections = VenturesBridges.Elections != null ? VenturesBridges.Elections() : -1;
-            if (elections >= 0)
-            {
-                if (_file.ElectionSeen >= 0 && elections > _file.ElectionSeen)
-                {
-                    _news.Add(new MarketNews { Cause = MarketCause.Election });
-                }
-                _file.ElectionSeen = elections;
-            }
-            float rate = VenturesBridges.Climate.BankRate;
-            if (_file.RateSeen >= 0f && Mathf.Abs(rate - _file.RateSeen) >= 0.01f)
-            {
-                _news.Add(new MarketNews { Cause = MarketCause.BankRate, Scale = Mathf.RoundToInt((rate - _file.RateSeen) * 100f) });
-            }
-            _file.RateSeen = rate;
-        }
-
-        private string NewsLine()
-        {
-            string text = string.Empty;
-            for (int i = 0; i < _news.Count; i++)
-            {
-                text += (i == 0 ? " (" : ", ") + _news[i].Cause + (_news[i].Cause == MarketCause.Policy ? " " + _news[i].Lever + " by " + _news[i].Scale : string.Empty)
-                        + (_news[i].Company != null ? " by " + _news[i].Company : string.Empty);
-            }
-            return text.Length > 0 ? text + ")" : text;
-        }
-
-        private void PayDividends(int day)
-        {
-            int total = Market.PayDividends(_file, _wallet);
-            if (total > 0)
-            {
-                Tell(NotificationType.Success, "reallife_ven_note_dividend", _openPortfolio, "amount", FinanceText.Money(total), "count", _file.Holdings.Count.ToString(),
-                    "days", VenturesCatalogue.DividendEveryDays.ToString());
-            }
-            if (Verbose)
-            {
-                Logger?.Info("Ventures check (dividend, day " + day + "): market day " + _file.MarketSteps + ", " + _file.Holdings.Count + " holding(s) paid " + total + " in all.");
-            }
-        }
-
         // ---------------------------------------------------------------- what the app asks for
 
         /// <summary>The app has been opened: a business a promise waited for may have been opened since the last hour, and what the badge counted has been seen.</summary>
@@ -832,42 +742,6 @@ namespace RealLifeOverhaul.Economy.Ventures
                     _file.Pledges.RemoveAt(i);
                     return;
                 }
-            }
-        }
-
-        public TradeAnswer Buy(int companyId, int shares)
-        {
-            return Trade(companyId, shares, true);
-        }
-
-        public TradeAnswer Sell(int companyId, int shares)
-        {
-            return Trade(companyId, shares, false);
-        }
-
-        private TradeAnswer Trade(int companyId, int shares, bool buy)
-        {
-            Company company = Running && Settings.VenturesMarket ? _file.Company(companyId) : null;
-            if (company == null)
-            {
-                return TradeAnswer.Nothing;
-            }
-            try
-            {
-                int cash = _wallet.Cash;
-                TradeAnswer answer = buy ? Market.Buy(_file, company, shares, _wallet) : Market.Sell(_file, company, shares, _wallet);
-                if (Verbose)
-                {
-                    Holding held = _file.Holding(companyId);
-                    Logger?.Info("Ventures check (trade): " + (buy ? "buy " : "sell ") + shares + " of " + company.Name + " at " + (company.PriceCents / 100f).ToString("0.00") + ": " + answer
-                                 + "; cash " + cash + " to " + _wallet.Cash + ", now holding " + (held != null ? held.Shares : 0) + " at a cost of " + (held != null ? held.Cost : 0) + ".");
-                }
-                return answer;
-            }
-            catch (Exception e)
-            {
-                Fault("a trade", e);
-                return TradeAnswer.Nothing;
             }
         }
 

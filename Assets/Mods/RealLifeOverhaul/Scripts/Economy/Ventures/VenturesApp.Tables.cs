@@ -20,10 +20,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             "reallife_ven_sector_retail", "reallife_ven_sector_food", "reallife_ven_sector_office", "reallife_ven_sector_leisure", "reallife_ven_sector_industry"
         };
 
-        // ---- whether shares of a company are held (the second filter of the Market tab)
-        public const int Held = 0, NotHeld = 1;
-        private static readonly string[] Holding = { "reallife_tab_ven_held", "reallife_tab_ven_not_held" };
-
         /// <summary>While the file is not open: one empty column.</summary>
         public static readonly TableSpec Off = new TableSpec("Ventures", "Off").Column("reallife_ven_col_investor", 600f, TableSort.None, flexible: true);
 
@@ -65,32 +61,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             .Column("reallife_ven_col_open", 320f, TableSort.Custom, right: true)
             .Filter("reallife_tab_all_types", InvestorKinds)
             .Empty("reallife_tab_empty_investors");
-
-        /// <summary>Market: 0 company, 1 sector, 2 price, 3 last move, 4 shares held, 5 worth, 6 gain or loss, 7 dividend.</summary>
-        public static readonly TableSpec Market = new TableSpec("Ventures", "Market")
-            .Column("reallife_ven_col_company", 400f, TableSort.Text, flexible: true)
-            .Column("reallife_ven_col_sector", 300f, TableSort.Text)
-            .Column("reallife_ven_col_price", 200f, TableSort.Money)
-            .Column("reallife_ven_col_today", 200f, TableSort.Number)
-            .Column("reallife_ven_col_shares", 180f, TableSort.Number)
-            .Column("reallife_ven_col_worth", 240f, TableSort.Money, sums: true)
-            .Column("reallife_ven_col_gain", 260f, TableSort.Money, sums: true)
-            .Column("reallife_tab_col_dividend", 200f, TableSort.Number, right: true)
-            .Filter("reallife_tab_all_sectors", VenturesCatalogue.MarketSectorKeys)
-            .Filter("reallife_tab_ven_all_companies", Holding)
-            .Empty("reallife_tab_empty_companies");
-
-        /// <summary>Portfolio: 0 company, 1 sector, 2 shares, 3 worth, 4 paid, 5 gain or loss, 6 dividends received.</summary>
-        public static readonly TableSpec Portfolio = new TableSpec("Ventures", "Portfolio")
-            .Column("reallife_ven_col_company", 440f, TableSort.Text, flexible: true)
-            .Column("reallife_ven_col_sector", 320f, TableSort.Text)
-            .Column("reallife_ven_col_shares", 200f, TableSort.Number)
-            .Column("reallife_ven_col_worth", 260f, TableSort.Money, sums: true)
-            .Column("reallife_ven_col_cost", 260f, TableSort.Money, sums: true)
-            .Column("reallife_ven_col_gain", 280f, TableSort.Money, sums: true)
-            .Column("reallife_tab_col_dividends", 260f, TableSort.Money, sums: true, right: true)
-            .Filter("reallife_tab_all_sectors", VenturesCatalogue.MarketSectorKeys)
-            .Empty("reallife_tab_empty_companies");
 
         /// <summary>Property: 0 building, 1 district, 2 let, 3 paid, 4 worth, 5 rent over 7 days, 6 yield a year.</summary>
         public static readonly TableSpec Property = new TableSpec("Ventures", "Property")

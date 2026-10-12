@@ -71,7 +71,8 @@ namespace RealLifeOverhaul
             Step("the economy", EconomyLinks.Connect);
             Step("credit and debt", DebtLinks.Connect);
             Step("the city's economy", CityLinks.Connect);
-            Step("investors and the market", VenturesLinks.Connect);
+            Step("investors", VenturesLinks.Connect);
+            Step("the stock market", MarketLinks.Connect);
             Step("running a business", CompanyLinks.Connect);
             Step("property", EstateLinks.Connect);
             Step("online shops", OnlineLinks.Connect);
@@ -98,7 +99,8 @@ namespace RealLifeOverhaul
             Step("the city's economy", CityLinks.Disconnect);
             Step("credit and debt", DebtLinks.Disconnect);
             Step("the economy", EconomyLinks.Disconnect);
-            Step("investors and the market", VenturesLinks.Disconnect);
+            Step("the stock market", MarketLinks.Disconnect);
+            Step("investors", VenturesLinks.Disconnect);
             Step("the minimap and the GPS", NavLinks.Disconnect);
             Step("family life", FamilyLinks.Disconnect);
             Step("everyday life", LifeLinks.Disconnect);

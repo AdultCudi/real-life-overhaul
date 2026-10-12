@@ -85,12 +85,31 @@ namespace RealLifeOverhaul
         public static IReadOnlyList<NewsItem> Today => Paper;
 
         /// <summary>
+        /// Raised for every report while a save is loaded, whether or not the paper prints it (the stock market hears
+        /// of a crime, a break-in or an accident the moment it is reported: Wiring/MarketLinks). With the kind, the
+        /// report's detail and its amount. A handler must not throw; one that does is logged and the report goes on.
+        /// </summary>
+        public static event Action<NewsKind, string, int> Reported;
+
+        /// <summary>
         /// Something happened that a newspaper would print. Safe to call from anywhere at any
         /// time: it does nothing until a save is loaded, or while the paper is switched off.
         /// </summary>
         /// <param name="detail">An id or a name that already exists as a string (never one built for this call).</param>
         public static void Report(NewsKind kind, Vector3 where, string detail = null, int amount = 0)
         {
+            Action<NewsKind, string, int> heard = Reported;
+            if (heard != null && SaveGameManager.Current != null)
+            {
+                try
+                {
+                    heard(kind, detail, amount);
+                }
+                catch (Exception e)
+                {
+                    SocialDirector.Logger?.Error(e);
+                }
+            }
             if (!_ready || (!Settings.SocialNewspaper && !Settings.Social))
             {
                 return;

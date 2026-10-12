@@ -5,7 +5,7 @@ using Extensions;
 namespace RealLifeOverhaul.Economy.Ventures
 {
     /// <summary>
-    /// What investors and the market ask of the rest of the mod. Each is optional and has a default, so
+    /// What investors ask of the rest of the mod. Each is optional and has a default, so
     /// Scripts/Economy/Ventures works alone; Scripts/Wiring/VenturesLinks.cs fills them in. Ventures calls no other
     /// feature directly. (The legal record, the courts for a civil claim and "is the player held" are the economy's
     /// own bridges, <see cref="EconomyBridges"/>, and are used as they are.)
@@ -21,18 +21,6 @@ namespace RealLifeOverhaul.Economy.Ventures
             set { _climate = value ?? SteadyClimate.Instance; }
         }
 
-        /// <summary>Adds the day's news the market answers to: the weather, the city's events, what the paper has, a rival's move. Default: none.</summary>
-        public static Action<List<MarketNews>> DayNews;
-
-        /// <summary>Where one of the council's policies stands (-1, 0 or 1), by its number. Default: there is no council.</summary>
-        public static Func<int, int> Lever;
-
-        /// <summary>How many of the council's policies there are (the numbers <see cref="Lever"/> is asked for).</summary>
-        public const int Levers = 13;
-
-        /// <summary>How many elections have been counted so far; -1 if nobody knows. Default: nobody knows.</summary>
-        public static Func<int> Elections;
-
         /// <summary>How many employers the player has worked for, the present one included. Default: none.</summary>
         public static Func<int> JobsHeld;
 
@@ -46,9 +34,6 @@ namespace RealLifeOverhaul.Economy.Ventures
         public static void Reset()
         {
             _climate = SteadyClimate.Instance;
-            DayNews = null;
-            Lever = null;
-            Elections = null;
             JobsHeld = null;
             Held = null;
         }
@@ -57,7 +42,7 @@ namespace RealLifeOverhaul.Economy.Ventures
     /// <summary>The Ventures app as the rest of the mod may use it: open it, on a tab.</summary>
     public static class VenturesPhone
     {
-        public const int Investors = 0, Market = 1, Portfolio = 2, Property = 3;
+        public const int Investors = 0, Property = 1;
 
         /// <summary>Opens the Ventures app on a tab. Does nothing while Ventures is off or the app is not on the phone.</summary>
         public static void Open(int tab)
