@@ -1,10 +1,10 @@
-using System;
 using System.Collections.Generic;
 using System.Text;
 using RealLifeOverhaul.GameUi;
 using TMPro;
 using UI.Smartphone;
 using UnityEngine;
+using UnityEngine.TextCore;
 using UnityEngine.UI;
 
 namespace RealLifeOverhaul.Ledger
@@ -13,19 +13,21 @@ namespace RealLifeOverhaul.Ledger
     /// The City Ledger as a newspaper, in the game's full menu (the game stands still while it is open; the cancel key puts
     /// it down). The frame is the game's own (GameUi.AppShell, copied from MyEmployees, with no button on the phone: it is
     /// opened by picking up the paper), its tabs are the paper's pages, and over the frame lies one sheet of newsprint, the
-    /// game's own white panel tinted, with the page on it made of the game's own texts, headlines and rules:
+    /// game's own white panel tinted. The page on it is set as a paper is: in a serif (LedgerType), in black ink, with thin
+    /// black rules, justified columns linked one into the next, and labels in small capitals over a rule:
     ///
-    ///   Front page    the masthead with its two ears (the weather, the city index) and the dateline; the lead story under
-    ///                 its headline in two columns; the city, the economy and business in three columns of stories and
-    ///                 briefs; down the side the markets (the index, the risers and fallers, the bank rate), the weather, and
-    ///                 around town (people, what is on, letters and the rest)
-    ///   Markets       the market's stories, the city index with its last weeks drawn, every sector, the risers, the
-    ///                 fallers and the most traded
-    ///   Share prices  every listed company's close and its move, by sector, in four columns, as a paper prints them
+    ///   Front page    the masthead between its two ears (the weather, the city index) over a double rule, and the
+    ///                 dateline; the lead's headline across the page, its standfirst and byline, then four columns: the
+    ///                 lead's text under a drop cap, the rest of its section, the city, the economy, business and around
+    ///                 town, each story under its headline; down the side a box with the markets, the weather and what
+    ///                 is inside; on a short day the index's last sessions drawn under the columns
+    ///   Markets       the market's stories and the movers in three columns, the index with its chart, every sector
+    ///   Share prices  every listed company's close and its move, by sector, in five columns, as a paper prints them
     ///
-    /// Positions are fractions of the sheet, so the page fits whatever room the menu gives it, and the type is sized to the
-    /// sheet when it is opened. Everything is written when the page is opened or turned (in the language of the moment),
-    /// never per frame; the edition itself is put together once a morning (LedgerDirector).
+    /// Everything is placed when the page is written (opened or turned, in the language of the moment), never per frame:
+    /// the type is sized to the sheet, the columns are laid out as shallow as holds their words (balanced), and what a
+    /// short paper leaves goes to a larger type, the index's chart and the headline. The edition itself is put together
+    /// once a morning (LedgerDirector).
     /// </summary>
     public sealed partial class LedgerPage
     {
@@ -36,23 +38,22 @@ namespace RealLifeOverhaul.Ledger
         private static readonly string[] TabKeys = { "reallife_ledger_tab_front", "reallife_ledger_tab_markets", "reallife_ledger_tab_prices" };
         private static readonly string[] FromKeys = { "reallife_ledger_header_home", "reallife_ledger_header_kiosk", "reallife_ledger_header_test" };
 
-        // The paper's inks: newsprint, black ink, a grey for the small print, the kicker's red, rising green and falling red.
+        // The paper's inks: newsprint, black ink, the rules' black and the chart's faint rules. Moves are printed in ink
+        // with a mark (up or down), as a paper prints them.
         private static readonly Color Newsprint = new Color(0.957f, 0.945f, 0.914f, 1f);
         private static readonly Color Ink = new Color(0.10f, 0.10f, 0.11f, 1f);
-        private static readonly Color Grey = new Color(0.36f, 0.36f, 0.37f, 1f);
-        private static readonly Color RuleInk = new Color(0.14f, 0.14f, 0.15f, 1f);
-        private static readonly Color KickerInk = new Color(0.60f, 0.14f, 0.09f, 1f);
-        private const string UpInk = "#1E6E37", DownInk = "#A3271D", SoftInk = "#5B5B60";
+        private static readonly Color RuleInk = new Color(0.12f, 0.12f, 0.13f, 1f);
+        private static readonly Color FaintInk = new Color(0.10f, 0.10f, 0.11f, 0.16f);
 
         private static readonly Vector3[] Corners = new Vector3[4];
 
         private readonly LedgerDirector _director;
         private readonly StringBuilder _b = new StringBuilder(4096);
         private readonly List<LedgerPiece> _pieces = new List<LedgerPiece>(24);
+        private readonly List<LedgerPiece> _also = new List<LedgerPiece>(24);
         private readonly List<LedgerQuote> _quotes = new List<LedgerQuote>(160);
-        private readonly List<TMP_Text> _sized = new List<TMP_Text>(64);
-        private readonly List<float> _factors = new List<float>(64);
         private readonly RectTransform[] _pages = new RectTransform[Pages];
+        private readonly Rules[] _rules = new Rules[Pages];
 
         private PhoneApp _app;
         private bool _gaveUp;
@@ -61,17 +62,29 @@ namespace RealLifeOverhaul.Ledger
         private LedgerEdition _edition;
         private int _from;
         private int _page;
-        private float _height;    // the sheet's height the type was last sized for
+        private float _height;    // the sheet's height: the type is sized to it
+
+        // The face the paper is set in (null: the game's own) and its measures, as fractions of its size: ascender,
+        // descender and line gap (TextMeshPro's line is the three), the capitals' height over the ascender, the width of a
+        // figure, of the up mark and of the per cent sign; and one screen pixel in canvas units (a hairline rule).
+        private TMP_FontAsset _face;
+        private float _asc = 1.07f, _desc = 0.29f, _gap, _cap = 0.72f, _capRatio = 0.67f, _figure = 0.56f, _mark = 0.6f, _percent = 0.9f;
+        private bool _marks = true;     // the face (or a fallback) has the up and down marks
+        private bool _measured;
+        private float _px = 2f;
 
         // the front page
-        private TMP_Text _fTitle, _fEarLeft, _fEarRight, _fDateLeft, _fDateMiddle, _fDateRight, _fKicker, _fHead, _fLead1, _fLead2, _fMarkets, _fWeather, _fAround;
-        private readonly TMP_Text[] _fColumns = new TMP_Text[3];
+        private TMP_Text _fTitle, _fEarLeft, _fEarRight, _fDateLeft, _fDateMiddle, _fDateRight, _fKicker, _fHead, _fStand, _fByline, _fBand, _fCaption, _fAd, _fBox;
+        private Columns _fColumns;
+        private LedgerSpark _fChart;
         // the markets page
-        private TMP_Text _mTitle, _mName, _mDate, _mHead, _mLead1, _mLead2, _mNews1, _mNews2, _mIndex, _mCaption, _mSectors, _mMovers;
+        private TMP_Text _mTitle, _mName, _mDate, _mKicker, _mHead, _mByline, _mIndex, _mCaption, _mSectorsLabel;
+        private readonly TMP_Text[] _mSectors = new TMP_Text[2];
+        private Columns _mColumns;
         private LedgerSpark _mChart;
         // the share prices
         private TMP_Text _pTitle, _pName, _pDate, _pLegend;
-        private readonly TMP_Text[] _pColumns = new TMP_Text[4];
+        private readonly TMP_Text[] _pColumns = new TMP_Text[5];
 
         public LedgerPage(LedgerDirector director)
         {
@@ -175,7 +188,7 @@ namespace RealLifeOverhaul.Ledger
             // nothing runs while the page is down
         }
 
-        // The page shown: its tab marked, its words written now.
+        // The page shown: its tab marked, its words written and placed now.
         private void Turn(int page)
         {
             _page = Mathf.Clamp(page, 0, Pages - 1);
@@ -187,16 +200,20 @@ namespace RealLifeOverhaul.Ledger
                     _pages[i].gameObject.SetActive(i == _page);
                 }
             }
-            if (_edition == null)
+            if (_edition == null || _height < 100f)
             {
                 return;
             }
+            MeasureFace(_page == Front ? _fBox : _page == Markets ? _mIndex : _pLegend);
+            Rules rules = _rules[_page];
+            rules.Begin();
             switch (_page)
             {
-                case Front: WriteFront(_edition); break;
-                case Markets: WriteMarkets(_edition); break;
-                default: WritePrices(_edition); break;
+                case Front: WriteFront(_edition, rules); break;
+                case Markets: WriteMarkets(_edition, rules); break;
+                default: WritePrices(_edition, rules); break;
             }
+            rules.End();
         }
 
         // ---------------------------------------------------------------- building it from the game's parts
@@ -249,6 +266,8 @@ namespace RealLifeOverhaul.Ledger
             _sheet.anchorMin = _sheet.anchorMax = _sheet.pivot = Vector2.zero;
             sheet.SetActive(true);
 
+            _face = LedgerType.Find();
+            _measured = false;
             for (int i = 0; i < Pages; i++)
             {
                 var go = new GameObject("Page" + i, typeof(RectTransform));
@@ -256,9 +275,10 @@ namespace RealLifeOverhaul.Ledger
                 var rect = (RectTransform)go.transform;
                 rect.anchorMin = Vector2.zero;
                 rect.anchorMax = Vector2.one;
-                rect.offsetMin = new Vector2(30f, 22f);
-                rect.offsetMax = new Vector2(-30f, -22f);
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
                 _pages[i] = rect;
+                _rules[i] = new Rules(rect);
                 go.SetActive(i == Front);
             }
             BuildFront(_pages[Front]);
@@ -277,114 +297,91 @@ namespace RealLifeOverhaul.Ledger
 
         private void BuildFront(RectTransform p)
         {
-            _fEarLeft = Words(p, false, 0f, 0.865f, 0.17f, 1f, TextAlignmentOptions.TopLeft, 0.0172f, FontStyles.Normal);
-            VRule(p, 0.178f, 0.872f, 0.995f, 1f);
-            _fTitle = Words(p, true, 0.19f, 0.872f, 0.81f, 1f, TextAlignmentOptions.Center, 0.082f, FontStyles.Bold);
-            _fTitle.characterSpacing = 6f;
-            VRule(p, 0.822f, 0.872f, 0.995f, 1f);
-            _fEarRight = Words(p, false, 0.83f, 0.865f, 1f, 1f, TextAlignmentOptions.TopRight, 0.0172f, FontStyles.Normal);
-            HRule(p, 0f, 1f, 0.862f, 3f);
-            _fDateLeft = Words(p, false, 0f, 0.828f, 0.34f, 0.858f, TextAlignmentOptions.MidlineLeft, 0.0185f, FontStyles.Normal);
-            _fDateMiddle = Words(p, false, 0.33f, 0.828f, 0.67f, 0.858f, TextAlignmentOptions.Midline, 0.0185f, FontStyles.Normal);
-            _fDateRight = Words(p, false, 0.66f, 0.828f, 1f, 0.858f, TextAlignmentOptions.MidlineRight, 0.0185f, FontStyles.Normal);
-            HRule(p, 0f, 1f, 0.824f, 1f);
-
-            _fKicker = Words(p, false, 0f, 0.788f, 0.72f, 0.818f, TextAlignmentOptions.BottomLeft, 0.0168f, FontStyles.Bold | FontStyles.UpperCase);
-            _fKicker.color = KickerInk;
-            _fHead = Words(p, true, 0f, 0.672f, 0.72f, 0.788f, TextAlignmentOptions.TopLeft, 0.041f, FontStyles.Bold | FontStyles.UpperCase);
-            _fLead1 = Words(p, false, 0f, 0.468f, 0.352f, 0.668f, TextAlignmentOptions.TopJustified, 0.0198f, FontStyles.Normal);
-            VRule(p, 0.36f, 0.474f, 0.664f, 1f);
-            _fLead2 = Words(p, false, 0.368f, 0.468f, 0.72f, 0.668f, TextAlignmentOptions.TopJustified, 0.0198f, FontStyles.Normal);
-            Link(_fLead1, _fLead2);
-            HRule(p, 0f, 0.72f, 0.46f, 1f);
-
-            string[] sections = { LedgerCatalogue.SectionKeys[(int)LedgerSection.City], LedgerCatalogue.SectionKeys[(int)LedgerSection.Economy], LedgerCatalogue.SectionKeys[(int)LedgerSection.Business] };
-            for (int i = 0; i < 3; i++)
-            {
-                float x0 = i * 0.244f, x1 = x0 + 0.232f;
-                Label(p, sections[i], x0, 0.414f, x1, 0.452f);
-                _fColumns[i] = Words(p, false, x0, 0f, x1, 0.408f, TextAlignmentOptions.TopJustified, 0.0188f, FontStyles.Normal);
-                if (i < 2)
-                {
-                    VRule(p, x1 + 0.006f, 0f, 0.452f, 1f);
-                }
-            }
-
-            VRule(p, 0.735f, 0f, 0.82f, 1f);
-            Label(p, LedgerCatalogue.SectionKeys[(int)LedgerSection.Markets], 0.75f, 0.784f, 1f, 0.82f);
-            _fMarkets = Words(p, false, 0.75f, 0.5f, 1f, 0.778f, TextAlignmentOptions.TopLeft, 0.0185f, FontStyles.Normal);
-            Label(p, LedgerCatalogue.SectionKeys[(int)LedgerSection.Weather], 0.75f, 0.454f, 1f, 0.49f);
-            _fWeather = Words(p, false, 0.75f, 0.33f, 1f, 0.448f, TextAlignmentOptions.TopLeft, 0.0185f, FontStyles.Normal);
-            Label(p, LedgerCatalogue.SectionKeys[(int)LedgerSection.AroundTown], 0.75f, 0.284f, 1f, 0.32f);
-            _fAround = Words(p, false, 0.75f, 0f, 1f, 0.278f, TextAlignmentOptions.TopLeft, 0.0178f, FontStyles.Normal);
+            _fTitle = Text(p, "Masthead", TextAlignmentOptions.Top, FontStyles.Bold);
+            _fTitle.textWrappingMode = TextWrappingModes.NoWrap;
+            _fEarLeft = Text(p, "EarLeft", TextAlignmentOptions.Top);
+            _fEarRight = Text(p, "EarRight", TextAlignmentOptions.Top);
+            _fDateLeft = Text(p, "DateLeft", TextAlignmentOptions.TopLeft);
+            _fDateMiddle = Text(p, "DateMiddle", TextAlignmentOptions.Top);
+            _fDateRight = Text(p, "DateRight", TextAlignmentOptions.TopRight);
+            _fKicker = Text(p, "Kicker", TextAlignmentOptions.TopLeft);
+            _fHead = Text(p, "Headline", TextAlignmentOptions.TopLeft, FontStyles.Bold | FontStyles.UpperCase);
+            _fHead.lineSpacing = HeadSpacing;
+            _fStand = Text(p, "Standfirst", TextAlignmentOptions.TopLeft);
+            _fStand.lineSpacing = -10f;
+            _fByline = Text(p, "Byline", TextAlignmentOptions.TopLeft);
+            _fColumns = new Columns(this, p, FrontColumns, "Column", BodySpacing, ItemSpacing);
+            _fBand = Text(p, "IndexLine", TextAlignmentOptions.TopLeft);
+            _fBand.textWrappingMode = TextWrappingModes.NoWrap;
+            _fChart = LedgerSpark.Make(p, "IndexChart");
+            _fCaption = Text(p, "IndexCaption", TextAlignmentOptions.TopLeft);
+            _fAd = Text(p, "HouseAdvert", TextAlignmentOptions.Center);
+            _fAd.lineSpacing = -8f;
+            _fBox = Text(p, "AtAGlance", TextAlignmentOptions.TopJustified);
+            _fBox.lineSpacing = -12f;
+            _fBox.paragraphSpacing = 45f;
         }
 
         private void BuildMarkets(RectTransform p)
         {
-            _mTitle = Words(p, true, 0f, 0.905f, 0.6f, 1f, TextAlignmentOptions.MidlineLeft, 0.05f, FontStyles.Bold);
-            _mTitle.characterSpacing = 4f;
-            _mName = Words(p, true, 0.5f, 0.905f, 1f, 1f, TextAlignmentOptions.MidlineRight, 0.042f, FontStyles.Bold | FontStyles.UpperCase);
-            HRule(p, 0f, 1f, 0.9f, 3f);
-            _mDate = Words(p, false, 0f, 0.865f, 1f, 0.895f, TextAlignmentOptions.Midline, 0.0185f, FontStyles.Normal);
-            HRule(p, 0f, 1f, 0.86f, 1f);
-
-            _mHead = Words(p, true, 0f, 0.752f, 0.56f, 0.852f, TextAlignmentOptions.TopLeft, 0.036f, FontStyles.Bold | FontStyles.UpperCase);
-            _mLead1 = Words(p, false, 0f, 0.528f, 0.274f, 0.748f, TextAlignmentOptions.TopJustified, 0.0195f, FontStyles.Normal);
-            VRule(p, 0.28f, 0.534f, 0.744f, 1f);
-            _mLead2 = Words(p, false, 0.286f, 0.528f, 0.56f, 0.748f, TextAlignmentOptions.TopJustified, 0.0195f, FontStyles.Normal);
-            Link(_mLead1, _mLead2);
-            HRule(p, 0f, 0.56f, 0.52f, 1f);
-            _mNews1 = Words(p, false, 0f, 0f, 0.274f, 0.512f, TextAlignmentOptions.TopJustified, 0.0185f, FontStyles.Normal);
-            VRule(p, 0.28f, 0f, 0.51f, 1f);
-            _mNews2 = Words(p, false, 0.286f, 0f, 0.56f, 0.512f, TextAlignmentOptions.TopJustified, 0.0185f, FontStyles.Normal);
-            Link(_mNews1, _mNews2);
-
-            VRule(p, 0.575f, 0f, 0.852f, 1f);
-            Label(p, "reallife_ledger_index", 0.59f, 0.815f, 1f, 0.852f);
-            _mIndex = Words(p, false, 0.59f, 0.742f, 1f, 0.81f, TextAlignmentOptions.TopLeft, 0.0195f, FontStyles.Normal);
+            Folio(p, out _mTitle, out _mName, out _mDate);
+            _mKicker = Text(p, "Kicker", TextAlignmentOptions.TopLeft);
+            _mHead = Text(p, "Headline", TextAlignmentOptions.TopLeft, FontStyles.Bold | FontStyles.UpperCase);
+            _mHead.lineSpacing = HeadSpacing;
+            _mByline = Text(p, "Byline", TextAlignmentOptions.TopLeft);
+            _mColumns = new Columns(this, p, MarketColumns, "Column", BodySpacing, ItemSpacing);
+            _mIndex = Text(p, "Index", TextAlignmentOptions.TopLeft);
+            _mIndex.lineSpacing = -12f;
+            _mIndex.paragraphSpacing = 30f;
             _mChart = LedgerSpark.Make(p, "IndexChart");
-            Place(_mChart.rectTransform, 0.59f, 0.618f, 1f, 0.738f);
-            _mCaption = Words(p, false, 0.59f, 0.586f, 1f, 0.614f, TextAlignmentOptions.TopLeft, 0.0155f, FontStyles.Italic);
-            _mCaption.color = Grey;
-            HRule(p, 0.59f, 1f, 0.58f, 1f);
-            Label(p, "reallife_ledger_sectors", 0.59f, 0.54f, 0.788f, 0.575f);
-            _mSectors = Words(p, false, 0.59f, 0f, 0.788f, 0.534f, TextAlignmentOptions.TopLeft, 0.0168f, FontStyles.Normal);
-            VRule(p, 0.797f, 0f, 0.575f, 1f);
-            Label(p, "reallife_ledger_movers", 0.806f, 0.54f, 1f, 0.575f);
-            _mMovers = Words(p, false, 0.806f, 0f, 1f, 0.534f, TextAlignmentOptions.TopLeft, 0.0168f, FontStyles.Normal);
+            _mCaption = Text(p, "IndexCaption", TextAlignmentOptions.TopLeft);
+            _mSectorsLabel = Text(p, "SectorsLabel", TextAlignmentOptions.TopLeft);
+            for (int i = 0; i < _mSectors.Length; i++)
+            {
+                _mSectors[i] = Text(p, "Sectors" + i, TextAlignmentOptions.TopLeft);
+                _mSectors[i].textWrappingMode = TextWrappingModes.NoWrap;
+                _mSectors[i].overflowMode = TextOverflowModes.Truncate;
+                _mSectors[i].lineSpacing = TableSpacing;
+            }
         }
 
         private void BuildPrices(RectTransform p)
         {
-            _pTitle = Words(p, true, 0f, 0.905f, 0.6f, 1f, TextAlignmentOptions.MidlineLeft, 0.05f, FontStyles.Bold);
-            _pTitle.characterSpacing = 4f;
-            _pName = Words(p, true, 0.5f, 0.905f, 1f, 1f, TextAlignmentOptions.MidlineRight, 0.042f, FontStyles.Bold | FontStyles.UpperCase);
-            HRule(p, 0f, 1f, 0.9f, 3f);
-            _pDate = Words(p, false, 0f, 0.865f, 1f, 0.895f, TextAlignmentOptions.Midline, 0.0185f, FontStyles.Normal);
-            HRule(p, 0f, 1f, 0.86f, 1f);
-            _pLegend = Words(p, false, 0f, 0.826f, 1f, 0.856f, TextAlignmentOptions.Midline, 0.0155f, FontStyles.Italic);
-            _pLegend.color = Grey;
-            HRule(p, 0f, 1f, 0.822f, 1f);
+            Folio(p, out _pTitle, out _pName, out _pDate);
+            _pLegend = Text(p, "Legend", TextAlignmentOptions.Top);
             for (int i = 0; i < _pColumns.Length; i++)
             {
-                float x0 = i * 0.2525f, x1 = x0 + 0.2425f;
-                _pColumns[i] = Words(p, false, x0, 0f, x1, 0.814f, TextAlignmentOptions.TopLeft, 0.016f, FontStyles.Normal);
+                _pColumns[i] = Text(p, "Prices" + i, TextAlignmentOptions.TopLeft);
+                _pColumns[i].textWrappingMode = TextWrappingModes.NoWrap;
                 _pColumns[i].overflowMode = TextOverflowModes.Truncate;
-                if (i < _pColumns.Length - 1)
-                {
-                    VRule(p, x1 + 0.005f, 0f, 0.814f, 1f);
-                }
+                _pColumns[i].lineSpacing = TableSpacing;
+                _pColumns[i].paragraphSpacing = 30f;
             }
+        }
+
+        // The head of an inside page: the paper's name, the page's, the dateline.
+        private void Folio(RectTransform p, out TMP_Text title, out TMP_Text name, out TMP_Text date)
+        {
+            title = Text(p, "Title", TextAlignmentOptions.TopLeft, FontStyles.Bold);
+            title.textWrappingMode = TextWrappingModes.NoWrap;
+            name = Text(p, "PageName", TextAlignmentOptions.TopRight);
+            name.textWrappingMode = TextWrappingModes.NoWrap;
+            date = Text(p, "Dateline", TextAlignmentOptions.Top);
         }
 
         // ---------------------------------------------------------------- the parts
 
-        // A text of the game's (the white box's title or line) lifted out of the box's layout and placed on the page.
-        private TMP_Text Words(RectTransform parent, bool title, float x0, float y0, float x1, float y1, TextAlignmentOptions align, float size, FontStyles style)
+        // A text of the game's (the white box's line) lifted out of the box's layout, set in the paper's face and ink;
+        // placed and sized when the page is written.
+        private TMP_Text Text(RectTransform parent, string name, TextAlignmentOptions align, FontStyles style = FontStyles.Normal)
         {
-            TMP_Text t = title ? _shell.Box.Title(string.Empty, parent) : _shell.Box.Line(string.Empty, parent);
+            TMP_Text t = _shell.Box.Line(string.Empty, parent);
+            t.gameObject.name = name;
             Loose(t.gameObject);
-            Place(t.rectTransform, x0, y0, x1, y1);
+            if (_face != null)
+            {
+                t.font = _face;
+            }
             t.alignment = align;
             t.fontStyle = style;
             t.color = Ink;
@@ -394,80 +391,23 @@ namespace RealLifeOverhaul.Ledger
             t.margin = Vector4.zero;
             t.textWrappingMode = TextWrappingModes.Normal;
             t.overflowMode = TextOverflowModes.Ellipsis;
+            t.characterSpacing = 0f;
+            t.wordSpacing = 0f;
+            t.lineSpacing = 0f;
             t.paragraphSpacing = 0f;
-            _sized.Add(t);
-            _factors.Add(size);
+            t.wordWrappingRatios = Spread;
+            Put(t.rectTransform, 0f, 0f, 10f, 10f);
             return t;
         }
 
-        // A section's name over a rule: the game's own headline, in the paper's ink.
-        private void Label(RectTransform parent, string key, float x0, float y0, float x1, float y1)
+        // A part placed by its top left corner, x across and y down from the page's top left, in canvas units.
+        private static void Put(RectTransform r, float x, float y, float w, float h)
         {
-            Transform made = _shell.Box.Headline(key, parent);
-            if (made == null)
-            {
-                return;
-            }
-            Loose(made.gameObject);
-            Place((RectTransform)made, x0, y0, x1, y1);
-            foreach (Image image in made.GetComponentsInChildren<Image>(true))
-            {
-                image.color = RuleInk;
-                image.raycastTarget = false;
-            }
-            var text = made.GetComponentInChildren<TMP_Text>(true);
-            if (text != null)
-            {
-                text.color = Ink;
-                text.fontStyle = FontStyles.Bold | FontStyles.UpperCase;
-                text.raycastTarget = false;
-                _sized.Add(text);
-                _factors.Add(0.0175f);
-            }
-        }
-
-        private static void Link(TMP_Text first, TMP_Text second)
-        {
-            first.overflowMode = TextOverflowModes.Linked;
-            first.linkedTextComponent = second;
-            second.overflowMode = TextOverflowModes.Ellipsis;
-        }
-
-        private static void HRule(RectTransform parent, float x0, float x1, float y, float px)
-        {
-            RectTransform r = Rule(parent);
-            r.anchorMin = new Vector2(x0, y);
-            r.anchorMax = new Vector2(x1, y);
-            r.sizeDelta = new Vector2(0f, px);
-            r.anchoredPosition = Vector2.zero;
-        }
-
-        private static void VRule(RectTransform parent, float x, float y0, float y1, float px)
-        {
-            RectTransform r = Rule(parent);
-            r.anchorMin = new Vector2(x, y0);
-            r.anchorMax = new Vector2(x, y1);
-            r.sizeDelta = new Vector2(px, 0f);
-            r.anchoredPosition = Vector2.zero;
-        }
-
-        private static RectTransform Rule(RectTransform parent)
-        {
-            var go = new GameObject("Rule", typeof(RectTransform), typeof(Image));
-            go.transform.SetParent(parent, false);
-            var image = go.GetComponent<Image>();
-            image.color = RuleInk;
-            image.raycastTarget = false;
-            return (RectTransform)go.transform;
-        }
-
-        private static void Place(RectTransform r, float x0, float y0, float x1, float y1)
-        {
-            r.anchorMin = new Vector2(x0, y0);
-            r.anchorMax = new Vector2(x1, y1);
-            r.pivot = new Vector2(0.5f, 0.5f);
-            r.offsetMin = Vector2.zero;
-            r.offsetMax = Vector2.zero;
+            r.anchorMin = new Vector2(0f, 1f);
+            r.anchorMax = new Vector2(0f, 1f);
+            r.pivot = new Vector2(0f, 1f);
+            r.anchoredPosition = new Vector2(x, -y);
+            r.sizeDelta = new Vector2(Mathf.Max(1f, w), Mathf.Max(1f, h));
         }
 
         // Out of whatever layout the template was made for: placed by its anchors alone.
@@ -482,9 +422,58 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
+        // ---------------------------------------------------------------- measuring
+
+        // The height of a line of type: from one baseline to the next.
+        private float Advance(float size, float lineSpacing)
+        {
+            return size * (_asc + _desc + _gap + lineSpacing * 0.01f);
+        }
+
+        // How many lines a paragraph takes at a width, in a text's settings at a size.
+        private int Lines(TMP_Text t, string words, float width, float size, float lineSpacing)
+        {
+            t.fontSize = size;
+            float h = t.GetPreferredValues(words, Mathf.Max(1f, width), 0f).y;
+            return 1 + Mathf.Max(0, Mathf.RoundToInt((h - (_asc + _desc) * size) / Mathf.Max(0.01f, Advance(size, lineSpacing))));
+        }
+
+        // How tall a text is at a width (its font size set first).
+        private static float Tall(TMP_Text t, string words, float width)
+        {
+            return t.GetPreferredValues(words, Mathf.Max(1f, width), 0f).y;
+        }
+
+        // The face's measures, from its own figures and the widths of a few signs: once per page built, when a page is first
+        // shown (with a text of that page, which is awake by then).
+        private void MeasureFace(TMP_Text t)
+        {
+            if (_measured || t == null)
+            {
+                return;
+            }
+            _measured = true;
+            TMP_FontAsset face = t.font;
+            if (face != null)
+            {
+                FaceInfo f = face.faceInfo;
+                float size = Mathf.Max(1f, f.pointSize);
+                _asc = f.ascentLine / size;
+                _desc = Mathf.Abs(f.descentLine) / size;
+                _gap = Mathf.Max(0f, (f.lineHeight - (f.ascentLine - f.descentLine)) / size);
+                _cap = f.capLine > 0f ? f.capLine / size : 0.7f * _asc;
+                _capRatio = Mathf.Clamp(_cap / Mathf.Max(0.01f, _asc), 0.4f, 1f);
+                _marks = face.HasCharacter('\u25B2', true, true) && face.HasCharacter('\u25BC', true, true);
+            }
+            t.fontSize = 100f;
+            _figure = Mathf.Max(0.3f, t.GetPreferredValues("0000000000").x / 1000f);
+            _percent = Mathf.Max(0.3f, t.GetPreferredValues("%").x / 100f);
+            _mark = _marks ? Mathf.Max(0.2f, t.GetPreferredValues("\u25B2").x / 100f) * MarkSize : 0f;
+        }
+
         // ---------------------------------------------------------------- fitting the sheet to the frame
 
-        // The sheet laid over its room in the frame, and the type sized to the sheet.
+        // The sheet laid over its room in the frame; the type is sized to the sheet when a page is written.
         private void Measure()
         {
             if (!Bounds(out float x0, out float y0, out float x1, out float y1))
@@ -499,19 +488,11 @@ namespace RealLifeOverhaul.Ledger
             Rect space = _layout.rect;
             _sheet.anchoredPosition = new Vector2(x0 - space.xMin, y0 - space.yMin);
             _sheet.sizeDelta = new Vector2(x1 - x0, y1 - y0);
-            float height = y1 - y0;
-            if (Mathf.Abs(height - _height) < 1f)
-            {
-                return;
-            }
-            _height = height;
-            for (int i = 0; i < _sized.Count; i++)
-            {
-                if (_sized[i] != null)
-                {
-                    _sized[i].fontSize = Mathf.Max(10f, _factors[i] * height);
-                }
-            }
+            _height = y1 - y0;
+            // a hairline is one pixel of the screen, however the canvas is scaled
+            Canvas canvas = _sheet.GetComponentInParent<Canvas>();
+            float scale = canvas != null && canvas.rootCanvas != null ? canvas.rootCanvas.scaleFactor : 1f;
+            _px = Mathf.Max(1f, 1f / Mathf.Max(0.05f, scale));
         }
 
         // The sheet's room: over the white box and the table together, from under the tabs to the foot of the table. False while there is no room at all.
