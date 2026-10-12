@@ -819,7 +819,7 @@ namespace RealLifeOverhaul
             if (!BusBay.Lay(stop.KerbAside, out float offset, out BusBay.Curve curveIn, out BusBay.Curve curveOut, out float behind, out float ahead))
             {
                 stop.NoBay = offset > 0f ? "too wide to cross in the plain lane there is"
-                    : stop.KerbAside < kerb - 0.01f ? "narrow with what stands on the kerb's edge (the kerb " + kerb.ToString("F2") + " m out, the bus may come to " + stop.KerbAside.ToString("F2") + ")"
+                    : stop.KerbAside < kerb - 0.01f ? "narrow with " + (_edgeWhat ?? "what stands") + " on the kerb's edge (the kerb " + kerb.ToString("F2") + " m out, the bus may come to " + stop.KerbAside.ToString("F2") + ")"
                     : "narrow";
                 return;
             }
@@ -968,7 +968,8 @@ namespace RealLifeOverhaul
         // buildings: a building's box is no guide to its walls where the streets do not run square to the world, and a
         // wall that does reach into the strip is found there (StripBad).
         private const float SideClear = 0.10f;
-        private const float TrunkHalf = 0.30f;
+        private const float TrunkHalf = 0.15f;   // a street tree's trunk, halved: some 0.3 m across, in a collider four times as broad
+        private static string _edgeWhat;         // what brought the kerb's line in, for the log
         private static readonly Collider[] EdgeHits = new Collider[24];
 
         private static float KerbLine(TransitStop stop, Vector3 right, float kerb)
@@ -979,6 +980,7 @@ namespace RealLifeOverhaul
             int found = _propsLayer < 0 ? 0 : Physics.OverlapBoxNonAlloc(centre, new Vector3((outer - inner) * 0.5f, 0.8f, (KerbLookAhead + KerbLookBehind) * 0.5f), EdgeHits, Quaternion.LookRotation(stop.Along),
                 1 << _propsLayer, QueryTriggerInteraction.Ignore);
             float line = kerb;
+            _edgeWhat = null;
             for (int i = 0; i < found; i++)
             {
                 Collider hit = EdgeHits[i];
@@ -992,7 +994,12 @@ namespace RealLifeOverhaul
                 {
                     continue;   // it stands in the road: the strip's own look deals with it (StripBad)
                 }
-                line = Mathf.Min(line, Reach(hit, stop.Lane, right, middle) + BusBay.KerbGap - SideClear);
+                float reach = Reach(hit, stop.Lane, right, middle) + BusBay.KerbGap - SideClear;
+                if (reach < line)
+                {
+                    line = reach;
+                    _edgeWhat = "'" + hit.name + "'";
+                }
             }
             return line;
         }
