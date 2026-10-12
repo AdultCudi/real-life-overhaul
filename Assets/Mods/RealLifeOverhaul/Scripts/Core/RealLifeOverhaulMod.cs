@@ -949,6 +949,7 @@ namespace RealLifeOverhaul
             _root.AddComponent<Economy.Ventures.VenturesDirector>();   // investors, the pitch and the Ventures app (Scripts/Economy/Ventures)
             Markets.MarketDirector.Logger = context.Logger;
             Markets.MarketTapeFile.Logger = context.Logger;
+            Markets.MarketApp.Logger = context.Logger;
             _root.AddComponent<Markets.MarketDirector>();   // the city's stock market and the Stocks app (Scripts/Markets): after Ventures, whose old market it takes over
             Economy.OnlineDirector.Logger = context.Logger;
             Economy.OnlineApp.Logger = context.Logger;

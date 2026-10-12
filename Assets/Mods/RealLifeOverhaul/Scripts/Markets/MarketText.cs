@@ -1,3 +1,4 @@
+using System;
 using Extensions;
 using Localizor;
 
@@ -82,6 +83,59 @@ namespace RealLifeOverhaul.Markets
         public static string Percent(int bp)
         {
             return (bp / 100f).ToString("0.0") + "%";
+        }
+
+        /// <summary>A piece of market news as a sentence (the app's box, the City Ledger's market page).</summary>
+        public static string News(in MarketNews n, MarketState s)
+        {
+            Stock k = n.Stock > 0 && s != null ? s.Stock(n.Stock) : null;
+            string name = k != null ? k.Name : string.Empty;
+            switch (n.Kind)
+            {
+                case MarketNewsKind.Close:
+                    return Fill("reallife_mkt_news_close", "level", (n.A / 100.0).ToString("N2"), "change", Change(n.B));
+                case MarketNewsKind.Mover:
+                    return Fill(n.A >= 0 ? "reallife_mkt_news_up" : "reallife_mkt_news_down", "name", name, "change", Change(n.A));
+                case MarketNewsKind.Results:
+                    return Fill(n.A >= n.B ? "reallife_mkt_news_results_beat" : "reallife_mkt_news_results_miss", "name", name, "eps", PerShare(n.A), "consensus", PerShare(n.B));
+                case MarketNewsKind.Dividend:
+                    return Fill("reallife_mkt_news_dividend", "name", name, "amount", Price(n.A), "record", n.B.ToString(), "pay", n.C.ToString());
+                case MarketNewsKind.Listing:
+                    return n.A > 0 ? Fill("reallife_mkt_news_listed", "name", name, "price", Price(n.A)) : Fill("reallife_mkt_news_listing", "name", NameOf(n.Stock), "day", n.B.ToString());
+                case MarketNewsKind.Failure:
+                    return Fill(n.A > 0 ? "reallife_mkt_news_failed_paid" : "reallife_mkt_news_failed", "name", name, "price", Price(n.A));
+                case MarketNewsKind.Bid:
+                    return Fill(n.C > 0 ? "reallife_mkt_news_bid_by" : "reallife_mkt_news_bid", "name", name, "price", Price(n.A), "day", n.B.ToString(), "bidder", s != null && s.Stock(n.C) != null ? s.Stock(n.C).Name : string.Empty);
+                case MarketNewsKind.BidDone:
+                    return Fill("reallife_mkt_news_taken_over", "name", name, "price", Price(n.A));
+                case MarketNewsKind.BidFailed:
+                    return Fill("reallife_mkt_news_bid_failed", "name", name);
+                case MarketNewsKind.Split:
+                    return Fill("reallife_mkt_news_split", "name", name, "ratio", n.A.ToString(), "day", n.B.ToString());
+                case MarketNewsKind.Crash:
+                    return Fill("reallife_mkt_news_crash", "change", Change(n.A));
+                case MarketNewsKind.Sector:
+                    return Fill(n.B >= 0 ? "reallife_mkt_news_sector_up" : "reallife_mkt_news_sector_down", "sector", Sector((MarketSector)Math.Max(0, Math.Min((int)MarketSector.Count - 1, n.A))), "change", Change(n.B));
+                case MarketNewsKind.Rate:
+                    return Fill(n.A > 0 ? "reallife_mkt_news_rate_up" : "reallife_mkt_news_rate_down", "points", (Math.Abs(n.A) / 100f).ToString("0.00"), "change", Change(n.B));
+                case MarketNewsKind.Mania:
+                    return Fill(n.B == 1 ? "reallife_mkt_news_craze" : "reallife_mkt_news_craze_burst", "sector", Sector((MarketSector)Math.Max(0, Math.Min((int)MarketSector.Count - 1, n.A))));
+                case MarketNewsKind.Crisis:
+                    return Fill("reallife_mkt_news_crisis", "name", name, "change", Percent(n.A));
+                case MarketNewsKind.Windfall:
+                    return Fill("reallife_mkt_news_windfall", "name", name, "change", Percent(n.A));
+                case MarketNewsKind.Delisted:
+                    return Fill("reallife_mkt_news_delisted", "name", name, "price", Price(n.A));
+                default:
+                    return string.Empty;
+            }
+        }
+
+        // A company that is not in the market yet (a listing announced): its name from the catalogue.
+        private static string NameOf(int id)
+        {
+            CompanyDef d = MarketCatalogue.Find(id);
+            return d != null ? d.Name : string.Empty;
         }
 
         /// <summary>A sector's name.</summary>
