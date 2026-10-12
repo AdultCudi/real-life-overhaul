@@ -44,7 +44,7 @@ namespace RealLifeOverhaul
                 No()),
             E("mn06", None, Warn().Money(-75, -25, "fee")),
             E("mn07", None, Good().Money(10, 50, "refund")),
-            E("mn08", None, Bad().Pct(-0.02f, 60, 350, "unexpected_bill")).Rich(1000),
+            E("mn08", None, Bad().Pct(-0.02f, 60, 350, "unexpected_bill")).Rich(1000).Only(LifeAccounts.HasAccountant),
             C("mn09", None, 75, "scam", Yes(Bad().Feel(Mood.Robbed)), No(Good().Up())).Rich(100),
             E("mn10", None, Good().Money(15, 60, "refund")),
             E("mn11", None, Warn().Money(-110, -40, "fee")),
@@ -57,13 +57,13 @@ namespace RealLifeOverhaul
             E("mn18", None, Bad().Money(-160, -70, "unexpected_bill")),
             C("mn19", None, 20, "donation",
                 Yes(Good().Feel(Mood.Generous).Chance(75), Good().Feed(20).Feel(Mood.Lucky).Chance(25)), No()),
-            E("mn20", None, Warn().Money(-85, -35, "fee")),
+            E("mn20", None, Warn().Money(-85, -35, "fee")).Only(LifeAccounts.HasCard),
             E("mn21", None, Good().Money(25, 75, "sale")),
             E("mn22", None, Bad().Money(-240, -110, "unexpected_bill").DownBig()),
             E("mn23", NotDriving | Weekday, Info().Tire(5).Down()).At(9, 17),
             C("mn24", Indoors, Yes(Good().Feel(Mood.Helped)), No(Info().Money(30, 30, "found_money").Down())),
             E("mn25", None, Warn().Money(-45, -15, "fee")),
-            E("mn26", None, Good().Money(10, 40, "refund")),
+            E("mn26", None, Good().Money(10, 40, "refund")).Only(LifeAccounts.HasPower),
             C("mn27", None, Yes(Good().Money(40, 80, "found_money").Tire(4)), No(Good().Money(30, 65, "found_money")))
         };
 

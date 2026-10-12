@@ -233,11 +233,16 @@ namespace RealLifeOverhaul
         public LifeEvent Poor(int maxMoney) { MaxMoney = maxMoney; return this; }
         public LifeEvent W(float weight) { Weight = weight; return this; }
 
+        /// <summary>Only while this holds (something the event is about that the player may not have: LifeAccounts).</summary>
+        public LifeEvent Only(Func<bool> test) { Test = test; return this; }
+
+        public Func<bool> Test { get; private set; }
+
         public bool Fits(in LifeContext context)
         {
             // MinMoney 0 means "don't care": a player in debt still gets the events that cost nothing.
             if ((Needs & context.Flags) != Needs || (MinMoney > 0 && context.Money < MinMoney)
-                || (MaxMoney >= 0 && context.Money > MaxMoney))
+                || (MaxMoney >= 0 && context.Money > MaxMoney) || (Test != null && !Test()))
             {
                 return false;
             }

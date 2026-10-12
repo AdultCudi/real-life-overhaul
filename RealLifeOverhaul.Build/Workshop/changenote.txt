@@ -14,3 +14,4 @@ Fixed
 - A car towed after a crash could stay behind as a shell you walked through; the whole car now goes to the space.
 - The game could freeze for two seconds as an ambulance crew got out with the stretcher; that is now a moment's work.
 - A subway entrance opened the mod's list of stations instead of the game's subway map; the game's map is back, and the journey still takes its time.
+- A lent car's parking ticket is paid back whole; the city's business tax share applies only where the game charges income tax; one pound fee and one tow fee; partner and roommate shares of the rent at today's prices; online takings follow prices; card and accountant life events only for somebody who has one.

@@ -71,7 +71,7 @@ namespace RealLifeOverhaul
         public const int ExpiredFine = 250;          // expired but renewable: a fine and a warning, the car stays
         public const int SuspendedFine = 1500;
         public const int EvadedCheckFine = 400;      // drove on from a roadside check: added at the next stop
-        public const int ImpoundFee = 350;
+        public const int ImpoundFee = Law.LawBook.ImpoundFee;   // the city pound's own (Law)
         public const int ArrestFromCount = 3;        // the third time caught within the window is an arrest
         public const int RepeatWindowDays = 30;
         public const int ArrestHours = 6;

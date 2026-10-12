@@ -34,6 +34,9 @@ namespace RealLifeOverhaul
         }
 
         public static float PoliceScale => CivicCatalogue.PoliceScale(Position(Lever.Policing));
+
+        /// <summary>What city policy adds to (or takes off) each parking ticket now, at today's prices; 0 with civic life off.</summary>
+        public static int TicketExtra => CivicCatalogue.TicketExtraNow(Position(Lever.Parking));
         public static float CrimeScale => CivicCatalogue.CrimeScale(Position(Lever.Policing), Position(Lever.NightLife));
         public static float FineScale => CivicCatalogue.FineScale(Position(Lever.Traffic));
         /// <summary>How much more (or less) likely a traffic offence is to be noticed.</summary>

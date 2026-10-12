@@ -30,14 +30,33 @@ namespace RealLifeOverhaul
 
             internal static void Connect()
             {
+                LifeAccounts.Card = HasCard;
+                LifeAccounts.Accountant = () => Economy.CompanyDirector.Instance != null && Economy.CompanyDirector.Instance.HasAccountant;
                 EconomyBridges.Legal = ReadLegal;
                 EconomyBridges.LegalReady = () => JusticeState.Loaded;
                 EconomyBridges.OtherDebts = AddDebts;
                 PlannerDirector.Instance?.AddSource(Source);
             }
 
+            // A credit card of the mod's banks, open and not one of the test buttons'.
+            private static bool HasCard()
+            {
+                Economy.CreditFile file = Economy.CreditLedger.File;
+                for (int i = 0; file != null && i < file.Accounts.Count; i++)
+                {
+                    Economy.CreditAccount a = file.Accounts[i];
+                    if (a != null && a.Kind == Economy.ProductKind.CreditCard && !a.Closed && !a.Test)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
             internal static void Disconnect()
             {
+                LifeAccounts.Card = null;
+                LifeAccounts.Accountant = null;
                 EconomyBridges.Reset();   // (the bridges of DebtLinks too) the Planner's director goes with the city, and its sources with it
                 // The city is unloading or the mod is being switched off: the banks have their own terms again now, not
                 // only when the economy's own object is destroyed at the end of the frame.

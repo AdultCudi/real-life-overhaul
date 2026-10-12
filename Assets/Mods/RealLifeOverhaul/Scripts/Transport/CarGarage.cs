@@ -57,7 +57,7 @@ namespace RealLifeOverhaul
         public const float FuelCallOut = 34f;         // a can brought to the roadside...
         public const float FuelLitres = 10f;
         public const float FuelPerLitre = 2.6f;       // ...at twice the pump price
-        public const float TowFee = 180f;             // the same as the mod's other tow
+        public const float TowFee = VehicleTow.Fee;   // the one tow of the mod's (Driving/VehicleTow)
         public const float ReplaceBelow = 0.35f;      // tyres and brakes are changed at a service when this worn
         public const float WarnBelow = 0.2f;
         public const float WearFrom = 0.3f;           // below this they begin to tell

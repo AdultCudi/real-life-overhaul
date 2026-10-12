@@ -2385,7 +2385,7 @@ What happens, in order (`Custody`):
    sit it out; **pay bail** (not for a death), which ends it at once; **call a lawyer** (750, or 600 for
    somebody the public thinks well of), once, which strikes off a third of what is left.
 5. Release outside the door: energy at least 45, hunger at least 50, a summary, a bad mood for a while,
-   and the car that was left at the scene brought to a kerb space near the precinct for a 250 impound fee
+   and the car that was left at the scene brought to a kerb space near the precinct for the city pound's fee (300, `LawBook.ImpoundFee`, the same for a car taken for driving without a licence)
    (`VehicleTow.BringNear`; a repair shop if there is no space; a message if it could not be moved).
 
 **At a precinct that can be walked into** (and with "Walk-in police stations" on), steps 3 to 5 go on
@@ -3754,7 +3754,7 @@ back every value it changed.
 |---|---|---|
 | Policing | officers and patrols x1.4, street crime x0.8, levy +70 a week | officers x0.6, crime x1.25, 50 a week returned |
 | Traffic enforcement | fines x1.5, traffic accidents x0.7 | fines x0.7, accidents x1.3 |
-| Business tax | +20 % of the income tax sales run up | 20 % of it paid back |
+| Business tax | +20 % of the income tax sales run up, only where the game charges income tax (the tax year so far, projected, at 150,000 or more: `TaxHelper.MeetsIncomeTaxThreshold`) | 20 % of it paid back, the same |
 | Trade levy | 0.5 % of sales charged; 40 a week off the levy | 0.3 % of sales paid back |
 | Grants | 150 a week per business (three at most) | licence fee 60 a week per business (three at most) |
 | Rent | +6 % on rent paid; +4 % on rent collected | 6 % of rent paid returned; -4 % on rent collected |
@@ -5258,7 +5258,7 @@ driving on from one is not chased but costs 400 and 3 points at the next stop).
 
 | found at a stop | fine | vehicle | further |
 |---|---|---|---|
-| no licence | 800 | impounded: towed to a repair-shop bay by the game's own tow, 350 | the third time in 30 days: arrest (6 h, `ILawBridge.Custody`) |
+| no licence | 800 | impounded: towed to a repair-shop bay by the game's own tow, the city pound's fee (300, `LawBook.ImpoundFee`) | the third time in 30 days: arrest (6 h, `ILawBridge.Custody`) |
 | a licence for another class (a car licence on a motorbike or a van, a motorcycle licence in a car) | 500 | impounded | as above |
 | expired, still renewable | 250 | stays | |
 | suspended | 1500 | impounded | the second time: arrest |
