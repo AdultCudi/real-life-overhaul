@@ -5,7 +5,7 @@ A mod for [Big Ambitions](https://store.steampowered.com/app/1331550/Big_Ambitio
 **To play it, subscribe on the Steam Workshop:**
 https://steamcommunity.com/sharedfiles/filedetails/?id=3816536560
 
-**Or install it without the Workshop:** download the zip from [the latest release](https://github.com/AdultCudi/real-life-overhaul/releases/latest) and follow [INSTALL.md](INSTALL.md).
+**Or install it without the Workshop:** run `setup.exe` from [the latest release](https://github.com/AdultCudi/real-life-overhaul/releases/latest). [INSTALL.md](INSTALL.md) has the steps, and how to install from the zip by hand.
 
 Questions, help and bug reports: [the Real Life Overhaul Discord](https://discord.gg/tzCh2VXs9E).
 
@@ -58,6 +58,14 @@ dotnet RealLifeOverhaul.Build/CatalogueCheck/bin/Release/net10.0/CatalogueCheck.
 It must end with `ALL CHECKS PASSED`.
 
 You do not need Unity or Blender unless you change a model, an animation or a piece of clothing. The built bundles are in the repository.
+
+The installer for players without the Workshop (`RealLifeOverhaul-<version>-setup.exe`) and the zip beside it are made by one script, which builds the mod into a clean folder first. It needs [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`winget install JRSoftware.InnoSetup`):
+
+```
+powershell -File RealLifeOverhaul.Build/Installer/build-installer.ps1 -OutDir <folder>
+```
+
+It prints the SHA-256 of both files for the release notes. The installer script is `RealLifeOverhaul.Build/Installer/RealLifeOverhaul.iss`.
 
 ## Reporting a problem
 
