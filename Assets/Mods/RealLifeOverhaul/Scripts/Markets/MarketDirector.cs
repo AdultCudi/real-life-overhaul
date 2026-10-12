@@ -86,6 +86,7 @@ namespace RealLifeOverhaul.Markets
             try
             {
                 StandDown(false);
+                MarketTapeFile.Drain();   // (what is on its way to the tape is on disk before the game goes)
             }
             catch (Exception e)
             {

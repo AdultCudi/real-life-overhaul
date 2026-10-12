@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
+using System.Threading;
 using BAModAPI;
 using UnityEngine;
 
@@ -50,11 +51,29 @@ namespace RealLifeOverhaul.Markets
     /// day's secret the moment it is drawn, the furthest moment played at least once a second), and the whole of it is
     /// written again, compacted, when the game saves. A file that cannot be read or written leaves the market running on
     /// what it has, with one line in the log.
+    ///
+    /// NOT ON THE GAME'S OWN THREAD. Each write is a few calls of the file system (and, where the machine's virus guard
+    /// looks at every file written, a look of its own), which on the game's thread would stall a frame every few seconds
+    /// of a trading day. So the writes go to one writer on the thread pool, in the order they are given: a day's secret is
+    /// on disk within a few milliseconds of being drawn, still long before a load could ask for it again. Before the file
+    /// is read, and as the market stops, whatever is on its way is written first (Drain).
     /// </summary>
     public static class MarketTapeFile
     {
         public static IModLogger Logger;
         private static bool _warned;
+
+        private struct Job
+        {
+            public string Path;
+            public string Text;
+            public string First;    // what a new file begins with
+            public bool Whole;      // the whole tape again, in place of what is there
+        }
+
+        private static readonly object Gate = new object();
+        private static readonly Queue<Job> Jobs = new Queue<Job>(8);
+        private static bool _writing;
 
         public static string PathOf(ulong id)
         {
@@ -63,6 +82,7 @@ namespace RealLifeOverhaul.Markets
 
         public static MarketTape Read(ulong id)
         {
+            Drain();
             try
             {
                 string path = PathOf(id);
@@ -81,39 +101,84 @@ namespace RealLifeOverhaul.Markets
             {
                 return;
             }
-            try
-            {
-                string path = PathOf(id);
-                Directory.CreateDirectory(Path.GetDirectoryName(path));
-                if (!File.Exists(path))
-                {
-                    File.WriteAllText(path, "T1 " + id.ToString("X16") + "\n");
-                }
-                File.AppendAllText(path, lines);
-            }
-            catch (Exception e)
-            {
-                Warn("add to", e);
-            }
+            Enqueue(new Job { Path = PathOf(id), Text = lines, First = "T1 " + id.ToString("X16") + "\n" });
         }
 
         public static void Rewrite(ulong id, string whole)
         {
-            try
+            Enqueue(new Job { Path = PathOf(id), Text = whole, Whole = true });
+        }
+
+        /// <summary>Waits (a couple of seconds at the most) until every write given so far is on disk.</summary>
+        public static void Drain()
+        {
+            lock (Gate)
             {
-                string path = PathOf(id);
-                Directory.CreateDirectory(Path.GetDirectoryName(path));
-                string temp = path + ".new";
-                File.WriteAllText(temp, whole);
-                if (File.Exists(path))
+                int waits = 0;
+                while ((_writing || Jobs.Count > 0) && waits++ < 20)
                 {
-                    File.Delete(path);
+                    Monitor.Wait(Gate, 100);
                 }
-                File.Move(temp, path);
             }
-            catch (Exception e)
+        }
+
+        // (The path is made here, on the game's thread: the data folder is the engine's to say.)
+        private static void Enqueue(Job job)
+        {
+            lock (Gate)
             {
-                Warn("write", e);
+                Jobs.Enqueue(job);
+                if (_writing)
+                {
+                    return;
+                }
+                _writing = true;
+            }
+            ThreadPool.QueueUserWorkItem(_ => Write());
+        }
+
+        // The one writer: the jobs in the order given, until there are none.
+        private static void Write()
+        {
+            while (true)
+            {
+                Job job;
+                lock (Gate)
+                {
+                    if (Jobs.Count == 0)
+                    {
+                        _writing = false;
+                        Monitor.PulseAll(Gate);
+                        return;
+                    }
+                    job = Jobs.Dequeue();
+                }
+                try
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(job.Path));
+                    if (job.Whole)
+                    {
+                        string temp = job.Path + ".new";
+                        File.WriteAllText(temp, job.Text);
+                        if (File.Exists(job.Path))
+                        {
+                            File.Delete(job.Path);
+                        }
+                        File.Move(temp, job.Path);
+                    }
+                    else
+                    {
+                        if (!File.Exists(job.Path))
+                        {
+                            File.WriteAllText(job.Path, job.First);
+                        }
+                        File.AppendAllText(job.Path, job.Text);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Warn(job.Whole ? "write" : "add to", e);
+                }
             }
         }
 
