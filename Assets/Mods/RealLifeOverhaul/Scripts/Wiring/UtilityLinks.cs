@@ -13,7 +13,12 @@ namespace RealLifeOverhaul
         ///   Grade        the credit rating (Economy): the deposit a new account asks for
         ///   Household    who lives at the player's home besides them (Family: a partner who moved in, children at
         ///                home; the roommate at the home they share): the home's power and water
-        ///   CloseFor     a business closed for want of power or water (Business, the game's own switch)
+        ///   CloseFor     a business closed for want of power, water or a connection (Business, the game's own switch),
+        ///                as the utilities' own closure: asked again each hour, it lasts while the want does, whether or
+        ///                not business events are on
+        ///   Release      ...and ended as soon as the business has what it lacked
+        ///   UtilitiesOn  their off switch, read by the closures' keeper (BusinessDirector): off, or stopped by a fault,
+        ///                every business they closed opens again
         ///   Record       why, in the Business desk's messages (BusinessDesk.Text), to read back after the notification
         ///   Taken        the courthouse's building (Justice), which the office is not to be
         ///   Life         the electricity company's events need a power account of the player's (LifeAccounts.Power)
@@ -29,7 +34,9 @@ namespace RealLifeOverhaul
             {
                 UtilitiesBridges.Grade = () => (int)Economy.CreditLedger.Grade;
                 UtilitiesBridges.Household = Household;
-                UtilitiesBridges.CloseFor = (reg, hours) => BusinessDirector.Instance != null && BusinessDirector.Instance.CloseFor(reg, hours);
+                UtilitiesBridges.CloseFor = (reg, hours) => BusinessDirector.Instance != null && BusinessDirector.Instance.CloseFor(reg, hours, ClosureSource.Utilities);
+                UtilitiesBridges.Release = reg => BusinessDirector.Instance?.Release(reg, ClosureSource.Utilities);
+                BusinessDirector.UtilitiesOn = () => Settings.Utilities && !UtilitiesDirector.Failed;
                 UtilitiesBridges.Record = (key, data) => BusinessDesk.Text(key, data, notify: false);
                 UtilitiesBridges.Taken = building =>
                 {
@@ -47,6 +54,7 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 UtilitiesBridges.Reset();
+                BusinessDirector.UtilitiesOn = null;
                 LifeAccounts.Power = null;
                 HomeTidy.HasPower = null;
                 HomeTidy.HasWater = null;

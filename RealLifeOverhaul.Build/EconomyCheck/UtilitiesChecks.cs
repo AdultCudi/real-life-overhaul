@@ -109,12 +109,12 @@ internal static partial class Program
 
         // ---------------------------------------------------------------- the businesses a cut closes
         // (Business/BusinessState) A cut may close every business the player has at once: each closure has to come back
-        // from the save, or nothing opens its business again.
+        // from the save with its maker, or nothing opens its business again, or the wrong off switch does.
         BusinessState.Reset();
         BusinessState.Load(null, 40);
         for (int i = 0; i < 40; i++)
         {
-            BusinessState.SetClosure("Fifth%20Avenue~" + i, 41, 9);
+            BusinessState.SetClosure("Fifth%20Avenue~" + i, i % 2 == 0 ? ClosureSource.Utilities : ClosureSource.Issue, 41, 9);
         }
         var saved = new Dictionary<string, string>();
         BusinessState.Save(saved);
@@ -122,6 +122,69 @@ internal static partial class Program
         Check(BusinessState.Closures.Count == 40 && BusinessState.ClosureAt("Fifth%20Avenue~0") >= 0 && BusinessState.ClosureAt("Fifth%20Avenue~39") >= 0
               && BusinessState.ClosureAt("Fifth%20Avenue~40") < 0 && BusinessState.Closures[39].Day == 41 && BusinessState.Closures[39].Hour == 9,
             "utilities: forty businesses closed at once all come back from the save, each found by its place");
+        Check(BusinessState.ClosureAt("Fifth%20Avenue~0", ClosureSource.Utilities) >= 0 && BusinessState.ClosureAt("Fifth%20Avenue~0", ClosureSource.Issue) < 0
+              && BusinessState.ClosureAt("Fifth%20Avenue~1", ClosureSource.Issue) >= 0 && BusinessState.ClosureAt("Fifth%20Avenue~1", ClosureSource.Utilities) < 0,
+            "utilities: each closure comes back from the save with whoever made it");
+        string key = null;
+        foreach (KeyValuePair<string, string> entry in saved)
+        {
+            key = entry.Key;
+        }
+        string[] line = saved[key].Split('|');
+        line[5] = "Old%20Road~1,41,9;Old%20Road~2,42,3;";   // closures as a save from before their maker was kept writes them
+        saved[key] = string.Join("|", line);
+        BusinessState.Load(saved, 41);
+        Check(BusinessState.Closures.Count == 2 && BusinessState.ClosureAt("Old%20Road~1", ClosureSource.Issue) >= 0 && BusinessState.ClosureAt("Old%20Road~2", ClosureSource.Issue) >= 0
+              && !BusinessState.Holds(ClosureSource.Utilities) && BusinessState.Closures[1].Day == 42 && BusinessState.Closures[1].Hour == 3,
+            "utilities: a closure saved before its maker was kept reads as business pressure's");
+
+        // Asked for again, a closure lasts longer, never shorter; another maker's closure is its own, and the business
+        // opens once none is left on it.
+        BusinessState.Reset();
+        BusinessState.Load(null, 50);
+        var open = new List<string>();
+        BusinessState.SetClosure("Pier~3", ClosureSource.Issue, 50, 18);
+        BusinessState.Hold("Pier~3", ClosureSource.Issue, 50, 12);
+        Check(BusinessState.Closures.Count == 1 && BusinessState.Closures[0].Day == 50 && BusinessState.Closures[0].Hour == 18,
+            "utilities: a closure asked for again for less time is not made shorter");
+        BusinessState.Hold("Pier~3", ClosureSource.Issue, 51, 2);
+        Check(BusinessState.Closures.Count == 1 && BusinessState.Closures[0].Day == 51 && BusinessState.Closures[0].Hour == 2,
+            "utilities: asked for again for longer, it lasts until then, past midnight too");
+        BusinessState.Hold("Pier~3", ClosureSource.Utilities, 50, 16);
+        Check(BusinessState.Closures.Count == 2 && BusinessState.ClosureAt("Pier~3", ClosureSource.Utilities) >= 0 && BusinessState.Closures[BusinessState.ClosureAt("Pier~3", ClosureSource.Issue)].Day == 51,
+            "utilities: a cut at a business an issue keeps closed adds a closure of its own, and leaves the issue's as it was");
+        BusinessState.EndDue(50, 16, open);
+        Check(open.Count == 0 && BusinessState.Closures.Count == 1 && !BusinessState.Holds(ClosureSource.Utilities),
+            "utilities: the cut's closure ends on its hour, and the business stays closed for the issue");
+        BusinessState.EndDue(51, 2, open);
+        Check(open.Count == 1 && open[0] == "Pier~3" && BusinessState.Closures.Count == 0, "utilities: it opens once the issue's closure is over too");
+
+        // Each maker's off switch ends its own closures; after a fault every one ends.
+        open.Clear();
+        BusinessState.SetClosure("Pier~3", ClosureSource.Utilities, 60, 10);
+        BusinessState.Hold("Pier~3", ClosureSource.Issue, 60, 12);
+        BusinessState.SetClosure("Dock~4", ClosureSource.Utilities, 60, 10);
+        BusinessState.SetClosure("Mill~5", ClosureSource.Issue, 60, 10);
+        BusinessState.EndOf(ClosureSource.Issue, false, open);
+        Check(open.Count == 1 && open[0] == "Mill~5" && BusinessState.Closures.Count == 2 && !BusinessState.Holds(ClosureSource.Issue),
+            "utilities: business events switched off end only their own closures; a business the utilities keep closed stays closed");
+        open.Clear();
+        BusinessState.EndAt("Dock~4", ClosureSource.Utilities, open);
+        BusinessState.EndAt("Dock~4", ClosureSource.Utilities, open);
+        Check(open.Count == 1 && open[0] == "Dock~4" && BusinessState.ClosureAt("Dock~4") < 0 && BusinessState.Closures.Count == 1,
+            "utilities: the utilities' closure ends as soon as the business has what it lacked, and only once");
+        open.Clear();
+        BusinessState.EndOf(ClosureSource.Utilities, false, open);
+        Check(open.Count == 1 && open[0] == "Pier~3" && BusinessState.Closures.Count == 0, "utilities: switched off, the utilities end every closure of theirs");
+        BusinessState.SetClosure("Pier~3", ClosureSource.Utilities, 60, 10);
+        BusinessState.Hold("Pier~3", ClosureSource.Issue, 60, 12);
+        open.Clear();
+        BusinessState.EndOf(ClosureSource.Issue, true, open);
+        Check(open.Count == 1 && open[0] == "Pier~3" && BusinessState.Closures.Count == 0, "utilities: after a fault every closure ends, and a business with two opens once");
+        BusinessState.SetClosure("Pier~3", ClosureSource.Issue, 60, 12);
+        BusinessState.SetClosure("Pier~3", ClosureSource.Utilities, 60, 11);
+        Check(BusinessState.Closures.Count == 1 && BusinessState.Closures[0].Source == ClosureSource.Utilities && BusinessState.Closures[0].Hour == 11,
+            "utilities: a business closed afresh was opened in the meantime, so what was left of its closures is dropped");
         BusinessState.Reset();
     }
 }

@@ -21,11 +21,17 @@ namespace RealLifeOverhaul
     /// move of the mod's is started there, and the one poaching the mod does start is the game's
     /// own offer to a single employee.
     ///
-    /// Cost: Update is two comparisons a frame. Once a second it looks at the clock; everything
-    /// else happens when the game's hour changes (a handful of list walks over at most two open
-    /// issues, a few running effects and the player's own businesses). A visitor in the shop is
-    /// ticked four times a second, only while there is one. A fault is logged once, everything
-    /// the mod changed is put back, and the feature stays off for the session.
+    /// It also keeps the closures the utilities make (a business without power, water or a
+    /// connection), each with its maker: those are kept and ended on their hour whether or not
+    /// business pressure is on, its off switch ends only its own, and the utilities' end when the
+    /// utilities are off.
+    ///
+    /// Cost: Update is two comparisons a frame. Once a second it looks at the clock and whether
+    /// the utilities are on; everything else happens when the game's hour changes (a handful of
+    /// list walks over at most two open issues, a few running effects, the closures and the
+    /// player's own businesses). A visitor in the shop is ticked four times a second, only while
+    /// there is one. A fault is logged once, everything the mod changed is put back, and the
+    /// feature stays off for the session.
     /// </summary>
     public sealed class BusinessDirector : MonoBehaviour
     {
@@ -41,8 +47,15 @@ namespace RealLifeOverhaul
         /// <summary>A kind's share of the deal, given its own (the city's economy makes rivals undercut more often in bad times). Its own while this is not set.</summary>
         public static Func<string, int, int> WeightOf;
 
+        /// <summary>
+        /// True while the utilities run (Wiring/UtilityLinks): switched off, or stopped by a fault, every business they
+        /// closed is opened again, as their own off switch. While it is not set, their closures end on their hour.
+        /// </summary>
+        public static Func<bool> UtilitiesOn;
+
         private readonly BusinessVisit _visit = new BusinessVisit();
         private readonly List<BuildingRegistration> _shops = new List<BuildingRegistration>(8);
+        private readonly List<string> _opening = new List<string>(8);   // the businesses whose last closure of the mod's has just ended
         private readonly List<IssueDef> _deal = new List<IssueDef>(BusinessCatalogue.All.Length);
         private readonly int[] _testAt = new int[8];
         private float _nextSlow;
@@ -102,7 +115,7 @@ namespace RealLifeOverhaul
                 Logger?.Error(e);
                 Logger?.Warn("Business pressure: switched off for this session after the error above; every footfall change and closure of the mod's was put back.");
                 _visit.End();
-                StandDown(true, false);
+                StandDown(true, false, true);
             }
         }
 
@@ -145,24 +158,54 @@ namespace RealLifeOverhaul
             // The game clears its event hub on every load, so the save hook is kept attached.
             SaveHook.Keep(_onSave);   // the mod's one relay in the game's save event (Core/SaveHook): nothing is allocated while that event has not changed
 
+            bool turned = hour != _lastHour || day != _lastDay, newDay = day != _lastDay;
+            _lastHour = hour;
+            _lastDay = day;
+
+            // The closures are kept whether or not business pressure is on: the utilities' are made either way. Each ends
+            // on its hour, and the utilities' all end once the utilities are off.
+            if (turned)
+            {
+                BusinessState.EndDue(day, hour, _opening);
+                ReopenListed();
+            }
+            Func<bool> utilities = UtilitiesOn;
+            if (utilities != null && !utilities() && BusinessState.Holds(ClosureSource.Utilities))
+            {
+                BusinessState.EndOf(ClosureSource.Utilities, false, _opening);
+                ReopenListed();
+                Logger?.Info("Business: the utilities are off, so every business they closed is open again.");
+            }
+
             if (!Settings.Business)
             {
-                if (BusinessState.Issues.Count > 0 || BusinessState.Effects.Count > 0 || BusinessState.Closures.Count > 0
+                if (BusinessState.Issues.Count > 0 || BusinessState.Effects.Count > 0 || BusinessState.Holds(ClosureSource.Issue)
                     || (BusinessState.Racket != RacketStage.None && BusinessState.Racket != RacketStage.Ended))
                 {
                     _visit.End();
-                    StandDown(true, false);   // the off switch: nothing of the mod's is left running on any business
+                    StandDown(true, false, false);   // the off switch: nothing of business pressure's own is left running on any business
                 }
-                _lastHour = hour;
-                _lastDay = day;
                 return;
             }
-            if (hour != _lastHour || day != _lastDay)
+            if (turned)
             {
-                bool newDay = day != _lastDay;
-                _lastHour = hour;
-                _lastDay = day;
                 Hourly(day, hour, newDay);
+            }
+        }
+
+        // The businesses listed as having no closure of the mod's left on them, opened again; the list emptied, whatever happens.
+        private void ReopenListed()
+        {
+            try
+            {
+                for (int i = 0; i < _opening.Count; i++)
+                {
+                    BusinessGame.Reopen(BusinessGame.Held(_opening[i]));   // (Held, not Find: the utilities close a headquarters too, which takes no money)
+                }
+            }
+            finally
+            {
+                _opening.Clear();
             }
         }
 
@@ -220,17 +263,7 @@ namespace RealLifeOverhaul
 
         private void Hourly(int day, int hour, bool newDay)
         {
-            // Closures the mod made, reopened on their hour: whatever business it was (Held, not Find: the utilities
-            // close a headquarters too, which takes no money).
-            for (int i = BusinessState.Closures.Count - 1; i >= 0; i--)
-            {
-                Closure closure = BusinessState.Closures[i];
-                if (day > closure.Day || (day == closure.Day && hour >= closure.Hour))
-                {
-                    BusinessGame.Reopen(BusinessGame.Held(closure.Place));
-                    BusinessState.Closures.RemoveAt(i);
-                }
-            }
+            // (The closures have ended on their hour already, in Slow: they are kept whether or not business pressure is on.)
 
             // Footfall changes: ended on their day; the rest put back on top of the game's own figure, which the game
             // recomputes at midnight and whenever marketing changes.
@@ -470,20 +503,51 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Closes a business for a few hours with the game's own switch and remembers when to reopen it. False if it was
-        /// closed already, or if the reopening could not be kept: before the save's closures are read (reading them
-        /// starts the list afresh) or after a fault (nothing reopens anything then).
+        /// Keeps a business closed for at least a few hours with the game's own switch, for one maker, and remembers when
+        /// to reopen it. An open business is closed. One the mod keeps closed already stays closed at least that long: the
+        /// maker's closure on it is made to last until then if that is later (never shorter), so a closure asked for again
+        /// each hour lasts while its cause does. True if the business is kept closed so. False if it is closed by someone
+        /// else (the player's own switch), or if the reopening could not be kept: before the save's closures are read
+        /// (reading them starts the list afresh) or after a fault (nothing reopens anything then).
         /// </summary>
-        internal bool CloseFor(BuildingRegistration reg, int hours)
+        internal bool CloseFor(BuildingRegistration reg, int hours, ClosureSource source = ClosureSource.Issue)
         {
             hours = Mathf.Clamp(hours, 1, BusinessCatalogue.MostClosedHours);
-            if (_broken || !BusinessState.Loaded || !BusinessGame.Close(reg))
+            if (_broken || !BusinessState.Loaded || reg == null)
             {
                 return false;
             }
-            int hour = TimeHelper.CurrentHour + hours;
-            BusinessState.SetClosure(BusinessGame.Place(reg), TimeHelper.CurrentDay + hour / 24, hour % 24);
+            string place = BusinessGame.Place(reg);
+            int hour = TimeHelper.CurrentHour + hours, day = TimeHelper.CurrentDay + hour / 24;
+            if (reg.temporarilyClosed)
+            {
+                if (BusinessState.ClosureAt(place) < 0)
+                {
+                    return false;   // not the mod's to keep closed or to reopen
+                }
+                BusinessState.Hold(place, source, day, hour % 24);
+                return true;
+            }
+            if (!BusinessGame.Close(reg))
+            {
+                return false;
+            }
+            BusinessState.SetClosure(place, source, day, hour % 24);
             return true;
+        }
+
+        /// <summary>
+        /// One maker's closure on a business ended now, as what kept it closed is over (the utilities: the business has its
+        /// power, water and connection again). It opens at once unless another closure of the mod's is left on it.
+        /// </summary>
+        internal void Release(BuildingRegistration reg, ClosureSource source)
+        {
+            if (_broken || !BusinessState.Loaded || reg == null || !BusinessState.Holds(source))
+            {
+                return;   // (asked each hour of every business that has what it needs: nothing is worked out while the maker holds none)
+            }
+            BusinessState.EndAt(BusinessGame.Place(reg), source, _opening);
+            ReopenListed();
         }
 
         /// <summary>Says something about a business: a toast now, and a line in the Business desk's messages to read back.</summary>
@@ -508,12 +572,15 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Everything the mod has running on any business is ended and put back: issues closed without their outcome,
-        // footfall back to the game's own figure, closed businesses reopened. The racket goes quiet (a racket ended
-        // for good stays ended unless a test asks otherwise).
-        private void StandDown(bool quiet, bool racketToo)
+        // Everything business pressure has running on any business is ended and put back: issues closed without their
+        // outcome, footfall back to the game's own figure, its closures ended (a business opens again once no closure of
+        // the mod's is left on it). The utilities' closures are theirs and stay, but for <everything>, after a fault: then
+        // nothing would ever end them. The racket goes quiet (a racket ended for good stays ended unless a test asks
+        // otherwise).
+        private void StandDown(bool quiet, bool racketToo, bool everything)
         {
             int day = TimeHelper.CurrentDay;
+            BusinessState.EndOf(ClosureSource.Issue, everything, _opening);
             try
             {
                 for (int i = BusinessState.Effects.Count - 1; i >= 0; i--)
@@ -524,17 +591,13 @@ namespace RealLifeOverhaul
                         BusinessGame.Footfall(reg, 0, true);
                     }
                 }
-                for (int i = BusinessState.Closures.Count - 1; i >= 0; i--)
-                {
-                    BusinessGame.Reopen(BusinessGame.Held(BusinessState.Closures[i].Place));
-                }
+                ReopenListed();
             }
             catch (Exception e)
             {
                 Logger?.Error(e);
             }
             BusinessState.Effects.Clear();
-            BusinessState.Closures.Clear();
             for (int i = BusinessState.Issues.Count - 1; i >= 0; i--)
             {
                 BusinessState.Close(BusinessState.Issues[i], day);
@@ -544,7 +607,7 @@ namespace RealLifeOverhaul
                 BusinessState.Racket = RacketStage.None;
                 BusinessState.RacketRestUntil = racketToo ? 0 : day + BusinessCatalogue.RacketRestDays;
             }
-            Logger?.Info("Business pressure: stood down; nothing of the mod's is running on any business.");
+            Logger?.Info("Business pressure: stood down; nothing of " + (everything ? "the mod's is running on any business." : "its own is running on any business (the utilities' closures stay)."));
             if (!quiet)
             {
                 Notifications.Show(NotificationType.Info, "reallife_biz_test_resolved", null, 8f);
@@ -625,7 +688,7 @@ namespace RealLifeOverhaul
             Notifications.Show(NotificationType.Warning, firstWhy ?? "reallife_biz_test_failed", data, 10f);
         }
 
-        /// <summary>Options page: every open issue closed, every footfall change and closure put back, the racket forgotten.</summary>
+        /// <summary>Options page: every open issue closed, every footfall change and closure of business pressure's put back, the racket forgotten.</summary>
         public void TestResolveAll()
         {
             if (_broken || !BusinessState.Loaded)
@@ -634,7 +697,7 @@ namespace RealLifeOverhaul
                 return;
             }
             _visit.End();
-            StandDown(false, true);
+            StandDown(false, true, false);
         }
 
         /// <summary>Options page: the Business desk, face to face, wherever the player is.</summary>
