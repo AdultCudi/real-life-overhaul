@@ -103,6 +103,7 @@ internal static partial class Program
         Calendar();
         Utilities();
         Internet();
+        Broadband();
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }

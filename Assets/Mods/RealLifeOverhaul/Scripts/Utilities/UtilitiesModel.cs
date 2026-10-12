@@ -26,7 +26,7 @@ namespace RealLifeOverhaul.Utilities
         public int OnTime;               // bills paid by their due day in a row
         public bool CutForDebt;          // cut because a bill went unpaid: reconnecting costs the fee
         // ---- the internet
-        public int Provider = -1;        // InternetCatalogue.Providers
+        public int Provider = -1;        // InternetCatalogue.Providers, or InternetCatalogue.OwnIndex: the player's own company
         public int Plan;
         public bool BusinessPlan;
         public int ContractUntil;        // the first day out of contract (0: month by month)
@@ -44,7 +44,14 @@ namespace RealLifeOverhaul.Utilities
         public int MonthStart;           // the first day of the month being added up
         public int Seed;                 // the internet's outages and prices are drawn from it (InternetRules.Draw)
         public int Month;                // months turned since the internet began, for its prices
-        public readonly int[] Promo = { 1000, 1000, 1000, 1000 };   // each provider's month, thousandths of its list
+        public readonly int[] Promo = { 1000, 1000, 1000, 1000 };   // each rival's month, thousandths of its list
+        public readonly Network Network = new Network();             // the player's own broadband company (Utilities/Broadband)
+
+        /// <summary>A provider's month, thousandths of its list (the player's own company keeps to its list).</summary>
+        public int PromoOf(int provider)
+        {
+            return provider >= 0 && provider < Promo.Length ? Promo[provider] : 1000;
+        }
 
         public Account Find(string place, Service service)
         {

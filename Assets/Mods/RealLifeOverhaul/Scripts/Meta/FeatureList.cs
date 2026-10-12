@@ -642,6 +642,12 @@ namespace RealLifeOverhaul.Meta
                 .Fact("net_monthly", () => ((Utilities.InternetCatalogue.MonthlyShare - 1000) / 10).ToString(CultureInfo.InvariantCulture) + "%")
                 .Fact("net_business", () => ((Utilities.InternetCatalogue.BusinessShare - 1000) / 10).ToString(CultureInfo.InvariantCulture) + "%")
                 .Fact("net_install_fee", () => Guide.Money(Utilities.InternetCatalogue.InstallFee))
+                .Fact("bb_licence", () => Guide.Money(Utilities.BroadbandRules.LicenceFee(Prices.Level)))
+                .Fact("bb_build_least", () => Guide.Money(Utilities.BroadbandRules.BuildCost(2, Prices.Level)))
+                .Fact("bb_build_most", () => Guide.Money(Utilities.BroadbandRules.BuildCost(4, Prices.Level)))
+                .Fact("bb_build_months", () => Utilities.BroadbandCatalogue.BuildMonths.ToString(CultureInfo.InvariantCulture))
+                .Fact("bb_trust_months", () => Utilities.BroadbandCatalogue.TrustMonths.ToString(CultureInfo.InvariantCulture))
+                .Fact("bb_sale_multiple", () => Utilities.BroadbandCatalogue.SaleMultiple.ToString(CultureInfo.InvariantCulture))
                 .Objects("RealLifeOverhaul Utilities Sign");
 
             Features.Add("family", "reallife_meta_title_family")

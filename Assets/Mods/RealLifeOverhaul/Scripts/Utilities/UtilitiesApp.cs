@@ -2,7 +2,11 @@ using System;
 using System.Collections.Generic;
 using BAModAPI;
 using Localizor;
+using Localizor.LanguageChangeEvent;
 using RealLifeOverhaul.GameUi;
+using Streets;
+using UI;
+using UI.Notification;
 using UI.Smartphone;
 using UnityEngine;
 
@@ -40,6 +44,18 @@ namespace RealLifeOverhaul.Utilities
             .Filter("reallife_tab_all_kinds", Kinds)
             .Order(0, true)
             .Empty("reallife_net_empty");
+
+        /// <summary>0 district, 1 the company's network there, 2 its connections, 3 its share, 4 homes and businesses, 5 rivals there, 6 its network's cost. Opens by district.</summary>
+        public static readonly TableSpec Network = new TableSpec("Utilities", "Network")
+            .Column("reallife_bb_col_district", 360f, TableSort.Text, flexible: true)
+            .Column("reallife_bb_col_network", 330f, TableSort.Text)
+            .Column("reallife_bb_col_connections", 220f, TableSort.Number, sums: true)
+            .Column("reallife_bb_col_share", 150f, TableSort.Number)
+            .Column("reallife_bb_col_market", 240f, TableSort.Number, sums: true)
+            .Column("reallife_bb_col_rivals", 130f, TableSort.Number)
+            .Column("reallife_bb_col_cost", 230f, TableSort.Money, sums: true, right: true)
+            .Order(0, true)
+            .Empty("reallife_bb_empty");
     }
 
     /// <summary>
@@ -52,14 +68,18 @@ namespace RealLifeOverhaul.Utilities
     ///   Internet   every place with its connection (provider, plan, price, contract) and whether the business needs one
     ///              to open; the white box buys one (the providers that reach the place, their plans, a contract or not),
     ///              changes it, cancels it, or reconnects it after a cut
+    ///   Your network  the player's own broadband company (BroadbandCompany): each district with the network there, its
+    ///              connections and share, the homes and businesses and the rivals there; the white box founds the
+    ///              company, builds a district's network, sets its prices, maintenance and marketing, or sells it
     ///
     /// Power and water are applied for in person at the office; the internet is bought here. Nothing runs while the app
     /// is closed.
     /// </summary>
     public sealed class UtilitiesApp
     {
-        private const int TabAccounts = 0, TabInternet = 1;
-        private static readonly string[] TabKeys = { "reallife_util_tab_accounts", "reallife_util_tab_internet" };
+        private const int TabAccounts = 0, TabInternet = 1, TabNetwork = 2;
+        private static readonly string[] TabKeys = { "reallife_util_tab_accounts", "reallife_util_tab_internet", "reallife_util_tab_network" };
+        private static Network _cityAsItIs;   // the city's market before any company, for a district's rivals before founding
 
         public static IModLogger Logger;
 
@@ -187,7 +207,7 @@ namespace RealLifeOverhaul.Utilities
                 InfoBox box = _shell.Box;
                 box.Clear();
                 string selected = null;
-                TableSpec spec = _tab == TabInternet ? UtilitiesTables.Internet : UtilitiesTables.Accounts;
+                TableSpec spec = _tab == TabNetwork ? UtilitiesTables.Network : _tab == TabInternet ? UtilitiesTables.Internet : UtilitiesTables.Accounts;
                 UtilitiesState state = _ready ? _director.State : null;
                 if (state == null || SaveGameManager.Current == null)
                 {
@@ -198,6 +218,10 @@ namespace RealLifeOverhaul.Utilities
                 else if (_tab == TabInternet)
                 {
                     WriteInternet(box, state, ref selected);
+                }
+                else if (_tab == TabNetwork)
+                {
+                    WriteNetwork(box, state, ref selected);
                 }
                 else
                 {
@@ -444,22 +468,27 @@ namespace RealLifeOverhaul.Utilities
                 _plan = 0;
                 Refresh();
             }));
-            box.Selector(p.Mbps.Length, _plan, i => UtilitiesText.T("reallife_net_plan_option", "mbps", p.Mbps[i].ToString(),
-                "price", UtilitiesText.Money(_director.NetPrice(place, provider, i, _contract) / 100f)), i => UiClone.Safe(() =>
+            bool ours = provider == InternetCatalogue.OwnIndex && _director.State.Network.Running;
+            box.Selector(p.Mbps.Length, _plan, i => ours ? UtilitiesText.T("reallife_net_plan_option_own", "mbps", p.Mbps[i].ToString())
+                : UtilitiesText.T("reallife_net_plan_option", "mbps", p.Mbps[i].ToString(), "price", UtilitiesText.Money(_director.NetPrice(place, provider, i, _contract) / 100f)), i => UiClone.Safe(() =>
             {
                 _plan = i;
                 Refresh();
             }));
-            box.Switch("reallife_net_box_contract_switch", _contract, on => UiClone.Safe(() =>
+            if (!ours)
             {
-                _contract = on;
-                Refresh();
-            }));
+                box.Switch("reallife_net_box_contract_switch", _contract, on => UiClone.Safe(() =>
+                {
+                    _contract = on;
+                    Refresh();
+                }));
+            }
             bool same = live && a.Provider == provider && a.State != SupplyState.Cut;
-            box.Line(UtilitiesText.Pair("reallife_net_box_price", UtilitiesText.Money(_director.NetPrice(place, provider, _plan, _contract) / 100f)));
+            box.Line(UtilitiesText.Pair("reallife_net_box_price", UtilitiesText.Money(_director.NetPrice(place, provider, _plan, _contract && !ours) / 100f)));
             if (!same)
             {
-                box.Line(_contract ? UtilitiesText.T("reallife_net_box_install_free") : UtilitiesText.T("reallife_net_box_install_fee", "fee", UtilitiesText.Money(InternetCatalogue.InstallFee)));
+                box.Line(ours ? UtilitiesText.T("reallife_net_box_install_own") : _contract ? UtilitiesText.T("reallife_net_box_install_free")
+                    : UtilitiesText.T("reallife_net_box_install_fee", "fee", UtilitiesText.Money(InternetCatalogue.InstallFee)));
                 box.Line(UtilitiesText.T("reallife_net_box_install_day", "day", UtilitiesText.Day(today + InternetCatalogue.InstallDays)));
                 int exit = live ? _director.NetExitFee(place) : 0;
                 if (exit > 0)
@@ -467,7 +496,7 @@ namespace RealLifeOverhaul.Utilities
                     box.Line(UtilitiesText.T("reallife_net_box_switch_fee", "provider", UtilitiesText.ProviderOf(a), "fee", UtilitiesText.Money(exit)));
                 }
             }
-            if (_contract)
+            if (_contract && !ours)
             {
                 box.Line(UtilitiesText.T("reallife_net_box_contract_note", "months", InternetCatalogue.ContractMonths.ToString()));
             }
@@ -496,6 +525,208 @@ namespace RealLifeOverhaul.Utilities
             {
                 InfoBox.Button(buttons, InfoBox.Additional, "reallife_util_box_back", Back);
             }
+        }
+
+        // ---------------------------------------------------------------- your network
+
+        private void WriteNetwork(InfoBox box, UtilitiesState state, ref string selected)
+        {
+            Network n = state.Network;
+            int today = UtilitiesGame.Today, level = Prices.Level, picked = -1, open = 0;
+            for (int d = 0; d < Network.Districts; d++)
+            {
+                string id = "bb|" + d;
+                TableRow row = Row(id);
+                row.Pick = true;
+                if (id == _pick)
+                {
+                    selected = id;
+                    picked = d;
+                }
+                bool isOpen = n.Open(d, today), digging = n.Digging(d);
+                open += isOpen ? 1 : 0;
+                int connections = BroadbandRules.Connections(n, d), share = n.Exists ? n.Share[d, Network.Own] : 0, rivals = Rivals(d);
+                int cost = isOpen || digging ? n.Spent[d] : BroadbandRules.BuildCost(d, level);
+                row.Set(0, BroadbandCompany.District(d));
+                row.Set(1, isOpen ? UtilitiesText.T("reallife_bb_state_open", "day", UtilitiesText.Day(n.Built[d])) : digging ? UtilitiesText.T("reallife_bb_state_digging", "day", UtilitiesText.Day(n.ReadyDay(d)))
+                    : UtilitiesText.T("reallife_bb_state_none"), isOpen ? TableRow.Green : digging ? TableRow.Yellow : TableRow.Plain);
+                row.Set(2, n.Exists ? connections.ToString("N0", UtilitiesText.Culture) : "-", connections);
+                row.Set(3, n.Exists ? UtilitiesText.T("reallife_bb_percent", "share", UtilitiesText.Percent(share)) : "-", share);
+                row.Set(4, BroadbandCatalogue.Market[d].ToString("N0", UtilitiesText.Culture), BroadbandCatalogue.Market[d]);
+                row.Set(5, rivals.ToString(UtilitiesText.Culture), rivals);
+                row.Set(6, UtilitiesText.Money(cost), cost);
+            }
+            UiClone.Words(_shell.Header, n.Running ? UtilitiesText.T("reallife_bb_headline", "count", BroadbandRules.Connections(n).ToString("N0", UtilitiesText.Culture), "districts", open.ToString())
+                : UtilitiesText.T(n.State == CompanyState.Sold ? "reallife_bb_headline_sold" : "reallife_bb_headline_none"));
+            if (picked >= 0)
+            {
+                WriteDistrict(box, n, picked, today, level);
+                return;
+            }
+            _pick = null;
+            WriteCompany(box, n, open, level);
+        }
+
+        private void WriteCompany(InfoBox box, Network n, int open, int level)
+        {
+            BroadbandCompany company = _director.Company;
+            BuildingRegistration hq = UtilitiesGame.Headquarters();
+            box.Title(UtilitiesText.T("reallife_bb_box_title"));
+            if (n.State == CompanyState.Sold)
+            {
+                box.Line(UtilitiesText.T("reallife_bb_box_sold", "day", UtilitiesText.Day(n.SoldDay), "price", UtilitiesText.Money(n.SalePrice)));
+                return;
+            }
+            if (!n.Running)
+            {
+                int fee = BroadbandRules.LicenceFee(level);
+                box.Line(UtilitiesText.T("reallife_bb_box_intro", "fee", UtilitiesText.Money(fee)));
+                box.Line(hq != null ? UtilitiesText.T("reallife_bb_box_hq", "name", HqName(hq)) : UtilitiesText.T("reallife_bb_box_need_hq"));
+                if (hq != null)
+                {
+                    InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_bb_box_found", () => Ask("reallife_bb_confirm_found_title".Localize(),
+                        "reallife_bb_confirm_found_body".Localize(new { fee = UtilitiesText.Money(fee) }), "reallife_bb_box_found", false,
+                        () => company.Found(out string why) ? null : why));
+                }
+                return;
+            }
+            int connections = BroadbandRules.Connections(n);
+            box.Line(UtilitiesText.Pair("reallife_bb_box_connections", UtilitiesText.T("reallife_bb_box_connections_value", "count", connections.ToString("N0", UtilitiesText.Culture), "districts", open.ToString())));
+            if (n.HistoryCount > 0)
+            {
+                box.Line(UtilitiesText.Pair("reallife_bb_box_last", UtilitiesText.T("reallife_bb_box_last_value", "takings", UtilitiesText.Money(n.LastTakings), "costs", UtilitiesText.Money(n.LastCosts),
+                    "profit", UtilitiesText.Money(n.LastTakings - n.LastCosts))));
+            }
+            box.Line(UtilitiesText.Pair("reallife_bb_box_month", UtilitiesText.T("reallife_bb_box_month_value", "takings", UtilitiesText.Money(n.MonthTakings), "costs", UtilitiesText.Money(n.MonthCosts))));
+            box.Line(UtilitiesText.Pair("reallife_bb_box_year", UtilitiesText.Money(BroadbandRules.YearProfit(n))));
+            int value = BroadbandRules.SaleValue(n);
+            box.Line(UtilitiesText.Pair("reallife_bb_box_value", UtilitiesText.Money(value)));
+            if (hq == null)
+            {
+                box.Line(UtilitiesText.T("reallife_bb_box_no_hq"));
+            }
+            box.Headline("reallife_bb_box_settings");
+            int least = BroadbandCatalogue.PriceLeast, step = BroadbandCatalogue.PriceStep;
+            box.Selector((BroadbandCatalogue.PriceMost - least) / step + 1, (n.PriceShare - least) / step, i => PricesText(least + i * step, level), i => UiClone.Safe(() =>
+            {
+                company.SetPrices(least + i * step);
+                Refresh();
+            }));
+            int careLeast = BroadbandCatalogue.MaintenanceLeast, careStep = BroadbandCatalogue.MaintenanceStep;
+            box.Selector((BroadbandCatalogue.MaintenanceMost - careLeast) / careStep + 1, (n.Maintenance - careLeast) / careStep, i => UtilitiesText.T("reallife_bb_maintenance_option",
+                "share", ((careLeast + i * careStep) / 10).ToString(), "outages", BroadbandRules.OutagePerMille(careLeast + i * careStep).ToString()), i => UiClone.Safe(() =>
+            {
+                company.SetMaintenance(careLeast + i * careStep);
+                Refresh();
+            }));
+            box.Selector(BroadbandCatalogue.Marketing.Length, n.Marketing, i => i == 0 ? UtilitiesText.T("reallife_bb_marketing_none")
+                : UtilitiesText.T("reallife_bb_marketing_option", "amount", UtilitiesText.Money(BroadbandRules.MarketingMoney(i, level))), i => UiClone.Safe(() =>
+            {
+                company.SetMarketing(i);
+                Refresh();
+            }));
+            InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_bb_box_sell", () => Ask("reallife_bb_confirm_sell_title".Localize(),
+                "reallife_bb_confirm_sell_body".Localize(new { price = UtilitiesText.Money(value), buyer = UtilitiesText.T(BroadbandCatalogue.SoldNameKey) }), "reallife_bb_box_sell", true,
+                () => company.Sell(out string why) ? null : why));
+        }
+
+        private void WriteDistrict(InfoBox box, Network n, int d, int today, int level)
+        {
+            BroadbandCompany company = _director.Company;
+            box.Title(BroadbandCompany.District(d));
+            box.Line(UtilitiesText.Pair("reallife_bb_box_district_market", BroadbandCatalogue.Market[d].ToString("N0", UtilitiesText.Culture)));
+            box.Line(UtilitiesText.Pair("reallife_bb_box_district_shares", Shares(n.Exists ? n : CityAsItIs(), d)));
+            int cost = BroadbandRules.BuildCost(d, level);
+            if (n.Open(d, today))
+            {
+                box.Line(UtilitiesText.T("reallife_bb_box_district_open", "day", UtilitiesText.Day(n.Built[d]), "count", BroadbandRules.Connections(n, d).ToString("N0", UtilitiesText.Culture),
+                    "share", UtilitiesText.Percent(n.Share[d, Network.Own]), "trust", UtilitiesText.Percent(BroadbandRules.Trust(n, d, today, GameCalendar.MonthDays))));
+            }
+            else if (n.Digging(d))
+            {
+                box.Line(UtilitiesText.T("reallife_bb_box_district_digging", "day", UtilitiesText.Day(n.ReadyDay(d))));
+            }
+            else
+            {
+                box.Line(UtilitiesText.T("reallife_bb_box_district_cost", "cost", UtilitiesText.Money(cost), "months", BroadbandCatalogue.BuildMonths.ToString()));
+            }
+            Transform buttons = box.ButtonRow();
+            if (n.Running && !n.Open(d, today) && !n.Digging(d))
+            {
+                int upkeep = cost * BroadbandCatalogue.UpkeepPerMille / 1000;
+                InfoBox.Button(buttons, InfoBox.Positive, "reallife_bb_box_build", () => Ask("reallife_bb_confirm_build_title".Localize(new { district = BroadbandCompany.District(d) }),
+                    "reallife_bb_confirm_build_body".Localize(new { cost = UtilitiesText.Money(cost), months = BroadbandCatalogue.BuildMonths.ToString(), upkeep = UtilitiesText.Money(upkeep) }),
+                    "reallife_bb_box_build", false, () => company.Build(d, out string why) ? null : why));
+            }
+            InfoBox.Button(buttons, InfoBox.Additional, "reallife_util_box_back", Back);
+        }
+
+        // The game's own question before a large sum is spent (or a company sold): on yes, done, and any refusal said.
+        private void Ask(LanguageChangeEventDataHolder title, LanguageChangeEventDataHolder body, string confirmKey, bool negative, Func<string> act)
+        {
+            UiClone.Safe(() => HudConfirm.Show(title, body, () => UiClone.Safe(() =>
+            {
+                string why = act();
+                if (why != null)
+                {
+                    UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T(why), 8f);
+                }
+                Refresh();
+            }), null, confirmKey, "common_cancel", false, negative));
+        }
+
+        private static string PricesText(int share, int level)
+        {
+            return UtilitiesText.T("reallife_bb_price_option", "share", (share / 10).ToString(), "p0", UtilitiesText.Money(BroadbandRules.PlanCents(share, 0, level) / 100f),
+                "p1", UtilitiesText.Money(BroadbandRules.PlanCents(share, 1, level) / 100f), "p2", UtilitiesText.Money(BroadbandRules.PlanCents(share, 2, level) / 100f));
+        }
+
+        // The providers of a district by their share, the largest first: "Kestrel Cable 45%, Brightvein Fibre 30%, ...".
+        private static string Shares(Network n, int d)
+        {
+            var order = new List<int>(Network.Providers);
+            for (int p = 0; p < Network.Providers; p++)
+            {
+                if (n.Share[d, p] > 0)
+                {
+                    order.Add(p);
+                }
+            }
+            order.Sort((x, y) => n.Share[d, y].CompareTo(n.Share[d, x]));
+            var words = new System.Text.StringBuilder(96);
+            for (int i = 0; i < order.Count; i++)
+            {
+                int p = order[i];
+                string name = p == Network.Own ? UtilitiesText.T(n.State == CompanyState.Sold ? BroadbandCatalogue.SoldNameKey : BroadbandCatalogue.OwnNameKey) : UtilitiesText.T(InternetCatalogue.Providers[p].NameKey);
+                words.Append(i == 0 ? string.Empty : ", ").Append(UtilitiesText.T("reallife_bb_share_item", "provider", name, "share", UtilitiesText.Percent(n.Share[d, p])));
+            }
+            return words.ToString();
+        }
+
+        private static Network CityAsItIs()
+        {
+            if (_cityAsItIs == null)
+            {
+                _cityAsItIs = new Network();
+                BroadbandRules.Found(_cityAsItIs, 0);
+                _cityAsItIs.State = CompanyState.None;
+            }
+            return _cityAsItIs;
+        }
+
+        private static int Rivals(int d)
+        {
+            int count = 0;
+            for (int p = 0; p < InternetCatalogue.Providers.Length; p++)
+            {
+                count += InternetRules.Reaches(p, BroadbandCatalogue.Districts[d]) ? 1 : 0;
+            }
+            return count;
+        }
+
+        private static string HqName(BuildingRegistration hq)
+        {
+            return string.IsNullOrEmpty(hq.BusinessName) ? hq.Address.ToFormattedString() : hq.BusinessName;
         }
 
         private void Reach(PlaceInfo place)

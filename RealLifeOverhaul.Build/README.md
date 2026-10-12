@@ -4815,8 +4815,12 @@ under, and deductible where the game's tax deducts them), shared out by those fi
 to the line (`CityAdjust.Split`; a carried amount goes with the day it is taken). `GameBooks.Refresh`, called by the
 city once its lines are booked and again when the mod's day is done, sums the day's statement as the game sums it:
 a business's four lines by category, its takings as the game's sales and the city's line on them (the goods sold
-scaled row by row so that they still add up; left alone where the game booked no takings), a rented home's rent as
-its daily rent and the city's line on it, and the day's own figures (loans, health insurance, the headhunter, parking,
+scaled row by row so that they still add up; where the game booked no takings of its own, the sales of its order book:
+a factory's exports) and the mod's own takings there (online orders less refunds, `OnlineGame` putting each product's
+sales among the rows itself; the broadband company's bills at the headquarters, `EconomyBridges.Takings`, with its
+network as a row among the goods, `EconomyBridges.CostRow`), every sum made afresh from what the save keeps and never
+from the statement itself, so that a second refresh counts nothing twice and loses nothing entered between the two;
+a rented home's rent as its daily rent and the city's line on it, and the day's own figures (loans, health insurance, the headhunter, parking,
 salary income, and the wages of no business with the city's line on them). So the game's taxes (sales of the period
 from the statements, deductions as booked), its bank (`PlayerHelper.CalculateDailyIncome`) and EconoView see the
 city's lines. Readers of a statement take its takings as today's: an insurance premium's base is at today's prices and
@@ -4862,9 +4866,33 @@ power (City Light and Power) and one for water (Riverside Water). The rules are 
   not charged, and a business plan is repaired in half the time. Web design and software companies and the headquarters
   (`InternetCatalogue.Needs`) cannot open without a connection that works.
 
-The save line (`reallife:utilities`): the days added up, the seed, the months and each provider's price, and each
-account's place (escaped) and figures. Nothing runs per frame but the office's panel check once a second; the effects
-once an hour, the books, outages and prices once a morning.
+- **Your own broadband company** (`BroadbandCatalogue`, `BroadbandRules`, `BroadbandCompany`). Late in a game and very
+  costly: the city's operator's licence (with a headquarters: its office, and where it bills from), then a fibre network
+  dug district by district, each a fortune and two of the game's months. Where it is open the company is a fifth
+  provider (`InternetCatalogue.Own`, set by `BroadbandRules.Apply`), and the player's own places connect free. Each
+  district's homes and businesses (`BroadbandCatalogue.Market`) choose among the providers there month by month: each
+  has a weight (the rivals' holds as the market stands when the company is founded, so that nothing moves without a
+  newcomer; the company's grown with the district's trust over nine months), by its price against its usual squared,
+  and the company's also by its reliability (the maintenance spent: outages on twenty days in a thousand as usual) and
+  its marketing (each dollar winning less than the last); each share moves a fifth of the way to its weight's share a
+  month. The rivals answer: a rival's price is held under its highest by the company's share of its markets
+  (`BroadbandRules.AnswerCap`). Each morning the day is booked at the headquarters (`UtilitiesGame.Book`): the customers'
+  bills as takings (none on a day the network failed, nor without a headquarters), engineers and the call centre as
+  salaries, the network (backbone, boxes and upkeep) as the cost of what it sells, the marketing as marketing; at the
+  turn of the month the new connections' installations. `GameBooks.Refresh` enters the takings and the network's row in
+  the headquarters' statement, so the game's tax and its bank count them; the running costs are deductible, the capital
+  (the licence, the networks dug) is not, and the sale is not taxed. A buyer (Harbour Fibre) pays four years of the last
+  twelve months' profit, or three tenths of what the network cost if that is more, and runs the network on at the usual
+  prices; the player's places on it pay like anybody's, and the licence goes with it. The checks hold that a district
+  pays back its network in about two years, that the market keeps still without a newcomer, that nobody is won in a
+  day, and that one squeezed month cannot raise the price of a sale by more than four times its gain.
+- **Bills at a business** (power, water, the internet, their fees) are deducted by the game's tax as its own charges
+  are (`UtilitiesGame.Pay`, deductible); a home's, and a deposit, are not.
+
+The save line (`reallife:utilities`, version 2): the days added up, the seed, the months and each rival's price, each
+account's place (escaped) and figures, and the broadband company (`~n:`, none in a line of version 1). Nothing runs per
+frame but the office's panel check once a second; the effects once an hour, the books, outages, prices and the
+company's day once a morning.
 
 ## Home life and health (`Scripts/Home`)
 
@@ -6366,7 +6394,9 @@ the account it becomes is held there. A game loan belongs to the bank at its own
 
 ### The game's parts
 
-The panel is `GameUi.AppShell` (copied from MyEmployees) like the Finance app's; tables are `GameUi.DataTable` with
+The panel is `GameUi.AppShell` (copied from MyEmployees) like the Finance app's; tables are `GameUi.DataTable` (a cell's
+tone is a type of its own, `GameUi.CellTone`, so that a figure passed to `TableRow.Set` is always what the column is
+ordered and summed by, never taken for a colour) with
 one set of `TableSpec`s per app (`BankTables`), so an order or a filter is that app's. The app's name on its button
 and in the menu's top bar is one text key, `reallife_bank_app` ("{bank}"), filled through the game's own
 `TextLocalizationComponent.Arguments` (`PhoneAppDef.TitleArguments`, game-ui.md section 33): it still follows a

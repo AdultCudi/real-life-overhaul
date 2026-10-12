@@ -29,6 +29,19 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static Func<string, bool> GivenBack;
 
+        /// <summary>
+        /// Whether a transaction of another feature's is a business's takings (the broadband company's customers' bills,
+        /// at its headquarters): the game's statement counts it among the takings of the business at its address
+        /// (GameBooks), so the game's tax and bank do. Default: none.
+        /// </summary>
+        public static Func<string, bool> Takings;
+
+        /// <summary>
+        /// The row among a business's goods (the cost of what it sold) that a transaction of another feature's is entered
+        /// in, by the row's text key (the broadband company's network); null for none. Default: none.
+        /// </summary>
+        public static Func<string, string> CostRow;
+
         /// <summary>False while the record cannot be read yet (its feature has not loaded this save). Default: ready.</summary>
         public static Func<bool> LegalReady;
 
@@ -74,6 +87,8 @@ namespace RealLifeOverhaul.Economy
         {
             Legal = null;
             GivenBack = null;
+            Takings = null;
+            CostRow = null;
             LegalReady = null;
             OtherDebts = null;
             FileClaim = null;

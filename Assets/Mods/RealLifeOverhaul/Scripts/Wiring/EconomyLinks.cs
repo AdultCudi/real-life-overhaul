@@ -23,6 +23,8 @@ namespace RealLifeOverhaul
         ///                costs by
         ///   GivenBack    the mod's refunds of a game charge (a ride the day pass covered, a lent vehicle's ticket), which
         ///                the city's cost of living line counts against the game's charges of the day
+        ///   Takings      the broadband company's bills (Scripts/Utilities), and its network's cost: in its headquarters'
+        ///   CostRow      statement among the takings and the goods, so the game's tax and bank count them
         ///   LifeAccounts a card of the mod's banks and an accountant, for the life events that need one
         ///   on unload    the banks' own terms are put back at once (Economy's own object goes at the end of the frame)
         ///
@@ -37,6 +39,8 @@ namespace RealLifeOverhaul
             {
                 Prices.Factor = () => Economy.CityEconomy.CostFactor;   // every price of the mod's follows the city's
                 EconomyBridges.GivenBack = GivenBack;
+                EconomyBridges.Takings = type => type == Utilities.BroadbandCatalogue.TakingsKey;   // the broadband company bills from its headquarters
+                EconomyBridges.CostRow = type => type == Utilities.BroadbandCatalogue.NetworkKey || type == Utilities.BroadbandCatalogue.InstallsKey ? Utilities.BroadbandCatalogue.NetworkRow : null;
                 LifeAccounts.Card = HasCard;
                 LifeAccounts.Accountant = () => Economy.CompanyDirector.Instance != null && Economy.CompanyDirector.Instance.HasAccountant;
                 EconomyBridges.Legal = ReadLegal;

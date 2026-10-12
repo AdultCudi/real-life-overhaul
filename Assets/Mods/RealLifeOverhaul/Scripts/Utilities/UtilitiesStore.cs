@@ -6,14 +6,15 @@ using System.Text;
 namespace RealLifeOverhaul.Utilities
 {
     /// <summary>
-    /// The utilities' accounts in the save (GameInstance.modData), one line: "v=1~h:" the days, "~a:" the accounts, each
-    /// its place (escaped, so that no divider can break the line) and its figures. A line that cannot be read gives no
-    /// state (the director starts afresh from the player's places); figures out of range are brought within it.
+    /// The utilities' accounts in the save (GameInstance.modData), one line: "v=2~h:" the days, "~a:" the accounts, each
+    /// its place (escaped, so that no divider can break the line) and its figures, "~n:" the player's broadband company
+    /// (none in a line of version 1). A line that cannot be read gives no state (the director starts afresh from the
+    /// player's places); figures out of range are brought within it.
     /// </summary>
     public static class UtilitiesStore
     {
         public const string Key = "reallife:utilities";
-        public const int Version = 1;
+        public const int Version = 2;
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
@@ -60,7 +61,71 @@ namespace RealLifeOverhaul.Utilities
                     t.Append('|').Append(figures[f].ToString(Inv));
                 }
             }
+            Network n = s.Network;
+            if (n.Exists)
+            {
+                t.Append("~n:").Append((int)n.State);
+                int[] head = { n.FoundedDay, n.SoldDay, n.SalePrice, n.PriceShare, n.Maintenance, n.Marketing, n.MonthTakings, n.MonthCosts, n.LastTakings, n.LastCosts, n.LastConnections, n.LastGained, n.HistoryCount };
+                for (int f = 0; f < head.Length; f++)
+                {
+                    t.Append('|').Append(head[f].ToString(Inv));
+                }
+                for (int d = 0; d < Network.Districts; d++)
+                {
+                    t.Append('|').Append(n.Built[d].ToString(Inv)).Append('|').Append(n.Spent[d].ToString(Inv));
+                    for (int p = 0; p < Network.Providers; p++)
+                    {
+                        t.Append('|').Append(n.Share[d, p].ToString(Inv));
+                    }
+                }
+                for (int h = 0; h < n.History.Length; h++)
+                {
+                    t.Append('|').Append(n.History[h].ToString(Inv));
+                }
+            }
             return t.ToString();
+        }
+
+        // The broadband company: its state, settings and books, then each district's build, cost and shares, then its months.
+        private static void ReadNetwork(string[] c, Network n)
+        {
+            n.State = (CompanyState)Clamp(I(c, 0), 0, (int)CompanyState.Sold);
+            n.FoundedDay = Math.Max(0, I(c, 1));
+            n.SoldDay = Math.Max(0, I(c, 2));
+            n.SalePrice = Math.Max(0, I(c, 3));
+            n.PriceShare = Clamp(I(c, 4), BroadbandCatalogue.PriceLeast, BroadbandCatalogue.PriceMost);
+            n.Maintenance = Clamp(I(c, 5), BroadbandCatalogue.MaintenanceLeast, BroadbandCatalogue.MaintenanceMost);
+            n.Marketing = Clamp(I(c, 6), 0, BroadbandCatalogue.Marketing.Length - 1);
+            n.MonthTakings = Math.Max(0, I(c, 7));
+            n.MonthCosts = Math.Max(0, I(c, 8));
+            n.LastTakings = Math.Max(0, I(c, 9));
+            n.LastCosts = Math.Max(0, I(c, 10));
+            n.LastConnections = Math.Max(0, I(c, 11));
+            n.LastGained = I(c, 12);
+            n.HistoryCount = Clamp(I(c, 13), 0, n.History.Length);
+            int at = 14;
+            for (int d = 0; d < Network.Districts; d++)
+            {
+                n.Built[d] = I(c, at++);
+                n.Spent[d] = Math.Max(0, I(c, at++));
+                int sum = 0;
+                for (int p = 0; p < Network.Providers; p++)
+                {
+                    n.Share[d, p] = Clamp(I(c, at++), 0, 1000);
+                    sum += n.Share[d, p];
+                }
+                if (sum > 1000)
+                {
+                    for (int p = 0; p < Network.Providers; p++)
+                    {
+                        n.Share[d, p] = n.Share[d, p] * 1000 / sum;   // (a line edited by hand: brought back within the whole)
+                    }
+                }
+            }
+            for (int h = 0; h < n.History.Length; h++)
+            {
+                n.History[h] = I(c, at++);
+            }
         }
 
         public static UtilitiesState Read(string text, out int version)
@@ -91,6 +156,10 @@ namespace RealLifeOverhaul.Utilities
                         int promo = I(c, 4 + p);
                         s.Promo[p] = promo <= 0 ? 1000 : Clamp(promo, InternetCatalogue.PromoLeast, InternetCatalogue.PromoMost);   // (none in a line from before the internet)
                     }
+                }
+                else if (section.StartsWith("n:", StringComparison.Ordinal))
+                {
+                    ReadNetwork(section.Substring(2).Split('|'), s.Network);
                 }
                 else if (section.StartsWith("a:", StringComparison.Ordinal) && section.Length > 2)
                 {
@@ -140,7 +209,7 @@ namespace RealLifeOverhaul.Utilities
                 LastBillDay = Math.Max(0, I(c, 16)),
                 OnTime = Math.Max(0, I(c, 17)),
                 CutForDebt = I(c, 18) != 0,  // (none in a line from before it was kept)
-                Provider = c.Length > 19 ? Clamp(I(c, 19), -1, InternetCatalogue.Providers.Length - 1) : -1,
+                Provider = c.Length > 19 ? Clamp(I(c, 19), -1, InternetCatalogue.OwnIndex) : -1,
                 Plan = Math.Max(0, I(c, 20)),
                 BusinessPlan = I(c, 21) != 0,
                 ContractUntil = Math.Max(0, I(c, 22)),
