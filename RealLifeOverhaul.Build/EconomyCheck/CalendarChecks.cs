@@ -60,6 +60,12 @@ internal static partial class Program
             "prices: the level is the city's factor in tenths of a point, within the index's own bounds");
         Check(PriceRules.Level(1009) == 1000 && PriceRules.Level(991) == 1000 && PriceRules.Level(1010) == 1010 && PriceRules.Quiet == MacroCatalogue.AdjustQuiet,
             "prices: within the city's quiet band (1%) the level is the start's, as the city adjusts nothing there");
+        int[] even = CityAdjust.Split(10, new[] { 1f, 1f, 1f }), mixed = CityAdjust.Split(5, new[] { 3f, -1f }), back = CityAdjust.Split(-7, new[] { 2f, 5f });
+        int[] none = CityAdjust.Split(9, new[] { 0f, 0f }), nothing = CityAdjust.Split(0, new[] { 4f, 6f });
+        Check(even[0] + even[1] + even[2] == 10 && Math.Max(even[0], Math.Max(even[1], even[2])) - Math.Min(even[0], Math.Min(even[1], even[2])) <= 1
+              && mixed[0] == 7 && mixed[1] == -2 && back[0] + back[1] == -7 && back[0] == -2 && back[1] == -5
+              && none[0] == 9 && none[1] == 0 && nothing[0] == 0 && nothing[1] == 0 && CityAdjust.Split(3, new float[0]).Length == 0,
+            "the city's lines: a line is shared out by the parts' figures in whole money and always sums to itself");
         var city = new CityState { Index = 104567 };
         Check(CityModel.Costs(city) == 1045 && PriceRules.Level(CityModel.Costs(city)) == 1045 && CityAdjust.Of(1000f, CityModel.Costs(city)) == 45
               && PriceRules.At(1000, PriceRules.Level(CityModel.Costs(city))) == 1050,

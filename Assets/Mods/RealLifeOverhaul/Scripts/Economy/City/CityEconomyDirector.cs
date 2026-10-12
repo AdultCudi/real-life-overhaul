@@ -564,24 +564,37 @@ namespace RealLifeOverhaul.Economy
         // The day that has ended: the game's own rent, wages and takings of that day, each adjusted by one transaction.
         private void Adjust(int day)
         {
-            float rent, wages, takings, living;
-            CityGame.DayFigures(day, out rent, out wages, out takings, out living);
+            DayBooks books = CityGame.DayFigures(day);
             int costs = CityModel.Costs(_state), spend = CityModel.Takings(_state, _level);
-            Settle(CityAdjust.Of(rent, costs), ref _state.CarryRent, CityGame.RentKey, day, costs, "rent", rent);
-            Settle(CityAdjust.Of(wages, costs), ref _state.CarryWages, CityGame.WagesKey, day, costs, "wages", wages);
-            Settle(-CityAdjust.Of(takings, spend), ref _state.CarryTakings, CityGame.TakingsKey, day, spend, "takings", takings);
-            Settle(CityAdjust.Of(living, costs), ref _state.CarryLiving, CityGame.LivingKey, day, costs, "the game's shops and services", living);
+            Settle(CityAdjust.Of(books.Rent.Total, costs), ref _state.CarryRent, CityGame.RentKey, day, costs, "rent", books.Rent);
+            Settle(CityAdjust.Of(books.Wages.Total, costs), ref _state.CarryWages, CityGame.WagesKey, day, costs, "wages", books.Wages);
+            Settle(-CityAdjust.Of(books.Takings.Total, spend), ref _state.CarryTakings, CityGame.TakingsKey, day, spend, "takings", books.Takings);
+            Settle(CityAdjust.Of(books.Living.Total, costs), ref _state.CarryLiving, CityGame.LivingKey, day, costs, "the game's shops and services", books.Living);
+            GameBooks.Refresh(day);   // the day's statements with the lines in them (the game made them before the lines were booked)
+        }
+
+        /// <summary>What the game's own takings come to at today's prices, in thousandths (the city's takings line: prices and what customers spend); 1000 while this is not running.</summary>
+        public static int TakingsFactor
+        {
+            get
+            {
+                CityEconomyDirector d = Instance;
+                int factor = d != null && d._running ? CityModel.Takings(d._state, d._level) : 1000;
+                return Math.Abs(factor - 1000) < MacroCatalogue.AdjustQuiet ? 1000 : factor;   // (as CityAdjust.Of: nothing within the quiet band)
+            }
         }
 
         // A charge (more than nothing: the player pays) is taken as far as the cash goes and the rest carried; a refund is paid.
-        private void Settle(int charge, ref int carried, string key, int day, int factor, string what, float figure)
+        private void Settle(int charge, ref int carried, string key, int day, int factor, string what, DayLine line)
         {
+            float figure = line.Total;
             int before = carried;
             int taken = CityAdjust.Take(charge, CityGame.Cash, ref carried);
-            if (taken != 0 && !CityGame.Book(-taken, key, day, CityText.Change(factor)))
+            int booked = taken != 0 ? -BookShared(-taken, key, day, CityText.Change(factor), line) : 0;
+            if (booked != taken)
             {
-                carried = (int)Math.Min((long)carried + taken, int.MaxValue / 2);   // the game refused the charge: it is still owed
-                taken = 0;
+                carried = (int)Math.Min((long)carried + taken - booked, int.MaxValue / 2);   // the game refused a part: it is still owed
+                taken = booked;
             }
             if (Verbose && (charge != 0 || before != 0))
             {
@@ -589,6 +602,31 @@ namespace RealLifeOverhaul.Economy
                              + (charge >= 0 ? charge + " more to pay" : -charge + " back") + "; carried from before " + before + "; " + (taken >= 0 ? taken + " taken" : -taken + " paid")
                              + ", " + carried + " carried to tomorrow: " + ((long)before + charge == (long)taken + carried ? "PASS" : "FAIL"));
             }
+        }
+
+        // The day's line booked where the game's own were (a business, a home, a category of the day's statement),
+        // shared out by their figures; where there is nothing to share by, one line of the player's own. What was booked.
+        private static int BookShared(int amount, string key, int day, string percent, DayLine line)
+        {
+            float weight = 0f;
+            for (int i = 0; i < line.Figures.Count; i++)
+            {
+                weight += line.Figures[i];
+            }
+            if (line.Figures.Count == 0 || Math.Abs(weight) < 0.5f)
+            {
+                return CityGame.Book(amount, key, day, percent) ? amount : 0;
+            }
+            int[] parts = CityAdjust.Split(amount, line.Figures.ToArray());
+            int booked = 0;
+            for (int i = 0; i < parts.Length; i++)
+            {
+                if (parts[i] != 0 && CityGame.Book(parts[i], key, day, percent, line.Addresses[i], line.Categories[i], line.Deductible[i]))
+                {
+                    booked += parts[i];
+                }
+            }
+            return booked;
         }
 
         // ---------------------------------------------------------------- rivals

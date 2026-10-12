@@ -78,13 +78,57 @@ namespace RealLifeOverhaul.Economy
     /// kind (<see cref="MacroCatalogue.KindOfType"/>), told from the business types that sell it.
     ///
     /// RENTS, WAGES, TAKINGS, SHOPS AND SERVICES are not changed anywhere: the game's own transactions of the day that
-    /// has ended are added up (<see cref="DayFigures"/>) and the difference is one dated transaction of the mod's own
-    /// each (<see cref="Book"/>), which EconoView and the Finance app list under its own name. Shops and services are
+    /// has ended are added up (<see cref="DayFigures"/>) and the difference is dated transactions of the mod's own
+    /// (<see cref="Book"/>), which EconoView and the Finance app list under their own name: one for each business,
+    /// home and category the game booked the day's own under, shared out by those figures, so that each business's
+    /// statement, the game's taxes and its bank see them (GameBooks.Refresh). Shops and services are
     /// the game's charges at prices of its own (<see cref="LivingTypes"/>), less what the mod paid back of them
     /// (EconomyBridges.GivenBack) and less what was bought at a wholesaler's, at today's prices already.
     ///
     /// Nothing here runs on a timer: once when the economy starts, once a game day, and when the app is opened.
     /// </summary>
+    /// <summary>
+    /// One of the city's lines for a day: the game's own figure, and where the game booked it, by address, the category
+    /// the day's statement keeps it under and whether the game's tax deducts it, so that the line can be booked where
+    /// its parts were and be deducted where they were.
+    /// </summary>
+    internal sealed class DayLine
+    {
+        public float Total;
+        public readonly List<Address> Addresses = new List<Address>();
+        public readonly List<string> Categories = new List<string>();
+        public readonly List<bool> Deductible = new List<bool>();
+        public readonly List<float> Figures = new List<float>();
+
+        public void Add(Address address, string category, float figure, bool deductible = false)
+        {
+            Total += figure;
+            for (int i = 0; i < Figures.Count; i++)
+            {
+                if (Same(Addresses[i], address) && Categories[i] == category && Deductible[i] == deductible)
+                {
+                    Figures[i] += figure;
+                    return;
+                }
+            }
+            Addresses.Add(address);
+            Categories.Add(category);
+            Deductible.Add(deductible);
+            Figures.Add(figure);
+        }
+
+        private static bool Same(Address a, Address b)
+        {
+            return ReferenceEquals(a, b) || (!ReferenceEquals(a, null) && !ReferenceEquals(b, null) && a.Equals(b));
+        }
+    }
+
+    /// <summary>The game's own rent, wages, takings and shops and services of a day, each by where it was booked.</summary>
+    internal sealed class DayBooks
+    {
+        public readonly DayLine Rent = new DayLine(), Wages = new DayLine(), Takings = new DayLine(), Living = new DayLine();
+    }
+
     internal static class CityGame
     {
         public const string RentKey = "reallife_transaction_macro_rent";
@@ -476,13 +520,13 @@ namespace RealLifeOverhaul.Economy
         /// over the game's transaction history. The mod's own adjustments have no category and another type, so they
         /// are never counted.
         /// </summary>
-        public static void DayFigures(int day, out float rent, out float wages, out float takings, out float living)
+        public static DayBooks DayFigures(int day)
         {
-            rent = wages = takings = living = 0f;
+            var books = new DayBooks();
             GameInstance save = SaveGameManager.Current;
             if (save == null || save.Transactions == null)
             {
-                return;
+                return books;
             }
             Func<string, bool> givenBack = EconomyBridges.GivenBack;
             foreach (Transaction t in save.Transactions)
@@ -496,30 +540,49 @@ namespace RealLifeOverhaul.Economy
                 {
                     if (t.amount > 0f && givenBack != null && givenBack(t.transactionType))
                     {
-                        living -= t.amount;   // a game charge the mod paid back: not the player's to pay at all
+                        books.Living.Add(null, Kept(t), -t.amount);   // a game charge the mod paid back: not the player's to pay at all
                     }
                     continue;
                 }
                 if (t.transactionType == RevenueType)
                 {
-                    takings += Mathf.Max(0f, t.amount);
+                    books.Takings.Add(t.address, null, Mathf.Max(0f, t.amount));
                 }
                 else if (t.amount < 0f)
                 {
                     if (t.transactionCategories != null && t.transactionCategories.Contains(RentCategory))
                     {
-                        rent -= t.amount;
+                        books.Rent.Add(t.address, RentCategory, -t.amount, t.isTaxDeductible);
                     }
                     else if (t.transactionCategories != null && t.transactionCategories.Contains(SalaryCategory))
                     {
-                        wages -= t.amount;
+                        books.Wages.Add(t.address, SalaryCategory, -t.amount, t.isTaxDeductible);
                     }
                     else if (LivingTypes.Contains(t.transactionType) && !AtWholesale(t))
                     {
-                        living -= t.amount;
+                        // (A business's marketing and licences are in its statement, by its address; the day's own figures
+                        // of parking, health insurance and the headhunter by their category alone; the rest is the player's.)
+                        string category = Kept(t);
+                        books.Living.Add(category == GameBooks.Marketing || category == GameBooks.Licensing ? t.address : null, category, -t.amount, t.isTaxDeductible);
                     }
                 }
             }
+            return books;
+        }
+
+        // The category of the game's a charge is kept under where the day's statement has a line for it.
+        private static string Kept(Transaction t)
+        {
+            List<string> categories = t.transactionCategories;
+            for (int i = 0; categories != null && i < categories.Count; i++)
+            {
+                string c = categories[i];
+                if (c == GameBooks.Marketing || c == GameBooks.Licensing || c == GameBooks.Parking || c == GameBooks.HealthInsurance || c == GameBooks.Headhunter)
+                {
+                    return c;
+                }
+            }
+            return null;
         }
 
         // Bought at a wholesaler's: at today's prices already, as the city writes the goods' wholesale prices (above).
@@ -541,15 +604,20 @@ namespace RealLifeOverhaul.Economy
         /// the player; less is taken, and only ever what the caller has found to be in hand (the game's own call refuses
         /// a charge the cash does not cover: false, and nothing is taken).
         /// </summary>
-        public static bool Book(int amount, string key, int day, string percent)
+        public static bool Book(int amount, string key, int day, string percent, Address address = null, string category = null, bool deductible = false)
         {
             if (amount == 0 || SaveGameManager.Current == null)
             {
                 return amount == 0;
             }
             // (a dictionary each: the game keeps hold of a transaction's data for as long as it lists the transaction)
-            var info = new TransactionInfo(key, new Dictionary<string, string>(1) { { "percent", percent } });
-            return GameManager.ChangeMoneySafe(amount, info, day, null, amount > 0);
+            var data = new Dictionary<string, string>(2) { { "percent", percent } };
+            var info = category != null ? new TransactionInfo(key, category, data) : new TransactionInfo(key, data);
+            if (deductible && amount < 0)
+            {
+                info.SetTaxDeductibleName(key);   // the game's tax deducts it as it does the charges it adjusts, under its own name
+            }
+            return GameManager.ChangeMoneySafe(amount, info, day, address, amount > 0);
         }
 
         // ---------------------------------------------------------------- property
