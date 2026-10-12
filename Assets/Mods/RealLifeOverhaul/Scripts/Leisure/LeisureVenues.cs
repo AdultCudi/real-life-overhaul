@@ -24,8 +24,8 @@ namespace RealLifeOverhaul.Leisure
 
     /// <summary>
     /// What the game's city has that leisure builds on, found once and kept: the things inside
-    /// the building the player is in (the cocktail bars and dance floors of a nightclub, the
-    /// wardrobes of a home, a clothing store's racks), the landmarks of the city, and whether
+    /// the building the player is in (the cocktail bars and dance floors of a nightclub, a
+    /// clothing store's racks), the landmarks of the city, and whether
     /// the player stands at the water's edge. Nothing here runs by itself: the director asks on
     /// its one-second timer, and the costly parts (a pass over the building's items, the scene
     /// search for landmarks) happen once per building entered and once per city load.
@@ -36,11 +36,9 @@ namespace RealLifeOverhaul.Leisure
         public const string Nightclub = "ba:businesstype_nightclub";
         public const string Cinema = "ba:businesstype_cinema";
         public const string Theater = "ba:businesstype_theater";
-        public const string Residential = "ba:buildingtype_residential";
 
         public static readonly List<ItemController> Bars = new List<ItemController>(8);
         public static readonly List<ItemController> DanceFloors = new List<ItemController>(8);
-        public static readonly List<ItemController> Wardrobes = new List<ItemController>(8);
         public static readonly List<ItemController> Racks = new List<ItemController>(16);
         public static readonly List<Landmark> Landmarks = new List<Landmark>(20);
 
@@ -53,7 +51,6 @@ namespace RealLifeOverhaul.Leisure
         {
             Bars.Clear();
             DanceFloors.Clear();
-            Wardrobes.Clear();
             Racks.Clear();
             Landmarks.Clear();
             _scanned = null;
@@ -69,12 +66,6 @@ namespace RealLifeOverhaul.Leisure
             return manager != null && manager.building != null && manager.buildingRegistration != null ? manager.buildingRegistration.businessTypeName : null;
         }
 
-        /// <summary>A home: a residential building, which the player can only be inside if it is theirs.</summary>
-        public static bool IsHome(BuildingManager manager)
-        {
-            return manager != null && manager.building != null && manager.building.BuildingType == Residential;
-        }
-
         /// <summary>
         /// Sorts the items of the building the player is in into the lists above. One pass, made again only when the
         /// building or the number of its items changes (an interior fills in over the first moments inside).
@@ -87,7 +78,6 @@ namespace RealLifeOverhaul.Leisure
                 {
                     Bars.Clear();
                     DanceFloors.Clear();
-                    Wardrobes.Clear();
                     Racks.Clear();
                     _scanned = null;
                     _scannedCount = -1;
@@ -104,7 +94,6 @@ namespace RealLifeOverhaul.Leisure
             _scannedCount = count;
             Bars.Clear();
             DanceFloors.Clear();
-            Wardrobes.Clear();
             Racks.Clear();
             for (int i = 0; i < count; i++)
             {
@@ -121,10 +110,6 @@ namespace RealLifeOverhaul.Leisure
                 else if (name.IndexOf("dancefloor", StringComparison.Ordinal) >= 0)
                 {
                     DanceFloors.Add(item);
-                }
-                else if (name.IndexOf("itemname_wardrobe", StringComparison.Ordinal) >= 0 || name.IndexOf("itemname_dresser", StringComparison.Ordinal) >= 0)
-                {
-                    Wardrobes.Add(item);
                 }
                 else if (name.IndexOf("clothingrack", StringComparison.Ordinal) >= 0)
                 {

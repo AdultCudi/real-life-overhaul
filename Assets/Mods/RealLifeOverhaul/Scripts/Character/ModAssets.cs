@@ -80,6 +80,16 @@ namespace RealLifeOverhaul
             public string[] bones;
             public TextureFile[] textures;
             public ItemFile[] items;
+            public PhotoFile[] photos;
+        }
+
+        // A garment's photograph for the game's screens: where it stands on a sheet of them (a texture no look names).
+        [Serializable]
+        private class PhotoFile
+        {
+            public string garment;   // the garment's mesh: every colourway of it shows this one
+            public string texture;
+            public int x, y, w, h;   // in pixels, from the sheet's lower left corner
         }
 
         [Serializable]
@@ -137,6 +147,8 @@ namespace RealLifeOverhaul
         public static Action Arrived;
 
         private static readonly Dictionary<string, LookItem> Items = new Dictionary<string, LookItem>(128);
+        private static readonly Dictionary<string, PhotoFile> Photos = new Dictionary<string, PhotoFile>(24);
+        private static readonly Dictionary<string, Sprite> PhotoSprites = new Dictionary<string, Sprite>(24);
         private static readonly HashSet<string> MissingLogged = new HashSet<string>();
         private static readonly Dictionary<string, Texture2D> Shared = new Dictionary<string, Texture2D>(4);
         private static readonly Dictionary<string, UnityEngine.Object> Held = new Dictionary<string, UnityEngine.Object>(16);   // by "m:" or "t:" + name
@@ -163,6 +175,30 @@ namespace RealLifeOverhaul
         public static Texture2D Texture(string name)
         {
             return _state == State.Ready && Shared.TryGetValue(name, out Texture2D texture) ? texture : null;
+        }
+
+        /// <summary>
+        /// A garment's photograph, by its mesh as the catalogue lists it (the game's own character wearing it, framed as
+        /// the game frames its own pieces in its screens), or null if the bundle has none for it. Made once a session.
+        /// </summary>
+        public static Sprite Photo(string garment)
+        {
+            if (_state != State.Ready || garment == null || !Photos.TryGetValue(garment, out PhotoFile photo))
+            {
+                return null;
+            }
+            if (PhotoSprites.TryGetValue(garment, out Sprite made) && made != null)
+            {
+                return made;
+            }
+            if (!Shared.TryGetValue(photo.texture, out Texture2D sheet) || sheet == null || photo.x + photo.w > sheet.width || photo.y + photo.h > sheet.height)
+            {
+                return null;
+            }
+            made = Sprite.Create(sheet, new Rect(photo.x, photo.y, photo.w, photo.h), new Vector2(0.5f, 0.5f), 100f);
+            made.name = "RealLifeOverhaul photo " + garment;
+            PhotoSprites[garment] = made;
+            return made;
         }
 
         /// <summary>Starts opening the bundle, the first time it is called in a game session.</summary>
@@ -250,7 +286,15 @@ namespace RealLifeOverhaul
                     }
                 }
 
-                // Textures no look names are everybody's (the hair strand maps): read now and kept.
+                foreach (PhotoFile photo in catalogue.photos ?? Array.Empty<PhotoFile>())
+                {
+                    if (photo != null && !string.IsNullOrEmpty(photo.garment) && !string.IsNullOrEmpty(photo.texture) && photo.w > 0 && photo.h > 0)
+                    {
+                        Photos[photo.garment] = photo;
+                    }
+                }
+
+                // Textures no look names are everybody's (the hair strand maps, the sheet of photographs): read now and kept.
                 var shared = new List<string>(4);
                 foreach (TextureFile texture in catalogue.textures ?? Array.Empty<TextureFile>())
                 {
@@ -300,7 +344,7 @@ namespace RealLifeOverhaul
         {
             _state = State.Ready;
             Logger?.Info("New looks: " + Items.Count + " on offer in the asset bundle (" + _triangles + " triangles in all, " + Shared.Count
-                         + " shared textures in memory, " + Megabytes(SharedBytes()) + " MB); each look's mesh and textures are read when it is worn.");
+                         + " shared textures in memory, " + Megabytes(SharedBytes()) + " MB, " + Photos.Count + " garment photograph(s)); each look's mesh and textures are read when it is worn.");
         }
 
         private static LookItem Read(ItemFile file, out string problem)
