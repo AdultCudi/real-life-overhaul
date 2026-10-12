@@ -23,8 +23,12 @@ namespace RealLifeOverhaul
     ///     DebtLinks       lenders with the courts (a civil claim for a debt), the private lender with the holds and the
     ///                     injury of a mugging, a repossession with what the camera sees
     ///     CityLinks       the city's economy with the calendar and the weather, business pressure (footfall, rivals) and the paper
-    ///     VenturesLinks   the stock market with the day's news (weather, city events, the paper, the council, a rival's
-    ///                     move), a pitch with the founder's CV and what has hold of the player; the Ventures rows in the Planner
+    ///     VenturesLinks   investors with the city's economy, a pitch with the founder's CV and what has hold of the player;
+    ///                     the Ventures rows in the Planner
+    ///     MarketLinks     the stock market with the city's economy, the council, the weather, the street, crime, fires and
+    ///                     accidents, the player's own takings, the game's rivals and the old Ventures market
+    ///     LedgerLinks     the City Ledger with the city's paper, the market's close, the economy, the street's calendar,
+    ///                     the council, the other fixtures of the street and the phone's City Ledger contact
     ///     CompanyLinks    running a business with business pressure (footfall, closures, inspections, audits), fires, break-ins, the courts, the paper and the Planner
     ///     EstateLinks     property with the council's rent and permits policies, the event calendar, a hotel's reception and the Planner
     ///     OnlineLinks     the online shops with the company's campaigns, the calendar's seasons, the GPS's roads and the Planner
@@ -73,6 +77,7 @@ namespace RealLifeOverhaul
             Step("the city's economy", CityLinks.Connect);
             Step("investors", VenturesLinks.Connect);
             Step("the stock market", MarketLinks.Connect);
+            Step("the City Ledger", LedgerLinks.Connect);
             Step("running a business", CompanyLinks.Connect);
             Step("property", EstateLinks.Connect);
             Step("online shops", OnlineLinks.Connect);
@@ -99,6 +104,7 @@ namespace RealLifeOverhaul
             Step("the city's economy", CityLinks.Disconnect);
             Step("credit and debt", DebtLinks.Disconnect);
             Step("the economy", EconomyLinks.Disconnect);
+            Step("the City Ledger", LedgerLinks.Disconnect);
             Step("the stock market", MarketLinks.Disconnect);
             Step("investors", VenturesLinks.Disconnect);
             Step("the minimap and the GPS", NavLinks.Disconnect);

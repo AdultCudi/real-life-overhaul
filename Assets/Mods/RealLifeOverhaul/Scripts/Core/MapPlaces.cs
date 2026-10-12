@@ -16,7 +16,7 @@ namespace RealLifeOverhaul
     /// <summary>The glyphs a map category can be given without bringing a sprite of its own. Each is drawn in code, once, white on nothing.</summary>
     public enum MapIcon
     {
-        Shield, Target, Bus, Bed, Scales, Wheel, Bicycle, Wrench, Briefcase, Ballot, Cone, Cross, Star, Flag, Custom
+        Shield, Target, Bus, Bed, Scales, Wheel, Bicycle, Wrench, Briefcase, Ballot, Cone, Cross, Star, Flag, Paper, Custom
     }
 
     /// <summary>One place of the mod's on the city map.</summary>
@@ -1172,6 +1172,18 @@ namespace RealLifeOverhaul
                     Line(true, 14f, 6f, 14f, 58f, 5f);
                     Poly(true, 16, 56, 54, 44, 16, 30);
                     Rect(true, 7f, 5f, 23f, 9f);
+                    break;
+                case MapIcon.Paper:
+                    // A newspaper: the sheet's edge, the masthead across the top, two columns of print and a picture.
+                    Rect(true, 9f, 8f, 55f, 56f);
+                    Rect(false, 13.5f, 12.5f, 50.5f, 51.5f);
+                    Rect(true, 17f, 41f, 47f, 47.5f);
+                    Rect(true, 17f, 33.5f, 30f, 36.5f);
+                    Rect(true, 17f, 27f, 30f, 30f);
+                    Rect(true, 17f, 20.5f, 30f, 23.5f);
+                    Rect(true, 17f, 15f, 27f, 18f);
+                    Rect(true, 34f, 22f, 47f, 36.5f);
+                    Rect(true, 34f, 15f, 47f, 18f);
                     break;
                 default:
                     Rect(true, 24f, 7f, 40f, 57f);

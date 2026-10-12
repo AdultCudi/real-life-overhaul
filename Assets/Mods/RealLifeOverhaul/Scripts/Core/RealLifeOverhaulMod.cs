@@ -447,8 +447,6 @@ namespace RealLifeOverhaul
                     v => Settings.SocialTexts = v)
                 .AddSlider(Settings.SocialTextsMaxId, "reallife_social_texts_max", 1, 6, Settings.SocialTextsMax,
                     v => Settings.SocialTextsMax = v, Meta.SettingsTable.SliderValue)
-                .AddToggle(Settings.SocialNewspaperId, "reallife_social_newspaper", Settings.SocialNewspaper,
-                    v => Settings.SocialNewspaper = v)
                 .AddButton("reallife_social_test_meet", () => SocialDirector.Instance?.TestMeet())
                 .AddButton("reallife_social_test_person", () => SocialDirector.Instance?.TestPerson())
                 .AddButton("reallife_social_test_advance", () => SocialDirector.Instance?.TestAdvance())
@@ -467,8 +465,22 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_social_test_business", () => SocialDirector.Instance?.TestOuting(PlanKind.Business))
                 .AddButton("reallife_social_test_lift", () => SocialDirector.Instance?.TestOuting(PlanKind.Lift))
                 .AddButton("reallife_social_test_moving", () => SocialDirector.Instance?.TestOuting(PlanKind.Moving))
-                .AddButton("reallife_social_test_paper", () => SocialDirector.Instance?.TestPaper())
                 .AddButton("reallife_social_test_stop", () => SocialDirector.Instance?.TestStop())
+                .AddSplitter()
+                .AddHeader("reallife_ledger_header")
+                .AddToggle(Settings.SocialNewspaperId, "reallife_social_newspaper", Settings.SocialNewspaper,
+                    v => Settings.SocialNewspaper = v)
+                .AddToggle(Settings.LedgerKiosksId, "reallife_ledger_opt_kiosks", Settings.LedgerKiosks,
+                    v => Settings.LedgerKiosks = v)
+                .AddButton("reallife_ledger_test_open", () => Ledger.LedgerDirector.Instance?.TestOpen())
+                .AddButton("reallife_social_test_paper", () =>
+                {
+                    SocialDirector.Instance?.TestPaper();   // the city's paper written again from its log...
+                    Ledger.LedgerDirector.Instance?.TestDeliver();   // ...printed as the City Ledger, a copy at the door
+                })
+                .AddButton("reallife_ledger_test_kiosk", () => Ledger.LedgerDirector.Instance?.TestKiosk())
+                .AddButton("reallife_ledger_test_find", () => Ledger.LedgerDirector.Instance?.TestFindKiosks())
+                .AddButton("reallife_ledger_test_back", () => Ledger.LedgerDirector.Instance?.TestBack())
                 .AddSplitter()
                 .AddHeader("reallife_travel_header")
                 .AddToggle(Settings.HotelsId, "reallife_travel_hotels", Settings.Hotels,
@@ -951,6 +963,8 @@ namespace RealLifeOverhaul
             Markets.MarketTapeFile.Logger = context.Logger;
             Markets.MarketApp.Logger = context.Logger;
             _root.AddComponent<Markets.MarketDirector>();   // the city's stock market and the Stocks app (Scripts/Markets): after Ventures, whose old market it takes over
+            Ledger.LedgerDirector.Logger = context.Logger;
+            _root.AddComponent<Ledger.LedgerDirector>();   // the City Ledger: the morning paper delivered or bought at a kiosk, and read as a newspaper (Scripts/Ledger)
             Economy.OnlineDirector.Logger = context.Logger;
             Economy.OnlineApp.Logger = context.Logger;
             _root.AddComponent<Economy.OnlineDirector>();   // online shops: orders from the whole city, picked from real stock and delivered, and the Web shop app (Scripts/Economy/Online); before the company, so that its day comes first

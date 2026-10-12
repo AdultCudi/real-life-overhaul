@@ -229,7 +229,9 @@ namespace RealLifeOverhaul.Meta
                 S("family").For("family").Main("family").Opts("family_at_home", "family_wedding", "family_children", "family_relatives", "family_friction",
                     "family_interest", "family_year_weeks").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
                 S("social").For("social").Main("social").Opts("social_meetings", "social_relationships", "social_outings", "social_contact", "social_texts")
-                    .Opt("social_texts_max", "social_texts").Opts("social_newspaper").Also("friends dating date people"),
+                    .Opt("social_texts_max", "social_texts").Also("friends dating date people"),
+                S("ledger").For("ledger").Main("social_newspaper").Opts("ledger_kiosks")
+                    .Also("newspaper paper news kiosk subscription delivery"),
                 S("leisure").For("leisure").Main("leisure").Opt("leisure_chess", "city_life").Opts("leisure_fishing", "leisure_night_out", "leisure_sights", "leisure_cinema")
                     .Opt("night_life", "city_life").Opts("photo_mode").Buttons("reallife_leisure_test_records").Also("fun hobby nightclub bar"),
                 S("lifeevents").For("life").Main("life_events").Opts("life_frequency").Also("random luck surprise"),

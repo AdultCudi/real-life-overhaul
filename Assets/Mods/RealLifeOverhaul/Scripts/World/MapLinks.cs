@@ -22,6 +22,7 @@ namespace RealLifeOverhaul
     ///   Bike hire and two-wheelers   docks, bicycle racks, motorbike stands (BikePlaces.All)   yes      no
     ///   Custom shops                 the repair stations whose bays the custom shop works at   yes      no
     ///   Help wanted and employers    the help-wanted boards, named after their employer        yes      no
+    ///   Newspaper kiosks             the City Ledger's kiosks near the home (LedgerDirector)   yes      yes
     ///   Polling places               one per district, during an election campaign             yes      no
     ///   Construction sites           the sites in progress (CivicWorks)                        yes      no
     ///   Sights and fishing spots     the landmarks; "seen" and "fishing nearby" in the name    yes      no
@@ -343,6 +344,26 @@ namespace RealLifeOverhaul
                         int employer = CareerDirector.On && jobs.Career != null ? jobs.Career.EmployerAt(b) : -1;
                         string what = employer >= 0 && employer < CareerCatalogue.All.Length ? T(CareerCatalogue.All[employer].NameKey) : T("reallife_map_help_wanted");
                         places.Add(new MapPlace(boards.Front(b), At(what, boards.Address(b))) { Lit = boards.Building(b) });
+                    }
+                }
+            });
+            // The City Ledger: the newspaper kiosks near the player's home; the building each stands in front of lights up.
+            _links.Add(new Link
+            {
+                Id = "newspaper_kiosks", TitleKey = "reallife_map_row_kiosks", Colour = new Color(0.16f, 0.38f, 0.27f), Icon = MapIcon.Paper, InStreet = true,
+                Enabled = () => Settings.SocialNewspaper && Settings.LedgerKiosks,
+                Stamp = () =>
+                {
+                    Ledger.LedgerDirector paper = Ledger.LedgerDirector.Instance;
+                    Ledger.LedgerKiosks kiosks = paper != null ? paper.Kiosks : null;
+                    return kiosks != null && kiosks.Count > 0 ? 1 + kiosks.Count + kiosks.Stamp * 8 : 0;
+                },
+                Fill = places =>
+                {
+                    Ledger.LedgerKiosks kiosks = Ledger.LedgerDirector.Instance.Kiosks;
+                    for (int i = 0; i < kiosks.Count; i++)
+                    {
+                        places.Add(new MapPlace(kiosks.Front(i), At(T("reallife_map_kiosk"), kiosks.Address(i))) { Lit = kiosks.Building(i) });
                     }
                 }
             });

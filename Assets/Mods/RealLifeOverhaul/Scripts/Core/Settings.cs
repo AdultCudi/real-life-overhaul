@@ -183,6 +183,7 @@ namespace RealLifeOverhaul
         public const string SocialTextsId = "social_texts";
         public const string SocialTextsMaxId = "social_texts_max";
         public const string SocialNewspaperId = "social_newspaper";
+        public const string LedgerKiosksId = "ledger_kiosks";
         public const string HotelsId = "travel_hotels";
         public const string HolidaysId = "travel_holidays";
         public const string TravelExtrasId = "travel_extras";
@@ -391,7 +392,8 @@ namespace RealLifeOverhaul
         public static bool SocialContact = true;         // they get in touch themselves: invitations, favours, news, a visit at the shop
         public static bool SocialTexts = true;           // text messages from people (off: only what must be said is shown, as a notification)
         public static int SocialTextsMax = 3;            // texts a day from everybody together, 1 to 6
-        public static bool SocialNewspaper = true;       // the City Ledger: a morning paper on the phone, written from what happened
+        public static bool SocialNewspaper = true;       // the City Ledger: a morning newspaper, delivered to subscribers' homes and sold at kiosks (Scripts/Ledger)
+        public static bool LedgerKiosks = true;          // newspaper kiosks near the player's home sell the paper (off: subscribers only)
         public static bool Hotels = true;                // eight places to stay: reception at the door, the room as a panel (Scripts/Travel)
         public static bool Holidays = true;              // trips bought at the game's travel agencies; burnout after weeks without a break
         public static bool TravelExtras = true;          // suitcase, travel insurance, a companion, trade fair invitations
@@ -606,6 +608,7 @@ namespace RealLifeOverhaul
             SocialTexts = Bool(modId, SocialTextsId, SocialTexts);
             SocialTextsMax = Int(modId, SocialTextsMaxId, SocialTextsMax);
             SocialNewspaper = Bool(modId, SocialNewspaperId, SocialNewspaper);
+            LedgerKiosks = Bool(modId, LedgerKiosksId, LedgerKiosks);
             Hotels = Bool(modId, HotelsId, Hotels);
             Holidays = Bool(modId, HolidaysId, Holidays);
             TravelExtras = Bool(modId, TravelExtrasId, TravelExtras);

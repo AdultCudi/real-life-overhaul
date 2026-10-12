@@ -1123,27 +1123,22 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>The City Ledger read out: today's paper, one piece at a time.</summary>
+    /// <summary>A call to the City Ledger: its subscriptions desk (Scripts/Ledger, through SocialPhone.LedgerDesk).</summary>
     public sealed class LedgerDialog : Dialog
     {
         public LedgerDialog()
         {
             npcNameKey = SocialPhone.LedgerId;
-            if (!Settings.SocialNewspaper || News.Today.Count == 0)
+            DialogEntry first = null;
+            try
             {
-                DialogController.current.ShowEntry(PhoneContacts.Closing("reallife_news_none"));
-                return;
+                first = Settings.SocialNewspaper && SocialPhone.LedgerDesk != null ? SocialPhone.LedgerDesk() : null;
             }
-            DialogController.current.ShowEntry(Piece(0));
-        }
-
-        private static DialogEntry Piece(int at)
-        {
-            NewsItem item = News.Today[at];
-            var entry = new DialogEntry { messageData = item.Key.Localize(item.Data), OnCancel = PhoneContacts.HangUp };
-            entry.ConfirmTextOverride = "reallife_social_btn_next".Localize();
-            entry.OnConfirm = () => at + 1 < News.Today.Count ? Piece(at + 1) : PhoneContacts.Closing("reallife_news_end");
-            return entry;
+            catch (Exception e)
+            {
+                SocialDirector.Logger?.Error(e);
+            }
+            DialogController.current.ShowEntry(first ?? PhoneContacts.Closing("reallife_ledger_desk_later"));
         }
     }
 }

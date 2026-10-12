@@ -225,13 +225,12 @@ namespace RealLifeOverhaul.GameUi
             Headline(key, null);
         }
 
-        /// <summary>A headline over a grey rule, in the box or (with a parent) anywhere else.</summary>
-        public void Headline(string key, Transform parent)
+        /// <summary>A headline over a grey rule, in the box or (with a parent) anywhere else. Returns what was made.</summary>
+        public Transform Headline(string key, Transform parent)
         {
             if (_headline == null)
             {
-                Line("<b>" + key.GetLocalization() + "</b>", parent);
-                return;
+                return Line("<b>" + key.GetLocalization() + "</b>", parent).transform;
             }
             GameObject headline = Add(_headline, parent);
             var text = headline.GetComponentInChildren<TMP_Text>(true);
@@ -244,6 +243,7 @@ namespace RealLifeOverhaul.GameUi
                     text.transform.GetChild(i).gameObject.SetActive(false);
                 }
             }
+            return headline.transform;
         }
 
         /// <summary>A switch with its label. False if the game's switch row could not be had: the caller leaves the choice out.</summary>

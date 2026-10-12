@@ -291,8 +291,7 @@ namespace RealLifeOverhaul
             bool skipping = uis != null && uis.timeMachine != null && uis.timeMachine.isRunning;
             if (News.Due(day, hour) && !skipping)
             {
-                News.Compose(day, false);
-                SocialPhone.DeliverPaper(Logger);
+                News.Compose(day, false);   // the City Ledger prints it (Scripts/Ledger)
                 Logger?.Info("Social: the City Ledger for day " + day + " is out (" + News.Today.Count + " pieces).");
             }
             if (!Settings.Social)
@@ -1979,7 +1978,7 @@ namespace RealLifeOverhaul
                          + venue.Name + "); the player is " + (OnFoot ? "on foot" : "in a vehicle") + ".");
         }
 
-        /// <summary>Test button: today's paper is written again from the log and delivered.</summary>
+        /// <summary>Test button: today's paper is written again from the log (the City Ledger's half of the button prints it and leaves a copy at the door).</summary>
         public void TestPaper()
         {
             if (!SocialState.Loaded || SaveGameManager.Current == null)
@@ -1993,7 +1992,6 @@ namespace RealLifeOverhaul
                 return;
             }
             News.Compose(SaveGameManager.Current.Day, true);
-            SocialPhone.DeliverPaper(Logger);
             for (int i = 0; i < News.Today.Count; i++)
             {
                 Logger?.Info("Ledger: " + SocialLife.T(News.Today[i].Key, News.Today[i].Data));
