@@ -11,7 +11,8 @@ namespace RealLifeOverhaul
     /// ground under it), clear of vehicles, street furniture, walls and other people, away from
     /// doors, and for work on a shopfront at a measured distance from a wall that really is
     /// there. All of it is asked when a site is being chosen (a handful of physics queries every
-    /// few seconds at most), never per frame, and none of it allocates.
+    /// few seconds at most), never per frame, but for <see cref="Ground"/>: the cameras ask that
+    /// once a frame while they swing low (one ray). None of it allocates.
     /// </summary>
     public static class CitySpots
     {
