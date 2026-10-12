@@ -1,17 +1,18 @@
-"""THE SERVICE VEHICLES: bodies that the mod stands over one of the game's own traffic vehicles, whose renderers are
-hidden meanwhile (so each body has its own wheels), and the light bar. Same rules as props.py: metres, X right,
-Y forward, Z up, one mesh on the shared atlas; Unity gets (x, z, y).
+"""THE SERVICE VEHICLES: the mod's own city bus and its parts, the fire engine's body that the mod stands over one of
+the game's own traffic vehicles, whose renderers are hidden meanwhile (so the body has its own wheels), and the light
+bar. Same rules as props.py: metres, X right, Y forward, Z up, one mesh on the shared atlas; Unity gets (x, z, y).
 
-    minibus          over the panel van (Transport/TransitBus.Dress): its axles on the van's, on the ground
-    fire_engine      over the delivery truck (Events/EventRoad.EngineLivery): its axles on the truck's
-    fire_light_bar   on the roof of a truck that has no modelled body (EventPropsBar)
-    fire_bar_lens    one end of the fire engine's own light bar, lit: shown in turn over each end while it flashes
+    city_bus             the body of the mod's own bus (Transport/BusVehicle), on the ground under its middle
+    city_bus_wheel       a front wheel on its own middle, and the rear pair (city_bus_wheel_twin): BusVehicle spins and steers them
+    city_bus_door        one leaf of its doors: BusVehicle puts two in each door and slides them open
+    city_bus_light_*     its lamps lit, a mesh for each of BusVehicle's groups (head, tail, brake, left, right), at the bus's origin
+    fire_engine          over the delivery truck (Events/EventRoad.EngineLivery): its axles on the truck's
+    fire_light_bar       on the roof of a truck that has no modelled body (EventPropsBar)
+    fire_bar_lens        one end of the fire engine's own light bar, lit: shown in turn over each end while it flashes
 
 What the code relies on, and what was measured on the game's vehicles (their prefabs; README "Service vehicles"):
 
-    Mersaidi Dash      mesh 2.33 x 2.27 x 6.66 m (0.29 to 2.56 up), colliders 2.26 x 6.81, origin on the ground under
-                       its middle; axles at z +2.40 and -1.62, track 1.70, tyres 0.377 in radius
-    Delivery Truck     mesh 2.72 x 3.01 x 7.43 m, ORIGIN UNDER ITS REAR AXLE (the body runs from z -2.353 to +5.077);
+    Delivery Truck    mesh 2.72 x 3.01 x 7.43 m, ORIGIN UNDER ITS REAR AXLE (the body runs from z -2.353 to +5.077);
                        axles at z 0 and +4.118, tyres 0.42 in radius, twins at the back
     Freight Truck T1   mesh 2.89 x 4.00 x 10.98 m, origin under its rear axle too (z -2.98 to +7.99); axles at z 0 and
                        +6.876, tyres 0.542 in radius: too long for a pumper, so the engine is not put on it
@@ -28,7 +29,7 @@ import numpy as np
 from mathutils import Vector
 
 from life_props import flat, pipe, ribbon, rod, sticker
-from prop_kit import Paint, Prop, box, lathe, loft, region, rounded_rect, tube
+from prop_kit import Paint, Prop, box, lathe, loft, moved, region, rounded_rect, tube
 
 
 def smooth01(t):
@@ -339,210 +340,338 @@ def light_bar(p, at=(0.0, 0.0, 0.0), length=1.30, depth=0.28, height=0.17, feet=
         p.add(box(0.014, depth, (z1 - z0) * 1.0), flat("gloss_black"), at=(ox + sx * length * 0.285, oy, (z0 + z1) / 2 - 0.002))
 
 
-# ---------------------------------------------------------------------------------------------- the shuttle bus
+# ---------------------------------------------------------------------------------------------- the city bus
 
-BUS_W = 1.035                 # half the saloon's width at the waist: trim stands out to 1.05
-CAB_W = 0.955
-BUS_AXLES = (2.40, -1.62)     # the Mersaidi Dash's own axles (wheelbase 4.02): the wheels turn about where the van's do
-BUS_REAR, BUS_NOSE = -3.27, 3.28          # the back wall and the nose; the bumpers reach -3.33 and +3.33 (the van is 6.66 long)
-BUS_TRACK = 1.70
-BUS_TYRE = 0.375
-BUS_ARCH = 0.45
-BUS_DOOR = (0.22, 1.30)       # the passenger door, kerb side, behind the cab: its middle is 0.76 m ahead of the body's (TransitBus.BodyDoorAhead)
-BUS_ROOF, BUS_TOP = 2.62, 2.75
-BUS_BULKHEAD = 1.37           # where the saloon ends and the cab begins
-BUS_WINDOWS = ((-3.09, -2.07), (-2.01, -1.23), (-1.17, -0.545), (-0.485, 0.14))          # both sides; then the door, or one more window
-CAB_SHIFT = 0.35              # the cab stands this much further forward than it was first drawn (the front axle went from 2.05 to 2.40)
-SCREEN_BASE = 2.50 + CAB_SHIFT
+# The mod's own bus (Transport/BusVehicle), which stands over no vehicle of the game's: its measurements are BusVehicle's
+# and BusBay's, and BusVehicle puts the wheels, the door leaves and the lamps on the body where they are below. A
+# low-floor midi bus, 10.90 m long over its sign boxes and 2.40 m wide (only the mirrors stand out beyond that), 3.05 m
+# to the top of the air-conditioning pod, its axles 2.90 m either side of the middle, its two doors on the kerb side (+x).
+BUS_HALF = 1.20               # BusVehicle.HalfWidth
+BUS_END = 5.45                # half of BusVehicle.Length: the sign boxes reach it, the bumpers 5 mm less
+BUS_NOSE, BUS_TAIL = 5.42, -5.42          # the front and back walls
+BUS_CORNERS = (0.25, 0.20)    # the corners' radius in plan, at the front and at the back
+BUS_AXLES = (2.90, -2.90)     # BusBay.BusAxleFront, and BusWheelbase behind it
+BUS_TYRE, BUS_ARCH = 0.48, 0.58           # BusVehicle.WheelRadius; the wheel arches' radius, over the axle
+BUS_TRACK = (1.02, 0.92)      # to the middle of a front wheel and of a rear pair (BusVehicle.TrackFront, TrackRear)
+BUS_TREAD = (0.30, 0.56)      # the front tyre's width and the rear pair's (TyreFront, TyreRear)
+BUS_FLOOR = 0.33              # BusVehicle.Floor: the threshold of both doors
+BUS_DOORS = (4.45, -0.55)     # the middles of the front door and of the middle door (FrontDoorAhead, MiddleDoorAhead)
+BUS_LEAF = (0.60, 2.30, 0.04)             # each door is two leaves of this (DoorLeaf, DoorTall, and the plain leaf's thickness), 0.03 off the side when shut
+# Up the side: the sill, the top of the grey skirt, the waist (the windows' foot), the window band's top, the cantrail,
+# and the middle of the roof.
+BUS_SILL, BUS_SKIRT, BUS_WAIST, BUS_BAND, BUS_RAIL, BUS_ROOF = 0.22, 0.60, 1.12, 2.70, 2.76, 2.865
+BUS_POD = (-4.90, -2.70, 3.05)            # the air-conditioning pod: from, to, and its top (BusVehicle.Height)
+# The windows, front to back. On the right the first has the side sign over it; on the left the last is the engine's grille.
+BUS_RIGHT = ((2.62, 3.82), (1.38, 2.56), (0.10, 1.32), (-2.42, -1.20), (-3.70, -2.48), (-5.00, -3.76))
+BUS_LEFT = ((3.88, 5.11), (2.62, 3.82), (1.38, 2.56), (0.10, 1.32), (-1.14, 0.04), (-2.42, -1.20), (-3.70, -2.48), (-5.00, -3.76))
 
 
-def cab_y(y):
-    """A station of the cab as first drawn (front axle at 2.05, nose at 3.045) -> where it is now: everything back to the
-    foot of the screen moves forward with the axle, and the bonnet ahead of it is shortened so that the nose ends at BUS_NOSE."""
-    return y + CAB_SHIFT if y <= 2.50 else SCREEN_BASE + (y - 2.50) * (BUS_NOSE - SCREEN_BASE) / (3.045 - 2.50)
+def uv_disc(u, v, ru, rv, count=10):
+    return [(u + ru * math.cos(2 * math.pi * k / count), v + rv * math.sin(2 * math.pi * k / count)) for k in range(count)]
 
 
-def minibus():
-    p = Prop("minibus", "lit", pivot="ground centre under the middle of the body; nose to +Y",
-             note="cutaway shuttle bus body with its own wheels (axles at y 2.40 and -1.62, the Mersaidi Dash's; track 1.70); passenger door on +X centred y 0.76; "
-                  "the roof is flat at 2.75 m from y 1.50 to 2.45 (the route board) and on the air-conditioning pod from y -3.18 to -2.23 (the number)")
-    s = Shell(low=0.20, high=1.45, length=6.4)
-    s.rule("white", "swatch", "svc_coach_white").rule("blue", "swatch", "svc_coach_blue").rule("sky", "flat", "svc_coach_sky")
-    s.rule("roof", "flat", "svc_coach_white").rule("black", "flat", "gloss_black").rule("rubber", "flat", "rubber_black")
-    s.rule("under", "flat", "plastic_grey").rule("glass", "own", "svc_glass").rule("screen", "own", "svc_screen")
-    s.rule("door", "flat", "car_silver").rule("tread", "flat", "aluminium")
-    rear_axle, front_axle = BUS_AXLES[1], BUS_AXLES[0]
+def uv_rect(u0, v0, u1, v1):
+    return [(u0, v0), (u1, v0), (u1, v1), (u0, v1)]
 
-    # ---- the saloon: sill, skirt, stripe, waist, window band, cantrail, round roof edge, roof.
-    def saloon(y, cap=False):
-        d = corner(y, BUS_REAR, 0.14, -1)
-        rise = smooth01((y - 1.15 - CAB_SHIFT) / 0.40)
-        top = BUS_ROOF + (BUS_TOP - BUS_ROOF) * rise
-        floor = 0.0
-        if cap:                                            # over the cab: the cap's underside, its brow drawn in and down
-            d = curve(((2.10, 0.0), (2.28, 0.035), (2.40, 0.13), (2.46, 0.30)), y - CAB_SHIFT)
-            top = curve(((2.10, BUS_TOP), (2.28, 2.722), (2.40, 2.65), (2.46, 2.54)), y - CAB_SHIFT)
-            floor = curve(((2.10, 2.15), (2.28, 2.17), (2.40, 2.23), (2.46, 2.33)), y - CAB_SHIFT)
-        w = BUS_W - d
-        r = min(0.20, (top - floor) * 0.48) if cap else 0.20
-        cx, cz = w - 0.045 - r, top - r
-        crown = 0.0 if cap else 0.012 * (1.0 - rise)
-        ring = [(w - 0.03, arch(y, rear_axle, BUS_ARCH, BUS_TYRE, 0.36)), (w, 0.84), (w, 0.94), (w, 1.22), (w - 0.03, 2.12), (w - 0.045, cz),
-                (cx + r * math.cos(math.radians(30)), cz + r * math.sin(math.radians(30))), (cx + r * math.cos(math.radians(60)), cz + r * math.sin(math.radians(60))),
-                (cx, top), (0.45, top + crown), (0.0, top + crown * 1.3)]
-        if cap:
-            ring = [(w - 0.045, max(z, floor)) if k < 5 else (x, max(z, floor)) for k, (x, z) in enumerate(ring)]
-        return ring
-    body_ys = sorted(set([BUS_REAR, BUS_REAR + 0.02, BUS_REAR + 0.07, BUS_REAR + 0.14, BUS_DOOR[0], round((BUS_DOOR[0] + BUS_DOOR[1]) / 2, 4), BUS_DOOR[1], BUS_BULKHEAD]
-                         + [y for w in BUS_WINDOWS for y in w] + arch_stations(rear_axle, BUS_ARCH)))
-    body = Hull(s, body_ys, saloon)
+
+# What lights up in each lamp, in its decal's own u, v (0..1, v up), as paint_service.py paints them: the two round lamps
+# and the indicator of svc_headlamp (112 x 64 px), the indicator, brake and tail lenses of svc_bus_tail_lamp (40 x 160)
+# from the top, the lens of svc_bus_repeater and of svc_bus_brake_high.
+HEAD_LAMPS = (uv_disc(58 / 112, 0.5, 19 / 112, 19 / 64), uv_disc(90 / 112, 0.5, 14 / 112, 14 / 64))
+HEAD_TURN = uv_rect(8 / 112, 8 / 64, 34 / 112, 56 / 64)
+BUS_TAIL_LENSES = (uv_rect(5 / 40, 1 - 37 / 160, 35 / 40, 1 - 5 / 160), uv_rect(5 / 40, 1 - 81 / 160, 35 / 40, 1 - 41 / 160), uv_rect(5 / 40, 1 - 125 / 160, 35 / 40, 1 - 85 / 160))
+
+
+def bus_lamps():
+    """Every lamp unit on the city bus, as lamp() makes it: (decal, centre, normal, right, size, depth, mirrored, lit),
+    where lit says what in it the code switches, (group, outline): the groups are BusVehicle's lamps, city_bus_light_<group>."""
+    units = []
+    for side in (1, -1):
+        turn = "right" if side > 0 else "left"
+        # Low at the front corners, the indicator outside the headlamp; at each back corner indicator, brake, tail and
+        # reversing lamp; a repeater on each side between the front wheel and the front door.
+        units.append(("svc_headlamp", (side * 0.66, BUS_NOSE, 0.74), (0, 1, 0), (-1, 0, 0), (0.385, 0.22), 0.024, side < 0,
+                      (("head", HEAD_LAMPS[0]), ("head", HEAD_LAMPS[1]), (turn, HEAD_TURN))))
+        units.append(("svc_bus_tail_lamp", (side * 0.90, BUS_TAIL, 1.09), (0, -1, 0), (1, 0, 0), (0.16, 0.64), 0.024, False,
+                      ((turn, BUS_TAIL_LENSES[0]), ("brake", BUS_TAIL_LENSES[1]), ("tail", BUS_TAIL_LENSES[2]))))
+        units.append(("svc_bus_repeater", (side * (BUS_HALF - 0.002), 3.70, 0.80), (side, 0, 0), (0, side, 0), (0.12, 0.05), 0.004, False,
+                      ((turn, uv_rect(2 / 32, 2 / 14, 30 / 32, 12 / 14)),)))
+    # The high brake lamp: over the number at the back (its lettering is 2.52 to 2.72 m up), under the roof's edge.
+    units.append(("svc_bus_brake_high", (0.0, BUS_TAIL, 2.81), (0, -1, 0), (1, 0, 0), (0.40, 0.05), 0.012, False, (("brake", uv_rect(2 / 96, 2 / 12, 94 / 96, 10 / 12)),)))
+    return units
+
+
+def lamp_point(unit, u, v, lift=0.0):
+    """A point of a lamp unit's lens (u, v as on its decal), `lift` in front of it: the decal's own mapping (Paint.planar),
+    which a mirrored unit turns half round."""
+    _, centre, normal, right, size, depth, mirrored, _ = unit
+    n, r = Vector(normal).normalized(), Vector(right).normalized()
+    r = -r if mirrored else r
+    up = n.cross(r)
+    return Vector(centre) + n * (depth + lift) + r * ((u - 0.5) * size[0] * 0.94) + up * ((v - 0.5) * size[1] * 0.94)
+
+
+def plate(points, normal):
+    """One flat face through the points, looking along `normal`."""
+    bm = bmesh.new()
+    face = bm.faces.new([bm.verts.new(p) for p in points])
+    bm.normal_update()
+    if face.normal.dot(Vector(normal)) < 0:
+        bmesh.ops.reverse_faces(bm, faces=[face])
+    return bm
+
+
+def bus_bumper(p, end, radius, z0, z1):
+    """Across an end wall and a third of the way round each corner, 0.05 thick on the body's own outline: its face is
+    5 mm short of the end (BUS_END), and its ends stay inside the bus's width."""
+    sign = 1 if end > 0 else -1
+    cx, cy = BUS_HALF - radius, end - sign * radius
+    path = []
+    for x_sign in (-1, 1):
+        arc = [(x_sign * (cx + radius * math.cos(math.radians(a))), cy + sign * radius * math.sin(math.radians(a)), (z0 + z1) / 2) for a in (30, 50, 70, 90)]
+        path += arc if x_sign < 0 else arc[::-1]
+
+    def away(q):
+        if abs(q.x) <= cx + 1e-6:
+            return (0.0, sign, 0.0)
+        return (q.x - math.copysign(cx, q.x), q.y - cy, 0.0)
+    p.add(ribbon(path, away, z1 - z0, 0.05), Paint("svc_bus_grey"), sharp=50)
+
+
+def city_bus():
+    p = Prop("city_bus", "lit", pivot="ground centre under the middle of the bus; nose to +Y",
+             note="the mod's own city bus (Transport/BusVehicle): axles at y +-2.90, doors on +X centred y 4.45 and -0.55 with their threshold 0.33 m up; "
+                  "the wheels, the door leaves and the lamps are props of their own (city_bus_wheel, city_bus_wheel_twin, city_bus_door, city_bus_light_*)")
+    s = Shell(low=0.20, high=1.70, length=11.0)
+    # The red is the clean part of its swatch all over, as the lettering's ground is: only the skirt gets the road's dirt.
+    s.rule("red", "flat", "svc_bus_red").rule("roof", "flat", "svc_bus_red").rule("skirt", "swatch", "svc_bus_grey")
+    s.rule("black", "flat", "gloss_black").rule("rubber", "flat", "rubber_black").rule("under", "flat", "rubber_black")
+    s.rule("glass", "own", "svc_glass").rule("screen", "own", "svc_screen").rule("grille", "own", "svc_bus_grille")
+    s.rule("inside", "flat", "svc_bus_inside").rule("floor", "flat", "plastic_grey").rule("step", "flat", "paint_yellow")
+    front_axle, rear_axle = BUS_AXLES
+    nose, tail = BUS_CORNERS
+    doors = [(round(m - BUS_LEAF[0] + 0.01, 4), round(m + BUS_LEAF[0] - 0.01, 4)) for m in BUS_DOORS]      # 1 cm inside the leaves all round
+    lintel = BUS_FLOOR + BUS_LEAF[1]      # the doors' upper edge, 2.63
+
+    # ---- the body: sill, grey skirt, red panels to the waist, the window band, cantrail, round roof edge, roof.
+    def section(y):
+        front = smooth01((y - (BUS_NOSE - nose)) / nose)          # 1 at the front wall, 0 behind its corners
+        back = smooth01(((BUS_TAIL + tail) - y) / tail)
+        w = BUS_HALF - corner(y, BUS_NOSE, nose, 1) - corner(y, BUS_TAIL, tail, -1)
+        sill = max(arch(y, front_axle, BUS_ARCH, BUS_TYRE, BUS_SILL), arch(y, rear_axle, BUS_ARCH, BUS_TYRE, BUS_SILL))
+        waist = BUS_WAIST - 0.16 * front + 0.36 * back      # the windscreen goes lower than the side windows, the back window not as low
+        band = BUS_BAND - 0.10 * front - 0.32 * back
+        brow = 0.09 * smooth01((y - 4.60) / 0.80)             # the roof rises over the front to take the sign box
+        return [(w - 0.035, sill), (w - 0.004, max(BUS_FLOOR, sill + 0.004)), (w, max(BUS_SKIRT, sill + 0.008)), (w, max(waist, sill + 0.012)),
+                (w, band), (w, BUS_RAIL + brow), (w - 0.035, BUS_RAIL + 0.075 + brow), (w - 0.10, BUS_RAIL + 0.098 + brow), (0.0, BUS_ROOF + brow)]
+    ys = [BUS_NOSE - nose * (1 - math.sin(math.radians(a))) for a in (0, 22.5, 45, 67.5, 90)]
+    ys += [BUS_TAIL + tail * (1 - math.sin(math.radians(a))) for a in (0, 22.5, 45, 67.5, 90)]
+    ys += arch_stations(front_axle, BUS_ARCH, 8) + arch_stations(rear_axle, BUS_ARCH, 8) + [y for d in doors for y in d] + [y for w in BUS_RIGHT + BUS_LEFT for y in w] + [4.60, 4.80]
+    stations = sorted(set(round(y, 4) for y in ys))
+    body = Hull(s, stations, section)
+
+    def within(y0, y1, span):
+        return y0 >= span[0] - 0.001 and y1 <= span[1] + 0.001
 
     def body_tag(y0, y1, k, side):
-        if side > 0 and y0 >= BUS_DOOR[0] - 0.001 and y1 <= BUS_DOOR[1] + 0.001 and k < 4:
+        if side > 0 and 1 <= k <= 3 and any(within(y0, y1, d) for d in doors):
             return None
         if k == 3:
-            if any(y0 >= a - 0.001 and y1 <= b + 0.001 for a, b in BUS_WINDOWS) or (side < 0 and y0 >= BUS_DOOR[0] - 0.001 and y1 <= BUS_DOOR[1] + 0.001):
-                return None
-            return "white" if y1 <= BUS_WINDOWS[0][0] + 0.001 else "black"
-        return ("blue", "sky", "white", None, "white")[k] if k < 5 else "roof"
+            if any(within(y0, y1, w) for w in (BUS_RIGHT if side > 0 else BUS_LEFT)) or y0 >= BUS_NOSE - nose - 0.001:
+                return None                                # windows, the grille, the windscreen's corners
+            return "red" if y1 <= BUS_LEFT[-1][0] + 0.001 else "black"          # the back corners; the pillars
+        return ("skirt", "skirt", "red", None, "red", "red", "red", "roof")[k]
     body.skin(body_tag, under="under")
-    for a, b in BUS_WINDOWS:
-        for side in (1, -1):
-            body.window(a, b, 3, side)
-    body.window(BUS_DOOR[0], BUS_DOOR[1], 3, -1)
-    # The back: a wide window, the stripes carried round.
-    back = body.wall(0, lambda k, m: None if k == 3 and m == 1 else ("blue", "sky", "white", "white", "white")[k] if k < 5 else "roof", (0, -1, 0), cuts={3: [0.74]})
-    a, b, c, d = back[(3, 1)]
-    s.pane([a, b], [d, c], "rubber", "glass", (0, -1, 0))
-    # The front of the saloon behind the cab, and the cap over the cab.
-    body.wall(len(body_ys) - 1, lambda k, m: "white", (0, 1, 0), last=4)
-    cap_ys = [BUS_BULKHEAD] + [round(y + CAB_SHIFT, 4) for y in (1.15, 1.28, 1.42, 1.55, 2.10, 2.28, 2.40, 2.46)]
-    cap = Hull(s, cap_ys, lambda y: saloon(y, cap=True) if y > BUS_BULKHEAD else [(x, max(z, 2.15)) if k >= 5 else (BUS_W - 0.045, max(z, 2.15)) for k, (x, z) in enumerate(saloon(y))])
-    cap.skin(lambda y0, y1, k, side: "roof" if k >= 4 else None, under="roof")
-    cap.wall(len(cap_ys) - 1, lambda k, m: "roof", (0, 1, 0))
-    # Joins the saloon's roof to the cap's first ring: they are the same above the cab's roof line.
-
-    # ---- the cab: a van's nose, bonnet and raked screen, narrower than the coachwork behind it.
-    profile = tuple((cab_y(y), z) for y, z in ((0.9, 2.14), (2.05, 2.14), (2.50, 1.28), (2.60, 1.255), (2.885, 1.15), (2.97, 1.09), (3.02, 1.02), (3.045, 0.95)))
-
-    def cab(y):
-        top = curve(profile, y)
-        d = corner(y, BUS_NOSE, 0.16, 1)
-        w = CAB_W - d
-        z3, z4 = min(1.22, top - 0.09), min(2.04, top - 0.07)
-        x4 = w - 0.09 * (z4 - z3) / 0.82
-        sill = arch(y, front_axle, BUS_ARCH, BUS_TYRE, 0.36 if y < cab_y(2.6) else 0.40)
-        return [(w - 0.03, sill), (w, min(0.84, top - 0.24)), (w, min(0.94, top - 0.16)), (w, z3), (x4, z4), (x4 - 0.05, top - 0.035), ((x4 - 0.05) * 0.60, top - 0.008), (0.0, top)]
-    cab_ys = sorted(set([round(cab_y(y), 4) for y in (1.00, 1.08, 2.60, 2.885, 2.97, 3.02, 3.045)] + arch_stations(front_axle, BUS_ARCH)))
-    cab_side = round(cab_y(1.08), 4)                       # where the cab door's window begins
-    nose = Hull(s, cab_ys, cab)
-    screen = (round(cab_y(2.05), 4), round(cab_y(2.50), 4))
-
-    def cab_tag(y0, y1, k, side):
-        if k >= 5 and y0 >= screen[0] - 0.001 and y1 <= screen[1] + 0.001:
-            return None
-        if k == 3 and y0 >= cab_side - 0.001 and y1 <= screen[1] + 0.001:
-            return None
-        if k < 2 and y1 <= front_axle - BUS_ARCH + 0.001:
-            return ("blue", "sky")[k]
-        return "white"
-    nose.skin(cab_tag, under="under")
+    for a, b in BUS_RIGHT[1:]:
+        body.window(a, b, 3, 1)
+    for a, b in BUS_LEFT[:-1]:
+        body.window(a, b, 3, -1)
     for side in (1, -1):
-        nose.window(cab_side, screen[0], 3, side, ends=0.035)
-        nose.window(screen[0], screen[1], 3, side, margin=0.018, ends=0.03)
-    i0, i1 = nose.at(screen[1]), nose.at(screen[0])
-    across = [(5, -1), (6, -1), (7, 1), (6, 1), (5, 1)]
-    s.pane([nose.P(i0, k, side) for k, side in across], [nose.P(i1, k, side) for k, side in across], "rubber", "screen", (0, 1, 0.6), margin=0.03, depth=0.02)
-    nose.wall(len(cab_ys) - 1, lambda k, m: "white", (0, 1, 0))
+        body.window(BUS_NOSE - nose, BUS_NOSE, 3, side, ends=0.03)          # the windscreen round the corners
+    # The first window on the right: the side sign's panel over it, flush with the side. BusVehicle.Signs letters there
+    # 12 mm out, in a box 1.10 x 0.20 centred y 3.25, 2.55 m up.
+    i0, i1 = body.at(BUS_RIGHT[0][0]), body.at(BUS_RIGHT[0][1])
+    head = [body.P(i, 4) for i in range(i0, i1 + 1)]
+    split = [Vector((q.x, q.y, 2.40)) for q in head]
+    s.pane([body.P(i, 3) for i in range(i0, i1 + 1)], split, "rubber", "glass", (1, 0, 0))
+    for j in range(len(head) - 1):
+        s.face([split[j], split[j + 1], head[j + 1], head[j]], "black", out=(1, 0, 0))
+    # The engine's grille at the left back corner, where its radiator is.
+    i0, i1 = body.at(BUS_LEFT[-1][0]), body.at(BUS_LEFT[-1][1])
+    s.pane([body.P(i, 3, -1) for i in range(i0, i1 + 1)], [body.P(i, 4, -1) for i in range(i0, i1 + 1)], "black", "grille", (-1, 0, 0), margin=0.03, depth=0.03)
+    # The front: the windscreen, the sign box over it (its wall black), the panel under it. The code letters the sign
+    # 15 mm in front of the box's face, in a box 1.62 x 0.24 centred 2.78 m up; at the back 0.45 x 0.20, 2.62 m up.
+    sign_half = 0.86
+    face = body.wall(len(stations) - 1, lambda k, m: None if k == 3 else ("skirt", "skirt", "red", None, "black" if m == 1 else "red", "black" if m == 1 else "red", "red", "roof")[k],
+                     (0, 1, 0), cuts={4: [sign_half], 5: [sign_half]})
+    a, b, c, d = face[(3, 0)]
+    s.pane([a, b], [d, c], "rubber", "screen", (0, 1, 0), margin=0.035, depth=0.02)
+    p.add(box(2 * sign_half, BUS_END - BUS_NOSE, 0.30), flat("gloss_black"), at=(0, (BUS_END + BUS_NOSE) / 2, 2.77))
+    # The back: the engine's grille low down with red round it, the back window over it, the number's box over that.
+    face = body.wall(0, lambda k, m: None if k in (2, 3) and m == 1 else ("skirt", "skirt", "red", "red", "red", "red", "red", "roof")[k], (0, -1, 0), cuts={2: [0.72], 3: [0.70]})
+    up = lambda q, r, z: q + (r - q) * ((z - q.z) / (r.z - q.z))
+    for k, (low, high), glass, frame in ((2, (0.70, 1.30), "grille", "black"), (3, (1.58, 2.30), "glass", "rubber")):
+        a, b, c, d = face[(k, 1)]                          # red below and above it, inside the piece the wall left open
+        a1, b1, a2, b2 = up(a, d, low), up(b, c, low), up(a, d, high), up(b, c, high)
+        s.face([a, b, b1, a1], "red", out=(0, -1, 0))
+        s.face([a2, b2, c, d], "red", out=(0, -1, 0))
+        s.pane([a1, b1], [a2, b2], frame, glass, (0, -1, 0), margin=0.03, depth=0.03 if glass == "grille" else 0.02)
+    p.add(box(0.54, BUS_END - BUS_NOSE, 0.30), flat("gloss_black"), at=(0, -(BUS_END + BUS_NOSE) / 2, 2.62))
 
-    # ---- the passenger door: two glazed leaves set back in a portal, a tread at the sill.
-    i0, i1 = body.at(BUS_DOOR[0]), body.at(BUS_DOOR[1])
-    xd = BUS_W - 0.055
-    for i, out in ((i0, (0, 1, 0)), (i1, (0, -1, 0))):
-        for k in range(4):
-            a, b = body.P(i, k), body.P(i, k + 1)
-            s.face([a, b, (xd, b.y, b.z), (xd, a.y, a.z)], "black", out=out)
-    for i in range(i0, i1):
-        a, b = body.P(i, 4), body.P(i + 1, 4)
-        s.face([a, b, (xd, b.y, b.z), (xd, a.y, a.z)], "black", out=(0, 0, -1))
-        a, b = body.P(i, 0), body.P(i + 1, 0)
-        s.face([a, b, (xd, b.y, 0.40), (xd, a.y, 0.40)], "tread", out=(0.4, 0, 1))
-    mid = (BUS_DOOR[0] + BUS_DOOR[1]) / 2
-    for y0, y1 in ((BUS_DOOR[0], mid - 0.012), (mid + 0.012, BUS_DOOR[1])):
-        s.panel((xd, y0, 0.40), (0, 1, 0), (0, 0, 1), y1 - y0, 1.72, "door", (1, 0, 0), window=(0.07, 0.24, y1 - y0 - 0.07, 1.62), margin=0.02, depth=0.016)
-    s.panel((xd + 0.012, mid - 0.016, 0.40), (0, 1, 0), (0, 0, 1), 0.032, 1.72, "rubber", (1, 0, 0))
+    # ---- the doors: open in the side down to the floor, a dark inside behind them; the code's leaves close them.
+    for (y0, y1), middle in zip(doors, BUS_DOORS):
+        i0, i1 = body.at(y0), body.at(y1)
+        back = -0.40 if middle > 0 else -(BUS_HALF - 0.06)          # the platform beside the driver; across the bus at the middle door
+        edge = [body.P(i, 1) for i in range(i0, i1 + 1)]          # the threshold, at the floor
+        top = [Vector((body.P(i, 4).x, body.ys[i], lintel)) for i in range(i0, i1 + 1)]
+        for j in range(i1 - i0):
+            s.face([top[j], top[j + 1], body.P(i0 + j + 1, 4), body.P(i0 + j, 4)], "black", out=(1, 0, 0))
+        s.face(edge + [(1.12, y1, BUS_FLOOR), (1.12, y0, BUS_FLOOR)], "step", out=(0, 0, 1))
+        s.face([(1.12, y0, BUS_FLOOR), (1.12, y1, BUS_FLOOR), (back, y1, BUS_FLOOR), (back, y0, BUS_FLOOR)], "floor", out=(0, 0, 1))
+        s.face(top + [(back, y1, lintel), (back, y0, lintel)], "inside", out=(0, 0, -1))
+        for i, y, out in ((i0, y0, (0, 1, 0)), (i1, y1, (0, -1, 0))):
+            s.face([body.P(i, 1), body.P(i, 2), body.P(i, 3), Vector((body.P(i, 4).x, y, lintel)), (back, y, lintel), (back, y, BUS_FLOOR)], "inside", out=out)
+        s.face([(back, y0, BUS_FLOOR), (back, y1, BUS_FLOOR), (back, y1, lintel), (back, y0, lintel)], "inside", out=(1, 0, 0))
     s.add_to(p, sharp=40)
+    for (y0, y1), middle in zip(doors, BUS_DOORS):
+        for y in (y0 + 0.08, y1 - 0.08):                   # the yellow poles either side of the way in, a rail across under the ceiling
+            rod(p, (1.08, y, BUS_FLOOR), (1.08, y, lintel), 0.018, "paint_yellow", 6, caps=False)
+        rod(p, (0.55, y0, lintel - 0.12), (0.55, y1, lintel - 0.12), 0.016, "paint_yellow", 6, caps=False)
+    p.add(box(0.12, 0.10, 0.30, bevel=0.012), flat("steel_dark"), at=(0.42, doors[0][1] - 0.10, 1.25))          # the ticket validator by the driver
+    p.add(box(0.004, 0.08, 0.10), flat("svc_lens_clear"), at=(0.482, doors[0][1] - 0.10, 1.31))
+    rod(p, (0.42, doors[0][1] - 0.10, BUS_FLOOR), (0.42, doors[0][1] - 0.10, 1.10), 0.02, "paint_yellow", 6, caps=False)
+    for x in (-0.92, -0.48):                               # across from the middle door, two seats facing forward, hung on the wall
+        p.add(box(0.42, 0.42, 0.10, bevel=0.02), flat("wool_blue"), at=(x, BUS_DOORS[1] + 0.06, 0.50))
+        p.add(box(0.42, 0.08, 0.58, bevel=0.02), flat("wool_blue"), at=(x, BUS_DOORS[1] - 0.17, 0.84), rot=(-8, 0, 0))
 
-    # ---- what stands on the coachwork.
+    # ---- under the floor: the wheel boxes, so that one does not see through the arches (the front wheels steer 38 degrees);
+    # a rubber lip round each arch, inside the bus's width.
+    for y, half in ((front_axle, 0.55), (rear_axle, 0.60)):
+        p.add(box(2 * half, 2 * BUS_ARCH + 0.06, 0.93), flat("rubber_black"), at=(0, y, 0.575))
+        for side in (1, -1):
+            arch_lip(p, side * (BUS_HALF - 0.016), y, BUS_ARCH + 0.01, BUS_TYRE, side, paint="rubber_black", thick=0.016)
+
+    # ---- the ends: bumpers, plates, the lamp units, wipers, mirrors.
+    bus_bumper(p, BUS_NOSE, nose, 0.22, 0.48)
+    bus_bumper(p, BUS_TAIL, tail, 0.22, 0.46)
+    for y, normal, right in ((BUS_END - 0.0045, (0, 1, 0), (-1, 0, 0)), (-(BUS_END - 0.0045), (0, -1, 0), (1, 0, 0))):
+        p.add(box(0.36, 0.006, 0.17), Paint("paper", grade=False).planar("svc_plate_bus", normal, right, (0, 0, 0), (0.36, 0.17)), at=(0, y, 0.35))
+    for unit in bus_lamps():
+        decal, centre, normal, right, size, depth, mirrored, _ = unit
+        lamp(p, decal, centre, normal, right, size, depth=depth, mirrored=mirrored)
+    p.add(box(1.70, 0.008, 0.17, bevel=0.003), flat("gloss_black"), at=(0, BUS_NOSE, 0.74))         # the black band the headlamps stand in
+    glass_y = BUS_NOSE - 0.02 + 0.012
+    for x0, x1 in ((-0.10, -0.84), (0.80, 0.06)):          # the wipers, parked along the foot of the windscreen
+        rod(p, (x0, glass_y, 1.035), (x1, glass_y, 1.075), 0.010, "rubber_black", 4)
+        rod(p, (x0 + (x1 - x0) * 0.08, glass_y + 0.004, 1.02), (x0 + (x1 - x0) * 0.55, glass_y + 0.004, 1.05), 0.012, "gloss_black", 4)
     for side in (1, -1):
-        # Wheels in their arches; the saloon's arches have a lip, the body builder's flare.
-        road_wheel(p, side * (BUS_TRACK / 2 + 0.115), front_axle, BUS_TYRE, 0.23, "svc_wheel", side)
-        road_wheel(p, side * (BUS_TRACK / 2 + 0.115), rear_axle, BUS_TYRE, 0.23, "svc_wheel", side)
-        arch_lip(p, side * (BUS_W - 0.003), rear_axle, BUS_ARCH + 0.012, BUS_TYRE, side, thick=0.018)
-        arch_lip(p, side * (CAB_W + 0.004), front_axle, BUS_ARCH + 0.012, BUS_TYRE, side, thick=0.018)
-        # Lettering, the same way round on both sides.
+        # On an arm from the top of the front corner, out over the front door's leaves (open, they stand 1.32 m out) and down.
+        pipe(p, [(side * 1.08, 5.31, 2.87), (side * 1.365, 5.36, 2.845), (side * 1.38, 5.37, 2.50)], 0.016, "gloss_black", 6, bend=0.06)
+        p.add(box(0.07, 0.15, 0.40, bevel=0.02), flat("gloss_black"), at=(side * 1.375, 5.37, 2.33))
+        p.add(box(0.05, 0.004, 0.35), flat("chrome"), at=(side * 1.375, 5.37 - 0.077, 2.33))
+
+    # ---- lettering: the city's name, the fleet number on both sides, the front and the back; the wheelchair's door.
+    for side in (1, -1):
         fore = (0, side, 0)
-        sticker(p, "svc_bus_title", (side * (BUS_W - 0.0375), -1.30, 2.27), (side, 0, 0.05), fore, (1.96, 0.2205), lift=0.002)
-        sticker(p, "svc_bus_shuttle", (side * BUS_W, -2.58, 1.085), (side, 0, 0), fore, (0.72, 0.1575), lift=0.002)
-        sticker(p, "svc_bus_number", (side * CAB_W, 1.42 + CAB_SHIFT, 1.04), (side, 0, 0), fore, (0.26, 0.13), lift=0.002)
-        # Cab door: its shut lines and handle; the mirror on its arm.
-        p.add(box(0.004, 0.008, 0.46), flat("rubber_black"), at=(side * (CAB_W + 0.001), 2.33 + CAB_SHIFT, 0.985))
-        p.add(box(0.012, 0.10, 0.028, bevel=0.004), flat("gloss_black"), at=(side * (CAB_W + 0.004), 1.17 + CAB_SHIFT, 1.17))
-        pipe(p, [(side * (CAB_W - 0.03), 2.40 + CAB_SHIFT, 1.33), (side * (CAB_W + 0.06), 2.47 + CAB_SHIFT, 1.36), (side * (CAB_W + 0.06), 2.47 + CAB_SHIFT, 1.52)], 0.012, "gloss_black", 5, bend=0.03)
-        p.add(box(0.06, 0.045, 0.25, bevel=0.012), flat("gloss_black"), at=(side * (CAB_W + 0.062), 2.475 + CAB_SHIFT, 1.60))
-        p.add(box(0.05, 0.004, 0.22), flat("svc_lens_clear"), at=(side * (CAB_W + 0.062), 2.451 + CAB_SHIFT, 1.60))
-        # Side repeater and marker lamps.
-        p.add(box(0.012, 0.07, 0.035, bevel=0.004), flat("lens_amber"), at=(side * (CAB_W + 0.003), cab_y(2.70) + 0.03, 0.93))
-        p.add(box(0.010, 0.09, 0.03, bevel=0.003), flat("lens_amber"), at=(side * (BUS_W + 0.003), BUS_REAR + 0.24, 0.89))
-        p.add(box(0.010, 0.09, 0.03, bevel=0.003), flat("lens_red"), at=(side * (BUS_W + 0.001), BUS_REAR + 0.16, 2.30))
-        # Head and tail lamps.
-        lamp(p, "svc_headlamp", (side * 0.60, BUS_NOSE, 0.80), (0, 1, 0), (-1, 0, 0), (0.32, 0.18), mirrored=side < 0)
-        lamp(p, "svc_tail_lamp", (side * 0.775, BUS_REAR, 1.03), (0, -1, 0), (1, 0, 0), (0.13, 0.36), depth=0.025)
-    # The nose: grille and badge, bumper, plate, wipers.
-    sticker(p, "svc_bus_grille", (0, BUS_NOSE, 0.80), (0, 1, 0), (-1, 0, 0), (0.80, 0.225), lift=0.004)
-    bumper = [(x, cab_y(y)) for x, y in ((-0.985, 2.62), (-0.985, 2.90), (-0.93, 3.015), (-0.80, 3.059), (0.80, 3.059), (0.93, 3.015), (0.985, 2.90), (0.985, 2.62))]
-    away = lambda q: (q.x * (1.0 if abs(q.x) > 0.9 else 0.25), max(0.0, q.y - cab_y(2.80)) * 4.0 + (1.0 if abs(q.x) < 0.9 else 0.0), 0.0)
-    p.add(ribbon([(x, y, 0.47) for x, y in bumper], away, 0.25, 0.07), Paint("plastic_grey"), sharp=50)
-    p.add(box(0.36, 0.006, 0.17), Paint("paper", grade=False).planar("svc_plate_bus", (0, 1, 0), (-1, 0, 0), (0, 0, 0), (0.36, 0.17)), at=(0, BUS_NOSE + 0.052, 0.47))
-    for x in (-0.62, 0.62):                                # fog lamps in the bumper
-        p.add(lathe([(0.046, 0.0), (0.046, 0.004), (0.034, 0.008)], 10, cap_top=True), flat("svc_lens_clear"), at=(x, BUS_NOSE + 0.047, 0.44), rot=(-90, 0, 0), sharp=40)
-    glass_at = lambda x, y: Vector((x, y + CAB_SHIFT + 0.016, 1.28 + (2.50 - y) * (0.86 / 0.45) + 0.012))      # a point just off the screen
-    for x0, x1 in ((-0.12, -0.66), (0.50, -0.04)):         # wipers, parked
-        rod(p, tuple(glass_at(x0, 2.485)), tuple(glass_at(x1, 2.40)), 0.009, "rubber_black", 4)
-        rod(p, tuple(glass_at(x0 + (x1 - x0) * 0.45, 2.445)), tuple(glass_at(x0 + (x1 - x0) * 0.45, 2.39) + Vector((0, 0.004, 0))), 0.006, "rubber_black", 4)
-    # The back: bumper, plate, the emergency door's outline and handle, high lamps, number.
-    p.add(box(1.84, 0.075, 0.20, bevel=0.03), Paint("plastic_grey"), at=(0, BUS_REAR - 0.0225, 0.47))
-    p.add(box(0.36, 0.008, 0.17), Paint("paper", grade=False).planar("svc_plate_bus", (0, -1, 0), (1, 0, 0), (0, 0, 0), (0.36, 0.17)), at=(0, BUS_REAR - 0.005, 0.72))
-    for x in (-0.47, 0.47):
-        p.add(box(0.012, 0.006, 1.52), flat("rubber_black"), at=(x, BUS_REAR - 0.002, 1.38))
-    p.add(box(0.952, 0.006, 0.012), flat("rubber_black"), at=(0, BUS_REAR - 0.002, 0.62))
-    p.add(box(0.05, 0.03, 0.16, bevel=0.01), flat("paint_red"), at=(0.36, BUS_REAR - 0.01, 1.08))
-    for x in (-0.20, 0.0, 0.20):
-        p.add(box(0.07, 0.012, 0.03, bevel=0.004), flat("lens_red"), at=(x, BUS_REAR - 0.003, 2.34))
-    sticker(p, "svc_bus_number", (-0.70, BUS_REAR, 2.30), (0, -1, 0), (1, 0, 0), (0.24, 0.12), lift=0.002)
-    # Under the floor: something where the axles are, so that one does not see through the arches.
-    for y in BUS_AXLES:
-        p.add(box(1.36, 0.60, 0.42), flat("rubber_black"), at=(0, y, 0.44))
-        rod(p, (-0.70, y, BUS_TYRE), (0.70, y, BUS_TYRE), 0.05, "steel_dark", 6, caps=False)
-    # The roof: marker lamps on the brow, a hatch, the air-conditioning pod with two fans, an aerial.
-    for x in (-0.50, -0.25, 0.0, 0.25, 0.50):
-        p.add(box(0.06, 0.03, 0.022, bevel=0.006), flat("lens_amber"), at=(x, 2.415 + CAB_SHIFT, 2.615), rot=(40, 0, 0))
-    p.add(box(0.66, 0.66, 0.03, bevel=0.012), flat("svc_coach_white"), at=(0, -0.30, BUS_ROOF + 0.022))
-    p.add(box(0.50, 0.50, 0.035, bevel=0.012), flat("plastic_grey"), at=(0, -0.30, BUS_ROOF + 0.036))
-    POD = BUS_REAR + 0.68                                  # the middle of the pod (TransitBus.BodyNumberBack is 0.36 m behind it)
-    pod_top = BUS_TOP - 0.004                              # the fans on it come to 2.75 and no higher: the code measures the roof by the bounds
-    pod = [[(x * a, POD + y * b, z) for x, y in rounded_rect(1.46, 1.34, 0.16, 2)] for a, b, z in ((1.0, 1.0, BUS_ROOF - 0.01), (1.0, 1.0, BUS_TOP - 0.035), (0.955, 0.95, pod_top))]
+        sticker(p, "svc_bus_title", (side * BUS_HALF, 1.32 if side > 0 else 0.0, 0.86), (side, 0, 0), fore, (1.70, 0.19), lift=0.002)
+        sticker(p, "svc_bus_number", (side * BUS_HALF, -4.40, 0.86), (side, 0, 0), fore, (0.26, 0.13), lift=0.002)
+    sticker(p, "svc_bus_number", (-0.30, BUS_NOSE, 0.89), (0, 1, 0), (-1, 0, 0), (0.20, 0.10), lift=0.002)
+    sticker(p, "svc_bus_number", (-0.62, BUS_TAIL, 2.62), (0, -1, 0), (1, 0, 0), (0.26, 0.13), lift=0.002)
+    sticker(p, "svc_bus_wheelchair", (BUS_HALF, 0.24, 0.86), (1, 0, 0), (0, 1, 0), (0.16, 0.16), lift=0.002)
+
+    # ---- the roof: two escape hatches, the air-conditioning pod at the back with its fans flush on top, an aerial.
+    for y in (1.10, -1.30):
+        p.add(box(0.76, 0.70, 0.035, bevel=0.012), flat("aluminium"), at=(0, y, BUS_ROOF + 0.01))
+    a, b, height = BUS_POD
+    mid, long = (a + b) / 2, b - a
+    pod_top = height - 0.004                               # the fans come to the top and no higher: BusVehicle.Height
+    pod = [[(x * k, mid + y * k2, z) for x, y in rounded_rect(1.64, long, 0.20, 2)] for k, k2, z in ((1.0, 1.0, BUS_ROOF - 0.01), (1.0, 1.0, pod_top - 0.035), (0.965, 0.985, pod_top))]
     vents = Paint("svc_coach_white", grade=False)
-    for normal, right, centre in (((1, 0, 0), (0, 1, 0), (0.73, POD, 2.685)), ((-1, 0, 0), (0, -1, 0), (-0.73, POD, 2.685)), ((0, -1, 0), (1, 0, 0), (0, POD - 0.67, 2.685))):
-        vents.planar("svc_vent", normal, right, centre, (0.96, 0.085), facing=0.9)
+    for normal, right, centre, wide in (((1, 0, 0), (0, 1, 0), (0.82, mid, 2.955), long * 0.80), ((-1, 0, 0), (0, -1, 0), (-0.82, mid, 2.955), long * 0.80),
+                                        ((0, -1, 0), (1, 0, 0), (0, a, 2.955), 1.20), ((0, 1, 0), (-1, 0, 0), (0, b, 2.955), 1.20)):
+        vents.planar("svc_vent", normal, right, centre, (wide, 0.11), facing=0.9)
     p.add(loft(pod, cap_end=True), vents, sharp=35)
-    for x in (-0.36, 0.36):                                # the fans: flush, so that the pod's top stays the highest thing
-        p.add(lathe([(0.235, -0.01), (0.235, 0.0015)], 12, cap_top=True), flat("plastic_grey"), at=(x, POD + 0.24, pod_top), sharp=30)
-        p.add(lathe([(0.065, 0.0), (0.065, 0.0025)], 8, cap_top=True), flat("aluminium"), at=(x, POD + 0.24, pod_top), sharp=30)
+    for y in (mid - 0.52, mid + 0.52):
+        p.add(lathe([(0.25, -0.01), (0.25, 0.0015)], 12, cap_top=True), flat("plastic_grey"), at=(0, y, pod_top), sharp=30)
+        p.add(lathe([(0.07, 0.0), (0.07, height - pod_top)], 8, cap_top=True), flat("aluminium"), at=(0, y, pod_top), sharp=30)
         for turn in range(3):
-            p.add(box(0.012, 0.40, 0.002), flat("gloss_black"), at=(x, POD + 0.24, pod_top + 0.0012), rot=(0, 0, 60 * turn))
-    rod(p, (0.55, 0.55, BUS_ROOF), (0.55, 0.50, BUS_TOP - 0.012), 0.006, "rubber_black", 4)
+            p.add(box(0.012, 0.44, 0.002), flat("gloss_black"), at=(0, y, pod_top + 0.0012), rot=(0, 0, 60 * turn))
+    rod(p, (-0.40, 3.60, BUS_ROOF), (-0.40, 3.54, BUS_ROOF + 0.16), 0.006, "rubber_black", 4)
     return p
+
+
+def bus_wheel(name, wide, dish, note):
+    """A wheel of the city bus standing on its own middle, its axle along X, its outer face (the hub, the nuts) to +X:
+    BusVehicle spins it about X and steers the front ones about Y. The tyre and the steel wheel are one lathe, painted
+    with the wheel's face; ten nuts stand on the hub so that it is seen to turn. `dish`: how far in the hub is."""
+    def make():
+        p = Prop(name, "lit", pivot="the middle of the wheel; its axle along X, the hub to +X", note=note)
+        r, w = BUS_TYRE, wide / 2
+        profile = [(0.29, -w + 0.007), (0.43, -w), (r, -w + 0.05)]
+        if wide > 0.4:                                     # a pair: the groove between the two tyres
+            profile += [(r, -0.03), (r * 0.88, 0.0), (r, 0.03)]
+        hub = w - dish
+        profile += [(r, w - 0.05), (0.43, w), (0.29, w - 0.007), (0.275, w - 0.03), (0.21, hub), (0.11, hub), (0.075, hub + 0.04)]
+        paint = Paint("rubber_black", grade=False).planar("svc_wheel", (0, 0, 1), (1, 0, 0), (0, 0, 0), (2 * r, 2 * r), facing=0.45)
+        p.add(lathe(profile, 16, cap_top=True, cap_bottom=True), paint, rot=(0, 90, 0), sharp=38)
+        for k in range(10):                                # on the nuts svc_wheel paints
+            t = 2 * math.pi * k / 10
+            nut = moved(lathe([(0.017, 0.0), (0.0, 0.016)], 3), at=(0.168 * math.cos(t), 0.168 * math.sin(t), hub - 0.002), rot=(0, 0, math.degrees(t)))
+            p.add(nut, flat("chrome"), rot=(0, 90, 0), sharp=30)
+        return p
+    return make
+
+
+def city_bus_door():
+    p = Prop("city_bus_door", "lit", pivot="the middle of its lower edge; it stands along Y, its outside to +X",
+             note="one leaf of the city bus's doors, 0.60 m wide and 2.30 m high: glass in a thin red frame with a rail across; BusVehicle puts two in each door, 0.03 off the side")
+    wide, high, thick = BUS_LEAF
+    s = Shell(low=0.0, high=high, length=wide)
+    s.rule("frame", "flat", "svc_bus_red").rule("rubber", "flat", "rubber_black").rule("glass", "own", "svc_glass")
+    x, stile, rails = thick / 2, 0.055, (0.0, 0.10, 0.98, 1.06, 2.22, high)
+
+    def at(u, v, out=x):
+        return (out, -wide / 2 + u, v)
+    # The stiles, each with the rails' ends along its inner edge (so that no edge ends in the middle of another).
+    s.face([at(0.0, 0.0), at(stile, 0.0)] + [at(stile, v) for v in rails[1:-1]] + [at(stile, high), at(0.0, high)], "frame", out=(1, 0, 0))
+    s.face([at(wide - stile, 0.0), at(wide, 0.0), at(wide, high), at(wide - stile, high)] + [at(wide - stile, v) for v in rails[-2:0:-1]], "frame", out=(1, 0, 0))
+    for v0, v1 in ((rails[0], rails[1]), (rails[2], rails[3]), (rails[4], rails[5])):
+        s.face([at(stile, v0), at(wide - stile, v0), at(wide - stile, v1), at(stile, v1)], "frame", out=(1, 0, 0))
+    for v0, v1 in ((rails[1], rails[2]), (rails[3], rails[4])):
+        s.pane([at(stile, v0), at(wide - stile, v0)], [at(stile, v1), at(wide - stile, v1)], "rubber", "glass", (1, 0, 0), margin=0.012, depth=0.012)
+    back = [at(0.0, 0.0, -x), at(wide, 0.0, -x), at(wide, high, -x), at(0.0, high, -x)]
+    s.face(back, "frame", out=(-1, 0, 0))
+    front = [at(0.0, 0.0), at(wide, 0.0), at(wide, high), at(0.0, high)]
+    for k in range(4):                                     # the edges: the rubber that seals them
+        s.face([front[k], front[(k + 1) % 4], back[(k + 1) % 4], back[k]], "rubber", inside=(0, 0, high / 2))
+    s.add_to(p, sharp=40)
+    return p
+
+
+def bus_light(group, paint, note):
+    """The lamps of one of BusVehicle's groups, lit: each the lens of its lamp unit in the body again, 1.5 mm in front of
+    it, in the glow material. The body is one mesh in the lit material, so nothing of it can light up by itself."""
+    def make():
+        p = Prop("city_bus_light_" + group, "glow", pivot="the city bus's own: the ground under its middle", note=note)
+        for unit in bus_lamps():
+            for part, outline in unit[7]:
+                if part == group:
+                    p.add(plate([tuple(lamp_point(unit, u, v, 0.0015)) for u, v in outline], unit[2]), flat(paint), sharp=10)
+        return p
+    return make
+
+
+def bus_parts(open_doors=False):
+    """Where BusVehicle puts the city bus's parts on it (kit space, turn about z): the wheels, the left ones turned round,
+    and the door leaves, shut or wholly open (out 0.07 m, along 0.56 m away from the door's middle)."""
+    parts = []
+    for side in (1, -1):
+        parts.append(("city_bus_wheel", (side * BUS_TRACK[0], BUS_AXLES[0], BUS_TYRE), 0.0 if side > 0 else 180.0))
+        parts.append(("city_bus_wheel_twin", (side * BUS_TRACK[1], BUS_AXLES[1], BUS_TYRE), 0.0 if side > 0 else 180.0))
+    for middle in BUS_DOORS:
+        for along in (1, -1):
+            parts.append(("city_bus_door", (BUS_HALF + 0.03 + (0.07 if open_doors else 0.0), middle + along * (BUS_LEAF[0] / 2 + (0.56 if open_doors else 0.0)), BUS_FLOOR), 0.0))
+    return parts
 
 
 # ---------------------------------------------------------------------------------------------- the fire engine
@@ -799,12 +928,24 @@ def fire_bar_lens():
 
 # ---------------------------------------------------------------------------------------------- the list
 
-PROPS = [(minibus, 5500), (fire_engine, 7000), (fire_light_bar, 350), (fire_bar_lens, 60)]
+PROPS = [
+    (city_bus, 6500),
+    (bus_wheel("city_bus_wheel", BUS_TREAD[0], 0.075, "front wheel of the city bus: tyre 0.48 in radius and 0.30 wide, a steel wheel with ten nuts"), 350),
+    (bus_wheel("city_bus_wheel_twin", BUS_TREAD[1], 0.13, "rear pair of the city bus as one wheel: 0.48 in radius, 0.56 wide over both tyres, the hub set deep"), 600),
+    (city_bus_door, 120),
+    (bus_light("head", "svc_lens_clear", "the city bus's headlamps lit, two round lamps in each unit"), 120),
+    (bus_light("tail", "lens_red", "the city bus's tail lamps lit, low in each back corner's unit"), 80),
+    (bus_light("brake", "lens_red", "the city bus's brake lamps lit: in each back corner's unit and the high one over the number"), 90),
+    (bus_light("left", "lens_amber", "the city bus's left indicators lit: front, back and the repeater on the side"), 80),
+    (bus_light("right", "lens_amber", "the city bus's right indicators lit: front, back and the repeater on the side"), 80),          # the lamps 450 in all
+    (fire_engine, 7000), (fire_light_bar, 350), (fire_bar_lens, 60),
+]
 
-# Each beside the vehicle it stands over (to the left, as measured on the game's prefab), a person at the door and one in front.
+# The fire engine beside the vehicle it stands over (to the left, as measured on the game's prefab), a person at the panel and
+# one in front; the bus as BusVehicle puts it together, doors shut, somebody at its front door and one in front of it.
 SIDES = {
-    "minibus": {"references": (((2.33, 6.66, 2.27), (-3.4, 0.0, 1.425)),), "people": (((1.35, 0.76), 90.0), ((0.3, 4.3), 180.0)),
-                "views": ((0, 8), (90, 8), (180, 8), (90, 52), (38, 20), (142, 28))},
-    "fire_engine": {"references": (((2.72, 7.43, 3.01), (-4.0, 0.0, 1.505)),), "people": (((1.72, 0.756), 90.0), ((0.4, 5.0), 180.0)),
+    "city_bus": {"parts": bus_parts(), "people": (((1.50, BUS_DOORS[0]), 90.0), ((0.3, 7.0), 180.0)),
+                 "views": ((0, 8), (90, 8), (180, 8), (270, 8), (38, 18), (142, 22))},
+    "fire_engine":{"references": (((2.72, 7.43, 3.01), (-4.0, 0.0, 1.505)),), "people": (((1.72, 0.756), 90.0), ((0.4, 5.0), 180.0)),
                     "views": ((0, 8), (90, 8), (180, 8), (90, 52), (38, 20), (142, 28))},
 }

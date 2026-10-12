@@ -14,6 +14,18 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import prop_kit as kit  # noqa: E402
 import props  # noqa: E402
+import props_service  # noqa: E402
+
+
+def city_bus(x, z, turn=0.0, open_doors=False):
+    """The city bus put together as Transport/BusVehicle does it (props_service.bus_parts: the body, its wheels and its
+    door leaves), its middle on the road at (x, z), facing `turn`."""
+    a = math.radians(turn)
+    things = [("city_bus", (x, 0.0, z), turn)]
+    for name, (px, py, pz), spin in props_service.bus_parts(open_doors):
+        things.append((name, (x + px * math.cos(a) + py * math.sin(a), pz, z - px * math.sin(a) + py * math.cos(a)), turn - spin))
+    return things
+
 
 # name: (things, walls, people, camera). A thing is (prop id, (x, y, z), turn about the vertical in degrees: 0 faces +Z,
 # 90 faces +X). A wall is ((sx, sy, sz), (cx, cy, cz)). A person is ((x, z), facing). Camera: (target, azimuth, elevation,
@@ -33,12 +45,12 @@ SCENES = {
         [((11.0, 3.2, 0.2), (0.5, 1.6, -1.86))],
         [((0.3, -0.9), 0), ((-1.2, 1.6), 180)],
         ((0.4, 1.2, 0), 14, 10, 11.5, 36)),
-    "bus_stop": (
-        [("bus_stop_sign", (0.4, 0, -2.6), 0), ("bus_shelter", (1.45, 0, 1.2), 0), ("minibus", (-2.3, 0, 0.4), 0), ("street_bin", (1.5, 0, -3.3), 0),
-         ("bollard", (0.3, 0, 4.2), 0)],
-        [((0.3, 4.0, 14.0), (3.4, 2.0, 0.5))],
-        [((0.5, -0.5), 270), ((1.5, 0.3), 270), ((0.3, -1.9), 250)],
-        ((0.0, 1.3, 0.6), 325, 18, 19.0, 36)),
+    "bus_stop": (       # the bus stands with its front door at the flag, its doors open, the kerb on its right
+        [("bus_stop_sign", (0.4, 0, -2.6), 0), ("bus_shelter", (1.45, 0, 1.2), 0), ("street_bin", (1.5, 0, -3.3), 0),
+         ("bollard", (0.3, 0, 4.2), 0)] + city_bus(-2.45, -6.85, open_doors=True),
+        [((0.3, 4.0, 22.0), (3.4, 2.0, -3.5))],
+        [((0.5, -0.5), 250), ((1.5, 0.3), 270), ((-0.95, -2.4), 270), ((0.6, -3.9), 300)],
+        ((0.0, 1.0, -3.0), 325, 16, 22.0, 38)),
     "fire": (
         [("fire_engine", (-2.6, 0, -7.0), 0), ("street_bin", (0.2, 0, 5.0), 0), ("hose_coil", (-0.8, 0, -3.6), 30), ("hose_nozzle", (0.17, 1.02, 0.46), 0),
          ("cone", (-4.6, 0, -1.0), 0), ("cone", (-4.6, 0, 2.0), 0), ("cone", (-4.6, 0, 5.0), 0), ("tape_post", (2.6, 0, -1.5), 0), ("tape_post", (2.6, 0, 2.5), 0),

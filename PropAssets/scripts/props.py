@@ -418,6 +418,7 @@ PROPS = [
 # (see atlas.py). PROPS_DEV=name[,name] limits them to those, as it does the atlas; a module not there is skipped.
 # A module may also say SIDES = {prop id: {"references": ((size, centre), ...), "people": (((x, y), turn), ...)}}: such a
 # prop gets a second sheet, previews/<id>_sides.png, from six sides with what it goes over or beside (kit.turnaround).
+# "parts": ((prop id, (x, y, z), turn), ...) puts other props on it where the code does (a vehicle's wheels).
 SIDES = {}
 EXTRA = ["civic", "service", "events", "everyday", "garage", "family", "site"]
 _only = os.environ.get("PROPS_DEV")

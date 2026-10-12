@@ -519,10 +519,11 @@ def figure(at=(0.0, 0.0), turn=0.0):
         obj.rotation_euler = (0, 0, a)
 
 
-def turnaround(prop, out, references=(), people=(), views=((0, 8), (90, 8), (180, 8), (270, 8), (38, 20), (218, 28)), tile=(560, 420)):
+def turnaround(prop, out, references=(), people=(), parts=(), views=((0, 8), (90, 8), (180, 8), (270, 8), (38, 20), (218, 28)), tile=(560, 420)):
     """Six views of a prop on one sheet (front, right, back, left, two three-quarters) with whatever it is made to go
-    over or beside: references is ((size, centre), ...) boxes in kit space, people ((x, y), turn) standing figures.
-    Azimuth 0 looks at the prop's front (+Y in the kit, +Z in Unity)."""
+    over or beside: references is ((size, centre), ...) boxes in kit space, people ((x, y), turn) standing figures,
+    parts ((Prop, at, turn), ...) the props the code puts on it (a vehicle's wheels). Azimuth 0 looks at the prop's
+    front (+Y in the kit, +Z in Unity)."""
     vertices = prop.arrays()[0]
     low, high = vertices.min(axis=0), vertices.max(axis=0)
     centre, radius = (low + high) / 2, max(float(((high - low) ** 2).sum()) ** 0.5 / 2, 0.3)
@@ -530,6 +531,8 @@ def turnaround(prop, out, references=(), people=(), views=((0, 8), (90, 8), (180
     for k, (azimuth, elevation) in enumerate(views):
         scene, camera = new_scene()
         place(prop)
+        for part, at, turn in parts:
+            place(part, at, turn)
         for size, where in references:
             reference_box(size, where)
         for where, turn in people:

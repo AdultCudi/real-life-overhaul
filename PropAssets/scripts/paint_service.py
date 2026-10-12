@@ -1,7 +1,7 @@
-"""What the service vehicles of props_service.py are painted with: the shuttle bus body (`minibus`), the fire engine
-body (`fire_engine`) and the light bar (`fire_light_bar`). One function, register(a), as atlas.py asks of a later
-round: coachwork finishes as swatches, and the faces that have to be crisp (glass with a reflection in it, wheels,
-lamps, grilles, the pump panel, roller shutters, lettering, chevrons) as decals.
+"""What the service vehicles of props_service.py are painted with: the city bus (`city_bus` and its parts), the fire
+engine body (`fire_engine`) and the light bar (`fire_light_bar`). One function, register(a), as atlas.py asks of a
+later round: coachwork finishes as swatches, and the faces that have to be crisp (glass with a reflection in it,
+wheels, lamps, grilles, the pump panel, roller shutters, lettering, chevrons) as decals.
 
 Lettering sizes: a decal is drawn for the size it has on the vehicle (given beside each painter), capital letters
 at least 44 px high where they are to be read from the pavement.
@@ -12,8 +12,8 @@ import numpy as np
 from PIL import Image
 
 COACH_WHITE = (0.90, 0.90, 0.87)
-COACH_BLUE = (0.05, 0.20, 0.52)
-COACH_SKY = (0.25, 0.62, 0.86)
+BUS_RED = (0.86, 0.10, 0.12)            # the city's buses: Transport/BusVehicle's Livery, which its plain shapes are painted
+BUS_GREY = (0.18, 0.18, 0.20)           # ...and their skirt (BusVehicle's Skirt)
 ENGINE_RED = (0.72, 0.045, 0.035)
 GOLD = (0.93, 0.74, 0.26)
 STEEL = (0.74, 0.75, 0.76)
@@ -24,10 +24,10 @@ def register(a):
 
     swatches = {
         "svc_coach_white": (COACH_WHITE, 0.15, 0.72, 0.55),
-        "svc_coach_blue": (COACH_BLUE, 0.25, 0.72, 0.60),
-        "svc_coach_sky": (COACH_SKY, 0.20, 0.72, 0.20),
+        "svc_bus_red": (BUS_RED, 0.25, 0.78, 0.50),
+        "svc_bus_grey": (BUS_GREY, 0.20, 0.55, 0.60),
         "svc_engine_red": (ENGINE_RED, 0.25, 0.78, 0.50),
-        "svc_tint": ((0.035, 0.045, 0.055), 0.0, 0.92, 0.0),
+        "svc_bus_inside": ((0.20, 0.21, 0.23), 0.0, 0.35, 0.0),        # the bus seen through an open door: walls and ceiling
         "svc_lens_clear": ((0.93, 0.95, 0.97), 0.0, 0.90, 0.0),
     }
 
@@ -54,8 +54,9 @@ def register(a):
             return layer.finish(grain=0.012, blotch=0.03)
         return paint
 
-    def wheel(rim, dish, holes, nuts, cap, tyre_edge=0.60):
-        """A road wheel seen square on, 128 px across the whole tyre: the rim's edge is at `tyre_edge` of the radius."""
+    def wheel(rim, dish, holes, nuts, cap, tyre_edge=0.60, hole_at=0.40, nut_at=0.20, hub=0.27):
+        """A road wheel seen square on, 128 px across the whole tyre: the rim's edge is at `tyre_edge` of the radius,
+        the holes, the nuts and the hub at `hole_at`, `nut_at` and `hub` of it."""
         def paint():
             layer = Layer(128, 128, (0.05, 0.05, 0.055), 0.0, 0.22)
             c, r = 64.0, 64.0
@@ -71,14 +72,14 @@ def register(a):
             layer.disc(c, c, r * (tyre_edge - 0.07), dish, metal=1.0, smooth=0.62)
             for k in range(holes):
                 t = 2 * math.pi * (k + 0.5) / holes
-                layer.disc(c + math.cos(t) * r * 0.40, c + math.sin(t) * r * 0.40, r * 0.062, (0.015, 0.015, 0.018), metal=0.0, smooth=0.2)
-                layer.disc(c + math.cos(t) * r * 0.40 - 0.8, c + math.sin(t) * r * 0.40 - 0.8, r * 0.045, (0.035, 0.035, 0.04), metal=0.0, smooth=0.2)
-            layer.disc(c, c, r * 0.27, tuple(v * 0.62 for v in dish), metal=1.0, smooth=0.5)
-            layer.disc(c, c, r * 0.25, dish, metal=1.0, smooth=0.6)
+                layer.disc(c + math.cos(t) * r * hole_at, c + math.sin(t) * r * hole_at, r * 0.062, (0.015, 0.015, 0.018), metal=0.0, smooth=0.2)
+                layer.disc(c + math.cos(t) * r * hole_at - 0.8, c + math.sin(t) * r * hole_at - 0.8, r * 0.045, (0.035, 0.035, 0.04), metal=0.0, smooth=0.2)
+            layer.disc(c, c, r * hub, tuple(v * 0.62 for v in dish), metal=1.0, smooth=0.5)
+            layer.disc(c, c, r * (hub - 0.02), dish, metal=1.0, smooth=0.6)
             for k in range(nuts):
                 t = 2 * math.pi * k / nuts
-                layer.disc(c + math.cos(t) * r * 0.20, c + math.sin(t) * r * 0.20, 2.4, (0.20, 0.20, 0.21), metal=1.0, smooth=0.5)
-                layer.disc(c + math.cos(t) * r * 0.20 - 0.4, c + math.sin(t) * r * 0.20 - 0.4, 1.6, (0.80, 0.80, 0.82), metal=1.0, smooth=0.8)
+                layer.disc(c + math.cos(t) * r * nut_at, c + math.sin(t) * r * nut_at, 2.4, (0.20, 0.20, 0.21), metal=1.0, smooth=0.5)
+                layer.disc(c + math.cos(t) * r * nut_at - 0.4, c + math.sin(t) * r * nut_at - 0.4, 1.6, (0.80, 0.80, 0.82), metal=1.0, smooth=0.8)
             layer.disc(c, c, r * 0.135, tuple(v * 0.6 for v in cap), metal=1.0, smooth=0.6)
             layer.disc(c, c, r * 0.12, cap, metal=1.0, smooth=0.85)
             layer.disc(c - 1.5, c - 1.5, r * 0.05, tuple(min(1.0, v * 1.15) for v in cap), metal=1.0, smooth=0.9)
@@ -96,18 +97,15 @@ def register(a):
             return layer.finish(grain=0.008, blotch=0.0)
         return paint
 
-    def paint_bus_grille():           # 0.80 x 0.22 m, on the nose
-        layer = Layer(256, 72, COACH_WHITE, 0.15, 0.72)
-        layer.rect(4, 4, 252, 68, (0.60, 0.61, 0.63), metal=1.0, smooth=0.8, radius=14)
-        layer.rect(8, 8, 248, 64, (0.02, 0.02, 0.025), metal=0.0, smooth=0.3, radius=11)
-        for y in (18, 30, 42, 54):
-            layer.rect(12, y - 3, 244, y + 2, (0.13, 0.13, 0.14), smooth=0.45, radius=2)
-            layer.line([(14, y - 3), (242, y - 3)], (0.30, 0.30, 0.32), width=1)
-        layer.disc(128, 36, 19, (0.02, 0.02, 0.025))
-        layer.disc(128, 36, 16, (0.78, 0.79, 0.81), metal=1.0, smooth=0.85)
-        layer.disc(128, 36, 12.5, COACH_BLUE, metal=0.2, smooth=0.8)
-        layer.poly([(128, 26), (137, 42), (119, 42)], (0.90, 0.91, 0.92), metal=1.0, smooth=0.85)
-        return layer.finish(grime=0.2, grain=0.03, blotch=0.04)
+    def paint_bus_grille():           # the engine's louvres: across the back (1.44 x 0.80 m) and up the left back corner (1.2 x 1.5)
+        layer = Layer(128, 160, (0.035, 0.035, 0.04), 0.0, 0.3)
+        for y in np.arange(2.0, 158.0, 5.0):
+            layer.rect(2, y, 126, y + 2.6, (0.19, 0.19, 0.20), smooth=0.45)
+            layer.line([(2, y + 0.4), (126, y + 0.4)], (0.30, 0.30, 0.32), width=1)
+            layer.line([(2, y + 3.4), (126, y + 3.4)], (0.008, 0.008, 0.01), width=1)
+        for x in (43, 85):                                 # the frame's two bars
+            layer.rect(x - 1.5, 0, x + 1.5, 160, (0.08, 0.08, 0.085), smooth=0.4)
+        return layer.finish(grime=0.25, grain=0.03, blotch=0.05)
 
     def paint_headlamp():             # 0.30 x 0.17 m; the indicator is at the left of the decal
         layer = Layer(112, 64, (0.03, 0.03, 0.035), 0.0, 0.5)
@@ -343,14 +341,56 @@ def register(a):
             layer.line([(4, y + 3.2), (124, y + 3.2)], (0.015, 0.015, 0.02), width=1)
         return layer.finish(grain=0.03, blotch=0.04)
 
+    def lens(layer, x0, y0, x1, y1, tint):
+        """One lamp behind its lens: a darker edge, ribs across it, a brighter spot where the bulb is."""
+        layer.rect(x0, y0, x1, y1, tuple(v * 0.45 for v in tint), smooth=0.9, radius=3)
+        layer.rect(x0 + 1.5, y0 + 1.5, x1 - 1.5, y1 - 1.5, tint, smooth=0.94, radius=2.5)
+        for y in np.arange(y0 + 4.0, y1 - 2.0, 3.0):
+            layer.line([(x0 + 3, y), (x1 - 3, y)], tuple(v * 0.80 for v in tint), width=1)
+        layer.disc((x0 + x1) / 2, (y0 + y1) / 2, min(x1 - x0, y1 - y0) * 0.22, tuple(min(1.0, v * 1.25 + 0.08) for v in tint), smooth=0.95)
+
+    def paint_bus_tail_lamp():        # 0.16 x 0.64 m, upright, at each back corner of the city bus
+        # Indicator, brake lamp, tail lamp and reversing lamp, top to bottom: props_service.py lights the first three
+        # (BUS_TAIL_LENSES there are these rows, as fractions of the height from the bottom).
+        layer = Layer(40, 160, (0.03, 0.03, 0.035), 0.0, 0.5)
+        for (y0, y1), tint in (((5, 37), (0.98, 0.50, 0.04)), ((41, 81), (0.80, 0.03, 0.03)), ((85, 125), (0.66, 0.03, 0.03)), ((129, 155), (0.90, 0.91, 0.92))):
+            lens(layer, 5, y0, 35, y1, tint)
+        return layer.finish(grain=0.015, blotch=0.03)
+
+    def paint_bus_brake_high():       # 0.40 x 0.05 m, the brake lamp high on the back: a row of LEDs behind red
+        layer = Layer(96, 12, (0.03, 0.03, 0.035), 0.0, 0.5)
+        layer.rect(2, 2, 94, 10, (0.36, 0.02, 0.02), smooth=0.92, radius=2)
+        for k in range(14):
+            layer.disc(8 + k * 6.15, 6, 1.7, (0.75, 0.05, 0.04), smooth=0.95)
+        return layer.finish(grain=0.015, blotch=0.02)
+
+    def paint_bus_repeater():         # 0.12 x 0.05 m, on each side behind the front wheel
+        layer = Layer(32, 14, (0.03, 0.03, 0.035), 0.0, 0.5)
+        layer.rect(2, 2, 30, 12, (0.55, 0.28, 0.02), smooth=0.9, radius=4)
+        layer.rect(3.5, 3.5, 28.5, 10.5, (0.98, 0.52, 0.05), smooth=0.94, radius=3)
+        layer.disc(16, 7, 2.2, (1.0, 0.75, 0.30), smooth=0.95)
+        return layer.finish(grain=0.015, blotch=0.02)
+
+    def paint_bus_wheelchair():       # 0.16 m square beside the middle door: where the ramp and the space for a wheelchair are
+        blue, white = (0.06, 0.26, 0.62), (0.95, 0.95, 0.93)
+        layer = Layer(48, 48, BUS_RED, 0.25, 0.78)
+        layer.rect(1, 1, 47, 47, white, metal=0.0, smooth=0.6, radius=6)
+        layer.rect(3, 3, 45, 45, blue, metal=0.0, smooth=0.6, radius=5)
+        layer.disc(22, 10, 3.6, white)                                     # head
+        layer.line([(21, 15), (20, 27), (31, 27), (35, 37)], white, width=4.2)        # back, seat, leg
+        layer.line([(20, 20), (29, 20)], white, width=3.4)                 # arm
+        for k in range(10):                                                # the wheel
+            t0, t1 = math.radians(k * 33 - 40), math.radians((k + 1) * 33 - 40)
+            layer.line([(19 + 10 * math.cos(t0), 31 + 10 * math.sin(t0)), (19 + 10 * math.cos(t1), 31 + 10 * math.sin(t1))], white, width=3.0)
+        return layer.finish(grain=0.01, blotch=0.0)
+
     decals = {
         "svc_glass": glass(96, 160),
         "svc_screen": glass(224, 112, deep=(0.030, 0.040, 0.052), sky=(0.27, 0.36, 0.46), band=0.10),
-        "svc_wheel": wheel((0.86, 0.87, 0.88), (0.80, 0.81, 0.82), 8, 6, (0.30, 0.31, 0.33)),
+        "svc_wheel": wheel((0.78, 0.79, 0.80), (0.66, 0.67, 0.69), 10, 10, (0.36, 0.37, 0.39), hole_at=0.45, nut_at=0.35, hub=0.25),        # the city bus's steel wheels
         "svc_wheel_alu": wheel((0.90, 0.91, 0.92), (0.72, 0.73, 0.75), 10, 10, (0.90, 0.91, 0.92), tyre_edge=0.62),
-        "svc_bus_title": lettering("CITY TRANSIT", 640, 72, COACH_WHITE, COACH_BLUE, weight=0.07, spacing=0.07),
-        "svc_bus_shuttle": lettering("SHUTTLE", 256, 56, COACH_WHITE, COACH_SKY, weight=0.07, spacing=0.10, rule=COACH_BLUE),
-        "svc_bus_number": lettering("2417", 112, 56, COACH_WHITE, (0.06, 0.07, 0.09), weight=0.06, spacing=0.05),
+        "svc_bus_title": lettering("CITY TRANSIT", 640, 72, BUS_RED, (0.96, 0.96, 0.94), weight=0.07, spacing=0.07, finish=(0.25, 0.78)),
+        "svc_bus_number": lettering("2417", 112, 56, BUS_RED, (0.96, 0.96, 0.94), weight=0.06, spacing=0.05, finish=(0.25, 0.78)),
         "svc_bus_grille": paint_bus_grille,
         "svc_headlamp": paint_headlamp,
         "svc_tail_lamp": paint_tail_lamp,
@@ -365,5 +405,9 @@ def register(a):
         "svc_tread": paint_tread,
         "svc_light_bar": paint_light_bar,
         "svc_vent": paint_vent,
+        "svc_bus_tail_lamp": paint_bus_tail_lamp,
+        "svc_bus_brake_high": paint_bus_brake_high,
+        "svc_bus_repeater": paint_bus_repeater,
+        "svc_bus_wheelchair": paint_bus_wheelchair,
     }
     return swatches, decals

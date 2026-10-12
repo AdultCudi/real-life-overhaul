@@ -3049,8 +3049,7 @@ Props (`PropAssets`, metres, standing on their origin):
 |---|---|---|---|
 | `bus_stop_sign` | 0.60 x 2.85 x 0.07 | ground centre of the pole; the flag hangs to +X (away from the road), its faces to +Z and -Z | pole 0.07, flag 0.50 x 0.62 with its middle 2.42 up, a timetable case at 1.45; the route number is lettered by code at (0.30, 2.53) on both faces in a box 0.44 x 0.34 (the model's plain blue field is from 2.33 m up): leave the upper half of the flag plain |
 | `bus_shelter` | 1.70 x 2.50 x 3.76 | ground centre of the floor (1.4 deep, 3.6 long); length along Z, open to -X, back at +X | bench seat 0.46 up along the back from z -1.3 to +0.6, end panel (route map, advert) at +Z; glass may be opaque |
-| `minibus` | 2.10 x 2.75 x 6.66 | ground centre under the middle of the body, nose to +Z | **delivered, and rebuilt to the van it hides**: a shuttle bus body the length of the Mersaidi Dash (measured: 2.33 x 2.60 x 6.66, axles at z +2.40 and -1.62 from its middle) with its own wheels on those axles; door on the +X (kerb) side 0.76 m ahead of the middle; the route board is added by code on the flat of the roof 2.22 m ahead of the middle, the line number on the pod 2.95 m behind it (`PropAssets\README.md`, "Service vehicles") |
-| `city_bus` | 2.55 x 3.10 x 12.0 | as `minibus` | not used: needs a chassis the game does not have |
+| `city_bus` and its parts | 2.40 x 3.05 x 10.90 | ground centre under the middle of the bus, nose to +Z | **delivered**: the mod's own bus (`Transport/BusVehicle`), its body with the wheels, the door leaves and the lit lamps as props of their own that the code puts together (`PropAssets\README.md`, "Service vehicles"); the shuttle body `minibus` it replaced is gone |
 | `turnstile` | 0.30 x 1.00 x 1.20 | ground centre, reader on top at 0.975 | for a subway entrance, if entrances are ever dressed |
 | `fuel_pump`, `jerry_can` | 0.5 x 1.6 x 0.4; 0.35 x 0.45 x 0.18 | ground centre; can: handle on top | the mechanic's can for fuel brought to the roadside |
 | `warning_triangle` | 0.45 x 0.42 x 0.05 | ground centre, faces +Z, glow | stood behind a broken-down car |
@@ -3060,7 +3059,7 @@ Clips (`CityAssets`, Humanoid, in place, starting and ending in the standing idl
 
 | id | length | loop | what |
 |---|---|---|---|
-| `board_step` | 1.4 s | once | a step up through a bus door 0.35 m ahead, hand to a rail at shoulder height; for a `minibus` with a step |
+| `board_step` | 1.4 s | once | a step up through a bus door 0.35 m ahead, hand to a rail at shoulder height; for the modelled `city_bus` (`BusVehicle.Modelled`) |
 | `strap_hang` | 6 s | loop | standing, one hand up on a strap, swaying: only if a ride is ever shown |
 | `sit_bench` / `sit_bench_up` | 1.6 s each | once | onto and off a seat 0.46 m up, 0.30 m behind the feet; with a seated loop `sit_wait` (8 s) for the shelter's bench |
 | `refuel_hold` | 5 s | loop | bent at the waist holding a jerry can to a filler 0.9 m up, 0.4 m ahead |
