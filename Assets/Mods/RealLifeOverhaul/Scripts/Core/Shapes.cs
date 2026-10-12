@@ -15,6 +15,15 @@ namespace RealLifeOverhaul
     public static class Shapes
     {
         private const string LitShader = "HDRP/Lit";
+
+        /// <summary>
+        /// The render queue HDRP's own material editor gives an opaque lit material that takes decals (HDRenderQueue
+        /// .Priority.OpaqueDecal; the game's own such materials are all in it). A material made in code keeps its
+        /// shader's 2000, and in the game's deferred rendering only queues from 2225 on are in the depth prepass that
+        /// decals are worked out from: a prop of the mod's then wore the road's markings of whatever lay behind it, as
+        /// if it were glass (the bus over a bus stop's painted words).
+        /// </summary>
+        public const int TakesDecalsQueue = 2225;
         private const int PostSides = 10;
 
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
@@ -83,7 +92,7 @@ namespace RealLifeOverhaul
             int key = packed.r | packed.g << 8 | packed.b << 16 | Mathf.Clamp(Mathf.RoundToInt(glow * 4f), 0, 127) << 24;
             if (!Paints.TryGetValue(key, out Material paint) || paint == null)
             {
-                paint = new Material(_shader) { name = "RealLifeOverhaul Paint" };
+                paint = new Material(_shader) { name = "RealLifeOverhaul Paint", renderQueue = TakesDecalsQueue };
                 paint.SetColor(BaseColorId, new Color(colour.r, colour.g, colour.b, 1f));
                 paint.SetFloat(SmoothnessId, 0.25f);
                 if (glow > 0f)
