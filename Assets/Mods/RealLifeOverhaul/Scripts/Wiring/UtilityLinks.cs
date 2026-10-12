@@ -14,6 +14,7 @@ namespace RealLifeOverhaul
         ///   Household    who lives at the player's home besides them (Family: a partner who moved in, children at
         ///                home; the roommate at the home they share): the home's power and water
         ///   CloseFor     a business closed for want of power or water (Business, the game's own switch)
+        ///   Record       why, in the Business desk's messages (BusinessDesk.Text), to read back after the notification
         ///   Taken        the courthouse's building (Justice), which the office is not to be
         ///   Life         the electricity company's events need a power account of the player's (LifeAccounts.Power)
         ///   Home         a home without water has dry taps, one without power dark screens and no cooker (HomeTidy)
@@ -29,6 +30,7 @@ namespace RealLifeOverhaul
                 UtilitiesBridges.Grade = () => (int)Economy.CreditLedger.Grade;
                 UtilitiesBridges.Household = Household;
                 UtilitiesBridges.CloseFor = (reg, hours) => BusinessDirector.Instance != null && BusinessDirector.Instance.CloseFor(reg, hours);
+                UtilitiesBridges.Record = (key, data) => BusinessDesk.Text(key, data, notify: false);
                 UtilitiesBridges.Taken = building =>
                 {
                     JusticeDirector justice = JusticeDirector.Instance;
