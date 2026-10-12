@@ -626,7 +626,7 @@ namespace RealLifeOverhaul
         /// <summary>Days until a car's registration runs out; negative once it has.</summary>
         public static int RegistrationLeft(CarRecord record)
         {
-            int year = SaveGameManager.Current != null && SaveGameManager.Current.gameVariables != null ? Mathf.Max(28, SaveGameManager.Current.gameVariables.daysPerYear) : 112;
+            int year = GameCalendar.DaysPerYear;   // (a registration runs a year)
             return record.RegisteredDay + year - TimeHelper.CurrentDay;
         }
 

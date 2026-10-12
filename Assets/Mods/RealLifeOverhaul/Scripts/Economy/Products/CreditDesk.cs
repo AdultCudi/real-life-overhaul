@@ -147,7 +147,7 @@ namespace RealLifeOverhaul.Economy
         public void Start(CreditFile file, int today)
         {
             _file = file;
-            AccountRules.DaysPerYear = Save != null && Save.gameVariables != null ? Mathf.Max(1, Save.gameVariables.daysPerYear) : 60;
+            AccountRules.DaysPerYear = GameCalendar.DaysPerYear;
             BankTerms.Secured = SecuredAt;
             for (int i = 0; i < file.Accounts.Count; i++)
             {

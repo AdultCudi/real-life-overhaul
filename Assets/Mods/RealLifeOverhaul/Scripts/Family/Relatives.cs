@@ -81,7 +81,7 @@ namespace RealLifeOverhaul.Family
             {
                 return;
             }
-            int year = Mathf.Max(8, SaveGameManager.Current.gameVariables.daysPerYear);
+            int year = GameCalendar.DaysPerYear;
             int count = (day - 1) / year;
             int dayOfYear = (day - 1) % year;
             for (int i = 0; i < 4; i++)

@@ -246,7 +246,7 @@ namespace RealLifeOverhaul.Roommates
         private static void Dress(CityPerson person, SocialPerson who)
         {
             AppearanceSetter appearance = person.Character.appearanceSetter;
-            int year = SaveGameManager.Current != null ? Mathf.Max(1, SaveGameManager.Current.gameVariables.daysPerYear) : 60;
+            int year = GameCalendar.DaysPerYear;
             int seed = who.Seed != 0 ? who.Seed : 1;
             // The game colours a beard to match the hair by a roll of the engine's own dice: the same roll every time for the same seed.
             Random.State dice = Random.state;

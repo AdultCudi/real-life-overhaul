@@ -397,7 +397,7 @@ namespace RealLifeOverhaul.Family
             {
                 S.MonthStart = day;
             }
-            if (day - S.MonthStart >= FamilyBalance.MonthDays)
+            if (day - S.MonthStart >= GameCalendar.MonthDays)
             {
                 S.MonthStart = day;
                 S.MIn = S.MChildcare = S.MSchool = S.MPocket = S.MFund = S.MOther = 0;

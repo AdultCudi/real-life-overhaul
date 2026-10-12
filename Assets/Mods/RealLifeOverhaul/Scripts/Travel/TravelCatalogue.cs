@@ -363,10 +363,10 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        /// <summary>The game counts days and weekdays only; travel gives the year four seasons of four weeks, beginning in spring.</summary>
+        /// <summary>The season of a day, the weather's own (GameCalendar): quarters of the year the player chose, counted from spring.</summary>
         public static TravelSeason Season(int day)
         {
-            return (TravelSeason)(Math.Max(day - 1, 0) / 28 % 4);
+            return (TravelSeason)GameCalendar.SeasonFromSpring(day);
         }
 
         /// <param name="weekday">The game's ordered day of the week: 1 Monday to 7 Sunday.</param>

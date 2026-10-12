@@ -506,7 +506,7 @@ namespace RealLifeOverhaul.Planner
             box.Line(Pair("reallife_planner_glance_week", week.ToString()));
             box.Headline("reallife_planner_calendar");
             box.Line(Pair("reallife_planner_calendar_week", PlannerText.T("reallife_planner_calendar_week_value", "day", (PlannerTime.Weekday(today) + 1).ToString())));
-            int perYear = SaveGameManager.Current != null && SaveGameManager.Current.gameVariables != null ? SaveGameManager.Current.gameVariables.daysPerYear : 0;
+            int perYear = SaveGameManager.Current != null ? GameCalendar.DaysPerYear : 0;
             if (perYear > 0)
             {
                 int year = PlannerTime.Year(today, perYear);

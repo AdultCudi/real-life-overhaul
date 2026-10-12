@@ -165,7 +165,7 @@ namespace RealLifeOverhaul.Economy.Brands
         {
             get
             {
-                int days = Save != null && Save.gameVariables != null ? Save.gameVariables.daysPerYear : 60;
+                int days = GameCalendar.DaysPerYear;
                 return days >= 8 ? days : 60;
             }
         }

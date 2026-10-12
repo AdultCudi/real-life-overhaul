@@ -212,7 +212,7 @@ namespace RealLifeOverhaul.Economy
         private static int DaysPerYear()
         {
             GameInstance save = Save;
-            int days = save != null && save.gameVariables != null ? save.gameVariables.daysPerYear : 60;
+            int days = GameCalendar.DaysPerYear;
             return days >= 8 ? days : 60;
         }
 

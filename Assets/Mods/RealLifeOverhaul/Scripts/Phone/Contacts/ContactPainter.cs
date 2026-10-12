@@ -267,7 +267,7 @@ namespace RealLifeOverhaul
             _drawingSince = Time.realtimeSinceStartup;
             SessionWatch.Mark("contacts: a face drawn by the game's portrait camera");   // once per look, ever: a render and a read-back
             Action<Sprite> back = sprite => UiClone.Safe(() => Drawn(p, sprite, file));
-            int days = p.Look.Age * Mathf.Max(1, SaveGameManager.Current != null && SaveGameManager.Current.gameVariables != null ? SaveGameManager.Current.gameVariables.daysPerYear : 60);
+            int days = p.Look.Age * GameCalendar.DaysPerYear;
             BigAmbitions.Characters.Gender gender = p.Look.Female ? BigAmbitions.Characters.Gender.Female : BigAmbitions.Characters.Gender.Male;
             AppearanceSetter setter = generator != null ? Setter(generator) : null;
             if (setter == null)

@@ -29,28 +29,14 @@ namespace RealLifeOverhaul.Events
         /// <summary>This save's own number, from modData; 0 until it has been read.</summary>
         internal static int Salt;
 
-        public static int DaysPerYear
-        {
-            get
-            {
-                var save = SaveGameManager.Current;
-                int days = save != null && save.gameVariables != null ? save.gameVariables.daysPerYear : 60;
-                return days >= 8 ? days : 60;
-            }
-        }
+        /// <summary>The year in days (the one calendar: GameCalendar).</summary>
+        public static int DaysPerYear => GameCalendar.DaysPerYear;
 
         /// <summary>The day of the year, 1 to DaysPerYear.</summary>
-        public static int DayOfYear(int day)
-        {
-            int year = DaysPerYear;
-            return ((Mathf.Max(1, day) - 1) % year) + 1;
-        }
+        public static int DayOfYear(int day) => GameCalendar.DayOfYear(day);
 
         /// <summary>How far through the year a day is, 0 to just under 1.</summary>
-        public static float YearPart(int day)
-        {
-            return (DayOfYear(day) - 1) / (float)DaysPerYear;
-        }
+        public static float YearPart(int day) => GameCalendar.YearPart(day);
 
         public static bool IsNewYearsEve(int day)
         {

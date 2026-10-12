@@ -66,12 +66,8 @@ namespace RealLifeOverhaul.Events
         private static FieldInfo _intensityField;
         private static bool _intensitySearched;
 
-        /// <summary>The season a day falls in: the year starts in midwinter, as the calendar's does.</summary>
-        public static Season SeasonOf(int day)
-        {
-            float part = EventCalendar.YearPart(day);
-            return part < 0.17f || part >= 0.92f ? Season.Winter : part < 0.42f ? Season.Spring : part < 0.67f ? Season.Summer : Season.Autumn;
-        }
+        /// <summary>The season a day falls in: the year starts in midwinter, as the calendar's does (GameCalendar, CalendarRules.Season).</summary>
+        public static Season SeasonOf(int day) => GameCalendar.SeasonOf(day);
 
         /// <summary>
         /// The spell rolled for a day: the same answer every time it is asked, so nothing is saved

@@ -45,9 +45,11 @@ namespace RealLifeOverhaul
         public const float RegistrationBase = 60f, RegistrationShare = 0.002f, RegistrationMost = 300f;
         public const float RegistrationLate = 75f;
         public const int RegistrationEarly = 30;      // days before it runs out that it can be renewed
-        public const float PremiumShare = 0.006f, PremiumLeast = 40f, PremiumMost = 2500f;
+        public const float PremiumShare = 0.006f, PremiumLeast = 40f, PremiumMost = 2500f;   // for four weeks of cover: a policy's is in proportion
         public const float PremiumPerClaim = 0.25f;   // each claim that still counts adds a quarter
-        public const int PolicyDays = 28;
+        /// <summary>A policy runs a month of the calendar the player chose (GameCalendar.MonthDays).</summary>
+        public static int PolicyDays => GameCalendar.MonthDays;
+        private const float PremiumDays = 28f;        // the days the premium's figures are written for
         public const int ClaimForgottenAfter = 56;    // days without a claim after which one stops counting
         public const float Excess = 100f;             // of a repair bill the owner always pays
         public const float Cover = 0.8f;              // of the rest that the insurer pays
@@ -75,7 +77,7 @@ namespace RealLifeOverhaul
 
         public static float Premium(float price, int claims)
         {
-            return Mathf.Round(Mathf.Clamp(price * PremiumShare, PremiumLeast, PremiumMost) * (1f + PremiumPerClaim * Mathf.Clamp(claims, 0, 6)) / 5f) * 5f;
+            return Mathf.Round(Mathf.Clamp(price * PremiumShare, PremiumLeast, PremiumMost) * PolicyDays / PremiumDays * (1f + PremiumPerClaim * Mathf.Clamp(claims, 0, 6)) / 5f) * 5f;
         }
 
         /// <summary>What the insurer pays towards a repair bill.</summary>
