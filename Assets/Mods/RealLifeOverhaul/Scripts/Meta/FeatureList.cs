@@ -636,6 +636,12 @@ namespace RealLifeOverhaul.Meta
                 .Fact("util_reconnect_fee", () => Guide.Money(Utilities.UtilitiesCatalogue.ReconnectFee))
                 .Fact("util_deposit_back", () => Utilities.UtilitiesCatalogue.DepositBackBills.ToString(CultureInfo.InvariantCulture))
                 .Fact("util_office", () => Utilities.UtilitiesDirector.Instance != null ? Utilities.UtilitiesDirector.Instance.OfficeName() : Utilities.UtilitiesText.T("reallife_util_office_unknown"))
+                .Fact("net_providers", Utilities.UtilitiesText.Providers)
+                .Fact("net_install_days", () => Utilities.InternetCatalogue.InstallDays.ToString(CultureInfo.InvariantCulture))
+                .Fact("net_contract_months", () => Utilities.InternetCatalogue.ContractMonths.ToString(CultureInfo.InvariantCulture))
+                .Fact("net_monthly", () => ((Utilities.InternetCatalogue.MonthlyShare - 1000) / 10).ToString(CultureInfo.InvariantCulture) + "%")
+                .Fact("net_business", () => ((Utilities.InternetCatalogue.BusinessShare - 1000) / 10).ToString(CultureInfo.InvariantCulture) + "%")
+                .Fact("net_install_fee", () => Guide.Money(Utilities.InternetCatalogue.InstallFee))
                 .Objects("RealLifeOverhaul Utilities Sign");
 
             Features.Add("family", "reallife_meta_title_family")

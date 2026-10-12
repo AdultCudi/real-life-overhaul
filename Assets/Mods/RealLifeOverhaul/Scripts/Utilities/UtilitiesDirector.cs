@@ -131,6 +131,11 @@ namespace RealLifeOverhaul.Utilities
                         sum += UtilitiesRules.DayCents(service, use, level, a.State != SupplyState.Active) / 100f;
                     }
                 }
+                Account net = d._state.Find(key, Service.Internet);
+                if (net != null && net.State == SupplyState.Active)
+                {
+                    sum += InternetRules.DayCents(net, GameCalendar.MonthDays) / 100f;
+                }
                 return sum;
             }
             return 0f;
@@ -223,6 +228,10 @@ namespace RealLifeOverhaul.Utilities
             {
                 // The feature has just appeared in this save: today's use is the first added up, from a month that starts today.
                 _state = new UtilitiesState { LastDay = today - 1, MonthStart = today };
+            }
+            if (_state.Seed == 0)
+            {
+                _state.Seed = UnityEngine.Random.Range(1, int.MaxValue);   // the internet's outages and prices are drawn from it, the same on every reload
             }
             _loaded = true;
             _hour = save.Hour;
@@ -433,8 +442,17 @@ namespace RealLifeOverhaul.Utilities
                         }
                     }
                 }
+                for (int i = 0; i < _state.Accounts.Count; i++)
+                {
+                    Account a = _state.Accounts[i];
+                    if (a.Service == Service.Internet)
+                    {
+                        InternetRules.AddDay(a, monthDays, a.OutageUntil > a.OutageFrom && a.OutageFrom / 24 == d);   // (a day the provider failed is not charged)
+                    }
+                }
                 if (d + 1 - _state.MonthStart >= monthDays)
                 {
+                    NewMonth(d + 1, level);
                     for (int i = 0; i < _state.Accounts.Count; i++)
                     {
                         int bill = UtilitiesRules.Bill(_state.Accounts[i], d + 1, monthDays);
@@ -455,6 +473,8 @@ namespace RealLifeOverhaul.Utilities
             }
             Turns(today);
             Dues(today);
+            Outages(today);
+            Unconnected();
             Effects();
             _view?.Changed();
             if (Meta.Dev.Verbose)
@@ -462,6 +482,83 @@ namespace RealLifeOverhaul.Utilities
                 Logger?.Info("Utilities check (day " + today + "): " + _state.Accounts.Count + " account(s), " + bills + " bill(s) of " + billed + "; the month began on day "
                              + _state.MonthStart + "; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms: PASS.");
             }
+        }
+
+        // The providers' month: each price moves (InternetRules.NextPromo), and a plan out of contract is priced again.
+        private void NewMonth(int day, int level)
+        {
+            for (int p = 0; p < InternetRules.Count && p < _state.Promo.Length; p++)
+            {
+                _state.Promo[p] = InternetRules.NextPromo(_state.Seed, _state.Month, p, _state.Promo[p]);
+            }
+            _state.Month++;
+            for (int i = 0; i < _state.Accounts.Count; i++)
+            {
+                Account a = _state.Accounts[i];
+                if (a.Service == Service.Internet && a.State != SupplyState.Closed && a.ContractUntil <= day && a.Provider >= 0)
+                {
+                    a.PriceCents = InternetRules.MonthCents(a.Provider, a.Plan, a.BusinessPlan, false, level, _state.Promo[a.Provider]);
+                }
+            }
+        }
+
+        // Today's outages, drawn from the save's seed: each connection of a provider that fails is down for some hours.
+        private void Outages(int today)
+        {
+            for (int p = 0; p < InternetRules.Count; p++)
+            {
+                if (!InternetRules.Outage(_state.Seed, today, p, false, out int from, out int hours))
+                {
+                    continue;
+                }
+                InternetRules.Outage(_state.Seed, today, p, true, out _, out int repaired);
+                int affected = 0;
+                for (int i = 0; i < _state.Accounts.Count; i++)
+                {
+                    Account a = _state.Accounts[i];
+                    if (a.Service == Service.Internet && a.Provider == p && a.State == SupplyState.Active)
+                    {
+                        a.OutageFrom = today * 24 + from;
+                        a.OutageUntil = a.OutageFrom + (a.BusinessPlan ? repaired : hours);
+                        affected++;
+                    }
+                }
+                if (affected > 0)
+                {
+                    UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_net_toast_outage", "provider", UtilitiesText.T(InternetRules.Get(p).NameKey),
+                        "hour", UtilitiesText.Hour(from), "hours", hours.ToString()), 12f);
+                }
+            }
+        }
+
+        // A business that cannot open without a connection, and has none: said once a morning.
+        private void Unconnected()
+        {
+            for (int p = 0; p < _places.Count; p++)
+            {
+                PlaceInfo place = _places[p];
+                if (NeedsNet(place) && !Online(place, UtilitiesGame.Today * 24 + 12))
+                {
+                    Account a = _state.Find(place.Place, Service.Internet);
+                    if (a == null || a.State == SupplyState.Closed || a.State == SupplyState.Cut)
+                    {
+                        UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_net_toast_needed", "place", place.Name), 10f);
+                    }
+                }
+            }
+        }
+
+        /// <summary>True for a business that cannot open without a connection (web design, software, the headquarters).</summary>
+        public static bool NeedsNet(PlaceInfo place)
+        {
+            return place.Kind != PlaceKind.Home && place.Reg != null && Array.IndexOf(InternetCatalogue.Needs, place.Reg.businessTypeName) >= 0;
+        }
+
+        /// <summary>True if a place has a connection that works at an hour (hours from the save's first day).</summary>
+        public bool Online(PlaceInfo place, int hour)
+        {
+            Account a = _state.Find(place.Place, Service.Internet);
+            return a != null && a.State == SupplyState.Active && !InternetRules.InOutage(a, hour);
         }
 
         // Accounts applied for connect; a temporary supply that has run out is cut.
@@ -528,7 +625,8 @@ namespace RealLifeOverhaul.Utilities
                 return true;
             }
             PlaceInfo? place = PlaceOf(a);
-            if (!UtilitiesGame.Pay(a.Owed, a.Service == Service.Power ? "reallife_transaction_util_power" : "reallife_transaction_util_water", place?.Reg))
+            string key = a.Service == Service.Power ? "reallife_transaction_util_power" : a.Service == Service.Water ? "reallife_transaction_util_water" : "reallife_transaction_util_net_bill";
+            if (!UtilitiesGame.Pay(a.Owed, key, place?.Reg))
             {
                 return false;
             }
@@ -597,6 +695,163 @@ namespace RealLifeOverhaul.Utilities
             return true;
         }
 
+        // ---------------------------------------------------------------- the internet, bought online in the app
+
+        /// <summary>What a plan costs a place a month now, cents (a business plan at a business).</summary>
+        public int NetPrice(PlaceInfo place, int provider, int plan, bool contract)
+        {
+            return InternetRules.MonthCents(provider, plan, place.Kind != PlaceKind.Home, contract, Prices.Level, provider >= 0 && provider < _state.Promo.Length ? _state.Promo[provider] : 1000);
+        }
+
+        /// <summary>The fee for leaving the place's connection now (a contract left early); nothing without one.</summary>
+        public int NetExitFee(PlaceInfo place)
+        {
+            Account a = _state.Find(place.Place, Service.Internet);
+            return a != null && a.State != SupplyState.Closed ? InternetRules.ExitFee(a, UtilitiesGame.Today, GameCalendar.MonthDays) : 0;
+        }
+
+        /// <summary>
+        /// A plan bought for a place, or the place's plan changed: another provider means leaving the old one (the exit
+        /// fee of a contract left early) and an engineer's visit; the same provider changes the plan at once. False with a
+        /// reason key if it cannot be.
+        /// </summary>
+        public bool BuyNet(PlaceInfo place, int provider, int plan, bool contract, out string why)
+        {
+            why = null;
+            int today = UtilitiesGame.Today, monthDays = GameCalendar.MonthDays;
+            if (!InternetRules.Reaches(provider, place.Reg != null ? place.Reg.Neighborhood : null))
+            {
+                why = "reallife_net_no_reach";
+                return false;
+            }
+            Account a = _state.Find(place.Place, Service.Internet);
+            if (a != null && a.Owed > 0)
+            {
+                why = "reallife_net_owed_first";
+                return false;
+            }
+            bool live = a != null && a.State != SupplyState.Closed && a.State != SupplyState.Cut;
+            bool same = live && a.Provider == provider;
+            int exit = live && !same ? InternetRules.ExitFee(a, today, monthDays) : 0;
+            int install = same || contract ? 0 : InternetCatalogue.InstallFee;
+            int price = NetPrice(place, provider, plan, contract);
+            if (exit + install > UtilitiesGame.Cash)
+            {
+                why = "reallife_net_no_cash";
+                return false;
+            }
+            if (exit > 0)
+            {
+                UtilitiesGame.Pay(exit, "reallife_transaction_util_net_exit", place.Reg);
+            }
+            if (install > 0)
+            {
+                UtilitiesGame.Pay(install, "reallife_transaction_util_net_install", place.Reg);
+            }
+            if (a == null)
+            {
+                a = new Account { Place = place.Place, Kind = place.Kind, AutoDebit = true };
+                _state.Accounts.Add(a);
+            }
+            if (same)
+            {
+                // The same provider: the plan and its price change today; a contract runs on (or begins, if one is taken now).
+                a.Plan = plan;
+                a.PriceCents = price;
+                if (contract && a.ContractUntil <= today)
+                {
+                    a.ContractUntil = today + InternetCatalogue.ContractMonths * Math.Max(1, monthDays);
+                }
+                UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_net_toast_changed", "place", place.Name, "provider", UtilitiesText.T(InternetRules.Get(provider).NameKey),
+                    "mbps", InternetRules.Get(provider).Mbps[plan].ToString(), "price", UtilitiesText.Money(price / 100f)), 10f);
+            }
+            else
+            {
+                if (a.Accrued > 0)
+                {
+                    UtilitiesRules.Bill(a, today, monthDays);   // what the old connection came to this month, billed now
+                }
+                InternetRules.SignUp(a, provider, plan, place.Kind != PlaceKind.Home, contract, today, monthDays, price);
+                a.Kind = place.Kind;
+                UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_net_toast_bought", "place", place.Name, "provider", UtilitiesText.T(InternetRules.Get(provider).NameKey),
+                    "mbps", InternetRules.Get(provider).Mbps[plan].ToString(), "day", UtilitiesText.Day(a.ConnectDay)), 10f);
+            }
+            Logger?.Info("Utilities: internet at " + place.Place + ": " + InternetRules.Get(provider).Id + " plan " + plan + (contract ? " on contract" : " month by month") + ", " + price
+                         + " cents a month" + (exit > 0 ? ", exit fee " + exit : string.Empty) + (install > 0 ? ", installation " + install : string.Empty) + ".");
+            _view?.Changed();
+            return true;
+        }
+
+        /// <summary>A place's connection cancelled: the exit fee of a contract left early, the month so far billed, and it is closed.</summary>
+        public bool CancelNet(PlaceInfo place, out string why)
+        {
+            why = null;
+            Account a = _state.Find(place.Place, Service.Internet);
+            if (a == null || a.State == SupplyState.Closed)
+            {
+                return true;
+            }
+            int today = UtilitiesGame.Today, monthDays = GameCalendar.MonthDays;
+            int exit = InternetRules.ExitFee(a, today, monthDays);
+            if (exit > 0 && !UtilitiesGame.Pay(exit, "reallife_transaction_util_net_exit", place.Reg))
+            {
+                why = "reallife_net_no_cash";
+                return false;
+            }
+            UtilitiesRules.Bill(a, today, monthDays);
+            a.State = SupplyState.Closed;
+            a.ContractUntil = 0;
+            a.OutageFrom = a.OutageUntil = 0;
+            UtilitiesText.Toast(NotificationType.Info, UtilitiesText.T("reallife_net_toast_cancelled", "place", place.Name), 8f);
+            _view?.Changed();
+            return true;
+        }
+
+        /// <summary>A connection cut for an unpaid bill, with nothing owed now, reconnected the next morning.</summary>
+        public bool ReconnectNet(PlaceInfo place, out string why)
+        {
+            why = null;
+            Account a = _state.Find(place.Place, Service.Internet);
+            if (a == null || a.State != SupplyState.Cut)
+            {
+                return false;
+            }
+            if (a.Owed > 0)
+            {
+                why = "reallife_net_owed_first";
+                return false;
+            }
+            a.State = SupplyState.Pending;
+            a.CutForDebt = false;
+            a.ConnectDay = UtilitiesGame.Today + 1;
+            UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_net_toast_reconnect", "place", place.Name), 8f);
+            _view?.Changed();
+            return true;
+        }
+
+        /// <summary>Test: every connection in an outage from now for two hours.</summary>
+        public void TestOutage()
+        {
+            if (!Ready("reallife_util_test_outage"))
+            {
+                return;
+            }
+            int now = UtilitiesGame.Today * 24 + (SaveGameManager.Current != null ? SaveGameManager.Current.Hour : 0), count = 0;
+            for (int i = 0; i < _state.Accounts.Count; i++)
+            {
+                Account a = _state.Accounts[i];
+                if (a.Service == Service.Internet && a.State == SupplyState.Active)
+                {
+                    a.OutageFrom = now;
+                    a.OutageUntil = now + 2;
+                    count++;
+                }
+            }
+            Effects();
+            UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_util_test_outage_done", "count", count.ToString()), 8f);
+            _view?.Changed();
+        }
+
         public string NameOf(Account a)
         {
             PlaceInfo? place = PlaceOf(a);
@@ -622,6 +877,7 @@ namespace RealLifeOverhaul.Utilities
         private void Effects()
         {
             int today = UtilitiesGame.Today;
+            int hour = today * 24 + (SaveGameManager.Current != null ? SaveGameManager.Current.Hour : 0);
             bool homeDark = false, homeDry = false;
             BuildingRegistration inHome = HomeIn();
             for (int p = 0; p < _places.Count; p++)
@@ -640,12 +896,13 @@ namespace RealLifeOverhaul.Utilities
                     continue;
                 }
                 bool needsWater = place.Kind == PlaceKind.FoodAndDrink || place.Kind == PlaceKind.Salon || place.Kind == PlaceKind.Gym;
-                if (dark || (dry && needsWater))
+                bool offline = NeedsNet(place) && !Online(place, hour);
+                if (dark || (dry && needsWater) || offline)
                 {
                     Func<BuildingRegistration, int, bool> close = UtilitiesBridges.CloseFor;
                     if (close != null && close(place.Reg, ClosedHours) && Meta.Dev.Verbose)
                     {
-                        Logger?.Info("Utilities: " + place.Name + " closed for want of " + (dark ? "power" : "water") + ".");
+                        Logger?.Info("Utilities: " + place.Name + " closed for want of " + (dark ? "power" : dry && needsWater ? "water" : "an internet connection") + ".");
                     }
                 }
             }

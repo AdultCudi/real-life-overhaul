@@ -102,7 +102,7 @@ internal static partial class Program
               && UtilitiesStore.Read("v=1~a:Place~1|7|99|99|1|1|-4|0|0|-9|0|0|0|0|0|0|0|0", out version).Accounts.Count == 0,
             "utilities: a line that cannot be read gives nothing; a short record, or one whose place was not escaped, is passed over");
         UtilitiesState odd = UtilitiesStore.Read("v=1~a:" + UtilitiesStore.Escape("A~1") + "|7|99|99|1|1|-4|0|0|-9|0|0|0|0|0|0|0|0", out version);
-        Check(odd != null && odd.Accounts.Count == 1 && odd.Accounts[0].Service == Service.Water && odd.Accounts[0].Kind == PlaceKind.Industry
+        Check(odd != null && odd.Accounts.Count == 1 && odd.Accounts[0].Service == Service.Internet && odd.Accounts[0].Kind == PlaceKind.Industry
               && odd.Accounts[0].State == SupplyState.Closed && odd.Accounts[0].OpenedDay == 0 && odd.Accounts[0].Deposit == 0,
             "utilities: figures out of range are brought within it");
     }

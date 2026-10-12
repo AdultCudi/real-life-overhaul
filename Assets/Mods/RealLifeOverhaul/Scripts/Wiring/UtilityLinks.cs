@@ -53,6 +53,7 @@ namespace RealLifeOverhaul
             }
 
             private static readonly UtilitiesSource Source = new UtilitiesSource();
+            private static readonly string[] DebtKeys = { "reallife_econ_debt_util_power", "reallife_econ_debt_util_water", "reallife_econ_debt_util_internet" };
 
             /// <summary>Power and water owed, a line each, with the days the oldest bill is late.</summary>
             internal static void AddDebts(List<Economy.DebtLine> into)
@@ -63,7 +64,7 @@ namespace RealLifeOverhaul
                     return;
                 }
                 int today = UtilitiesGame.Today;
-                int[] owed = new int[UtilitiesCatalogue.Services], late = new int[UtilitiesCatalogue.Services];
+                int[] owed = new int[UtilitiesCatalogue.AllServices], late = new int[UtilitiesCatalogue.AllServices];
                 for (int i = 0; i < state.Accounts.Count; i++)
                 {
                     Account a = state.Accounts[i];
@@ -78,11 +79,11 @@ namespace RealLifeOverhaul
                         late[s] = Math.Max(late[s], today - a.DueDay);
                     }
                 }
-                for (int s = 0; s < UtilitiesCatalogue.Services; s++)
+                for (int s = 0; s < UtilitiesCatalogue.AllServices; s++)
                 {
                     if (owed[s] > 0)
                     {
-                        into.Add(new Economy.DebtLine { NameKey = s == 0 ? "reallife_econ_debt_util_power" : "reallife_econ_debt_util_water", Owed = owed[s], LateDays = late[s] });
+                        into.Add(new Economy.DebtLine { NameKey = DebtKeys[s], Owed = owed[s], LateDays = late[s] });
                     }
                 }
             }

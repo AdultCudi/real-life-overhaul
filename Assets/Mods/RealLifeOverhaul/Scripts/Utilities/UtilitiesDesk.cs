@@ -62,6 +62,10 @@ namespace RealLifeOverhaul.Utilities
             for (int i = 0; i < state.Accounts.Count; i++)
             {
                 Account a = state.Accounts[i];
+                if (a.Service == Service.Internet)
+                {
+                    continue;   // (bought and paid online, from its own provider: the Utilities app)
+                }
                 string service = UtilitiesText.Service(a.Service), place = _director.NameOf(a);
                 int index = _accounts.Count;
                 _accounts.Add(a);

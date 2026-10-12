@@ -4852,8 +4852,19 @@ power (City Light and Power) and one for water (Riverside Water). The rules are 
 - **The app.** Every account with where it stands, the month so far, what is owed and when, and auto debit; the white
   box has the picked account's use, bills and deposit, the auto debit switch and "Pay now".
 
-The save line (`reallife:utilities`): the days added up, and each account's place (escaped) and figures. Nothing runs
-per frame but the office's panel check once a second; the effects once an hour, the books once a morning.
+- **The internet.** Four rival providers (`InternetCatalogue`: cable for the whole city but The Hamptons, fibre in
+  three districts only, fixed wireless and a copper line everywhere), each with its plans, reliability and a price that
+  walks month by month within bounds (a promotion now and then: `InternetRules.NextPromo`). A plan is bought in the app
+  (no office: a private provider sells online) and installed two days later; on a contract of twelve months its price is
+  held and the installation free, month by month it costs a fifth more; leaving a contract early costs half of each month
+  left. It is billed with power and water, a day's share of the month at a time, and cut the same way. Outages are drawn
+  from the save's own seed, the day and the provider (`InternetRules.Draw`), so a reload changes nothing; a day with one is
+  not charged, and a business plan is repaired in half the time. Web design and software companies and the headquarters
+  (`InternetCatalogue.Needs`) cannot open without a connection that works.
+
+The save line (`reallife:utilities`): the days added up, the seed, the months and each provider's price, and each
+account's place (escaped) and figures. Nothing runs per frame but the office's panel check once a second; the effects
+once an hour, the books, outages and prices once a morning.
 
 ## Home life and health (`Scripts/Home`)
 
