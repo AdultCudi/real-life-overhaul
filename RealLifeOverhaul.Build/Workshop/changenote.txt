@@ -1,9 +1,7 @@
-0.3.2
-
-New
-- You can switch off the notifications about accidents near you, and the waypoint to them, on the options page: the accidents still happen, without the messages and their sound, or without the marker.
+0.3.3
 
 Fixed
-- The mod's bus and its other props showed the road's markings through them, as if they were glass.
-- A bus stop's painted box ran the whole length of the stop's zone, some 55 m; it now covers where the bus stands, some 24 m.
-- A business closed for want of power, water or an internet connection said nothing; it now tells you why and what opens it again. A bought building's temporary supply runs out after three days unless you apply for an account in person at the utilities office.
+- A headquarters, warehouse or factory the utilities closed for want of power, water or an internet connection stayed closed for good, even once it had them, and the game has no switch to open a headquarters by hand. It now opens again by itself, and one an earlier version left closed opens when the save is loaded. A factory left closed has its own Temporarily closed switch in BizMan.
+- A shop could stay closed after the game was saved and loaded again while more than eight businesses were closed at once.
+- A business without power, water or a connection opened for about an hour now and then. It now stays closed until it has them, and opens again as soon as it does.
+- With Business events switched off, the utilities could not keep a business closed, though they said they had. Now they can, and the notice comes only when the mod itself keeps the business closed.
