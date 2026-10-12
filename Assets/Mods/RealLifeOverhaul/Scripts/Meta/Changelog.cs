@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.Meta
 
         public static readonly Entry[] All =
         {
+            new Entry(Unnumbered, "reallife_changes_next_title", "reallife_changes_next"),
             new Entry(2030, "reallife_changes_002_3_title", "reallife_changes_002_3"),
             new Entry(2020, "reallife_changes_002_2_title", "reallife_changes_002_2"),
             new Entry(2010, "reallife_changes_002_1_title", "reallife_changes_002_1"),
