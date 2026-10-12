@@ -510,6 +510,12 @@ internal static partial class Program
         Check(fell > 70 && fell < 130 && fellRecession > 210 && fellRecession < 290, "one agreed sale in ten falls through, one in four in a recession (" + fell + " and " + fellRecession + " of 1000)");
         Check(EstateRules.AgentFee(1000000, 1000) == 15000 && EstateRules.AgentFee(10000, 1000) == 500 && EstateRules.AgentFee(300, 1000) == 300 && EstateRules.AgentFee(0, 1000) == 0, "the selling fee is 1.5% of the price, 500 at least, never more than the price");
         Check(EstateRules.AgentFee(10000, 2000) == 1000 && EstateRules.AgentFee(1000000, 2000) == 15000, "the selling fee's least follows prices; its share of the price does by itself");
+        Check(EstateRules.TaxYearLast(1, 60) == 60 && EstateRules.TaxYearLast(60, 60) == 60 && EstateRules.TaxYearLast(61, 60) == 120 && EstateRules.TaxYearFirst(60, 60) == 1
+              && EstateRules.TaxYearFirst(61, 60) == 61 && EstateRules.TaxYearFirst(0, 60) == 1 && EstateRules.TaxYearLast(200, 365) == 365,
+            "the game's tax year turns at the end of each day that is a multiple of the year, as the game's tax does");
+        Check(EstateRules.TradingTax(500000, 300000, 0, 20) == 40000 && EstateRules.TradingTax(300000, 400000, 1000000, 20) == 0 && EstateRules.TradingTax(100000, 20000, 40000, 20) == 0
+              && EstateRules.TradingTax(100000, 20000, 50000, 20) == 16000 && EstateRules.TradingTax(500000, 0, 0, 150) == 500000,
+            "hotels and car hire: the game's rate on the year's takings less running costs, nothing on a loss, nothing under the game's threshold of all the year's business income");
         Check(EstateRules.GainsTax(1000000, 15000, 700000, 85000, 20) == 20000, "tax on a gain: half the game's rate on the price less the fee, the price paid and the improvements");
         Check(EstateRules.GainsTax(700000, 15000, 700000, 0, 20) == 0 && EstateRules.GainsTax(1000000, 0, 0, 0, 0) == 0 && EstateRules.GainsTax(1000000, 0, 0, 0, 500) == 500000, "nothing on a loss, nothing at no rate, and the rate is a rate");
     }
@@ -1033,6 +1039,9 @@ internal static partial class Program
         s.Hire.Cover = true;
         s.Hire.TakingsYear = 9000;
         s.Hire.CostsYear = 1200;
+        s.TaxFrom = 61;
+        s.TaxTakings = 456000;
+        s.TaxCosts = 123000;
         s.Hire.Cars.Add(new HireCar { Id = "aB3+/x=", Type = "ba:vehicletype_sedan", Price = 22000, Rate = 1150, State = (int)HireState.Out, Day = 42, HireDays = 3, HireRate = 136, Deposit = 272, HireSeed = 123456, X = -41250, Y = 12, Z = 99000, Yaw = 2715, Takings = 4000, Hires = 11 });
         s.Hire.Cars.Add(new HireCar { Id = "second", Type = "ba:vehicletype_van", Price = 31000 });
         return s;
@@ -1046,6 +1055,7 @@ internal static partial class Program
         EstateState back = EstateStore.Read(line, out version);
         Check(back != null && version == EstateStore.Version, "a written line is read back");
         Check(back != null && EstateStore.Write(back) == line, "what is read back writes the same line again: nothing is lost or changed");
+        Check(back != null && back.TaxFrom == 61 && back.TaxTakings == 456000 && back.TaxCosts == 123000, "the hotels' and car hire's tax year so far");
         Check(back != null && back.Holdings.Count == 2 && back.Holdings[0].Rent == 1200 && back.Holdings[0].Managed && back.Holdings[0].NoticeEnd == 44 && back.Holdings[1].Applicants.Count == 2 && back.Holdings[1].Applicants[1].Record == 88
               && back.Holdings[1].Work == (int)EstateWork.Planning && back.Holdings[1].Offer == 770000, "the buildings, their tenancies, works, listings and applicants");
         Check(back != null && back.Agency.Office == "Office~1" && back.Agency.Open.Count == 2 && back.Agency.Open[0].Fails && back.Agency.Open[0].Price == 2500000 && back.Agency.District("ba:neighborhood_midtown").Rep == 410,
@@ -1086,7 +1096,7 @@ internal static partial class Program
         Check(EstateStore.Load(data, EstateStore.Key, out version) != null && EstateStore.Load(data, EstateStore.TestKey, out version) == null && EstateStore.Load(null, EstateStore.Key, out version) == null,
             "a save without the feature's line, or with no data of the mod's at all, has no state: the feature starts afresh");
         Check(EstateStore.Key == "reallife:economy_estate" && EstateStore.Version == 1, "the save key is the one the brief names, with a version");
-        Check(EstateStore.Write(new EstateState { Seed = 3 }).StartsWith("v=1^h:3|0|0|1000|0|0^p:^g:|1|0|0|0^d:^i:^t:^c:|600|0|0|0^v:", StringComparison.Ordinal), "an empty state writes every part, empty");
+        Check(EstateStore.Write(new EstateState { Seed = 3 }).StartsWith("v=1^h:3|0|0|1000|0|0|0|0|0^p:^g:|1|0|0|0^d:^i:^t:^c:|600|0|0|0^v:", StringComparison.Ordinal), "an empty state writes every part, empty");
     }
 
     // A history of the whole business from a seed, as one line of text.

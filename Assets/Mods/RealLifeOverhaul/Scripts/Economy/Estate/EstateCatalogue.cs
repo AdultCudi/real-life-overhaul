@@ -185,6 +185,7 @@ namespace RealLifeOverhaul.Economy
         public const int AgentFee = 15;             // thousandths of the price
         public const int AgentFeeLeast = 500;
         public const int GainsShare = 500;          // thousandths of the game's own tax rate charged on a gain
+        public const int TaxThreshold = 150000;     // the game's own: no income tax while a year's business income is under it (TaxHelper.MeetsIncomeTaxThreshold)
 
         // ---------------------------------------------------------------- the agency
 

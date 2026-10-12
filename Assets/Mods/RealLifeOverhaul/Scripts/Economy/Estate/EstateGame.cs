@@ -99,6 +99,7 @@ namespace RealLifeOverhaul.Economy
         public const string HireDepositKey = "reallife_transaction_estate_hire_deposit";
         public const string HireCostsKey = "reallife_transaction_estate_hire_costs";
         public const string HireClaimKey = "reallife_transaction_estate_hire_claim";
+        public const string TradingTaxKey = "reallife_transaction_estate_trading_tax";
         private const string DeductKey = "reallife_estate_deduct";
         private const string CustomerService = "ba:skill_customerservice";
         private const string OfficeType = "ba:buildingtype_office";
@@ -947,6 +948,12 @@ namespace RealLifeOverhaul.Economy
             {
                 GameManager.ChangeMoneySafe(amount, new TransactionInfo(RentKey, new Dictionary<string, string>(2) { { "address", address.ToFormattedString() } }), null, address, true);
             }
+        }
+
+        /// <summary>The businesses' takings in the game's daily statements over some days, as the game's tax adds them up.</summary>
+        public static long BusinessSales(int from, int to)
+        {
+            return Save != null && Save.financialSummaries != null ? (long)TaxCalculationHelper.GetBusinessSales(from, to) : 0L;
         }
 
         // (a dictionary each: the game keeps hold of a transaction's data for as long as it lists the transaction)

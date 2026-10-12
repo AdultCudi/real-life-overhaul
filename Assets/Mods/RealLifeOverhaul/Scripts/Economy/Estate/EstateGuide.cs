@@ -46,6 +46,7 @@ namespace RealLifeOverhaul.Economy
                 .Fact("est_completion_days", () => Whole(EstateCatalogue.CompletionDays))
                 .Fact("est_agent_fee", () => Share(EstateCatalogue.AgentFee))
                 .Fact("est_gains", () => Share(EstateCatalogue.GainsShare))
+                .Fact("est_tax_threshold", () => Guide.Money(EstateCatalogue.TaxThreshold))
                 .Fact("est_instructions", () => Whole(EstateCatalogue.InstructionsMost))
                 .Fact("est_answer_days", () => Whole(EstateCatalogue.InstructionAnswerDays))
                 .Fact("est_lapse_days", () => Whole(EstateCatalogue.InstructionLapseDays))
