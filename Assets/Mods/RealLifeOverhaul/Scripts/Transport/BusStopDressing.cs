@@ -3,6 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.HighDefinition;
 
 namespace RealLifeOverhaul
 {
@@ -28,13 +29,16 @@ namespace RealLifeOverhaul
     /// stop is dressed <see cref="Check"/> asks the mesh what was really cut and says so in
     /// one line.
     ///
-    /// THE BAY. Where the stop has one (<see cref="TransitStop.HasBay"/>) the place the bus stands
-    /// in it is marked on the road: a yellow box and the words BUS STOP, read the way the traffic
-    /// runs. Painted strips and lettering, nothing solid; made the first time this dressing stands
-    /// at a stop with a bay, laid to the road's own fall each time it is put out, gone with the
-    /// dressing. As the stop is dressed the bay is looked at once (<see cref="TransitBays"/>): the
-    /// game's parked cars standing in it out of view are taken in, and what the check line says of
-    /// the bay is what was found then.
+    /// THE BAY. Where the stop has one (<see cref="TransitStop.HasBay"/>) its zone (BusZones) is
+    /// painted on the road the way the game paints its own markings (RoadPaint, HDRP decals): a
+    /// broken yellow line along the zone's lane side, tapering in to the kerb at each end, and the
+    /// words BUS STOP within it, BUS nearest the traffic coming up. Paint, nothing solid; the
+    /// projectors are made the first time this dressing stands at a stop with a bay, laid to the
+    /// road's own fall in pieces of no more than 8 m each time it is put out, gone with the
+    /// dressing. Where the city has no road paint to copy, a yellow box of strips. As the stop is
+    /// dressed the bay is looked at once (<see cref="TransitBays"/>): the game's parked cars
+    /// standing in it out of view are taken in, and what the check line says of the bay is what
+    /// was found then.
     ///
     /// THE SEATS are two places on the bench (never one for two): the sitter's feet 0.30 m in
     /// front of the seat's middle line, facing the road, which is what the clips
@@ -65,9 +69,16 @@ namespace RealLifeOverhaul
         private const float BoxKerbSide = 0.06f;    // its kerb-side line lies this far out from the kerb
         private const float LineWide = 0.12f;
         private const float LineTall = 0.03f;
-        private static readonly bool BayLettering = false;
-        private const string BayWords = "reallife_transit_bay_marking";
         private static readonly Color BayYellow = new Color(0.98f, 0.82f, 0.10f);
+        private const float PaintWide = 0.17f;      // the broken line's decal, of which 0.15 m is paint (decals.py)
+        private const float PaintOut = 0.25f;       // the line lies this far beyond the bus's side, towards the lane
+        private const float PaintKerb = 0.15f;      // ...and its tapers end this far short of the kerb, clear of its face
+        private const float PaintTaper = 6f;        // metres along which a taper comes in from the line to the kerb
+        private const float PaintPiece = 8f;        // the longest piece of line laid as one decal: the road's fall along it stays within the decal's depth
+        private const float WordsWide = 1.9f;       // the words BUS STOP on the road
+        private const float WordsLong = 4.6f;
+        private const float WordsAhead = 1f;        // their middle this far ahead of the pole
+        private const int PaintPieces = 8;          // seven pieces of line at the most, and the words
 
         private readonly GameObject _root;
         private readonly Transform _sign;
@@ -82,8 +93,10 @@ namespace RealLifeOverhaul
         private float _radius = 0.5f;
         private float _walkRoom;
         private string _walkNote;
-        private Transform _bay;        // the bay's marking: four strips and the lettering
-        private TextMeshPro _bayText;
+        private Transform _bay;        // the bay's marking where there is no road paint: four strips
+        private Transform _paintRoot;  // the bay's paint, where there is (RoadPaint)
+        private readonly DecalProjector[] _paint = new DecalProjector[PaintPieces];
+        private string _marking;
         private bool _bayFree;
         private string _bayTaken;
         private int _baySent;
@@ -222,7 +235,7 @@ namespace RealLifeOverhaul
                    + Stop.BayOffset.ToString("F2") + " m off the lane's line in it with the kerb at " + Stop.KerbAside.ToString("F2") + ", "
                    + (_bayFree ? "free" : "taken by " + _bayTaken + " (the bus stops in the lane until it is free)")
                    + (_baySent > 0 ? ", " + _baySent + " of the game's parked cars taken in from it out of view" : "")
-                   + ", the marking " + (_bay != null && _bay.gameObject.activeSelf ? "made" : "NOT made");
+                   + ", " + (_marking ?? "NOT marked") + "; " + BusZones.Describe(Stop.Zone);
         }
 
         // The marking, where the stop has a bay, and one look at what stands in the bay now.
@@ -231,51 +244,159 @@ namespace RealLifeOverhaul
             _bayFree = false;
             _bayTaken = null;
             _baySent = 0;
-            if (!stop.HasBay)
+            _marking = null;
+            bool paint = stop.HasBay && PaintReady();
+            if (_paintRoot != null)
             {
-                if (_bay != null)
-                {
-                    _bay.gameObject.SetActive(false);
-                }
-                return;
-            }
-            if (_bay == null)
-            {
-                BuildBay();
+                _paintRoot.gameObject.SetActive(paint);
             }
             if (_bay != null)
             {
-                // The box round where the bus stands. It lies on the road as the road lies there: its ends and its two
-                // sides are put on the ground under them, so a street that falls away or a cambered strip is followed.
-                Vector3 right = Vector3.Cross(Vector3.up, stop.BayAlong);
-                float halfLength = TransitBus.BodyLength * 0.5f + BoxEnd;
-                float inner = stop.BayOffset - TransitBus.BodyHalfWidth - BoxLaneSide;
-                float outer = stop.KerbAside - BoxKerbSide;
-                float halfWidth = (outer - inner) * 0.5f;
-                Vector3 middle = stop.Lane + right * ((inner + outer) * 0.5f);
-                Vector3 back = OnGround(middle - stop.BayAlong * halfLength, stop.Bay.y);
-                Vector3 front = OnGround(middle + stop.BayAlong * halfLength, stop.Bay.y);
-                Vector3 laneSide = OnGround(middle - right * halfWidth, stop.Bay.y);
-                Vector3 kerbSide = OnGround(middle + right * halfWidth, stop.Bay.y);
-                Vector3 forward = front - back;
-                Vector3 up = Vector3.Cross(forward, kerbSide - laneSide);
-                if (up.y < 0.9f * up.magnitude)
-                {
-                    forward = stop.BayAlong;   // (a reading that makes no sense: flat, at the bay's own height)
-                    up = Vector3.up;
-                }
-                _bay.SetPositionAndRotation(new Vector3(middle.x, (back.y + front.y + laneSide.y + kerbSide.y) * 0.25f, middle.z), Quaternion.LookRotation(forward, up));
-                Strip(_bay.GetChild(0), new Vector3(-halfWidth, LineTall, 0f), new Vector3(LineWide, LineTall, halfLength * 2f));
-                Strip(_bay.GetChild(1), new Vector3(halfWidth, LineTall, 0f), new Vector3(LineWide, LineTall, halfLength * 2f));
-                Strip(_bay.GetChild(2), new Vector3(0f, LineTall, halfLength), new Vector3(halfWidth * 2f + LineWide, LineTall, LineWide));
-                Strip(_bay.GetChild(3), new Vector3(0f, LineTall, -halfLength), new Vector3(halfWidth * 2f + LineWide, LineTall, LineWide));
-                if (_bayText != null)
-                {
-                    _bayText.rectTransform.sizeDelta = new Vector2(Mathf.Max(0.8f, halfWidth * 2f - 0.5f), 3.6f);
-                }
-                _bay.gameObject.SetActive(true);
+                _bay.gameObject.SetActive(stop.HasBay && !paint);
+            }
+            if (!stop.HasBay)
+            {
+                return;
+            }
+            if (paint)
+            {
+                Paint(stop);
+                _marking = "painted";
+            }
+            else
+            {
+                Strips(stop);
+                _marking = _bay == null ? "NOT marked" : "marked with strips (" + (RoadPaint.Missing ?? "no road paint") + ")";
             }
             _bayFree = TransitBays.Free(stop, stop.BayBehind, stop.BayAhead, null, true, out _bayTaken, out _baySent);
+        }
+
+        // The projectors for the paint, made once both paints can be had (the prop bundle loads in the background).
+        private bool PaintReady()
+        {
+            if (_paintRoot != null)
+            {
+                return true;
+            }
+            Material dash = RoadPaint.Paint(RoadPaint.Dash);
+            Material words = dash != null ? RoadPaint.Paint(RoadPaint.Words) : null;
+            if (words == null)
+            {
+                return false;
+            }
+            _paintRoot = new GameObject("Paint").transform;
+            _paintRoot.SetParent(_root.transform, false);
+            for (int i = 0; i < PaintPieces - 1; i++)
+            {
+                _paint[i] = RoadPaint.Make(_paintRoot, "Line", dash);
+            }
+            _paint[PaintPieces - 1] = RoadPaint.Make(_paintRoot, "Words", words);
+            return true;
+        }
+
+        // The zone painted: the broken line along its lane side, a taper in to the kerb at each end, and the words between
+        // the line and the kerb a little ahead of the pole (where a bus's front half stands).
+        private void Paint(TransitStop stop)
+        {
+            Vector3 right = Vector3.Cross(Vector3.up, stop.BayAlong);
+            float from = stop.Zone != null ? stop.Zone.From : -stop.BayBehind;
+            float to = stop.Zone != null ? stop.Zone.To : stop.BayAhead;
+            float kerb = stop.KerbAside - PaintKerb;
+            float line = Mathf.Max(BusBay.LaneHalf + 0.12f, stop.BayOffset - TransitBus.BodyHalfWidth - PaintOut);
+            float taper = Mathf.Min(PaintTaper, (to - from) * 0.25f);
+            int used = Line(stop, right, kerb, from, line, from + taper, 0);
+            used = Line(stop, right, line, from + taper, line, to - taper, used);
+            used = Line(stop, right, line, to - taper, kerb, to, used);
+            for (int i = used; i < PaintPieces - 1; i++)
+            {
+                _paint[i].gameObject.SetActive(false);
+            }
+            float wide = Mathf.Clamp(kerb - line - 0.3f, 0.8f, WordsWide);
+            Lie(_paint[PaintPieces - 1], At(stop, right, (line + kerb) * 0.5f, WordsAhead), stop.BayAlong, wide, wide * WordsLong / WordsWide, 1f, 0f);
+        }
+
+        // One broken line from (aside a, along s) to (aside b, along t), in the stop's frame, laid in pieces of no more
+        // than PaintPiece metres whose dashes run on from one piece to the next, beginning and ending with paint. Takes the
+        // number of pieces used so far and gives back the number used after it.
+        private int Line(TransitStop stop, Vector3 right, float a, float s, float b, float t, int used)
+        {
+            Vector3 start = At(stop, right, a, s);
+            Vector3 run = At(stop, right, b, t) - start;
+            run.y = 0f;
+            float length = run.magnitude;
+            if (length < 0.3f)
+            {
+                return used;
+            }
+            Vector3 direction = run / length;
+            float pattern = length / BusBay.Dashes(length, RoadPaint.DashRepeat, RoadPaint.DashPaint);
+            int pieces = Mathf.Max(1, Mathf.CeilToInt(length / PaintPiece));
+            for (int p = 0; p < pieces && used < PaintPieces - 1; p++)
+            {
+                float near = length * p / pieces;
+                float far = length * (p + 1) / pieces;
+                Lie(_paint[used++], start + direction * ((near + far) * 0.5f), direction, PaintWide, far - near, (far - near) / pattern, 1f - RoadPaint.DashPaint + near / pattern);
+            }
+            return used;
+        }
+
+        // A place in the stop's frame: aside of the lane's line, along it from the pole.
+        private static Vector3 At(TransitStop stop, Vector3 right, float aside, float along)
+        {
+            return stop.Lane + stop.BayAlong * along + right * aside;
+        }
+
+        // One piece of paint laid on the road as the road lies there: its middle on the ground, tipped to the road's fall.
+        private static void Lie(DecalProjector decal, Vector3 middle, Vector3 along, float width, float length, float repeats, float shift)
+        {
+            Vector3 across = Vector3.Cross(Vector3.up, along);
+            float reach = Mathf.Max(0.5f, length * 0.5f);
+            float y = middle.y;
+            Vector3 back = OnGround(middle - along * reach, y);
+            Vector3 front = OnGround(middle + along * reach, y);
+            Vector3 laneSide = OnGround(middle - across * 0.5f, y);
+            Vector3 kerbSide = OnGround(middle + across * 0.5f, y);
+            Vector3 up = Vector3.Cross(front - back, kerbSide - laneSide);
+            up = up.y > 0.9f * up.magnitude && up.sqrMagnitude > 0.0001f ? up.normalized : Vector3.up;   // (a reading that makes no sense: flat)
+            middle.y = (back.y + front.y + laneSide.y + kerbSide.y) * 0.25f;
+            RoadPaint.Pose(decal, middle, along, up, width, length, repeats, shift);
+        }
+
+        // Where the city has no road paint to copy: a yellow box round where the bus stands, of four strips laid to the
+        // road's fall (its ends and its two sides put on the ground under them).
+        private void Strips(TransitStop stop)
+        {
+            if (_bay == null)
+            {
+                BuildStrips();
+            }
+            if (_bay == null)
+            {
+                return;
+            }
+            Vector3 right = Vector3.Cross(Vector3.up, stop.BayAlong);
+            float halfLength = TransitBus.BodyLength * 0.5f + BoxEnd;
+            float inner = stop.BayOffset - TransitBus.BodyHalfWidth - BoxLaneSide;
+            float outer = stop.KerbAside - BoxKerbSide;
+            float halfWidth = (outer - inner) * 0.5f;
+            Vector3 middle = stop.Lane + right * ((inner + outer) * 0.5f);
+            Vector3 back = OnGround(middle - stop.BayAlong * halfLength, stop.Bay.y);
+            Vector3 front = OnGround(middle + stop.BayAlong * halfLength, stop.Bay.y);
+            Vector3 laneSide = OnGround(middle - right * halfWidth, stop.Bay.y);
+            Vector3 kerbSide = OnGround(middle + right * halfWidth, stop.Bay.y);
+            Vector3 forward = front - back;
+            Vector3 up = Vector3.Cross(forward, kerbSide - laneSide);
+            if (up.y < 0.9f * up.magnitude)
+            {
+                forward = stop.BayAlong;   // (a reading that makes no sense: flat, at the bay's own height)
+                up = Vector3.up;
+            }
+            _bay.SetPositionAndRotation(new Vector3(middle.x, (back.y + front.y + laneSide.y + kerbSide.y) * 0.25f, middle.z), Quaternion.LookRotation(forward, up));
+            Strip(_bay.GetChild(0), new Vector3(-halfWidth, LineTall, 0f), new Vector3(LineWide, LineTall, halfLength * 2f));
+            Strip(_bay.GetChild(1), new Vector3(halfWidth, LineTall, 0f), new Vector3(LineWide, LineTall, halfLength * 2f));
+            Strip(_bay.GetChild(2), new Vector3(0f, LineTall, halfLength), new Vector3(halfWidth * 2f + LineWide, LineTall, LineWide));
+            Strip(_bay.GetChild(3), new Vector3(0f, LineTall, -halfLength), new Vector3(halfWidth * 2f + LineWide, LineTall, LineWide));
+            _bay.gameObject.SetActive(true);
         }
 
         private static Vector3 OnGround(Vector3 place, float otherwise)
@@ -290,9 +411,9 @@ namespace RealLifeOverhaul
             piece.localScale = size;
         }
 
-        // Four painted strips (the driving test's bay is marked the same way: Licences/LicenceProps.MakeBay) and the words,
-        // lying on the road and read the way the traffic runs. Local axes: Z along the bay, X towards the kerb.
-        private void BuildBay()
+        // Four painted strips (the driving test's bay is marked the same way: Licences/LicenceProps.MakeBay), lying on the
+        // road. Local axes: Z along the bay, X towards the kerb.
+        private void BuildStrips()
         {
             if (!Shapes.Available)
             {
@@ -304,33 +425,6 @@ namespace RealLifeOverhaul
             for (int i = 0; i < 4; i++)
             {
                 Shapes.Piece("Line", _bay, Shapes.Cube, line, Vector3.zero, Vector3.one);
-            }
-            // No lettering on the road: seen in the game it ran far outside the box and shimmered. The yellow box is the marking.
-            TMP_FontAsset font = BayLettering ? GameUi.GameFont.Asset : null;
-            if (font == null)
-            {
-                return;
-            }
-            var words = new GameObject("Words");
-            words.transform.SetParent(_bay, false);
-            words.transform.localPosition = new Vector3(0f, LineTall + 0.01f, 0f);
-            words.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);   // flat on the road, the tops of the letters ahead
-            _bayText = words.AddComponent<TextMeshPro>();
-            _bayText.font = font;
-            _bayText.text = TransitText.T(BayWords);
-            _bayText.color = new Color(BayYellow.r * 0.85f, BayYellow.g * 0.85f, BayYellow.b * 0.85f);
-            _bayText.fontStyle = FontStyles.Bold;
-            _bayText.alignment = TextAlignmentOptions.Center;
-            _bayText.textWrappingMode = TextWrappingModes.Normal;
-            _bayText.rectTransform.sizeDelta = new Vector2(1.8f, 3.6f);
-            _bayText.enableAutoSizing = true;
-            _bayText.fontSizeMin = 2f;
-            _bayText.fontSizeMax = 14f;
-            var renderer = words.GetComponent<MeshRenderer>();
-            if (renderer != null)
-            {
-                renderer.shadowCastingMode = ShadowCastingMode.Off;
-                renderer.receiveShadows = false;
             }
         }
 

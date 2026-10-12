@@ -180,6 +180,8 @@ namespace RealLifeOverhaul
         {
             Instance = this;
             TransitMap.Logger = Logger;
+            BusZones.Logger = Logger;
+            RoadPaint.Logger = Logger;
             TransitMap.Reset();
             TransitState.Reset();
             _root = new GameObject("RealLifeOverhaul Transit").transform;
@@ -217,6 +219,7 @@ namespace RealLifeOverhaul
             }
             TransitMap.Reset();
             TransitState.Reset();
+            RoadPaint.Dispose();
             if (Instance == this)
             {
                 Instance = null;
@@ -337,6 +340,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
+            BusZones.Step();   // the stops' zones, a slice at a time until they are all made
             _streetClear = false;
             if ((_tick & 3) == 0)
             {
@@ -1295,6 +1299,7 @@ namespace RealLifeOverhaul
                     _dressings[i]?.Clear();
                 }
                 _dressAtOnce = true;
+                BusZones.Restore();   // the buses are off: the parking and the furniture as the game had them
             }
             _streetClear = true;
         }
