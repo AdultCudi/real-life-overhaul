@@ -1,24 +1,15 @@
-0.3.0
+0.3.1
 
 New
-- Power and water bills for every home and business you rent or own, by its size, its kind of business, who lives there and the season. A rented place just pays. A place you buy is supplied for three days at half as much again, then cut, unless you apply in person at the utilities office, which lights up on the map.
-- A Utilities app with every account, auto debit and Pay now. A late bill has a fee and is cut three days after it was due. Without power a business closes, as does one that needs water without it; at home a cut means no shower, sink, screens or cooking.
-- Internet from four rival providers, bought in the Utilities app, on a contract or month by month, each with its own reach, reliability and prices that move. Web design and software companies and your headquarters cannot open without a connection, and a day with an outage is not charged.
-- Your own broadband company, late in the game and very costly: with a headquarters and the city's operator's licence, dig fibre district by district and win the city's homes and businesses from the four providers by price, reliability and marketing, while they answer with lower prices. Its books are at your headquarters, and you can sell it.
-- Every price follows the city's prices: fines and fees, fares and taxis, bail and lawyers, car costs, clothes, drinks, hotels and trips, the banks' limits, and the pay of jobs and gigs. The game's own fixed charges follow them on one line a night, as rent and wages do. Nothing moves while prices are within 1% of where they began.
-- Your businesses' books: the mod's costs and the city's cost of living lines show in each business's daily statement, so EconoView, the game's taxes and its bank count them.
-- A business's power, water and internet bills come off its tax. Hotels and car hire pay tax on their yearly profit, and the estate agency's commissions are taxed with your businesses' sales.
-- One calendar: a month is a twelfth of the year you chose, and the seasons are the weather's everywhere. Car insurance runs a month; childcare and school fees follow that month at the same cost by the day.
-- Wages follow prices once: rising prices no longer make staff ask for raises on top of the city's cost of living.
-- The rota planner counts the goods: a plan sells a product only while there is some, and the page says what runs out, when, and what would keep it on the shelves.
-- Bus stops: Choose a stop opens the city map with the stops on it and the game's list of stations beside it, as a subway entrance does.
-- On the city map, the mod's buildings light up when their row is ticked, as the game's own do: police stations, the courthouse, hotels, driving schools and more.
+- A stock market of its own: some 136 of the city's companies in a new Stocks app, with candle charts, the usual analysis tools, each company's figures and every usual kind of order, priced from their business and moved by everything in the city.
+- The City Ledger is now a real newspaper, set in a serif with ruled columns and a stock table: subscribe on the phone to have it left at your door each morning, or buy a copy at a kiosk near your home.
+- The bus is the mod's own city bus, with doors that open at the stop, lamps and indicators, and the stop's countdown now matches when it pulls in.
+- At bus stops beside parking the buses have a zone of their own: the parking there is cut back, bins and barricades in the road are cleared, the zone is painted, and the bus pulls in to the kerb.
+- With mouse look you can look up past the horizon to the tops of the buildings, on foot and in the car.
+- The mod's clothes are in the game's own clothes screen: at home your wardrobe's Change clothes has what you bought, and the rack in a clothing store opens the same screen as a shop, with the prices and a Buy button.
 
 Fixed
-- Some columns of figures in the mod's apps did not sort or add up, and a small number could colour its cell red or green.
-- The search box in Contacts was out of sight to the left of the app; it now has its own line above the list.
-- The minimap turned with the way you walked; it now turns with the camera.
-- A car towed after a crash could stay behind as a shell you walked through; the whole car now goes to the space.
-- The game could freeze for two seconds as an ambulance crew got out with the stretcher.
-- A subway entrance opened the mod's list of stations instead of the game's subway map; the game's map is back.
-- A lent car's parking ticket is paid back whole, and a few charges came out wrong: the pound's fee, the tow, a partner's and a roommate's share of the rent, and life events about a card or an accountant.
+- The mod's apps went missing from the phone after a bank's app changed, and a stray set of page dots was left on the top bar. Every app now stays on a page, the top bar of the phone's full screen shares the apps out evenly, and the page dots sit level with the icons.
+- At home the wardrobe's key for the mod's clothes did nothing; they are in the wardrobe's own Change clothes now.
+- Short stutters while the stock market traded and when a car was towed are gone, and the bus no longer stalls the game as it sets out.
+- Planned road works no longer close the lane just before a bus stop, which left the stop saying DELAYED; and more stops keep their bay.
