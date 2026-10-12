@@ -13,3 +13,4 @@ New
 
 Fixed
 - An unseen parked car could block the pavement while the "far districts" performance option was on.
+- The row of apps at the top of the full screen menu ran under the money and off the screen; it now has pages.
