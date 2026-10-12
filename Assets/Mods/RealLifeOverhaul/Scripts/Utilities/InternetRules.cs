@@ -10,12 +10,19 @@ namespace RealLifeOverhaul.Utilities
     /// </summary>
     public static class InternetRules
     {
-        public static int Count => InternetCatalogue.Providers.Length;
+        /// <summary>The providers: the rivals, and the player's own company where its network is open.</summary>
+        public static int Count => InternetCatalogue.Providers.Length + (OwnReaches ? 1 : 0);
 
         public static Provider Get(int provider)
         {
-            return provider >= 0 && provider < InternetCatalogue.Providers.Length ? InternetCatalogue.Providers[provider] : null;
+            if (provider >= 0 && provider < InternetCatalogue.Providers.Length)
+            {
+                return InternetCatalogue.Providers[provider];
+            }
+            return provider == InternetCatalogue.OwnIndex && OwnReaches ? InternetCatalogue.Own : null;
         }
+
+        private static bool OwnReaches => InternetCatalogue.Own.Districts.Length > 0;
 
         /// <summary>True if a provider reaches a neighbourhood.</summary>
         public static bool Reaches(int provider, string district)

@@ -11,13 +11,26 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
+    /// The tone of a cell: plain, the game's yellow, its red, its green (as EconoView colours a gain and a loss). A type
+    /// of its own so that a cell's figure is never taken for a tone: TableRow.Set(column, words, figure) orders and sums
+    /// the column by the figure whatever its type.
+    /// </summary>
+    public enum CellTone : byte
+    {
+        Plain = 0,
+        Yellow = 1,
+        Red = 2,
+        Green = 3
+    }
+
+    /// <summary>
     /// One row of an app's table: the words of each cell, what each cell is ordered by, the kind the row is of, or
     /// one line that only says something. An app keeps its rows and uses them again (Reset).
     /// </summary>
     public sealed class TableRow
     {
-        /// <summary>The tones of a cell: plain, the game's yellow, its red, its green (as EconoView colours a gain and a loss).</summary>
-        public const int Plain = 0, Yellow = 1, Red = 2, Green = 3;
+        /// <summary>The tones of a cell (GameUi.CellTone), by their old names.</summary>
+        public const GameUi.CellTone Plain = GameUi.CellTone.Plain, Yellow = GameUi.CellTone.Yellow, Red = GameUi.CellTone.Red, Green = GameUi.CellTone.Green;
 
         public string Id;
         public readonly string[] Text = new string[TableSpec.MaxColumns];
@@ -36,7 +49,7 @@ namespace RealLifeOverhaul.GameUi
         public string C { get { return Text[2]; } set { Text[2] = value; } }
         public string D { get { return Text[3]; } set { Text[3] = value; } }
         /// <summary>The tone of the fourth cell (the last one of a table of four).</summary>
-        public int Tone { get { return Tones[3]; } set { Tones[3] = (byte)value; } }
+        public GameUi.CellTone Tone { get { return (GameUi.CellTone)Tones[3]; } set { Tones[3] = (byte)value; } }
 
         public TableRow Reset(string id)
         {
@@ -45,7 +58,7 @@ namespace RealLifeOverhaul.GameUi
             {
                 Text[i] = null;
                 Key[i] = double.NaN;
-                Tones[i] = Plain;
+                Tones[i] = (byte)Plain;
             }
             Kind = Kind2 = -1;
             Info = Pick = Pinned = NoTotal = false;
@@ -54,7 +67,7 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>A cell of words, ordered by them where its column sorts.</summary>
-        public void Set(int column, string words, int tone = Plain)
+        public void Set(int column, string words, GameUi.CellTone tone = Plain)
         {
             Text[column] = words;
             Key[column] = double.NaN;
@@ -62,7 +75,7 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>A cell with the figure it is ordered (and summed) by: an amount, a rate, a count, a day.</summary>
-        public void Set(int column, string words, double key, int tone = Plain)
+        public void Set(int column, string words, double key, GameUi.CellTone tone = Plain)
         {
             Text[column] = words;
             Key[column] = key;
@@ -471,7 +484,7 @@ namespace RealLifeOverhaul.GameUi
                 {
                     continue;
                 }
-                switch (_row.Tones[i])
+                switch ((CellTone)_row.Tones[i])
                 {
                     case TableRow.Red: _cells[i].color = references.colors.red; break;
                     case TableRow.Yellow: _cells[i].color = selected ? references.colors.orange : references.colors.yellow; break;

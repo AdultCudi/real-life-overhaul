@@ -279,7 +279,7 @@ namespace RealLifeOverhaul.Economy
                 row.Set(1, RotaGame.Skills(who));
                 row.Set(2, CompanyText.T("reallife_rota_person_wage", "wage", CompanyText.Wage(sheet.Problem.Worker[w].Wage)));
                 row.Set(3, w < sheet.Fixed.Length && sheet.Fixed[w] ? CompanyText.T("reallife_rota_person_fixed") : RotaAsks(sheet.Problem.Worker[w]));
-                int tone;
+                CellTone tone;
                 string range = RotaRange(sheet, plan, w, out tone);
                 row.Set(4, range ?? CompanyText.T("reallife_rota_person_hours", "now", RotaHoursOf(now, w).ToString(), "plan", RotaHoursOf(plan, w).ToString()), tone);
                 row.Set(5, RotaDemandState(sheet, plan, w), unmet ? TableRow.Yellow : TableRow.Plain);
@@ -367,7 +367,7 @@ namespace RealLifeOverhaul.Economy
                 TableRow row = Row("who" + w);
                 row.A = hired ? CompanyText.T("reallife_rota_plan_hired", "skill", RotaGame.GroupSkill(sheet, group)) : RotaGame.WorkerName(sheet.Workers[w]);
                 row.B = hired ? CompanyText.T("reallife_rota_person_wage", "wage", CompanyText.Wage(RotaLadder.Going(shop, group))) : RotaAsks(sheet.Problem.Worker[w]);
-                int tone = TableRow.Plain;
+                CellTone tone = TableRow.Plain;
                 string range = hired ? null : RotaRange(sheet, r, w, out tone);
                 row.Set(2, CompanyText.T("reallife_rota_plan_person", "hours", RotaHoursOf(r, w).ToString(), "now", RotaHoursOf(now, w).ToString()));
                 row.Set(3, hired ? string.Empty : range ?? RotaDemandState(sheet, r, w), range != null ? tone : !hired && RotaUnmetOf(sheet, r.Plan, w) != null ? TableRow.Yellow : hired ? TableRow.Green : TableRow.Plain);
@@ -503,7 +503,7 @@ namespace RealLifeOverhaul.Economy
                 row.B = CompanyText.T(gap.Reason == RotaReason.NoSkill ? "reallife_rota_gap_no_skill" : "reallife_rota_gap_stretched");
                 row.C = CompanyText.T("reallife_rota_from_to", "from", RotaHour(gap.From), "to", RotaHour(gap.To));
                 row.D = RotaDayName(gap.Day);
-                row.Tone = 2;
+                row.Tone = TableRow.Red;
             }
             if (plan.Gaps.Count > rows)
             {
@@ -699,7 +699,7 @@ namespace RealLifeOverhaul.Economy
 
         // The hours a week somebody asks for against what a plan gives: inside the range in green; outside it, or left out because
         // the least cannot be had, in red with the clash in a sentence and what would remove it. Null for somebody who asks for none.
-        private static string RotaRange(RotaSheet sheet, RotaRung r, int worker, out int tone)
+        private static string RotaRange(RotaSheet sheet, RotaRung r, int worker, out CellTone tone)
         {
             int least, most, hours = RotaHoursOf(r, worker);
             tone = TableRow.Plain;

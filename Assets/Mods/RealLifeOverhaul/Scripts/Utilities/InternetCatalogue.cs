@@ -59,6 +59,20 @@ namespace RealLifeOverhaul.Utilities
             }
         };
 
+        /// <summary>
+        /// The player's own broadband company as a provider (Utilities/Broadband), as this save has it: it reaches where
+        /// its network is open, connects the player's own places free and fails as its maintenance allows; sold, it is
+        /// its buyer's at the usual prices. BroadbandRules.Apply sets it; with no company it reaches nowhere.
+        /// </summary>
+        public static readonly Provider Own = new Provider
+        {
+            Id = "own", NameKey = BroadbandCatalogue.OwnNameKey, KindKey = "reallife_net_kind_fibre", Districts = new string[0],
+            OutagePerMille = BroadbandCatalogue.OutageBase, Mbps = BroadbandCatalogue.Mbps, MonthCents = new int[BroadbandCatalogue.Mbps.Length]
+        };
+
+        /// <summary>The company's place among the providers: after the rivals.</summary>
+        public static int OwnIndex => Providers.Length;
+
         public const int BusinessShare = 1800;       // thousandths of a home's price that a business plan costs (repairs first)
         public const int MonthlyShare = 1200;        // ...and month by month, without a contract
         public const int ContractMonths = 12;        // a contract runs this many of the game's months

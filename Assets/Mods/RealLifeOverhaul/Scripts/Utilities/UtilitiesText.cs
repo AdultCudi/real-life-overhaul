@@ -13,6 +13,15 @@ namespace RealLifeOverhaul.Utilities
             return amount.ToCurrencyFormat();
         }
 
+        /// <summary>The game's culture, for counts written as the game writes them (12,500).</summary>
+        public static System.Globalization.CultureInfo Culture => CultureHelper.CultureInfo ?? System.Globalization.CultureInfo.InvariantCulture;
+
+        /// <summary>Thousandths as a percentage (231 as 23.1).</summary>
+        public static string Percent(int thousandths)
+        {
+            return (thousandths / 10f).ToString("0.#", Culture);
+        }
+
         public static string T(string key)
         {
             return key.GetLocalization();

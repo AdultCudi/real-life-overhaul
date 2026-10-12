@@ -58,12 +58,16 @@ namespace RealLifeOverhaul.Utilities
         private UtilitiesDesk _desk;
         private PhoneApp _app;
         private UtilitiesApp _view;
+        private BroadbandCompany _company;
 
         /// <summary>The accounts while a save is running; null otherwise.</summary>
         public UtilitiesState State => _loaded ? _state : null;
 
         /// <summary>The player's places as last read (each morning, when the app opens, at the desk).</summary>
         public IReadOnlyList<PlaceInfo> Places => _places;
+
+        /// <summary>The player's broadband company while a save is running; null otherwise.</summary>
+        public BroadbandCompany Company => _loaded ? _company : null;
 
         public UtilitiesOffice Office => _office;
         public DeskList Window => _window;
@@ -148,6 +152,7 @@ namespace RealLifeOverhaul.Utilities
             _door = new DoorPanel(Logger, "Utilities check (office panel)");
             _window = new DeskList("RealLifeOverhaul Utilities Desk", 1100f, 120f);
             _onDesk = _door.Press(DeskClicked);
+            _company = new BroadbandCompany(this);
         }
 
         private void OnDestroy()
@@ -238,8 +243,9 @@ namespace RealLifeOverhaul.Utilities
             _office = new UtilitiesOffice(Logger);
             _desk = new UtilitiesDesk(this);
             Sync(today, fresh);
+            BroadbandRules.Apply(_state.Network, today);   // the company as a provider, as this save has it
             Logger?.Info("Utilities: " + (fresh ? "started in this save" : "read from the save (line v" + version + ")") + ": " + _state.Accounts.Count + " account(s) for "
-                         + _places.Count + " place(s); the month began on day " + _state.MonthStart + ".");
+                         + _places.Count + " place(s); the month began on day " + _state.MonthStart + (_state.Network.Exists ? "; a broadband company (" + _state.Network.State + ")" : string.Empty) + ".");
         }
 
         private void Stop(string why)
@@ -261,6 +267,7 @@ namespace RealLifeOverhaul.Utilities
             _loaded = false;
             _save = null;
             _state = null;
+            BroadbandRules.Apply(null, 0);   // (no company of this save's is a provider of the next one)
             _places.Clear();
             Logger?.Info("Utilities: stopped (" + why + ").");
         }
@@ -422,6 +429,7 @@ namespace RealLifeOverhaul.Utilities
             int monthDays = GameCalendar.MonthDays;
             int level = Prices.Level;
             Sync(today, false);
+            _company.Morning(today);
             int from = Math.Max(_state.LastDay + 1, today - CatchUpDays);
             int bills = 0, billed = 0;
             for (int d = from; d < today; d++)
@@ -450,6 +458,7 @@ namespace RealLifeOverhaul.Utilities
                         InternetRules.AddDay(a, monthDays, a.OutageUntil > a.OutageFrom && a.OutageFrom / 24 == d);   // (a day the provider failed is not charged)
                     }
                 }
+                _company.Day(d, level, monthDays);
                 if (d + 1 - _state.MonthStart >= monthDays)
                 {
                     NewMonth(d + 1, level);
@@ -484,12 +493,17 @@ namespace RealLifeOverhaul.Utilities
             }
         }
 
-        // The providers' month: each price moves (InternetRules.NextPromo), and a plan out of contract is priced again.
+        // The providers' month: each rival's price moves (InternetRules.NextPromo), held down where the player's broadband
+        // company has taken its customers (BroadbandRules.AnswerCap); a plan out of contract is priced again; the city's
+        // market moves (BroadbandCompany.Month).
         private void NewMonth(int day, int level)
         {
-            for (int p = 0; p < InternetRules.Count && p < _state.Promo.Length; p++)
+            int answered = 0;
+            for (int p = 0; p < InternetCatalogue.Providers.Length && p < _state.Promo.Length; p++)
             {
-                _state.Promo[p] = InternetRules.NextPromo(_state.Seed, _state.Month, p, _state.Promo[p]);
+                int walked = InternetRules.NextPromo(_state.Seed, _state.Month, p, _state.Promo[p]);
+                _state.Promo[p] = Math.Max(InternetCatalogue.PromoLeast, Math.Min(walked, BroadbandRules.AnswerCap(_state.Network, p)));
+                answered += _state.Promo[p] < walked ? 1 : 0;
             }
             _state.Month++;
             for (int i = 0; i < _state.Accounts.Count; i++)
@@ -497,9 +511,10 @@ namespace RealLifeOverhaul.Utilities
                 Account a = _state.Accounts[i];
                 if (a.Service == Service.Internet && a.State != SupplyState.Closed && a.ContractUntil <= day && a.Provider >= 0)
                 {
-                    a.PriceCents = InternetRules.MonthCents(a.Provider, a.Plan, a.BusinessPlan, false, level, _state.Promo[a.Provider]);
+                    a.PriceCents = InternetRules.MonthCents(a.Provider, a.Plan, a.BusinessPlan, false, level, _state.PromoOf(a.Provider));
                 }
             }
+            _company.Month(day, level, GameCalendar.MonthDays, answered);
         }
 
         // Today's outages, drawn from the save's seed: each connection of a provider that fails is down for some hours.
@@ -523,7 +538,12 @@ namespace RealLifeOverhaul.Utilities
                         affected++;
                     }
                 }
-                if (affected > 0)
+                if (p == InternetCatalogue.OwnIndex && _state.Network.Running)
+                {
+                    // (the player's own network: its customers are not billed for the day, BroadbandCompany.Day)
+                    UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_bb_toast_outage", "hour", UtilitiesText.Hour(from), "hours", hours.ToString()), 12f);
+                }
+                else if (affected > 0)
                 {
                     UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_net_toast_outage", "provider", UtilitiesText.T(InternetRules.Get(p).NameKey),
                         "hour", UtilitiesText.Hour(from), "hours", hours.ToString()), 12f);
@@ -626,7 +646,7 @@ namespace RealLifeOverhaul.Utilities
             }
             PlaceInfo? place = PlaceOf(a);
             string key = a.Service == Service.Power ? "reallife_transaction_util_power" : a.Service == Service.Water ? "reallife_transaction_util_water" : "reallife_transaction_util_net_bill";
-            if (!UtilitiesGame.Pay(a.Owed, key, place?.Reg))
+            if (!UtilitiesGame.Pay(a.Owed, key, place?.Reg, deductible: true))
             {
                 return false;
             }
@@ -677,7 +697,7 @@ namespace RealLifeOverhaul.Utilities
             }
             int cost = ApplicationCost(a, out int deposit, out int fee);
             PlaceInfo? place = PlaceOf(a);
-            if (cost > 0 && !UtilitiesGame.Pay(cost, fee > 0 && deposit == 0 ? "reallife_transaction_util_reconnect" : "reallife_transaction_util_deposit", place?.Reg))
+            if (cost > 0 && !UtilitiesGame.Pay(cost, fee > 0 && deposit == 0 ? "reallife_transaction_util_reconnect" : "reallife_transaction_util_deposit", place?.Reg, deductible: deposit == 0))
             {
                 why = "reallife_util_desk_no_cash";
                 return false;
@@ -730,10 +750,12 @@ namespace RealLifeOverhaul.Utilities
                 why = "reallife_net_owed_first";
                 return false;
             }
+            bool ours = provider == InternetCatalogue.OwnIndex && _state.Network.Running;
+            contract &= !ours;   // (no contract with one's own company, nor installation fee: its engineers do it)
             bool live = a != null && a.State != SupplyState.Closed && a.State != SupplyState.Cut;
             bool same = live && a.Provider == provider;
             int exit = live && !same ? InternetRules.ExitFee(a, today, monthDays) : 0;
-            int install = same || contract ? 0 : InternetCatalogue.InstallFee;
+            int install = same || contract || ours ? 0 : InternetCatalogue.InstallFee;
             int price = NetPrice(place, provider, plan, contract);
             if (exit + install > UtilitiesGame.Cash)
             {
@@ -742,11 +764,11 @@ namespace RealLifeOverhaul.Utilities
             }
             if (exit > 0)
             {
-                UtilitiesGame.Pay(exit, "reallife_transaction_util_net_exit", place.Reg);
+                UtilitiesGame.Pay(exit, "reallife_transaction_util_net_exit", place.Reg, deductible: true);
             }
             if (install > 0)
             {
-                UtilitiesGame.Pay(install, "reallife_transaction_util_net_install", place.Reg);
+                UtilitiesGame.Pay(install, "reallife_transaction_util_net_install", place.Reg, deductible: true);
             }
             if (a == null)
             {
@@ -793,7 +815,7 @@ namespace RealLifeOverhaul.Utilities
             }
             int today = UtilitiesGame.Today, monthDays = GameCalendar.MonthDays;
             int exit = InternetRules.ExitFee(a, today, monthDays);
-            if (exit > 0 && !UtilitiesGame.Pay(exit, "reallife_transaction_util_net_exit", place.Reg))
+            if (exit > 0 && !UtilitiesGame.Pay(exit, "reallife_transaction_util_net_exit", place.Reg, deductible: true))
             {
                 why = "reallife_net_no_cash";
                 return false;
@@ -827,6 +849,34 @@ namespace RealLifeOverhaul.Utilities
             UtilitiesText.Toast(NotificationType.Success, UtilitiesText.T("reallife_net_toast_reconnect", "place", place.Name), 8f);
             _view?.Changed();
             return true;
+        }
+
+        /// <summary>Test: a month of the city's market and the company's books now (its takings and costs of the month so far closed).</summary>
+        public void TestNetworkMonth()
+        {
+            if (!Ready("reallife_util_test_network_month"))
+            {
+                return;
+            }
+            if (!_state.Network.Exists)
+            {
+                UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_bb_not_running"), 8f);
+                return;
+            }
+            _company.Month(UtilitiesGame.Today, Prices.Level, GameCalendar.MonthDays, 0);
+            _view?.Changed();
+        }
+
+        /// <summary>Test: every network being dug opens this morning.</summary>
+        public void TestNetworkBuilt()
+        {
+            if (!Ready("reallife_util_test_network_built"))
+            {
+                return;
+            }
+            int opened = _company.TestBuilt(UtilitiesGame.Today);
+            UtilitiesText.Toast(NotificationType.Info, UtilitiesText.T("reallife_util_test_network_built_done", "count", opened.ToString()), 8f);
+            _view?.Changed();
         }
 
         /// <summary>Test: every connection in an outage from now for two hours.</summary>

@@ -739,6 +739,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_util_test_cut", () => Utilities.UtilitiesDirector.Instance?.TestCutHome())
                 .AddButton("reallife_util_test_restore", () => Utilities.UtilitiesDirector.Instance?.TestRestore())
                 .AddButton("reallife_util_test_outage", () => Utilities.UtilitiesDirector.Instance?.TestOutage())
+                .AddButton("reallife_util_test_network_month", () => Utilities.UtilitiesDirector.Instance?.TestNetworkMonth())
+                .AddButton("reallife_util_test_network_built", () => Utilities.UtilitiesDirector.Instance?.TestNetworkBuilt())
                 .AddSplitter()
                 .AddHeader("reallife_family_header")
                 .AddToggle(Settings.FamilyId, "reallife_family_enabled", Settings.Family,

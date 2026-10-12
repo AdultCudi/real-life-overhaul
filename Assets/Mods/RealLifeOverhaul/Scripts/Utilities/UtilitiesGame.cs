@@ -5,6 +5,7 @@ using BigAmbitions.DayNightCycle;
 using Buildings;
 using Buildings.Schedule;
 using Helpers;
+using Localizor;
 using Streets;
 using UnityEngine;
 
@@ -29,7 +30,8 @@ namespace RealLifeOverhaul.Utilities
     /// </summary>
     public static class UtilitiesGame
     {
-        private const string Residential = "ba:buildingtype_residential";
+        private const string Residential = "ba:buildingtype_residential", HeadquartersType = "ba:businesstype_headquarters";
+        private const string BillsDeductKey = "reallife_util_deduct", CompanyDeductKey = "reallife_broadband_deduct";
 
         public static GameInstance Save => SaveGameManager.Current;
         public static int Today => Save != null ? Save.Day : 0;
@@ -147,15 +149,67 @@ namespace RealLifeOverhaul.Utilities
             return 1 + Mathf.Max(0, household != null ? household(place.Reg) : 0);
         }
 
-        /// <summary>Money taken for a bill, a fee or a deposit. False if the game refused it (not enough cash).</summary>
-        public static bool Pay(int amount, string key, BuildingRegistration reg, bool force = false)
+        /// <summary>
+        /// Money taken for a bill, a fee or a deposit. A business's bills and fees (deductible) are deducted by the game's
+        /// tax as its own charges are; a home's, and a deposit, are not. False if the game refused it (not enough cash).
+        /// </summary>
+        public static bool Pay(int amount, string key, BuildingRegistration reg, bool force = false, bool deductible = false)
         {
             if (amount <= 0)
             {
                 return true;
             }
             var info = new TransactionInfo(key, new Dictionary<string, string>(1) { { "place", reg != null ? reg.Address.ToFormattedString() : string.Empty } });
+            if (deductible && reg != null && !IsHome(reg))
+            {
+                info.SetTaxDeductibleName(BillsDeductKey.GetLocalization());
+            }
             return GameManager.ChangeMoneySafe(-amount, info, null, reg != null ? reg.Address : null, force: force, showNotification: true);
+        }
+
+        /// <summary>True if a place is a home (a residential building).</summary>
+        public static bool IsHome(BuildingRegistration reg)
+        {
+            Building building = reg != null ? BuildingHelper.GetBuilding(reg.Address) : null;
+            return building != null && building.BuildingType == Residential;
+        }
+
+        /// <summary>The player's headquarters (the game has one at most), or null.</summary>
+        public static BuildingRegistration Headquarters()
+        {
+            GameInstance save = Save;
+            for (int i = 0; save != null && save.BuildingRegistrations != null && i < save.BuildingRegistrations.Count; i++)
+            {
+                BuildingRegistration reg = save.BuildingRegistrations[i];
+                if (reg != null && reg.RentedByPlayer && reg.HasValidAddress && reg.businessTypeName == HeadquartersType)
+                {
+                    return reg;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Money of the player's broadband company at its headquarters (a positive amount comes in, a negative one goes
+        /// out): under a category of the game's where its statement has a line for it. A running cost is deducted by the
+        /// game's tax and taken however little cash there is (force), as the game takes its rent; capital (the licence, a
+        /// network dug) is neither deducted nor taken without the cash, as the sale of the company is not taxed. False if
+        /// refused.
+        /// </summary>
+        public static bool Book(int amount, string key, BuildingRegistration hq, string category, bool running = true)
+        {
+            bool force = running;
+            if (amount == 0)
+            {
+                return true;
+            }
+            var data = new Dictionary<string, string>(1) { { "place", hq != null ? (string.IsNullOrEmpty(hq.BusinessName) ? hq.Address.ToFormattedString() : hq.BusinessName) : string.Empty } };
+            TransactionInfo info = category != null ? new TransactionInfo(key, category, data) : new TransactionInfo(key, data);
+            if (amount < 0 && running)
+            {
+                info.SetTaxDeductibleName(CompanyDeductKey.GetLocalization());
+            }
+            return GameManager.ChangeMoneySafe(amount, info, null, hq != null ? hq.Address : null, force: force && amount < 0, showNotification: false);
         }
 
         /// <summary>Money given back (a deposit, the rest of one after a last bill).</summary>
