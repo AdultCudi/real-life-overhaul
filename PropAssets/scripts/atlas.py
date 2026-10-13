@@ -1038,7 +1038,7 @@ LIFE_DECALS = {
 #
 # They are painted in this order after everything above, each from where the shared random stream then stands, so
 # adding a module at the end (or a region at the end of the last) leaves every earlier region as it was.
-EXTRA = ["civic", "service", "events", "everyday", "garage", "family", "site"]
+EXTRA = ["civic", "service", "events", "everyday", "garage", "family", "site", "tow"]
 
 
 def extra_modules():

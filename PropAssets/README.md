@@ -13,7 +13,7 @@ scripts\
   props.py                THE PROPS: one function each, and the list with triangle budgets
   city_props.py           the city-life props (tools, things carried, the coffee cart): same rules, listed by props.py
   life_props.py           the second round (things held, pushed and worn, job props, street furniture): likewise
-  props_<name>.py         the later rounds, a module each (civic, service, events, everyday, garage, family, site), with its
+  props_<name>.py         the later rounds, a module each (civic, service, events, everyday, garage, family, site, tow), with its
   paint_<name>.py           own painting module (what it adds to the atlas) and
   checks_<name>.py          its own measurements for check_life.py
   scenes.py               whole scenes made of the exported props: previews\scene_<name>.png
@@ -67,18 +67,18 @@ occlusion, and nothing else: no Blender-only shading.
 | | limit | now |
 |---|---|---|
 | triangles, each prop | its own budget, beside its maker in the `PROPS` lists | see the tables below |
-| triangles, all props together | 130 000 | 120 198 (241 props: the two-wheelers are in the bundle whole and in parts, the city bus in parts, its roof apart) |
+| triangles, all props together | 130 000 | 124 220 (250 props: the two-wheelers are in the bundle whole and in parts, the city bus and the tow truck in parts) |
 | materials | 2, shared by everything | 2 |
-| textures | one atlas: 4096 x 2048 colour + 2048 x 1024 mask, BC7 (the bundle check fails on anything else); the two road paint pictures | 14.0 MB of video memory (10.7 + 2.7, and 0.7 for the road paint), 248 regions, 87 % of the atlas used |
-| meshes in memory | | 6.6 MB |
-| bundle on disk | 16 MB | 10.6 MB, loaded once per session, asynchronously |
+| textures | one atlas: 4096 x 2048 colour + 2048 x 1024 mask, BC7 (the bundle check fails on anything else); the two road paint pictures | 14.0 MB of video memory (10.7 + 2.7, and 0.7 for the road paint), 258 regions, 90 % of the atlas used |
+| meshes in memory | | 7.1 MB |
+| bundle on disk | 16 MB | 11.1 MB, loaded once per session, asynchronously |
 
 **Why the ceilings went up** (they were 30 000 triangles, a 2048 x 2048 atlas and 9 MB for 77 props). The first two
 rounds were things in a hand and a cordon. The later rounds are a police station's frontage, bus stops and a bus,
 a fire engine, hotels, street events, home and social life, a garage and a building site: 240 props, among
 them vehicle bodies of 3 700 to 6 300 triangles. None of it is drawn unless a feature places it, a placed prop is one
 instanced draw call with one of two materials, and a scene shows a dozen at most: the totals are what sits in memory,
-not what is rendered. Memory is the real cost: about 6.6 MB of meshes and 14.0 MB of texture, where the game's own
+not what is rendered. Memory is the real cost: about 7.1 MB of meshes and 14.0 MB of texture, where the game's own
 city uses gigabytes. The atlas doubled in width only (BC7 keeps it at one byte a pixel); `PropLibrary` reads exactly
 one bundle with one colour and one mask texture, so a second bundle or a second atlas would have needed code and a
 third material. If the atlas fills again, 4096 x 4096 is the next step (27 MB); nothing else changes.
@@ -555,6 +555,33 @@ Not asked for by code (made for an earlier wish-list; kept because they are done
 Atlas: 28 regions (5 swatches: `site_party_0` .. `_3`, `site_door`; 23 decals), 465 536 pixels with their gutters. One word is one strip that several props share (`site_vote` is on ten props), the stars are geometry. Module total 12 633 triangles.
 <!-- end: site -->
 <!-- end: site -->
+
+<!-- module: tow -->
+### The tow truck (`scripts\props_tow.py`, painted by `paint_tow.py`, measured by `checks_tow.py`)
+
+**The mod's own rollback tow truck** (`Traffic/Tow/TowTruck`), on no vehicle of the game's, driven by the city bus's driver
+(`Transport/BusDriver`). A cab-over truck 8.3 m long, its cab 2.26 m wide and its bed 2.40, on two axles 4.60 m apart, in the
+livery of a firm of the city's own (Bridgeway Towing: white over a navy skirt, an amber stripe round the cab), an amber light bar
+on its roof. **Its parts are modelled where they lie at rest, in the truck's own space**, so the code puts each on at the truck's
+origin and moves the subframe and the bed from there: the subframe turns nose up about (0, 0.89, -4.45) by up to 13 degrees, the
+bed slides back along it by up to 4.12 m (`TowRules.DeckPose`), and its tail then lies 4 cm over the road 8.89 m behind the
+origin. `checks_tow.py` holds every figure `TowRules` and `TowTruck` use to the model's. **The wheels are the city bus's**
+(`city_bus_wheel`, `city_bus_wheel_twin`) drawn at 0.45 / 0.48 of their size: no meshes of its own for them. `previews\scene_tow_loading.png`
+shows the bed down with a car-sized box at its foot, `scene_tow_loaded.png` the bed up with one on it.
+
+| id | size | triangles | material | pivot and facing | use |
+|---|---|---|---|---|---|
+| `tow_truck` | 2.71 x 2.61 x 8.16 | 2 996 | lit | **ground centre under the middle between its axles**; nose to +Z | `TowTruck` (`Shapes.Prop` under its shell, which leans and dips). **Axles at z +2.30 and -2.30** (`TowRules.AxleFront`, `AxleRear`), wheels at x +-0.98 (front) and +-0.90 (rear pair), 0.45 in radius. Cab from z 1.50 to 3.30, its roof 2.615 up; the bumper's face at z 3.42 (`TowRules.Nose`), its tow eyes and plate 6 cm beyond. **The light bar** on the roof, the middle of its underside at (0, 2.615, 2.40) (`TowTruck.BarAt`), 1.40 long: the code shows `tow_bar_lens` over each half in turn. **Control levers on both sides** at z 0.75 (`PanelAhead`), five knobs 1.00 m up reaching x +-1.24 (`PanelOut`): `TowService` stands the operator 0.46 m out from them for `pump_panel`. Lockers between the cab and the rear wheels, the chassis rails to z -4.55, the underride bar with red and white stripes, the ram's mount on the chassis at (0, 0.60, -1.00) (`RamFoot`). Nothing of the body behind the cab reaches the bed's underside (0.94 m) |
+| `tow_truck_tilt` | 1.10 x 0.14 x 5.40 | 176 | lit | **the truck's origin**: modelled where it lies at rest | The subframe: two rails 0.10 m square at x +-0.40 from z -4.50 to 0.90, on the chassis rails, cross members, the pivot tube across at (y 0.89, z -4.45) (`TowTruck.TiltPivot`). The ram's head under it at (0, 0.84, -2.50) at rest (`RamHead`): the code draws the ram between the two |
+| `tow_truck_bed` | 2.42 x 1.24 x 6.15 | 686 | lit | **the truck's origin**: modelled where it lies at rest | The bed: its top 1.06 m up (`TowRules.BedTop`) from its tail at z -4.85 (`BedTail`) to the headboard at 1.17 (`HeadBoard`), 2.40 wide, the underside tapering to a 3 cm lip over the last 0.55 m; steel planks with hazard stripes at the tail, edge rails, red and white strips along the sides, marker lamps. The headboard lettered on its back, two work lamps on it. **The winch** before the headboard: its cable leaves at (0, 1.18, 0.84) (`TowTruck.WinchAt`), where the code starts the cable it draws. A car up to 5.6 m long fits between the tail and the headboard less 0.30 (`TowRules.LongestCar`) |
+| `tow_bar_lens` | 0.69 x 0.10 x 0.26 | 44 | glow | **the middle of the underside of the light bar** (`tow_truck`'s (0, 2.615, 2.40)); the lens is at +X | The +X half of the light bar again, 3 mm proud of it all round, in the glow material; the code turns a second one 180 degrees about Y for the other half and shows them in turn while the truck is at work, with two amber point lights over the bar |
+| `tow_truck_light_head` | 1.58 x 0.11 x 0.00 | 32 | glow | **the truck's own origin**, as `tow_truck` | The lenses of the two headlamp units (the city bus's `svc_headlamp`, made 0.36 x 0.205) again, 1.5 mm proud: from dusk |
+| `tow_truck_light_tail`, `_brake` | 1.88 x 0.11 x 0.00 | 4 each | glow | as `tow_truck_light_head` | The tail and the brake lenses of the two back units (the bus's `svc_bus_tail_lamp`, made 0.12 x 0.48), faces at z -4.66 under the bed's overhang |
+| `tow_truck_light_left`, `_right` | 0.33 x 0.17 x 8.01 | 6 each | glow | as `tow_truck_light_head` | A side's indicators: the outer end of the headlamp unit, the top of the back unit, the repeater on the cab's side. Both blink together while the truck stands at work |
+
+Atlas: 10 regions (2 swatches: `tow_blue`, `tow_amber`; 8 decals: the light bar, the doors, the headboard, the grille, the plate,
+the deck, the side strips, the underride bar's stripes). The glass, the lamps and the wheels' faces are the service vehicles' regions.
+<!-- end: tow -->
 
 ## Fit to the character
 

@@ -132,6 +132,8 @@ namespace RealLifeOverhaul
                     v => Settings.AccidentNotices = v)
                 .AddToggle(Settings.AccidentMarkerId, "reallife_accident_waypoint", Settings.AccidentMarker,
                     v => Settings.AccidentMarker = v)
+                .AddToggle(Settings.TowTrucksId, "reallife_tow_trucks", Settings.TowTrucks,
+                    v => Settings.TowTrucks = v)
                 .AddToggle(Settings.PoliceId, "reallife_police", Settings.Police,
                     v => Settings.Police = v)
                 .AddSlider(Settings.PolicePresenceId, "reallife_police_presence", 0, 10, Settings.PolicePresence,
@@ -169,6 +171,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_accident_minor", () => TrafficAccidents.Instance?.StageAccidentNow(TrafficAccidents.Severity.Minor))
                 .AddButton("reallife_test_accident_moderate", () => TrafficAccidents.Instance?.StageAccidentNow(TrafficAccidents.Severity.Moderate))
                 .AddButton("reallife_test_accident_severe", () => TrafficAccidents.Instance?.StageAccidentNow(TrafficAccidents.Severity.Severe))
+                .AddButton("reallife_test_tow_truck", () => TowService.Instance?.Test())
                 .AddButton("reallife_test_ragdoll", () => PedestrianIncidents.Instance?.TestNearest())
                 .AddButton("reallife_test_ped_incident", () => PedestrianIncidents.Instance?.StageNow())
                 .AddButton("reallife_test_streets_speeder", () => RecklessDrivers.Instance?.Test(RecklessDrivers.TestKind.Speeder))
@@ -1008,6 +1011,7 @@ namespace RealLifeOverhaul
             VehicleTow.Logger = context.Logger;
             CrashConsequences.Logger = context.Logger;
             TrafficAccidents.Logger = context.Logger;
+            TowService.Logger = context.Logger;
             TrafficTools.Logger = context.Logger;
             TrafficEffects.Logger = context.Logger;
             ResponseUnit.Logger = context.Logger;
@@ -1089,6 +1093,7 @@ namespace RealLifeOverhaul
             _root.AddComponent<RagdollSystem>();   // before anyone who throws people down
             _root.AddComponent<ActorPool>();   // before the scenes that put people on the street
             _root.AddComponent<TrafficAccidents>();
+            _root.AddComponent<TowService>();   // the tow truck that takes a cleared scene's wrecks away (Traffic/Tow): disabled while there is nothing to tow
             _root.AddComponent<PolicePursuit>();
             _root.AddComponent<StreetCrime>();
             _root.AddComponent<CrimeDirector>();   // the scenes StreetCrime now forwards to

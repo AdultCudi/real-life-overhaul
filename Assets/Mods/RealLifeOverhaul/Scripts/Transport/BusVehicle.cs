@@ -42,7 +42,7 @@ namespace RealLifeOverhaul
     ///
     /// One per <see cref="TransitBus"/>, made the first time it is sent out and switched off in between.
     /// </summary>
-    public sealed class BusVehicle : MonoBehaviour
+    public sealed class BusVehicle : MonoBehaviour, IDrivenVehicle
     {
         // Its measurements: the bays are laid out for them (BusBay), and the modelled body is built to them
         // (PropAssets/scripts/props_service.py, city_bus).
@@ -120,6 +120,14 @@ namespace RealLifeOverhaul
         public bool Out => gameObject.activeSelf;
 
         public Rigidbody Body => _body;
+
+        // What its driver measures it by (IDrivenVehicle): the constants above.
+        public Transform Frame => transform;
+        float IDrivenVehicle.FrontAxleAhead => AxleFront;
+        float IDrivenVehicle.RearAxleAhead => AxleRear;
+        float IDrivenVehicle.AxleSpan => Wheelbase;
+        float IDrivenVehicle.NoseBeyondAxle => NoseAhead;
+        float IDrivenVehicle.HalfBreadth => HalfWidth;
         public Collider Solid => _solid;
 
         // ---------------------------------------------------------------- making it
