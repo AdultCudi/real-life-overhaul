@@ -441,8 +441,9 @@ internal static partial class Program
         string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
         Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(folder, "en.json"));
         Dictionary<string, string> pt = LoadWords(System.IO.Path.Combine(folder, "pt.json"));
-        Check(en != null && pt != null, "permadeath: en.json and pt.json are where the checks look for them (" + folder + ")");
-        if (en == null || pt == null)
+        Dictionary<string, string> zh = LoadWords(System.IO.Path.Combine(folder, "zh-cn.json"));
+        Check(en != null && pt != null && zh != null, "permadeath: en.json, pt.json and zh-cn.json are where the checks look for them (" + folder + ")");
+        if (en == null || pt == null || zh == null)
         {
             return;
         }
@@ -465,11 +466,11 @@ internal static partial class Program
             PermadeathStory.Draft(story, true, DraftScratch);
             foreach (ObitLine line in DraftScratch) keys.Add(line.Key);
         }
-        bool present = true, names = true, same = true;
+        bool present = true, names = true, same = true, sameZh = true;
         var missing = new List<string>();
         foreach (string key in keys)
         {
-            if (!en.TryGetValue(key, out string e) || !pt.TryGetValue(key, out string p) || e.Trim().Length == 0 || p.Trim().Length == 0)
+            if (!en.TryGetValue(key, out string e) || !pt.TryGetValue(key, out string p) || !zh.TryGetValue(key, out string z) || e.Trim().Length == 0 || p.Trim().Length == 0 || z.Trim().Length == 0)
             {
                 present = false;
                 missing.Add(key);
@@ -483,16 +484,21 @@ internal static partial class Program
             var b = new List<string>();
             foreach (Match m in Regex.Matches(e, @"\{[a-z_]+\}")) a.Add(m.Value);
             foreach (Match m in Regex.Matches(p, @"\{[a-z_]+\}")) b.Add(m.Value);
+            var c = new List<string>();
+            foreach (Match m in Regex.Matches(z, @"\{[a-z_]+\}")) c.Add(m.Value);
             a.Sort();
             b.Sort();
+            c.Sort();
             same &= string.Join(",", a) == string.Join(",", b);
+            sameZh &= string.Join(",", a) == string.Join(",", c);
         }
-        Check(keys.Count > 60 && present, "permadeath: every sentence a page can have is in en.json and pt.json (" + keys.Count + " keys" + (missing.Count > 0 ? "; missing " + string.Join(", ", missing) : string.Empty) + ")");
+        Check(keys.Count > 60 && present, "permadeath: every sentence a page can have is in en.json, pt.json and zh-cn.json (" + keys.Count + " keys" + (missing.Count > 0 ? "; missing " + string.Join(", ", missing) : string.Empty) + ")");
         Check(names, "permadeath: every name in the obituary's sentences is one the page fills in");
         Check(same, "permadeath: the Portuguese sentences have the same names as the English");
+        Check(sameZh, "permadeath: the Chinese sentences have the same names as the English");
         foreach (string key in new[] { "reallife_pd_n_year_many", "reallife_pd_n_day_many", "reallife_pd_n_friend_many", "reallife_pd_n_time_many" })
         {
-            Check(en.TryGetValue(key, out string t) && t.Contains("{count}") && pt.ContainsKey(key), "permadeath: " + key + " says its count");
+            Check(en.TryGetValue(key, out string t) && t.Contains("{count}") && pt.ContainsKey(key) && zh.ContainsKey(key), "permadeath: " + key + " says its count");
         }
         foreach (string key in new[] { "reallife_pd_ill_1", "reallife_pd_ill_2", "reallife_pd_ill_3", "reallife_pd_near_crash", "reallife_pd_near_struck", "reallife_pd_near_mugging",
                      "reallife_pd_near_assault", "reallife_pd_mugged_body", "reallife_opt_tip_permadeath" })

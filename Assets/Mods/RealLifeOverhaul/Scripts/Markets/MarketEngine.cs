@@ -42,7 +42,7 @@ namespace RealLifeOverhaul.Markets
     /// its recent days, falls more than rises), more near the open and the close; the night between two sessions is a
     /// gap. A company under a takeover bid trades close to what the bid is worth and hardly moves.
     /// </summary>
-    public sealed class MarketEngine
+    public sealed partial class MarketEngine
     {
         private const int Sectors = (int)MarketSector.Count;
         private const int Steps = MarketCatalogue.Steps;
@@ -328,6 +328,11 @@ namespace RealLifeOverhaul.Markets
                 }
                 return;
             }
+            if (e.Kind >= MarketInputs.EventOwn && e.Kind < MarketInputs.EventCompany)
+            {
+                OwnEvent(e);   // what the founder of a player's company asked for (MarketEngine.Own.cs)
+                return;
+            }
             if (e.Kind == MarketInputs.EventTrade || e.Kind == MarketInputs.EventVolume)
             {
                 // A player's trade in a Going Public session: its lasting move of the price, or its shares, on one company.
@@ -406,7 +411,11 @@ namespace RealLifeOverhaul.Markets
                 Stock s = State.Stocks[i];
                 if (s.Listed && s.ResultsDay == day && s.PendingQuarter >= 0)
                 {
-                    Say(MarketLife.Results(s, day, Year, _secret, State.Env));
+                    Say(s.Own != null ? ListingRules.Results(s, day, Year, State.Env) : MarketLife.Results(s, day, Year, _secret, State.Env));
+                    if (s.Own != null)
+                    {
+                        OwnResults(s, day);
+                    }
                     if (s.DeclaredCents > 0)
                     {
                         Say(new MarketNews { Day = day, Kind = MarketNewsKind.Dividend, Stock = s.Id, A = s.DeclaredCents, B = s.RecordDay, C = s.PayDay });
@@ -472,11 +481,12 @@ namespace RealLifeOverhaul.Markets
             }
             State.ElectionsSeen = env.Elections;
 
-            // A listing announced for today comes to the market.
+            // A listing announced for today comes to the market, and the player's own company priced or listed (MarketEngine.Own.cs).
             if (State.ListingId > 0 && State.ListingDay <= day)
             {
                 List(day);
             }
+            OwnMorning(day, env);
             for (int i = 0; i < State.Stocks.Count; i++)
             {
                 Stock s = State.Stocks[i];
@@ -499,18 +509,19 @@ namespace RealLifeOverhaul.Markets
                 double own = s.Def.IdioBp / 10000.0 * vs * Math.Sqrt(OwnVariance(variance) * night) * (s.ResultsBoostDay == day ? Math.Sqrt(MarketCatalogue.ResultsDayVolScale) : 1.0);
                 double z = MarketRandom.Fat(_secret, MarketRandom.OpenShock, MarketRandom.OpenTail, s.Id, 1);
                 double zo = MarketRandom.Normal(_secret, MarketRandom.OpenMood, s.Id, 1);
+                double founder = s.Own != null ? ListingRules.OpenNews(s, env) : 0.0;   // a player's company: what the city made of its founder yesterday
                 s.LogFair = MarketLife.LogFairOf(s, env, day, Year);
                 if (s.BidCents > 0)
                 {
                     double held = BidMarketShare * (beta * (marketNews + marketMood) + _sectorNews[sector] + _sectorMood[sector]) + BidOwnShare * own * z;
-                    s.Sent = s.Sent * Math.Max(0.0, 1.0 - BidKappa * night) + held;
+                    s.Sent = s.Sent * Math.Max(0.0, 1.0 - BidKappa * night) + held + founder * BidOwnShare;
                     s.Mis = s.Sent;
                 }
                 else
                 {
                     double news = beta * marketNews + _sectorNews[sector] + own * OwnNews * z
                                   - 0.5 * (beta * beta * marketNewsVar + _sectorSd[sector] * _sectorSd[sector] * (1.0 - MarketCatalogue.SectorMoodShare) + own * own * (1.0 - MarketCatalogue.OwnMoodShare));
-                    double mood = beta * marketMood + _sectorMood[sector] + own * OwnMood * zo;
+                    double mood = beta * marketMood + _sectorMood[sector] + own * OwnMood * zo + founder;
                     if (s.ListedDay == day && s.Daily.Count == 0)
                     {
                         // A new listing's first trade: the price it was offered at, and the first morning's interest in it.
@@ -564,6 +575,11 @@ namespace RealLifeOverhaul.Markets
                 Stock s = State.Stocks[i];
                 if (!s.Listed)
                 {
+                    continue;
+                }
+                if (s.Own != null)
+                {
+                    OwnBusiness(s, env, from, day);   // (its business is its founder's books: MarketEngine.Own.cs)
                     continue;
                 }
                 double competition = Competition(s, env);
@@ -992,8 +1008,12 @@ namespace RealLifeOverhaul.Markets
                 {
                     State.Dues.Add(new DividendDue { StockId = s.Id, Cents = p.Shares * s.DeclaredCents, PayDay = s.PayDay, Test = p.Test });
                 }
-                // The company pays it out of its book.
+                // The company pays it out of its book (a player's company: out of its reserve).
                 s.Equity -= s.Shares * s.DeclaredCents / 100.0;
+                if (s.Own != null)
+                {
+                    ListingRules.PaidOut(s, s.DeclaredCents);
+                }
             }
             for (int i = State.Dues.Count - 1; i >= 0; i--)
             {
@@ -1053,6 +1073,11 @@ namespace RealLifeOverhaul.Markets
                 Stock s = State.Stocks[i];
                 if (!s.Listed)
                 {
+                    continue;
+                }
+                if (s.Own != null)
+                {
+                    OwnCorporate(s, day);   // (a player's company: its meetings, its investors, a bid for it: MarketEngine.Own.cs)
                     continue;
                 }
                 // A takeover bid due today completes or falls through (decided now, never before).
@@ -1202,6 +1227,11 @@ namespace RealLifeOverhaul.Markets
             {
                 return false;
             }
+            if (s.Own != null)
+            {
+                OwnBid(s, State.Day);   // (a player's company: its own bid, decided by its founder's holding)
+                return true;
+            }
             Bid(s, State.Day);
             return true;
         }
@@ -1210,7 +1240,7 @@ namespace RealLifeOverhaul.Markets
         public bool NewsFor(int stockId, bool crisis)
         {
             Stock s = State.Stock(stockId);
-            if (s == null || !s.Listed || s.BidCents > 0)
+            if (s == null || !s.Listed || s.BidCents > 0 || s.Own != null)   // (a player's company has no crises drawn for it: its news is its books)
             {
                 return false;
             }
@@ -1231,7 +1261,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         // A company leaves the market: what is left is paid to its holders (a short is closed at the same price), its orders go.
-        private void Leave(Stock s, int day, GoneReason reason, int centsEach)
+        // The news is the reason's, or the one given (a player's company taken private).
+        private void Leave(Stock s, int day, GoneReason reason, int centsEach, MarketNewsKind kind = MarketNewsKind.Count)
         {
             Reweigh(s, false);
             s.Status = StockStatus.Gone;
@@ -1285,7 +1316,11 @@ namespace RealLifeOverhaul.Markets
             s.Monthly.Clear();
             s.BarCount = s.LastBarCount = 0;
             // (A dividend it already owes the player is still paid on its day: it is in the dues.)
-            Say(new MarketNews { Day = day, Kind = reason == GoneReason.TakenOver ? MarketNewsKind.BidDone : reason == GoneReason.Delisted ? MarketNewsKind.Delisted : MarketNewsKind.Failure, Stock = s.Id, A = s.GoneCents });
+            if (kind == MarketNewsKind.Count)
+            {
+                kind = reason == GoneReason.TakenOver ? MarketNewsKind.BidDone : reason == GoneReason.Delisted ? MarketNewsKind.Delisted : MarketNewsKind.Failure;
+            }
+            Say(new MarketNews { Day = day, Kind = kind, Stock = s.Id, A = s.GoneCents });
         }
 
         // The next company of the pipeline; when it is empty, one that left the market two years ago or more may come back.

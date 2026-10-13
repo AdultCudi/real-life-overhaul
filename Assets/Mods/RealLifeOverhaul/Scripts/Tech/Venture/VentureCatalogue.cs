@@ -90,7 +90,8 @@ namespace RealLifeOverhaul.Tech
         public const int AcquireChance = 4;             // per mille a day for a company at series B or later (a third of it at seed, two thirds at series A)
         public const int AcquireMultipleLeast = 3, AcquireMultipleMost = 9;
         public const int AcquihireShare = 300;          // thousandths of what was put in that an acqui-hire pays
-        public const long ListingArr = 3000000000;      // recurring a year at which a growth company could list (the share issue's own feature decides)
+        public const long ListingArr = 3000000000;      // recurring a year at which a growth company could list
+        public const int ListingMultiple = 10;          // ...and the times its recurring revenue a year the market values it at
 
         // ---------------------------------------------------------------- the player as an investor
         public const int PitchChance = 350;             // per mille a raising startup comes to the player as well

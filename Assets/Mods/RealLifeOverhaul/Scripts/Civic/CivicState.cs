@@ -12,6 +12,7 @@ namespace RealLifeOverhaul
         public int Look;                 // a seed for how they look, should a character ever be dressed as them
         public int Lead;                 // the issue they lead on (an Issue)
         public bool Incumbent;
+        public bool Player;              // the player themselves (Civic/CivicOffice): named by the game, never saved in the candidate's own fields
         public readonly int[] Platform = new int[4];   // indices into CivicCatalogue.All; -1 for none
         public int Planks;
 
@@ -32,6 +33,7 @@ namespace RealLifeOverhaul
             Look = other.Look;
             Lead = other.Lead;
             Incumbent = other.Incumbent;
+            Player = other.Player;
             Planks = other.Planks;
             for (int i = 0; i < Platform.Length; i++)
             {
@@ -105,6 +107,10 @@ namespace RealLifeOverhaul
         public int Turnout;                       // votes cast in it
         public readonly int[] OthersVotes = new int[CivicCatalogue.MaxCandidates];   // the other players' ballots in a Going Public session (Civic/CivicShare)
         public int VotesCast;                     // elections the player has voted in, ever (for Permadeath's obituary)
+        public int PlayerSlot = -1;               // the candidate who is the player in this election (Civic/CivicOffice); -1 for none
+        public bool MayorIsPlayer;                // the mayor in office is the player
+        public readonly float[] DistrictShares = new float[CivicCatalogue.MaxDistricts * CivicCatalogue.MaxCandidates];   // the count's shares in each district, by district then candidate
+        public int DistrictsCounted;              // districts the count above has
 
         // ---- between elections
         public int Favours;                       // faster permits owed to the player for donating to the winner
@@ -149,6 +155,10 @@ namespace RealLifeOverhaul
             Array.Clear(Final, 0, Final.Length);
             Array.Clear(OthersVotes, 0, OthersVotes.Length);
             VotesCast = 0;
+            PlayerSlot = -1;
+            MayorIsPlayer = false;
+            Array.Clear(DistrictShares, 0, DistrictShares.Length);
+            DistrictsCounted = 0;
             Endorsed = -1;
             Volunteered = -1;
             Rallies = 0;
@@ -199,6 +209,8 @@ namespace RealLifeOverhaul
             w.Int(SettleDay).Float(OwedTax).Float(OwedTrade).Int(SeenDay).Float(SeenFines).Float(SeenRides).Int(SeenTickets);
             for (int i = 0; i < OthersVotes.Length; i++) w.Int(OthersVotes[i]);   // (added with the shared city, at the end: an older line has none)
             w.Int(VotesCast);   // (added with Permadeath, after them: an older line has none, and counts from nought)
+            w.Int(PlayerSlot).Bool(MayorIsPlayer).Int(DistrictsCounted);   // (added with running for office, after it: an older line has none)
+            for (int i = 0; i < DistrictsCounted * CivicCatalogue.MaxCandidates; i++) w.Float(DistrictShares[i]);
             return w.ToString();
         }
 
@@ -276,6 +288,20 @@ namespace RealLifeOverhaul
                     OthersVotes[i] = Math.Max(0, r.Int());
                 }
                 VotesCast = r.More ? Math.Max(0, r.Int()) : 0;
+                PlayerSlot = -1;
+                MayorIsPlayer = false;
+                DistrictsCounted = 0;
+                Array.Clear(DistrictShares, 0, DistrictShares.Length);
+                if (r.More)
+                {
+                    int slot = r.Int();
+                    PlayerSlot = slot >= 0 && slot < CandidateCount ? slot : -1;
+                    MayorIsPlayer = r.Bool();
+                    DistrictsCounted = Math.Max(0, Math.Min(CivicCatalogue.MaxDistricts, r.Int()));
+                    for (int i = 0; i < DistrictsCounted * CivicCatalogue.MaxCandidates; i++) DistrictShares[i] = Clamp(r.Float(), 0f, 1f);
+                }
+                for (int i = 0; i < Candidates.Length; i++) Candidates[i].Player = i == PlayerSlot;
+                Mayor.Player = MayorIsPlayer;
                 if (PetitionPolicy >= CivicCatalogue.All.Length)
                 {
                     PetitionPolicy = -1;
@@ -298,7 +324,7 @@ namespace RealLifeOverhaul
         {
             c.First = Wrap(r.Int(), CivicCatalogue.FirstNames.Length);
             c.Last = Wrap(r.Int(), CivicCatalogue.LastNames.Length);
-            c.Party = Wrap(r.Int(), CivicCatalogue.Parties.Length);
+            c.Party = Wrap(r.Int(), CivicCatalogue.Parties.Length + 1);   // (the last is the independent: Civic/CivicCatalogue.Independent)
             c.Slogan = Wrap(r.Int(), CivicCatalogue.Slogans.Length);
             c.Look = r.Int();
             c.Lead = Wrap(r.Int(), CivicCatalogue.Issues);

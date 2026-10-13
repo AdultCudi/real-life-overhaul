@@ -41,7 +41,7 @@ namespace RealLifeOverhaul.Flare
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
         // The kinds this version knows: anything past them is from a later one.
-        private const int Sources = (int)FlareSource.Issue + 1;
+        private const int Sources = (int)FlareSource.Campaign + 1;
         private const int Tones = (int)FlareTone.Cheeky + 1;
         private const int Authors = (int)FlareAuthor.Ledger + 1;
         private const int Niches = (int)FlareNiche.Business + 1;

@@ -44,7 +44,7 @@ namespace RealLifeOverhaul.Fame
 
         // The kinds this version knows: anything past them is from a later one.
         private const int Parts = (int)FamePart.Integrity + 1;
-        private const int Causes = (int)FameCause.Press + 1;
+        private const int Causes = (int)FameCause.Office + 1;
         private const int InviteKinds = (int)FameInviteKind.CityEvent + 1;
         private const int InviteStates = (int)FameInviteState.Lapsed + 1;
         private const int PromiseKinds = (int)FamePromiseKind.Charity + 1;

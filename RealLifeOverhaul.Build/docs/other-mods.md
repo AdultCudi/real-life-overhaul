@@ -8,7 +8,8 @@ knows by name. The next clash is one more line in that table and, if it is a new
 ## The rule
 
 1. **This mod is the one that gives way.** It never switches another mod off, never changes another mod's objects and
-   never patches its code. What it can do is stop doing its own share.
+   never patches its code. What it can do is stop doing its own share. One exception, on the owner's word: Empire
+   Motors' view from the driver's seat is switched off while this mod's camera key is V (see "Empire Motors").
 2. **Stand down for what is seen, not for what is installed.** A mod that is switched on may be idle (the camera mod
    below starts switched off, behind a key). So where the game lets it be seen, this mod watches what happens to the
    game's object and stands down only while something else is driving it, and comes back when that stops. A name
@@ -42,7 +43,7 @@ name) and which holds the named type. `OtherMods.Look(logger)` does the walk and
 | Going Public: Extras (3794606607) | `BampExtras` | `BampExtras.ModEntry` | Location and property sharing in Going Public's own hub and on the city map (its own markers; its own message type). | Nothing: logged only. |
 | Going Public Expansion-Friend Trade (3798559131) | `ForeignTradeMultiplayer` | `ForeignTradeMultiplayer.InitEntry` | Trades between players through the ForeignTrade mod's money and stock, its own phone button (a copy of the game's), `ftmp:` transactions and save keys. | Nothing: logged only. Its button is one more child of the phone's grid, which the pages take in. |
 | Going Public: Français (3794605892) | `BampFrancais` | `BampFrancais.ModEntry` | Rewrites Going Public's own English strings (a transpiler on its methods only). | Nothing: logged only. |
-| Empire Motors (dealership, Workshop 3787690782) | `EmpireMotors` | `EmpireMotors.Core.EmpireMotorsMod` | A car dealership as a business type of its own: stock bought at wholesale, used and at auction, parked as the player's vehicles at the dealership; sold to customers it makes up, with financing, trade-ins and warranties; its own app in the full menu's top bar; a talking desk at the game's own dealership that sells its car add-ons; V in a car for a view from the driver's seat; F6, F7, F9, F12. No Harmony. | `Core/EmpireMotors`: see "Empire Motors" below. |
+| Empire Motors (dealership, Workshop 3787690782) | `EmpireMotors` | `EmpireMotors.Core.EmpireMotorsMod` | A car dealership as a business type of its own: stock bought at wholesale, used and at auction, parked as the player's vehicles at the dealership; sold to customers it makes up, with financing, trade-ins and warranties; its own app in the full menu's top bar; a talking desk at the game's own dealership that sells its car add-ons; V in a car for a view from the driver's seat (kept off while this mod's camera key is V); F6, F7, F9, F12. No Harmony. | `Core/EmpireMotors`: see "Empire Motors" below. |
 | Empire Motors: Mustang GT, Empire Motors: BMW G82 (its car add-ons) | `EmpireMustangGT`, `empirebmwg82` | `EmpireMustangGTMod`, `EmpireBMWG82Mod` | Each registers one car (`ModdingAPI.RegisterModVehicleType`) with its lights and a dashboard; the BMW puts itself on Empire Motors' desk. No Harmony. | Logged only; car tuning has a row for each car by its type name (`Driving/CarCatalogue`). |
 
 ## How a foreign camera is seen without a name (`Camera/CameraYield`)
@@ -153,6 +154,16 @@ market: in a session a trade's lasting move is an event on the host's tape (`Eve
 plays at the next moment; a day played in a session and replayed after a load takes those moves from the tape, once. Each
 update carries the host's prices at its moment (a checksum); a guest that comes out different asks for the market again.
 
+**A player's own listed company** (`Markets/Listing`) is a company of the market like any other, with its founder's hash
+(`OwnListing.Owner`; `MarketState.Me` is this machine's player). The host's company is in the city's line and every guest
+plays it from the host's tape: its day's books are in the host's city of the day (`MarketEnv.Own*`), its founder's deals,
+buy-backs, new shares, pay, dividend, taking private, audit and a business sold are tape events (`MarketInputs.EventOwn`),
+and only the founder's machine moves money for it (`MarketEngine.Mine`). A guest's own company is not in the host's city:
+`MarketShare.Adopt` sets it aside whole (`ListingFile.Suspended`, in the guest's own part of the save) and nothing of it
+moves; its way to the market waits. When the guest plays alone again (`MarketEngine.Alone`, on leaving or on opening a save
+made as a guest) every other player's company leaves the market, the guest's holding in it paid at its last price, and
+the guest's own company is back, the profit of the days away counted from its books at the next open.
+
 **A guest steps none of it**: no day of the economy (`CityEconomyDirector.OnDay` does only the player's own part of the
 day), no hour of the government (`CivicGovernment.FollowTick`), no site but its own refit (`CivicWorks.Shared`), no market
 moment past the host's. It applies the host's state to its own game as alone (prices, the bank rate, footfall, the policies'
@@ -161,7 +172,8 @@ complaint, report of an unsafe site, a favour that became a story, the crime it 
 its game and sent as requests; the host applies them to the city within bounds and they come back with the next update.
 A guest's ballot is counted in the host's election (`GovState.OthersVotes`, at the end of the save's line).
 
-**Leaving**: nothing is undone; each system steps again from the host's last state, which is now the player's own.
+**Leaving**: nothing is undone; each system steps again from the host's last state, which is now the player's own (but
+for the market's companies of other players, which leave it, and the player's own company, which is back).
 **Saves**: each system writes its state as ever, and on a guest that state is the host's city, so Going Public's
 coordinated saves (`MPSaveCoordinator`, which runs the game's own save on every machine) keep the shared city in every
 guest's save.
@@ -190,8 +202,9 @@ coordinated save runs this mod's save handlers on the guest's machine (Going Pub
 ## Empire Motors (`Core/EmpireMotors`)
 
 Read in its decompiled code (`evidence/othermods/EmpireMotors`, version 1.20, and its car add-ons `EmpireMustangGT` and
-`empirebmwg82` beside it), never run. Item 3 of the roadmap: this mod sits beside it and connects where it can, and builds
-no dealership of its own.
+`empirebmwg82` beside it), never run. This mod sits beside it and connects where it can. Since its own dealership
+(`Economy/Dealer`, the business type `reallife_businesstype_cardealership`) the two kinds live side by side in one city:
+see the last rows of the table below.
 
 What it does:
 
@@ -241,7 +254,7 @@ Where the two meet, and what this mod does:
 | Selling a dealership | refused for "a vehicle at the building", which the player cannot move | refused until Empire Motors has sold the stock (`SaleBlock.Stock`); the stock and its records cannot go with the sale |
 | The books | a dealership took nothing and paid wages and rent: business pressure's fees at their floor, the company, brands, a sale's value, business loans, the takings a debt is paid from, Flare and the investors saw a loss every day | `GameBooks.Refresh` counts its takings (car sales, finance payments, premiums, less refunds) and its costs (two rows among the goods); what has no address is shared evenly between the player's dealerships; its order book's day gets the takings and a customer a car |
 | The game's tax | counted nothing of it | counts the takings in the statement, and `GameBooks.Deduct` gives it the day's costs to deduct as a shop's goods are, so the margin is taxed. Needs Money and credit on, as the mod's own lines do |
-| V in a car | this mod's camera key, also V, switched this mod's camera for the whole game on each press | while the key is V with no modifier, it is left to Empire Motors in a car, with a notice once (`EmpireMotors.TakesCameraKey`); the chase camera stands aside for the view by `CameraYield`'s second finding (the camera moved by another hand) and names Empire Motors |
+| V in a car | this mod's camera key, also V, switched this mod's camera for the whole game on each press; from 0.4.3 to 0.4.5 V in a car was left to Empire Motors, whose view hands the game's camera list to the game's `indoorVehicleCamera` (`CameraHelper.SetCamera`: the `vehicleCamera` at priority 0, and switched off), so the chase camera, which follows the `vehicleCamera`, let go; on a car with no seat of the kind it looks for (the game's own, as far as read) the view never moves the camera at all, which left the game's camera for driving inside a building and nothing for `CameraYield` to see | V in a car is this mod's again: while this mod's camera key is V (with any modifier, as its view reads V with any), its view's component is switched off (`Camera/EmpireView`: the first time the chase camera comes on or the key goes down in a car, a notice once), its own `OnDisable` puts the game's camera back and the camera the game wants is asked for again; it is switched on again when the key is moved off V or this mod is unloaded, and the chase camera stands aside for the view by `CameraYield`'s second finding as before. The one component of another author's this mod switches, on the owner's word: the two views cannot share a key and that mod has no setting for its own |
 | F6, F7, F9, F12 | this mod's diagnostic keys F7 and F9 are the same | said beside the key on the options page (`EmpireMotors.KeyUse`); the player moves this mod's key |
 | The add-on cars | placed by `CarCatalogue.Guess` from a max speed this mod cannot see beforehand | a row each: Sports, 4.5 s and 4.0 s, 250 km/h |
 | The full menu's top bar | its button is one more child of the row | the pages take it in (`PhoneGridPager`, hardened in 0.3.5); it pages nothing and adds no component, so the pager does not step aside |
@@ -252,6 +265,7 @@ Where the two meet, and what this mod does:
 | Online shops | | nothing to sell: it has no products |
 | Going Public | | `GoingPublic.Mine` keeps another player's dealership out, as every other business |
 | Saves and removal | its key is its own | nothing of this mod's touches `empiremotors.save` or its cars; this mod's records of a car of the stock are dropped when it is sold (`CarGarage.Prune`) |
+| This mod's own dealership | | Both business types can be founded and run at once. Each keeps its own cars (by its own records and by the address of its own type), customers, money and app; `Core/Dealerships` answers "is this a dealership's stock?" for both, so every rule above holds for this mod's cars as well. Empire Motors' showroom tools act only in a building of its own type (`EmpireMotorsShowroomService.IsActiveShowroom`), and this mod's lot only in one of this mod's. This mod's dealership gets the game's footfall and campaigns (it is promoted as any shop), which Empire Motors' does not |
 
 Left, and why: its own financing and warranties stay its own (they are the dealership's business with its customers, not
 the player's credit); the custom shop has no body fit for the add-on cars (their meshes are in their bundles); a car of the

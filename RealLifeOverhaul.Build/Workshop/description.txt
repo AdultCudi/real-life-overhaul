@@ -34,7 +34,7 @@ No frame-rate figures are claimed. Apart from the cameras, the mod's features do
 [list]
 [*]Built against the Steam version of Big Ambitions as of October 2026 (Steam build 25482473, Unity 2022.3.62f2).
 [*]Windows. The mod's models and animations are built for Windows only.
-[*]English and Brazilian Portuguese. The mod follows the language the game is set to; in any other language it is in English.
+[*]English, Brazilian Portuguese and Simplified Chinese. The mod follows the language the game is set to; in any other language it is in English.
 [*]One DLL, a text file for each language and three asset files. No game files are replaced.
 [*]While another camera mod such as "Immersion - RPG Camera" drives the camera, this mod's cameras stand aside and come back when it stops.
 [*]It can be added to an existing save.
@@ -65,7 +65,7 @@ The Guide's "Known limits" page has the full list.
 [list]
 [*]On the options page, under Troubleshooting, switch on "Developer diagnostics" and make the problem happen again.
 [*]Attach Player.log from that session. It is in %USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions and is overwritten when the game starts again.
-[*]Add a screenshot, what you were doing, what you expected, the mod version (0.4.5) and which other mods are on.
+[*]Add a screenshot, what you were doing, what you expected, the mod version (0.5.0) and which other mods are on.
 [*]For stutter, or a frame rate that drops the longer you play: switch on "Developer diagnostics" before you start, play for ten minutes or more until it happens, and send Player.log from that session with your processor, graphics card and memory. The mod writes a line a minute there that shows where the time goes.
 [/list]
 

@@ -214,6 +214,7 @@ namespace RealLifeOverhaul
         public const int PollsOpen = 7, PollsClose = 20, ResultHour = 21;
         public const int CouncilSeats = 5;
         public const int MaxCandidates = 4;
+        public const int MaxDistricts = 12;         // the count keeps each district's shares for so many districts (the game's city has fewer)
         public const int DonationStep = 500;        // one donation
         public const int DonationCap = 2500;        // to one campaign, in one election
         public const float PayToPlayOdds = 0.25f;   // the chance a favour called in becomes a newspaper story
@@ -244,6 +245,15 @@ namespace RealLifeOverhaul
             "reallife_civic_party_1", "reallife_civic_party_2", "reallife_civic_party_3", "reallife_civic_party_4",
             "reallife_civic_party_5", "reallife_civic_party_6", "reallife_civic_party_7", "reallife_civic_party_8"
         };
+
+        /// <summary>The party of somebody who stands for none: one past the last of <see cref="Parties"/> (only the player stands so).</summary>
+        public const int Independent = 8;
+
+        /// <summary>A party's name key, or that of "Independent".</summary>
+        public static string PartyKey(int party)
+        {
+            return party >= 0 && party < Parties.Length ? Parties[party] : "reallife_civic_party_independent";
+        }
 
         /// <summary>Slogans, three for each issue a candidate can lead on (in the order of <see cref="Issue"/>).</summary>
         public static readonly string[] Slogans =

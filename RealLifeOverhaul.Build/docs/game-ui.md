@@ -1041,3 +1041,34 @@ What the mod adds, all with the game's own parts:
 - Test buttons are on the page only while "Show test tools" is on: the page is registered again with or without them (`OptionsService.Register`), so a player's page has about 300 rows fewer to make.
 
 A new option: add its row in `RealLifeOverhaulMod.cs` as before, name its id in a section of `Meta/OptionsTree.cs`, and give it a sentence in en.json. `CatalogueCheck` fails until all three are there.
+
+## 34. A business type of the mod's own, and cars that stand in a building (`Economy/Dealer`)
+
+- **Registering it.** `BAModAPI.ModdingAPI.RegisterModBusinessType(BusinessType)` takes a `ScriptableObject` made in code:
+  `businessTypeName` (also its text key, which the game finds in the mod's own `Locales`), `suitableBuildingType`
+  (`ba:buildingtype_retail`), `employeePrimarySkills` (what the job board and the agencies offer: customer service and
+  cleaning), the tags `ba:businesstag_allowplayercreation` and `ba:businesstag_generatesrevenue` (`AddTag`), and empty
+  lists for products, demand sets and the day and hour factors. The game keeps the mod's types in a dictionary of its own
+  and lays them over its own on every load (`BusinessTypeHelper.OnBusinessTypesLoaded`, and the building types'
+  `availableBusinessTypes`), so one call when the mod starts is enough; a vanilla name wins over a mod's.
+- **What it then is.** BizMan offers it in a retail building; the staff's shifts point at a station item whose
+  `suitableSkills` fit (a cash register for customer service). With no day or hour factors the game's customer count
+  (`CustomerEntriesCalculator.GetCustomersByHour`) is 0 for it, so no shopper of the game's walks in; the building still
+  has a capacity (`GetInitialCustomers`) and a promotion the game and the mod's features write. Its name splits at the
+  first underscore for the game's layout folders (`GetIdWithoutType`): `reallife_businesstype_...` finds none, as wanted.
+- **What it only gets once a city is up.** The icon (`GlobalReferences.vehiclePOIIcon`), and from a retail type of the
+  game's its logo shapes, uniforms and appearance tags: copied onto the type when the city loads.
+- **Cars in a building.** A `VehicleInstance` whose street data is a building's address is spawned by the game itself at
+  its saved world position whenever the player walks in (`BuildingManager.DelayedEnterBuildingActions` calls
+  `GameManager.SpawnPlayerVehicles`, then raises `GlobalEvents.onEnterBuildingDelayed`), with a map pin. The floor the
+  game measured on entering is `BuildingManager.interiorBounds`. A car made while the player is inside is spawned with
+  `VehicleHelper.CreateAndSpawnVehicle` (which adds it to the save itself); one made while away is only added to
+  `GameInstance.VehicleInstances`. `VehicleController.SetFreeze`, `EntityController.primaryInteractionEnabled` and
+  `poi.SetHidden` hold a car on show. `VehicleInstance.Delete(controller)` removes one the game's way. Such cars are the
+  player's to the game (BizMan's list, the wealth figure); the mod's own features ask `Core/Dealerships.Stock`.
+- **Money.** A car sold is `ba:transaction_itemsold` with `itemSoldInfo`, a car bought `ba:transaction_vehiclebought` with
+  `vehicleName`, as the game books its own; both with the business's address. The game's statement takes a business's
+  sales from its order book only, so `Economy/GameBooks` puts them in the day's statement itself.
+
+Proven: every member named, from the game's code. Inferred (not seen running): that a cash register takes a customer
+service shift at a business with no products, and how cars stand on a shop's floor.

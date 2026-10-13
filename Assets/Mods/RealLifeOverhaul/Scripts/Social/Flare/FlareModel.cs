@@ -30,7 +30,8 @@ namespace RealLifeOverhaul.Flare
         Shares = 22,       // the player about a listed company they hold shares in (its results)
         Results = 23,      // a listed company's own post of its results
         Headline = 24,     // the City Ledger's own account: a headline of the morning paper
-        Issue = 25         // the player about an issue in the city (safety after a crime, the roads after a crash)
+        Issue = 25,        // the player about an issue in the city (safety after a crime, the roads after a crash)
+        Campaign = 26      // the player about their own run for office or their office (Civic/CivicOffice, through Wiring/FlareLinks)
     }
 
     /// <summary>The issues a post can raise, as Flare knows them (Wiring/FlareLinks turns them into the council's own).</summary>

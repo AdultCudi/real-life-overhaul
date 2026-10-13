@@ -65,6 +65,8 @@ namespace RealLifeOverhaul
         public const string MarketAbuse = "market_abuse";  // shares sold soon after talking them up on social media (Justice/TaxCases.cs, FileMarketAbuse)
         public const string Bribery = "bribery";            // a bribe paid to an inspector that came out (Justice/TaxCases.cs, FileBribery)
         public const string DataProtection = "data_protection";   // a firm off the data protection register, or breached again, after a breach (Justice/TaxCases.cs, FileDataProtection)
+        public const string CampaignFinance = "campaign_finance";   // money taken for a campaign against the law that came out (Justice/TaxCases.cs, FileCampaignFinance)
+        public const string Misconduct = "misconduct";              // a vote that decided a motion the player had an interest in, not declared (Justice/TaxCases.cs, FileMisconduct)
 
         // Caps. Nothing a court does goes past these, whatever is added up.
         public const int CustodyCapHours = 48;         // the station's own limit (Law bridge): never held longer without a prison sentence
@@ -142,6 +144,10 @@ namespace RealLifeOverhaul
                 Fine = 4000, CommunityHours = 8, ProbationDays = 0, JailHours = 0 },
             new ChargeDef { Id = Bribery, NameKey = "reallife_justice_charge_bribery", Class = ChargeClass.Misdemeanour,
                 Fine = 5000, CommunityHours = 12, ProbationDays = 7, JailHours = 0 },
+            new ChargeDef { Id = CampaignFinance, NameKey = "reallife_justice_charge_campaign_finance", Class = ChargeClass.Misdemeanour,
+                Fine = 4000, CommunityHours = 10, ProbationDays = 5, JailHours = 0 },
+            new ChargeDef { Id = Misconduct, NameKey = "reallife_justice_charge_misconduct", Class = ChargeClass.Misdemeanour,
+                Fine = 6000, CommunityHours = 16, ProbationDays = 10, JailHours = 0 },
             new ChargeDef { Id = DataProtection, NameKey = "reallife_justice_charge_data_protection", Class = ChargeClass.Misdemeanour,
                 Fine = 6000, CommunityHours = 8, ProbationDays = 0, JailHours = 0 }
         };

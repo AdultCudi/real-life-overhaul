@@ -181,7 +181,9 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       TransitBus       one bus: a van from the traffic pool with a route board, driven by the traffic system on a scripted route, stopped "in point" at the stop
       BusBay           the geometry of a bus bay and nothing else (game-free: NavCheck drives a model bus through it): where the bus stands, the curves in and out
       TransitBays      a bay on the street as it is now: whether its length of the strip is free; the game's parked cars standing in it out of view are taken in
-      TransitRide      the ride itself (fade, the game's time machine, put down at the far end), for bus and subway; TransitState: day pass and ride counts in modData
+      TransitRide      the time a ride takes (fade, the game's time machine, put down at the far end), for bus and subway; TransitState: day pass, ride counts, a fare owed back, in modData
+      BusRider         the bus ride seen: the game's walk to the front door, the fare, board_step up, the validator, the aisle, a seat (strap_hang on a full bus), the pull-away; at the far end up and off by the middle door; every way out
+      BusInside        the inside of the bus as a rider walks it (game-free: EconomyCheck walks every path; PropAssets/checks_service.py measures each place on the mesh), and the ride's fare and fade rules
       SubwayJourney    the game's own subway taking a journey's time: the panel at each entrance, service by the clock (frequency, delays), the day pass, the City Transit contact
       CarDash          what a car needs as one more reading in the game's own vehicle panel (a copy of its "Condition" reading)
       CarGarage        CarRecord (per owned car, in modData by vehicle id), CarRules (every price, interval and chance; game-free)
@@ -295,6 +297,13 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       PermadeathGame     everything it touches of the game: the game's own "the player is dead", the fade, the save, the main menu, the tutorial and missions; the machine's memorial
       Mortality          the one door the features where a life is in danger call (crash, hit on foot, mugging, the lender's men, the flu)
       PermadeathSettings its options block and its feature entry (Guide figures from the rules)
+    Districts/ the district view on the city map: ten layers in its filter list tint each district, with a key, a card and the districts in order
+      DistrictRules      the layers, their scales and five bands, the colours, the key's ranges; DistrictLog, the crimes reported by district (game-free: EconomyCheck runs it)
+      DistrictBridges    what it asks of the others, one reading per district (Wiring/DistrictLinks fills them in)
+      DistrictGame       everything it touches of the game: the map's district zones and their colour, the figures from the buildings, the mouse on the map
+      DistrictPanel      its window, a copy of the map's filter window beside it: the key, the card, the districts
+      DistrictView       the one component: the layer ticked (Core/MapPlaces.RegisterChoice), the map's opening and the day, the tint, the card, the crime log; the test buttons
+      DistrictGuide      its options block and its feature entry (Guide figures from the rules)
 CharacterAssets/                   asset pipeline for the new looks (outside Assets, Unity ignores it)
   scripts/                         Blender scripts: make the meshes and textures, write them to build/
   PreviewProject/, preview.ps1     the game's character rebuilt under HDRP: a look is judged here before it ships
@@ -3733,7 +3742,8 @@ When the version is bumped: `Changelog.Latest`, and the row `Changelog.Unnumbere
 
 `Scripts/Civic/`: a city government with elections, and a construction programme. Everything is data that
 moves once per in-game hour; the street only shows what is near the player. Options group "Civic life":
-a master switch, "Elections and the mayor" and "Construction sites", and eleven test buttons.
+a master switch, "Elections and the mayor", "Standing for office" (needs the elections) and "Construction sites", and
+sixteen test buttons.
 
 ```
 CivicDirector     the clock, the save (two lines in modData), the toggles, faults, key prompts, the test buttons
@@ -3749,7 +3759,12 @@ RoadClosure       one lane closed for roadworks through the traffic system's swi
 CampaignWorld     posters, boards, the canvasser, rallies, the polling place's sign; VolunteerShift (the player canvassing)
 CivicCast         civic life's own five people (a second instance of CityPeople), CivicCrew (walk in, work, walk off); CivicScreen: the game's panel and job panel for its prompts and shift figures
 CivicProps        pooled props by id: the bundle's model if it has one, else a plain stand-in built to the same size
-CityHallPhone     the City Hall contact (four topics), the ballot and the site notice in the game's conversation panel
+CityHallPhone     the City Hall contact (five topics), the ballot and the site notice in the game's conversation panel
+OfficeRules       running for office by rule: nominations, who may stand, donors and the law, the vote model by district, doors, rallies, the debate, attacks, endorsements, the council's odds, conflicts of interest, the city's budget, approval, recall (game-free)
+OfficeState       the player's run, result and office, and the city's budget, as one line (game-free)
+CivicOffice       the player's run and office on the government's clock: its hooks (PlayerStands, PlayerTerm, PlayerLocal, Counted, DayBegins, OfficeSits, ToAgenda, ApprovalExtra, DepartmentLevel)
+OfficePhone       City Hall's fifth topic: standing, the papers, the platform, the fund, spending, endorsements, attacks; the agenda, the budget, orders, the register
+OfficeScenes      a door, the player's rally, the debate, result night and the council's meetings, in the game's list window (OfficePanel)
 ```
 
 **On screen (Civic).** The mod draws nothing of its own for civic life (`CivicHud` is gone; `CivicScreen` takes its place). The polling station, the campaign canvasser, the site notice and the canvassing shift's "offer a leaflet" are the game's panel over the player (`GameUi.DoorPanel`, one button the game labels with the player's key); the shift's figures (leaflets taken, seconds left) are the headline and first line of a copy of the game's job panel (`ShiftCard`), or a notification each time they change if that copy cannot be made. The council's meetings and ballots were already the game's phone dialogue (`CityHallPhone`). Cost: nothing per frame; the prompt is offered once a second and told to the panel only when it changed. Log lines with diagnostics on: `Civic check (prompt panel)`, `Civic check (shift card)`. Not seen in the game.
@@ -3806,13 +3821,74 @@ one endorsement (worth more with every business they run; a scandal with a crimi
 bridge), an afternoon's canvassing, standing through a rally. The debate is 3 days before at 19:00. On the day
 the polls are open 07:00 to 20:00 at one designated building per district (a school if there is one, else a
 bank, an agency, a clinic, else the first building by address); the count is at 21:00, by district, from an
-electorate derived from the district's floor space (the game keeps no population). The winner takes office the
+electorate derived from the district's floor space (the game keeps no population): each district's shares are the city's
+final poll leaned by how each platform fits what that district cares about against the city, and by each candidate's local
+appeal there (for the player: their home, businesses, doors and posters in it), kept in the save with the count
+(`GovState.DistrictShares`). A sitting mayor carries the economy too (OfficeRules.EconomyTerm: the cycle of Economy/City,
+a boom helps them, a recession their challengers), in the polls and in their approval. The winner takes office the
 next morning and their policies come in one a day at 09:00, each with a notice. Between elections: approval
 follows crime, accidents, late sites and promises kept; petitions (2 % of the electorate in 14 days force a
 council vote; the city starts some, the player can start or sign one); a council vote on one policy about every
 12 days; a recall election after 7 days under 25 %.
 
-Standing for a council seat is not implemented.
+### Running for office (`CivicOffice`, `OfficeRules`, `OfficeState`)
+
+The player can stand for the council seat of the district their home is in, or for mayor. Nominations open 14 days before
+election day and close at the end of the campaign's second day (papers filed in the campaign join it at once). To stand:
+a home in the city, no conviction that still counts, no case before the court, a platform of one to four policies (one a
+lever), and either signatures (council 60, mayor 300: the businesses' sheets once, 8 a business, ten at most, half the
+player's recognition, and doors) or the deposit (council 1,000, mayor 5,000; back with a tenth of the vote). A party
+(each stands for issue `party % 6`) gives a grant (1,500 / 4,000) and wants a plank on its issue; an independent gets the
+outsider's lift while the mayor's approval is under 40. Not offered in a Going Public session.
+
+The mayor's race is the city's own: the player's candidate takes a slot of `GovState.Candidates` (their party's
+candidate stands down, else a free slot, else the last challenger's; a mayor standing again takes slot 0) and is
+`Candidate.Player` (named by the game; `GovState.PlayerSlot`, `MayorIsPlayer`). Their score adds `PlayerTerm`: Standing
+(recognition, public opinion, integrity: 0.4 at most either way), what the fund has spent against the others (diminishing,
+0.3 at most), a party's machine (0.08), the outsider's lift, the campaign's own support and the district's (doors and
+posters), and the economy for a challenger. The council race is the district's alone: two rivals from the city's pools (one
+of the mayor's party holds the seat unless the player does), the same polls a third of the way a day, counted at 21:00
+with the mayor's, and the seat is `Council[4]`.
+
+The fund: the player's own money (500 a step), the party's grant, donors (an offer a day at most, likelier the better
+known and placed; at most 500 or 1,000 from one donor). Over the limit, cash from nobody named and straw donors are
+against the law: taken, the money can come out on any day for 28 days after it was taken or after the election (2 % a
+day, up to 10 more by how much, up to 2 more for somebody well known, 12 % at most), when it is forfeited, a summons for breach of campaign
+finance law is filed (`TaxCases.FileCampaignFinance`), support or approval falls and the City Ledger prints it. Spending:
+posters (300 for 12, put up by the player on a shop wall: the five rays of the campaign's own posters, from where they
+stand), a City Ledger or a social media advert (800 / 500, less each time), a rally (600: `CampaignWorld.OwnRally`, a box and
+a crowd and no speaker; the speech is the player's, `OfficeScenes.Rally`), canvassers (400: 30 doors in the district).
+Doors: between 10:00 and 20:00 at the street door of a home that is not the player's (`CivicDirector.OfficePrompt`), once a
+building a day; the person's worry is drawn from the district's issues. Endorsements: seven bodies, each for an issue (the
+City Ledger's editorial for the platform and integrity); asked once (odds by fit and influence), or deciding for whoever fits
+best four days out. Attacks: about one day in three (one in two in the last three days), on what is true of the player
+if anything is (a record, money taken, meetings or the debate missed, integrity under 45, promises not kept, never having
+won), else on something thin; answered within a day or it stands. The debate is the player's scene at 19:00 three days
+before; an empty chair costs 0.05. Result night is the count's pages, district by district, and a speech.
+
+In office: a councillor is paid 600 a week, a mayor 1,800. The council meets every 7 days at 18:00 (not on election day)
+while the player sits (`OfficeSits`: the government's own council votes and petitions go to the agenda instead). A
+councillor votes on each motion and may table one; a mayor sets the agenda (two of their own, petitions, the budget),
+speaks for or against each (0.15 on their own party's members) and orders the levers that are how the city is kept
+(cleaning, events, permits, transit: once a fortnight, without the council). The city's budget: four departments at -2 to
+2 steps, 12 % of a department's share a step; police and streets take 8 % a step off the crime and accidents the city
+counts, every department a point of approval a step, by how much its issue matters; a deficit runs the reserve down and
+costs up to ten points (with the option off the budget is kept as data and does nothing). A vote on a lever that touches
+the player's businesses or property is a conflict of interest: declared, the player stands aside; not declared, it can come
+out within 21 days (4 % a day, 7 % if the vote decided it, more for somebody well known, twice as likely while no register
+of interests is filed; the register is due in the first 7 days): a scandal, and a summons for misconduct in public office if it decided the motion
+(`TaxCases.FileMisconduct`). A councillor's approval is their own (`OfficeRules.CouncillorTarget`); under 25 for 7 days
+brings a recall vote in 7 days, kept by approval and the campaign against it. A mayor's is the city's. Standing again needs
+neither signatures nor deposit.
+
+The player's moments are a draft in Flare (`FlareSource.Campaign`; a post of it adds a little support) and pieces in the
+next morning's City Ledger (`OfficeState.Stories`, through `LedgerBridges.Extra`: filing, the race, attacks,
+endorsements, adverts, the debate, the result, scandals, recalls, orders, the budget). Standing hears of it
+(`FameCause.Office`: integrity and the papers' notice). The Planner has the last day to file, the debate, result night, an
+attack to answer, the meetings, the register, the budget and a recall vote.
+
+While the option is off nothing new begins and nothing is offered; papers already filed stay on the ballot and are counted,
+and an office held lasts to the next count with the council voting by itself.
 
 ### Construction sites
 
@@ -3846,6 +3922,8 @@ CivicBridges.CityPeopleOut = () => ...;       // City life: civic life makes no 
 CivicBridges.FinesScaledAtSource = true;      // Law, if it multiplies its own fines by CivicPolicy.FineScale
 CivicBridges.FaresScaledAtSource = true;      // Transport, likewise for fares
 CivicBridges.NoteCrime();  CivicBridges.NoteAccident();   // anything that happens out of the player's sight
+CivicBridges.Economy, Influence, Recognition, Integrity, Convicted, CaseOpen, Landlord   // running for office: what it reads
+CivicBridges.StandingMoved, FileCase, CampaignPost                                     // ...and what it tells
 ```
 
 ### Wish-list (assets)
@@ -3893,7 +3971,7 @@ its caller: a fault is logged once per place (`Wiring.Fault`) and the default an
 | `LawJustice.cs` | `Wiring.Arrests`: Law's cell and Justice's case for the same arrest; `Justice.Bridges.Law` |
 | `LicenceLinks.cs` | `Licences.Law`, `Justice.Bridges.Licences`, and what Licences reports to the courts instead of fining |
 | `Scenes.cs` | `Wiring.Scenes`: the one question every street scene asks before it starts; `PlayerHeld` for panels |
-| `CivicLinks.cs` | `CivicBridges` (record, reputation, scenes, weather, news, city people); `Wiring.Paper.Print`: a finished story for the City Ledger |
+| `CivicLinks.cs` | `CivicBridges` (record, reputation, scenes, weather, news, city people; for running for office the economy's cycle, Standing's influence, recognition and integrity, a conviction or a case, a let building, Standing's notice, a summons); `Wiring.Paper.Print`: a finished story for the City Ledger |
 | `LifeLinks.cs` | `SocialLinks`, `CareerLinks`, `TravelBridges`, `Justice.Bridges.Social`, `GarageBridges.RoadIsWet` |
 | `EconomyLinks.cs` | `Economy.EconomyBridges` (the record the credit rating reads, the fines and court debts the Finance app lists), the Finance rows of the Planner, and the banks' own terms put back on unload |
 
@@ -6460,6 +6538,79 @@ full menu and from the HUD phone, and the game's own app's name again after it; 
 phone's sprites (the next glyph is used if not). The statement's matching by name relies on the data keys of the
 game's loan transactions (`businessName`, read from the decompiled `LoanHelper` and `LoanEntryUi`).
 
+## Economy: your own bank
+
+`Scripts/Economy/OwnBank/`. A bank of the player's own, late in a game, run from the headquarters, in its own app
+(Your bank; the Company app's first page has a button to it). Option: Business > Your own bank (`economy_bank`, on;
+it needs the credit rating). Save line `reallife:economy_ownbank` (`OwnBankStore`, v1), and
+`reallife:economy_ownbank_test` while a test has run.
+
+What the game already has, and what this is not: the game's banks lend to the player (`BankSettings`: a cap, an annual
+rate, years to pay; `LoanHelper.RunDaily` takes the payments) and take no savings; its investment funds
+(`InvestmentFund`, EconoView's Investments page) are the player's own money in a fund; its rivals (`RivalsHelper`) own
+businesses and buildings. None of them is touched. The bank's rivals are the game's banks by their own rate
+(`BankTerms.House`), priced as they price the player (`LendingTerms`); its fund trades the mod's Stocks app; its
+borrowers are the city's people by credit rating and the city's businesses, as pools, not one by one.
+
+- **The rules** (`OwnBankCatalogue`, `OwnBankRules`, `OwnBankFund`, game-free). The licence and the least capital; the
+  rivals' rates (savers: the bank rate less 1.5 points; borrowers: the house bank's own rate for a typical rating of
+  each kind, a business loan a point under it, with the central bank's points and the game's interest multiplier; the
+  poorly rated, whom no bank lends to, at the fair rate and 12 points), lowered or raised by up to a point as the bank
+  takes their customers. The city's savings (people, businesses) and borrowing (five kinds) are shared between the
+  rivals' hold of 1000 and the bank's weight: its hold, by its rate against theirs (e to a pull for each point), and
+  for savers by the city's trust (its confidence: the player's integrity, the capital ratio against the lines, the
+  scare of what the paper printed, the cycle; and its age, full after nine months). Balances move a share of a
+  month's way to it each day; a run (confidence under 450 until it is back over 550) takes 3% of people's and 6% of
+  businesses' savings a day. Defaults a year by kind, moved by the cycle (people) or `CityModel.Trouble` (business
+  pressure, firms), inflation against the target, the council's business tax, grants, wage floor and rents, the
+  adverse selection of a dear rate and each month's luck (seeded). Arrears settle over a month: a part put right, the
+  rest written off, a part of that coming back over two months (more, over four, through the courts, for 5% in
+  costs). The capital ratio is the capital (with the fund at market prices) against the assets weighted by risk;
+  lending and buying stop at 13%, the regulator watches under 12.5%, under 10% is a breach with a month's deadline, a
+  deadline missed is fined and the second closes the bank, as do no capital or a ratio under 5%, or savers it cannot
+  pay after the fund is sold under the market. A closed bank is wound up: savers first, the regulator's tenth, the
+  rest the player's. The balance sheet balances after every day (`OwnBankRules.Balanced`).
+- **The day** (`OwnBankDirector`, after the credit side's day, `EconomyDirector.AfterDay`). Each day ended since the
+  last (a week at most) is run with the city now (`OwnBankGame.City`) and the market's quotes (`OwnBankBridges.Quotes`)
+  and booked at the headquarters, dated on it (`OwnBankGame.BookDay`): takings (`TakingsKey`, in the statement's
+  takings through `EconomyBridges.Takings`), savers' interest and losses as rows among its goods (`CostRow`), staff as
+  salaries, all deductible; a fine is not. Then the day's profit is kept in the bank's capital (`KeptKey`) or its loss
+  met from it (`CoveredKey`), so the player's cash nets to nothing; neither is in any statement category. The licence
+  (licensing fees) and capital in come from the player's cash; a dividend, a sale and what a winding up leaves go into
+  it. `GameBooks.Refresh(day - 1)` puts the day into the statement the game made for it.
+- **The rest of the mod** (`Wiring/OwnBankLinks`): integrity (Standing), the council's levers (Civic), the courts
+  (`DebtClaims.Available`), the market's quotes (Markets), integrity lost for a fine (3) or a closure (8) and a little
+  for a breach in the papers; the paper's pieces (`News.Extra`, chained after the company's; `LedgerCatalogue` kinds
+  `_ob_news_*`, Business section). The headquarters is Going Public's `Mine`.
+- **Tests**: a bank founded for a test (paid by nobody, pays nothing out), a month now, a hard month (a recession,
+  inflation at 8%, business pressure at its worst), a run, the regulator's deadline today, the fund's trades, and
+  putting the bank back as it was before the session's first test. A test that runs days runs them now and sets the
+  bank's clock back by as many (`OwnBankRules.Rewind`).
+
+Cost: nothing per frame; once a second a few comparisons; once a game day a few dozen sums per day ended, a pass over
+the market's 150 or so quotes and a handful of transactions; the fund's weekly rebalance sorts the eligible quotes once.
+With "Developer diagnostics" on each day writes `Own bank check (day N)`: what was booked where, the market, the time it
+took and whether the books balance.
+
+### Checks
+
+EconomyCheck (`OwnBankChecks.cs`, 91 checks): every table's length; the rivals' rates, their answer and the floor; the
+city's savers and borrowers (none with no bank, the hold's share at parity, rates, trust, firms faster than people, a
+fifth less borrowing in a recession), the market settling within 2% of its weights in two and a half years and never
+by a hundredth of the city's savings in a day; defaults by the cycle, business pressure, inflation, the council and a
+dear rate, bounded; three years of a quiet city balanced every day, lending kept at its line, profitable within bounds;
+a day's money item by item; the arrears and the courts; capital in and out; a breach, a fine, a closure, a breach put
+right, insolvency and collapse; a run that starts and ends, and one that closes the bank; the fund's rules, even parts,
+a failure, distress, gains, no market, no buying in a breach, a fire sale; a sale and a winding up; the save's line
+(round trip, damage, bounds, a later version, mending); determinism and ten years in under a second and a half.
+
+### Not verified (the game could not be run)
+
+That four tabs and seven columns fit the frame and the Bank tab's white box holds its nine lines and three buttons
+(`InfoBox.Fit` with diagnostics on); that the City Ledger prints the pieces on the morning after (they are queued for
+the next paper after six in the morning); that the headquarters' statement shows the bank's rows (the same path as the
+broadband company's network row); and the game's own text box for a name and an amount (as the bank apps use it).
+
 ## Economy: the city
 
 The third part of the economy (`Scripts/Economy/City`; options "The city's economy" and "How far the economy
@@ -6910,6 +7061,97 @@ a real save. That a transaction with no address and no category shows in EconoVi
 rivals' names as the game gives them (`SpecialRival.rivalData.rivalName`). The app icon's glyph (`Icon-Building`).
 Whether a business opened in a building rented before the promise is found (it is counted by its kind, so it
 should be). Every figure's feel in play: the sums against what businesses really earn, how often an offer comes.
+
+## Economy: your company on the market (`Scripts/Markets/Listing`)
+
+The player's businesses together come to the city's stock market (Scripts/Markets) as a company with shareholders (option
+"Listing your own company", id `markets_listing`, under the stock market's header, on by default). It has no Update and no
+Harmony patch: its price, results, meetings and bids ride the market's own steps (`MarketEngine.Own.cs`), its way to the
+market and its year ride the market director's one-second timer (`MarketDirector.Own.cs`), and the Stocks app and the
+Company app write its pages when they are opened.
+
+### What the game already had, and what was therefore built
+
+| The game's own | Built here |
+| --- | --- |
+| Personal wealth (`PlayerHelper.GetPersonalWealth`: cash, funds, assets, loans) and a goal on it; a business's daily valuation (`CompetitionHelper.UpdateDailyValuation`) and a rival's business valued to buy it over (`CalculateAiOwnedValuation`, BizMan) | The company's worth by the market's own model (MarketValuation) on its real books |
+| Investment funds in EconoView, which follow a yearly rate | Nothing: a fund is not a share |
+| No shares of the player's company, no investors in it | (The mod's Ventures investors take a share of one business's profit; untouched) the company listed, its float, shareholders, meetings, bids |
+| Business sales tax once a year on statements' sales, less what is marked deductible (`TaxHelper`, `TaxCalculationHelper.GetBusinessSales`) | The audit and the exchange's fees marked deductible; the offer's money and the holders' part are no sales; a tax withheld from market dividends |
+
+### Files
+
+| File | What it is |
+| --- | --- |
+| `Listing/ListingCatalogue.cs` | every figure: requirements, fees, the offer and the book, the company on the market, meetings, investors, bids, the dividend tax |
+| `Listing/ListingModel.cs` | `OwnListing` (on `Stock.Own`: the founder, the reserve, pay, board, what the market follows, meetings, deals), `ListingFile` (on `MarketState.Listing`: the way to the market, the books, a hand-over), the enums, `ListingMoney` |
+| `Listing/ListingRules.cs` | the price from the books (`Day`, `Figures`, `Morning`), the reserve (`ToReserve`), quarters and results, dividends, the founder's news, closed times, short swings, the year's limits, the price to take it private |
+| `Listing/ListingBook.cs` | the books by quarter, the requirements, the audit's findings, the fees, the shares, the prospectus, the book's price, the stock on its first day |
+| `Listing/ListingVotes.cs` | what the holders make of the year, the votes, investors' reasons, a bid's chance and acceptance, the dividend tax |
+| `MarketEngine.Own.cs` | the engine's part: the book priced and the first day at the open, the business, results, meetings, investors, bids, the founder's tape events, `Alone` |
+| `MarketDirector.Own.cs`, `.OwnTests.cs` | the game's part: who the player is, the books, the steps of the way, the year's fees, asking, the hand-over, the founder's notifications, the dividend tax, the save tools; the test buttons |
+| `MarketApp.Own.cs`, `Listing/ListingText.cs`, `Listing/ListingGuide.cs` | the Stocks app's page and the founder's ticket; the words; the Guide's figures |
+| `Wiring/ListingLinks.cs` | the bridges: the books from the game's statements (the player's own businesses only), the facts for the audit, the day's city, the hand-over and a business sold (Economy/Services), the Company app's line, the Planner |
+
+The first five are game-free and compiled by EconomyCheck (`ListingChecks.cs`), with the engine.
+
+### The rules in short (every figure is in the catalogue and printed by the Guide)
+
+- **To come to the market**: two years since the first business, four complete quarters of books, takings and profit over
+  them above a least (at today's prices), a profit in three of them, and a clean audit (tax unpaid past its day, late
+  returns, takings kept off the books, a bankruptcy or debt arrangement qualify it; a bribe that came out is disclosed).
+  Advisers' retainer, the audit's fee, the underwriters and the exchange as the catalogue says.
+- **The price** (`ListingBook.Price`): what the books say a share is worth by `MarketValuation` (all the shares, old and
+  new; the last year at most the two years' mean; the last quarter a patch; growth half believed; debt), 12% under it, a
+  range 8% either side, a book drawn from the pricing day's secret and moved by the index's month, Standing, a disclosure
+  and the float, never 15% outside the range. Under the least the founder takes, called off.
+- **On the market**: its business is the player's businesses' real statements a day at a time (`MarketEnv.Own*`, on the
+  tape), followed over a quarter and a year, a day beyond three times the year's usual counted as no more; the council's
+  policies are priced as for any company and fade out of the reckoning as the year's figures show them; growth is read at
+  results. The reserve keeps the other holders' part of each day's profit after tax and pay (forced from the founder's cash,
+  given back out of a loss) and is in the price; dividends are paid from it. No crisis, windfall, failure or penny rule is
+  drawn for it.
+- **The founder** deals at the market under the rules: closed from the last third of a quarter to its results, no sale in
+  the half-year lock-up, at most 90% held, 10% bought and 10% sold a game year, every deal read by the market, and a gain on
+  shares bought and sold within a quarter of a year paid back to the company. Buy-backs (10% a year), new shares (20% a year
+  at 5% under the bid) and taking private (25% over the price and never under the year's highest close, with half the shares)
+  need the board. A business sold while listed puts the other holders' part of its price into the reserve.
+- **Meetings**: the yearly one after the year's last results (pay, a payout when the reserve is held back, the chair), an
+  investor's after their demand; the founder's shares for the board, the others by their year, with a drawn turnout. Half
+  the shares or more carries every vote. A bid comes while the price is well under the worth, wins only under 30% held and
+  if the holders take it; then the businesses pass to the buyer through Economy/Services' own hand-over of a sale
+  (`ServicesDirector.HandOver`), a few an hour as the game lets them go, what is left after seven days paid for.
+
+### The save
+
+The market's own line (`reallife:markets`): a player's company is a record of `k` with its own fields after the rest
+(founder, name, ticker, sector, usual debt, the `OwnListing` figures, the founder's deals, its trade); the way to the
+market and the books are part `l`, a company set aside part `u`. Neither part is in the city's line a host sends. A line
+without them reads as before, and a market with no player's company writes exactly what it did.
+
+### Tests (options page, the stock market's tests)
+
+"Put a test company of mine on the market" (no requirement, nothing paid or raised; a test company's books if the save has
+too few, read again from the statements once it is gone), "My company's results the next market morning", "My company's
+yearly meeting at today's close", "An investor buys in to press my company's board", "A bid for my company" (a test's
+company hands nothing over), "Take my test company off the market".
+
+### Log lines
+
+- `Listing: advisers engaged on day 140 for 25000 (the company looks worth 7454935).`
+- `Listing: the prospectus of Harbour Lights Group (HLG) on day 152: 248333 new shares (2500 bp) beside the founder's 745000, ...`
+- `Listing check (asked): Deal 1000 for Harbour Lights Group at 160/30, quoted 6731 (673 cents a share): put on the tape for the next moment: PASS`
+- `Listing: the year's fees for Harbour Lights Group: the exchange 5000, the audit 10000; findings 0.`
+- `Listing: Harbour Lights Group was taken over at 840 cents a share by a private buyer; its 6 business(es) pass to the buyer by day 212.`
+- `Selling a business: handed over to a private buyer in a takeover: ...`
+
+### Not verified (the game could not be run)
+
+Everything on screen: how many lines the Stocks app's white box holds on the company's page (the listed page is the
+longest: a selector, about eight lines and three rows of buttons); the game's text box for a name and a count; the
+notifications' length. That the statements' addresses compare as the mod's other readers compare them (`Books.Key`). That
+`ServicesGame.Complete` hands a business over cleanly on the day of a takeover, as it does for a sale. How the figures feel
+in play: the requirements against what businesses earn, how often investors and bids come.
 
 ## Economy: running a business
 

@@ -1,4 +1,9 @@
-0.4.5
+0.5.0
 
 New
-- Permadeath, an ending you can choose: off unless you switch it on, and kept with each save. With it on, your character can die for good, but only after a warning: a crash at very high speed, being hit by fast traffic on foot, a mugging refused, the private lender's men or a flu left untreated past three warnings. The game is saved at once, the City Ledger prints a front page in memory with their life's story, and the save can be opened again to read it but never played. It is off in a Going Public session and during the game's tutorial and missions.
+- Running for office: stand for your district's council seat or for mayor yourself. File papers with signatures or a deposit, stand for a party or as an independent, and choose a platform. Run a campaign with a fund and donors (and the law on them), posters you put up, doors you knock on, rallies you speak at, adverts, endorsements, rivals who attack you and a televised debate. The vote is counted district by district, with a result night. In office the council meets every week: you vote and table motions, a mayor sets the agenda, the city's budget and some policies by order, and conflicts of interest, scandals, approval and recall follow you. City Hall, the Planner, the City Ledger and Flare follow your run.
+- Your own company on the stock market. Once your businesses have two years and a year of books behind them, advisers, an audit and a prospectus take them to the city's market, where a book prices the shares from your real results and the money raised is yours. Its price then follows your real takings and profit, your Standing and the press; the other holders' part of each day's profit is kept for them, and dividends, a yearly shareholders' meeting with votes on your pay and the board, investors who press the board and bids for a cheap company follow, with rules that stop you dealing on what you know.
+- The mod can now be read in Simplified Chinese: it follows the language the game is set to.
+
+Fixed
+- The welcome panel's list of what changed since you last played shows the versions again; it had stayed empty since 0.1.1. Version numbers now follow major, minor and patch: a new feature raises the middle number and a fix alone the last one.

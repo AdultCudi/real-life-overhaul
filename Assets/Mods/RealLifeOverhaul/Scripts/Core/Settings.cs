@@ -14,6 +14,7 @@ namespace RealLifeOverhaul
         public const string CameraDistanceId = "camera_distance";
         public const string CameraFollowId = "camera_follow";
         public const string MapPlacesShownId = "map_places_shown";
+        public const string DistrictViewId = "district_view";
         public const string MouseLookId = "camera_mouselook";
         public const string MouseSensitivityId = "camera_sensitivity";
         public const string EnterWithKeyId = "enter_with_key";
@@ -82,6 +83,7 @@ namespace RealLifeOverhaul
         public const string CivicId = "civic";
         public const string CivicElectionsId = "civic_elections";
         public const string CivicConstructionId = "civic_construction";
+        public const string CivicOfficeId = "civic_office";
         public const string DrivingLicenceId = "driving_licence";
         public const string StartWithLicenceId = "licence_start_with";
         public const string DrivingSchoolId = "driving_school";
@@ -98,6 +100,7 @@ namespace RealLifeOverhaul
         public const string VenturesInvestorsId = "ventures_investors";
         public const string MarketsId = "ventures_market";        // (the old market's option: kept, so that a player's choice carries over to the city's stock market)
         public const string MarketsMarginId = "markets_margin";
+        public const string MarketsListingId = "markets_listing";
         public const string VenturesLevelId = "ventures_level";
         public const string EconomyCompanyId = "economy_company";
         public const string EconomyCompanyLevelId = "economy_company_level";
@@ -116,8 +119,10 @@ namespace RealLifeOverhaul
         public const string TechJobsId = "tech_jobs";
         public const string TechSectorId = "tech_sector";
         public const string TechStartupsId = "tech_startups";
+        public const string EconomyDealerId = "economy_dealer";
         public const string EconomyCleaningId = "economy_cleaning";
         public const string EconomySaleId = "economy_sale";
+        public const string EconomyBankId = "economy_bank";
         public const string EconomyBrandsId = "economy_brands";
         public const string EconomyBanksId = "economy_banks";
         public const string MinimapId = "nav_minimap";
@@ -221,6 +226,7 @@ namespace RealLifeOverhaul
         public static int CameraPitch = 18;      // degrees above the horizon
         public static int CameraDistance = 6;    // metres behind the player
         public static int CameraFollow = 5;      // 0 = never swing behind the player (only without mouse look)
+        public static bool DistrictView = true;     // the district view on the city map: its rows in the map's filter list, the tint and the card (Districts/DistrictView)
         public static bool MapPlacesShown = true;   // the mod's places on the city map: their markers and their rows in the map's filter list (Core/MapPlaces; off hides all of them)
         public static bool MouseLook = true;     // GTA-style: mouse steers the camera, cursor locked
         public static int MouseSensitivity = 6;
@@ -289,6 +295,7 @@ namespace RealLifeOverhaul
         public static bool Civic = true;                 // civic life: a city government and a construction programme (Scripts/Civic)
         public static bool CivicElections = true;        // elections, the mayor's policies and their effects, the campaign in the street
         public static bool CivicConstruction = true;     // construction sites that progress over days
+        public static bool CivicOffice = true;           // the player may stand for the council or for mayor (Civic/CivicOffice)
         public static bool DrivingLicence = true;        // driving needs a licence for the class of vehicle; unlicensed driving is punished when police stop the player
         public static bool StartWithLicence = false;     // a save that owns no vehicle the first time the rule runs is given a car licence anyway
         public static bool DrivingSchool = true;         // the desks at the school buildings, the written test, lessons and the driven test
@@ -305,6 +312,7 @@ namespace RealLifeOverhaul
         public static bool VenturesInvestors = true;     // investors: offers for a business that does well, the pitch, deals (off: no new offers or meetings; deals that exist carry on) (Scripts/Economy/Ventures)
         public static bool Markets = true;               // the city's stock market and the Stocks app (off: the market stands still and nothing is traded; shares held are kept) (Scripts/Markets)
         public static bool MarketsMargin = true;         // a margin account may be opened: borrowing against shares and selling short, with margin calls (off: no new account; one that is open can only be wound down)
+        public static bool MarketsListing = true;        // the player's own company may come to the market (off: no new listing is begun; a company on the market stays there until taken private) (Scripts/Markets/Listing)
         public static int VenturesLevel = 1;             // how demanding investors are: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Ventures/VenturesCatalogue)
         public static bool EconomyCompany = true;        // running a business: staff, insurance, marketing, tax and licences, with the Company app (off: none of it runs and nothing is charged) (Scripts/Economy/Company)
         public static int EconomyCompanyLevel = 1;       // how strict it is: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Company/CompanyCatalogue)
@@ -323,8 +331,10 @@ namespace RealLifeOverhaul
         public static bool TechSector = true;            // the tech sector: software studios, game studios, IT consultancies, cybersecurity firms and AI labs of the player's, products with customers and recurring revenue, client contracts and tenders, outages and breaches, in the Tech app (off: those businesses earn nothing of their own; their files are kept) (Scripts/Tech/Firms)
         public static bool TechStartups = true;          // startups and venture capital: the city's startups that grow, raise, fail or are bought, their pitches to the player, an angel portfolio and a fund, and the player's own tech firms raising from venture firms with a board and share options (off: no startup is founded or pitches; holdings are kept) (Scripts/Tech/Venture)
         public static bool EconomyOnline = true;         // online shops: a business or a warehouse sells what it stocks to the whole city, picked by its staff and delivered by van or courier, with the Web shop app (off: no orders come, nothing is charged or paid) (Scripts/Economy/Online)
+        public static bool EconomyDealer = true;         // the car dealership: a business type of the mod's own that buys cars new, used and at auction and sells them to customers, with its own finance and warranties and the Dealership app (off: its dealerships do not trade; their cars stay on the lots) (Scripts/Economy/Dealer)
         public static bool EconomyCleaning = true;       // the cleaning service: cleaners shared between businesses on a daily round, and cleaning contracts with other businesses, in the Services app (off: no round, no contracts, nothing cleaned or charged by it) (Scripts/Economy/Services)
         public static bool EconomySale = true;           // selling a business: its value, the market, offers and a completed sale, in the Services app (off: nothing is offered, paid or charged by it) (Scripts/Economy/Services)
+        public static bool EconomyBank = true;           // the player's own bank: a licence, savers, loans, a fund and a regulator, in its own app (off: it stands still, nothing is run, booked or charged) (Scripts/Economy/OwnBank)
         public static bool EconomyBrands = true;         // brands and franchises: a brand made from a shop, its recognition and standards, franchising it, and a shop under a city chain, with the Brands app (off: none of it runs, nothing is paid and footfall is without it) (Scripts/Economy/Brands)
         public static bool EconomyBanks = true;          // the bank apps: one app on the phone for each of the city's three largest banks, that bank's slice of the accounts, loans, card, offers and rating (off: no bank app; every account and loan stays as it is, and the Finance app still has everything) (Scripts/Economy/Banks)
         public static bool Minimap = true;               // the minimap on the HUD while out in the city (Scripts/Navigation)
@@ -471,6 +481,7 @@ namespace RealLifeOverhaul
             CameraDistance = Int(modId, CameraDistanceId, CameraDistance);
             CameraFollow = Int(modId, CameraFollowId, CameraFollow);
             MapPlacesShown = Bool(modId, MapPlacesShownId, MapPlacesShown);
+            DistrictView = Bool(modId, DistrictViewId, DistrictView);
             MouseLook = Bool(modId, MouseLookId, MouseLook);
             MouseSensitivity = Int(modId, MouseSensitivityId, MouseSensitivity);
             EnterWithKey = Bool(modId, EnterWithKeyId, EnterWithKey);
@@ -546,6 +557,7 @@ namespace RealLifeOverhaul
             Civic = Bool(modId, CivicId, Civic);
             CivicElections = Bool(modId, CivicElectionsId, CivicElections);
             CivicConstruction = Bool(modId, CivicConstructionId, CivicConstruction);
+            CivicOffice = Bool(modId, CivicOfficeId, CivicOffice);
             DrivingLicence = Bool(modId, DrivingLicenceId, DrivingLicence);
             StartWithLicence = Bool(modId, StartWithLicenceId, StartWithLicence);
             DrivingSchool = Bool(modId, DrivingSchoolId, DrivingSchool);
@@ -562,6 +574,7 @@ namespace RealLifeOverhaul
             VenturesInvestors = Bool(modId, VenturesInvestorsId, VenturesInvestors);
             Markets = Bool(modId, MarketsId, Markets);
             MarketsMargin = Bool(modId, MarketsMarginId, MarketsMargin);
+            MarketsListing = Bool(modId, MarketsListingId, MarketsListing);
             VenturesLevel = Int(modId, VenturesLevelId, VenturesLevel);
             EconomyCompany = Bool(modId, EconomyCompanyId, EconomyCompany);
             EconomyCompanyLevel = Int(modId, EconomyCompanyLevelId, EconomyCompanyLevel);
@@ -580,8 +593,10 @@ namespace RealLifeOverhaul
             TechJobs = Bool(modId, TechJobsId, TechJobs);
             TechSector = Bool(modId, TechSectorId, TechSector);
             TechStartups = Bool(modId, TechStartupsId, TechStartups);
+            EconomyDealer = Bool(modId, EconomyDealerId, EconomyDealer);
             EconomyCleaning = Bool(modId, EconomyCleaningId, EconomyCleaning);
             EconomySale = Bool(modId, EconomySaleId, EconomySale);
+            EconomyBank = Bool(modId, EconomyBankId, EconomyBank);
             EconomyBrands = Bool(modId, EconomyBrandsId, EconomyBrands);
             EconomyBanks = Bool(modId, EconomyBanksId, EconomyBanks);
             Minimap = Bool(modId, MinimapId, Minimap);

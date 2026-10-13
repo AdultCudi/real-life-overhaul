@@ -316,7 +316,7 @@ namespace RealLifeOverhaul.Tech
             }
             if (s.Alive && s.Stage == (int)RoundStage.Growth && s.Mrr * 12 >= VentureCatalogue.ListingArr && TechRandom.Mille(f.Seed, s.Id, day, 45) < 20)
             {
-                notes?.Add(new VentureNote { Kind = NoteListing, Startup = s.Id });
+                List(f, s, notes);
             }
         }
 
@@ -404,6 +404,30 @@ namespace RealLifeOverhaul.Tech
             s.State = price > 0 ? (int)StartupState.Acquired : (int)StartupState.Failed;
             s.Ask = null;
             notes?.Add(new VentureNote { Kind = note, Startup = s.Id, Amount = player });
+            return pay;
+        }
+
+        /// <summary>
+        /// A growth company comes to the market: valued at its recurring revenue by the public multiple (never under its last
+        /// round), its preferences convert, and every holder sells at the offer, as the investors of a listed company do once
+        /// their lock-up ends. Its listed shares are the market's from then on.
+        /// </summary>
+        public static long[] List(VentureFile f, Startup s, List<VentureNote> notes)
+        {
+            long price = Math.Max(s.Post, s.Mrr * 12 * VentureCatalogue.ListingMultiple);
+            long total = Math.Max(1, s.Total);
+            var pay = new long[s.Holders.Count];
+            long player = 0;
+            for (int i = 0; i < s.Holders.Count; i++)
+            {
+                pay[i] = (long)((double)price * s.Holders[i].Shares / total);
+                s.Holders[i].Paid = pay[i];
+                player += s.Holders[i].Players ? pay[i] : 0;
+            }
+            s.Post = price;
+            s.State = (int)StartupState.Listed;
+            s.Ask = null;
+            notes?.Add(new VentureNote { Kind = NoteListing, Startup = s.Id, Amount = player });
             return pay;
         }
 

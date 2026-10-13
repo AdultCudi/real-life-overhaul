@@ -143,6 +143,8 @@ namespace RealLifeOverhaul.Tech
                 .Fact("vc_failed", () => Whole(VentureCatalogue.FailedRaisesToDie))
                 .Fact("vc_acquire_least", () => Whole(VentureCatalogue.AcquireMultipleLeast))
                 .Fact("vc_acquire_most", () => Whole(VentureCatalogue.AcquireMultipleMost))
+                .Fact("vc_listing_arr", () => Guide.Money(Prices.At((int)(VentureCatalogue.ListingArr / 100))))
+                .Fact("vc_listing_multiple", () => Whole(VentureCatalogue.ListingMultiple))
                 .Fact("vc_acquihire", () => Mille(VentureCatalogue.AcquihireShare))
                 .Fact("vc_multiple_least", () => Whole(VentureCatalogue.MultipleLeast))
                 .Fact("vc_multiple_most", () => Whole(VentureCatalogue.MultipleMost))

@@ -139,6 +139,9 @@ namespace RealLifeOverhaul.Markets
         public readonly List<Candle> Daily = new List<Candle>(MarketCatalogue.DailyKept + 1);
         public readonly List<Candle> Monthly = new List<Candle>(16);
 
+        /// <summary>A player's own company, listed (Markets/Listing): its founder, its reserve, its board and meetings. Null for every company of the city's.</summary>
+        public OwnListing Own;
+
         public bool Listed => Status == StockStatus.Listed;
 
         /// <summary>The middle price, in money.</summary>
@@ -257,12 +260,23 @@ namespace RealLifeOverhaul.Markets
         public int[] TradeSales;     // ...and their takings yesterday, in money
         public int RivalMood;        // the game's rivals: their income against a month ago, per cent (100 the same)
 
+        // The player's own listed company (Markets/Listing), from the game's own daily statements of its businesses: the
+        // statement days counted (OwnFrom and the OwnDays after it), their takings and profit together, in money; the
+        // player's Standing (0 to 100, -1 not known), what the papers made of them (tenths of a point either way) and a
+        // scandal that came out; what the player owes on loans. Nothing while the player has no company on the market.
+        public int OwnFrom, OwnDays;
+        public long OwnRev, OwnProfit;
+        public int OwnStanding;
+        public int OwnPress;
+        public int OwnScandal;
+        public long OwnDebt;
+
         public static MarketEnv Quiet()
         {
             return new MarketEnv
             {
                 Cycle = 1, RateBp = 300, InflationBp = 200, PriceLevel = 1000, DistrictIncome = 1000, Supply = new[] { 1000, 1000, 1000, 1000, 1000, 1000 }, Levers = Packed(null),
-                TradeOf = new int[TradesMost], TradeSales = new int[TradesMost], RivalMood = 100
+                TradeOf = new int[TradesMost], TradeSales = new int[TradesMost], RivalMood = 100, OwnStanding = -1
             };
         }
 
@@ -327,6 +341,21 @@ namespace RealLifeOverhaul.Markets
         Crisis = 14,        // a company's crisis: Stock, A what it does to the company's worth, in bp (the price follows at the open)
         Windfall = 15,      // a company's windfall: Stock, A the same
         Delisted = 16,      // shares that traded under a unit for weeks leave the market: Stock, A cents a share paid out
+        // A player's own company (Markets/Listing):
+        OwnPriced = 17,     // its shares priced by the book: Stock the id it will have, A the price in cents, B its first day, C the share offered in bp
+        OwnPulled = 18,     // its listing called off: A the price the book came to, B the least the player would take
+        OwnDeal = 19,       // its founder bought or sold: Stock, A shares (under nothing: sold), B the price in cents
+        OwnBuyBack = 20,    // it bought back shares: Stock, A shares, B the price in cents
+        OwnIssue = 21,      // it sold new shares: Stock, A shares, B the price in cents
+        OwnMeeting = 22,    // a meeting of its shareholders: Stock, A what passed (ListingVotes bits), B against the board in bp, C 1 for an extraordinary meeting
+        OwnActivist = 23,   // an investor bought in to press a demand: Stock, A their stake in bp, B the demand (ActivistDemand), C the meeting's day
+        OwnPrivate = 24,    // taken off the market by its founder: Stock, A the price paid a share
+        OwnDisgorged = 25,  // the founder paid back a gain on shares bought and sold within the time the rules allow: Stock, A the money
+        OwnBidBlocked = 26, // a bid for it lapsed: Stock, A 1 the founder's holding stood in its way, 0 the holders did not take it
+        OwnRefused = 27,    // something its founder asked for could not be done when its moment came: Stock, A the action (OwnAction), B why (OwnWhy)
+        OwnWithdrawn = 28,  // an investor dropped a demand that was met: Stock, A the demand
+        OwnAway = 29,       // another player's company left this market (its founder's city is no longer this one): Stock, A cents a share paid out
+        OwnAudit = 30,      // its yearly audit found the books wanting: Stock, A what it found (ListingBook bits)
         Count
     }
 
@@ -376,6 +405,14 @@ namespace RealLifeOverhaul.Markets
         public readonly List<MarketNews> News = new List<MarketNews>(32);   // the last few days' pieces
         public readonly List<DividendDue> Dues = new List<DividendDue>(8);  // dividends worked out at a record day, to be paid
         public int BusinessDay;                  // the last day of the calendar the companies' business has been run for
+
+        // The player's own company (Markets/Listing). Me is who the player of this machine is (a hash of their save, set by
+        // the director at every start, never saved): a listed company whose Own.Owner is Me is theirs, any other player's
+        // is another holder's company to them. Listing is their way to the market and their books (saved, never shared);
+        // Following is set while this market follows a Going Public host's (nothing of the player's own company moves then).
+        public ulong Me;
+        public bool Following;
+        public ListingFile Listing = new ListingFile();
 
         // The city's index and the sector indices: today's bars and the daily history (hundredths of a point).
         public readonly Candle[] IndexBars = new Candle[MarketCatalogue.IntradayBars];

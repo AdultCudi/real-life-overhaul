@@ -185,6 +185,12 @@ namespace RealLifeOverhaul.Flare
                 _file.MayorMood = FlareRules.Clamp(_file.MayorMood - FlareRules.MoodIssuePost, -100, 100);
                 Logger?.Info("Flare: the post about " + (FlareIssue)d.Arg + " raises it in the council by " + weight + " thousandths of a point; the feed's mood is " + _file.MayorMood + ".");
             }
+            if (p.Source == FlareSource.Campaign && FlareBridges.Campaign != null)
+            {
+                int weight = FlareRules.IssueWeight(_file.Followers) * (p.Viral ? FlareRules.ViralTimes : 1);
+                FlareBridges.Campaign(weight);
+                Logger?.Info("Flare: the post about the player's campaign is worth " + weight + " thousandths of a point to it.");
+            }
             if (p.Viral && p.Place != null && FlareBridges.MarketBuzz != null)
             {
                 FlareBridges.MarketBuzz(p.Place, 1);

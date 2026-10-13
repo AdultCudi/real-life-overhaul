@@ -25,6 +25,8 @@ namespace RealLifeOverhaul
         ///   Extra     what is on in the street today (Events/EventCalendar) and a spell of weather (Events/Weather)
         ///   Council   the council's policies (Civic) against how they stood at the last edition: one piece for each that
         ///             came in or ended
+        ///   Office    the player's own run for office and office (Civic/CivicOffice): the morning's pieces about them, with
+        ///             their names (a filing, an attack, an endorsement, the debate, the result, a scandal, the budget)
         ///   Taken     the bus stops, the help-wanted boards and the bike docks, which a kiosk keeps clear of
         ///   Say       a message from the City Ledger's contact (Social/SocialPhone), whose call is the paper's desk
         ///   Extra     also tomorrow's street event (announced the day before) and, while the night life is on, the
@@ -251,6 +253,19 @@ namespace RealLifeOverhaul
                         if (piece != null)
                         {
                             into.Add(piece);
+                        }
+                    }
+                    CivicOffice office = Settings.Civic && CivicDirector.Instance != null ? CivicDirector.Instance.Office : null;
+                    for (int i = 0; office != null && i < office.State.Stories.Count; i++)
+                    {
+                        OfficeStory story = office.State.Stories[i];
+                        if (story.Day == day)
+                        {
+                            LedgerPiece piece = LedgerRules.Piece(story.Key, new[] { "name", story.Name ?? string.Empty, "value", story.Value ?? string.Empty });
+                            if (piece != null)
+                            {
+                                into.Add(piece);
+                            }
                         }
                     }
                     if (Settings.WeatherMatters)

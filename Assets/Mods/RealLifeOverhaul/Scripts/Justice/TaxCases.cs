@@ -74,22 +74,47 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
+        /// Opens a case for money taken for a campaign against the law (Civic/CivicOffice, through Wiring/CivicLinks: over a
+        /// donor's limit, cash from nobody named, or passed through other people's names), on a summons like a tax case.
+        /// Its number, or 0 with no court to open it.
+        /// </summary>
+        public static int FileCampaignFinance(int amount)
+        {
+            return Summons(JusticeLaw.CampaignFinance, "money taken for a campaign against the law (" + amount + ") came out");
+        }
+
+        /// <summary>
+        /// Opens a case for misconduct in public office (Civic/CivicOffice, through Wiring/CivicLinks: a councillor's vote that
+        /// decided a motion they had an interest in and did not declare, or a mayor's own motion of the kind), on a summons.
+        /// Its number, or 0 with no court to open it.
+        /// </summary>
+        public static int FileMisconduct()
+        {
+            return Summons(JusticeLaw.Misconduct, "an interest not declared on a vote that it decided came out");
+        }
+
+        /// <summary>
         /// Opens a case for a data protection offence (the tech sector, through Wiring/TechLinks: a breach at a firm that was
         /// off the register, or breached before), on a summons like a tax case: heard and fined by Justice's own table, on
         /// top of the regulator's own fine. Its number, or 0 with no court to open it.
         /// </summary>
         public static int FileDataProtection(string firm)
         {
+            return Summons(JusticeLaw.DataProtection, "a data protection offence (a breach at " + firm + ")");
+        }
+
+        private static int Summons(string charge, string what)
+        {
             if (!Justice.Active)
             {
                 return 0;
             }
-            JusticeCase opened = Justice.Summon(new JusticeReport(JusticeLaw.DataProtection) { Complied = true, Evidence = new[] { Evidence } });
+            JusticeCase opened = Justice.Summon(new JusticeReport(charge) { Complied = true, Evidence = new[] { Evidence } });
             if (opened == null)
             {
                 return 0;
             }
-            JusticeDirector.Logger?.Info("Justice: case " + opened.Number + " opened on a summons for a data protection offence (a breach at " + firm + "), to be heard on day " + opened.CourtDay + ".");
+            JusticeDirector.Logger?.Info("Justice: case " + opened.Number + " opened on a summons: " + what + "; to be heard on day " + opened.CourtDay + ".");
             return opened.Number;
         }
 

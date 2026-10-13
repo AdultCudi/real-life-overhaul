@@ -44,6 +44,7 @@ namespace RealLifeOverhaul
                 TechBridges.Claim = Claim;
                 TechBridges.Fame = Fame;
                 TechBridges.Supplied = Supplied;
+                TechBridges.Ipo = Ipo;
                 TechBridges.Mbps = Mbps;
                 TechBridges.UtilityCents = (service, use) => Utilities.UtilitiesRules.DayCents(service == 0 ? Utilities.Service.Power : Utilities.Service.Water, use, Prices.Level, false);
                 _paperBefore = News.Extra;
@@ -88,6 +89,26 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     Fault("TechLinks.Held", e);
+                    return false;
+                }
+            }
+
+            // A firm's listing is the player's company's (Markets/Listing): its page opened, while the stock market and its listing run.
+            private static bool Ipo()
+            {
+                try
+                {
+                    Markets.MarketDirector m = Markets.MarketDirector.Instance;
+                    if (m == null || !Settings.MarketsListing || m.Listing == null)
+                    {
+                        return false;
+                    }
+                    m.OpenListing();
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Ipo", e);
                     return false;
                 }
             }

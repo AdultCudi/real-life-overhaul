@@ -260,7 +260,8 @@ namespace RealLifeOverhaul.Meta
                 S("crime").For("crime").Main("street_crime").Opts("crime_frequency").FreeOpts("crime_against_player").Also("robbery mugging thief theft burglar scam pickpocket"),
                 S("courts").For("justice").Main("justice").Opts("justice_lawyers", "justice_courthouse", "justice_no_prison", "justice_prison_cap", "justice_community",
                     "justice_civil", "justice_aftermath").Opt("justice_phone", "phone_contacts").Also("trial judge lawyer prison jail sentence bail"),
-                S("council").For("civic").Main("civic").Opts("civic_elections", "civic_construction").Also("election vote mayor politics roadworks city hall"),
+                S("council").For("civic").Main("civic").Opts("civic_elections").Opt("civic_office", "civic_elections").Opts("civic_construction")
+                    .Also("election vote mayor politics roadworks city hall candidate campaign councillor stand office"),
                 S("sounds").Guide("leisure").Need("leisure").Main("ambient_sound").Opts("ambient_birds", "ambient_night", "ambient_city", "ambient_crowd").Also("audio volume noise")),
 
             G("around",
@@ -277,6 +278,8 @@ namespace RealLifeOverhaul.Meta
                 S("taxi").For("taxi").Opts("transit_taxi_call").Also("cab cabs ride"),
                 S("nav").For("navigation").Main("nav_minimap").Opts("nav_rotate", "nav_size", "nav_zoom", "nav_base").FreeOpts("nav_gps").Opt("nav_other_route", "nav_gps")
                     .FreeOpts("map_places_shown").Also("map route satnav directions destination"),
+                S("districtview").For("districtview").Opts("district_view")
+                    .Also("district districts neighbourhood neighbourhoods neighborhood map layer layers stats statistics wealth rent prices footfall crime standing coverage internet competition council"),
                 S("licences").For("licences").Main("driving_licence").Opts("licence_start_with", "driving_school", "licence_points", "roadside_checks")
                     .Also("driving test theory examiner points"),
                 S("travel").For("travel").Opts("travel_hotels", "travel_holidays", "travel_extras").Also("holiday trip hotel stay")),
@@ -293,7 +296,8 @@ namespace RealLifeOverhaul.Meta
                 S("banks").For("economy_banks").Need("economy").Opts("economy_banks").Also("bank app current account statement card loan apply"),
                 S("cityeco").For("economy_city").Need("economy").Main("economy_city").Opts("economy_city_level").Also("prices rates boom recession inflation"),
                 S("ventures").For("ventures").Opts("ventures_investors", "ventures_level").Also("invest investor pitch deal"),
-                S("markets").For("markets").Main("ventures_market").Opts("markets_margin").Also("shares stocks invest dividend broker trading candles chart margin short")),
+                S("markets").For("markets", "markets_listing").Main("ventures_market").Opts("markets_margin", "markets_listing")
+                    .Also("shares stocks invest dividend broker trading candles chart margin short").Also("markets_listing", "listing flotation offer prospectus shareholders takeover")),
 
             G("business",
                 S("company").For("economy_company").Need("economy").Main("economy_company").Opts("economy_company_staff", "economy_company_cover",
@@ -302,12 +306,14 @@ namespace RealLifeOverhaul.Meta
                 S("rota").For("economy_rota").Opt("economy_rota", "economy_company").Also("schedule shifts opening hours staff"),
                 S("cleaning").For("economy_cleaning").Need("economy").Opts("economy_cleaning").Also("cleaners contract"),
                 S("sale").For("economy_sale").Need("economy").Opts("economy_sale").Also("sell buyer offer"),
+                S("ownbank").For("economy_ownbank").Need("economy").Opts("economy_bank").Also("bank licence deposits savers loans regulator capital fund"),
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),
                 S("online").For("economy_online").Need("economy").Opts("economy_online").Also("web shop orders delivery internet"),
                 S("people").For("tech_people").Opts("tech_people").Also("professionals staff employees skills skill percent role promotion review course certificate notice severance lay off poach"),
                 S("jobsboard").For("tech_jobs").Opt("tech_jobs", "tech_people").Also("jobs board hire hiring recruit recruitment applicants interview offer headhunter search labour market candidates"),
                 S("techsector").For("tech_sector").Opt("tech_sector", "tech_people").Also("tech software saas app game studio consultancy cybersecurity security breach outage product subscription contract tender developer"),
                 S("startups").For("tech_startups").Opt("tech_startups", "tech_sector").Also("startup startups venture capital vc angel fund pitch term sheet valuation equity round board shares options dilution"),
+                S("dealer").For("economy_dealer").Need("economy").Opts("economy_dealer").Also("car dealership showroom auction wholesale used cars finance warranty"),
                 S("estate").For("economy_estate").Need("economy").Opts("economy_estate", "economy_estate_hotel", "economy_estate_hire")
                     .Also("buildings landlord tenant letting rent rental").Also("economy_estate", "rent tenant landlord letting"),
                 S("bizevents").For("business").Main("business_pressure").Opts("business_frequency", "business_easy").Also("trouble pressure competition"),

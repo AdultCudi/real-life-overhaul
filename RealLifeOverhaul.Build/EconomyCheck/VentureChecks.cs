@@ -16,6 +16,31 @@ internal static partial class Program
         VenturePlayer();
         VentureOwnFirm();
         VentureSave();
+        VentureListing();
+    }
+
+    private static void VentureListing()
+    {
+        var f = new VentureFile { Seed = 8 };
+        Startup s = VentureRules.Born(f, 1, 1000);
+        var angel = new Holder { Kind = (int)HolderKind.Angel, Invested = 50000000 };
+        VentureRules.Round(s, 400000000, new[] { angel }, 10);
+        s.Mrr = VentureCatalogue.ListingArr / 12;
+        var notes = new List<VentureNote>();
+        long[] pay = VentureRules.List(f, s, notes);
+        long sum = 0;
+        for (int i = 0; i < pay.Length; i++)
+        {
+            sum += pay[i];
+        }
+        Check(s.State == (int)StartupState.Listed && !s.Alive && s.Post == VentureCatalogue.ListingArr * VentureCatalogue.ListingMultiple, "ventures: a listed startup is valued at its revenue by the public multiple");
+        Check(sum <= s.Post && sum > s.Post * 99 / 100, "ventures: on listing every holder sells at the offer, by shares (" + sum + " of " + s.Post + ")");
+        Check(notes.Count == 1 && notes[0].Kind == VentureRules.NoteListing && notes[0].Amount == angel.Paid && angel.Paid > angel.Invested, "ventures: the player's shares at the offer come back to them");
+        Startup small = VentureRules.Born(f, 2, 1000);
+        VentureRules.Round(small, 900000000, new[] { new Holder { Kind = (int)HolderKind.Vc, Who = 1, Invested = 100000000 } }, 10);
+        small.Mrr = 1000;
+        VentureRules.List(f, small, null);
+        Check(small.Post >= 1000000000, "ventures: a listing is never under the last round");
     }
 
     private static void VentureMood()

@@ -36,14 +36,10 @@ namespace RealLifeOverhaul.Tech
         public static Action<int, int> Fame;
 
         /// <summary>
-        /// A company of the player's or a startup the player holds asks to list its shares: its name, its value in cents and
-        /// the player's share in thousandths. True if the share issue's own feature has taken it on (it runs the listing).
-        /// Default: none, and the company is told a listing is not open yet.
+        /// A firm of the player's asks to come to the market: the stock market's listing (Markets/Listing) takes the player's
+        /// company there, and this opens its way. True if it is open. Default: none, and the firm is told it is not.
         /// </summary>
-        public static Func<string, long, int, bool> Ipo;
-
-        /// <summary>Other investors' money in the player's fund, cents (a bank's or investors' feature brings it). Default: none.</summary>
-        public static Func<long> FundOthers;
+        public static Func<bool> Ipo;
 
         /// <summary>True if a building has the city's power (service 0) or water (1) now. Default: always.</summary>
         public static Func<BuildingRegistration, int, bool> Supplied;
@@ -81,7 +77,6 @@ namespace RealLifeOverhaul.Tech
             Supplied = null;
             Mbps = null;
             UtilityCents = null;
-            FundOthers = null;
         }
     }
 }

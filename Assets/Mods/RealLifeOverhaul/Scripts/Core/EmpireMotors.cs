@@ -7,8 +7,10 @@ namespace RealLifeOverhaul
 {
     /// <summary>
     /// Living with Empire Motors (Steam Workshop 3787690782), the mod that lets the player run a car dealership of its own
-    /// business type. This mod builds no dealership: it lets that one be a business of the player's like any other and
-    /// keeps its own hands off what is the dealership's. See RealLifeOverhaul.Build/docs/other-mods.md, "Empire Motors".
+    /// business type. This mod has a dealership of its own too (Economy/Dealer), of another business type; the two live
+    /// side by side. This class lets Empire Motors' be a business of the player's like any other and keeps this mod's
+    /// hands off what is that dealership's (Core/Dealerships asks both kinds). See RealLifeOverhaul.Build/docs/other-mods.md,
+    /// "Empire Motors".
     ///
     /// What matters here, read in its decompiled code (it makes no Harmony patch: its one patch method is never applied):
     ///  - its dealership is a business type of its own, "empiremotors:businesstype_cardealership", in a retail building,
@@ -20,11 +22,13 @@ namespace RealLifeOverhaul
     ///  - its money moves through the game's own GameManager.ChangeMoneySafe, but under types the game's statement does
     ///    not count (Core/EmpireMotorsLines): to the game, and so to this mod's books, a dealership took nothing;
     ///  - while the player drives, V switches to a view from the driver's seat that writes the camera's place itself,
-    ///    and F6, F7, F9 and F12 are tools of its own for the showroom's cars, always on.
+    ///    and F6, F7, F9 and F12 are tools of its own for the showroom's cars, always on. While this mod's camera key is
+    ///    V that view is kept off (Camera/EmpireView, the one thing of its own this mod switches).
     ///
     /// How it is known, without a reference to it: by its assembly and a type of its own (<see cref="OtherMods"/>).
-    /// Nothing of it is called or read by reflection: its dealership is known by the game's own record of the business
-    /// type, its stock by the address and by the vehicle's id in its saved text.
+    /// Nothing of it is called or read by reflection but that view's component (Camera/EmpireView): its dealership is
+    /// known by the game's own record of the business type, its stock by the address and by the vehicle's id in its saved
+    /// text.
     ///
     /// The cost: nothing per frame. <see cref="Stock"/> is a field read while it is not switched on; then a dictionary
     /// lookup of the game's, and once per vehicle while its saved text stays the same, one search of that text.
@@ -37,7 +41,6 @@ namespace RealLifeOverhaul
         private static string _saved;                                                        // the saved text the answers below are for
         private static readonly Dictionary<string, bool> Held = new Dictionary<string, bool>(32);   // vehicle id: in its records
         private static readonly List<Address> Scratch = new List<Address>(4);
-        private static bool _toldKey;   // the camera key's notice has been shown in this run of the game
 
         /// <summary>True once Empire Motors has been seen among the loaded assemblies. A field read.</summary>
         public static bool On => OtherMods.EmpireMotors.Loaded;
@@ -135,29 +138,6 @@ namespace RealLifeOverhaul
             return line;
         }
 
-        /// <summary>
-        /// True while Empire Motors has the camera key: it is V with no modifier, as Empire Motors' view from the driver's
-        /// seat is, and the player is driving. The first time in a run of the game it says so. Only when the key went down.
-        /// </summary>
-        public static bool TakesCameraKey(GameManager gm)
-        {
-            if (!On || Keys.Key(KeyAction.CameraToggle) != KeyCode.V || Keys.Modifier(KeyAction.CameraToggle) != KeyModifier.None)
-            {
-                return false;
-            }
-            VehicleController vehicle = gm != null ? gm.selectedVehicle : null;
-            if (vehicle == null || !vehicle.controlledByPlayer)
-            {
-                return false;
-            }
-            if (!_toldKey)
-            {
-                _toldKey = true;
-                UI.Notification.Notifications.Show(UI.Notification.NotificationType.Info, "reallife_empire_camera_key", null, 10f);
-            }
-            return true;
-        }
-
         /// <summary>The text key that says what Empire Motors does on a key of this mod's, for its row on the options page; null for nothing.</summary>
         public static string KeyUse(KeyCode key, KeyModifier modifier)
         {
@@ -168,7 +148,7 @@ namespace RealLifeOverhaul
             switch (key)
             {
                 case KeyCode.V:
-                    return modifier == KeyModifier.None ? "reallife_keys_empire_view" : null;
+                    return "reallife_keys_empire_view";   // (its view reads V with any modifier held, and is kept off while this key is V: Camera/EmpireView)
                 case KeyCode.F7:
                     return modifier == KeyModifier.Shift ? null : "reallife_keys_empire_tools";   // (its F7 waits for Shift to be up)
                 case KeyCode.F6:

@@ -193,13 +193,11 @@ namespace RealLifeOverhaul.Tech
                     }
                     break;
                 case VentureRules.NoteListing:
-                    int share;
-                    long invested;
-                    VentureRules.PlayerValue(s, out share, out invested);
-                    if (TechBridges.Ipo != null && TechBridges.Ipo(s.Name, Level(s.Post), share))
+                    PayOut(s);
+                    Story("reallife_tech_news_listing", "name", s.Name, "amount", TechText.Cents(Level(s.Post)));
+                    if (mine)
                     {
-                        s.State = (int)StartupState.Listed;
-                        Story("reallife_tech_news_listing", "name", s.Name, "amount", TechText.Cents(Level(s.Post)));
+                        Tell2(NotificationType.Success, "reallife_vc_note_listed", Data("name", s.Name, "amount", TechText.Cents(Level(n.Amount))), TabStartups, row);
                     }
                     break;
             }
@@ -722,14 +720,11 @@ namespace RealLifeOverhaul.Tech
         internal void PrepareListing(string place)
         {
             FirmPlace firm = FirmOf(place);
-            Cap c = CapFor(place, false);
             if (firm == null)
             {
                 return;
             }
-            long value = c != null && c.Post > 0 ? Level(c.Post) : Level(FirmsRules.Value(firm.File, FirmsRules.Arr(_firmsFile, place), 0));
-            int share = c != null ? VentureRules.PlayerShare(c) : 1000;
-            bool taken = TechBridges.Ipo != null && TechBridges.Ipo(firm.File.Name, value, share);
+            bool taken = TechBridges.Ipo != null && TechBridges.Ipo();
             Notifications.Show(taken ? NotificationType.Success : NotificationType.Info, taken ? "reallife_vc_note_listing_taken" : "reallife_vc_note_listing_closed", Data("firm", firm.File.Name), 8f, null, null, true, false);
         }
 

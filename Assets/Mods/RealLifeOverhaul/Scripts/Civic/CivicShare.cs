@@ -114,6 +114,8 @@ namespace RealLifeOverhaul
             mine.Phase = host.Phase;
             mine.Recall = host.Recall;
             mine.CandidateCount = host.CandidateCount;
+            mine.PlayerSlot = -1;          // (nobody on a guest stands: Civic/CivicOffice is not offered in a session)
+            mine.DistrictsCounted = 0;     // the host's district shares are not sent: a guest's district pages divide the city's result itself
             for (int i = 0; i < mine.Candidates.Length; i++)
             {
                 mine.Candidates[i].CopyFrom(host.Candidates[i]);
