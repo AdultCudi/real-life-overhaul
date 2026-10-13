@@ -62,6 +62,12 @@ namespace RealLifeOverhaul.Flare
         // A viral post: the game's own hype for a product of the business it was about, and a piece in the morning paper.
         private void Viral(FlarePost p, int day)
         {
+            BuildingRegistration viral = p.Place != null ? FlareGame.Business(p.Place) : null;
+            if (viral != null)
+            {
+                _file.ViralNiche = (int)FlareCast.NicheOf(viral.businessTypeName);   // a viral business draws an influencer of its kind for a month
+                _file.ViralNicheDay = day;
+            }
             if (p.Place != null && FlareRules.MayHype(_file, day))
             {
                 string product = FlareGame.Hype(FlareGame.Business(p.Place));

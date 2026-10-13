@@ -92,8 +92,9 @@ internal static partial class Program
     private static void FlareSponsored()
     {
         int kind = (int)CampaignKind.Sponsored;
-        Check(kind == 4 && CompanyCatalogue.CampaignKinds == 5 && CompanyCatalogue.CampaignOwnKinds == 4 && CompanyCatalogue.CampaignCost.Length == 5 && CompanyCatalogue.CampaignDays.Length == 5
-              && CompanyCatalogue.CampaignFootfall.Length == 5 && CompanyCatalogue.CampaignLocal.Length == 5 && !CompanyCatalogue.CampaignLocal[kind],
+        int kinds = CompanyCatalogue.CampaignKinds;
+        Check(kind == 4 && (int)CampaignKind.Giveaway == 10 && kinds == 11 && CompanyCatalogue.CampaignOwnKinds == 4 && CompanyCatalogue.CampaignCost.Length == kinds && CompanyCatalogue.CampaignDays.Length == kinds
+              && CompanyCatalogue.CampaignFootfall.Length == kinds && CompanyCatalogue.CampaignLocal.Length == kinds && !CompanyCatalogue.CampaignLocal[kind],
             "Company: a sponsored post is the fifth campaign, after the four that keep their numbers, with an entry in every table");
         Check(FlareRules.SponsoredReach(499) == 0 && FlareRules.SponsoredReach(500) == FlareRules.SponsoredLeast && FlareRules.SponsoredReach(5000) == 625
               && FlareRules.SponsoredReach(100000000) == FlareRules.SponsoredMost, "Flare: a sponsored post from Local on, its reach by followers on a log scale");
@@ -130,14 +131,20 @@ internal static partial class Program
         CompanyState back = CompanyStore.Read(line, out version);
         Check(back != null && back.Shops[0].PushEnded[(int)CampaignKind.Sponsored] == 90 && back.Shops[1].Push == (int)CampaignKind.Sponsored && back.Shops[1].PushPercent == 5
               && CompanyStore.Write(back) == line, "Company: a sponsored post and when the last one ended survive the save");
-        string older = line.Replace("|90;", ";");
+        string tail = string.Empty;
+        for (int k = CompanyCatalogue.CampaignOwnKinds; k < s.Shops[0].PushEnded.Length; k++)
+        {
+            tail += "|" + s.Shops[0].PushEnded[k];
+        }
+        string older = line.Replace(tail + ";", ";");   // the first shop as a version before the new kinds wrote it
         CompanyState old = older != line ? CompanyStore.Read(older, out version) : null;
         Check(old != null && old.Shops[0].PushEnded[(int)CampaignKind.Sponsored] == 0 && old.Shops[0].PushEnded[(int)CampaignKind.Radio] == s.Shops[0].PushEnded[(int)CampaignKind.Radio]
               && old.Shops[0].Permits[0].Until == s.Shops[0].Permits[0].Until && old.Shops[0].Cover[0].Insurer == s.Shops[0].Cover[0].Insurer,
             "Company: a line from before the sponsored post reads as before, with none ended");
         // An older version reads only the fields it knows: the new one is after every one of them.
         string[] fields = line.Substring(line.IndexOf("^s:", StringComparison.Ordinal) + 3).Split(';')[0].Split('|');
-        Check(fields.Length == 1 + 20 + 3 * 7 + 4 * 3 + 1 && fields[fields.Length - 1] == "90", "Company: the new field goes after everything an older version reads");
+        Check(fields.Length == 1 + 20 + 3 * 7 + 4 * 3 + CompanyCatalogue.CampaignKinds - CompanyCatalogue.CampaignOwnKinds && fields[1 + 20 + 3 * 7 + 4 * 3] == "90",
+            "Company: the new fields go after everything an older version reads");
         FlareFile f = FlareRules.Open(5, 1, 0, 50);
         FlareRules.AddBuzz(f, "Main%20St~1", 3, 4, 3);
         f.HypeDay = 9;

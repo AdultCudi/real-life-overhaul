@@ -17,6 +17,11 @@ namespace RealLifeOverhaul.Flare
     ///     B|place|percent|until                               talk about a business, in its customers
     ///   reallife:flare_posts
     ///     P|id|day|hour|author|who|source|tone|tag|place|name|arg|seed|quality|reach|likes|replies|likers|repliers|gained|flags
+    ///   reallife:flare_cast
+    ///     FC1|cast seed|month day|follow notice day|news today|news day|viral niche day|viral niche
+    ///     I|id|handle|niche|district|followers|engagement|reliability|style|reputation|start|quit|star|person|scandal day|seed|staff
+    ///     H|id|kind|place|name|from|to|percent|who,who|late|off message|backfired|ended
+    ///     F|account                                           an account the player follows
     ///
     /// Every number is written in the invariant culture. What is not understood is left out a line at a time: a post or
     /// a draft of a kind this version does not know (from a later one) is dropped, never read as something else, so an
@@ -27,14 +32,18 @@ namespace RealLifeOverhaul.Flare
     {
         public const string AccountKey = "reallife:flare_account";
         public const string PostsKey = "reallife:flare_posts";
+        public const string CastKey = "reallife:flare_cast";
+        private const string CastVersion = "FC1";
         public const string Keys = "reallife:flare_*";
         private const string Version = "FL1";
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
         // The kinds this version knows: anything past them is from a later one.
-        private const int Sources = (int)FlareSource.Sponsored + 1;
+        private const int Sources = (int)FlareSource.CityNews + 1;
         private const int Tones = (int)FlareTone.Cheeky + 1;
-        private const int Authors = (int)FlareAuthor.Friend + 1;
+        private const int Authors = (int)FlareAuthor.Candidate + 1;
+        private const int Niches = (int)FlareNiche.Business + 1;
+        private const int Styles = (int)FlareStyle.Wholesome + 1;
 
         public static void Save(Dictionary<string, string> data, FlareFile f)
         {
@@ -44,6 +53,7 @@ namespace RealLifeOverhaul.Flare
             }
             data[AccountKey] = WriteAccount(f);
             data[PostsKey] = WritePosts(f);
+            data[CastKey] = WriteCast(f);
         }
 
         /// <summary>The save's file, or null if it has none this version can read (a new account is opened then).</summary>
@@ -55,7 +65,123 @@ namespace RealLifeOverhaul.Flare
                 return null;
             }
             data.TryGetValue(PostsKey, out posts);
-            return Read(account, posts);
+            FlareFile f = Read(account, posts);
+            string cast;
+            if (f != null && data.TryGetValue(CastKey, out cast))
+            {
+                ReadCast(f, cast);
+            }
+            return f;
+        }
+
+        public static string WriteCast(FlareFile f)
+        {
+            var b = new StringBuilder(256 + f.Influencers.Count * 90 + f.Hires.Count * 70 + f.Follows.Count * 20);
+            b.Append(CastVersion);
+            Join(b, f.CastSeed, f.MonthDay, f.FollowNoticeDay, f.NewsToday, f.NewsDay, f.ViralNicheDay, f.ViralNiche);
+            for (int i = 0; i < f.Influencers.Count; i++)
+            {
+                FlareInfluencer n = f.Influencers[i];
+                b.Append("\nI");
+                Join(b, n.Id);
+                b.Append('|').Append(Clean(n.Handle));
+                Join(b, (int)n.Niche);
+                b.Append('|').Append(Clean(n.District));
+                Join(b, n.Followers, n.Engagement, n.Reliability, (int)n.Style, n.Reputation, n.StartDay, n.Quit ? 1 : 0, n.Star ? 1 : 0, n.Person, n.ScandalDay, n.Seed, n.Staff ? 1 : 0);
+            }
+            for (int i = 0; i < f.Hires.Count; i++)
+            {
+                FlareHire h = f.Hires[i];
+                b.Append("\nH");
+                Join(b, h.Id, h.Kind);
+                b.Append('|').Append(Clean(h.Place)).Append('|').Append(Clean(h.Name));
+                Join(b, h.From, h.To, h.Percent);
+                b.Append('|');
+                for (int k = 0; k < h.Who.Count; k++)
+                {
+                    b.Append(k > 0 ? "," : string.Empty).Append(h.Who[k].ToString(Inv));
+                }
+                Join(b, h.Late ? 1 : 0, h.OffMessage ? 1 : 0, h.Backfired ? 1 : 0, h.Ended ? 1 : 0);
+            }
+            for (int i = 0; i < f.Follows.Count; i++)
+            {
+                b.Append("\nF|").Append(Clean(f.Follows[i]));
+            }
+            return b.ToString();
+        }
+
+        /// <summary>The cast, the hires and the follows into a file. What is not understood is left out a line at a time; another version's entry leaves the file without them (a new cast is made).</summary>
+        public static void ReadCast(FlareFile f, string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+            try
+            {
+                string[] lines = text.Split('\n');
+                string[] h = lines[0].TrimEnd('\r').Split('|');
+                if (h.Length < 8 || h[0] != CastVersion)
+                {
+                    return;
+                }
+                f.CastSeed = I(h, 1);
+                f.MonthDay = I(h, 2, -1);
+                f.FollowNoticeDay = I(h, 3, -1);
+                f.NewsToday = I(h, 4);
+                f.NewsDay = I(h, 5, -1);
+                f.ViralNicheDay = I(h, 6, -100);
+                f.ViralNiche = I(h, 7, -1);
+                for (int i = 1; i < lines.Length; i++)
+                {
+                    string[] c = lines[i].TrimEnd('\r').Split('|');
+                    if (c[0] == "I" && c.Length >= 17 && f.Influencers.Count < FlareCast.Most * 4)
+                    {
+                        int niche = I(c, 3, -1), style = I(c, 8, -1);
+                        if (niche < 0 || niche >= Niches || style < 0 || style >= Styles)
+                        {
+                            continue;   // a kind of a later version's
+                        }
+                        f.Influencers.Add(new FlareInfluencer
+                        {
+                            Id = I(c, 1), Handle = Text(c[2]) ?? "@?", Niche = (FlareNiche)niche, District = Text(c[4]), Followers = Math.Max(0, I(c, 5)), Engagement = FlareRules.Clamp(I(c, 6), 0, 10000),
+                            Reliability = FlareRules.Clamp(I(c, 7), 0, 100), Style = (FlareStyle)style, Reputation = FlareRules.Clamp(I(c, 9), 0, 100), StartDay = I(c, 10), Quit = I(c, 11) != 0,
+                            Star = I(c, 12) != 0, Person = I(c, 13, -1), ScandalDay = I(c, 14, -100), Seed = I(c, 15), Staff = I(c, 16) != 0
+                        });
+                    }
+                    else if (c[0] == "H" && c.Length >= 13 && f.Hires.Count < 32)
+                    {
+                        var hire = new FlareHire
+                        {
+                            Id = I(c, 1), Kind = I(c, 2), Place = Text(c[3]), Name = Text(c[4]), From = I(c, 5), To = I(c, 6), Percent = I(c, 7),
+                            Late = I(c, 9) != 0, OffMessage = I(c, 10) != 0, Backfired = I(c, 11) != 0, Ended = I(c, 12) != 0
+                        };
+                        string[] who = c[8].Split(',');
+                        for (int k = 0; k < who.Length && hire.Who.Count < 3; k++)
+                        {
+                            int id;
+                            if (int.TryParse(who[k], NumberStyles.Integer, Inv, out id))
+                            {
+                                hire.Who.Add(id);
+                            }
+                        }
+                        if (hire.Place != null && hire.Who.Count > 0)
+                        {
+                            f.Hires.Add(hire);
+                        }
+                    }
+                    else if (c[0] == "F" && c.Length >= 2 && c[1].Length > 0 && f.Follows.Count < 64 && !f.Follows.Contains(c[1]))
+                    {
+                        f.Follows.Add(c[1]);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                f.Influencers.Clear();
+                f.Hires.Clear();
+                f.Follows.Clear();
+            }
         }
 
         public static string WriteAccount(FlareFile f)

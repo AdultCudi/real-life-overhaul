@@ -29,7 +29,7 @@ namespace RealLifeOverhaul.Flare
     public sealed partial class FlareDirector : MonoBehaviour
     {
         public const string AppId = "RealLifeFlare";
-        public const int TabFeed = 0, TabPost = 1, TabMe = 2, TabBusiness = 3;
+        public const int TabFeed = 0, TabPost = 1, TabMe = 2, TabBusiness = 3, TabCity = 4;
         private static readonly string[] AppGlyphs = { "Icon-Heart", "Icon-Chat", "Icon-People" };
 
         public static IModLogger Logger;
@@ -40,7 +40,7 @@ namespace RealLifeOverhaul.Flare
         private FlareApp _view;
         private PhoneApp _app;
         private bool _running, _broken, _gaveUp;
-        private Action _onSave, _onHour, _onDay, _hourSeen, _daySeen, _openFeed;
+        private Action _onSave, _onHour, _onDay, _hourSeen, _daySeen, _openFeed, _openFeedTab, _openBusinessTab;
 
         public bool Running => _running && !_broken;
 
@@ -58,6 +58,8 @@ namespace RealLifeOverhaul.Flare
             _onHour = OnHour;
             _onDay = OnDay;
             _openFeed = () => Open(TabMe);
+            _openFeedTab = () => Open(TabFeed);
+            _openBusinessTab = () => Open(TabBusiness);
             StartCoroutine(Tick());
         }
 
@@ -156,6 +158,7 @@ namespace RealLifeOverhaul.Flare
                     FlareRules.ShopDay(file, FlareGame.Place(shops[i]), 0, day);
                 }
             }
+            Cast(file, day);
             _file = file;
             _running = true;
             Logger?.Info("Flare: " + (fresh ? "an account is opened for this save on day " + day + " with " + file.Followers + " followers (" + _people.Count + " people met, seed " + file.Seed + ")"
@@ -320,6 +323,7 @@ namespace RealLifeOverhaul.Flare
             Talked(_talked);
             FlareDayReport r = FlareRules.Day(_file, day, FlareBridges.Standing(), _people);
             Rewrite(_talked, true);
+            CastDay(day);
             List<BuildingRegistration> shops = FlareGame.Businesses();
             for (int i = 0; i < shops.Count; i++)
             {
@@ -400,6 +404,8 @@ namespace RealLifeOverhaul.Flare
                 return false;
             }
             ReadPeople();
+            Names(FlareBridges.Brands, _brands);
+            Names(FlareBridges.Candidates, _candidates);
             _file.Unseen = 0;
             Badge();
             return true;

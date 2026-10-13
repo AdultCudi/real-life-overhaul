@@ -26,6 +26,7 @@ internal static partial class Program
         FlareSave();
         FlareTiming();
         FlareInfluences();
+        FlareInfluencersChecks();
     }
 
     private static List<FlarePerson> FlarePeople()

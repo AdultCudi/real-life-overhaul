@@ -18,7 +18,36 @@ namespace RealLifeOverhaul.Flare
         Arrested = 10,     // taken into custody
         Life = 11,         // a friend's own everyday post
         Scandal = 12,      // talk about a scandal at a business of a brand of the player's: an answer
-        Sponsored = 13     // the player's own sponsored post, booked as a campaign
+        Sponsored = 13,    // the player's own sponsored post, booked as a campaign
+        Niche = 14,        // an influencer's everyday post about their niche and their part of town
+        Visit = 15,        // an influencer at one of the player's businesses, unpaid
+        Hired = 16,        // an influencer paid by the player for a post about a business (a campaign)
+        Rival = 17,        // an influencer paid by one of the game's rivals or a city chain
+        Election = 18,     // an influencer or a candidate about the election
+        Apology = 19,      // an influencer's own scandal
+        BrandNews = 20,    // a brand's or a city chain's own post
+        CityNews = 21      // an influencer of local news about what happened in the city today
+    }
+
+    /// <summary>What an influencer posts about. Saved as a number: new ones go at the end.</summary>
+    public enum FlareNiche
+    {
+        Food = 0,
+        Fashion = 1,
+        Fitness = 2,
+        Nightlife = 3,
+        Tech = 4,
+        LocalNews = 5,
+        Business = 6
+    }
+
+    /// <summary>An influencer's manner. Saved as a number: new ones go at the end.</summary>
+    public enum FlareStyle
+    {
+        Honest = 0,      // posts what they think, on time
+        Flaky = 1,       // late, now and then off message
+        Edgy = 2,        // reaches far, can backfire, the most scandals
+        Wholesome = 3    // steady and liked, the fewest scandals
     }
 
     /// <summary>How a post is worded. Saved as a number.</summary>
@@ -34,7 +63,10 @@ namespace RealLifeOverhaul.Flare
     public enum FlareAuthor
     {
         Player = 0,
-        Friend = 1
+        Friend = 1,
+        Influencer = 2,
+        Brand = 3,
+        Candidate = 4
     }
 
     /// <summary>The account's tier, by followers (FlareRules.TierFrom).</summary>
@@ -162,6 +194,41 @@ namespace RealLifeOverhaul.Flare
         public readonly List<FlarePost> Posts = new List<FlarePost>(FlareRules.PostsMost);
         public readonly List<FlareShopSeen> Shops = new List<FlareShopSeen>(8);
         public readonly List<FlareBuzz> Buzz = new List<FlareBuzz>(8);
+        public readonly List<FlareInfluencer> Influencers = new List<FlareInfluencer>(FlareCast.Most);
+        public readonly List<FlareHire> Hires = new List<FlareHire>(8);
+        public readonly List<string> Follows = new List<string>(8);   // the accounts the player follows ("i:3", "b:Copper Kettle", "c:Name"); a new game follows nobody
+        public int CastSeed;             // the cast's own seed: the same cast for the same seed
+        public int MonthDay = -1;        // the day the influencers' month was last played
+        public int FollowNoticeDay = -1; // the last day the one notification of posts from followed accounts was sent
+        public int NewsToday;            // bits: what the city's news had today (FlareCast.News*), for local news
+        public int NewsDay = -1;
+        public int ViralNicheDay = -100; // a viral post of the player's about a business: its niche draws a newcomer for a month
+        public int ViralNiche = -1;
+
+        public FlareInfluencer Influencer(int id)
+        {
+            for (int i = 0; i < Influencers.Count; i++)
+            {
+                if (Influencers[i].Id == id)
+                {
+                    return Influencers[i];
+                }
+            }
+            return null;
+        }
+
+        public int ActiveInfluencers
+        {
+            get
+            {
+                int n = 0;
+                for (int i = 0; i < Influencers.Count; i++)
+                {
+                    n += Influencers[i].Active ? 1 : 0;
+                }
+                return n;
+            }
+        }
 
         /// <summary>What Flare adds to a business's customers now, per cent: the talk of its posts, inside the cap.</summary>
         public int BuzzAt(string place, int day)
@@ -245,6 +312,53 @@ namespace RealLifeOverhaul.Flare
         public string Place;
         public int Percent;
         public int Until;            // the first day without it
+    }
+
+    /// <summary>
+    /// One of the city's influencers: made by seed, kept in the save, growing, fading, quitting or caught in a scandal by
+    /// the month. They post under a handle; a star may turn out to be somebody the player can meet (Person).
+    /// </summary>
+    public sealed class FlareInfluencer
+    {
+        public int Id;
+        public string Handle;
+        public FlareNiche Niche;
+        public string District;      // the game's own name for their home district ("ba:neighborhood_...")
+        public int Followers;
+        public int Engagement;       // hundredths of a per cent of the followers who answer a post (basis points)
+        public int Reliability;      // 0 to 100
+        public FlareStyle Style;
+        public int Reputation = 60;  // 0 to 100
+        public int StartDay;
+        public bool Quit;
+        public bool Star;
+        public int Person = -1;      // the social life's number of who they are, once the player can meet them (a friend who became one, a star)
+        public bool Staff;           // one of the player's own staff, who took it up
+        public int ScandalDay = -100;
+        public int Seed;
+
+        /// <summary>The followers who answer a post.</summary>
+        public int Engaged => (int)((long)Followers * Engagement / 10000);
+
+        public bool Active => !Quit;
+    }
+
+    /// <summary>A campaign with influencers the player has paid for: the company's campaign of that kind, and what Flare does with it.</summary>
+    public sealed class FlareHire
+    {
+        public int Id;
+        public int Kind;             // the company's CampaignKind, saved as its number
+        public string Place;
+        public string Name;          // the business
+        public int From, To;         // the first and the last day
+        public int Percent;          // the customers the company's campaign adds
+        public readonly List<int> Who = new List<int>(3);   // the influencers
+        public bool Late;            // the first post came a day late
+        public bool OffMessage;
+        public bool Backfired;
+        public bool Ended;           // the player ended it (a scandal), or it ran out
+
+        public bool On(int day) => !Ended && day >= From && day <= To;
     }
 
     /// <summary>What the daily round did, for the one log line.</summary>

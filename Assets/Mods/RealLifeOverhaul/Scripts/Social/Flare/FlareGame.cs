@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using BigAmbitions.Rivals;
 using Entities;
 using Helpers;
+using Localizor;
 using RealLifeOverhaul.Economy;
 using UnityEngine;
 
@@ -57,6 +59,31 @@ namespace RealLifeOverhaul.Flare
         /// <summary>A complaint at work: the boss saw the player posting on shift. Default: nothing.</summary>
         public static Action Complaint;
 
+        // ---- the city's influencers, brands and candidates
+
+        /// <summary>True while the council lets the night go on later than the city came with (night life draws influencers). Default: no.</summary>
+        public static Func<bool> NightLate;
+
+        /// <summary>The candidates of the election on now, into the list given (none between elections). Default: none.</summary>
+        public static Action<List<string>> Candidates;
+
+        /// <summary>The player's brands and the city's chains, into the list given. Default: none.</summary>
+        public static Action<List<string>> Brands;
+
+        /// <summary>What the company would charge and bring for a campaign of a kind at a business now; false with the reason's key if it cannot be booked. Default: none can.</summary>
+        public static QuoteAsk Quote;
+
+        public delegate bool QuoteAsk(string place, int kind, out int cost, out int percent, out string why);
+
+        /// <summary>Has the company book and pay a campaign of a kind at a business. Default: nothing is booked.</summary>
+        public static Func<string, int, bool> Book;
+
+        /// <summary>A business that hired an influencer is hurt by their scandal: its brand hears of it. Default: nothing.</summary>
+        public static Action<string> BrandScandal;
+
+        /// <summary>A star influencer: somebody the player has still to meet in the social life is them, and a friend will introduce them. Their number, or -1. Default: nobody.</summary>
+        public static Func<string, int> MeetStar;
+
         public static void Reset()
         {
             People = null;
@@ -71,6 +98,13 @@ namespace RealLifeOverhaul.Flare
             Noticed = null;
             OnShift = null;
             Complaint = null;
+            NightLate = null;
+            Candidates = null;
+            Brands = null;
+            Quote = null;
+            Book = null;
+            BrandScandal = null;
+            MeetStar = null;
         }
 
         internal static T Ask<T>(Func<T> bridge, T otherwise)
@@ -195,6 +229,103 @@ namespace RealLifeOverhaul.Flare
                 return products[i];
             }
             return null;
+        }
+
+        private static readonly List<EmployeeInstance> Staffed = new List<EmployeeInstance>(16);
+        private const string GlobalDistrict = "ba:neighborhood_global";
+
+        /// <summary>The city's districts by the game's own names (not its "everywhere"), into the list given.</summary>
+        public static void Districts(List<string> into)
+        {
+            into.Clear();
+            try
+            {
+                var all = NeighborhoodHelper.Neighborhoods;
+                for (int i = 0; all != null && i < all.Count; i++)
+                {
+                    if (!string.IsNullOrEmpty(all[i]) && all[i] != GlobalDistrict)
+                    {
+                        into.Add(all[i]);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                into.Clear();   // (the game's list is not there: influencers have no home district)
+            }
+        }
+
+        /// <summary>The names of the game's own rivals, into the list given (none while the game's rivals are off).</summary>
+        public static void Rivals(List<string> into)
+        {
+            into.Clear();
+            try
+            {
+                if (SaveGameManager.Current == null || !RivalsHelper.IsFeatureEnabled)
+                {
+                    return;
+                }
+                IReadOnlyCollection<SpecialRival> rivals = RivalsHelper.GetSpecialRivals();
+                if (rivals == null)
+                {
+                    return;
+                }
+                foreach (SpecialRival rival in rivals)
+                {
+                    string name = rival != null && rival.rivalData != null ? rival.rivalData.rivalName : null;
+                    if (!string.IsNullOrEmpty(name) && !into.Contains(name) && into.Count < 8)
+                    {
+                        into.Add(name);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                into.Clear();
+            }
+        }
+
+        /// <summary>True if any business of the player's has staff (one of them may take up posting). Asked once a month.</summary>
+        public static bool HasStaff()
+        {
+            List<BuildingRegistration> all = Businesses();
+            for (int i = 0; i < all.Count; i++)
+            {
+                Staffed.Clear();
+                try
+                {
+                    EmployeeHelper.GetEmployeeInstances(new EmployeeInstancesQueryInfo { withAssignedAddress = all[i].Address, excludeBeingReplaced = true }, Staffed);
+                }
+                catch (Exception)
+                {
+                    Staffed.Clear();
+                }
+                if (Staffed.Count > 0)
+                {
+                    Staffed.Clear();
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>The player's businesses as influencers see them, into the list given.</summary>
+        public static void Shops(FlareFile f, List<FlareShop> into)
+        {
+            into.Clear();
+            List<BuildingRegistration> all = Businesses();
+            for (int i = 0; i < all.Count; i++)
+            {
+                string place = Place(all[i]);
+                FlareShopSeen seen = f.Shop(place);
+                into.Add(new FlareShop { Place = place, Name = Name(all[i]), Niche = FlareCast.NicheOf(all[i].businessTypeName), District = all[i].Neighborhood, OpenedDay = seen != null ? seen.FirstDay : f.StartDay });
+            }
+        }
+
+        /// <summary>A district by the game's own name, in words.</summary>
+        public static string DistrictName(string district)
+        {
+            return string.IsNullOrEmpty(district) ? FlareText.T("reallife_flare_district_none") : LocalizorManager.IsLocalizedKey(district) ? district.GetLocalization() : district;
         }
 
         /// <summary>The business of the player's they are standing in, or null.</summary>

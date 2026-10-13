@@ -22,6 +22,9 @@ namespace RealLifeOverhaul.Flare
         {
             _tone = -1;
             _untag = false;
+            _hireOpen = false;
+            _hireWho = 0;
+            _hireDeal = 0;
         }
 
         // ---------------------------------------------------------------- the Feed
@@ -34,8 +37,9 @@ namespace RealLifeOverhaul.Flare
             {
                 FlarePost p = file.Posts[i];
                 TableRow row = Row("post:" + p.Id);
-                row.Kind = p.Author == FlareAuthor.Player ? FlareTables.IsYours : FlareTables.IsFriends;
-                row.Set(0, FlareText.Author(p, _director.PersonName(p.Who)));
+                row.Kind = p.Author == FlareAuthor.Player ? FlareTables.IsYours : p.Author == FlareAuthor.Friend ? FlareTables.IsFriends
+                    : FlareCast.Followed(file, FlareCast.KeyOf(p)) ? FlareTables.IsFollowed : FlareTables.IsAccounts;
+                row.Set(0, AuthorName(p, file));
                 row.Set(1, Words(p));
                 row.Set(2, FlareText.N(p.Likes), p.Likes);
                 row.Set(3, FlareText.N(p.Replies), p.Replies);
@@ -61,13 +65,18 @@ namespace RealLifeOverhaul.Flare
         {
             FlarePerson who = default(FlarePerson);
             bool friend = p.Author == FlareAuthor.Friend && _director.Person(p.Who, out who);
+            FlareInfluencer inf = p.Author == FlareAuthor.Influencer && _director.File != null ? _director.File.Influencer(p.Who) : null;
+            if (inf != null)
+            {
+                return FlareText.Post(p, null, null, FlareGame.DistrictName(inf.District), (int)inf.Niche);
+            }
             return FlareText.Post(p, _director.PersonName(p.Tag), friend ? who.Job : string.Empty, friend ? who.District : string.Empty);
         }
 
         // A post in the box: its words, how far it went and what the friends said.
         private void WritePost(InfoBox box, FlareFile file, FlarePost p)
         {
-            box.Title(FlareText.Author(p, _director.PersonName(p.Who)) + ", " + FlareText.When(p.Day, p.Hour));
+            box.Title(AuthorName(p, file) + ", " + FlareText.When(p.Day, p.Hour));
             box.Line(Words(p));
             if (p.Source == FlareSource.Photo || p.Source == FlareSource.Selfie)
             {
@@ -92,6 +101,15 @@ namespace RealLifeOverhaul.Flare
                         said++;
                     }
                 }
+            }
+            string key = FlareCast.KeyOf(p);
+            if (key != null)
+            {
+                bool following = FlareCast.Followed(file, key);
+                Transform buttons = box.ButtonRow();
+                InfoBox.Button(buttons, InfoBox.Positive, following ? "reallife_flare_unfollow" : "reallife_flare_follow", () => _director.Follow(key, !following));
+                InfoBox.Button(buttons, InfoBox.Additional, "reallife_flare_back", Back);
+                return;
             }
             BackButton(box);
         }
@@ -271,9 +289,23 @@ namespace RealLifeOverhaul.Flare
                     pickedReg = shops[i];
                 }
             }
+            FlareHire hire = null;
+            HireRows(file, day, ref selected, ref hire);
             if (pickedPlace != null)
             {
-                WriteShop(box, file, day, pickedReg, pickedPlace, pickedName, pickedPosts);
+                if (_hireOpen)
+                {
+                    WriteHire(box, file, pickedPlace, pickedName, day);
+                }
+                else
+                {
+                    WriteShop(box, file, day, pickedReg, pickedPlace, pickedName, pickedPosts);
+                }
+                return FlareTables.Business;
+            }
+            if (hire != null)
+            {
+                WriteHireRow(box, file, hire, day);
                 return FlareTables.Business;
             }
             box.Title(FlareText.T("reallife_flare_tab_business"));
@@ -307,7 +339,13 @@ namespace RealLifeOverhaul.Flare
             int reach = FlareRules.SponsoredReach(file.Followers);
             box.Line(reach > 0 ? FlareText.Fill("reallife_flare_shop_sponsored", "share", (reach / 10).ToString())
                 : FlareText.Fill("reallife_flare_shop_sponsored_later", "followers", FlareText.N(FlareRules.SponsoredFrom)));
-            BackButton(box);
+            Transform buttons = box.ButtonRow();
+            InfoBox.Button(buttons, InfoBox.Positive, "reallife_flare_shop_hire", () =>
+            {
+                _hireOpen = true;
+                Refresh();
+            });
+            InfoBox.Button(buttons, InfoBox.Additional, "reallife_flare_back", Back);
         }
     }
 }

@@ -12,7 +12,9 @@ namespace RealLifeOverhaul.Economy
     {
         private static readonly string[] CampaignAbout =
         {
-            "reallife_co_push_about_flyers", "reallife_co_push_about_radio", "reallife_co_push_about_discount", "reallife_co_push_about_refit", "reallife_co_push_about_sponsored"
+            "reallife_co_push_about_flyers", "reallife_co_push_about_radio", "reallife_co_push_about_discount", "reallife_co_push_about_refit", "reallife_co_push_about_sponsored",
+            "reallife_co_push_about_influencer", "reallife_co_push_about_influencer", "reallife_co_push_about_influencer", "reallife_co_push_about_influencer",
+            "reallife_co_push_about_influencer", "reallife_co_push_about_giveaway"
         };
 
         private readonly List<int> _kinds = new List<int>(CompanyCatalogue.CampaignKinds);

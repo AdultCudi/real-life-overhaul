@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                if (file.Push == (int)CampaignKind.DiscountDay && file.Pushing(yesterday) && shop.HasBooks)
+                if ((file.Push == (int)CampaignKind.DiscountDay || file.Push == (int)CampaignKind.Giveaway) && file.Pushing(yesterday) && shop.HasBooks)
                 {
                     // The takings a discount day gave away never came in: taken whatever the cash is, and part of the campaign's cost.
                     int given = CampaignRules.Discount(shop.Takings);

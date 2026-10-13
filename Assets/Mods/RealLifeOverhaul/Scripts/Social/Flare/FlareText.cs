@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using Extensions;
 using Localizor;
 
 namespace RealLifeOverhaul.Flare
@@ -16,7 +17,7 @@ namespace RealLifeOverhaul.Flare
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private static readonly StringBuilder Words = new StringBuilder(256);
 
-        public static readonly string[] TabKeys = { "reallife_flare_tab_feed", "reallife_flare_tab_post", "reallife_flare_tab_me", "reallife_flare_tab_business" };
+        public static readonly string[] TabKeys = { "reallife_flare_tab_feed", "reallife_flare_tab_post", "reallife_flare_tab_me", "reallife_flare_tab_business", "reallife_flare_tab_city" };
         public static readonly string[] TierKeys = { "reallife_flare_tier_0", "reallife_flare_tier_1", "reallife_flare_tier_2", "reallife_flare_tier_3", "reallife_flare_tier_4" };
         public static readonly string[] ToneKeys = { "reallife_flare_tone_0", "reallife_flare_tone_1", "reallife_flare_tone_2", "reallife_flare_tone_3" };
         public static readonly string[] OutingKeys =
@@ -105,6 +106,12 @@ namespace RealLifeOverhaul.Flare
             return value.ToString("N0", Inv);
         }
 
+        /// <summary>An amount of money as the game writes it.</summary>
+        public static string Money(float amount)
+        {
+            return amount.ToShortCurrencyFormat();
+        }
+
         public static string Signed(int value)
         {
             return (value > 0 ? "+" : string.Empty) + N(value);
@@ -160,9 +167,13 @@ namespace RealLifeOverhaul.Flare
         /// The words of a post: the player's, a template of its source with the tone's line after it and the tag; a
         /// friend's, a template of its topic with their job or part of town.
         /// </summary>
-        public static string Post(FlarePost p, string tagged, string job, string district)
+        public static string Post(FlarePost p, string tagged, string job, string district, int niche = 0)
         {
             Words.Length = 0;
+            if (p.Author >= FlareAuthor.Influencer)
+            {
+                return Other(p, district, niche);
+            }
             if (p.Author == FlareAuthor.Friend)
             {
                 string[] topic = LifeKeys[FlareRules.Clamp(p.Arg / 10, 0, LifeKeys.Length - 1)];
@@ -178,6 +189,85 @@ namespace RealLifeOverhaul.Flare
             string[] tone = ToneLineKeys[FlareRules.Clamp((int)p.Tone, 0, ToneLineKeys.Length - 1)];
             Words.Append(' ').Append(T(tone[Pick(p.Seed, 2, tone.Length) - 1]));
             return Words.ToString();
+        }
+
+        public static readonly string[] NicheKeys =
+        {
+            "reallife_flare_niche_0", "reallife_flare_niche_1", "reallife_flare_niche_2", "reallife_flare_niche_3", "reallife_flare_niche_4", "reallife_flare_niche_5", "reallife_flare_niche_6"
+        };
+        public static readonly string[] StyleKeys = { "reallife_flare_style_0", "reallife_flare_style_1", "reallife_flare_style_2", "reallife_flare_style_3" };
+        public static readonly string[] DealKeys = { "reallife_flare_deal_0", "reallife_flare_deal_1", "reallife_flare_deal_2", "reallife_flare_deal_3", "reallife_flare_deal_4", "reallife_flare_deal_5" };
+        public static readonly string[] DealAboutKeys =
+        {
+            "reallife_flare_deal_about_0", "reallife_flare_deal_about_1", "reallife_flare_deal_about_2", "reallife_flare_deal_about_3", "reallife_flare_deal_about_4", "reallife_flare_deal_about_5"
+        };
+        private static readonly string[][] NichePostKeys =
+        {
+            new[] { "reallife_flare_inf_food_1", "reallife_flare_inf_food_2" },
+            new[] { "reallife_flare_inf_fashion_1", "reallife_flare_inf_fashion_2" },
+            new[] { "reallife_flare_inf_fitness_1", "reallife_flare_inf_fitness_2" },
+            new[] { "reallife_flare_inf_night_1", "reallife_flare_inf_night_2" },
+            new[] { "reallife_flare_inf_tech_1", "reallife_flare_inf_tech_2" },
+            new[] { "reallife_flare_inf_news_1", "reallife_flare_inf_news_2" },
+            new[] { "reallife_flare_inf_business_1", "reallife_flare_inf_business_2" }
+        };
+        private static readonly string[] VisitKeys = { "reallife_flare_inf_visit_1", "reallife_flare_inf_visit_2" };
+        private static readonly string[] HiredKeys = { "reallife_flare_inf_hired_1", "reallife_flare_inf_hired_2" };
+        private static readonly string[] RivalKeys = { "reallife_flare_inf_rival_1", "reallife_flare_inf_rival_2" };
+        private static readonly string[] VoteKeys = { "reallife_flare_inf_vote_1", "reallife_flare_inf_vote_2" };
+        private static readonly string[] CandidateKeys = { "reallife_flare_cand_1", "reallife_flare_cand_2" };
+        private static readonly string[] SorryKeys = { "reallife_flare_inf_sorry_1", "reallife_flare_inf_sorry_2" };
+        private static readonly string[] BrandKeys = { "reallife_flare_brand_1", "reallife_flare_brand_2" };
+        private static readonly string[] CityNewsKeys = { "reallife_flare_city_accident", "reallife_flare_city_crime", "reallife_flare_city_fire", "reallife_flare_city_arrest", "reallife_flare_city_breakin" };
+
+        public static string Niche(FlareNiche niche)
+        {
+            return T(Of(NicheKeys, (int)niche));
+        }
+
+        public static string Style(FlareStyle style)
+        {
+            return T(Of(StyleKeys, (int)style));
+        }
+
+        public static string Deal(int deal)
+        {
+            return T(Of(DealKeys, deal));
+        }
+
+        // An influencer's, a brand's or a candidate's post: a template by what it is, a variant by its seed.
+        private static string Other(FlarePost p, string district, int niche)
+        {
+            string[] keys;
+            switch (p.Source)
+            {
+                case FlareSource.Visit: keys = VisitKeys; break;
+                case FlareSource.Hired:
+                    if (p.Arg == 1)
+                    {
+                        return Fill("reallife_flare_inf_off", "name", p.Name);
+                    }
+                    Words.Append(Fill(HiredKeys[Pick(p.Seed, 1, HiredKeys.Length) - 1], "name", p.Name)).Append(' ').Append(T("reallife_flare_paid"));
+                    return Words.ToString();
+                case FlareSource.Rival: keys = RivalKeys; break;
+                case FlareSource.Election: keys = p.Author == FlareAuthor.Candidate ? CandidateKeys : VoteKeys; break;
+                case FlareSource.Apology: keys = SorryKeys; break;
+                case FlareSource.BrandNews: keys = BrandKeys; break;
+                case FlareSource.CityNews:
+                    for (int bit = 0; bit < CityNewsKeys.Length; bit++)
+                    {
+                        if ((p.Arg & (1 << bit)) != 0)
+                        {
+                            return T(CityNewsKeys[bit]);
+                        }
+                    }
+                    keys = NichePostKeys[(int)FlareNiche.LocalNews];
+                    break;
+                default:
+                    keys = NichePostKeys[FlareRules.Clamp(niche, 0, NichePostKeys.Length - 1)];
+                    break;
+            }
+            return Fill(keys[Pick(p.Seed, 1, keys.Length) - 1], "name", p.Name, "district", district);
         }
 
         /// <summary>A friend's reply to a post, in a kind picked by the rules and a variant by the post and the friend.</summary>

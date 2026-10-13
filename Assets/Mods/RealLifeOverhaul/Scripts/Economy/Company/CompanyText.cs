@@ -17,7 +17,9 @@ namespace RealLifeOverhaul.Economy
         public static readonly string[] InsurerKeys = { "reallife_co_insurer_0", "reallife_co_insurer_1", "reallife_co_insurer_2" };
         public static readonly string[] CampaignKeys =
         {
-            "reallife_co_campaign_flyers", "reallife_co_campaign_radio", "reallife_co_campaign_discount", "reallife_co_campaign_refit", "reallife_co_campaign_sponsored"
+            "reallife_co_campaign_flyers", "reallife_co_campaign_radio", "reallife_co_campaign_discount", "reallife_co_campaign_refit", "reallife_co_campaign_sponsored",
+            "reallife_co_campaign_inf_post", "reallife_co_campaign_inf_series", "reallife_co_campaign_inf_ambassador", "reallife_co_campaign_inf_plan",
+            "reallife_co_campaign_inf_launch", "reallife_co_campaign_inf_giveaway"
         };
         public static readonly string[] LicenceKeys = { "reallife_co_licence_hygiene", "reallife_co_licence_alcohol", "reallife_co_licence_late", "reallife_co_licence_signage" };
         public static readonly string[] AccountantKeys = { "reallife_co_accountant_0", "reallife_co_accountant_1", "reallife_co_accountant_2" };

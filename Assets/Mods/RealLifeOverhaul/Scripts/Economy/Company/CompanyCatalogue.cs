@@ -28,7 +28,13 @@ namespace RealLifeOverhaul.Economy
         Radio = 1,
         DiscountDay = 2,
         Refit = 3,
-        Sponsored = 4      // a post of the player's own Flare account: booked here, priced by Flare (CompanyBridges.Outside)
+        Sponsored = 4,     // a post of the player's own Flare account: booked here, priced by Flare (CompanyBridges.Outside)
+        InfluencerPost = 5,    // the city's influencers on Flare, hired from Flare's Business tab and priced by it: one post
+        InfluencerSeries = 6,  // a week of posts
+        Ambassador = 7,        // four weeks, two posts a week
+        InfluencerPlan = 8,    // two or three influencers for a week
+        Launch = 9,            // a business in its first fortnight
+        Giveaway = 10          // it costs stock, as a discount day does, and brings a crowd
     }
 
     /// <summary>A licence or permit. Saved as a number.</summary>
@@ -177,12 +183,14 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- marketing
 
-        public const int CampaignKinds = 5;
+        public const int CampaignKinds = 11;
         public const int CampaignOwnKinds = 4;      // the company's own; the rest are offered and priced from outside (CompanyBridges.Outside)
-        public static readonly int[] CampaignCost = { 150, 1200, 0, 2500, 400 };     // flyers, a radio spot, a discount day, a shop-window refit, a sponsored post (radio's price for its two days of six, before Flare's own figure)
-        public static readonly int[] CampaignDays = { 3, 6, 1, 20, 2 };
-        public static readonly int[] CampaignFootfall = { 5, 8, 12, 3, 8 };        // per cent of customers, before the district, the economy, repeats and (from outside) the reach
-        public static readonly bool[] CampaignLocal = { true, false, true, true, false };   // a local one is stronger where the district suits the business
+        // flyers, a radio spot, a discount day, a shop-window refit, a sponsored post (radio's price for its two days of six, before Flare's own figure),
+        // and the influencers' six (each a base Flare's fee is a share of: a post, a series, an ambassador, a plan, a launch, a giveaway)
+        public static readonly int[] CampaignCost = { 150, 1200, 0, 2500, 400, 250, 1250, 1500, 1500, 750, 500 };
+        public static readonly int[] CampaignDays = { 3, 6, 1, 20, 2, 2, 7, 28, 7, 3, 2 };
+        public static readonly int[] CampaignFootfall = { 5, 8, 12, 3, 8, 8, 8, 4, 8, 10, 12 };   // per cent of customers, before the district, the economy, repeats and (from outside) the reach
+        public static readonly bool[] CampaignLocal = { true, false, true, true, false, false, false, false, false, false, false };   // a local one is stronger where the district suits the business
         public const int CampaignMost = 12;         // per cent of customers: no campaign gives more
         public const int DiscountShare = 150;       // thousandths of the day's takings given away on a discount day
         public const int SuitPerPoint = 5;          // thousandths for each point of district income on the business's side

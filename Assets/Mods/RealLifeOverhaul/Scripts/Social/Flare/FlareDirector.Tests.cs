@@ -115,6 +115,71 @@ namespace RealLifeOverhaul.Flare
             Tell(NotificationType.Info, "reallife_flare_test_viral_done", null);
         }
 
+        /// <summary>Test: the influencers' month now: growth, stars, quitting, scandals and newcomers.</summary>
+        public void TestMonth()
+        {
+            if (!TestReady("Flare month"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                ReadPeople();
+                Month(Save.Day);
+                Logger?.Info("Flare: test month: " + CastLine(_file) + ".");
+                Tell(NotificationType.Info, "reallife_flare_test_month_done", _openFeedTab, "count", _file.ActiveInfluencers.ToString());
+                Changed();
+            });
+        }
+
+        /// <summary>Test: a scandal now for the influencer the player has hired, or else the first one.</summary>
+        public void TestInfluencerScandal()
+        {
+            if (!TestReady("Flare influencer scandal"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                FlareInfluencer who = null;
+                for (int i = 0; i < _file.Hires.Count && who == null; i++)
+                {
+                    who = _file.Hires[i].On(Save.Day) ? _file.Influencer(_file.Hires[i].Who[0]) : null;
+                }
+                for (int i = 0; i < _file.Influencers.Count && who == null; i++)
+                {
+                    who = _file.Influencers[i].Active ? _file.Influencers[i] : null;
+                }
+                if (who == null)
+                {
+                    TestRefusals.Tell(Logger, "Flare influencer scandal", TestRefusal.NothingFits);
+                    return;
+                }
+                FlareCast.Scandal(who, Save.Day);
+                Scandalised(who, Save.Day);
+                Changed();
+            });
+        }
+
+        /// <summary>Test: a newcomer arrives now, in the niche of the player's first business (or food).</summary>
+        public void TestArrival()
+        {
+            if (!TestReady("Flare new influencer"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                FlareGame.Shops(_file, _shops);
+                FlareGame.Districts(_districts);
+                FlareNiche niche = _shops.Count > 0 ? _shops[0].Niche : FlareNiche.Food;
+                FlareInfluencer inf = FlareCast.New(_file, niche, _shops.Count > 0 ? _shops[0].District : _districts.Count > 0 ? _districts[0] : null, Save.Day, 3000, -1, false);
+                CastNews(new FlareCastNews { Kind = FlareCastNews.What.Arrived, Id = inf.Id, After = inf.Followers }, Save.Day);
+                Tell(NotificationType.Info, "reallife_flare_test_arrival_done", _openFeedTab, "handle", inf.Handle);
+                Changed();
+            });
+        }
+
         /// <summary>Test: the account starts again, as for a save that has never had Flare.</summary>
         public void TestBack()
         {
@@ -126,6 +191,7 @@ namespace RealLifeOverhaul.Flare
             {
                 Save.modData.Remove(FlareStore.AccountKey);
                 Save.modData.Remove(FlareStore.PostsKey);
+                Save.modData.Remove(FlareStore.CastKey);
                 Forget();
                 Tell(NotificationType.Info, "reallife_flare_test_back_done", null);
             });

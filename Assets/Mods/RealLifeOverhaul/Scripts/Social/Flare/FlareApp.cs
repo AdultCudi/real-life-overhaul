@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Flare
 {
     /// <summary>
     /// What the Flare app shows, in the game's frame (GameUi.AppShell, copied from MyEmployees) as Brands, the Company
-    /// app and the Web shop are, with the kit's table (GameUi.DataTable, the game's own BaTable). Four tabs over the
+    /// app and the Web shop are, with the kit's table (GameUi.DataTable, the game's own BaTable). Five tabs over the
     /// table on the right, and on the left the white box with the one thing picked:
     ///
     ///   Feed       the player's posts and the friends' own, newest first, twenty at most; pick one for its words,
@@ -17,7 +17,8 @@ namespace RealLifeOverhaul.Flare
     ///   Post       what the player can post about now (FlareDraft); pick one for its words, the tone, whom to tag,
     ///              and the Post button
     ///   Me         the account: followers, tier, reputation, the last seven days; the player's own posts
-    ///   Business   the player's businesses and the posts about each (FlareApp.Pages.cs)
+    ///   Business   the player's businesses: stars, reviews, the talk, posts, hiring influencers and the deals made
+    ///   City       the city's influencers, brands and candidates, each with a profile and a Follow button (FlareApp.City.cs)
     ///
     /// A list goes in the table, which scrolls; the white box shows only the one thing picked. Everything on it is the
     /// game's. PER FRAME: NOTHING, open or closed. The rows and the page are made when the app opens, when a tab or a
@@ -202,6 +203,9 @@ namespace RealLifeOverhaul.Flare
                             break;
                         case FlareDirector.TabBusiness:
                             table = WriteBusiness(box, file, day, ref selected);
+                            break;
+                        case FlareDirector.TabCity:
+                            table = WriteCity(box, file, day, ref selected);
                             break;
                         default:
                             table = WriteFeed(box, file, day, ref selected);

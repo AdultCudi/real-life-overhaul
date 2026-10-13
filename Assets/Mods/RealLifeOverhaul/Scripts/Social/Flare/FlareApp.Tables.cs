@@ -10,8 +10,12 @@ namespace RealLifeOverhaul.Flare
     internal static class FlareTables
     {
         // ---- whose a post of the Feed is (its filter)
-        public const int IsYours = 0, IsFriends = 1;
-        private static readonly string[] Whose = { "reallife_flare_kind_yours", "reallife_flare_kind_friends" };
+        public const int IsYours = 0, IsFriends = 1, IsAccounts = 2, IsFollowed = 3;
+        private static readonly string[] Whose = { "reallife_flare_kind_yours", "reallife_flare_kind_friends", "reallife_flare_kind_accounts", "reallife_flare_kind_followed" };
+
+        // ---- what an account of the City tab is (its filter)
+        public const int IsInfluencer = 0, IsBrand = 1, IsCandidate = 2;
+        private static readonly string[] Accounts = { "reallife_flare_kind_influencers", "reallife_flare_kind_brands", "reallife_flare_kind_candidates" };
 
         /// <summary>While Flare is not running: one empty column.</summary>
         public static readonly TableSpec Off = new TableSpec("Flare", "Off").Column("reallife_flare_col_post", 600f, TableSort.None, flexible: true);
@@ -53,5 +57,16 @@ namespace RealLifeOverhaul.Flare
             .Column("reallife_flare_col_posts", 200f, TableSort.Number)
             .Column("reallife_flare_col_last", 260f, TableSort.Date, right: true)
             .Empty("reallife_flare_empty_business");
+
+        /// <summary>City: 0 account, 1 niche or kind, 2 followers, 3 home district, 4 followed by the player.</summary>
+        public static readonly TableSpec City = new TableSpec("Flare", "City")
+            .Column("reallife_flare_col_account", 520f, TableSort.Text, flexible: true)
+            .Column("reallife_flare_col_niche", 300f, TableSort.Text)
+            .Column("reallife_flare_col_followers", 240f, TableSort.Number)
+            .Column("reallife_flare_col_district", 320f, TableSort.Text)
+            .Column("reallife_flare_col_following", 220f, TableSort.Text, right: true)
+            .Filter("reallife_tab_all_kinds", Accounts)
+            .Order(2, false)
+            .Empty("reallife_flare_empty_city");
     }
 }

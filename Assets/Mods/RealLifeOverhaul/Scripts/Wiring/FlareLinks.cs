@@ -40,6 +40,20 @@ namespace RealLifeOverhaul
         ///   Wanted, Noticed  a picture posted while wanted: a day of closer police scrutiny (Reputation.Noticed)
         ///   OnShift, Complaint  a post on a rota shift, if the boss follows: a complaint (CareerState.Complaint)
         ///
+        /// The city's influencers, one line each too:
+        ///   hiring        a deal with influencers is one of the company's six campaigns after the sponsored post
+        ///                 (CampaignKind 5 to 10), quoted (CompanyDirector.CampaignQuote) and booked
+        ///                 (CompanyDirector.BookCampaign) from Flare's Business tab; Flare prices it (CompanyBridges.Outside:
+        ///                 its fee as a share of the kind's base) and is told when it is booked (CompanyBridges.Booked)
+        ///   BrandScandal  a hired influencer's scandal, or a hire that backfires, is one more scandal for the business's
+        ///                 brand (BrandsDirector.Heard, Scandal.Influencer)
+        ///   NightLate     the council's night-life policy draws night-life influencers (CivicPolicy)
+        ///   Candidates    the election's candidates post, and influencers back them (the council's state)
+        ///   Brands        the player's brands and the city's chains post (the brands' state)
+        ///   MeetStar      a star influencer is somebody the player has still to meet, introduced by a friend
+        ///                 (SocialDirector.NextStranger, QueueIntroduction)
+        ///   CityNews      what the city's news reported today is what local news posts about (News.Reported)
+        ///
         /// Everything is read from what those features already keep in public or heard through an event they already
         /// raise; nothing of theirs is changed but through an entry of theirs. COST: nothing per frame. A draft is one
         /// call when the thing happens; the people are read when Flare plays its day, makes a post or the app opens (a
@@ -78,6 +92,13 @@ namespace RealLifeOverhaul
                 CivicBridges.Following = () => FlareDirector.Instance != null ? CivicGovernment.FollowingMost * FlareDirector.Instance.EndorseShare() / 1000f : 0f;
                 CompanyBridges.Outside = Outside;
                 CompanyBridges.Booked = Booked;
+                FlareBridges.NightLate = () => Settings.Civic && CivicPolicy.Position(Lever.NightLife) > 0;
+                FlareBridges.Candidates = Candidates;
+                FlareBridges.Brands = Brands;
+                FlareBridges.Quote = Quote;
+                FlareBridges.Book = Book;
+                FlareBridges.BrandScandal = place => BrandsDirector.Instance?.Heard(place, Scandal.Influencer);
+                FlareBridges.MeetStar = MeetStar;
             }
 
             internal static void Disconnect()
@@ -151,7 +172,21 @@ namespace RealLifeOverhaul
             {
                 cost = reach = 1000;
                 FlareDirector flare = FlareDirector.Instance;
-                return kind == (int)CampaignKind.Sponsored && flare != null && flare.SponsoredQuote(out cost, out reach);
+                if (flare == null)
+                {
+                    return false;
+                }
+                if (kind == (int)CampaignKind.Sponsored)
+                {
+                    return flare.SponsoredQuote(out cost, out reach);
+                }
+                int fee;
+                if (kind < FlareCast.FirstDealKind || kind >= CompanyCatalogue.CampaignKinds || !flare.HireFigures(kind, place, out fee, out reach))
+                {
+                    return false;   // an influencer's deal is offered only while Flare is booking it
+                }
+                cost = (int)((long)fee * 1000 / Math.Max(1, CompanyCatalogue.CampaignCost[kind]));   // both at the start's prices: the company puts today's on
+                return true;
             }
 
             private static void Booked(string place, int kind, int from, int to, int percent)
@@ -159,6 +194,123 @@ namespace RealLifeOverhaul
                 if (kind == (int)CampaignKind.Sponsored)
                 {
                     FlareDirector.Instance?.Sponsored(place, from, to, percent);
+                }
+                else if (kind >= FlareCast.FirstDealKind)
+                {
+                    FlareDirector.Instance?.Hired(place, kind, from, to, percent);
+                }
+            }
+
+            // The company's quote for a deal Flare is making, or why there is none.
+            private static bool Quote(string place, int kind, out int cost, out int percent, out string why)
+            {
+                cost = percent = 0;
+                why = null;
+                try
+                {
+                    CompanyDirector company = CompanyDirector.Instance;
+                    CompanyShop shop = company != null && company.Running && company.On(CompanyPart.Marketing) ? company.ShopAt(place) : null;
+                    if (shop == null)
+                    {
+                        why = "reallife_flare_hire_no_company";
+                        return false;
+                    }
+                    if (!CampaignRules.CanBook(shop.File))
+                    {
+                        why = "reallife_flare_hire_busy";
+                        return false;
+                    }
+                    if (!company.Promoted(shop))
+                    {
+                        why = "reallife_flare_hire_no_figure";
+                        return false;
+                    }
+                    int share, reach, suit, repeat;
+                    if (!company.Offered(shop, kind, out share, out reach))
+                    {
+                        why = "reallife_flare_hire_no_one";
+                        return false;
+                    }
+                    company.CampaignQuote(shop, kind, out cost, out percent, out suit, out repeat);
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareLinks.Quote", e);
+                    why = "reallife_flare_hire_no_company";
+                    return false;
+                }
+            }
+
+            private static bool Book(string place, int kind)
+            {
+                try
+                {
+                    CompanyDirector company = CompanyDirector.Instance;
+                    if (company == null)
+                    {
+                        return false;
+                    }
+                    company.BookCampaign(place, kind);
+                    CompanyShop shop = company.ShopAt(place);
+                    return shop != null && shop.File.Push == kind;
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareLinks.Book", e);
+                    return false;
+                }
+            }
+
+            // The election's candidates, while one is being fought.
+            private static void Candidates(List<string> into)
+            {
+                CivicGovernment gov = CivicDirector.Instance != null && Settings.Civic ? CivicDirector.Instance.Government : null;
+                GovState s = gov != null ? gov.State : null;
+                for (int i = 0; s != null && gov.Campaigning && i < s.CandidateCount; i++)
+                {
+                    into.Add(CivicText.Name(s.Candidates[i]));
+                }
+            }
+
+            // The player's brands and the city's chains.
+            private static void Brands(List<string> into)
+            {
+                BrandsState s = BrandsDirector.Instance != null ? BrandsDirector.Instance.State : null;
+                for (int i = 0; s != null && i < s.Brands.Count; i++)
+                {
+                    into.Add(s.Brands[i].Name);
+                }
+                for (int i = 0; s != null && i < BrandsText.ChainKeys.Length; i++)
+                {
+                    into.Add(BrandsText.ChainKeys[i].GetLocalization());
+                }
+            }
+
+            // A star influencer: the first person the player has still to meet is them, and a friend will bring them along.
+            private static int MeetStar(string handle)
+            {
+                try
+                {
+                    SocialDirector social = SocialDirector.Instance;
+                    SocialPerson stranger = social != null && Settings.Social && SocialState.Loaded ? SocialDirector.NextStranger() : null;
+                    SocialPerson friend = null;
+                    for (int i = 0; stranger != null && i < SocialRules.CastSize && friend == null; i++)
+                    {
+                        SocialPerson p = SocialState.Get(i);
+                        friend = p != null && p.Met && p.Stage >= SocialStage.Friend ? p : null;
+                    }
+                    if (friend == null || !social.QueueIntroduction(friend, stranger))
+                    {
+                        return -1;
+                    }
+                    SocialDirector.Logger?.Info("Social: " + friend.Name + " will introduce " + stranger.Name + ", who posts on Flare as " + handle + ".");
+                    return stranger.Index;
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareLinks.MeetStar", e);
+                    return -1;
                 }
             }
 
@@ -278,6 +430,13 @@ namespace RealLifeOverhaul
                 if (kind == NewsKind.PlayerArrested)
                 {
                     FlareDirector.Instance?.Happened(FlareSource.Arrested, -1, null, null, 0);
+                }
+                int bit = kind == NewsKind.Accident || kind == NewsKind.PedestrianHit || kind == NewsKind.HitAndRun ? FlareCast.NewsAccident
+                    : kind == NewsKind.Crime ? FlareCast.NewsCrime : kind == NewsKind.Arrest ? FlareCast.NewsArrest : kind == NewsKind.BreakIn || kind == NewsKind.CarBreakIn ? FlareCast.NewsBreakIn
+                    : kind == NewsKind.Story && detail == "reallife_news_story_fire" ? FlareCast.NewsFire : 0;
+                if (bit != 0)
+                {
+                    FlareDirector.Instance?.CityNews(bit);
                 }
             }
         }
