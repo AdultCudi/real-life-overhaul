@@ -1,4 +1,4 @@
-0.3.6
+0.3.7
 
 New
-- Photo mode takes selfies: press 4 and the camera is held out at arm's length in front of you, with your back to what the free camera was looking at. The mouse moves it round your face, the wheel brings it nearer or farther, and 5 changes the pose: the phone held out, a wave, a fist in the air or talking to the camera. Enter saves it. A selfie with a friend beside you on an outing pleases them.
+- Living with Going Public, the multiplayer mod: in one of its sessions this mod passes no time of its own (custody, prison, rides and outings take none, and photo mode does not pause), never treats another player's business or home as yours, and leaves what takes cars out of the traffic to the host. Holidays, nights in a hotel, selling a business or a building and hiring out cars wait until you play alone. A notice says so once, the options that do nothing in a session are greyed with the reason, and the Guide has a page on it.
