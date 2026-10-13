@@ -1,6 +1,4 @@
-0.9.7
+0.9.8
 
 Fixed
-- The city bus could stop short of its stop and stand there for good, the stop's panel saying DELAYED and nobody able to get on. Held up near the stop, by a car, somebody in the road or you, it now opens its doors where it stands, and a car of the traffic that waits for the bus while the bus waits for it is let go.
-- At a narrow stop the bus braked for people waiting at the kerb.
-- An old file left in the mod's folder by an earlier version could dress the city bus in the wrong textures, fuel price boards and fire engine lettering. The mod now ignores such files, and the steps for installing from the zip say to delete the old folder first.
+- Stutters every few seconds in the street, and short freezes the first time traffic met a crossing, the first time you went into a building and the first time a bus stop was cleared. The mod searched the whole city for other characters' hair every five seconds, and for the crossings, the building's panel and the street furniture the first time it needed them; it now does this only behind a loading screen or the dark screen at a door.
