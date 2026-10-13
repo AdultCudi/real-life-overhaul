@@ -395,7 +395,7 @@ namespace RealLifeOverhaul
         public static bool LawCustody = true;            // an arrest ends in a cell at the nearest precinct (off: the old time skip where caught)
         public static bool LawArrests = true;            // arrested for a death even when stopped, and for 911 calls about nothing; wanted after an escape
         public static bool LawReputation = true;         // the record and reputation have effects: scrutiny, thanks from passers-by
-        public static bool LawStationFurniture = true;   // ...furnished with the game's own furniture: lockers, desks with computers, a water cooler, plants, a clock, lamps, a toilet in the cell (off: the counter, bench, desks and cell only) (Scripts/Law/StationInterior.Furnish.cs)
+        public static bool LawStationFurniture = true;   // ...furnished with the game's own furniture and the walls and floors of its office design for the unit: waiting chairs and a queue, desks with computers, lockers, a briefing row, a break table, a toilet in the cell, and the officers and visitors who use them (off: the counter, bench, desks and cell only, and the people as before) (Scripts/Law/StationInterior.Furnish.cs, .Rooms.cs, .Design.cs, .Cast.cs)
         public static bool LawStation = true;            // a precinct can be walked into: front desk, waiting area, holding cell (off: the front desk answers at its door)
         public static bool LawMapMarkers = true;         // police stations on the city map and its filter list, and their markers in the street
         public static bool Buses = true;                 // bus stops near the player, buses that call at them, riding one

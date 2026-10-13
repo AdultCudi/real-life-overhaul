@@ -20,7 +20,7 @@ namespace RealLifeOverhaul
         private const float Exact = 0.05f;        // metres from the end of the route at which someone who must be at a measured distance has arrived
         private const float ExactWait = 1f;       // ...and the seconds they are given to close that last step before they are taken as there
 
-        private enum Order { None, Standing, Going, Boarding, Leaving, Led }
+        private enum Order { None, Standing, Going, Boarding, Leaving, Led, Seated }
 
         private StreetActor _actor;
         private int _lease;
@@ -242,6 +242,39 @@ namespace RealLifeOverhaul
             _posed = false;
             _repeats = false;
         }
+
+        /// <summary>
+        /// Sits them down on a place to sit (a chair at a desk, a seat in a waiting row: GameFurniture.Seats) from where they
+        /// stand, as the game seats its own employees; any pose is dropped. A gesture asked for with <see cref="Repeat(AnimationType, float, float)"/>
+        /// goes on being played while they sit (the game's own typing at a desk computer is such a gesture). Any later order stands
+        /// them up first, where they stood. False, and nothing changed, if they cannot be seated.
+        /// </summary>
+        public bool Sit(Transform seat)
+        {
+            if (!Present || _actor.Limp || seat == null)
+            {
+                return false;
+            }
+            Drop();
+            if (!_actor.Sit(seat))
+            {
+                return false;
+            }
+            _hasThen = false;
+            _order = Order.Seated;
+            _orderFrom = Time.time;
+            if (_repeats)
+            {
+                _nextGesture = Time.time + Random.Range(0.3f, _gestureMax);
+            }
+            return true;
+        }
+
+        /// <summary>True if there is somebody and their characters have this gesture of the game's (asked once, then remembered).</summary>
+        public bool Knows(AnimationType gesture) => Present && _actor.Knows(gesture);
+
+        /// <summary>True while they sit where <see cref="Sit"/> put them.</summary>
+        public bool Seated => Present && _order == Order.Seated && _actor.Seated;
 
         /// <summary>Stops where they are and turns to face a point.</summary>
         public void Stand(Vector3 lookAt)
@@ -778,6 +811,18 @@ namespace RealLifeOverhaul
                     {
                         ActorPool.PlayDoorSound(_actor.Position);
                         Exit();
+                    }
+                    break;
+
+                case Order.Seated:
+                    if (!_actor.Seated)
+                    {
+                        Settle(now);   // (stood up by something else: standing where they got up)
+                    }
+                    else if (_repeats && now >= _nextGesture)
+                    {
+                        _nextGesture = now + Random.Range(_gestureMin, _gestureMax);
+                        _actor.Gesture(_gesture);
                     }
                     break;
 

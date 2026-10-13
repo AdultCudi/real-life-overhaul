@@ -13,7 +13,7 @@ using RealLifeOverhaul.Nav;
 // the phone (TaxiCheck.cs), the rules of the horn and the reckless drivers (StreetCheck.cs),
 // the minimap's buildings and water (BaseCheck.cs), and the small rules of the panels, the bars and the
 // camera's stand-down (PolishCheck.cs), the ambulance crew's way as geometry (CrewCheck.cs; with --crew it prints what a
-// planning's worth of ways costs), the game-free parts of the work against long frames (HitchCheck.cs), and getting out of the driving school's car (CarExitCheck.cs).
+// planning's worth of ways costs), the game-free parts of the work against long frames (HitchCheck.cs), and getting out of the driving school's car (CarExitCheck.cs), and the furnished police station's walkways and cast (StationCheck.cs).
 internal static partial class Program
 {
     private static int _failed, _run;
@@ -53,6 +53,7 @@ internal static partial class Program
         Solid();
         Crew(Array.IndexOf(args, "--crew") >= 0);
         CarExit();
+        Station();
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         if (_failed == 0 && args.Length > 0 && File.Exists(args[0]))
         {
