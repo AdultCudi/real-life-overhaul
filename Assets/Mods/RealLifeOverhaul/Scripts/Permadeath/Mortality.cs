@@ -3,7 +3,8 @@ namespace RealLifeOverhaul.Permadeath
     /// <summary>
     /// The one door the features where a life can be in danger call: a crash (Traffic/CrashConsequences), being hit on foot
     /// (Ragdoll/PlayerKnockdown), a mugging refused (Crime/Scenes/PlayerMuggingScene), the private lender's men
-    /// (Wiring/DebtLinks) and a flu left untreated (Home/HomeHealth). Each asks <see cref="Judge"/> at the moment it would
+    /// (Wiring/DebtLinks) and a flu left untreated (Home/HomeHealth). Going without food needs no door: the director reads
+    /// the game's hunger bar itself (Permadeath/PermadeathDirector.Hunger). Each asks <see cref="Judge"/> at the moment it would
     /// otherwise hurt the player, and does as it always did unless the answer is a near miss (it hurts as before and calls
     /// <see cref="NearMiss"/>, which says so) or a death (it hurts nobody and calls <see cref="Die"/>, which takes over).
     /// Safe to call at any time: with Permadeath off, in a Going Public session, during the game's tutorial or one of its

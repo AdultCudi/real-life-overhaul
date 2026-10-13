@@ -31,6 +31,13 @@ namespace RealLifeOverhaul.Permadeath
     ///   the age                 TimeHelper.GetYearsByDays(CharacterData.ageInDays)
     ///   what they were worth    PlayerHelper.GetPersonalWealth().CurrentWealth, the figure the Persona app shows
     ///   the staff               GameInstance.EmployeeInstances: the player's own employees (candidates are a list of their own)
+    ///   hunger                  GameInstance.Hunger, 0 to 100: falls 1.5 for each point of energy spent
+    ///                           (EnergyHelper.SpentEnergyOnce), rises only by eating (ItemHelper.TryToConsume) or a stay in
+    ///                           hospital (GameManager.HospitalRespawn sets it to 100); at 0 energy burns half as fast again
+    ///                           (EnergySettings.GetEnergyWasteMultiplier) and with energy gone too the player walks as a zombie
+    ///                           (ThirdPersonCharacter.ShouldEnableZombieWalking). Nothing in the game can kill.
+    ///   a safe moment           LifeEvents.IsSafeForEvent (awake, no activity panel such as sleep, no dialog, ride or time
+    ///                           skip) and not in a hospital or clinic (the building's special service)
     ///
     /// Everything here is called on an event (a death, a load, a button), never per frame, except <see cref="CancelPressed"/>,
     /// which is asked once a frame only while the obituary is up.
@@ -108,6 +115,123 @@ namespace RealLifeOverhaul.Permadeath
                 return true;
             }
             return false;
+        }
+
+        /// <summary>The game's hunger bar, 0 to 100; 100 when no save is loaded.</summary>
+        public static float Hunger => SaveGameManager.Current != null ? SaveGameManager.Current.Hunger : 100f;
+
+        /// <summary>True when the game's energy is switched off in this save (its hunger never falls then).</summary>
+        public static bool NoEnergy => SaveGameManager.Current == null || SaveGameManager.Current.gameVariables == null || SaveGameManager.Current.gameVariables.disableEnergy;
+
+        /// <summary>True in a moment the game can take a death in: nothing is demanding the player (Life/LifeEvents), and not in a hospital or clinic.</summary>
+        public static bool SafeToDie()
+        {
+            return LifeEvents.IsSafeForEvent() && !InHospital();
+        }
+
+        /// <summary>True in a hospital or a clinic, as the game's own building says.</summary>
+        public static bool InHospital()
+        {
+            if (!BuildingManager.IsInsideBuilding)
+            {
+                return false;
+            }
+            BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
+            string service = manager != null && manager.building != null && manager.building.SpecialService != null ? manager.building.SpecialService.businessTypeName : null;
+            return service == "ba:businesstype_hospital" || service == "ba:businesstype_clinic";
+        }
+
+        // ---------------------------------------------------------------- weak with hunger
+
+        private const string StarveDrainId = "rlo-pd-starve";
+        private static float _starveDrain;
+
+        /// <summary>
+        /// What going without food does at the warnings shown (0 to 3): from the first a low mood (the mod's own modifier,
+        /// kept on while it lasts), from the second energy that drains faster (the game's own energy spenders). 0 takes both
+        /// off. Called on the hour and when it ends; cheap when nothing changes.
+        /// </summary>
+        public static void Weak(int told)
+        {
+            try
+            {
+                if (SaveGameManager.Current == null)
+                {
+                    _starveDrain = 0f;
+                    return;
+                }
+                HoldStarving(told >= 1 && ModState.Loaded);
+                float drain = PermadeathRules.StarveDrain(told);
+                if (!Mathf.Approximately(drain, _starveDrain))
+                {
+                    EnergyHelper.RemoveEnergySpender(StarveDrainId);
+                    if (drain > 0f)
+                    {
+                        EnergyHelper.AddEnergySpender(StarveDrainId, drain);
+                    }
+                    _starveDrain = drain;
+                }
+            }
+            catch (Exception e)
+            {
+                PermadeathDirector.Logger?.Error(e);
+            }
+        }
+
+        // The modifier kept on while its cause lasts and taken off when it goes (as Home's needs keep theirs).
+        private static void HoldStarving(bool on)
+        {
+            List<HappinessModifierData> list = SaveGameManager.Current.happinessModifiers;
+            HappinessModifierData found = null;
+            for (int i = 0; list != null && i < list.Count; i++)
+            {
+                if (list[i].type == ModState.Starving)
+                {
+                    found = list[i];
+                    break;
+                }
+            }
+            if (on)
+            {
+                if (found == null)
+                {
+                    ModState.AddModifier(ModState.Starving, 12);
+                }
+                else if (found.hoursLeft <= 3)
+                {
+                    found.hoursLeft = 12;
+                }
+            }
+            else if (found != null)
+            {
+                ModState.RemoveModifier(ModState.Starving);
+            }
+        }
+
+        /// <summary>A load or the feature going: the drain is taken off, whatever this side remembers of it (the game's list of spenders outlives a save).</summary>
+        public static void ClearWeak()
+        {
+            try
+            {
+                _starveDrain = 0f;
+                if (SaveGameManager.Current != null)
+                {
+                    EnergyHelper.RemoveEnergySpender(StarveDrainId);
+                }
+            }
+            catch (Exception e)
+            {
+                PermadeathDirector.Logger?.Error(e);
+            }
+        }
+
+        /// <summary>For the test button: the bar at its bottom now.</summary>
+        public static void Starve()
+        {
+            if (SaveGameManager.Current != null)
+            {
+                EnergyHelper.SetCurrentHunger(0f);
+            }
         }
 
         /// <summary>A game begun today: what a switch moved in the main menu applies to.</summary>

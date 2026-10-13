@@ -115,6 +115,33 @@ namespace RealLifeOverhaul.Permadeath
             Logger?.Info(Test + " test: a flu begun " + (PermadeathRules.IllWarnFirst - 0.5f) + " hours ago, untreated; Permadeath " + (PermadeathState.Armed ? "on: the first warning comes on the hour." : "off: it takes its usual course."));
         }
 
+        /// <summary>
+        /// Test button: the hunger bar at its bottom, as if for half an hour short of a day, so that the first warning of
+        /// going without food comes within the game hour (and, with the clock run on, the others a day apart). Only with
+        /// Permadeath on in this save: off, the bar is simply what it always was.
+        /// </summary>
+        public void TestStarve()
+        {
+            const string Test = "Going without food";
+            if (!Ready(Test))
+            {
+                return;
+            }
+            if (!PermadeathState.Armed || PermadeathState.Dead)
+            {
+                TestRefusals.TellKey(Logger, Test, "reallife_pd_test_needs_on");
+                return;
+            }
+            if (PermadeathGame.NoEnergy)
+            {
+                TestRefusals.Tell(Logger, Test, TestRefusal.FeatureOff);
+                return;
+            }
+            StarvedFor(PermadeathRules.StarveWarnFirst - 0.5f);
+            Notifications.Show(NotificationType.Info, "reallife_pd_test_starve_done", null, 12f);
+            Logger?.Info(Test + " test: the bar at its bottom since " + (PermadeathRules.StarveWarnFirst - 0.5f) + " hours ago; the first warning comes on the hour.");
+        }
+
         /// <summary>Test button: the notice a near miss shows (a crash's), and nothing more: nothing is remembered as warned.</summary>
         public void TestNearMiss()
         {

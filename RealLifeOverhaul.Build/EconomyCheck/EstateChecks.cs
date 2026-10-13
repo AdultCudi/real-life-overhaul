@@ -20,6 +20,7 @@ internal static partial class Program
         EstateMarket();
         EstateMortgage();
         EstateRent();
+        EstateRentScale();
         EstateApplicants();
         EstateTenancy();
         EstateRepairs();
