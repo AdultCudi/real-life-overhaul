@@ -130,6 +130,7 @@ namespace RealLifeOverhaul.Careers
                     changed |= StudyRules.Miss(e, day);
                     changed |= AfterClass(e, day, false);
                 }
+                ClassDue(e, day, hour);   // a class beginning now: the log line, and a notice if it cannot be joined where the player is
                 // A class about to start: the reminder an hour before (once a class).
                 if (StudyRules.On(StudyRules.Days(c, mode), day) && StudyRules.Hour(c, mode) == hour + 1 && e.SettledDay < day && day >= e.Start)
                 {
@@ -355,23 +356,24 @@ namespace RealLifeOverhaul.Careers
             return CampusWhere(c.Campus);
         }
 
+        /// <summary>Where the player is now, as study reads it.</summary>
+        private StudyHere Here()
+        {
+            bool home = CareersGame.AtHome();
+            return new StudyHere
+            {
+                School = CareersGame.InSchool(),
+                Hospital = CareersGame.InHospital(),
+                University = AtUniversity(),
+                Home = home,
+                Online = home && CareersBridges.HomeOnline()
+            };
+        }
+
         /// <summary>True if the player is where a course's classes are held now; else the reason key.</summary>
         private string AtClass(CourseDef c, StudyMode mode)
         {
-            if (mode == StudyMode.Distance || c.Campus == Campus.Online)
-            {
-                if (!CareersGame.AtHome())
-                {
-                    return "reallife_study_why_not_home";
-                }
-                return CareersBridges.HomeOnline() ? null : "reallife_study_why_no_internet";
-            }
-            switch (c.Campus)
-            {
-                case Campus.School: return CareersGame.InSchool() ? null : "reallife_study_why_not_school";
-                case Campus.Hospital: return CareersGame.InHospital() ? null : "reallife_study_why_not_hospital";
-                default: return AtUniversity() ? null : "reallife_study_why_not_university";
-            }
+            return StudyRules.AtClass(c, mode, Here());
         }
 
         /// <summary>Homework is done at home or where the classes are.</summary>
@@ -387,11 +389,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>Exams are sat where the classes are; online courses and certificates are examined at the school.</summary>
         private string AtExam(CourseDef c, StudyMode mode)
         {
-            if (mode == StudyMode.Distance || c.Campus == Campus.Online)
-            {
-                return CareersGame.InSchool() ? null : "reallife_study_why_exam_school";
-            }
-            return AtClass(c, mode);
+            return StudyRules.AtExam(c, mode, Here());
         }
 
         // ---------------------------------------------------------------- a class, homework, an exam

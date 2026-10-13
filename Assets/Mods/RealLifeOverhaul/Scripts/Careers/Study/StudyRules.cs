@@ -21,8 +21,86 @@ namespace RealLifeOverhaul.Careers
     /// homework teach, what an exam comes to and the grade it earns, retakes, fees and grants, the student loan, and how
     /// skills fade. Game-free: EconomyCheck runs every one.
     /// </summary>
+    /// <summary>Where the player is, as far as study cares: read from the game by the director, decided on here.</summary>
+    public struct StudyHere
+    {
+        public bool School;       // inside the game's school (Manhattan Business School)
+        public bool Hospital;     // inside a hospital or clinic
+        public bool University;   // at the university's sign or door, or inside its building
+        public bool Home;         // in a home of the player's
+        public bool Online;       // that home has a working internet connection
+    }
+
+    /// <summary>What the panel where the player stands offers: nothing, a class to attend, an exam to sit.</summary>
+    public enum StudyPrompt
+    {
+        None = 0,
+        Class = 1,
+        Exam = 2
+    }
+
     public static class StudyRules
     {
+        /// <summary>Null if the player is where a course's classes are held; else the reason key (what to say, and where to go).</summary>
+        public static string AtClass(CourseDef c, StudyMode mode, StudyHere here)
+        {
+            if (mode == StudyMode.Distance || c.Campus == Campus.Online)
+            {
+                if (!here.Home)
+                {
+                    return "reallife_study_why_not_home";
+                }
+                return here.Online ? null : "reallife_study_why_no_internet";
+            }
+            switch (c.Campus)
+            {
+                case Campus.School: return here.School ? null : "reallife_study_why_not_school";
+                case Campus.Hospital: return here.Hospital ? null : "reallife_study_why_not_hospital";
+                default: return here.University ? null : "reallife_study_why_not_university";
+            }
+        }
+
+        /// <summary>Exams are sat where the classes are; online courses and certificates are examined at the school.</summary>
+        public static string AtExam(CourseDef c, StudyMode mode, StudyHere here)
+        {
+            if (mode == StudyMode.Distance || c.Campus == Campus.Online)
+            {
+                return here.School ? null : "reallife_study_why_exam_school";
+            }
+            return AtClass(c, mode, here);
+        }
+
+        /// <summary>
+        /// What the panel where the player stands offers for one course, from whether its class can be joined and its exam
+        /// sat here and now (null: yes; else the reason key): a class first, then an exam, and nothing while the player is
+        /// busy with something else (a sitting under way, the wheel, another screen).
+        /// </summary>
+        public static StudyPrompt Prompt(string classWhy, string examWhy, bool busy)
+        {
+            if (busy)
+            {
+                return StudyPrompt.None;
+            }
+            return classWhy == null ? StudyPrompt.Class : examWhy == null ? StudyPrompt.Exam : StudyPrompt.None;
+        }
+
+        /// <summary>
+        /// The notice when a class's hour comes: none if it cannot be joined at all now (no class, a fee owed is said by its
+        /// own notice); "press the key" if it can be joined where the player is; "go there" if only the place is wrong.
+        /// </summary>
+        public static int ClassNotice(string why)
+        {
+            if (why == null)
+            {
+                return 1;   // here: press the key
+            }
+            if (why == "reallife_study_why_no_class")
+            {
+                return 0;
+            }
+            return 2;       // elsewhere, or another reason the mod knows: why, where, and for how long
+        }
+
         public const int LiveMost = 4;   // courses at once
 
         // ---------------------------------------------------------------- the timetable
@@ -97,6 +175,28 @@ namespace RealLifeOverhaul.Careers
             }
             minutesLeft = start + c.Hours * 60 - Math.Max(minuteOfDay, start);
             return minutesLeft > 0;
+        }
+
+        /// <summary>
+        /// The next class of a course that can still be joined, from now on (today's if its window is still open), as
+        /// day * 1440 + its starting minute; -1 if none in the next four weeks. <paramref name="fromDay"/>: the first day it
+        /// may be on (the course's start, the day after the last one settled).
+        /// </summary>
+        public static int NextClass(CourseDef c, StudyMode mode, int today, int minuteOfDay, int fromDay)
+        {
+            if (c == null || !c.Timetabled)
+            {
+                return -1;
+            }
+            int start = Hour(c, mode) * 60;
+            for (int d = Math.Max(today, fromDay); d < today + 28; d++)
+            {
+                if (On(Days(c, mode), d) && (d > today || minuteOfDay <= start + StudyCatalogue.LateMinutes))
+                {
+                    return d * 24 * 60 + start;
+                }
+            }
+            return -1;
         }
 
         /// <summary>True once a day's class can no longer be joined: it is missed if not attended.</summary>

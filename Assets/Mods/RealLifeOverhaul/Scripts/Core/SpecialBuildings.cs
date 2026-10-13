@@ -46,10 +46,13 @@ namespace RealLifeOverhaul
         public static int Count => Book.Count;
 
         /// <summary>Changes whenever the book or its names do.</summary>
-        public static int Stamp => Book.Stamp;
+        public static int Stamp => Book.Stamp * 31 + FindableTypes.Count;
 
         /// <summary>True while names are given at all: the option is on and some building is in the book.</summary>
         public static bool Active => Settings.SpecialNames && Book.Count > 0;
+
+        /// <summary>True while the city map's search is to be made by the mod: names are given, or some kind is to be found by its own word.</summary>
+        internal static bool Searching => Active || FindableTypes.Count > 0;
 
         /// <summary>Puts a building in the book under the feature's id, in place of what that id held. False if it was refused (and said once in the log).</summary>
         public static bool Set(string id, CityBuildingController building, SpecialKind kind, string nameKey, string typeKey = null, Func<bool> shown = null)
@@ -132,6 +135,45 @@ namespace RealLifeOverhaul
             return entry != null ? entry.TypeKey : null;
         }
 
+        /// <summary>True if a feature holds the building at an address (a later feature that picks a building of its own leaves it alone).</summary>
+        public static bool Holds(string street, int number)
+        {
+            return Book.Holds(street, number);
+        }
+
+        /// <summary>True if a feature holds this building.</summary>
+        public static bool Holds(CityBuildingController building)
+        {
+            Address address = building != null && building.building != null ? building.building.Address : null;
+            return address != null && Book.Holds(address.streetName, address.streetNumber);
+        }
+
+        private static readonly HashSet<string> FindableTypes = new HashSet<string>(StringComparer.Ordinal);
+
+        /// <summary>
+        /// A kind of the game's special service (its business type, "ba:businesstype_school") that keeps the game's own name
+        /// but is to be found in the city map's search even where the game gives it no business name: it is listed under
+        /// the game's own word for the kind. A feature that sends the player there says so once per city load.
+        /// </summary>
+        public static void Findable(string businessType)
+        {
+            if (!string.IsNullOrEmpty(businessType) && FindableTypes.Add(businessType))
+            {
+                SpecialNames.Changed();
+            }
+        }
+
+        /// <summary>The name a building is found by in the city map's search where it has no business name of its own, or null.</summary>
+        internal static string FoundAs(CityBuildingController building)
+        {
+            if (FindableTypes.Count == 0 || building == null || building.building == null || building.building.SpecialService == null)
+            {
+                return null;
+            }
+            string type = building.building.SpecialService.businessTypeName;
+            return type != null && FindableTypes.Contains(type) ? type.GetLocalization() : null;
+        }
+
         internal static void Forget()
         {
             Book.Forget();
@@ -140,6 +182,7 @@ namespace RealLifeOverhaul
         internal static void Clear()
         {
             Book.Clear();
+            FindableTypes.Clear();
         }
 
         private static bool Players(BuildingRegistration registration)
@@ -319,6 +362,7 @@ namespace RealLifeOverhaul
             }
             bool on = SpecialBuildings.Active;
             bool changed = on != _on || _stamp != SpecialBuildings.Stamp;
+            bool searching = SpecialBuildings.Searching;
             _on = on;
             _stamp = SpecialBuildings.Stamp;
             enabled = on;
@@ -329,7 +373,7 @@ namespace RealLifeOverhaul
             {
                 Search();
             }
-            else if (changed && !on && _searchOptions != null)
+            else if (changed && !searching && _searchOptions != null)
             {
                 Search();   // the game's own list back
             }
@@ -496,7 +540,7 @@ namespace RealLifeOverhaul
                     return;
                 }
                 bool ours = _searchOptions != null && ReferenceEquals(_optionsField.GetValue(drop), _searchOptions);
-                if (!SpecialBuildings.Active)
+                if (!SpecialBuildings.Searching)
                 {
                     if (ours)
                     {
@@ -523,7 +567,11 @@ namespace RealLifeOverhaul
                     string name = SpecialBuildings.NameFor(building) ?? building.buildingRegistration.BusinessName;
                     if (string.IsNullOrWhiteSpace(name))
                     {
-                        continue;
+                        name = SpecialBuildings.FoundAs(building);   // (a school or a hospital with no business name: the game's word for it)
+                        if (string.IsNullOrWhiteSpace(name))
+                        {
+                            continue;
+                        }
                     }
                     options.Add("<b><noparse>" + name + "</noparse></b><br><noparse>" + building.building.Address.ToFormattedString() + "</noparse>");
                     words.Add(name);

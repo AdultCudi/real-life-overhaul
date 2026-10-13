@@ -103,6 +103,7 @@ internal static partial class Program
         Calendar();
         Utilities();
         SpecialNames();
+        StudyPrompts();
         Internet();
         Broadband();
         Empire();

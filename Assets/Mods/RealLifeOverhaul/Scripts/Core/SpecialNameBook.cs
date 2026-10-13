@@ -132,6 +132,46 @@ namespace RealLifeOverhaul
             return shown == null || shown() ? entry : null;
         }
 
+        /// <summary>True if any feature holds the building at an address, whether or not its name is shown just now.</summary>
+        public bool Holds(string street, int number)
+        {
+            return _byAddress.Count > 0 && !string.IsNullOrEmpty(street) && _byAddress.ContainsKey(Key(street, number));
+        }
+
+        /// <summary>
+        /// The pick of a feature that takes "the largest building of a kind": of the candidates that may serve
+        /// (<paramref name="fits"/>), the one with the most floor, ties broken by address (street, then number, as the
+        /// features have always broken them: "street#number" in ordinal order), leaving out every building another feature
+        /// holds (<paramref name="taken"/>). Returns its index, or -1. The same city gives the same pick in every game.
+        /// </summary>
+        public static int PickLargest(int count, Func<int, bool> fits, Func<int, int> sqm, Func<int, string> street, Func<int, int> number, Func<string, int, bool> taken)
+        {
+            int best = -1, bestSqm = int.MinValue;
+            string bestName = null;
+            for (int i = 0; i < count; i++)
+            {
+                if (fits != null && !fits(i))
+                {
+                    continue;
+                }
+                string s = street(i);
+                int n = number(i);
+                if (taken != null && taken(s, n))
+                {
+                    continue;
+                }
+                int size = Math.Max(0, Math.Min(999999, sqm(i)));
+                string name = s + "#" + n.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                if (size > bestSqm || (size == bestSqm && string.CompareOrdinal(name, bestName) < 0))
+                {
+                    best = i;
+                    bestSqm = size;
+                    bestName = name;
+                }
+            }
+            return best;
+        }
+
         /// <summary>The entry an id holds, shown or not, or null.</summary>
         public SpecialEntry Of(string id)
         {

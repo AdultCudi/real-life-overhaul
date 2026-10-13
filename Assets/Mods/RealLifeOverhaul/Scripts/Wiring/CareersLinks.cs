@@ -47,9 +47,21 @@ namespace RealLifeOverhaul
             private static readonly List<TechStory> Stories = new List<TechStory>(4);
             private static readonly StudySource Classes = new StudySource();
 
+            // The utilities office and the courthouse have chosen their buildings (or their features are off), so the university
+            // can choose one that is neither.
+            private static bool OthersPicked()
+            {
+                Utilities.UtilitiesDirector utilities = Utilities.UtilitiesDirector.Instance;
+                bool office = !Settings.Utilities || (utilities != null && utilities.Office != null && utilities.Office.Searched);
+                JusticeDirector justice = JusticeDirector.Instance;
+                bool court = !(JusticeSettings.Enabled && JusticeSettings.Courthouse) || (justice != null && justice.Court != null && justice.Court.Searched);
+                return office && court;
+            }
+
             internal static void Connect()
             {
                 CareersBridges.HomeInternet = HomeInternet;
+                CareersBridges.OthersPicked = OthersPicked;
                 CareersBridges.Refresher = Refresher;
                 CareersBridges.Standing = Moved;
                 CareersBridges.Reputation = Reputation;

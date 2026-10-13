@@ -80,6 +80,35 @@ internal static partial class Program
               && book.NameAt("College Road", 1, false, words) == "[reallife_campus_name]",
             "special names: a later feature (the university) registers the same way, by address");
 
+        // ---------------------------------------------------------------- a later feature's pick leaves the others' buildings alone
+        // The owner's city: the largest office (17 7th Street) is the utilities office, so the university takes the next.
+        string[] streets = { "7th Street", "Main Street", "Elm Street", "Bay Road", "Bay Road" };
+        int[] numbers = { 17, 4, 9, 2, 1 };
+        int[] sqm = { 102502, 80000, 80000, 120000, 500 };
+        bool[] office = { true, true, true, false, true };
+        Func<int, bool> fits = i => office[i];
+        Func<int, int> size = i => sqm[i];
+        Func<int, string> street = i => streets[i];
+        Func<int, int> number = i => numbers[i];
+        Check(SpecialNameBook.PickLargest(5, fits, size, street, number, null) == 0, "special names: the largest office building, as the university chose it in 0.7.0");
+        Check(SpecialNameBook.PickLargest(5, fits, size, street, number, book.Holds) == 0 && book.Holds("Fifth Avenue", 120) && !book.Holds("7th Street", 17),
+            "special names: with nobody holding it, it is still the one picked");
+        book.Set("utilities_office", "7th Street", 17, SpecialKind.Civic, "reallife_util_desk_title");
+        int campus = SpecialNameBook.PickLargest(5, fits, size, street, number, book.Holds);
+        Check(campus == 2 && streets[campus] == "Elm Street",
+            "special names: the university never takes the utilities office's building; of two the same size, the first by address (Elm before Main)");
+        utilitiesOn = false;
+        Check(book.Holds("7th Street", 17) && SpecialNameBook.PickLargest(5, fits, size, street, number, book.Holds) == 2,
+            "special names: a building stays held while its feature's names are off, so the pick does not move with an option");
+        utilitiesOn = true;
+        book.Set("campus", "Elm Street", 9, SpecialKind.Campus, "reallife_study_campus_university");
+        Check(SpecialNameBook.PickLargest(5, fits, size, street, number, book.Holds) == 1, "special names: each further feature skips every building already held");
+        Check(SpecialNameBook.PickLargest(5, i => false, size, street, number, book.Holds) == -1 && SpecialNameBook.PickLargest(0, fits, size, street, number, null) == -1,
+            "special names: nothing that fits, nothing picked");
+        Check(SpecialNameBook.PickLargest(2, null, i => i == 0 ? -50 : 2000000, street, number, null) == 1, "special names: a nonsense floor area is brought within bounds");
+        book.Set("campus", "College Road", 1, SpecialKind.Campus, "reallife_campus_name", "reallife_campus_card_type");
+        book.Set("utilities_office", "Fifth Avenue", 120, SpecialKind.Civic, "reallife_util_desk_title");
+
         // ---------------------------------------------------------------- taken out
         stamp = book.Stamp;
         Check(book.Remove("campus") && !book.Remove("campus") && book.NameAt("College Road", 1, false, words) == null && book.Stamp != stamp,
