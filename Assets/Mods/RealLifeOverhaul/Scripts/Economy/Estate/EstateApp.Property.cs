@@ -155,7 +155,7 @@ namespace RealLifeOverhaul.Economy
             }
             else if (!h.Managed)
             {
-                box.Line(EstateText.T("reallife_estate_own_game", "amount", EstateText.Money(EstateGame.GameRent(h)), "market", EstateText.Money(EstateRules.MarketRent(h, c))));
+                box.Line(EstateText.T("reallife_estate_own_game", "amount", EstateText.Money(EstateGame.GameRent(h) + EstateRules.GameRentTopUp(EstateGame.GameRent(h), c.RentScale)), "market", EstateText.Money(EstateRules.MarketRent(h, c))));
             }
             else if (h.Units.Count == 1)
             {

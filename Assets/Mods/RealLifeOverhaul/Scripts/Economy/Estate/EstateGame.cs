@@ -987,6 +987,20 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>
+        /// The rental income option settled on a night of the game's own rent: added (or, under 100%, taken back) under
+        /// the game's own rent transaction and the building's address, so its books read it as that building's rent and
+        /// its tax treats it as it treats rent.
+        /// </summary>
+        public static void AdjustRent(int amount, EstateHolding h)
+        {
+            Address address = AddressOf(h.Place);
+            if (amount != 0 && Save != null && address != null)
+            {
+                GameManager.ChangeMoneySafe(amount, new TransactionInfo(RentKey, new Dictionary<string, string>(2) { { "address", address.ToFormattedString() } }), null, address, true);
+            }
+        }
+
         /// <summary>The businesses' takings in the game's daily statements over some days, as the game's tax adds them up.</summary>
         public static long BusinessSales(int from, int to)
         {

@@ -75,5 +75,26 @@ internal static partial class Program
 
             Check(agreed == first.Offer && EstateRules.PayingRent(b) == agreed, "rental income: a lease is agreed at the offer made under the setting, and the game is told to pay exactly that");
         }
+
+        // A building the game lets: the night's own rent, topped up (or taken back) to the setting, once a night.
+        Check(EstateRules.GameRentTopUp(1000, 500) == -500 && EstateRules.GameRentTopUp(1000, 1000) == 0 && EstateRules.GameRentTopUp(1000, 0) == 0
+              && EstateRules.GameRentTopUp(1000, 2000) == 1000 && EstateRules.GameRentTopUp(1000, 3000) == 2000,
+            "rental income on the game's own rent: at 50% half is taken back, at 100% nothing, at 200% and 300% one and two times more is paid");
+        Check(EstateRules.GameRentTopUp(0, 3000) == 0 && EstateRules.GameRentTopUp(-5, 500) == 0 && EstateRules.GameRentTopUp(777, 9000) == 2 * 777 && EstateRules.GameRentTopUp(777, 100) == -388,
+            "rental income on the game's own rent: nothing on a night that paid nothing, and the setting's bounds hold");
+        bool exact = true;
+        for (int rent = 1; rent < 5000; rent += 37)
+        {
+            for (int scale = EstateCatalogue.RentScaleLeast; scale <= EstateCatalogue.RentScaleMost; scale += 250)
+            {
+                long want = (long)rent * scale / 1000;
+                exact &= Math.Abs(rent + EstateRules.GameRentTopUp(rent, scale) - want) <= 1 && rent + EstateRules.GameRentTopUp(rent, scale) >= 0;
+            }
+        }
+        Check(exact, "rental income on the game's own rent: a night comes to its rent times the setting, never below nothing");
+        EstateHolding mine = Building(managed: true), games = Building(managed: false);
+        Check(EstateRules.TopUp(mine, 5, 1000, 2000) == 0 && EstateRules.TopUp(mine, 6, 1000, 500) == 0, "rental income: no top-up for a building the player lets himself, whose leases are already at the setting");
+        int night = EstateRules.TopUp(games, 5, 1000, 2000), again = EstateRules.TopUp(games, 5, 1000, 2000), older = EstateRules.TopUp(games, 4, 1000, 2000), next = EstateRules.TopUp(games, 6, 1000, 2000);
+        Check(night == 1000 && again == 0 && older == 0 && next == 1000, "rental income: one top-up a night for a building the game lets, never twice for the same night or for one already past");
     }
 }

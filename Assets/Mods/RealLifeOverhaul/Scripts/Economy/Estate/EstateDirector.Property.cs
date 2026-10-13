@@ -18,12 +18,21 @@ namespace RealLifeOverhaul.Economy
             EstateState s = _state;
             EstateClimate c = _climate;
 
-            // What the game's nightly run has just paid for each building, before anything is written again.
-            int paid = 0, wrong = 0;
+            // What the game's nightly run has just paid for each building, before anything is written again. A building
+            // the game lets has the rental income option settled on it here: the difference to the setting, as rent.
+            int paid = 0, wrong = 0, topped = 0, topUps = 0;
             for (int i = 0; i < s.Holdings.Count; i++)
             {
                 EstateHolding h = s.Holdings[i];
                 int rent = EstateGame.GameRent(h);
+                int extra = EstateRules.TopUp(h, day, rent, c.RentScale);
+                if (extra != 0)
+                {
+                    EstateGame.AdjustRent(extra, h);
+                    topped += extra;
+                    topUps++;
+                }
+                rent += extra;
                 h.RentYear += rent;
                 paid += rent;
                 int agreed = h.Managed ? EstateRules.PayingRent(h) : 0;
@@ -34,6 +43,10 @@ namespace RealLifeOverhaul.Economy
                 Logger?.Info("Estate check (rent, day " + day + "): the game's run paid " + paid + " for " + s.Holdings.Count + " building(s); " + wrong
                              + " building(s) the player lets himself were paid something other than the agreed rent of their units that owe nothing (the game may let a few units less on a day): "
                              + (wrong == 0 ? "PASS" : "LOOK"));
+            }
+            if (topUps > 0)
+            {
+                Logger?.Info("Estate: rental income at " + (EstateRules.RentShare(c.RentScale) / 10) + "%: " + topped + " " + (topped > 0 ? "added to" : "taken from") + " the game's own rent of " + topUps + " building(s) it lets.");
             }
 
             // The market: a step for each month of the city's economy that has passed.

@@ -201,6 +201,36 @@ namespace RealLifeOverhaul.Economy
             return scale <= 0 ? 1000 : EstateCatalogue.Clamp(scale, EstateCatalogue.RentScaleLeast, EstateCatalogue.RentScaleMost);
         }
 
+        /// <summary>
+        /// The rental income option on a building the game lets as it always did: what is added to the rent its nightly
+        /// run paid (or, under 100%, taken back from it), so that the night comes to that rent times the setting. Nothing
+        /// at 100% or for a night that paid nothing.
+        /// </summary>
+        public static int GameRentTopUp(int gameRent, int scale)
+        {
+            if (gameRent <= 0)
+            {
+                return 0;
+            }
+            long t = (long)gameRent * (RentShare(scale) - 1000) / 1000;
+            return (int)Math.Max(-gameRent, Math.Min(int.MaxValue / 4, t));
+        }
+
+        /// <summary>
+        /// A night's top-up for a building, once a night at most: nothing for a building the player lets himself (its
+        /// leases are already at the setting), and nothing a second time for a night already settled (a day looked at
+        /// twice, a load). <paramref name="gameRent"/> is what the game's run paid that night.
+        /// </summary>
+        public static int TopUp(EstateHolding h, int day, int gameRent, int scale)
+        {
+            if (h == null || h.Managed || day <= h.TopUpDay)
+            {
+                return 0;
+            }
+            h.TopUpDay = day;
+            return GameRentTopUp(gameRent, scale);
+        }
+
         public static int MarketRent(EstateHolding h, EstateClimate c)
         {
             return MarketRent(h.Base, h.Use, h.Income, h.Cond, h.Level, c);
