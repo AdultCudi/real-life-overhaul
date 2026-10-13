@@ -303,8 +303,9 @@ namespace RealLifeOverhaul
         /// </summary>
         public static bool FastRide;
 
-        /// <summary>The street can have a bus on it: the game's traffic is running, or stopped only for a fast-forwarded ride.</summary>
-        public static bool StreetReady => TrafficTools.Ready || (FastRide && TrafficTools.Paused);
+        /// <summary>The street can have a bus on it: the game's traffic is running, or stopped only for the game's fast forward (its own cars are
+        /// taken off then; the buses drive on at its pace, so that a bus the player is watching does not vanish when they speed time up).</summary>
+        public static bool StreetReady => TrafficTools.Ready || TrafficTools.Paused;
 
         /// <summary>True while its doors stand open.</summary>
         public bool DoorsOpen => Vehicle != null && !Vehicle.DoorsShut;
@@ -459,7 +460,7 @@ namespace RealLifeOverhaul
                 refusal = "the bus is still out";
                 return false;
             }
-            if (!TrafficTools.Ready || stop == null || stop.Line >= TransitMap.Lines.Count)
+            if (!StreetReady || stop == null || stop.Line >= TransitMap.Lines.Count)
             {
                 refusal = "traffic is not running";
                 return false;
@@ -526,7 +527,7 @@ namespace RealLifeOverhaul
         /// <summary>Puts a bus straight onto the lane just past a stop, already leaving: what a rider sees pull away after getting off.</summary>
         public bool SendLeaving(TransitStop stop)
         {
-            if (State != Phase.Idle || !TrafficTools.Ready || stop == null || stop.Line >= TransitMap.Lines.Count)
+            if (State != Phase.Idle || !StreetReady || stop == null || stop.Line >= TransitMap.Lines.Count)
             {
                 return false;
             }
@@ -567,7 +568,7 @@ namespace RealLifeOverhaul
         public bool PutStanding(TransitStop stop, out string refusal)
         {
             refusal = null;
-            if (State != Phase.Idle || !TrafficTools.Ready || stop == null || stop.Line >= TransitMap.Lines.Count)
+            if (State != Phase.Idle || !StreetReady || stop == null || stop.Line >= TransitMap.Lines.Count)
             {
                 refusal = State != Phase.Idle ? "the bus is still out" : "traffic is not running";
                 return false;
@@ -1136,7 +1137,7 @@ namespace RealLifeOverhaul
         // Nor are any while the game fast-forwards a ride: its traffic system, the lights with it, stands still meanwhile.
         private static bool Lit(Waypoint point)
         {
-            return !FastRide && CitySpots.Flat(point.position - PlayerHelper.GetPosition()) < LitWithin * LitWithin;
+            return !FastRide && !TrafficTools.Paused && CitySpots.Flat(point.position - PlayerHelper.GetPosition()) < LitWithin * LitWithin;   // (in the game's fast forward its lights stand still)
         }
 
         private bool GateOpen()
