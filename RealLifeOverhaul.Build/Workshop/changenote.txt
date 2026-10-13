@@ -1,6 +1,4 @@
-0.7.4
+0.7.5
 
 Fixed
-- A parked car could stand in a bus stop's bay, so the bus stopped in the road beside it. The bay's parking is now cut as soon as the buses run, a parked car in it is taken away once you are not looking, a car of yours there is moved to a free space nearby and you are told, and the parking meters along the bay are cleared with it.
-- Street furniture cleared from a bus stop could still stop you where nothing could be seen. What is cleared is now cleared whole, and a piece that cannot go without leaving an invisible obstacle is left standing where you can see it.
-- The bus stop's sign could stand in the bus's doorway, so you could not get on. The sign now stands clear of both doors and the way to them, the bus stops where neither door lines up with a tree or a post on the kerb, and you are never walked to a door with the sign in front of it.
+- Under a bright street lamp at night your character's hair could look bald from above. The strands now darken towards their edges, as real strands do in each other's shade, and stay as full from the street camera's distance as close up. The same goes for every character drawn in that hair, other players' in a Going Public session included; nothing of anyone's look is saved or sent differently.
