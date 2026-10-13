@@ -46,6 +46,10 @@ namespace RealLifeOverhaul
         public readonly List<GameObject> Boarding = new List<GameObject>(4);
         public bool BoardingMade; // switched off now
 
+        public float Stand;       // metres on from the pole that the bus's middle stands (BusInside.StandShift): neither door lines up with what stands on the kerb
+        public int KerbThings;    // what stands on the kerb by the doors and stays (a tree, a lamp, the pole), for the log
+        public float ZoneLook;    // the director's time at which BusZones next looks at it while something there waits to be out of view
+
         /// <summary>The length of strip the bay takes up.</summary>
         public float BayLength => BayBehind + BayAhead;
     }
@@ -379,6 +383,26 @@ namespace RealLifeOverhaul
                 text.Append(" m);");
             }
             Logger?.Info(text.ToString());
+            LogPoles();
+        }
+
+        // Where the poles stand and the buses stop by them: one line.
+        private static void LogPoles()
+        {
+            int clear = 0, shifted = 0, things = 0;
+            for (int i = 0; i < Stops.Count; i++)
+            {
+                TransitStop stop = Stops[i];
+                Vector3 right = Vector3.Cross(Vector3.up, stop.Along);
+                Vector3 toWait = Flat(stop.Wait - stop.Lane), toPole = Flat(stop.Sign - stop.Lane);
+                float kerb = Vector3.Dot(Flat(stop.Kerb - stop.Lane), right);
+                clear += BusInside.SignClear(Vector3.Dot(toPole, stop.Along), Vector3.Dot(toPole, right), kerb, Vector3.Dot(toWait, stop.Along), Vector3.Dot(toWait, right), stop.Stand) ? 1 : 0;
+                shifted += Mathf.Abs(stop.Stand) > 0.01f ? 1 : 0;
+                things += stop.KerbThings;
+            }
+            Logger?.Info("Transit check (poles): " + clear + " of " + Stops.Count + " stops' poles stand clear of both doors and the ways to them; the bus stands on from its pole or short of it at "
+                         + shifted + " stop(s) so that neither door lines up with what stays on the kerb (" + things + " thing(s) in all, the poles counted): "
+                         + (clear == Stops.Count ? "PASS" : "FAIL") + ".");
         }
 
         // ---------------------------------------------------------------- the ends of the routes
@@ -794,6 +818,18 @@ namespace RealLifeOverhaul
                 stop.Shelter = true;
                 stop.ShelterAt = floor;
             }
+            // The pole stands clear of the doors and the ways to them (it used to stand at the kerb beside the bus's middle,
+            // on the way to the middle door and at the edge of its opening); then the bus stands where neither door lines up
+            // with what stays on the kerb, and the boarding strip is looked at again for where its doors then are.
+            if (!PlaceSign(stop, right, edge))
+            {
+                return null;
+            }
+            Stand(stop, right, edge);
+            if (Mathf.Abs(stop.Stand) > 0.01f)
+            {
+                FindBoarding(stop, right, edge);
+            }
             return stop;
         }
 
@@ -815,7 +851,7 @@ namespace RealLifeOverhaul
                 return;
             }
             Vector3 toWait = stop.Wait - stop.Lane;
-            BusInside.Strip[] strips = BusInside.BoardingStrips(kerb, Vector3.Dot(Flat(toWait), stop.Along), Vector3.Dot(Flat(toWait), right));
+            BusInside.Strip[] strips = BusInside.BoardingStrips(kerb, Vector3.Dot(Flat(toWait), stop.Along), Vector3.Dot(Flat(toWait), right), stop.Stand);
             for (int s = 0; s < strips.Length; s++)
             {
                 BusInside.Strip strip = strips[s];
@@ -860,7 +896,93 @@ namespace RealLifeOverhaul
             {
                 return null;   // a kiosk, a wall: not a piece of furniture to take away
             }
-            return BusZones.PropOf(hit);
+            GameObject piece = BusZones.PropOf(hit);
+            return piece != null && !BusZones.MustStay(piece) ? piece : null;
+        }
+
+        // ---------------------------------------------------------------- the pole, and where the bus stands
+
+        // The pole at the first of BusInside.SignPlaces that is pavement with nothing standing there and is clear of the doors
+        // and the ways to them however the bus stands (BusInside.SignClearAlways). False if none is (no stop here, then).
+        private static bool PlaceSign(TransitStop stop, Vector3 right, float kerb)
+        {
+            Vector3 toWait = Flat(stop.Wait - stop.Lane);
+            float waitAlong = Vector3.Dot(toWait, stop.Along), waitAside = Vector3.Dot(toWait, right);
+            for (int i = 0; i < BusInside.SignPlaces.Length; i++)
+            {
+                if (i == BusInside.SignByShelter && !stop.Shelter)
+                {
+                    continue;
+                }
+                BusInside.Spot place = BusInside.SignPlaces[i];
+                float aside = kerb + place.X;
+                if (!BusInside.SignClearAlways(place.Z, aside, kerb, waitAlong, waitAside))
+                {
+                    continue;
+                }
+                if (IsPavement(stop.Lane + right * aside + stop.Along * place.Z, out Vector3 at) && Open(at, 0.3f))
+                {
+                    stop.Sign = at;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static readonly Collider[] KerbHits = new Collider[24];
+        private static readonly float[] KerbAt = new float[26];
+        private static readonly float[] KerbHalfs = new float[26];
+
+        // Where the bus stands by the pole (BusInside.StandShift): what stays on the kerb by its doors is found once, in one box
+        // along all the places the doors may come to, from the kerb's edge to beyond the doors' steps: a street tree (by its trunk),
+        // anything else that is not switched off for the boarding strip, and the pole. In a bay it may only stand a little on.
+        private static void Stand(TransitStop stop, Vector3 right, float kerb)
+        {
+            stop.Stand = 0f;
+            stop.KerbThings = 0;
+            int count = 0;
+            float from = BusInside.MiddleDoor - BusInside.DoorHalf - 2.5f;
+            float to = BusInside.FrontDoor + BusInside.DoorHalf + 2.5f;
+            float inner = kerb - 0.3f;
+            float outer = kerb + BusInside.DoorStep;
+            Vector3 centre = stop.Lane + stop.Along * ((from + to) * 0.5f) + right * ((inner + outer) * 0.5f);
+            centre.y = stop.Wait.y + 1.2f;
+            int found = _propsLayer < 0 ? 0 : Physics.OverlapBoxNonAlloc(centre, new Vector3((outer - inner) * 0.5f, 1.0f, (to - from) * 0.5f), KerbHits, Quaternion.LookRotation(stop.Along),
+                1 << _propsLayer, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < found; i++)
+            {
+                Collider hit = KerbHits[i];
+                KerbHits[i] = null;
+                if (hit == null || hit.attachedRigidbody != null || count >= KerbAt.Length - 1)
+                {
+                    continue;
+                }
+                Transform root = hit.transform.root;
+                if (root != null && root.name.StartsWith("RealLifeOverhaul", StringComparison.Ordinal))
+                {
+                    continue;   // the mod's own: the pole is counted below
+                }
+                GameObject piece = BoardingPiece(hit);
+                if (piece != null && stop.Boarding.Contains(piece))
+                {
+                    continue;   // switched off while the buses run
+                }
+                Bounds bounds = hit.bounds;
+                bool tree = hit.GetComponentInParent<TreeController>() != null;
+                KerbAt[count] = Vector3.Dot(Flat(bounds.center - stop.Lane), stop.Along);
+                KerbHalfs[count] = tree ? TrunkHalf : Mathf.Abs(bounds.extents.x * stop.Along.x) + Mathf.Abs(bounds.extents.z * stop.Along.z);
+                count++;
+            }
+            Vector3 pole = Flat(stop.Sign - stop.Lane);
+            if (Vector3.Dot(pole, right) <= outer + BusInside.PoleReach)
+            {
+                KerbAt[count] = Vector3.Dot(pole, stop.Along);
+                KerbHalfs[count] = BusInside.PoleReach;
+                count++;
+            }
+            stop.KerbThings = count;
+            stop.Stand = stop.HasBay ? BusInside.StandShift(KerbAt, KerbHalfs, count, 0f, BusInside.BayStandMost)
+                                     : BusInside.StandShift(KerbAt, KerbHalfs, count, -1f, 1f);
         }
 
         // Another lane of the road to the right of a lane point (the road graph names the lanes that run beside one).
@@ -909,6 +1031,7 @@ namespace RealLifeOverhaul
             Vector3 bay = lane + right * offset;
             CitySpots.Ground(bay, out float ground);
             bay.y = ground;
+            FindMeters(stop, right, -behind, ahead, Zoning);
             stop.HasBay = true;
             stop.Bay = bay;
             stop.BayOffset = offset;
@@ -993,6 +1116,48 @@ namespace RealLifeOverhaul
                 }
             }
             return bad;
+        }
+
+        // The game's parking meters along a bay's kerb, on the pavement within a step of its edge: with the parking gone from the
+        // bay they stand for nothing, and are switched off with the zone (BusZones) as plain furniture is. One box.
+        private static void FindMeters(TransitStop stop, Vector3 right, float from, float to, BusZone zone)
+        {
+            if (_propsLayer < 0)
+            {
+                return;
+            }
+            float inner = stop.KerbAside - 0.3f;
+            float outer = stop.KerbAside + 1.2f;
+            Vector3 centre = stop.Lane + stop.Along * ((from + to) * 0.5f) + right * ((inner + outer) * 0.5f) + Vector3.up * 1.1f;
+            int found = Physics.OverlapBoxNonAlloc(centre, new Vector3((outer - inner) * 0.5f, 1.0f, (to - from) * 0.5f), StripHits, Quaternion.LookRotation(stop.Along),
+                1 << _propsLayer, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < found; i++)
+            {
+                Collider hit = StripHits[i];
+                StripHits[i] = null;
+                if (hit == null || !IsMeter(hit.transform))
+                {
+                    continue;
+                }
+                GameObject piece = BoardingPiece(hit);
+                if (piece != null && !zone.Meters.Contains(piece) && !zone.Clear.Contains(piece))
+                {
+                    zone.Meters.Add(piece);
+                }
+            }
+        }
+
+        // The game's parking meter (Prefab_ParkingMeter, its models SM_ParkingMeter_LOD*): by its name or a parent's.
+        private static bool IsMeter(Transform part)
+        {
+            for (int up = 0; up < 4 && part != null; up++, part = part.parent)
+            {
+                if (part.name.IndexOf("ParkingMeter", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         // Something fixed found in a bay's strip. Null if the zone deals with it: street furniture standing in the road is
