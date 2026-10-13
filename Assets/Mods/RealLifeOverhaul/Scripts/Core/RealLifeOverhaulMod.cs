@@ -166,6 +166,9 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_contacts_test_redraw", ContactPictures.TestRedraw)
                 .AddToggle(Settings.PhoneSkinId, "reallife_phone_skin", Settings.PhoneSkin,
                     v => Settings.PhoneSkin = v)
+                .AddToggle(Settings.NoticeLookId, "reallife_notice_look", Settings.NoticeLook,
+                    v => Settings.NoticeLook = v)
+                .AddButton("reallife_test_notice_look", GameUi.NoticeLook.Test)
                 .AddButton("reallife_test_event", () => LifeEvents.Instance?.TriggerEventNow())
                 .AddButton("reallife_test_accident", () => TrafficAccidents.Instance?.StageAccidentNow())
                 .AddButton("reallife_test_accident_minor", () => TrafficAccidents.Instance?.StageAccidentNow(TrafficAccidents.Severity.Minor))
@@ -1088,6 +1091,9 @@ namespace RealLifeOverhaul
             ScenePrewarm.Add("roads: the traffic system's road data being found for the city", RoadData.Prewarm);
             ScenePrewarm.Add("traffic: the game's smoke effect being found for accidents and fires", TrafficEffects.Prewarm);
             ScenePrewarm.Add("game UI: the game's font being found", FindFont);
+            GameUi.NoticeLook.Logger = context.Logger;
+            _root.AddComponent<GameUi.NoticeLook>();   // the mod's notifications told from the game's by a picture of their kind on the mod's colour (Core/GameUi/NoticeLook): nothing per frame, a few writes per notification shown
+            ScenePrewarm.Add("game UI: the game's notification toast and list being found, and the notifications' pictures", GameUi.NoticeLook.Prewarm);
             ClickWatch.Logger = context.Logger;
             OverlayGuard.Logger = context.Logger;
             _root.AddComponent<OverlayGuard>();   // the game's card over a thing is put away once the thing is gone (removed while the time machine hid it): two null tests a frame

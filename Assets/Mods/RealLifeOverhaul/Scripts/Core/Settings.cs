@@ -47,6 +47,7 @@ namespace RealLifeOverhaul
         public const string SolidStreetsId = "solid_streets";
         public const string PhoneContactsId = "phone_contacts";
         public const string PhoneSkinId = "phone_skin";
+        public const string NoticeLookId = "notice_look";
         public const string CarSpeedId = "car_speed";           // the old single "car speed %" slider: dropped at load
         public const string CarTuningId = "car_tuning";
         public const string CarTopSpeedId = "car_top_speed";
@@ -287,6 +288,7 @@ namespace RealLifeOverhaul
         public static bool SmoothThrottle = true;    // the throttle key eases the pedal down instead of flooring it
         public static bool Speedometer = true;
         public static bool PhoneSkin = true;         // modern phone body, wallpaper and status bar
+        public static bool NoticeLook = true;        // the mod's notifications carry a picture of their kind on a disc of the mod's colour (Core/GameUi/NoticeLook); off: they look like the game's
         public static bool CarCamera = true;     // chase camera while driving
         public static int CarCameraDistance = 8; // metres behind the car
         public static int CameraHeight = 15;     // look-at height above the player's feet, in tenths of a metre
@@ -561,6 +563,7 @@ namespace RealLifeOverhaul
             SolidStreets = Bool(modId, SolidStreetsId, SolidStreets);
             PhoneContacts = Bool(modId, PhoneContactsId, PhoneContacts);
             PhoneSkin = Bool(modId, PhoneSkinId, PhoneSkin);
+            NoticeLook = Bool(modId, NoticeLookId, NoticeLook);
             CarTuning = Bool(modId, CarTuningId, CarTuning);
             CarTopSpeed = Int(modId, CarTopSpeedId, CarTopSpeed);
             CarAcceleration = Int(modId, CarAccelerationId, CarAcceleration);

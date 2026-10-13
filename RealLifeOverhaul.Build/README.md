@@ -5627,6 +5627,9 @@ Core/GameUi/
                   entries whose lines wrap) for lists that say more than a station's name
   GuideMark       a mark on a place that is no building, on the game's own destination guider (the job's), taken
                   only while it is free and taken off only by whoever put it there
+  NoticeKinds     game-free (CatalogueCheck/NoticeCheck): which kind a notification of the mod's is, from its key alone
+  NoticeLook      the mod's notifications told from the game's: the kind's picture on a disc of the mod's colour, in the
+                  game's own toast and the game's own notification list; the options page's test of one of each kind
 Planner/
   PlannerModel    game-free: the clock as the game counts it, entries, order, clashes, states, "next", the badge
   PlannerStore    game-free: notes, reminders and settings; the save's three lines ("reallife:planner",
@@ -5674,6 +5677,46 @@ list window, three more bars under the game's needs (section 14), a reading in t
 15), the game's own repair-bay panel with a button more (section 16), its panel over a place at a dock, a stand, a
 broken-down car and the doctor's desk, and its destination marker (`GameUi.GuideMark`). Neither feature has a
 canvas, a prompt or a key of its own left.
+
+### The mod's notifications (`Core/GameUi/NoticeKinds`, `NoticeLook`)
+
+Every notification of the mod's goes through the game's own `Notifications.Show`, so it pops up in the game's toast
+and stays in the game's list, saved with the game as its type, key, names and time (`UI.Notification/Notification`).
+To be told from the game's at a glance, each carries a picture of its kind on a disc in the mod's indigo, where the
+game's carry their white one; the game's own notifications, and other mods', are never touched.
+
+- **Which kind.** Read from the key each time it is drawn (`NoticeKinds.Of`: the prefix after `reallife_`, a table
+  read longest first), so nothing new is saved and notifications in an older save get their picture too. A new
+  feature's keys need a row in the table only if its prefix is new; a key with no row is drawn as "anything else".
+  NoticeCheck fails a key raised by a call that is not taken for the mod's, a toast text over 240 characters, a row
+  that can never match, and more than half of the notifications under "anything else".
+- **Where it is set.** The toast: after the game's maker on `Notifications.onShow` (the copy it has just made: its
+  `Text/Image` becomes the disc, the picture a child of it). The list: the scroller's `cellViewVisibilityChanged`,
+  raised right after the game's `NotificationListCellView.SetData`; rows are reused, so every row is set either way
+  (the mod's: the disc and its picture; the game's: its white disc back, the game having put its own picture on).
+  No Harmony patch, nothing per frame.
+- **The pictures.** The game's own where one fits, found once behind the loading screen (`GameSprites`), else one of
+  the mod's glyphs drawn in code like the map's (`MapPlaces.Glyph`, which gained Coin, House and Heart for this):
+
+  | kind | the game's picture | else the mod's glyph |
+  | --- | --- | --- |
+  | accidents and the road | Icon-Traffic | Cone |
+  | police and crime | Icon-Security | Shield |
+  | health and the hospital | BusinessIcon-Hospital | Cross |
+  | money and bills | Icon-Coin | Coin |
+  | property and rent | Icon-Building | House |
+  | work and careers | Icon-Briefcase | Briefcase |
+  | the player's businesses | Icon-Shop | Tower |
+  | the tech sector | Icon-Laptop | Cloud |
+  | news and the city | (none) | Paper |
+  | family and friends | Icon-People | Heart |
+  | anything else | (none) | Star |
+
+  Icon-Coin, Icon-Building, Icon-Security, Icon-Shop and the disc's Circle are used by Images of the UI scene, so in
+  memory; the others may not be, and then the glyph is drawn. With "Developer diagnostics" on, `Notice check
+  (attach)` says how many kinds got the game's picture.
+- **Option and test.** "The mod's notifications carry their own picture and colour" (on by default; off, they look
+  like the game's). Options > Tests: "One notification of each kind" shows the eleven, 1.2 s apart, kept in the list.
 
 ## Minimap and GPS (`Scripts/Navigation`)
 
