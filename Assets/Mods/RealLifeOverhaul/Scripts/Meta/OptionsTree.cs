@@ -277,7 +277,7 @@ namespace RealLifeOverhaul.Meta
                 S("transit").For("transport").Opts("transit_buses").Opt("transit_people", "transit_buses").Opts("transit_subway").Also("bus metro train public transport"),
                 S("taxi").For("taxi").Opts("transit_taxi_call").Also("cab cabs ride"),
                 S("nav").For("navigation").Main("nav_minimap").Opts("nav_rotate", "nav_size", "nav_zoom", "nav_base").FreeOpts("nav_gps").Opt("nav_other_route", "nav_gps")
-                    .FreeOpts("map_places_shown").Also("map route satnav directions destination"),
+                    .FreeOpts("map_places_shown", "special_names").Also("map route satnav directions destination names building buildings"),
                 S("districtview").For("districtview").Opts("district_view")
                     .Also("district districts neighbourhood neighbourhoods neighborhood map layer layers stats statistics wealth rent prices footfall crime standing coverage internet competition council"),
                 S("licences").For("licences").Main("driving_licence").Opts("licence_start_with", "driving_school", "licence_points", "roadside_checks")

@@ -89,6 +89,11 @@ namespace RealLifeOverhaul.Utilities
                     Front = door;
                     Usable = true;
                 }
+                if (Usable)
+                {
+                    // Its own name wherever the game names the building (Core/SpecialBuildings).
+                    SpecialBuildings.Set("utilities_office", picked, SpecialKind.Civic, "reallife_util_desk_title", "reallife_util_card_type", () => Settings.Utilities);
+                }
                 _logger?.Info("Utilities: the office is " + Name + " (" + picked.building.totalSqm + " sqm); "
                               + (placed ? "sign up." : Usable ? "no room for the sign: the desk is at the door." : "no pavement at its door: accounts are applied for in the app."));
             }

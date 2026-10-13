@@ -982,9 +982,10 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- the building card
 
-        // The game's card for a building that is one of the mod's places: the place's name where the business name goes, and
-        // (if the place gives them) what it is and its state. The game writes all three again whenever it shows the card
-        // for anything, so nothing has to be put back.
+        // The game's card for a building that is one of the mod's places: the place's name where the business name goes (the
+        // building's own name instead, for a special building: Core/SpecialBuildings, which writes the same name), and (if
+        // the place gives them) what it is and its state. The game writes all three again whenever it shows the card for
+        // anything, so nothing has to be put back.
         private static void Card(BuildingResume card, EntityController target)
         {
             var building = target as CityBuildingController;
@@ -995,10 +996,11 @@ namespace RealLifeOverhaul
             }
             try
             {
-                if (card.businessNameLabel != null && !string.IsNullOrEmpty(place.Name))
+                string name = RealLifeOverhaul.SpecialBuildings.NameFor(building) ?? place.Name;
+                if (card.businessNameLabel != null && !string.IsNullOrEmpty(name))
                 {
                     card.businessNameLabel.gameObject.SetActive(true);
-                    card.businessNameLabel.text = place.Name;
+                    card.businessNameLabel.text = name;
                 }
                 if (card.businessTypeLabel != null && !string.IsNullOrEmpty(place.CardTypeKey))
                 {

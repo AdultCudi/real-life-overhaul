@@ -263,12 +263,13 @@ namespace RealLifeOverhaul
                 Stamp = () =>
                 {
                     Utilities.UtilitiesDirector utilities = Utilities.UtilitiesDirector.Instance;
-                    return utilities != null && utilities.Office != null && utilities.Office.Usable ? 2 : 0;
+                    return utilities != null && utilities.Office != null && utilities.Office.Usable ? (SpecialBuildings.Active ? 3 : 2) : 0;
                 },
                 Fill = places =>
                 {
                     Utilities.UtilitiesOffice office = Utilities.UtilitiesDirector.Instance.Office;
-                    places.Add(new MapPlace(office.Front, At(T("reallife_map_row_utilities"), office.Name), office.Building)
+                    string what = SpecialBuildings.NameFor(office.Building) ?? T("reallife_map_row_utilities");   // (its own name, while special buildings carry theirs)
+                    places.Add(new MapPlace(office.Front, At(what, office.Name), office.Building)
                     {
                         CardTypeKey = "reallife_util_card_type",
                         CardStateKey = "reallife_util_card_open"

@@ -86,6 +86,8 @@ namespace RealLifeOverhaul
                     v => Settings.CameraFollow = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.MapPlacesShownId, "reallife_map_places_shown", Settings.MapPlacesShown,
                     v => Settings.MapPlacesShown = v)
+                .AddToggle(Settings.SpecialNamesId, "reallife_special_names", Settings.SpecialNames,
+                    v => { Settings.SpecialNames = v; SpecialNames.Changed(); })
                 .AddSplitter()
                 .AddHeader("reallife_visuals_header")
                 .AddToggle(Settings.VisualsEnabledId, "reallife_visuals_enabled", Settings.VisualsEnabled,
@@ -984,6 +986,7 @@ namespace RealLifeOverhaul
             Shapes.Logger = context.Logger;
             PropLibrary.Logger = context.Logger;
             MapPlaces.Logger = context.Logger;
+            SpecialBuildings.Logger = context.Logger;
             MapLinks.Logger = context.Logger;
             Districts.DistrictView.Logger = context.Logger;
             Districts.DistrictPanel.Logger = context.Logger;
@@ -1042,6 +1045,7 @@ namespace RealLifeOverhaul
             ClickWatch.Logger = context.Logger;
             OverlayGuard.Logger = context.Logger;
             _root.AddComponent<OverlayGuard>();   // the game's card over a thing is put away once the thing is gone (removed while the time machine hid it): two null tests a frame
+            _root.AddComponent<SpecialNames>();   // the special buildings' own names on the game's card, guiders, headline and map search (Core/SpecialBuildings): one reference comparison a frame while some building is named
             _root.AddComponent<ClickWatch>();     // with "Developer diagnostics" on, what a left click in the city met: one flag test a frame otherwise
             _root.AddComponent<ThirdPersonCamera>();
             _root.AddComponent<VisualEnhancer>();
