@@ -1,4 +1,4 @@
-0.4.5
+0.4.6
 
 New
-- Permadeath, an ending you can choose: off unless you switch it on, and kept with each save. With it on, your character can die for good, but only after a warning: a crash at very high speed, being hit by fast traffic on foot, a mugging refused, the private lender's men or a flu left untreated past three warnings. The game is saved at once, the City Ledger prints a front page in memory with their life's story, and the save can be opened again to read it but never played. It is off in a Going Public session and during the game's tutorial and missions.
+- District view on the city map: ten new rows in its filter list tint each district by wealth, rents, property prices, footfall and demand, crime, your standing, power and water, the internet, competition or the council. Beside the filters a window gives the colours' key, a card with every figure for the district under the pointer, and the districts in order. The Guide has a page on it.
