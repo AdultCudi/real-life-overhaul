@@ -1,4 +1,6 @@
-0.9.6
+0.9.7
 
 Fixed
-- The mod's own buildings (the tech companies' headquarters, City Utilities, the university, the courthouse, the police stations and the hotels) could be rented, bought or taken over, and then lost their names and their light on the map. They are now off the market: BizMan says whose they are, and they are left out of the real estate list and the map's rows of units to let. If you already rent or own one, it stays yours and the company or office moves to another building.
+- The city bus could stop short of its stop and stand there for good, the stop's panel saying DELAYED and nobody able to get on. Held up near the stop, by a car, somebody in the road or you, it now opens its doors where it stands, and a car of the traffic that waits for the bus while the bus waits for it is let go.
+- At a narrow stop the bus braked for people waiting at the kerb.
+- An old file left in the mod's folder by an earlier version could dress the city bus in the wrong textures, fuel price boards and fire engine lettering. The mod now ignores such files, and the steps for installing from the zip say to delete the old folder first.
