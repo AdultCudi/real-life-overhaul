@@ -644,6 +644,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 string name = Name(a), thing = Thing(a);
                 int owed = a.Owed, surplus;
+                OverlayGuard.Release(controller);
                 vehicle.Delete(controller);   // the game's own way of removing a vehicle of the player's
                 int used = AccountRules.Repossess(a, day, out surplus);
                 if (a.SecurityValue <= 0 || a.Test)

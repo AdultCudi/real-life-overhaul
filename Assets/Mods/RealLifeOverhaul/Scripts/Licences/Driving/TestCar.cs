@@ -551,11 +551,7 @@ namespace RealLifeOverhaul
         {
             try
             {
-                OverlayManager overlays = InstanceBehavior<OverlayManager>.Instance;
-                if (car != null && overlays != null && overlays.IsShowingOverlayOverItem(car))
-                {
-                    overlays.HideOverlays();
-                }
+                OverlayGuard.Release(car);
                 var gm = InstanceBehavior<GameManager>.Instance;
                 UIs hud = InstanceBehavior<UIs>.Instance;
                 if (car != null && gm != null && ReferenceEquals(gm.selectedVehicle, car) && !PlayerHelper.IsUsingVehicle
@@ -667,6 +663,7 @@ namespace RealLifeOverhaul
                             controller = own[v];
                         }
                     }
+                    OverlayGuard.Release(controller);
                     all[i].Delete(controller);
                     _logger?.Info("Licences: a school car left in the save (" + id + ") was removed.");
                 }

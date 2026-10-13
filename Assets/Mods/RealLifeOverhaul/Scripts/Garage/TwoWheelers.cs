@@ -809,6 +809,7 @@ namespace RealLifeOverhaul
             {
                 controller.ExitVehicle();
             }
+            OverlayGuard.Release(controller);
             instance.Delete(controller);
         }
 
