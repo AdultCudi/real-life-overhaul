@@ -26,7 +26,8 @@
        (PermadeathChecks.cs) Permadeath: the odds, the warnings first, when nothing can happen, the flu's course, the switch per save, a dead save, the life's line and the obituary's sentences, and
        (DistrictChecks.cs) the district view on the city map: the layers' scales, the bands, the key's ranges, the colours, the crime log and its line in the save, and
        (BusInsideChecks.cs) the bus ride seen: the places the clips want on the bus, every path clear of the seats, the way off, the pull-away and the fare given back, and
-       (OwnBankChecks.cs) the player's own bank: the rival banks' rates, the city's savers and borrowers, defaults, arrears, the regulator's ratio, a run, the fund, a sale and the save's line
+       (OwnBankChecks.cs) the player's own bank: the rival banks' rates, the city's savers and borrowers, defaults, arrears, the regulator's ratio, a run, the fund, a sale and the save's line, and (DealerChecks.cs) the car dealership: a car's worth, the lot, the market,
+       haggling and the trade auction, customers and their offers, the dealership's finance and warranties, the books and the save's line, and a month of a reference dealership
        Compiles the mod's own files, so it checks exactly what ships.
        the lender of last resort and the ways out of debt, and (VenturesChecks.cs) investors, the pitch, deals and the
        stock market. Compiles the mod's own files, so it checks exactly what ships.
@@ -181,6 +182,14 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankRules.cs" Link="Mod\OwnBankRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankFund.cs" Link="Mod\OwnBankFund.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankStore.cs" Link="Mod\OwnBankStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerCatalogue.cs" Link="Mod\DealerCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerState.cs" Link="Mod\DealerState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerRules.cs" Link="Mod\DealerRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerRules.Market.cs" Link="Mod\DealerRules.Market.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerRules.Customers.cs" Link="Mod\DealerRules.Customers.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerRules.Credit.cs" Link="Mod\DealerRules.Credit.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerLines.cs" Link="Mod\DealerLines.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerStore.cs" Link="Mod\DealerStore.cs" />
   </ItemGroup>
 
 </Project>
