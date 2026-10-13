@@ -71,6 +71,22 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static Func<int> Esteem;
 
+        /// <summary>Points the workplace's comfort raises the level staff paid fairly settle at, by its place, 0 to 10 (Scripts/Interiors). Default: nothing.</summary>
+        public static Func<string, int> Comfort;
+
+        /// <summary>The comfort of a workplace, inside its bounds; 0 without it.</summary>
+        internal static int ComfortAt(string place)
+        {
+            try
+            {
+                return Comfort != null ? CompanyCatalogue.Clamp(Comfort(place), 0, 10) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
         /// <summary>
         /// The player's company and the city's market (Markets/Listing, through Wiring/ListingLinks): one line for the
         /// Overview (where the company stands on its way to the market, or its price and the founder's stake), and the
@@ -95,6 +111,7 @@ namespace RealLifeOverhaul.Economy
 
         public static void Reset()
         {
+            Comfort = null;
             Footfall = null;
             Promoted = null;
             Close = null;

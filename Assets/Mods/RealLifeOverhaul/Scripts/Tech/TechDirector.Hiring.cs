@@ -131,7 +131,7 @@ namespace RealLifeOverhaul.Tech
             }
             float started = Time.realtimeSinceStartup;
             _notes.Clear();
-            int esteem = TechBridges.EsteemNow();
+            int esteem = TechBridges.HiringEsteem();   // (the player's esteem as an employer, and their best office's: Scripts/Interiors)
             HiringRules.Day(_hiring, day, HiringGame.Cycle, HiringGame.Summer(day), _rivals, _rate, _districts, _notes);
             int delivered = 0;
             for (int i = 0; i < _hiring.Ads.Count; i++)

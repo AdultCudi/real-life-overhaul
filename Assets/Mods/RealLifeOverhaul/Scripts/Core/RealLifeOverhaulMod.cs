@@ -4,6 +4,7 @@ using BAModAPI;
 using BigAmbitions.Mods;
 using RealLifeOverhaul;
 using RealLifeOverhaul.Districts;
+using RealLifeOverhaul.Interiors;
 using RealLifeOverhaul.Permadeath;
 using UnityEngine;
 
@@ -300,6 +301,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_business_desk", () => BusinessDirector.Instance?.TestDesk())
                 .AddButton("reallife_test_business_resolve", () => BusinessDirector.Instance?.TestResolveAll())
                 .AddSplitter()
+                .AddInteriors()   // interiors and decor that matter (Scripts/Interiors)
                 .AddHeader("reallife_home_header")
                 .AddToggle(Settings.HomeLifeId, "reallife_home_enabled", Settings.HomeLife,
                     v => Settings.HomeLife = v)
@@ -1205,6 +1207,9 @@ namespace RealLifeOverhaul
             _root.AddComponent<PerfDirector>();   // performance tweaks for the base game, and the two measurements (their keys are development aids)
             _root.AddComponent<MapLinks>();   // every feature's places on the city map (World/MapLinks reads them; no feature knows of it)
             _root.AddComponent<Districts.DistrictView>();   // the district view on the city map: ten layers, the key and a card per district (Scripts/Districts)
+            Interiors.InteriorDirector.Logger = context.Logger;
+            CustomerDraw.Logger = context.Logger;
+            _root.AddComponent<Interiors.InteriorDirector>();   // interiors and decor that matter: the scores once a game day, the BizMan tab (Scripts/Interiors)
             Wiring.Connect(context.Logger, _root);   // every director is there: the bridges between the features are filled in (Scripts/Wiring)
             // The loading screen is still up: the people of the two street pools are made and dressed now, where the time
             // it takes is not seen (People/Looks). Each catches its own faults and falls back to making them as they are needed.

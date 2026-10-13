@@ -47,6 +47,8 @@ namespace RealLifeOverhaul
     ///                     life, the record, Flare, the council, the businesses) and the City Ledger's page it is printed on
     ///     DistrictLinks   the district view on the city map with what the features keep by district: the city's economy,
     ///                     Standing, power, water and the internet, the council, and the crimes the paper hears of
+    ///     InteriorLinks   interiors and decor with business pressure (footfall, complaints, inspections), the city's
+    ///                     prices, the cleaning service, brands, Standing, the staff, the tech sector, Flare and the paper
     ///     OwnBankLinks    the player's own bank with Standing (its name), the council (defaults), the courts (what comes
     ///                     back), the Stocks app (its fund) and the City Ledger (its news)
     ///
@@ -103,6 +105,7 @@ namespace RealLifeOverhaul
             Step("the roommate", RoommateLinks.Connect);
             Step("power and water", UtilityLinks.Connect);
             Step("the social media app", FlareLinks.Connect);
+            Step("interiors and decor", InteriorLinks.Connect);   // after Flare's: its part of footfall goes on top of the others'
             Step("permadeath", PermadeathLinks.Connect);
             Step("the district view", DistrictLinks.Connect);
             Step("the player's bank", OwnBankLinks.Connect);   // after running a business: its pieces of the paper follow the company's
@@ -121,6 +124,7 @@ namespace RealLifeOverhaul
             Step("the player's bank", OwnBankLinks.Disconnect);   // before running a business: what it wrapped of the paper is put back first
             Step("the district view", DistrictLinks.Disconnect);
             Step("permadeath", PermadeathLinks.Disconnect);
+            Step("interiors and decor", InteriorLinks.Disconnect);   // before the social media app's: what it wrapped is put back first
             Step("the social media app", FlareLinks.Disconnect);   // ...and then the social media app's
             Step("the taxi by phone", TaxiLinks.Disconnect);
             Step("property", EstateLinks.Disconnect);

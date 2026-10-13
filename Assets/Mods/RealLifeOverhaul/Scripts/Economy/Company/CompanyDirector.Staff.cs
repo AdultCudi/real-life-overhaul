@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Economy
                     StaffRules.SickDay(f, s.SickPolicy);
                 }
                 int standing = f.Standing;
-                StaffNote note = StaffRules.Day(f, _level, day);
+                StaffNote note = StaffRules.Day(f, _level, day, CompanyBridges.ComfortAt(f.Place));
                 if (note == StaffNote.Asked)
                 {
                     asked++;

@@ -383,7 +383,7 @@ namespace RealLifeOverhaul
                 LastWritten = reg.promotion.total;
                 if (regenerate)
                 {
-                    CustomerEntriesHelper.UpdateCustomerEntriesForPlayerBusiness(reg, TimeHelper.GetDayOfWeek());
+                    CustomerDraw.Redraw(reg);   // the game's own redraw (Core/CustomerDraw keeps the hour under way while Meaningful Ambience is on)
                     Logger?.Info("Business: footfall at " + Name(reg) + " " + (percent >= 0 ? "+" : string.Empty) + percent + " %"
                                  + (ambient != 0 ? " and " + (ambient > 0 ? "+" : string.Empty) + ambient + " % from the city's economy" : string.Empty) + ": promotion " + own + " -> "
                                  + reg.promotion.total + ".");

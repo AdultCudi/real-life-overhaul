@@ -227,6 +227,14 @@ namespace RealLifeOverhaul
         public const string BusinessCustomersId = "business_customers";
         public const string BusinessAuditId = "business_audit";
         public const string BusinessOpportunitiesId = "business_opportunities";
+        public const string InteriorsId = "interiors";
+        public const string InteriorsStandardId = "interiors_standard";
+        public const string InteriorsDecorId = "interiors_decor";
+        public const string InteriorsPricesId = "interiors_prices";
+        public const string InteriorsBasketId = "interiors_basket";
+        public const string InteriorsWearId = "interiors_wear";
+        public const string InteriorsStandingId = "interiors_standing";
+        public const string InteriorsStaffId = "interiors_staff";
         public const string PermadeathId = "permadeath";
 
         public static bool CameraEnabled = true;
@@ -466,6 +474,14 @@ namespace RealLifeOverhaul
         public static bool BusinessCustomers = true;
         public static bool BusinessAudit = true;
         public static bool BusinessOpportunities = true;
+        public static bool Interiors = true;                // how a business looks counts: the game's interior design score, a decor score from the placed items, wear, the district's standard, and a BizMan tab (off: none of the parts below, and the tab is gone) (Scripts/Interiors)
+        public static bool InteriorsStandard = true;        // each district expects a standard: short of it fewer customers and complaints, over it a few more (off, or with Meaningful Interiors on: nothing) (Scripts/Interiors)
+        public static bool InteriorsDecor = true;           // decor brings up to a few per cent more customers (off, or with Meaningful Ambience on: nothing) (Scripts/Interiors)
+        public static bool InteriorsPrices = true;          // a nicer place lets the district bear a little more of the price, a shabby one less (Scripts/Interiors)
+        public static bool InteriorsBasket = false;         // over the standard a customer may take one more product the shop has in stock; off by default: it adds to the game's own list of the hour's customers (off, or with Meaningful Interiors on: nothing) (Scripts/Interiors)
+        public static bool InteriorsWear = true;            // finishes wear and get dirty, lowering the scores until refreshed; an inspector notices a worn place (off: no wear) (Scripts/Interiors)
+        public static bool InteriorsStanding = true;        // a well kept place lifts its brand's standards and Standing's customers, and makes the news; a shabby one the other way (Scripts/Interiors)
+        public static bool InteriorsStaff = true;           // plants, good light and a rest corner lift staff; a good office helps hiring and a firm's bids (Scripts/Interiors)
         public static bool Permadeath = false;           // what the options page shows; the switch itself is kept per save (Permadeath/PermadeathState.Armed), off unless switched on
 
         private static string _modId;
@@ -717,6 +733,14 @@ namespace RealLifeOverhaul
             BusinessCustomers = Bool(modId, BusinessCustomersId, BusinessCustomers);
             BusinessAudit = Bool(modId, BusinessAuditId, BusinessAudit);
             BusinessOpportunities = Bool(modId, BusinessOpportunitiesId, BusinessOpportunities);
+            Interiors = Bool(modId, InteriorsId, Interiors);
+            InteriorsStandard = Bool(modId, InteriorsStandardId, InteriorsStandard);
+            InteriorsDecor = Bool(modId, InteriorsDecorId, InteriorsDecor);
+            InteriorsPrices = Bool(modId, InteriorsPricesId, InteriorsPrices);
+            InteriorsBasket = Bool(modId, InteriorsBasketId, InteriorsBasket);
+            InteriorsWear = Bool(modId, InteriorsWearId, InteriorsWear);
+            InteriorsStanding = Bool(modId, InteriorsStandingId, InteriorsStanding);
+            InteriorsStaff = Bool(modId, InteriorsStaffId, InteriorsStaff);
         }
 
         /// <summary>

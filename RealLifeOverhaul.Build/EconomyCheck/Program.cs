@@ -127,6 +127,7 @@ internal static partial class Program
         Own();
         FamilyStudy();
         Districts();
+        Interiors();
         BusRide();
         PlayerBank();
         Office();

@@ -456,12 +456,18 @@ namespace RealLifeOverhaul.Tech
         /// </summary>
         public static bool Decide(FirmsFile f, Contract t, Firm bidder, int day)
         {
+            return Decide(f, t, bidder, day, 0);
+        }
+
+        /// <summary>The same, with what the bidder's office adds to the weight of its bid, thousandths (0 to 50: Scripts/Interiors).</summary>
+        public static bool Decide(FirmsFile f, Contract t, Firm bidder, int day, int office)
+        {
             if (t.Bid <= 0 || bidder == null)
             {
                 t.Stage = (int)WorkStage.Lost;
                 return false;
             }
-            long mine = t.Bid * (1500 - bidder.Reputation) / 1000;
+            long mine = t.Bid * (1500 - bidder.Reputation - TalentCatalogue.Clamp(office, 0, 50)) / 1000;
             for (int r = 0; r < t.Rivals; r++)
             {
                 long bid = t.Value * TechRandom.Range(f.Seed, t.Id, 81, r, 850, 1250) / 1000;

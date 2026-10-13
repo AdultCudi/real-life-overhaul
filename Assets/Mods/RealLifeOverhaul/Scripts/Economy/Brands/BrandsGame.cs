@@ -51,6 +51,9 @@ namespace RealLifeOverhaul.Economy.Brands
         /// <summary>How a scandal at a shop spreads, thousandths of its loss (Flare's account reputation). Default: 1000.</summary>
         public static Func<string, int> ScandalScale;
 
+        /// <summary>Points a shop's interior counts more or less in its standards (Scripts/Interiors). Default: nothing.</summary>
+        public static Func<BuildingRegistration, int> Interior;
+
         /// <summary>A scandal has cost a brand: the shop's place, its name, the recognition lost (hundredths) and the scale it was lost at. Default: nobody is told.</summary>
         public static Action<string, string, int, int> ScandalHeard;
 
@@ -64,6 +67,7 @@ namespace RealLifeOverhaul.Economy.Brands
             ClaimOpen = null;
             WithdrawClaim = null;
             ScandalScale = null;
+            Interior = null;
             ScandalHeard = null;
         }
     }
@@ -370,7 +374,7 @@ namespace RealLifeOverhaul.Economy.Brands
             BuildingRegistration reg = shop.Reg;
             int satisfaction = reg.satisfaction != null ? reg.satisfaction.overall : 50;
             int clean = Cleanliness(reg), stock = Stock(reg), skill = Skill(reg);
-            int standards = BrandRules.ShopStandards(satisfaction, clean, stock, skill);
+            int standards = BrandRules.WithInterior(BrandRules.ShopStandards(satisfaction, clean, stock, skill), InteriorOf(reg));
             Yesterday(reg, day, out shop.Customers, out shop.Takings);
             if (shop.File != null)
             {
@@ -407,6 +411,19 @@ namespace RealLifeOverhaul.Economy.Brands
                 shop.Chain.Seen = true;
                 shop.Chain.Standards = standards;
                 shop.Chain.Prices = PriceRatio(reg);
+            }
+        }
+
+        private static int InteriorOf(BuildingRegistration reg)
+        {
+            try
+            {
+                return BrandsBridges.Interior != null ? BrandsBridges.Interior(reg) : 0;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return 0;
             }
         }
 
@@ -1260,7 +1277,7 @@ namespace RealLifeOverhaul.Economy.Brands
             Guarded("the game's schedule events", () => GameEvent.Invoke("ba:gameevent_changedbuildingregistration"));
             Guarded("today's customers and alerts", () =>
             {
-                CustomerEntriesHelper.UpdateCustomerEntriesForPlayerBusiness(reg, TimeHelper.GetDayOfWeek());
+                CustomerDraw.Redraw(reg);   // the game's own redraw (Core/CustomerDraw keeps the hour under way while Meaningful Ambience is on)
                 BusinessHelper.CheckIfTheaterHasNoActors(reg);
                 if (!BusinessHelper.IsMissingEmployeeTaskActive(reg))
                 {

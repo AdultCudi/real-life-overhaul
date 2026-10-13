@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Reflection;
 using BAModAPI;
 
@@ -11,6 +11,8 @@ namespace RealLifeOverhaul
         Route,    // it draws a route and markers on the city map
         Session,  // it shares the city with other players: the clock, the world and the traffic (Core/GoingPublic)
         Business, // it runs a business of a type of its own, with its stock, its takings and its keys (Core/EmpireMotors)
+        Interiors, // it sets each district's minimum interior score and adds products to customers' baskets (Scripts/Interiors)
+        Ambience, // it adds customers for a business's decor each hour (Scripts/Interiors)
         AddOn    // it adds to a mod of the kind above and does nothing this mod has to give way to
     }
 
@@ -61,7 +63,11 @@ namespace RealLifeOverhaul
         public static readonly OtherMod EmpireMustang = new OtherMod("EmpireMustangGT", "EmpireMustangGTMod", "Empire Motors: Mustang GT", OtherModKind.AddOn);
         public static readonly OtherMod EmpireBmw = new OtherMod("empirebmwg82", "EmpireBMWG82Mod", "Empire Motors: BMW G82", OtherModKind.AddOn);
 
-        public static readonly OtherMod[] All = { RpgCamera, VoogleRoute, GoingPublic, GoingPublicExtras, FriendTrade, GoingPublicFrench, EmpireMotors, EmpireMustang, EmpireBmw };
+        public static readonly OtherMod MeaningfulInteriors = new OtherMod("MeaningfulInteriors", "MeaningfulInteriors.MeaningfulInteriorsMod", "Meaningful Interiors", OtherModKind.Interiors);
+        public static readonly OtherMod MeaningfulAmbience = new OtherMod("MeaningfulAmbience", "MeaningfulAmbience.MeaningfulAmbienceMod", "Meaningful Ambience", OtherModKind.Ambience);
+
+        public static readonly OtherMod[] All = { RpgCamera, VoogleRoute, GoingPublic, GoingPublicExtras, FriendTrade, GoingPublicFrench, EmpireMotors, EmpireMustang, EmpireBmw,
+                                                  MeaningfulInteriors, MeaningfulAmbience };
 
         /// <summary>
         /// One walk over the loaded assemblies for every mod of the table not found yet. One line in the log for each
@@ -113,6 +119,10 @@ namespace RealLifeOverhaul
                     return "In one of its sessions this mod passes no time of its own, takes nothing out of a guest's traffic and counts no other player's building as this player's (Core/GoingPublic).";
                 case OtherModKind.Business:
                     return "Its dealerships are businesses of the player's here, with their car sales and costs in the books; the cars of their stock are left to it; its view from the driver's seat is kept off while this mod's camera key is V (Core/EmpireMotors, Camera/EmpireView).";
+                case OtherModKind.Interiors:
+                    return "Each district's minimum and the extra products in customers' baskets are left to it: this mod's district standard (its footfall and complaints) and its basket stay off (Scripts/Interiors).";
+                case OtherModKind.Ambience:
+                    return "The customers decor brings are left to it: this mod's decor footfall stays off, and its redraws of a day's customers keep the hour under way (Scripts/Interiors, Core/CustomerDraw).";
                 default:
                     return "It adds to a mod this one already lives with; nothing more is changed for it.";
             }

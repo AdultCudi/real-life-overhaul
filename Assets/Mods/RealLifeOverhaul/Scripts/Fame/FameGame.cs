@@ -60,12 +60,16 @@ namespace RealLifeOverhaul.Fame
         /// <summary>A bribe of so much came out: a court case is opened. Its number, or 0 with no court. Default: none.</summary>
         public static Func<int, int> Investigate;
 
+        /// <summary>Points a business's interior moves its figure in the customers' reputation, by its place (Scripts/Interiors). Default: nothing.</summary>
+        public static Func<string, int> Interior;
+
         public static void Reset()
         {
             Meet = null;
             Levers = null;
             Lobbied = null;
             Investigate = null;
+            Interior = null;
             Footfall = null;
             Story = null;
             Need = null;
@@ -155,6 +159,14 @@ namespace RealLifeOverhaul.Fame
                     shop.Figures = true;
                     shop.Satisfaction = s.overall;
                     shop.Pricing = s.pricing;
+                    try
+                    {
+                        shop.Interior = FameBridges.Interior != null ? FameBridges.Interior(shop.Place) : 0;
+                    }
+                    catch (Exception)
+                    {
+                        shop.Interior = 0;
+                    }
                 }
                 int count, standing, low;
                 bool strike;

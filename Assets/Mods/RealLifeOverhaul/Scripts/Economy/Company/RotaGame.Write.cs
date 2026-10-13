@@ -334,7 +334,7 @@ namespace RealLifeOverhaul.Economy
             });
             Guarded("today's customers and alerts", () =>
             {
-                CustomerEntriesHelper.UpdateCustomerEntriesForPlayerBusiness(reg, TimeHelper.GetDayOfWeek());
+                CustomerDraw.Redraw(reg);   // the game's own redraw (Core/CustomerDraw keeps the hour under way while Meaningful Ambience is on)
                 BusinessHelper.CheckIfTheaterHasNoActors(reg);
                 if (!BusinessHelper.IsMissingEmployeeTaskActive(reg))
                 {

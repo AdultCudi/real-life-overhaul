@@ -324,7 +324,11 @@ namespace RealLifeOverhaul.Meta
                     .Also("buildings landlord tenant letting rent rental income").Also("economy_estate", "rent tenant landlord letting"),
                 S("bizevents").For("business").Main("business_pressure").Opts("business_frequency", "business_easy").Also("trouble pressure competition"),
                 S("bizkinds").Guide("business").Need("business_pressure").Opts("business_rivals", "business_racket", "business_inspections", "business_staff",
-                    "business_suppliers", "business_customers", "business_audit", "business_opportunities").Also("trouble competition")),
+                    "business_suppliers", "business_customers", "business_audit", "business_opportunities").Also("trouble competition"),
+                S("interiors").For("interiors").Main("interiors").Opts("interiors_prices", "interiors_wear", "interiors_standing", "interiors_staff")
+                    .Also("interior design decor decoration plants paintings lighting wear refresh shabby furniture bizman tab"),
+                S("interiorstd").For("interiors_standard").Need("interiors").Opts("interiors_standard", "interiors_basket").Also("district standard minimum complaints basket products"),
+                S("interiordecor").For("interiors_decor").Need("interiors").Opts("interiors_decor").Also("decor ambience customers footfall")),
 
             G("controls",
                 S("keys").For("keys").Buttons("reallife_keys_reset", "reallife_keys_camera_toggle", "reallife_keys_interact", "reallife_keys_interact_alt",
