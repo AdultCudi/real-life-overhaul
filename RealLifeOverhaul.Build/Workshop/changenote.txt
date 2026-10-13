@@ -1,4 +1,8 @@
-0.7.8
+0.8.0
 
-Changed
-- A bank the regulator closed no longer bars you from banking for good. A year after the closure you may apply for a new licence, on stricter terms: more capital for the next bank and, with Standing on, an integrity as an owner that has recovered. The Your bank app shows the date and what is still missing.
+New
+- Interiors and decor matter. How your business looks now counts. The game's interior design score for walls and floors and a decor score from what you place, sorted by the game's own kinds of item, are worked out each morning. Each district expects its own standard, rising with its wealth: short of it you get fewer customers and complaints, never none; over it a few more, and the district bears a little more of your price. Decor brings a few more customers. Finishes wear and get dirty; refresh them from the new Interior tab in BizMan, which shows every figure and what to add next. A well kept place lifts its brand, your standing and your staff, helps an office's hiring and a firm's bids, and can make the City Ledger. An extra product in customers' baskets can be switched on in the options. With Meaningful Interiors or Meaningful Ambience switched on, the parts they already do stay off.
+
+Fixed
+- A Flare post about a graduation was dropped when the save was read.
+- With Meaningful Ambience on, the customers it had added for the hour were lost whenever this mod redrew a business's day. They now stay.
