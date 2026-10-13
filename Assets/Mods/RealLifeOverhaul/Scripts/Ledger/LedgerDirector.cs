@@ -24,7 +24,8 @@ namespace RealLifeOverhaul.Ledger
     ///   the copy       inside the home, the copy the player has lies by the door, a click away (LedgerHome)
     ///
     /// No subscription and no copy bought: no paper. The page itself is the full menu's (LedgerPage); the phone's City
-    /// Ledger contact is the subscriptions desk (LedgerDesk). Per frame only the kiosk's counter is looked at, and only
+    /// Ledger contact is the subscriptions desk (LedgerDesk). Online, the paper and three other titles are read on the
+    /// phone by subscription over the home's internet (Newsstand: LedgerDirector.Online, NewsstandApp). Per frame only the kiosk's counter is looked at, and only
     /// while the player was near a kiosk at the last second's look.
     /// </summary>
     public sealed partial class LedgerDirector : MonoBehaviour
@@ -170,6 +171,7 @@ namespace RealLifeOverhaul.Ledger
             _kiosks.Slow(home, skipping);
             _home.Slow(AtHome() && LedgerRules.HasCopy(_state));
             _page.Install();
+            OnlineSlow(day, hour, skipping);
         }
 
         // ---------------------------------------------------------------- starting and stopping
@@ -187,6 +189,7 @@ namespace RealLifeOverhaul.Ledger
             _kiosks = new LedgerKiosks(this);
             _home = new LedgerHome(this);
             _page = new LedgerPage(this);
+            OnlineStart(save);
             Logger?.Info("City Ledger: ready; " + (_state.Subscribed ? "delivered to the door, paid until day " + _state.PaidUntil + (_state.Cancelled ? " (cancelled)" : string.Empty) : "no subscription")
                          + "; " + _state.Kiosks.Count + " kiosk(s) near the home; latest edition " + (_state.Edition != null ? "of day " + _state.Edition.Day : "none") + ".");
         }
@@ -198,10 +201,12 @@ namespace RealLifeOverhaul.Ledger
             if (keep && _state != null && Save != null && ReferenceEquals(Save, _save) && Save.modData != null)
             {
                 LedgerStore.Save(Save.modData, _state);
+                OnlineSave(Save.modData);
             }
             _kiosks?.Dispose();
             _home?.Dispose();
             _page?.Remove();
+            OnlineStop();
             _kiosks = null;
             _home = null;
             _page = null;
@@ -220,6 +225,7 @@ namespace RealLifeOverhaul.Ledger
                 _kiosks?.Dispose();
                 _home?.Dispose();
                 _page?.Remove();
+                _stand?.Remove();
             }
             catch (Exception second)
             {
@@ -235,6 +241,7 @@ namespace RealLifeOverhaul.Ledger
                 if (_state != null && Save != null && ReferenceEquals(Save, _save) && Save.modData != null)
                 {
                     LedgerStore.Save(Save.modData, _state);
+                    OnlineSave(Save.modData);
                 }
             }
             catch (Exception e)
@@ -314,8 +321,10 @@ namespace RealLifeOverhaul.Ledger
                 e.Pieces.Sort((a, b) => b.Weight.CompareTo(a.Weight));
                 e.Pieces.RemoveRange(LedgerCatalogue.PiecesMost, e.Pieces.Count - LedgerCatalogue.PiecesMost);
             }
+            KeepEarlier(_state.Edition, day);   // the edition it replaces, to be read again on the phone
             _state.Edition = e;
             _page?.Changed();
+            _stand?.Changed();
             Logger?.Info("City Ledger: the edition of day " + day + (again ? " written again" : string.Empty) + " has " + e.Pieces.Count + " pieces"
                          + (e.HasMarket ? ", the market's close of day " + e.MarketDay + " (" + e.Quotes.Count + " companies)" : ", no market report") + ".");
         }

@@ -27,6 +27,13 @@ namespace RealLifeOverhaul
         ///             came in or ended
         ///   Taken     the bus stops, the help-wanted boards and the bike docks, which a kiosk keeps clear of
         ///   Say       a message from the City Ledger's contact (Social/SocialPhone), whose call is the paper's desk
+        ///   Extra     also tomorrow's street event (announced the day before) and, while the night life is on, the
+        ///             evening's clubs, cinemas and theatres: the Weekend Review's pages
+        ///   Connection  the internet at the player's homes (Utilities: each home's connection, a provider's outage, a
+        ///             cut, one being put in), which Newsstand's editions come over; and the Utilities app opened on
+        ///             its internet page, where one is bought
+        ///   the Planner  a source of its own: the morning each online subscription renews, and a cancelled one's last
+        ///             edition
         /// </summary>
         public static class LedgerLinks
         {
@@ -43,6 +50,9 @@ namespace RealLifeOverhaul
                 LedgerBridges.Taken = Taken;
                 LedgerBridges.Say = SocialPhone.LedgerMessage;
                 SocialPhone.LedgerDesk = LedgerDesk.First;
+                LedgerBridges.Connection = Connection;
+                LedgerBridges.OpenUtilities = () => Utilities.UtilitiesDirector.Instance != null && Utilities.UtilitiesDirector.Instance.OpenInternet();
+                Planner.PlannerDirector.Instance?.AddSource(Renewals);
             }
 
             internal static void Disconnect()
@@ -205,6 +215,8 @@ namespace RealLifeOverhaul
             // ---------------------------------------------------------------- what is on, and the weather's spell
 
             private static readonly string SpellPrefix = "reallife" + "_ledger_spell_";
+            private static readonly string NightPrefix = "reallife" + "_ledger_night_";
+            private const int NightPieces = 3;
 
             private static void Extra(int day, List<LedgerPiece> into)
             {
@@ -220,6 +232,25 @@ namespace RealLifeOverhaul
                             {
                                 into.Add(piece);
                             }
+                        }
+                        PlannedEvent next = EventCalendar.For(day + 1);
+                        if (next.Kind != EventKind.None)
+                        {
+                            LedgerPiece piece = LedgerRules.Piece(EventCalendar.Tomorrow(next.Kind), new[] { "from", next.From.GetFormattedTime(0f, true), "to", next.To.GetFormattedTime(0f, true) });
+                            if (piece != null)
+                            {
+                                into.Add(piece);
+                            }
+                        }
+                    }
+                    if (Settings.Leisure && Settings.NightLife && Settings.CityLife)
+                    {
+                        // the city after dark (Leisure/Night/NightLife: from eight in the evening to three in the morning)
+                        LedgerPiece piece = LedgerRules.Piece(NightPrefix + (1 + day % NightPieces).ToString(CultureInfo.InvariantCulture),
+                            new[] { "from", 20.GetFormattedTime(0f, true), "to", 3.GetFormattedTime(0f, true) });
+                        if (piece != null)
+                        {
+                            into.Add(piece);
                         }
                     }
                     if (Settings.WeatherMatters)
@@ -290,6 +321,88 @@ namespace RealLifeOverhaul
                 {
                     Fault("LedgerLinks.Council", ex);
                     return before;
+                }
+            }
+
+            // ---------------------------------------------------------------- the internet at home (Newsstand)
+
+            // The best connection among the player's homes: a working one, else one down for a few hours, one being put
+            // in, one cut, none. NotKept while the utilities are off: the paper then counts a home as connected.
+            private static NetState Connection(out string home)
+            {
+                home = null;
+                Utilities.UtilitiesDirector d = Utilities.UtilitiesDirector.Instance;
+                Utilities.UtilitiesState state = d != null ? d.State : null;
+                GameInstance save = SaveGameManager.Current;
+                if (!Settings.Utilities || state == null || Utilities.UtilitiesDirector.Failed || save == null)
+                {
+                    return NetState.NotKept;
+                }
+                int hour = save.Day * 24 + save.Hour;
+                NetState best = NetState.NoHome;
+                IReadOnlyList<Utilities.PlaceInfo> places = d.Places;
+                for (int i = 0; i < places.Count; i++)
+                {
+                    Utilities.PlaceInfo place = places[i];
+                    if (place.Kind != Utilities.PlaceKind.Home)
+                    {
+                        continue;
+                    }
+                    Utilities.Account a = state.Find(place.Place, Utilities.Service.Internet);
+                    NetState here = a == null || a.State == Utilities.SupplyState.Closed ? NetState.NoLine
+                        : a.State == Utilities.SupplyState.Pending ? NetState.Installing
+                        : a.State == Utilities.SupplyState.Cut ? NetState.Cut
+                        : a.State != Utilities.SupplyState.Active ? NetState.NoLine
+                        : Utilities.InternetRules.InOutage(a, hour) ? NetState.Outage : NetState.Online;
+                    if (here < best)
+                    {
+                        best = here;
+                        home = place.Name;
+                    }
+                }
+                return best;
+            }
+
+            // ---------------------------------------------------------------- the Planner: Newsstand's renewals
+
+            private static readonly NewsstandRenewals Renewals = new NewsstandRenewals();
+
+            private sealed class NewsstandRenewals : Planner.IPlannerSource
+            {
+                public string Id => "newsstand";
+
+                public bool Available => Settings.SocialNewspaper && Settings.LedgerOnline && LedgerDirector.Instance != null && LedgerDirector.Instance.Online != null
+                                         && SaveGameManager.Current != null;
+
+                public void Collect(int fromDay, int toDay, Planner.PlannerList into)
+                {
+                    LedgerDirector d = LedgerDirector.Instance;
+                    NewsstandState s = d.Online;
+                    for (int i = 0; i < s.Subs.Length; i++)
+                    {
+                        OnlineSub x = s.Subs[i];
+                        if (!x.Subscribed)
+                        {
+                            continue;
+                        }
+                        bool ends = x.Cancelled;
+                        Planner.PlannerEntry e = into.Add(Id, ends ? 2 : 1, i, Planner.PlannerCategory.Money, ends ? x.PaidUntil : x.PaidUntil + 1);
+                        if (e == null || !into.WantText)
+                        {
+                            continue;
+                        }
+                        string title = LedgerText.T(NewsstandCatalogue.NameKeys[i]), price = LedgerText.Money(d.OnlinePrice(i));
+                        if (ends)
+                        {
+                            e.Title = LedgerText.Fill("reallife_ledger_online_plan_ends_title", "title", title);
+                            e.What = LedgerText.Fill("reallife_ledger_online_plan_ends_what", "title", title);
+                            continue;
+                        }
+                        e.Title = LedgerText.Fill("reallife_ledger_online_plan_renews_title", "title", title);
+                        e.What = LedgerText.Fill("reallife_ledger_online_plan_renews_what", "title", title, "price", price);
+                        e.Money = Planner.PlannerText.T("reallife_planner_costs", "amount", price);
+                        e.IfMissed = LedgerText.T("reallife_ledger_online_plan_renews_missed");
+                    }
                 }
             }
 

@@ -32,11 +32,11 @@ namespace RealLifeOverhaul.Ledger
     public sealed partial class LedgerPage
     {
         public const string AppId = "RealLifeLedger";
-        public const int FromHome = 0, FromKiosk = 1, FromTest = 2;
+        public const int FromHome = 0, FromKiosk = 1, FromTest = 2, FromPhone = 3;
         private const int Front = 0, Markets = 1, Prices = 2, Pages = 3;
 
         private static readonly string[] TabKeys = { "reallife_ledger_tab_front", "reallife_ledger_tab_markets", "reallife_ledger_tab_prices" };
-        private static readonly string[] FromKeys = { "reallife_ledger_header_home", "reallife_ledger_header_kiosk", "reallife_ledger_header_test" };
+        private static readonly string[] FromKeys = { "reallife_ledger_header_home", "reallife_ledger_header_kiosk", "reallife_ledger_header_test", "reallife_ledger_header_phone" };
 
         // The paper's inks: newsprint, black ink, the rules' black and the chart's faint rules. Moves are printed in ink
         // with a mark (up or down), as a paper prints them.

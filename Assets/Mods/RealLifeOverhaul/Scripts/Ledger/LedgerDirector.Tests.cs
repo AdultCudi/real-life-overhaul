@@ -52,6 +52,46 @@ namespace RealLifeOverhaul.Ledger
             Logger?.Info(Test + " test: the edition of day " + _state.Edition.Day + " is at the door of " + HomeName + " (" + _state.Edition.Pieces.Count + " pieces).");
         }
 
+        /// <summary>
+        /// Test button: today's edition of every Newsstand title comes to the phone now, whatever the subscriptions and the
+        /// connection (nothing is charged), and the app opens on the City Ledger. If there is no edition yet, one is put
+        /// together now.
+        /// </summary>
+        public void TestOnline()
+        {
+            const string Test = "Newsstand's editions";
+            if (!Ready(Test))
+            {
+                return;
+            }
+            if (!Settings.LedgerOnline || _online == null)
+            {
+                TestRefusals.Tell(Logger, Test, TestRefusal.FeatureOff);
+                return;
+            }
+            GameInstance save = Save;
+            if (_state.Edition == null || _state.Edition.Day != save.Day)
+            {
+                Print(save.Day, Mathf.Max(save.Hour, LedgerCatalogue.DeliveryHour + 1), false);
+            }
+            for (int t = 0; t < NewsstandCatalogue.Titles; t++)
+            {
+                if (!NewsstandRules.Has(_online, t, save.Day))
+                {
+                    _online.Loaded[t].Add(save.Day);
+                }
+            }
+            _stand?.Install();
+            if (_stand == null)
+            {
+                TestRefusals.TellKey(Logger, Test, "reallife_ledger_test_no_page", "the app is not on the phone yet");
+                return;
+            }
+            _stand.Open(NewsstandCatalogue.Ledger);
+            Logger?.Info(Test + " test: today's editions of the " + NewsstandCatalogue.Titles + " titles are on the phone (day " + save.Day + ", " + _state.Edition.Pieces.Count
+                         + " pieces); Newsstand is open on the City Ledger.");
+        }
+
         /// <summary>Test button: a newspaper kiosk on the nearest stretch of shopfront round the player (not kept in the save).</summary>
         public void TestKiosk()
         {

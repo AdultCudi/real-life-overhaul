@@ -1026,7 +1026,7 @@ namespace RealLifeOverhaul.Ledger
         }
 
         // A kicker as the page prints it, in small capitals: "COURT" becomes "Court".
-        private static string Sentence(string kicker)
+        internal static string Sentence(string kicker)
         {
             if (string.IsNullOrEmpty(kicker))
             {
@@ -1036,7 +1036,7 @@ namespace RealLifeOverhaul.Ledger
             return char.ToUpper(lower[0], CultureInfo.CurrentCulture) + lower.Substring(1);
         }
 
-        private static string BylineKey(LedgerSection section)
+        internal static string BylineKey(LedgerSection section)
         {
             switch (section)
             {
@@ -1082,14 +1082,14 @@ namespace RealLifeOverhaul.Ledger
         // ---------------------------------------------------------------- the words
 
         // A piece's words without its kicker or headline: what a box that has its own name prints.
-        private static string Body(LedgerPiece p)
+        internal static string Body(LedgerPiece p)
         {
             LedgerText.Words(p, out _, out string headline, out string body);
             return headline != null && p.Head == null ? headline + ". " + body : body;
         }
 
         // A lead without a headline of its own: its first sentence is the headline.
-        private static void FirstSentence(ref string body, out string headline)
+        internal static void FirstSentence(ref string body, out string headline)
         {
             body = body ?? string.Empty;
             int stop = body.IndexOf(". ", System.StringComparison.Ordinal);
@@ -1112,7 +1112,7 @@ namespace RealLifeOverhaul.Ledger
                 : LedgerText.Fill("reallife_ledger_dateline", "weekday", Weekday(e.Day), "day", e.Day.ToString(CultureInfo.CurrentCulture));
         }
 
-        private static string Weekday(int day)
+        internal static string Weekday(int day)
         {
             return TimeHelper.GetDayOfWeek(Mathf.Max(1, day)).GetLocalization();
         }
@@ -1123,7 +1123,7 @@ namespace RealLifeOverhaul.Ledger
             return (Mathf.Max(1, day) - 1) / perYear + 1;
         }
 
-        private static string Level(int hundredths)
+        internal static string Level(int hundredths)
         {
             return (hundredths / 100.0).ToString("N2", CultureInfo.CurrentCulture);
         }
@@ -1134,7 +1134,7 @@ namespace RealLifeOverhaul.Ledger
             return "<i angle=12>" + Plain(words) + "</i>";
         }
 
-        private static string Marks(int flags)
+        internal static string Marks(int flags)
         {
             if (flags == 0)
             {
@@ -1146,7 +1146,7 @@ namespace RealLifeOverhaul.Ledger
         }
 
         // Words that came from a name in the game (a shop the player named) printed as they are, never read as mark-up.
-        private static string Plain(string words)
+        internal static string Plain(string words)
         {
             if (string.IsNullOrEmpty(words))
             {
