@@ -234,6 +234,7 @@ namespace RealLifeOverhaul.Family
                 Logger?.Error(e);
                 Logger?.Warn("Family: the saved family state could not be read and starts afresh.");
                 S = new FamilySave();
+                SaveLines.Unreadable(SaveGameManager.Current != null ? SaveGameManager.Current.modData : null, Key, "it could not be read");   // (and the line is kept as it is: Core/SaveLines)
             }
             // Whatever an older or a hand-edited save left out.
             if (S.Wedding == null) S.Wedding = new WeddingPlan();

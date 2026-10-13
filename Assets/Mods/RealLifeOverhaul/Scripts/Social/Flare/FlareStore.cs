@@ -68,6 +68,16 @@ namespace RealLifeOverhaul.Flare
             }
             data.TryGetValue(PostsKey, out posts);
             FlareFile f = Read(account, posts);
+            if (f == null)
+            {
+                // An account that cannot be read (damaged, or of a later version) is kept as it is, with its posts and cast (Core/SaveLines).
+                SaveLines.Unreadable(data, AccountKey, "it could not be read");
+                if (SaveLines.IsKept(data, AccountKey))
+                {
+                    SaveLines.Unreadable(data, PostsKey, "its account could not be read");
+                    SaveLines.Unreadable(data, CastKey, "its account could not be read");
+                }
+            }
             string cast;
             if (f != null && data.TryGetValue(CastKey, out cast))
             {

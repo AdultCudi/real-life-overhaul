@@ -67,6 +67,25 @@ namespace RealLifeOverhaul
             Told?.Invoke(key, why);
         }
 
+        /// <summary>
+        /// What a store read from its line, checked: nothing read from a line that is there (it could not be read), or a
+        /// line of a later version than the store knows (what it holds of that version would be lost), keeps the line as
+        /// it is. Returns what was read, so that a store can say <c>return SaveLines.Checked(data, Key, Read(text, out
+        /// version), version, Version);</c>.
+        /// </summary>
+        public static T Checked<T>(Dictionary<string, string> data, string key, T read, int version, int known) where T : class
+        {
+            if (read == null)
+            {
+                Unreadable(data, key, "it could not be read");
+            }
+            else if (version > known)
+            {
+                Unreadable(data, key, "it was written by a later version of the mod (line version " + version + ", this one knows " + known + ")");
+            }
+            return read;
+        }
+
         /// <summary>True when this save's line under the key is being kept as it was read.</summary>
         public static bool IsKept(Dictionary<string, string> data, string key)
         {

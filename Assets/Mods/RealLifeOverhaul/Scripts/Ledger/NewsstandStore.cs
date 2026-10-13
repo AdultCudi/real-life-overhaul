@@ -65,7 +65,23 @@ namespace RealLifeOverhaul.Ledger
         public static NewsstandState Load(Dictionary<string, string> data)
         {
             string text;
-            return data != null && data.TryGetValue(Key, out text) ? Read(text) : new NewsstandState();
+            if (data == null || !data.TryGetValue(Key, out text))
+            {
+                return new NewsstandState();
+            }
+            if (!string.IsNullOrEmpty(text) && !HeadOk(text, 3))
+            {
+                SaveLines.Unreadable(data, Key, "it could not be read");   // (damaged, or of a later version: kept as it is, Core/SaveLines)
+            }
+            return Read(text);
+        }
+
+        // The line's first row is this version's (what Read needs before it reads anything).
+        private static bool HeadOk(string text, int fields)
+        {
+            int end = text.IndexOf('\n');
+            string[] head = (end >= 0 ? text.Substring(0, end) : text).TrimEnd('\r').Split('|');
+            return head.Length >= fields && head[0] == Version;
         }
 
         public static NewsstandState Read(string text)

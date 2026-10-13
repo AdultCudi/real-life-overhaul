@@ -491,6 +491,7 @@ namespace RealLifeOverhaul
                 catch (Exception)
                 {
                     Clear();   // a damaged line: no history, and the load goes on
+                    SaveLines.Unreadable(data, Key, "it could not be read");   // (and the line is kept as it is: Core/SaveLines)
                 }
             }
         }

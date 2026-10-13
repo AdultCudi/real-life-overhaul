@@ -52,7 +52,7 @@ namespace RealLifeOverhaul.Economy
             }
             try
             {
-                CreditFile file = Read(text, out version);
+                CreditFile file = SaveLines.Checked(data, Key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
                 if (file == null)
                 {
                     return null;
@@ -63,7 +63,8 @@ namespace RealLifeOverhaul.Economy
             }
             catch (Exception)
             {
-                return null;   // a damaged line: the file is opened afresh from what the save shows
+                SaveLines.Unreadable(data, Key, "it could not be read");
+                return null;   // a damaged line: the file is opened afresh from what the save shows (and the line is kept as it is)
             }
         }
 

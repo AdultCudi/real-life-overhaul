@@ -363,6 +363,7 @@ namespace RealLifeOverhaul.Meta
 
         private static void RemoveData(GameInstance save, Removed removed)
         {
+            SaveLines.Forget();   // the player takes the mod's data out: the lines kept as they were read go too (Core/SaveLines)
             if (save.modData == null)
             {
                 return;

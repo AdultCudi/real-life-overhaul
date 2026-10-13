@@ -399,6 +399,7 @@ namespace RealLifeOverhaul
                 catch (Exception)
                 {
                     Clear();   // a damaged line costs the open issues, never the load
+                    SaveLines.Unreadable(data, Key, "it could not be read");   // (and the line is kept as it is: Core/SaveLines)
                 }
             }
             if (Racket == RacketStage.Demand && IssueOf(BusinessCatalogue.Racket) == null)

@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Utilities
             {
                 return null;
             }
-            return Read(text, out version);
+            return SaveLines.Checked(data, Key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
         }
 
         public static string Write(UtilitiesState s)

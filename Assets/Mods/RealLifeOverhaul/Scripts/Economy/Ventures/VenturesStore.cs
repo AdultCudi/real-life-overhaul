@@ -44,7 +44,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             try
             {
-                VenturesFile file = Read(text, out version);
+                VenturesFile file = SaveLines.Checked(data, Key, Read(text, out version), version, Version);   // (a line that cannot be read is kept as it is: Core/SaveLines)
                 if (file != null)
                 {
                     Upgrade(file, version);
@@ -53,6 +53,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             catch (Exception)
             {
+                SaveLines.Unreadable(data, Key, "it could not be read");
                 return null;
             }
         }

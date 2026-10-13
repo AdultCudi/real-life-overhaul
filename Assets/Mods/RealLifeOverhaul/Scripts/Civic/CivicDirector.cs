@@ -879,21 +879,31 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- the save
 
+        // A line that is there and could not be read is kept as it is for a version that can (Core/SaveLines).
+        private static bool Readable(Dictionary<string, string> data, string key, bool read)
+        {
+            if (!read)
+            {
+                SaveLines.Unreadable(data, key, "it could not be read");
+            }
+            return read;
+        }
+
         private void Load(int day, int hour)
         {
             Dictionary<string, string> data = SaveGameManager.Current.modData;
             long now = (long)day * 24 + hour;
-            if (data == null || !data.TryGetValue(KeyGov, out string gov) || string.IsNullOrEmpty(gov) || !Government.State.Read(gov) || Government.State.Seed == 0)
+            if (data == null || !data.TryGetValue(KeyGov, out string gov) || string.IsNullOrEmpty(gov) || !Readable(data, KeyGov, Government.State.Read(gov)) || Government.State.Seed == 0)
             {
                 Government.NewSave(day, now);
                 Logger?.Info("Civic: a new city government for this save; the first election is on day " + Government.State.ElectionDay + ".");
             }
-            if (data == null || !data.TryGetValue(KeyWorks, out string works) || string.IsNullOrEmpty(works) || !Works.State.Read(works))
+            if (data == null || !data.TryGetValue(KeyWorks, out string works) || string.IsNullOrEmpty(works) || !Readable(data, KeyWorks, Works.State.Read(works)))
             {
                 Works.State.Sites.Clear();
                 Works.State.LastHour = now;
             }
-            if (data == null || !data.TryGetValue(KeyOffice, out string office) || string.IsNullOrEmpty(office) || !Office.State.Read(office))
+            if (data == null || !data.TryGetValue(KeyOffice, out string office) || string.IsNullOrEmpty(office) || !Readable(data, KeyOffice, Office.State.Read(office)))
             {
                 Office.State.Reset();
             }
