@@ -347,9 +347,9 @@ namespace RealLifeOverhaul
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 VehicleInstance instance = all[i];
-                if (instance == null || instance is DeliveryVehicleInstance || EmpireMotors.Stock(instance))
+                if (instance == null || instance is DeliveryVehicleInstance || Dealerships.Stock(instance))
                 {
-                    continue;   // the game's job van is not theirs, nor is a car of an Empire Motors dealership's stock to drive (Core/EmpireMotors)
+                    continue;   // the game's job van is not theirs, nor is a car of a dealership's stock to drive (Core/Dealerships)
                 }
                 VehicleType type = SafeType(instance.vehicleTypeName);
                 if (type == null || !type.IsMotorVehicle || type.spawnInPlayerObject)

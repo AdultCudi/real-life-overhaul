@@ -18,7 +18,7 @@ using UnityEngine;
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>What stands in the way of a sale completing now.</summary>
-    public enum SaleBlock { None, NotABusiness, Inside, Vehicle, Gift, Busy, Stock }
+    public enum SaleBlock { None, NotABusiness, Inside, Vehicle, Gift, Busy, Stock, Lot }
 
     /// <summary>What became of the building after a sale.</summary>
     public enum SaleAfter { ToRent, Rival, Owned }
@@ -144,10 +144,16 @@ namespace RealLifeOverhaul.Economy
             }
             // An Empire Motors dealership's cars are its stock, which only that mod can sell or take back: a sale would leave
             // them and its records of them behind (Core/EmpireMotors). Its only dealership's stock is its own wherever it stands.
-            bool dealership = EmpireMotors.IsDealership(reg), only = dealership && EmpireMotors.DealershipCount() == 1;
+            // One of this mod's own dealerships: its cars are its stock too, sold or sent to the trade from the Dealership app first
+            // (Economy/Dealer): they cannot go with a sale.
+            bool dealership = EmpireMotors.IsDealership(reg), only = dealership && EmpireMotors.DealershipCount() == 1, own = Dealership.DealerType.Is(reg);
             List<VehicleInstance> vehicles = Save.VehicleInstances;
             for (int i = 0; vehicles != null && i < vehicles.Count; i++)
             {
+                if (own && vehicles[i] != null && vehicles[i].Address == address && Dealerships.Own(vehicles[i]))
+                {
+                    return SaleBlock.Lot;
+                }
                 if (vehicles[i] != null && (vehicles[i].Address == address || only) && dealership && EmpireMotors.Stock(vehicles[i]))
                 {
                     return SaleBlock.Stock;

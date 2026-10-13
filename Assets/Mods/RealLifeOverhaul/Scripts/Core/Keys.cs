@@ -309,6 +309,7 @@ namespace RealLifeOverhaul
             {
                 ShowRow((KeyAction)i, false);
             }
+            EmpireView.KeysChanged();   // the camera key moved off V: Empire Motors' view on V is switched on again (Camera/EmpireView)
         }
 
         private static string KeyName(KeyCode key)
