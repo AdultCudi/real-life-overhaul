@@ -24,7 +24,7 @@ namespace RealLifeOverhaul
     {
         private const string MopItem = "ba:itemname_mop";   // the item the game's cleaning station hands over
 
-        private static readonly MethodInfo Click = typeof(MopController).GetMethod("OnFloorCellClick", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly MethodInfo Click = GameContract.MopClick.Method;   // (resolved once: Core/GameContract)
 
         private readonly IModLogger _logger;
         private UnityAction<DirtSpotObject> _onCell;

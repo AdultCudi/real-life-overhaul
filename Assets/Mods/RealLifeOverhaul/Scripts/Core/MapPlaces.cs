@@ -105,7 +105,6 @@ namespace RealLifeOverhaul
         private const string Neighbourhoods = "common_neighborhoods";   // the game's own category of districts: a choice's line stands before it
         private const string Pref = "rlo_map_";
         private const float MarkerHeight = 4.5f;
-        private const BindingFlags Hidden = BindingFlags.NonPublic | BindingFlags.Instance;
 
         public static IModLogger Logger;
 
@@ -575,9 +574,9 @@ namespace RealLifeOverhaul
         {
             try
             {
-                Type type = typeof(CityMapFilters);
-                FieldInfo togglesField = type.GetField("_filterToggles", Hidden);
-                FieldInfo entriesField = type.GetField("_filterEntries", Hidden);
+                // The filters' private fields and methods, resolved once (Core/GameContract): null when a game update took one away.
+                FieldInfo togglesField = GameContract.FilterToggles.Field;
+                FieldInfo entriesField = GameContract.FilterEntries.Field;
                 var toggles = togglesField != null ? togglesField.GetValue(filters) as Dictionary<string, Toggle> : null;
                 var entries = entriesField != null ? entriesField.GetValue(filters) as Dictionary<string, CityMapFilter> : null;
                 if (toggles == null || entries == null)
@@ -589,7 +588,7 @@ namespace RealLifeOverhaul
                 {
                     return;   // the game has not built its list yet: looked at again in a second
                 }
-                MethodInfo create = type.GetMethod("CreateFilter", Hidden);
+                MethodInfo create = GameContract.FilterCreate.Method;
                 ParameterInfo[] parameters = create != null ? create.GetParameters() : null;
                 if (parameters == null || parameters.Length != 7 || parameters[0].ParameterType != typeof(string) || parameters[1].ParameterType != typeof(Sprite)
                     || parameters[2].ParameterType != typeof(CityMapFilterData) || parameters[3].ParameterType != typeof(CityMapFilterCategory)
@@ -602,7 +601,7 @@ namespace RealLifeOverhaul
                 bool own = under == null;
                 if (own)
                 {
-                    MethodInfo line = type.GetMethod("CreateLine", Hidden);
+                    MethodInfo line = GameContract.FilterCreateLine.Method;
                     under = line != null ? line.Invoke(filters, new object[] { OwnCategory }) as CityMapFilterCategory : null;
                 }
                 if (under == null)
@@ -651,7 +650,7 @@ namespace RealLifeOverhaul
                     // The two switches that tick rows without telling them: the category's own, and "toggle all" at the top.
                     under.ToggleAll.onValueChanged.RemoveListener(Swept);
                     under.ToggleAll.onValueChanged.AddListener(Swept);
-                    var all = type.GetField("_toggleAll", Hidden)?.GetValue(filters) as Toggle;
+                    var all = GameContract.FilterToggleAll.Field?.GetValue(filters) as Toggle;
                     if (all != null)
                     {
                         all.onValueChanged.RemoveListener(SweptAll);
@@ -680,11 +679,10 @@ namespace RealLifeOverhaul
             }
             try
             {
-                Type type = typeof(CityMapFilters);
-                var toggles = type.GetField("_filterToggles", Hidden)?.GetValue(filters) as Dictionary<string, Toggle>;
-                var entries = type.GetField("_filterEntries", Hidden)?.GetValue(filters) as Dictionary<string, CityMapFilter>;
-                MethodInfo create = type.GetMethod("CreateFilter", Hidden);
-                MethodInfo makeLine = type.GetMethod("CreateLine", Hidden);
+                var toggles = GameContract.FilterToggles.Field?.GetValue(filters) as Dictionary<string, Toggle>;   // (resolved once: Core/GameContract)
+                var entries = GameContract.FilterEntries.Field?.GetValue(filters) as Dictionary<string, CityMapFilter>;
+                MethodInfo create = GameContract.FilterCreate.Method;
+                MethodInfo makeLine = GameContract.FilterCreateLine.Method;
                 ParameterInfo[] parameters = create != null ? create.GetParameters() : null;
                 if (toggles == null || entries == null || makeLine == null || parameters == null || parameters.Length != 7
                     || parameters[3].ParameterType != typeof(CityMapFilterCategory) || !parameters[4].ParameterType.IsValueType
@@ -926,8 +924,8 @@ namespace RealLifeOverhaul
                     {
                         if (_buttonField == null)
                         {
-                            _buttonField = typeof(PointOfInterest).GetField("button", Hidden);
-                            _blobField = typeof(PointOfInterest).GetField("blobImage", Hidden);
+                            _buttonField = GameContract.PoiButton.Field;   // (resolved once: Core/GameContract)
+                            _blobField = GameContract.PoiBlob.Field;
                         }
                         var dismiss = _buttonField != null ? _buttonField.GetValue(marker) as Button : null;
                         if (dismiss == null)

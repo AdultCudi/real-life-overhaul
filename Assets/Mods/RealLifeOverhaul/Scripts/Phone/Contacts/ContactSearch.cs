@@ -68,8 +68,8 @@ namespace RealLifeOverhaul
                 }
                 UIs uis = InstanceBehavior<UIs>.Instance;
                 ContactsApp app = uis != null && uis.fullMenu != null ? uis.fullMenu.contactsApp : null;
-                Button mark = app != null ? Field<Button>(app, typeof(ContactsApp), "markAllAsReadButton") : null;
-                TMP_InputField template = uis != null && uis.textInputUi != null ? Field<TMP_InputField>(uis.textInputUi, typeof(TextInputUI), "inputField") : null;
+                Button mark = app != null ? Field<Button>(app, GameContract.ContactsMarkAll) : null;
+                TMP_InputField template = uis != null && uis.textInputUi != null ? Field<TMP_InputField>(uis.textInputUi, GameContract.TextInputField) : null;
                 if (app == null || mark == null || template == null || mark.transform.parent == null)
                 {
                     UiClone.Fallback("the Contacts app or the game's text field is not built as expected, so the contacts have no search box");
@@ -100,9 +100,10 @@ namespace RealLifeOverhaul
             }
         }
 
-        private static T Field<T>(object owner, Type type, string name) where T : class
+        // A private field of the game's, through its line of the game contract (resolved once: Core/GameContract).
+        private static T Field<T>(object owner, GameMember member) where T : class
         {
-            FieldInfo field = type.GetField(name, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            FieldInfo field = member.Field;
             return field != null ? field.GetValue(owner) as T : null;
         }
 

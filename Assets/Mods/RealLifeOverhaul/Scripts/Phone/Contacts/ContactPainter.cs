@@ -419,8 +419,8 @@ namespace RealLifeOverhaul
                 return;
             }
             _reflected = true;
-            _generator = typeof(PortraitGenerator).GetField("_instance", BindingFlags.NonPublic | BindingFlags.Static);
-            _setter = typeof(PortraitGenerator).GetField("portraitAppearanceSetter", BindingFlags.NonPublic | BindingFlags.Instance);
+            _generator = GameContract.PortraitInstance.Field;   // (resolved once: Core/GameContract)
+            _setter = GameContract.PortraitCharacter.Field;
             if (_setter != null && _setter.FieldType != typeof(AppearanceSetter))
             {
                 _setter = null;

@@ -302,8 +302,8 @@ namespace RealLifeOverhaul
             }
 
             // The preview's lights sit under an object the game switches on and off with the screen.
-            var setUp = CharacterTools.ReadField<GameObject>(preview, "setUp");
-            var camera = CharacterTools.ReadField<Camera>(preview, "previewCamera");
+            var setUp = CharacterTools.ReadField<GameObject>(preview, GameContract.PreviewSetUp);   // (resolved once: Core/GameContract)
+            var camera = CharacterTools.ReadField<Camera>(preview, GameContract.PreviewCamera);
             Transform parent = setUp != null ? setUp.transform : null;
             Light[] lights = setUp != null ? setUp.GetComponentsInChildren<Light>(true) : Array.Empty<Light>();
             if (parent == null || lights.Length == 0)

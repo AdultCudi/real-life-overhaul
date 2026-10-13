@@ -17,12 +17,11 @@ namespace RealLifeOverhaul
     /// </summary>
     internal static class PerfGame
     {
-        private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
 
-        private static readonly FieldInfo LampLights = typeof(StreetLamp).GetField("lights", Hidden);
-        private static readonly FieldInfo LampData = typeof(StreetLamp).GetField("additionalLightDatas", Hidden);
-        private static readonly FieldInfo LampGlow = typeof(StreetLamp).GetField("volumetricLightObject", Hidden);
-        private static readonly FieldInfo LampIsOn = typeof(StreetLamp).GetField("_isOn", Hidden);
+        private static readonly FieldInfo LampLights = GameContract.LampLights.Field;   // (the game's private fields, resolved once: Core/GameContract)
+        private static readonly FieldInfo LampData = GameContract.LampData.Field;
+        private static readonly FieldInfo LampGlow = GameContract.LampGlow.Field;
+        private static readonly FieldInfo LampIsOn = GameContract.LampIsOn.Field;
 
         /// <summary>False if this version of the game keeps a street lamp's lights somewhere else.</summary>
         public static bool KnowsLamps => LampLights != null && LampData != null && LampGlow != null && LampIsOn != null;

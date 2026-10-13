@@ -86,8 +86,7 @@ namespace RealLifeOverhaul
         private const float LookBehindHoldTime = 0.2f;   // a shorter right click stays the game's own right-click action
 
         // The game flags a right-button drag here to stop the release from also firing a right-click action.
-        private static readonly FieldInfo RightButtonHeldField =
-            typeof(MouseController).GetField("RightButtonHeld", BindingFlags.NonPublic | BindingFlags.Static);
+        private static readonly FieldInfo RightButtonHeldField = GameContract.RightButtonHeld.Field;   // (resolved once: Core/GameContract)
 
         private float _rightHeldFor;
 

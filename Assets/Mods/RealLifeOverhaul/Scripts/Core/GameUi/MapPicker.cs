@@ -37,7 +37,6 @@ namespace RealLifeOverhaul.GameUi
     {
         public static IModLogger Logger;
 
-        private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
         private const float MarkerUp = 4.5f;   // metres over the place, as the mod's other markers stand (MapPlaces)
         private static readonly string[] Harmless = { "ButtonEffects", "ScrollBarDraggingComponent", "ScrollBarHandleSizeLimiter" };
         private static FieldInfo _blobField, _plateButtonField;
@@ -437,8 +436,8 @@ namespace RealLifeOverhaul.GameUi
             {
                 if (_blobField == null)
                 {
-                    _blobField = typeof(PointOfInterest).GetField("blobImage", Hidden);
-                    _plateButtonField = typeof(PointOfInterest).GetField("button", Hidden);
+                    _blobField = GameContract.PoiBlob.Field;   // (the game's private fields, resolved once: Core/GameContract)
+                    _plateButtonField = GameContract.PoiButton.Field;
                 }
                 var dismiss = _plateButtonField != null ? _plateButtonField.GetValue(mark.Poi) as Button : null;
                 if (dismiss != null)

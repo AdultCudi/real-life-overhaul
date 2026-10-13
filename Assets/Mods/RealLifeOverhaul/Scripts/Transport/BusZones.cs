@@ -113,11 +113,12 @@ namespace RealLifeOverhaul
             public float PerLocal;     // metres along the stop's lane for each unit along the box's own length
         }
 
-        private static readonly FieldInfo OverrideField = Field("spotCountOverride");
-        private static readonly FieldInfo SideField = Field("sideBySideParkingSpots");
-        private static readonly FieldInfo CurvedField = Field("curvedLane");
-        private static readonly FieldInfo SpecificField = Field("specificVehicles");
-        private static readonly FieldInfo SpotField = Field("parkingSpotDistance");
+        // A parking lane's private settings, resolved once (Core/GameContract): null when a game update took one away.
+        private static readonly FieldInfo OverrideField = GameContract.LaneSpotCount.Field;
+        private static readonly FieldInfo SideField = GameContract.LaneSideBySide.Field;
+        private static readonly FieldInfo CurvedField = GameContract.LaneCurved.Field;
+        private static readonly FieldInfo SpecificField = GameContract.LaneVehicles.Field;
+        private static readonly FieldInfo SpotField = GameContract.LaneSpotDistance.Field;
 
         private static readonly Dictionary<ParkingLaneGenerator, Original> Originals = new Dictionary<ParkingLaneGenerator, Original>(32);
         private static readonly Dictionary<ParkingLaneGenerator, string> Verdicts = new Dictionary<ParkingLaneGenerator, string>(64);
@@ -137,11 +138,6 @@ namespace RealLifeOverhaul
         {
             "TreeController", "NavMeshModifier", "NavMeshObstacle", "HDAdditionalLightData", "CityMapHider", "StepSound", "DirtSpotObject"
         };
-
-        private static FieldInfo Field(string name)
-        {
-            return typeof(ParkingLaneGenerator).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance);
-        }
 
         private static int ParkingMask
         {

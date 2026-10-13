@@ -753,7 +753,7 @@ namespace RealLifeOverhaul.GameUi
             if (!_pictureLooked)
             {
                 _pictureLooked = true;
-                _pictureField = typeof(AppButton).GetField("icon", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+                _pictureField = GameContract.AppButtonIcon.Field;   // (resolved once: Core/GameContract)
             }
             var script = button.GetComponent<AppButton>();
             if (_pictureField != null && script != null && _pictureField.GetValue(script) is Image own && own != null)

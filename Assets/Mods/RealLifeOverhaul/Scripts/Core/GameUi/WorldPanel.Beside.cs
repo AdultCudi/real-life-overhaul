@@ -43,7 +43,7 @@ namespace RealLifeOverhaul.GameUi
         private const float TestReach = 80f;   // metres: how far away the building for the test may be
 
         // The building box's own rectangle: private in the game, read once per city.
-        private static readonly FieldInfo ResumePanel = typeof(BuildingResume).GetField("panelRectTransform", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+        private static readonly FieldInfo ResumePanel = GameContract.ResumePanel.Field;   // (resolved once: Core/GameContract)
 
         private static readonly Vector3[] Corners = new Vector3[4];
         private static readonly Canvas.WillRenderCanvases WatchCall = Beside;

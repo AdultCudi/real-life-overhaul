@@ -29,12 +29,9 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger;
 
-        private static readonly FieldInfo PermanentField =
-            typeof(PermanentPointsOfInterest).GetField("PermanentPois", BindingFlags.NonPublic | BindingFlags.Static);
-        private static readonly FieldInfo DeadZoneField =
-            typeof(PointOfInterest).GetField("deadZone", BindingFlags.NonPublic | BindingFlags.Instance);
-        private static readonly FieldInfo PointerField =
-            typeof(PointOfInterest).GetField("pointerRectTransform", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static readonly FieldInfo PermanentField = GameContract.PermanentPois.Field;   // (the game's private fields, resolved once: Core/GameContract)
+        private static readonly FieldInfo DeadZoneField = GameContract.PoiDeadZone.Field;
+        private static readonly FieldInfo PointerField = GameContract.PoiPointer.Field;
 
         // What was read from a direction marker's private fields, so that is done once per marker.
         private readonly PointOfInterest[] _known = new PointOfInterest[Remembered];

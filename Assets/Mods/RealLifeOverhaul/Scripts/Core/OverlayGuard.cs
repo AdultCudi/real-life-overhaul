@@ -29,8 +29,8 @@ namespace RealLifeOverhaul
 
         private const int MostSaid = 5;
 
-        private static readonly FieldInfo SimpleField = typeof(OverlayManager).GetField("simpleOverlay", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-        private static readonly FieldInfo DetailedField = typeof(OverlayManager).GetField("detailedOverlay", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+        private static readonly FieldInfo SimpleField = GameContract.OverlaySimple.Field;   // (the game's private fields, resolved once: Core/GameContract)
+        private static readonly FieldInfo DetailedField = GameContract.OverlayDetailed.Field;
 
         private static OverlayManager _manager;
         private static SimpleOverlay _simple;

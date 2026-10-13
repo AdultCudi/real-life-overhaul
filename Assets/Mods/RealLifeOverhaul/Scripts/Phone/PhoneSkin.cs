@@ -29,7 +29,6 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger;
 
-        private static readonly BindingFlags Private = BindingFlags.NonPublic | BindingFlags.Instance;
 
         // Generated once per session and shared by every city load.
         private static Sprite _frameSprite;
@@ -116,10 +115,10 @@ namespace RealLifeOverhaul
             try
             {
                 _frame = uis.smartphoneUI.GetComponent<SmartPhoneFrame>();
-                Type type = typeof(SmartPhoneFrame);
-                var frames = type.GetField("frameData", Private)?.GetValue(_frame) as List<SmartPhoneFrame.FrameData>;
-                var frameImage = type.GetField("frameImage", Private)?.GetValue(_frame) as Image;
-                var maskImage = type.GetField("maskImage", Private)?.GetValue(_frame) as Image;
+                // The frame's private fields, resolved once (Core/GameContract): null when a game update took one away.
+                var frames = _frame != null ? GameContract.FrameData.Field?.GetValue(_frame) as List<SmartPhoneFrame.FrameData> : null;
+                var frameImage = _frame != null ? GameContract.FrameImage.Field?.GetValue(_frame) as Image : null;
+                var maskImage = _frame != null ? GameContract.FrameMask.Field?.GetValue(_frame) as Image : null;
                 if (_frame == null || frames == null || frames.Count == 0 || frameImage == null || maskImage == null)
                 {
                     Logger?.Warn("Phone skin: the game's phone frame was not found; leaving the phone alone.");

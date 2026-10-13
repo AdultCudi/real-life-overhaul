@@ -99,9 +99,9 @@ namespace RealLifeOverhaul.GameUi
                     return null;
                 }
                 string templateUsed;
-                Transform hudTemplate = Template(phone, typeof(SmartphoneUI), phone.transform, typeof(SmartphoneAppButton), out templateUsed);
+                Transform hudTemplate = Template(phone, GameContract.HudAppTemplate, phone.transform, typeof(SmartphoneAppButton), out templateUsed);
                 string menuTemplateUsed;
-                Transform menuTemplate = Template(menu, typeof(FullMenu), menu.transform, typeof(FullMenuAppButton), out menuTemplateUsed);
+                Transform menuTemplate = Template(menu, GameContract.MenuAppTemplate, menu.transform, typeof(FullMenuAppButton), out menuTemplateUsed);
                 if (hudTemplate == null || menuTemplate == null || hudTemplate.parent == null || menuTemplate.parent == null)
                 {
                     UiClone.Fallback("the phone's app button was not found (" + (hudTemplate == null ? "HUD phone" : "full menu") + "), so '" + def.Id + "' is not added");
@@ -198,12 +198,12 @@ namespace RealLifeOverhaul.GameUi
         // The button each phone copies for its apps: its private "appButtonTemplate"; failing that the object of that
         // name; failing that any button of the right kind (a copy of a live button works the same: the click the game
         // adds in code is not copied with it).
-        private static Transform Template(object owner, Type type, Transform under, Type buttonType, out string used)
+        private static Transform Template(object owner, GameMember templateField, Transform under, Type buttonType, out string used)
         {
             used = "appButtonTemplate";
             try
             {
-                FieldInfo field = type.GetField("appButtonTemplate", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+                FieldInfo field = templateField.Field;   // (resolved once: Core/GameContract)
                 var template = field != null ? field.GetValue(owner) as Transform : null;
                 if (template != null && template.GetComponent(buttonType) != null)
                 {

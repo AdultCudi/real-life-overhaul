@@ -607,9 +607,8 @@ namespace RealLifeOverhaul
                 string path = InputPath(key, false);
                 string either = InputPath(key, true);
                 bool read = false;
-                object player = typeof(Helpers.InputHelper).GetField("playerInput", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
-                object vehicle = typeof(NWH.VehiclePhysics2.Input.InputSystemVehicleInputProvider)
-                    .GetField("vehicleInputActions", BindingFlags.Public | BindingFlags.Static)?.GetValue(null);
+                object player = GameContract.PlayerInput.Field?.GetValue(null);   // (resolved once: Core/GameContract)
+                object vehicle = GameContract.VehicleInput.Field?.GetValue(null);
                 string found = Bound(player, "Player", path, either, ref read) ?? Bound(vehicle, null, path, either, ref read);
                 if (read)
                 {

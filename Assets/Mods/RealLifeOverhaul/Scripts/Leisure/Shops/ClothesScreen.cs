@@ -38,7 +38,6 @@ namespace RealLifeOverhaul.Leisure
     /// </summary>
     internal static class ClothesScreen
     {
-        private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
         private const string BuyKey = "reallife_clothes_screen_buy";
 
         // The kinds of the game's clothes the shop's screen opens with: everyday wear (its own pieces of the mod's three kinds are put away).
@@ -79,8 +78,8 @@ namespace RealLifeOverhaul.Leisure
             }
             try
             {
-                _tagsField = typeof(CharacterCustomizer).GetField("tags", Hidden);
-                _save = typeof(ChangeCharacterClothesUI).GetField("saveClothesChangesButton", Hidden)?.GetValue(ui) as Button;
+                _tagsField = GameContract.CustomizerTags.Field;   // (the game's private fields, resolved once: Core/GameContract)
+                _save = GameContract.ClothesSaveButton.Field?.GetValue(ui) as Button;
                 if (_tagsField == null || _save == null)
                 {
                     Fail("the clothes screen is not built as this version of the mod expects");

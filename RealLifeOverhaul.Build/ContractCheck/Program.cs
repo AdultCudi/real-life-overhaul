@@ -283,16 +283,18 @@ internal static class Program
 
         // A missing piece switches off the parts on it, and only those; an optional one switches nothing off.
         var problems = new Dictionary<GameMember, string>();
-        ContractBook.Mark(m => m == GameContract.PoiDeadZone ? "the field is missing" : null);
-        Check(GameContract.MarkersBehind.Off && ContractBook.OffParts().Count == 1, "a missing piece switches off its one part and no other");
-        Check(ContractBook.FeaturesHit().SetEquals(new[] { "camera" }), "a missing piece hits only its own feature");
-        Check(GameContract.MarkersBehind.Why == "PointOfInterest.deadZone: the field is missing", "the part says which piece and what is wrong: " + GameContract.MarkersBehind.Why);
+        ContractBook.Mark(m => m == GameContract.RainIntensity ? "the field is missing" : null);
+        Check(GameContract.Thunder.Off && ContractBook.OffParts().Count == 1, "a missing piece switches off its one part and no other");
+        Check(ContractBook.FeaturesHit().SetEquals(new[] { "events" }), "a missing piece hits only its own feature");
+        Check(GameContract.Thunder.Why == "RainHelper.NextRainMaxIntensity: the field is missing", "the part says which piece and what is wrong: " + GameContract.Thunder.Why);
         ContractBook.Mark(m => m == GameContract.PoiBlob ? "the field is missing" : null);
         Check(GameContract.MapPicker.Off && GameContract.MapPlaces.Off && GameContract.NavMarks.Off && ContractBook.OffParts().Count == 3,
             "a piece three parts stand on switches off those three");
         Check(ContractBook.FeaturesHit().SetEquals(new[] { "navigation" }), "...all of the one feature");
-        ContractBook.Mark(m => m == GameContract.HudAppTemplate ? "the field is missing" : null);
-        Check(ContractBook.OffParts().Count == 0 && !GameContract.AppButtons.Off, "an optional piece that is missing switches nothing off");
+        ContractBook.Mark(m => m == GameContract.HudAppTemplate || m == GameContract.PoiDeadZone ? "the field is missing" : null);
+        Check(ContractBook.OffParts().Count == 0 && !GameContract.AppButtons.Off && !GameContract.MarkersBehind.Off, "an optional piece that is missing switches nothing off");
+        ContractBook.Mark(m => m == GameContract.Switchers[5] ? "the type BillboardAd is not in BigAmbitions" : null);
+        Check(GameContract.FarDistricts.Off && ContractBook.OffParts().Count == 1, "one type of a list missing switches off the part that needs the whole list");
         ContractBook.Mark(m => m == GameContract.CtaBehaviours || m == GameContract.LampIsOn ? "the field is missing" : null);
         Check(GameContract.ClickHome.Off && GameContract.ClickLedger.Off && GameContract.ClickBusStop.Off && GameContract.StreetLamps.Off && ContractBook.OffParts().Count == 4,
             "two missing pieces switch off what stands on either");

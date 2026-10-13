@@ -487,7 +487,7 @@ namespace RealLifeOverhaul
             if (!_showSearched)
             {
                 _showSearched = true;
-                _showNearVehicle = typeof(HumanHider).GetMethod("SetIsNearItemToHide", BindingFlags.Instance | BindingFlags.NonPublic);
+                _showNearVehicle = GameContract.NearItemToHide.Method;   // (resolved once: Core/GameContract)
                 if (_showNearVehicle == null)
                 {
                     RagdollSystem.Logger?.Warn("Ragdoll: the game's fade-near-vehicles switch was not found; a body may stay faded while a car is beside it.");

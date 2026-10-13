@@ -252,8 +252,7 @@ namespace RealLifeOverhaul.GameUi
                 else if (OverlayUI.IsVisible)
                 {
                     // The interface went first (the city is unloading): the game's flag must not be left saying a box is up.
-                    MethodInfo set = typeof(OverlayUI).GetProperty("IsVisible", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)?.GetSetMethod(true);
-                    set?.Invoke(null, new object[] { false });
+                    GameContract.OverlayVisible.Setter?.Invoke(null, new object[] { false });   // (its private setter, resolved once: Core/GameContract)
                 }
             }
             catch (Exception e)
@@ -336,7 +335,7 @@ namespace RealLifeOverhaul.GameUi
                 _looked = true;
                 try
                 {
-                    MethodInfo method = typeof(OverlayUI).GetMethod("SetUpHeader", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, Type.EmptyTypes, null);
+                    MethodInfo method = GameContract.OverlayHeader.Method;   // (resolved once: Core/GameContract)
                     _setUpHeader = method != null ? (Action<OverlayUI>)Delegate.CreateDelegate(typeof(Action<OverlayUI>), method, false) : null;
                 }
                 catch (Exception e)

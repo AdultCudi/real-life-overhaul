@@ -73,8 +73,8 @@ namespace RealLifeOverhaul
         private bool _haveSpot;
         private int _freed;             // exits the school has had to finish since the player last got out
 
-        private static readonly FieldInfo TargetsField = typeof(EntityController).GetField("navMeshTargets", BindingFlags.Instance | BindingFlags.NonPublic);
-        private static readonly FieldInfo BlockersField = typeof(PlayerController).GetField("_activeNavigationBlockers", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo TargetsField = GameContract.NavTargets.Field;   // (the game's private fields, resolved once: Core/GameContract)
+        private static readonly FieldInfo BlockersField = GameContract.NavBlockers.Field;
 
         public TestCar(MonoBehaviour host, IModLogger logger)
         {

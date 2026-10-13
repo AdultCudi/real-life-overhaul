@@ -145,7 +145,7 @@ namespace RealLifeOverhaul.Ledger
             }
             try
             {
-                FieldInfo field = typeof(CtaManager).GetField("CtaBehaviors", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public);
+                FieldInfo field = GameContract.CtaBehaviours.Field;   // (resolved once: Core/GameContract)
                 _list = field != null ? field.GetValue(null) as List<ICtaBehavior> : null;
                 if (_list == null)
                 {

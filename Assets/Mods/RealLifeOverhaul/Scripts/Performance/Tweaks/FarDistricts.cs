@@ -30,7 +30,7 @@ namespace RealLifeOverhaul
     /// ViewBlockingEntity.cs line 248) reaches renderers through a list set up in the editor, anywhere in the
     /// scene, so no rule about where a renderer sits can prove the game will not switch it. If the game disabled
     /// a renderer while this held it, giving the square back would wrongly show it. It leaves alone everything on
-    /// or under the components in <see cref="Switchers"/>, which is most of that risk, not all of it.
+    /// or under the components in GameContract.Switchers, which is most of that risk, not all of it.
     ///
     /// WHAT MOVES IS NEVER TAKEN. A square is where a renderer stood when the scenery was looked through. The game
     /// keeps its parked cars in a pool (ParkingSimulator): a car parked in a far street is put away and parked again
@@ -53,33 +53,8 @@ namespace RealLifeOverhaul
         private const float Alarm = 500f;            // a held square this near means the camera jumped: worth a line in the log
         private const float Cooldown = 5f;           // after squares were given back for the map or a picture
 
-        // Game components whose own code enables and disables renderers (by reading the game's code: file and line of one such write each).
-        private static readonly string[] Switchers =
-        {
-            "CityBuildingController",        // CityBuildingController.cs 241, 718
-            "CityHamptonsHouseController",   // CityHamptonsHouseController.cs 86-116
-            "HamptonsHouse",                 // HamptonsHouse.cs 121-252
-            "BuildingSignController", "BuildingLogoSignController",   // through CityBuildingController.cs 718
-            "BillboardAd",                   // BillboardAd.cs 101, 106
-            "DirtSpotObject",                // DirtSpotObject.cs 63, 79
-            "GasStationTrigger",             // GasStationTrigger.cs 39-49
-            "PrivateDriverGarageTrigger",    // PrivateDriverGarageTrigger.cs 68-82
-            "AutoParkSpot",                  // AutoParkSpot.cs 14, 20; VehicleParkingHelper.cs 65-190
-            "FenceDoor",                     // FenceDoor.cs 352, 357
-            "EntityController",              // EntityController.cs 145, 160 (ViewBlockingEntity and its kin derive from it: ViewBlockingEntity.cs 248)
-            "ItemController",                // ItemController.cs 461, 475
-            "BaseHuman",                     // BaseHuman.cs 297; HumanHider.cs 117, 126
-            "CarFeatures", "CarController",  // CarFeatures.cs 114, 130
-            "TaxiDestinationData",           // Buildings/TaxiDestinationData.cs 49
-            "CoatCheckController",           // Controllers/CoatCheckController.cs 143
-            "CarnivalPedestrian",            // CarnivalPedestrian.cs 48; CarnivalPedestrianPool.cs 44
-            "AttractionViewBlockingEntity", "FerrisWheelViewBlockingEntity",   // Controllers/*.cs 49, 38-58
-            "InteriorElement",               // inside houses: switched with them
-            "ParkingBuildingWithDifferentHeightsManager",   // ParkingBuildingWithDifferentHeightsManager.cs (22 writes)
-            "GolfCourse",                    // PlayerActivity/GolfCourse.cs 232-498
-            "SewerSteam",                    // SewerSteam.cs 54, 59
-            "TennisPlayer", "TennisBall", "TennisScoreLine", "WorkoutActivity",
-        };
+        // Game components whose own code enables and disables renderers: the game contract's list (Core/GameContract,
+        // Switchers, with the file and line of one such write each), resolved once when the mod starts.
 
         // Scenes that are not scenery standing in one place.
         // Layers of things the game moves about, pooled or driven: never scenery, whatever scene they stand in.
@@ -139,6 +114,11 @@ namespace RealLifeOverhaul
         {
             if (_byEnabled)
             {
+                if (GameContract.FarDistricts.Off)
+                {
+                    // A component of the list is gone after a game update: without all of them this trial cannot be safe (Core/GameContract).
+                    throw new InvalidOperationException("the game's components that switch renderers have changed: " + GameContract.FarDistricts.Why);
+                }
                 _switcherTypes ??= FindSwitcherTypes();
             }
             // In front of the game's own map handlers: when they run, every renderer is as the game left it.
@@ -154,13 +134,12 @@ namespace RealLifeOverhaul
 
         private static Type[] FindSwitcherTypes()
         {
-            var names = new HashSet<string>(Switchers);
-            var found = new List<Type>(Switchers.Length);
-            foreach (Type type in typeof(GameManager).Assembly.GetTypes())
+            var found = new List<Type>(GameContract.Switchers.Length);
+            foreach (GameMember switcher in GameContract.Switchers)
             {
-                if (names.Contains(type.Name) && typeof(Component).IsAssignableFrom(type))
+                if (switcher.Type != null && typeof(Component).IsAssignableFrom(switcher.Type))
                 {
-                    found.Add(type);
+                    found.Add(switcher.Type);
                 }
             }
             return found.ToArray();

@@ -37,11 +37,30 @@ namespace RealLifeOverhaul
 
         public string NameKey => KeyPrefix + Id;
 
+        private bool _off;
+        private string _why;
+
         /// <summary>True when a piece of the game it needs is missing or has changed: the part does nothing this session.</summary>
-        public bool Off { get; internal set; }
+        public bool Off
+        {
+            get
+            {
+                ContractBook.EnsureResolved();
+                return _off;
+            }
+            internal set => _off = value;
+        }
 
         /// <summary>What was missing or changed, in English, or null while the part is on.</summary>
-        public string Why { get; internal set; }
+        public string Why
+        {
+            get
+            {
+                ContractBook.EnsureResolved();
+                return _why;
+            }
+            internal set => _why = value;
+        }
     }
 
     /// <summary>
@@ -88,19 +107,81 @@ namespace RealLifeOverhaul
             }
         }
 
-        public Type Type { get; private set; }
-        public FieldInfo Field { get; private set; }
-        public PropertyInfo Property { get; private set; }
-        public MethodInfo Method { get; private set; }
+        private Type _type;
+        private FieldInfo _field;
+        private PropertyInfo _property;
+        private MethodInfo _method;
+        private MethodInfo _setter;
+        private bool _ok;
+        private string _problem;
+
+        // Each is resolved before it is first read: a class that reads its piece in a static initialiser before the
+        // mod's start has resolved the contract still gets it (one test of a flag after that).
+        public Type Type
+        {
+            get
+            {
+                ContractBook.EnsureResolved();
+                return _type;
+            }
+        }
+
+        public FieldInfo Field
+        {
+            get
+            {
+                ContractBook.EnsureResolved();
+                return _field;
+            }
+        }
+
+        public PropertyInfo Property
+        {
+            get
+            {
+                ContractBook.EnsureResolved();
+                return _property;
+            }
+        }
+
+        public MethodInfo Method
+        {
+            get
+            {
+                ContractBook.EnsureResolved();
+                return _method;
+            }
+        }
 
         /// <summary>The property's setter, private ones too (for a member made with NeedsSetter).</summary>
-        public MethodInfo Setter { get; private set; }
+        public MethodInfo Setter
+        {
+            get
+            {
+                ContractBook.EnsureResolved();
+                return _setter;
+            }
+        }
 
         /// <summary>True when it was found as expected.</summary>
-        public bool Ok { get; private set; }
+        public bool Ok
+        {
+            get
+            {
+                ContractBook.EnsureResolved();
+                return _ok;
+            }
+        }
 
         /// <summary>Missing, or not what the mod expects, in English; null when <see cref="Ok"/>.</summary>
-        public string Problem { get; private set; }
+        public string Problem
+        {
+            get
+            {
+                ContractBook.EnsureResolved();
+                return _problem;
+            }
+        }
 
         /// <summary>"Type.Member", as the log and the checker name it.</summary>
         public string Label
@@ -115,28 +196,13 @@ namespace RealLifeOverhaul
 
         internal void Set(Type type, MemberInfo info, string problem)
         {
-            Type = type;
-            Field = info as FieldInfo;
-            Property = info as PropertyInfo;
-            Method = info as MethodInfo;
-            Setter = Property != null ? Property.GetSetMethod(true) : null;
-            Problem = problem;
-            Ok = problem == null;
-            if (!Ok)
-            {
-                Field = null;
-                Property = null;
-                Method = null;
-                Setter = null;
-                if (Kind != GameMemberKind.Type)
-                {
-                    Type = type;   // (the type may still be there: only the member is not)
-                }
-                else
-                {
-                    Type = null;
-                }
-            }
+            _problem = problem;
+            _ok = problem == null;
+            _type = _ok || Kind != GameMemberKind.Type ? type : null;   // (for a missing member the type may still be there)
+            _field = _ok ? info as FieldInfo : null;
+            _property = _ok ? info as PropertyInfo : null;
+            _method = _ok ? info as MethodInfo : null;
+            _setter = _property != null ? _property.GetSetMethod(true) : null;
         }
     }
 
@@ -178,6 +244,17 @@ namespace RealLifeOverhaul
         }
 
         public static bool Resolved => _resolved;
+
+        /// <summary>Resolves the contract among the loaded assemblies if nothing has yet (a piece read before the mod's start).</summary>
+        public static void EnsureResolved()
+        {
+            if (!_resolved && !_resolving)
+            {
+                Resolve(FindLoaded);
+            }
+        }
+
+        private static bool _resolving;
 
         internal static void Add(GameMember member)
         {
@@ -245,6 +322,19 @@ namespace RealLifeOverhaul
 
         // Every member's problem (null: there as expected) switches off the parts that stand on it, unless it is optional.
         private static void Apply(Func<GameMember, string> problemOf)
+        {
+            _resolving = true;
+            try
+            {
+                ApplyAll(problemOf);
+            }
+            finally
+            {
+                _resolving = false;
+            }
+        }
+
+        private static void ApplyAll(Func<GameMember, string> problemOf)
         {
             GameContract.Touch();
             foreach (GamePart part in _parts)

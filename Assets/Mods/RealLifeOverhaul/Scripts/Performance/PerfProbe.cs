@@ -314,10 +314,9 @@ namespace RealLifeOverhaul
             {
                 if (_layoutQueue == null)
                 {
-                    const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
                     CanvasUpdateRegistry registry = CanvasUpdateRegistry.instance;
-                    _layoutQueue = typeof(CanvasUpdateRegistry).GetField("m_LayoutRebuildQueue", Hidden)?.GetValue(registry) as IList<ICanvasElement>;
-                    _graphicQueue = typeof(CanvasUpdateRegistry).GetField("m_GraphicRebuildQueue", Hidden)?.GetValue(registry) as IList<ICanvasElement>;
+                    _layoutQueue = GameContract.LayoutQueue.Field?.GetValue(registry) as IList<ICanvasElement>;   // (resolved once: Core/GameContract)
+                    _graphicQueue = GameContract.GraphicQueue.Field?.GetValue(registry) as IList<ICanvasElement>;
                 }
                 if (_layoutQueue == null || _graphicQueue == null)
                 {

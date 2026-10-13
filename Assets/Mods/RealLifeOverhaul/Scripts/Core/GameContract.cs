@@ -39,7 +39,7 @@ namespace RealLifeOverhaul
         public static readonly GamePart MarkersBehind = ContractBook.Part("markers_behind", "camera", "the game's place markers put right when what they mark is behind the camera");
         public static readonly GamePart LookBehind = ContractBook.Part("look_behind", "camera", "looking behind with the right mouse button held");
         public static readonly GamePart CharacterDetail = ContractBook.Part("character_detail", "character", "the detailed character copied for the player's looks");
-        public static readonly GamePart ShopPreview = ContractBook.Part("shop_preview", "character", "the hair and lighting of the clothes shop's preview");
+        public static readonly GamePart ShopPreview = ContractBook.Part("shop_preview", "character", "the lighting of the clothes shop's preview");
         public static readonly GamePart LooksGrid = ContractBook.Part("looks_grid", "character", "the mod's garments in the game's character screens");
         public static readonly GamePart WornPieces = ContractBook.Part("worn_pieces", "character", "the mod's own hair and clothes on the player");
         public static readonly GamePart ClothesShop = ContractBook.Part("clothes_shop", "leisure", "the clothes shops' screen");
@@ -48,9 +48,9 @@ namespace RealLifeOverhaul
         public static readonly GamePart ContactPictures = ContractBook.Part("contact_pictures", "phone", "the pictures of the mod's contacts");
         public static readonly GamePart ContactSearch = ContractBook.Part("contact_search", "phone", "the search box of the Contacts app");
         public static readonly GamePart PhoneSkin = ContractBook.Part("phone_skin", "phone", "the phone's skin");
-        public static readonly GamePart MapPicker = ContractBook.Part("map_picker", "navigation", "choosing a place on the city map");
+        public static readonly GamePart MapPicker = ContractBook.Part("map_picker", "navigation", "clicking the markers when choosing a place on the city map");
         public static readonly GamePart MapPlaces = ContractBook.Part("map_places", "navigation", "the mod's places in the city map's filters");
-        public static readonly GamePart NavMarks = ContractBook.Part("nav_marks", "navigation", "the minimap's markers drawn as the game's");
+        public static readonly GamePart NavMarks = ContractBook.Part("nav_marks", "navigation", "the game's look for the markers on the minimap");
         public static readonly GamePart PanelBeside = ContractBook.Part("panel_beside", null, "the mod's cards beside the game's building card");
         public static readonly GamePart CardFlag = ContractBook.Part("card_flag", null, "the mod's cards over things in the street");
         public static readonly GamePart CardGuard = ContractBook.Part("card_guard", null, "putting away the game's card over a thing that was removed");
@@ -65,24 +65,24 @@ namespace RealLifeOverhaul
         public static readonly GamePart SaveCheck = ContractBook.Part("save_check", "savetools", "the save tools' test of whether the game may save here");
         public static readonly GamePart BenchSitters = ContractBook.Part("bench_sitters", "citylife", "people sitting on the game's benches");
         public static readonly GamePart StreetLamps = ContractBook.Part("street_lamps", "performance", "the savings on street lamps");
-        public static readonly GamePart FarDistricts = ContractBook.Part("far_districts", "performance", "the savings on far districts");
+        public static readonly GamePart FarDistricts = ContractBook.Part("far_districts", "performance", "the far districts trial of the performance benchmark");
         public static readonly GamePart UiProbe = ContractBook.Part("ui_probe", "diagnostics", "the interface part of the performance probe");
         public static readonly GamePart BodyFade = ContractBook.Part("body_fade", "ragdoll", "showing a body the game faded beside a car");
         public static readonly GamePart BusStops = ContractBook.Part("bus_stops", "transport", "bus stops kept clear of parked cars");
 
         // ---------------------------------------------------------------- the pieces
 
-        // Camera/PoiDirection
-        public static readonly GameMember PermanentPois = StaticField(MarkersBehind, Game, "UI.PermanentPointsOfInterest", "PermanentPois", "List<PointOfInterest>");
-        public static readonly GameMember PoiDeadZone = Field(MarkersBehind, Game, "PointOfInterest", "deadZone", "Vector4");
-        public static readonly GameMember PoiPointer = Field(MarkersBehind, Game, "PointOfInterest", "pointerRectTransform", "RectTransform");
+        // Camera/PoiDirection: without them every marker is looked at, and a direction marker uses the whole screen
+        public static readonly GameMember PermanentPois = Optional(StaticField(MarkersBehind, Game, "UI.PermanentPointsOfInterest", "PermanentPois", "List<PointOfInterest>"));
+        public static readonly GameMember PoiDeadZone = Optional(Field(MarkersBehind, Game, "PointOfInterest", "deadZone", "Vector4"));
+        public static readonly GameMember PoiPointer = Optional(Field(MarkersBehind, Game, "PointOfInterest", "pointerRectTransform", "RectTransform"));
 
-        // Camera/ThirdPersonCamera
-        public static readonly GameMember RightButtonHeld = StaticField(LookBehind, Game, "MouseController", "RightButtonHeld", "Boolean");
+        // Camera/ThirdPersonCamera: without it the game's own right click also fires when a look behind ends
+        public static readonly GameMember RightButtonHeld = Optional(StaticField(LookBehind, Game, "MouseController", "RightButtonHeld", "Boolean"));
 
-        // Character/CharacterTools, Phone/Contacts/ContactPainter
-        public static readonly GameMember PortraitInstance = StaticField(On(CharacterDetail, ContactPictures), Game, "Character.Customization.PortraitGenerator", "_instance", "PortraitGenerator");
-        public static readonly GameMember PortraitCharacter = Field(On(CharacterDetail, ContactPictures), Game, "Character.Customization.PortraitGenerator", "portraitAppearanceSetter", "AppearanceSetter");
+        // Character/CharacterTools (one of three places a detailed character is copied from), Phone/Contacts/ContactPainter (the game's public call otherwise)
+        public static readonly GameMember PortraitInstance = Optional(StaticField(On(CharacterDetail, ContactPictures), Game, "Character.Customization.PortraitGenerator", "_instance", "PortraitGenerator"));
+        public static readonly GameMember PortraitCharacter = Optional(Field(On(CharacterDetail, ContactPictures), Game, "Character.Customization.PortraitGenerator", "portraitAppearanceSetter", "AppearanceSetter"));
 
         // Character/CharacterQuality (through CharacterTools.ReadField)
         public static readonly GameMember PreviewSetUp = Field(ShopPreview, Game, "EmployeeUniformPreview", "setUp", "GameObject");
@@ -111,10 +111,11 @@ namespace RealLifeOverhaul
         public static readonly GameMember MenuAppTemplate = Optional(Field(AppButtons, Game, "UI.Smartphone.FullMenu", "appButtonTemplate", "Transform"));
         public static readonly GameMember AppButtonIcon = Optional(Field(AppButtons, Game, "AppButton", "icon", "Image"));
 
-        // Core/GameUi/WorldPanel
-        public static readonly GameMember ResumePanel = Field(PanelBeside, Game, "UI.InGameUI.BuildingResume", "panelRectTransform", "RectTransform");
-        public static readonly GameMember OverlayVisible = NeedsSetter(Prop(CardFlag, Game, "UI.Overlays.OverlayUI", "IsVisible", "Boolean", true));
-        public static readonly GameMember OverlayHeader = Method(CardFlag, Game, "UI.Overlays.OverlayUI", "SetUpHeader", "Void");
+        // Core/GameUi/WorldPanel: the building box is found another way, the flag is only put right as a city unloads, the
+        // lines are made again with their buttons: each has another way
+        public static readonly GameMember ResumePanel = Optional(Field(PanelBeside, Game, "UI.InGameUI.BuildingResume", "panelRectTransform", "RectTransform"));
+        public static readonly GameMember OverlayVisible = Optional(NeedsSetter(Prop(CardFlag, Game, "UI.Overlays.OverlayUI", "IsVisible", "Boolean", true)));
+        public static readonly GameMember OverlayHeader = Optional(Method(CardFlag, Game, "UI.Overlays.OverlayUI", "SetUpHeader", "Void"));
 
         // Core/GameUi/MapPicker, Core/MapPlaces, Navigation/NavMarks: the game's marker
         public static readonly GameMember PoiBlob = Field(On(MapPicker, MapPlaces, NavMarks), Game, "PointOfInterest", "blobImage", "Image");
@@ -149,7 +150,7 @@ namespace RealLifeOverhaul
         public static readonly GameMember CtaBehaviours = StaticField(On(ClickHome, ClickLedger, ClickBusStop), Game, "Player.HUD.ItemInfoOverlays.CtaManager", "CtaBehaviors", "List<ICtaBehavior>");
 
         // Jobs/JobMop
-        public static readonly GameMember MopClick = Method(Mop, Game, "MopController", "OnFloorCellClick", "Void", "DirtSpotObject");
+        public static readonly GameMember MopClick = Optional(Method(Mop, Game, "MopController", "OnFloorCellClick", "Void", "DirtSpotObject"));   // (else the cell under the player)
 
         // Licences/Driving/TestCar
         public static readonly GameMember NavTargets = Field(SchoolCar, Game, "EntityController", "navMeshTargets", "Transform[]");
@@ -172,7 +173,7 @@ namespace RealLifeOverhaul
         public static readonly GameMember GraphicQueue = Field(UiProbe, UnityUi, "UnityEngine.UI.CanvasUpdateRegistry", "m_GraphicRebuildQueue", null);
 
         // Phone/Contacts
-        public static readonly GameMember ContactIcons = StaticField(ContactPictures, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "PredefinedContactIconSprites", "Dictionary<String,Sprite>");
+        public static readonly GameMember ContactIcons = Optional(StaticField(ContactPictures, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "PredefinedContactIconSprites", "Dictionary<String,Sprite>"));   // (else from the next load)
         public static readonly GameMember ContactsMarkAll = Field(ContactSearch, Game, "UI.Smartphone.Apps.Contacts.ContactsApp", "markAllAsReadButton", "Button");
         public static readonly GameMember TextInputField = Field(ContactSearch, Game, "TextInputUI", "inputField", "TMP_InputField");
 
@@ -190,45 +191,55 @@ namespace RealLifeOverhaul
         public static readonly GameMember LaneCurved = Field(BusStops, Game, "ParkingLaneGenerator", "curvedLane", "Boolean");
         public static readonly GameMember LaneVehicles = Field(BusStops, Game, "ParkingLaneGenerator", "specificVehicles", "String[]");
         public static readonly GameMember LaneSpotDistance = Field(BusStops, Game, "ParkingLaneGenerator", "parkingSpotDistance", "Single");
+        // (found by name on the scenery: a name that changes is a script no longer switched off with its kerb)
         public static readonly GameMember SceneryTree = Optional(TypeOf(BusStops, Game, "TreeController"));
         public static readonly GameMember SceneryMapHider = Optional(TypeOf(BusStops, Game, "CityMapHider"));
         public static readonly GameMember SceneryDirt = Optional(TypeOf(BusStops, Game, "DirtSpotObject"));
+        public static readonly GameMember SceneryNavModifier = Optional(TypeOf(BusStops, "Unity.AI.Navigation", "Unity.AI.Navigation.NavMeshModifier"));
+        public static readonly GameMember SceneryNavObstacle = Optional(TypeOf(BusStops, "UnityEngine.AIModule", "UnityEngine.AI.NavMeshObstacle"));
+        public static readonly GameMember SceneryLight = Optional(TypeOf(BusStops, "Unity.RenderPipelines.HighDefinition.Runtime", "UnityEngine.Rendering.HighDefinition.HDAdditionalLightData"));
 
-        // Performance/Tweaks/FarDistricts: what switches things on and off by itself, found by name and never hidden
+        // Performance/Tweaks/FarDistricts (its benchmark trial by Renderer.enabled): the game's components whose own code
+        // enables and disables renderers, by reading the game's code (file and line of one such write each). Without every
+        // one of them the trial cannot be safe, so it stays off.
         public static readonly GameMember[] Switchers =
         {
-            TypeOf(FarDistricts, Game, "CityBuildingController"),
-            TypeOf(FarDistricts, Game, "CityHamptonsHouseController"),
-            TypeOf(FarDistricts, Game, "HamptonsHouse"),
-            TypeOf(FarDistricts, Game, "BuildingSignController"),
-            TypeOf(FarDistricts, Game, "BuildingLogoSignController"),
-            TypeOf(FarDistricts, Game, "BillboardAd"),
-            TypeOf(FarDistricts, Game, "DirtSpotObject"),
-            TypeOf(FarDistricts, Game, "GasStationTrigger"),
-            TypeOf(FarDistricts, Game, "Buildings.BuildingTypes.Special.PrivateDriverService.PrivateDriverGarageTrigger"),
-            TypeOf(FarDistricts, Game, "AutoParkSpot"),
-            TypeOf(FarDistricts, Game, "FenceDoor"),
-            TypeOf(FarDistricts, Game, "EntityController"),
-            TypeOf(FarDistricts, Game, "ItemController"),
-            TypeOf(FarDistricts, Game, "BaseHuman"),
-            TypeOf(FarDistricts, Game, "CarFeatures"),
-            TypeOf(FarDistricts, Game, "CarController"),
-            TypeOf(FarDistricts, Game, "Buildings.TaxiDestinationData"),
-            TypeOf(FarDistricts, Game, "Controllers.CoatCheckController"),
-            TypeOf(FarDistricts, Game, "CarnivalPedestrian"),
-            TypeOf(FarDistricts, Game, "Controllers.AttractionViewBlockingEntity"),
-            TypeOf(FarDistricts, Game, "Controllers.FerrisWheelViewBlockingEntity"),
-            TypeOf(FarDistricts, Game, "ParkingBuildingWithDifferentHeightsManager"),
-            TypeOf(FarDistricts, Game, "PlayerActivity.GolfCourse"),
-            TypeOf(FarDistricts, Game, "SewerSteam"),
+            TypeOf(FarDistricts, Game, "CityBuildingController"),        // CityBuildingController.cs 241, 718
+            TypeOf(FarDistricts, Game, "CityHamptonsHouseController"),   // CityHamptonsHouseController.cs 86-116
+            TypeOf(FarDistricts, Game, "HamptonsHouse"),                 // HamptonsHouse.cs 121-252
+            TypeOf(FarDistricts, Game, "BuildingSignController"),        // through CityBuildingController.cs 718
+            TypeOf(FarDistricts, Game, "BuildingLogoSignController"),    // through CityBuildingController.cs 718
+            TypeOf(FarDistricts, Game, "BillboardAd"),                   // BillboardAd.cs 101, 106
+            TypeOf(FarDistricts, Game, "DirtSpotObject"),                // DirtSpotObject.cs 63, 79
+            TypeOf(FarDistricts, Game, "GasStationTrigger"),             // GasStationTrigger.cs 39-49
+            TypeOf(FarDistricts, Game, "Buildings.BuildingTypes.Special.PrivateDriverService.PrivateDriverGarageTrigger"),   // PrivateDriverGarageTrigger.cs 68-82
+            TypeOf(FarDistricts, Game, "AutoParkSpot"),                  // AutoParkSpot.cs 14, 20; VehicleParkingHelper.cs 65-190
+            TypeOf(FarDistricts, Game, "FenceDoor"),                     // FenceDoor.cs 352, 357
+            TypeOf(FarDistricts, Game, "EntityController"),              // EntityController.cs 145, 160 (ViewBlockingEntity and its kin derive from it: ViewBlockingEntity.cs 248)
+            TypeOf(FarDistricts, Game, "ItemController"),                // ItemController.cs 461, 475
+            TypeOf(FarDistricts, Game, "BaseHuman"),                     // BaseHuman.cs 297; HumanHider.cs 117, 126
+            TypeOf(FarDistricts, Game, "CarFeatures"),                   // CarFeatures.cs 114, 130
+            TypeOf(FarDistricts, Game, "CarController"),                 // CarFeatures.cs 114, 130
+            TypeOf(FarDistricts, Game, "Buildings.TaxiDestinationData"), // Buildings/TaxiDestinationData.cs 49
+            TypeOf(FarDistricts, Game, "Controllers.CoatCheckController"),   // Controllers/CoatCheckController.cs 143
+            TypeOf(FarDistricts, Game, "CarnivalPedestrian"),            // CarnivalPedestrian.cs 48; CarnivalPedestrianPool.cs 44
+            TypeOf(FarDistricts, Game, "Controllers.AttractionViewBlockingEntity"),    // Controllers/AttractionViewBlockingEntity.cs 49
+            TypeOf(FarDistricts, Game, "Controllers.FerrisWheelViewBlockingEntity"),   // Controllers/FerrisWheelViewBlockingEntity.cs 38-58
+            TypeOf(FarDistricts, Game, "ParkingBuildingWithDifferentHeightsManager"),  // (22 writes)
+            TypeOf(FarDistricts, Game, "PlayerActivity.GolfCourse"),     // PlayerActivity/GolfCourse.cs 232-498
+            TypeOf(FarDistricts, Game, "SewerSteam"),                    // SewerSteam.cs 54, 59
             TypeOf(FarDistricts, Game, "PlayerActivity.Tennis.TennisPlayer"),
             TypeOf(FarDistricts, Game, "PlayerActivity.Tennis.TennisBall"),
             TypeOf(FarDistricts, Game, "PlayerActivity.Tennis.TennisScoreLine"),
             TypeOf(FarDistricts, Game, "PlayerActivity.WorkoutActivity"),
+            // (The list before the contract also named "InteriorElement", which the game's assembly has no type of: it was
+            // never found, and is left out.)
         };
 
-        // Core/GameUi/InfoBox: the game's hover effect taken off a copied drop-down (left on when it is not found)
+        // Core/GameUi/InfoBox: the game's hover effect taken off a copied drop-down (left on when it is not found);
+        // Core/GameFurniture: a light of the game's pipeline is kept on a copy of furniture. Both found by name.
         public static readonly GameMember HoverEffect = Optional(TypeOf(null, Game, "UI.HoverEffect"));
+        public static readonly GameMember HdLight = Optional(TypeOf(null, "Unity.RenderPipelines.HighDefinition.Runtime", "UnityEngine.Rendering.HighDefinition.HDAdditionalLightData"));
 
         // ---------------------------------------------------------------- how a line is made
 

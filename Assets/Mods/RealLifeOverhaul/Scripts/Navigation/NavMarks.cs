@@ -33,7 +33,6 @@ namespace RealLifeOverhaul.Nav
     public static class NavMarks
     {
         private const int Most = 512;
-        private const BindingFlags Hidden = BindingFlags.NonPublic | BindingFlags.Instance;
 
         public static IModLogger Logger;
 
@@ -62,10 +61,10 @@ namespace RealLifeOverhaul.Nav
             _looked = true;
             try
             {
-                _blob = typeof(PointOfInterest).GetField("blobImage", Hidden);
-                _icon = typeof(PointOfInterest).GetField("buildingIcon", Hidden);
-                _iconImage = typeof(BuildingIcon).GetField("image", Hidden);
-                _words = typeof(PointOfInterest).GetField("_text", Hidden);
+                _blob = GameContract.PoiBlob.Field;   // (the game's private fields, resolved once: Core/GameContract)
+                _icon = GameContract.PoiIcon.Field;
+                _iconImage = GameContract.BuildingIconImage.Field;
+                _words = GameContract.PoiText.Field;
                 var blob = _blob != null && map.poiTemplate != null ? _blob.GetValue(map.poiTemplate) as Image : null;
                 Blob = blob != null ? blob.sprite : null;
             }

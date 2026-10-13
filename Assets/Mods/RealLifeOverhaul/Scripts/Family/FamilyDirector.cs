@@ -1041,7 +1041,7 @@ namespace RealLifeOverhaul.Family
             }
             try
             {
-                FieldInfo field = typeof(HappinessHelper).GetField("Modifiers", BindingFlags.NonPublic | BindingFlags.Static);
+                FieldInfo field = GameContract.HappinessRegistry.Field;   // (resolved once: Core/GameContract)
                 var registry = field?.GetValue(null) as Dictionary<string, HappinessModifier>;
                 if (registry == null)
                 {
@@ -1072,7 +1072,7 @@ namespace RealLifeOverhaul.Family
         {
             try
             {
-                FieldInfo field = typeof(HappinessHelper).GetField("Modifiers", BindingFlags.NonPublic | BindingFlags.Static);
+                FieldInfo field = GameContract.HappinessRegistry.Field;   // (resolved once: Core/GameContract)
                 var registry = field?.GetValue(null) as Dictionary<string, HappinessModifier>;
                 return registry != null && registry.ContainsKey(Married);
             }

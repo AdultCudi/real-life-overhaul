@@ -261,7 +261,7 @@ namespace RealLifeOverhaul.Meta
         {
             try
             {
-                MethodInfo method = typeof(SaveGameManager).GetMethod("CanSave", BindingFlags.NonPublic | BindingFlags.Static);
+                MethodInfo method = GameContract.CanSave.Method;   // (resolved once: Core/GameContract)
                 return method == null || (bool)method.Invoke(null, null);
             }
             catch (Exception)
@@ -938,7 +938,7 @@ namespace RealLifeOverhaul.Meta
         {
             try
             {
-                FieldInfo field = typeof(HappinessHelper).GetField("Modifiers", BindingFlags.NonPublic | BindingFlags.Static);
+                FieldInfo field = GameContract.HappinessRegistry.Field;   // (resolved once: Core/GameContract)
                 return field?.GetValue(null) is Dictionary<string, HappinessModifier> registry
                        && registry.ContainsKey(ModState.Sick) && registry.ContainsKey(ModState.MoodDownBig);
             }
