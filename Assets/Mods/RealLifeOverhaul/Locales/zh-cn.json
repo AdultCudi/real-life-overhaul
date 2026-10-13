@@ -16947,7 +16947,6 @@
   "reallife_interior_line_wear": "磨损：<b>{wear}%</b>",
   "reallife_interior_line_wear_off": "磨损：已在选项中关闭",
   "reallife_interior_line_clean": "清洁度：<b>{clean}</b>/100",
-  "reallife_interior_effects_title": "影响",
   "reallife_interior_line_customers": "顾客：<b>{footfall}</b>（区域标准{standard}，装饰{decor}）",
   "reallife_interior_line_prices": "价格：这里的区域可接受价格为通常的<b>{bears}</b>",
   "reallife_interior_line_prices_off": "价格：不变（已在选项中关闭）",

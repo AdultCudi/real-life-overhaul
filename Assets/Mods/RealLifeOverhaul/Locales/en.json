@@ -16947,7 +16947,6 @@
   "reallife_interior_line_wear": "Wear: <b>{wear}%</b>",
   "reallife_interior_line_wear_off": "Wear: switched off in the options",
   "reallife_interior_line_clean": "Cleanliness: <b>{clean}</b> of 100",
-  "reallife_interior_effects_title": "What it does",
   "reallife_interior_line_customers": "Customers: <b>{footfall}</b> ({standard} from the district's standard, {decor} from decor)",
   "reallife_interior_line_prices": "Prices: the district bears <b>{bears}</b> of its usual price here",
   "reallife_interior_line_prices_off": "Prices: not changed (switched off in the options)",

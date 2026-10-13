@@ -16947,7 +16947,6 @@
   "reallife_interior_line_wear": "Desgaste: <b>{wear}%</b>",
   "reallife_interior_line_wear_off": "Desgaste: desligado nas opções",
   "reallife_interior_line_clean": "Limpeza: <b>{clean}</b> de 100",
-  "reallife_interior_effects_title": "O que isso faz",
   "reallife_interior_line_customers": "Clientes: <b>{footfall}</b> ({standard} pelo padrão do bairro, {decor} pela decoração)",
   "reallife_interior_line_prices": "Preços: o bairro aceita <b>{bears}</b> do preço habitual aqui",
   "reallife_interior_line_prices_off": "Preços: sem mudança (desligado nas opções)",
