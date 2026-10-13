@@ -1,6 +1,4 @@
-0.9.3
+0.9.4
 
-Fixed
-- In a Going Public session, crashing, being arrested, going to prison or being stopped without a licence in another player's car no longer tows or impounds their car or charges you for it. It stays where you stopped.
-- When the city had no free ambulance, the one sent to a crash could be taken from another crash scene or vanish from the road in front of you.
-- A private driver's car could be pulled into a traffic accident or a street crime. Private drivers are now left alone.
+New
+- The mod's notifications now carry their own icon and colour, so you can tell them from the game's at a glance, and their texts are shorter.
