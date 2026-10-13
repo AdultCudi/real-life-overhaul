@@ -340,7 +340,7 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// People hit by ordinary traffic per hour at the most: the same bank the reckless drivers draw on
-        /// (StreetRules.PerHour times the pedestrians' share), since a hit can only happen while one is owed.
+        /// (StreetRules.PerHour, an hour of play, times the pedestrians' share), since a hit can only happen while one is owed.
         /// </summary>
         public static float StrikesPerHourMost(int frequency, float weather)
         {

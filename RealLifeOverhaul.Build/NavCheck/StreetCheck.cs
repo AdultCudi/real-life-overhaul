@@ -127,39 +127,83 @@ internal static partial class Program
 
     private static void StreetFrequency()
     {
-        // The old roll: every 20 s a chance of frequency x 0.02 x weather. The same quantity falls due here.
-        for (int frequency = 1; frequency <= 10; frequency++)
+        // The option: 0.75 car accidents a game day of street time at the default, half as many again a point.
+        Check(Near(StreetRules.PerDay(2), 0.75f, 0.0001f), "street: the default (2) is 0.75 accidents a game day of street time");
+        Check(Near(StreetRules.PerDay(1), 0.5f, 0.0001f), "street: 1 is half an accident a game day");
+        Check(Near(StreetRules.PerDay(10), 0.75f * (float)Math.Pow(1.5, 8), 0.01f) && StreetRules.PerDay(10) > 14.4f,
+            "street: 10 is about 19 a day, still more than the old roll's 14.4 at 10 (" + StreetRules.PerDay(10).ToString("0.0") + ")");
+        bool rising = true;
+        for (int frequency = 1; frequency < 10; frequency++)
         {
-            float oldPerHour = 3600f / 20f * frequency * 0.02f;
-            Check(Near(StreetRules.PerHour(frequency, 1f), oldPerHour, 0.001f), "street: at frequency " + frequency + " " + oldPerHour.ToString("0.0") + " accidents fall due an hour, as the old roll made");
+            rising &= Near(StreetRules.PerDay(frequency + 1), StreetRules.PerDay(frequency) * StreetRules.StepFactor, 0.001f);
         }
-        Check(Near(StreetRules.PerHour(2, 1f), 7.2f, 0.001f), "street: the default (2) is 7.2 an hour of open street");
-        Check(Near(StreetRules.Due(2, 1.4f), 0.056f, 0.0001f), "street: the weather multiplies it (x1.4 on ice)");
-        Check(Near(StreetRules.Due(0, 1f), 0f) && Near(StreetRules.Due(-3, 1f), 0f), "street: nothing falls due at frequency 0, and never less than nothing");
+        Check(rising, "street: each point of the option is half as many again as the one below");
+        Check(StreetRules.PerDay(0) == 0f && StreetRules.PerDay(-3) == 0f, "street: nothing at frequency 0, and never less than nothing");
 
-        // What is owing never passes one and a half, so accidents never come in a bunch.
+        // Against the old roll (frequency x 0.02 a look, 3 looks a game hour): about a quarter at the default, and fewer at every setting the presets use.
+        float oldDay = 2 * 0.02f * 72f;
+        Check(Near(oldDay, 2.88f, 0.001f) && StreetRules.PerDay(2) < oldDay / 3.5f, "street: the default is under a third of the old 2.88 a day");
+        for (int frequency = 1; frequency <= 4; frequency++)
+        {
+            Check(StreetRules.PerDay(frequency) < frequency * 0.02f * 72f * 0.6f, "street: at " + frequency + " fewer than the old roll made, by far");
+        }
+
+        // The hours: the 24 average one, the small hours are quiet, the late afternoon busy.
+        float sum = 0f, least = 9f, most = 0f;
+        for (int hour = 0; hour < 24; hour++)
+        {
+            float f = StreetRules.HourFactor(hour);
+            sum += f;
+            least = Math.Min(least, f);
+            most = Math.Max(most, f);
+        }
+        Check(Near(sum / 24f, 1f, 0.005f), "street: over the day the hours come to the average (" + (sum / 24f).ToString("0.000") + ")");
+        Check(Near(least, StreetRules.HourFactor(3)) && least < 0.4f, "street: 03:00 is the quietest hour, about a third of the average");
+        Check(most > 1.5f && StreetRules.HourFactor(17) > StreetRules.HourFactor(10), "street: the late afternoon is the busiest, busier than the morning");
+        Check(StreetRules.HourFactor(24) == StreetRules.HourFactor(0) && StreetRules.HourFactor(-1) == StreetRules.HourFactor(23), "street: an hour outside 0 to 23 is taken round the clock");
+
+        // A look, an hour, a day.
+        float day = 0f;
+        for (int hour = 0; hour < 24; hour++)
+        {
+            day += StreetRules.PerGameHour(2, 1f, hour);
+        }
+        Check(Near(day, StreetRules.PerDay(2), 0.01f), "street: a game day of looks owes the day's figure (" + day.ToString("0.000") + ")");
+        Check(Near(StreetRules.Due(2, 1.4f, 12), StreetRules.Due(2, 1f, 12) * 1.4f, 0.00001f), "street: the weather multiplies it (x1.4 on ice)");
+        Check(StreetRules.Due(2, 1.5f, 3) < StreetRules.Due(2, 1f, 16), "street: rain in the small hours still owes less than a dry late afternoon");
+        Check(Near(StreetRules.PerHour(2, 1f), 0.75f / 24f * 60f, 0.001f), "street: an hour of play (sixty game hours) owes 1.9 at the default, the old roll owed 7.2");
+        Check(StreetRules.Due(0, 1f, 12) == 0f && StreetRules.Due(2, -1f, 12) == 0f, "street: nothing falls due at frequency 0, and never less than nothing");
+
+        // What is owing never passes 1.1, so one accident never has a second close behind it.
         float owing = 0f;
         for (int look = 0; look < 1000; look++)
         {
-            owing = StreetRules.Accrue(owing, 10, 2f);
+            owing = StreetRules.Accrue(owing, 10, 2f, 16);
         }
         Check(Near(owing, StreetRules.DueMost), "street: what is owing stops at " + StreetRules.DueMost);
-        Check(Near(StreetRules.Accrue(0f, 2, 1f), 0.04f, 0.0001f), "street: one look at the default adds 0.04");
-        Check(Near(StreetRules.Accrue(0f, 2, 1f, StreetRules.PeopleShare), 0.016f, 0.0001f), "street: and 0.016 of a pedestrian (the old share of 0.4)");
+        Check(StreetRules.DueMost - 1f < 0.2f, "street: after one accident is paid, at most a fifth of the next is owed already");
+        Check(Near(StreetRules.Accrue(0f, 2, 1f, 12, StreetRules.PeopleShare), StreetRules.Accrue(0f, 2, 1f, 12) * 0.4f, 0.00001f), "street: a pedestrian is 0.4 of a car accident");
         int looks = 0;
-        for (owing = 0f; owing < 1f; looks++)
+        for (owing = 0f; owing < 1f && looks < 100000; looks++)
         {
-            owing = StreetRules.Accrue(owing, 2, 1f);
+            owing = StreetRules.Accrue(owing, 2, 1f, 13);
         }
-        Check(looks == 25 || looks == 26, "street: at the default an accident is owed after about 25 looks, 500 s (" + looks + ")");
+        float minutes = looks * StreetRules.CheckSeconds / 60f;
+        Check(minutes > 20f && minutes < 30f, "street: at the default at 13:00 an accident is owed after " + looks + " looks, " + minutes.ToString("0") + " minutes of play in the street (the old roll: 25 looks, 8 minutes)");
+        looks = 0;
+        for (owing = 0f; owing < 1f && looks < 100000; looks++)
+        {
+            owing = StreetRules.Accrue(owing, 2, 1f, 3);
+        }
+        Check(looks * StreetRules.CheckSeconds / 60f > 80f, "street: at 03:00 it takes more than an hour and a quarter of play");
 
         // Reckless drivers: three for each accident due, more at night, never certain.
-        Check(Near(StreetRules.RecklessChance(2, 1f, false), 0.12f, 0.0001f), "street: at the default a reckless driver at 12 looks in 100");
-        Check(Near(StreetRules.RecklessChance(2, 1f, true), 0.156f, 0.0001f), "street: 15.6 in 100 at night");
-        Check(Near(StreetRules.RecklessChance(10, 2f, true), StreetRules.RecklessMost), "street: never more than 85 in 100");
-        Check(StreetRules.RecklessChance(1, 1f, false) < StreetRules.RecklessChance(2, 1f, false), "street: the frequency option still means more or fewer");
-        Check(Near(StreetRules.JaywalkChance(2, 1f), 0.048f, 0.0001f), "street: somebody steps out at 4.8 looks in 100 at the default");
-        Check(Near(StreetRules.JaywalkChance(10, 3f), StreetRules.JaywalkMost), "street: and never at more than half of them");
+        Check(Near(StreetRules.RecklessChance(2, 1f, 12, false), StreetRules.Due(2, 1f, 12) * 3f, 0.00001f), "street: at the default a reckless driver is three times as likely as an accident at a look");
+        Check(Near(StreetRules.RecklessChance(2, 1f, 22, true), StreetRules.Due(2, 1f, 22) * 3f * 1.3f, 0.00001f), "street: and 1.3 times that again at night");
+        Check(Near(StreetRules.RecklessChance(10, 40f, 16, true), StreetRules.RecklessMost), "street: never more than 85 in 100");
+        Check(StreetRules.RecklessChance(1, 1f, 12, false) < StreetRules.RecklessChance(2, 1f, 12, false), "street: the frequency option still means more or fewer");
+        Check(Near(StreetRules.JaywalkChance(2, 1f, 12), StreetRules.Due(2, 1f, 12) * 0.4f * 3f, 0.00001f), "street: somebody steps out three times as often as somebody is due to be hit");
+        Check(Near(StreetRules.JaywalkChance(10, 80f, 16), StreetRules.JaywalkMost), "street: and never at more than half of the looks");
     }
 
     private static void StreetPicking()

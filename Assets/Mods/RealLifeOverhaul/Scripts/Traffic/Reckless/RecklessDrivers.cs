@@ -21,12 +21,14 @@ namespace RealLifeOverhaul
     /// as it stands; somebody run down, which is PedestrianIncidents' and ends with the driver staying or
     /// running; or a patrol car that saw it and pulls the driver over, or chases them (RoadChase).
     ///
-    /// HOW OFTEN. The option "traffic accident frequency" keeps its meaning. The old roll was a chance of
-    /// frequency x 0.02 x the weather at each 20 second look; here the same quantity falls due at each
-    /// look (StreetRules.Due), so the same number of accidents is owed per hour. A reckless driver is
-    /// about three times as likely as that at a look, and only one who appears while an accident is owed
-    /// drives with no margin (and uses the debt up if a collision comes of it). So most of them get away
-    /// with it, and accidents cannot come faster than they used to.
+    /// HOW OFTEN. At each 20 second look a share of an accident falls due (StreetRules.Due): what the
+    /// option "traffic accident frequency" stands for in a game day (0.75 at the default, half as many
+    /// again for each point above it), shared over the day by how busy the road is at that hour (about a
+    /// third of the average in the small hours, half as much again in the late afternoon) and raised by
+    /// rain, mist, storms and ice. A reckless driver is about three times as likely as that at a look (a
+    /// little more at night), and only one who appears while an accident is owed drives with no margin
+    /// (and uses the debt up if a collision comes of it). So most of them get away with it, and no more
+    /// than one accident is ever owed at once.
     ///
     /// EVERY CAR THAT HITS SOMEBODY ENDS HERE. CarStrikes tells this director whenever a traffic car it watches
     /// has thrown somebody down (Struck): the reckless car, the car somebody stepped out in front of, or any
@@ -240,14 +242,15 @@ namespace RealLifeOverhaul
             // What the old roll's chance was at this look falls due instead (same conditions, same quantity).
             int frequency = Settings.AccidentFrequency;
             float weather = Events.Weather.AccidentFactor;
-            _carsDue = StreetRules.Accrue(_carsDue, frequency, weather);
+            int hour = TimeHelper.CurrentHour;
+            _carsDue = StreetRules.Accrue(_carsDue, frequency, weather, hour);
             bool people = PeopleCanBeHit();
             if (people)
             {
-                _peopleDue = StreetRules.Accrue(_peopleDue, frequency, weather, StreetRules.PeopleShare);
+                _peopleDue = StreetRules.Accrue(_peopleDue, frequency, weather, hour, StreetRules.PeopleShare);
             }
             bool night = Crime.IsNight;
-            if (Random.value < StreetRules.RecklessChance(frequency, weather, night))
+            if (Random.value < StreetRules.RecklessChance(frequency, weather, hour, night))
             {
                 StreetRules.Kind kind = StreetRules.Pick(Random.Range(0, 100), night);
                 bool blind = people && _peopleDue >= 1f;
@@ -258,7 +261,7 @@ namespace RealLifeOverhaul
                 Begin(null, kind, _carsDue >= 1f, blind, false, false, now);
                 return;
             }
-            if (people && Random.value < StreetRules.JaywalkChance(frequency, weather))
+            if (people && Random.value < StreetRules.JaywalkChance(frequency, weather, hour))
             {
                 StepOut(_peopleDue >= 1f, 0, now, out _);
             }

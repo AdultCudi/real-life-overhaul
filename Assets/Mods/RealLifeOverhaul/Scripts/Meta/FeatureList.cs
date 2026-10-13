@@ -254,6 +254,10 @@ namespace RealLifeOverhaul.Meta
                 // A guest of a Going Public session has the host's traffic, which nothing of this mod's takes cars from (Core/GoingPublic).
                 .StandsAside(GoingPublic.TrafficSentence, Settings.TrafficAccidentsId, Settings.AccidentFrequencyId, Settings.PoliceId, Settings.PolicePursuitId, Settings.SirenId)
                 .Preset(Settings.AccidentFrequencyId, 1, 3, 4)
+                .Fact("accident_hours", () => AccidentHours(StreetRules.DefaultFrequency))
+                .Fact("accident_hours_now", () => AccidentHours(Settings.AccidentFrequency))
+                .Fact("accident_hours_least", () => AccidentHours(1))
+                .Fact("accident_hours_most", () => AccidentHours(10))
                 .Preset(Settings.CrashConsequencesId, 0, 1, 1)
                 .Preset(Settings.PolicePursuitId, 0, 1, 1)
                 .Test("reallife_test_accident", "reallife_test_accident_minor", "reallife_test_accident_moderate", "reallife_test_accident_severe")
@@ -1206,6 +1210,14 @@ namespace RealLifeOverhaul.Meta
             Permadeath.PermadeathGuide.Register();   // an ending the player chooses: the feature, its switch, its save lines, its tests and its Guide figures (Scripts/Permadeath)
             Districts.DistrictGuide.Register();   // the district view on the city map: the feature, its switch, its save line, its tests and its Guide figures (Scripts/Districts)
             Economy.OwnBankGuide.Register();   // the player's own bank: the feature, its option, its save lines, its tests and its Guide figures (Scripts/Economy/OwnBank)
+        }
+
+        // Game hours of street time between two accidents near the player at a setting of the option, at the day's average hour in fair weather.
+        private static string AccidentHours(int frequency)
+        {
+            float perDay = StreetRules.PerDay(frequency < 1 ? 1 : frequency);
+            float hours = perDay > 0f ? 24f / perDay : 0f;
+            return Guide.Number(hours >= 10f ? (float)System.Math.Round(hours) : (float)System.Math.Round(hours * 10f) / 10f);
         }
 
         private static string Whole(int value)
