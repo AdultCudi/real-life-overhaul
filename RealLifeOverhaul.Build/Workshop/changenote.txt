@@ -1,4 +1,7 @@
-0.4.5
+0.4.9
 
 New
-- Permadeath, an ending you can choose: off unless you switch it on, and kept with each save. With it on, your character can die for good, but only after a warning: a crash at very high speed, being hit by fast traffic on foot, a mugging refused, the private lender's men or a flu left untreated past three warnings. The game is saved at once, the City Ledger prints a front page in memory with their life's story, and the save can be opened again to read it but never played. It is off in a Going Public session and during the game's tutorial and missions.
+- A car dealership of your own. Found a Car Dealership in a shop unit with BizMan, hire salespeople and run it from the Dealership app. Buy cars new from the wholesaler, used from their owners after an inspection and a haggle, or at the trade auction against other dealers. Customers come by the hour by the building's promotion, your staff close what reaches your floor and take them on test drives, and you answer the rest. Sell on your own finance and with warranties; the takings and the costs are in the game's statement and tax.
+
+Fixed
+- With Empire Motors switched on, the chase camera works again. V in a car is this mod's camera key once more; Empire Motors' view from the driver's seat, which on most cars only switched to the game's camera for driving inside a building and let the chase camera go, is kept off while the key is V. To use that view, give this mod's camera key another key in the options.

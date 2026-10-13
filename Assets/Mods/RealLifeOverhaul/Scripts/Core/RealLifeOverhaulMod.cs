@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using BAModAPI;
 using BigAmbitions.Mods;
 using RealLifeOverhaul;
+using RealLifeOverhaul.Districts;
 using RealLifeOverhaul.Permadeath;
 using UnityEngine;
 
@@ -39,6 +40,8 @@ namespace RealLifeOverhaul
             _context = context;
             Keys.Logger = context.Logger;
             Settings.Load(context.ModId);
+            Economy.Dealership.DealerType.Logger = log;
+            Economy.Dealership.DealerType.Register();   // the car dealership's business type, before any save is read (Scripts/Economy/Dealer)
             Meta.Dev.Gated(context);   // (the option has been read now)
 
             var options = new ModOptions()
@@ -696,6 +699,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyCleaning = v)
                 .AddToggle(Settings.EconomySaleId, "reallife_svc_sale_enabled", Settings.EconomySale,
                     v => Settings.EconomySale = v)
+                .AddToggle(Settings.EconomyBankId, "reallife_ob_enabled", Settings.EconomyBank,
+                    v => Settings.EconomyBank = v)
                 .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
                     v => Settings.EconomyCompanyLevel = v)
@@ -712,6 +717,13 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rota_test_plans", () => Economy.CompanyDirector.Instance?.TestRotaPlans())
                 .AddButton("reallife_rota_test_fill", () => Economy.CompanyDirector.Instance?.TestRotaFillAll())
                 .AddButton("reallife_rota_test_back", () => Economy.CompanyDirector.Instance?.TestRotaBackAll())
+                .AddButton("reallife_ob_test_found", () => Economy.OwnBankDirector.Instance?.TestFound())
+                .AddButton("reallife_ob_test_month", () => Economy.OwnBankDirector.Instance?.TestMonth())
+                .AddButton("reallife_ob_test_hard", () => Economy.OwnBankDirector.Instance?.TestHardMonth())
+                .AddButton("reallife_ob_test_run", () => Economy.OwnBankDirector.Instance?.TestRun())
+                .AddButton("reallife_ob_test_deadline", () => Economy.OwnBankDirector.Instance?.TestDeadline())
+                .AddButton("reallife_ob_test_fund", () => Economy.OwnBankDirector.Instance?.TestFund())
+                .AddButton("reallife_ob_test_back", () => Economy.OwnBankDirector.Instance?.TestBack())
                 .AddHeader("reallife_estate_header")
                 .AddToggle(Settings.EstateId, "reallife_estate_enabled", Settings.Estate,
                     v => Settings.Estate = v)
@@ -737,6 +749,13 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_online_test_return", () => Economy.OnlineDirector.Instance?.TestReturn())
                 .AddButton("reallife_online_test_day", () => Economy.OnlineDirector.Instance?.TestDay())
                 .AddButton("reallife_online_test_back", () => Economy.OnlineDirector.Instance?.TestBack())
+                .AddToggle(Settings.EconomyDealerId, "reallife_dealer_enabled", Settings.EconomyDealer,
+                    v => Settings.EconomyDealer = v)
+                .AddButton("reallife_dealer_test_stock", () => Economy.Dealership.DealerDirector.Instance?.TestStock())
+                .AddButton("reallife_dealer_test_customers", () => Economy.Dealership.DealerDirector.Instance?.TestCustomers())
+                .AddButton("reallife_dealer_test_auction", () => Economy.Dealership.DealerDirector.Instance?.TestAuction())
+                .AddButton("reallife_dealer_test_week", () => Economy.Dealership.DealerDirector.Instance?.TestWeek())
+                .AddButton("reallife_dealer_test_back", () => Economy.Dealership.DealerDirector.Instance?.TestBack())
                 .AddButton("reallife_svc_test_round", () => Economy.ServicesDirector.Instance?.TestRound())
                 .AddButton("reallife_svc_test_contract", () => Economy.ServicesDirector.Instance?.TestContractOffer())
                 .AddButton("reallife_svc_test_week", () => Economy.ServicesDirector.Instance?.TestContractWeek())
@@ -776,6 +795,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_nav_test_base_marks", () => Nav.NavDirector.Instance?.TestBaseMarks())
                 .AddButton("reallife_nav_test_base_again", () => Nav.NavDirector.Instance?.TestBaseAgain())
                 .AddSplitter()
+                .AddDistrictView()   // the district view on the city map (Scripts/Districts)
                 .AddHeader("reallife_civic_header")
                 .AddToggle(Settings.CivicId, "reallife_civic_enabled", Settings.Civic,
                     v => Settings.Civic = v)
@@ -868,6 +888,8 @@ namespace RealLifeOverhaul
             Meta.OptionsLayout.Dispose();
             OptionsService.RemoveModOptions(_context.ModId);
             Keys.Dispose();
+            EmpireView.Release();   // Empire Motors' view from the driver's seat as it was without this mod (Camera/EmpireView)
+            Economy.Dealership.DealerType.Unregister();   // the dealership's business type off the game's list (Scripts/Economy/Dealer)
             return Task.CompletedTask;
         }
     }
@@ -907,6 +929,7 @@ namespace RealLifeOverhaul
             GoingPublic.Reset();
             GoingPublic.Look();   // a Going Public session is known before any feature starts (Core/GoingPublic)
             CameraYield.Logger = context.Logger;
+            EmpireView.Logger = context.Logger;
             GameUi.WorldPanel.Logger = context.Logger;
             ThirdPersonCamera.Logger = context.Logger;
             VisualEnhancer.Logger = context.Logger;
@@ -927,6 +950,8 @@ namespace RealLifeOverhaul
             PropLibrary.Logger = context.Logger;
             MapPlaces.Logger = context.Logger;
             MapLinks.Logger = context.Logger;
+            Districts.DistrictView.Logger = context.Logger;
+            Districts.DistrictPanel.Logger = context.Logger;
             PropLibrary.Load(context);   // the modelled props, read in the background; plain shapes until they are there
             PolicePursuit.Logger = context.Logger;
             ActorPool.Logger = context.Logger;
@@ -1043,6 +1068,9 @@ namespace RealLifeOverhaul
             _root.AddComponent<Ledger.LedgerDirector>();   // the City Ledger: the morning paper delivered or bought at a kiosk, and read as a newspaper (Scripts/Ledger)
             Economy.OnlineDirector.Logger = context.Logger;
             Economy.OnlineApp.Logger = context.Logger;
+            Economy.Dealership.DealerDirector.Logger = context.Logger;
+            Economy.Dealership.DealerApp.Logger = context.Logger;
+            _root.AddComponent<Economy.Dealership.DealerDirector>();   // the car dealership: its stock, market, customers, finance and warranties, and the Dealership app (Scripts/Economy/Dealer); before the company, so that its day comes first
             _root.AddComponent<Economy.OnlineDirector>();   // online shops: orders from the whole city, picked from real stock and delivered, and the Web shop app (Scripts/Economy/Online); before the company, so that its day comes first
             Economy.CompanyDirector.Logger = context.Logger;
             Economy.CompanyApp.Logger = context.Logger;
@@ -1053,6 +1081,8 @@ namespace RealLifeOverhaul
             Economy.EstateDirector.Logger = context.Logger;
             Economy.EstateApp.Logger = context.Logger;
             _root.AddComponent<Economy.EstateDirector>();   // property: the market, letting, works, selling, an agency, a hotel and car hire, and the Property app (Scripts/Economy/Estate)
+            Economy.OwnBankDirector.Logger = context.Logger;
+            _root.AddComponent<Economy.OwnBankDirector>();   // the player's own bank: a licence, savers, loans, a fund and a regulator, and its app (Scripts/Economy/OwnBank); after the company, so that its day's books come after the company's
             Economy.Brands.BrandsDirector.Logger = context.Logger;
             Economy.Brands.BrandsApp.Logger = context.Logger;
             _root.AddComponent<Economy.Brands.BrandsDirector>();   // brands and franchises: recognition, standards, franchised shops, city chains and the Brands app (Scripts/Economy/Brands; after the company: its day follows the company's)
@@ -1096,6 +1126,7 @@ namespace RealLifeOverhaul
             PerfDirector.Logger = context.Logger;
             _root.AddComponent<PerfDirector>();   // performance tweaks for the base game, and the two measurements (their keys are development aids)
             _root.AddComponent<MapLinks>();   // every feature's places on the city map (World/MapLinks reads them; no feature knows of it)
+            _root.AddComponent<Districts.DistrictView>();   // the district view on the city map: ten layers, the key and a card per district (Scripts/Districts)
             Wiring.Connect(context.Logger, _root);   // every director is there: the bridges between the features are filled in (Scripts/Wiring)
             // The loading screen is still up: the people of the two street pools are made and dressed now, where the time
             // it takes is not seen (People/Looks). Each catches its own faults and falls back to making them as they are needed.

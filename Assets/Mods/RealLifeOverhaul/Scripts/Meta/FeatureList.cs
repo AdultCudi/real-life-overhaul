@@ -1131,6 +1131,16 @@ namespace RealLifeOverhaul.Meta
                 .Data(Economy.OnlineStore.Key, Economy.OnlineStore.TestKey)
                 .Cleanup(() => Economy.OnlineDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Economy.OnlineDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
+            // The car dealership: a business type of the mod's own. Its row stands under the company's header on the options page;
+            // the Dealership app is its own. Off, its dealerships do not trade and their cars stay on the lots. It runs only while
+            // the economy core does. (Cleaned up before the core: order -2.)
+            Economy.Dealership.DealerGuide.AddFacts(Features.Add("economy_dealer", "reallife_meta_title_economy_dealer")
+                .About("reallife_guide_economy_dealer_about").Help("reallife_guide_economy_dealer")
+                .Owns(Settings.EconomyDealerId)
+                .Test("reallife_dealer_test_stock", "reallife_dealer_test_customers", "reallife_dealer_test_auction", "reallife_dealer_test_week", "reallife_dealer_test_back")
+                .Data(Economy.Dealership.DealerStore.Key, Economy.Dealership.DealerStore.TestKey)
+                .Cleanup(() => Economy.Dealership.DealerDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Economy.Dealership.DealerDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
             // The cleaning service and selling a business. Their rows stand under the company's header on the options page
             // and their pages are the Services app. They share one line of the save. Off, the cleaning service plans no
             // round, shows no cleaner and charges nothing; selling a business offers, pays and charges nothing.
@@ -1157,6 +1167,8 @@ namespace RealLifeOverhaul.Meta
                 .ResetData(() => Economy.Brands.BrandsDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
             Roommates.RoommateGuide.Register();   // sharing the flat: the feature, its option, its save line, its tests and its Guide figures (Scripts/Home/Roommates)
             Permadeath.PermadeathGuide.Register();   // an ending the player chooses: the feature, its switch, its save lines, its tests and its Guide figures (Scripts/Permadeath)
+            Districts.DistrictGuide.Register();   // the district view on the city map: the feature, its switch, its save line, its tests and its Guide figures (Scripts/Districts)
+            Economy.OwnBankGuide.Register();   // the player's own bank: the feature, its option, its save lines, its tests and its Guide figures (Scripts/Economy/OwnBank)
         }
 
         private static string Whole(int value)

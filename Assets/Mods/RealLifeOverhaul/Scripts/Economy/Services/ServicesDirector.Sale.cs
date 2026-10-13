@@ -26,7 +26,7 @@ namespace RealLifeOverhaul.Economy
         private static readonly string[] BlockKeys =
         {
             null, "reallife_svc_refuse_not_business", "reallife_svc_refuse_inside", "reallife_svc_refuse_vehicle", "reallife_svc_refuse_gift", "reallife_svc_refuse_busy",
-            "reallife_svc_refuse_stock"
+            "reallife_svc_refuse_stock", "reallife_svc_refuse_lot"
         };
 
         private readonly List<BuildingRegistration> _regs = new List<BuildingRegistration>(16);

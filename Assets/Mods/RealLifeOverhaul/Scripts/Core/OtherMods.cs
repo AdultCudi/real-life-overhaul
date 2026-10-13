@@ -112,7 +112,7 @@ namespace RealLifeOverhaul
                 case OtherModKind.Session:
                     return "In one of its sessions this mod passes no time of its own, takes nothing out of a guest's traffic and counts no other player's building as this player's (Core/GoingPublic).";
                 case OtherModKind.Business:
-                    return "Its dealerships are businesses of the player's here, with their car sales and costs in the books; the cars of their stock are left to it, and so is V in a car (Core/EmpireMotors).";
+                    return "Its dealerships are businesses of the player's here, with their car sales and costs in the books; the cars of their stock are left to it; its view from the driver's seat is kept off while this mod's camera key is V (Core/EmpireMotors, Camera/EmpireView).";
                 default:
                     return "It adds to a mod this one already lives with; nothing more is changed for it.";
             }
