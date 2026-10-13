@@ -336,7 +336,7 @@ namespace RealLifeOverhaul.Meta
             G(TroubleId,
                 S("savetools").For("savetools").Buttons("reallife_meta_repair_button", "reallife_meta_resetdata_button", "reallife_meta_remove_button")
                     .Also("uninstall remove backup save"),
-                S("diagnostics").For("diagnostics").Opts("dev_diagnostics", "show_test_tools").Buttons("reallife_meta_check_button", "reallife_meta_welcome_button")
+                S("diagnostics").For("diagnostics").Opts("dev_diagnostics", "show_test_tools").Buttons("reallife_meta_check_button", "reallife_guard_button", "reallife_meta_welcome_button")
                     .Also("debug log developer"),
                 S("multiplayer").For("multiplayer").Buttons("reallife_gp_tell_button", "reallife_gp_city_button")
                     .Also("going public multiplayer online friends host guest session"),
