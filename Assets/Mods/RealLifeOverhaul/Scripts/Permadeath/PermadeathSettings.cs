@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Permadeath
                 // In a session another player's world is never ended, and the page says so (Core/GoingPublic).
                 .StandsAside(GoingPublic.PermadeathSentence, Settings.PermadeathId)
                 .Data(PermadeathState.Key, PermadeathState.RecordKey, PermadeathState.SeenKey)
-                .Test("reallife_pd_test_obituary", "reallife_pd_test_rehearsal", "reallife_pd_test_die", "reallife_pd_test_flu", "reallife_pd_test_near_miss")
+                .Test("reallife_pd_test_obituary", "reallife_pd_test_rehearsal", "reallife_pd_test_die", "reallife_pd_test_flu", "reallife_pd_test_starve", "reallife_pd_test_near_miss")
                 .Fact("pd_crash_from", () => Kmh(PermadeathRules.CrashFrom))
                 .Fact("pd_crash_worst", () => Kmh(PermadeathRules.CrashWorst))
                 .Fact("pd_crash_least", () => Guide.Percent(PermadeathRules.CrashLeast))
@@ -39,6 +39,11 @@ namespace RealLifeOverhaul.Permadeath
                 .Fact("pd_ill_last", () => Days(PermadeathRules.IllWarnLast))
                 .Fact("pd_ill_fatal", () => Days(PermadeathRules.IllFatalFrom))
                 .Fact("pd_ill_day", () => Guide.Percent(PermadeathRules.IllPerDay))
+                .Fact("pd_starve_first", () => Hours(PermadeathRules.StarveWarnFirst))
+                .Fact("pd_starve_second", () => Hours(PermadeathRules.StarveWarnSecond))
+                .Fact("pd_starve_last", () => Hours(PermadeathRules.StarveWarnLast))
+                .Fact("pd_starve_fatal", () => Hours(PermadeathRules.StarveFatalFrom))
+                .Fact("pd_starve_day", () => Guide.Percent(PermadeathRules.StarvePerDay))
                 .ResetData(() => PermadeathDirector.Instance?.Forget());   // a death is never forgotten (Permadeath/PermadeathDirector.Forget)
         }
 
@@ -56,6 +61,11 @@ namespace RealLifeOverhaul.Permadeath
         {
             return (hours / 24).ToString(Inv);
         }
+
+        private static string Hours(int hours)
+        {
+            return hours.ToString(Inv);
+        }
     }
 
     /// <summary>Permadeath's place on the options page, under the mod's own namespace so that it is one line there.</summary>
@@ -72,6 +82,7 @@ namespace RealLifeOverhaul.Permadeath
                 .AddButton("reallife_pd_test_rehearsal", () => PermadeathDirector.Instance?.TestRehearsal())
                 .AddButton("reallife_pd_test_die", () => PermadeathDirector.Instance?.TestDie())
                 .AddButton("reallife_pd_test_flu", () => PermadeathDirector.Instance?.TestFlu())
+                .AddButton("reallife_pd_test_starve", () => PermadeathDirector.Instance?.TestStarve())
                 .AddButton("reallife_pd_test_near_miss", () => PermadeathDirector.Instance?.TestNearMiss())
                 .AddSplitter();
         }

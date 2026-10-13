@@ -7,7 +7,9 @@ using RealLifeOverhaul.Permadeath;
 // Permadeath (Scripts/Permadeath): the odds stay rare and stop well short of certain, a warning always comes first, nothing
 // can happen while it is not allowed (off, dead already, a Going Public session, the game's tutorial or a mission, the game
 // busy), the flu's three warnings in their turn before its fatal stretch, the switch kept per save and what a switch in the
-// main menu applies to, a dead save reads as dead and stays dead, the life's story and its line, and the obituary's
+// main menu applies to, going without food (three warnings a day apart from a day on an empty stomach, eating ends it,
+// never fatal at a moment the game cannot take it, rare after), a dead save reads as dead and stays dead, the life's
+// story and its line, and the obituary's
 // sentences: each one there only when the record has something for it to say, and every key in both languages.
 internal static partial class Program
 {
@@ -22,6 +24,7 @@ internal static partial class Program
         EndingsWarnFirst();
         EndingsRare();
         EndingsIllness();
+        EndingsStarve();
         EndingsSwitch();
         EndingsSaved();
         EndingsStory();
@@ -52,6 +55,8 @@ internal static partial class Program
                 killed |= PermadeathRules.Judge(cause, 100f, true, m, 0f) != Verdict.None || PermadeathRules.Judge(cause, 100f, false, m, 0f) != Verdict.None;
             }
             killed |= PermadeathRules.IllHour(500f, 3, m, 0f, out int warn) != Verdict.None || warn != 0;
+            killed |= PermadeathRules.StarveHour(500f, 3, m, true, 0f, out int starveWarn) != Verdict.None || starveWarn != 0;
+            killed |= PermadeathRules.StarveHour(500f, 0, m, true, 0f, out int starveFirst) != Verdict.None || starveFirst != 0;
             if (!yes)
             {
                 Check(!killed, "permadeath: nothing at all happens while it is not allowed (moment " + bits + ")");
@@ -232,6 +237,101 @@ internal static partial class Program
         Check(mean > 2.8 && mean < 4.2, "permadeath: past all three warnings, a flu kills only after days more without a doctor (" + mean.ToString("F1") + " on average)");
     }
 
+    private static void EndingsStarve()
+    {
+        Check(PermadeathRules.StarveStage(0f) == 0 && PermadeathRules.StarveStage(23.9f) == 0 && PermadeathRules.StarveStage(24f) == 1 && PermadeathRules.StarveStage(48f) == 2
+              && PermadeathRules.StarveStage(72f) == 3 && PermadeathRules.StarveStage(95.9f) == 3 && PermadeathRules.StarveStage(96f) == 4,
+            "permadeath: going without food's stages: warnings after one, two and three days with the bar at its bottom, the fatal stretch from four");
+        Check(PermadeathRules.StarveWarnFirst >= 24 && PermadeathRules.StarveFatalFrom >= PermadeathRules.StarveWarnLast + 24,
+            "permadeath: a whole day on an empty stomach before the first warning, and a whole day after the last before it can kill");
+        double day = 1.0 - Math.Pow(1.0 - PermadeathRules.StarvePerHour, 24.0);
+        Check(Math.Abs(day - PermadeathRules.StarvePerDay) < 1e-4 && PermadeathRules.StarvePerDay <= PermadeathRules.IllPerDay,
+            "permadeath: the fatal stretch's hours come to a fifth over a whole day, no more than the flu (" + day.ToString("F4") + ")");
+        Check(PermadeathRules.Empty(0f) && PermadeathRules.Empty(4.9f) && !PermadeathRules.Empty(5f) && !PermadeathRules.Empty(60f),
+            "permadeath: the bar is at its bottom under 5, where the game shows its own face for too hungry");
+        Check(PermadeathRules.Ate(0f, 1f) && PermadeathRules.Ate(2f, 30f) && !PermadeathRules.Ate(3f, 3f) && !PermadeathRules.Ate(3f, 2.9f) && !PermadeathRules.Ate(1f, 1.2f),
+            "permadeath: anything eaten counts (a rise of half a point), and the bar falling or standing never does");
+        Check(PermadeathRules.StarveDrain(0) == 0f && PermadeathRules.StarveDrain(1) == 0f && PermadeathRules.StarveDrain(2) > 0f && PermadeathRules.StarveDrain(3) > PermadeathRules.StarveDrain(2)
+              && PermadeathRules.StarveDrain(3) <= 0.04f && PermadeathRules.StarveMood < 0,
+            "permadeath: weak with hunger: a low mood from the first warning, energy draining faster from the second and more from the third, never more than just living costs again");
+
+        // Hour by hour from the bar's bottom with the worst roll every hour: three warnings in order, a day apart, then the end.
+        int told = 0;
+        var warnings = new List<int>();
+        int diedAtHour = -1;
+        for (int hour = 0; hour <= 200 && diedAtHour < 0; hour++)
+        {
+            Verdict v = PermadeathRules.StarveHour(hour, told, Open(), true, 0f, out int warn);
+            if (warn > 0)
+            {
+                warnings.Add(hour);
+                told = warn;
+            }
+            if (v == Verdict.Death)
+            {
+                diedAtHour = hour;
+            }
+        }
+        Check(warnings.Count == 3 && warnings[0] == 24 && warnings[1] == 48 && warnings[2] == 72, "permadeath: going without food warns at 24, 48 and 72 hours (" + string.Join(", ", warnings) + ")");
+        Check(diedAtHour == 96, "permadeath: even with the worst roll, going without food cannot end a life before four days (" + diedAtHour + ")");
+
+        // Never at a moment the game cannot take it: asleep, a dialog, a ride, in hospital. It still warns then.
+        bool never = true;
+        for (int hour = 0; hour <= 400; hour++)
+        {
+            never &= PermadeathRules.StarveHour(hour, 3, Open(), false, 0f, out _) != Verdict.Death;
+        }
+        Check(never, "permadeath: going without food never kills while asleep, in hospital or in the middle of something, whatever the roll");
+        Check(PermadeathRules.StarveHour(30f, 0, Open(), false, 0f, out int busyWarn) == Verdict.NearMiss && busyWarn == 1, "permadeath: a warning still comes at a busy moment");
+
+        // A long sleep jumps the course: the warnings still come one at a time before the end can come.
+        Verdict j1 = PermadeathRules.StarveHour(150f, 0, Open(), true, 0f, out int w1);
+        Verdict j2 = PermadeathRules.StarveHour(151f, w1, Open(), true, 0f, out int w2);
+        Verdict j3 = PermadeathRules.StarveHour(152f, w2, Open(), true, 0f, out int w3);
+        Verdict j4 = PermadeathRules.StarveHour(153f, w3, Open(), true, 0f, out int w4);
+        Check(w1 == 1 && w2 == 2 && w3 == 3 && w4 == 0 && j1 != Verdict.Death && j2 != Verdict.Death && j3 != Verdict.Death && j4 == Verdict.Death,
+            "permadeath: after a long sleep going without food's warnings still come in turn before it can kill");
+        Check(PermadeathRules.StarveHour(150f, 0, new Moment { Armed = false }, true, 0f, out int none) == Verdict.None && none == 0
+              && PermadeathRules.StarveHour(150f, 3, new Moment { Armed = true, MissionOrTutorial = true }, true, 0f, out int inMission) == Verdict.None && inMission == 0,
+            "permadeath: off, or in the game's own story, an empty stomach warns of nothing and kills nobody");
+        Check(PermadeathRules.Judge(DeathCause.Starvation, 100f, true, Open(), 0f) == Verdict.None, "permadeath: going without food has its own course, never a dangerous moment's");
+
+        // Eating ends it: the state forgets the clock and the warnings.
+        PermadeathState.Reset();
+        PermadeathState.Empty(1000f);
+        PermadeathState.StarveTold = 2;
+        PermadeathState.Empty(5000f);
+        bool kept = PermadeathState.EmptySince == 1000f && PermadeathState.StarveTold == 2;
+        PermadeathState.Fed();
+        Check(kept && PermadeathState.EmptySince < 0f && PermadeathState.StarveTold == 0, "permadeath: the empty stomach's clock keeps running until something is eaten, which ends it and its warnings");
+        PermadeathState.Empty(7000f);
+        Check(PermadeathState.EmptySince == 7000f && PermadeathState.StarveTold == 0, "permadeath: going without food again starts a new count from nothing");
+        PermadeathState.Reset();
+
+        // With honest rolls, past all three warnings: how long a life lasts on an empty stomach (expected about four and a half days).
+        var rng = new Random(13);
+        double total = 0;
+        const int Lives = 4000;
+        for (int life = 0; life < Lives; life++)
+        {
+            int hour = PermadeathRules.StarveFatalFrom;
+            while (PermadeathRules.StarveHour(hour, 3, Open(), true, (float)rng.NextDouble(), out _) != Verdict.Death && hour < 10000)
+            {
+                hour++;
+            }
+            total += hour - PermadeathRules.StarveFatalFrom;
+        }
+        double mean = total / Lives / 24.0;
+        Console.WriteLine("  Permadeath: going without food past its warnings lasts " + mean.ToString("F1") + " more days on average before it is fatal.");
+        Check(mean > 3.6 && mean < 5.4, "permadeath: past all three warnings, going without food kills only after days more (" + mean.ToString("F1") + " on average)");
+
+        var starved = new LifeStory { Name = "Ash", Age = 30, Day = 40, Cause = DeathCause.Starvation };
+        var back = new LifeStory();
+        PermadeathStory.Draft(starved, false, DraftScratch);
+        Check(back.Read(starved.Write()) && back.Cause == DeathCause.Starvation && Has(DraftScratch, "_stand_starvation") && Has(DraftScratch, "_how_starvation"),
+            "permadeath: a death from going without food is kept in the life's line and has its own sentences on the page");
+    }
+
     private static void EndingsSwitch()
     {
         int armed = 0;
@@ -277,13 +377,21 @@ internal static partial class Program
         PermadeathState.Flu(1234.5f);
         PermadeathState.IllTold = 2;
         PermadeathState.ArmedDay = 17;
+        PermadeathState.Empty(4321.5f);
+        PermadeathState.StarveTold = 3;
         PermadeathState.See("5th Ave#12");
         PermadeathState.See("5th Ave#12");
         PermadeathState.Write(data);
         PermadeathState.Read(data);
         Check(!PermadeathState.Fresh && PermadeathState.Armed && !PermadeathState.Dead && PermadeathState.HasWarned(DeathCause.Crash) && PermadeathState.HasWarned(DeathCause.Mugging)
-              && !PermadeathState.HasWarned(DeathCause.Struck) && PermadeathState.IllSince == 1234.5f && PermadeathState.IllTold == 2 && PermadeathState.ArmedDay == 17 && PermadeathState.Seen.Count == 1,
-            "permadeath: the switch, the near misses had, the flu's warnings and the businesses run come back from the save as they went in");
+              && !PermadeathState.HasWarned(DeathCause.Struck) && PermadeathState.IllSince == 1234.5f && PermadeathState.IllTold == 2 && PermadeathState.ArmedDay == 17 && PermadeathState.Seen.Count == 1
+              && PermadeathState.EmptySince == 4321.5f && PermadeathState.StarveTold == 3,
+            "permadeath: the switch, the near misses had, the flu's and going without food's warnings and the businesses run come back from the save as they went in");
+        var older = new Dictionary<string, string> { { PermadeathState.Key, "v1|1|0|2|-1|0|5" } };
+        PermadeathState.Read(older);
+        Check(!PermadeathState.Fresh && PermadeathState.Armed && PermadeathState.ArmedDay == 5 && PermadeathState.EmptySince < 0f && PermadeathState.StarveTold == 0,
+            "permadeath: a line from before going without food reads as it was, and fed");
+        PermadeathState.Read(data);
         Check(data[PermadeathState.Key].StartsWith("v1|1|0|", StringComparison.Ordinal) && !data.ContainsKey(PermadeathState.RecordKey), "permadeath: a living save has its line and no record");
         PermadeathState.Flu(1234.5f);
         Check(PermadeathState.IllTold == 2, "permadeath: the same flu keeps its warnings");

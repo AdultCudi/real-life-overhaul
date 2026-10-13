@@ -8,7 +8,9 @@ namespace RealLifeOverhaul.Permadeath
     /// Permadeath's part of one save, in the save's modData under keys the base game ignores (a save made with it loads
     /// without the mod). Game-free: read and written by the director (<see cref="Read"/>, <see cref="Write"/>).
     ///
-    ///   reallife:permadeath_state    v1|on|dead|warned bits|flu began at|flu warnings shown|day it was switched on
+    ///   reallife:permadeath_state    v1|on|dead|warned bits|flu began at|flu warnings shown|day it was switched on|
+    ///                                the minute the hunger bar reached its bottom|its warnings shown (the last two came
+    ///                                later: a line without them reads as fed)
     ///   reallife:permadeath_record   the life as it ended (<see cref="LifeStory"/>), only once it has
     ///   reallife:permadeath_seen     the businesses this save has run, by address, so that the obituary can count the
     ///                                ones that closed or were sold (kept whether the switch is on or not)
@@ -37,6 +39,8 @@ namespace RealLifeOverhaul.Permadeath
         public static float IllSince = -1f;  // the game minute the flu the warnings belong to began; -1 none
         public static int IllTold;           // how many of its warnings have been shown, 0 to 3
         public static int ArmedDay;          // the day it was last switched on
+        public static float EmptySince = -1f; // the game minute the hunger bar reached its bottom, while it stays there; -1 fed
+        public static int StarveTold;        // how many of going without food's warnings have been shown, 0 to 3
 
         public static readonly LifeStory Record = new LifeStory();   // only while Dead
         public static readonly HashSet<string> Seen = new HashSet<string>();
@@ -57,6 +61,8 @@ namespace RealLifeOverhaul.Permadeath
             IllSince = -1f;
             IllTold = 0;
             ArmedDay = 0;
+            EmptySince = -1f;
+            StarveTold = 0;
             Record.Clear();
             Seen.Clear();
         }
@@ -86,6 +92,15 @@ namespace RealLifeOverhaul.Permadeath
                     IllSince = float.TryParse(f[4], NumberStyles.Float, CultureInfo.InvariantCulture, out float since) ? since : -1f;
                     IllTold = Clamp(Int(f[5]), 0, PermadeathRules.IllStages - 1);
                     ArmedDay = Int(f[6]);
+                    if (f.Length >= 9)
+                    {
+                        EmptySince = float.TryParse(f[7], NumberStyles.Float, CultureInfo.InvariantCulture, out float empty) ? empty : -1f;
+                        StarveTold = Clamp(Int(f[8]), 0, PermadeathRules.IllStages - 1);
+                        if (EmptySince < 0f)
+                        {
+                            StarveTold = 0;
+                        }
+                    }
                 }
                 else
                 {
@@ -118,7 +133,8 @@ namespace RealLifeOverhaul.Permadeath
             var t = new StringBuilder(64);
             t.Append('v').Append(Version).Append('|').Append(Armed ? '1' : '0').Append('|').Append(Dead ? '1' : '0').Append('|')
              .Append(Warned.ToString(CultureInfo.InvariantCulture)).Append('|').Append(IllSince.ToString("R", CultureInfo.InvariantCulture)).Append('|')
-             .Append(IllTold.ToString(CultureInfo.InvariantCulture)).Append('|').Append(ArmedDay.ToString(CultureInfo.InvariantCulture));
+             .Append(IllTold.ToString(CultureInfo.InvariantCulture)).Append('|').Append(ArmedDay.ToString(CultureInfo.InvariantCulture)).Append('|')
+             .Append(EmptySince.ToString("R", CultureInfo.InvariantCulture)).Append('|').Append(StarveTold.ToString(CultureInfo.InvariantCulture));
             data[Key] = t.ToString();
             if (Dead)
             {
@@ -157,6 +173,23 @@ namespace RealLifeOverhaul.Permadeath
         {
             IllSince = -1f;
             IllTold = 0;
+        }
+
+        /// <summary>The hunger bar at its bottom: the count starts at <paramref name="now"/> unless it is already running.</summary>
+        public static void Empty(float now)
+        {
+            if (EmptySince < 0f)
+            {
+                EmptySince = now;
+                StarveTold = 0;
+            }
+        }
+
+        /// <summary>Something eaten (or the bar above its bottom): going without food's danger and its warnings are over.</summary>
+        public static void Fed()
+        {
+            EmptySince = -1f;
+            StarveTold = 0;
         }
 
         private static int Int(string text)
