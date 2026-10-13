@@ -1,10 +1,4 @@
-0.6.1
-
-New
-- Permadeath and hunger: with Permadeath on, going without food is now a danger. After a day with your hunger bar empty you feel weak, after two you tire faster, after three you are starving, and from four days it can be fatal, rarely and never while you sleep or are in hospital. Eating anything ends it.
-- Rental income: a new option in the Property settings sets the rent your buildings earn, the units you let yourself and the buildings the game lets for you, from 50% to 300% (150% on the Relaxed preset, 80% on Hardcore). Asking rents, offers and renewals move with it, so your buildings stay let.
+0.6.2
 
 Fixed
-- Getting out of the driving school's car after a lesson or a test could fail with the game's warning that there was no room to get out, and leave you held against the side of the car until the game was restarted. The school now names a place beside the car that you can walk away from, and finishes the exit itself if anything stops it half way.
-- Accidents came one after another. At the default setting there is now about one near you for every 32 game hours you spend in the street, where there were nearly three a game day, and fewer in the small hours, when the road is quiet. Rain, storms, mist and ice still bring more, and each step of 'How often accidents happen' now brings half as many again. The Guide gives the figures for your setting.
-- At an accident the driver who caused it was handcuffed even after staying and calling an ambulance. A driver who stays is now questioned by an officer and given a ticket, and only a driver who runs for it is chased and, if caught, arrested.
+- After a night in hospital, or any time the game skipped ahead, the game's card over something that had been removed meanwhile kept looking for it, filling the game's log with errors every frame and costing frame time. The card is now put away when what it points at is gone.
