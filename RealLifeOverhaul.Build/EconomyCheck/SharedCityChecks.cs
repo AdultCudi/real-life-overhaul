@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Text;
 using RealLifeOverhaul;
+using RealLifeOverhaul.Economy;
 
 // The shared city of a Going Public session (Scripts/Core/SharedCity*): its messages written and read back exactly,
 // another version's message read but never taken as this one's, and a damaged one dropped whole.
@@ -12,6 +13,7 @@ internal static partial class Program
         var watch = Stopwatch.StartNew();
         int before = _run, failedBefore = _failed;
         SharedWire();
+        SharedEconomy();
         Console.WriteLine("  Shared city: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
@@ -23,6 +25,79 @@ internal static partial class Program
         m.Parts.Add(new SharedPart('G', string.Empty));
         m.Parts.Add(new SharedPart('W', "pão, café e ação: " + new string('x', 20000)));
         return m;
+    }
+
+    // A part's text through the whole path a message takes: written into a message, as bytes, read back.
+    private static string SharedThrough(SharedKind kind, char id, string text)
+    {
+        var m = new SharedMessage { Kind = kind, Version = "0.3.8", Sequence = 7 };
+        m.Parts.Add(new SharedPart(id, text));
+        SharedRead read = SharedCityWire.Read(SharedCityWire.Write(m), "0.3.8", out SharedMessage back);
+        return read == SharedRead.Ok ? back.Part(id) : null;
+    }
+
+    private static void EconomyDays(CityState s, int from, int to)
+    {
+        for (int day = from; day <= to; day++)
+        {
+            CityModel.Day(s, day, new CityDay { Season = day / 15 % 4 }, MacroCatalogue.Standard, 5);
+        }
+    }
+
+    // The economy (part E): a guest's state takes the city's figures of the host's, whole, and keeps its own.
+    private static void SharedEconomy()
+    {
+        CityState host = CityModel.Open(4711, 1);
+        CityModel.Know(host, "ba:neighborhood_a", 900);
+        CityModel.Know(host, "ba:neighborhood_b", 1200);
+        EconomyDays(host, 2, 140);
+        host.CarryRent = 999;
+        host.Buys = 63;
+        host.News.Add(new CityNews { Day = 140, Kind = CityNewsKind.Rival, Name = "The host's shop" });
+
+        CityState guest = CityModel.Open(17, 1);
+        CityModel.Know(guest, "ba:neighborhood_a", 900);
+        EconomyDays(guest, 2, 60);
+        guest.CarryRent = 120;
+        guest.CarryWages = 45;
+        guest.CarryTakings = 7;
+        guest.CarryLiving = 3;
+        guest.LastCopycatDay = 55;
+        guest.Buys = 5;
+        guest.News.Add(new CityNews { Day = 60, Kind = CityNewsKind.Rival, Name = "The guest's shop" });
+
+        string snapshot = SharedThrough(SharedKind.Snapshot, 'E', CityShare.Write(host));
+        Check(snapshot != null && !snapshot.Contains("The host's shop"), "shared city, economy: the host's line goes whole through a message, without the paper's piece on the host's own rival");
+        Check(CityShare.Apply(guest, snapshot, 5, out CityTick joined), "shared city, economy: a guest takes the host's line");
+        Check(CityShare.SameCity(guest, host), "shared city, economy: the guest's city is then the host's in every figure (rate, cycle, index, inflation, districts, supply)");
+        Check(guest.CarryRent == 120 && guest.CarryWages == 45 && guest.CarryTakings == 7 && guest.CarryLiving == 3 && guest.LastCopycatDay == 55 && guest.Buys == 5,
+            "shared city, economy: and what the guest carries, its last rival and the goods its businesses stock stay the guest's");
+        bool ownRival = false, hostRival = false;
+        foreach (CityNews n in guest.News)
+        {
+            ownRival |= n.Kind == CityNewsKind.Rival && n.Name == "The guest's shop";
+            hostRival |= n.Kind == CityNewsKind.Rival && n.Name == "The host's shop";
+        }
+        Check(ownRival && !hostRival, "shared city, economy: the guest's paper keeps its own rival and is never told of the host's");
+
+        // The host goes on alone for a month and more; the guest counts no day; the update makes them one again.
+        int rateBefore = host.Base;
+        EconomyDays(host, 141, 152);
+        Check(!CityShare.SameCity(guest, host), "shared city, economy: (the host's days have moved its city on)");
+        string update = SharedThrough(SharedKind.Update, 'E', CityShare.Write(host));
+        Check(CityShare.Apply(guest, update, 5, out CityTick tick) && CityShare.SameCity(guest, host), "shared city, economy: an update applied to the snapshot gives the host's state");
+        Check(tick.MonthTurned && tick.RateMoved == host.Base - rateBefore, "shared city, economy: the guest hears that a month has turned and how far the rate moved in all (" + tick.RateMoved + ")");
+        Check(guest.CarryRent == 120 && guest.Buys == 5, "shared city, economy: the update leaves the guest's own figures alone too");
+
+        // A guest that leaves goes on from the host's last state: the same days give the same city as the host's.
+        EconomyDays(host, 153, 200);
+        EconomyDays(guest, 153, 200);
+        Check(CityShare.SameCity(guest, host), "shared city, economy: a guest that leaves carries on from the host's last state, with no jump: its days are the host's days");
+
+        // A line that cannot be read changes nothing.
+        string before = CityStore.Write(guest);
+        Check(!CityShare.Apply(guest, "v=1~x:damaged", 5, out _) && !CityShare.Apply(guest, null, 5, out _) && CityStore.Write(guest) == before,
+            "shared city, economy: a damaged line is refused and the guest's state is untouched");
     }
 
     private static void SharedWire()
