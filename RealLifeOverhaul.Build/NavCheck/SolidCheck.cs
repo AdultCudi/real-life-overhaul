@@ -443,36 +443,41 @@ internal static partial class Program
     private static void SolidRate()
     {
         // The pedestrians' share of the accident bank: the most that ordinary traffic and reckless drivers together can hit.
-        Check(Near(SolidRules.StrikesPerHourMost(1, 1f), 1.44f), "solid: frequency 1 owes 1.44 pedestrians an hour at the most (3.6 accidents, 0.4 of them people)");
-        Check(Near(SolidRules.StrikesPerHourMost(3, 1f), 4.32f) && Near(SolidRules.StrikesPerHourMost(10, 1f), 14.4f), "solid: frequency 3: 4.32; frequency 10: 14.4");
+        Check(Near(SolidRules.StrikesPerHourMost(1, 1f), 0.5f), "solid: frequency 1 owes 0.5 pedestrians an hour of play at the most (1.25 accidents, 0.4 of them people)");
+        Check(Near(SolidRules.StrikesPerHourMost(3, 1f), 1.125f) && Near(SolidRules.StrikesPerHourMost(10, 1f), 19.22f, 0.05f), "solid: frequency 3: 1.1; frequency 10: about 19");
         Check(SolidRules.StrikesPerHourMost(0, 1f) == 0f && SolidRules.StrikesPerHourMost(3, 0f) == 0f, "solid: none at frequency 0");
-        Check(Near(SolidRules.StrikesPerHourMost(3, 1.5f), 6.48f), "solid: bad weather raises it as it raises every accident");
+        Check(Near(SolidRules.StrikesPerHourMost(3, 1.5f), 1.6875f), "solid: bad weather raises it as it raises every accident");
 
-        // The bank itself, as the director keeps it: what falls due at each look, kept until it is a whole person, never more than one and a half.
+        // The bank itself, as the director keeps it: what falls due at each look, kept until it is a whole person, never more than 1.1.
+        // At 20:00 the road is about as busy as the day's average (1.05 of it).
         float owing = 0f;
         int owed = 0, looks = 0;
+        float perLook = StreetRules.Due(3, 1f, 20) * StreetRules.PeopleShare;
         while (owing < 1f)
         {
-            owing = StreetRules.Accrue(owing, 3, 1f, StreetRules.PeopleShare);
+            owing = StreetRules.Accrue(owing, 3, 1f, 20, StreetRules.PeopleShare);
             looks++;
         }
-        Check(looks == 42, "solid: at frequency 3 a pedestrian is first owed after 42 looks, 14 minutes of street time (" + looks + ")");
-        for (int look = 0; look < 180; look++)
+        Check(looks == (int)Math.Ceiling(1f / perLook - 0.001f) || looks == (int)Math.Ceiling(1f / perLook - 0.001f) + 1,
+            "solid: at frequency 3 a pedestrian is first owed after " + looks + " looks, " + (looks / 3) + " minutes of street time");
+        const int span = 1800;   // ten hours of play
+        for (int look = 0; look < span; look++)
         {
-            owing = StreetRules.Accrue(owing, 3, 1f, StreetRules.PeopleShare);
+            owing = StreetRules.Accrue(owing, 3, 1f, 20, StreetRules.PeopleShare);
             if (owing >= 1f)
             {
                 owing -= 1f;   // somebody was hit at the first chance: the most there can be
                 owed++;
             }
         }
-        Check(owed >= 4 && owed <= 5, "solid: paid out at every chance, that is four or five in an hour, never more (" + owed + ")");
+        int most = (int)Math.Ceiling(span * perLook);
+        Check(owed >= most - 1 && owed <= most, "solid: paid out at every chance, that is " + owed + " in ten hours of play, never more than the bank holds (" + most + ")");
         owing = 0f;
         for (int look = 0; look < 5000; look++)
         {
-            owing = StreetRules.Accrue(owing, 10, 2f, StreetRules.PeopleShare);
+            owing = StreetRules.Accrue(owing, 10, 2f, 16, StreetRules.PeopleShare);
         }
-        Check(owing <= StreetRules.DueMost, "solid: with nobody ever hit the debt stops at one and a half: an hour without one is not followed by a string of them");
+        Check(owing <= StreetRules.DueMost, "solid: with nobody ever hit the debt stops at 1.1: an hour without one is not followed by a string of them");
         Check(!SolidRules.MayStrike(owing - 1f >= 1f, 10f, 3f, 2.5f), "solid: so two can never be owed at once");
     }
 

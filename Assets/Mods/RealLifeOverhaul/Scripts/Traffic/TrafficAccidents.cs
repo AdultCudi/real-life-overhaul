@@ -344,7 +344,7 @@ namespace RealLifeOverhaul
                 // run with the player indoors (traffic is switched off there), so there is nothing else for it to cover.
                 if (Settings.TrafficAccidents && !RecklessDrivers.IsSource && ModState.Loaded && TrafficTools.Ready && LifeEvents.IsSafeForEvent()
                     && !Wiring.Scenes.Near(PlayerHelper.GetPosition(), Wiring.Scenes.Beside, Wiring.Scene.Accident)   // no other scene, no building site beside it
-                    && Random.value < Settings.AccidentFrequency * 0.02f * Events.Weather.AccidentFactor)
+                    && Random.value < StreetRules.Due(Settings.AccidentFrequency, Events.Weather.AccidentFactor, TimeHelper.CurrentHour))
                 {
                     TryStageAccident();
                 }
