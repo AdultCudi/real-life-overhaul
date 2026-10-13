@@ -1,4 +1,4 @@
-0.4.0
+0.4.1
 
 New
-- In a Going Public session the city is one city for every player, the host's: its economy (the bank rate, prices, the good and bad times, the districts, supply), its government (the mayor, the council, policies, elections, petitions and the building sites) and its stock market, with the same prices on every screen. A guest's vote, donation, petition, complaint or trade counts in the host's city, a guest who leaves carries on from the city as it was, and each player's money, shares and businesses stay their own.
+- A shop under a city chain can have its prices kept inside the chain's range: each morning every product is priced as high as the district bears, and a price changed by anything else, another mod included, is put back within the hour, so the chain never writes about prices. A brand can keep its member shops on the flagship's prices instead of copying them once, with a small adjustment for each district if you want one.
