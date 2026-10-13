@@ -14,6 +14,7 @@ namespace RealLifeOverhaul
         public const string CameraDistanceId = "camera_distance";
         public const string CameraFollowId = "camera_follow";
         public const string MapPlacesShownId = "map_places_shown";
+        public const string DistrictViewId = "district_view";
         public const string MouseLookId = "camera_mouselook";
         public const string MouseSensitivityId = "camera_sensitivity";
         public const string EnterWithKeyId = "enter_with_key";
@@ -218,6 +219,7 @@ namespace RealLifeOverhaul
         public static int CameraPitch = 18;      // degrees above the horizon
         public static int CameraDistance = 6;    // metres behind the player
         public static int CameraFollow = 5;      // 0 = never swing behind the player (only without mouse look)
+        public static bool DistrictView = true;     // the district view on the city map: its rows in the map's filter list, the tint and the card (Districts/DistrictView)
         public static bool MapPlacesShown = true;   // the mod's places on the city map: their markers and their rows in the map's filter list (Core/MapPlaces; off hides all of them)
         public static bool MouseLook = true;     // GTA-style: mouse steers the camera, cursor locked
         public static int MouseSensitivity = 6;
@@ -465,6 +467,7 @@ namespace RealLifeOverhaul
             CameraDistance = Int(modId, CameraDistanceId, CameraDistance);
             CameraFollow = Int(modId, CameraFollowId, CameraFollow);
             MapPlacesShown = Bool(modId, MapPlacesShownId, MapPlacesShown);
+            DistrictView = Bool(modId, DistrictViewId, DistrictView);
             MouseLook = Bool(modId, MouseLookId, MouseLook);
             MouseSensitivity = Int(modId, MouseSensitivityId, MouseSensitivity);
             EnterWithKey = Bool(modId, EnterWithKeyId, EnterWithKey);

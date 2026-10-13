@@ -181,7 +181,9 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       TransitBus       one bus: a van from the traffic pool with a route board, driven by the traffic system on a scripted route, stopped "in point" at the stop
       BusBay           the geometry of a bus bay and nothing else (game-free: NavCheck drives a model bus through it): where the bus stands, the curves in and out
       TransitBays      a bay on the street as it is now: whether its length of the strip is free; the game's parked cars standing in it out of view are taken in
-      TransitRide      the ride itself (fade, the game's time machine, put down at the far end), for bus and subway; TransitState: day pass and ride counts in modData
+      TransitRide      the time a ride takes (fade, the game's time machine, put down at the far end), for bus and subway; TransitState: day pass, ride counts, a fare owed back, in modData
+      BusRider         the bus ride seen: the game's walk to the front door, the fare, board_step up, the validator, the aisle, a seat (strap_hang on a full bus), the pull-away; at the far end up and off by the middle door; every way out
+      BusInside        the inside of the bus as a rider walks it (game-free: EconomyCheck walks every path; PropAssets/checks_service.py measures each place on the mesh), and the ride's fare and fade rules
       SubwayJourney    the game's own subway taking a journey's time: the panel at each entrance, service by the clock (frequency, delays), the day pass, the City Transit contact
       CarDash          what a car needs as one more reading in the game's own vehicle panel (a copy of its "Condition" reading)
       CarGarage        CarRecord (per owned car, in modData by vehicle id), CarRules (every price, interval and chance; game-free)
@@ -295,6 +297,13 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       PermadeathGame     everything it touches of the game: the game's own "the player is dead", the fade, the save, the main menu, the tutorial and missions; the machine's memorial
       Mortality          the one door the features where a life is in danger call (crash, hit on foot, mugging, the lender's men, the flu)
       PermadeathSettings its options block and its feature entry (Guide figures from the rules)
+    Districts/ the district view on the city map: ten layers in its filter list tint each district, with a key, a card and the districts in order
+      DistrictRules      the layers, their scales and five bands, the colours, the key's ranges; DistrictLog, the crimes reported by district (game-free: EconomyCheck runs it)
+      DistrictBridges    what it asks of the others, one reading per district (Wiring/DistrictLinks fills them in)
+      DistrictGame       everything it touches of the game: the map's district zones and their colour, the figures from the buildings, the mouse on the map
+      DistrictPanel      its window, a copy of the map's filter window beside it: the key, the card, the districts
+      DistrictView       the one component: the layer ticked (Core/MapPlaces.RegisterChoice), the map's opening and the day, the tint, the card, the crime log; the test buttons
+      DistrictGuide      its options block and its feature entry (Guide figures from the rules)
 CharacterAssets/                   asset pipeline for the new looks (outside Assets, Unity ignores it)
   scripts/                         Blender scripts: make the meshes and textures, write them to build/
   PreviewProject/, preview.ps1     the game's character rebuilt under HDRP: a look is judged here before it ships

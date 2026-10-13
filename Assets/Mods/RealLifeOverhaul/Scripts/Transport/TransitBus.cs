@@ -305,6 +305,59 @@ namespace RealLifeOverhaul
             return true;
         }
 
+        /// <summary>
+        /// Puts a bus standing at a stop, as one that has just pulled in would stand: in its bay where the bay is free, else on
+        /// the lane's line where nothing stands. Its doors shut (whoever asked opens them). For the bus a rider arrives on,
+        /// set out while the screen is dark. False, with why, if it cannot stand there now.
+        /// </summary>
+        public bool PutStanding(TransitStop stop, out string refusal)
+        {
+            refusal = null;
+            if (State != Phase.Idle || !TrafficTools.Ready || stop == null || stop.Line >= TransitMap.Lines.Count)
+            {
+                refusal = State != Phase.Idle ? "the bus is still out" : "traffic is not running";
+                return false;
+            }
+            BusVehicle bus = Bus();
+            if (bus == null)
+            {
+                refusal = "the bus cannot be drawn (the game has no lit shader)";
+                return false;
+            }
+            TransitLine line = TransitMap.Lines[stop.Line];
+            Vector3 right = Vector3.Cross(Vector3.up, stop.Along);
+            bool bay = BayOpen(stop, sendAway: true);
+            string bayNote = BayNote;
+            Vector3 front;
+            if (bay)
+            {
+                front = stop.Lane + stop.Along * -_middleAhead + right * _curveIn.Offset;   // where RouteToBay has it come to rest
+            }
+            else
+            {
+                front = stop.Lane + stop.Along * -_middleAhead;                           // ...and RouteToLane
+                if (SceneParking.InStrip(stop.Lane - stop.Along * (BodyLength * 0.5f + 1f), stop.Lane + stop.Along * (BodyLength * 0.5f + 1f), BodyHalfWidth + 0.2f,
+                        _made != null ? _made.Body : null, TrafficTools.VehicleMask) != null)
+                {
+                    refusal = "traffic stands on the lane at the stop" + (bayNote != null ? " and " + bayNote : "");
+                    return false;
+                }
+            }
+            Take(bus, stop, line);
+            _bay = bay;
+            BayNote = bayNote;
+            bus.Place(front, stop.Along, line);
+            _driver.Take(bus);
+            Park();
+            State = Phase.Standing;
+            Lost = false;
+            _since = Time.time;
+            Took = 0f;
+            StartedBack = 0f;
+            Remaining = 0f;
+            return true;
+        }
+
         // Where it may start: plain lane points of its line before the stop, out of view, none of them before a closed road;
         // the one about StartBack away first, then further back, then nearer. Returns how far back the road is closed, or -1.
         private float CollectStarts(TransitLine line, TransitStop stop, bool mayAppearInView, float mostBack)
@@ -887,6 +940,15 @@ namespace RealLifeOverhaul
             Vector3 right = Vector3.Cross(Vector3.up, forward);
             inwards = -right;
             place = centre + right * (BusVehicle.HalfWidth + BusVehicle.DoorOut) + forward * BusVehicle.FrontDoorAhead;
+        }
+
+        /// <summary>Where somebody steps down onto the road from its middle door, on its kerb side, and the way into the bus from there.</summary>
+        public void MiddleDoorPlace(out Vector3 place, out Vector3 inwards)
+        {
+            Vehicle.Footprint(out Vector3 centre, out Vector3 forward, out _, out _);
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            inwards = -right;
+            place = centre + right * (BusVehicle.HalfWidth + BusVehicle.DoorOut) + forward * BusVehicle.MiddleDoorAhead;
         }
 
         /// <summary>True when its door has a step to it (<c>board_step</c>): the bus's always has, low floor or not.</summary>

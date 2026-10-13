@@ -1,4 +1,4 @@
-0.4.5
+0.4.7
 
 New
-- Permadeath, an ending you can choose: off unless you switch it on, and kept with each save. With it on, your character can die for good, but only after a warning: a crash at very high speed, being hit by fast traffic on foot, a mugging refused, the private lender's men or a flu left untreated past three warnings. The game is saved at once, the City Ledger prints a front page in memory with their life's story, and the save can be opened again to read it but never played. It is off in a Going Public session and during the game's tutorial and missions.
+- Buses: you are seen getting on and off. Board and you walk to the front door, pay, step in, tap your card on the validator and sit down by the middle door, or stand and hold a strap when the bus is full. You ride as it pulls away, and from above its roof is taken off so that you can see in. At your stop the doors open, you get up and step off by the middle door, and the bus leaves. A full bus now takes you, standing.

@@ -509,13 +509,14 @@ def reference_box(size, centre, colour=(0.42, 0.47, 0.52)):
     return obj
 
 
-def figure(at=(0.0, 0.0), turn=0.0):
-    """A standing person 1.78 m tall made of boxes, for scale beside something big. Faces +Y before `turn` (degrees)."""
+def figure(at=(0.0, 0.0), turn=0.0, up=0.0):
+    """A standing person 1.78 m tall made of boxes, for scale beside something big, standing `up` over the ground (on a
+    vehicle's floor). Faces +Y before `turn` (degrees)."""
     parts = (((0.13, 0.15, 0.86), (-0.10, 0, 0.43)), ((0.13, 0.15, 0.86), (0.10, 0, 0.43)), ((0.40, 0.22, 0.60), (0, 0, 1.16)),
              ((0.10, 0.12, 0.62), (-0.26, 0, 1.13)), ((0.10, 0.12, 0.62), (0.26, 0, 1.13)), ((0.17, 0.20, 0.24), (0, 0.01, 1.66)))
     a = math.radians(turn)
     for size, (x, y, z) in parts:
-        obj = reference_box(size, (at[0] + x * math.cos(a) - y * math.sin(a), at[1] + x * math.sin(a) + y * math.cos(a), z), (0.55, 0.42, 0.34))
+        obj = reference_box(size, (at[0] + x * math.cos(a) - y * math.sin(a), at[1] + x * math.sin(a) + y * math.cos(a), z + up), (0.55, 0.42, 0.34))
         obj.rotation_euler = (0, 0, a)
 
 

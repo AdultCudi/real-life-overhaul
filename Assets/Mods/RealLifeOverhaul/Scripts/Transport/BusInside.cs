@@ -1,0 +1,361 @@
+using System;
+using System.Collections.Generic;
+
+namespace RealLifeOverhaul
+{
+    /// <summary>
+    /// The inside of the city bus as a rider walks it, and the few rules of a ride that are not the game's. Bus-local
+    /// metres: x towards the kerb side (where the doors are), z forward, the floor <see cref="Floor"/> over the road; a
+    /// facing is degrees about the vertical, 0 forward and 90 towards the doors.
+    ///
+    /// The places are the clips' own measurements laid on the bus: board_step leaves a rider standing on the step
+    /// <see cref="StepIn"/> in from where it began; pay_tap holds the card to a reader 0.50 m ahead and 0.975 m up, which
+    /// is the validator by the driver; sit_bench sits on a seat 0.46 m up whose middle is 0.30 m behind the feet; strap_hang
+    /// holds a strap 1.82 m over the feet, 0.28 m to the right and 0.16 m ahead. The bus's inside is modelled to these
+    /// numbers (PropAssets/scripts/props_service.py, bus_inside), and PropAssets/scripts/checks_service.py reads every
+    /// <c>new Spot</c> of this file and measures it on the mesh: the floor under each place of a path, nothing over it, the
+    /// seats, the reader and the strap where the clips want them. EconomyCheck (BusInsideChecks.cs) walks every path
+    /// against the furniture listed here.
+    ///
+    /// Game-free: nothing here knows of Unity.
+    /// </summary>
+    public static class BusInside
+    {
+        /// <summary>A place on the floor, in the bus's own metres.</summary>
+        public struct Spot
+        {
+            public readonly float X;
+            public readonly float Z;
+
+            public Spot(float x, float z)
+            {
+                X = x;
+                Z = z;
+            }
+
+            public float To(Spot other)
+            {
+                float dx = other.X - X, dz = other.Z - Z;
+                return (float)Math.Sqrt(dx * dx + dz * dz);
+            }
+
+            /// <summary>The facing that looks from here towards another place (0 forward, 90 towards the doors).</summary>
+            public float Facing(Spot other)
+            {
+                return (float)(Math.Atan2(other.X - X, other.Z - Z) * 180.0 / Math.PI);
+            }
+        }
+
+        /// <summary>An obstacle on the floor, as a box seen from above: seats, housings, the cab.</summary>
+        public struct Box
+        {
+            public readonly float X0, X1, Z0, Z1;
+
+            public Box(float x0, float x1, float z0, float z1)
+            {
+                X0 = x0;
+                X1 = x1;
+                Z0 = z0;
+                Z1 = z1;
+            }
+
+            /// <summary>Metres from a place to the box's edge; 0 or less inside it.</summary>
+            public float Clearance(Spot at)
+            {
+                float dx = Math.Max(Math.Max(X0 - at.X, at.X - X1), 0f);
+                float dz = Math.Max(Math.Max(Z0 - at.Z, at.Z - Z1), 0f);
+                if (dx > 0f || dz > 0f)
+                {
+                    return (float)Math.Sqrt(dx * dx + dz * dz);
+                }
+                return -Math.Min(Math.Min(at.X - X0, X1 - at.X), Math.Min(at.Z - Z0, Z1 - at.Z));
+            }
+        }
+
+        public enum Place { Aboard, Reader, Seat, WindowSeat, Strap }
+
+        // ---------------------------------------------------------------- the bus and the clips
+
+        public const float Floor = 0.33f;                         // BusVehicle.Floor: the doors' threshold and the whole floor
+        public const float HalfWidth = BusBay.BusSideHalf;        // the side the doors are in
+        public const float Wall = 1.15f;                          // the inner face of the walls
+        public const float FrontDoor = 4.45f;                     // BusVehicle.FrontDoorAhead: the middle of the front door
+        public const float MiddleDoor = -0.55f;                   // BusVehicle.MiddleDoorAhead
+        public const float Outside = HalfWidth + 0.30f;           // BusVehicle.DoorOut: where a rider stands on the road to step in (board_step), and steps down to
+        public const float StepIn = 0.44f;                        // board_step ends standing on the step this far in from where it began
+        public const float StepUp = 0.30f;                        // ...and this far up: the floor is Floor, so the root is put 3 cm higher than the pose
+        public const float SeatUp = 0.46f;                        // sit_bench: the seat's top over the feet
+        public const float SeatFeet = 0.30f;                      // ...and its middle this far behind them
+        public const float StrapUp = 1.82f;                       // strap_hang: the strap's loop over the feet
+        public const float StrapRight = 0.28f;                    // ...this far to the right
+        public const float StrapAhead = 0.16f;                    // ...and this far ahead
+        public const float StrapX = 0.30f;                        // the rail along the aisle the straps hang from
+        public const float RiderStrap = -0.55f;                   // the strap opposite the middle door that a standing rider holds
+        public const float ReaderAhead = 0.50f;                   // pay_tap: the reader ahead of the feet
+        public const float ReaderUp = 0.975f;                     // ...and over them
+        public const float ReaderX = 0.482f;                      // the validator's lens by the driver (its face, towards the door)
+        public const float ReaderZ = 4.94f;
+        public const float ReaderY = 1.31f;                       // ...the middle of the lens over the road
+        public const float Walk = 1.05f;                          // metres a second inside: the game's walk, unhurried
+        public const float StepDown = 0.55f;                      // seconds to walk down from the threshold onto the road
+
+        // ---------------------------------------------------------------- the places
+
+        /// <summary>On the road at the front door, facing in: where board_step begins.</summary>
+        public static readonly Spot BoardFrom = new Spot(1.50f, 4.45f);
+
+        /// <summary>Where board_step leaves the rider: on the floor StepIn in from BoardFrom.</summary>
+        public static readonly Spot Aboard = new Spot(1.06f, 4.45f);
+
+        /// <summary>
+        /// Before the validator, turned to it (<see cref="ReaderFacing"/>): its lens ReaderAhead away and ReaderUp over the floor.
+        /// Not square in front of it: that is where the door's post stands. From a little behind and to the side, clear of both posts.
+        /// </summary>
+        public static readonly Spot Reader = new Spot(0.90f, 4.66f);
+
+        public static float ReaderFacing => Reader.Facing(new Spot(ReaderX, ReaderZ));
+
+        /// <summary>The two seats a rider sits on, opposite the middle door with open floor ahead of them: their middles.</summary>
+        public static readonly Spot[] Seats = { new Spot(-0.45f, -0.52f), new Spot(-0.86f, -0.52f) };
+
+        /// <summary>Where a standing rider stands, facing forward, the strap at RiderStrap in the right hand.</summary>
+        public static readonly Spot Strap = new Spot(0.02f, -0.71f);
+
+        /// <summary>Inside the middle door at its threshold, and on the road beyond it: the way out.</summary>
+        public static readonly Spot Exit = new Spot(0.98f, -0.55f);
+        public static readonly Spot ExitTo = new Spot(1.50f, -0.55f);
+
+        /// <summary>Inside the front door, for a rider who gets off again before the bus leaves while still on its platform.</summary>
+        public static readonly Spot FrontExit = new Spot(1.00f, 4.45f);
+        public static readonly Spot FrontExitTo = new Spot(1.50f, 4.45f);
+
+        // Along the aisle from the validator: past the platform's corner, between the front housings, to the space opposite the middle door.
+        private static readonly Spot[] Aisle = { new Spot(0.45f, 4.30f), new Spot(0.15f, 3.40f), new Spot(0.15f, 0.25f) };
+        private static readonly Spot SeatTurn = new Spot(-0.30f, -0.05f);       // short of the seats: they turn round there
+        private static readonly Spot OffSeat = new Spot(-0.10f, -0.22f);        // up off a seat, towards the door
+        private static readonly Spot WindowOut = new Spot(-0.45f, -0.08f);      // out from the window seat past the aisle one
+        private static readonly Spot BackToAisle = new Spot(0.15f, -0.20f);     // the aisle's end opposite the middle door
+
+        /// <summary>Where the feet stand to sit on a seat, facing forward.</summary>
+        public static Spot SeatFeetAt(int seat)
+        {
+            Spot middle = Seats[Math.Max(0, Math.Min(Seats.Length - 1, seat))];
+            return new Spot(middle.X, middle.Z + SeatFeet);
+        }
+
+        /// <summary>Where a place puts the feet.</summary>
+        public static Spot At(Place place)
+        {
+            switch (place)
+            {
+                case Place.Aboard: return Aboard;
+                case Place.Reader: return Reader;
+                case Place.Seat: return SeatFeetAt(0);
+                case Place.WindowSeat: return SeatFeetAt(1);
+                default: return Strap;
+            }
+        }
+
+        /// <summary>The way a rider faces at a place once there.</summary>
+        public static float FacingAt(Place place)
+        {
+            return place == Place.Reader ? ReaderFacing : place == Place.Aboard ? -90f : 0f;
+        }
+
+        // ---------------------------------------------------------------- the furniture a path must keep clear of
+
+        /// <summary>
+        /// What stands on the floor, seen from above (props_service.py: SEATS, the housings, the cab, the poles): every
+        /// seat's cushion and back, the wheel housings, the cab and its partition, the validator, the poles.
+        /// </summary>
+        public static readonly Box[] Furniture = BuildFurniture();
+
+        private static Box[] BuildFurniture()
+        {
+            var list = new List<Box>(24);
+            float[,] seats =
+            {
+                { -0.45f, -0.52f }, { -0.86f, -0.52f }, { -0.45f, 0.95f }, { -0.86f, 0.95f }, { -0.45f, 1.70f }, { -0.86f, 1.70f },
+                { -0.45f, -1.75f }, { -0.86f, -1.75f }, { -0.45f, -4.15f }, { -0.86f, -4.15f }, { 0.86f, 0.80f }, { 0.86f, 1.55f },
+                { 0.86f, -1.75f }, { 0.86f, -4.15f }
+            };
+            for (int i = 0; i < seats.GetLength(0); i++)
+            {
+                // The cushion 0.40 square, and its back behind it.
+                list.Add(new Box(seats[i, 0] - 0.20f, seats[i, 0] + 0.20f, seats[i, 1] - 0.27f, seats[i, 1] + 0.20f));
+            }
+            list.Add(new Box(-Wall, -0.55f, 2.28f, 3.52f));            // the front housings: over the axle, 0.55 in from the middle
+            list.Add(new Box(0.55f, Wall, 2.28f, 3.52f));
+            list.Add(new Box(-Wall, -0.60f, -3.52f, -2.28f));          // the rear ones, 0.60
+            list.Add(new Box(0.60f, Wall, -3.52f, -2.28f));
+            list.Add(new Box(-Wall, -0.40f, 3.84f, 5.30f));            // the cab and its partition
+            list.Add(new Box(-0.40f, Wall, 5.04f, 5.30f));             // the wall under the windscreen beyond the platform
+            list.Add(new Box(0.36f, 0.48f, 4.89f, 4.99f));             // the validator on its post
+            list.Add(new Box(-Wall, Wall, -5.30f, -4.84f));            // the back seat
+            float[,] poles = { { -0.25f, 1.33f }, { 0.66f, 1.18f }, { -0.25f, -1.36f }, { 0.66f, -1.36f }, { 1.08f, 3.94f }, { 1.08f, 4.96f }, { 1.08f, -1.06f }, { 1.08f, -0.04f } };
+            for (int i = 0; i < poles.GetLength(0); i++)
+            {
+                list.Add(new Box(poles[i, 0] - 0.02f, poles[i, 0] + 0.02f, poles[i, 1] - 0.02f, poles[i, 1] + 0.02f));
+            }
+            return list.ToArray();
+        }
+
+        // ---------------------------------------------------------------- the paths
+
+        /// <summary>
+        /// The way from one place to another, the first place included, written into <paramref name="into"/> (cleared first).
+        /// Inwards: Aboard to Reader, and Reader to a seat or the strap. Anything else is a path of the first place alone.
+        /// </summary>
+        public static void Path(Place from, Place to, List<Spot> into)
+        {
+            into.Clear();
+            into.Add(At(from));
+            if (from == Place.Aboard && to == Place.Reader)
+            {
+                into.Add(Reader);
+                return;
+            }
+            if (from != Place.Reader || (to != Place.Seat && to != Place.WindowSeat && to != Place.Strap))
+            {
+                return;
+            }
+            for (int i = 0; i < Aisle.Length; i++)
+            {
+                into.Add(Aisle[i]);
+            }
+            if (to == Place.Strap)
+            {
+                into.Add(Strap);
+                return;
+            }
+            into.Add(SeatTurn);
+            if (to == Place.WindowSeat)
+            {
+                into.Add(WindowOut);
+            }
+            into.Add(At(to));
+        }
+
+        /// <summary>
+        /// The way off the bus from wherever a rider stands on its floor: by the front door from its platform, else by the
+        /// middle door (the aisle first, if they are up it). The last place is the threshold (Exit or FrontExit); stepping
+        /// down from there onto the road (ExitTo, FrontExitTo) is the caller's. True for the front door.
+        /// </summary>
+        public static bool WayOut(Spot at, List<Spot> into)
+        {
+            into.Clear();
+            into.Add(at);
+            if (at.Z > 3.70f)
+            {
+                into.Add(FrontExit);
+                return true;
+            }
+            if (at.X < -0.30f && at.Z < 0.10f && at.Z > -0.40f)
+            {
+                // At a seat: out past the aisle seat if it is the window one, then towards the door.
+                if (at.X < -0.65f)
+                {
+                    into.Add(WindowOut);
+                }
+                into.Add(OffSeat);
+            }
+            else if (at.Z > 0.30f)
+            {
+                // Up the aisle: down it to its end opposite the door.
+                into.Add(new Spot(0.15f, Math.Min(at.Z, 3.40f)));
+                into.Add(BackToAisle);
+            }
+            into.Add(Exit);
+            return false;
+        }
+
+        /// <summary>Metres along a path.</summary>
+        public static float Length(List<Spot> path)
+        {
+            float length = 0f;
+            for (int i = 1; i < path.Count; i++)
+            {
+                length += path[i - 1].To(path[i]);
+            }
+            return length;
+        }
+
+        /// <summary>The place a given distance along a path, and the way it heads there.</summary>
+        public static Spot Along(List<Spot> path, float metres, out float facing)
+        {
+            facing = 0f;
+            if (path.Count == 0)
+            {
+                return default(Spot);
+            }
+            for (int i = 1; i < path.Count; i++)
+            {
+                float leg = path[i - 1].To(path[i]);
+                facing = path[i - 1].Facing(path[i]);
+                if (metres <= leg || i == path.Count - 1)
+                {
+                    float k = leg > 1e-4f ? Math.Max(0f, Math.Min(1f, metres / leg)) : 1f;
+                    return new Spot(path[i - 1].X + (path[i].X - path[i - 1].X) * k, path[i - 1].Z + (path[i].Z - path[i - 1].Z) * k);
+                }
+                metres -= leg;
+            }
+            return path[path.Count - 1];
+        }
+
+        /// <summary>The clearance of a place from the furniture (the least, in metres), leaving out one box (-1 for none).</summary>
+        public static float Clearance(Spot at, int except = -1)
+        {
+            float least = float.MaxValue;
+            for (int i = 0; i < Furniture.Length; i++)
+            {
+                if (i != except)
+                {
+                    least = Math.Min(least, Furniture[i].Clearance(at));
+                }
+            }
+            // The walls, but not where a door is open in the side: there the floor goes on to the step and the road.
+            least = Math.Min(least, at.X > 0f && InDoor(at.Z) ? Outside - at.X : Wall - Math.Abs(at.X));
+            return least;
+        }
+
+        /// <summary>Whether a place along the bus is within one of its doors.</summary>
+        public static bool InDoor(float z)
+        {
+            return Math.Abs(z - FrontDoor) < 0.59f || Math.Abs(z - MiddleDoor) < 0.59f;
+        }
+
+        // ---------------------------------------------------------------- the ride's own rules
+
+        /// <summary>How far a rider has got with a ride, for what an end to it means.</summary>
+        public enum Stage { None, Walking, Boarding, Aboard, Leaving, Away, Arriving }
+
+        public const float ShowMetres = 30f;      // the bus is seen to pull away this far before the screen darkens
+        public const float ShowMoving = 7f;       // ...or for this many seconds on the move
+        public const float ShowStill = 8f;        // ...or, held in its bay with its doors shut, this long
+        public const float ShowMost = 16f;        // ...and never longer than this after the doors shut
+
+        /// <summary>Whether the bus has been seen leaving for long enough and the time can be skipped.</summary>
+        public static bool FadeNow(float shutFor, float movingFor, float metres)
+        {
+            return metres >= ShowMetres || movingFor >= ShowMoving || (movingFor <= 0f && shutFor >= ShowStill) || shutFor >= ShowMost;
+        }
+
+        /// <summary>
+        /// Whether a ride that ends here, not at the stop it was for, gives the fare back. It does once paid until the bus
+        /// has carried the rider away (the doors shut on them, the bus left with them); never once it has.
+        /// </summary>
+        public static bool FareBackOnCancel(Stage stage)
+        {
+            return stage == Stage.Boarding || stage == Stage.Aboard;
+        }
+
+        /// <summary>
+        /// Whether a save written now puts the rider back at the stop they boarded at with the fare given back (true), or
+        /// at the stop they are getting off at (false). Until the time of the ride has passed, it has not happened.
+        /// </summary>
+        public static bool SaveAtStart(Stage stage)
+        {
+            return stage == Stage.Boarding || stage == Stage.Aboard || stage == Stage.Leaving || stage == Stage.Away;
+        }
+    }
+}

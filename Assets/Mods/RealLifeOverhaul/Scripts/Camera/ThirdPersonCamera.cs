@@ -53,6 +53,34 @@ namespace RealLifeOverhaul
         /// </summary>
         public static Transform Focus { get; set; }
 
+        /// <summary>
+        /// While set, the player rides inside it (the mod's bus: Transport/BusRider): out of doors the camera keeps within
+        /// its sides and ends, coming in closer as a wall would have it, so that it looks at the player inside and not at the
+        /// outside of the bus. Its top is open: swung up over it the camera rises out, and the bus's roof is not drawn then.
+        /// One box test a frame while set, nothing otherwise.
+        /// </summary>
+        public static Transform Inside { get; private set; }
+
+        private static Vector3 _insideCentre;
+        private static Vector3 _insideHalf;
+
+        /// <summary>Keeps the out-of-doors camera inside a box of a frame (its middle and half sizes in that frame's own space; the top is open).</summary>
+        public static void Confine(Transform frame, Vector3 centre, Vector3 half)
+        {
+            Inside = frame;
+            _insideCentre = centre;
+            _insideHalf = half;
+        }
+
+        /// <summary>Lets the camera go again, if it was this frame that held it.</summary>
+        public static void Unconfine(Transform frame)
+        {
+            if (Inside == frame || Inside == null)
+            {
+                Inside = null;
+            }
+        }
+
         private const float LookBehindHoldTime = 0.2f;   // a shorter right click stays the game's own right-click action
 
         // The game flags a right-button drag here to stop the release from also firing a right-click action.
@@ -366,7 +394,8 @@ namespace RealLifeOverhaul
             flat = flat.sqrMagnitude > 0.0001f ? flat.normalized : Vector3.back;
             float pitch = Orbit(state, flat) * Mathf.Deg2Rad;
             state.Cam.offset = flat * Mathf.Cos(pitch) + Vector3.up * Mathf.Sin(pitch);
-            float min = state.Indoor ? IndoorMinDistance : MinDistance;
+            bool confined = !state.Indoor && Inside != null && state.Target != null;
+            float min = state.Indoor || confined ? IndoorMinDistance : MinDistance;
             float max = Mathf.Max(state.MinMaxDistance.y, min + 1f);
             state.Cam.minMaxDistance = new Vector2(min, max);
 
@@ -383,10 +412,11 @@ namespace RealLifeOverhaul
 
             // Interiors are built for the top-down view, so indoors the camera must stay in front of walls.
             // (Only while that camera is the one being looked through: out of doors the indoor camera is not live, and a sphere cast a frame for it is wasted.)
-            float distance = state.Indoor && CinemachineCore.Instance.IsLive(state.VCam) ? Collide(state, player, state.Desired) : state.Desired;
+            float distance = state.Indoor && CinemachineCore.Instance.IsLive(state.VCam) ? Collide(state, player, state.Desired)
+                : confined && CinemachineCore.Instance.IsLive(state.VCam) ? Confined(state, state.Desired) : state.Desired;
             state.Cam.distance = distance;
             state.LastWritten = distance;
-            state.Cam.distanceSpeed = state.Indoor ? 14f : state.DistanceSpeed;
+            state.Cam.distanceSpeed = state.Indoor || confined ? 14f : state.DistanceSpeed;
             state.Applied = true;
         }
 
@@ -472,6 +502,47 @@ namespace RealLifeOverhaul
                 nearest = Mathf.Min(nearest, hit.distance);
             }
             return Mathf.Max(IndoorMinDistance, nearest - 0.15f);
+        }
+
+        /// <summary>
+        /// How far the camera may be from its target and stay inside <see cref="Inside"/>'s sides and ends (its top is open):
+        /// where the line from the target to the camera leaves the box, a little short of it. The desired distance if the
+        /// target is not in the box.
+        /// </summary>
+        private static float Confined(CamState state, float desired)
+        {
+            Transform frame = Inside;
+            if (frame == null)
+            {
+                return desired;
+            }
+            Vector3 origin = state.Target.position;
+            Vector3 toCamera = state.Cam.transform.position - origin;
+            if (toCamera.sqrMagnitude < 0.01f)
+            {
+                return desired;
+            }
+            Vector3 o = frame.InverseTransformPoint(origin) - _insideCentre;
+            Vector3 d = frame.InverseTransformDirection(toCamera.normalized);
+            Vector3 h = _insideHalf;
+            if (Mathf.Abs(o.x) > h.x || Mathf.Abs(o.z) > h.z || o.y < -h.y)
+            {
+                return desired;
+            }
+            float exit = desired;
+            if (Mathf.Abs(d.x) > 1e-4f)
+            {
+                exit = Mathf.Min(exit, ((d.x > 0f ? h.x : -h.x) - o.x) / d.x);
+            }
+            if (Mathf.Abs(d.z) > 1e-4f)
+            {
+                exit = Mathf.Min(exit, ((d.z > 0f ? h.z : -h.z) - o.z) / d.z);
+            }
+            if (d.y < -1e-4f)
+            {
+                exit = Mathf.Min(exit, (-h.y - o.y) / d.y);
+            }
+            return Mathf.Clamp(exit - 0.2f, IndoorMinDistance, desired);
         }
 
         private static void SetFov(CamState state, float fov)
