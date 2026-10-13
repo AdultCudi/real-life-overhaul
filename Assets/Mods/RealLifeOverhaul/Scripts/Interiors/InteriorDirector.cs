@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using AI.Customers.CustomerEntries;
 using BAModAPI;
 using Helpers;
 using UI;
@@ -41,7 +42,11 @@ namespace RealLifeOverhaul.Interiors
         private InteriorStore _store;
         private float _nextSlow;
         private int _lastDay = -1, _lastHour = -1, _switches = -1;
-        private int _basketToday;
+        private int _basketToday, _officeToday;
+        private readonly Dictionary<string, int> _carry = new Dictionary<string, int>(StringComparer.Ordinal);       // an office's fraction of a client carried to the next hour, thousandths
+        private readonly Dictionary<string, int> _booked = new Dictionary<string, int>(StringComparer.Ordinal);      // clients booked today, by office
+        private readonly HashSet<CustomerEntry> _ours = new HashSet<CustomerEntry>();   // today's clients the feature booked
+        private Action<BuildingRegistration> _onRedrawn;
         private bool _broken;
         private Action _onSave;
 
@@ -57,11 +62,14 @@ namespace RealLifeOverhaul.Interiors
             InteriorGame.Logger = Logger;
             InteriorTab.Begin();
             _onSave = OnSaveGame;
+            _onRedrawn = Redrawn;
+            CustomerDraw.Redrawn += _onRedrawn;
         }
 
         private void OnDestroy()
         {
             SaveHook.Drop(_onSave);
+            CustomerDraw.Redrawn -= _onRedrawn;
             InteriorTab.Remove();
             if (Instance == this)
             {
@@ -176,11 +184,14 @@ namespace RealLifeOverhaul.Interiors
         // out, footfall written, and a complaint and a piece of news perhaps.
         private void Round(int day, bool events)
         {
-            if (_basketToday > 0)
+            if (_basketToday > 0 || _officeToday > 0)
             {
-                Logger?.Info("Interiors: " + _basketToday + " product(s) more in customers' baskets yesterday.");
+                Logger?.Info("Interiors: yesterday " + _basketToday + " product(s) more in customers' baskets, " + _officeToday + " client(s) more booked at offices.");
             }
-            _basketToday = 0;
+            _basketToday = _officeToday = 0;
+            _carry.Clear();
+            _booked.Clear();
+            _ours.Clear();   // (yesterday's list of customers is the game's no more)
             _firstRound = !events;
             try
             {
@@ -377,6 +388,7 @@ namespace RealLifeOverhaul.Interiors
         private void Hourly()
         {
             Selling();
+            Offices();
             if (!BasketOn)
             {
                 return;
@@ -391,6 +403,71 @@ namespace RealLifeOverhaul.Interiors
                 BuildingRegistration reg = BusinessGame.Find(s.Place);
                 _basketToday += reg != null ? InteriorGame.Basket(reg, s.Basket) : 0;
             }
+        }
+
+        // Each office that takes clients is booked its extra ones for the coming hour.
+        private void Offices()
+        {
+            for (int i = 0; i < _shops.Count; i++)
+            {
+                if (_shops[i].OfficeBoost > 0)
+                {
+                    BuildingRegistration reg = BusinessGame.Find(_shops[i].Place);
+                    if (reg != null)
+                    {
+                        Book(reg, _shops[i]);
+                    }
+                }
+            }
+        }
+
+        private void Book(BuildingRegistration reg, InteriorShop s)
+        {
+            int carry;
+            _carry.TryGetValue(s.Place, out carry);
+            int n = InteriorGame.BookOffice(reg, s.OfficeBoost, ref carry, _ours);
+            _carry[s.Place] = carry;
+            if (n > 0)
+            {
+                int had;
+                _booked.TryGetValue(s.Place, out had);
+                _booked[s.Place] = had + n;
+                _officeToday += n;
+            }
+        }
+
+        // A business's customers to come were drawn again: an office's extra clients for the coming hour went with them, and are booked again.
+        private void Redrawn(BuildingRegistration reg)
+        {
+            InteriorShop s = At(reg);
+            if (s != null && s.OfficeBoost > 0 && !_broken)
+            {
+                Book(reg, s);
+            }
+        }
+
+        /// <summary>Clients the feature booked at an office today, and how many of them are still in the game's list of the day (some go with a redraw).</summary>
+        public int BookedToday(BuildingRegistration reg, out int standing)
+        {
+            standing = 0;
+            InteriorShop s = At(reg);
+            int n = 0;
+            if (s == null || !_booked.TryGetValue(s.Place, out n))
+            {
+                return 0;
+            }
+            List<CustomerEntry> entries = CustomerDraw.Entries(reg);
+            for (int i = 0; entries != null && i < entries.Count; i++)
+            {
+                standing += entries[i] != null && _ours.Contains(entries[i]) ? 1 : 0;
+            }
+            return n;
+        }
+
+        /// <summary>True for a customer of today's list the feature booked (an office's extra client).</summary>
+        public bool Ours(CustomerEntry e)
+        {
+            return e != null && _ours.Contains(e);
         }
 
         // Whether each business sells anything this hour: one that stops brings nobody extra from its interior until it

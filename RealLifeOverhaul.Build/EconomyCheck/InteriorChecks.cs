@@ -27,6 +27,7 @@ internal static partial class Program
         InteriorStepAside();
         InteriorStrengths();
         InteriorSelling();
+        InteriorOfficeClients();
         InteriorWork();
         InteriorSave();
         InteriorElsewhere();
@@ -295,6 +296,39 @@ internal static partial class Program
         poor.Stop = SaleStop.NoStaff;
         InteriorRules.Work(poor, 0, InteriorDefaults());
         Check(poor.Footfall == -8 && poor.ComplaintChance > 0, "interiors: selling nothing, a shortfall of the standard still costs what it costs");
+    }
+
+    private static void InteriorOfficeClients()
+    {
+        Check(InteriorRules.OfficeBoost(100, 20) == 200 && InteriorRules.OfficeBoost(80, 5) == 40 && InteriorRules.OfficeBoost(50, 0) == 0 && InteriorRules.OfficeBoost(100, 99) == 200
+              && InteriorRules.OfficeBoost(150, 20) == InteriorRules.OfficeBoostMost, "interiors: an office's boost is the decor's choice at its overall score, 20% at most");
+        int carry = 0;
+        Check(InteriorRules.OfficeClients(10, 5, 200, ref carry) == 2 && carry == 0, "interiors: 20% more clients on the game's 10 is 2 more");
+        carry = 0;
+        int got = 0;
+        for (int h = 0; h < 4; h++)
+        {
+            got += InteriorRules.OfficeClients(3, 5, 100, ref carry);
+        }
+        Check(got == 1 && carry == 200, "interiors: a fraction of a client is carried hour to hour until it makes one (" + got + ", " + carry + ")");
+        carry = 0;
+        Check(InteriorRules.OfficeClients(20, 1, 200, ref carry) == 1 && carry == 0, "interiors: never more clients than the staffed workstations left free, and nothing carried past them");
+        carry = 500;
+        Check(InteriorRules.OfficeClients(20, 0, 200, ref carry) == 0 && carry == 0 && InteriorRules.OfficeClients(20, -3, 200, ref carry) == 0, "interiors: no free station, no client");
+        carry = 0;
+        Check(InteriorRules.OfficeClients(0, 5, 200, ref carry) == 0 && InteriorRules.OfficeClients(10, 5, 0, ref carry) == 0, "interiors: no game clients or no boost, no extra clients");
+        InteriorShop office = InteriorSample(InteriorKind.Office);
+        InteriorRules.Work(office, 0, InteriorDefaults());
+        InteriorShop shop = InteriorSample(InteriorKind.Shop);
+        InteriorRules.Work(shop, 0, InteriorDefaults());
+        InteriorShop idle = InteriorSample(InteriorKind.Office);
+        idle.Stop = SaleStop.NoStaff;
+        InteriorRules.Work(idle, 0, InteriorDefaults());
+        InteriorShop ambience = InteriorSample(InteriorKind.Office);
+        InteriorRules.Work(ambience, 0, InteriorRules.Parts(InteriorRules.StandardDefault, InteriorRules.RewardDefault, InteriorRules.DecorDefault, InteriorRules.PriceDefault,
+            InteriorRules.WearDefault, true, true, true, false, true));
+        Check(office.OfficeBoost == InteriorRules.OfficeBoost(office.Overall, 5) && office.OfficeBoost > 0 && shop.OfficeBoost == 0 && idle.OfficeBoost == 0 && ambience.OfficeBoost == 0,
+            "interiors: only an office is booked more clients; not while it sells nothing, and not while Meaningful Ambience is on");
     }
 
     private static InteriorShop InteriorSample(InteriorKind kind)

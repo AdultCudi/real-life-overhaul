@@ -377,6 +377,95 @@ namespace RealLifeOverhaul.Interiors
             }
         }
 
+        // ---------------------------------------------------------------- an office's clients
+
+        /// <summary>
+        /// Books an office of the player's more clients for the coming hour, as the game books them: its own calculator
+        /// for offices (CustomerEntriesCalculatorOffice.GetCustomersEntriesForHour, with the district's demand weight), the
+        /// clients added to the day's list beside the game's. Only an office the game's office simulator serves
+        /// (BusinessType.simulator is OfficeBusinessSimulator) that takes money, meets its requirements and is open then;
+        /// never more than the stations staffed then (one client a station an hour, as the simulator serves them) less the
+        /// clients already booked. The booked ones are kept in <paramref name="ours"/>. Returns how many.
+        /// </summary>
+        public static int BookOffice(BuildingRegistration reg, int boostMille, ref int carryMille, HashSet<CustomerEntry> ours)
+        {
+            if (boostMille <= 0 || reg == null || reg.temporarilyClosed)
+            {
+                return 0;
+            }
+            BusinessType type = BusinessTypeHelper.GetData(reg);
+            int next = TimeHelper.CurrentHour + 1;
+            if (type == null || !(type.simulator is Buildings.Office.OfficeBusinessSimulator) || !type.HasTag(TagRef.Businesstag.generatesrevenue) || next > 23
+                || !BusinessHelper.IsBusinessOpen(reg, next) || !reg.AreAllRequirementsMet())
+            {
+                return 0;
+            }
+            var calculator = CustomerEntriesCalculatorFactory.GetCustomerEntriesCalculator(reg) as CustomerEntriesCalculatorOffice;
+            List<CustomerEntry> entries = CustomerDraw.Entries(reg);
+            if (calculator == null || entries == null)
+            {
+                return 0;
+            }
+            int today = TimeHelper.CurrentDay, game = 0, booked = 0;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                CustomerEntry e = entries[i];
+                if (e != null && !e.completed && e.spawnTime != null && e.spawnTime.Day == today && e.spawnTime.Hour == next)
+                {
+                    booked++;
+                    game += ours.Contains(e) ? 0 : 1;
+                }
+            }
+            int n = InteriorRules.OfficeClients(game, Stations(reg, type, next) - booked, boostMille, ref carryMille);
+            if (n <= 0)
+            {
+                return 0;
+            }
+            List<CustomerEntry> made = calculator.GetCustomersEntriesForHour(next, n, NeighborhoodHelper.GetData(reg.Neighborhood).customerDemandsWeight);
+            int added = 0;
+            for (int i = 0; made != null && i < made.Count && added < n; i++)   // (the calculator's own list: taken from at once)
+            {
+                if (made[i] != null)
+                {
+                    entries.Add(made[i]);
+                    ours.Add(made[i]);
+                    added++;
+                }
+            }
+            return added;
+        }
+
+        // The stations an office's simulator serves a client at in an hour: a shift on it then (not a cleaning one) with
+        // somebody of the business type's own skills at it, and nothing the station needs missing.
+        private static int Stations(BuildingRegistration reg, BusinessType type, int hour)
+        {
+            ScheduleDay today = BuildingHelper.GetTodaySchedule(reg);
+            if (today == null || today.workShifts == null || type.employeePrimarySkills == null)
+            {
+                return 0;
+            }
+            int count = 0;
+            foreach (WorkShift shift in today.workShifts)
+            {
+                ItemInstance station;
+                if (shift == null || string.IsNullOrEmpty(shift.employeeId) || shift.type == WorkShiftType.Cleaning || shift.startingHour > hour || shift.endingHour <= hour
+                    || !reg.itemInstances.TryGetValue(shift.itemInstanceId, out station) || ItemHelper.HasAnyMissingRequirements(station))
+                {
+                    continue;
+                }
+                EmployeeInstance employee = EmployeeHelper.GetEmployeeAtStationAndHour(reg, station.id, hour);
+                for (int k = 0; employee != null && employee.characterData != null && employee.characterData.skills != null && k < employee.characterData.skills.Count; k++)
+                {
+                    if (Array.IndexOf(type.employeePrimarySkills, employee.characterData.skills[k].name) >= 0)
+                    {
+                        count++;
+                        break;
+                    }
+                }
+            }
+            return count;
+        }
+
         // ---------------------------------------------------------------- the basket
 
         /// <summary>

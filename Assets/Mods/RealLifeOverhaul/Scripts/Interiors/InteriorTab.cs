@@ -372,6 +372,16 @@ namespace RealLifeOverhaul.Interiors
             else
             {
                 b.Line("reallife_interior_line_office".GetLocalization());
+                if (s.OfficeBoost > 0)
+                {
+                    int standing;
+                    int booked = InteriorDirector.Instance != null ? InteriorDirector.Instance.BookedToday(reg, out standing) : 0;
+                    b.Line(InteriorText.T("reallife_interior_line_clients", "boost", InteriorText.SignedMille(s.OfficeBoost), "booked", InteriorText.N(booked)));
+                }
+                else if (OtherMods.MeaningfulAmbience.Loaded)
+                {
+                    b.Line(InteriorText.T("reallife_interior_line_clients_other", "mod", OtherMods.MeaningfulAmbience.Name));
+                }
             }
             if (Settings.InteriorsStaff)
             {

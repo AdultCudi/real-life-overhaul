@@ -83,6 +83,7 @@ namespace RealLifeOverhaul.Interiors
         public int DecorRaw, Decor, InteriorNow, Overall, Standard;
         public int Wear;                        // thousandths, 0 fresh to 1000 worn out (the file's)
         public int StandardFootfall, DecorFootfall, Footfall, Bears, Basket, BrandPoints, StandingPoints, Comfort, OfficeEsteem, OfficeBid;
+        public int OfficeBoost;                 // thousandths more clients an office is booked, an hour ahead
         public int ComplaintChance;             // per mille today
     }
 
@@ -147,7 +148,9 @@ namespace RealLifeOverhaul.Interiors
     ///                the calm level contented staff settle at goes up by the comfort, and a professional's morale
     ///                heads 8 thousandths higher for each point.
     ///   offices      the best office of the player's at 60 or over adds 1 to the esteem candidates on the jobs
-    ///                board feel, 2 at 80; a firm's office over 50 weighs its bids up to 2% better.
+    ///                board feel, 2 at 80; a firm's office over 50 weighs its bids up to 2% better. An office that takes
+    ///                clients is booked more of them an hour ahead: the decor's choice at its overall score (5% at 100
+    ///                by default, 20% at the strongest), never more than its staffed workstations left free.
     /// </summary>
     public static class InteriorRules
     {
@@ -205,6 +208,7 @@ namespace RealLifeOverhaul.Interiors
         public const int StoryChance = 100;           // per mille a day, once it is newsworthy
         public const int GraceDays = 14;              // a new business's days to fit out before its district holds it to the standard
         public const int RecentOrders = 8;            // the last completed orders looked at for prices turned down, and no fewer
+        public const int OfficeBoostMost = 200;       // thousandths more clients at an overall score of 100 and the decor's strongest choice
 
         // ---- the strengths: each option's choices, in the order of its drop-down, and the default's place in it
         public static readonly int[] StandardScales = { 0, 500, 1000, 1500 };        // Off, Gentle, Standard, Strict
@@ -536,6 +540,32 @@ namespace RealLifeOverhaul.Interiors
             return recent >= RecentOrders && refused >= recent ? SaleStop.Prices : SaleStop.None;
         }
 
+        // ---------------------------------------------------------------- an office's clients
+
+        /// <summary>Thousandths more clients an office gets: the decor's choice (5% by default, 20% at the strongest) at its overall score.</summary>
+        public static int OfficeBoost(int overall, int decorPercent)
+        {
+            return Clamp(Clamp(overall, 0, 100) * Clamp(decorPercent, 0, DecorPercents[DecorPercents.Length - 1]) * 10 / 100, 0, OfficeBoostMost);
+        }
+
+        /// <summary>
+        /// How many clients more an office is booked for the coming hour: its boost on the clients the game has booked it
+        /// (thousandths, the fraction carried to the next hour), never more than its staffed workstations left free then.
+        /// What could not be booked for want of a free station is not carried.
+        /// </summary>
+        public static int OfficeClients(int gameClients, int free, int boostMille, ref int carryMille)
+        {
+            long total = (long)Math.Max(0, gameClients) * Clamp(boostMille, 0, OfficeBoostMost) + Clamp(carryMille, 0, 999);
+            int n = (int)(total / 1000);
+            carryMille = (int)(total - (long)n * 1000);
+            if (n > free)
+            {
+                n = Math.Max(0, free);
+                carryMille = 0;
+            }
+            return n;
+        }
+
         // ---------------------------------------------------------------- one business, worked out
 
         /// <summary>
@@ -580,6 +610,7 @@ namespace RealLifeOverhaul.Interiors
             s.Comfort = s.Kind != InteriorKind.None && p.Staff
                 ? Comfort(s.Items[(int)DecorCategory.Greenery], s.Capped[(int)DecorCategory.Lighting], s.Target, s.RestCorner) : 0;
             s.OfficeEsteem = s.Kind == InteriorKind.Office && p.Staff ? OfficeEsteem(s.Overall) : 0;
+            s.OfficeBoost = s.Kind == InteriorKind.Office && s.Stop == SaleStop.None ? OfficeBoost(s.Overall, p.DecorPercent) : 0;
             s.OfficeBid = s.Kind != InteriorKind.None && p.Staff ? OfficeBid(s.Overall) : 0;
         }
 
