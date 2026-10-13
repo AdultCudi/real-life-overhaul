@@ -8,7 +8,9 @@ namespace RealLifeOverhaul.Economy
 {
     /// <summary>
     /// The Mine, Tenants, Works and Agency tabs. Each writes its rows and, for what is picked, a page in the white
-    /// box that says in sentences what each figure is made of. Written when the tab is shown; nothing is kept.
+    /// box that says in sentences what each figure is made of. Written when the tab is shown; nothing is kept. A
+    /// building the player lets himself is let unit by unit: the Mine tab says how its units stand and opens one's
+    /// lease, and the Tenants tab has a row for each unit and each applicant.
     /// </summary>
     public sealed partial class EstateApp
     {
@@ -18,6 +20,7 @@ namespace RealLifeOverhaul.Economy
         private int _listShare = 2;     // the asking price showing, a place in ListShares
         private int _toUse = -1;        // the use showing for a change of use
         private int _office;            // the office showing for the agency
+        private int _unit;              // the unit showing on a building's page
 
         private static int YieldOf(long rentADay, int daysPerYear, int value)
         {
@@ -43,11 +46,26 @@ namespace RealLifeOverhaul.Economy
             {
                 return EstateText.T("reallife_estate_state_game");
             }
-            if (!h.Let)
+            if (h.Units.Count > 1)
             {
-                return EstateText.T("reallife_estate_state_empty", "days", h.VoidDays.ToString());
+                int behind, let = h.LetUnits(out behind);
+                return behind > 0 ? EstateText.T("reallife_estate_state_units_behind", "behind", behind.ToString(), "units", h.Units.Count.ToString())
+                    : EstateText.T("reallife_estate_state_units", "let", let.ToString(), "units", h.Units.Count.ToString());
             }
-            return h.Arrears > 0 ? EstateText.T("reallife_estate_state_arrears", "days", h.ArrearsDays.ToString()) : EstateText.T("reallife_estate_state_let", "who", EstateText.Tenant(h.Use, h.Tenant));
+            EstateUnit u = h.Units[0];
+            if (!u.Let)
+            {
+                return EstateText.T("reallife_estate_state_empty", "days", u.VoidDays.ToString());
+            }
+            return u.Arrears > 0 ? EstateText.T("reallife_estate_state_arrears", "days", u.ArrearsDays.ToString()) : EstateText.T("reallife_estate_state_let", "who", EstateText.Tenant(h.Use, u.Tenant));
+        }
+
+        // A unit's lease on the Tenants tab.
+        private void OpenLease(EstateHolding h, int unit)
+        {
+            _tab = EstateDirector.TabTenants;
+            _pick = EstateDirector.UnitPick(h, unit);
+            Refresh();
         }
 
         // ---------------------------------------------------------------- Mine
@@ -62,8 +80,9 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; property && i < state.Holdings.Count; i++)
             {
                 EstateHolding h = state.Holdings[i];
-                int value = EstateRules.Value(h, state.Real, c.Index);
-                int income = h.Managed ? (h.Let && h.Arrears == 0 ? h.Rent : 0) : EstateGame.GameRent(h);
+                int value = EstateRules.Value(h, state.Real, c.Index), behind;
+                int income = h.Managed ? EstateRules.PayingRent(h) : EstateGame.GameRent(h);
+                bool empty = h.LetUnits(out behind) < h.Units.Count && h.Managed;
                 worth += value;
                 rent += income;
                 if (Pick("own:" + h.Place, ref selected, out row))
@@ -73,7 +92,7 @@ namespace RealLifeOverhaul.Economy
                 row.Kind = EstateTables.OwnBuilding;
                 row.Set(0, h.Name);
                 row.Set(1, EstateText.T("reallife_estate_kind_building"));
-                row.Set(2, StateOf(h, day), h.Arrears > 0 ? TableRow.Red : h.Managed && !h.Let && !h.Busy ? TableRow.Yellow : TableRow.Plain);
+                row.Set(2, StateOf(h, day), behind > 0 ? TableRow.Red : empty && !h.Busy ? TableRow.Yellow : TableRow.Plain);
                 row.Set(3, EstateText.Money(value), value);
                 row.Set(4, EstateText.Money(h.Paid), h.Paid);
                 row.Set(5, EstateText.Money(income), income);
@@ -138,11 +157,16 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(EstateText.T("reallife_estate_own_game", "amount", EstateText.Money(EstateGame.GameRent(h)), "market", EstateText.Money(EstateRules.MarketRent(h, c))));
             }
+            else if (h.Units.Count == 1)
+            {
+                EstateUnit u = h.Units[0];
+                box.Line(u.Let
+                    ? EstateText.T("reallife_estate_own_let", "who", EstateText.Tenant(h.Use, u.Tenant), "amount", EstateText.Money(u.Rent), "yield", EstateText.Yield(YieldOf(u.Rent, c.DaysPerYear, value)))
+                    : EstateText.T("reallife_estate_own_empty", "days", u.VoidDays.ToString(), "count", u.Applicants.Count.ToString()));
+            }
             else
             {
-                box.Line(h.Let
-                    ? EstateText.T("reallife_estate_own_let", "who", EstateText.Tenant(h.Use, h.Tenant), "amount", EstateText.Money(h.Rent), "yield", EstateText.Yield(YieldOf(h.Rent, c.DaysPerYear, value)))
-                    : EstateText.T("reallife_estate_own_empty", "days", h.VoidDays.ToString(), "count", h.Applicants.Count.ToString()));
+                WriteUnits(box, h, c, value);
             }
             if (!box.HasSwitch || !box.Switch("reallife_estate_own_cover", h.Cover, on => _director.SetCover(place, on)))
             {
@@ -192,11 +216,46 @@ namespace RealLifeOverhaul.Economy
             {
                 InfoBox.Button(more, InfoBox.Positive, "reallife_estate_btn_take_on", () => _director.TakeOn(place));
             }
-            else if (h.Managed && !h.Let && !h.Busy)
+            else if (h.Managed)
             {
-                InfoBox.Button(more, InfoBox.Negative, "reallife_estate_btn_hand_back", () => _director.HandBack(place));
+                int unit = EstateCatalogue.Clamp(_unit, 0, h.Units.Count - 1);
+                InfoBox.Button(more, InfoBox.Positive, "reallife_estate_btn_lease", () => OpenLease(h, unit));
+                if (!h.AnyLet && !h.Busy)
+                {
+                    InfoBox.Button(more, InfoBox.Negative, "reallife_estate_btn_hand_back", () => _director.HandBack(place));
+                }
             }
             BackButton(more);
+        }
+
+        // How a building's units stand, and one of them, picked with the selector: its lease opens from the button under it.
+        private void WriteUnits(InfoBox box, EstateHolding h, EstateClimate c, int value)
+        {
+            int behind, let = h.LetUnits(out behind);
+            long agreed = 0;
+            for (int i = 0; i < h.Units.Count; i++)
+            {
+                agreed += h.Units[i].Let ? h.Units[i].Rent : 0;
+            }
+            box.Line(EstateText.T("reallife_estate_own_units", "units", h.Units.Count.ToString(), "let", let.ToString(), "behind", behind.ToString()));
+            if (let > 0)
+            {
+                box.Line(EstateText.T("reallife_estate_own_units_rent", "amount", EstateText.Money(agreed), "yield", EstateText.Yield(YieldOf(agreed, c.DaysPerYear, value))));
+            }
+            _unit = EstateCatalogue.Clamp(_unit, 0, h.Units.Count - 1);
+            if (!box.HasSelector || !box.Selector(h.Units.Count, _unit, i => EstateText.T("reallife_estate_unit_short", "unit", (i + 1).ToString()), i =>
+                {
+                    _unit = i;
+                    Refresh();
+                }))
+            {
+                box.Line(EstateText.T("reallife_estate_unit_short", "unit", (_unit + 1).ToString()));
+            }
+            EstateUnit u = h.Units[_unit];
+            string unit = (_unit + 1).ToString();
+            box.Line(!u.Let ? EstateText.T("reallife_estate_own_unit_empty", "unit", unit, "days", u.VoidDays.ToString(), "count", u.Applicants.Count.ToString())
+                : u.Arrears > 0 ? EstateText.T("reallife_estate_own_unit_behind", "unit", unit, "who", EstateText.Tenant(h.Use, u.Tenant), "amount", EstateText.Money(u.Arrears))
+                : EstateText.Fill("reallife_estate_own_unit_let", "unit", unit, "who", EstateText.Tenant(h.Use, u.Tenant), "amount", EstateText.Money(u.Rent), "day", u.Until.ToString()));
         }
 
         // ---------------------------------------------------------------- Tenants
@@ -207,7 +266,7 @@ namespace RealLifeOverhaul.Economy
             EstateHolding picked = null, applied = null;
             RentApplicant applicant = null;
             TableRow row;
-            int let = 0, empty = 0, owed = 0;
+            int let = 0, empty = 0, owed = 0, pickedUnit = 0, appliedUnit = 0;
             for (int i = 0; i < state.Holdings.Count; i++)
             {
                 EstateHolding h = state.Holdings[i];
@@ -215,45 +274,56 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                let += h.Let ? 1 : 0;
-                empty += h.Let ? 0 : 1;
-                owed += h.Arrears;
-                string who = h.Let ? EstateText.Tenant(h.Use, h.Tenant) : EstateText.T("reallife_estate_row_nobody");
-                string standing = !h.Let ? EstateText.T("reallife_estate_state_empty", "days", h.VoidDays.ToString())
-                    : h.CourtDay > 0 ? EstateText.T("reallife_estate_state_court", "day", h.CourtDay.ToString())
-                    : h.NoticeEnd > 0 ? EstateText.T("reallife_estate_state_notice", "day", h.NoticeEnd.ToString())
-                    : h.Arrears > 0 ? EstateText.T("reallife_estate_state_arrears", "days", h.ArrearsDays.ToString()) : EstateText.T("reallife_estate_state_paying");
-                if (Pick("own:" + h.Place, ref selected, out row))
+                if (_pick == "own:" + h.Place)
                 {
-                    picked = h;
+                    _pick = EstateDirector.UnitPick(h, 0);   // (a building picked elsewhere opens its first unit's lease)
                 }
-                row.Kind = !h.Let ? EstateTables.TenantNone : h.CourtDay > 0 || h.NoticeEnd > 0 ? EstateTables.TenantNotice : h.Arrears > 0 ? EstateTables.TenantBehind : EstateTables.TenantPaying;
-                row.Set(0, h.Name);
-                row.Set(1, who);
-                row.Set(6, standing, h.Arrears > 0 ? TableRow.Red : !h.Let ? TableRow.Yellow : TableRow.Plain);
-                if (h.Let)
+                for (int n = 0; n < h.Units.Count; n++)
                 {
-                    row.Set(2, EstateText.Money(h.Rent), h.Rent);
-                    row.Set(3, EstateText.Money(h.Arrears), h.Arrears);
-                    row.Set(4, EstateText.Record(h.Record), h.Record);
-                    row.Set(5, EstateText.T("reallife_estate_row_until", "day", h.Until.ToString()), h.Until);
-                }
-                for (int a = 0; a < h.Applicants.Count; a++)
-                {
-                    RentApplicant p = h.Applicants[a];
-                    if (Pick("app:" + h.Place + ":" + p.Id, ref selected, out row))
+                    EstateUnit u = h.Units[n];
+                    string name = EstateText.UnitName(h, n);
+                    let += u.Let ? 1 : 0;
+                    empty += u.Let ? 0 : 1;
+                    owed += u.Arrears;
+                    string who = u.Let ? EstateText.Tenant(h.Use, u.Tenant) : EstateText.T("reallife_estate_row_nobody");
+                    string standing = !u.Let ? EstateText.T("reallife_estate_state_empty", "days", u.VoidDays.ToString())
+                        : u.CourtDay > 0 ? EstateText.T("reallife_estate_state_court", "day", u.CourtDay.ToString())
+                        : u.NoticeEnd > 0 ? EstateText.T("reallife_estate_state_notice", "day", u.NoticeEnd.ToString())
+                        : u.Arrears > 0 ? EstateText.T("reallife_estate_state_arrears", "days", u.ArrearsDays.ToString()) : EstateText.T("reallife_estate_state_paying");
+                    if (Pick(EstateDirector.UnitPick(h, n), ref selected, out row))
                     {
-                        applied = h;
-                        applicant = p;
+                        picked = h;
+                        pickedUnit = n;
                     }
-                    row.Kind = EstateTables.TenantApplies;
-                    row.NoTotal = true;   // (an offer is not rent yet)
-                    row.Set(0, h.Name);
-                    row.Set(1, EstateText.Tenant(h.Use, p.Kind));
-                    row.Set(2, EstateText.Money(p.Offer), p.Offer);
-                    row.Set(4, EstateText.Record(p.Record), p.Record);
-                    row.Set(5, EstateText.T("reallife_estate_row_until", "day", p.Lapse.ToString()), p.Lapse);
-                    row.Set(6, EstateText.T("reallife_estate_filter_applicants"), TableRow.Green);
+                    row.Kind = !u.Let ? EstateTables.TenantNone : u.CourtDay > 0 || u.NoticeEnd > 0 ? EstateTables.TenantNotice : u.Arrears > 0 ? EstateTables.TenantBehind : EstateTables.TenantPaying;
+                    row.Set(0, name);
+                    row.Set(1, who);
+                    row.Set(6, standing, u.Arrears > 0 ? TableRow.Red : !u.Let ? TableRow.Yellow : TableRow.Plain);
+                    if (u.Let)
+                    {
+                        row.Set(2, EstateText.Money(u.Rent), u.Rent);
+                        row.Set(3, EstateText.Money(u.Arrears), u.Arrears);
+                        row.Set(4, EstateText.Record(u.Record), u.Record);
+                        row.Set(5, EstateText.T("reallife_estate_row_until", "day", u.Until.ToString()), u.Until);
+                    }
+                    for (int a = 0; a < u.Applicants.Count; a++)
+                    {
+                        RentApplicant p = u.Applicants[a];
+                        if (Pick("app:" + h.Place + ":" + p.Id, ref selected, out row))
+                        {
+                            applied = h;
+                            applicant = p;
+                            appliedUnit = n;
+                        }
+                        row.Kind = EstateTables.TenantApplies;
+                        row.NoTotal = true;   // (an offer is not rent yet)
+                        row.Set(0, name);
+                        row.Set(1, EstateText.Tenant(h.Use, p.Kind));
+                        row.Set(2, EstateText.Money(p.Offer), p.Offer);
+                        row.Set(4, EstateText.Record(p.Record), p.Record);
+                        row.Set(5, EstateText.T("reallife_estate_row_until", "day", p.Lapse.ToString()), p.Lapse);
+                        row.Set(6, EstateText.T("reallife_estate_filter_applicants"), TableRow.Green);
+                    }
                 }
             }
             if (_rows.Count == 0)
@@ -262,11 +332,11 @@ namespace RealLifeOverhaul.Economy
             }
             if (applicant != null)
             {
-                WriteApplicant(box, applied, applicant, c);
+                WriteApplicant(box, applied, appliedUnit, applicant, c);
             }
             else if (picked != null)
             {
-                WriteTenancy(box, picked, day, c);
+                WriteTenancy(box, picked, pickedUnit, day, c);
             }
             else
             {
@@ -280,69 +350,83 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        private void WriteApplicant(InfoBox box, EstateHolding h, RentApplicant a, EstateClimate c)
+        private void WriteApplicant(InfoBox box, EstateHolding h, int unit, RentApplicant a, EstateClimate c)
         {
             string place = h.Place;
-            int id = a.Id, market = EstateRules.MarketRent(h, c);
+            int id = a.Id, market = EstateRules.UnitRent(h, c);
             box.Title(EstateText.Tenant(h.Use, a.Kind));
-            box.Line(EstateText.T("reallife_estate_app_for", "building", h.Name, "day", a.Lapse.ToString()));
+            box.Line(EstateText.T("reallife_estate_app_for", "building", EstateText.UnitName(h, unit), "day", a.Lapse.ToString()));
             box.Line(EstateText.T("reallife_estate_app_offer", "amount", EstateText.Money(a.Offer), "market", EstateText.Money(market), "share", EstateText.Share(market > 0 ? (int)((long)a.Offer * 1000 / market) : 0)));
             box.Line(EstateText.T("reallife_estate_app_term", "days", a.Term.ToString(), "deposit", EstateText.Money(a.Offer * EstateCatalogue.DepositDays)));
             box.Line(EstateText.T("reallife_estate_app_record", "record", EstateText.Record(a.Record), "miss", EstateText.Share(EstateRules.MissChance(a.Record, c.Cycle)), "back", EstateText.Share(EstateRules.CatchUpChance(a.Record))));
             box.Line(EstateText.T("reallife_estate_app_note"));
             Transform buttons = box.ButtonRow();
-            if (!h.Let && !h.Busy)
+            if (!h.Units[unit].Let && !h.Busy)
             {
-                InfoBox.Button(buttons, InfoBox.Positive, "reallife_estate_btn_accept", () => _director.Accept(place, id));
+                InfoBox.Button(buttons, InfoBox.Positive, "reallife_estate_btn_accept", () =>
+                {
+                    int taken = _director.Accept(place, id);
+                    if (taken >= 0)
+                    {
+                        _pick = EstateDirector.UnitPick(h, taken);   // (the new lease is what the page shows next)
+                        Refresh();
+                    }
+                });
             }
             InfoBox.Button(buttons, InfoBox.Negative, "reallife_estate_btn_refuse", () => _director.Refuse(place, id));
             BackButton(buttons);
         }
 
-        private void WriteTenancy(InfoBox box, EstateHolding h, int day, EstateClimate c)
+        // One unit's lease, or the unit empty: its asking rent and whether applicants are looked for.
+        private void WriteTenancy(InfoBox box, EstateHolding h, int unit, int day, EstateClimate c)
         {
             string place = h.Place;
-            int market = EstateRules.MarketRent(h, c);
-            box.Title(h.Name);
+            EstateUnit u = h.Units[unit];
+            int market = EstateRules.UnitRent(h, c);
+            box.Title(EstateText.UnitName(h, unit));
             box.Line(market > 0
                 ? EstateText.Fill("reallife_estate_ten_market", "amount", EstateText.Money(market), "use", EstateText.Use(h.Use), "yield", EstateText.Share(EstateRules.Yield(h.Use, h.Income)), "condition", EstateText.Level(h.Cond))
                 : EstateText.T("reallife_estate_ten_unfit", "condition", EstateText.Level(h.Cond)));
-            Transform buttons = box.ButtonRow();
-            if (h.Let)
+            if (h.Units.Count > 1)
             {
-                box.Line(EstateText.T("reallife_estate_ten_who", "who", EstateText.Tenant(h.Use, h.Tenant), "amount", EstateText.Money(h.Rent), "day", h.Until.ToString()));
-                box.Line(EstateText.T("reallife_estate_ten_record", "record", EstateText.Record(h.Record), "deposit", EstateText.Money(h.Deposit)));
-                if (h.Arrears > 0)
+                box.Line(EstateText.T("reallife_estate_ten_share", "units", h.Units.Count.ToString(), "amount", EstateText.Money(EstateRules.MarketRent(h, c))));
+            }
+            Transform buttons = box.ButtonRow();
+            if (u.Let)
+            {
+                box.Line(EstateText.T("reallife_estate_ten_who", "who", EstateText.Tenant(h.Use, u.Tenant), "amount", EstateText.Money(u.Rent), "day", u.Until.ToString()));
+                box.Line(EstateText.T("reallife_estate_ten_record", "record", EstateText.Record(u.Record), "deposit", EstateText.Money(u.Deposit)));
+                if (u.Arrears > 0)
                 {
-                    box.Line(EstateText.T("reallife_estate_ten_arrears", "amount", EstateText.Money(h.Arrears), "days", h.ArrearsDays.ToString(), "back", EstateText.Share(EstateRules.CatchUpChance(h.Record))));
+                    box.Line(EstateText.T("reallife_estate_ten_arrears", "amount", EstateText.Money(u.Arrears), "days", u.ArrearsDays.ToString(), "back", EstateText.Share(EstateRules.CatchUpChance(u.Record))));
                 }
-                if (h.CourtDay > 0)
+                if (u.CourtDay > 0)
                 {
-                    box.Line(EstateText.T("reallife_estate_ten_court", "day", h.CourtDay.ToString()));
+                    box.Line(EstateText.T("reallife_estate_ten_court", "day", u.CourtDay.ToString()));
                 }
-                else if (h.NoticeEnd > 0)
+                else if (u.NoticeEnd > 0)
                 {
-                    box.Line(EstateText.T(day > h.NoticeEnd ? "reallife_estate_ten_notice_over" : "reallife_estate_ten_notice", "day", h.NoticeEnd.ToString(), "fee", EstateText.Money(EstateRules.CourtFee(c.Index)),
+                    box.Line(EstateText.T(day > u.NoticeEnd ? "reallife_estate_ten_notice_over" : "reallife_estate_ten_notice", "day", u.NoticeEnd.ToString(), "fee", EstateText.Money(EstateRules.CourtFee(c.Index)),
                         "days", EstateCatalogue.CourtDays.ToString()));
                 }
-                if (EstateRules.MayServeNotice(h, day))
+                if (EstateRules.MayServeNotice(h, unit, day))
                 {
-                    InfoBox.Button(buttons, InfoBox.Negative, "reallife_estate_btn_notice", () => _director.ServeNotice(place));
+                    InfoBox.Button(buttons, InfoBox.Negative, "reallife_estate_btn_notice", () => _director.ServeNotice(place, unit));
                 }
-                else if (EstateRules.MayGoToCourt(h, day))
+                else if (EstateRules.MayGoToCourt(h, unit, day))
                 {
-                    InfoBox.Button(buttons, InfoBox.Negative, "reallife_estate_btn_court", () => _director.GoToCourt(place));
+                    InfoBox.Button(buttons, InfoBox.Negative, "reallife_estate_btn_court", () => _director.GoToCourt(place, unit));
                 }
             }
             else
             {
-                box.Line(EstateText.T("reallife_estate_ten_empty", "days", h.VoidDays.ToString()));
+                box.Line(EstateText.T("reallife_estate_ten_empty", "days", u.VoidDays.ToString()));
                 box.Headline("reallife_estate_ten_asking");
-                Steps(box, EstateCatalogue.AskLeast, EstateCatalogue.AskMost, EstateCatalogue.AskStep, h.Ask, ask => _director.SetAsk(place, ask));
-                box.Line(EstateText.T("reallife_estate_ten_asking_what", "amount", EstateText.Money(EstateCatalogue.Share(market, h.Ask)), "chance", EstateText.Share(EstateRules.ApplicantChance(h.Ask, h.Cond, c.Cycle))));
-                if (!box.HasSwitch || !box.Switch("reallife_estate_ten_to_let", h.ToLet, on => _director.SetToLet(place, on)))
+                Steps(box, EstateCatalogue.AskLeast, EstateCatalogue.AskMost, EstateCatalogue.AskStep, u.Ask, ask => _director.SetAsk(place, unit, ask));
+                box.Line(EstateText.T("reallife_estate_ten_asking_what", "amount", EstateText.Money(EstateCatalogue.Share(market, u.Ask)), "chance", EstateText.Share(EstateRules.ApplicantChance(u.Ask, h.Cond, c.Cycle))));
+                if (!box.HasSwitch || !box.Switch("reallife_estate_ten_to_let", u.ToLet, on => _director.SetToLet(place, unit, on)))
                 {
-                    box.Line(EstateText.T(h.ToLet ? "reallife_estate_ten_to_let_on" : "reallife_estate_ten_to_let_off"));
+                    box.Line(EstateText.T(u.ToLet ? "reallife_estate_ten_to_let_on" : "reallife_estate_ten_to_let_off"));
                 }
             }
             BackButton(buttons);
@@ -428,7 +512,7 @@ namespace RealLifeOverhaul.Economy
             }
 
             // a change of use: the council first, then the builders
-            if (h.Managed && !h.Let && !h.Self)
+            if (h.Managed && !h.AnyLet && !h.Self)
             {
                 box.Headline("reallife_estate_works_use");
                 Transform useButtons = box.ButtonRow();

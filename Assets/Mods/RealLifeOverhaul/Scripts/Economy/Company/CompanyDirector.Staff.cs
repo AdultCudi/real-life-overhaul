@@ -128,7 +128,7 @@ namespace RealLifeOverhaul.Economy
         private void Approach(int day)
         {
             CompanyState s = _state;
-            if (_fit.Count == 0 || day < s.PoachRest || !StaffRules.Approach(s.Seed, s.Age, _level))
+            if (_fit.Count == 0 || day < s.PoachRest || !StaffRules.Approach(s.Seed, s.Age, _level, CompanyBridges.EsteemNow()))
             {
                 return;
             }
@@ -222,6 +222,34 @@ namespace RealLifeOverhaul.Economy
             {
                 _state.Staff[i].PoachDay = _state.Staff[i].PoachOffer = 0;
             }
+        }
+
+        /// <summary>
+        /// The owner has walked in (the player's standing, through Wiring/StandingLinks): each of the business's staff's
+        /// standing moved by so many points, proud or nervous, within its bounds. Returns how many it moved. The standing is
+        /// the company's own number; nothing of the game's employee is written.
+        /// </summary>
+        public int Visited(string place, int points)
+        {
+            if (!On(CompanyPart.Staff) || _state == null || points == 0 || place == null)
+            {
+                return 0;
+            }
+            int moved = 0;
+            for (int i = 0; i < _state.Staff.Count; i++)
+            {
+                StaffFile f = _state.Staff[i];
+                if (f.Place == place)
+                {
+                    f.Standing = CompanyCatalogue.Clamp(f.Standing + points, 0, CompanyCatalogue.StandingMost);
+                    moved++;
+                }
+            }
+            if (moved > 0)
+            {
+                Recount();
+            }
+            return moved;
         }
 
         private void WagePaid(int amount, string key, CompanyShop shop, int? day, string how)

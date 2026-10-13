@@ -323,6 +323,9 @@ internal static partial class Program
         Check(OtherModName.Is("BigAmbitionsMP", "BigAmbitionsMP") && !OtherModName.Is("BigAmbitions", "BigAmbitionsMP") && !OtherModName.Is("BigAmbitionsMP", "BigAmbitions")
               && !OtherModName.Is("BampExtras", "BigAmbitionsMP") && OtherModName.Is("ForeignTradeMultiplayer", "ForeignTradeMultiplayer") && !OtherModName.Is("ForeignTrade", "ForeignTradeMultiplayer"),
             "other mods: Going Public is known by its own assembly, never by the game's, and its add-ons by theirs");
+        Check(OtherModName.Is("EmpireMotors", "EmpireMotors") && OtherModName.Is("EmpireMustangGT", "EmpireMustangGT") && OtherModName.Is("empirebmwg82", "empirebmwg82")
+              && !OtherModName.Is("EmpireMustangGT", "EmpireMotors") && !OtherModName.Is("EmpireBank", "EmpireMotors") && !OtherModName.Is("EmpireMotorsExtras", "EmpireMotors"),
+            "other mods: Empire Motors and its two car add-ons are known each by its own assembly, and not by the author's other mods");
     }
 
     private static void PolishTiming()

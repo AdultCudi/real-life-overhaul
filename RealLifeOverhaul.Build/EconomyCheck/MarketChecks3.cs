@@ -205,16 +205,107 @@ internal static partial class Program
         again.HoldAfterLoad();
         Stock a = loaded.Stock(s.Id);
         Check(again.Held && Why(again, a, OrderSide.Buy, 10) == OrderWhy.Held, "market: after a load no order is taken while the moments played before are played again");
+        RunTo(again, saturday + 3, MarketCatalogue.PhaseOpen + 9);
+        Check(again.Held && Why(again, a, OrderSide.Buy, 10) == OrderWhy.Held, "market: not even a step before the furthest moment played");
         RunTo(again, saturday + 3, MarketCatalogue.PhaseOpen + 10);
-        Check(again.Held && Why(again, a, OrderSide.Buy, 10) == OrderWhy.Held, "market: not even at the furthest moment played");
-        RunTo(again, saturday + 3, MarketCatalogue.PhaseOpen + 11);
-        Check(!again.Held && Why(again, a, OrderSide.Buy, 10) == OrderWhy.None, "market: orders are taken again once the market is past it");
-        // A load at the moment of the save itself: one fresh step first.
+        Check(!again.Held && Why(again, a, OrderSide.Buy, 10) == OrderWhy.None, "market: orders are taken again once the market is back at it (nothing past it was seen)");
+        // A load at the moment of the save itself, the furthest played: orders at once (the clock stands still while the phone is open).
         MarketState fresh = MarketStore.Read(MarketStore.Write(again.State), out _);
-        var third = new MarketEngine(fresh, MarketTape.Read(again.Tape.Id, again.Tape.Whole()), new MarketWorld(5));
+        var third = new MarketEngine(fresh, MarketTape.Read(again.Tape.Id, again.Tape.Whole()), new MarketWorld(5) { Purse = { Money = 10000000 } });
         third.HoldAfterLoad();
-        Check(third.Held, "market: after a load there is no trade at the price of the save until the market has moved on");
+        Check(!third.Held && Why(third, fresh.Stock(s.Id), OrderSide.Buy, 10) == OrderWhy.None, "market: a load at the moment of the save, the furthest played, takes orders at once");
         Check(frontier > 0, "market: the tape keeps the furthest moment played");
+    }
+
+    // The order ticket's path, as the Stocks app takes it: what the ticket draws (MarketDirector.Estimate) and what its Buy
+    // button places (MarketDirector.Place) for a market order.
+    private static Estimate TicketEstimate(MarketEngine m, MarketWorld world, Stock k, OrderSide side, long qty)
+    {
+        bool held = m.Held;
+        return MarketTrading.Check(m.State, k, side, OrderType.Market, qty, 0, 0, world.Wallet.Cash, world.Least, m.Trading && !held, held, m.State.Phase);
+    }
+
+    private static Order TicketPlace(MarketEngine m, Stock k, OrderSide side, long qty, out OrderWhy why)
+    {
+        bool held = m.Held;
+        return m.Place(k.Id, side, OrderType.Market, OrderLife.Day, qty, 0, 0, m.Trading && !held, held, false, out why);
+    }
+
+    // A save loaded at its own moment, the furthest the market played, with the clock standing still (the phone is open:
+    // the game is paused) takes an order from the ticket at once: filled in a session, waiting for the open when the
+    // market is shut. A load of an older save holds orders back, with a reason the ticket says. The ticket's button is
+    // always lit and says why when it cannot place an order, and every reason has its sentence.
+    private static void MarketTicketPath()
+    {
+        var world = new MarketWorld(77);
+        world.Purse.Money = 100000000;
+        MarketEngine m = NewMarket(77, 60, 1, 0, world);
+        int day = SessionDay(m, 3, 20);
+        Stock s = Liquid(m, MarketSize.Large);
+        string older = MarketStore.Write(m.State);
+        string olderTape = m.Tape.Whole();
+        RunTo(m, day, MarketCatalogue.PhaseOpen + 30);
+        var loaded = new MarketEngine(MarketStore.Read(MarketStore.Write(m.State), out _), MarketTape.Read(m.Tape.Id, m.Tape.Whole()), world);
+        loaded.HoldAfterLoad();
+        Stock k = loaded.State.Stock(s.Id);
+        Estimate e = TicketEstimate(loaded, world, k, OrderSide.Buy, 10);
+        OrderWhy why;
+        Order bought = e.Why == OrderWhy.None ? TicketPlace(loaded, k, OrderSide.Buy, 10, out why) : null;
+        Check(!loaded.Held && e.Why == OrderWhy.None && bought != null && bought.State == OrderState.Filled && loaded.State.Held(k.Id) == 10,
+            "market ticket: a save loaded at its own moment, the clock standing still, buys from the ticket at once (" + e.Why + ")");
+        Estimate sell = TicketEstimate(loaded, world, k, OrderSide.Sell, 10);
+        Order sold = sell.Why == OrderWhy.None ? TicketPlace(loaded, k, OrderSide.Sell, 10, out why) : null;
+        Check(sold != null && sold.State == OrderState.Filled && loaded.State.Held(k.Id) == 0, "market ticket: and sells (" + sell.Why + ")");
+        // Shut: loaded after the close, the order waits for the next open, and is filled there.
+        RunTo(loaded, day, MarketCatalogue.PhaseClose);
+        var evening = new MarketEngine(MarketStore.Read(MarketStore.Write(loaded.State), out _), MarketTape.Read(loaded.Tape.Id, loaded.Tape.Whole()), world);
+        evening.HoldAfterLoad();
+        Stock ek = evening.State.Stock(s.Id);
+        Estimate shut = TicketEstimate(evening, world, ek, OrderSide.Buy, 10);
+        Order waits = shut.Why == OrderWhy.None ? TicketPlace(evening, ek, OrderSide.Buy, 10, out why) : null;
+        Check(!evening.Trading && waits != null && waits.IsOpen && waits.Filled == 0, "market ticket: with the market shut the order is taken and waits for the open (" + shut.Why + ")");
+        RunTo(evening, TradingOnOrAfter(day + 1), MarketCatalogue.PhaseOpen);
+        Check(waits != null && waits.State == OrderState.Filled, "market ticket: and the open fills it");
+        // An older save: held, with its reason, until the market is back at the furthest moment played.
+        var back = new MarketEngine(MarketStore.Read(older, out _), MarketTape.Read(m.Tape.Id, m.Tape.Whole()), world);
+        back.HoldAfterLoad();
+        Stock bk = back.State.Stock(s.Id);
+        Check(olderTape.Length > 0 && back.Held && TicketEstimate(back, world, bk, OrderSide.Buy, 10).Why == OrderWhy.Held && TicketPlace(back, bk, OrderSide.Buy, 10, out why) == null && why == OrderWhy.Held,
+            "market ticket: an older save loaded holds orders back, with the reason");
+        RunTo(back, day, MarketCatalogue.PhaseOpen + 30);
+        Check(!back.Held && TicketEstimate(back, world, bk, OrderSide.Buy, 10).Why == OrderWhy.None, "market ticket: until the market is back at the furthest moment it played");
+
+        // The ticket itself (MarketApp.Box): its button is never shut off, and pressed it says the reason in the game's notification.
+        string dir = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\"));
+        string box = System.IO.Path.Combine(dir, @"Scripts\Markets\MarketApp.Box.cs");
+        string code = System.IO.File.Exists(box) ? System.IO.File.ReadAllText(box) : null;
+        int confirm = code != null ? code.IndexOf("private void Confirm(", StringComparison.Ordinal) : -1;
+        int place = code != null ? code.IndexOf("private void Place(", StringComparison.Ordinal) : -1;
+        Check(code != null && !code.Contains(".interactable") && confirm > 0 && place > confirm && code.IndexOf("Error(e.Why, k)", confirm, place - confirm, StringComparison.Ordinal) > 0
+              && code.IndexOf("Error(why, k)", place, StringComparison.Ordinal) > 0 && code.Contains("reallife_mkt_note_refused"),
+            "market ticket: the Buy or Sell button is always lit and says why it cannot place an order (" + box + ")");
+        string locale = System.IO.Path.Combine(dir, @"Locales\en.json");
+        Dictionary<string, string> words = System.IO.File.Exists(locale)
+            ? System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(System.IO.File.ReadAllText(locale).TrimStart('\uFEFF')) : null;
+        var missing = new List<string>();
+        for (OrderWhy w = OrderWhy.Closed; w < OrderWhy.Count; w++)
+        {
+            string name = w.ToString();
+            var key = new System.Text.StringBuilder("reallife_mkt_why_");
+            for (int i = 0; i < name.Length; i++)
+            {
+                if (i > 0 && char.IsUpper(name[i]))
+                {
+                    key.Append('_');
+                }
+                key.Append(char.ToLowerInvariant(name[i]));
+            }
+            if (words == null || !words.TryGetValue(key.ToString(), out string line) || string.IsNullOrWhiteSpace(line))
+            {
+                missing.Add(key.ToString());
+            }
+        }
+        Check(words != null && missing.Count == 0 && words.ContainsKey("reallife_mkt_note_refused"), "market ticket: every reason an order cannot be placed has its sentence" + (missing.Count > 0 ? " (missing " + string.Join(", ", missing) + ")" : string.Empty));
     }
 
     // Time skipped (a sleep, a stay in prison) is played step by step: the market is the same whether it was watched or not.

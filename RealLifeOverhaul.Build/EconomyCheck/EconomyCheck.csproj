@@ -12,13 +12,17 @@
        orders, picking, rounds, lateness and the rating, returns, the day's book, the bound on what a site adds and
        its line in the save, and (ServicesChecks.cs) the cleaning service and selling a business: the round,
        what a visit does, contracts, a business's value, the market and the money on the day, and (BrandChecks.cs) brands and franchises: recognition, standards, a
-       franchised shop's day, every way an agreement ends, a shop under a city chain and the save's line, and (EstateChecks.cs) property:
+       franchised shop's day, every way an agreement ends, a shop under a city chain and the save's line, and (KeptPriceChecks.cs) prices kept for a chain or a brand: always
+       inside the chain's range, the district's adjustment bounded, a price changed by something else put back, and (EstateChecks.cs) property:
        the market, a purchase on the existing mortgage, tenancies, works, a sale, the agency, a hotel's night, car hire,
        the yearly returns and the save's line, and (MarketChecks.cs) the city's stock market: prices over thousands of days,
        trading and what it costs, orders, dividends, splits, failures, candles, the analysis tools, the tape and the save's line, and
        (LedgerChecks.cs) the City Ledger: what each piece is, its headline, the subscription's round, the copy, the page's choices and the save's line, and
        (NewsstandChecks.cs) the City Ledger online: the titles' prices, the connection rule, the weeks, the pass, the editions kept, what each title prints and the save's line, and
-       (SharedCityChecks.cs) the shared city of a Going Public session: its messages, another version's, a damaged one, and each shared part applied to a guest's own state, and (FlareChecks.cs) Flare, the social media app, and
+       (SharedCityChecks.cs) the shared city of a Going Public session: its messages, another version's, a damaged one, and each shared part applied to a guest's own state, and (FlareChecks.cs) Flare, the social media app, and (EmpireChecks.cs) the
+       books of a dealership of Empire Motors, another author's mod: its takings and costs, a share of what has no address,
+       its stock among its records and what the tax deducts, and (FameChecks.cs) Standing:
+       wealth, recognition, the four reputations, the daily round, the street, the press, the city's requests and the save's line, and
        (PermadeathChecks.cs) Permadeath: the odds, the warnings first, when nothing can happen, the flu's course, the switch per save, a dead save, the life's line and the obituary's sentences
        Compiles the mod's own files, so it checks exactly what ships.
        the lender of last resort and the ways out of debt, and (VenturesChecks.cs) investors, the pitch, deals and the
@@ -53,6 +57,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityEconomy.cs" Link="Mod\CityEconomy.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CalendarRules.cs" Link="Mod\CalendarRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\Prices.cs" Link="Mod\Prices.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\EmpireMotorsLines.cs" Link="Mod\EmpireMotorsLines.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\UtilitiesCatalogue.cs" Link="Mod\UtilitiesCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\UtilitiesModel.cs" Link="Mod\UtilitiesModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\UtilitiesRules.cs" Link="Mod\UtilitiesRules.cs" />
@@ -105,10 +110,16 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandRules.cs" Link="Mod\BrandRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\FranchiseRules.cs" Link="Mod\FranchiseRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandStore.cs" Link="Mod\BrandStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\KeptPrices.cs" Link="Mod\KeptPrices.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareModel.cs" Link="Mod\FlareModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareRules.cs" Link="Mod\FlareRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareStore.cs" Link="Mod\FlareStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareCast.cs" Link="Mod\FlareCast.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Fame\FameModel.cs" Link="Mod\FameModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Fame\FameRules.cs" Link="Mod\FameRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Fame\FameStore.cs" Link="Mod\FameStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Fame\FamePress.cs" Link="Mod\FamePress.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Fame\FameCity.cs" Link="Mod\FameCity.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\TableModel.cs" Link="Mod\TableModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\CashCategory.cs" Link="Mod\CashCategory.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialModel.cs" Link="Mod\SocialModel.cs" />

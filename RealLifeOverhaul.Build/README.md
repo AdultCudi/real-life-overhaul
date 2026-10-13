@@ -2199,6 +2199,12 @@ once per car ("Car tuning: ..."). They are a model of the physics, not a measure
   up to 65: van (15 s, 145) with cargo room for 14 or more, else economy (12 s, 170); cargo 16 or more: utility
   (10 s, 180); max speed 95 or more: sports (4.8 s, 270), 85 or more: sports (5.5 s, 250); otherwise luxury
   (6.5 s, 240) if flagged so, else saloon (9 s, 200). To give it its own figures, add one `case` to `CarCatalogue.For`.
+- **Cars of other mods with their own row**, by their whole type names (their data is in their own asset
+  files, not read here, so the "applied" and "model" columns are worked out in the game only): Empire
+  Motors' two car add-ons, sold at the game's dealership through that mod's desk (docs/other-mods.md),
+  `empiremustanggt:vehicletype_mustanggt` (Mustang GT, Sports, 4.5 s, 250) and
+  `empirebmwg82:vehicletype_empirebmwg82` (BMW G82, Sports, 4.0 s, 250). Without their rows they were placed
+  by the game's own max speed they carry, which the guess cannot be sure of.
 - **The two sliders** (70 to 150 %) scale the top speed and divide the 0-100 time. Top speed is never taken
   past 350 km/h; with a top speed turned down below 125 km/h the power is found as if for 125 and the car is
   then geared and dragged down to what was asked.

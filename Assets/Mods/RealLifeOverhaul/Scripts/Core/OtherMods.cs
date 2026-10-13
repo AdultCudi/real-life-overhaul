@@ -10,7 +10,8 @@ namespace RealLifeOverhaul
         Camera,   // it drives the game's camera
         Route,    // it draws a route and markers on the city map
         Session,  // it shares the city with other players: the clock, the world and the traffic (Core/GoingPublic)
-        AddOn     // it adds to a mod of the kind above and does nothing this mod has to give way to
+        Business, // it runs a business of a type of its own, with its stock, its takings and its keys (Core/EmpireMotors)
+        AddOn    // it adds to a mod of the kind above and does nothing this mod has to give way to
     }
 
     /// <summary>One mod of another author's that this mod knows by name.</summary>
@@ -56,7 +57,11 @@ namespace RealLifeOverhaul
         public static readonly OtherMod FriendTrade = new OtherMod("ForeignTradeMultiplayer", "ForeignTradeMultiplayer.InitEntry", "Going Public Expansion-Friend Trade", OtherModKind.AddOn);
         public static readonly OtherMod GoingPublicFrench = new OtherMod("BampFrancais", "BampFrancais.ModEntry", "Going Public: Fran\u00e7ais", OtherModKind.AddOn);
 
-        public static readonly OtherMod[] All = { RpgCamera, VoogleRoute, GoingPublic, GoingPublicExtras, FriendTrade, GoingPublicFrench };
+        public static readonly OtherMod EmpireMotors = new OtherMod("EmpireMotors", "EmpireMotors.Core.EmpireMotorsMod", "Empire Motors", OtherModKind.Business);
+        public static readonly OtherMod EmpireMustang = new OtherMod("EmpireMustangGT", "EmpireMustangGTMod", "Empire Motors: Mustang GT", OtherModKind.AddOn);
+        public static readonly OtherMod EmpireBmw = new OtherMod("empirebmwg82", "EmpireBMWG82Mod", "Empire Motors: BMW G82", OtherModKind.AddOn);
+
+        public static readonly OtherMod[] All = { RpgCamera, VoogleRoute, GoingPublic, GoingPublicExtras, FriendTrade, GoingPublicFrench, EmpireMotors, EmpireMustang, EmpireBmw };
 
         /// <summary>
         /// One walk over the loaded assemblies for every mod of the table not found yet. One line in the log for each
@@ -106,6 +111,8 @@ namespace RealLifeOverhaul
                     return "The city map is left to it: this mod draws its route on its own minimap only, and not at all with 'Use the other mod's route line' on.";
                 case OtherModKind.Session:
                     return "In one of its sessions this mod passes no time of its own, takes nothing out of a guest's traffic and counts no other player's building as this player's (Core/GoingPublic).";
+                case OtherModKind.Business:
+                    return "Its dealerships are businesses of the player's here, with their car sales and costs in the books; the cars of their stock are left to it, and so is V in a car (Core/EmpireMotors).";
                 default:
                     return "It adds to a mod this one already lives with; nothing more is changed for it.";
             }

@@ -64,6 +64,26 @@ namespace RealLifeOverhaul.Economy
         /// <summary>A campaign of a kind that is not the company's own has been booked and paid: its business, kind, first and last day, and customers. Default: nobody is told.</summary>
         public static Action<string, int, int, int, int> Booked;
 
+        /// <summary>
+        /// What it is like to work for the player as the city tells it (Standing's workers' reputation, through
+        /// Wiring/StandingLinks), -10 to 10: somebody new starts that many points of standing above or below the usual, and
+        /// a rival approaches the staff a quarter as much more or less often for every four points under or over. Default: 0.
+        /// </summary>
+        public static Func<int> Esteem;
+
+        /// <summary>The esteem, inside its bounds; 0 without it.</summary>
+        internal static int EsteemNow()
+        {
+            try
+            {
+                return Esteem != null ? CompanyCatalogue.Clamp(Esteem(), -CompanyCatalogue.EsteemMost, CompanyCatalogue.EsteemMost) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
         public static void Reset()
         {
             Footfall = null;
@@ -80,6 +100,7 @@ namespace RealLifeOverhaul.Economy
             Cleaned = null;
             Outside = null;
             Booked = null;
+            Esteem = null;
         }
     }
 
@@ -492,7 +513,7 @@ namespace RealLifeOverhaul.Economy
                     {
                         continue;
                     }
-                    f = new StaffFile { Id = e.id };
+                    f = new StaffFile { Id = e.id, Standing = CompanyCatalogue.Clamp(CompanyCatalogue.StandingStart + CompanyBridges.EsteemNow(), 0, CompanyCatalogue.StandingMost) };
                     staff.Add(f);
                     ById[e.id] = f;
                 }

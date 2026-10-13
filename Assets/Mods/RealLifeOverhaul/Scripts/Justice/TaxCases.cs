@@ -54,6 +54,25 @@ namespace RealLifeOverhaul
             return opened.Number;
         }
 
+        /// <summary>
+        /// Opens a case for bribery (Wiring/StandingLinks: a bribe paid to an inspector came out), on a summons like a tax case:
+        /// heard and fined by Justice's own table. Its number, or 0 with no court to open it.
+        /// </summary>
+        public static int FileBribery(int amount)
+        {
+            if (!Justice.Active || amount <= 0)
+            {
+                return 0;
+            }
+            JusticeCase opened = Justice.Summon(new JusticeReport(JusticeLaw.Bribery) { Complied = true, Evidence = new[] { Evidence } });
+            if (opened == null)
+            {
+                return 0;
+            }
+            JusticeDirector.Logger?.Info("Justice: case " + opened.Number + " opened on a summons for bribery (" + amount + " paid to an inspector came out), to be heard on day " + opened.CourtDay + ".");
+            return opened.Number;
+        }
+
         /// <summary>True while a case with this number is still before the court.</summary>
         public static bool Open(int number)
         {

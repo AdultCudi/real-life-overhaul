@@ -33,6 +33,8 @@ namespace RealLifeOverhaul.Economy.Brands
         public int Failed;                       // franchisees that closed
         public int Bid, BidBy, BidUntil;         // a franchisee's bid for the brand: the price, who, and the last day to answer
         public int AskRest;                      // no new second shop or bid before this day
+        public bool Keep;                        // the member shops are kept on the flagship's prices (KeptPrices), not only copied once
+        public bool Local;                       // ...with an adjustment for each one's district, within a small band
         public readonly List<DistrictFile> Districts = new List<DistrictFile>(8);
 
         public bool Pushing => Push >= 0 && Age >= PushFrom && Age < PushEnd;
@@ -50,12 +52,13 @@ namespace RealLifeOverhaul.Economy.Brands
         }
     }
 
-    /// <summary>A shop of the player's that trades under a brand. The figures after the first three are read from the game each day and are not saved.</summary>
+    /// <summary>A shop of the player's that trades under a brand. The figures after the first four are read from the game each day and are not saved.</summary>
     public sealed class Member
     {
         public string Place = string.Empty;
         public int BrandId;
         public int Joined;
+        public bool Told;                        // the player has been told once that a price changed here by something else was put back
 
         public string District;
         public int Satisfaction = 50, Clean = 100, Stock = 100, Skill = 50;   // the game's own figures, 0 to 100 (Stock: the share of its main goods on the shelves)
@@ -129,6 +132,8 @@ namespace RealLifeOverhaul.Economy.Brands
         public int Breach;                       // days running outside the chain's standards or prices
         public int Average;                      // an ordinary day's royalty, a moving average
         public int Paid;
+        public bool Keep;                        // its prices are kept inside the chain's range (KeptPrices)
+        public bool Told;                        // the player has been told once that a price changed here by something else was put back
 
         public int Standards = 50, Prices = 1000;   // read each day, not saved
         public bool Seen;

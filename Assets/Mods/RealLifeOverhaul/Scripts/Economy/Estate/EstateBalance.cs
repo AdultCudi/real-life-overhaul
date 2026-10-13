@@ -18,38 +18,41 @@ namespace RealLifeOverhaul.Economy
         /// A let building's net return a year, hundredths of a per cent of its value: the rent that came in, less
         /// landlord's cover, the court's fees and what it costs to put the wear right, with a landlord who takes
         /// the first applicant with a fair record (or anybody after two days), serves notice when he may and goes
-        /// to court when he may.
+        /// to court when he may. The building is one unit: a building of many lets each at its share of the rent, so
+        /// its return on its value is the same.
         /// </summary>
         public static int LetYearlyBp(int use, int income, int cycle, int seed)
         {
             EstateClimate c = EstateClimate.Steady;
             c.Cycle = cycle;
             var h = new EstateHolding { Place = "Balance~" + use, Base = Value, Use = use, AsBuilt = use, Income = income, Cond = 900, Cover = true, Managed = true };
+            EstateUnit u = h.Units[0];
             int days = Years * c.DaysPerYear;
             long net = 0;
             bool pays = false;
             for (int day = 1; day <= days; day++)
             {
-                net += pays ? h.Rent : 0;
+                net += pays ? u.Rent : 0;
                 EstateRules.Lapse(h, day);
-                EstateRules.Apply(h, seed, day, c);
-                for (int i = 0; !h.Let && i < h.Applicants.Count; i++)
+                EstateRules.Apply(h, 0, seed, day, c);
+                for (int i = 0; !u.Let && i < u.Applicants.Count; i++)
                 {
-                    if (h.Applicants[i].Record >= 50 || h.VoidDays >= 2)
+                    if (u.Applicants[i].Record >= 50 || u.VoidDays >= 2)
                     {
-                        EstateRules.Accept(h, h.Applicants[i].Id, day);
+                        EstateRules.Accept(h, u.Applicants[i].Id, day);
                     }
                 }
-                TenancyDay d = EstateRules.Day(h, seed, day, c);
+                EstateRules.Wear(h);
+                TenancyDay d = EstateRules.Day(h, 0, seed, day, c);
                 pays = d.Pays;
                 net += d.Lump;
                 net += EstateRules.Hazard(h, seed, day, c).Payout;
                 net -= EstateRules.Premium(h.Base, c);
-                if (EstateRules.ServeNotice(h, day, c.RentLever))
+                if (EstateRules.ServeNotice(h, 0, day, c.RentLever))
                 {
                     continue;
                 }
-                if (EstateRules.GoToCourt(h, day))
+                if (EstateRules.GoToCourt(h, 0, day))
                 {
                     net -= EstateRules.CourtFee(c.Index);
                 }

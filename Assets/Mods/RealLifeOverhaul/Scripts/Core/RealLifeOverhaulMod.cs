@@ -508,6 +508,27 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_flare_test_city", () => Flare.FlareDirector.Instance?.TestCity())
                 .AddButton("reallife_flare_test_back", () => Flare.FlareDirector.Instance?.TestBack())
                 .AddSplitter()
+                .AddHeader("reallife_fame_header")
+                .AddToggle(Settings.StandingId, "reallife_fame_enabled", Settings.Standing,
+                    v => Settings.Standing = v)
+                .AddToggle(Settings.StandingStreetId, "reallife_fame_street", Settings.StandingStreet,
+                    v => Settings.StandingStreet = v)
+                .AddToggle(Settings.StandingPressId, "reallife_fame_press", Settings.StandingPress,
+                    v => Settings.StandingPress = v)
+                .AddToggle(Settings.StandingCorruptionId, "reallife_fame_corruption", Settings.StandingCorruption,
+                    v => Settings.StandingCorruption = v)
+                .AddButton("reallife_fame_test_day", () => Fame.FameDirector.Instance?.TestDay())
+                .AddButton("reallife_fame_test_street", () => Fame.FameDirector.Instance?.TestStreet())
+                .AddButton("reallife_fame_test_known", () => Fame.FameDirector.Instance?.TestKnown())
+                .AddButton("reallife_fame_test_reporter", () => Fame.FameDirector.Instance?.TestReporter())
+                .AddButton("reallife_fame_test_show", () => Fame.FameDirector.Instance?.TestShow())
+                .AddButton("reallife_fame_test_promises", () => Fame.FameDirector.Instance?.TestPromises())
+                .AddButton("reallife_fame_test_request", () => Fame.FameDirector.Instance?.TestRequest())
+                .AddButton("reallife_fame_test_evening", () => Fame.FameDirector.Instance?.TestEvening())
+                .AddButton("reallife_fame_test_bribe", () => Fame.FameDirector.Instance?.TestBribe())
+                .AddButton("reallife_fame_test_council", () => Fame.FameDirector.Instance?.TestCouncil())
+                .AddButton("reallife_fame_test_back", () => Fame.FameDirector.Instance?.TestBack())
+                .AddSplitter()
                 .AddHeader("reallife_travel_header")
                 .AddToggle(Settings.HotelsId, "reallife_travel_hotels", Settings.Hotels,
                     v => Settings.Hotels = v)
@@ -1044,6 +1065,8 @@ namespace RealLifeOverhaul
             Flare.FlareDirector.Logger = context.Logger;
             Flare.FlareApp.Logger = context.Logger;
             _root.AddComponent<Flare.FlareDirector>();   // Flare, the city's social media app (Scripts/Social/Flare): after the company and the brands, so that its day follows theirs
+            Fame.FameDirector.Logger = context.Logger;
+            _root.AddComponent<Fame.FameDirector>();   // Standing, a city that reacts to the player's success (Scripts/Fame): after Flare and the company, so that its day reads theirs
             PermadeathDirector.Logger = context.Logger;
             _root.AddComponent<PermadeathDirector>();   // an ending the player chooses: a death after warnings, the obituary, the save ended (Scripts/Permadeath)
             CarTuning.Logger = context.Logger;

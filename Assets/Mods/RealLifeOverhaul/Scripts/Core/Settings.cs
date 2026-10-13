@@ -188,6 +188,10 @@ namespace RealLifeOverhaul
         public const string SocialNewspaperId = "social_newspaper";
         public const string SocialMediaId = "social_media";
         public const string SocialMediaNoticesId = "social_media_notices";
+        public const string StandingId = "standing";
+        public const string StandingStreetId = "standing_street";
+        public const string StandingPressId = "standing_press";
+        public const string StandingCorruptionId = "standing_corruption";
         public const string LedgerKiosksId = "ledger_kiosks";
         public const string LedgerOnlineId = "ledger_online";
         public const string LedgerOnlineNotesId = "ledger_online_notes";
@@ -405,6 +409,10 @@ namespace RealLifeOverhaul
         public static int SocialTextsMax = 3;            // texts a day from everybody together, 1 to 6
         public static bool SocialMedia = true;           // Flare, the city's social media app: an account, posts about what really happened, friends who follow (Scripts/Social/Flare)
         public static bool SocialMediaNotices = true;    // Flare's few notifications (off: none at all; the app's badge still counts)
+        public static bool Standing = true;              // Standing: the city knows the player's wealth, name and reputation, and reacts (Scripts/Fame)
+        public static bool StandingStreet = true;        // ...people in the street and customers in the player's shops know them
+        public static bool StandingPress = true;         // ...reporters, the night show, magazines and the papers' pieces about the player
+        public static bool StandingCorruption = true;    // ...officials who offer to speed things up for a bribe, and what comes of it
         public static bool SocialNewspaper = true;       // the City Ledger: a morning newspaper, delivered to subscribers' homes and sold at kiosks (Scripts/Ledger)
         public static bool LedgerKiosks = true;          // newspaper kiosks near the player's home sell the paper (off: subscribers only)
         public static bool LedgerOnline = true;          // Newsstand: the City Ledger and three other titles read on the phone by subscription, over the home's internet
@@ -636,6 +644,10 @@ namespace RealLifeOverhaul
             SocialNewspaper = Bool(modId, SocialNewspaperId, SocialNewspaper);
             SocialMedia = Bool(modId, SocialMediaId, SocialMedia);
             SocialMediaNotices = Bool(modId, SocialMediaNoticesId, SocialMediaNotices);
+            Standing = Bool(modId, StandingId, Standing);
+            StandingStreet = Bool(modId, StandingStreetId, StandingStreet);
+            StandingPress = Bool(modId, StandingPressId, StandingPress);
+            StandingCorruption = Bool(modId, StandingCorruptionId, StandingCorruption);
             LedgerKiosks = Bool(modId, LedgerKiosksId, LedgerKiosks);
             LedgerOnline = Bool(modId, LedgerOnlineId, LedgerOnline);
             LedgerOnlineNotes = Bool(modId, LedgerOnlineNotesId, LedgerOnlineNotes);

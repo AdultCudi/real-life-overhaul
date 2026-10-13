@@ -443,6 +443,14 @@ namespace RealLifeOverhaul.Economy
                 {
                     Logger?.Info("Economy check (books): the game's statement of day " + (Save.Day - 1) + " brought up to date with the mod's costs booked for it after it was made: PASS.");
                 }
+                // Another author's dealerships (Core/EmpireMotors): what they spent is deducted by the game's tax, once a day.
+                float deducted = GameBooks.Deduct(Save.Day - 1);
+                if (Verbose && (deducted > 0f || GameBooks.DealerTakings != 0f || GameBooks.DealerCosts != 0f))
+                {
+                    Logger?.Info("Economy check (Empire Motors): day " + (Save.Day - 1) + " the dealerships took " + GameBooks.DealerTakings.ToString("0") + " and spent "
+                                 + GameBooks.DealerCosts.ToString("0") + " in the game's statements; " + deducted.ToString("0") + " given to the game's tax to deduct: "
+                                 + (deducted <= Mathf.Max(0f, GameBooks.DealerCosts) + 1f ? "PASS" : "FAIL") + ".");
+                }
             }
             catch (Exception e)
             {
@@ -778,6 +786,16 @@ namespace RealLifeOverhaul.Economy
         private void OpenCredit()
         {
             Open(Finance.Credit);
+        }
+
+        /// <summary>The Finance app on the Standing page.</summary>
+        public void OpenStanding()
+        {
+            if (_app != null && _view != null && _running)
+            {
+                _view.WantStanding();
+                _app.Open();
+            }
         }
 
         /// <summary>The Finance app on the city's page.</summary>

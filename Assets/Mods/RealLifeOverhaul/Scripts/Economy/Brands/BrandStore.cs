@@ -13,15 +13,16 @@ namespace RealLifeOverhaul.Economy.Brands
     /// Parts are divided by '^' and begin with a letter and a colon; records inside a part by ';', fields by '|'.
     ///   h  the header: seed|first day|last day|next number
     ///   b  the brands: id|name|type|flagship|founded|age|city-wide recognition|standards|minimum|on offer|campaign|
-    ///      from|end|its district|fund|ticket|net|earned|failed|bid|bid by|bid until|ask rest
+    ///      from|end|its district|fund|ticket|net|earned|failed|bid|bid by|bid until|ask rest|prices kept|by district
     ///   d  recognition by district: brand|district|figure
-    ///   m  the member shops: place|brand|joined
+    ///   m  the member shops: place|brand|joined|told of a price put back
     ///   a  the applicants: id|brand|name|temperament|capital|experience|shops run|shops closed|ability|district|until|from
     ///   f  the franchises: id|brand|name|temperament|ability|district|place|the game's name|hold|x|z|has a spot|
     ///      customers|signed|until|term|entry fee|royalty|levy|exclusive|standards|seen|seen day|warnings|warned until|
     ///      retrained until|cash|ask|ask until|ask amount|ask rest|court number|waived until|takings|royalty paid
     ///      yesterday|customers yesterday|paid in all|no renewal|the business's own start day
-    ///   t  the player's shops under a city chain: place|chain|from|until|days in breach|average royalty|paid
+    ///   t  the player's shops under a city chain: place|chain|from|until|days in breach|average royalty|paid|prices kept|
+    ///      told of a price put back
     ///
     /// Every figure is a whole number, so what is read back is exactly what was written. A NEWER VERSION adds fields at
     /// the end of a record or a part with a new letter; this reader takes the fields it knows and skips parts it does
@@ -68,7 +69,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 t.Append('|').Append(Clean(b.Name)).Append('|').Append(Clean(b.Type)).Append('|').Append(Clean(b.Flagship)).Append('|');
                 Join(t, b.Founded, b.Age, b.City, b.Standards, b.Minimum, b.Offered ? 1 : 0, b.Push, b.PushFrom, b.PushEnd);
                 t.Append('|').Append(Clean(b.PushDistrict)).Append('|');
-                Join(t, b.Fund, b.Ticket, b.Net, b.Earned, b.Failed, b.Bid, b.BidBy, b.BidUntil, b.AskRest);
+                Join(t, b.Fund, b.Ticket, b.Net, b.Earned, b.Failed, b.Bid, b.BidBy, b.BidUntil, b.AskRest, b.Keep ? 1 : 0, b.Local ? 1 : 0);
             }
             t.Append("^d:");
             bool first = true;
@@ -89,7 +90,7 @@ namespace RealLifeOverhaul.Economy.Brands
             {
                 Member m = s.Members[i];
                 t.Append(i > 0 ? ";" : string.Empty).Append(Clean(m.Place)).Append('|');
-                Join(t, m.BrandId, m.Joined);
+                Join(t, m.BrandId, m.Joined, m.Told ? 1 : 0);
             }
             t.Append("^a:");
             for (int i = 0; i < s.Applicants.Count && i < BrandCatalogue.ApplicantsMost; i++)
@@ -119,7 +120,7 @@ namespace RealLifeOverhaul.Economy.Brands
             {
                 Taken k = s.Taken[i];
                 t.Append(i > 0 ? ";" : string.Empty).Append(Clean(k.Place)).Append('|');
-                Join(t, k.Chain, k.From, k.Until, k.Breach, k.Average, k.Paid);
+                Join(t, k.Chain, k.From, k.Until, k.Breach, k.Average, k.Paid, k.Keep ? 1 : 0, k.Told ? 1 : 0);
             }
             return t.ToString();
         }
@@ -189,7 +190,7 @@ namespace RealLifeOverhaul.Economy.Brands
                                 string[] c = record.Split('|');
                                 if (c[0].Length > 0 && s.Brand(I(c, 1)) != null && s.Member(c[0]) == null && s.Members.Count < BrandCatalogue.MembersMost)
                                 {
-                                    s.Members.Add(new Member { Place = c[0], BrandId = I(c, 1), Joined = Math.Max(0, I(c, 2)) });
+                                    s.Members.Add(new Member { Place = c[0], BrandId = I(c, 1), Joined = Math.Max(0, I(c, 2)), Told = I(c, 3) != 0 });
                                 }
                             }
                             break;
@@ -229,7 +230,8 @@ namespace RealLifeOverhaul.Economy.Brands
                                     s.Taken.Add(new Taken
                                     {
                                         Place = c[0], Chain = BrandCatalogue.Clamp(I(c, 1), 0, BrandCatalogue.Chains - 1), From = Math.Max(0, I(c, 2)), Until = Math.Max(0, I(c, 3)),
-                                        Breach = BrandCatalogue.Clamp(I(c, 4), 0, BrandCatalogue.ChainEndDays), Average = Math.Max(0, I(c, 5)), Paid = Math.Max(0, I(c, 6))
+                                        Breach = BrandCatalogue.Clamp(I(c, 4), 0, BrandCatalogue.ChainEndDays), Average = Math.Max(0, I(c, 5)), Paid = Math.Max(0, I(c, 6)),
+                                        Keep = I(c, 7) != 0, Told = I(c, 8) != 0
                                     });
                                 }
                             }
@@ -271,7 +273,8 @@ namespace RealLifeOverhaul.Economy.Brands
             {
                 Id = id, Name = c[1], Type = c[2], Flagship = c[3], Founded = Math.Max(0, I(c, 4)), Age = Math.Max(0, I(c, 5)), City = BrandCatalogue.Clamp(I(c, 6), 0, BrandCatalogue.RecMost),
                 Standards = BrandCatalogue.Clamp(I(c, 7), 0, 100), Offered = I(c, 9) != 0, Fund = Math.Max(0, I(c, 14)), Ticket = Math.Max(0, I(c, 15)), Net = I(c, 16), Earned = Math.Max(0, I(c, 17)),
-                Failed = Math.Max(0, I(c, 18)), Bid = Math.Max(0, I(c, 19)), BidBy = Math.Max(0, I(c, 20)), BidUntil = Math.Max(0, I(c, 21)), AskRest = Math.Max(0, I(c, 22))
+                Failed = Math.Max(0, I(c, 18)), Bid = Math.Max(0, I(c, 19)), BidBy = Math.Max(0, I(c, 20)), BidUntil = Math.Max(0, I(c, 21)), AskRest = Math.Max(0, I(c, 22)),
+                Keep = I(c, 23) != 0, Local = I(c, 24) != 0
             };
             int minimum = I(c, 8, BrandCatalogue.OfferStandards);
             b.Minimum = Array.IndexOf(BrandCatalogue.MinimumSteps, minimum) >= 0 ? minimum : BrandCatalogue.OfferStandards;

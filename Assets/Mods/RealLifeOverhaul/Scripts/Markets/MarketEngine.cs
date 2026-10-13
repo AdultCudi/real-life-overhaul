@@ -97,15 +97,20 @@ namespace RealLifeOverhaul.Markets
         /// <summary>True while the moments being played are ones the tape has seen before (after a load).</summary>
         public bool Replaying => State.Now < _replayUntil;
 
-        /// <summary>True while orders wait after a load: until the market is past the furthest moment ever played (and past the load itself).</summary>
-        public bool Held => State.HeldDay > 0 && State.Now <= MarketState.Time(State.HeldDay, State.HeldPhase);
+        /// <summary>
+        /// True while orders wait after a load: while the moments being played are ones played before it, up to the furthest
+        /// moment ever played. At that moment itself orders are taken: nothing past it has been seen. (A load at the moment
+        /// of the save, the save being the furthest moment, takes orders at once: the game's clock stands still while the
+        /// phone is open, so a hold to the next step would keep the ticket shut for as long as the app is.)
+        /// </summary>
+        public bool Held => State.HeldDay > 0 && State.Now < MarketState.Time(State.HeldDay, State.HeldPhase);
 
         /// <summary>True while the market trades: a market day, from the open to the close.</summary>
         public bool Trading => MarketCatalogue.TradingDay(State.Day) && State.Phase >= MarketCatalogue.PhaseOpen && State.Phase < MarketCatalogue.PhaseClose;
 
         /// <summary>
         /// A save has just been loaded into this engine: the tape is followed up to its frontier, and no order is taken
-        /// until the market is past both the frontier and the moment of the load (no trade at a price from before it).
+        /// until the market has played up to it again (no trade at a price already seen moving on).
         /// </summary>
         public void HoldAfterLoad()
         {

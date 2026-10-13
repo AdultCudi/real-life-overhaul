@@ -53,6 +53,16 @@ namespace RealLifeOverhaul
         /// </summary>
         public static Func<bool> UtilitiesOn;
 
+        /// <summary>
+        /// What an official asks to make an inspection or a licence a formality (Wiring/StandingLinks: the player's standing
+        /// and its corruption option): the issue's kind, the business's place, what the catalogue would ask, and the issue's
+        /// seed, so that the same issue always gets the same answer. 0: nobody asks. While it is not set, nobody ever does.
+        /// </summary>
+        public static Func<string, string, int, int, int> BribeAsk;
+
+        /// <summary>A bribe was paid at a business: the issue's kind, the place and the amount. Default: nobody hears of it.</summary>
+        public static Action<string, string, int> Bribed;
+
         private readonly BusinessVisit _visit = new BusinessVisit();
         private readonly List<BuildingRegistration> _shops = new List<BuildingRegistration>(8);
         private readonly List<string> _opening = new List<string>(8);   // the businesses whose last closure of the mod's has just ended
