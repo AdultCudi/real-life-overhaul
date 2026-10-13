@@ -16,7 +16,7 @@ namespace RealLifeOverhaul
     /// every place, and "set destination".
     ///
     ///   kind (row)                   places                                                    ticked   in street
-    ///   Bus stops                    every stop of the bus network (TransitMap.Stops)          by count no
+    ///   Bus stops                    every place of the bus network (TransitMap.Places)        by count no
     ///   Hotels                       the eight hotels (Hotels.Sites)                           yes      yes
     ///   Courthouse                   the courthouse (Courthouse.Front)                         yes      yes
     ///   Places to study              the university, the game's school, the hospitals' wards   yes      yes
@@ -222,7 +222,7 @@ namespace RealLifeOverhaul
                 Id = "bus_stops", TitleKey = "reallife_map_row_bus_stops", Colour = TransitDirector.StopColour, Icon = MapIcon.Bus,
                 TickedByDefault = count => count <= ManyStops,
                 Enabled = () => Settings.Buses,
-                Stamp = () => TransitMap.Ready ? 1 + TransitMap.Stops.Count : 0,
+                Stamp = () => TransitMap.Ready ? 1 + TransitMap.Places.Count : 0,
                 Fill = BusStops
             });
             // Travel: the hotels (which used to add markers of their own).
@@ -554,8 +554,10 @@ namespace RealLifeOverhaul
 
         private static void BusStops(List<MapPlace> places)
         {
-            List<TransitStop> stops = TransitMap.Stops;
+            // One marker a place: a place several lines stop at names them all.
+            List<TransitStop> stops = TransitMap.Places;
             string pattern = T("reallife_map_bus_stop");
+            string shared = T("reallife_map_bus_stop_lines");
             for (int i = 0; i < stops.Count; i++)
             {
                 TransitStop stop = stops[i];
@@ -564,9 +566,11 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 TransitLine line = stop.Line >= 0 && stop.Line < TransitMap.Lines.Count ? TransitMap.Lines[stop.Line] : null;
-                string name = pattern.Replace("{line}", line != null ? line.Number : string.Empty)
-                    .Replace("{to}", line != null && !string.IsNullOrEmpty(line.ToKey) ? line.To : string.Empty)
-                    .Replace("{name}", stop.Name ?? (stop.Order + 1).ToString());
+                string name = stop.Calls.Count > 1
+                    ? shared.Replace("{lines}", TransitMap.Numbers(stop, ", ")).Replace("{name}", stop.Name ?? (stop.Order + 1).ToString())
+                    : pattern.Replace("{line}", line != null ? line.Number : string.Empty)
+                        .Replace("{to}", line != null && !string.IsNullOrEmpty(line.ToKey) ? line.To : string.Empty)
+                        .Replace("{name}", stop.Name ?? (stop.Order + 1).ToString());
                 places.Add(new MapPlace(stop.Sign, name));
             }
         }

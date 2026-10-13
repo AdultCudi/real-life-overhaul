@@ -257,8 +257,7 @@ namespace RealLifeOverhaul
                 Finish("the bus had left by the time they reached its door", put: false);
                 return;
             }
-            bool pass = TransitState.HasPass;
-            if (!TransitState.Pay(TransitState.BusFare, "reallife_transaction_bus_fare"))
+            if (!TransitState.PayBus(out bool pass))
             {
                 Logger?.Info("Transit check (boarding): the player reached the door but cannot pay the fare of " + TransitState.BusFare.ToString("F2") + ": they stay on the pavement: FAIL.");
                 RefusedFare = true;

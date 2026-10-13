@@ -243,7 +243,8 @@ namespace RealLifeOverhaul
 
         public LabelInfo GetHeadlineLabel()
         {
-            return new LabelInfo("reallife_bus_ride_title", new { name = _host.JourneyStopName(true) }, GameUi.WorldPanel.White());
+            (string key, object arguments) title = _host.JourneyHeadline();
+            return new LabelInfo(title.key, title.arguments, GameUi.WorldPanel.White());
         }
 
         public LabelInfo[] GetLabels() => null;
