@@ -177,6 +177,17 @@ namespace RealLifeOverhaul
 
         public SocialPerson Who => _who;
         public bool Greeted => _greeted;
+
+        /// <summary>
+        /// True while the other person is out in the street with the player, met, shown and within
+        /// <paramref name="within"/> metres of <paramref name="where"/>: in the picture's background, or at the player's
+        /// shoulder. False on the way there, inside, in a car, or gone.
+        /// </summary>
+        public bool Beside(Vector3 where, float within)
+        {
+            return _greeted && _friend != null && _friend.Valid && _friend.Character.visible && _friend.Character.gameObject.activeInHierarchy
+                   && (_friend.Position - where).sqrMagnitude <= within * within;
+        }
         public override bool SkippingTime => _skipping;
         public override bool Waiting => _step == Step.Travel && _friend == null;
 

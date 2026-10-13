@@ -49,6 +49,16 @@ namespace RealLifeOverhaul
                 director.OnArrested();
             }
         }
+
+        /// <summary>
+        /// The player saved a selfie in photo mode, standing at <paramref name="where"/>. On an outing with the friend
+        /// beside them, the friend likes it (once an outing): the first name of who did, or null.
+        /// </summary>
+        public static string Selfie(Vector3 where)
+        {
+            SocialDirector director = SocialDirector.Instance;
+            return director != null ? director.OnSelfie(where) : null;
+        }
     }
 
     /// <summary>
@@ -107,6 +117,7 @@ namespace RealLifeOverhaul
         public Vector3 CarVelocity { get; private set; }
 
         private SocialScene _scene;
+        private SocialScene _selfieScene;   // the outing a selfie was last liked on: one like an outing
         private Rigidbody _carBody;
         private CarController _hookedCar;
         private float _lastCrash = -100f;
@@ -471,6 +482,28 @@ namespace RealLifeOverhaul
             if (SocialState.CoffeeBuys >= 2)
             {
                 Pend(SocialOrigin.CoffeeCart, 0.5f, Time.unscaledTime, 5f);   // a regular notices another
+            }
+        }
+
+        internal string OnSelfie(Vector3 where)
+        {
+            try
+            {
+                if (_broken || !SocialState.Loaded || !Settings.Social || !(_scene is OutingScene outing) || ReferenceEquals(_selfieScene, _scene)
+                    || !outing.Beside(where, SocialRules.SelfieWithin))
+                {
+                    return null;
+                }
+                _selfieScene = _scene;
+                SocialPerson person = outing.Who;
+                SocialLife.Change(person, SocialRules.SelfieFamiliarity, SocialRules.SelfieAffection, 0f);
+                Logger?.Info("Social: " + person.Name + " was in a selfie with the player on an outing and liked it.");
+                return SocialLife.First(person);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return null;
             }
         }
 

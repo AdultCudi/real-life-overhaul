@@ -204,6 +204,8 @@ namespace RealLifeOverhaul
         public const float CallFamiliarity = 3f, CallAffection = 2f, CallTrust = 0.5f;
         public const float WarmReply = 1.5f, BluntReply = -2f;
         public const float TextReply = 1f;
+        public const float SelfieFamiliarity = 1f, SelfieAffection = 2f;   // a selfie together on an outing, once an outing
+        public const float SelfieWithin = 3f;                               // metres from the player the friend stands in
         public const float OnTimeTrust = 2f;
         public const float LateTrust = -3f, LateAffection = -2f;
         public const float StoodUpTrust = -12f, StoodUpAffection = -10f;
