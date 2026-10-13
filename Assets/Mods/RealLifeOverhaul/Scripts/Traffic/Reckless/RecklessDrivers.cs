@@ -92,6 +92,8 @@ namespace RealLifeOverhaul
         /// and this has not switched itself off. TrafficAccidents and PedestrianIncidents make their own rolls only
         /// while it is false, so with this option off, or after a fault here, everything is as it was before.
         /// </summary>
+        // (What other drivers do near the player is told through TrafficAccidents.Notice, so that 'Notifications about
+        // accidents' switches it off with the accidents' own notices.)
         public static bool IsSource => Instance != null && Instance._working && Settings.NaturalAccidents && Settings.TrafficAccidents;
 
         private readonly RoadsideStop _stop = new RoadsideStop();
@@ -545,7 +547,7 @@ namespace RealLifeOverhaul
                     }
                     if (now >= _until || !_car.Driver.Active)
                     {
-                        Notifications.Show(NotificationType.Info, "reallife_streets_got_away", null, 8f, "reallife_accident");
+                        TrafficAccidents.Notice(NotificationType.Info, "reallife_streets_got_away", 8f);
                         Settle(now, "the driver who ran got away");
                     }
                     break;
@@ -701,7 +703,7 @@ namespace RealLifeOverhaul
                 _chaseWanted = Settings.Police;
                 _patrolAt = 0f;
                 News.Report(NewsKind.HitAndRun, _scene);
-                Notifications.Show(NotificationType.Warning, "reallife_streets_hit_run", null, 8f, "reallife_accident");
+                TrafficAccidents.Notice(NotificationType.Warning, "reallife_streets_hit_run", 8f);
                 Logger?.Info($"Reckless driver: ran somebody down ({(fatal ? "fatal" : "injured")}) and is not stopping"
                              + (_chaseWanted ? $"; a patrol car goes after it once it is {StreetRules.ChaseAfter:F0} m clear of the scene." : "; no police to go after it."));
             }
@@ -817,7 +819,7 @@ namespace RealLifeOverhaul
                 _car.Settle();
                 driver.CruiseSpeed = 21f;
                 _chase.Begin(_car.Unit, _patrol, _stop, true, now + PullOverMost, arrest: false, "reallife_streets_pulled_over");
-                Notifications.Show(NotificationType.Info, "reallife_streets_patrol_stop", null, 8f, "reallife_accident");
+                TrafficAccidents.Notice(NotificationType.Info, "reallife_streets_patrol_stop", 8f);
             }
             else
             {
@@ -825,7 +827,7 @@ namespace RealLifeOverhaul
                 driver.CruiseSpeed = _car.Cruise + 3.5f;
                 bool caught = Random.value < 0.55f;
                 _chase.Begin(_car.Unit, _patrol, _stop, caught, now + Random.Range(20f, 45f), arrest: true, hitAndRun ? "reallife_chase_caught" : "reallife_streets_chase_caught");
-                Notifications.Show(NotificationType.Warning, hitAndRun ? "reallife_streets_chase_hit_run" : "reallife_streets_patrol_chase", null, 8f, "reallife_accident");
+                TrafficAccidents.Notice(NotificationType.Warning, hitAndRun ? "reallife_streets_chase_hit_run" : "reallife_streets_patrol_chase", 8f);
             }
             _fledFromPeople = hitAndRun;
             _phase = Phase.Chased;
@@ -852,7 +854,7 @@ namespace RealLifeOverhaul
             _chase.Reset();
             if (caught && _complies)
             {
-                Notifications.Show(NotificationType.Info, "reallife_streets_ticketed", null, 8f, "reallife_accident");
+                TrafficAccidents.Notice(NotificationType.Info, "reallife_streets_ticketed", 8f);
                 Finish(now, false, "pulled over, written up and sent on its way");
             }
             else if (caught)
@@ -862,7 +864,7 @@ namespace RealLifeOverhaul
             }
             else
             {
-                Notifications.Show(NotificationType.Info, _fledFromPeople ? "reallife_chase_escaped" : "reallife_streets_chase_lost", null, 8f, "reallife_accident");
+                TrafficAccidents.Notice(NotificationType.Info, _fledFromPeople ? "reallife_chase_escaped" : "reallife_streets_chase_lost", 8f);
                 Settle(now, "it lost the patrol car");
             }
         }
