@@ -306,8 +306,10 @@ the lens and the strap where the clips put the hands. `scene_bus_inside.png` sho
 `newer_props.py <id> ...` after `build_props.py`: the listed props' meshes (the very files the bundle is built from)
 and their catalogue rows go into `Assets\Mods\RealLifeOverhaul\Bundles\props_newer`, and the mod reads them after the
 bundle and uses them in place of its own of the same id, with its atlas (so a remade prop may only use paints the atlas
-already has: check that `build\atlas.json` has not changed). All of them or none. `build_bundle.ps1` removes the folder
-once a bundle has been built with them in it. **The fire engine is a body that stands over one of the game's own traffic vehicles** while **all**
+already has: check that `build\atlas.json` has not changed). All of them or none. The folder's catalogue carries the
+SHA-256 of the bundle file beside it, and the mod uses the folder only next to that very bundle: a folder left from an
+older version is ignored (said once in the log). `build_bundle.ps1` removes the folder once a bundle has been built
+with them in it. **The fire engine is a body that stands over one of the game's own traffic vehicles** while **all**
 of that vehicle's renderers are hidden (`EngineLivery.Dress`), so it carries its own wheels. Both are lofted hulls
 (cross-sections along the length, windows let in 2.4 cm with a chamfered surround), not boxes. **A body over a game's
 vehicle is made to that vehicle: the same length, and its axles where that vehicle's are**, so that the hidden
