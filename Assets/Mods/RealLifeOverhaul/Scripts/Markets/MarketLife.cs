@@ -250,6 +250,10 @@ namespace RealLifeOverhaul.Markets
         /// </summary>
         public static double Accrued(Stock s, int day, int year)
         {
+            if (s.Own != null)
+            {
+                return s.Own.Rps;   // a player's company: its reserve a share is in the price, and a dividend leaves it on its record day (ListingRules)
+            }
             bool declared = s.DeclaredCents > 0 && !s.ExDone && s.RecordDay > 0;
             int cents = declared ? s.DeclaredCents : s.DpsCents;
             if (cents <= 0)
@@ -302,6 +306,23 @@ namespace RealLifeOverhaul.Markets
             s.DayVolume *= ratio;
             s.DpsCents = (int)Math.Round(s.DpsCents / (double)ratio);
             s.DeclaredCents = (int)Math.Round(s.DeclaredCents / (double)ratio);
+            if (s.Own != null)
+            {
+                // A player's company: its founder's shares and their deals as well, its reserve and its prices a share.
+                OwnListing own = s.Own;
+                own.Founder *= ratio;
+                own.Rps /= ratio;
+                own.ProposedCents = (int)Math.Round(own.ProposedCents / (double)ratio);
+                own.ListedCents = Div(own.ListedCents, ratio);
+                own.YearCents = Div(own.YearCents, ratio);
+                for (int i = 0; i < own.Deals.Count; i++)
+                {
+                    OwnDeal d = own.Deals[i];
+                    d.Shares *= ratio;
+                    d.Cents = Div(d.Cents, ratio);
+                    own.Deals[i] = d;
+                }
+            }
             if (s.BidCents > 0)
             {
                 s.BidCents = Div(s.BidCents, ratio);

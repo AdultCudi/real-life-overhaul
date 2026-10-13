@@ -506,6 +506,21 @@ namespace RealLifeOverhaul.Markets
             return id >= 900 && id < 1000;
         }
 
+        /// <summary>
+        /// A player's company as a row of the catalogue (Markets/Listing): small, its sector's figures moved by its id as
+        /// every company's are, but nothing of the cycle, of inflation or of the day's supply of goods made up for it (its
+        /// own books carry those), and its usual debt its own. Made when it is listed and again from the save's line.
+        /// </summary>
+        public static CompanyDef PlayerDef(int id, string name, string ticker, MarketSector sector, int debtBp)
+        {
+            var d = new CompanyDef(id, string.IsNullOrEmpty(name) ? ticker : name, ticker, sector, MarketSize.Small, 0, 0, null);
+            Profile(d);
+            d.Cyclical = 0;
+            d.PassPct = 100;
+            d.DebtPct = Math.Max(0, Math.Min(300, (debtBp + 50) / 100));
+            return d;
+        }
+
         // A company's own figures: its sector's, moved by a fixed amount worked out from its id.
         private static void Profile(CompanyDef d)
         {

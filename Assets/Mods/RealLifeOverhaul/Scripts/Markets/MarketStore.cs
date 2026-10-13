@@ -17,7 +17,11 @@ namespace RealLifeOverhaul.Markets
     ///      results, dividends, events, and their history (candles written small: MarketCodec). Today's step candles are
     ///      kept only for the companies the player watches, holds or has an order in (the others' start again at the load)
     ///   p  positions, o orders, t the account's history, w the watch list, a the account, n the last days' news,
-    ///   d dividends owed, x the city's index and its history, y the sectors
+    ///   d dividends owed, x the city's index and its history, y the sectors,
+    ///   l the player's own way to the market and their company's books, u their listed company while it is set aside
+    ///      (its founder is a guest in another player's city): Markets/Listing. Never in the city's line.
+    /// A player's listed company is a record of k like every company's, with its own fields after the rest (its
+    /// founder, its name and sector, its reserve, board and meetings): another player's is in the city's line too.
     ///
     /// No secret of the market's chance is ever in it: those are on the tape (<see cref="MarketTape"/>). A newer
     /// version adds fields at the end of a record or a part with a new letter; this reader takes the fields it knows,
@@ -178,7 +182,63 @@ namespace RealLifeOverhaul.Markets
                 Ints(t, s.SectorDaily[sec]);
                 D(t, s.SectorDayZ[sec]);
             }
+            if (!city && s.Listing != null && !s.Listing.Empty)
+            {
+                t.Append("~l:");
+                Listing(t, s.Listing);
+                if (!string.IsNullOrEmpty(s.Listing.Suspended))
+                {
+                    t.Append("~u:").Append(s.Listing.Suspended);
+                }
+            }
             return t.ToString();
+        }
+
+        // The player's own way to the market and their company's books (never in the city's line).
+        private static void Listing(StringBuilder t, ListingFile f)
+        {
+            t.Append(((int)f.Stage).ToString(Inv));
+            Join(t, f.AdvisedDay, f.AuditFrom, f.AuditDone, f.AuditDay, f.Findings, f.FloatBp, f.LowCents, f.HighCents, f.WalkCents, f.BookFrom, f.BookEnd, f.PriceCents, f.ListDay);
+            L(t, f.OldShares, f.NewShares);
+            Join(t, f.FairCents);
+            t.Append('|').Append(Clean(f.Name)).Append('|').Append(Clean(f.Ticker));
+            Join(t, f.Sector, f.StockId, f.Test ? 1 : 0);
+            L(t, f.Raised, f.Fees);
+            Join(t, f.FeeYear, f.FirstDay, f.BooksDay);
+            t.Append('|');
+            for (int i = 0; i < f.Books.Count; i++)
+            {
+                BookQuarter q = f.Books[i];
+                t.Append(i > 0 ? ":" : string.Empty).Append(q.Quarter.ToString(Inv)).Append(',').Append(q.Revenue.ToString(Inv)).Append(',').Append(q.Profit.ToString(Inv)).Append(',')
+                    .Append(q.Days.ToString(Inv));
+            }
+            Join(t, f.SetAsideDay);
+        }
+
+        private static ListingFile ReadListing(string[] c)
+        {
+            var f = new ListingFile
+            {
+                Stage = (ListingStage)Clamp(I(c, 0), 0, (int)ListingStage.Listed), AdvisedDay = I(c, 1), AuditFrom = I(c, 2), AuditDone = I(c, 3), AuditDay = Math.Max(0, I(c, 4)),
+                Findings = Math.Max(0, I(c, 5)), FloatBp = Clamp(I(c, 6), 0, 9000), LowCents = Math.Max(0, I(c, 7)), HighCents = Math.Max(0, I(c, 8)),
+                WalkCents = Math.Max(0, I(c, 9)), BookFrom = I(c, 10), BookEnd = I(c, 11), PriceCents = Math.Max(0, I(c, 12)), ListDay = I(c, 13), OldShares = Math.Max(0, L(c, 14)),
+                NewShares = Math.Max(0, L(c, 15)), FairCents = Math.Max(0, I(c, 16)), Name = S(c, 17), Ticker = S(c, 18), Sector = Clamp(I(c, 19), 0, (int)MarketSector.Count - 1),
+                StockId = I(c, 20), Test = I(c, 21) != 0, Raised = L(c, 22), Fees = Math.Max(0, L(c, 23)), FeeYear = I(c, 24, -1), FirstDay = Math.Max(0, I(c, 25)), BooksDay = I(c, 26)
+            };
+            foreach (string r in S(c, 27).Length > 0 ? c[27].Split(':') : Array.Empty<string>())
+            {
+                string[] q = r.Split(',');
+                if (q.Length >= 4 && f.Books.Count < 12)
+                {
+                    f.Books.Add(new BookQuarter { Quarter = Int(q[0]), Revenue = Math.Max(0, Long(q[1])), Profit = Long(q[2]), Days = Math.Max(0, Int(q[3])) });
+                }
+            }
+            f.SetAsideDay = Math.Max(0, I(c, 28));
+            if (f.StockId != 0 && !ListingRules.IsPlayer(f.StockId))
+            {
+                f.StockId = 0;
+            }
+            return f;
         }
 
         // Today's step candles are kept for the companies the player follows: watched, held or with an order in.
@@ -248,6 +308,95 @@ namespace RealLifeOverhaul.Markets
             t.Append('|');
             MarketCodec.Write(t, k.LastBars, followed ? k.LastBarCount : 0);
             Join(t, k.LastBarsDay);
+            if (k.Own != null)
+            {
+                Own(t, k);
+            }
+        }
+
+        /// <summary>One company's record alone (a player's company set aside while its founder is a guest in another city: ListingFile.Suspended).</summary>
+        public static string StockLine(MarketState state, Stock k)
+        {
+            var t = new StringBuilder(4096);
+            Stock(t, state, k, true);
+            return t.ToString();
+        }
+
+        /// <summary>A company read back from its record alone; null if it cannot be read.</summary>
+        public static Stock ReadStockLine(string record, int year)
+        {
+            try
+            {
+                return string.IsNullOrEmpty(record) ? null : ReadStock(record.Split('|'), year);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        // A player's company: its founder, name, ticker, sector and usual debt, then its own figures, then its founder's deals.
+        private static void Own(StringBuilder t, Stock k)
+        {
+            OwnListing o = k.Own;
+            t.Append('|').Append(o.Owner.ToString("X16", Inv)).Append('|').Append(Clean(k.Name)).Append('|').Append(Clean(k.Ticker));
+            Join(t, (int)k.Sector, o.DebtBp);
+            t.Append('|').Append(o.Test ? 1 : 0).Append(',').Append(o.Founder.ToString(Inv)).Append(',').Append(R(o.Rps)).Append(',').Append(o.PayBp.ToString(Inv)).Append(',')
+                .Append(o.ProposedCents.ToString(Inv)).Append(',').Append(o.Board ? 1 : 0).Append(',').Append(R(o.RevQ)).Append(',').Append(R(o.NiQ)).Append(',').Append(R(o.RevY)).Append(',')
+                .Append(R(o.NiY)).Append(',').Append(R(o.LeverY)).Append(',').Append(R(o.Expect)).Append(',').Append(R(o.PendingExpect)).Append(',').Append(o.ListedCents.ToString(Inv)).Append(',')
+                .Append(o.LockDay.ToString(Inv)).Append(',').Append(o.AgmDay.ToString(Inv)).Append(',').Append(o.YearCents.ToString(Inv)).Append(',').Append(o.YearIndex.ToString(Inv)).Append(',')
+                .Append(o.YearScandals.ToString(Inv)).Append(',').Append(o.YearDividendCents.ToString(Inv)).Append(',').Append(o.LastStanding.ToString(Inv)).Append(',')
+                .Append(o.ActBp.ToString(Inv)).Append(',').Append(((int)o.ActDemand).ToString(Inv)).Append(',').Append(o.ActDay.ToString(Inv)).Append(',').Append(o.Votes.ToString(Inv)).Append(',')
+                .Append(o.VotesAgainstBp.ToString(Inv)).Append(',').Append(o.IssuedYear.ToString(Inv)).Append(',').Append(o.IssuedBp.ToString(Inv)).Append(',').Append(o.SaleDay.ToString(Inv))
+                .Append(',').Append(R(o.Carry));
+            t.Append('|');
+            for (int i = 0; i < o.Deals.Count; i++)
+            {
+                OwnDeal d = o.Deals[i];
+                t.Append(i > 0 ? ":" : string.Empty).Append(d.Day.ToString(Inv)).Append(',').Append(d.Shares.ToString(Inv)).Append(',').Append(d.Cents.ToString(Inv));
+            }
+        }
+
+        private static string R(double value)
+        {
+            return double.IsNaN(value) || double.IsInfinity(value) ? "0" : value.ToString("R", Inv);
+        }
+
+        // A player's company read back: its row of the catalogue made again from its own fields, and its figures.
+        private static OwnListing ReadOwn(string[] c, out CompanyDef def, int id)
+        {
+            def = null;
+            if (c.Length < 66 || !ulong.TryParse(S(c, 59), NumberStyles.HexNumber, Inv, out ulong owner) || owner == 0UL)
+            {
+                return null;
+            }
+            string ticker = S(c, 61).Length > 0 ? S(c, 61) : "OWN";
+            int debtBp = Clamp(I(c, 63), 0, 30000);
+            def = MarketCatalogue.PlayerDef(id, S(c, 60), ticker, (MarketSector)Clamp(I(c, 62), 0, (int)MarketSector.Count - 1), debtBp);
+            string[] f = S(c, 64).Split(',');
+            var o = new OwnListing
+            {
+                Owner = owner, Test = I(f, 0) != 0, Founder = Math.Max(0, L(f, 1)), Rps = Clamp(F(f, 2, 0.0), -1e7, 1e7), PayBp = Clamp(I(f, 3), 0, 10000),
+                ProposedCents = Clamp(I(f, 4), 0, 10000000), Board = I(f, 5, 1) != 0, RevQ = Math.Max(0.0, F(f, 6, 0.0)), NiQ = F(f, 7, 0.0), RevY = Math.Max(0.0, F(f, 8, 0.0)),
+                NiY = F(f, 9, 0.0), LeverY = Clamp(F(f, 10, 0.0), -1.0, 1.0), Expect = F(f, 11, 0.0), PendingExpect = F(f, 12, 0.0), ListedCents = Math.Max(0, I(f, 13)), LockDay = I(f, 14),
+                AgmDay = Math.Max(0, I(f, 15)), YearCents = Math.Max(0, I(f, 16)), YearIndex = Math.Max(0, I(f, 17)), YearScandals = Math.Max(0, I(f, 18)), YearDividendCents = Math.Max(0, I(f, 19)),
+                LastStanding = Clamp(I(f, 20, -1), -1, 100), ActBp = Clamp(I(f, 21), 0, 10000), ActDemand = (ActivistDemand)Clamp(I(f, 22), 0, (int)ActivistDemand.Count - 1),
+                ActDay = Math.Max(0, I(f, 23)), Votes = Math.Max(0, I(f, 24)), VotesAgainstBp = Clamp(I(f, 25), 0, 10000), IssuedYear = I(f, 26, -1), IssuedBp = Math.Max(0, I(f, 27)),
+                SaleDay = Math.Max(0, I(f, 28)), Carry = Clamp(F(f, 29, 0.0), -1.0, 1.0), DebtBp = debtBp
+            };
+            foreach (string r in S(c, 65).Length > 0 ? c[65].Split(':') : Array.Empty<string>())
+            {
+                string[] d = r.Split(',');
+                if (d.Length >= 3 && o.Deals.Count < 16)
+                {
+                    o.Deals.Add(new OwnDeal { Day = Int(d[0]), Shares = Long(d[1]), Cents = Math.Max(1, Int(d[2])) });
+                }
+            }
+            if (o.ActDemand == ActivistDemand.None)
+            {
+                o.ActBp = 0;
+            }
+            return o;
         }
 
         // ---------------------------------------------------------------- reading
@@ -262,6 +411,7 @@ namespace RealLifeOverhaul.Markets
             }
             var s = new MarketState();
             bool header = false;
+            string suspended = null;
             for (int p = 1; p < parts.Length; p++)
             {
                 string part = parts[p];
@@ -394,6 +544,12 @@ namespace RealLifeOverhaul.Markets
                             s.IndexLastBarsDay = I(c, 4);
                         }
                         break;
+                    case 'l':
+                        s.Listing = ReadListing(body.Split('|'));
+                        break;
+                    case 'u':
+                        suspended = body;
+                        break;
                     case 'y':
                         {
                             string[] records = body.Split(';');
@@ -417,6 +573,10 @@ namespace RealLifeOverhaul.Markets
             if (!header || s.Stocks.Count == 0)
             {
                 return null;
+            }
+            if (s.Listing != null && suspended != null && ReadStockLine(suspended, s.YearDays) != null)
+            {
+                s.Listing.Suspended = suspended;
             }
             Repair(s);
             return s;
@@ -467,6 +627,11 @@ namespace RealLifeOverhaul.Markets
         {
             int id = I(c, 0);
             CompanyDef def = MarketCatalogue.Find(id);
+            OwnListing own = null;
+            if (def == null && ListingRules.IsPlayer(id))
+            {
+                own = ReadOwn(c, out def, id);   // a player's company: its row is in its record
+            }
             if (def == null || c.Length < 54)
             {
                 return null;
@@ -496,7 +661,7 @@ namespace RealLifeOverhaul.Markets
             k.Rev = Math.Max(1.0, F(c, 20, def.RevenueM * 1e6));
             k.Margin = Clamp(F(c, 21, def.MarginBp / 10000.0), -0.5, 0.8);
             k.Growth = Clamp(F(c, 22, def.GrowthBp / 10000.0), -0.25, 0.4);
-            k.MarginShift = Clamp(F(c, 23, 0.0), -0.3, 0.9);
+            k.MarginShift = own != null ? Clamp(F(c, 23, 0.0), -2.0, 2.0) : Clamp(F(c, 23, 0.0), -0.3, 0.9);   // (a player's company's usual margin is its own books')
             k.MarginTarget = Clamp(F(c, 24, k.Margin), -1.0, 1.0);
             k.GrowthTarget = Clamp(F(c, 25, MarketCatalogue.LongRealGrowth), -0.25, 0.4);
             k.Debt = Math.Max(0.0, F(c, 26, 0.0));
@@ -557,6 +722,11 @@ namespace RealLifeOverhaul.Markets
             {
                 k.LogFair = Math.Log(k.Last / 100.0);
                 k.Mis = k.Sent = 0.0;
+            }
+            k.Own = own;
+            if (own != null)
+            {
+                own.Founder = Math.Min(own.Founder, k.Shares);
             }
             return k;
         }
