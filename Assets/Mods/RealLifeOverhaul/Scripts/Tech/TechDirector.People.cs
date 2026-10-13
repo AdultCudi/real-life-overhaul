@@ -195,6 +195,17 @@ namespace RealLifeOverhaul.Tech
         /// <summary>A file for an employee of the game's seen for the first time: a role the business wants (else one of the skill's), the level their skill stands at, specialisms near it.</summary>
         private Profile NewFile(EmployeeInstance e, int day)
         {
+            Profile ahead = Ahead(e.id);
+            if (ahead != null && ahead.Def.GameSkill == TalentGame.Skill(e))
+            {
+                ahead.Id = e.id;
+                ahead.Main = 0;
+                ahead.Joined = e.dayHired > 0 && e.dayHired <= day ? e.dayHired : day;
+                ahead.LevelDay = ahead.Joined;
+                ahead.ReviewDay = TalentRules.FirstReview(ahead.Joined, Year);
+                ahead.Morale = TalentCatalogue.MoraleStart;
+                return ahead;
+            }
             string skill = TalentGame.Skill(e);
             int main = TalentGame.MainPoints(e);
             BuildingRegistration at = TalentGame.Business(e);
@@ -262,7 +273,7 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The labour market's shortage of a family, thousandths (1000: as many seekers as places).</summary>
         internal int Shortage(Family family)
         {
-            return 1000;
+            return ShortageOf(family);
         }
 
         // ---------------------------------------------------------------- the hour

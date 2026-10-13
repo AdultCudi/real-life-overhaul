@@ -735,6 +735,11 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_talent_test_review", () => Tech.TechDirector.Instance?.TestReview())
                 .AddButton("reallife_talent_test_offer", () => Tech.TechDirector.Instance?.TestOffer())
                 .AddButton("reallife_talent_test_course", () => Tech.TechDirector.Instance?.TestCourse())
+                .AddToggle(Settings.TechJobsId, "reallife_hire_enabled", Settings.TechJobs,
+                    v => Settings.TechJobs = v)
+                .AddButton("reallife_hire_test_applicants", () => Tech.TechDirector.Instance?.TestApplicants())
+                .AddButton("reallife_hire_test_market", () => Tech.TechDirector.Instance?.TestMarketDay())
+                .AddButton("reallife_hire_test_search", () => Tech.TechDirector.Instance?.TestSearch())
                 .AddToggle(Settings.EconomyOnlineId, "reallife_online_enabled", Settings.EconomyOnline,
                     v => Settings.EconomyOnline = v)
                 .AddButton("reallife_online_test_open", () => Economy.OnlineDirector.Instance?.TestOpen())
@@ -966,6 +971,7 @@ namespace RealLifeOverhaul
             Family.FamilyDirector.Logger = context.Logger;
             Tech.TechDirector.Logger = context.Logger;
             Tech.RolesApp.Logger = context.Logger;
+            Tech.HiringGame.Logger = context.Logger;
 
             _root = new GameObject(RootName);
             SessionWatch.Logger = context.Logger;

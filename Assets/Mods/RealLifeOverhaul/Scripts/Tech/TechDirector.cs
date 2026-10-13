@@ -41,6 +41,7 @@ namespace RealLifeOverhaul.Tech
         {
             Instance = this;
             TalentGame.Logger = Logger;
+            HiringGame.Logger = Logger;
             _onSave = OnSave;
             _onHour = OnHour;
             _onDay = OnDay;
@@ -54,7 +55,9 @@ namespace RealLifeOverhaul.Tech
             GlobalEvents.onNewDay -= _onDay;
             try
             {
+                StopHiring(false);
                 StopPeople(false, true);
+                _interview?.Dispose();
             }
             catch (Exception e)
             {
@@ -108,6 +111,16 @@ namespace RealLifeOverhaul.Tech
             {
                 StopPeople(true, false);
             }
+            bool jobs = Settings.TechJobs && _peopleOn;
+            if (jobs && !_hiringOn)
+            {
+                StartHiring();
+            }
+            else if (!jobs && _hiringOn)
+            {
+                StopHiring(true);
+            }
+            _interview?.Watch();
             if (!_peopleOn)
             {
                 return;
@@ -151,6 +164,10 @@ namespace RealLifeOverhaul.Tech
             try
             {
                 float started = Time.realtimeSinceStartup;
+                if (_hiringOn)
+                {
+                    HiringDay(Save.Day);
+                }
                 if (_peopleOn)
                 {
                     PeopleDay(Save.Day);
@@ -180,6 +197,10 @@ namespace RealLifeOverhaul.Tech
                     Save.modData = new Dictionary<string, string>();
                 }
                 WritePeople(Save.modData);
+                if (_hiringOn)
+                {
+                    WriteHiring(Save.modData);
+                }
                 if (_news != null && ReferenceEquals(_newsOf, Save))
                 {
                     if (_news.Stories.Count > 0)
@@ -226,6 +247,7 @@ namespace RealLifeOverhaul.Tech
             Logger?.Error(e);
             try
             {
+                StopHiring(false);
                 StopPeople(false, false);
             }
             catch (Exception second)
@@ -255,6 +277,7 @@ namespace RealLifeOverhaul.Tech
         {
             try
             {
+                StopHiring(true);
                 StopPeople(true, false);
             }
             catch (Exception e)
@@ -268,6 +291,7 @@ namespace RealLifeOverhaul.Tech
         {
             try
             {
+                StopHiring(false);
                 StopPeople(false, false);
             }
             catch (Exception e)
@@ -275,6 +299,7 @@ namespace RealLifeOverhaul.Tech
                 Fault("the save tools", e);
             }
             _talent = null;
+            _hiring = null;
             _news = new TechNews();
         }
     }

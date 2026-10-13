@@ -56,6 +56,9 @@ namespace RealLifeOverhaul.Tech
 
         public static string Cert(int cert) => T(Mod + "_talent_cert_" + TalentCatalogue.Certs[TalentCatalogue.Clamp(cert, 0, TalentCatalogue.CertCount - 1)].Key);
 
+        /// <summary>reallife_talent_family_{name}, the family's name in lower case.</summary>
+        public static string FamilyName(Family family) => T(Mod + "_talent_family_" + family.ToString().ToLowerInvariant());
+
         public static string Work(int work) => T(work == (int)Arrangement.Remote ? "reallife_talent_work_remote" : work == (int)Arrangement.Hybrid ? "reallife_talent_work_hybrid" : "reallife_talent_work_onsite");
 
         /// <summary>Years and days of a 365-day year as whole years: "7 years", "1 year", "under a year".</summary>

@@ -305,6 +305,7 @@ namespace RealLifeOverhaul.Meta
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),
                 S("online").For("economy_online").Need("economy").Opts("economy_online").Also("web shop orders delivery internet"),
                 S("people").For("tech_people").Opts("tech_people").Also("professionals staff employees skills skill percent role promotion review course certificate notice severance lay off poach"),
+                S("jobsboard").For("tech_jobs").Opt("tech_jobs", "tech_people").Also("jobs board hire hiring recruit recruitment applicants interview offer headhunter search labour market candidates"),
                 S("estate").For("economy_estate").Need("economy").Opts("economy_estate", "economy_estate_hotel", "economy_estate_hire")
                     .Also("buildings landlord tenant letting rent rental").Also("economy_estate", "rent tenant landlord letting"),
                 S("bizevents").For("business").Main("business_pressure").Opts("business_frequency", "business_easy").Also("trouble pressure competition"),

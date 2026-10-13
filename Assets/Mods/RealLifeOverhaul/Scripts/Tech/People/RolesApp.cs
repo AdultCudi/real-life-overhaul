@@ -10,16 +10,22 @@ namespace RealLifeOverhaul.Tech
     /// The Open Roles app, in the game's frame (GameUi.AppShell, copied from MyEmployees) as the Web shop and Ventures
     /// apps are. Its tabs over the table on the right, and on the left the white box with the one thing picked:
     ///
-    ///   Team   every professional of the player's with their role, level, skills, morale and burnout; pick one for their
-    ///          file, their career (role, promotion, a rise, a course, an exam) and their contract (where they work, a
-    ///          restraint clause, notice and severance) (RolesApp.Team.cs)
+    ///   Team         every professional of the player's with their role, level, skills, morale and burnout; pick one for
+    ///                their file, their career (role, promotion, a rise, a course, an exam) and their contract (where they
+    ///                work, a restraint clause, notice and severance) (RolesApp.Team.cs)
+    ///   Jobs         the player's ads on the jobs board, and the page that posts one (RolesApp.Hiring.cs)
+    ///   Applicants   everyone who has applied, with what is known of them; pick one to check them, interview them and
+    ///                make an offer
+    ///   Market       the city's labour market by family: seekers by level, the rivals' openings, the shortage, the
+    ///                going rate; pick a family for its rivals and districts
+    ///   Search       the search firms briefed for senior roles, and the page that briefs one
     ///
     /// Everything on it is the game's. Nothing runs while the app is closed: the rows and figures are made when it
     /// opens, when a tab is picked and when the player changes something in it.
     /// </summary>
     public sealed partial class RolesApp
     {
-        private static readonly string[] TabKeys = { "reallife_roles_tab_team" };
+        private static readonly string[] TabKeys = { "reallife_roles_tab_team", "reallife_roles_tab_jobs", "reallife_roles_tab_applicants", "reallife_roles_tab_market", "reallife_roles_tab_search" };
 
         public static IModLogger Logger;
 
@@ -141,7 +147,24 @@ namespace RealLifeOverhaul.Tech
                 else
                 {
                     UiClone.Words(_shell.Header, TechText.T("reallife_roles_head", "count", _director.People.Count.ToString()));
-                    table = WriteTeam(box, SaveGameManager.Current.Day);
+                    int day = SaveGameManager.Current.Day;
+                    if (_tab != TechDirector.TabTeam && _director.Hiring == null)
+                    {
+                        box.Title(TechText.T("reallife_roles_off_title"));
+                        box.Line(TechText.T("reallife_hire_off_body"));
+                        _picked = null;
+                    }
+                    else
+                    {
+                        switch (_tab)
+                        {
+                            case TechDirector.TabJobs: table = WriteJobs(box, day); break;
+                            case TechDirector.TabApplicants: table = WriteApplicants(box, day); break;
+                            case TechDirector.TabMarket: table = WriteMarket(box, day); break;
+                            case TechDirector.TabSearch: table = WriteSearch(box, day); break;
+                            default: table = WriteTeam(box, day); break;
+                        }
+                    }
                 }
                 box.Done();
                 _table.Show(table, _rows, _picked);

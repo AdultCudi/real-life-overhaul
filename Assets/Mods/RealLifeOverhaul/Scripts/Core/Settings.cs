@@ -113,6 +113,7 @@ namespace RealLifeOverhaul
         public const string EstateHireId = "economy_estate_hire";
         public const string EconomyOnlineId = "economy_online";
         public const string TechPeopleId = "tech_people";
+        public const string TechJobsId = "tech_jobs";
         public const string EconomyCleaningId = "economy_cleaning";
         public const string EconomySaleId = "economy_sale";
         public const string EconomyBrandsId = "economy_brands";
@@ -316,6 +317,7 @@ namespace RealLifeOverhaul
         public static bool EstateHotel = true;           // owning a hotel of the city's as a business (off: a hotel that is held stands still and nothing is taken or paid)
         public static bool EstateHire = true;            // car hire: the player's own vehicles go out to customers from a lot (off: no car goes out, and one that is out is called back)
         public static bool TechPeople = true;            // professionals: roles, levels and skills of their own for the player's professional staff, reviews, promotions, courses, notice and severance, rivals' offers, in the Open Roles app (off: the game's own staff alone; files are kept) (Scripts/Tech/People)
+        public static bool TechJobs = true;              // the jobs board and the labour market: ads in the Open Roles app, applicants from the city's job seekers, interviews, offers, executive search, and more candidates from the recruitment office (off: the game's own hiring alone) (Scripts/Tech/Hiring)
         public static bool EconomyOnline = true;         // online shops: a business or a warehouse sells what it stocks to the whole city, picked by its staff and delivered by van or courier, with the Web shop app (off: no orders come, nothing is charged or paid) (Scripts/Economy/Online)
         public static bool EconomyCleaning = true;       // the cleaning service: cleaners shared between businesses on a daily round, and cleaning contracts with other businesses, in the Services app (off: no round, no contracts, nothing cleaned or charged by it) (Scripts/Economy/Services)
         public static bool EconomySale = true;           // selling a business: its value, the market, offers and a completed sale, in the Services app (off: nothing is offered, paid or charged by it) (Scripts/Economy/Services)
@@ -571,6 +573,7 @@ namespace RealLifeOverhaul
             EstateHire = Bool(modId, EstateHireId, EstateHire);
             EconomyOnline = Bool(modId, EconomyOnlineId, EconomyOnline);
             TechPeople = Bool(modId, TechPeopleId, TechPeople);
+            TechJobs = Bool(modId, TechJobsId, TechJobs);
             EconomyCleaning = Bool(modId, EconomyCleaningId, EconomyCleaning);
             EconomySale = Bool(modId, EconomySaleId, EconomySale);
             EconomyBrands = Bool(modId, EconomyBrandsId, EconomyBrands);

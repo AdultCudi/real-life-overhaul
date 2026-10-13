@@ -1131,6 +1131,15 @@ namespace RealLifeOverhaul.Meta
                 .Data(Tech.TalentStore.Key, Tech.TechNews.Key)
                 .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Tech.TechDirector.Instance?.Forget()));
+            // The jobs board and the labour market: ads in the Open Roles app, applicants from the city's seekers, interviews
+            // and offers, executive search, and more candidates from the recruitment office. It runs with the professionals.
+            Tech.TechGuide.AddHiringFacts(Features.Add("tech_jobs", "reallife_meta_title_tech_jobs")
+                .About("reallife_guide_tech_jobs_about").Help("reallife_guide_tech_jobs")
+                .Owns(Settings.TechJobsId)
+                .Test("reallife_hire_test_applicants", "reallife_hire_test_market", "reallife_hire_test_search")
+                .Data(Tech.HiringStore.Key)
+                .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Tech.TechDirector.Instance?.Forget()));
             // The cleaning service and selling a business. Their rows stand under the company's header on the options page
             // and their pages are the Services app. They share one line of the save. Off, the cleaning service plans no
             // round, shows no cleaner and charges nothing; selling a business offers, pays and charges nothing.

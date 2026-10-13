@@ -44,6 +44,48 @@ namespace RealLifeOverhaul.Tech
                 .Fact("talent_certs", Certs);
         }
 
+        public static void AddHiringFacts(Feature f)
+        {
+            f.Fact("hire_seekers_least", () => Whole(HiringRules.Target(0, false)))
+                .Fact("hire_seekers_most", () => Whole(HiringRules.Target(3, false)))
+                .Fact("hire_graduates", () => Whole(HiringCatalogue.GraduatesSummer))
+                .Fact("hire_unemployment", Unemployment)
+                .Fact("hire_ad_day", () => Guide.Money(Prices.At(HiringCatalogue.AdDayCost)))
+                .Fact("hire_ad_days", () => Whole(HiringCatalogue.AdDays[0]) + ", " + Whole(HiringCatalogue.AdDays[1]) + " " + TechText.T("reallife_guide_tech_or") + " " + Whole(HiringCatalogue.AdDays[2]))
+                .Fact("hire_boost", () => (HiringCatalogue.BoostCostBp / 10000f).ToString("0.#", Inv))
+                .Fact("hire_week", () => Whole(HiringCatalogue.AdWeekMost))
+                .Fact("hire_week_boosted", () => Whole(HiringCatalogue.AdWeekMostBoosted))
+                .Fact("hire_ads_most", () => Whole(HiringCatalogue.AdsMost))
+                .Fact("hire_office_more", () => Whole(HiringCatalogue.OfficeBonusLeast))
+                .Fact("hire_office_share", () => Whole(HiringCatalogue.OfficeBonusShare / 10) + "%")
+                .Fact("hire_office_floor", () => Whole(HiringCatalogue.OfficeSkillFloor) + "%")
+                .Fact("hire_refs", () => Guide.Money(Prices.At(HiringCatalogue.ReferencesCost)))
+                .Fact("hire_background", () => Guide.Money(Prices.At(HiringCatalogue.BackgroundCost)))
+                .Fact("hire_claim", () => Whole(HiringCatalogue.ClaimMost))
+                .Fact("hire_rounds", () => Whole(HiringCatalogue.InterviewRounds))
+                .Fact("hire_accept", () => Bp(HiringCatalogue.AcceptBp))
+                .Fact("hire_counter", () => Bp(HiringCatalogue.CounterBp))
+                .Fact("hire_rival_offer", () => Bp(HiringCatalogue.RivalOfferBp))
+                .Fact("hire_offer_days", () => Whole(HiringCatalogue.OfferDays))
+                .Fact("hire_lapse", () => Whole(HiringCatalogue.ApplicantDays))
+                .Fact("hire_search_fee", () => Bp(HiringCatalogue.SearchFeeBp))
+                .Fact("hire_search_retainer", () => Whole(HiringCatalogue.SearchRetainerShare / 10 + 0) + "%")
+                .Fact("hire_search_count", () => Whole(HiringCatalogue.SearchCandidates))
+                .Fact("hire_search_least", () => Whole(HiringCatalogue.SearchDaysLeast))
+                .Fact("hire_search_most", () => Whole(HiringCatalogue.SearchDaysMost))
+                .Fact("hire_search_level", () => TechText.Level(HiringCatalogue.SearchLeastLevel))
+                .Fact("hire_rivals", () => Whole(HiringCatalogue.RivalAdsByCycle[1]));
+        }
+
+        // Unemployment among professionals by the city's cycle, in one line.
+        private static string Unemployment()
+        {
+            return TechText.Fill("reallife_guide_tech_unemployment", "boom", Mille(HiringCatalogue.Unemployment[0]), "steady", Mille(HiringCatalogue.Unemployment[1]),
+                "slowdown", Mille(HiringCatalogue.Unemployment[2]), "recession", Mille(HiringCatalogue.Unemployment[3]));
+        }
+
+        internal static string Mille(int thousandths) => (thousandths / 10f).ToString("0.#", Inv) + "%";
+
         // One line per role: its name, its family's word, whether the game draws them and whether it can be done from home.
         private static string Roles()
         {
