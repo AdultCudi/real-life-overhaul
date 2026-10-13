@@ -57,6 +57,7 @@ namespace RealLifeOverhaul.Meta
                 .Owns(Settings.CharacterHighDetailId, Settings.CharacterHairId, Settings.CharacterLightingId, Settings.CharacterNewLooksId)
                 .Test("reallife_test_hair_say", HairTests.Say)
                 .Test("reallife_test_hair_lamp", HairTests.Lamp)
+                .Test("reallife_test_hair_streetlamp", HairTests.StreetLamp)
                 .Test("reallife_test_hair_switch", HairTests.Switch)
                 .Cleanup(HairTests.Forget)
                 .Data("reallife:look_*")

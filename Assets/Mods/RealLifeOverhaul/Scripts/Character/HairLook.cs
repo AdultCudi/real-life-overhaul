@@ -33,6 +33,14 @@ namespace RealLifeOverhaul
 
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int BaseColorMapId = Shader.PropertyToID("_BaseColorMap");
+        private static readonly int SrcBlendId = Shader.PropertyToID("_SrcBlend");
+        private static readonly int DstBlendId = Shader.PropertyToID("_DstBlend");
+        private static readonly int AlphaClipId = Shader.PropertyToID("_AlphaClipThreshold");
+        private static readonly int PrepassEnableId = Shader.PropertyToID("_TransparentDepthPrepassEnable");
+        private static readonly int PrepassClipId = Shader.PropertyToID("_AlphaClipThresholdDepthPrepass");
+        private static readonly int ZWriteId = Shader.PropertyToID("_TransparentZWrite");
+        private static readonly int SortPriorityId = Shader.PropertyToID("_TransparentSortPriority");
+        private static readonly HashSet<int> Said = new HashSet<int>();   // characters whose hair check line was written this scene
 
         private sealed class Layer
         {
@@ -57,6 +65,7 @@ namespace RealLifeOverhaul
         private static readonly List<Finished> All = new List<Finished>(8);
         private static readonly List<Material> Scratch = new List<Material>(8);
         private static readonly List<SkinnedMeshRenderer> RendererScratch = new List<SkinnedMeshRenderer>(64);
+        private static readonly List<SkinnedMeshRenderer> Worn = new List<SkinnedMeshRenderer>(16);
         private static readonly Dictionary<int, Texture2D> Denser = new Dictionary<int, Texture2D>(8);
         private static readonly Dictionary<int, HairRules.Cover> Covers = new Dictionary<int, HairRules.Cover>(8);
 
@@ -83,7 +92,7 @@ namespace RealLifeOverhaul
                 Logger?.Info("Hair: finish on, keyword set borrowed from the game's '" + template.name + "', strand maps "
                              + (mask != null && normal != null ? "from the bundle" : "MISSING (the finish goes without them)") + ".");
             }
-            IReadOnlyList<SkinnedMeshRenderer> renderers = character.GetSelectedMeshRenderers();
+            List<SkinnedMeshRenderer> renderers = WornBy(character);
             bool changed = false;
             for (int i = 0; i < renderers.Count; i++)
             {
@@ -180,6 +189,57 @@ namespace RealLifeOverhaul
         private static bool IsFinished(Material material)
         {
             return material.name.IndexOf(Marker, StringComparison.Ordinal) >= 0;
+        }
+
+        // The renderers a character's hair can be on: its pieces, and the one mesh the game merges them into for a
+        // character that is not kept in pieces (the city's people, and another player's character in a Going Public
+        // session if it is built that way). Shared scratch list: read it before asking again.
+        private static List<SkinnedMeshRenderer> WornBy(AppearanceSetter character)
+        {
+            Worn.Clear();
+            IReadOnlyList<SkinnedMeshRenderer> pieces = character.GetSelectedMeshRenderers();
+            for (int i = 0; i < pieces.Count; i++)
+            {
+                Worn.Add(pieces[i]);
+            }
+            SkinnedMeshRenderer merged = character.skipMeshMerging ? null : character.lastMergedMeshRenderer;
+            if (merged != null && !Worn.Contains(merged))
+            {
+                Worn.Add(merged);
+            }
+            return Worn;
+        }
+
+        /// <summary>
+        /// Whether this character shows strand hair (the game's hair shader) on a renderer that is drawn, not only cast
+        /// as a shadow: the characters other than the ones on show that the finish is for too (CharacterQuality, every
+        /// few seconds in the city). Reads materials only.
+        /// </summary>
+        public static bool WearsStrandHair(AppearanceSetter character)
+        {
+            if (character == null)
+            {
+                return false;
+            }
+            List<SkinnedMeshRenderer> renderers = WornBy(character);
+            bool any = false;
+            for (int i = 0; i < renderers.Count && !any; i++)
+            {
+                SkinnedMeshRenderer renderer = renderers[i];
+                if (renderer == null || !renderer.enabled || renderer.forceRenderingOff || !renderer.gameObject.activeInHierarchy
+                    || renderer.shadowCastingMode == UnityEngine.Rendering.ShadowCastingMode.ShadowsOnly)
+                {
+                    continue;
+                }
+                renderer.GetSharedMaterials(Scratch);
+                for (int k = 0; k < Scratch.Count && !any; k++)
+                {
+                    any = HairFinish.IsHair(Scratch[k]);
+                }
+                Scratch.Clear();
+            }
+            Worn.Clear();
+            return any;
         }
 
         private static Finished Find(SkinnedMeshRenderer renderer)
@@ -329,9 +389,19 @@ namespace RealLifeOverhaul
             _templateWarned = false;
             _mapsLogged = false;
             _layers = 0;
+            Said.Clear();
         }
 
         // ---------------------------------------------------------------- saying what it did
+
+        /// <summary>
+        /// True the first time it is asked for this character in a scene: its hair check line is then written even with
+        /// diagnostics off, so that every Player.log says once what the player's hair is drawn with.
+        /// </summary>
+        public static bool FirstSay(AppearanceSetter character)
+        {
+            return character != null && Said.Add(character.GetInstanceID());
+        }
 
         /// <summary>One line for the F9 report.</summary>
         public static string Describe()
@@ -353,7 +423,7 @@ namespace RealLifeOverhaul
             {
                 return 0;
             }
-            IReadOnlyList<SkinnedMeshRenderer> renderers = character.GetSelectedMeshRenderers();
+            List<SkinnedMeshRenderer> renderers = WornBy(character);
             for (int i = 0; i < renderers.Count; i++)
             {
                 if (renderers[i] == null)
@@ -394,7 +464,7 @@ namespace RealLifeOverhaul
             }
             int hairLayers = 0, finishedLayers = 0;
             string reason = null;
-            IReadOnlyList<SkinnedMeshRenderer> renderers = character.GetSelectedMeshRenderers();
+            List<SkinnedMeshRenderer> renderers = WornBy(character);
             for (int i = 0; i < renderers.Count; i++)
             {
                 SkinnedMeshRenderer renderer = renderers[i];
@@ -430,6 +500,7 @@ namespace RealLifeOverhaul
                     text.Append("[").Append(k).Append("] '").Append(name).Append("' ")
                         .Append(HairFinish.IsCap(finished ? layer.Original : material) ? "cap on the skull" : "strands")
                         .Append(", queue ").Append(material.renderQueue).Append(", colour ").Append(Hex(material.GetColor(BaseColorId)));
+                    Shading(text, material);
                     if (!finished)
                     {
                         text.Append(", the game's own (not finished); ");
@@ -440,7 +511,10 @@ namespace RealLifeOverhaul
                     if (layer.Measured)
                     {
                         text.Append(", core ").Append(Percent(layer.Cover.Core)).Append(" edge ").Append(Percent(layer.Cover.Edge)).Append(" empty ")
-                            .Append(Percent(layer.Cover.Empty)).Append(" at gain ").Append(Number(layer.Cover.Gain, "F2"));
+                            .Append(Percent(layer.Cover.Empty)).Append(" at gain ").Append(Number(layer.Cover.Gain, "F2"))
+                            .Append(", solid at an eighth of the size ").Append(Percent(layer.Cover.FarCore)).Append(" (plain mipmaps ")
+                            .Append(Percent(layer.Cover.FarCorePlain)).Append(", alpha x").Append(Number(layer.Cover.FarScale, "F2"))
+                            .Append("), strand shade ").Append(Number(layer.Cover.Shade, "F2"));
                     }
                     text.Append(", back-light ").Append(Hex(HairFinish.Through(layer.Rule))).Append(" rim ").Append(Number(layer.Rule.Rim, "F3"))
                         .Append(" (at most ").Append(Number(layer.Rule.ThroughPeak, "F4")).Append("), highlight ").Append(Number(layer.Rule.Specular, "F3"))
@@ -481,6 +555,29 @@ namespace RealLifeOverhaul
                 text.Append(reason == null ? "PASS." : "FAIL, " + reason + ".");
             }
             return text.ToString();
+        }
+
+        // The material's own settings that decide how much of the hair is drawn and how it sorts, as the shader reads them.
+        private static void Shading(StringBuilder text, Material material)
+        {
+            text.Append(", ").Append(material.IsKeywordEnabled(HairFinish.TransparentKeyword) ? "blended" : "solid")
+                .Append(" ").Append(Number(Float(material, SrcBlendId), "F0")).Append("/").Append(Number(Float(material, DstBlendId), "F0"))
+                .Append(material.IsKeywordEnabled(HairFinish.AlphaTestKeyword) ? ", clip " + Number(Float(material, AlphaClipId), "F2") : ", no clip")
+                .Append(", depth prepass ").Append(material.GetShaderPassEnabled(HairFinish.DepthPrepass) && Float(material, PrepassEnableId) > 0.5f
+                    ? "at " + Number(Float(material, PrepassClipId), "F2") : "off")
+                .Append(", writes depth ").Append(Float(material, ZWriteId) > 0.5f ? "yes" : "no")
+                .Append(", sort ").Append(Number(Float(material, SortPriorityId), "F0"));
+            Texture map = material.HasProperty(BaseColorMapId) ? material.GetTexture(BaseColorMapId) : null;
+            text.Append(", strands '").Append(map != null ? map.name : "none").Append("'");
+            if (map is Texture2D texture)
+            {
+                text.Append(" ").Append(texture.width).Append("x").Append(texture.height).Append(" ").Append(texture.mipmapCount).Append(" mips");
+            }
+        }
+
+        private static float Float(Material material, int id)
+        {
+            return material.HasProperty(id) ? material.GetFloat(id) : -1f;
         }
 
         private static string Hex(Color colour)

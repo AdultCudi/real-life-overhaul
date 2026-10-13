@@ -148,6 +148,47 @@ finish are a white-hot dome, the finish now a dim brown fuzz, which is the hair'
 what a car's lamp does at night in the game is for the game to show (Options > Tests has "Test: a strong lamp beyond my
 head for 20 seconds").
 
+## Hair from above under a street lamp
+
+Reported after 0.7.3: at night under the street lamp of a stop, the player seen from above had no hair on top. The
+style was `MaleHair07` (the least hair of the men's styles), light brown, the finish on (the log's check line came before the scalp underlay was in).
+
+**Cause**, read from the game's files and the shader (confidence: moderate; not seen in the game, the editor here has
+no licence). Three things meet under one strong lamp at night:
+
+- The game's strand textures are plain white: measured on all 22 (`_reference\preview\textures`), the colour in the
+  middle of a strand, at its edge and between strands is the same (luminance 0.97 to 1.00; only three of the "Scalp"
+  maps have darker edges). The hair's look comes from its alpha alone.
+- Nothing in the hair casts a shadow: the player's double draws every piece with shadows off (`PlayerDouble.Finish`),
+  the game's street lamps cast shadows only at the highest shadow setting, and HDRP applies ambient occlusion to
+  indirect light only. Under one lamp from above, every strand on the crown, the scalp layer and the underlay under
+  them are lit alike: the top of the head is one smooth patch of colour, which reads as a bare scalp.
+- With distance the strands melt: plain mipmaps average them into their gaps, so at an eighth of the size (about the
+  city camera's distance) the solid share of a strand texture falls to a third or less of the full size's
+  (`T_MaleHair07_BC` 29% to 11%, `T_MaleHair04_BC` 19% to 4%), the depth prepass draws next to nothing, and the
+  strands are a 30% haze over the scalp.
+
+**Fix** (`HairFinish.Denser`, numbers in `HairRules`, checked offline in `NavCheck/HairCheck.cs`): the denser copy of
+each strand texture, made once when it is first worn,
+
+- is darkened towards 0.6 at the faint edge of every strand (`HairRules.Shade`, from the alpha as painted), so under a
+  single light the strands stay apart; on average the hair's colour comes out 0.76 to 0.99 of what it was;
+- carries mipmaps made on the CPU: colour averaged by how much of each texel is drawn, alpha averaged and then
+  multiplied (by 1 to 4) until as much of the level is solid as of the full size (`HairRules.CoverScale`).
+
+The "Hair check" line in Player.log (once per character per scene now, whatever the options) gives per layer the
+blend, the clip, the depth prepass, the texture and its mipmaps, the solid share at an eighth of the size as plain
+mipmaps had it and as the copy has it, and the mean shade. Options > Tests has "A street lamp over my head for 20
+seconds": a copy of the nearest street lamp's light, all but over the head. Preview options `deep=1` and `keep=0`
+give the finish as it was before.
+
+Who gets it: the characters on show as before (the double, character creation, the shop preview) and, since this
+change, every other character drawn in the city in the game's strand hair, another player's character in a Going
+Public session included (`CharacterQuality.FindOthers`: one lookup every 5 s, the finish on a change of look). Only
+the materials on this machine's renderers are swapped (the merged mesh of a character built in one piece too);
+the appearance data a save keeps and Going Public sends is neither read for it nor written. The city's own people
+are built from the game's plain set; if their hair is not on the hair shader nothing of theirs is touched.
+
 ## How it fits the game's character
 
 - The game's detailed character has one skeleton of 55 bones, and every renderer on it lists them in the same
