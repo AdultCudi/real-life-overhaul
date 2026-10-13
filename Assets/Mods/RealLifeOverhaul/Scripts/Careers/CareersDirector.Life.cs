@@ -241,7 +241,6 @@ namespace RealLifeOverhaul.Careers
             string title = CareersText.Title(j.Post.Prof, next), employer = CareersText.Employer(j.Post.Employer);
             Tell2(NotificationType.Success, "reallife_life_note_promoted", Data("title", title, "employer", employer, "pay", CareersText.Rate(Prices.At(j.Pay))), TabJob, null);
             CareersGame.Mood(ModState.MoodUp);
-            CareersBridges.Standing?.Invoke(1, 1);
             if (j.Rank.Exec)
             {
                 Story("reallife_life_news_top", "name", PlayerName(), "title", title + ", " + employer);

@@ -77,7 +77,6 @@ namespace RealLifeOverhaul.Careers
             int on = StudyRules.CeremonyDay(day);
             _study.GraduationDay = on;
             _study.GraduationCourse = c.Id;
-            CareersBridges.Standing?.Invoke(1, StudyRules.Honours(c, e.Grade) ? 2 : 1);
             Tell(NotificationType.Success, "reallife_study_note_graduation", Data("course", CareersText.Course(c.Id), "day", CareersText.Day(on), "hour", CareersText.Hour(CeremonyHour)),
                 TabResults, null);
         }
