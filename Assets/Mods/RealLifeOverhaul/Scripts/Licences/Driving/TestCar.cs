@@ -1,12 +1,15 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using BAModAPI;
 using GleyTrafficSystem;
 using Helpers;
+using Player.HUD.ItemInfoOverlays;
 using UI;
 using UI.Notification;
 using UnityEngine;
+using UnityEngine.AI;
 using Vehicles.DeliveryDriverJob;
 using Vehicles.VehicleTypes;
 
@@ -30,6 +33,18 @@ namespace RealLifeOverhaul
     ///
     /// It is an instance of the game's job-vehicle class (unsellable, not assignable to a
     /// warehouse), which also keeps the mod's own jobs from counting it as the player's car.
+    ///
+    /// Getting out of it always ends with the player on their feet beside it (CarExitRules). The
+    /// game's own exit puts them at one point by the driver's door a frame later, and puts them back
+    /// at the wheel with a warning when that point is not walkable; the school, which then sees them
+    /// out again, would ask for ever and the player was held against the car's side until the game
+    /// was restarted. So when the school sees them out it names a walkable point around the car that
+    /// the game's exit takes instead. Should the exit be cut short however it began (a fault in the
+    /// game's exit, a handler of its exit event, the player's own exit), the school finishes it once a
+    /// second for half a minute after: out from under the car, shown, no longer held as in a vehicle,
+    /// and on the navigation mesh beside it. The car is never taken back within two seconds of the
+    /// player getting out, and the game's card over it is put away first, so nothing of the game's
+    /// still points at a car that has gone.
     /// </summary>
     public sealed class TestCar
     {
@@ -52,6 +67,14 @@ namespace RealLifeOverhaul
         private bool _seeingOut;
         private bool _failed;
         private int _tickets;           // parking tickets the game has written on the lent car, as last seen (LentVehicle)
+        private bool _wasDriven;        // at its wheel at the last look
+        private float _leftAt = -100f;  // when the player last got out of it (Time.time)
+        private Vector3 _exitSpot;      // where the school last asked the game to put them
+        private bool _haveSpot;
+        private int _freed;             // exits the school has had to finish since the player last got out
+
+        private static readonly FieldInfo TargetsField = typeof(EntityController).GetField("navMeshTargets", BindingFlags.Instance | BindingFlags.NonPublic);
+        private static readonly FieldInfo BlockersField = typeof(PlayerController).GetField("_activeNavigationBlockers", BindingFlags.Instance | BindingFlags.NonPublic);
 
         public TestCar(MonoBehaviour host, IModLogger logger)
         {
@@ -116,6 +139,10 @@ namespace RealLifeOverhaul
                 _instance = instance;
                 _tickets = 0;
                 _returning = false;
+                _wasDriven = false;
+                _leftAt = -100f;
+                _haveSpot = false;
+                _freed = 0;
                 SpawnedAt = Time.time;
                 _logger?.Info("Licences: the school's " + (van ? "van" : "car") + " ('" + type + "', id " + instance.id + ") stands "
                               + Vector3.Distance(near, spot).ToString("F0") + " m from the desk.");
@@ -193,11 +220,27 @@ namespace RealLifeOverhaul
                 {
                     Forget();   // wrecked and removed by the game
                 }
-                if (_car == null || !_returning)
+                if (_car == null)
                 {
                     return;
                 }
-                if (Driven)
+                bool driven = Driven;
+                if (_wasDriven && !driven)
+                {
+                    _leftAt = Time.time;   // out by whatever way: the game's exit, the player's, the school's
+                    _freed = 0;
+                    _haveSpot = false;     // (the school's own exit sets these itself, with the place it named)
+                }
+                _wasDriven = driven;
+                if (!driven)
+                {
+                    WatchExit(player);
+                }
+                if (!_returning)
+                {
+                    return;
+                }
+                if (driven)
                 {
                     // Still at its wheel, or back at it: seen out. The time it may stand counts from when they are out.
                     _returnFrom = Time.time;
@@ -218,7 +261,8 @@ namespace RealLifeOverhaul
                     return;
                 }
                 float away = (_car.transform.position - player).sqrMagnitude;
-                if (away > 30f * 30f || Time.time - _returnFrom > 20f || (away > 12f * 12f && !StreetSpots.IsInView(_car.transform.position)))
+                bool due = away > 30f * 30f || Time.time - _returnFrom > 20f || (away > 12f * 12f && !StreetSpots.IsInView(_car.transform.position));
+                if (due && CarExitRules.MayTakeBack(false, Time.time - _leftAt, UnderCar()))
                 {
                     TakeBack();
                 }
@@ -264,17 +308,261 @@ namespace RealLifeOverhaul
             return car != null && ReferenceEquals(car, _car) && _returning && Driven;
         }
 
+        // The game's exit, told where to put the player: a walkable place around the car found while the car
+        // still cuts no hole in the navigation mesh, written over the game's own door point after its exit has
+        // checked that point and before the frame in which it puts the player there. A fault on the way is
+        // finished at once if it left the player half out.
         private bool PutOut(CarController car)
         {
+            bool found = false;
+            Vector3 spot = default;
             try
             {
-                car.ExitVehicle();
-                return true;
+                found = ExitSpot(car, out spot);
             }
             catch (Exception e)
             {
                 _logger?.Error(e);
+            }
+            _exitSpot = spot;
+            _haveSpot = found;
+            _leftAt = Time.time;
+            _freed = 0;
+            _wasDriven = false;
+            try
+            {
+                car.ExitVehicle();
+            }
+            catch (Exception e)
+            {
+                _logger?.Error(e);
+                _logger?.Warn("Licences: the game's exit from the school's car stopped half way (the error above); the school finishes it.");
+                if (!Driven)
+                {
+                    Free(car, "the game's exit stopped half way");
+                }
                 return false;
+            }
+            if (found)
+            {
+                Aim(car, spot);
+            }
+            return true;
+        }
+
+        // The game's exit warps the player to its first door point one frame after it was called.
+        private void Aim(CarController car, Vector3 spot)
+        {
+            try
+            {
+                if (TargetsField != null && TargetsField.GetValue(car) is Transform[] targets && targets.Length > 0 && targets[0] != null)
+                {
+                    targets[0].position = spot;
+                }
+            }
+            catch (Exception e)
+            {
+                _logger?.Error(e);
+            }
+        }
+
+        // A place to stand around the car that the player can walk on and walk off from: the driver's door
+        // first (CarExitRules.Place), on the player's own navigation mesh, at the height of the street, out of
+        // the car's body and of any other vehicle. Failing all six, the nearest pavement.
+        private static bool ExitSpot(CarController car, out Vector3 spot)
+        {
+            spot = default;
+            if (car == null)
+            {
+                return false;
+            }
+            JobSpots.CarFrame(car, out Vector3 centre, out Vector3 forward, out float halfLength, out float halfWidth);
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            NavMeshQueryFilter filter = PlayerController.navMeshQueryFilter;
+            for (int i = 0; i < CarExitRules.Places; i++)
+            {
+                CarExitRules.Place(i, halfWidth, halfLength, out float across, out float along);
+                Vector3 at = centre + right * across + forward * along;
+                bool grounded = StreetSpots.Ground(at, out float ground);
+                at.y = ground;
+                if (!NavMesh.SamplePosition(at, out NavMeshHit hit, CarExitRules.SampleRadius, filter)
+                    || (grounded && Mathf.Abs(hit.position.y - ground) > 0.45f))
+                {
+                    continue;
+                }
+                Vector3 local = hit.position - centre;
+                if (CarExitRules.InBody(Vector3.Dot(local, right), Vector3.Dot(local, forward), halfWidth, halfLength))
+                {
+                    continue;
+                }
+                Vector3 clear = hit.position;
+                if (!StreetSpots.OutOfVehicles(ref clear) || !NavMesh.SamplePosition(clear, out hit, 0.5f, filter))
+                {
+                    continue;
+                }
+                local = hit.position - centre;
+                if (CarExitRules.InBody(Vector3.Dot(local, right), Vector3.Dot(local, forward), halfWidth, halfLength))
+                {
+                    continue;
+                }
+                spot = hit.position;
+                return true;
+            }
+            if (StreetSpots.OnPavement(centre, 12f, out Vector3 pavement) && NavMesh.SamplePosition(pavement, out NavMeshHit onFoot, 1f, filter))
+            {
+                spot = onFoot.position;
+                return true;
+            }
+            return false;
+        }
+
+        // ---------------------------------------------------------------- out, and free
+
+        // Once a second for half a minute after the player got out, while they are near the car: a few comparisons,
+        // and the exit finished only if something of it was left undone.
+        private void WatchExit(Vector3 player)
+        {
+            float since = Time.time - _leftAt;
+            if (since < CarExitRules.SettleSeconds || since > CarExitRules.WatchFor || _car == null)
+            {
+                return;
+            }
+            PlayerController pc = PlayerHelper.PlayerController;
+            if (pc == null || pc.Character == null || PlayerHelper.IsUsingVehicle || HeldByOther(pc))
+            {
+                return;
+            }
+            JobSpots.CarFrame(_car, out Vector3 centre, out Vector3 forward, out float halfLength, out float halfWidth);
+            Vector3 local = player - centre;
+            local.y = 0f;
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            NavMeshAgent agent = pc.Character.navmeshAgent;
+            bool underCar = pc.transform.IsChildOf(_car.transform);
+            bool marked = HasBlocker(pc, NavigationBlocker.Vehicle);
+            bool hidden = !pc.gameObject.activeInHierarchy || pc.Character.transform.localScale.sqrMagnitude < 0.01f;
+            bool onMesh = agent != null && agent.enabled && agent.isOnNavMesh;
+            bool inBody = CarExitRules.InBody(Vector3.Dot(local, right), Vector3.Dot(local, forward), halfWidth, halfLength);
+            if (!CarExitRules.Stuck(false, since, local.magnitude, underCar, marked, hidden, onMesh, inBody))
+            {
+                return;
+            }
+            string what = (underCar ? "still under the car, " : string.Empty) + (marked ? "still held as in a vehicle, " : string.Empty)
+                          + (hidden ? "not shown, " : string.Empty) + (!onMesh ? "off the navigation mesh, " : string.Empty)
+                          + (inBody ? "inside the car's body, " : string.Empty);
+            Free(_car, what.TrimEnd(' ', ','));
+        }
+
+        // The rest of the game's exit (CarController.ExitVehicle, and PlayerController.Unstuck for what it does
+        // after a failed exit), done by the school: shown, out from under the car, no longer held as in a vehicle,
+        // the walking camera, and warped to a walkable place beside the car. Three times at most per exit.
+        private void Free(CarController car, string why)
+        {
+            if (_freed >= 3)
+            {
+                return;
+            }
+            _freed++;
+            try
+            {
+                var gm = InstanceBehavior<GameManager>.Instance;
+                PlayerController pc = gm != null ? gm.playerController : null;
+                if (pc == null || pc.Character == null || Driven)
+                {
+                    return;
+                }
+                bool underCar = car != null && pc.transform.IsChildOf(car.transform);
+                bool hidden = !pc.gameObject.activeInHierarchy || pc.Character.transform.localScale.sqrMagnitude < 0.01f;
+                if (underCar || pc.transform.parent != gm.transform)
+                {
+                    pc.transform.SetParent(gm.transform);
+                }
+                if (hidden)
+                {
+                    pc.Character.ToggleVisibility(show: true);
+                }
+                if (HasBlocker(pc, NavigationBlocker.Vehicle))
+                {
+                    pc.UnsetNavigationBlocker(NavigationBlocker.Vehicle);
+                }
+                if (underCar || hidden)
+                {
+                    CameraHelper.SetCamera(BuildingManager.IsInsideBuilding || Parking.UndergroundParking.UndergroundParkingManager.IsInsideParking ? gm.indoorCamera : gm.pedestrianCamera);
+                }
+                Vector3 spot = _exitSpot;
+                bool found = _haveSpot && car != null && (spot - car.transform.position).sqrMagnitude < CarExitRules.StuckNear * CarExitRules.StuckNear;
+                if (!found)
+                {
+                    found = ExitSpot(car, out spot);
+                }
+                NavMeshAgent agent = pc.Character.navmeshAgent;
+                bool warped = false;
+                if (agent != null && found)
+                {
+                    if (!agent.enabled)
+                    {
+                        agent.enabled = true;
+                    }
+                    warped = agent.Warp(spot);
+                }
+                pc.ResetNavigation();
+                HideCard(car);
+                _logger?.Info("Licences: out of the school's car, the player was " + why + "; the school finished the exit"
+                              + (warped ? " and put them on their feet " + Vector3.Distance(spot, car != null ? car.transform.position : spot).ToString("F1") + " m from the car's middle."
+                                  : ", but found no walkable place to put them (" + (found ? "the warp was refused" : "none within reach") + ")."));
+            }
+            catch (Exception e)
+            {
+                _logger?.Error(e);
+            }
+        }
+
+        // Something else holds the player still (a sequence of the game's, the mod's custody, a fall): left to it.
+        private static bool HeldByOther(PlayerController pc)
+        {
+            if (BlockersField == null || !(BlockersField.GetValue(pc) is HashSet<NavigationBlocker> set))
+            {
+                return false;
+            }
+            foreach (NavigationBlocker blocker in set)
+            {
+                if (blocker != NavigationBlocker.Vehicle)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private static bool HasBlocker(PlayerController pc, NavigationBlocker blocker)
+        {
+            return BlockersField != null && BlockersField.GetValue(pc) is HashSet<NavigationBlocker> set && set.Contains(blocker);
+        }
+
+        private bool UnderCar()
+        {
+            PlayerController pc = PlayerHelper.PlayerController;
+            return pc != null && _car != null && pc.transform.IsChildOf(_car.transform);
+        }
+
+        // The game's card over the car (shown while the cursor is on it, or after a click) and its vehicle panel are
+        // put away before the car goes: the game hides the first only when the cursor leaves the car, and a card left
+        // pointing at a deleted car throws in every frame (OverlayManager.LateUpdate) and keeps the player from walking.
+        private static void HideCard(CarController car)
+        {
+            try
+            {
+                OverlayGuard.Release(car);
+                var gm = InstanceBehavior<GameManager>.Instance;
+                UIs hud = InstanceBehavior<UIs>.Instance;
+                if (car != null && gm != null && ReferenceEquals(gm.selectedVehicle, car) && !PlayerHelper.IsUsingVehicle
+                    && hud != null && hud.playerHUD != null && hud.playerHUD.itemPanelUI != null)
+                {
+                    hud.playerHUD.itemPanelUI.Toggle(false);
+                }
+            }
+            catch (Exception e)
+            {
+                Licences.Logger?.Error(e);
             }
         }
 
@@ -375,6 +663,7 @@ namespace RealLifeOverhaul
                             controller = own[v];
                         }
                     }
+                    OverlayGuard.Release(controller);
                     all[i].Delete(controller);
                     _logger?.Info("Licences: a school car left in the save (" + id + ") was removed.");
                 }
@@ -385,6 +674,11 @@ namespace RealLifeOverhaul
         {
             CarController car = _car;
             VehicleInstance instance = _instance;
+            if (car != null && UnderCar())
+            {
+                Free(car, "still under the car as it was taken back");   // (deleting the car would take the player with it)
+            }
+            HideCard(car);
             Forget();
             if (instance != null)
             {
@@ -400,6 +694,7 @@ namespace RealLifeOverhaul
             _returning = false;
             _wasLeft = false;
             _seeingOut = false;
+            _wasDriven = false;
         }
 
         // A stretch of lane near the desk with nothing standing in it: the kerb side first, then the lane itself.

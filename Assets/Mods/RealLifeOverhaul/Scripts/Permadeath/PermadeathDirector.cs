@@ -23,8 +23,13 @@ namespace RealLifeOverhaul.Permadeath
     ///                        memory (Wiring/PermadeathLinks), and the main menu when it is put down
     ///   an ended save        the same page, read from the save's record, and the main menu
     ///
+    ///   going without food   with it on, the game's hunger bar is looked at once a second: from a day at its bottom
+    ///                        a warning on the hour, three in all, with a low mood and then a faster drain of energy;
+    ///                        anything eaten ends it; past the third a rare death, only at a moment the game can take it
+    ///
     /// Per frame: one flag test, and while the obituary is up the cancel key (the game reads no keys of its own then).
-    /// Once a second: two reference comparisons and a day comparison; once a game day, one walk over the businesses.
+    /// Once a second: two reference comparisons, a day comparison and the hunger bar; once a game hour while the bar is
+    /// at its bottom, the rules of going without food; once a game day, one walk over the businesses.
     /// </summary>
     public sealed partial class PermadeathDirector : MonoBehaviour
     {
@@ -32,6 +37,8 @@ namespace RealLifeOverhaul.Permadeath
         public static PermadeathDirector Instance { get; private set; }
 
         private static readonly string[] IllKeys = { "reallife_pd_ill_1", "reallife_pd_ill_2", "reallife_pd_ill_3" };
+        private static readonly string[] StarveKeys = { "reallife_pd_starve_1", "reallife_pd_starve_2", "reallife_pd_starve_3" };
+        private const int StarveCatchUpMost = 48;   // game hours caught up at most in one look (the game run on fast)
 
         private readonly LifeStory _story = new LifeStory();     // the life being printed
         private readonly List<string> _keys = new List<string>(8);
@@ -44,6 +51,8 @@ namespace RealLifeOverhaul.Permadeath
         private bool _closed;
         private bool _asking;       // the question that comes before switching it on is up
         private bool _broken;
+        private float _lastHunger = -1f;   // the bar at the last look; -1 not looked at yet
+        private int _starveHour = -1;      // the game hour going without food was last judged in
         private Action _onSave;
         private Action _onClosed;
         private Action _onChanged;
@@ -63,6 +72,7 @@ namespace RealLifeOverhaul.Permadeath
             SaveHook.Drop(_onSave);
             Settings.Changed -= _onChanged;
             PermadeathGame.Hold(false, false);
+            PermadeathGame.ClearWeak();
             PermadeathState.Reset();
             Settings.SetPermadeath(false);   // in the main menu the switch is no save's: on there, it is for the next game begun
             if (Instance == this)
@@ -132,6 +142,93 @@ namespace RealLifeOverhaul.Permadeath
                 _day = save.Day;
                 Chronicle();
             }
+            Hunger();
+        }
+
+        // ---------------------------------------------------------------- going without food
+
+        // Once a second: the bar read; something eaten ends the danger; at its bottom, once a game hour (the hours missed
+        // caught up, one warning at most a look), the rules. Off, dead, or with the game's energy off, nothing is kept.
+        private void Hunger()
+        {
+            if (!PermadeathState.Armed || PermadeathState.Dead || PermadeathGame.NoEnergy)
+            {
+                if (PermadeathState.EmptySince >= 0f || PermadeathState.StarveTold > 0)
+                {
+                    PermadeathState.Fed();
+                    PermadeathGame.Weak(0);
+                }
+                _lastHunger = -1f;
+                return;
+            }
+            float hunger = PermadeathGame.Hunger;
+            float now = PermadeathGame.NowMinutes;
+            bool ate = _lastHunger >= 0f && PermadeathRules.Ate(_lastHunger, hunger);
+            _lastHunger = hunger;
+            if (ate || !PermadeathRules.Empty(hunger))
+            {
+                if (PermadeathState.EmptySince >= 0f)
+                {
+                    bool warned = PermadeathState.StarveTold > 0;
+                    Logger?.Info("Permadeath: going without food is over after " + ((now - PermadeathState.EmptySince) / 60f).ToString("F0") + " hours at the bottom of the bar"
+                                 + (ate ? " (something eaten)" : string.Empty) + "; warnings shown " + PermadeathState.StarveTold + ".");
+                    PermadeathState.Fed();
+                    PermadeathGame.Weak(0);
+                    if (warned)
+                    {
+                        Notifications.Show(NotificationType.Info, "reallife_pd_starve_over", null, 10f);
+                    }
+                }
+                return;
+            }
+            PermadeathState.Empty(now);
+            int hour = (int)Math.Floor(now / 60f);
+            if (hour == _starveHour)
+            {
+                return;
+            }
+            int passed = _starveHour < 0 ? 1 : Mathf.Clamp(hour - _starveHour, 1, StarveCatchUpMost);
+            _starveHour = hour;
+            Moment m = PermadeathGame.Now(_ending || _broken);
+            bool safe = PermadeathGame.SafeToDie();
+            for (int i = passed - 1; i >= 0; i--)
+            {
+                float hours = (now - PermadeathState.EmptySince) / 60f - i;
+                float roll = Random.value;
+                Verdict v = PermadeathRules.StarveHour(hours, PermadeathState.StarveTold, m, safe, roll, out int warn);
+                if (warn > 0)
+                {
+                    PermadeathState.StarveTold = warn;
+                    PermadeathState.Warn(DeathCause.Starvation);
+                    Notifications.Show(NotificationType.Error, StarveKeys[warn - 1], null, 16f);
+                    Logger?.Info("Permadeath: " + hours.ToString("F0") + " hours on an empty stomach: warning " + warn + " of 3.");
+                    break;
+                }
+                if (v == Verdict.Death)
+                {
+                    Logger?.Info("Permadeath check (going without food, " + hours.ToString("F0") + " hours at the bottom of the bar, all three warnings shown): roll " + roll.ToString("F3")
+                                 + " under " + PermadeathRules.StarvePerHour.ToString("F4") + ": the end.");
+                    PermadeathGame.Weak(0);
+                    Die(DeathCause.Starvation);
+                    return;
+                }
+            }
+            if (!safe && PermadeathRules.Allowed(m) && PermadeathState.StarveTold >= PermadeathRules.IllStages - 1
+                && PermadeathRules.StarveStage((now - PermadeathState.EmptySince) / 60f) >= PermadeathRules.IllStages)
+            {
+                Logger?.Info("Permadeath: going without food, an hour of the fatal stretch while the game was busy (asleep, a dialog, a ride, in hospital): not judged.");
+            }
+            PermadeathGame.Weak(PermadeathRules.Allowed(m) ? PermadeathState.StarveTold : 0);
+        }
+
+        /// <summary>For the test button: the bar at its bottom, as if for so many hours, the warnings not yet shown.</summary>
+        internal void StarvedFor(float hours)
+        {
+            PermadeathGame.Starve();
+            PermadeathState.Fed();
+            PermadeathState.Empty(PermadeathGame.NowMinutes - hours * 60f);
+            _lastHunger = 0f;
+            _starveHour = -1;
         }
 
         // A save read for the first time this session: its state, what a switch moved in the main menu does to it, and
@@ -142,6 +239,9 @@ namespace RealLifeOverhaul.Permadeath
             _day = -1;
             _ending = false;
             _elsewhere = false;
+            _lastHunger = -1f;
+            _starveHour = -1;
+            PermadeathGame.ClearWeak();
             if (save.modData == null)
             {
                 save.modData = new Dictionary<string, string>();
@@ -420,7 +520,7 @@ namespace RealLifeOverhaul.Permadeath
             s.Clear();
             PermadeathGame.Fill(s);
             s.Cause = cause;
-            s.Place = cause == DeathCause.Illness || cause == DeathCause.Test || cause == DeathCause.None ? string.Empty : PermadeathGame.Street();
+            s.Place = cause == DeathCause.Illness || cause == DeathCause.Starvation || cause == DeathCause.Test || cause == DeathCause.None ? string.Empty : PermadeathGame.Street();
             _keys.Clear();
             _names.Clear();
             try

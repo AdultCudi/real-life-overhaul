@@ -768,6 +768,7 @@ namespace RealLifeOverhaul
                     v => Settings.EstateHotel = v)
                 .AddToggle(Settings.EstateHireId, "reallife_estate_opt_hire", Settings.EstateHire,
                     v => Settings.EstateHire = v)
+                .AddSlider(Settings.EstateRentId, "reallife_estate_opt_rent", 50, 300, Settings.EstateRent, v => Settings.EstateRent = v, Meta.SettingsTable.SliderPercent)
                 .AddButton("reallife_estate_test_applicant", () => Economy.EstateDirector.Instance?.TestApplicant())
                 .AddButton("reallife_estate_test_arrears", () => Economy.EstateDirector.Instance?.TestArrears())
                 .AddButton("reallife_estate_test_works", () => Economy.EstateDirector.Instance?.TestWorks())
@@ -1069,6 +1070,8 @@ namespace RealLifeOverhaul
             ScenePrewarm.Add("traffic: the game's smoke effect being found for accidents and fires", TrafficEffects.Prewarm);
             ScenePrewarm.Add("game UI: the game's font being found", FindFont);
             ClickWatch.Logger = context.Logger;
+            OverlayGuard.Logger = context.Logger;
+            _root.AddComponent<OverlayGuard>();   // the game's card over a thing is put away once the thing is gone (removed while the time machine hid it): two null tests a frame
             _root.AddComponent<ClickWatch>();     // with "Developer diagnostics" on, what a left click in the city met: one flag test a frame otherwise
             _root.AddComponent<ThirdPersonCamera>();
             _root.AddComponent<VisualEnhancer>();

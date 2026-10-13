@@ -89,7 +89,7 @@ namespace RealLifeOverhaul
                 {
                     if (Settings.PedestrianIncidents && !RecklessDrivers.IsSource && CanStage() && LifeEvents.IsSafeForEvent()
                         && !Wiring.Scenes.AnyLargeSceneActive   // (an accident, a crime, a fire or street event, a rally: Wiring/Scenes)
-                        && Random.value < Settings.AccidentFrequency * 0.02f * StagedShare)
+                        && Random.value < StreetRules.Due(Settings.AccidentFrequency, Events.Weather.AccidentFactor, TimeHelper.CurrentHour) * StagedShare)
                     {
                         TryStage(now, TrafficAccidents.Instance.FindMovingCar(PlayerHelper.GetPosition()));
                     }

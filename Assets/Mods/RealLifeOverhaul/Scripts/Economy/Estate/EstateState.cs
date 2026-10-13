@@ -72,6 +72,7 @@ namespace RealLifeOverhaul.Economy
         public bool SaleFails;          // ...which was settled when it was agreed, and is found out on the day
 
         public int RentYear, CostYear;  // since the first day of the running year of the game
+        public int TopUpDay;            // the last night the rental income option was settled on the game's own rent (not saved: a load starts on the day it is read, after which only new nights come)
         public int NextApplicant = 1;   // applicants are numbered across the building's units
 
         // read from the game, not saved

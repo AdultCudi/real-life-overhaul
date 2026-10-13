@@ -11,7 +11,8 @@ namespace RealLifeOverhaul.Permadeath
         Illness = 3,     // a flu left untreated long past its warnings
         Mugging = 4,     // a mugger refused, and it went badly
         Assault = 5,     // the private lender's men, over a debt long past its day
-        Test = 6         // the options page's rehearsal: nobody died
+        Test = 6,        // the options page's rehearsal: nobody died
+        Starvation = 7   // days on an empty stomach, long past its warnings
     }
 
     /// <summary>What one dangerous moment comes to while Permadeath is on.</summary>
@@ -73,6 +74,24 @@ namespace RealLifeOverhaul.Permadeath
 
         public const int IllStages = 4;              // 0 nothing yet, 1 to 3 the warnings had, 4 the fatal stretch
 
+        // ---- going without food: hours with the game's hunger bar at its very bottom. The bar falls with every point of
+        // energy spent (EnergyHelper.SpentEnergyOnce, 1.5 hunger a point): about 3.6 an hour just living, so a full
+        // stomach is empty in a day at most, sooner on the move. At its bottom the game already burns energy half as fast
+        // again (EnergySettings.maxEnergyBurnIncreaseAtZeroHunger) and walks the player as a zombie once energy is gone too.
+        public const float HungerEmpty = 5f;          // under this the bar is at its worst (the game's own "too low" face)
+        public const float HungerAte = 0.5f;          // a rise of this much in a second is something eaten: the danger is over
+        public const int StarveWarnFirst = 24;        // a day on an empty stomach: weak with hunger (a low mood)
+        public const int StarveWarnSecond = 48;       // two days: faint, and tiring faster
+        public const int StarveWarnLast = 72;         // three days: starving
+        public const int StarveFatalFrom = 96;        // four days: from here each further hour may be the last
+        public const float StarvePerDay = 0.20f;      // the chance over a whole further day without food
+        public const float StarveDrainFaint = 0.02f;  // energy a game minute it costs from the second warning (just living is 0.04)
+        public const float StarveDrainWorst = 0.04f;  // from the third
+        public const int StarveMood = -10;            // the happiness of being weak with hunger, from the first warning
+
+        /// <summary>The chance in one game hour of starvation's fatal stretch, so that a whole day comes to <see cref="StarvePerDay"/>.</summary>
+        public static float StarvePerHour => (float)(1.0 - Math.Pow(1.0 - StarvePerDay, 1.0 / 24.0));
+
         /// <summary>The chance in one game hour of the fatal stretch, so that a whole day comes to <see cref="IllPerDay"/>.</summary>
         public static float IllPerHour => (float)(1.0 - Math.Pow(1.0 - IllPerDay, 1.0 / 24.0));
 
@@ -91,7 +110,7 @@ namespace RealLifeOverhaul.Permadeath
                 case DeathCause.Struck: return measure >= StruckFrom;
                 case DeathCause.Mugging:
                 case DeathCause.Assault: return true;
-                default: return false;   // the illness has its own course (IllStage); a test kills nobody
+                default: return false;   // the illness and going without food have their own course (IllStage, StarveStage); a test kills nobody
             }
         }
 
@@ -168,6 +187,62 @@ namespace RealLifeOverhaul.Permadeath
                 return Verdict.NearMiss;
             }
             if (stage >= IllStages && told >= IllStages - 1 && roll < IllPerHour)
+            {
+                return Verdict.Death;
+            }
+            return Verdict.None;
+        }
+
+        // ---------------------------------------------------------------- going without food
+
+        /// <summary>How far going without food has gone after so many hours with the bar at its bottom: 0 nothing yet, 1 to 3 a warning each, 4 the fatal stretch.</summary>
+        public static int StarveStage(float hoursEmpty)
+        {
+            if (hoursEmpty >= StarveFatalFrom) return 4;
+            if (hoursEmpty >= StarveWarnLast) return 3;
+            if (hoursEmpty >= StarveWarnSecond) return 2;
+            if (hoursEmpty >= StarveWarnFirst) return 1;
+            return 0;
+        }
+
+        /// <summary>True while the bar counts as at its bottom.</summary>
+        public static bool Empty(float hunger)
+        {
+            return hunger < HungerEmpty;
+        }
+
+        /// <summary>True when the bar rose from one look to the next by enough to be something eaten (only food and the hospital raise it).</summary>
+        public static bool Ate(float before, float now)
+        {
+            return now - before >= HungerAte;
+        }
+
+        /// <summary>The extra energy a game minute the weakness costs at a warning shown (0 to 3).</summary>
+        public static float StarveDrain(int told)
+        {
+            return told >= 3 ? StarveDrainWorst : told >= 2 ? StarveDrainFaint : 0f;
+        }
+
+        /// <summary>
+        /// One hour on an empty stomach, as <see cref="IllHour"/> is for a flu: the next warning due (one a call, in order),
+        /// and whether this hour is the last, never before the third warning has been shown. <paramref name="safe"/> is the
+        /// moment the game can take a death in (awake, no dialog, ride or activity, not in hospital): an hour that is not
+        /// safe warns but never kills.
+        /// </summary>
+        public static Verdict StarveHour(float hoursEmpty, int told, Moment m, bool safe, float roll, out int warn)
+        {
+            warn = 0;
+            if (!Allowed(m))
+            {
+                return Verdict.None;
+            }
+            int stage = StarveStage(hoursEmpty);
+            if (told < stage && told < IllStages - 1)
+            {
+                warn = told + 1;
+                return Verdict.NearMiss;
+            }
+            if (safe && stage >= IllStages && told >= IllStages - 1 && roll < StarvePerHour)
             {
                 return Verdict.Death;
             }

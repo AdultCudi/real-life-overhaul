@@ -140,9 +140,13 @@ namespace RealLifeOverhaul.Economy
                 TaxPercent = save != null && save.gameVariables != null ? Mathf.Max(0, save.gameVariables.taxPercentage) : 0,
                 Event = EstateBridges.EventOn != null ? EstateBridges.EventOn(day) : 0,
                 Season = Mathf.Clamp((int)TravelCatalogue.Season(day), 0, 3),
-                Weekday = Mathf.Clamp((int)TimeHelper.GetDayOfWeek(day) - 1, 0, 6)
+                Weekday = Mathf.Clamp((int)TimeHelper.GetDayOfWeek(day) - 1, 0, 6),
+                RentScale = RentScale
             };
         }
+
+        /// <summary>The options' rental income (percent) as the rules take it: thousandths of the market's rent.</summary>
+        public static int RentScale => EstateRules.RentShare(Settings.EstateRent * 10);
 
         // ---------------------------------------------------------------- the city's buildings and their values
 
@@ -926,7 +930,9 @@ namespace RealLifeOverhaul.Economy
             VehicleInstance v = Vehicle(car.Id);
             if (v != null)
             {
-                v.Delete(Controller(car.Id));
+                VehicleController controller = Controller(car.Id);
+                OverlayGuard.Release(controller);
+                v.Delete(controller);
             }
         }
 
@@ -978,6 +984,20 @@ namespace RealLifeOverhaul.Economy
         {
             Address address = AddressOf(h.Place);
             if (amount > 0 && Save != null && address != null)
+            {
+                GameManager.ChangeMoneySafe(amount, new TransactionInfo(RentKey, new Dictionary<string, string>(2) { { "address", address.ToFormattedString() } }), null, address, true);
+            }
+        }
+
+        /// <summary>
+        /// The rental income option settled on a night of the game's own rent: added (or, under 100%, taken back) under
+        /// the game's own rent transaction and the building's address, so its books read it as that building's rent and
+        /// its tax treats it as it treats rent.
+        /// </summary>
+        public static void AdjustRent(int amount, EstateHolding h)
+        {
+            Address address = AddressOf(h.Place);
+            if (amount != 0 && Save != null && address != null)
             {
                 GameManager.ChangeMoneySafe(amount, new TransactionInfo(RentKey, new Dictionary<string, string>(2) { { "address", address.ToFormattedString() } }), null, address, true);
             }

@@ -100,6 +100,7 @@ namespace RealLifeOverhaul.Permadeath
             Children.Clear();
             Family.Clear();
             Arrests = Convictions = Followers = Elections = 0;
+            Degree = Career = string.Empty;
         }
 
         public void CopyFrom(LifeStory o)
@@ -148,7 +149,7 @@ namespace RealLifeOverhaul.Permadeath
             Day = Clamp(Int(f[i++]), 0, int.MaxValue);
             DaysPerYear = Clamp(Int(f[i++]), 1, 10000);
             int cause = Int(f[i++]);
-            Cause = cause >= 0 && cause <= (int)DeathCause.Test ? (DeathCause)cause : DeathCause.None;
+            Cause = cause >= 0 && cause <= (int)DeathCause.Starvation ? (DeathCause)cause : DeathCause.None;
             Place = f[i++];
             long.TryParse(f[i++], NumberStyles.Integer, CultureInfo.InvariantCulture, out Worth);
             Founded = Clamp(Int(f[i++]), 0, 100000);

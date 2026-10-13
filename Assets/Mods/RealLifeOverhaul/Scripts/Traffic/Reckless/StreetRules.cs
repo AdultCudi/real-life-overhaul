@@ -46,10 +46,13 @@ namespace RealLifeOverhaul
         public const float PenaltyPause = 30f;       // seconds after a warning or a fine before either can follow
 
         // ---------------------------------------------------------------- how often
-        public const float CheckSeconds = 20f;       // the street is looked at this often (TrafficAccidents' own interval)
-        public const float PerCheck = 0.02f;         // accidents due per look and per point of the frequency option: the old roll's chance
+        public const float CheckSeconds = 20f;       // the street is looked at this often (TrafficAccidents' own interval), in seconds of play
+        public const float LooksPerGameHour = 3f;    // a game minute is a second of play at normal speed: three looks a game hour
+        public const int DefaultFrequency = 2;       // the option's default
+        public const float DayAtDefault = 0.75f;     // car accidents near the player in a game day of street time at the default, fair weather, the day's average hour
+        public const float StepFactor = 1.5f;        // each point of the option is half as many again: 1 is 0.5 a day, 10 about 19
         public const float PeopleShare = 0.4f;       // pedestrians struck per car accident (PedestrianIncidents' own share)
-        public const float DueMost = 1.5f;           // accidents that may be owing at once: they never come in a bunch
+        public const float DueMost = 1.1f;           // accidents that may be owing at once: one, and never a second close behind it
         public const float RecklessPerAccident = 3f; // reckless drivers seen for each accident that is due
         public const float RecklessMost = 0.85f;     // the chance of one at a look never passes this
         public const float NightFactor = 1.3f;       // more of them from 21:00 to 05:00
@@ -210,41 +213,79 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- how often
 
-        /// <summary>
-        /// Accidents that fall due at one look at the street: the chance the old roll had at that look,
-        /// kept as a quantity. 180 looks an hour, so the frequency option still means 3.6 an hour for
-        /// each of its points in fair weather.
-        /// </summary>
-        public static float Due(int frequency, float weather)
+        // How busy the road is at each hour of the day, against the day's average (the mean of the 24 is 1): the
+        // shape of a large city's reported collisions by hour, lowest from 02:00 to 05:00 at about a third of the
+        // average, highest in the late afternoon at about one and a half times it. The higher risk of each car at
+        // night (drink, speed, the dark) is in the drivers instead: more of them are reckless (NightFactor) and a
+        // drunk may be among them.
+        private static readonly float[] HourFactors =
         {
-            float due = frequency * PerCheck * weather;
+            0.63f, 0.44f, 0.37f, 0.32f, 0.37f, 0.49f,   // 00:00 to 05:00
+            0.66f, 0.88f, 1.22f, 1.17f, 1.12f, 1.20f,   // 06:00 to 11:00
+            1.29f, 1.34f, 1.51f, 1.49f, 1.63f, 1.63f,   // 12:00 to 17:00
+            1.46f, 1.22f, 1.05f, 0.95f, 0.83f, 0.73f    // 18:00 to 23:00
+        };
+
+        /// <summary>How busy the road is at an hour of the day (0 to 23; any other number is taken round the clock), 1 being the day's average.</summary>
+        public static float HourFactor(int hour)
+        {
+            return HourFactors[((hour % 24) + 24) % 24];
+        }
+
+        /// <summary>
+        /// Car accidents near the player in a game day of street time at a setting of the frequency option, in fair
+        /// weather at the day's average hour. Each point is half as many again as the one below it, so the low end is
+        /// rare and the top still busy: 0.5 at 1, 0.75 at the default 2, about 19 at 10. None at 0 or below.
+        ///
+        /// What a real city sees is far rarer still: a city the size of the game's records a few hundred collisions a
+        /// day over some ten thousand kilometres of street, so the kilometre or two of street in sight of one person
+        /// sees one every few weeks. The game is a game: an accident is an event the player meets now and then, and
+        /// the old rate of nearly three a day at the default (with a scene that lasts up to five game hours) put one
+        /// on the road nearly all the time.
+        /// </summary>
+        public static float PerDay(int frequency)
+        {
+            return frequency <= 0 ? 0f : DayAtDefault * (float)Math.Pow(StepFactor, frequency - DefaultFrequency);
+        }
+
+        /// <summary>Accidents that fall due at one look at the street, at a setting, the weather's factor and the hour.</summary>
+        public static float Due(int frequency, float weather, int hour)
+        {
+            float due = PerDay(frequency) / (24f * LooksPerGameHour) * weather * HourFactor(hour);
             return due < 0f ? 0f : due;
         }
 
-        /// <summary>The same per hour of street time.</summary>
+        /// <summary>The same per game hour.</summary>
+        public static float PerGameHour(int frequency, float weather, int hour)
+        {
+            return Due(frequency, weather, hour) * LooksPerGameHour;
+        }
+
+        /// <summary>The same per hour of play in the street (sixty game hours) at the day's average hour.</summary>
         public static float PerHour(int frequency, float weather)
         {
-            return Due(frequency, weather) * 3600f / CheckSeconds;
+            float perHour = PerDay(frequency) / 24f * (3600f / CheckSeconds / LooksPerGameHour) * weather;
+            return perHour < 0f ? 0f : perHour;
         }
 
         /// <summary>What is owing after one more look, never more than <see cref="DueMost"/>.</summary>
-        public static float Accrue(float owing, int frequency, float weather, float share = 1f)
+        public static float Accrue(float owing, int frequency, float weather, int hour, float share = 1f)
         {
-            float next = owing + Due(frequency, weather) * share;
+            float next = owing + Due(frequency, weather, hour) * share;
             return next > DueMost ? DueMost : next;
         }
 
         /// <summary>The chance at one look that a driver near the player starts to drive recklessly.</summary>
-        public static float RecklessChance(int frequency, float weather, bool night)
+        public static float RecklessChance(int frequency, float weather, int hour, bool night)
         {
-            float chance = Due(frequency, weather) * RecklessPerAccident * (night ? NightFactor : 1f);
+            float chance = Due(frequency, weather, hour) * RecklessPerAccident * (night ? NightFactor : 1f);
             return chance > RecklessMost ? RecklessMost : chance;
         }
 
         /// <summary>The chance at one look that somebody steps into the road in front of a car.</summary>
-        public static float JaywalkChance(int frequency, float weather)
+        public static float JaywalkChance(int frequency, float weather, int hour)
         {
-            float chance = Due(frequency, weather) * PeopleShare * JaywalkersPerKnock;
+            float chance = Due(frequency, weather, hour) * PeopleShare * JaywalkersPerKnock;
             return chance > JaywalkMost ? JaywalkMost : chance;
         }
 

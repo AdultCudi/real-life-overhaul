@@ -97,6 +97,7 @@ namespace RealLifeOverhaul.Ledger
 
         public override void OnDestroy()
         {
+            OverlayGuard.Release(this);   // (the game's own lets the card go only while it is on screen)
             if (!GameManager.isCitySceneBeingUnloaded && MouseController.currentTargetEntity == this)
             {
                 MouseController.ResetCurrentEntitySelected(this);

@@ -43,6 +43,7 @@ namespace RealLifeOverhaul
         public const string BackPain = "reallife_happinessmodifier_back_pain";
         public const string Burnout = "reallife_happinessmodifier_burnout";
         public const string HomeCooked = "reallife_happinessmodifier_home_cooked";
+        public const string Starving = "reallife_happinessmodifier_starving";   // Permadeath: a day and more on an empty stomach
 
         // Generic moods shared by the many life events, so each event doesn't need a modifier of its own.
         public const string MoodUp = "reallife_happinessmodifier_mood_up";
@@ -76,7 +77,7 @@ namespace RealLifeOverhaul
             (MoodUp, 4, 8), (MoodUpBig, 8, 12), (MoodDown, -4, 8), (MoodDownBig, -8, 12),
             (Unwashed, -6, 12), (NoPower, -8, 2), (NoWater, -10, 2), (Stressed, -8, 12), (Relaxed, 4, 12), (MessyHome, -5, 12), (CosyHome, 4, 12),
             (WellRested, 6, 10), (Groggy, -5, 6), (ShortOfSleep, -8, 12), (InShape, 4, 12), (GoodDiet, 4, 12), (PoorDiet, -5, 12),
-            (BackPain, -8, 48), (Burnout, -12, 72), (HomeCooked, 5, 8), (Tipsy, 3, 3),
+            (BackPain, -8, 48), (Burnout, -12, 72), (HomeCooked, 5, 8), (Tipsy, 3, 3), (Starving, Permadeath.PermadeathRules.StarveMood, 12),
             (CivicClean, 3, 3), (CivicLitter, -3, 3), (CivicFestive, 2, 3), (CivicNoise, -3, 2), (CivicVoted, 5, 24)
         };
 
