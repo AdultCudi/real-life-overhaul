@@ -153,7 +153,11 @@ namespace RealLifeOverhaul.Planner
         }
     }
 
-    /// <summary>Civic life: election day with its polling hours, and the candidates' debate before it (Civic/CivicGovernment.State).</summary>
+    /// <summary>
+    /// Civic life: election day with its polling hours, and the candidates' debate before it (Civic/CivicGovernment.State);
+    /// and the player's own politics (Civic/CivicOffice.State): the last day to file papers, the player's own debate, result
+    /// night, an attack to answer, the council's meetings, the budget, the register of interests and a recall vote.
+    /// </summary>
     public sealed class CivicSource : IPlannerSource
     {
         public string Id => "civic";
@@ -162,6 +166,11 @@ namespace RealLifeOverhaul.Planner
         public void Collect(int fromDay, int toDay, PlannerList into)
         {
             GovState state = CivicDirector.Instance.Government.State;
+            CivicOffice office = CivicDirector.Instance.Office;
+            if (office != null && CivicOffice.Enabled)
+            {
+                Office(office, state, into);
+            }
             if (state == null || state.Phase != ElectionPhase.Campaign || state.ElectionDay <= 0)
             {
                 return;
@@ -177,7 +186,7 @@ namespace RealLifeOverhaul.Planner
                     vote.What = PlannerText.T("reallife_planner_election_what", "time", PlannerText.Clock(CivicCatalogue.ResultHour * 60));
                 }
             }
-            if (!state.DebateHeld)
+            if (!state.DebateHeld && (office == null || !office.Campaigning))
             {
                 int day = state.ElectionDay - CivicCatalogue.DebateBefore;
                 PlannerEntry debate = into.Add(Id, day, 1, PlannerCategory.City, day);
@@ -189,6 +198,111 @@ namespace RealLifeOverhaul.Planner
                         debate.Title = PlannerText.T("reallife_planner_debate_title");
                         debate.What = PlannerText.T("reallife_planner_debate_what");
                     }
+                }
+            }
+        }
+
+        // The player's own politics: ids are the day and 10 to 17 for the kind of row.
+        private void Office(CivicOffice office, GovState g, PlannerList into)
+        {
+            OfficeState s = office.State;
+            if (office.Collecting)
+            {
+                int close = OfficeRules.NominationsClose(s.ForDay, CivicCatalogue.CampaignDays);
+                PlannerEntry e = into.Add(Id, close, 10, PlannerCategory.City, close);
+                if (e != null && into.WantText)
+                {
+                    e.Title = PlannerText.T("reallife_planner_office_file_title");
+                    e.What = PlannerText.T("reallife_planner_office_file_what", "signatures", s.Signatures.ToString(), "needed", OfficeRules.SignaturesNeeded(s.Race).ToString());
+                    e.IfMissed = PlannerText.T("reallife_planner_office_file_missed");
+                }
+            }
+            if (office.Campaigning && g != null)
+            {
+                int debate = g.ElectionDay - CivicCatalogue.DebateBefore;
+                if (s.Debate == 0)
+                {
+                    PlannerEntry e = into.Add(Id, debate, 11, PlannerCategory.City, debate);
+                    if (e != null)
+                    {
+                        e.Start = 19 * 60;
+                        e.End = 22 * 60;
+                        e.Attend = true;
+                        if (into.WantText)
+                        {
+                            e.Title = PlannerText.T("reallife_planner_office_debate_title");
+                            e.What = PlannerText.T("reallife_planner_office_debate_what");
+                            e.IfMissed = PlannerText.T("reallife_planner_office_debate_missed");
+                        }
+                    }
+                }
+                PlannerEntry night = into.Add(Id, g.ElectionDay, 12, PlannerCategory.City, g.ElectionDay);
+                if (night != null)
+                {
+                    night.Start = CivicCatalogue.ResultHour * 60;
+                    if (into.WantText)
+                    {
+                        night.Title = PlannerText.T("reallife_planner_office_result_title");
+                        night.What = PlannerText.T("reallife_planner_office_result_what");
+                    }
+                }
+                if (s.AttackKind >= 0)
+                {
+                    int by = s.AttackDay + OfficeRules.AttackAnswerDays;
+                    PlannerEntry e = into.Add(Id, by, 13, PlannerCategory.City, by);
+                    if (e != null && into.WantText)
+                    {
+                        e.Title = PlannerText.T("reallife_planner_office_attack_title");
+                        e.What = PlannerText.T("reallife_planner_office_attack_what");
+                    }
+                }
+            }
+            if (!s.InOffice)
+            {
+                return;
+            }
+            if (s.NextMeeting > 0)
+            {
+                PlannerEntry e = into.Add(Id, s.NextMeeting, 14, PlannerCategory.City, s.NextMeeting);
+                if (e != null)
+                {
+                    e.Start = OfficeRules.MeetingHour * 60;
+                    e.End = OfficeRules.MeetingLast * 60;
+                    e.Attend = true;
+                    if (into.WantText)
+                    {
+                        e.Title = PlannerText.T("reallife_planner_office_meeting_title");
+                        e.What = PlannerText.T("reallife_planner_office_meeting_what", "count", s.Agenda.Count.ToString());
+                        e.IfMissed = PlannerText.T("reallife_planner_office_meeting_missed");
+                    }
+                }
+            }
+            if (!s.Registered && s.RegisterBy > 0)
+            {
+                PlannerEntry e = into.Add(Id, s.RegisterBy, 15, PlannerCategory.City, s.RegisterBy);
+                if (e != null && into.WantText)
+                {
+                    e.Title = PlannerText.T("reallife_planner_office_register_title");
+                    e.What = PlannerText.T("reallife_planner_office_register_what");
+                    e.IfMissed = PlannerText.T("reallife_planner_office_register_missed");
+                }
+            }
+            if (s.Holds == OfficeRace.Mayor && s.BudgetDay > 0)
+            {
+                PlannerEntry e = into.Add(Id, s.BudgetDay, 16, PlannerCategory.City, s.BudgetDay);
+                if (e != null && into.WantText)
+                {
+                    e.Title = PlannerText.T("reallife_planner_office_budget_title");
+                    e.What = PlannerText.T("reallife_planner_office_budget_what");
+                }
+            }
+            if (s.RecallDay > 0)
+            {
+                PlannerEntry e = into.Add(Id, s.RecallDay, 17, PlannerCategory.City, s.RecallDay);
+                if (e != null && into.WantText)
+                {
+                    e.Title = PlannerText.T("reallife_planner_office_recall_title");
+                    e.What = PlannerText.T("reallife_planner_office_recall_what");
                 }
             }
         }

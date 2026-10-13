@@ -27,6 +27,7 @@ internal static partial class Program
         OfficePolls();
         OfficeSaved();
         OfficeGovLine();
+        OfficeWords();
         Console.WriteLine("  Running for office: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
@@ -517,5 +518,44 @@ internal static partial class Program
         Check(older.Read(old) && older.PlayerSlot == -1 && !older.MayorIsPlayer && older.DistrictsCounted == 0 && !older.Candidates[2].Player,
             "office: an older line reads, with nobody the player and no district shares");
         Check(CivicCatalogue.PartyKey(CivicCatalogue.Independent) == "reallife_civic_party_independent" && CivicCatalogue.PartyKey(0) == CivicCatalogue.Parties[0], "office: an independent has a name of their own");
+    }
+
+    private static void OfficeWords()
+    {
+        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
+        Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(folder, "en.json"));
+        Dictionary<string, string> pt = LoadWords(System.IO.Path.Combine(folder, "pt.json"));
+        Check(en != null && pt != null, "office: en.json and pt.json are where the checks look for them");
+        if (en == null || pt == null)
+        {
+            return;
+        }
+        string[] keys =
+        {
+            "reallife_civic_party_independent", "reallife_civic_office_option", "reallife_opt_tip_civic_office",
+            "reallife_civic_office_attack_record", "reallife_civic_office_attack_business", "reallife_civic_office_attack_money", "reallife_civic_office_attack_inexperience",
+            "reallife_civic_office_attack_absent", "reallife_civic_office_attack_promises",
+            "reallife_civic_office_body_0", "reallife_civic_office_body_6", "reallife_civic_office_dept_0", "reallife_civic_office_dept_3",
+            "reallife_justice_charge_campaign_finance", "reallife_justice_charge_misconduct", "reallife_fame_cause_30", "reallife_flare_draft_campaign"
+        };
+        var missing = new List<string>();
+        foreach (string k in keys)
+        {
+            if (!en.ContainsKey(k) || !pt.ContainsKey(k) || string.IsNullOrEmpty(en[k]) || string.IsNullOrEmpty(pt[k]))
+            {
+                missing.Add(k);
+            }
+        }
+        Check(missing.Count == 0, "office: the run's texts are in en.json and pt.json" + (missing.Count > 0 ? " (missing " + string.Join(", ", missing) + ")" : string.Empty));
+        // What the texts say must be what the rules do: the numbers in them.
+        bool numbers = en.TryGetValue("reallife_civic_office_no_window", out string window) && window.Contains(OfficeRules.NominationsOpen + " days") && window.Contains("second day")
+                       && en.TryGetValue("reallife_civic_office_rally_hours", out string hours) && hours.Contains(OfficeRules.RallyFrom + ":00") && hours.Contains(OfficeRules.RallyTo + ":00");
+        Check(numbers, "office: the nominations' window and the rally's hours in the texts are the rules'");
+        bool dept = en.TryGetValue("reallife_civic_office_dept_about_0", out string about) && about.Contains((int)Math.Round(OfficeRules.DepartmentStep * 100) + "%")
+                    && about.Contains((int)Math.Round((1f - OfficeRules.HeatScale(1)) * 100) + "%");
+        Check(dept, "office: what a step of the budget does, in the text, is the rules'");
+        bool guide = en.TryGetValue("reallife_guide_civic", out string g) && g.Contains("{office_open}") && g.Contains("{office_limit_mayor}") && g.Contains(OfficeRules.MeetingHour + ":00")
+                     && g.Contains((int)OfficeRules.RecallBelow + "%");
+        Check(guide, "office: the Guide's numbers are the rules' (meetings at " + OfficeRules.MeetingHour + ":00, recall under " + OfficeRules.RecallBelow + "%)");
     }
 }
