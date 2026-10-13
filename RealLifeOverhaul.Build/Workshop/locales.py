@@ -19,7 +19,54 @@ import sys
 LOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'Assets', 'Mods', 'RealLifeOverhaul', 'Locales')
 FILL = '--fill' in sys.argv
 STRICT = ('zh-cn.json',)
-ENGLISH_OK = set()
+# Texts that stay as the English in zh-cn.json: placeholders alone, version numbers, and invented names kept in Latin letters.
+ENGLISH_OK = {
+    'reallife-friend', 'reallife_leisure_drinks_choice', 'reallife_social_people_birthday_in', 'reallife_social_with',
+    'reallife_travel_toast', 'reallife_travel_say', 'reallife-travel', 'reallife_travel_hotel_garment_hostel',
+    'reallife_travel_hotel_industry_hostel', 'reallife_travel_hotel_kitchen_hotel', 'reallife_travel_hotel_downtown_hotel',
+    'reallife_travel_hotel_murray_hotel', 'reallife_travel_hotel_midtown_grand', 'reallife_travel_hotel_kitchen_tower',
+    'reallife_travel_hotel_hamptons_cottages', 'reallife_career_promo_name', 'reallife_career_promo_boss', 'reallife_career_promo_mate_1',
+    'reallife_career_promo_mate_2', 'reallife_career_cleaning_name', 'reallife_career_cleaning_boss', 'reallife_career_cleaning_mate_1',
+    'reallife_career_cleaning_mate_2', 'reallife_career_food_boss', 'reallife_career_food_mate_1', 'reallife_career_food_mate_2',
+    'reallife_career_retail_name', 'reallife_career_retail_boss', 'reallife_career_retail_mate_1', 'reallife_career_retail_mate_2',
+    'reallife_career_courier_name', 'reallife_career_courier_boss', 'reallife_career_courier_mate_1', 'reallife_career_courier_mate_2',
+    'reallife_career_cab_name', 'reallife_career_cab_boss', 'reallife_career_cab_mate_1', 'reallife_career_cab_mate_2',
+    'reallife_biz_desk_say', 'reallife_justice_raw', 'reallife_justice_chambers_1', 'reallife_justice_chambers_2',
+    'reallife_justice_chambers_3', 'reallife_meta_header', 'reallife_civic_page', 'reallife_civic_first_1', 'reallife_civic_first_2',
+    'reallife_civic_first_3', 'reallife_civic_first_4', 'reallife_civic_first_5', 'reallife_civic_first_6', 'reallife_civic_first_7',
+    'reallife_civic_first_8', 'reallife_civic_first_9', 'reallife_civic_first_10', 'reallife_civic_first_11', 'reallife_civic_first_12',
+    'reallife_civic_first_13', 'reallife_civic_first_14', 'reallife_civic_first_15', 'reallife_civic_first_16', 'reallife_civic_first_17',
+    'reallife_civic_first_18', 'reallife_civic_first_19', 'reallife_civic_first_20', 'reallife_civic_last_1', 'reallife_civic_last_2',
+    'reallife_civic_last_3', 'reallife_civic_last_4', 'reallife_civic_last_5', 'reallife_civic_last_6', 'reallife_civic_last_7',
+    'reallife_civic_last_8', 'reallife_civic_last_9', 'reallife_civic_last_10', 'reallife_civic_last_11', 'reallife_civic_last_12',
+    'reallife_civic_last_13', 'reallife_civic_last_14', 'reallife_civic_last_15', 'reallife_civic_last_16', 'reallife_civic_last_17',
+    'reallife_civic_last_18', 'reallife_civic_last_19', 'reallife_civic_last_20', 'reallife_civic_party_1', 'reallife_civic_party_2',
+    'reallife_civic_party_3', 'reallife_civic_party_4', 'reallife_civic_party_5', 'reallife_civic_party_6', 'reallife_civic_party_7',
+    'reallife_civic_party_8', 'reallife_civic_contractor_1', 'reallife_civic_contractor_2', 'reallife_civic_contractor_3',
+    'reallife_civic_contractor_4', 'reallife_civic_contractor_5', 'reallife_civic_contractor_6', 'reallife_civic_contractor_7',
+    'reallife_civic_contractor_8', 'reallife_family_text', 'reallife_creator_tag', 'reallife_changes_001_title',
+    'reallife_changes_001_1_title', 'reallife_opt_value', 'reallife_opt_value_percent', 'reallife_changes_001_2_title',
+    'reallife_changes_001_3_title', 'reallife_changes_001_4_title', 'reallife_changes_001_5_title', 'reallife_law_desk_toast',
+    'reallife_lic_toast', 'reallife_changes_001_6_title', 'reallife-taxi', 'reallife_econ_row_rate', 'reallife_social_text',
+    'reallife_social_card_toast', 'reallife_leisure_button', 'reallife_leisure_text', 'reallife_leisure_card_toast', 'reallife_civic_text',
+    'reallife_changes_002_0_title', 'reallife_co_row_pay', 'reallife_co_insurer_0', 'reallife_co_insurer_1', 'reallife_co_insurer_2',
+    'reallife_co_accountant_0', 'reallife_co_accountant_1', 'reallife_co_accountant_2', 'reallife_changes_002_1_title',
+    'reallife_online_row_orders', 'reallife_online_ord_goods', 'reallife_svc_trend_level', 'reallife_svc_buyer_investor_0',
+    'reallife_svc_buyer_investor_1', 'reallife_svc_buyer_investor_2', 'reallife_svc_buyer_chain_0', 'reallife_svc_buyer_chain_1',
+    'reallife_svc_buyer_chain_2', 'reallife_svc_confirm_sell_text', 'reallife_brand_chain_0', 'reallife_brand_chain_1',
+    'reallife_brand_chain_2', 'reallife_changes_002_2_title', 'reallife_opt_text', 'reallife_changes_002_3_title', 'reallife_bank_app',
+    'reallife_changes_002_4_title', 'reallife_util_toast', 'reallife_util_provider_water', 'reallife_net_mbps',
+    'reallife_net_provider_aerowave', 'reallife_net_provider_brightvein', 'reallife_net_provider_copperhill',
+    'reallife_net_provider_kestrel', 'reallife_bb_percent', 'reallife_bb_share_item', 'reallife_net_provider_sold',
+    'reallife_changes_003_0_title', 'reallife_mkt_ticket_status', 'reallife_mkt_lower_rsi', 'reallife_mkt_lower_macd',
+    'reallife_mkt_chart_rsi', 'reallife_mkt_chart_macd', 'reallife_changes_003_1_title', 'reallife_changes_003_2_title',
+    'reallife_changes_003_3_title', 'reallife_changes_003_4_title', 'reallife_changes_003_5_title', 'reallife_changes_003_6_title',
+    'reallife_meta_title_multiplayer', 'reallife_changes_003_7_title', 'reallife_changes_003_8_title', 'reallife_flare_header',
+    'reallife_flare_app', 'reallife_flare_hire_percent', 'reallife_changes_003_9_title', 'reallife_changes_004_0_title',
+    'reallife_fame_talk_line', 'reallife_fame_percent', 'reallife_changes_004_1_title', 'reallife_changes_004_2_title',
+    'reallife_changes_004_3_title', 'reallife_changes_004_4_title', 'reallife_changes_004_5_title', 'reallife_changes_004_6_title',
+    'reallife_changes_004_7_title'
+}
 
 
 def marks(v):
@@ -68,8 +115,8 @@ for name in sorted(os.listdir(LOC)):
         elif v.strip() and not t.strip():
             bad.append('%s: empty' % k)
         english += 1 if t == v and len(re.findall(r'[A-Za-z]{3,}', v)) >= 4 else 0
-        if name in STRICT and k not in ENGLISH_OK and not re.search(r'[一-鿿]', t) and len(re.findall(r'[A-Za-z]{3,}', t)) >= 3:
-            bad.append('%s: no Chinese in the text' % k)
+        if name in STRICT and k not in ENGLISH_OK and (t == v or not re.search(r'[一-鿿]', t)) and len(re.findall(r'[A-Za-z]{3,}', re.sub(r'\{[^{}]*\}|<[^<>]*>', '', t))) >= 1:
+            bad.append('%s: not translated into Chinese (or add it to ENGLISH_OK if it is only a name)' % k)
     for line in bad[:30]:
         print('%s: %s' % (name, line))
     faults += len(bad)
