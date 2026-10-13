@@ -353,6 +353,10 @@ namespace RealLifeOverhaul.Careers
             {
                 return CareersText.Campus(Campus.Online);
             }
+            if (c.Campus == Campus.University && CampusRules.FloorOf(c.Id) > 0 && _interior != null && _interior.Available)
+            {
+                return CareersText.Fill("reallife_campus_place_room", "campus", CampusWhere(c.Campus), "floor", CampusRules.FloorOf(c.Id).ToString(), "room", CampusRules.RoomOf(c.Id).ToString());
+            }
             return CampusWhere(c.Campus);
         }
 
@@ -420,6 +424,10 @@ namespace RealLifeOverhaul.Careers
             Enrolment e = _studyOn ? _study.Live(course) : null;
             int minutes;
             string why = CanAttend(e, out minutes);
+            if (InRooms(e))
+            {
+                return ToRoom(e, why);   // (attended in its classroom: the way there)
+            }
             if (why != null)
             {
                 return why;
@@ -477,6 +485,10 @@ namespace RealLifeOverhaul.Careers
         {
             Enrolment e = _studyOn ? _study.Live(course) : null;
             string why = CanSit(e);
+            if (InRooms(e))
+            {
+                return ToRoom(e, why);   // (sat in its classroom: the way there)
+            }
             if (why != null)
             {
                 return why;

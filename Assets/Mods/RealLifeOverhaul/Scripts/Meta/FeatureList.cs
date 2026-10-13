@@ -666,8 +666,8 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_careers_degrees_about").Help("reallife_guide_careers_degrees")
                 .Owns(Settings.CareersDegreesId)
                 .Test("reallife_degrees_test_graduate")
-                .Objects("RealLifeOverhaul University Sign")
-                .Data(Careers.CareersStore.Key)
+                .Objects("RealLifeOverhaul University Sign", "RealLifeOverhaul University Room Sign")
+                .Data(Careers.CareersStore.Key, Careers.CareersStore.CampusKey)
                 .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
             // The family and others: a grown child at university, tutoring, the player's own academy. It runs with the courses.

@@ -219,6 +219,7 @@ namespace RealLifeOverhaul.Careers
                     Save.modData = new Dictionary<string, string>();
                 }
                 WriteStudy(Save.modData);
+                WriteCampus(Save.modData);
                 if (_news != null && ReferenceEquals(_newsOf, Save))
                 {
                     if (_news.Stories.Count > 0)
