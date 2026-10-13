@@ -102,6 +102,8 @@ internal static partial class Program
         Banks();
         Calendar();
         Utilities();
+        SpecialNames();
+        StudyPrompts();
         Internet();
         Broadband();
         Empire();

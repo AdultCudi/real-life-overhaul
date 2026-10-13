@@ -57,6 +57,12 @@ namespace RealLifeOverhaul.Careers
         /// <summary>Former colleagues join a firm of the player's: the place, the role, the level and how many; returns how many joined (Tech/People). Default: none.</summary>
         public static Func<string, int, int, int, int> JoinFirm;
 
+        /// <summary>
+        /// True once the features that take one of the city's buildings before the university have chosen theirs (the utilities
+        /// office, the courthouse: Wiring/CareersLinks), so that the university never takes one of them. Default: true.
+        /// </summary>
+        public static Func<bool> OthersPicked;
+
         public static bool HomeOnline()
         {
             try
@@ -143,6 +149,7 @@ namespace RealLifeOverhaul.Careers
 
         public static void Reset()
         {
+            OthersPicked = null;
             Board = null;
             Claim = null;
             Credit = null;

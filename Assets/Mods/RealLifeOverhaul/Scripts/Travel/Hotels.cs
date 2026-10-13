@@ -146,6 +146,12 @@ namespace RealLifeOverhaul
                 _taken.Add(building.building);
                 var site = new HotelSite { Slot = slot, Building = building, Desk = door, Front = door, Name = TravelText.T(slot.NameKey) };
                 _sites.Add(site);
+                if (slot.Anchors == null)
+                {
+                    // A hotel that is a building of its own has its name wherever the game names the building (Core/SpecialBuildings);
+                    // the cottages' board stands by somebody else's building, which keeps its own.
+                    SpecialBuildings.Set("hotel_" + slot.Id, building, SpecialKind.Hotel, slot.NameKey, "reallife_map_card_hotel", () => Settings.Hotels);
+                }
                 said.Append(' ').Append(slot.Id).Append('=').Append(building.building.StreetName).Append(' ').Append(building.building.StreetNumber);
             }
             _logger?.Info(said.ToString());

@@ -610,6 +610,11 @@ namespace RealLifeOverhaul.Nav
                 Address address = guider.CurrentAddress;
                 if (!address.IsUndefined())
                 {
+                    string special = SpecialBuildings.NameFor(address);   // a special building's own name (Core/SpecialBuildings)
+                    if (special != null)
+                    {
+                        return special;
+                    }
                     string business = BuildingHelper.GetBuildingRegistration(address).BusinessName;
                     return string.IsNullOrEmpty(business) ? address.ToFormattedString() : business;
                 }
@@ -1005,6 +1010,12 @@ namespace RealLifeOverhaul.Nav
                     Address address = building.building.Address;
                     GuidersManager.SetGuiderTarget(address, DirectionGuiderType.Destination);   // what a building's card does (it also keeps the address in the save)
                     name = address.ToFormattedString();
+                    string special = SpecialBuildings.NameFor(address);
+                    if (special != null)
+                    {
+                        guiders.destinationGuider.poi.SetText(special);   // a special building's own name on the marker at once (Core/SpecialBuildings)
+                        name = NavText.T("reallife_map_name_at").Replace("{what}", special).Replace("{place}", name);   // "Courthouse: 12 Third Street", as its map marker says
+                    }
                 }
                 else
                 {

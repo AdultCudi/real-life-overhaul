@@ -661,6 +661,8 @@ namespace RealLifeOverhaul.Law
         // name, a row in the map's filters, a click for a destination, and its name on the game's card for the building.
         private void Mark(Precinct precinct)
         {
+            // Its own name wherever the game names the building (Core/SpecialBuildings); a precinct that moves is set again.
+            SpecialBuildings.Set("police_" + precinct.Index, precinct.Building, SpecialKind.Police, precinct.NameKey, "reallife_law_card_type", () => Settings.LawPrecincts);
             try
             {
                 if (_map == null)
@@ -815,6 +817,7 @@ namespace RealLifeOverhaul.Law
                     _map.Remove(_all[i].Place);
                     _all[i].Place = null;
                 }
+                SpecialBuildings.Remove("police_" + _all[i].Index);
             }
             _all.Clear();
         }

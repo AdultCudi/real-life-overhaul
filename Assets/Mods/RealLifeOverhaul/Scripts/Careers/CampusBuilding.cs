@@ -11,7 +11,10 @@ namespace RealLifeOverhaul.Careers
     /// <summary>
     /// Hudson City University: one of the game's own buildings, the same one in every game on the same map. The game has no
     /// university, so the largest office building of the city that is no special service and not the player's is taken,
-    /// ties broken by address. Its frontage gets one sign, a board on two posts lettered with the game's font, stood against
+    /// ties broken by address, leaving out every building another feature has made its own (Core/SpecialBuildings: the
+    /// City Utilities office, the courthouse), which are chosen first. Nothing of it is kept in a save: an enrolment is on
+    /// "the university", and its lectures, the Planner and the Campus app read where it is now. Once chosen it carries its
+    /// own name wherever the game names the building, and is on the city map with the other places to study (World/MapLinks). Its frontage gets one sign, a board on two posts lettered with the game's font, stood against
     /// the wall a few steps from the door where there is wall, pavement and room, the way the courthouse's is; lectures are
     /// attended standing at it (or inside the building, or at the door if no place for the sign was found). Looked for once
     /// per city load; nothing here runs by itself.
@@ -22,11 +25,13 @@ namespace RealLifeOverhaul.Careers
         private const float FromWall = 0.30f;
         private const float Reach = 2.2f;
         private const float ReachAtDoor = 3f;
+        private const int WaitForOthers = 30;   // seconds to wait for the utilities office and the courthouse to choose theirs
         private static readonly float[] Aside = { -4.6f, 4.6f, -6.2f, 6.2f };   // (the courthouse tries the other side first)
 
         private readonly IModLogger _logger;
         private GameObject _sign;
         private bool _failed;
+        private int _waited;
 
         public CampusBuilding(IModLogger logger)
         {
@@ -38,6 +43,12 @@ namespace RealLifeOverhaul.Careers
         public Vector3 Front { get; private set; }
         public string Street { get; private set; } = string.Empty;
         public int Number { get; private set; }
+
+        /// <summary>The university's building; null until found.</summary>
+        public CityBuildingController Building { get; private set; }
+
+        /// <summary>Where the player stands to attend: at the sign, or at the door.</summary>
+        public bool HasSign => _sign != null;
 
         /// <summary>The address as the game writes it; empty until found.</summary>
         public string Name { get; private set; } = string.Empty;
@@ -77,13 +88,25 @@ namespace RealLifeOverhaul.Careers
                 {
                     return;
                 }
-                CityBuildingController picked = Pick(buildings);
+                Func<bool> others = CareersBridges.OthersPicked;
+                if (others != null && !others() && ++_waited < WaitForOthers)
+                {
+                    return;   // (the utilities office and the courthouse choose first: the university is never one of them)
+                }
+                CityBuildingController picked = Pick(buildings, out CityBuildingController largest);
                 Searched = true;
+                if (largest != null && !ReferenceEquals(largest, picked))
+                {
+                    // Said once a city load: a save from 0.7.0 may have had its lectures in that building.
+                    _logger?.Info("Careers: the largest office building, " + largest.building.Address.ToFormattedString() + ", is another of the mod's buildings ("
+                                  + (SpecialBuildings.NameFor(largest) ?? "taken") + "); the university is in the next largest. Enrolments follow it.");
+                }
                 if (picked == null)
                 {
                     _logger?.Warn("Careers: no building could serve as the university; its lectures are followed online from home instead.");
                     return;
                 }
+                Building = picked;
                 Street = picked.building.Address.streetName;
                 Number = picked.building.Address.streetNumber;
                 Name = picked.building.Address.ToFormattedString();
@@ -92,6 +115,11 @@ namespace RealLifeOverhaul.Careers
                 {
                     Front = door;
                     Usable = true;
+                }
+                if (Usable)
+                {
+                    // Its own name wherever the game names the building (Core/SpecialBuildings).
+                    SpecialBuildings.Set("campus", picked, SpecialKind.Campus, "reallife_study_campus_university", "reallife_campus_card_type", () => CareersDirector.UniversityOpen);
                 }
                 _logger?.Info("Careers: the university is " + Name + " (" + picked.building.totalSqm + " sqm); " + (placed ? "sign up." : Usable ? "lectures at the door." : "no pavement at its door: online only."));
             }
@@ -115,31 +143,28 @@ namespace RealLifeOverhaul.Careers
             Usable = false;
             Searched = false;
             _failed = false;
+            _waited = 0;
+            Building = null;
+            SpecialBuildings.Remove("campus");
         }
 
-        private static CityBuildingController Pick(CityBuildingController[] buildings)
+        // The largest office building that may serve and that no other feature holds; also the largest with none left out, to
+        // say so when the two differ.
+        private static CityBuildingController Pick(CityBuildingController[] buildings, out CityBuildingController largest)
         {
-            CityBuildingController best = null;
-            int bestSqm = -1;
-            string bestName = null;
-            for (int i = 0; i < buildings.Length; i++)
+            Func<int, bool> fits = i =>
             {
                 CityBuildingController b = buildings[i];
-                if (b == null || b.building == null || b.entranceDoors == null || b.entranceDoors.Length == 0 || b.building.locatedInsidePrivateFenceIndex >= 0
-                    || b.building.SpecialService != null || b.building.BuildingType != Office)
-                {
-                    continue;
-                }
-                int sqm = Mathf.Clamp(b.building.totalSqm, 0, 999999);
-                string name = b.building.StreetName + "#" + b.building.StreetNumber;
-                if (sqm > bestSqm || (sqm == bestSqm && string.CompareOrdinal(name, bestName) < 0))
-                {
-                    best = b;
-                    bestSqm = sqm;
-                    bestName = name;
-                }
-            }
-            return best;
+                return b != null && b.building != null && b.entranceDoors != null && b.entranceDoors.Length > 0 && b.building.locatedInsidePrivateFenceIndex < 0
+                       && b.building.SpecialService == null && b.building.BuildingType == Office;
+            };
+            Func<int, int> sqm = i => buildings[i].building.totalSqm;
+            Func<int, string> street = i => buildings[i].building.StreetName;
+            Func<int, int> number = i => buildings[i].building.StreetNumber;
+            int any = SpecialNameBook.PickLargest(buildings.Length, fits, sqm, street, number, null);
+            int free = SpecialNameBook.PickLargest(buildings.Length, fits, sqm, street, number, SpecialBuildings.Holds);
+            largest = any >= 0 ? buildings[any] : null;
+            return free >= 0 ? buildings[free] : null;
         }
 
         private bool Place(CityBuildingController building)

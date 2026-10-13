@@ -1050,7 +1050,7 @@ namespace RealLifeOverhaul.Utilities
         {
             PlayerController player = PlayerHelper.PlayerController;
             bool can = player != null && _office != null && _office.Usable && !BuildingManager.IsInsideBuilding && !PlayerHelper.IsUsingVehicle
-                       && !ThirdPersonCamera.IsUiOpen() && !JobDirector.TakesInteractKey && !_window.IsOpen;
+                       && !ThirdPersonCamera.IsUiOpen() && !JobDirector.TakesInteractKey && !Careers.CareersDirector.TakesInteractKey && !_window.IsOpen;
             Vector3 at = player != null ? player.transform.position : Vector3.zero;
             if (!can || !_office.InReach(at))
             {

@@ -56,6 +56,7 @@ namespace RealLifeOverhaul.Careers
             GlobalEvents.onNewDay -= _onDay;
             try
             {
+                ClassPromptGone();
                 CloseSitting();
                 StopWork(true);
                 StopStudy(false, true);
@@ -130,8 +131,10 @@ namespace RealLifeOverhaul.Careers
             }
             if (!_studyOn)
             {
+                ClassPromptGone();
                 return;
             }
+            ClassPrompt();
             SaveHook.Keep(_onSave);
             EventHold.Keep(ref GlobalEvents.onNewHour, _onHour, ref _hourSeen);
             EventHold.Keep(ref GlobalEvents.onNewDay, _onDay, ref _daySeen);
