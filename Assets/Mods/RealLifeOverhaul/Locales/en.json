@@ -4082,7 +4082,7 @@
   "reallife_biz_test_busy": "Business test: {business} already has an open issue. Deal with it on the Business desk, or use 'resolve all'.",
   "reallife_biz_test_kind_open": "Business test: '{issue}' is already open at one of your businesses.",
   "reallife_biz_test_failed": "Business test: '{issue}' could not be started (see Player.log).",
-  "reallife_biz_test_resolved": "Business test: every open issue was closed, every footfall change and closure put back, and the racket forgotten.",
+  "reallife_biz_test_resolved": "Business test: every open business event was closed without its outcome, and a business that had one gets no new one for {days} days. Every change to customer numbers is undone, and every closure from business events has ended (a closure for want of power, water or internet stays). A visit about an event that was under way has ended, and the racket is reset with no wait before it can come back, even after an arrest.",
   "reallife_biz_why_no_footfall": "Business test: '{issue}' was not started at {business}: its customer numbers cannot be changed now (it has no promotion figure, is temporarily closed, already has a change running, or its figure is too near 0 or 100).",
   "reallife_biz_why_game_rival": "Business test: '{issue}' was not started at {business}: one of the game's own rivals is already active in this neighbourhood.",
   "reallife_biz_why_no_rival": "Business test: '{issue}' was not started at {business}: the game's rivals are switched off, or none of them owns a business.",

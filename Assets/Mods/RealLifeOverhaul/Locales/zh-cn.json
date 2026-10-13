@@ -4082,7 +4082,7 @@
   "reallife_biz_test_busy": "企业测试：{business}已经有一个待处理事项。请在企业事务台处理，或使用“全部解决”。",
   "reallife_biz_test_kind_open": "企业测试：“{issue}”已在你的某家企业中处于待处理状态。",
   "reallife_biz_test_failed": "企业测试：无法启动“{issue}”（参见Player.log）。",
-  "reallife_biz_test_resolved": "企业测试：所有待处理事项均已关闭，所有客流量变化和停业均已恢复，保护费勒索也已清除。",
+  "reallife_biz_test_resolved": "企业测试：所有待处理的企业事件均已关闭，不产生其结果；有过事件的企业在 {days} 天内不会再有新事件。所有客流量变化均已撤销，所有由企业事件造成的停业均已结束（因断电、断水或断网造成的停业仍会保留）。正在进行的事件来访已结束，保护费勒索已重置，可以立即再次出现，即使之前已有人被捕。",
   "reallife_biz_why_no_footfall": "企业测试：未在{business}启动“{issue}”：其顾客数量目前无法更改（它没有推广度数值、已暂时关闭、已有变化正在进行，或其数值太接近0或100）。",
   "reallife_biz_why_game_rival": "企业测试：未在{business}启动“{issue}”：游戏自带的一个对手已在这个街区活动。",
   "reallife_biz_why_no_rival": "企业测试：未在{business}启动“{issue}”：游戏的对手功能已关闭，或者没有对手拥有企业。",

@@ -626,7 +626,7 @@ namespace RealLifeOverhaul
             Logger?.Info("Business pressure: stood down; nothing of " + (everything ? "the mod's is running on any business." : "its own is running on any business (the utilities' closures stay)."));
             if (!quiet)
             {
-                Notifications.Show(NotificationType.Info, "reallife_biz_test_resolved", null, 8f);
+                Notifications.Show(NotificationType.Info, "reallife_biz_test_resolved", new Dictionary<string, string>(1) { { "days", BusinessCatalogue.BusinessRestDays.ToString() } }, 12f);
             }
         }
 

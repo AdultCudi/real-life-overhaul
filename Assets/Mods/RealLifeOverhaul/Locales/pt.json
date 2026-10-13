@@ -4082,7 +4082,7 @@
   "reallife_biz_test_busy": "Teste de empresa: {business} já tem um assunto em aberto. Resolva-o na Central de Empresas ou use 'resolver tudo'.",
   "reallife_biz_test_kind_open": "Teste de empresa: '{issue}' já está em aberto em uma das suas empresas.",
   "reallife_biz_test_failed": "Teste de empresa: não foi possível iniciar '{issue}' (veja o Player.log).",
-  "reallife_biz_test_resolved": "Teste de empresa: todos os assuntos em aberto foram encerrados, todas as mudanças de movimento e fechamentos foram revertidos, e a extorsão foi esquecida.",
+  "reallife_biz_test_resolved": "Teste de empresa: todos os eventos de empresa em aberto foram encerrados sem o seu desfecho, e uma empresa que tinha um não recebe outro por {days} dias. Todas as mudanças no número de clientes foram desfeitas, e todos os fechamentos causados por eventos de empresa terminaram (um fechamento por falta de luz, água ou internet continua). Uma visita sobre um evento que estava em andamento terminou, e a extorsão foi reiniciada sem espera para voltar, mesmo depois de uma prisão.",
   "reallife_biz_why_no_footfall": "Teste de empresa: '{issue}' não foi iniciado em {business}: o número de clientes não pode ser alterado agora (não há valor de divulgação, está temporariamente fechado, já tem uma mudança em andamento ou o valor está perto demais de 0 ou 100).",
   "reallife_biz_why_game_rival": "Teste de empresa: '{issue}' não foi iniciado em {business}: um dos rivais do próprio jogo já está ativo neste bairro.",
   "reallife_biz_why_no_rival": "Teste de empresa: '{issue}' não foi iniciado em {business}: os rivais do jogo estão desativados, ou nenhum deles tem uma empresa.",
