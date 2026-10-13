@@ -417,6 +417,10 @@ namespace RealLifeOverhaul.Economy
             }
             why = _bank.Running ? "reallife_ob_why_already" : _bank.State == OwnBankState.Closed ? "reallife_ob_why_closed_before" : null;
             BuildingRegistration hq = OwnBankGame.Headquarters();
+            if (why == null && OwnBankBridges.Qualified != null && !OwnBankBridges.Qualified())
+            {
+                why = "reallife_ob_why_unqualified";
+            }
             if (why == null && hq == null)
             {
                 why = "reallife_ob_why_no_hq";

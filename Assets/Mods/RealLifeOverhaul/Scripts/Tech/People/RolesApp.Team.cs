@@ -210,16 +210,24 @@ namespace RealLifeOverhaul.Tech
             InfoBox.Button(rises, InfoBox.Additional, "reallife_roles_button_rise_8", () => Do(() => _director.GiveRise(key, 800)));
             if (p.OnCourse(day))
             {
-                box.Line(TechText.T(p.Exam >= 0 ? "reallife_roles_career_on_exam" : "reallife_roles_career_on_course", "day", p.CourseEnd.ToString()));
+                box.Line(TechText.T(p.CourseSkill == 2 ? "reallife_roles_career_on_degree" : p.Exam >= 0 ? "reallife_roles_career_on_exam" : "reallife_roles_career_on_course", "day", p.CourseEnd.ToString()));
             }
             else
             {
-                int feeA = Prices.At(TalentRules.CourseFee(p.A / 1000)), feeB = Prices.At(TalentRules.CourseFee(p.B / 1000));
+                int share = TechBridges.CourseShare();   // (the player's own academy: Careers)
+                int feeA = (int)((long)Prices.At(TalentRules.CourseFee(p.A / 1000)) * share / 10000), feeB = (int)((long)Prices.At(TalentRules.CourseFee(p.B / 1000)) * share / 10000);
                 box.Line(TechText.Fill("reallife_roles_career_courses", "a", TechText.Skill(r.SkillA), "a_gain", TalentRules.CourseGain(p.A / 1000).ToString(), "a_fee", TechText.Money(feeA),
                     "b", TechText.Skill(r.SkillB), "b_gain", TalentRules.CourseGain(p.B / 1000).ToString(), "b_fee", TechText.Money(feeB), "days", TalentCatalogue.CourseDays.ToString()));
                 Transform courses = box.ButtonRow();
                 InfoBox.Button(courses, InfoBox.Additional, "reallife_roles_button_course_a", () => Do(() => _director.Course(key, 0)));
                 InfoBox.Button(courses, InfoBox.Additional, "reallife_roles_button_course_b", () => Do(() => _director.Course(key, 1)));
+                if (TechBridges.DegreeFee != null && TechBridges.DegreeFee() > 0)
+                {
+                    int degree = TechBridges.DegreeFee();
+                    box.Line(TechText.Fill("reallife_roles_career_degree", "fee", TechText.Money(degree), "days", TalentCatalogue.Scaled(TalentCatalogue.DegreeDays, year).ToString(),
+                        "gain", TalentCatalogue.DegreeGain.ToString()));
+                    InfoBox.Button(courses, InfoBox.Additional, "reallife_roles_button_degree", () => Do(() => _director.SponsorDegree(key)));
+                }
                 _certs.Clear();
                 for (int c = 0; c < TalentCatalogue.CertCount; c++)
                 {

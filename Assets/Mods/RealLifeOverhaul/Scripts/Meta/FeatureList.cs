@@ -651,6 +651,59 @@ namespace RealLifeOverhaul.Meta
                 .ResetData(() => CareerState.Load(SaveGameManager.Current.modData))
                 .Repair(CareerPhone.Setup);
 
+            // Courses: the city's short courses and diplomas at the school, with a timetable, homework and exams, and the
+            // player's own skills, in the Campus app. They share the jobs header. Off, the game's own courses alone; records are kept.
+            Careers.CareersGuide.AddStudyFacts(Features.Add("careers_study", "reallife_meta_title_careers_study")
+                .About("reallife_guide_careers_study_about").Help("reallife_guide_careers_study")
+                .Owns(Settings.CareersStudyId)
+                .Test("reallife_study_test_class", "reallife_study_test_exam", "reallife_study_test_skills")
+                .Data(Careers.CareersStore.Key, Careers.CareersStore.NewsKey)
+                .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
+            // The university: degrees, certificates, the student loan and graduation day. It runs with the courses.
+            Careers.CareersGuide.AddDegreeFacts(Features.Add("careers_degrees", "reallife_meta_title_careers_degrees")
+                .About("reallife_guide_careers_degrees_about").Help("reallife_guide_careers_degrees")
+                .Owns(Settings.CareersDegreesId)
+                .Test("reallife_degrees_test_graduate")
+                .Objects("RealLifeOverhaul University Sign")
+                .Data(Careers.CareersStore.Key)
+                .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
+            // The family and others: a grown child at university, tutoring, the player's own academy. It runs with the courses.
+            Careers.CareersGuide.AddFamilyFacts(Features.Add("careers_family", "reallife_meta_title_careers_family")
+                .About("reallife_guide_careers_family_about").Help("reallife_guide_careers_family")
+                .Owns(Settings.CareersFamilyId)
+                .Test("reallife_family_test_tutor")
+                .Data(Careers.CareersStore.Key)
+                .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
+            // Professional jobs: the city's employers take the player on by qualifications and skills, in the Career app. It runs
+            // with the courses, whose skills it reads. Off, no vacancies; a job held is kept in the save.
+            Careers.CareersGuide.AddWorkFacts(Features.Add("careers_jobs", "reallife_meta_title_careers_jobs")
+                .About("reallife_guide_careers_jobs_about").Help("reallife_guide_careers_jobs")
+                .Owns(Settings.CareersJobsId)
+                .Test("reallife_work_test_offer", "reallife_work_test_day", "reallife_work_test_vacancies")
+                .Data(Careers.CareersStore.Key)
+                .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
+            // Working life in a profession: reviews, promotions, office matters, search firms, downturns, options and the pension.
+            // It runs with professional jobs. Off, a job is its days and its pay alone.
+            Careers.CareersGuide.AddLifeFacts(Features.Add("careers_life", "reallife_meta_title_careers_life")
+                .About("reallife_guide_careers_life_about").Help("reallife_guide_careers_life")
+                .Owns(Settings.CareersLifeId)
+                .Test("reallife_life_test_review", "reallife_life_test_matter", "reallife_life_test_approach")
+                .Data(Careers.CareersStore.Key)
+                .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
+            // Working for oneself: founding a company or a practice out of a profession, colleagues, restraint clauses, freelance
+            // contracts. It runs with professional jobs. Off, no contracts come; a practice is kept in the save.
+            Careers.CareersGuide.AddOwnFacts(Features.Add("careers_own", "reallife_meta_title_careers_own")
+                .About("reallife_guide_careers_own_about").Help("reallife_guide_careers_own")
+                .Owns(Settings.CareersOwnId)
+                .Test("reallife_own_test_contract", "reallife_own_test_found")
+                .Data(Careers.CareersStore.Key)
+                .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
             Features.Add("business", "reallife_meta_title_business")
                 .Group("reallife_business_header")
                 .About("reallife_guide_business_about").Help("reallife_guide_business")

@@ -270,6 +270,40 @@ namespace RealLifeOverhaul.Tech
             return n;
         }
 
+
+        /// <summary>
+        /// Former colleagues the player brings along to a firm of theirs (Careers, through Wiring/CareersLinks): each joins the
+        /// mod's own payroll at the business, in a role and at a level given, at the going rate. Returns how many joined.
+        /// </summary>
+        internal int JoinPayroll(string place, int role, int level, int count, int day)
+        {
+            if (!_peopleOn || _talent == null || string.IsNullOrEmpty(place))
+            {
+                return 0;
+            }
+            int joined = 0;
+            for (int i = 0; i < count && _talent.People.Count < TalentStore.PeopleMost; i++)
+            {
+                Profile p = TalentRules.Make(Seed, day * 53 + i * 7 + 3, role, Math.Max(0, level - (i == 0 ? 0 : 1)), day);
+                p.Id = "pro:" + _talent.NextPro++;
+                p.Name = VentureGame.Founder();
+                p.Place = place;
+                p.Work = (int)Arrangement.Hybrid;
+                p.Wage = Math.Max(TalentCatalogue.RateLeast, TalentRules.Going(TalentGame.GameRate(p.Def.GameSkill, p.Main / 1000), p.Def, Shortage(p.Def.Family), 0));
+                p.Joined = day;
+                p.LevelDay = day;
+                p.ReviewDay = TalentRules.FirstReview(day, Year);
+                p.Morale = 700;
+                _talent.People.Add(p);
+                joined++;
+            }
+            if (joined > 0)
+            {
+                ReadPeople(day);
+                Changed();
+            }
+            return joined;
+        }
         /// <summary>The labour market's shortage of a family, thousandths (1000: as many seekers as places).</summary>
         internal int Shortage(Family family)
         {
@@ -388,7 +422,7 @@ namespace RealLifeOverhaul.Tech
                 if (course > 0)
                 {
                     courses++;
-                    Tell(course == 3 ? NotificationType.Warning : NotificationType.Success, course == 1 ? "reallife_talent_note_course" : course == 2 ? "reallife_talent_note_passed" : "reallife_talent_note_failed",
+                    Tell(course == 3 ? NotificationType.Warning : NotificationType.Success, course == 1 ? "reallife_talent_note_course" : course == 2 ? "reallife_talent_note_passed" : course == 4 ? "reallife_talent_note_degree" : "reallife_talent_note_failed",
                         Data("name", person.Name), TabTeam, Row(p));
                 }
                 // reviews and the requests they make
@@ -618,7 +652,7 @@ namespace RealLifeOverhaul.Tech
             {
                 return false;
             }
-            int fee = Prices.At(TalentRules.CourseFee(person.File.Slot(slot) / 1000));
+            int fee = (int)((long)Prices.At(TalentRules.CourseFee(person.File.Slot(slot) / 1000)) * TechBridges.CourseShare() / 10000);
             if (!TalentGame.Cost(fee * 100, TalentGame.TrainingKey, person.At, person.Name, false, false))
             {
                 Notifications.ShowInsufficientMoney();
@@ -629,6 +663,33 @@ namespace RealLifeOverhaul.Tech
             return true;
         }
 
+
+        /// <summary>
+        /// A degree for a professional, paid by the business (study leave on top of the work): longer than a course, it adds
+        /// to both of the role's skills and raises their schooling a step (Careers' university, through TechBridges). False if
+        /// they are on a course already, the university is closed or the cash does not cover the fee.
+        /// </summary>
+        internal bool SponsorDegree(string id)
+        {
+            Person person = PersonOf(id);
+            if (person == null || Save == null || person.File.OnCourse(Save.Day) || TechBridges.DegreeFee == null)
+            {
+                return false;
+            }
+            int fee = TechBridges.DegreeFee();
+            if (fee <= 0)
+            {
+                return false;
+            }
+            if (!TalentGame.Cost(fee * 100, TalentGame.TrainingKey, person.At, person.Name, false, false))
+            {
+                Notifications.ShowInsufficientMoney();
+                return false;
+            }
+            TalentRules.StartDegree(person.File, Save.Day, TalentCatalogue.Scaled(TalentCatalogue.DegreeDays, Year));
+            Changed();
+            return true;
+        }
         /// <summary>An exam for a certificate, paid now; false if the score is short of it or the cash does not cover it.</summary>
         internal bool Exam(string id, int cert)
         {
