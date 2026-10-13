@@ -205,9 +205,12 @@ namespace RealLifeOverhaul
         {
             VehicleComponent car = job.Car;
             Rigidbody body = car.rb;
-            body.velocity = Vector3.zero;
-            body.angularVelocity = Vector3.zero;
-            body.isKinematic = true;
+            if (!body.isKinematic)
+            {
+                body.velocity = Vector3.zero;          // (a frozen body takes no velocity: the engine warns of it)
+                body.angularVelocity = Vector3.zero;
+                body.isKinematic = true;
+            }
             job.Interpolation = body.interpolation;
             body.interpolation = RigidbodyInterpolation.None;    // it is posed by hand while it is drawn and carried
             job.Rescue = TrafficTools.SuspendRescue(car);
