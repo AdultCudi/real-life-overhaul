@@ -361,13 +361,15 @@ namespace RealLifeOverhaul
             _resolved = true;
         }
 
-        /// <summary>The usual way of finding a type: among the assemblies loaded in this process.</summary>
+        /// <summary>The usual way of finding a type: among the assemblies loaded in this process (one not loaded yet is loaded by its name).</summary>
         public static Type FindLoaded(string assembly, string typeName)
         {
+            bool seen = false;
             foreach (Assembly a in AppDomain.CurrentDomain.GetAssemblies())
             {
                 if (a.GetName().Name == assembly)
                 {
+                    seen = true;
                     Type t = a.GetType(typeName, false);
                     if (t != null)
                     {
@@ -375,7 +377,18 @@ namespace RealLifeOverhaul
                     }
                 }
             }
-            return null;
+            if (seen)
+            {
+                return null;
+            }
+            try
+            {
+                return Assembly.Load(new AssemblyName(assembly)).GetType(typeName, false);
+            }
+            catch (Exception)
+            {
+                return null;   // (an assembly the game no longer has: the type is not there)
+            }
         }
 
         private const BindingFlags Declared = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;

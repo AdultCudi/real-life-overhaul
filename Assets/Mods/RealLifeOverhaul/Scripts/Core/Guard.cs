@@ -286,7 +286,7 @@ namespace RealLifeOverhaul
             {
                 return;   // (said already for the feature)
             }
-            string name = feature != null ? FeatureName(feature) : guard.Where;
+            string name = feature != null ? FeatureName(feature) : "reallife_guard_unnamed".GetLocalization();
             Logger?.Warn("Guard: " + guard.Where + " failed " + FeatureGuard.Most + " times within " + FeatureGuard.Seconds + " seconds; "
                          + (feature != null ? "the feature '" + feature + "' is" : "it is") + " switched off until the game is loaded again. Its saved data is left as it was.");
             if (feature != null)
@@ -301,6 +301,31 @@ namespace RealLifeOverhaul
                 }
             }
             Tell("reallife_guard_notice_fault".GetLocalization().Replace("{feature}", name));
+        }
+
+        private static readonly FeatureGuard TestGuard = FeatureGuards.For(null, "the guard's test (options page, test tools)");
+
+        /// <summary>
+        /// The options page's test: five faults of an entry point of its own, as a feature broken by a game update would
+        /// make them, so that the lines in Player.log and the one notice can be seen. Nothing of the mod is switched off.
+        /// </summary>
+        public static void TestFault()
+        {
+            for (int i = 0; i < FeatureGuard.Most; i++)
+            {
+                try
+                {
+                    throw new InvalidOperationException("a test fault of the guard (options page, test tools), " + (i + 1) + " of " + FeatureGuard.Most);
+                }
+                catch (Exception e)
+                {
+                    Fail(TestGuard, e);
+                }
+            }
+            if (TestGuard.Faults > FeatureGuard.Most)
+            {
+                Logger?.Info("Guard: the test was run before this session; its entry point is off already, so nothing more is said.");
+            }
         }
 
         /// <summary>The feature's title in the player's language (its id when it has none).</summary>

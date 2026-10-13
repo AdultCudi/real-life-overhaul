@@ -351,6 +351,7 @@ namespace RealLifeOverhaul.Meta
                 }))
                 .Row(new ButtonOption("reallife_meta_check_button", OptionsLayout.CheckSetup))
                 .Test("reallife_test_block_say", BlockTests.Say)
+                .Test("reallife_test_guard_fault", Guard.TestFault)   // five faults of a test entry point: the line in Player.log and the notice (Core/Guard)
                 .Diagnostic(KeyAction.PerfProbe, KeyAction.PerfBench, KeyAction.PhoneDump, KeyAction.CharacterReport);
 
             // Going Public, the multiplayer mod: what this mod does differently in one of its sessions (Core/GoingPublic). The rows
