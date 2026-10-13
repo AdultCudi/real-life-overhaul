@@ -46,6 +46,8 @@ namespace RealLifeOverhaul.Utilities
         public int Month;                // months turned since the internet began, for its prices
         public readonly int[] Promo = { 1000, 1000, 1000, 1000 };   // each rival's month, thousandths of its list
         public readonly Network Network = new Network();             // the player's own broadband company (Utilities/Broadband)
+        public int GraceUntil;           // the internet's grace period (InternetRules.BeginGrace): the first day it no longer covers (0: none)
+        public readonly List<string> Grace = new List<string>();     // ...and the places it covers: the businesses that needed a connection when it began
 
         /// <summary>A provider's month, thousandths of its list (the player's own company keeps to its list).</summary>
         public int PromoOf(int provider)
