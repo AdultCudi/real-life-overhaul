@@ -53,6 +53,25 @@ namespace RealLifeOverhaul.Tech
         /// <summary>What the player's record as a founder adds to a pitch, thousandths (Careers: the rungs reached in a tech profession, the years, their name). Default: nothing.</summary>
         public static Func<int> Founder;
 
+        /// <summary>What a course costs the player's staff, basis points of its fee (Careers: half with an academy of the player's own). Default: the whole fee.</summary>
+        public static Func<int> CourseShareBp;
+
+        /// <summary>A degree the business sponsors for a professional: its fee now, whole money, or 0 with the university closed (Careers). Default: none.</summary>
+        public static Func<int> DegreeFee;
+
+
+        public static int CourseShare()
+        {
+            try
+            {
+                return CourseShareBp != null ? Math.Max(0, Math.Min(10000, CourseShareBp())) : 10000;
+            }
+            catch (Exception)
+            {
+                return 10000;
+            }
+        }
+
         public static int FounderNow()
         {
             try
@@ -93,6 +112,8 @@ namespace RealLifeOverhaul.Tech
             Mbps = null;
             UtilityCents = null;
             Founder = null;
+            CourseShareBp = null;
+            DegreeFee = null;
         }
     }
 }

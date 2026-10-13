@@ -403,6 +403,41 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        /// <summary>A tutoring session now, here, whatever the hour (the skill to tutor is given if there is too little).</summary>
+        public void TestTutor()
+        {
+            string why;
+            if (!TestReady(out why))
+            {
+                return;
+            }
+            if (!FamilyOn)
+            {
+                Notifications.Show(NotificationType.Warning, "reallife_family_test_off", null, 8f);
+                return;
+            }
+            try
+            {
+                int skill = StudyRules.TutorSkill(_study);
+                if (StudyRules.Points(_study, skill) < StudyCatalogue.TutorLeast)
+                {
+                    StudyRules.Learn(_study, Skills.Teaching, StudyCatalogue.TutorLeast * 1000, Save.Day);
+                    skill = Skills.Teaching;
+                }
+                string busy = Offer(new Sitting(this, SittingKind.Tutoring, skill, StudyCatalogue.TutorMinutes, CareersText.T("reallife_family_skip_tutor"), true,
+                    CareersText.T("reallife_family_skip_subject", "subject", CareersText.Skill(skill))));
+                if (busy != null)
+                {
+                    Notifications.Show(NotificationType.Warning, busy, null, 8f);
+                }
+                Changed();
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
+
         /// <summary>Twenty points more in four of the player's skills, one of the trades among them.</summary>
         public void TestSkills()
         {

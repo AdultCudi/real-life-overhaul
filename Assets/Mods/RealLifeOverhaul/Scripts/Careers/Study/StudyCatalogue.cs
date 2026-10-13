@@ -253,6 +253,18 @@ namespace RealLifeOverhaul.Careers
         public const int TiredEnergy = 15;            // a class or homework cannot be started below this much energy
         public const int RefresherPoints = 3;         // penalty points a driving refresher takes off the licence
 
+        // ---------------------------------------------------------------- tutoring, the family, an academy
+        public const int TutorLeast = 30;             // points of a subject it takes to tutor it
+        public const int TutorBase = 1500;            // cents an hour at the start's prices...
+        public const int TutorPerPoint = 60;          // ...and this much more a point of the subject
+        public const int TutorMinutes = 120;          // a session
+        public const int TutorPerDay = 2;
+        public const int TutorFrom = 15, TutorTo = 21;   // sessions are given between these hours (after school), from home online
+        public const int AcademyPerStaff = 12;        // students an academy's staff member teaches
+        public const int AcademyDemand = 30;          // students who would come to a new academy...
+        public const int AcademyFeeCents = 900;       // ...each paying this a day, at the start's prices
+        public const int AcademyStaffCourseBp = 5000; // what the player's own staff pay for a course while the player has an academy
+
         public static CourseDef Find(int id)
         {
             for (int i = 0; i < All.Length; i++)

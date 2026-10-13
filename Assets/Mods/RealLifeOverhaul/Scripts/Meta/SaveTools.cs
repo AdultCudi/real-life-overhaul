@@ -393,6 +393,7 @@ namespace RealLifeOverhaul.Meta
             RemoveModifiers(save, removed);
             RemoveData(save, removed);
             removed.BusinessTypes += Tech.TechTypes.Strip(save);   // the tech sector's business types, made the game's own web development agency again
+            removed.BusinessTypes += Careers.AcademyType.Strip(save);   // the player's academies, made the game's own recruitment office again
 
             if (save.Contacts != null)
             {

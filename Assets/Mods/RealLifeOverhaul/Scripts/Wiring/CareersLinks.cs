@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Careers;
 using RealLifeOverhaul.Fame;
+using RealLifeOverhaul.Family;
+using RealLifeOverhaul.Permadeath;
 using RealLifeOverhaul.Planner;
 using RealLifeOverhaul.Tech;
 
@@ -28,6 +30,11 @@ namespace RealLifeOverhaul
         ///   Founder       the venture firms read the player's record as a founder at a pitch (TechBridges.Founder)
         ///   Credit        the student loan is an account of the credit file: borrowing and paying it off are on the record
         ///   Council       the council's grants policy covers tuition too: a subsidy when it is up, a surcharge when it is down (CivicPolicy)
+        ///   Children      the family's children: a grown one is offered a place at the university
+        ///   CourseShareBp the player's own academy halves what their professional staff pay for a course (Tech/People)
+        ///   DegreeFee     a professional can be sent on a degree, paid by the business (Tech/People)
+        ///   Qualified     the banking licence asks for a qualified person: a finance qualification of the player's, or a senior professional in finance
+        ///   the obituary  the best qualification and the career, for Permadeath's page (PermadeathLinks)
         ///   the paper     education's and careers' stories, chained on to the City Ledger's other pieces (News.Extra)
         ///   the Planner   a source of its own: the classes of the courses under way, and their exams
         ///
@@ -54,6 +61,10 @@ namespace RealLifeOverhaul
                 CareersBridges.Cycle = () => Economy.CityEconomy.Running ? (int)Economy.CityEconomy.State : 1;
                 CareersBridges.Claim = (amount, employer) => RestraintClaims.File(amount, employer);
                 CareersBridges.Credit = Credit;
+                CareersBridges.Children = Children;
+                TechBridges.CourseShareBp = () => CareersDirector.Instance != null && CareersDirector.Instance.HasAcademy() ? StudyCatalogue.AcademyStaffCourseBp : 10000;
+                TechBridges.DegreeFee = DegreeFee;
+                Economy.OwnBankBridges.Qualified = Qualified;
                 CareersBridges.Council = () => CivicPolicy.Position(Lever.Grants);
                 Economy.CreditLedger.Register(Loan);
                 CareersBridges.TechFirm = TechFirm;
@@ -72,6 +83,7 @@ namespace RealLifeOverhaul
                 CareersBridges.Reset();
                 TechBridges.Founder = null;
                 Economy.CreditLedger.Unregister(Loan);
+                Economy.OwnBankBridges.Qualified = null;
                 News.Extra = _paperBefore;
                 _paperBefore = null;
             }
@@ -141,6 +153,95 @@ namespace RealLifeOverhaul
                 {
                     Fault("CareersLinks.Reputation", e);
                     return 0;
+                }
+            }
+
+            // ---------------------------------------------------------------- the family's children, staff courses, the obituary, the bank
+
+            private static void Children(List<ChildView> into)
+            {
+                try
+                {
+                    if (!FamilyState.Loaded || !Settings.Family || FamilyState.S == null)
+                    {
+                        return;
+                    }
+                    for (int i = 0; i < FamilyState.S.Children.Count; i++)
+                    {
+                        ChildRecord c = FamilyState.S.Children[i];
+                        if (c != null && !string.IsNullOrEmpty(c.Name))
+                        {
+                            into.Add(new ChildView { Name = c.Name, Age = c.Age, Closeness = c.Closeness, Grown = c.Grown, Fund = c.Fund, School = c.School });
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.Children", e);
+                }
+            }
+
+            // A degree for a professional of the player's: the dearest of the university's degrees, at today's prices.
+            private static int DegreeFee()
+            {
+                if (!CareersDirector.UniversityOpen)
+                {
+                    return 0;
+                }
+                return Prices.At(StudyCatalogue.Find(StudyCatalogue.SoftwareEngineering).Fee);
+            }
+
+            /// <summary>The player's degree and career for the obituary (Permadeath): the best qualification, and the job now or the highest held.</summary>
+            internal static void Obituary(LifeStory s)
+            {
+                try
+                {
+                    CareersDirector d = CareersDirector.Instance;
+                    StudyFile f = d != null ? d.Study : null;
+                    if (f == null)
+                    {
+                        return;
+                    }
+                    s.Degree = LifeStory.Clean(d.ObituaryDegree());
+                    s.Career = LifeStory.Clean(d.ObituaryCareer());
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.Obituary", e);
+                }
+            }
+
+            /// <summary>The banking licence's qualified person (the own bank): the player with a finance qualification, or a senior professional of the player's in finance.</summary>
+            private static bool Qualified()
+            {
+                try
+                {
+                    CareersDirector d = CareersDirector.Instance;
+                    StudyFile f = d != null ? d.Study : null;
+                    if (f == null)
+                    {
+                        return true;   // (careers not running: the licence asks nothing of the kind)
+                    }
+                    if (f.Holds(StudyCatalogue.Finance) || f.Holds(StudyCatalogue.Mba) || f.Holds(StudyCatalogue.CharteredAccountant) || f.Holds(StudyCatalogue.Accounting))
+                    {
+                        return true;
+                    }
+                    TechDirector t = TechDirector.Instance;
+                    IReadOnlyList<Person> people = t != null ? t.People : null;
+                    for (int i = 0; people != null && i < people.Count; i++)
+                    {
+                        Profile p = people[i].File;
+                        if ((p.Role == TalentCatalogue.Accountant || p.Role == 29) && p.Level >= TalentCatalogue.Senior)
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.Qualified", e);
+                    return true;
                 }
             }
 

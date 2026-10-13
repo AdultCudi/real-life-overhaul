@@ -19,17 +19,18 @@ namespace RealLifeOverhaul.Careers
     ///   Studying   the courses under way: the next class, attendance, homework, the exam; pick one to attend the class,
     ///              do homework, sit the exam, pay a fee that is owed or withdraw
     ///   Results    every course finished, with its grade: the qualifications an employer reads
-    ///   Skills     the player's own skills, the best each has been and whether it is fading
+    ///   Skills     the player's own skills, the best each has been and whether it is fading; tutoring from home
+    ///   Family     the family's children, their schooling and a grown child's university (CampusApp.Family.cs)
     ///
     /// Everything on it is the game's. Nothing runs while the app is closed: the rows and figures are made when it opens,
     /// when a tab is picked and when the player changes something in it.
     /// </summary>
-    public sealed class CampusApp
+    public sealed partial class CampusApp
     {
         public const string CourseRow = "course:";
         private const string ResultRow = "result:", SkillRow = "skill:";
 
-        private static readonly string[] TabKeys = { "reallife_campus_tab_courses", "reallife_campus_tab_studying", "reallife_campus_tab_results", "reallife_campus_tab_skills" };
+        private static readonly string[] TabKeys = { "reallife_campus_tab_courses", "reallife_campus_tab_studying", "reallife_campus_tab_results", "reallife_campus_tab_skills", "reallife_campus_tab_family" };
 
         public static IModLogger Logger;
 
@@ -162,6 +163,7 @@ namespace RealLifeOverhaul.Careers
                         case CareersDirector.TabStudying: table = WriteStudying(box, f, day); break;
                         case CareersDirector.TabResults: table = WriteResults(box, f); break;
                         case CareersDirector.TabSkills: table = WriteSkills(box, f, day); break;
+                        case CareersDirector.TabFamily: table = WriteFamily(box, f, day); break;
                         default: table = WriteCourses(box, f, day); break;
                     }
                 }
@@ -598,6 +600,7 @@ namespace RealLifeOverhaul.Careers
             box.Title(CareersText.T("reallife_campus_skills_title"));
             box.Line(CareersText.T("reallife_campus_skills_about", "days", StudyCatalogue.FadeAfterDays.ToString(), "floor", CareersText.Mille(StudyCatalogue.FadeFloor)));
             box.Line(CareersText.Pair("reallife_campus_sum_skills", any.ToString()));
+            TutorButton(box);
             return CampusColumns.Skills;
         }
 

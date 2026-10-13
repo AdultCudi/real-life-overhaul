@@ -123,6 +123,7 @@ internal static partial class Program
         Work();
         Life();
         Own();
+        FamilyStudy();
         Districts();
         BusRide();
         PlayerBank();

@@ -15,6 +15,8 @@ namespace RealLifeOverhaul.Careers
     ///   c  each course under way, r each one finished: course|mode|start|seen|done|settled day|homework|fee|instalments|loan|on loan|
     ///      grant|stage|exam from|exam to|retakes|score|grade|ended|graduated|fee late
     ///   w, o, a, j, y  the working life (Careers/Work/WorkStore)
+    ///   q  each grown child at university: name|degree|stage|start|end|paid|class
+    ///   t  tutoring: the day|sessions that day
     /// </summary>
     public static class CareersStore
     {
@@ -64,6 +66,13 @@ namespace RealLifeOverhaul.Careers
                 Course(w, f.Results[i]);
             }
             WorkStore.Write(w, f.Work);
+            w.Part('q');
+            for (int i = 0; i < f.Children.Count && i < 6; i++)
+            {
+                ChildStudy c = f.Children[i];
+                w.Record().Add(c.Name).Add(c.Course).Add(c.Stage).Add(c.Start).Add(c.End).Add(c.Paid).Add(c.Grade);
+            }
+            w.Part('t').Record().Add(f.TutorDay).Add(f.TutorToday);
             return w.ToString();
         }
 
@@ -117,6 +126,18 @@ namespace RealLifeOverhaul.Careers
                 }
             }
             WorkStore.Read(r, f.Work);
+            foreach (Fields x in r.Records('q'))
+            {
+                var c = new ChildStudy { Name = x.Text(), Course = x.Int(-1), Stage = TalentCatalogue.Clamp(x.Int(), 0, (int)ChildStep.Declined), Start = x.Int(), End = x.Int(), Paid = Math.Max(0, x.Int()),
+                    Grade = x.Int() };
+                if (c.Name.Length > 0 && StudyCatalogue.Find(c.Course) != null && f.Children.Count < 6)
+                {
+                    f.Children.Add(c);
+                }
+            }
+            Fields t = r.One('t');
+            f.TutorDay = t.Int(-1);
+            f.TutorToday = Math.Max(0, t.Int());
             return f;
         }
 

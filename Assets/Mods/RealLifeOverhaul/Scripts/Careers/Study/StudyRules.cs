@@ -380,6 +380,55 @@ namespace RealLifeOverhaul.Careers
             return on;
         }
 
+        // ---------------------------------------------------------------- the family's children
+
+        /// <summary>What a child's degree costs the player, whole money at the start's prices: its fee less what the college fund covers.</summary>
+        public static int ChildCost(CourseDef c, int fundWhole)
+        {
+            return c == null ? 0 : Math.Max(0, c.Fee - Math.Max(0, fundWhole));
+        }
+
+        /// <summary>
+        /// The class a child graduates with (a degree's 1 to 4): by how close they are to the player (0 to 100), a private
+        /// school, and their own luck (-15 to 15).
+        /// </summary>
+        public static int ChildGrade(float closeness, bool privateSchool, int luck)
+        {
+            int mark = 40 + (int)(Math.Max(0f, Math.Min(100f, closeness)) * 0.3f) + (privateSchool ? 8 : 0) + TalentCatalogue.Clamp(luck, -15, 15);
+            return mark >= StudyCatalogue.First ? 4 : mark >= StudyCatalogue.UpperSecond ? 3 : mark >= StudyCatalogue.LowerSecond ? 2 : 1;
+        }
+
+        /// <summary>The students an academy teaches a day: as many as its staff can take, of those who come (more with the council's grants up).</summary>
+        public static int AcademyStudents(int staff, int council)
+        {
+            int demand = StudyCatalogue.AcademyDemand * (council > 0 ? 12 : council < 0 ? 8 : 10) / 10;
+            return Math.Max(0, Math.Min(staff * StudyCatalogue.AcademyPerStaff, demand + staff * 4));
+        }
+
+        // ---------------------------------------------------------------- tutoring
+
+        /// <summary>What an hour of tutoring pays, cents at the start's prices: a base and more for the subject's points; nothing under the least.</summary>
+        public static int TutorRate(int points)
+        {
+            return points < StudyCatalogue.TutorLeast ? 0 : StudyCatalogue.TutorBase + points * StudyCatalogue.TutorPerPoint;
+        }
+
+        /// <summary>The best subject the player could tutor: the skill with the most points among the professions' and teaching.</summary>
+        public static int TutorSkill(StudyFile f)
+        {
+            int best = Skills.Teaching, points = -1;
+            for (int s = 0; s < Skills.Count; s++)
+            {
+                bool subject = Skills.Professional(s) || s == Skills.Teaching;
+                if (subject && f.Skill[s] > points)
+                {
+                    best = s;
+                    points = f.Skill[s];
+                }
+            }
+            return best;
+        }
+
         // ---------------------------------------------------------------- starting a course
 
         /// <summary>Whether the player may start a course now, and why not.</summary>

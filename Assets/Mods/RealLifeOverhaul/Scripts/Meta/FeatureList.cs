@@ -665,6 +665,14 @@ namespace RealLifeOverhaul.Meta
                 .Data(Careers.CareersStore.Key)
                 .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
+            // The family and others: a grown child at university, tutoring, the player's own academy. It runs with the courses.
+            Careers.CareersGuide.AddFamilyFacts(Features.Add("careers_family", "reallife_meta_title_careers_family")
+                .About("reallife_guide_careers_family_about").Help("reallife_guide_careers_family")
+                .Owns(Settings.CareersFamilyId)
+                .Test("reallife_family_test_tutor")
+                .Data(Careers.CareersStore.Key)
+                .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
             // Professional jobs: the city's employers take the player on by qualifications and skills, in the Career app. It runs
             // with the courses, whose skills it reads. Off, no vacancies; a job held is kept in the save.
             Careers.CareersGuide.AddWorkFacts(Features.Add("careers_jobs", "reallife_meta_title_careers_jobs")

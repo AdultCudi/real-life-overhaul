@@ -44,6 +44,25 @@ namespace RealLifeOverhaul.Careers
         public CourseDef Def => StudyCatalogue.Find(Course);
     }
 
+    /// <summary>Where a child's university stands: the saved number of <see cref="ChildStudy.Stage"/>.</summary>
+    public enum ChildStep
+    {
+        Offered = 0, Studying = 1, Graduated = 2, Declined = 3
+    }
+
+    /// <summary>A grown child of the family and their university (Family's children, read through Wiring/CareersLinks). Game-free.</summary>
+    public sealed class ChildStudy
+    {
+        public string Name = string.Empty;
+        public int Course;          // the degree they read
+        public int Stage;           // ChildStep
+        public int Start, End;      // the days it runs
+        public int Paid;            // whole money the player paid (the rest from the college fund)
+        public int Grade;           // the class they graduate with
+
+        public ChildStep At => (ChildStep)Stage;
+    }
+
     /// <summary>
     /// The player's learning and skills: the courses under way and done, the skills (thousandths of a point, with the best
     /// ever reached and the day each was last used), the student loan and the week's hours of study; and their working life
@@ -64,6 +83,8 @@ namespace RealLifeOverhaul.Careers
         public int GraduationDay, GraduationCourse = -1;   // a graduation ceremony to come
         public int Taught;           // minutes of tutoring given, ever
         public readonly WorkFile Work = new WorkFile();   // the working life, kept in the same line (Careers/Work)
+        public readonly List<ChildStudy> Children = new List<ChildStudy>(3);   // the family's grown children at university
+        public int TutorDay = -1, TutorToday;   // tutoring sessions given on a day
 
         public const int ResultsMost = 40;
 

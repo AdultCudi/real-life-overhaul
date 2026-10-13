@@ -42,6 +42,9 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The city's economy: 0 boom, 1 steady, 2 slowdown, 3 recession. Default: steady.</summary>
         public static Func<int> Cycle;
 
+        /// <summary>The family's children (Family): into the list given. Default: none.</summary>
+        public static Action<List<ChildView>> Children;
+
         /// <summary>The student loan on the credit file: 0 money borrowed (the amount, whole), 1 paid off (Economy's credit rating). Default: nothing is told.</summary>
         public static Action<int, int> Credit;
 
@@ -143,6 +146,7 @@ namespace RealLifeOverhaul.Careers
             Board = null;
             Claim = null;
             Credit = null;
+            Children = null;
             TechFirm = null;
             JoinFirm = null;
             TookAd = null;
@@ -163,5 +167,15 @@ namespace RealLifeOverhaul.Careers
     {
         public string Rival;
         public int Family, Level, To, PayBp;
+    }
+
+    /// <summary>One child of the family, as careers read them.</summary>
+    public struct ChildView
+    {
+        public string Name;
+        public float Age, Closeness;
+        public bool Grown;
+        public int Fund;     // the college fund, whole money
+        public int School;   // 0 none yet, 1 a state school, 2 a private one
     }
 }

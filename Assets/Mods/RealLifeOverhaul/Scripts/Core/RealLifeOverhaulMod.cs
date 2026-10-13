@@ -45,6 +45,8 @@ namespace RealLifeOverhaul
             Meta.Dev.Gated(context);   // (the option has been read now)
             Tech.TechTypes.Logger = context.Logger;
             Tech.TechTypes.Register();   // the tech sector's business types, before any save that holds one is loaded (Scripts/Tech/Firms/TechTypes)
+            Careers.AcademyType.Logger = context.Logger;
+            Careers.AcademyType.Register();   // the player's own training academy, a business type, before any save that holds one is loaded (Scripts/Careers/AcademyType)
 
             var options = new ModOptions()
                 .AddHeader("reallife_camera_header")
@@ -244,6 +246,9 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.CareersDegreesId, "reallife_degrees_enabled", Settings.CareersDegrees,
                     v => Settings.CareersDegrees = v)
                 .AddButton("reallife_degrees_test_graduate", () => Careers.CareersDirector.Instance?.TestGraduate())
+                .AddToggle(Settings.CareersFamilyId, "reallife_family_study_enabled", Settings.CareersFamily,
+                    v => Settings.CareersFamily = v)
+                .AddButton("reallife_family_test_tutor", () => Careers.CareersDirector.Instance?.TestTutor())
                 .AddToggle(Settings.CareersJobsId, "reallife_work_enabled", Settings.CareersJobs,
                     v => Settings.CareersJobs = v)
                 .AddButton("reallife_work_test_offer", () => Careers.CareersDirector.Instance?.TestOffer())
@@ -978,6 +983,7 @@ namespace RealLifeOverhaul
             _running = context.ModId;
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on; warnings and errors always
             Tech.TechTypes.Register();   // (furnished as the game's web development agency once its type is known)
+            Careers.AcademyType.Register();   // (furnished as the game's recruitment office once its type is known)
             OtherMods.Look(context.Logger);   // other authors' mods this one stands aside for: one walk over the loaded assemblies (Core/OtherMods)
             GoingPublic.Logger = context.Logger;
             GoingPublicLink.Logger = context.Logger;

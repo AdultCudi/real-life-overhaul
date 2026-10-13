@@ -190,6 +190,7 @@ namespace RealLifeOverhaul.Careers
                 Logger?.Info("Careers check (study day " + day + "): skills faded " + faded + " thousandths in all, loan interest " + interest + " cents: PASS");
             }
             GraduationDay(day);
+            FamilyDay(day);
         }
 
         /// <summary>An instalment that has fallen due is charged, or lent; one that cannot be paid stands as owed and the classes wait for it.</summary>

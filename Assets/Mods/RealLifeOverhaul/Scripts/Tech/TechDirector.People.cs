@@ -422,7 +422,7 @@ namespace RealLifeOverhaul.Tech
                 if (course > 0)
                 {
                     courses++;
-                    Tell(course == 3 ? NotificationType.Warning : NotificationType.Success, course == 1 ? "reallife_talent_note_course" : course == 2 ? "reallife_talent_note_passed" : "reallife_talent_note_failed",
+                    Tell(course == 3 ? NotificationType.Warning : NotificationType.Success, course == 1 ? "reallife_talent_note_course" : course == 2 ? "reallife_talent_note_passed" : course == 4 ? "reallife_talent_note_degree" : "reallife_talent_note_failed",
                         Data("name", person.Name), TabTeam, Row(p));
                 }
                 // reviews and the requests they make
@@ -652,7 +652,7 @@ namespace RealLifeOverhaul.Tech
             {
                 return false;
             }
-            int fee = Prices.At(TalentRules.CourseFee(person.File.Slot(slot) / 1000));
+            int fee = (int)((long)Prices.At(TalentRules.CourseFee(person.File.Slot(slot) / 1000)) * TechBridges.CourseShare() / 10000);
             if (!TalentGame.Cost(fee * 100, TalentGame.TrainingKey, person.At, person.Name, false, false))
             {
                 Notifications.ShowInsufficientMoney();
@@ -663,6 +663,33 @@ namespace RealLifeOverhaul.Tech
             return true;
         }
 
+
+        /// <summary>
+        /// A degree for a professional, paid by the business (study leave on top of the work): longer than a course, it adds
+        /// to both of the role's skills and raises their schooling a step (Careers' university, through TechBridges). False if
+        /// they are on a course already, the university is closed or the cash does not cover the fee.
+        /// </summary>
+        internal bool SponsorDegree(string id)
+        {
+            Person person = PersonOf(id);
+            if (person == null || Save == null || person.File.OnCourse(Save.Day) || TechBridges.DegreeFee == null)
+            {
+                return false;
+            }
+            int fee = TechBridges.DegreeFee();
+            if (fee <= 0)
+            {
+                return false;
+            }
+            if (!TalentGame.Cost(fee * 100, TalentGame.TrainingKey, person.At, person.Name, false, false))
+            {
+                Notifications.ShowInsufficientMoney();
+                return false;
+            }
+            TalentRules.StartDegree(person.File, Save.Day, TalentCatalogue.Scaled(TalentCatalogue.DegreeDays, Year));
+            Changed();
+            return true;
+        }
         /// <summary>An exam for a certificate, paid now; false if the score is short of it or the cash does not cover it.</summary>
         internal bool Exam(string id, int cert)
         {

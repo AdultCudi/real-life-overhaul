@@ -213,6 +213,7 @@ namespace RealLifeOverhaul
         public const string CareersJobsId = "careers_jobs";
         public const string CareersLifeId = "careers_life";
         public const string CareersOwnId = "careers_own";
+        public const string CareersFamilyId = "careers_family";
         public const string BusinessId = "business_pressure";
         public const string BusinessFrequencyId = "business_frequency";
         public const string BusinessEasyId = "business_easy";
@@ -448,6 +449,7 @@ namespace RealLifeOverhaul
         public static bool CareersDegrees = true;        // the university: degrees at Hudson City University and on the wards, professional certificates studied at home, the student loan, grants and graduation day (off: those courses are not offered; results are kept) (Scripts/Careers)
         public static bool CareersJobs = true;           // professional jobs: the city's businesses, the rivals', its tech companies and the public sector take the player on by their qualifications and skills, with applications, interviews, offers and working days, in the Career app (off: no vacancies; a job held is kept) (Scripts/Careers)
         public static bool CareersLife = true;           // working life in a profession: reviews, rises, bonuses and promotions, office matters, overtime and burnout, search firms, redundancy and benefit, share options, the pension and the top seats of a rival's company (off: a job is its days and pay alone) (Scripts/Careers)
+        public static bool CareersFamily = true;         // the family's children at university, tutoring from home, and the player's own training academy as a business type (off: none of them; records are kept) (Scripts/Careers)
         public static bool CareersOwn = true;            // working for oneself: leaving a profession to found a company or open a practice, former colleagues, restraint clauses and claims, freelance contracts and side work (off: no contracts come; a practice is kept) (Scripts/Careers)
         public static bool Business = true;              // rival moves, inspections, staff and supplier trouble, opportunities for the player's businesses
         public static int BusinessFrequency = 4;         // 1 = something every couple of weeks, 10 = most days (never more than two open at once)
@@ -697,6 +699,7 @@ namespace RealLifeOverhaul
             CareersJobs = Bool(modId, CareersJobsId, CareersJobs);
             CareersLife = Bool(modId, CareersLifeId, CareersLife);
             CareersOwn = Bool(modId, CareersOwnId, CareersOwn);
+            CareersFamily = Bool(modId, CareersFamilyId, CareersFamily);
             Business = Bool(modId, BusinessId, Business);
             BusinessFrequency = Int(modId, BusinessFrequencyId, BusinessFrequency);
             BusinessEasy = Bool(modId, BusinessEasyId, BusinessEasy);

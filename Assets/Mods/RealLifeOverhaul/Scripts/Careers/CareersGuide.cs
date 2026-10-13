@@ -65,6 +65,23 @@ namespace RealLifeOverhaul.Careers
                 .Fact("degrees_window", () => Whole(StudyCatalogue.ExamWindowDays * 2));
         }
 
+        public static void AddFamilyFacts(Feature f)
+        {
+            f.Fact("family_tutor_least", () => Whole(StudyCatalogue.TutorLeast))
+                .Fact("family_tutor_rate", () => Guide.Money(Prices.At(StudyRules.TutorRate(StudyCatalogue.TutorLeast)) / 100f))
+                .Fact("family_tutor_top", () => Guide.Money(Prices.At(StudyRules.TutorRate(100)) / 100f))
+                .Fact("family_tutor_hours", () => Whole(StudyCatalogue.TutorMinutes / 60))
+                .Fact("family_tutor_per_day", () => Whole(StudyCatalogue.TutorPerDay))
+                .Fact("family_tutor_from", () => CareersText.Hour(StudyCatalogue.TutorFrom))
+                .Fact("family_tutor_to", () => CareersText.Hour(StudyCatalogue.TutorTo))
+                .Fact("family_academy_staff", () => Whole(StudyCatalogue.AcademyPerStaff))
+                .Fact("family_academy_demand", () => Whole(StudyCatalogue.AcademyDemand))
+                .Fact("family_academy_fee", () => Guide.Money(Prices.At(StudyCatalogue.AcademyFeeCents) / 100f))
+                .Fact("family_academy_courses", () => Bp(StudyCatalogue.AcademyStaffCourseBp))
+                .Fact("family_degree_days", () => Whole(TalentCatalogue.Scaled(TalentCatalogue.DegreeDays, GameCalendar.DaysPerYear)))
+                .Fact("family_degree_gain", () => Whole(TalentCatalogue.DegreeGain));
+        }
+
         public static void AddWorkFacts(Feature f)
         {
             f.Fact("work_professions", Professions)

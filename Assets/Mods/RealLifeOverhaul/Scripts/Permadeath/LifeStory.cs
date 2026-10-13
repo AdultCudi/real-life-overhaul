@@ -43,6 +43,8 @@ namespace RealLifeOverhaul.Permadeath
         public int Convictions;
         public int Followers;                // on Flare
         public int Elections;                // voted in
+        public string Degree = string.Empty; // the best qualification, in words (Careers); empty for none
+        public string Career = string.Empty; // the job at the end or the highest held, in words (Careers); empty for none
 
         /// <summary>The days lived in the city (the first day counts as one), whole years of them and the days over.</summary>
         public int Days => Day < 1 ? 1 : Day;
@@ -123,6 +125,7 @@ namespace RealLifeOverhaul.Permadeath
             List(t, Children);
             List(t, Family);
             Num(t, Arrests).Num(t, Convictions).Num(t, Followers).Num(t, Elections);
+            t.Append(Clean(Degree)).Append(Field).Append(Clean(Career)).Append(Field);
             return t.ToString();
         }
 
@@ -163,6 +166,8 @@ namespace RealLifeOverhaul.Permadeath
             Convictions = Clamp(Int(f[i++]), 0, 100000);
             Followers = Clamp(Int(f[i++]), 0, int.MaxValue);
             Elections = Clamp(Int(f[i++]), 0, 100000);
+            Degree = i < f.Length ? f[i++] : string.Empty;   // (a line of before the careers has neither)
+            Career = i < f.Length ? f[i++] : string.Empty;
             return true;
         }
 

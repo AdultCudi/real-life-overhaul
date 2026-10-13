@@ -146,6 +146,11 @@ namespace RealLifeOverhaul.Careers
 
         partial void OtherEndedMore(Sitting sitting, int minutes, bool whole)
         {
+            if (sitting.Kind == SittingKind.Tutoring && _studyOn)
+            {
+                TutorEnded(sitting, minutes, whole);
+                return;
+            }
             if (sitting.Kind != SittingKind.Ceremony || !_studyOn || !whole)
             {
                 return;
@@ -171,6 +176,60 @@ namespace RealLifeOverhaul.Careers
             return Save != null && _graduatedToday == Save.Day ? _graduatedName : null;
         }
 
+
+        // ---------------------------------------------------------------- for the obituary (Permadeath, through Wiring/CareersLinks)
+
+        /// <summary>The player's best qualification in words ("LLB Law, First"), or empty: a degree first, then a certificate, then a diploma.</summary>
+        public string ObituaryDegree()
+        {
+            if (_study == null)
+            {
+                return string.Empty;
+            }
+            Enrolment best = null;
+            int bestRank = -1;
+            for (int i = 0; i < _study.Results.Count; i++)
+            {
+                Enrolment e = _study.Results[i];
+                CourseDef c = e.Def;
+                if (c == null || e.Stage != (int)EnrolStage.Passed || c.Kind == CourseKind.Short)
+                {
+                    continue;
+                }
+                int rank = (c.Kind == CourseKind.Postgrad ? 400 : c.Kind == CourseKind.Degree ? 300 : c.Kind == CourseKind.Certificate ? 200 : 100) + e.Grade;
+                if (rank > bestRank)
+                {
+                    best = e;
+                    bestRank = rank;
+                }
+            }
+            return best == null ? string.Empty : CareersText.T("reallife_study_degree_with", "course", CareersText.Course(best.Course), "grade", CareersText.Grade(best.Def, best.Grade));
+        }
+
+        /// <summary>The player's career in words ("Partner at Elm Street Law"): the job now, else the highest post held, or empty.</summary>
+        public string ObituaryCareer()
+        {
+            WorkFile w = _study != null ? _study.Work : null;
+            if (w == null)
+            {
+                return string.Empty;
+            }
+            if (w.Job != null)
+            {
+                return CareersText.T("reallife_study_post_at", "title", CareersText.Title(w.Job.Post.Prof, w.Job.Post.Rank), "employer", CareersText.Employer(w.Job.Post.Employer));
+            }
+            Spell top = null;
+            for (int i = 0; i < w.History.Count; i++)
+            {
+                Spell s = w.History[i];
+                Profession p = ProCatalogue.Find(s.Prof);
+                if (p != null && (top == null || p.Rank(s.Top).Pay > ProCatalogue.Find(top.Prof).Rank(top.Top).Pay))
+                {
+                    top = s;
+                }
+            }
+            return top == null ? string.Empty : CareersText.T("reallife_study_post_at", "title", CareersText.Title(top.Prof, top.Top), "employer", CareersText.Employer(top.Employer));
+        }
         // ---------------------------------------------------------------- the student loan on the credit file
 
         partial void Borrowed(int whole)

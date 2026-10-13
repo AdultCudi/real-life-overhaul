@@ -63,6 +63,16 @@ namespace RealLifeOverhaul.Careers
             .Filter("reallife_campus_all_results", ResultKinds)
             .Empty("reallife_campus_empty_results");
 
+        /// <summary>Family: 0 child, 1 age, 2 schooling, 3 college fund, 4 university, 5 state.</summary>
+        public static readonly TableSpec Family = new TableSpec("Campus", "Family")
+            .Column("reallife_campus_col_child", 300f, TableSort.Text, flexible: true)
+            .Column("reallife_campus_col_age", 140f, TableSort.Number)
+            .Column("reallife_campus_col_schooling", 240f, TableSort.Text)
+            .Column("reallife_campus_col_fund", 200f, TableSort.Money)
+            .Column("reallife_campus_col_university", 380f, TableSort.Text)
+            .Column("reallife_campus_col_state", 240f, TableSort.Text, right: true)
+            .Empty("reallife_campus_empty_family");
+
         public const int SkillProfession = 0, SkillTrade = 1;
         private static readonly string[] SkillKinds = { "reallife_campus_kind_professional", "reallife_campus_kind_trade" };
 
