@@ -42,7 +42,7 @@ namespace RealLifeOverhaul.Flare
         public const int FeedRows = 20;            // the Feed shows this many
 
         // ---- what a post is worth, thousandths, by FlareSource (Life: a friend's own, worth nothing to the player)
-        public static readonly int[] SourceQuality = { 0, 600, 750, 700, 1000, 1000, 850, 500, 650, 750, 900, 0, 800, 0, 0, 0, 0, 0, 0, 0, 0, 0, 700, 0, 0, 650 };
+        public static readonly int[] SourceQuality = { 0, 600, 750, 700, 1000, 1000, 850, 500, 650, 750, 900, 0, 800, 0, 0, 0, 0, 0, 0, 0, 0, 0, 700, 0, 0, 650, 800 };
         public const int WithFriend = 250;         // a friend tagged in it
         public const int InsideShop = 100;         // a picture taken in one of the player's businesses
 
@@ -74,7 +74,8 @@ namespace RealLifeOverhaul.Flare
             {  900, 1000, 1150,  700 },   // Shares: honest is best; cheeky about money is not liked
             { 1000, 1000, 1000, 1000 },   // Results
             { 1000, 1000, 1000, 1000 },   // Headline
-            {  800,  900, 1150,  950 }    // Issue
+            {  800,  900, 1150,  950 },   // Issue
+            { 1050, 1000, 1100,  800 }    // Campaign: proud of one's own run is fine; cheek about it less so
         };
         public const int BadFit = 650;             // a fit under this goes badly
         public const int GoodFit = 1150;           // ...one at or over this is well liked: a point of reputation

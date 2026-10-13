@@ -29,7 +29,8 @@ namespace RealLifeOverhaul.Fame
             "reallife_fame_cause_6", "reallife_fame_cause_7", "reallife_fame_cause_8", "reallife_fame_cause_9", "reallife_fame_cause_10", "reallife_fame_cause_11",
             "reallife_fame_cause_12", "reallife_fame_cause_13", "reallife_fame_cause_14", "reallife_fame_cause_15", "reallife_fame_cause_16", "reallife_fame_cause_17",
             "reallife_fame_cause_18", "reallife_fame_cause_19", "reallife_fame_cause_20", "reallife_fame_cause_21", "reallife_fame_cause_22", "reallife_fame_cause_23",
-            "reallife_fame_cause_24", "reallife_fame_cause_25", "reallife_fame_cause_26", "reallife_fame_cause_27", "reallife_fame_cause_28", "reallife_fame_cause_29"
+            "reallife_fame_cause_24", "reallife_fame_cause_25", "reallife_fame_cause_26", "reallife_fame_cause_27", "reallife_fame_cause_28", "reallife_fame_cause_29",
+            "reallife_fame_cause_30"
         };
 
         // ---- what people in the street say, by FameReaction (Look says nothing)

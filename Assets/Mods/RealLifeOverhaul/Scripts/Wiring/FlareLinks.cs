@@ -65,6 +65,8 @@ namespace RealLifeOverhaul
         ///   Headlines     the City Ledger's own account: the morning paper's headlines (News.Today)
         ///   Issue, Mood   a post raising an issue (CivicGovernment.Raised) and the feed's mood on the mayor's approval
         ///                 (CivicBridges.Mood), a point a day at most
+        ///   Campaign      the player's own run for office or office: a draft to post (CivicBridges.CampaignPost,
+        ///                 FlareSource.Campaign), and what a post of it is worth to the campaign (CivicOffice.Posted)
         ///   Fame, Heard   a Celebrity pays a lawyer a little more and their hearing is in the paper (Justice.Bridges)
         ///
         /// Everything is read from what those features already keep in public or heard through an event they already
@@ -126,6 +128,8 @@ namespace RealLifeOverhaul
                 FlareBridges.Headlines = Headlines;
                 FlareBridges.Issue = (issue, weight) => CivicDirector.Instance?.Government?.Raised(issue == (int)FlareIssue.Safety ? (int)RealLifeOverhaul.Issue.Safety : (int)RealLifeOverhaul.Issue.Roads, weight / 1000f);
                 CivicBridges.Mood = () => FlareDirector.Instance != null ? FlareDirector.Instance.ApprovalPull() : 0f;
+                CivicBridges.CampaignPost = (what, name) => FlareDirector.Instance?.Happened(FlareSource.Campaign, -1, null, name, what);
+                FlareBridges.Campaign = weight => CivicDirector.Instance?.Office?.Posted(weight);
                 Justice.Bridges.Fame = () => FlareDirector.Instance != null ? FlareDirector.Instance.Fame() : 0;
                 Justice.Bridges.Heard = () =>
                 {
@@ -151,6 +155,7 @@ namespace RealLifeOverhaul
                 CompanyBridges.Outside = null;
                 CompanyBridges.Booked = null;
                 CivicBridges.Mood = null;
+                CivicBridges.CampaignPost = null;
                 Justice.Bridges.Fame = null;
                 Justice.Bridges.Heard = null;
             }
@@ -307,7 +312,10 @@ namespace RealLifeOverhaul
                 GovState s = gov != null ? gov.State : null;
                 for (int i = 0; s != null && gov.Campaigning && i < s.CandidateCount; i++)
                 {
-                    into.Add(CivicText.Name(s.Candidates[i]));
+                    if (!s.Candidates[i].Player)
+                    {
+                        into.Add(CivicText.Name(s.Candidates[i]));   // (the player's own account is theirs: the city does not post as them)
+                    }
                 }
             }
 
