@@ -142,6 +142,10 @@ namespace RealLifeOverhaul
             {
                 return "reallife_garage_refused_not_yours";   // a job's van, a hire car
             }
+            if (EmpireMotors.Stock(vehicle.vehicleInstance))
+            {
+                return "reallife_garage_refused_stock";   // Empire Motors prices it as it came, and what was spent would go with the sale (Core/EmpireMotors)
+            }
             return null;
         }
 

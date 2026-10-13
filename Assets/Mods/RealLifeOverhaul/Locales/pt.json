@@ -13178,5 +13178,8 @@
   "reallife_changes_004_2": "Imóveis: cada unidade de um prédio que você aluga por conta própria agora tem inquilino e contrato próprios, com o próprio aluguel pedido, candidatos, atrasos, aviso e dias vazio. A aba Meus mostra como estão as unidades de um prédio e abre o contrato de cada uma, e um jogo salvo de antes mantém o inquilino na primeira unidade. O app de Ações volta a aceitar ordens logo depois de carregar: os botões Comprar e Vender ficam sempre acesos, e quando uma ordem não pode ser feita o formulário diz o motivo.",
   "reallife_empire_camera_key": "No carro, V é a visão do banco do motorista do Empire Motors, então a tecla de câmera deste mod não faz nada ali. A pé ela troca a câmera deste mod como antes; a câmera de perseguição fica de lado enquanto essa visão estiver ligada.",
   "reallife_keys_empire_view": "no carro, a visão do banco do motorista do Empire Motors",
-  "reallife_keys_empire_tools": "o Empire Motors também age nesta tecla, faça este mod o que fizer: as ferramentas dele para os carros do showroom"
+  "reallife_keys_empire_tools": "o Empire Motors também age nesta tecla, faça este mod o que fizer: as ferramentas dele para os carros do showroom",
+  "reallife_estate_hire_no_stock": "Esse carro faz parte do estoque de uma concessionária do Empire Motors: é dela para vender e não pode ser alugado.",
+  "reallife_garage_refused_stock": "Esse carro faz parte do estoque de uma concessionária do Empire Motors. Ele é da concessionária para vender como veio: a oficina de personalização só trabalha nos seus próprios carros.",
+  "reallife_svc_refuse_stock": "Venda primeiro os carros da concessionária no Empire Motors: o estoque dela não pode ir junto com a venda do negócio."
 }

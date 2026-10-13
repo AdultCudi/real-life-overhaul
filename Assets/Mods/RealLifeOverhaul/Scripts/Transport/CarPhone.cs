@@ -72,10 +72,16 @@ namespace RealLifeOverhaul
             int count = 0;
             for (int i = 0; save != null && save.VehicleInstances != null && i < save.VehicleInstances.Count; i++)
             {
-                VehicleInstance car = save.VehicleInstances[i];
-                count += car != null && car.VehicleType != null && car.VehicleType.IsMotorVehicle ? 1 : 0;
+                count += Runs(save.VehicleInstances[i]) ? 1 : 0;
             }
             return count;
+        }
+
+        // A motor vehicle of the player's to run. A car of an Empire Motors dealership's stock is the dealership's to sell
+        // (Core/EmpireMotors): it has no Garage page, as a car on hire has none.
+        private static bool Runs(VehicleInstance car)
+        {
+            return car != null && car.VehicleType != null && car.VehicleType.IsMotorVehicle && !EmpireMotors.Stock(car);
         }
 
         /// <summary>The n-th motor vehicle the player owns (wrapping round), or null.</summary>
@@ -90,7 +96,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < save.VehicleInstances.Count; i++)
             {
                 VehicleInstance car = save.VehicleInstances[i];
-                if (car != null && car.VehicleType != null && car.VehicleType.IsMotorVehicle && index-- == 0)
+                if (Runs(car) && index-- == 0)
                 {
                     return car;
                 }
@@ -111,7 +117,7 @@ namespace RealLifeOverhaul
             foreach (VehicleController vehicle in VehicleHelper.AllPlayerVehicles)
             {
                 if (vehicle == null || !vehicle.isActiveAndEnabled || vehicle.vehicleInstance == null || vehicle.vehicleType == null || !vehicle.vehicleType.IsMotorVehicle
-                    || !save.VehicleInstances.Contains(vehicle.vehicleInstance))
+                    || !save.VehicleInstances.Contains(vehicle.vehicleInstance) || EmpireMotors.Stock(vehicle.vehicleInstance))
                 {
                     continue;
                 }

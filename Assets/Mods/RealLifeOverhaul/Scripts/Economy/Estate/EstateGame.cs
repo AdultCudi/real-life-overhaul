@@ -727,6 +727,10 @@ namespace RealLifeOverhaul.Economy
             {
                 why = "reallife_estate_hire_no_kind";
             }
+            else if (EmpireMotors.Stock(v))
+            {
+                why = "reallife_estate_hire_no_stock";   // the dealership's to sell: a hire would take it out of its showroom and its records (Core/EmpireMotors)
+            }
             else if (controller == null || controller.controlledByPlayer || save.ActiveVehicleId == v.id)
             {
                 why = "reallife_estate_hire_no_driven";

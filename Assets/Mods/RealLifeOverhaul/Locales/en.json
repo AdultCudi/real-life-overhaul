@@ -13178,5 +13178,8 @@
   "reallife_changes_004_2": "Property: each unit of a building you let yourself now has a tenant and a lease of its own, with its own asking rent, applicants, arrears, notice and empty days. The Mine tab shows how a building's units stand and opens each one's lease, and a save from before keeps its tenant in the first unit. The Stocks app takes orders again right after a load: the Buy and Sell buttons are always lit, and when an order cannot be placed the ticket says why.",
   "reallife_empire_camera_key": "In a car, V is Empire Motors' view from the driver's seat, so this mod's camera key does nothing there. On foot it switches this mod's camera as before; the chase camera stands aside while that view is on.",
   "reallife_keys_empire_view": "in a car, Empire Motors' view from the driver's seat",
-  "reallife_keys_empire_tools": "Empire Motors acts on this key too, whatever this mod does: its own tools for the showroom's cars"
+  "reallife_keys_empire_tools": "Empire Motors acts on this key too, whatever this mod does: its own tools for the showroom's cars",
+  "reallife_estate_hire_no_stock": "That car is part of an Empire Motors dealership's stock: it is the dealership's to sell, and cannot go on hire.",
+  "reallife_garage_refused_stock": "That car is part of an Empire Motors dealership's stock. It is the dealership's to sell as it came: the custom shop works on your own cars only.",
+  "reallife_svc_refuse_stock": "Sell the dealership's cars in Empire Motors first: its stock cannot go with a sale of the business."
 }
