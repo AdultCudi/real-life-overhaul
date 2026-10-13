@@ -78,6 +78,7 @@ namespace RealLifeOverhaul
                 Logger?.Error(e);
             }
             _build = ReadBuild();
+            CheckLayers();
             try
             {
                 _hit = ContractBook.FeaturesHit();
@@ -111,6 +112,31 @@ namespace RealLifeOverhaul
                 {
                     Logger?.Info("Game contract: " + ContractBook.Members.Count + " pieces of the game checked, " + off.Count + " part(s) off; the game is " + build
                                  + ", this version of the mod was checked against build " + ContractBook.CheckedBuild + ".");
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
+        // The game's layers the mod finds things by: one that is gone is named once (GameContract.Layers).
+        private static void CheckLayers()
+        {
+            try
+            {
+                var gone = new List<string>();
+                foreach (string layer in GameContract.Layers)
+                {
+                    if (LayerMask.NameToLayer(layer) < 0)
+                    {
+                        gone.Add(layer);
+                    }
+                }
+                if (gone.Count > 0)
+                {
+                    Logger?.Warn("Game contract: the game has no layer " + string.Join(", ", gone) + " any more; what the mod looks for on "
+                                 + (gone.Count == 1 ? "it" : "them") + " (the ground, roads, buildings, vehicles, people) is not found until the mod is updated.");
                 }
             }
             catch (Exception e)

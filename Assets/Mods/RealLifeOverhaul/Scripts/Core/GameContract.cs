@@ -241,6 +241,21 @@ namespace RealLifeOverhaul
         public static readonly GameMember HoverEffect = Optional(TypeOf(null, Game, "UI.HoverEffect"));
         public static readonly GameMember HdLight = Optional(TypeOf(null, "Unity.RenderPipelines.HighDefinition.Runtime", "UnityEngine.Rendering.HighDefinition.HDAdditionalLightData"));
 
+        // ---------------------------------------------------------------- the game's layers, by name
+
+        /// <summary>
+        /// The game's physics and rendering layers the mod names (LayerMask.GetMask, NameToLayer: raycasts for the ground,
+        /// the roads, buildings and props, what is a parked or driven vehicle, a person, the interface). They are the game's
+        /// project settings, not in its assemblies, so ContractCheck cannot read them: Core/Guard looks each up as the mod
+        /// starts and names any that is gone in Player.log (what is looked for on it is then not found).
+        /// </summary>
+        public static readonly string[] Layers =
+        {
+            "AiVehicles", "AutoParkSpots", "BuildingWalls", "Buildings", "BuildingsOutlined", "Default", "Ground", "GroundUnplacable", "Human",
+            "Ignore Raycast", "InteractiveItems", "InteractiveItemsOutlined", "ParkedVehicles", "ParkingArea", "Player", "PlayerVehicles", "Roads",
+            "StreetProps", "TransparentFX", "UI", "Vehicles", "Water",
+        };
+
         // ---------------------------------------------------------------- how a line is made
 
         private static GamePart[] On(params GamePart[] parts)
