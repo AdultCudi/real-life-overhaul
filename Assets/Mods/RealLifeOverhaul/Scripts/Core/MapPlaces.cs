@@ -16,7 +16,7 @@ namespace RealLifeOverhaul
     /// <summary>The glyphs a map category can be given without bringing a sprite of its own. Each is drawn in code, once, white on nothing.</summary>
     public enum MapIcon
     {
-        Shield, Target, Bus, Bed, Scales, Wheel, Bicycle, Wrench, Briefcase, Ballot, Cone, Cross, Star, Flag, Paper, Tower, Cloud, Custom
+        Shield, Target, Bus, Bed, Scales, Wheel, Bicycle, Wrench, Briefcase, Ballot, Cone, Cross, Star, Flag, Paper, Tower, Cloud, Coin, House, Heart, Custom
     }
 
     /// <summary>One place of the mod's on the city map.</summary>
@@ -1499,6 +1499,29 @@ namespace RealLifeOverhaul
                     Rect(true, 18f, 18f, 46f, 27f);
                     Rect(false, 21f, 9f, 25f, 12f);
                     Rect(false, 21f, 21f, 25f, 24f);
+                    break;
+                case MapIcon.Coin:
+                    // A coin: its rim, and a dollar sign struck on its face in six strokes.
+                    Ring(32f, 32f, 27f, 5f);
+                    Line(true, 23f, 43f, 41f, 43f, 4.5f);
+                    Line(true, 23f, 43f, 23f, 32f, 4.5f);
+                    Line(true, 23f, 32f, 41f, 32f, 4.5f);
+                    Line(true, 41f, 32f, 41f, 21f, 4.5f);
+                    Line(true, 41f, 21f, 23f, 21f, 4.5f);
+                    Line(true, 32f, 13f, 32f, 51f, 4.5f);
+                    break;
+                case MapIcon.House:
+                    // A house: its roof, its walls, the door (y runs up).
+                    Poly(true, 4, 32, 32, 58, 60, 32);
+                    Rect(true, 12f, 6f, 52f, 34f);
+                    Rect(false, 27f, 6f, 37f, 22f);
+                    Rect(true, 42f, 44f, 48f, 56f);
+                    break;
+                case MapIcon.Heart:
+                    // A heart: two lobes and the point below them.
+                    Disc(true, 21f, 40f, 13f);
+                    Disc(true, 43f, 40f, 13f);
+                    Poly(true, 9, 36, 55, 36, 32, 8);
                     break;
                 default:
                     Rect(true, 24f, 7f, 40f, 57f);

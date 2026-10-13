@@ -242,7 +242,7 @@ namespace RealLifeOverhaul.Meta
                     .Opt("night_life", "city_life").Opts("photo_mode").Buttons("reallife_leisure_test_records").Also("fun hobby nightclub bar"),
                 S("lifeevents").For("life").Main("life_events").Opts("life_frequency").Also("random luck surprise"),
                 S("permadeath").For("permadeath").Opts("permadeath").Also("death die dead obituary ending hardcore funeral"),
-                S("phone").For("phone").Opts("phone_contacts", "phone_skin").Also("call numbers wallpaper")),
+                S("phone").For("phone").Opts("phone_contacts", "phone_skin", "notice_look").Also("call numbers wallpaper notifications toast icons")),
 
             G("city",
                 S("citylife").For("citylife").Main("city_life").Opts("city_density", "city_workers", "city_everyday", "city_interactions")

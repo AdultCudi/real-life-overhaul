@@ -157,7 +157,7 @@ namespace RealLifeOverhaul
 
             // ---------------------------------------------------------------- every reallife key in the mod source
             Section("Every reallife_* string literal in the mod source");
-            var notLocale = new Regex("^(reallife_sick|reallife_accident|reallife_[a-z0-9]+_calldialogtype|reallife_happinessmodifier_|reallife_ev_|reallife_transaction_)$");
+            var notLocale = new Regex("^(reallife_sick|reallife_accident|reallife_[a-z0-9]+_calldialogtype|reallife_happinessmodifier_|reallife_ev_|reallife_transaction_|reallife_)$");   // reallife_ alone: NoticeKinds' prefix of every key of the mod's
             int literals = 0;
             foreach (string file in Directory.GetFiles(src, "*.cs", SearchOption.AllDirectories))
             {
@@ -293,6 +293,7 @@ namespace RealLifeOverhaul
             GigCheck.Run(Fail, locale);
             SavedShiftCheck.Run(Fail, locale, src);
             OptionsCheck.Run(Fail, locale, src);
+            NoticeCheck.Run(Fail, locale, src);
 
             Console.WriteLine(_failures == 0 ? "\nALL CHECKS PASSED" : $"\n{_failures} CHECK(S) FAILED");
             return _failures == 0 ? 0 : 1;

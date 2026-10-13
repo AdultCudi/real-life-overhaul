@@ -231,10 +231,10 @@ namespace RealLifeOverhaul.Meta
 
             Features.Add("phone", "reallife_meta_title_phone")
                 .About("reallife_guide_phone_about").Help("reallife_guide_phone")
-                .Owns(Settings.PhoneContactsId, Settings.PhoneSkinId)
+                .Owns(Settings.PhoneContactsId, Settings.PhoneSkinId, Settings.NoticeLookId)
                 .NeedsReload(Settings.PhoneContactsId)
                 .Contact("reallife-911", "reallife-doctor", "reallife-friend", "reallife-mom")
-                .Test("reallife_contacts_test_pictures", "reallife_contacts_test_redraw")
+                .Test("reallife_contacts_test_pictures", "reallife_contacts_test_redraw", "reallife_test_notice_look")
                 .Repair(PhoneContacts.Setup);
 
             Features.Add("ragdoll", "reallife_meta_title_ragdoll")
