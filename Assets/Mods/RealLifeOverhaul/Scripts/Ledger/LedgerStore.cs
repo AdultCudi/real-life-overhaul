@@ -52,36 +52,42 @@ namespace RealLifeOverhaul.Ledger
             {
                 b.Append("\nV|").Append(Clean(s.Council));
             }
-            LedgerEdition e = s.Edition;
-            if (e != null)
+            Edition(b, s.Edition);
+            return b.ToString();
+        }
+
+        /// <summary>An edition as the store writes it: its line and those of its pieces, sectors, companies and closes (each after a line break).</summary>
+        public static void Edition(StringBuilder b, LedgerEdition e)
+        {
+            if (e == null)
             {
-                b.Append("\nE|").Append(e.Day).Append('|').Append(Bit(e.HasMarket)).Append('|').Append(e.MarketDay).Append('|').Append(e.IndexLevel).Append('|').Append(e.IndexChangeBp)
-                    .Append('|').Append(e.IndexWeekBp).Append('|').Append(e.RateBp).Append('|').Append(e.InflationBp).Append('|').Append(Clean(e.CycleKey));
-                for (int i = 0; i < e.Pieces.Count; i++)
+                return;
+            }
+            b.Append("\nE|").Append(e.Day).Append('|').Append(Bit(e.HasMarket)).Append('|').Append(e.MarketDay).Append('|').Append(e.IndexLevel).Append('|').Append(e.IndexChangeBp)
+                .Append('|').Append(e.IndexWeekBp).Append('|').Append(e.RateBp).Append('|').Append(e.InflationBp).Append('|').Append(Clean(e.CycleKey));
+            for (int i = 0; i < e.Pieces.Count; i++)
+            {
+                Piece(b, "P", e.Pieces[i]);
+            }
+            for (int i = 0; i < e.Sectors.Count; i++)
+            {
+                LedgerSector x = e.Sectors[i];
+                b.Append("\nS|").Append(Clean(x.Key)).Append('|').Append(x.Level).Append('|').Append(x.ChangeBp);
+            }
+            for (int i = 0; i < e.Quotes.Count; i++)
+            {
+                LedgerQuote q = e.Quotes[i];
+                b.Append("\nQ|").Append(Clean(q.Name)).Append('|').Append(Clean(q.Ticker)).Append('|').Append(q.Sector).Append('|').Append(q.Close).Append('|').Append(q.ChangeBp)
+                    .Append('|').Append(q.Volume).Append('|').Append(q.Flags);
+            }
+            if (e.IndexCloses.Count > 0)
+            {
+                b.Append("\nC|");
+                for (int i = 0; i < e.IndexCloses.Count; i++)
                 {
-                    Piece(b, "P", e.Pieces[i]);
-                }
-                for (int i = 0; i < e.Sectors.Count; i++)
-                {
-                    LedgerSector x = e.Sectors[i];
-                    b.Append("\nS|").Append(Clean(x.Key)).Append('|').Append(x.Level).Append('|').Append(x.ChangeBp);
-                }
-                for (int i = 0; i < e.Quotes.Count; i++)
-                {
-                    LedgerQuote q = e.Quotes[i];
-                    b.Append("\nQ|").Append(Clean(q.Name)).Append('|').Append(Clean(q.Ticker)).Append('|').Append(q.Sector).Append('|').Append(q.Close).Append('|').Append(q.ChangeBp)
-                        .Append('|').Append(q.Volume).Append('|').Append(q.Flags);
-                }
-                if (e.IndexCloses.Count > 0)
-                {
-                    b.Append("\nC|");
-                    for (int i = 0; i < e.IndexCloses.Count; i++)
-                    {
-                        b.Append(i > 0 ? "," : string.Empty).Append(e.IndexCloses[i]);
-                    }
+                    b.Append(i > 0 ? "," : string.Empty).Append(e.IndexCloses[i]);
                 }
             }
-            return b.ToString();
         }
 
         private static void Piece(StringBuilder b, string tag, LedgerPiece p)
@@ -149,55 +155,8 @@ namespace RealLifeOverhaul.Ledger
                         case "V":
                             s.Council = f.Length >= 2 && f[1].Length > 0 ? f[1] : null;
                             break;
-                        case "E":
-                            if (f.Length >= 10)
-                            {
-                                e = new LedgerEdition
-                                {
-                                    Day = Int(f[1]), HasMarket = f[2] == "1", MarketDay = Int(f[3]), IndexLevel = Int(f[4]), IndexChangeBp = Int(f[5]), IndexWeekBp = Int(f[6]),
-                                    RateBp = Int(f[7]), InflationBp = Int(f[8]), CycleKey = f[9].Length > 0 ? f[9] : null
-                                };
-                            }
-                            break;
-                        case "P":
-                            if (e != null && e.Pieces.Count < LedgerCatalogue.PiecesMost)
-                            {
-                                LedgerPiece p = ReadPiece(f);
-                                if (p != null)
-                                {
-                                    e.Pieces.Add(p);
-                                }
-                            }
-                            break;
-                        case "S":
-                            if (e != null && f.Length >= 4 && e.Sectors.Count < 64)
-                            {
-                                e.Sectors.Add(new LedgerSector { Key = f[1], Level = Int(f[2]), ChangeBp = Int(f[3]) });
-                            }
-                            break;
-                        case "Q":
-                            if (e != null && f.Length >= 8 && e.Quotes.Count < 400)
-                            {
-                                var q = new LedgerQuote { Name = f[1], Ticker = f[2], Sector = Int(f[3]), Close = Int(f[4]), ChangeBp = Int(f[5]), Volume = Long(f[6]), Flags = Int(f[7]) };
-                                if (q.Close > 0 && q.Sector >= 0 && q.Volume >= 0)
-                                {
-                                    e.Quotes.Add(q);
-                                }
-                            }
-                            break;
-                        case "C":
-                            if (e != null && f.Length >= 2 && f[1].Length > 0)
-                            {
-                                string[] values = f[1].Split(',');
-                                for (int v = 0; v < values.Length && e.IndexCloses.Count < LedgerCatalogue.ChartDays; v++)
-                                {
-                                    int close = Int(values[v]);
-                                    if (close > 0)
-                                    {
-                                        e.IndexCloses.Add(close);
-                                    }
-                                }
-                            }
+                        default:
+                            EditionLine(f, ref e);
                             break;
                     }
                 }
@@ -206,15 +165,86 @@ namespace RealLifeOverhaul.Ledger
                     // one line this version cannot read: left out
                 }
             }
-            s.Edition = e != null && e.Day > 0 ? e : null;
-            for (int i = 0; s.Edition != null && i < s.Edition.Quotes.Count; i++)
+            s.Edition = Finish(e);
+            return s;
+        }
+
+        /// <summary>
+        /// One line of an edition as the store writes it: "E" begins a new one (given back in <paramref name="e"/>), the
+        /// others are added to the one begun. A line of another kind, or one before any "E", is left out.
+        /// </summary>
+        public static void EditionLine(string[] f, ref LedgerEdition e)
+        {
+            switch (f[0])
             {
-                if (s.Edition.Quotes[i].Sector >= s.Edition.Sectors.Count)
+                case "E":
+                    if (f.Length >= 10)
+                    {
+                        e = new LedgerEdition
+                        {
+                            Day = Int(f[1]), HasMarket = f[2] == "1", MarketDay = Int(f[3]), IndexLevel = Int(f[4]), IndexChangeBp = Int(f[5]), IndexWeekBp = Int(f[6]),
+                            RateBp = Int(f[7]), InflationBp = Int(f[8]), CycleKey = f[9].Length > 0 ? f[9] : null
+                        };
+                    }
+                    break;
+                case "P":
+                    if (e != null && e.Pieces.Count < LedgerCatalogue.PiecesMost)
+                    {
+                        LedgerPiece p = ReadPiece(f);
+                        if (p != null)
+                        {
+                            e.Pieces.Add(p);
+                        }
+                    }
+                    break;
+                case "S":
+                    if (e != null && f.Length >= 4 && e.Sectors.Count < 64)
+                    {
+                        e.Sectors.Add(new LedgerSector { Key = f[1], Level = Int(f[2]), ChangeBp = Int(f[3]) });
+                    }
+                    break;
+                case "Q":
+                    if (e != null && f.Length >= 8 && e.Quotes.Count < 400)
+                    {
+                        var q = new LedgerQuote { Name = f[1], Ticker = f[2], Sector = Int(f[3]), Close = Int(f[4]), ChangeBp = Int(f[5]), Volume = Long(f[6]), Flags = Int(f[7]) };
+                        if (q.Close > 0 && q.Sector >= 0 && q.Volume >= 0)
+                        {
+                            e.Quotes.Add(q);
+                        }
+                    }
+                    break;
+                case "C":
+                    if (e != null && f.Length >= 2 && f[1].Length > 0)
+                    {
+                        string[] values = f[1].Split(',');
+                        for (int v = 0; v < values.Length && e.IndexCloses.Count < LedgerCatalogue.ChartDays; v++)
+                        {
+                            int close = Int(values[v]);
+                            if (close > 0)
+                            {
+                                e.IndexCloses.Add(close);
+                            }
+                        }
+                    }
+                    break;
+            }
+        }
+
+        /// <summary>An edition read whole: a company whose sector is not in it is left out. Null for none, or one without a day.</summary>
+        public static LedgerEdition Finish(LedgerEdition e)
+        {
+            if (e == null || e.Day <= 0)
+            {
+                return null;
+            }
+            for (int i = 0; i < e.Quotes.Count; i++)
+            {
+                if (e.Quotes[i].Sector >= e.Sectors.Count)
                 {
-                    s.Edition.Quotes.RemoveAt(i--);   // a company whose sector is not in the edition
+                    e.Quotes.RemoveAt(i--);   // a company whose sector is not in the edition
                 }
             }
-            return s;
+            return e;
         }
 
         private static LedgerPiece ReadPiece(string[] f)
