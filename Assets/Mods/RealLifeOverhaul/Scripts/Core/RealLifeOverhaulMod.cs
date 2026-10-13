@@ -507,6 +507,20 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_flare_test_city", () => Flare.FlareDirector.Instance?.TestCity())
                 .AddButton("reallife_flare_test_back", () => Flare.FlareDirector.Instance?.TestBack())
                 .AddSplitter()
+                .AddHeader("reallife_fame_header")
+                .AddToggle(Settings.StandingId, "reallife_fame_enabled", Settings.Standing,
+                    v => Settings.Standing = v)
+                .AddToggle(Settings.StandingStreetId, "reallife_fame_street", Settings.StandingStreet,
+                    v => Settings.StandingStreet = v)
+                .AddToggle(Settings.StandingPressId, "reallife_fame_press", Settings.StandingPress,
+                    v => Settings.StandingPress = v)
+                .AddToggle(Settings.StandingCorruptionId, "reallife_fame_corruption", Settings.StandingCorruption,
+                    v => Settings.StandingCorruption = v)
+                .AddButton("reallife_fame_test_day", () => Fame.FameDirector.Instance?.TestDay())
+                .AddButton("reallife_fame_test_street", () => Fame.FameDirector.Instance?.TestStreet())
+                .AddButton("reallife_fame_test_known", () => Fame.FameDirector.Instance?.TestKnown())
+                .AddButton("reallife_fame_test_back", () => Fame.FameDirector.Instance?.TestBack())
+                .AddSplitter()
                 .AddHeader("reallife_travel_header")
                 .AddToggle(Settings.HotelsId, "reallife_travel_hotels", Settings.Hotels,
                     v => Settings.Hotels = v)
@@ -1040,6 +1054,8 @@ namespace RealLifeOverhaul
             Flare.FlareDirector.Logger = context.Logger;
             Flare.FlareApp.Logger = context.Logger;
             _root.AddComponent<Flare.FlareDirector>();   // Flare, the city's social media app (Scripts/Social/Flare): after the company and the brands, so that its day follows theirs
+            Fame.FameDirector.Logger = context.Logger;
+            _root.AddComponent<Fame.FameDirector>();   // Standing, a city that reacts to the player's success (Scripts/Fame): after Flare and the company, so that its day reads theirs
             CarTuning.Logger = context.Logger;
             SpeedReading.Logger = context.Logger;
             CarMeasure.Logger = context.Logger;

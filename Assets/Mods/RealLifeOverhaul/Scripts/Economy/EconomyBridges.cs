@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
@@ -83,8 +84,16 @@ namespace RealLifeOverhaul.Economy
 
         public delegate bool SpotFinder(Vector3 near, out Vector3 spot, out Quaternion heading);
 
+        /// <summary>
+        /// The player's standing (Scripts/Fame) as a page of the Finance app, opened from the Overview with a button as the
+        /// city's page is: its white box and its table's rows are written by its own writer, in the app's frame. Default:
+        /// no such page and no button.
+        /// </summary>
+        public static StandingPage Standing;
+
         public static void Reset()
         {
+            Standing = null;
             Legal = null;
             GivenBack = null;
             Takings = null;
@@ -102,6 +111,18 @@ namespace RealLifeOverhaul.Economy
         }
     }
 
+    /// <summary>
+    /// A page another feature writes into the Finance app's frame (the player's standing): whether it is there now, its
+    /// table, and its writer, which is given the white box, a row for an id, what is picked (a row's id, or null), a way to
+    /// pick another (null puts the pick away) and a way back to the Overview. Asked when the page is shown, never otherwise.
+    /// </summary>
+    public sealed class StandingPage
+    {
+        public Func<bool> On;
+        public TableSpec Spec;
+        public Action<InfoBox, Func<string, TableRow>, string, Action<string>, Action> Write;
+    }
+
     /// <summary>The Finance app as the rest of the mod may use it: open it, on a tab.</summary>
     public static class Finance
     {
@@ -114,6 +135,16 @@ namespace RealLifeOverhaul.Economy
             if (director != null)
             {
                 director.Open(tab);
+            }
+        }
+
+        /// <summary>Opens the Finance app on the Standing page (the Overview while there is none).</summary>
+        public static void OpenStanding()
+        {
+            EconomyDirector director = EconomyDirector.Instance;
+            if (director != null)
+            {
+                director.OpenStanding();
             }
         }
 

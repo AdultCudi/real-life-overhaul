@@ -1,4 +1,5 @@
 using System;
+using RealLifeOverhaul.Fame;
 using RealLifeOverhaul.Law;
 
 namespace RealLifeOverhaul
@@ -8,7 +9,8 @@ namespace RealLifeOverhaul
         /// <summary>
         /// The player's record and standing, asked in one place. Two features keep a part of it:
         /// Scripts/Law the police record (tickets, stays in a cell, getting away) and both
-        /// reputations, Scripts/Justice what a court convicted them of. Everybody else (city
+        /// reputations, Scripts/Justice what a court convicted them of, Scripts/Fame how well the city
+        /// knows them and what it thinks of them as an owner. Everybody else (city
         /// hall, employers, friends, a licensing desk) asks here and never the two directly, so
         /// "a record" means the same thing everywhere. Read when something happens, never per
         /// frame: the longest answer walks the forty lines of the police record once.
@@ -79,6 +81,26 @@ namespace RealLifeOverhaul
 
             /// <summary>What the city thinks of the player, 0 (notorious) to 100 (spotless); 55 for a newcomer.</summary>
             public static int Public => Reputation.Public;
+
+            /// <summary>How well the city knows the player, 0 (nobody) to 100 (everybody): Standing's recognition; 0 while Standing is off.</summary>
+            public static int Recognition
+            {
+                get
+                {
+                    FameFile file = FameDirector.Instance != null ? FameDirector.Instance.File : null;
+                    return file != null ? file.Recognition : 0;
+                }
+            }
+
+            /// <summary>What the city makes of the player's integrity as an owner, 0 to 100; 50 while Standing is off.</summary>
+            public static int Integrity
+            {
+                get
+                {
+                    FameFile file = FameDirector.Instance != null ? FameDirector.Instance.File : null;
+                    return file != null ? file.Rep[(int)FamePart.Integrity] : FameRules.Start;
+                }
+            }
 
             /// <summary>The same on a scale of -100 to 100 around the newcomer's 55.</summary>
             public static int PublicSigned

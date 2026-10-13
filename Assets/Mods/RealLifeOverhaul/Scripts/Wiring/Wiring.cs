@@ -39,6 +39,8 @@ namespace RealLifeOverhaul
     ///     FlareLinks      the social media app with the social life (friends who follow and are tagged), the law (its
     ///                     reputation, scrutiny), the council (the election), careers, photo mode, business pressure
     ///                     (footfall), the company (a sponsored post), brands (scandals) and the City Ledger
+    ///     StandingLinks   the player's standing (wealth, recognition, reputation) with Flare, the company, property,
+    ///                     brands, business pressure, good deeds and the Finance app's Standing page
     ///
     /// <see cref="Connect"/> is called once per city load, after every director has been added;
     /// <see cref="Disconnect"/> on unload puts every bridge back to its default. Nothing here
@@ -90,6 +92,7 @@ namespace RealLifeOverhaul
             Step("the roommate", RoommateLinks.Connect);
             Step("power and water", UtilityLinks.Connect);
             Step("the social media app", FlareLinks.Connect);
+            Step("standing", StandingLinks.Connect);   // last: what it wraps of the others' is theirs already
             Logger?.Info("Wiring: the features are connected.");
         }
 
@@ -100,7 +103,8 @@ namespace RealLifeOverhaul
                 return;
             }
             Connected = false;
-            Step("the social media app", FlareLinks.Disconnect);   // first: what it wrapped is put back before the others take theirs off
+            Step("standing", StandingLinks.Disconnect);   // first: what it wrapped is put back before the others take theirs off
+            Step("the social media app", FlareLinks.Disconnect);   // ...and then the social media app's
             Step("the taxi by phone", TaxiLinks.Disconnect);
             Step("property", EstateLinks.Disconnect);
             Step("the cleaning service and selling a business", ServicesLinks.Disconnect);

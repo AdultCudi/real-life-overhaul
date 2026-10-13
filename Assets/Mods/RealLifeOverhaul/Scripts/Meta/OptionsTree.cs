@@ -234,6 +234,8 @@ namespace RealLifeOverhaul.Meta
                     .Opt("social_texts_max", "social_texts").Also("friends dating date people"),
                 S("flare").For("flare").Main("social_media").Opts("social_media_notices")
                     .Also("social media app followers posts likes selfie influencer"),
+                S("standing").For("standing").Main("standing").Opts("standing_street", "standing_press", "standing_corruption")
+                    .Also("fame reputation recognition wealth famous reporter interview press bribe lobby charity"),
                 S("ledger").For("ledger").Main("social_newspaper").Opts("ledger_kiosks", "ledger_online").Opt("ledger_online_notes", "ledger_online")
                     .Also("newspaper paper news kiosk subscription delivery online newsstand internet phone"),
                 S("leisure").For("leisure").Main("leisure").Opt("leisure_chess", "city_life").Opts("leisure_fishing", "leisure_night_out", "leisure_sights", "leisure_cinema")

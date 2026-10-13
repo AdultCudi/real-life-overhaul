@@ -552,6 +552,35 @@ namespace RealLifeOverhaul.Meta
                 .Fact("flare_abuse_days", () => Whole(Flare.FlareRules.AbuseDays))
                 .ResetData(() => Flare.FlareDirector.Instance?.Forget());   // a new account opens from the (now empty) save on the next second
 
+            // Standing, a city that reacts to the player's success: wealth, recognition and four reputations, the street,
+            // the shops and the staff. Everything it does to the other features is Wiring/StandingLinks'; off, it does nothing.
+            Features.Add("standing", "reallife_meta_title_standing")
+                .Group("reallife_fame_header")
+                .About("reallife_guide_standing_about").Help("reallife_guide_standing")
+                .Owns(Settings.StandingId, Settings.StandingStreetId, Settings.StandingPressId, Settings.StandingCorruptionId)
+                .Data(Fame.FameStore.Keys)
+                .Fact("standing_local", () => Whole(Fame.FameRules.TierFrom[1]))
+                .Fact("standing_known", () => Whole(Fame.FameRules.TierFrom[2]))
+                .Fact("standing_prominent", () => Whole(Fame.FameRules.TierFrom[3]))
+                .Fact("standing_famous", () => Whole(Fame.FameRules.TierFrom[4]))
+                .Fact("standing_wealth_share", () => Whole(Fame.FameRules.WealthShare))
+                .Fact("standing_followers_most", () => Whole(Fame.FameRules.FollowersMost))
+                .Fact("standing_press_most", () => Whole(Fame.FameRules.PressMost / 10))
+                .Fact("standing_shop_known", () => Whole(Fame.FameRules.ShopKnown))
+                .Fact("standing_job_points", () => Whole(Fame.FameRules.JobPoints))
+                .Fact("standing_job_most", () => Whole(Fame.FameRules.JobPointsMost))
+                .Fact("standing_raised_points", () => Whole(Fame.FameRules.RaisedPoints))
+                .Fact("standing_raised_most", () => Whole(Fame.FameRules.RaisedPointsMost))
+                .Fact("standing_drift_most", () => Whole(Fame.FameRules.DriftMost))
+                .Fact("standing_day_most", () => Whole(Fame.FameRules.DayMost))
+                .Fact("standing_forget_days", () => Whole(Fame.FameRules.ForgetDays))
+                .Fact("standing_street_from", () => Whole(Fame.FameRules.StreetFrom))
+                .Fact("standing_street_most", () => Whole(Fame.FameRules.StreetMost))
+                .Fact("standing_visits_most", () => Whole(Fame.FameRules.VisitsMost))
+                .Fact("standing_proud_from", () => Whole(Fame.FameRules.ProudFrom))
+                .Fact("standing_nervous_under", () => Whole(Fame.FameRules.NervousUnder))
+                .ResetData(() => Fame.FameDirector.Instance?.Forget());   // a new file opens from the (now empty) save on the next second
+
             Features.Add("travel", "reallife_meta_title_travel")
                 .Group("reallife_travel_header")
                 .About("reallife_guide_travel_about").Help("reallife_guide_travel")
