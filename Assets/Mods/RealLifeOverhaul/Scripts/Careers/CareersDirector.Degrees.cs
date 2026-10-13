@@ -40,10 +40,12 @@ namespace RealLifeOverhaul.Careers
                 _campus.Dispose();
                 _campus = null;
             }
+            InteriorTick();
         }
 
         private void CampusGone()
         {
+            InteriorGone();
             _campus?.Dispose();
             _campus = null;
         }

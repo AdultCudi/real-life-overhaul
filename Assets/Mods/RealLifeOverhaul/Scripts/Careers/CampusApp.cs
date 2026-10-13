@@ -453,6 +453,11 @@ namespace RealLifeOverhaul.Careers
                 }
             }
             box.Line(CareersText.Pair("reallife_campus_sum_week", CareersText.Minutes(f.WeekOf == (day - 1) / 7 ? f.WeekMinutes : 0)));
+            string university = _director.UniversityLine();
+            if (university != null)
+            {
+                box.Line(university);
+            }
             if (f.LoanCents > 0)
             {
                 box.Line(CareersText.Pair("reallife_campus_sum_loan", CareersText.Cents(f.LoanCents)));
@@ -485,6 +490,11 @@ namespace RealLifeOverhaul.Careers
                 box.Line(CareersText.T(sit));
             }
             box.Line(CareersText.Fill("reallife_campus_on_mode", "mode", CareersText.Mode(mode), "place", _director.PlaceOf(c, mode), "start", CareersText.Day(e.Start)));
+            string room = _director.RoomLine(e);
+            if (room != null)
+            {
+                box.Line(room);
+            }
             if (c.Timetabled)
             {
                 box.Line(CareersText.Fill("reallife_campus_on_classes", "done", e.Done.ToString(), "seen", e.Seen.ToString(), "of", c.Sessions.ToString(), "share", CareersText.Mille(StudyRules.Attendance(e)),

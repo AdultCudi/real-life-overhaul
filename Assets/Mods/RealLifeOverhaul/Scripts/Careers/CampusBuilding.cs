@@ -9,15 +9,20 @@ using UnityEngine.Rendering;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// Hudson City University: one of the game's own buildings, the same one in every game on the same map. The game has no
-    /// university, so the largest office building of the city that is no special service and not the player's is taken,
-    /// ties broken by address, leaving out every building another feature has made its own (Core/SpecialBuildings: the
-    /// City Utilities office, the courthouse), which are chosen first. Nothing of it is kept in a save: an enrolment is on
-    /// "the university", and its lectures, the Planner and the Campus app read where it is now. Once chosen it carries its
-    /// own name wherever the game names the building, and is on the city map with the other places to study (World/MapLinks). Its frontage gets one sign, a board on two posts lettered with the game's font, stood against
-    /// the wall a few steps from the door where there is wall, pavement and room, the way the courthouse's is; lectures are
-    /// attended standing at it (or inside the building, or at the door if no place for the sign was found). Looked for once
-    /// per city load; nothing here runs by itself.
+    /// Hudson City University: one of the game's own buildings, a building of its own. The game has no university, so the
+    /// largest office building of the city that is no special service, holds no business of the game's and is nobody's
+    /// (CampusRules.NoBusinessIn) is taken, ties broken by address, leaving out every building another feature has made its
+    /// own (Core/SpecialBuildings: the City Utilities office, the courthouse, the police stations), which are chosen first.
+    /// Every machine of a Going Public session sees the same businesses, so every machine takes the same building. Nothing
+    /// of it is needed from a save: an enrolment is on "the university", and its classes, the Planner and the Campus app
+    /// read where it is now; the save keeps the address only so that a move is said once (CareersDirector.Degrees). Every
+    /// five seconds the building is looked at again: one that has come to hold a business, or to be the player's, is left
+    /// for the next that may serve. Once chosen it carries its own name wherever the game names the building, is kept off
+    /// the market with the mod's other buildings, and is on the city map with the other places to study (World/MapLinks).
+    /// Its frontage gets one sign, a board on two posts lettered with the game's font, stood against the wall a few steps
+    /// from the door where there is wall, pavement and room, the way the courthouse's is. Inside it is the game's own school
+    /// on several floors (Careers/CampusInterior), chosen at the door. Looked for once per city load; nothing here runs by
+    /// itself.
     /// </summary>
     public sealed class CampusBuilding
     {
@@ -42,8 +47,14 @@ namespace RealLifeOverhaul.Careers
         public bool Searched { get; private set; }
         public bool Usable { get; private set; }
         public Vector3 Front { get; private set; }
+
+        /// <summary>Where the player stands at the door, outside: the floors are chosen here (the sign's place if the door has no pavement).</summary>
+        public Vector3 Door { get; private set; }
         public string Street { get; private set; } = string.Empty;
         public int Number { get; private set; }
+
+        /// <summary>"street|number" of the building the earlier rule would take (the largest office, whatever business was in it), for a save that kept none.</summary>
+        public string Before { get; private set; }
 
         /// <summary>The university's building; null until found.</summary>
         public CityBuildingController Building { get; private set; }
@@ -77,7 +88,8 @@ namespace RealLifeOverhaul.Careers
         /// <summary>
         /// Once a second: until <see cref="Searched"/>, finds the building, then stands the sign; after that, every five
         /// seconds, a university whose building has become the player's (a save from before the mod's buildings were off
-        /// the market, another player's in a session) moves off it, to the next that may serve.
+        /// the market, another player's in a session) or has come to hold a business of the game's moves off it, to the
+        /// next that may serve (never while the player is inside it).
         /// </summary>
         public void Tick()
         {
@@ -90,9 +102,10 @@ namespace RealLifeOverhaul.Careers
                 if (Building != null && ++_look >= 5)
                 {
                     _look = 0;
-                    if (SpecialBuildings.Players(Building))
+                    string why = WhyNotStill();
+                    if (why != null && !CareersGame.InsideAt(Street, Number))
                     {
-                        _logger?.Info("Careers: the university's building, " + Name + ", is the player's; the university moves to another.");
+                        _logger?.Info("Careers: the university's building, " + Name + ", may no longer serve: " + why + "; the university moves to another.");
                         Dispose();
                     }
                 }
@@ -111,13 +124,16 @@ namespace RealLifeOverhaul.Careers
                 {
                     return;   // (the utilities office and the courthouse choose first: the university is never one of them)
                 }
-                CityBuildingController picked = Pick(buildings, out CityBuildingController largest);
+                CityBuildingController picked = Pick(buildings, out CityBuildingController largest, out CityBuildingController before);
+                Before = before != null ? before.building.StreetName + "|" + before.building.StreetNumber : null;
                 Searched = true;
                 if (largest != null && !ReferenceEquals(largest, picked))
                 {
-                    // Said once a city load: a save from 0.7.0 may have had its lectures in that building.
-                    _logger?.Info("Careers: the largest office building, " + largest.building.Address.ToFormattedString() + ", is another of the mod's buildings ("
-                                  + (SpecialBuildings.NameFor(largest) ?? "taken") + "); the university is in the next largest. Enrolments follow it.");
+                    // Said once a city load: why the university is not in the city's largest office building.
+                    string held = SpecialBuildings.NameFor(largest);
+                    _logger?.Info("Careers: the largest office building, " + largest.building.Address.ToFormattedString() + ", is "
+                                  + (held != null ? "another of the mod's buildings (" + held + ")" : SpecialBuildings.Players(largest) ? "the player's" : "a business's (" + (largest.buildingRegistration != null ? largest.buildingRegistration.businessTypeName : "?") + ")")
+                                  + "; the university takes the largest office building with no business in it. Enrolments follow it.");
                 }
                 if (picked == null)
                 {
@@ -128,18 +144,21 @@ namespace RealLifeOverhaul.Careers
                 Street = picked.building.Address.streetName;
                 Number = picked.building.Address.streetNumber;
                 Name = picked.building.Address.ToFormattedString();
+                bool atDoor = JobSpots.Front(picked, out Vector3 door);
                 bool placed = Place(picked);
-                if (!placed && JobSpots.Front(picked, out Vector3 door))
+                if (!placed && atDoor)
                 {
                     Front = door;
                     Usable = true;
                 }
+                Door = atDoor ? door : Front;
                 if (Usable)
                 {
                     // Its own name wherever the game names the building (Core/SpecialBuildings).
                     SpecialBuildings.Set("campus", picked, SpecialKind.Campus, "reallife_study_campus_university", "reallife_campus_card_type", () => CareersDirector.UniversityOpen);
                 }
-                _logger?.Info("Careers: the university is " + Name + " (" + picked.building.totalSqm + " sqm); " + (placed ? "sign up." : Usable ? "lectures at the door." : "no pavement at its door: online only."));
+                _logger?.Info("Careers: the university is " + Name + " (" + picked.building.totalSqm + " sqm, " + picked.building.BuildingType + ", size " + picked.building.BuildingSize
+                              + " version " + picked.building.BuildingVersion + "), a building with no business in it; " + (placed ? "sign up." : Usable ? "no room for the sign: at the door." : "no pavement at its door: online only."));
             }
             catch (Exception e)
             {
@@ -168,22 +187,64 @@ namespace RealLifeOverhaul.Careers
 
         // The largest office building that may serve and that no other feature holds; also the largest with none left out, to
         // say so when the two differ.
-        private static CityBuildingController Pick(CityBuildingController[] buildings, out CityBuildingController largest)
+        private static CityBuildingController Pick(CityBuildingController[] buildings, out CityBuildingController largest, out CityBuildingController before)
         {
             Func<int, bool> fits = i =>
             {
                 CityBuildingController b = buildings[i];
-                return b != null && b.building != null && b.entranceDoors != null && b.entranceDoors.Length > 0 && b.building.locatedInsidePrivateFenceIndex < 0
-                       && b.building.SpecialService == null && b.building.BuildingType == Office
-                       && !SpecialBuildings.Players(b);   // (one the player rents or owns stays theirs)
+                return May(b) && !SpecialBuildings.Players(b);   // (one the player rents or owns stays theirs)
             };
+            Func<int, bool> free = i => fits(i) && Empty(buildings[i]);
             Func<int, int> sqm = i => buildings[i].building.totalSqm;
             Func<int, string> street = i => buildings[i].building.StreetName;
             Func<int, int> number = i => buildings[i].building.StreetNumber;
             int any = SpecialNameBook.PickLargest(buildings.Length, fits, sqm, street, number, null);
-            int free = SpecialNameBook.PickLargest(buildings.Length, fits, sqm, street, number, SpecialBuildings.Holds);
+            int chosen = SpecialNameBook.PickLargest(buildings.Length, free, sqm, street, number, SpecialBuildings.Holds);
+            int old = SpecialNameBook.PickLargest(buildings.Length, fits, sqm, street, number, SpecialBuildings.Holds);   // (the earlier rule: whatever was in it)
             largest = any >= 0 ? buildings[any] : null;
-            return free >= 0 ? buildings[free] : null;
+            before = old >= 0 ? buildings[old] : null;
+            return chosen >= 0 ? buildings[chosen] : null;
+        }
+
+        // An office building of the city's own that the player can walk to: not a special service, not behind a fence.
+        private static bool May(CityBuildingController b)
+        {
+            return b != null && b.building != null && b.entranceDoors != null && b.entranceDoors.Length > 0 && b.entranceDoors[0] != null && b.entranceDoors[0].doorTransform != null
+                   && b.building.locatedInsidePrivateFenceIndex < 0 && b.building.SpecialService == null && b.building.BuildingType == Office;
+        }
+
+        /// <summary>True for a building that holds no business of the game's and is nobody's (CampusRules.NoBusinessIn).</summary>
+        public static bool Empty(CityBuildingController b)
+        {
+            BuildingRegistration r = b != null ? b.buildingRegistration : null;
+            return r != null && CampusRules.NoBusinessIn(r.businessTypeName, r.RentedByPlayer, r.BuildingOwnedByPlayer, r.businessOwnerRivalId)
+                   && string.IsNullOrEmpty(r.Layout);   // (a layout left behind would have the game look for it inside, and go back out)
+        }
+
+        /// <summary>
+        /// The building chosen is still one the university may have: no business has come into it and it has not become the
+        /// player's (or, in a session, another player's). Null if so, else why not, for the log.
+        /// </summary>
+        public string WhyNotStill()
+        {
+            if (!Searched || Building == null)
+            {
+                return null;
+            }
+            BuildingRegistration r = Building.buildingRegistration;
+            if (r == null)
+            {
+                return null;
+            }
+            if (SpecialBuildings.Players(r))
+            {
+                return "it is rented or owned by the player" + (GoingPublic.InSession ? " (or, in this session, another player)" : string.Empty);
+            }
+            if (!Empty(Building))
+            {
+                return "a business of the game's has opened in it (" + (r.businessTypeName ?? "?") + (string.IsNullOrEmpty(r.businessOwnerRivalId) ? string.Empty : ", " + r.businessOwnerRivalId) + ")";
+            }
+            return null;
         }
 
         private bool Place(CityBuildingController building)
