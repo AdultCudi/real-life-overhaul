@@ -397,8 +397,8 @@ namespace RealLifeOverhaul
                 {
                     m.Parts.Add(new SharedPart(part.Id, text));
                 }
-                part.Dirty = false;
-                part.Changes?.Invoke();   // (what changed before the snapshot is in it)
+                // (What has changed and is not sent yet stays for the next update: the guests that already follow need it,
+                // and to a guest that has just joined it is no news: a whole part again, or market moments it has passed.)
             }
             return m;
         }

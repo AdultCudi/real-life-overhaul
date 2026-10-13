@@ -35,6 +35,7 @@ namespace RealLifeOverhaul.Markets
         private readonly Dictionary<int, ulong> _secrets = new Dictionary<int, ulong>(64);
         private readonly Dictionary<int, MarketEnv> _envs = new Dictionary<int, MarketEnv>(64);
         private readonly List<MarketEvent> _events = new List<MarketEvent>(32);
+        private readonly HashSet<int> _traded = new HashSet<int>();   // the days on which a player's trade is an event (a Going Public session)
         private readonly StringBuilder _pending = new StringBuilder(256);
 
         public ulong Id { get; private set; }
@@ -95,9 +96,74 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
+        /// <summary>True for a day played in a Going Public session with a trade in it: its trades' moves are the tape's.</summary>
+        public bool Traded(int day)
+        {
+            return _traded.Contains(day);
+        }
+
+        /// <summary>A day's secret from the host's tape (a guest that follows it): the host's, in place of whatever was here.</summary>
+        public void SetSecret(int day, ulong secret)
+        {
+            if (_secrets.TryGetValue(day, out ulong had) && had == secret)
+            {
+                return;
+            }
+            _secrets[day] = secret;
+            _pending.Append("D ").Append(day.ToString(Inv)).Append(' ').Append(secret.ToString("X16", Inv)).Append('\n');
+        }
+
+        /// <summary>A day's city from the host's tape, in place of whatever was here.</summary>
+        public void SetEnv(int day, in MarketEnv env)
+        {
+            _envs[day] = env;
+            _pending.Append("V ").Append(day.ToString(Inv)).Append(' ');
+            WriteEnv(_pending, env);
+            _pending.Append('\n');
+        }
+
+        /// <summary>The tape from a day on, as lines of the file: what a guest needs to play the host's market from that day.</summary>
+        public string From(int day)
+        {
+            var t = new StringBuilder(256);
+            var days = new List<int>(_secrets.Keys);
+            days.Sort();
+            for (int i = 0; i < days.Count; i++)
+            {
+                if (days[i] >= day)
+                {
+                    t.Append("D ").Append(days[i].ToString(Inv)).Append(' ').Append(_secrets[days[i]].ToString("X16", Inv)).Append('\n');
+                }
+            }
+            foreach (KeyValuePair<int, MarketEnv> env in _envs)
+            {
+                if (env.Key >= day)
+                {
+                    t.Append("V ").Append(env.Key.ToString(Inv)).Append(' ');
+                    WriteEnv(t, env.Value);
+                    t.Append('\n');
+                }
+            }
+            for (int i = 0; i < _events.Count; i++)
+            {
+                MarketEvent e = _events[i];
+                if (e.Day >= day)
+                {
+                    t.Append("E ").Append(e.Day.ToString(Inv)).Append(' ').Append(e.Phase.ToString(Inv)).Append(' ').Append(e.Kind.ToString(Inv)).Append(' ')
+                        .Append(e.A.ToString(Inv)).Append(' ').Append(e.B.ToString(Inv)).Append('\n');
+                }
+            }
+            t.Append("F ").Append(FrontierDay.ToString(Inv)).Append(' ').Append(FrontierPhase.ToString(Inv)).Append('\n');
+            return t.ToString();
+        }
+
         public void AddEvent(in MarketEvent e)
         {
             _events.Add(e);
+            if (e.Kind == MarketInputs.EventTrade)
+            {
+                _traded.Add(e.Day);
+            }
             _pending.Append("E ").Append(e.Day.ToString(Inv)).Append(' ').Append(e.Phase.ToString(Inv)).Append(' ').Append(e.Kind.ToString(Inv)).Append(' ')
                 .Append(e.A.ToString(Inv)).Append(' ').Append(e.B.ToString(Inv)).Append('\n');
         }
@@ -202,7 +268,12 @@ namespace RealLifeOverhaul.Markets
                         case "E":
                             if (ours && f.Length > 5)
                             {
-                                tape._events.Add(new MarketEvent { Day = Int(f[1]), Phase = Int(f[2]), Kind = Int(f[3]), A = Int(f[4]), B = Int(f[5]) });
+                                var e = new MarketEvent { Day = Int(f[1]), Phase = Int(f[2]), Kind = Int(f[3]), A = Int(f[4]), B = Int(f[5]) };
+                                tape._events.Add(e);
+                                if (e.Kind == MarketInputs.EventTrade)
+                                {
+                                    tape._traded.Add(e.Day);
+                                }
                             }
                             break;
                         case "F":

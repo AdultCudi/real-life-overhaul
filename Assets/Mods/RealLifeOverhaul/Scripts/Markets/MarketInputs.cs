@@ -159,8 +159,20 @@ namespace RealLifeOverhaul.Markets
 
         // ---------------------------------------------------------------- events during the day
 
-        /// <summary>What happened (MarketEvent.Kind). Saved on the tape as a number: never renumber.</summary>
-        public const int EventFire = 1, EventCrime = 2, EventBreakIn = 3, EventAccident = 4, EventPolicy = 5, EventElection = 6, EventStorm = 7, EventCount = 8;
+        /// <summary>
+        /// What happened (MarketEvent.Kind). Saved on the tape as a number: never renumber. The last two are a player's
+        /// trade in a Going Public session, where every player's trades move the one city's prices (MarketEngine.FillNow):
+        /// the lasting part of its move (A the company, B the move in millionths of the log price) and its shares (B).
+        /// </summary>
+        public const int EventFire = 1, EventCrime = 2, EventBreakIn = 3, EventAccident = 4, EventPolicy = 5, EventElection = 6, EventStorm = 7, EventTrade = 8, EventVolume = 9,
+            EventCount = 10;
+
+        /// <summary>A trade's lasting move of a price, in the millionths the tape keeps it in.</summary>
+        public static int TradeMicros(double move)
+        {
+            double micros = Math.Round(move * 1000000.0);
+            return micros > 1000000.0 ? 1000000 : micros < -1000000.0 ? -1000000 : (int)micros;
+        }
 
         // The move of a sector's prices, in bp, the moment the market hears of it (a policy: a step tightened, by lever, below).
         private static readonly int[][] EventKicks = Table(

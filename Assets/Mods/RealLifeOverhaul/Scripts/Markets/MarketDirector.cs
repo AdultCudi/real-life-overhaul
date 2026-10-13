@@ -18,6 +18,13 @@ namespace RealLifeOverhaul.Markets
     /// played out step by step within a few frames, and while the market is behind the clock no order is taken
     /// (OrderWhy.Behind), so nobody can trade at a price the market has already moved past.
     ///
+    /// IN A GOING PUBLIC SESSION the market is the city's, one for every player (Core/SharedCity, part M; Markets/
+    /// MarketShare): the host plays it as alone and sends the new lines of its tape; a guest's market is the host's,
+    /// with the guest's own holdings, and follows the host's tape, never past the host's furthest moment, so it plays
+    /// the very moments the host played. Every player's trades move the one city's prices: their lasting moves are
+    /// events of the host's tape (MarketEngine.TradesAsEvents, TradeSink). When the guest leaves, its market goes on
+    /// alone from there, with secrets of its own.
+    ///
     /// Everything that happens (a fill, a dividend, a call, the news) comes back through the world
     /// (<see cref="MarketGameWorld"/>) and is told to the player once the frame's work is done. A fault anywhere
     /// switches the market off for the session with one line, and leaves the game and the save's market as they were.
@@ -42,6 +49,11 @@ namespace RealLifeOverhaul.Markets
         private long _frontierWritten;
         private Action _onSave;
         private Action<int, int, int> _say;
+        private bool _following;                                    // a guest: the host's market is this one, and its tape the host's
+        private readonly List<long> _checks = new List<long>(8);   // a guest: the host's checks still to come (moment, sum)
+        private readonly System.Text.StringBuilder _shared = new System.Text.StringBuilder(256);   // the host: tape lines its guests have not had
+        private long _checkedAt;
+        private Action<int, int, long> _tradeSink;
 
         /// <summary>Raised after the market has moved on or something the player did changed it (the app shows it again).</summary>
         public event Action Changed;
@@ -77,7 +89,22 @@ namespace RealLifeOverhaul.Markets
             _onSave = OnSave;
             _say = (kind, a, b) => _engine?.Event(kind, a, b);
             _world = new MarketGameWorld(this);
+            _tradeSink = (stock, micros, shares) => SharedCity.Ask('M', "i|" + stock + "|" + micros + "|" + shares);
             StartCoroutine(Tick());
+            SharedCity.Register(new SharedCityPart
+            {
+                Id = 'M', Name = "stock market",
+                Ready = () => Running && Save != null && ReferenceEquals(Save, _save),
+                Write = () =>
+                {
+                    Flush();   // (the tape's lines up to now are in the market sent; the guests that follow have them with the next update)
+                    return MarketShare.Write(_engine.State, _engine.Tape);
+                },
+                Changes = HostChanges,
+                Apply = ApplyHost,
+                Request = HostRequest,
+                Left = Unfollow
+            });
         }
 
         private void OnDestroy()
@@ -149,7 +176,8 @@ namespace RealLifeOverhaul.Markets
                 return;
             }
             SaveHook.Keep(_onSave);
-            MarketBridges.Poll?.Invoke(_say);
+            MarketBridges.Poll?.Invoke(_say);   // (a guest that follows the host's market hears nothing of its own: the tape's events are the host's)
+            _engine.TradesAsEvents = SharedCity.Leading;
             InstallApp();
         }
 
@@ -162,12 +190,24 @@ namespace RealLifeOverhaul.Markets
             try
             {
                 long target = Target();
+                if (_following)
+                {
+                    target = Math.Min(target, _engine.ReplayUntil);   // the host's furthest moment: the market goes no further while it follows
+                    if (_checks.Count >= 2 && _checks[0] > _engine.State.Now && _checks[0] < target)
+                    {
+                        target = _checks[0];   // a moment the host checked: played to, looked at, then on
+                    }
+                }
                 if (_engine.State.Now < target)
                 {
                     int work = WorkPerFrame;
                     bool there = _engine.RunTo(target, ref work);
                     Behind = !there;
                     Moved();
+                    if (_following)
+                    {
+                        Checked();
+                    }
                 }
                 else if (Behind)
                 {
@@ -202,7 +242,12 @@ namespace RealLifeOverhaul.Markets
             }
             if (tape.HasPending)
             {
-                MarketTapeFile.Append(tape.Id, tape.TakePending());
+                string lines = tape.TakePending();
+                MarketTapeFile.Append(tape.Id, lines);
+                if (SharedCity.Leading && !_following)
+                {
+                    _shared.Append(lines);   // the host's guests play the same moments
+                }
             }
             for (int i = 0; i < _notes.Count && i < 3; i++)
             {
@@ -319,6 +364,9 @@ namespace RealLifeOverhaul.Markets
             _save = null;
             _notes.Clear();
             Behind = false;
+            _following = false;
+            _checks.Clear();
+            _shared.Length = 0;
             RemoveApp();
         }
 
@@ -350,6 +398,7 @@ namespace RealLifeOverhaul.Markets
             {
                 if (_running && Save != null && ReferenceEquals(Save, _save))
                 {
+                    Flush();   // (the lines on their way, to the file and to the guests, before the tape is written whole)
                     MarketStore.Save(Save.modData, _engine.State);
                     MarketTapeFile.Rewrite(_engine.Tape.Id, _engine.Tape.Whole());
                     _frontierWritten = _engine.Tape.Frontier;
@@ -358,6 +407,126 @@ namespace RealLifeOverhaul.Markets
             catch (Exception e)
             {
                 Logger?.Error(e);
+            }
+        }
+
+        // ---------------------------------------------------------------- a Going Public session
+
+        // The host: what its guests have not had of the tape, with where the market stands now; null if nothing has moved.
+        private string HostChanges()
+        {
+            if (!Running)
+            {
+                _shared.Length = 0;
+                return null;
+            }
+            string lines = _shared.Length > 0 ? _shared.ToString() : null;
+            _shared.Length = 0;
+            return MarketShare.Changes(lines, _engine.State, ref _checkedAt);
+        }
+
+        // The host: a guest's trades, put on the tape for every market at the next moment.
+        private void HostRequest(string text, string who)
+        {
+            if (!Running || string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+            string[] lines = text.Split('\n');
+            int done = 0;
+            for (int i = 0; i < lines.Length && i < 64; i++)
+            {
+                string[] f = lines[i].Split('|');
+                if (f.Length >= 4 && f[0] == "i" && int.TryParse(f[1], out int stock) && int.TryParse(f[2], out int micros) && long.TryParse(f[3], out long shares)
+                    && _engine.GuestTrade(stock, micros, shares))
+                {
+                    done++;
+                }
+            }
+            if (Verbose)
+            {
+                Logger?.Info("Stock market check (the host): " + done + " trade(s) of " + who + " put on the tape for the next moment: PASS");
+            }
+        }
+
+        // A guest: the host's market, whole (it becomes this machine's market, with the player's own in it) or the new lines of its tape.
+        private bool ApplyHost(string text, bool whole)
+        {
+            if (!Running)
+            {
+                return false;
+            }
+            if (!whole)
+            {
+                if (!_following || !MarketShare.Follow(_engine.Tape, text, _checks))
+                {
+                    return false;
+                }
+                _engine.Follow(_engine.Tape.Frontier);
+                return true;
+            }
+            MarketTape tape;
+            var checks = new List<long>(4);
+            MarketState state = MarketShare.Adopt(_engine.State, text, checks, out tape);
+            if (state == null)
+            {
+                return false;
+            }
+            if (_engine.Tape.HasPending)
+            {
+                MarketTapeFile.Append(_engine.Tape.Id, _engine.Tape.TakePending());   // (this machine's own tape, as it was)
+            }
+            ulong was = _engine.State.Id;
+            _engine = new MarketEngine(state, tape, _world);
+            _engine.Follow(tape.Frontier);
+            _engine.TradeSink = _tradeSink;
+            MarketTapeFile.Rewrite(state.Id, tape.Whole());
+            _frontierWritten = tape.Frontier;
+            _following = true;
+            _checks.Clear();
+            _checks.AddRange(checks);
+            Behind = false;
+            _notes.Clear();
+            Moved();
+            Logger?.Info("Stock market: the host's market is this one now (" + state.Stocks.Count + " companies, day " + state.Day + " phase " + state.Phase + ", its tape to "
+                         + tape.FrontierDay + "/" + tape.FrontierPhase + (was != state.Id ? "; this save's own market was another playthrough's" : string.Empty) + "), with this player's "
+                         + state.Positions.Count + " holding(s) and " + state.Orders.Count + " order(s).");
+            return true;
+        }
+
+        // A guest at a moment the host checked: the same prices, or the market is asked for again.
+        private void Checked()
+        {
+            while (_checks.Count >= 2 && _checks[0] <= _engine.State.Now)
+            {
+                long at = _checks[0], sum = _checks[1];
+                _checks.RemoveRange(0, 2);
+                if (at != _engine.State.Now)
+                {
+                    continue;   // (passed in a jump of the clock: the next one will do)
+                }
+                long mine = MarketShare.Checksum(_engine.State);
+                if (mine != sum)
+                {
+                    Logger?.Warn("Stock market: at " + at / 100 + "/" + at % 100 + " this guest's market is not the host's (" + mine + " against " + sum + "); it is asked for again.");
+                    SharedCity.AskAgain('M');
+                }
+                else if (Verbose)
+                {
+                    Logger?.Info("Stock market check (a guest, " + at / 100 + "/" + at % 100 + "): the same prices as the host's: PASS");
+                }
+            }
+        }
+
+        // A guest no longer follows: the market goes on from here alone, with secrets of its own past the host's last moment.
+        private void Unfollow()
+        {
+            _following = false;
+            _checks.Clear();
+            if (_engine != null)
+            {
+                _engine.TradeSink = null;
+                Logger?.Info("Stock market: the host's market is no longer followed; it goes on alone from day " + _engine.State.Day + " phase " + _engine.State.Phase + ".");
             }
         }
 
