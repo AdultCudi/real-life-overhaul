@@ -94,6 +94,8 @@ namespace RealLifeOverhaul
         public const int MostBoost = 10;
         public const int AmbientMostDip = -25;        // what the city's economy may add to that, in all (district, cycle and prices: Economy/City)...
         public const int AmbientMostBoost = 15;       // ...kept apart from an issue's own change, which keeps its own bounds
+        public const int InteriorMostDip = -12;       // what a business's interior adds (Scripts/Interiors), a part of its own beside those two:
+        public const int InteriorMostBoost = 24;      // ...the strongest standard short of it, and the strongest decor and reward over it
         public const int MostClosedHours = 12;
         public const int MostClosures = 256;          // closures read back from a save: the utilities may close every business the player has at once
         public const float SatisfactionFloor = 20f;   // an employee's satisfaction is never pushed below this (the game makes them resign under 10)
@@ -282,22 +284,40 @@ namespace RealLifeOverhaul
             return percent < AmbientMostDip ? AmbientMostDip : percent > AmbientMostBoost ? AmbientMostBoost : percent;
         }
 
+        /// <summary>What a business's interior asks for, kept inside what it may do.</summary>
+        public static int ClampInterior(int percent)
+        {
+            return percent < InteriorMostDip ? InteriorMostDip : percent > InteriorMostBoost ? InteriorMostBoost : percent;
+        }
+
         /// <summary>
         /// The promotion figure the mod writes for a business: its own where nothing changes its footfall, otherwise
-        /// <see cref="PromotionFor(int, int, int, float)"/>. The one function behind every write of that figure
+        /// <see cref="PromotionFor(int, int, int, int, float)"/>. The one function behind every write of that figure
         /// (BusinessGame.Footfall), and behind the staff rota planner's forecast of a day on which the parts will be
         /// different, so that the forecast and what is written cannot drift apart.
         /// </summary>
         public static int Written(int own, int percent, int ambient, float baseMultiplier)
         {
-            return percent != 0 || ambient != 0 ? PromotionFor(own, percent, ambient, baseMultiplier) : own;
+            return Written(own, percent, ambient, 0, baseMultiplier);
+        }
+
+        /// <summary>The same with the business's interior's part on top (Scripts/Interiors).</summary>
+        public static int Written(int own, int percent, int ambient, int interior, float baseMultiplier)
+        {
+            return percent != 0 || ambient != 0 || interior != 0 ? PromotionFor(own, percent, ambient, interior, baseMultiplier) : own;
         }
 
         /// <summary>The same with the city's economy on top: an issue's change and the ambient one are each kept to their own bounds and added.</summary>
         public static int PromotionFor(int own, int percent, int ambient, float baseMultiplier)
         {
+            return PromotionFor(own, percent, ambient, 0, baseMultiplier);
+        }
+
+        /// <summary>The same with the interior's part: each of the three is kept to its own bounds, and they are added.</summary>
+        public static int PromotionFor(int own, int percent, int ambient, int interior, float baseMultiplier)
+        {
             float multiplier = baseMultiplier + 0.75f * own / 100f;
-            float wanted = multiplier * (1f + (ClampFootfall(percent) + ClampAmbient(ambient)) / 100f);
+            float wanted = multiplier * (1f + (ClampFootfall(percent) + ClampAmbient(ambient) + ClampInterior(interior)) / 100f);
             float promotion = (wanted - baseMultiplier) / 0.75f * 100f;
             int rounded = (int)(promotion + 0.5f);
             return rounded < 0 ? 0 : rounded > 100 ? 100 : rounded;

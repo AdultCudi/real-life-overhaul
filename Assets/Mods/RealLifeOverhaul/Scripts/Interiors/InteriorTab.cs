@@ -324,7 +324,7 @@ namespace RealLifeOverhaul.Interiors
             else
             {
                 b.Line(InteriorText.T("reallife_interior_line_standard", "standard", InteriorText.N(s.Standard), "district", Districts.DistrictGame.Name(s.District)));
-                if (s.Fitting && s.Kind == InteriorKind.Shop && Settings.InteriorsStandard)
+                if (s.Fitting && s.Kind == InteriorKind.Shop && InteriorDirector.StandardOn)
                 {
                     b.Line(InteriorText.T("reallife_interior_line_fitting", "day", InteriorText.N(s.StandardFrom)));
                 }
@@ -340,7 +340,7 @@ namespace RealLifeOverhaul.Interiors
             }
             b.Line(InteriorText.T("reallife_interior_line_area", "sqm", InteriorText.N(s.Sqm)));
             b.Headline("reallife_interior_head_condition");
-            b.Line(InteriorText.T(Settings.InteriorsWear ? "reallife_interior_line_wear" : "reallife_interior_line_wear_off", "wear", InteriorText.N(s.Wear / 10)));
+            b.Line(InteriorText.T(InteriorDirector.Parts.WearScale > 0 ? "reallife_interior_line_wear" : "reallife_interior_line_wear_off", "wear", InteriorText.N(s.Wear / 10)));
             b.Line(InteriorText.T("reallife_interior_line_clean", "clean", InteriorText.N(s.Clean)));
         }
 
@@ -352,7 +352,7 @@ namespace RealLifeOverhaul.Interiors
             {
                 b.Line(InteriorText.T("reallife_interior_line_customers", "footfall", InteriorText.Signed(s.Footfall), "standard", InteriorText.Signed(s.StandardFootfall),
                     "decor", InteriorText.Signed(s.DecorFootfall)));
-                b.Line(Settings.InteriorsPrices ? InteriorText.T("reallife_interior_line_prices", "bears", InteriorText.SignedMille(s.Bears)) : "reallife_interior_line_prices_off".GetLocalization());
+                b.Line(InteriorDirector.Parts.PriceScale > 0 ? InteriorText.T("reallife_interior_line_prices", "bears", InteriorText.SignedMille(s.Bears)) : "reallife_interior_line_prices_off".GetLocalization());
                 b.Line(InteriorDirector.BasketOn ? InteriorText.T("reallife_interior_line_basket", "chance", InteriorText.Mille(s.Basket))
                     : OtherMods.MeaningfulInteriors.Loaded && Settings.InteriorsBasket ? InteriorText.T("reallife_interior_line_basket_other", "mod", OtherMods.MeaningfulInteriors.Name)
                     : "reallife_interior_line_basket_off".GetLocalization());
@@ -397,7 +397,7 @@ namespace RealLifeOverhaul.Interiors
             {
                 b.Line("reallife_interior_next_rest".GetLocalization());
             }
-            if (Settings.InteriorsWear)
+            if (InteriorDirector.Parts.WearScale > 0)
             {
                 if (s.Wear >= InteriorRules.WornFrom)
                 {

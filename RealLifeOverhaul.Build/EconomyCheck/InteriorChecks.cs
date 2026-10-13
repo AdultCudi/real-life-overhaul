@@ -25,6 +25,7 @@ internal static partial class Program
         InteriorEffects();
         InteriorStaffAndOffices();
         InteriorStepAside();
+        InteriorStrengths();
         InteriorWork();
         InteriorSave();
         InteriorElsewhere();
@@ -150,21 +151,10 @@ internal static partial class Program
             "interiors: 1% fewer customers for each 4 points short, rounded up");
         Check(InteriorRules.StandardFootfall(0, 70) == -InteriorRules.ShortFootfallMost && InteriorRules.StandardFootfall(0, 70) == -8, "interiors: short of the standard costs 8% at most");
         Check(InteriorRules.StandardFootfall(48, 40) == 1 && InteriorRules.StandardFootfall(100, 15) == 3, "interiors: over it 1% for each 8 points, 3% at most");
-        Check(InteriorRules.DecorFootfall(100) == 5 && InteriorRules.DecorFootfall(0) == 0 && InteriorRules.DecorFootfall(150) == 5, "interiors: decor brings up to 5% more customers");
-        Check(InteriorRules.Footfall(3, 5) == 8 && InteriorRules.Footfall(-8, 0) == -8 && InteriorRules.Footfall(-8, 5) == -3, "interiors: the footfall parts together stay inside -8% to +8%");
-        Check(InteriorRules.FootfallLeast >= BusinessCatalogue.AmbientMostDip && InteriorRules.FootfallMost <= BusinessCatalogue.AmbientMostBoost,
-            "interiors: its footfall alone stays inside what business pressure lets the mod add");
-        for (int overall = 0; overall <= 100; overall += 5)
-        {
-            for (int standard = 15; standard <= 70; standard += 5)
-            {
-                int f = InteriorRules.Footfall(InteriorRules.StandardFootfall(overall, standard), InteriorRules.DecorFootfall(overall));
-                if (f < -8 || f > 8)
-                {
-                    Check(false, "interiors: footfall out of bounds at " + overall + " against " + standard);
-                }
-            }
-        }
+        Check(InteriorRules.DecorFootfall(100, 5) == 5 && InteriorRules.DecorFootfall(0, 5) == 0 && InteriorRules.DecorFootfall(150, 5) == 5, "interiors: decor brings up to 5% more customers by default");
+        Check(InteriorRules.Footfall(3, 5) == 8 && InteriorRules.Footfall(-8, 0) == -8 && InteriorRules.Footfall(-8, 5) == -3, "interiors: the footfall parts are added");
+        Check(InteriorRules.FootfallLeast == BusinessCatalogue.InteriorMostDip && InteriorRules.FootfallMost == BusinessCatalogue.InteriorMostBoost,
+            "interiors: its footfall is business pressure's interior part, with the same bounds");
         Check(InteriorRules.Bears(60, 40) == 20 && InteriorRules.Bears(100, 15) == 30 && InteriorRules.Bears(20, 40) == -20 && InteriorRules.Bears(0, 70) == -20,
             "interiors: the district bears 1 per mille a point over the standard (3% at most) and 1 a point under (2% at most)");
         Check(CityModel.WithBears(1000, 30) == 1030 && CityModel.WithBears(1000, 500) == 1100 && CityModel.WithBears(1100, -20) == 1078 && CityModel.WithBears(1000, 0) == 1000,
@@ -202,14 +192,85 @@ internal static partial class Program
             "interiors: the office's and comfort's parts are inside what the company and the tech sector take");
     }
 
+    // The parts at the options' defaults, the basket switched on or not; and every part off.
+    private static InteriorParts InteriorDefaults(bool basket = true)
+    {
+        return InteriorRules.Parts(InteriorRules.StandardDefault, InteriorRules.RewardDefault, InteriorRules.DecorDefault, InteriorRules.PriceDefault, InteriorRules.WearDefault,
+            basket, true, true, false, false);
+    }
+
+    private static InteriorParts InteriorOff()
+    {
+        return InteriorRules.Parts(0, 0, 0, 0, 0, false, false, false, false, false);
+    }
+
     private static void InteriorStepAside()
     {
-        Check(InteriorRules.StandardOn(true, false) && !InteriorRules.StandardOn(true, true) && !InteriorRules.StandardOn(false, false),
-            "interiors: the district standard stays off while Meaningful Interiors is on, and when switched off");
-        Check(InteriorRules.BasketOn(true, false) && !InteriorRules.BasketOn(true, true) && !InteriorRules.BasketOn(false, false),
-            "interiors: the basket stays off while Meaningful Interiors is on, and when switched off");
-        Check(InteriorRules.DecorFootfallOn(true, false) && !InteriorRules.DecorFootfallOn(true, true) && !InteriorRules.DecorFootfallOn(false, false),
-            "interiors: the decor's footfall stays off while Meaningful Ambience is on, and when switched off");
+        InteriorParts mi = InteriorRules.Parts(InteriorRules.StandardDefault, InteriorRules.RewardDefault, InteriorRules.DecorDefault, InteriorRules.PriceDefault, InteriorRules.WearDefault,
+            true, true, true, true, false);
+        Check(mi.StandardScale == 0 && mi.RewardScale == 0 && !mi.Basket && mi.DecorPercent == 5 && mi.PriceScale == 1000 && mi.WearScale == 1000 && mi.Staff && mi.Standing,
+            "interiors: with Meaningful Interiors on, the shortfall, the reward over the standard and the basket are left to it; the rest keeps running");
+        InteriorParts ma = InteriorRules.Parts(InteriorRules.StandardDefault, InteriorRules.RewardDefault, InteriorRules.DecorDefault, InteriorRules.PriceDefault, InteriorRules.WearDefault,
+            true, true, true, false, true);
+        Check(ma.DecorPercent == 0 && ma.StandardScale == 1000 && ma.RewardScale == 1000 && ma.Basket, "interiors: with Meaningful Ambience on, the customers decor brings are left to it; the rest keeps running");
+        Check(!InteriorDefaults(false).Basket && !InteriorRules.Parts(2, 0, 1, 3, 2, true, true, true, false, false).Basket,
+            "interiors: the basket needs its own switch, and a reward that is not Off");
+    }
+
+    private static void InteriorStrengths()
+    {
+        Check(InteriorRules.DecorPercents[InteriorRules.DecorDefault] == 5 && InteriorRules.RewardScales[InteriorRules.RewardDefault] == 1000
+              && InteriorRules.StandardScales[InteriorRules.StandardDefault] == 1000 && InteriorRules.PriceScales[InteriorRules.PriceDefault] == 1000
+              && InteriorRules.WearScales[InteriorRules.WearDefault] == 1000, "interiors: every strength's default gives the figures of before");
+        Check(string.Join(",", InteriorRules.DecorPercents) == "0,5,10,15,20" && string.Join(",", InteriorRules.RewardScales) == "0,500,750,1000,1250"
+              && string.Join(",", InteriorRules.StandardScales) == "0,500,1000,1500" && string.Join(",", InteriorRules.WearScales) == "0,500,1000,1500",
+            "interiors: the choices cover the other mods' ranges (decor Off to 20%, the reward Off to 1.25 times)");
+        Check(InteriorRules.Level(InteriorRules.DecorPercents, -1) == 0 && InteriorRules.Level(InteriorRules.DecorPercents, 9) == 20, "interiors: a choice outside the list is kept inside it");
+        Check(InteriorRules.Scale(3, 1250) == 4 && InteriorRules.Scale(3, 500) == 2 && InteriorRules.Scale(-8, 1500) == -12 && InteriorRules.Scale(-7, 500) == -4 && InteriorRules.Scale(5, 0) == 0
+              && InteriorRules.Scale(5, -1000) == 0, "interiors: a figure at a strength rounds half away from nothing, and a strength under nothing is nothing");
+        Check(InteriorRules.StandardFootfall(0, 70, 1500, 1000) == -12 && InteriorRules.StandardFootfall(0, 70, 500, 1000) == -4 && InteriorRules.StandardFootfall(0, 70, 0, 1000) == 0,
+            "interiors: short of the standard costs 12% at most when Strict, 4% when Gentle, nothing when Off");
+        Check(InteriorRules.StandardFootfall(100, 15, 1000, 1250) == 4 && InteriorRules.StandardFootfall(100, 15, 1000, 500) == 2 && InteriorRules.StandardFootfall(100, 15, 1000, 0) == 0
+              && InteriorRules.StandardFootfall(100, 15, 0, 1000) == 3, "interiors: over it gains 4% when Generous, 2% when Low, nothing when Off; the shortfall's strength does not touch it");
+        Check(InteriorRules.DecorFootfall(100, 20) == 20 && InteriorRules.DecorFootfall(60, 10) == 6 && InteriorRules.DecorFootfall(100, 99) == 20 && InteriorRules.DecorFootfall(100, 0) == 0,
+            "interiors: decor brings up to 20% at the strongest, in step with the decor score");
+        Check(InteriorRules.Footfall(4, 20) == 24 && InteriorRules.Footfall(-12, 0) == -12 && InteriorRules.Footfall(-30, 0) == -12 && InteriorRules.Footfall(30, 0) == 24,
+            "interiors: its footfall is -12% to +24% at the strongest choices");
+        bool inside = true;
+        for (int st = 0; st < InteriorRules.StandardScales.Length; st++)
+        {
+            for (int rw = 0; rw < InteriorRules.RewardScales.Length; rw++)
+            {
+                for (int dc = 0; dc < InteriorRules.DecorPercents.Length; dc++)
+                {
+                    for (int overall = 0; overall <= 100; overall += 10)
+                    {
+                        for (int standard = 15; standard <= 70; standard += 11)
+                        {
+                            int f = InteriorRules.Footfall(InteriorRules.StandardFootfall(overall, standard, InteriorRules.StandardScales[st], InteriorRules.RewardScales[rw]),
+                                InteriorRules.DecorFootfall(overall, InteriorRules.DecorPercents[dc]));
+                            inside &= f >= InteriorRules.FootfallLeast && f <= InteriorRules.FootfallMost;
+                        }
+                    }
+                }
+            }
+        }
+        Check(inside, "interiors: at every choice of every strength, its footfall stays inside its bounds");
+        Check(InteriorRules.BasketChance(100, 15, 1250) == 75 && InteriorRules.BasketChance(100, 15, 500) == 30 && InteriorRules.BasketChance(100, 15, 0) == 0,
+            "interiors: the basket's chance follows the reward: 7.5% at most when Generous, 3% when Low");
+        Check(InteriorRules.Bears(100, 15, 1250) == 38 && InteriorRules.Bears(0, 70, 500) == -10 && InteriorRules.Bears(100, 15, 0) == 0,
+            "interiors: the price borne follows its strength either way");
+        Check(InteriorRules.ComplaintChance(0, 70, 1500) == 180 && InteriorRules.ComplaintChance(0, 70, 500) == 60 && InteriorRules.ComplaintChance(0, 70, 0) == 0,
+            "interiors: complaints follow the standard's strength: 18% a day at most when Strict");
+        Check(InteriorRules.WearToday(100, false, 500) == 2 && InteriorRules.WearToday(100, false, 1500) == 5 && InteriorRules.WearToday(100, false, 0) == 0
+              && InteriorRules.Age(300, 0, false, 0) == 300, "interiors: wear follows its strength: slower, faster, or none at all");
+        float b = 0.25f;
+        Check(BusinessCatalogue.ClampInterior(30) == 24 && BusinessCatalogue.ClampInterior(-20) == -12 && BusinessCatalogue.ClampInterior(5) == 5,
+            "interiors: business pressure keeps the interior's part inside -12% to +24%");
+        Check(BusinessCatalogue.PromotionFor(40, 0, 0, 10, b) == BusinessCatalogue.PromotionFor(40, 0, 10, b) && BusinessCatalogue.Written(40, 0, 0, 0, b) == 40
+              && BusinessCatalogue.Written(40, 0, 7, 0, b) == BusinessCatalogue.Written(40, 0, 7, b), "interiors: its part counts as much as the same of the ambient one, and nothing changes nothing");
+        Check(BusinessCatalogue.PromotionFor(30, 0, 15, 20, b) > BusinessCatalogue.PromotionFor(30, 0, 15, 0, b),
+            "interiors: its part is not lost under the ambient one's bound when the rest of the mod already adds its most");
     }
 
     private static InteriorShop InteriorSample(InteriorKind kind)
@@ -230,32 +291,32 @@ internal static partial class Program
     private static void InteriorWork()
     {
         InteriorShop s = InteriorSample(InteriorKind.Shop);
-        InteriorRules.Work(s, 0, true, true, true, true, true, true);
+        InteriorRules.Work(s, 0, InteriorDefaults());
         Check(s.Target == 200 && s.Capped[(int)DecorCategory.Furniture] == 30 && s.Capped[(int)DecorCategory.Equipment] == 20,
             "interiors: a worked shop's target and caps (" + s.Target + ", " + s.Capped[(int)DecorCategory.Furniture] + ")");
         Check(s.DecorRaw == Math.Min(100, 100 * (60 + 40 + 60 + 0 + 10 + 30 + 20) / 200 + 6) && s.Decor == s.DecorRaw, "interiors: a worked shop's decor (" + s.DecorRaw + ")");
         Check(s.Standard == InteriorRules.Standard(120, 0) && s.Overall == InteriorRules.Overall(s.InteriorNow, s.Decor), "interiors: its overall figure and its district's standard");
-        Check(s.Footfall == InteriorRules.Footfall(s.StandardFootfall, s.DecorFootfall) && s.Footfall >= -8 && s.Footfall <= 8 && s.Bears != 0 && s.Comfort == 5,
+        Check(s.Footfall == InteriorRules.Footfall(s.StandardFootfall, s.DecorFootfall) && s.Footfall >= -12 && s.Footfall <= 24 && s.Bears != 0 && s.Comfort == 5,
             "interiors: its effects are the rules' (" + s.Footfall + "%, " + s.Bears + " per mille, comfort " + s.Comfort + ")");
         InteriorShop worn = InteriorSample(InteriorKind.Shop);
-        InteriorRules.Work(worn, 1000, true, true, true, true, true, true);
+        InteriorRules.Work(worn, 1000, InteriorDefaults());
         Check(worn.Overall < s.Overall && worn.Footfall <= s.Footfall, "interiors: the same place worn out scores less and draws no more");
         InteriorShop off = InteriorSample(InteriorKind.Shop);
-        InteriorRules.Work(off, 0, false, false, false, false, false, false);
+        InteriorRules.Work(off, 0, InteriorOff());
         Check(off.Footfall == 0 && off.Bears == 0 && off.Basket == 0 && off.ComplaintChance == 0 && off.BrandPoints == 0 && off.StandingPoints == 0 && off.Comfort == 0 && off.OfficeBid == 0,
             "interiors: every part switched off does nothing");
         InteriorShop office = InteriorSample(InteriorKind.Office);
-        InteriorRules.Work(office, 0, true, true, true, true, true, true);
+        InteriorRules.Work(office, 0, InteriorDefaults());
         Check(office.Footfall == 0 && office.Bears == 0 && office.Basket == 0 && office.ComplaintChance == 0 && office.Comfort == 5 && office.OfficeEsteem == InteriorRules.OfficeEsteem(office.Overall),
             "interiors: an office gets no customers' parts, only staff, hiring and bids");
         InteriorShop none = InteriorSample(InteriorKind.None);
-        InteriorRules.Work(none, 0, true, true, true, true, true, true);
+        InteriorRules.Work(none, 0, InteriorDefaults());
         Check(none.Footfall == 0 && none.Comfort == 0 && none.OfficeBid == 0, "interiors: a place of neither kind gets nothing");
         InteriorShop poor = InteriorSample(InteriorKind.Shop);
         poor.Interior = 5;
         Array.Clear(poor.Points, 0, poor.Points.Length);
         poor.Income = 140;
-        InteriorRules.Work(poor, 900, true, true, true, true, true, true);
+        InteriorRules.Work(poor, 900, InteriorDefaults());
         Check(poor.Footfall == -8 && poor.ComplaintChance > 0 && poor.Bears == -20, "interiors: a bare, worn shop in the richest district loses 8% and 2% of its prices and draws complaints, never all its customers");
         Check(InteriorRules.Next(poor) == (int)DecorCategory.Art, "interiors: with nothing placed, art comes first to add");
         Check(InteriorRules.Fitting(10, 23) && !InteriorRules.Fitting(10, 24) && !InteriorRules.Fitting(InteriorFile.Unset, 5) && !InteriorRules.Fitting(InteriorFile.LongAgo, 1),
@@ -265,12 +326,12 @@ internal static partial class Program
         Array.Clear(fitting.Points, 0, fitting.Points.Length);
         fitting.Income = 140;
         fitting.Fitting = true;
-        InteriorRules.Work(fitting, 0, true, true, true, true, true, true);
+        InteriorRules.Work(fitting, 0, InteriorDefaults());
         Check(fitting.StandardFootfall == 0 && fitting.Bears == 0 && fitting.ComplaintChance == 0 && fitting.Overall < fitting.Standard,
             "interiors: fitting out, a bare shop loses nothing for falling short of its standard");
         InteriorShop fine = InteriorSample(InteriorKind.Shop);
         fine.Fitting = true;
-        InteriorRules.Work(fine, 0, true, true, true, true, true, true);
+        InteriorRules.Work(fine, 0, InteriorDefaults());
         Check(fine.StandardFootfall == s.StandardFootfall && fine.Bears == s.Bears && fine.Footfall == s.Footfall, "interiors: fitting out, being over the standard counts at once");
         Check(InteriorRules.Next(s) == (int)DecorCategory.Audio, "interiors: the sample shop most needs audio next (" + InteriorRules.Next(s) + ")");
     }

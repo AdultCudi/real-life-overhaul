@@ -44,6 +44,18 @@ namespace RealLifeOverhaul.Interiors
             return (value > 0 ? "+" : string.Empty) + value.ToString(Inv);
         }
 
+        /// <summary>The choices of the options' drop-downs, in the order of InteriorRules' strengths.</summary>
+        public static readonly string[] StandardChoices = { "reallife_interior_level_off", "reallife_interior_level_gentle", "reallife_interior_level_standard", "reallife_interior_level_strict" };
+
+        public static readonly string[] StrengthChoices =
+        {
+            "reallife_interior_level_off", "reallife_interior_level_low", "reallife_interior_level_conservative", "reallife_interior_level_standard", "reallife_interior_level_generous"
+        };
+
+        public static readonly string[] DecorChoices = { "reallife_interior_level_off", "reallife_interior_decor_5", "reallife_interior_decor_10", "reallife_interior_decor_15", "reallife_interior_decor_20" };
+
+        public static readonly string[] WearChoices = { "reallife_interior_level_off", "reallife_interior_level_slow", "reallife_interior_level_standard", "reallife_interior_level_fast" };
+
         private static readonly string[] CategoryKeys =
         {
             "reallife_interior_cat_art", "reallife_interior_cat_greenery", "reallife_interior_cat_lighting", "reallife_interior_cat_audio",

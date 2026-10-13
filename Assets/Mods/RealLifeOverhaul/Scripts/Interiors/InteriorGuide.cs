@@ -22,7 +22,9 @@ namespace RealLifeOverhaul.Interiors
             Features.Add("interiors", "reallife_meta_title_interiors")
                 .Group("reallife_interior_header")
                 .About("reallife_guide_interiors_about").Help("reallife_guide_interiors")
-                .Owns(Settings.InteriorsId, Settings.InteriorsPricesId, Settings.InteriorsWearId, Settings.InteriorsStandingId, Settings.InteriorsStaffId)
+                .Owns(Settings.InteriorsId, Settings.InteriorsPricesLevelId, Settings.InteriorsWearLevelId, Settings.InteriorsStandingId, Settings.InteriorsStaffId)
+                .Preset(Settings.InteriorsPricesLevelId, 4, 3, 2)   // Relaxed Generous, Realistic Standard, Hardcore Conservative
+                .Preset(Settings.InteriorsWearLevelId, 1, 2, 3)     // Relaxed Slow, Realistic Standard, Hardcore Fast
                 .Data(InteriorStore.Key)
                 .Test("reallife_interior_test_report_button", "reallife_interior_test_wear_button", "reallife_interior_test_news_button")
                 .Fact("in_repeat", () => Share(InteriorRules.RepeatShare))
@@ -73,8 +75,10 @@ namespace RealLifeOverhaul.Interiors
 
             Features.Add("interiors_standard", "reallife_meta_title_interiors_standard")
                 .About("reallife_guide_interiors_standard_about").Help("reallife_guide_interiors_standard")
-                .Owns(Settings.InteriorsStandardId, Settings.InteriorsBasketId)
-                .StandsAside(InteriorsSentence, Settings.InteriorsStandardId, Settings.InteriorsBasketId)
+                .Owns(Settings.InteriorsStandardLevelId, Settings.InteriorsRewardLevelId, Settings.InteriorsBasketId)
+                .Preset(Settings.InteriorsStandardLevelId, 1, 2, 3)   // Relaxed Gentle, Realistic Standard, Hardcore Strict
+                .Preset(Settings.InteriorsRewardLevelId, 4, 2, 1)     // Relaxed Generous, Realistic Conservative, Hardcore Low (the basket keeps its own switch: off)
+                .StandsAside(InteriorsSentence, Settings.InteriorsStandardLevelId, Settings.InteriorsRewardLevelId, Settings.InteriorsBasketId)
                 .Fact("in_grace", () => N(InteriorRules.GraceDays))
                 .Fact("in_standard_least", () => N(InteriorRules.StandardLeast))
                 .Fact("in_standard_most", () => N(InteriorRules.StandardMost))
@@ -93,9 +97,11 @@ namespace RealLifeOverhaul.Interiors
 
             Features.Add("interiors_decor", "reallife_meta_title_interiors_decor")
                 .About("reallife_guide_interiors_decor_about").Help("reallife_guide_interiors_decor")
-                .Owns(Settings.InteriorsDecorId)
-                .StandsAside(AmbienceSentence, Settings.InteriorsDecorId)
-                .Fact("in_decor_most", () => N(InteriorRules.DecorFootfallMost));
+                .Owns(Settings.InteriorsDecorLevelId)
+                .Preset(Settings.InteriorsDecorLevelId, 2, 1, 1)      // Relaxed 10%, Realistic and Hardcore 5%
+                .StandsAside(AmbienceSentence, Settings.InteriorsDecorLevelId)
+                .Fact("in_decor_most", () => N(InteriorRules.DecorPercents[InteriorRules.DecorDefault]))
+                .Fact("in_decor_top", () => N(InteriorRules.DecorPercents[InteriorRules.DecorPercents.Length - 1]));
         }
 
         /// <summary>Why the district standard's rows do nothing just now (Meaningful Interiors is on), or null.</summary>
@@ -119,11 +125,12 @@ namespace RealLifeOverhaul.Interiors
             return options
                 .AddHeader("reallife_interior_header")
                 .AddToggle(Settings.InteriorsId, "reallife_interior_enabled", Settings.Interiors, v => Settings.Interiors = v)
-                .AddToggle(Settings.InteriorsStandardId, "reallife_interior_standard_option", Settings.InteriorsStandard, v => Settings.InteriorsStandard = v)
-                .AddToggle(Settings.InteriorsDecorId, "reallife_interior_decor_option", Settings.InteriorsDecor, v => Settings.InteriorsDecor = v)
-                .AddToggle(Settings.InteriorsPricesId, "reallife_interior_prices_option", Settings.InteriorsPrices, v => Settings.InteriorsPrices = v)
+                .AddDropdown(Settings.InteriorsStandardLevelId, "reallife_interior_standard_option", InteriorText.StandardChoices, Settings.InteriorsStandardLevel, v => Settings.InteriorsStandardLevel = v)
+                .AddDropdown(Settings.InteriorsRewardLevelId, "reallife_interior_reward_option", InteriorText.StrengthChoices, Settings.InteriorsRewardLevel, v => Settings.InteriorsRewardLevel = v)
+                .AddDropdown(Settings.InteriorsDecorLevelId, "reallife_interior_decor_option", InteriorText.DecorChoices, Settings.InteriorsDecorLevel, v => Settings.InteriorsDecorLevel = v)
+                .AddDropdown(Settings.InteriorsPricesLevelId, "reallife_interior_prices_option", InteriorText.StrengthChoices, Settings.InteriorsPricesLevel, v => Settings.InteriorsPricesLevel = v)
                 .AddToggle(Settings.InteriorsBasketId, "reallife_interior_basket_option", Settings.InteriorsBasket, v => Settings.InteriorsBasket = v)
-                .AddToggle(Settings.InteriorsWearId, "reallife_interior_wear_option", Settings.InteriorsWear, v => Settings.InteriorsWear = v)
+                .AddDropdown(Settings.InteriorsWearLevelId, "reallife_interior_wear_option", InteriorText.WearChoices, Settings.InteriorsWearLevel, v => Settings.InteriorsWearLevel = v)
                 .AddToggle(Settings.InteriorsStandingId, "reallife_interior_standing_option", Settings.InteriorsStanding, v => Settings.InteriorsStanding = v)
                 .AddToggle(Settings.InteriorsStaffId, "reallife_interior_staff_option", Settings.InteriorsStaff, v => Settings.InteriorsStaff = v)
                 .AddButton("reallife_interior_test_report_button", () => InteriorDirector.Instance?.TestReport())

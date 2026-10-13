@@ -150,17 +150,25 @@ namespace RealLifeOverhaul.Interiors
             }
         }
 
-        // The switches and the two other mods, as one number: a change of any is a change of what applies.
+        // The options and the two other mods, as one number: a change of any is a change of what applies.
         private static int Switches()
         {
-            return (Settings.Interiors ? 1 : 0) | (Settings.InteriorsStandard ? 2 : 0) | (Settings.InteriorsDecor ? 4 : 0) | (Settings.InteriorsPrices ? 8 : 0)
-                   | (Settings.InteriorsBasket ? 16 : 0) | (Settings.InteriorsWear ? 32 : 0) | (Settings.InteriorsStanding ? 64 : 0) | (Settings.InteriorsStaff ? 128 : 0)
-                   | (OtherMods.MeaningfulInteriors.Loaded ? 256 : 0) | (OtherMods.MeaningfulAmbience.Loaded ? 512 : 0);
+            return (Settings.Interiors ? 1 : 0) | (Settings.InteriorsBasket ? 2 : 0) | (Settings.InteriorsStanding ? 4 : 0) | (Settings.InteriorsStaff ? 8 : 0)
+                   | (OtherMods.MeaningfulInteriors.Loaded ? 16 : 0) | (OtherMods.MeaningfulAmbience.Loaded ? 32 : 0)
+                   | (InteriorRules.Clamp(Settings.InteriorsStandardLevel, 0, 7) << 6) | (InteriorRules.Clamp(Settings.InteriorsRewardLevel, 0, 7) << 9)
+                   | (InteriorRules.Clamp(Settings.InteriorsDecorLevel, 0, 7) << 12) | (InteriorRules.Clamp(Settings.InteriorsPricesLevel, 0, 7) << 15)
+                   | (InteriorRules.Clamp(Settings.InteriorsWearLevel, 0, 7) << 18);
         }
 
-        public static bool StandardOn => InteriorRules.StandardOn(Settings.InteriorsStandard, OtherMods.MeaningfulInteriors.Loaded);
-        public static bool DecorOn => InteriorRules.DecorFootfallOn(Settings.InteriorsDecor, OtherMods.MeaningfulAmbience.Loaded);
-        public static bool BasketOn => InteriorRules.BasketOn(Settings.InteriorsBasket, OtherMods.MeaningfulInteriors.Loaded);
+        /// <summary>The parts that apply now and their strengths, from the options and the two other mods.</summary>
+        public static InteriorParts Parts => InteriorRules.Parts(Settings.InteriorsStandardLevel, Settings.InteriorsRewardLevel, Settings.InteriorsDecorLevel,
+            Settings.InteriorsPricesLevel, Settings.InteriorsWearLevel, Settings.InteriorsBasket, Settings.InteriorsStanding, Settings.InteriorsStaff,
+            OtherMods.MeaningfulInteriors.Loaded, OtherMods.MeaningfulAmbience.Loaded);
+
+        /// <summary>Falling short of the district's standard costs something (its strength is not Off, and Meaningful Interiors is not on).</summary>
+        public static bool StandardOn => Parts.StandardScale > 0;
+        public static bool DecorOn => Parts.DecorPercent > 0;
+        public static bool BasketOn => Parts.Basket;
 
         // ---------------------------------------------------------------- once a game day
 
@@ -202,12 +210,14 @@ namespace RealLifeOverhaul.Interiors
             _shops.Clear();
             _byReg.Clear();
             InteriorGame.Places(_regs);
+            InteriorParts parts = Parts;
             int bestOffice = -1;
             for (int i = 0; i < _regs.Count; i++)
             {
                 BuildingRegistration reg = _regs[i];
                 InteriorShop s = Take();
                 InteriorGame.Read(reg, s);
+                InteriorParts p = parts;
                 InteriorFile f = _store.File(s.Place, true);
                 int wear = 0;
                 if (f != null)
@@ -218,14 +228,14 @@ namespace RealLifeOverhaul.Interiors
                     }
                     s.Fitting = InteriorRules.Fitting(f.FirstDay, day);
                     s.StandardFrom = s.Fitting ? f.FirstDay + InteriorRules.GraceDays : 0;
-                    if (age && Settings.InteriorsWear)
+                    if (age && p.WearScale > 0)
                     {
                         int days = f.LastDay > 0 ? InteriorRules.Clamp(day - f.LastDay, 0, 30) : 0;
                         bool cleaned = InteriorBridges.Cleaned != null && Ask(() => InteriorBridges.Cleaned(s.Place));
                         f.Wear = InteriorRules.Redecorated(f.Wear, f.LastInterior, s.Interior);
                         for (int d = 0; d < days; d++)
                         {
-                            f.Wear = InteriorRules.Age(f.Wear, s.Clean, cleaned);
+                            f.Wear = InteriorRules.Age(f.Wear, s.Clean, cleaned, p.WearScale);
                         }
                     }
                     if (age)
@@ -233,9 +243,9 @@ namespace RealLifeOverhaul.Interiors
                         f.LastDay = day;
                         f.LastInterior = s.Interior;
                     }
-                    wear = Settings.InteriorsWear ? f.Wear : 0;
+                    wear = p.WearScale > 0 ? f.Wear : 0;
                 }
-                InteriorRules.Work(s, wear, StandardOn, DecorOn, Settings.InteriorsPrices, BasketOn, Settings.InteriorsStanding, Settings.InteriorsStaff);
+                InteriorRules.Work(s, wear, p);
                 if (s.Kind == InteriorKind.Office)
                 {
                     bestOffice = Math.Max(bestOffice, s.Overall);
@@ -489,7 +499,7 @@ namespace RealLifeOverhaul.Interiors
         /// <summary>The cleanliness an inspector judges at a business: a worn place looks dirtier than it is.</summary>
         public static int Inspected(BuildingRegistration reg, int clean)
         {
-            InteriorShop s = Settings.InteriorsWear ? At(reg) : null;
+            InteriorShop s = Parts.WearScale > 0 ? At(reg) : null;
             return s != null ? InteriorRules.InspectedClean(clean, s.Wear) : clean;
         }
 
@@ -508,7 +518,7 @@ namespace RealLifeOverhaul.Interiors
         {
             InteriorShop s = At(reg);
             InteriorFile f = s != null ? _store.File(s.Place, true) : null;
-            if (f == null || !Settings.InteriorsWear)
+            if (f == null || Parts.WearScale <= 0)
             {
                 return false;
             }
