@@ -256,7 +256,10 @@ namespace RealLifeOverhaul.Law
         /// <summary>Raised when either value or the level of scrutiny changes.</summary>
         public static event Action Changed;
 
-        internal static int LastDay = -1;           // the last game day the daily step ran for
+        /// <summary>Raised for a good deed that counted (three a day at most): Flare offers it as a post (Wiring/FlareLinks).</summary>
+        public static event Action Deed;
+
+        internal static int LastDay = -1;          // the last game day the daily step ran for
         internal static int DeedDay = -1;
         internal static int Deeds;
         internal static int ThanksDay = -1;         // the last day a passer-by said thanks
@@ -305,6 +308,14 @@ namespace RealLifeOverhaul.Law
             Public = Mathf.Clamp(Public + 4, 0, 100);
             Police = Mathf.Clamp(Police + 1, 0, 100);
             Changed?.Invoke();
+            try
+            {
+                Deed?.Invoke();
+            }
+            catch (Exception e)
+            {
+                LawDirector.Logger?.Error(e);
+            }
         }
 
         /// <summary>A 911 call that led to an arrest: the police remember who called.</summary>

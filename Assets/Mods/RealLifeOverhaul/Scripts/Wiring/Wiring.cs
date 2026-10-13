@@ -35,6 +35,8 @@ namespace RealLifeOverhaul
     ///     ServicesLinks   selling a business with Ventures (investors bought out), the credit side (business loans paid off) and running a business; the Planner
     ///     BrandLinks      brands and franchises with business pressure (footfall), the city's economy (prices), fires, inspections, strikes, the courts and the Planner
     ///     RoommateLinks   the roommate with family life (a partner who moves in), social life (friends, introductions) and the Planner
+    ///     FlareLinks      the social media app with the social life (friends who follow), the law's reputation, the
+    ///                     council's election, careers, photo mode, good deeds and arrests (what can be posted)
     ///
     /// <see cref="Connect"/> is called once per city load, after every director has been added;
     /// <see cref="Disconnect"/> on unload puts every bridge back to its default. Nothing here
@@ -85,6 +87,7 @@ namespace RealLifeOverhaul
             Step("brands and franchises", BrandLinks.Connect);
             Step("the roommate", RoommateLinks.Connect);
             Step("power and water", UtilityLinks.Connect);
+            Step("the social media app", FlareLinks.Connect);
             Logger?.Info("Wiring: the features are connected.");
         }
 
@@ -95,6 +98,7 @@ namespace RealLifeOverhaul
                 return;
             }
             Connected = false;
+            Step("the social media app", FlareLinks.Disconnect);   // first: what it wrapped is put back before the others take theirs off
             Step("the taxi by phone", TaxiLinks.Disconnect);
             Step("property", EstateLinks.Disconnect);
             Step("the cleaning service and selling a business", ServicesLinks.Disconnect);

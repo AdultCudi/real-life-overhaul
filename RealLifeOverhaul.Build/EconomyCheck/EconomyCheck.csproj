@@ -16,7 +16,7 @@
        the market, a purchase on the existing mortgage, tenancies, works, a sale, the agency, a hotel's night, car hire,
        the yearly returns and the save's line, and (MarketChecks.cs) the city's stock market: prices over thousands of days,
        trading and what it costs, orders, dividends, splits, failures, candles, the analysis tools, the tape and the save's line, and
-       (LedgerChecks.cs) the City Ledger: what each piece is, its headline, the subscription's round, the copy, the page's choices and the save's line.
+       (LedgerChecks.cs) the City Ledger: what each piece is, its headline, the subscription's round, the copy, the page's choices and the save's line, and (FlareChecks.cs) Flare, the social media app: the follower curve, the limits on posting, the friends' answers, the daily round and the save's lines.
        Compiles the mod's own files, so it checks exactly what ships.
        the lender of last resort and the ways out of debt, and (VenturesChecks.cs) investors, the pitch, deals and the
        stock market. Compiles the mod's own files, so it checks exactly what ships.
@@ -102,6 +102,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandRules.cs" Link="Mod\BrandRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\FranchiseRules.cs" Link="Mod\FranchiseRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandStore.cs" Link="Mod\BrandStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareModel.cs" Link="Mod\FlareModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareRules.cs" Link="Mod\FlareRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareStore.cs" Link="Mod\FlareStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\TableModel.cs" Link="Mod\TableModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\CashCategory.cs" Link="Mod\CashCategory.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialModel.cs" Link="Mod\SocialModel.cs" />
