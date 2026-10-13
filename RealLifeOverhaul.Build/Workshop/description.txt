@@ -16,6 +16,7 @@ Real Life Overhaul adds everyday life to the city of Big Ambitions: things happe
 [*][b]Markets and news.[/b] A stock market of some 136 companies with charts and orders, and your own company listed on it: results, dividends, a shareholders' meeting and takeover bids. The City Ledger and online papers. Flare, a social network with influencers.
 [*][b]Running a business.[/b] Staff who ask for raises and may strike, insurance, marketing, a quarterly tax return, licences and a rota planner. Professional staff with skills, and a jobs board your rivals hire from too.
 [*][b]Growing a business.[/b] Brands and franchises that keep their prices, online shops, investors, selling a business, your own bank and your own car dealership.
+[*][b]Interiors and decor.[/b] Walls, floors and decor bring customers and let you charge a little more, each district expects its own standard, finishes wear, and an Interior tab in BizMan shows what to add next.
 [*][b]The tech sector.[/b] Software and game studios, IT consultancies, security firms and AI labs, startups and venture capital, data centres, a cloud and in time a hyperscaler.
 [*][b]Property.[/b] Buy, let and sell buildings with a tenant in each unit, set your rental income, run an estate agency or a hotel, and hire out cars.
 [*][b]Permadeath, if you want it.[/b] Off unless you switch it on: rare deaths after warnings, hunger among them, and an obituary in the City Ledger.
@@ -39,7 +40,7 @@ No frame rate figures are claimed. Apart from the cameras, buses in view and hai
 [*]English, Brazilian Portuguese and Simplified Chinese. The mod follows the language the game is set to; in any other language it is in English.
 [*]One DLL, a text file for each language and three asset files. No game files are replaced. It can be added to an existing save.
 [*]Made to work with Going Public, the multiplayer mod: what would put players out of step, such as fast forward, is set aside in a session.
-[*]Works beside Empire Motors. While a camera mod such as "Immersion - RPG Camera" drives the camera, this mod's cameras stand aside.
+[*]Works beside Empire Motors, Meaningful Interiors and Meaningful Ambience: where those already do something, this mod's part stays off. While a camera mod such as "Immersion - RPG Camera" drives the camera, this mod's cameras stand aside.
 [/list]
 
 [h1]Removing the mod[/h1]
