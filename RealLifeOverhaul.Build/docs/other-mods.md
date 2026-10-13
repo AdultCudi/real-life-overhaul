@@ -248,6 +248,7 @@ Where the two meet, and what this mod does:
 | Its app page | switches every other page off | the same rule as the game's and this mod's own: the last one opened shows |
 | Utilities, the company, the rota | a retail business; its staff are customer service and cleaning | works as it is: the rota covers every station for the hours kept ("the game sends no customers here"), which suits a dealership whose sales need the counter staffed |
 | Brands and franchises | a brand of the player's dealerships; a franchise of the type | works: a franchised dealership opens in the books only (the game has no business of the type for a rival) |
+| Campaigns and footfall | the Company app sold campaigns for a dealership, and business pressure, the city and brands wrote its promotion figure, which its customers do not follow (Empire Motors makes them up; it reads only the opening hours and a temporary closure) | `BusinessGame.Promoted` is false for a dealership: no campaign can be booked (the app says Empire Motors brings its customers itself), no footfall is written; closures, strikes and opening hours still reach it |
 | Online shops | | nothing to sell: it has no products |
 | Going Public | | `GoingPublic.Mine` keeps another player's dealership out, as every other business |
 | Saves and removal | its key is its own | nothing of this mod's touches `empiremotors.save` or its cars; this mod's records of a car of the stock are dropped when it is sold (`CarGarage.Prune`) |
