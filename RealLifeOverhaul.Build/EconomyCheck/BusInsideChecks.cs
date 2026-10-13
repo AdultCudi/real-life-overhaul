@@ -26,6 +26,7 @@ internal static partial class Program
         BusFare();
         BusJourney();
         BusBoarding();
+        BusMiddleDoor();
         BusNetwork();
         Console.WriteLine("  Bus ride: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
@@ -33,6 +34,51 @@ internal static partial class Program
     private static bool Near(float a, float b, float within)
     {
         return Math.Abs(a - b) <= within;
+    }
+
+    // Boarding by the middle door: its own validator, the paths from it, the way off again, and which door is taken.
+    private static void BusMiddleDoor()
+    {
+        var lens = new BusInside.Spot(BusInside.MiddleReaderX, BusInside.MiddleReaderZ);
+        Check(Near(BusInside.MiddleReader.To(lens), BusInside.ReaderAhead, 0.02f), "bus middle door: its validator is pay_tap's 0.50 m from where the rider stands (" + BusInside.MiddleReader.To(lens).ToString("F3") + ")");
+        Check(Near(BusInside.ReaderY - BusInside.Floor, BusInside.ReaderUp, 0.01f), "bus middle door: its lens is at the front one's height, pay_tap's 0.975 m over the floor");
+        float facing = BusInside.MiddleReaderFacing;
+        Check(Math.Abs(Math.Abs(facing) - 180f) < 20f, "bus middle door: the rider turns back to it, inside the doorway (" + facing.ToString("F0") + " degrees)");
+        Check(lens.Z > BusInside.MiddleDoor - 0.6f && lens.Z < BusInside.MiddleDoor && lens.X < BusInside.Wall && lens.X > 0.6f, "bus middle door: the validator stands inside the middle door, behind its middle, at the side");
+        Check(BusInside.Clearance(BusInside.MiddleReader) >= BodyClear, "bus middle door: before it the rider stands clear of the poles and the validator (" + BusInside.Clearance(BusInside.MiddleReader).ToString("F2") + ")");
+        Check(BusInside.Clearance(BusInside.Exit) >= BodyClear, "bus middle door: those getting off by it still pass clear of its validator (" + BusInside.Clearance(BusInside.Exit).ToString("F2") + ")");
+        var path = new List<BusInside.Spot>(12);
+        var walks = new List<KeyValuePair<string, BusInside.Place[]>>
+        {
+            new KeyValuePair<string, BusInside.Place[]>("the middle door's step to its validator", new[] { BusInside.Place.MiddleAboard, BusInside.Place.MiddleReader }),
+            new KeyValuePair<string, BusInside.Place[]>("the middle validator to the aisle seat", new[] { BusInside.Place.MiddleReader, BusInside.Place.Seat }),
+            new KeyValuePair<string, BusInside.Place[]>("the middle validator to the window seat", new[] { BusInside.Place.MiddleReader, BusInside.Place.WindowSeat }),
+            new KeyValuePair<string, BusInside.Place[]>("the middle validator to the strap", new[] { BusInside.Place.MiddleReader, BusInside.Place.Strap })
+        };
+        foreach (KeyValuePair<string, BusInside.Place[]> walk in walks)
+        {
+            BusInside.Path(walk.Value[0], walk.Value[1], path);
+            BusInside.Spot end = path[path.Count - 1];
+            BusInside.Spot want = BusInside.At(walk.Value[1]);
+            Check(path.Count >= 2 && end.X == want.X && end.Z == want.Z, "bus middle door: " + walk.Key + ": a path from the one place to the other");
+            int seat = walk.Value[1] == BusInside.Place.Seat ? 0 : walk.Value[1] == BusInside.Place.WindowSeat ? 1 : -1;
+            Clear("bus middle door: " + walk.Key, path, seat);
+            Check(BusInside.Length(path) < 3f, "bus middle door: " + walk.Key + ": a few steps (" + BusInside.Length(path).ToString("F1") + " m), not up the aisle to the front");
+        }
+        bool front = BusInside.WayOut(BusInside.MiddleReader, path);
+        BusInside.Spot last = path[path.Count - 1];
+        Check(!front && last.X == BusInside.Exit.X && last.Z == BusInside.Exit.Z, "bus middle door: off again from its validator by the middle door");
+        Clear("bus middle door: off again from its validator", path, -1);
+
+        // Which door.
+        Check(BusInside.ByMiddleDoor(6f, 2f) && !BusInside.ByMiddleDoor(2f, 6f) && !BusInside.ByMiddleDoor(3f, 2.6f), "bus middle door: the nearer door is taken, the front one when they are about as near");
+        Check(BusInside.BoardTriesMiddle[0].Middle && Math.Abs(BusInside.BoardTriesMiddle[0].Along) < 1e-4f, "bus middle door: by the middle door its own place is tried first");
+        bool fallback = false;
+        foreach (BusInside.Approach a in BusInside.BoardTriesMiddle)
+        {
+            fallback |= !a.Middle;
+        }
+        Check(fallback && BusInside.BoardTries[0].Middle == false, "bus middle door: the other door is still tried when the nearer one's place cannot be walked to");
     }
 
     private static void BusPlaces()

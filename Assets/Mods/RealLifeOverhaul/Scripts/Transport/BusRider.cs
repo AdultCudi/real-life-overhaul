@@ -100,7 +100,9 @@ namespace RealLifeOverhaul
         private float _shutSince = -1f;
         private float _movingSince = -1f;
         private UnityEngine.Events.UnityAction _onReached;
-        private bool _middleIn;             // in by the middle door: the front door's place on the road could not be reached
+        private bool _middleIn;             // in by the middle door: the nearer one, or the front door's place on the road could not be reached
+        private bool _waitedOff;            // ...and somebody getting off there was waited for
+        private const float MiddleWaitMost = 20f;   // seconds after setting off for the door that somebody getting off is waited for, at the most
         private TransitStop _passed;        // riding through the city: the last stop the bus called at, or null
         private int _passedCount;
         private bool _offChosen;            // the place to step down to has been chosen and found reachable (WayOut)
@@ -209,8 +211,9 @@ namespace RealLifeOverhaul
             _passed = null;
             _passedCount = 0;
             _offChosen = false;
-            // Where to walk to: the front door's place if there is a way to it on the walkable ground and nothing stands there,
-            // else a little along the kerb, and only then the middle door (BusInside.BoardTries).
+            _waitedOff = false;
+            // Where to walk to: the nearer door's place if there is a way to it on the walkable ground and nothing stands there,
+            // else a little along the kerb, and only then the other door (BusInside.BoardTries, BoardTriesMiddle).
             int tried = ChooseApproach(bus.Vehicle, player.transform.position, door, out door, out _middleIn);
             if (tried < 0)
             {
@@ -372,7 +375,7 @@ namespace RealLifeOverhaul
                 case Step.Tapping:
                     if (now >= _until)
                     {
-                        WalkTo(BusInside.Place.Reader, _place, _place == BusInside.Place.Strap ? Then.Strap : Then.Seat);
+                        WalkTo(_middleIn ? BusInside.Place.MiddleReader : BusInside.Place.Reader, _place, _place == BusInside.Place.Strap ? Then.Strap : Then.Seat);
                     }
                     break;
 
@@ -495,6 +498,17 @@ namespace RealLifeOverhaul
                 Abort("something kept them from the door's step", put: false);
                 return;
             }
+            if (_middleIn && _director.MiddleDoorBusy && now < _since + MiddleWaitMost)
+            {
+                // Somebody is getting off by the middle door: the player waits beside it until they are off, as at any stop.
+                if (!_waitedOff)
+                {
+                    _waitedOff = true;
+                    Logger?.Info("Transit check (boarding): at the middle door somebody is getting off: the player waits until they are off, then steps up: PASS.");
+                }
+                _until = Mathf.Max(_until, now + 0.3f);
+                return;
+            }
             _body.Move(Vector3.zero);
             place.rotation = facing;
             if (!Play("board_step", 0.15f, ClipEnd.Hold))
@@ -518,10 +532,10 @@ namespace RealLifeOverhaul
             _up = 0f;
             Put(bus);
             _stage = BusInside.Stage.Aboard;
-            Logger?.Info("Transit check (boarding): up the step at the " + (_middleIn ? "middle door (the front one could not be reached): they walk up the aisle to the validator" : "front door")
+            Logger?.Info("Transit check (boarding): up the step at the " + (_middleIn ? "middle door: they tap in at the validator inside it" : "front door")
                          + " with board_step; on the floor " + (_player.transform.position.y - was.y).ToString("F2")
                          + " m over the road (the clip ends " + BusInside.StepUp.ToString("F2") + " up, the floor is " + BusInside.Floor.ToString("F2") + "): PASS.");
-            WalkTo(_middleIn ? BusInside.Place.MiddleAboard : BusInside.Place.Aboard, BusInside.Place.Reader, Then.Tap);
+            WalkTo(_middleIn ? BusInside.Place.MiddleAboard : BusInside.Place.Aboard, _middleIn ? BusInside.Place.MiddleReader : BusInside.Place.Reader, Then.Tap);
         }
 
         // ---------------------------------------------------------------- walking on the floor
@@ -557,7 +571,7 @@ namespace RealLifeOverhaul
             switch (_then)
             {
                 case Then.Tap:
-                    TurnTo(BusInside.ReaderFacing);
+                    TurnTo(_middleIn ? BusInside.MiddleReaderFacing : BusInside.ReaderFacing);
                     break;
                 case Then.Seat:
                 case Then.Strap:
@@ -1259,12 +1273,17 @@ namespace RealLifeOverhaul
                 return -1;
             }
             Vector3 start = Nearest(from);
-            if (!Furnished(door) && Reachable(start, door))
+            // The nearer door: many city buses are boarded by any door, with a validator by each (BusInside.ByMiddleDoor).
+            Vector3 front = bus.transform.TransformPoint(new Vector3(BusInside.BoardFrom.X, 0f, BusInside.BoardFrom.Z));
+            Vector3 back = bus.transform.TransformPoint(new Vector3(BusInside.MiddleBoardFrom.X, 0f, BusInside.MiddleBoardFrom.Z));
+            _byChoice = BusInside.ByMiddleDoor(Mathf.Sqrt(CitySpots.Flat(from - front)), Mathf.Sqrt(CitySpots.Flat(from - back)));
+            _tries = _byChoice ? BusInside.BoardTriesMiddle : BusInside.BoardTries;
+            if (!_byChoice && !Furnished(door) && Reachable(start, door))
             {
                 return 0;
             }
             Vector3 found = door;
-            int chosen = BusInside.First(BusInside.BoardTries, a =>
+            int chosen = BusInside.First(_tries, a =>
             {
                 BusInside.Spot spot = a.At;
                 return Ground(bus.transform.TransformPoint(new Vector3(spot.X, 0f, spot.Z)), bus, out found) && !Furnished(found) && Reachable(start, found);
@@ -1274,19 +1293,23 @@ namespace RealLifeOverhaul
                 return -1;
             }
             at = found;
-            middle = BusInside.BoardTries[chosen].Middle;
+            middle = _tries[chosen].Middle;
             return chosen + 1;
         }
 
-        private static string ApproachWords(int tried)
+        private BusInside.Approach[] _tries = BusInside.BoardTries;
+        private bool _byChoice;   // the middle door is the nearer to where the player stood
+
+        private string ApproachWords(int tried)
         {
             if (tried <= 0)
             {
                 return "the front door's own place";
             }
-            BusInside.Approach a = BusInside.BoardTries[tried - 1];
-            return (a.Middle ? "the middle door (the front door's place could not be walked to)" : "the front door")
-                   + (Mathf.Abs(a.Along) > 0.01f ? ", " + Mathf.Abs(a.Along).ToString("F1") + " m along the kerb" + (a.Middle ? "" : " (its own place could not be walked to)") : "");
+            BusInside.Approach a = _tries[tried - 1];
+            string door = a.Middle ? _byChoice ? "the middle door, the nearer one" : "the middle door (the front door's place could not be walked to)"
+                : _byChoice ? "the front door (the middle door's place could not be walked to)" : "the front door";
+            return door + (Mathf.Abs(a.Along) > 0.01f ? ", " + Mathf.Abs(a.Along).ToString("F1") + " m along the kerb" : "");
         }
 
         // A way on the walkable ground from one point to the other, all the way, by the game's own navigation mesh.

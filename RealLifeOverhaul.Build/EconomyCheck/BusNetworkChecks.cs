@@ -20,6 +20,7 @@ internal static partial class Program
         BusDoublesBack();
         BusLayout();
         BusPlanner();
+        BusSession();
         Console.WriteLine("  Bus network: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
@@ -731,6 +732,18 @@ internal static partial class Program
         Check(stationReached * 4 >= stationPairs * 3, "bus layout: three in four journeys between two stations need one bus or one change at the most (" + stationReached + " of " + stationPairs + ")");
         Check(changes > 0 && direct > 0, "bus layout: some journeys are on one bus, others change at a transfer point");
         Check(honest, "bus layout: every journey boards when its line calls, arrives after it boards, and changes after the first bus");
+    }
+
+    // ---------------------------------------------------------------- a Going Public session
+
+    private static void BusSession()
+    {
+        Check(RideRules.RealTime(false) && !RideRules.RealTime(true), "bus session: a ride is driven in real time alone and on the host's machine; never where the street is the host's (a guest's)");
+        Check(RideRules.FastForwardOffered(true, false) && !RideRules.FastForwardOffered(true, true) && !RideRules.FastForwardOffered(false, false),
+              "bus session: the panel's fast forward alone only, never in a session (the game's speed is everyone's)");
+        Check(RideRules.SkipOffered(true) && !RideRules.SkipOffered(false), "bus session: the panel's skip while the ride runs, in a session too");
+        Check(RideRules.SkipMinutes(25f, true) == 0f && RideRules.SkipMinutes(25f, false) == 25f, "bus session: the skip passes no time in a session, the rest of the ride alone");
+        Check(RideRules.GetOffAt(2, 3, false, false, 6) == 3, "bus session: getting off early is as alone");
     }
 
     // ---------------------------------------------------------------- the journey planner

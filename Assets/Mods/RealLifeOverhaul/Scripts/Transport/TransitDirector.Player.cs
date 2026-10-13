@@ -1218,6 +1218,9 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- the ride seen (BusRider calls these)
 
+        /// <summary>True while somebody is stepping down from the bus by its middle door: a rider boarding there waits for them.</summary>
+        internal bool MiddleDoorBusy => _alighter.Step == RiderStep.Exiting;
+
         /// <summary>True while the time of a ride is passing under its fade (TransitRide).</summary>
         internal bool RideRunning => _ride.Riding;
 

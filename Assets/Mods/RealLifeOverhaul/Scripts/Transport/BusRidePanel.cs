@@ -272,8 +272,8 @@ namespace RealLifeOverhaul
             _host.JourneyStayOn();
         }
 
-        public bool HasFastForward() => (_state == PlayerActivityState.Running || _state == PlayerActivityState.Started) && !GoingPublic.ClockShared;
-        public bool HasTimeMachine() => _state == PlayerActivityState.Running || _state == PlayerActivityState.Started;
+        public bool HasFastForward() => RideRules.FastForwardOffered(_state == PlayerActivityState.Running || _state == PlayerActivityState.Started, GoingPublic.ClockShared);
+        public bool HasTimeMachine() => RideRules.SkipOffered(_state == PlayerActivityState.Running || _state == PlayerActivityState.Started);
         public int GetRemainingMinutesForTimeMachine() => Mathf.Max(1, Mathf.RoundToInt(_host.JourneyMinutesLeft()));
 
         // The game's time-skip button: not its time machine at once, but the ride's own fade (the panel finishes this at once

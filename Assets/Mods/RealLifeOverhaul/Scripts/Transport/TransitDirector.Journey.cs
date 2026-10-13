@@ -77,9 +77,9 @@ namespace RealLifeOverhaul
             {
                 why = "the stop is reached with a change of bus, which is not driven";
             }
-            else if (GoingPublic.ClockShared)
+            else if (!RideRules.RealTime(GoingPublic.TrafficMirrored))
             {
-                why = "in a Going Public session a ride takes no time";
+                why = "on a guest's machine of a Going Public session the street is the host's";
             }
             else
             {
@@ -140,7 +140,9 @@ namespace RealLifeOverhaul
             Logger?.Info("Transit check (journey): " + (first ? "leg 1 of 2: " : second ? "leg 2 of 2: " : string.Empty) + "the player rides the " + line.Number + " from " + StopLabel(from) + " to " + StopLabel(to)
                          + (first ? " to change there for the " + LineNumber(_plan.ChangeOn) + " to " + StopLabel(_plan.To) : string.Empty)
                          + " in real time on the game's activity panel: " + (to.Order - from.Order) + " stop(s), " + (to.Metres - from.Metres).ToString("F0") + " m of line, " + _jMinutes.ToString("F0")
-                         + " game minutes by the timetable; the panel offers fast-forward and the time skip: PASS.");
+                         + " game minutes by the timetable; " + (GoingPublic.ClockShared
+                             ? "in a Going Public session (" + (GoingPublic.IsHost ? "hosted here" : "here") + "): the bus is this machine's own, not the shared traffic; no fast forward (the game's speed is everyone's), the skip is the fade that passes no time"
+                             : "the panel offers fast-forward and the time skip") + ": PASS.");
             return true;
         }
 
