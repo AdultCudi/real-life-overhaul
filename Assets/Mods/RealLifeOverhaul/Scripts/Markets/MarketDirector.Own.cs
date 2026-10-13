@@ -235,7 +235,8 @@ namespace RealLifeOverhaul.Markets
             }
         }
 
-        // The statement days since the last counted into the company's quarters (a year back at the most).
+        // The statement days since the last counted into the company's quarters (as far back as the game keeps them). The
+        // day that has just ended waits a day: the mod's own costs of it are put into its statement after the game's run.
         private void Books(ListingFile f, int day)
         {
             Func<int, int, OwnBooks> books = MarketBridges.Books;
@@ -244,7 +245,7 @@ namespace RealLifeOverhaul.Markets
                 return;
             }
             int from = Math.Max(f.BooksDay + 1, day - Year * 3);
-            for (int d = from; d < day; d++)
+            for (int d = from; d < day - 1; d++)
             {
                 OwnBooks b = books(d, d + 1);
                 if (b.Days > 0)

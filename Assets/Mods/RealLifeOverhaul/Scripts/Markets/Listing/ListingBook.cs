@@ -231,10 +231,14 @@ namespace RealLifeOverhaul.Markets
             return best;
         }
 
+        /// <summary>The least price taken: the range's bottom, its middle, or any price at all.</summary>
+        public const int WalkLow = 0, WalkMiddle = -2, WalkAny = 1;
+
         /// <summary>
         /// The prospectus: the offer of a share of the company at a price range around the advisers' price, from what the
         /// books say a share is worth (<paramref name="fairCents"/>, with all the shares there will be). Sets the shares,
-        /// the range and what was found worth.
+        /// the range and what was found worth. The least price taken is a price in cents, or <see cref="WalkLow"/> (the
+        /// range's bottom) or <see cref="WalkMiddle"/> (its middle).
         /// </summary>
         public static void Prospectus(ListingFile f, int floatBp, int fairCents, int walkCents)
         {
@@ -243,7 +247,7 @@ namespace RealLifeOverhaul.Markets
             int mid = Math.Max(1, (int)Math.Round(fairCents * (1.0 - ListingCatalogue.IpoDiscount)));
             f.LowCents = Step(mid * (1.0 - ListingCatalogue.RangeSpread), false);
             f.HighCents = Math.Max(f.LowCents + ListingCatalogue.PriceStepCents, Step(mid * (1.0 + ListingCatalogue.RangeSpread), true));
-            f.WalkCents = walkCents > 0 ? walkCents : f.LowCents;
+            f.WalkCents = walkCents > 0 ? walkCents : walkCents == WalkMiddle ? Step((f.LowCents + f.HighCents) * 0.5, false) : f.LowCents;
         }
 
         /// <summary>A price as a whole number of steps, rounded down or up.</summary>

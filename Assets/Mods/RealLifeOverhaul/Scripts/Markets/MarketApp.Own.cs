@@ -224,8 +224,9 @@ namespace RealLifeOverhaul.Markets
             Transform row = box.ButtonRow();
             if (all)
             {
-                int walk = _walk == 0 ? low : _walk == 1 ? (low + high) / 2 : 1;
-                InfoBox.Button(row, InfoBox.Positive, "reallife_lst_publish", () => UiClone.Safe(() => Publish(name, walk)));
+                int walk = _walk == 0 ? ListingBook.WalkLow : _walk == 1 ? ListingBook.WalkMiddle : ListingBook.WalkAny;
+                string least = _walk == 0 ? MarketText.Price(low) : _walk == 1 ? MarketText.Price(ListingBook.Step((low + high) * 0.5, false)) : MarketText.T("reallife_lst_walk_any");
+                InfoBox.Button(row, InfoBox.Positive, "reallife_lst_publish", () => UiClone.Safe(() => Publish(name, walk, least)));
             }
             AskName(row, name);
             InfoBox.Button(row, InfoBox.Negative, "reallife_lst_withdraw", () => UiClone.Safe(Withdraw));
@@ -253,11 +254,10 @@ namespace RealLifeOverhaul.Markets
             }), null, name ?? string.Empty, false, 32));
         }
 
-        private void Publish(string name, int walk)
+        private void Publish(string name, int walk, string least)
         {
-            ListingFile f = _director.Listing;
             HudConfirm.Show("reallife_lst_confirm_publish".Localize(new { name }),
-                "reallife_lst_confirm_publish_body".Localize(new { name, share = MarketText.Percent(_floatBp), days = ListingCatalogue.BookDays.ToString(), least = walk > 1 ? MarketText.Price(walk) : MarketText.T("reallife_lst_walk_any") }),
+                "reallife_lst_confirm_publish_body".Localize(new { name, share = MarketText.Percent(_floatBp), days = ListingCatalogue.BookDays.ToString(), least }),
                 () => UiClone.Safe(() =>
                 {
                     Step(_director.Publish(name, _floatBp, walk));
