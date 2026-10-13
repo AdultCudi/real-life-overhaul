@@ -62,7 +62,9 @@ namespace RealLifeOverhaul
     /// - on foot at the stop the player is shown, in the game's own panel, the stop, the line and
     ///   the next bus; may sit on the shelter's bench (<see cref="TransitSeat"/>); picks any stop
     ///   of the network from the game's own list (<see cref="TransitTrips"/>), at once or while
-    ///   waiting; gets on when the bus stands, pays, and is carried there (<see cref="TransitRide"/>).
+    ///   waiting; walks to the bus's door, pays, steps in, sits down (stands on a full bus) and is
+    ///   seen pulling away (<see cref="BusRider"/>); the time passes under a fade (<see cref="TransitRide"/>);
+    ///   at the far end gets up and off the bus that stands there, which then leaves.
     ///   All of that is in TransitDirector.Player.cs.
     ///
     /// Every step writes one "Transit check (...)" line with what was measured and PASS or FAIL,
@@ -114,8 +116,8 @@ namespace RealLifeOverhaul
         public static IModLogger Logger;
         public static TransitDirector Instance { get; private set; }
 
-        /// <summary>True while the player is aboard a bus (the ride hides the player and darkens the screen).</summary>
-        public static bool Riding => Instance != null && Instance._ride != null && Instance._ride.Riding;
+        /// <summary>True while the player is aboard a bus: from the step up at its door until they are off it at the far end (or the old ride's fade).</summary>
+        public static bool Riding => Instance != null && ((Instance._ride != null && Instance._ride.Riding) || (Instance._rider != null && Instance._rider.Aboard));
 
         /// <summary>True while the stop's panel (whose buttons are on the game's interact keys) is on screen: the mod's own enter-a-door key stands aside.</summary>
         public static bool TakesInteractKey => Instance != null && (Instance._panel.Showing || Instance._keyFrame == Time.frameCount);
@@ -126,6 +128,9 @@ namespace RealLifeOverhaul
         private readonly StringBuilder _text = new StringBuilder(320);
         private readonly TransitEta _eta = new TransitEta();
         private readonly TransitSeat _seat = new TransitSeat();
+        private BusRider _rider;
+        private TransitBus _offBus;      // the bus the player has just stepped down from at the far end: it closes its doors and goes once they are clear
+        private float _offAt;
         private TransitBus _bus;
         private TransitBus _seenOff;     // the bus a rider sees pull away
         private Rider _alighter;
@@ -161,6 +166,7 @@ namespace RealLifeOverhaul
         private Vector3 _door;
         private Vector3 _doorInwards;
         private bool _doorFound;
+        private Vector3 _exitDoor;       // where somebody getting off steps down to: the middle door, else the front one
         private bool _boardable;         // the waiting people have a clear way to the door
         private bool _busFull;
         private bool _wasStanding;
@@ -189,6 +195,8 @@ namespace RealLifeOverhaul
             _bus = new TransitBus(_root.gameObject);
             _seenOff = new TransitBus(_root.gameObject);
             _ride = new TransitRide(this);
+            BusRider.Logger = Logger;
+            _rider = new BusRider(this);
             _subway = new SubwayJourney(this, _ride);
             for (int i = 0; i < Waiters; i++)
             {
@@ -202,6 +210,7 @@ namespace RealLifeOverhaul
             SaveHook.Drop(_onSave);
             try
             {
+                _rider?.Abort("the city is going", put: false);
                 RemovePlayerUi();
                 _seat.Abort();
                 _ride.Abort();
@@ -234,7 +243,16 @@ namespace RealLifeOverhaul
             {
                 if (SaveGameManager.Current != null && SaveGameManager.Current.modData != null)
                 {
-                    TransitState.Save(SaveGameManager.Current.modData);
+                    // Part of the way through a bus ride the save has the player on the ground at a stop, not on the bus
+                    // (this runs after the game has written where the player is: PlayerHelper.SaveCurrentPosition).
+                    float fareBack = 0f;
+                    if (_rider != null && _rider.ForSave(out Vector3 place, out fareBack))
+                    {
+                        SaveGameManager.Current.LastPlayerPosition = place;
+                        Logger?.Info("Transit check (save): written part of the way through a bus ride (" + _rider.Now + "): the save has the player at "
+                                     + (BusInside.SaveAtStart(_rider.Stage) ? "the stop they boarded at" + (fareBack > 0f ? ", the fare to be given back" : "") : "the stop they get off at") + ": PASS.");
+                    }
+                    TransitState.Save(SaveGameManager.Current.modData, fareBack);
                 }
             }
             catch (Exception e)
@@ -253,6 +271,10 @@ namespace RealLifeOverhaul
             }
             try
             {
+                if (_rider.Active)
+                {
+                    _rider.Frame(Time.deltaTime, Time.time);
+                }
                 if (_seat.Active)
                 {
                     if (_seat.Frame(Time.deltaTime))
@@ -286,6 +308,7 @@ namespace RealLifeOverhaul
             Logger?.Warn("Transit: buses and the subway journey are switched off for this session after the error above.");
             try
             {
+                _rider.Abort("a fault switched the buses off", put: true);
                 _seat.Abort();
                 _ride.Abort();
                 ClearStreet(true);
@@ -311,6 +334,21 @@ namespace RealLifeOverhaul
                 TransitState.Load(SaveGameManager.Current.modData);
                 TransitPhone.Setup();
             }
+            if (TransitState.FareBack > 0f)
+            {
+                // The save was written part of the way through a bus ride: the player is at the stop they boarded at, and the fare is theirs again.
+                float fare = TransitState.FareBack;
+                TransitState.FareBack = 0f;
+                RiderFareBack(fare, "the save was written part of the way through a bus ride");
+            }
+            if (_rider.Now == BusRider.Step.Away && !_ride.Riding)
+            {
+                _rider.Done();   // (the ride's routine ended without reaching the far end: it gave the player back itself)
+            }
+            if (_offBus != null)
+            {
+                SeeOff(now);
+            }
             if ((_tick & 7) == 0)
             {
                 SaveHook.Keep(_onSave ?? (_onSave = OnSaveGame));   // the mod's one relay in the game's save event (Core/SaveHook): nothing is allocated while that event has not changed
@@ -319,7 +357,7 @@ namespace RealLifeOverhaul
             Vector3 at = game.playerController.transform.position;
             bool onFoot = !PlayerHelper.IsUsingVehicle && !BuildingManager.IsInsideBuilding;
 
-            _subway.Tick(now, at, onFoot && !_ride.Riding && _player != PlayerStep.Choosing && !_seat.Active);
+            _subway.Tick(now, at, onFoot && !_ride.Riding && !_rider.Active && _player != PlayerStep.Choosing && !_seat.Active);
 
             if (!Settings.Buses || !TrafficTools.Ready)
             {
@@ -690,9 +728,14 @@ namespace RealLifeOverhaul
                     {
                         busy |= _waiting[i].Step == RiderStep.Rising || _waiting[i].Step == RiderStep.Boarding || _waiting[i].Step == RiderStep.Entering;
                     }
-                    bool held = (_player == PlayerStep.Choosing && now < _chooseUntil) || _ride.Riding;   // (aboard: it stands until the screen is dark)
+                    bool held = (_player == PlayerStep.Choosing && now < _chooseUntil) || _ride.Riding || _rider.HoldsBus;   // (the player on the way to its door, getting on, or getting off again)
+                    if (_rider.WantsDeparture && !busy)
+                    {
+                        Leave(now);   // they sit (or hold on): the doors close and it goes
+                        break;
+                    }
                     // The driver waits for somebody at the stop or walking up to it: the least stand is for an empty stop.
-                    bool wanted = !_busFull && PlayerAtStop(WaitsWithin);
+                    bool wanted = PlayerAtStop(WaitsWithin) && !_rider.Aboard;
                     if ((now >= _dwellUntil && !busy && !held && !wanted) || _bus.Standing > DwellMost + (held ? ChooseFor : 0f))
                     {
                         Leave(now);
@@ -811,7 +854,7 @@ namespace RealLifeOverhaul
         private void Arrived(float now)
         {
             _dwellUntil = now + DwellLeast;
-            if (!_busFull && !_ride.Riding && PlayerAtStop(WaitsWithin))
+            if (!Riding && PlayerAtStop(WaitsWithin))
             {
                 // Said once as it pulls in: the bus is a small one, and it is not obvious that it is theirs.
                 Notifications.Show(NotificationType.Info, "reallife_transit_bus_in",
@@ -855,6 +898,14 @@ namespace RealLifeOverhaul
                 }
             }
             bool wayClear = _doorFound && WayClear(_served.Wait, _door, car);
+            // Those who get off do so by the middle door, as the player does: where it is on the road and clear, else by the front one.
+            _exitDoor = _door;
+            _bus.MiddleDoorPlace(out Vector3 exitWant, out _);
+            if (_doorFound && StreetSpots.OnRoad(exitWant, 0.5f, out Vector3 exitAt) && CitySpots.Flat(exitAt - exitWant) < 0.3f * 0.3f && JobSpots.Clear(exitAt, car.transform)
+                && WayClear(_served.Wait, exitAt, car))
+            {
+                _exitDoor = exitAt;
+            }
             int waiting = 0;
             int seated = 0;
             for (int i = 0; i < Waiters; i++)
@@ -865,14 +916,14 @@ namespace RealLifeOverhaul
             bool sat = _seat.Seated;
             Logger?.Info("Transit check (doors): doors open; a place to step in " + (_doorFound ? "found " + out_.ToString("F1") + " m further out than the door wants" : "NOT found on the road surface beside the door")
                          + "; the way from the kerb to it " + (!_doorFound ? "not looked at" : wayClear ? "clear" : "has vehicles standing in it") + "; " + waiting + " waiting (" + seated + " seated)"
-                         + (sat ? ", the player seated and getting up" : "") + "; the bus is " + (_busFull ? "full: nobody boards" : "not full") + "; it stands "
+                         + (sat ? ", the player seated and getting up" : "") + "; the bus is " + (_busFull ? "full: no seat free, whoever boards stands" : "not full") + "; it stands "
                          + (_bus.InBay ? "out of the lane" : "in the lane") + ": "
                          + (_doorFound && wayClear ? "PASS" : "FAIL (nobody on foot gets in or out this time; the player still boards from the stop)") + ".");
             if (!wayClear)
             {
                 _doorFound = false;
             }
-            _boardable = _doorFound && !_busFull;
+            _boardable = _doorFound;   // (a full bus has no seat free: whoever gets on stands)
             if (sat)
             {
                 _seat.Stand(now);   // the bus is here: up off the bench
@@ -884,7 +935,7 @@ namespace RealLifeOverhaul
             // How long it stands at the least. In the lane it is in the way of everything behind it, so where nobody at all
             // has business with it (nobody waiting or walking up, nobody getting out, the player not near and not aboard
             // or choosing) the doors open and shut and it goes. Out of the lane, in its bay, it keeps the usual stand.
-            bool nobody = waiting == 0 && !sat && _alighter.Step == RiderStep.None && _player != PlayerStep.Choosing && !_ride.Riding && !PlayerAtStop(WaitsWithin);
+            bool nobody = waiting == 0 && !sat && _alighter.Step == RiderStep.None && _player != PlayerStep.Choosing && !Riding && !PlayerAtStop(WaitsWithin);
             _dwellLeast = toLane < 0f && nobody ? DwellEmpty : DwellLeast;
             _dwellUntil = now + _dwellLeast;
             _panelKey = int.MinValue;
@@ -915,10 +966,18 @@ namespace RealLifeOverhaul
         {
             _wasStanding = false;
             _doorFound = false;
+            if (_rider.Now == BusRider.Step.ToDoor)
+            {
+                _rider.Cancel("the bus left before they reached its door");
+            }
             if (_bus.State == TransitBus.Phase.Standing)
             {
                 float stood = _bus.Standing;
                 _bus.Depart();
+                if (_rider.Aboard && _rider.Stage == BusInside.Stage.Aboard)
+                {
+                    _rider.Departing();   // (no getting off now: the pull-away is watched)
+                }
                 bool sound = stood <= DwellMost + ChooseFor + 2f;
                 bool waits = _bus.AwaitingGap;   // in its bay: it goes when the lane is clear, and the line is written then (RunBus)
                 _departure = null;
@@ -927,7 +986,7 @@ namespace RealLifeOverhaul
                 {
                     string said = "Transit check (departure): the bus " + (waits ? "closes its doors" : "pulls away in the lane") + " after standing " + stood.ToString("F0") + " s ("
                                   + _dwellLeast.ToString("F0") + " to " + DwellMost.ToString("F0") + " allowed); " + _boarded + " got in, " + _alighted + " got out, the player "
-                                  + (_ride.Riding ? "is aboard" : _player == PlayerStep.Choosing ? "was still choosing a stop" : "did not board");
+                                  + (Riding ? "is aboard" : _player == PlayerStep.Choosing ? "was still choosing a stop" : "did not board");
                     if (waits)
                     {
                         _departure = said;
@@ -984,7 +1043,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            bool doorBusy = _alighter.Step == RiderStep.Exiting;
+            bool doorBusy = _alighter.Step == RiderStep.Exiting || _rider.AtDoor;   // (the player on their way to the front door has it first)
             for (int i = 0; i < Waiters; i++)
             {
                 doorBusy |= _waiting[i].Step == RiderStep.Boarding || _waiting[i].Step == RiderStep.Entering;
@@ -1220,15 +1279,15 @@ namespace RealLifeOverhaul
             {
                 _others = new JobCast(this, Logger);
             }
-            StreetActor person = _others.Put(_door, true);
+            StreetActor person = _others.Put(_exitDoor, true);
             if (person == null)
             {
                 return;
             }
-            person.StandAt(_door, _door - _doorInwards * 3f);
+            person.StandAt(_exitDoor, _exitDoor - _doorInwards * 3f);
             // Out of the van's sliding door there is a clip; down a bus's step there is none: they are simply on the road, and walk.
             bool clip = !_bus.Modelled && ClipLibrary.TryGet("job_car_exit", out CityClip exit) && person.Work("job_car_exit");
-            JobCast.DoorSound(_door);
+            JobCast.DoorSound(_exitDoor);
             _alighter.Person = person;
             _alighter.Spot = away;
             _alighter.Seat = -1;
@@ -1278,6 +1337,8 @@ namespace RealLifeOverhaul
         /// <summary>Everything of the buses off the street: people, buses, and (with <paramref name="props"/>) the dressed stops.</summary>
         private void ClearStreet(bool props)
         {
+            _rider.Abort("everything of the buses is taken off the street", put: true);   // (not while the ride's time passes: the ride has the player then)
+            _offBus = null;
             _seat.Abort();
             _sitAt = null;
             ReleaseRiders();
@@ -1316,7 +1377,7 @@ namespace RealLifeOverhaul
             {
                 why = TestRefusal.FeatureOff;
             }
-            if (why == TestRefusal.None && _ride.Riding)
+            if (why == TestRefusal.None && Riding)
             {
                 why = TestRefusal.SceneActive;
             }

@@ -2,7 +2,8 @@
 the game's own traffic vehicles, whose renderers are hidden meanwhile (so the body has its own wheels), and the light
 bar. Same rules as props.py: metres, X right, Y forward, Z up, one mesh on the shared atlas; Unity gets (x, z, y).
 
-    city_bus             the body of the mod's own bus (Transport/BusVehicle), on the ground under its middle
+    city_bus             the body of the mod's own bus (Transport/BusVehicle) with its inside, on the ground under its middle
+    city_bus_roof        its roof and the ceiling under it: BusVehicle stops drawing it while the player rides and the camera is over it
     city_bus_wheel       a front wheel on its own middle, and the rear pair (city_bus_wheel_twin): BusVehicle spins and steers them
     city_bus_door        one leaf of its doors: BusVehicle puts two in each door and slides them open
     city_bus_light_*     its lamps lit, a mesh for each of BusVehicle's groups (head, tail, brake, left, right), at the bus's origin
@@ -361,6 +362,25 @@ BUS_LEAF = (0.60, 2.30, 0.04)             # each door is two leaves of this (Doo
 # and the middle of the roof.
 BUS_SILL, BUS_SKIRT, BUS_WAIST, BUS_BAND, BUS_RAIL, BUS_ROOF = 0.22, 0.60, 1.12, 2.70, 2.76, 2.865
 BUS_POD = (-4.90, -2.70, 3.05)            # the air-conditioning pod: from, to, and its top (BusVehicle.Height)
+# The inside, which Transport/BusInside walks a rider through: the same numbers are written there, and checks_service.py
+# reads them from that file and measures them here. Facing forward is +Y; a seat is said by its middle.
+IN_WALL = 1.15                # the inner face of the side walls; a door's step reaches in from the side to here, where the floor begins
+IN_ENDS = (5.30, -5.30)       # the inner faces of the front and back walls
+IN_CAB = (-0.40, 3.86)        # the driver's cab, closed and roofed: from the left wall to x -0.40, from y 3.86 forward
+IN_PLATFORM = 5.04            # the front door's platform ends at the wall under the windscreen
+IN_HOUSINGS = ((BUS_AXLES[0], 0.55), (BUS_AXLES[1], 0.60))   # a wheel housing over each axle, from |x| this to the wall (a tyre steered 38 degrees sweeps in to 0.60)
+IN_HOUSING_LONG, IN_HOUSING_TOP = 0.62, 1.08                  # half a housing's length along the bus, and its top
+SEAT_UP, SEAT_W, SEAT_D, SEAT_FEET = 0.46, 0.40, 0.40, 0.30   # a seat's top over the floor, its width and depth, and where the feet stand ahead of its middle (sit_bench)
+RIDER_SEATS = ((-0.45, -0.52), (-0.86, -0.52))                # the two a rider sits on, opposite the middle door with open floor ahead of them
+SEATS = RIDER_SEATS + ((-0.45, 0.95), (-0.86, 0.95), (-0.45, 1.70), (-0.86, 1.70), (-0.45, -1.75), (-0.86, -1.75), (-0.45, -4.15), (-0.86, -4.15),
+                       (0.86, 0.80), (0.86, 1.55), (0.86, -1.75), (0.86, -4.15))
+BENCH_Y = -5.05               # the back seat, across the bus
+STRAP_X, STRAP_RAIL, STRAP_LOOP = 0.30, 2.45, BUS_FLOOR + 1.82   # the rail along the aisle the straps hang from; the loop's grip (strap_hang: 1.82 m over the feet)
+STRAPS = (-3.80, -3.00, -1.95, -0.95, -0.55, -0.15, 0.65, 1.45, 2.25)
+RIDER_STRAP = -0.55           # the strap a rider standing opposite the middle door holds (strap_hang: 0.28 m to the right, 0.16 ahead)
+POLES = ((-0.25, 1.33), (0.66, 1.18), (-0.25, -1.36), (0.66, -1.36))
+ROOF_FROM = 2.695             # what is wholly this high or higher, inside the walls and behind the front, is the roof (city_bus_roof)
+IN_STEP = IN_WALL
 # The windows, front to back. On the right the first has the side sign over it; on the left the last is the engine's grille.
 BUS_RIGHT = ((2.62, 3.82), (1.38, 2.56), (0.10, 1.32), (-2.42, -1.20), (-3.70, -2.48), (-5.00, -3.76))
 BUS_LEFT = ((3.88, 5.11), (2.62, 3.82), (1.38, 2.56), (0.10, 1.32), (-1.14, 0.04), (-2.42, -1.20), (-3.70, -2.48), (-5.00, -3.76))
@@ -438,10 +458,135 @@ def bus_bumper(p, end, radius, z0, z1):
     p.add(ribbon(path, away, z1 - z0, 0.05), Paint("svc_bus_grey"), sharp=50)
 
 
+def slab(p, x0, x1, y0, y1, z0, z1, paint):
+    """A box between two corners."""
+    p.add(box(x1 - x0, y1 - y0, z1 - z0), flat(paint), at=((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2))
+
+
+def housing(p, side, axle, inner):
+    """A wheel housing over an axle on one side: its face towards the aisle, its top and its two ends. It has no face on the
+    wall's side and none underneath, so that the arch in the side looks into it, as into a real one."""
+    x0, x1 = side * inner, side * IN_WALL
+    y0, y1 = axle - IN_HOUSING_LONG, axle + IN_HOUSING_LONG
+    z0, z1 = BUS_SILL - 0.11, IN_HOUSING_TOP
+    bm = bmesh.new()
+    quads = (((x0, y0, z0), (x0, y1, z0), (x0, y1, z1), (x0, y0, z1)),          # towards the aisle
+             ((x0, y0, z1), (x0, y1, z1), (x1, y1, z1), (x1, y0, z1)),          # the top
+             ((x0, y0, z0), (x0, y0, z1), (x1, y0, z1), (x1, y0, z0)),          # its back end
+             ((x0, y1, z0), (x1, y1, z0), (x1, y1, z1), (x0, y1, z1)))          # its front end
+    outs = ((-side, 0, 0), (0, 0, 1), (0, -1, 0), (0, 1, 0))
+    for quad, out in zip(quads, outs):
+        face = bm.faces.new([bm.verts.new(q) for q in quad])
+        face.normal_update()
+        if face.normal.dot(Vector(out)) < 0:
+            face.normal_flip()
+    p.add(bm, flat("plastic_grey"), sharp=30)
+
+
+def bus_seat(p, x, y, paint="wool_blue"):
+    """A seat facing forward, its middle at (x, y): the cushion's top SEAT_UP over the floor, a back leaning back 8 degrees
+    behind it, on a leg. sit_bench sits on it with the feet SEAT_FEET ahead of the middle."""
+    top = BUS_FLOOR + SEAT_UP
+    p.add(box(SEAT_W, SEAT_D, 0.07, bevel=0.015), flat(paint), at=(x, y, top - 0.035))
+    p.add(box(SEAT_W, 0.06, 0.52, bevel=0.015), flat(paint), at=(x, y - SEAT_D / 2 - 0.01, top + 0.27), rot=(-8, 0, 0))
+    p.add(box(0.06, 0.06, top - 0.07 - BUS_FLOOR), flat("steel_dark"), at=(x, y - 0.05, (BUS_FLOOR + top - 0.07) / 2))
+
+
+def bus_strap(p, y):
+    """A hand strap on the rail along the aisle: a band down from the rail and a triangular handle whose bottom bar is the grip."""
+    p.add(box(0.022, 0.010, STRAP_RAIL - STRAP_LOOP - 0.06), flat("rubber_black"), at=(STRAP_X, y, (STRAP_RAIL + STRAP_LOOP + 0.06) / 2))
+    p.add(tube([(STRAP_X, y - 0.055, STRAP_LOOP), (STRAP_X, y + 0.055, STRAP_LOOP), (STRAP_X, y, STRAP_LOOP + 0.075)], 0.011, 5, closed=True), flat("rubber_black"), sharp=70)
+
+
+def bus_inside(p, lintel):
+    """The inside of the city bus below its ceiling (the ceiling is city_bus_roof's): one floor, walls below the windows,
+    the closed cab, the wheel housings, the seats, the poles, the rails and straps along the aisle, the back seat."""
+    front, back = IN_ENDS
+    (front_axle, front_in), (rear_axle, rear_in) = IN_HOUSINGS
+    fh0, fh1 = front_axle - IN_HOUSING_LONG, front_axle + IN_HOUSING_LONG
+    rh0, rh1 = rear_axle - IN_HOUSING_LONG, rear_axle + IN_HOUSING_LONG
+    floor = BUS_FLOOR
+    # The floor: from wall to wall, narrower between the housings.
+    for y0, y1, half in ((back, rh0, IN_WALL), (rh0, rh1, rear_in), (rh1, fh0, IN_WALL), (fh0, fh1, front_in), (fh1, front, IN_WALL)):
+        slab(p, -half, half, y0, y1, floor - 0.04, floor, "plastic_grey")
+    for side, inner in ((1, front_in), (-1, front_in)):
+        housing(p, side, front_axle, inner)
+    for side in (1, -1):
+        housing(p, side, rear_axle, rear_in)
+    # The walls below the windows, 3 cm thick inside the side, where nothing else stands against them.
+    doors = [(m - BUS_LEAF[0] + 0.01, m + BUS_LEAF[0] - 0.01) for m in BUS_DOORS]
+    for side in (1, -1):
+        spans = [(back, rh0), (rh1, fh0), (fh1, IN_CAB[1])]
+        if side > 0:
+            cut = []
+            for a, b in spans:
+                for d0, d1 in doors:
+                    if a < d0 < b:
+                        cut.append((a, d0))
+                        a = d1
+                cut.append((a, b))
+            spans = [(a, b) for a, b in cut if b - a > 0.02]
+        for a, b in spans:
+            slab(p, *sorted((side * IN_WALL, side * (IN_WALL + 0.03))), a, b, floor, BUS_WAIST - 0.02, "paint_white")
+    slab(p, -IN_WALL, IN_WALL, back - 0.03, back, floor, 1.30, "paint_white")                # the back wall, up to the back window
+    # The cab: its partition beside the platform, its back wall, and a roof of its own over it and over the platform's front.
+    cab_x, cab_y = IN_CAB
+    slab(p, cab_x - 0.02, cab_x, cab_y, IN_PLATFORM, floor, lintel, "svc_bus_inside")
+    slab(p, -IN_WALL, cab_x, cab_y - 0.02, cab_y, floor, lintel, "svc_bus_inside")
+    slab(p, cab_x, IN_WALL, IN_PLATFORM, IN_PLATFORM + 0.02, floor, lintel, "svc_bus_inside")
+    slab(p, -IN_WALL, cab_x, cab_y - 0.02, front, lintel, lintel + 0.06, "svc_bus_red")
+    slab(p, cab_x, IN_WALL, IN_PLATFORM, front, lintel, lintel + 0.06, "svc_bus_red")
+    # The seats, all facing forward, and the back seat across the bus on a plinth.
+    for x, y in SEATS:
+        bus_seat(p, x, y)
+    top = floor + SEAT_UP
+    p.add(box(2 * IN_WALL - 0.02, SEAT_D + 0.02, 0.07, bevel=0.015), flat("wool_blue"), at=(0, BENCH_Y, top - 0.035))
+    slab(p, -IN_WALL + 0.01, IN_WALL - 0.01, BENCH_Y - 0.20, BENCH_Y + 0.18, floor, top - 0.07, "plastic_grey")
+    p.add(box(2 * IN_WALL - 0.02, 0.06, 0.52, bevel=0.015), flat("wool_blue"), at=(0, back + 0.04, top + 0.27), rot=(-8, 0, 0))
+    # Poles from the floor to the ceiling, rails along the aisle under it and the straps on the right-hand one.
+    for x, y in POLES:
+        rod(p, (x, y, floor), (x, y, lintel), 0.018, "paint_yellow", 6, caps=False)
+    for x in (STRAP_X, -STRAP_X):
+        rod(p, (x, back + 0.75, STRAP_RAIL), (x, cab_y - 0.10, STRAP_RAIL), 0.016, "paint_yellow", 6)
+        for y in (back + 0.85, -2.0, 0.60, cab_y - 0.20):
+            rod(p, (x, y, STRAP_RAIL), (x, y, lintel), 0.010, "paint_yellow", 4, caps=False)
+    for y in STRAPS:
+        bus_strap(p, y)
+
+
+def split_roof(p, keep_roof):
+    """Splits the body at its roof: the faces wholly ROOF_FROM or higher, inside the walls and short of the front and the
+    back (their sign boxes, the high brake lamp), are the roof. Keeps one side of the cut and deletes the other."""
+    bm = p.bm
+    gone = []
+    for face in bm.faces:
+        roof = all(v.co.z >= ROOF_FROM and abs(v.co.x) <= BUS_HALF + 0.015 and abs(v.co.y) <= 5.25 for v in face.verts)
+        if roof != keep_roof:
+            gone.append(face)
+    bmesh.ops.delete(bm, geom=gone, context="FACES")
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context="VERTS")
+
+
 def city_bus():
-    p = Prop("city_bus", "lit", pivot="ground centre under the middle of the bus; nose to +Y",
-             note="the mod's own city bus (Transport/BusVehicle): axles at y +-2.90, doors on +X centred y 4.45 and -0.55 with their threshold 0.33 m up; "
-                  "the wheels, the door leaves and the lamps are props of their own (city_bus_wheel, city_bus_wheel_twin, city_bus_door, city_bus_light_*)")
+    p = bus_body("city_bus", "the body of the mod's own city bus (Transport/BusVehicle) and its inside: axles at y +-2.90, doors on +X centred y 4.45 and -0.55 with their threshold 0.33 m up; "
+                 "the roof is city_bus_roof, the wheels, the door leaves and the lamps are props of their own (city_bus_wheel, city_bus_wheel_twin, city_bus_door, city_bus_light_*)")
+    split_roof(p, keep_roof=False)
+    return p
+
+
+def city_bus_roof():
+    p = bus_body("city_bus_roof", "the city bus's roof with the ceiling under it, at the bus's own origin: BusVehicle stops drawing it (it still casts its shadow) "
+                 "while the player rides and the camera is over it, so that the view looks into the bus")
+    split_roof(p, keep_roof=True)
+    cab_x, cab_y = IN_CAB
+    lintel = BUS_FLOOR + BUS_LEAF[1]
+    slab(p, cab_x, IN_WALL, IN_ENDS[1], IN_PLATFORM, lintel, lintel + 0.03, "paint_white")
+    slab(p, -IN_WALL, cab_x, IN_ENDS[1], cab_y - 0.02, lintel, lintel + 0.03, "paint_white")
+    return p
+
+
+def bus_body(name, note):
+    p = Prop(name, "lit", pivot="ground centre under the middle of the bus; nose to +Y", note=note)
     s = Shell(low=0.20, high=1.70, length=11.0)
     # The red is the clean part of its swatch all over, as the lettering's ground is: only the skirt gets the road's dirt.
     s.rule("red", "flat", "svc_bus_red").rule("roof", "flat", "svc_bus_red").rule("skirt", "swatch", "svc_bus_grey")
@@ -518,20 +663,18 @@ def city_bus():
         s.pane([a1, b1], [a2, b2], frame, glass, (0, -1, 0), margin=0.03, depth=0.03 if glass == "grille" else 0.02)
     p.add(box(0.54, BUS_END - BUS_NOSE, 0.30), flat("gloss_black"), at=(0, -(BUS_END + BUS_NOSE) / 2, 2.62))
 
-    # ---- the doors: open in the side down to the floor, a dark inside behind them; the code's leaves close them.
+    # ---- the doors: open in the side down to the floor; the code's leaves close them. Behind them the inside of the bus
+    # (bus_inside): the doors' jambs reach in from the side to where its floor and walls begin.
     for (y0, y1), middle in zip(doors, BUS_DOORS):
         i0, i1 = body.at(y0), body.at(y1)
-        back = -0.40 if middle > 0 else -(BUS_HALF - 0.06)          # the platform beside the driver; across the bus at the middle door
         edge = [body.P(i, 1) for i in range(i0, i1 + 1)]          # the threshold, at the floor
         top = [Vector((body.P(i, 4).x, body.ys[i], lintel)) for i in range(i0, i1 + 1)]
         for j in range(i1 - i0):
             s.face([top[j], top[j + 1], body.P(i0 + j + 1, 4), body.P(i0 + j, 4)], "black", out=(1, 0, 0))
-        s.face(edge + [(1.12, y1, BUS_FLOOR), (1.12, y0, BUS_FLOOR)], "step", out=(0, 0, 1))
-        s.face([(1.12, y0, BUS_FLOOR), (1.12, y1, BUS_FLOOR), (back, y1, BUS_FLOOR), (back, y0, BUS_FLOOR)], "floor", out=(0, 0, 1))
-        s.face(top + [(back, y1, lintel), (back, y0, lintel)], "inside", out=(0, 0, -1))
+        s.face(edge + [(IN_STEP, y1, BUS_FLOOR), (IN_STEP, y0, BUS_FLOOR)], "step", out=(0, 0, 1))
+        s.face(top + [(IN_STEP, y1, lintel), (IN_STEP, y0, lintel)], "inside", out=(0, 0, -1))
         for i, y, out in ((i0, y0, (0, 1, 0)), (i1, y1, (0, -1, 0))):
-            s.face([body.P(i, 1), body.P(i, 2), body.P(i, 3), Vector((body.P(i, 4).x, y, lintel)), (back, y, lintel), (back, y, BUS_FLOOR)], "inside", out=out)
-        s.face([(back, y0, BUS_FLOOR), (back, y1, BUS_FLOOR), (back, y1, lintel), (back, y0, lintel)], "inside", out=(1, 0, 0))
+            s.face([body.P(i, 1), body.P(i, 2), body.P(i, 3), Vector((body.P(i, 4).x, y, lintel)), (IN_STEP, y, lintel), (IN_STEP, y, BUS_FLOOR)], "inside", out=out)
     s.add_to(p, sharp=40)
     for (y0, y1), middle in zip(doors, BUS_DOORS):
         for y in (y0 + 0.08, y1 - 0.08):                   # the yellow poles either side of the way in, a rail across under the ceiling
@@ -540,14 +683,10 @@ def city_bus():
     p.add(box(0.12, 0.10, 0.30, bevel=0.012), flat("steel_dark"), at=(0.42, doors[0][1] - 0.10, 1.25))          # the ticket validator by the driver
     p.add(box(0.004, 0.08, 0.10), flat("svc_lens_clear"), at=(0.482, doors[0][1] - 0.10, 1.31))
     rod(p, (0.42, doors[0][1] - 0.10, BUS_FLOOR), (0.42, doors[0][1] - 0.10, 1.10), 0.02, "paint_yellow", 6, caps=False)
-    for x in (-0.92, -0.48):                               # across from the middle door, two seats facing forward, hung on the wall
-        p.add(box(0.42, 0.42, 0.10, bevel=0.02), flat("wool_blue"), at=(x, BUS_DOORS[1] + 0.06, 0.50))
-        p.add(box(0.42, 0.08, 0.58, bevel=0.02), flat("wool_blue"), at=(x, BUS_DOORS[1] - 0.17, 0.84), rot=(-8, 0, 0))
+    bus_inside(p, lintel)
 
-    # ---- under the floor: the wheel boxes, so that one does not see through the arches (the front wheels steer 38 degrees);
-    # a rubber lip round each arch, inside the bus's width.
-    for y, half in ((front_axle, 0.55), (rear_axle, 0.60)):
-        p.add(box(2 * half, 2 * BUS_ARCH + 0.06, 0.93), flat("rubber_black"), at=(0, y, 0.575))
+    # ---- a rubber lip round each arch, inside the bus's width (the wheel housings inside are bus_inside's).
+    for y in (front_axle, rear_axle):
         for side in (1, -1):
             arch_lip(p, side * (BUS_HALF - 0.016), y, BUS_ARCH + 0.01, BUS_TYRE, side, paint="rubber_black", thick=0.016)
 
@@ -661,10 +800,11 @@ def bus_light(group, paint, note):
     return make
 
 
-def bus_parts(open_doors=False):
-    """Where BusVehicle puts the city bus's parts on it (kit space, turn about z): the wheels, the left ones turned round,
-    and the door leaves, shut or wholly open (out 0.07 m, along 0.56 m away from the door's middle)."""
-    parts = []
+def bus_parts(open_doors=False, roof=True):
+    """Where BusVehicle puts the city bus's parts on it (kit space, turn about z): its roof (left off for a view in), the
+    wheels, the left ones turned round, and the door leaves, shut or wholly open (out 0.07 m, along 0.56 m away from the
+    door's middle)."""
+    parts = [("city_bus_roof", (0.0, 0.0, 0.0), 0.0)] if roof else []
     for side in (1, -1):
         parts.append(("city_bus_wheel", (side * BUS_TRACK[0], BUS_AXLES[0], BUS_TYRE), 0.0 if side > 0 else 180.0))
         parts.append(("city_bus_wheel_twin", (side * BUS_TRACK[1], BUS_AXLES[1], BUS_TYRE), 0.0 if side > 0 else 180.0))
@@ -929,7 +1069,8 @@ def fire_bar_lens():
 # ---------------------------------------------------------------------------------------------- the list
 
 PROPS = [
-    (city_bus, 6500),
+    (city_bus, 9000),
+    (city_bus_roof, 1600),
     (bus_wheel("city_bus_wheel", BUS_TREAD[0], 0.075, "front wheel of the city bus: tyre 0.48 in radius and 0.30 wide, a steel wheel with ten nuts"), 350),
     (bus_wheel("city_bus_wheel_twin", BUS_TREAD[1], 0.13, "rear pair of the city bus as one wheel: 0.48 in radius, 0.56 wide over both tyres, the hub set deep"), 600),
     (city_bus_door, 120),

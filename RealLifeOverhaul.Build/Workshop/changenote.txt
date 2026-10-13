@@ -1,4 +1,4 @@
-0.4.5
+0.4.8
 
 New
-- Permadeath, an ending you can choose: off unless you switch it on, and kept with each save. With it on, your character can die for good, but only after a warning: a crash at very high speed, being hit by fast traffic on foot, a mugging refused, the private lender's men or a flu left untreated past three warnings. The game is saved at once, the City Ledger prints a front page in memory with their life's story, and the save can be opened again to read it but never played. It is off in a Going Public session and during the game's tutorial and missions.
+- Your own bank, late in a game: a banking licence at your headquarters and the capital the regulator wants paid in; the city's savers won from the rival banks by your rate and how far the city trusts you; loans to its people and businesses priced by risk, with defaults that follow the economy, business pressure and the council; arrears written off and partly recovered, through the courts with the justice system on; a fund in the Stocks app's companies; and a regulator that watches the capital ratio, fines a breach and closes a bank that cannot be saved. A run comes when the city's confidence falls, and the City Ledger reports it. The bank's books are in your headquarters' statement and the game's tax, in its own app.
