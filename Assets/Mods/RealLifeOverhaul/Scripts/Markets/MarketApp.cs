@@ -30,6 +30,7 @@ namespace RealLifeOverhaul.Markets
     {
         public const int TabMarket = 0, TabCompanies = 1, TabWatch = 2, TabOrders = 3, TabPortfolio = 4, TabHistory = 5;
         public const int IndexPage = -1;   // the page of the city's index (a company's page is its id)
+        private const string GuideTitle = "reallife_meta_title_markets";   // the Guide's page every page of the app points to at its foot
 
         private static readonly string[] TabKeys =
         {
