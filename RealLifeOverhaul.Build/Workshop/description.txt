@@ -6,7 +6,7 @@ Real Life Overhaul adds everyday life to the city of Big Ambitions: things happe
 [*][b]A living street.[/b] People chat, eat, queue and busk. There are accidents with ambulances and police, fires, crimes, street events and weather. Accidents come from drivers you can watch go wrong, and traffic brakes and sounds its horn for people in the road.
 [*][b]Driving.[/b] Cars that handle by their kind, a third-person and a chase camera, a speed reading, a garage for paint, parts and tuning, running costs, and people who react to your horn. A driving school with lessons, a theory test and a practical test.
 [*][b]Getting around.[/b] The mod's own city buses with stops, bays and zones of their own, the subway, a taxi called from your phone, bicycles and scooters, and a minimap with a GPS route.
-[*][b]Police and courts.[/b] Offences, fines, arrests, a cell, bail, hearings, community service and prison. A council you can vote for and stand for.
+[*][b]Police and courts.[/b] Offences, fines, arrests, a cell, bail, hearings, community service and prison. A council and a mayor you can vote for, and campaigns you can help.
 [*][b]Home and family.[/b] Cooking, chores, a partner, a wedding, a baby, friends and outings, leisure such as fishing and chess, and a roommate who shares the rent.
 [*][b]Work.[/b] Jobs you do yourself, with shifts and uniforms, gigs called by phone, and a career.
 [*][b]Money and credit.[/b] A credit rating from 300 to 850. A Finance app with loans, an overdraft, a card, car finance and a mortgage, and real consequences for not paying. Each bank has its own app too.
