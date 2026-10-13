@@ -8,6 +8,8 @@
 #
 # A translation passes when it has exactly en.json's keys in en.json's order and every text keeps its {placeholders}, its
 # <tags>, its line breaks, its heading and bullet marks, its "|" separators and a space at either end.
+# The Chinese file (zh-cn.json) is held to more: a text of three Latin words or more must hold a Chinese character, unless
+# it is on the short list ENGLISH_OK of texts that are only names, and %s/%d formats and web addresses must be kept.
 import io
 import json
 import os
@@ -16,11 +18,14 @@ import sys
 
 LOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'Assets', 'Mods', 'RealLifeOverhaul', 'Locales')
 FILL = '--fill' in sys.argv
+STRICT = ('zh-cn.json',)
+ENGLISH_OK = set()
 
 
 def marks(v):
     return (sorted(re.findall(r'\{[^{}]*\}', v)), sorted(re.findall(r'</?[a-zA-Z][^<>]*>', v)), v.count('\n'),
-            [re.match(r'\s*(#+ |- |\d+\. )?', line).group(0) for line in v.split('\n')], v.count('|'), v[:1] == ' ', v[-1:] == ' ')
+            [re.match(r'\s*(#+ |- |\d+\. )?', line).group(0) for line in v.split('\n')], v.count('|'), v[:1] == ' ', v[-1:] == ' ',
+            sorted(re.findall(r'%[0-9.]*[sdfi]', v)), sorted(re.findall(r'https?://\S+', v)))
 
 
 def write(path, like, texts):
@@ -63,6 +68,8 @@ for name in sorted(os.listdir(LOC)):
         elif v.strip() and not t.strip():
             bad.append('%s: empty' % k)
         english += 1 if t == v and len(re.findall(r'[A-Za-z]{3,}', v)) >= 4 else 0
+        if name in STRICT and k not in ENGLISH_OK and not re.search(r'[一-鿿]', t) and len(re.findall(r'[A-Za-z]{3,}', t)) >= 3:
+            bad.append('%s: no Chinese in the text' % k)
     for line in bad[:30]:
         print('%s: %s' % (name, line))
     faults += len(bad)
