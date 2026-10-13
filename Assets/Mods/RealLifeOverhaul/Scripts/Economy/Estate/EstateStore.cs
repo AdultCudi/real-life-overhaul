@@ -8,14 +8,18 @@ namespace RealLifeOverhaul.Economy
     /// <summary>
     /// The property business in the save: one line of the save's modData, under <see cref="Key"/>. Game-free.
     ///
-    ///     v=1^h:...^p:...^g:...^d:...^i:...^t:...^c:...^v:...
+    ///     v=2^h:...^p:...^u:...^g:...^d:...^i:...^t:...^c:...^v:...
     ///
     /// Parts are divided by '^' and begin with a letter and a colon; records inside a part by ';', fields by '|'.
     ///   h  the header: seed|first day|last day|the market|months|the year's first day
     ///   p  the buildings: place|paid|bought|spent|use|condition|level|asking rent|to let|cover|tenant|record|rent|
     ///      deposit|until|arrears|days in arrears|notice ends|court day|days empty|work|its end|its cost|its target|
     ///      use allowed|asking price|offer|offer lapses|sale day|sale price|sale fails|rent this year|costs this year|
-    ///      next applicant|let by the player|applicants, then six fields each: id|description|offer|record|term|lapses
+    ///      next applicant|let by the player|applicants, then six fields each: id|description|offer|record|term|lapses.
+    ///      The asking rent, to let, the tenancy (tenant to days empty) and the applicants are the first unit's.
+    ///   u  the other units (version 2): place|unit|asking rent|to let|tenant|record|rent|deposit|until|arrears|days in
+    ///      arrears|notice ends|court day|days empty|applicants, then six fields each as above. A unit that is empty,
+    ///      asks the market's rent and has nobody waiting is not written at a building the game lets.
     ///   g  the agency: office|next id|commission|deals|lost
     ///   d  the districts: name|reputation
     ///   i  the instructions: id|district|sale|square metres|value|asked|stage|hours|done|day|price|fails
@@ -27,7 +31,8 @@ namespace RealLifeOverhaul.Economy
     ///
     /// Every figure is a whole number, so what is read back is exactly what was written. A NEWER VERSION adds fields at
     /// the end of a record or a part with a new letter; this reader takes the fields it knows and skips parts it does
-    /// not, so a save written by a later version still loads. A figure out of its bounds is put inside them; a line
+    /// not, so a save written by a later version still loads, and a version from before units reads the first unit
+    /// as the building's one tenancy and leaves the others out. A figure out of its bounds is put inside them; a line
     /// that cannot be read is left alone and the feature starts afresh. The lists are capped when written. Nothing
     /// here is the game's: a save loads in the plain game with this line ignored.
     ///
@@ -38,9 +43,9 @@ namespace RealLifeOverhaul.Economy
     {
         public const string Key = "reallife:economy_estate";
         public const string TestKey = "reallife:economy_estate_before_tests";
-        public const int Version = 1;
+        public const int Version = 2;   // 2: the units after the first (part u)
 
-        private const int HoldingFields = 36, ApplicantFields = 6;
+        private const int HoldingFields = 36, UnitFields = 15, ApplicantFields = 6;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
         /// <summary>The state of this save; null if the save has none or it cannot be read.</summary>
@@ -57,23 +62,36 @@ namespace RealLifeOverhaul.Economy
 
         public static string Write(EstateState s)
         {
-            var t = new StringBuilder(256 + s.Holdings.Count * 160 + s.Hire.Cars.Count * 90);
+            var t = new StringBuilder(256 + s.Holdings.Count * 220 + s.Hire.Cars.Count * 90);
             t.Append("v=").Append(Version).Append("^h:");
             Join(t, s.Seed, s.FirstDay, s.LastDay, s.Real, s.Months, s.YearFrom, s.TaxFrom, s.TaxTakings, s.TaxCosts);
             t.Append("^p:");
             for (int i = 0; i < s.Holdings.Count && i < EstateCatalogue.HoldingsMost; i++)
             {
                 EstateHolding h = s.Holdings[i];
-                int applicants = Math.Min(h.Applicants.Count, EstateCatalogue.ApplicantsMost);
+                EstateUnit u = h.Units[0];
                 t.Append(i > 0 ? ";" : string.Empty).Append(Clean(h.Place)).Append('|');
-                Join(t, h.Paid, h.BoughtDay, h.Spent, h.Use, h.Cond, h.Level, h.Ask, h.ToLet ? 1 : 0, h.Cover ? 1 : 0, h.Tenant, h.Record, h.Rent, h.Deposit, h.Until, h.Arrears, h.ArrearsDays, h.NoticeEnd,
-                    h.CourtDay, h.VoidDays, h.Work, h.WorkEnd, h.WorkCost, h.WorkTo, h.PlanUse, h.List, h.Offer, h.OfferLapse, h.SaleDay, h.SalePrice, h.SaleFails ? 1 : 0, h.RentYear, h.CostYear, h.NextApplicant,
-                    h.Managed ? 1 : 0, applicants);
-                for (int a = 0; a < applicants; a++)
+                Join(t, h.Paid, h.BoughtDay, h.Spent, h.Use, h.Cond, h.Level, u.Ask, u.ToLet ? 1 : 0, h.Cover ? 1 : 0, u.Tenant, u.Record, u.Rent, u.Deposit, u.Until, u.Arrears, u.ArrearsDays, u.NoticeEnd,
+                    u.CourtDay, u.VoidDays, h.Work, h.WorkEnd, h.WorkCost, h.WorkTo, h.PlanUse, h.List, h.Offer, h.OfferLapse, h.SaleDay, h.SalePrice, h.SaleFails ? 1 : 0, h.RentYear, h.CostYear, h.NextApplicant,
+                    h.Managed ? 1 : 0);
+                Applicants(t, u);
+            }
+            t.Append("^u:");
+            bool first = true;
+            for (int i = 0; i < s.Holdings.Count && i < EstateCatalogue.HoldingsMost; i++)
+            {
+                EstateHolding h = s.Holdings[i];
+                for (int n = 1; n < h.Units.Count && n < EstateCatalogue.UnitsMost; n++)
                 {
-                    RentApplicant p = h.Applicants[a];
-                    t.Append('|');
-                    Join(t, p.Id, p.Kind, p.Offer, p.Record, p.Term, p.Lapse);
+                    EstateUnit u = h.Units[n];
+                    if (!h.Managed && !u.Let && u.Applicants.Count == 0 && u.Ask == EstateCatalogue.AskStart && u.ToLet)
+                    {
+                        continue;   // (a blank unit of a building the game lets: made again from the game's count)
+                    }
+                    t.Append(first ? string.Empty : ";").Append(Clean(h.Place)).Append('|');
+                    first = false;
+                    Join(t, n, u.Ask, u.ToLet ? 1 : 0, u.Tenant, u.Record, u.Rent, u.Deposit, u.Until, u.Arrears, u.ArrearsDays, u.NoticeEnd, u.CourtDay, u.VoidDays);
+                    Applicants(t, u);
                 }
             }
             AgencyFile g = s.Agency;
@@ -171,6 +189,18 @@ namespace RealLifeOverhaul.Economy
                                 }
                             }
                             break;
+                        case 'u':
+                            foreach (string record in Records(body))
+                            {
+                                string[] c = record.Split('|');
+                                EstateHolding h = c.Length >= UnitFields ? s.Holding(c[0]) : null;
+                                int n = I(c, 1);
+                                if (h != null && n >= 1 && n < EstateCatalogue.UnitsMost && (n >= h.Units.Count || IsBlank(h.Units[n])))
+                                {
+                                    ReadUnit(h, n, c);
+                                }
+                            }
+                            break;
                         case 'g':
                         {
                             string[] c = body.Split('|');
@@ -259,35 +289,91 @@ namespace RealLifeOverhaul.Economy
             {
                 Place = c[0], Paid = Math.Max(0, I(c, 1)), BoughtDay = Math.Max(0, I(c, 2)), Spent = Math.Max(0, I(c, 3)), Use = EstateCatalogue.Clamp(I(c, 4), 0, EstateCatalogue.Uses - 1),
                 Cond = EstateCatalogue.Clamp(I(c, 5, EstateCatalogue.ConditionNew), 0, 1000), Level = EstateCatalogue.Clamp(I(c, 6), 0, EstateCatalogue.LevelMost),
-                Ask = EstateCatalogue.Clamp(I(c, 7, EstateCatalogue.AskStart), EstateCatalogue.AskLeast, EstateCatalogue.AskMost), ToLet = I(c, 8, 1) != 0, Cover = I(c, 9) != 0,
-                Tenant = EstateCatalogue.Clamp(I(c, 10, -1), -1, EstateCatalogue.TenantKinds - 1), Record = EstateCatalogue.Clamp(I(c, 11), 0, 100), Rent = Math.Max(0, I(c, 12)), Deposit = Math.Max(0, I(c, 13)),
-                Until = Math.Max(0, I(c, 14)), Arrears = Math.Max(0, I(c, 15)), ArrearsDays = Math.Max(0, I(c, 16)), NoticeEnd = Math.Max(0, I(c, 17)), CourtDay = Math.Max(0, I(c, 18)),
-                VoidDays = Math.Max(0, I(c, 19)), WorkEnd = Math.Max(0, I(c, 21)), WorkCost = Math.Max(0, I(c, 22)), WorkTo = Math.Max(0, I(c, 23)),
+                Cover = I(c, 9) != 0, WorkEnd = Math.Max(0, I(c, 21)), WorkCost = Math.Max(0, I(c, 22)), WorkTo = Math.Max(0, I(c, 23)),
                 PlanUse = EstateCatalogue.Clamp(I(c, 24, -1), -1, EstateCatalogue.Uses - 1), List = Math.Max(0, I(c, 25)), Offer = Math.Max(0, I(c, 26)), OfferLapse = Math.Max(0, I(c, 27)),
                 SaleDay = Math.Max(0, I(c, 28)), SalePrice = Math.Max(0, I(c, 29)), SaleFails = I(c, 30) != 0, RentYear = Math.Max(0, I(c, 31)), CostYear = Math.Max(0, I(c, 32)),
                 NextApplicant = Math.Max(1, I(c, 33, 1)), Managed = I(c, 34) != 0
             };
             int work = I(c, 20);
             h.Work = work >= 0 && work <= (int)EstateWork.Convert ? work : 0;
-            if (h.Tenant < 0)
+            // the first unit: where a version from before units kept the building's one tenancy
+            EstateUnit u = h.Units[0];
+            u.Ask = EstateCatalogue.Clamp(I(c, 7, EstateCatalogue.AskStart), EstateCatalogue.AskLeast, EstateCatalogue.AskMost);
+            u.ToLet = I(c, 8, 1) != 0;
+            Lease(u, c, 10);
+            ReadApplicants(h, u, c, HoldingFields - 1);
+            return h;
+        }
+
+        // A unit after the first (part u): its asking rent, its tenancy and its applicants. Units in between that no record names are empty.
+        private static void ReadUnit(EstateHolding h, int n, string[] c)
+        {
+            while (h.Units.Count <= n)
             {
-                h.Record = h.Rent = h.Deposit = h.Until = h.Arrears = h.ArrearsDays = h.NoticeEnd = h.CourtDay = 0;   // (nobody in: nothing is owed and no notice runs)
+                h.Units.Add(new EstateUnit());
             }
-            int applicants = EstateCatalogue.Clamp(I(c, 35), 0, EstateCatalogue.ApplicantsMost);
+            EstateUnit u = h.Units[n];
+            u.Ask = EstateCatalogue.Clamp(I(c, 2, EstateCatalogue.AskStart), EstateCatalogue.AskLeast, EstateCatalogue.AskMost);
+            u.ToLet = I(c, 3, 1) != 0;
+            Lease(u, c, 4);
+            ReadApplicants(h, u, c, UnitFields - 1);
+        }
+
+        // A tenancy's ten fields from 'at': tenant, record, rent, deposit, until, arrears, days in arrears, notice ends, court day, days empty.
+        private static void Lease(EstateUnit u, string[] c, int at)
+        {
+            u.Tenant = EstateCatalogue.Clamp(I(c, at, -1), -1, EstateCatalogue.TenantKinds - 1);
+            u.Record = EstateCatalogue.Clamp(I(c, at + 1), 0, 100);
+            u.Rent = Math.Max(0, I(c, at + 2));
+            u.Deposit = Math.Max(0, I(c, at + 3));
+            u.Until = Math.Max(0, I(c, at + 4));
+            u.Arrears = Math.Max(0, I(c, at + 5));
+            u.ArrearsDays = Math.Max(0, I(c, at + 6));
+            u.NoticeEnd = Math.Max(0, I(c, at + 7));
+            u.CourtDay = Math.Max(0, I(c, at + 8));
+            u.VoidDays = Math.Max(0, I(c, at + 9));
+            if (u.Tenant < 0)
+            {
+                u.Vacant();   // (nobody in: nothing is owed and no notice runs)
+            }
+        }
+
+        // The count of applicants at 'at' and six fields each after it. A number the building has already is the end of them.
+        private static void ReadApplicants(EstateHolding h, EstateUnit u, string[] c, int at)
+        {
+            int applicants = EstateCatalogue.Clamp(I(c, at), 0, EstateCatalogue.ApplicantsMost);
             for (int a = 0; a < applicants; a++)
             {
-                int at = HoldingFields + a * ApplicantFields;
-                if (at + ApplicantFields > c.Length || I(c, at) <= 0 || h.ApplicantOf(I(c, at)) != null)
+                int from = at + 1 + a * ApplicantFields;
+                if (from + ApplicantFields > c.Length || I(c, from) <= 0 || h.ApplicantOf(I(c, from)) != null)
                 {
                     break;
                 }
-                h.Applicants.Add(new RentApplicant
+                u.Applicants.Add(new RentApplicant
                 {
-                    Id = I(c, at), Kind = EstateCatalogue.Clamp(I(c, at + 1), 0, EstateCatalogue.TenantKinds - 1), Offer = Math.Max(1, I(c, at + 2, 1)),
-                    Record = EstateCatalogue.Clamp(I(c, at + 3), 0, 100), Term = Math.Max(1, I(c, at + 4, 1)), Lapse = Math.Max(0, I(c, at + 5))
+                    Id = I(c, from), Kind = EstateCatalogue.Clamp(I(c, from + 1), 0, EstateCatalogue.TenantKinds - 1), Offer = Math.Max(1, I(c, from + 2, 1)),
+                    Record = EstateCatalogue.Clamp(I(c, from + 3), 0, 100), Term = Math.Max(1, I(c, from + 4, 1)), Lapse = Math.Max(0, I(c, from + 5))
                 });
             }
-            return h;
+        }
+
+        // A unit nothing has been read into yet (a second record for the same unit is left out).
+        private static bool IsBlank(EstateUnit u)
+        {
+            return !u.Let && u.Applicants.Count == 0 && u.VoidDays == 0 && u.Ask == EstateCatalogue.AskStart && u.ToLet;
+        }
+
+        // A unit's applicants, capped, after its count.
+        private static void Applicants(StringBuilder t, EstateUnit u)
+        {
+            int applicants = Math.Min(u.Applicants.Count, EstateCatalogue.ApplicantsMost);
+            t.Append('|').Append(applicants.ToString(Inv));
+            for (int a = 0; a < applicants; a++)
+            {
+                RentApplicant p = u.Applicants[a];
+                t.Append('|');
+                Join(t, p.Id, p.Kind, p.Offer, p.Record, p.Term, p.Lapse);
+            }
         }
 
         private static HotelFile ReadHotel(string[] c)

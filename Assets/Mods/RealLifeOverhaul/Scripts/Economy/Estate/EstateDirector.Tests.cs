@@ -64,7 +64,6 @@ namespace RealLifeOverhaul.Economy
                 if (!h.Managed && !h.Self)
                 {
                     h.Managed = true;
-                    h.ToLet = true;
                     if (fits(h))
                     {
                         return h;
@@ -85,18 +84,46 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             BeforeTest();   // (the test may take a building on for the player: that is put back with the rest)
-            EstateHolding h = TestHolding(test, x => !x.Let && !x.Busy && x.Applicants.Count < EstateCatalogue.ApplicantsMost && EstateRules.MarketRent(x, _climate) > 0);
+            EstateHolding h = TestHolding(test, x => !x.Busy && OpenUnit(x) >= 0 && x.ApplicantCount < EstateRules.ApplicantCap(x.Units.Count) && EstateRules.MarketRent(x, _climate) > 0);
             if (h == null)
             {
                 return;
             }
-            RentApplicant a = EstateRules.Apply(h, _state.Seed, Save.Day + _state.Holdings.Count + h.NextApplicant, _climate, true);
+            int unit = OpenUnit(h);
+            RentApplicant a = EstateRules.Apply(h, unit, _state.Seed, Save.Day + _state.Holdings.Count + h.NextApplicant, _climate, true);
             if (a != null)
             {
                 a.Lapse = Save.Day + EstateCatalogue.ApplicantDays;
             }
             Touched(h);
-            TestDone("an applicant at " + h.Name + (a != null ? ": " + a.Offer + " a day, record " + a.Record + ", " + a.Term + " days" : ": none could be made"), TabTenants, "own:" + h.Place);
+            TestDone("an applicant at " + EstateText.UnitName(h, unit) + (a != null ? ": " + a.Offer + " a day, record " + a.Record + ", " + a.Term + " days" : ": none could be made"), TabTenants,
+                a != null ? "app:" + h.Place + ":" + a.Id : UnitPick(h, unit));
+        }
+
+        // The first unit of a building that is empty and has room for another application; -1 for none.
+        private static int OpenUnit(EstateHolding h)
+        {
+            for (int u = 0; u < h.Units.Count; u++)
+            {
+                if (!h.Units[u].Let && h.Units[u].Applicants.Count < EstateCatalogue.ApplicantsMost)
+                {
+                    return u;
+                }
+            }
+            return -1;
+        }
+
+        // The first let unit of a building; with none, the first empty one; -1 if it has neither (never: a building has a unit).
+        private static int LetOrEmptyUnit(EstateHolding h)
+        {
+            for (int u = 0; u < h.Units.Count; u++)
+            {
+                if (h.Units[u].Let)
+                {
+                    return u;
+                }
+            }
+            return h.Units.Count > 0 ? 0 : -1;
         }
 
         /// <summary>Test: a rent day with a tenant in arrears. With no tenant anywhere, one is put in first.</summary>
@@ -108,27 +135,28 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             BeforeTest();
-            EstateHolding h = TestHolding(test, x => x.Let || (!x.Busy && EstateRules.MarketRent(x, _climate) > 0));
+            EstateHolding h = TestHolding(test, x => x.AnyLet || (!x.Busy && EstateRules.MarketRent(x, _climate) > 0));
             if (h == null)
             {
                 return;
             }
-            int day = Save.Day;
-            if (!h.Let)
+            int day = Save.Day, unit = LetOrEmptyUnit(h);
+            EstateUnit u = h.Units[unit];
+            if (!u.Let)
             {
-                h.Applicants.Clear();
-                RentApplicant a = EstateRules.Apply(h, _state.Seed, day, _climate, true);
+                u.Applicants.Clear();
+                RentApplicant a = EstateRules.Apply(h, unit, _state.Seed, day, _climate, true);
                 if (a == null || !EstateRules.Accept(h, a.Id, day))
                 {
                     TestRefusals.TellKey(Logger, test, "reallife_estate_test_no_fit");
                     return;
                 }
             }
-            h.Arrears = h.Rent * EstateCatalogue.NoticeArrearsDays;
-            h.ArrearsDays = EstateCatalogue.NoticeArrearsDays;
+            u.Arrears = u.Rent * EstateCatalogue.NoticeArrearsDays;
+            u.ArrearsDays = EstateCatalogue.NoticeArrearsDays;
             HoldingDay(h, day);
-            TestDone("a rent day at " + h.Name + " with " + EstateCatalogue.NoticeArrearsDays + " days owed: arrears now " + h.Arrears + " over " + h.ArrearsDays + " day(s)" + (h.Let ? string.Empty : ", and the tenant has gone"),
-                TabTenants, "own:" + h.Place);
+            TestDone("a rent day at " + EstateText.UnitName(h, unit) + " with " + EstateCatalogue.NoticeArrearsDays + " days owed: arrears now " + u.Arrears + " over " + u.ArrearsDays + " day(s)"
+                     + (u.Let ? string.Empty : ", and the tenant has gone"), TabTenants, UnitPick(h, unit));
         }
 
         /// <summary>Test: the works under way finish.</summary>
