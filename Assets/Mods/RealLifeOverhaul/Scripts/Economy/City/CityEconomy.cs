@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Economy
     ///     CityEconomy.PriceIndex              the price index (100 at the start)
     ///     CityEconomy.InflationPercent        inflation in per cent a year (-1 to +12)
     ///     CityEconomy.DistrictIncome(name)    a district's income level, 60 to 140, by the game's own name for the neighbourhood
+    ///     CityEconomy.Bears(name)             what a district's customers bear against the game's own price for it, thousandths
     ///     CityEconomy.MonthTurned             raised once when a month of the model turns, after the new figures are in place
     ///
     /// Nothing here may be written by a reader; the director alone sets <see cref="Live"/>.
@@ -47,6 +48,18 @@ namespace RealLifeOverhaul.Economy
         {
             CityDistrict d = Live != null && name != null ? Live.District(name) : null;
             return d != null ? d.Income / 10f : MacroCatalogue.IncomeMiddle / 10f;
+        }
+
+        /// <summary>
+        /// What a district's customers bear against the game's own price for it (the default market price times the
+        /// neighbourhood's price index), in thousandths: its income against its start and what customers spend in the
+        /// cycle, as the city's economy judges every business's prices (CityModel.Tolerance). 1000 while the economy is
+        /// off; a district that is not known is judged by the cycle alone, as the city's economy judges one.
+        /// </summary>
+        public static int Bears(string name)
+        {
+            CityState s = Live;
+            return s != null ? CityModel.Tolerance(s, name != null ? s.District(name) : null, Level) : 1000;
         }
 
         /// <summary>A month of the model has turned. Raised on the game's day event, once, after the month's figures are in place. A handler must not throw; one that does is not allowed to stop the others.</summary>

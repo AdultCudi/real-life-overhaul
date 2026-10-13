@@ -235,6 +235,17 @@ namespace RealLifeOverhaul.Economy.Brands
         public const int ChainExitDays = 20;        // leaving costs this many days of royalty...
         public const int ChainExitLeastShare = 500; // ...and never less than this of the fee, in thousandths
 
+        // ---------------------------------------------------------------- prices kept for a chain or a brand (KeptPrices)
+
+        public const int ChainPriceMargin = 5;      // a kept price stays this far inside the chain's range, thousandths, so that rounding to the cent never takes it out
+        public const int BearsOver = 20;            // a kept price aims this far over what the district bears, thousandths: the city's economy takes no customers up to 2% over (MacroCatalogue.OverBand)
+        public const int MonopolyAllowance = 300;   // thousandths the game itself lets the only seller of a product in a neighbourhood charge more (ItemHelper; MacroCatalogue.MonopolyAllowance)
+        public const int DemandFull = 50;           // the game's demand for a product in a district at or over which nothing is taken off...
+        public const int DemandPerPoint = 1;        // ...and the thousandths taken off for each point it is under
+        public const int KeepCostShare = 1100;      // a kept price is not put under the wholesale price and a tenth, where the chain's range allows
+        public const int LocalBand = 50;            // a member shop kept on the flagship's prices may differ by this much for its district, thousandths either way
+        public const int KeepPerRound = 16;         // kept shops whose prices are written in one hourly round at most; the rest wait for the next
+
         // ---------------------------------------------------------------- brand campaigns (priced by the company's own campaign list)
 
         public const int PushLocal = 0, PushCity = 1;
