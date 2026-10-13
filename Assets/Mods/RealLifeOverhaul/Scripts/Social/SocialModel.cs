@@ -36,7 +36,8 @@ namespace RealLifeOverhaul
     public enum MemoryCode
     {
         None, Met, Coffee, Meal, Drinks, Cinema, Walk, Drive, Workout, Business, Lift, Moving, Loan, Borrowed, Birthday,
-        StoodUp, Late, Rude, Arrest, Crash, AskedOut, Official, MovedIn, BreakUp, Introduced, DroppedBy, NotRepaid
+        StoodUp, Late, Rude, Arrest, Crash, AskedOut, Official, MovedIn, BreakUp, Introduced, DroppedBy, NotRepaid,
+        Posted     // tagged in a post of the player's on Flare (saved as a number: new ones go at the end)
     }
 
     public struct SocialMemory

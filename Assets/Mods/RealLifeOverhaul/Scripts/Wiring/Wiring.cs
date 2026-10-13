@@ -35,8 +35,9 @@ namespace RealLifeOverhaul
     ///     ServicesLinks   selling a business with Ventures (investors bought out), the credit side (business loans paid off) and running a business; the Planner
     ///     BrandLinks      brands and franchises with business pressure (footfall), the city's economy (prices), fires, inspections, strikes, the courts and the Planner
     ///     RoommateLinks   the roommate with family life (a partner who moves in), social life (friends, introductions) and the Planner
-    ///     FlareLinks      the social media app with the social life (friends who follow), the law's reputation, the
-    ///                     council's election, careers, photo mode, good deeds and arrests (what can be posted)
+    ///     FlareLinks      the social media app with the social life (friends who follow and are tagged), the law (its
+    ///                     reputation, scrutiny), the council (the election), careers, photo mode, business pressure
+    ///                     (footfall), the company (a sponsored post), brands (scandals) and the City Ledger
     ///
     /// <see cref="Connect"/> is called once per city load, after every director has been added;
     /// <see cref="Disconnect"/> on unload puts every bridge back to its default. Nothing here

@@ -25,6 +25,7 @@ internal static partial class Program
         FlareNotices();
         FlareSave();
         FlareTiming();
+        FlareInfluences();
     }
 
     private static List<FlarePerson> FlarePeople()
@@ -48,7 +49,7 @@ internal static partial class Program
         FlareFile f = FlareRules.Open(7, 10, 3, 55);
         Check(f.Followers == 3 + FlareRules.StartExtra && f.Reputation == 55 && f.StartDay == 10 && f.History[0] == f.Followers && f.Tier == FlareTier.Newcomer,
             "Flare: a new account has the people met and a few dozen more (" + f.Followers + ")");
-        Check(FlareRules.SourceQuality.Length == (int)FlareSource.Life + 1, "Flare: a quality for every source");
+        Check(FlareRules.SourceQuality.Length == (int)FlareSource.Sponsored + 1, "Flare: a quality for every source");
         Check((int)FlareSource.Arrested == 10 && (int)FlareSource.Life == 11 && (int)FlareTone.Cheeky == 3 && (int)FlareAuthor.Friend == 1, "Flare: the kinds keep their numbers (they are in saves)");
     }
 

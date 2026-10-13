@@ -519,6 +519,11 @@ namespace RealLifeOverhaul.Meta
                 .Fact("flare_silent_days", () => Whole(Flare.FlareRules.SilentFrom))
                 .Fact("flare_viral_most", () => Whole(Flare.FlareRules.ViralMost / 10))
                 .Fact("flare_viral_gap", () => Whole(Flare.FlareRules.ViralGapDays))
+                .Fact("flare_buzz_most", () => Whole(Flare.FlareRules.BuzzMost))
+                .Fact("flare_buzz_days", () => Whole(Flare.FlareRules.BuzzDays))
+                .Fact("flare_hype_gap", () => Whole(Flare.FlareRules.HypeGapDays))
+                .Fact("flare_sponsored_from", () => Whole(Flare.FlareRules.SponsoredFrom))
+                .Fact("flare_arrest_share", () => Whole(Flare.FlareRules.ArrestShare / 10))
                 .ResetData(() => Flare.FlareDirector.Instance?.Forget());   // a new account opens from the (now empty) save on the next second
 
             Features.Add("travel", "reallife_meta_title_travel")

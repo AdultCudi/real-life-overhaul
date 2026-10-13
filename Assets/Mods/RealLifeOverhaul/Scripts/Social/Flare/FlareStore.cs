@@ -10,9 +10,11 @@ namespace RealLifeOverhaul.Flare
     ///
     ///   reallife:flare_account
     ///     FL1|seed|start|settled|followers|reputation|last post day|last post minute|posts day|posts today|last viral|
-    ///         posts|likes|next id|unseen|following|civic seen|career|history,history,...|notice day
+    ///         posts|likes|next id|unseen|following|civic seen|career|history,history,...|notice day|hype day|
+    ///         complaint day|noticed day|story day|arrest day
     ///     D|id|source|day|hour|person|place|name|arg          a draft
     ///     S|place|first day|best|days                         a business as Flare has seen it
+    ///     B|place|percent|until                               talk about a business, in its customers
     ///   reallife:flare_posts
     ///     P|id|day|hour|author|who|source|tone|tag|place|name|arg|seed|quality|reach|likes|replies|likers|repliers|gained|flags
     ///
@@ -30,7 +32,7 @@ namespace RealLifeOverhaul.Flare
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
         // The kinds this version knows: anything past them is from a later one.
-        private const int Sources = (int)FlareSource.Life + 1;
+        private const int Sources = (int)FlareSource.Sponsored + 1;
         private const int Tones = (int)FlareTone.Cheeky + 1;
         private const int Authors = (int)FlareAuthor.Friend + 1;
 
@@ -67,7 +69,7 @@ namespace RealLifeOverhaul.Flare
             {
                 b.Append(i > 0 ? "," : string.Empty).Append(f.History[i].ToString(Inv));
             }
-            Join(b, f.NoticeDay);
+            Join(b, f.NoticeDay, f.HypeDay, f.ComplaintDay, f.NoticedDay, f.StoryDay, f.ArrestDay);
             for (int i = 0; i < f.Drafts.Count; i++)
             {
                 FlareDraft d = f.Drafts[i];
@@ -80,6 +82,12 @@ namespace RealLifeOverhaul.Flare
                 FlareShopSeen s = f.Shops[i];
                 b.Append("\nS|").Append(Clean(s.Place));
                 Join(b, s.FirstDay, s.Best, s.Days);
+            }
+            for (int i = 0; i < f.Buzz.Count; i++)
+            {
+                FlareBuzz z = f.Buzz[i];
+                b.Append("\nB|").Append(Clean(z.Place));
+                Join(b, z.Percent, z.Until);
             }
             return b.ToString();
         }
@@ -117,7 +125,8 @@ namespace RealLifeOverhaul.Flare
                     Seed = I(h, 1), StartDay = I(h, 2), SettledDay = I(h, 3), Followers = Math.Max(0, I(h, 4)), Reputation = FlareRules.Clamp(I(h, 5, FlareRules.ReputationStart), 0, 100),
                     LastPostDay = I(h, 6, -1), LastPostMinute = I(h, 7, -1), PostsDay = I(h, 8, -1), PostsToday = Math.Max(0, I(h, 9)), LastViralDay = I(h, 10, -100),
                     TotalPosts = Math.Max(0, I(h, 11)), TotalLikes = Math.Max(0, I(h, 12)), NextId = Math.Max(1, I(h, 13, 1)), Unseen = Math.Max(0, I(h, 14)),
-                    Following = I(h, 15), CivicSeen = I(h, 16), CareerKey = I(h, 17, -1), NoticeDay = I(h, 19, -1)
+                    Following = I(h, 15), CivicSeen = I(h, 16), CareerKey = I(h, 17, -1), NoticeDay = I(h, 19, -1),
+                    HypeDay = I(h, 20, -100), ComplaintDay = I(h, 21, -1), NoticedDay = I(h, 22, -1), StoryDay = I(h, 23, -1), ArrestDay = I(h, 24, -1)
                 };
                 string[] history = h[18].Split(',');
                 for (int i = 0; i < f.History.Length; i++)
@@ -141,6 +150,10 @@ namespace RealLifeOverhaul.Flare
                     else if (c[0] == "S" && c.Length >= 5 && c[1].Length > 0 && f.Shops.Count < 64)
                     {
                         f.Shops.Add(new FlareShopSeen { Place = c[1], FirstDay = I(c, 2), Best = Math.Max(0, I(c, 3)), Days = Math.Max(0, I(c, 4)) });
+                    }
+                    else if (c[0] == "B" && c.Length >= 4 && c[1].Length > 0 && f.Buzz.Count < 64)
+                    {
+                        f.Buzz.Add(new FlareBuzz { Place = c[1], Percent = FlareRules.Clamp(I(c, 2), -FlareRules.BuzzMost, FlareRules.BuzzMost), Until = I(c, 3) });
                     }
                 }
                 ReadPosts(f, posts);

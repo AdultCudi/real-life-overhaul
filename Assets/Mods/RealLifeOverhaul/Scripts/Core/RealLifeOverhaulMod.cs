@@ -494,6 +494,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_flare_test_drafts", () => Flare.FlareDirector.Instance?.TestDrafts())
                 .AddButton("reallife_flare_test_day", () => Flare.FlareDirector.Instance?.TestDay())
                 .AddButton("reallife_flare_test_followers", () => Flare.FlareDirector.Instance?.TestFollowers())
+                .AddButton("reallife_flare_test_viral", () => Flare.FlareDirector.Instance?.TestViral())
                 .AddButton("reallife_flare_test_back", () => Flare.FlareDirector.Instance?.TestBack())
                 .AddSplitter()
                 .AddHeader("reallife_travel_header")

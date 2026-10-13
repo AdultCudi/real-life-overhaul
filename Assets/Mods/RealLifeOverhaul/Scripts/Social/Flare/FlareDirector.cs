@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Flare
     /// on every load). The work is done on the game's own events: the hour (has the player been promoted, voted or
     /// endorsed: two delegate calls and two comparisons), the day (the daily round of FlareRules and a look at each
     /// business's takings), the save, a thing that happened (told by Wiring/FlareLinks, one draft made), and a click in
-    /// the app. PER FRAME: NOTHING, open or closed.
+    /// the app. PER FRAME: NOTHING, open or closed. What a post does to the other features is FlareDirector.Links.cs.
     ///
     /// The rules are game-free (FlareRules, FlareModel, FlareStore); this class reads what they need through
     /// FlareGame and FlareBridges and says what happened. Nothing is written into the game's own records. A fault
@@ -317,7 +317,9 @@ namespace RealLifeOverhaul.Flare
         private void PlayDay(int day)
         {
             ReadPeople();
+            Talked(_talked);
             FlareDayReport r = FlareRules.Day(_file, day, FlareBridges.Standing(), _people);
+            Rewrite(_talked, true);
             List<BuildingRegistration> shops = FlareGame.Businesses();
             for (int i = 0; i < shops.Count; i++)
             {
@@ -366,6 +368,10 @@ namespace RealLifeOverhaul.Flare
             try
             {
                 Made(FlareRules.Draft(_file, source, Save.Day, Save.Hour, person, place, name, arg));
+                if (source == FlareSource.Arrested)
+                {
+                    Trended(Save.Day);
+                }
             }
             catch (Exception e)
             {
@@ -429,7 +435,8 @@ namespace RealLifeOverhaul.Flare
                 }
                 int before = _file.Followers, reputation = _file.Reputation;
                 ReadPeople();
-                FlarePost p = FlareRules.Post(_file, d, tone, tag ? d.Person : -1, _people, day, Save.Hour, minute);
+                FlarePost p = FlareRules.Post(_file, d, tone, tag ? d.Person : -1, _people, day, Save.Hour, minute, _testViral);
+                _testViral = false;
                 Logger?.Info("Flare: posted (" + p.Source + ", " + p.Tone + (p.Tag >= 0 ? ", " + PersonName(p.Tag) + " tagged" : string.Empty) + "): quality " + p.Quality + ", tone fit "
                              + FlareRules.ToneFit(p.Source, p.Tone) + ", seen by " + p.Reach + ", " + p.Likes + " likes, " + p.Replies + " replies, followers " + before + " to " + _file.Followers
                              + ", reputation " + reputation + " to " + _file.Reputation + (p.Viral ? ", viral" : string.Empty) + (p.Bad ? ", went badly" : string.Empty) + ".");
@@ -437,6 +444,7 @@ namespace RealLifeOverhaul.Flare
                 {
                     Tell(NotificationType.Success, "reallife_flare_note_viral", _openFeed, "followers", FlareText.N(p.Gained));
                 }
+                Influence(p, d);
                 Changed();
                 return true;
             }

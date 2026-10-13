@@ -259,7 +259,8 @@ namespace RealLifeOverhaul.Law
         /// <summary>Raised for a good deed that counted (three a day at most): Flare offers it as a post (Wiring/FlareLinks).</summary>
         public static event Action Deed;
 
-        internal static int LastDay = -1;          // the last game day the daily step ran for
+        internal static int LastDay = -1;           // the last game day the daily step ran for
+        internal static int NoticedUntil = -1;      // a day the police watch more closely than the record says (not saved: a day at most)
         internal static int DeedDay = -1;
         internal static int Deeds;
         internal static int ThanksDay = -1;         // the last day a passer-by said thanks
@@ -272,6 +273,7 @@ namespace RealLifeOverhaul.Law
             NoWarnings = false;
             ScrutinyLevel = 0;
             LastDay = -1;
+            NoticedUntil = -1;
             DeedDay = -1;
             Deeds = 0;
             ThanksDay = -1;
@@ -386,10 +388,28 @@ namespace RealLifeOverhaul.Law
         {
             int recent = Record.Recent(ScrutinyDays);
             int level = recent >= 4 ? 3 : recent == 3 ? 2 : recent == 2 ? 1 : 0;
+            if (LastDay >= 0 && LastDay < NoticedUntil)
+            {
+                level = Mathf.Min(3, level + 1);
+            }
             ScrutinyLevel = level;
             Scrutiny = ScrutinyFactor[level];
             NoWarnings = level >= 2;
             Changed?.Invoke();
+        }
+
+        /// <summary>
+        /// The police take notice for the rest of the day (a picture posted while wanted: Wiring/FlareLinks): the level of
+        /// scrutiny one higher until the next day's step, never past the top.
+        /// </summary>
+        public static void Noticed()
+        {
+            if (!LawState.Loaded || LastDay < 0)
+            {
+                return;
+            }
+            NoticedUntil = LastDay + 1;
+            Refresh();
         }
 
         internal static void Set(int police, int people)

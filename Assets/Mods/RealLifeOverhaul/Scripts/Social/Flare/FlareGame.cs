@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
-using BigAmbitions.DayNightCycle;
+using Entities;
+using Helpers;
 using RealLifeOverhaul.Economy;
 using UnityEngine;
 
@@ -30,12 +31,58 @@ namespace RealLifeOverhaul.Flare
 
         public delegate int CareerAsk(out string employer);
 
+        // ---- the influences (each one line in Wiring/FlareLinks; without them a post changes nothing outside Flare)
+
+        /// <summary>Has a business's customers figure written again now that Flare's talk about it has changed (business pressure's own writer), and whether it is the new day. Default: nothing is written.</summary>
+        public static Func<BuildingRegistration, bool, bool> Footfall;
+
+        /// <summary>A friend was tagged in a post (the social life's number), whether it is a selfie taken with them, and whether the post went well. Default: nothing.</summary>
+        public static Action<int, bool, bool> Tagged;
+
+        /// <summary>An honest answer to a scandal at a brand's shop: the shop's place and the recognition to give back (hundredths). Returns what came back. Default: nothing.</summary>
+        public static Func<string, int, int> Answered;
+
+        /// <summary>A finished piece for the morning paper (one locale key). Default: nothing is printed.</summary>
+        public static Action<string> Story;
+
+        /// <summary>True while the player is wanted by the police. Default: never.</summary>
+        public static Func<bool> Wanted;
+
+        /// <summary>The police take notice of the player for the rest of the day. Default: nothing.</summary>
+        public static Action Noticed;
+
+        /// <summary>The employer and rank of a rota shift the player is clocked on to (employer * 100 + rank), or -1. Default: never on one.</summary>
+        public static Func<int> OnShift;
+
+        /// <summary>A complaint at work: the boss saw the player posting on shift. Default: nothing.</summary>
+        public static Action Complaint;
+
         public static void Reset()
         {
             People = null;
             PublicStanding = null;
             Civic = null;
             Career = null;
+            Footfall = null;
+            Tagged = null;
+            Answered = null;
+            Story = null;
+            Wanted = null;
+            Noticed = null;
+            OnShift = null;
+            Complaint = null;
+        }
+
+        internal static T Ask<T>(Func<T> bridge, T otherwise)
+        {
+            try
+            {
+                return bridge != null ? bridge() : otherwise;
+            }
+            catch (Exception)
+            {
+                return otherwise;
+            }
         }
 
         internal static int Standing()
@@ -104,6 +151,50 @@ namespace RealLifeOverhaul.Flare
         public static int Takings(BuildingRegistration reg)
         {
             return reg != null ? Mathf.RoundToInt(Books.SalesYesterday(reg.Address)) : 0;
+        }
+
+        /// <summary>The game's own satisfaction figures of a business (0 to 100): overall, service, pricing, cleanliness, facility. False if it has none.</summary>
+        public static bool Satisfaction(BuildingRegistration reg, out int overall, int[] parts)
+        {
+            overall = 0;
+            Satisfaction s = reg != null ? reg.satisfaction : null;
+            if (s == null)
+            {
+                return false;
+            }
+            overall = s.overall;
+            parts[0] = s.customerService;
+            parts[1] = s.pricing;
+            parts[2] = s.cleanliness;
+            parts[3] = s.facility;
+            return true;
+        }
+
+        /// <summary>
+        /// A viral post about a business: the game's own hype for one product it sells (a retail product the game can
+        /// hype, not hyped there already), in its district, as the game makes one (ProductMarketHelper). The product, or
+        /// null if there was none to hype.
+        /// </summary>
+        public static string Hype(BuildingRegistration reg)
+        {
+            List<string> products = reg != null ? reg.cachedAvailableProducts : null;
+            string district = reg != null ? reg.Neighborhood : null;
+            if (products == null || string.IsNullOrEmpty(district) || SaveGameManager.Current == null || SaveGameManager.Current.marketEvents == null)
+            {
+                return null;
+            }
+            for (int i = 0; i < products.Count; i++)
+            {
+                BigAmbitions.Items.Item item = BigAmbitions.Items.ItemsGetter.GetByName(products[i], true);
+                if (item == null || (item.type & BigAmbitions.Items.ItemType.RetailProduct) == 0 || item.GetWholesalePrice() <= 0f
+                    || ProductMarketHelper.IsProductInMarketEvent(products[i], MarketEventType.Hype, district))
+                {
+                    continue;
+                }
+                ProductMarketHelper.CreateItemRelatedMarketEvent(MarketEventType.Hype, products[i], district);
+                return products[i];
+            }
+            return null;
         }
 
         /// <summary>The business of the player's they are standing in, or null.</summary>

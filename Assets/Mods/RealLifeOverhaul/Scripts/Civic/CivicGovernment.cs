@@ -905,11 +905,23 @@ namespace RealLifeOverhaul
             return "reallife_civic_donate_thanks";
         }
 
-        /// <summary>How much the player's word is worth: more with every business they run (five at most).</summary>
+        /// <summary>How much the player's word is worth: more with every business they run (five at most), and with a following on social media (two businesses' worth at most).</summary>
         public static float EndorsementWeight()
         {
-            return 0.03f + 0.035f * Mathf.Min(5, CivicCity.PlayerBusinesses()) + Mathf.Clamp(CivicBridges.Standing(), -50, 50) * 0.001f;
+            float following = 0f;
+            try
+            {
+                following = CivicBridges.Following != null ? Mathf.Clamp(CivicBridges.Following(), 0f, FollowingMost) : 0f;
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+            }
+            return 0.03f + BusinessWeight * Mathf.Min(5, CivicCity.PlayerBusinesses()) + Mathf.Clamp(CivicBridges.Standing(), -50, 50) * 0.001f + following;
         }
+
+        public const float BusinessWeight = 0.035f;            // an endorsement's weight for each business the player runs
+        public const float FollowingMost = 2f * BusinessWeight;   // what a following can add: two businesses' worth
 
         /// <summary>The player's public endorsement: once an election. With a criminal record it is a scandal that costs the candidate instead.</summary>
         public string Endorse(int candidate)

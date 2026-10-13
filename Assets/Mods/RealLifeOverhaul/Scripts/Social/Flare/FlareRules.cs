@@ -42,7 +42,7 @@ namespace RealLifeOverhaul.Flare
         public const int FeedRows = 20;            // the Feed shows this many
 
         // ---- what a post is worth, thousandths, by FlareSource (Life: a friend's own, worth nothing to the player)
-        public static readonly int[] SourceQuality = { 0, 600, 750, 700, 1000, 1000, 850, 500, 650, 750, 900, 0 };
+        public static readonly int[] SourceQuality = { 0, 600, 750, 700, 1000, 1000, 850, 500, 650, 750, 900, 0, 800, 0 };
         public const int WithFriend = 250;         // a friend tagged in it
         public const int InsideShop = 100;         // a picture taken in one of the player's businesses
 
@@ -60,7 +60,9 @@ namespace RealLifeOverhaul.Flare
             {  950, 1000, 1100,  750 },   // Endorsed
             {  900,  700, 1150,  800 },   // GoodDeed: proud is bragging
             {  600,  500, 1200,  550 },   // Arrested: only honesty does not go badly
-            { 1000, 1000, 1000, 1000 }    // Life
+            { 1000, 1000, 1000, 1000 },   // Life
+            {  600,  550, 1200,  500 },   // Scandal: the same
+            { 1000, 1000, 1000, 1000 }    // Sponsored
         };
         public const int BadFit = 650;             // a fit under this goes badly
         public const int GoodFit = 1150;           // ...one at or over this is well liked: a point of reputation
@@ -90,6 +92,20 @@ namespace RealLifeOverhaul.Flare
 
         public const int FriendPostChance = 300;   // per mille a day for a friend who follows
         public const int FlakyPostChance = 150;
+
+        // ---- what a post does elsewhere (Wiring/FlareLinks carries each to its feature)
+        public const int BuzzMost = 6;             // per cent of a business's customers from Flare's talk, all of it together, either way
+        public const int BuzzDays = 3;             // a post about a business is talked about this long
+        public const int HypeGapDays = 14;         // a viral post raises the game's own hype for a product once a fortnight at most
+        public const int ScandalWorst = 1250;      // thousandths of a scandal's loss to a brand, for an account of no reputation...
+        public const int ScandalAnswered = 800;    // ...and what is left of it after an honest answer
+        public const int ArrestShare = 30;         // thousandths of the followers an arrest costs, from Local on
+        public const int ArrestReputation = 3, ArrestReputationKnown = 6;
+        public const int EndorseFull = 100000;     // followers at which the account's word in an election is worth the most
+        public const int BossBase = 200;           // per mille: the boss follows the player, and more for each rank and tier
+        public const int BossStep = 150;
+        public const int SponsoredFrom = 500;      // followers: a sponsored post is offered from Local on
+        public const int SponsoredLeast = 250, SponsoredMost = 1500;   // thousandths of radio's customers a day, by followers
 
         // ---------------------------------------------------------------- the account
 
@@ -317,9 +333,10 @@ namespace RealLifeOverhaul.Flare
 
         /// <summary>
         /// The player posts a draft in a tone, with a friend tagged or not (-1). Every figure of the account follows;
-        /// the draft is spent. The friends are the social life's people, as they stand now. Returns the post.
+        /// the draft is spent. The friends are the social life's people, as they stand now. Returns the post. With
+        /// 'viral' (a test) a post that does not go badly goes viral whatever the roll and the gap.
         /// </summary>
-        public static FlarePost Post(FlareFile f, FlareDraft d, FlareTone tone, int tag, IReadOnlyList<FlarePerson> people, int day, int hour, int minuteOfDay)
+        public static FlarePost Post(FlareFile f, FlareDraft d, FlareTone tone, int tag, IReadOnlyList<FlarePerson> people, int day, int hour, int minuteOfDay, bool viral = false)
         {
             int id = f.NextId++;
             FlarePost last = f.LastOwn(d.Source);
@@ -346,7 +363,7 @@ namespace RealLifeOverhaul.Flare
             {
                 reputation += fit >= GoodFit ? 1 : 0;
                 reputation += d.Source == FlareSource.Arrested && tone == FlareTone.Honest ? HonestReputation : 0;
-                if (MayGoViral(f, day) && Roll(f.Seed, id, 101) < ViralChance(followers, p.Quality, fit))
+                if (viral || (MayGoViral(f, day) && Roll(f.Seed, id, 101) < ViralChance(followers, p.Quality, fit)))
                 {
                     p.Viral = true;
                     f.LastViralDay = day;
@@ -410,6 +427,110 @@ namespace RealLifeOverhaul.Flare
             }
             f.NoticeDay = day;
             return true;
+        }
+
+        // ---------------------------------------------------------------- what a post does elsewhere
+
+        /// <summary>The talk a post about a business brings, per cent of its customers for three days: more as more people see it.</summary>
+        public static int BuzzOf(FlarePost p)
+        {
+            if (p.Place == null || p.Bad || p.Author != FlareAuthor.Player)
+            {
+                return 0;
+            }
+            return p.Viral ? 4 : p.Reach >= 5000 ? 3 : p.Reach >= 1000 ? 2 : 1;
+        }
+
+        /// <summary>Talk about a business from today: kept beside what is there, the whole never past the cap either way. Returns the business's figure now.</summary>
+        public static int AddBuzz(FlareFile f, string place, int percent, int day, int days)
+        {
+            if (string.IsNullOrEmpty(place) || percent == 0)
+            {
+                return f.BuzzAt(place, day);
+            }
+            int now = f.BuzzAt(place, day);
+            int room = percent > 0 ? Math.Max(0, BuzzMost - now) : Math.Min(0, -BuzzMost - now);
+            int add = percent > 0 ? Math.Min(percent, room) : Math.Max(percent, room);
+            if (add != 0)
+            {
+                f.Buzz.Add(new FlareBuzz { Place = place, Percent = add, Until = day + Math.Max(1, days) });
+            }
+            return f.BuzzAt(place, day);
+        }
+
+        /// <summary>Talk that has run its days is gone. True if any went.</summary>
+        public static bool BuzzDay(FlareFile f, int day)
+        {
+            bool gone = false;
+            for (int i = f.Buzz.Count - 1; i >= 0; i--)
+            {
+                if (day >= f.Buzz[i].Until)
+                {
+                    f.Buzz.RemoveAt(i);
+                    gone = true;
+                }
+            }
+            return gone;
+        }
+
+        public static bool MayHype(FlareFile f, int day)
+        {
+            return day - f.HypeDay >= HypeGapDays;
+        }
+
+        /// <summary>What a scandal at a brand's shop costs, thousandths of its loss: more for an account the city doubts, never under the whole.</summary>
+        public static int ScandalScale(int reputation)
+        {
+            return reputation >= 50 ? 1000 : Clamp(1000 + (50 - reputation) * (ScandalWorst - 1000) / 50, 1000, ScandalWorst);
+        }
+
+        /// <summary>What an honest answer to a scandal gives back of what it cost: down to four fifths of the plain loss.</summary>
+        public static int Answered(int lost, int scale)
+        {
+            return Math.Max(0, lost - (int)((long)lost * ScandalAnswered / Math.Max(1000, scale)));
+        }
+
+        /// <summary>How much of the most an account's word adds to an endorsement, thousandths: by followers on a log scale, and only for a reputation the city trusts.</summary>
+        public static int EndorseShare(int followers, int reputation)
+        {
+            double share = Math.Log10(1.0 + Math.Max(0, followers)) / Math.Log10(1.0 + EndorseFull);
+            return Clamp((int)(Math.Min(1.0, share) * 1000.0 * Clamp(reputation, 0, 50) / 50.0), 0, 1000);
+        }
+
+        /// <summary>An arrest trends: from Local on, 3% of the followers and some reputation, once a day. Returns the followers lost.</summary>
+        public static int Arrest(FlareFile f, int day)
+        {
+            if (f.ArrestDay == day || f.Followers < TierFrom[(int)FlareTier.Local])
+            {
+                return 0;
+            }
+            f.ArrestDay = day;
+            int lost = (int)((long)f.Followers * ArrestShare / 1000);
+            f.Reputation = Clamp(f.Reputation - (f.Tier >= FlareTier.Known ? ArrestReputationKnown : ArrestReputation), 0, 100);
+            f.Followers -= lost;
+            return lost;
+        }
+
+        /// <summary>Whether the boss follows the player: a fifth of bosses, and more for each rank and each tier of the account. Always the same for the same job.</summary>
+        public static bool BossFollows(int seed, int career, FlareTier tier)
+        {
+            return career >= 0 && Roll(seed, career / 100, 811) < BossBase + BossStep * (career % 100 + (int)tier);
+        }
+
+        /// <summary>What a sponsored post brings, thousandths of radio's customers a day: by followers on a log scale, from Local on; 0 below.</summary>
+        public static int SponsoredReach(int followers)
+        {
+            if (followers < SponsoredFrom)
+            {
+                return 0;
+            }
+            return Clamp((int)Math.Round(SponsoredLeast + 375.0 * Math.Log10(followers / (double)SponsoredFrom)), SponsoredLeast, SponsoredMost);
+        }
+
+        /// <summary>What a sponsored post costs, thousandths of its base price: its reach, a little less for a trusted account and more for a doubted one.</summary>
+        public static int SponsoredCost(int reach, int reputation)
+        {
+            return (int)((long)reach * (1100 - 2 * Clamp(reputation, 0, 100)) / 1000);
         }
 
         public static int Count(int bits)
@@ -565,6 +686,7 @@ namespace RealLifeOverhaul.Flare
                     r.DraftsGone++;
                 }
             }
+            BuzzDay(f, day);
             Array.Copy(f.History, 1, f.History, 0, f.History.Length - 1);
             f.History[f.History.Length - 1] = f.Followers;
             Prune(f);

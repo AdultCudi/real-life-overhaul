@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Flare
         {
             "reallife_flare_draft_photo", "reallife_flare_draft_photo", "reallife_flare_draft_selfie", "reallife_flare_draft_outing", "reallife_flare_draft_promotion",
             "reallife_flare_draft_opened", "reallife_flare_draft_record", "reallife_flare_draft_voted", "reallife_flare_draft_endorsed", "reallife_flare_draft_deed",
-            "reallife_flare_draft_arrested", "reallife_flare_draft_photo"
+            "reallife_flare_draft_arrested", "reallife_flare_draft_photo", "reallife_flare_draft_scandal", "reallife_flare_draft_photo"
         };
         private static readonly string[][] PostKeys =
         {
@@ -46,7 +46,9 @@ namespace RealLifeOverhaul.Flare
             new[] { "reallife_flare_post_endorsed_1", "reallife_flare_post_endorsed_2" },
             new[] { "reallife_flare_post_deed_1", "reallife_flare_post_deed_2" },
             new[] { "reallife_flare_post_arrested_1", "reallife_flare_post_arrested_2" },
-            new[] { "reallife_flare_post_photo_1", "reallife_flare_post_photo_2" }
+            new[] { "reallife_flare_post_photo_1", "reallife_flare_post_photo_2" },
+            new[] { "reallife_flare_post_scandal_1", "reallife_flare_post_scandal_2" },
+            new[] { "reallife_flare_post_sponsored_1", "reallife_flare_post_sponsored_2" }
         };
         private static readonly string[][] ToneLineKeys =
         {

@@ -27,7 +27,8 @@ namespace RealLifeOverhaul.Economy
         Flyers = 0,
         Radio = 1,
         DiscountDay = 2,
-        Refit = 3
+        Refit = 3,
+        Sponsored = 4      // a post of the player's own Flare account: booked here, priced by Flare (CompanyBridges.Outside)
     }
 
     /// <summary>A licence or permit. Saved as a number.</summary>
@@ -176,11 +177,12 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- marketing
 
-        public const int CampaignKinds = 4;
-        public static readonly int[] CampaignCost = { 150, 1200, 0, 2500 };     // flyers, a radio spot, a discount day, a shop-window refit
-        public static readonly int[] CampaignDays = { 3, 6, 1, 20 };
-        public static readonly int[] CampaignFootfall = { 5, 8, 12, 3 };        // per cent of customers, before the district, the economy and repeats
-        public static readonly bool[] CampaignLocal = { true, false, true, true };   // a local one is stronger where the district suits the business
+        public const int CampaignKinds = 5;
+        public const int CampaignOwnKinds = 4;      // the company's own; the rest are offered and priced from outside (CompanyBridges.Outside)
+        public static readonly int[] CampaignCost = { 150, 1200, 0, 2500, 400 };     // flyers, a radio spot, a discount day, a shop-window refit, a sponsored post (radio's price for its two days of six, before Flare's own figure)
+        public static readonly int[] CampaignDays = { 3, 6, 1, 20, 2 };
+        public static readonly int[] CampaignFootfall = { 5, 8, 12, 3, 8 };        // per cent of customers, before the district, the economy, repeats and (from outside) the reach
+        public static readonly bool[] CampaignLocal = { true, false, true, true, false };   // a local one is stronger where the district suits the business
         public const int CampaignMost = 12;         // per cent of customers: no campaign gives more
         public const int DiscountShare = 150;       // thousandths of the day's takings given away on a discount day
         public const int SuitPerPoint = 5;          // thousandths for each point of district income on the business's side

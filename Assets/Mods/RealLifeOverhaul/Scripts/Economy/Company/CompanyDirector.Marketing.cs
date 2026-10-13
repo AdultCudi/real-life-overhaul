@@ -66,16 +66,54 @@ namespace RealLifeOverhaul.Economy
         /// <summary>What a campaign would cost at a business today and the customers it would add from tomorrow, with the parts of that.</summary>
         public void CampaignQuote(CompanyShop shop, int kind, out int cost, out int percent, out int suit, out int repeat)
         {
-            cost = CampaignRules.Cost(kind, _index);
+            int costShare = 1000, reach = 1000;
+            Offered(shop, kind, out costShare, out reach);
+            cost = (int)((long)CampaignRules.Cost(kind, _index) * costShare / 1000);
             suit = CampaignRules.Suit(kind, shop.Taste, shop.Income);
             repeat = CampaignRules.Repeat(shop.File.PushEnded[kind], Save.Day + 1);
-            percent = CampaignRules.Effect(kind, suit, _cycle, repeat);
+            percent = CampaignRules.Effect(kind, suit, _cycle, repeat, reach);
+        }
+
+        /// <summary>Whether a kind of campaign can be booked at a business: the company's own always; another only when it is offered from outside, with its figures.</summary>
+        public bool Offered(CompanyShop shop, int kind, out int costShare, out int reach)
+        {
+            costShare = reach = 1000;
+            if (kind < CompanyCatalogue.CampaignOwnKinds)
+            {
+                return kind >= 0;
+            }
+            try
+            {
+                return kind < CompanyCatalogue.CampaignKinds && shop != null && CompanyBridges.Outside != null && CompanyBridges.Outside(kind, shop.File.Place, out costShare, out reach);
+            }
+            catch (System.Exception e)
+            {
+                Logger?.Error(e);
+                costShare = reach = 1000;
+                return false;
+            }
+        }
+
+        /// <summary>The kinds of campaign that can be booked at a business now, into the list given: the company's own first.</summary>
+        public int OfferedKinds(CompanyShop shop, List<int> into)
+        {
+            into.Clear();
+            for (int k = 0; k < CompanyCatalogue.CampaignKinds; k++)
+            {
+                int costShare, reach;
+                if (Offered(shop, k, out costShare, out reach))
+                {
+                    into.Add(k);
+                }
+            }
+            return into.Count;
         }
 
         public void BookCampaign(string place, int kind)
         {
             CompanyShop shop = On(CompanyPart.Marketing) ? ShopAt(place) : null;
-            if (shop == null || kind < 0 || kind >= CompanyCatalogue.CampaignKinds || !CampaignRules.CanBook(shop.File) || !Promoted(shop))
+            int share, reach;
+            if (shop == null || kind < 0 || kind >= CompanyCatalogue.CampaignKinds || !Offered(shop, kind, out share, out reach) || !CampaignRules.CanBook(shop.File) || !Promoted(shop))
             {
                 return;
             }
@@ -93,6 +131,17 @@ namespace RealLifeOverhaul.Economy
             {
                 { "campaign", CompanyText.Campaign(kind) }, { "business", shop.Name }, { "from", shop.File.PushFrom.ToString() }, { "to", (shop.File.PushEnd - 1).ToString() }, { "percent", percent.ToString() }
             }, 9f, null, null, true, false);
+            if (kind >= CompanyCatalogue.CampaignOwnKinds && CompanyBridges.Booked != null)
+            {
+                try
+                {
+                    CompanyBridges.Booked(place, kind, shop.File.PushFrom, shop.File.PushEnd - 1, percent);
+                }
+                catch (System.Exception e)
+                {
+                    Logger?.Error(e);
+                }
+            }
             Changed();
         }
 

@@ -16,7 +16,9 @@ namespace RealLifeOverhaul.Flare
         Endorsed = 8,      // a candidate endorsed
         GoodDeed = 9,      // somebody helped
         Arrested = 10,     // taken into custody
-        Life = 11          // a friend's own everyday post
+        Life = 11,         // a friend's own everyday post
+        Scandal = 12,      // talk about a scandal at a business of a brand of the player's: an answer
+        Sponsored = 13     // the player's own sponsored post, booked as a campaign
     }
 
     /// <summary>How a post is worded. Saved as a number.</summary>
@@ -150,10 +152,27 @@ namespace RealLifeOverhaul.Flare
         public int CivicSeen;            // bits: 1 the ballot, 2 the endorsement of the election that is on
         public int CareerKey = -1;       // the employer and rank last seen (employer * 100 + rank)
         public int NoticeDay = -1;       // the last day Flare sent a notification that asks for something (one a day at most)
+        public int HypeDay = -100;       // the last day a viral post raised the game's own hype for a product
+        public int ComplaintDay = -1;    // the last day a post on shift was a complaint at work
+        public int NoticedDay = -1;      // the last day a picture posted while wanted drew the police's eye
+        public int StoryDay = -1;        // the last day the City Ledger was given a piece about a viral post
+        public int ArrestDay = -1;       // the last day an arrest trended
         public readonly int[] History = new int[HistoryDays];   // followers at the end of each of the last seven days, oldest first
         public readonly List<FlareDraft> Drafts = new List<FlareDraft>(FlareRules.DraftsMost);
         public readonly List<FlarePost> Posts = new List<FlarePost>(FlareRules.PostsMost);
         public readonly List<FlareShopSeen> Shops = new List<FlareShopSeen>(8);
+        public readonly List<FlareBuzz> Buzz = new List<FlareBuzz>(8);
+
+        /// <summary>What Flare adds to a business's customers now, per cent: the talk of its posts, inside the cap.</summary>
+        public int BuzzAt(string place, int day)
+        {
+            int sum = 0;
+            for (int i = 0; i < Buzz.Count; i++)
+            {
+                sum += Buzz[i].Place == place && day < Buzz[i].Until ? Buzz[i].Percent : 0;
+            }
+            return FlareRules.Clamp(sum, -FlareRules.BuzzMost, FlareRules.BuzzMost);
+        }
 
         public FlareTier Tier => FlareRules.TierOf(Followers);
 
@@ -218,6 +237,14 @@ namespace RealLifeOverhaul.Flare
                 return n;
             }
         }
+    }
+
+    /// <summary>Talk on Flare about a business: so many per cent of customers until a day (Wiring/FlareLinks adds it to business pressure's figure).</summary>
+    public sealed class FlareBuzz
+    {
+        public string Place;
+        public int Percent;
+        public int Until;            // the first day without it
     }
 
     /// <summary>What the daily round did, for the one log line.</summary>

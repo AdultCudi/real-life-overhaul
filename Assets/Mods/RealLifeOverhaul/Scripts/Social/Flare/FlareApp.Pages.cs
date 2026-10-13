@@ -223,14 +223,30 @@ namespace RealLifeOverhaul.Flare
 
         // ---------------------------------------------------------------- Business
 
+        private static readonly string[] ReviewGood = { "reallife_flare_review_service_good", "reallife_flare_review_pricing_good", "reallife_flare_review_clean_good", "reallife_flare_review_facility_good" };
+        private static readonly string[] ReviewBad = { "reallife_flare_review_service_bad", "reallife_flare_review_pricing_bad", "reallife_flare_review_clean_bad", "reallife_flare_review_facility_bad" };
+        private const int ReviewGoodFrom = 70, ReviewBadUnder = 40;   // the game's satisfaction figures, 0 to 100: a part this good or this poor is talked about
+        private readonly int[] _parts = new int[4];
+
+        // The game's overall satisfaction as stars, in halves: "4.5".
+        private static string Stars(int overall)
+        {
+            int halves = FlareRules.Clamp((overall + 5) / 10, 0, 10);
+            return FlareText.Fill("reallife_flare_stars", "stars", (halves / 2).ToString() + (halves % 2 == 1 ? ".5" : string.Empty));
+        }
+
         private TableSpec WriteBusiness(InfoBox box, FlareFile file, int day, ref string selected)
         {
             List<BuildingRegistration> shops = FlareGame.Businesses();
             string pickedPlace = null, pickedName = null;
             int pickedPosts = 0;
+            BuildingRegistration pickedReg = null;
             for (int i = 0; i < shops.Count; i++)
             {
                 string place = FlareGame.Place(shops[i]), name = FlareGame.Name(shops[i]);
+                int overall;
+                bool rated = FlareGame.Satisfaction(shops[i], out overall, _parts);
+                int talk = file.BuzzAt(place, day);
                 int posts = 0, last = -1;
                 for (int k = 0; k < file.Posts.Count; k++)
                 {
@@ -243,26 +259,55 @@ namespace RealLifeOverhaul.Flare
                 }
                 TableRow row = Row("shop:" + place);
                 row.Set(0, name);
-                row.Set(1, posts.ToString(), posts);
-                row.Set(2, last >= 0 ? FlareText.Fill("reallife_flare_day", "day", last.ToString()) : FlareText.T("reallife_flare_never"), last);
+                row.Set(1, rated ? Stars(overall) : string.Empty, rated ? overall : double.NaN);
+                row.Set(2, talk != 0 ? FlareText.Signed(talk) + "%" : string.Empty, talk, talk > 0 ? TableRow.Green : talk < 0 ? TableRow.Red : TableRow.Plain);
+                row.Set(3, posts.ToString(), posts);
+                row.Set(4, last >= 0 ? FlareText.Fill("reallife_flare_day", "day", last.ToString()) : FlareText.T("reallife_flare_never"), last);
                 if (Is(row, ref selected))
                 {
                     pickedPlace = place;
                     pickedName = name;
                     pickedPosts = posts;
+                    pickedReg = shops[i];
                 }
             }
             if (pickedPlace != null)
             {
-                box.Title(pickedName);
-                box.Line(FlareText.Pair("reallife_flare_shop_posts", pickedPosts.ToString()));
-                box.Line(FlareText.T("reallife_flare_shop_how"));
-                BackButton(box);
+                WriteShop(box, file, day, pickedReg, pickedPlace, pickedName, pickedPosts);
                 return FlareTables.Business;
             }
             box.Title(FlareText.T("reallife_flare_tab_business"));
             box.Line(FlareText.T(shops.Count > 0 ? "reallife_flare_business_intro" : "reallife_flare_business_none"));
+            box.Line(FlareText.Fill("reallife_flare_business_talk", "most", FlareRules.BuzzMost.ToString(), "days", FlareRules.BuzzDays.ToString()));
             return FlareTables.Business;
+        }
+
+        // A business picked: its stars and what its reviews say (the game's own satisfaction, read only), the talk on Flare, and a sponsored post.
+        private void WriteShop(InfoBox box, FlareFile file, int day, BuildingRegistration reg, string place, string name, int posts)
+        {
+            box.Title(name);
+            int overall;
+            if (FlareGame.Satisfaction(reg, out overall, _parts))
+            {
+                box.Line(FlareText.Pair("reallife_flare_shop_stars", Stars(overall)));
+                int said = 0;
+                for (int k = 0; k < _parts.Length && said < 2; k++)
+                {
+                    string key = _parts[k] >= ReviewGoodFrom ? ReviewGood[k] : _parts[k] < ReviewBadUnder ? ReviewBad[k] : null;
+                    if (key != null)
+                    {
+                        box.Line(FlareText.Fill("reallife_flare_review_line", "words", FlareText.T(key)));
+                        said++;
+                    }
+                }
+            }
+            int talk = file.BuzzAt(place, day);
+            box.Line(talk != 0 ? FlareText.Fill("reallife_flare_shop_talk", "percent", FlareText.Signed(talk)) : FlareText.T("reallife_flare_shop_quiet"));
+            box.Line(FlareText.Pair("reallife_flare_shop_posts", posts.ToString()));
+            int reach = FlareRules.SponsoredReach(file.Followers);
+            box.Line(reach > 0 ? FlareText.Fill("reallife_flare_shop_sponsored", "share", (reach / 10).ToString())
+                : FlareText.Fill("reallife_flare_shop_sponsored_later", "followers", FlareText.N(FlareRules.SponsoredFrom)));
+            BackButton(box);
         }
     }
 }

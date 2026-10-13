@@ -45,6 +45,12 @@ namespace RealLifeOverhaul.Economy.Brands
         /// <summary>Withdraws a claim that has not been judged. Default: nothing happens.</summary>
         public static Func<int, bool> WithdrawClaim;
 
+        /// <summary>How a scandal at a shop spreads, thousandths of its loss (Flare's account reputation). Default: 1000.</summary>
+        public static Func<string, int> ScandalScale;
+
+        /// <summary>A scandal has cost a brand: the shop's place, its name, the recognition lost (hundredths) and the scale it was lost at. Default: nobody is told.</summary>
+        public static Action<string, string, int, int> ScandalHeard;
+
         public static void Reset()
         {
             Footfall = null;
@@ -54,6 +60,8 @@ namespace RealLifeOverhaul.Economy.Brands
             FileClaim = null;
             ClaimOpen = null;
             WithdrawClaim = null;
+            ScandalScale = null;
+            ScandalHeard = null;
         }
     }
 

@@ -102,6 +102,7 @@ namespace RealLifeOverhaul.Economy.Brands
 
         public static readonly int[] ScandalLoss = { 400, 300, 200 };   // a failed inspection, a strike, a fire: in the district; a quarter of it city-wide
         public const int ScandalCityShare = 250;    // thousandths
+        public const int ScandalScaleLeast = 800, ScandalScaleMost = 1250;   // thousandths of a scandal's loss: how the talk of it spreads, at most either way
         public const int FailureLoss = 800;         // a franchisee that closes
         public const int UnfairLoss = 600;          // an agreement ended without cause
         public const int UnfairCityLoss = 150;

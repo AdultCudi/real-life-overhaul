@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using Localizor;
+using RealLifeOverhaul.Economy;
+using RealLifeOverhaul.Economy.Brands;
 using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.Law;
 using RealLifeOverhaul.Leisure;
@@ -22,12 +24,35 @@ namespace RealLifeOverhaul
         ///                 deed that counted (Reputation.Deed) and an arrest (News.Reported, PlayerArrested) become
         ///                 drafts in Flare (FlareDirector.Happened)
         ///
+        /// What a post does elsewhere, one line each:
+        ///   Footfall      Flare's talk about a business is added to <see cref="BusinessGame.Ambient"/> (on top of what
+        ///                 the city's economy, the company and the brands add) and written by business pressure's own
+        ///                 writer (BusinessDirector.Footfall), which keeps the sum inside its own bounds; Flare's part is
+        ///                 6% at most. On a new day a business the others have had drawn already is not drawn again
+        ///   Sponsored     a sponsored post is the company's fifth campaign (CampaignKind.Sponsored), offered from Local
+        ///                 on and priced by Flare (CompanyBridges.Outside); booked, it is posted (CompanyBridges.Booked)
+        ///   Tagged        a friend tagged is a little closer (SocialLife.Change, MemoryCode.Posted); a selfie taken with
+        ///                 them on an outing counts again, the partner more; a post that went badly costs a little trust
+        ///   scandals      a scandal at a brand's shop spreads by the account's reputation (BrandsBridges.ScandalScale,
+        ///                 BrandRules.Hit) and an honest answer wins part of it back (BrandsDirector.Recover)
+        ///   Story         a viral day is a piece in the City Ledger (Paper.Print, NewsKind.Story)
+        ///   Following     the account's word in an election (CivicBridges.Following, two businesses' worth at most)
+        ///   Wanted, Noticed  a picture posted while wanted: a day of closer police scrutiny (Reputation.Noticed)
+        ///   OnShift, Complaint  a post on a rota shift, if the boss follows: a complaint (CareerState.Complaint)
+        ///
         /// Everything is read from what those features already keep in public or heard through an event they already
-        /// raise; nothing of theirs is changed. COST: nothing per frame. A draft is one call when the thing happens;
-        /// the people are read when Flare plays its day, makes a post or the app opens (a walk over the cast of eight).
+        /// raise; nothing of theirs is changed but through an entry of theirs. COST: nothing per frame. A draft is one
+        /// call when the thing happens; the people are read when Flare plays its day, makes a post or the app opens (a
+        /// walk over the cast of eight); the footfall answer is a walk over Flare's talk (none most days).
         /// </summary>
         public static class FlareLinks
         {
+            private const int PostFamiliarity = 1, PostAffection = 1;   // a friend tagged in a post that went well
+            private const int PartnerAffection = 2;                     // ...the partner, more
+            private const int BadTrust = -2;                            // ...one that went badly
+
+            private static Func<BuildingRegistration, int> _ambientBefore;
+
             internal static void Connect()
             {
                 FlareBridges.People = People;
@@ -38,6 +63,21 @@ namespace RealLifeOverhaul
                 SocialLinks.OutingDone = OutingDone;
                 Reputation.Deed += Deed;
                 News.Reported += Reported;
+                _ambientBefore = BusinessGame.Ambient;
+                BusinessGame.Ambient = Ambient;
+                FlareBridges.Footfall = Footfall;
+                FlareBridges.Tagged = Tagged;
+                FlareBridges.Answered = (place, points) => BrandsDirector.Instance != null ? BrandsDirector.Instance.Recover(place, points) : 0;
+                FlareBridges.Story = Paper.Print;
+                FlareBridges.Wanted = () => LawState.Loaded && Record.Has(Charge.Wanted, Reputation.ScrutinyDays);
+                FlareBridges.Noticed = Reputation.Noticed;
+                FlareBridges.OnShift = () => JobDirector.Instance != null && JobDirector.Instance.OnRotaShift && CareerState.Employed ? CareerState.EmployerIndex * 100 + CareerState.Rank : -1;
+                FlareBridges.Complaint = CareerState.Complaint;
+                BrandsBridges.ScandalScale = place => FlareDirector.Instance != null ? FlareDirector.Instance.ScandalScale() : 1000;
+                BrandsBridges.ScandalHeard = (place, name, lost, scale) => FlareDirector.Instance?.Scandal(place, name, lost, scale);
+                CivicBridges.Following = () => FlareDirector.Instance != null ? CivicGovernment.FollowingMost * FlareDirector.Instance.EndorseShare() / 1000f : 0f;
+                CompanyBridges.Outside = Outside;
+                CompanyBridges.Booked = Booked;
             }
 
             internal static void Disconnect()
@@ -47,6 +87,79 @@ namespace RealLifeOverhaul
                 SocialLinks.OutingDone = null;
                 Reputation.Deed -= Deed;
                 News.Reported -= Reported;
+                BusinessGame.Ambient = _ambientBefore;   // (the brands', the company's and the city's own pairings take theirs off in a moment)
+                _ambientBefore = null;
+                BrandsBridges.ScandalScale = null;
+                BrandsBridges.ScandalHeard = null;
+                CivicBridges.Following = null;
+                CompanyBridges.Outside = null;
+                CompanyBridges.Booked = null;
+            }
+
+            // What was asked for before this pairing, and Flare's talk on top. Business pressure keeps the sum inside its own bounds.
+            private static int Ambient(BuildingRegistration reg)
+            {
+                return (_ambientBefore != null ? _ambientBefore(reg) : 0) + FlareDirector.FootfallOf(reg);
+            }
+
+            private static bool Footfall(BuildingRegistration reg, bool newDay)
+            {
+                try
+                {
+                    bool drawn = newDay && (CityEconomyDirector.FootfallOf(reg) != 0 || CompanyDirector.FootfallOf(reg) != 0 || BrandsDirector.FootfallOf(reg) != 0);
+                    int own, written;
+                    return BusinessDirector.Footfall(reg, !drawn, newDay, out own, out written);
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareLinks.Footfall", e);
+                    return false;
+                }
+            }
+
+            // A friend tagged: closer for it, and they remember it; a selfie with them counts again; the partner more; a bad post costs a little trust.
+            private static void Tagged(int person, bool selfie, bool wentWell)
+            {
+                try
+                {
+                    SocialPerson p = Settings.Social && SocialState.Loaded ? SocialState.Get(person) : null;
+                    if (p == null || !p.Met)
+                    {
+                        return;
+                    }
+                    if (!wentWell)
+                    {
+                        SocialLife.Change(p, 0f, 0f, BadTrust);
+                        SocialDirector.Logger?.Info("Social: " + p.Name + " was tagged in a post that went badly and minds it (trust " + BadTrust + ").");
+                        return;
+                    }
+                    float familiarity = PostFamiliarity + (selfie ? SocialRules.SelfieFamiliarity : 0f);
+                    float affection = PostAffection + (selfie ? SocialRules.SelfieAffection : 0f) + (p.Together ? PartnerAffection : 0f);
+                    SocialLife.Change(p, familiarity, affection, 0f);
+                    SocialLife.Remember(p, MemoryCode.Posted);
+                    SocialDirector.Logger?.Info("Social: " + p.Name + " was tagged in a post on Flare (familiarity +" + familiarity + ", affection +" + affection
+                                                + (selfie ? ", the selfie together counted again" : string.Empty) + (p.Together ? ", the partner" : string.Empty) + ").");
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareLinks.Tagged", e);
+                }
+            }
+
+            // The company's question: can a campaign of a kind not its own be booked, at what share of its cost and customers.
+            private static bool Outside(int kind, string place, out int cost, out int reach)
+            {
+                cost = reach = 1000;
+                FlareDirector flare = FlareDirector.Instance;
+                return kind == (int)CampaignKind.Sponsored && flare != null && flare.SponsoredQuote(out cost, out reach);
+            }
+
+            private static void Booked(string place, int kind, int from, int to, int percent)
+            {
+                if (kind == (int)CampaignKind.Sponsored)
+                {
+                    FlareDirector.Instance?.Sponsored(place, from, to, percent);
+                }
             }
 
             // The people of the social life the player has met, as Flare sees them.

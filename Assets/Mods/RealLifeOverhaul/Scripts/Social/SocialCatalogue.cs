@@ -337,6 +337,7 @@ namespace RealLifeOverhaul
                 case MemoryCode.Introduced: return "reallife_social_memory_introduced";
                 case MemoryCode.DroppedBy: return "reallife_social_memory_droppedby";
                 case MemoryCode.NotRepaid: return "reallife_social_memory_notrepaid";
+                case MemoryCode.Posted: return "reallife_social_memory_posted";
                 default: return "reallife_social_memory_met";
             }
         }

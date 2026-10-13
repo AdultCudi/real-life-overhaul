@@ -9,6 +9,8 @@ namespace RealLifeOverhaul.Flare
     /// </summary>
     public sealed partial class FlareDirector
     {
+        private bool _testViral;   // the next post goes viral (a test)
+
         private bool TestReady(string test)
         {
             if (Save == null || !ModState.Loaded)
@@ -98,6 +100,19 @@ namespace RealLifeOverhaul.Flare
                 Tell(NotificationType.Info, "reallife_flare_test_followers_done", _openFeed, "followers", FlareText.N(_file.Followers), "tier", FlareText.Tier(_file.Tier));
                 Changed();
             });
+        }
+
+        /// <summary>Test: the next post goes viral, with all that comes of it (the talk, the game's hype, the paper).</summary>
+        public void TestViral()
+        {
+            if (!TestReady("Flare viral"))
+            {
+                return;
+            }
+            _testViral = true;
+            _file.LastPostMinute = -1;
+            Logger?.Info("Flare: test: the next post goes viral.");
+            Tell(NotificationType.Info, "reallife_flare_test_viral_done", null);
         }
 
         /// <summary>Test: the account starts again, as for a save that has never had Flare.</summary>

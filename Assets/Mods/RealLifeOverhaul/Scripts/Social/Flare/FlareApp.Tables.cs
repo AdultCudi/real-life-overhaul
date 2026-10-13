@@ -45,11 +45,13 @@ namespace RealLifeOverhaul.Flare
             .Order(1, false)
             .Empty("reallife_flare_empty_mine");
 
-        /// <summary>Business: 0 business, 1 posts about it, 2 the last one.</summary>
+        /// <summary>Business: 0 business, 1 its stars (the game's own satisfaction), 2 the talk on Flare now, 3 posts about it, 4 the last one.</summary>
         public static readonly TableSpec Business = new TableSpec("Flare", "Business")
-            .Column("reallife_flare_col_business", 700f, TableSort.Text, flexible: true)
-            .Column("reallife_flare_col_posts", 220f, TableSort.Number)
-            .Column("reallife_flare_col_last", 280f, TableSort.Date, right: true)
+            .Column("reallife_flare_col_business", 620f, TableSort.Text, flexible: true)
+            .Column("reallife_flare_col_stars", 220f, TableSort.Number)
+            .Column("reallife_flare_col_talk", 220f, TableSort.Number)
+            .Column("reallife_flare_col_posts", 200f, TableSort.Number)
+            .Column("reallife_flare_col_last", 260f, TableSort.Date, right: true)
             .Empty("reallife_flare_empty_business");
     }
 }
