@@ -176,6 +176,7 @@ namespace RealLifeOverhaul
         }
 
         public SocialPerson Who => _who;
+        public PlanKind Kind => _kind;
         public bool Greeted => _greeted;
 
         /// <summary>

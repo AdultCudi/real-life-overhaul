@@ -525,6 +525,33 @@ namespace RealLifeOverhaul.Meta
                 .Cleanup(() => Ledger.LedgerDirector.Instance?.StopAll())
                 .ResetData(() => Ledger.LedgerDirector.Instance?.Forget());   // the director reads the (now empty) save again on its next second
 
+            // Flare, the city's social media app: an account, posts about what really happened, friends who follow and
+            // answer. Everything it does to the other features is Wiring/FlareLinks'; off, it does nothing at all.
+            Features.Add("flare", "reallife_meta_title_flare")
+                .Group("reallife_flare_header")
+                .About("reallife_guide_flare_about").Help("reallife_guide_flare")
+                .Owns(Settings.SocialMediaId, Settings.SocialMediaNoticesId)
+                .Data(Flare.FlareStore.Keys)
+                .Fact("flare_local", () => Whole(Flare.FlareRules.TierFrom[1]))
+                .Fact("flare_known", () => Whole(Flare.FlareRules.TierFrom[2]))
+                .Fact("flare_influencer", () => Whole(Flare.FlareRules.TierFrom[3]))
+                .Fact("flare_celebrity", () => Whole(Flare.FlareRules.TierFrom[4]))
+                .Fact("flare_posts_day", () => Whole(Flare.FlareRules.PostsPerDay))
+                .Fact("flare_gap_hours", () => Whole(Flare.FlareRules.PostGapMinutes / 60))
+                .Fact("flare_draft_days", () => Whole(Flare.FlareRules.DraftDays))
+                .Fact("flare_silent_days", () => Whole(Flare.FlareRules.SilentFrom))
+                .Fact("flare_viral_most", () => Whole(Flare.FlareRules.ViralMost / 10))
+                .Fact("flare_viral_gap", () => Whole(Flare.FlareRules.ViralGapDays))
+                .Fact("flare_buzz_most", () => Whole(Flare.FlareRules.BuzzMost))
+                .Fact("flare_buzz_days", () => Whole(Flare.FlareRules.BuzzDays))
+                .Fact("flare_hype_gap", () => Whole(Flare.FlareRules.HypeGapDays))
+                .Fact("flare_sponsored_from", () => Whole(Flare.FlareRules.SponsoredFrom))
+                .Fact("flare_arrest_share", () => Whole(Flare.FlareRules.ArrestShare / 10))
+                .Fact("flare_cast_most", () => Whole(Flare.FlareCast.Most))
+                .Fact("flare_never_days", () => Whole(Flare.FlareRules.NeverPostedDays))
+                .Fact("flare_abuse_days", () => Whole(Flare.FlareRules.AbuseDays))
+                .ResetData(() => Flare.FlareDirector.Instance?.Forget());   // a new account opens from the (now empty) save on the next second
+
             Features.Add("travel", "reallife_meta_title_travel")
                 .Group("reallife_travel_header")
                 .About("reallife_guide_travel_about").Help("reallife_guide_travel")

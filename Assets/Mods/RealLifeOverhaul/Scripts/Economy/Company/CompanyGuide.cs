@@ -149,7 +149,7 @@ namespace RealLifeOverhaul.Economy
         private static string Campaigns()
         {
             var text = new StringBuilder();
-            for (int k = 0; k < CompanyCatalogue.CampaignKinds; k++)
+            for (int k = 0; k < CompanyCatalogue.CampaignOwnKinds; k++)   // (a sponsored post is priced by Flare: its own Guide page says how)
             {
                 bool free = CompanyCatalogue.CampaignCost[k] == 0;
                 text.Append("- ").Append((free ? "reallife_guide_economy_company_campaign_free" : "reallife_guide_economy_company_campaign").GetLocalization()

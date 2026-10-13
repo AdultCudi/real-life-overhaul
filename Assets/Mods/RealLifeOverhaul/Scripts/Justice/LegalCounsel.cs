@@ -224,7 +224,16 @@ namespace RealLifeOverhaul
                     weight = JusticeState.Cases[i].Weight;
                 }
             }
-            return JusticeLaw.Bound(JusticeLaw.FirmFee(weight, firm.Stars), Crime.Cash, JusticeLaw.FeeShareOfCash, Prices.At(200));
+            int fame = 0;
+            try
+            {
+                fame = Justice.Bridges.Fame != null ? Mathf.Clamp(Justice.Bridges.Fame(), 0, 250) : 0;   // fame costs money in court: a little more, a quarter at most
+            }
+            catch (Exception)
+            {
+                fame = 0;
+            }
+            return JusticeLaw.Bound(JusticeLaw.FirmFee(weight, firm.Stars) * (1000 + fame) / 1000, Crime.Cash, JusticeLaw.FeeShareOfCash, Prices.At(200));
         }
 
         /// <summary>Retains a firm: a quarter of the fee now if it can be afforded, the rest (or all of it) over six days.</summary>

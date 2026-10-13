@@ -491,6 +491,22 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_ledger_test_find", () => Ledger.LedgerDirector.Instance?.TestFindKiosks())
                 .AddButton("reallife_ledger_test_back", () => Ledger.LedgerDirector.Instance?.TestBack())
                 .AddSplitter()
+                .AddHeader("reallife_flare_header")
+                .AddToggle(Settings.SocialMediaId, "reallife_flare_enabled", Settings.SocialMedia,
+                    v => Settings.SocialMedia = v)
+                .AddToggle(Settings.SocialMediaNoticesId, "reallife_flare_notices", Settings.SocialMediaNotices,
+                    v => Settings.SocialMediaNotices = v)
+                .AddButton("reallife_flare_test_drafts", () => Flare.FlareDirector.Instance?.TestDrafts())
+                .AddButton("reallife_flare_test_day", () => Flare.FlareDirector.Instance?.TestDay())
+                .AddButton("reallife_flare_test_followers", () => Flare.FlareDirector.Instance?.TestFollowers())
+                .AddButton("reallife_flare_test_viral", () => Flare.FlareDirector.Instance?.TestViral())
+                .AddButton("reallife_flare_test_month", () => Flare.FlareDirector.Instance?.TestMonth())
+                .AddButton("reallife_flare_test_arrival", () => Flare.FlareDirector.Instance?.TestArrival())
+                .AddButton("reallife_flare_test_inf_scandal", () => Flare.FlareDirector.Instance?.TestInfluencerScandal())
+                .AddButton("reallife_flare_test_online", () => Flare.FlareDirector.Instance?.TestOnline())
+                .AddButton("reallife_flare_test_city", () => Flare.FlareDirector.Instance?.TestCity())
+                .AddButton("reallife_flare_test_back", () => Flare.FlareDirector.Instance?.TestBack())
+                .AddSplitter()
                 .AddHeader("reallife_travel_header")
                 .AddToggle(Settings.HotelsId, "reallife_travel_hotels", Settings.Hotels,
                     v => Settings.Hotels = v)
@@ -1021,6 +1037,9 @@ namespace RealLifeOverhaul
             _root.AddComponent<Utilities.UtilitiesDirector>();   // power and water: the utilities office, the bills, a cut and the Utilities app (Scripts/Utilities)
             _root.AddComponent<Family.FamilyDirector>();   // a partner at home, engagement and wedding, children, relatives (Scripts/Family)
             Roommates.RoommateDirector.Attach(_root, context.Logger);   // a roommate who shares the flat and the rent (Scripts/Home/Roommates)
+            Flare.FlareDirector.Logger = context.Logger;
+            Flare.FlareApp.Logger = context.Logger;
+            _root.AddComponent<Flare.FlareDirector>();   // Flare, the city's social media app (Scripts/Social/Flare): after the company and the brands, so that its day follows theirs
             CarTuning.Logger = context.Logger;
             SpeedReading.Logger = context.Logger;
             CarMeasure.Logger = context.Logger;

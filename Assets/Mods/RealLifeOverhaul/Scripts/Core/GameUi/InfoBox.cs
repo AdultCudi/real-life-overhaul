@@ -220,6 +220,29 @@ namespace RealLifeOverhaul.GameUi
             return line.GetComponent<TMP_Text>();
         }
 
+        /// <summary>
+        /// A picture in the box (a post's thumbnail), at a width and the height its texture's shape gives, never past the
+        /// height given. The texture is the caller's: the box only shows it, and its row goes with the page.
+        /// </summary>
+        public RawImage Picture(Texture texture, float width, float most)
+        {
+            if (texture == null || texture.width <= 0)
+            {
+                return null;
+            }
+            var row = new GameObject("Picture", typeof(RectTransform), typeof(RawImage), typeof(LayoutElement));
+            row.transform.SetParent(_box, false);
+            var image = row.GetComponent<RawImage>();
+            image.texture = texture;
+            image.raycastTarget = false;
+            float height = Mathf.Min(most, width * texture.height / texture.width);
+            var layout = row.GetComponent<LayoutElement>();
+            layout.preferredWidth = height * texture.width / texture.height;
+            layout.preferredHeight = height;
+            layout.flexibleWidth = 0f;
+            return image;
+        }
+
         public void Headline(string key)
         {
             Headline(key, null);

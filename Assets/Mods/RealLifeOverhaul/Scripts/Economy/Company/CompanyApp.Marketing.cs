@@ -10,9 +10,15 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     public sealed partial class CompanyApp
     {
-        private static readonly string[] CampaignAbout = { "reallife_co_push_about_flyers", "reallife_co_push_about_radio", "reallife_co_push_about_discount", "reallife_co_push_about_refit" };
+        private static readonly string[] CampaignAbout =
+        {
+            "reallife_co_push_about_flyers", "reallife_co_push_about_radio", "reallife_co_push_about_discount", "reallife_co_push_about_refit", "reallife_co_push_about_sponsored",
+            "reallife_co_push_about_influencer", "reallife_co_push_about_influencer", "reallife_co_push_about_influencer", "reallife_co_push_about_influencer",
+            "reallife_co_push_about_influencer", "reallife_co_push_about_giveaway"
+        };
 
-        private int _campaign;   // the campaign whose quote is showing
+        private readonly List<int> _kinds = new List<int>(CompanyCatalogue.CampaignKinds);
+        private int _campaign;   // which of the kinds offered at the business has its quote showing
 
         partial void WriteMarketing(InfoBox box, CompanyState state, int day, ref string selected)
         {
@@ -95,8 +101,10 @@ namespace RealLifeOverhaul.Economy
                 BackButton(box);
                 return;
             }
-            int kind = CompanyCatalogue.Clamp(_campaign, 0, CompanyCatalogue.CampaignKinds - 1);
-            if (!box.HasSelector || !box.Selector(CompanyCatalogue.CampaignKinds, kind, CompanyText.Campaign, i =>
+            int offered = _director.OfferedKinds(shop, _kinds);
+            int at = CompanyCatalogue.Clamp(_campaign, 0, offered - 1);
+            int kind = _kinds[at];
+            if (!box.HasSelector || !box.Selector(offered, at, i => CompanyText.Campaign(_kinds[i]), i =>
                 {
                     _campaign = i;
                     Refresh();

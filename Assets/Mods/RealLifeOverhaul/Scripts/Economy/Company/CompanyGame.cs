@@ -52,6 +52,18 @@ namespace RealLifeOverhaul.Economy
         /// <summary>True for a business whose cleaning the cleaning service does on its round, so that the staff rota planner asks for no cleaning shift there. Default: none is.</summary>
         public static Func<Address, bool> Cleaned;
 
+        /// <summary>
+        /// A campaign of a kind that is not the company's own (CompanyCatalogue.CampaignOwnKinds and on: a sponsored post on
+        /// Flare): whether it can be booked at a business now, and its cost and its customers as thousandths of the
+        /// catalogue's figures. Default: none of them is offered.
+        /// </summary>
+        public static OutsideQuote Outside;
+
+        public delegate bool OutsideQuote(int kind, string place, out int cost, out int reach);
+
+        /// <summary>A campaign of a kind that is not the company's own has been booked and paid: its business, kind, first and last day, and customers. Default: nobody is told.</summary>
+        public static Action<string, int, int, int, int> Booked;
+
         public static void Reset()
         {
             Footfall = null;
@@ -66,6 +78,8 @@ namespace RealLifeOverhaul.Economy
             IssueFootfall = null;
             OtherIncome = null;
             Cleaned = null;
+            Outside = null;
+            Booked = null;
         }
     }
 

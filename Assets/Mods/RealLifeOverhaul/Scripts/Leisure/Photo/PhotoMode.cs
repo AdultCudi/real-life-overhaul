@@ -64,6 +64,13 @@ namespace RealLifeOverhaul.Leisure
         /// <summary>True while photo mode is on: everything of the mod's that acts on keys or draws a HUD stands aside.</summary>
         public static bool Active { get; private set; }
 
+        /// <summary>
+        /// Raised when a picture has been saved: its path, whether it is a selfie, and the friend beside the player in it
+        /// (the social life's number; -1 for nobody). Heard by Wiring/FlareLinks. A handler that throws is logged and the
+        /// mode goes on.
+        /// </summary>
+        public static event Action<string, bool, int> Saved;
+
         private Camera _camera;
         private CinemachineBrain _brain;
         private bool _brainWasOn;
@@ -580,6 +587,17 @@ namespace RealLifeOverhaul.Leisure
                     {
                         Logger?.Error(e);
                         _shotPath = null;
+                    }
+                    if (_shotPath != null && Saved != null)
+                    {
+                        try
+                        {
+                            Saved(_shotPath, _inSelfie, PlayerHelper.PlayerController != null ? SocialHooks.Companion(PlayerHelper.PlayerController.transform.position) : -1);
+                        }
+                        catch (Exception e)
+                        {
+                            Logger?.Error(e);
+                        }
                     }
                     _shotStep = 3;
                     break;

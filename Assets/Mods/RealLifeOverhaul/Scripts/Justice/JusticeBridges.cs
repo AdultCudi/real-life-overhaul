@@ -193,12 +193,20 @@ namespace RealLifeOverhaul
                 set => _transport = value ?? new DefaultTransportBridge();
             }
 
+            /// <summary>Thousandths more a lawyer asks of somebody famous (a Celebrity on social media). Default: none.</summary>
+            public static Func<int> Fame;
+
+            /// <summary>A hearing of the player's is over (somebody famous makes it a story). Default: nothing.</summary>
+            public static Action Heard;
+
             public static void Reset()
             {
                 Law = null;
                 Licences = null;
                 Social = null;
                 Transport = null;
+                Fame = null;
+                Heard = null;
             }
         }
 

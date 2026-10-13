@@ -43,6 +43,8 @@ namespace RealLifeOverhaul
         public static ISocialWellbeing Wellbeing;
         /// <summary>Who the player is with has changed (somebody new, or it ended): whoever keeps the family life is told. Set by Wiring.</summary>
         public static Action PartnerChanged;
+        /// <summary>An outing went to its end with somebody (who, and what it was): whoever keeps Flare is told. Set by Wiring.</summary>
+        public static Action<SocialPerson, PlanKind> OutingDone;
     }
 
     /// <summary>

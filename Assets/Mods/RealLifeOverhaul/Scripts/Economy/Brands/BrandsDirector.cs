@@ -680,8 +680,13 @@ namespace RealLifeOverhaul.Economy.Brands
                     return;
                 }
                 int before = BrandRules.Effective(b, m.District);
-                int lost = BrandRules.Hit(b, m.District, kind);
+                int scale = BrandsBridges.ScandalScale != null ? BrandsBridges.ScandalScale(place) : 1000;
+                int lost = BrandRules.Hit(b, m.District, kind, scale);
                 BrandShop shop = BrandsGame.ShopAt(_shops, place);
+                if (scale != 1000)
+                {
+                    Logger?.Info("Brands: the scandal at " + (shop != null ? shop.Name : place) + " spread at " + scale + " thousandths of its loss (Flare).");
+                }
                 Logger?.Info("Brands check (scandal, " + kind + " at " + (shop != null ? shop.Name : place) + "): " + b.Name + "'s recognition in " + m.District + " " + before + " to " + BrandRules.Effective(b, m.District)
                              + " hundredths (" + lost + " lost of the " + BrandCatalogue.ScandalLoss[(int)kind] + " such a thing costs), city-wide now " + b.City + ": PASS");
                 Tell(NotificationType.Warning, "reallife_brand_note_scandal", new Dictionary<string, string>
@@ -689,10 +694,37 @@ namespace RealLifeOverhaul.Economy.Brands
                     { "what", BrandsText.Scandal(kind) }, { "business", shop != null ? shop.Name : "?" }, { "brand", b.Name }, { "points", BrandsText.Lost(lost) }, { "district", BrandsText.District(m.District) }
                 }, TabBrands, "brand:" + b.Id);
                 Changed(true);
+                BrandsBridges.ScandalHeard?.Invoke(place, shop != null ? shop.Name : b.Name, lost, scale);
             }
             catch (Exception e)
             {
                 Fault("a scandal", e);
+            }
+        }
+
+        /// <summary>Recognition a scandal took at a shop is given back (an honest answer on Flare, through Wiring/FlareLinks). Returns what came back, hundredths.</summary>
+        public int Recover(string place, int points)
+        {
+            if (!_running || _broken || _state == null)
+            {
+                return 0;
+            }
+            try
+            {
+                Member m = _state.Member(place);
+                Brand b = m != null ? _state.Brand(m.BrandId) : null;
+                int back = b != null ? BrandRules.Regain(b, m.District, points) : 0;
+                if (back > 0)
+                {
+                    Logger?.Info("Brands: " + b.Name + " won back " + back + " hundredths of recognition in " + m.District + " after an honest answer to the scandal.");
+                    Changed(true);
+                }
+                return back;
+            }
+            catch (Exception e)
+            {
+                Fault("a scandal answered", e);
+                return 0;
             }
         }
 

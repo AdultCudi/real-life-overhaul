@@ -786,7 +786,7 @@ internal static partial class Program
         Check(CompanyStore.Read(null, out version) == null && CompanyStore.Read(string.Empty, out version) == null && CompanyStore.Read("nonsense", out version) == null
               && CompanyStore.Read("v=x^h:1", out version) == null && CompanyStore.Read("v=0^h:1", out version) == null && CompanyStore.Read("v=1^t:1|2", out version) == null,
             "a line that is not this feature's is not read");
-        CompanyState wild = CompanyStore.Read("v=1^h:5|-3|-9|-1|44|-2|-6^t:-5|0|-1|-2|-3|-4|-5|-6|-7|-8|-9|99|-1|42|-3|999999|-4|-5|-6|-7^s:A~1|-4|17|9|1|2|3|900^e:x|A~1|500|-40^c:0|A~1|9|1|1|1|1|1|1|1^r:9|1|1", out version);
+        CompanyState wild = CompanyStore.Read("v=1^h:5|-3|-9|-1|44|-2|-6^t:-5|0|-1|-2|-3|-4|-5|-6|-7|-8|-9|99|-1|42|-3|999999|-4|-5|-6|-7^s:A~1|-4|17|99|1|2|3|900^e:x|A~1|500|-40^c:0|A~1|9|1|1|1|1|1|1|1^r:99|1|1", out version);
         Check(wild != null && wild.FirstDay == 0 && wild.SickPolicy == 2 && wild.NextClaim == 1 && wild.Tax.Quarter == 1 && wild.Tax.Costs[0] == 0 && wild.Tax.ReturnPenalties == CompanyCatalogue.PenaltiesMost
               && wild.Tax.Accountant == CompanyCatalogue.Accountants - 1 && wild.Tax.Risk == CompanyCatalogue.RiskMost && wild.Tax.Owed == 0, "figures out of their bounds are put inside them");
         Check(wild != null && wild.Shops.Count == 1 && wild.Shops[0].Hide == 0 && wild.Shops[0].Push == -1 && wild.Shops[0].PushPercent == 0 && wild.Staff.Count == 1 && wild.Staff[0].Standing == CompanyCatalogue.StandingMost

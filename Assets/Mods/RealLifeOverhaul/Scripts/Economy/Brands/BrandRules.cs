@@ -251,8 +251,29 @@ namespace RealLifeOverhaul.Economy.Brands
         /// <summary>Something the city hears about at a shop of the brand's: the district's figure falls at once, and the city-wide one by a quarter of that. Returns what the district lost.</summary>
         public static int Hit(Brand b, string district, Scandal kind)
         {
+            return Hit(b, district, kind, 1000);
+        }
+
+        /// <summary>The same with the loss scaled, thousandths (how the talk of it spreads: Wiring/FlareLinks), from four fifths to a quarter more.</summary>
+        public static int Hit(Brand b, string district, Scandal kind, int scale)
+        {
             int loss = BrandCatalogue.ScandalLoss[BrandCatalogue.Clamp((int)kind, 0, BrandCatalogue.ScandalLoss.Length - 1)];
+            loss = (int)((long)loss * BrandCatalogue.Clamp(scale, BrandCatalogue.ScandalScaleLeast, BrandCatalogue.ScandalScaleMost) / 1000);
             return Lose(b, district, loss, CompanyCatalogue.Share(loss, BrandCatalogue.ScandalCityShare));
+        }
+
+        /// <summary>Recognition a scandal took that is given back (an honest answer to it), in its district and a quarter of it city-wide, never past the most. Returns what came back.</summary>
+        public static int Regain(Brand b, string district, int points)
+        {
+            DistrictFile d = b.District(district);
+            if (d == null || points <= 0)
+            {
+                return 0;
+            }
+            int back = Math.Min(points, BrandCatalogue.RecMost - d.Rec);
+            d.Rec += Math.Max(0, back);
+            b.City = Math.Min(BrandCatalogue.RecMost, b.City + CompanyCatalogue.Share(Math.Max(0, back), BrandCatalogue.ScandalCityShare));
+            return Math.Max(0, back);
         }
 
         /// <summary>Recognition lost in a district and city-wide, never under nothing. Returns what the district lost.</summary>
