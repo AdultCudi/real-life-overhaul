@@ -38,7 +38,15 @@ namespace RealLifeOverhaul.GameUi
     /// the game's nor this mod's, or a button it had switched off that someone has shown again. Everything it hid is
     /// shown then, and the other mod's pages are the pages.
     ///
-    /// Nothing here runs per frame: it acts when the grid is shown, when its children change, and on the wheel.
+    /// The row's own layout places the page that shows, and the pager checks that it did: two buttons that show
+    /// standing where one does (the layout switched off by another hand, or a button switched on that the layout was
+    /// never told of) are placed by the pager itself, the same way the layout would, and one line in Player.log says
+    /// what was on the row. (Before, the mod's apps put on after the menu was built, the bank apps among them, could
+    /// stand one on top of another at the place of the button they were copied from.)
+    ///
+    /// Nothing here runs per frame: it acts when the grid is shown, when its children change, when one of them is
+    /// shown or hidden by any hand (every button carries a PageMark that says so: one pass before the frame is drawn,
+    /// however many changed), when the row's box changes size, and on the wheel.
     /// </summary>
     public sealed class PhoneGridPager : MonoBehaviour, IScrollHandler
     {
@@ -69,6 +77,9 @@ namespace RealLifeOverhaul.GameUi
         private float _pagesLeft;       // the strip's place for a page, in the row's space: where the widest page begins
         private float _pagesWidth;      // and how wide it is
         private bool _own;              // the strip holds only the game's own apps: laid out as the game lays it out
+        private bool _pending;          // a pass is asked for before the frame is drawn
+        private Canvas.WillRenderCanvases _late;
+        private static bool _toldByHand;
         private static readonly Vector3[] Corners = new Vector3[4];
 
         public int Pages { get; private set; } = 1;
@@ -114,6 +125,11 @@ namespace RealLifeOverhaul.GameUi
             return pager;
         }
 
+        private void Awake()
+        {
+            _late = LatePass;   // (one delegate for good: asking for a pass allocates nothing)
+        }
+
         private void OnEnable()
         {
             Refresh();
@@ -137,9 +153,52 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
+        private void OnDisable()
+        {
+            if (_pending)
+            {
+                _pending = false;
+                Canvas.willRenderCanvases -= _late;
+            }
+        }
+
         private void OnTransformChildrenChanged()
         {
             Refresh();
+        }
+
+        // The row's box changed size (the screen, the interface's scale): how many fit on a page may have changed.
+        private void OnRectTransformDimensionsChange()
+        {
+            if (_strip)
+            {
+                Changed();
+            }
+        }
+
+        /// <summary>
+        /// A button of the grid has been shown or hidden by any hand (its PageMark says so). That is no change of the
+        /// grid's children, so nothing else tells this pager, and the layout may not hear of it either: one pass
+        /// before the frame is drawn, however many buttons changed in it (the whole row comes on with the menu).
+        /// </summary>
+        internal void Changed()
+        {
+            if (_working || _aside || _pending || !_ready || !isActiveAndEnabled)
+            {
+                return;   // (our own changes, or the grid is not showing: it is looked at again when it is)
+            }
+            _pending = true;
+            Canvas.willRenderCanvases += _late;
+        }
+
+        private void LatePass()
+        {
+            Canvas.willRenderCanvases -= _late;
+            _pending = false;
+            if (this != null && isActiveAndEnabled)
+            {
+                Refresh();
+            }
         }
 
         /// <summary>Where a button is in the grid, counted from 1; 0 if it is not one of the apps.</summary>
@@ -240,18 +299,31 @@ namespace RealLifeOverhaul.GameUi
 
         // The apps are the buttons of the game's kind in the grid that are showing, or that a pager of this grid has
         // switched off for being on another page (this one or one before it: the PageMark says so). A button somebody
-        // else keeps switched off is not counted: it is theirs to show.
+        // else keeps switched off is not counted: it is theirs to show, and its PageMark tells this pager when it is.
         private void Collect()
         {
             _apps.Clear();
             for (int i = 0; i < transform.childCount; i++)
             {
                 Transform child = transform.GetChild(i);
-                if (child == _template || child.GetComponent<AppButton>() == null)
+                if (child == _template)
                 {
                     continue;
                 }
-                if (child.gameObject.activeSelf || PagedOff(child))
+                var mark = child.GetComponent<PageMark>();
+                if (mark == null && !_aside)
+                {
+                    mark = child.gameObject.AddComponent<PageMark>();   // (on any button, ours or not: its being shown or hidden reaches the pager)
+                }
+                if (mark != null)
+                {
+                    mark.Pager = this;
+                }
+                if (child.GetComponent<AppButton>() == null)
+                {
+                    continue;
+                }
+                if (child.gameObject.activeSelf || mark != null && mark.Off)
                 {
                     _apps.Add(child);
                 }
@@ -409,11 +481,95 @@ namespace RealLifeOverhaul.GameUi
             if (strip.gameObject.activeInHierarchy)
             {
                 LayoutRebuilder.ForceRebuildLayoutImmediate(strip);   // in place before anything is drawn (and before the dots look)
+                if (!layout.isActiveAndEnabled || Stacked(strip, pitch))
+                {
+                    ByHand(strip, layout, begin, pitch - layout.spacing);
+                }
             }
             else
             {
-                LayoutRebuilder.MarkLayoutForRebuild(strip);
+                LayoutRebuilder.MarkLayoutForRebuild(strip);   // (and the pass when the menu opens looks again)
             }
+        }
+
+        // Whether two buttons that show stand where one does: the layout has not placed them.
+        private static bool Stacked(RectTransform strip, float pitch)
+        {
+            bool first = true;
+            float last = 0f;
+            for (int i = 0; i < strip.childCount; i++)
+            {
+                var child = strip.GetChild(i) as RectTransform;
+                if (child == null || !child.gameObject.activeSelf || Ignored(child))
+                {
+                    continue;
+                }
+                float left = child.localPosition.x + child.rect.xMin * child.localScale.x;
+                if (!first && Mathf.Abs(left - last) < pitch * 0.25f)
+                {
+                    return true;
+                }
+                first = false;
+                last = left;
+            }
+            return false;
+        }
+
+        // The buttons that show, placed as the row's layout places them: from the page's left edge one after another,
+        // at the height its alignment gives. Only when the layout has not: while it is on, it does the same.
+        private void ByHand(RectTransform strip, HorizontalLayoutGroup layout, float begin, float cellWidth)
+        {
+            if (!_toldByHand)
+            {
+                _toldByHand = true;
+                UiClone.Fallback("the full menu's row of app buttons was not laid out by its own layout (" + (layout.enabled ? "switched on" : "switched off")
+                                 + "), so the pages place its buttons themselves; it showed " + Shown(strip));
+            }
+            Rect box = strip.rect;
+            float x = begin - box.xMin;   // from the row's left edge, as the layout counts
+            float row = (int)layout.childAlignment / 3 * 0.5f;   // upper, middle or lower
+            for (int i = 0; i < strip.childCount; i++)
+            {
+                var child = strip.GetChild(i) as RectTransform;
+                if (child == null || !child.gameObject.activeSelf || Ignored(child))
+                {
+                    continue;
+                }
+                float width = layout.childControlWidth ? Mathf.Max(LayoutUtility.GetPreferredWidth(child), child.rect.width) : child.rect.width;
+                if (width < 1f)
+                {
+                    width = cellWidth;
+                }
+                float height = child.rect.height;
+                float top = layout.padding.top + (box.height - layout.padding.vertical - height) * row;
+                child.anchorMin = child.anchorMax = new Vector2(0f, 1f);
+                child.anchoredPosition = new Vector2(x + width * child.pivot.x, -(top + height * (1f - child.pivot.y)));
+                x += width + layout.spacing;
+            }
+        }
+
+        // What the row showed, for the line in Player.log: each button's name and left edge.
+        private static string Shown(RectTransform strip)
+        {
+            var said = new System.Text.StringBuilder(256);
+            for (int i = 0; i < strip.childCount; i++)
+            {
+                var child = strip.GetChild(i) as RectTransform;
+                if (child == null || !child.gameObject.activeSelf)
+                {
+                    continue;
+                }
+                said.Append(said.Length == 0 ? string.Empty : ", ").Append(child.name).Append(" at ")
+                    .Append((child.localPosition.x + child.rect.xMin * child.localScale.x).ToString("0"));
+            }
+            return said.Length == 0 ? "nothing" : said.ToString();
+        }
+
+        // A child the layout leaves out (LayoutElement.ignoreLayout): placed by whoever put it there.
+        private static bool Ignored(RectTransform child)
+        {
+            var ignorer = child.GetComponent<ILayoutIgnorer>();
+            return ignorer != null && ignorer.ignoreLayout;
         }
 
         // How the game built the row, kept on the row the first time it is paged, so that any pager after this one knows it.
@@ -723,10 +879,31 @@ namespace RealLifeOverhaul.GameUi
         }
     }
 
-    /// <summary>On an app button: switched off by a pager of its grid for being on another page (Off), so that any pager of that grid counts it as one of the apps.</summary>
+    /// <summary>
+    /// On each button of a paged grid: switched off by a pager of that grid for being on another page (Off), so that
+    /// any pager of that grid counts it as one of the apps; and the pager's word when the button is shown or hidden by
+    /// any hand, the game's, another mod's or this one's, which is no change of the grid's children. It has no Update.
+    /// </summary>
     public sealed class PageMark : MonoBehaviour
     {
         public bool Off;
+        internal PhoneGridPager Pager;   // (not saved with the button: a copy of it waits for its own pager)
+
+        private void OnEnable()
+        {
+            if (Pager != null)
+            {
+                Pager.Changed();
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (Pager != null)
+            {
+                Pager.Changed();
+            }
+        }
     }
 
     /// <summary>On the full menu's row of app buttons: its alignment and left padding as the game built them, kept from the first time it was paged.</summary>
