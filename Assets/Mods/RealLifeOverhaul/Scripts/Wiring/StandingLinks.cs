@@ -352,8 +352,27 @@ namespace RealLifeOverhaul
                 EstateState s = EstateDirector.Instance != null ? EstateDirector.Instance.State : null;
                 for (int i = 0; s != null && i < s.Holdings.Count; i++)
                 {
+                    // (Since each unit has its own lease: let if any unit is, the units' asking rents averaged, their agreed rents summed.)
                     EstateHolding h = s.Holdings[i];
-                    into.Add(new FameHolding { District = h.District, Let = h.Let, Ask = h.Managed ? h.Ask : FameRules.AskMarket, Rent = h.Managed && h.Let ? h.Rent : 0 });
+                    bool let = false;
+                    int ask = 0, rent = 0;
+                    for (int u = 0; u < h.Units.Count; u++)
+                    {
+                        EstateUnit unit = h.Units[u];
+                        ask += unit.Ask;
+                        if (unit.Let)
+                        {
+                            let = true;
+                            rent += unit.Rent;
+                        }
+                    }
+                    into.Add(new FameHolding
+                    {
+                        District = h.District,
+                        Let = let,
+                        Ask = h.Managed && h.Units.Count > 0 ? ask / h.Units.Count : FameRules.AskMarket,
+                        Rent = h.Managed ? rent : 0
+                    });
                 }
             }
 
