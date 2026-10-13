@@ -229,11 +229,12 @@ namespace RealLifeOverhaul.Law
                 yield break;
             }
 
-            // The car they are in is remembered, so that it can be brought to the precinct afterwards.
-            VehicleController car = gm.selectedVehicle;
-            if (car != null && PlayerHelper.IsUsingVehicle && car.vehicleType != null && !car.vehicleType.spawnInPlayerObject && car.vehicleInstance != null)
+            // The car they are in is remembered, so that it can be brought to the precinct afterwards: their own only, never
+            // another player's car of a Going Public session (VehicleTow.LeftBehind).
+            VehicleInstance car = PlayerHelper.IsUsingVehicle ? VehicleTow.LeftBehind(gm.selectedVehicle) : null;
+            if (car != null)
             {
-                LawState.Custody.VehicleId = car.vehicleInstance.id;
+                LawState.Custody.VehicleId = car.id;
             }
             yield return LeaveVehicle(4f, force: false);
             if (PlayerHelper.IsUsingVehicle || BuildingManager.IsInsideBuilding || !Settings.People || _player.Character == null
@@ -1160,11 +1161,12 @@ namespace RealLifeOverhaul.Law
                     yield break;
                 }
                 // The car they are sitting in is remembered, as at an arrest: it is at the pound or brought round afterwards.
+                // Their own only, never another player's car of a Going Public session (VehicleTow.LeftBehind).
                 var gm = InstanceBehavior<GameManager>.Instance;
-                VehicleController car = gm != null ? gm.selectedVehicle : null;
-                if (car != null && PlayerHelper.IsUsingVehicle && car.vehicleType != null && !car.vehicleType.spawnInPlayerObject && car.vehicleInstance != null)
+                VehicleInstance car = gm != null && PlayerHelper.IsUsingVehicle ? VehicleTow.LeftBehind(gm.selectedVehicle) : null;
+                if (car != null)
                 {
-                    LawState.Custody.VehicleId = car.vehicleInstance.id;
+                    LawState.Custody.VehicleId = car.id;
                 }
                 _faded = true;
                 yield return UiFader.Fade(0.7f, "reallife_crime_custody_fade");

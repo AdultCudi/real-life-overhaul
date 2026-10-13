@@ -123,21 +123,21 @@ namespace RealLifeOverhaul
         /// True for a vehicle of the player's own. Going Public shows another player's car on this machine as a car of the
         /// game's player's list (VehicleHelper.AllPlayerVehicles) but takes it off the save's own list
         /// (GameInstance.VehicleInstances), so in a session a car is the player's only if the save has it. For loops over a
-        /// handful of cars, not per frame. Outside a session: any car of the list with an entry.
+        /// handful of cars, not per frame. Outside a session: any car of the list with an entry. The decision is
+        /// <see cref="WhoseCar.Mine"/>'s, checked offline.
         /// </summary>
         public static bool MineVehicle(VehicleController vehicle)
         {
-            if (vehicle == null || vehicle.vehicleInstance == null)
+            bool has = vehicle != null && vehicle.vehicleInstance != null;
+            bool sessionRules = InSession && _pretend == GoingPublicRole.Absent;
+            if (!has || !sessionRules)
             {
-                return false;
-            }
-            if (!InSession || _pretend != GoingPublicRole.Absent)
-            {
-                return true;
+                return WhoseCar.Mine(has, sessionRules, false, false, false);
             }
             GameInstance save = SaveGameManager.Current;
-            return save == null || (save.VehicleInstances != null && save.VehicleInstances.Contains(vehicle.vehicleInstance))
-                   || (save.privateDriverVehicleInstances != null && save.privateDriverVehicleInstances.Contains(vehicle.vehicleInstance));
+            bool own = save != null && save.VehicleInstances != null && save.VehicleInstances.Contains(vehicle.vehicleInstance);
+            bool driver = !own && save != null && save.privateDriverVehicleInstances != null && save.privateDriverVehicleInstances.Contains(vehicle.vehicleInstance);
+            return WhoseCar.Mine(true, true, save == null, own, driver);
         }
 
         /// <summary>A city is loading: the session is read at once, so that every feature starts knowing it.</summary>

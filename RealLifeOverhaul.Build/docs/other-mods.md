@@ -92,6 +92,17 @@ Read in its decompiled code (`evidence/othermods/GoingPublic`), never run. What 
 - **Closing a business.** `BuildingRegistration.TemporarilyClose` has a postfix that sends the player's own shop's state to
   everyone at once, and a prefix that routes a merged company's shop to its owner. This mod closes only the player's own
   (through `Mine`), so its closures reach the others.
+- **Other players' cars.** A player may drive another's car: on the driver's machine it is a car of the game's player list
+  with the id `BAMP_` and the owner's id, taken off the save's own list (`VehicleManager.SpawnRemoteVehicle`,
+  `DeregisterGhostFromSave`). `GoingPublic.MineVehicle` tells it by the save's lists (`Core/WhoseCar.Mine`). A car left
+  behind at a crash, an arrest or a prison term is remembered only when it is the player's own (`VehicleTow.LeftBehind`),
+  so another player's car is never towed, impounded or billed for here; the licence stop's impound asks the same. Cars of
+  the traffic pool are put on the road only through `TrafficTools.Load`, which asks the game's `LoadVehicle` only when an
+  idle car of that very prefab is there: with none idle the game takes the first car of that name, whatever it is doing.
+  Going Public's own removals of pool cars (a guest's clear every second, the host's slot freed for a private driver's
+  arrival) skip a car with a scripted route, and every car this mod holds carries one; on a guest this mod takes no car of
+  the pool at all. A private driver's car (the host's may carry another player) is left out of every scene's pick
+  (`TrafficTools.SpokenFor`).
 
 Found by its assembly and `BigAmbitionsMP.MPServer`; then three statics are read by reflection once and called through
 delegates: `MPServer.IsRunning` (host), `MPClient.IsClientInWorld` (guest), `GameStatePatcher.HideFromOwnAssetLists`.

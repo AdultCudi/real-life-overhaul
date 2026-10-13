@@ -1777,7 +1777,7 @@ namespace RealLifeOverhaul
         private static bool IsUsable(VehicleComponent car)
         {
             return car != null && car.gameObject.activeInHierarchy && car.presetPath == null
-                   && !TrafficTools.IsAmbulance(car) && car.GetComponent<TaxiController>() == null
+                   && !TrafficTools.IsAmbulance(car) && !TrafficTools.SpokenFor(car)
                    && !TrafficManager.Instance.IsVehicleIgnored(car.GetIndex());
         }
 

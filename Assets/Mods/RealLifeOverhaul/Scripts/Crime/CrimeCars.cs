@@ -80,14 +80,15 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// On the road as plain traffic, a car and not a truck, nobody's taxi, held by nobody of the mod's, and not a
-        /// vehicle with a job to do (the names are StreetRules.IsOrdinaryCarName's). The reckless drivers pick by it too.
+        /// On the road as plain traffic, a car and not a truck, nobody's taxi or private driver (TrafficTools.SpokenFor), held by
+        /// nobody of the mod's, and not a vehicle with a job to do (the names are StreetRules.IsOrdinaryCarName's). The
+        /// reckless drivers pick by it too.
         /// </summary>
         internal static bool IsOrdinary(VehicleComponent car)
         {
             if (car == null || !car.gameObject.activeInHierarchy || car.presetPath != null || car.prefab == null
                 || car.vehicleType != VehicleTypes.Car || TrafficManager.Instance.IsVehicleIgnored(car.GetIndex())
-                || car.GetComponent<TaxiController>() != null)
+                || TrafficTools.SpokenFor(car))
             {
                 return false;
             }

@@ -764,7 +764,7 @@ namespace RealLifeOverhaul
                 VehicleInstance car = null;
                 foreach (VehicleController vehicle in VehicleHelper.AllPlayerVehicles)
                 {
-                    if (vehicle != null && vehicle.vehicleInstance != null && vehicle.vehicleInstance.id == id)
+                    if (vehicle != null && vehicle.vehicleInstance != null && vehicle.vehicleInstance.id == id && GoingPublic.MineVehicle(vehicle))
                     {
                         car = vehicle.vehicleInstance;
                         break;
@@ -809,7 +809,7 @@ namespace RealLifeOverhaul
             }
             if (gm.selectedVehicle != null)
             {
-                _leftBehind = gm.selectedVehicle.vehicleType != null && !gm.selectedVehicle.vehicleType.spawnInPlayerObject ? gm.selectedVehicle.vehicleInstance : null;
+                _leftBehind = VehicleTow.LeftBehind(gm.selectedVehicle);   // their own only: another player's car of a Going Public session stays where it stopped
                 float waited = 0f;
                 while (gm.selectedVehicle != null && gm.selectedVehicle.CurrentSpeed > 1f && waited < 8f)
                 {

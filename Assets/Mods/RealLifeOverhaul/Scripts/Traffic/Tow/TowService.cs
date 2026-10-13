@@ -1023,7 +1023,7 @@ namespace RealLifeOverhaul
             for (int i = 0; cars != null && i < cars.Count; i++)
             {
                 VehicleComponent car = cars[i];
-                if (car == null || !car.gameObject.activeInHierarchy || car.presetPath != null || TrafficTools.IsAmbulance(car) || car.GetComponent<TaxiController>() != null
+                if (car == null || !car.gameObject.activeInHierarchy || car.presetPath != null || TrafficTools.IsAmbulance(car) || TrafficTools.SpokenFor(car)
                     || TrafficManager.Instance.IsVehicleIgnored(car.GetIndex()) || car.rb == null)
                 {
                     continue;
