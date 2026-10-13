@@ -11776,7 +11776,7 @@
   "reallife_law_station_furniture": "Delegacias mobiliadas",
   "reallife_opt_tip_law_station_furniture": "A delegacia é mobiliada com mesas, computadores, armários, plantas e luminárias do próprio jogo, e a cela tem um vaso. Desligado, só o balcão, o banco, as mesas e a cela.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "O modo foto tira selfies: aperte 4 e a câmera fica com o braço estendido à sua frente, com você de costas para o que a câmera livre estava olhando. O mouse a move em volta do rosto, a roda a aproxima ou afasta, e a 5 muda a pose: o celular estendido, um aceno, o punho para o alto ou falando com a câmera. Uma selfie com um amigo ao seu lado num passeio agrada a ele.",
+  "reallife_changes_next": "Nada ainda.",
   "reallife_changes_002_4_title": "0.2.4",
   "reallife_changes_002_4": "Cada banco da cidade tem seu próprio app no celular, com o nome que o jogo dá a ele: sua conta corrente e o extrato, os empréstimos que você deve àquele banco, podendo pagar parte ou tudo, seu cartão, o que ele oferece a você hoje e como ele vê sua pontuação. As condições dos bancos diferem um pouco, então escolher um faz diferença, e abaixo de uma pontuação de 580 nenhum deles empresta. Os contatos do mod têm fotos de verdade do jogo: as pessoas mostram o rosto e os serviços mostram um logotipo. Contatos tem uma caixa de busca no alto. As delegacias são mobiliadas com os móveis do próprio jogo: mesas com computadores, armários, um bebedouro, plantas, um relógio, luminárias e um vaso sanitário na cela. Corrigido: com todos os apps do mod, a fileira de apps no alto do menu de tela cheia passava por baixo do dinheiro e da data e saía da tela; agora ela tem páginas, centralizadas entre o nome do app e o dinheiro, viradas com a roda do mouse ou com os pontos. Corrigido: no mapa da cidade, uma linha do mod (Tribunal, Oficinas de personalização e as outras) podia ficar desmarcada enquanto os seus lugares continuavam no mapa; agora os lugares seguem a marcação que você vê.",
   "reallife_rota_box_stock_ok": "As mercadorias dão conta do plano recomendado.",
@@ -12608,5 +12608,7 @@
   "reallife_photo_pose_talk": "falando com a câmera",
   "reallife_photo_selfie_vehicle": "Nada de selfies dentro de um veículo ou no ônibus. Desça primeiro.",
   "reallife_photo_selfie_cannot": "Não foi possível montar a câmera de selfie para o seu personagem (veja o Player.log).",
-  "reallife_photo_selfie_liked": "{name} curtiu a selfie de vocês."
+  "reallife_photo_selfie_liked": "{name} curtiu a selfie de vocês.",
+  "reallife_changes_003_6_title": "0.3.6",
+  "reallife_changes_003_6": "O modo foto tira selfies: aperte 4 e a câmera fica com o braço estendido à sua frente, com você de costas para o que a câmera livre estava olhando. O mouse a move em volta do rosto, a roda a aproxima ou afasta, e a 5 muda a pose: o celular estendido, um aceno, o punho para o alto ou falando com a câmera. Uma selfie com um amigo ao seu lado num passeio agrada a ele."
 }

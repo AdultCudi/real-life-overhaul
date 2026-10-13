@@ -1,5 +1,4 @@
-0.3.5
+0.3.6
 
-Fixed
-- The notifications about reckless drivers near you (one who got away, a hit-and-run, a driver pulled over, chased, ticketed or lost) now follow 'Notifications about accidents' as well: switched off, none of them comes.
-- The apps in the top bar of the phone's full screen no longer stand on top of one another in one place, as the bank apps sometimes did with other mods' apps on the phone. Each page shows its apps side by side.
+New
+- Photo mode takes selfies: press 4 and the camera is held out at arm's length in front of you, with your back to what the free camera was looking at. The mouse moves it round your face, the wheel brings it nearer or farther, and 5 changes the pose: the phone held out, a wave, a fist in the air or talking to the camera. Enter saves it. A selfie with a friend beside you on an outing pleases them.
