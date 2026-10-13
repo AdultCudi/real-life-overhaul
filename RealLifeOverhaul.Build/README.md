@@ -6460,6 +6460,79 @@ full menu and from the HUD phone, and the game's own app's name again after it; 
 phone's sprites (the next glyph is used if not). The statement's matching by name relies on the data keys of the
 game's loan transactions (`businessName`, read from the decompiled `LoanHelper` and `LoanEntryUi`).
 
+## Economy: your own bank
+
+`Scripts/Economy/OwnBank/`. A bank of the player's own, late in a game, run from the headquarters, in its own app
+(Your bank; the Company app's first page has a button to it). Option: Business > Your own bank (`economy_bank`, on;
+it needs the credit rating). Save line `reallife:economy_ownbank` (`OwnBankStore`, v1), and
+`reallife:economy_ownbank_test` while a test has run.
+
+What the game already has, and what this is not: the game's banks lend to the player (`BankSettings`: a cap, an annual
+rate, years to pay; `LoanHelper.RunDaily` takes the payments) and take no savings; its investment funds
+(`InvestmentFund`, EconoView's Investments page) are the player's own money in a fund; its rivals (`RivalsHelper`) own
+businesses and buildings. None of them is touched. The bank's rivals are the game's banks by their own rate
+(`BankTerms.House`), priced as they price the player (`LendingTerms`); its fund trades the mod's Stocks app; its
+borrowers are the city's people by credit rating and the city's businesses, as pools, not one by one.
+
+- **The rules** (`OwnBankCatalogue`, `OwnBankRules`, `OwnBankFund`, game-free). The licence and the least capital; the
+  rivals' rates (savers: the bank rate less 1.5 points; borrowers: the house bank's own rate for a typical rating of
+  each kind, a business loan a point under it, with the central bank's points and the game's interest multiplier; the
+  poorly rated, whom no bank lends to, at the fair rate and 12 points), lowered or raised by up to a point as the bank
+  takes their customers. The city's savings (people, businesses) and borrowing (five kinds) are shared between the
+  rivals' hold of 1000 and the bank's weight: its hold, by its rate against theirs (e to a pull for each point), and
+  for savers by the city's trust (its confidence: the player's integrity, the capital ratio against the lines, the
+  scare of what the paper printed, the cycle; and its age, full after nine months). Balances move a share of a
+  month's way to it each day; a run (confidence under 450 until it is back over 550) takes 3% of people's and 6% of
+  businesses' savings a day. Defaults a year by kind, moved by the cycle (people) or `CityModel.Trouble` (business
+  pressure, firms), inflation against the target, the council's business tax, grants, wage floor and rents, the
+  adverse selection of a dear rate and each month's luck (seeded). Arrears settle over a month: a part put right, the
+  rest written off, a part of that coming back over two months (more, over four, through the courts, for 5% in
+  costs). The capital ratio is the capital (with the fund at market prices) against the assets weighted by risk;
+  lending and buying stop at 13%, the regulator watches under 12.5%, under 10% is a breach with a month's deadline, a
+  deadline missed is fined and the second closes the bank, as do no capital or a ratio under 5%, or savers it cannot
+  pay after the fund is sold under the market. A closed bank is wound up: savers first, the regulator's tenth, the
+  rest the player's. The balance sheet balances after every day (`OwnBankRules.Balanced`).
+- **The day** (`OwnBankDirector`, after the credit side's day, `EconomyDirector.AfterDay`). Each day ended since the
+  last (a week at most) is run with the city now (`OwnBankGame.City`) and the market's quotes (`OwnBankBridges.Quotes`)
+  and booked at the headquarters, dated on it (`OwnBankGame.BookDay`): takings (`TakingsKey`, in the statement's
+  takings through `EconomyBridges.Takings`), savers' interest and losses as rows among its goods (`CostRow`), staff as
+  salaries, all deductible; a fine is not. Then the day's profit is kept in the bank's capital (`KeptKey`) or its loss
+  met from it (`CoveredKey`), so the player's cash nets to nothing; neither is in any statement category. The licence
+  (licensing fees) and capital in come from the player's cash; a dividend, a sale and what a winding up leaves go into
+  it. `GameBooks.Refresh(day - 1)` puts the day into the statement the game made for it.
+- **The rest of the mod** (`Wiring/OwnBankLinks`): integrity (Standing), the council's levers (Civic), the courts
+  (`DebtClaims.Available`), the market's quotes (Markets), integrity lost for a fine (3) or a closure (8) and a little
+  for a breach in the papers; the paper's pieces (`News.Extra`, chained after the company's; `LedgerCatalogue` kinds
+  `_ob_news_*`, Business section). The headquarters is Going Public's `Mine`.
+- **Tests**: a bank founded for a test (paid by nobody, pays nothing out), a month now, a hard month (a recession,
+  inflation at 8%, business pressure at its worst), a run, the regulator's deadline today, the fund's trades, and
+  putting the bank back as it was before the session's first test. A test that runs days runs them now and sets the
+  bank's clock back by as many (`OwnBankRules.Rewind`).
+
+Cost: nothing per frame; once a second a few comparisons; once a game day a few dozen sums per day ended, a pass over
+the market's 150 or so quotes and a handful of transactions; the fund's weekly rebalance sorts the eligible quotes once.
+With "Developer diagnostics" on each day writes `Own bank check (day N)`: what was booked where, the market, the time it
+took and whether the books balance.
+
+### Checks
+
+EconomyCheck (`OwnBankChecks.cs`, 91 checks): every table's length; the rivals' rates, their answer and the floor; the
+city's savers and borrowers (none with no bank, the hold's share at parity, rates, trust, firms faster than people, a
+fifth less borrowing in a recession), the market settling within 2% of its weights in two and a half years and never
+by a hundredth of the city's savings in a day; defaults by the cycle, business pressure, inflation, the council and a
+dear rate, bounded; three years of a quiet city balanced every day, lending kept at its line, profitable within bounds;
+a day's money item by item; the arrears and the courts; capital in and out; a breach, a fine, a closure, a breach put
+right, insolvency and collapse; a run that starts and ends, and one that closes the bank; the fund's rules, even parts,
+a failure, distress, gains, no market, no buying in a breach, a fire sale; a sale and a winding up; the save's line
+(round trip, damage, bounds, a later version, mending); determinism and ten years in under a second and a half.
+
+### Not verified (the game could not be run)
+
+That four tabs and seven columns fit the frame and the Bank tab's white box holds its nine lines and three buttons
+(`InfoBox.Fit` with diagnostics on); that the City Ledger prints the pieces on the morning after (they are queued for
+the next paper after six in the morning); that the headquarters' statement shows the bank's rows (the same path as the
+broadband company's network row); and the game's own text box for a name and an amount (as the bank apps use it).
+
 ## Economy: the city
 
 The third part of the economy (`Scripts/Economy/City`; options "The city's economy" and "How far the economy

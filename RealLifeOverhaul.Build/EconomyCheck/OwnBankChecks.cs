@@ -108,26 +108,29 @@ internal static partial class Program
         int fair = OwnBankRules.RivalLoanBp(c, none, OwnBankCatalogue.Fair), good = OwnBankRules.RivalLoanBp(c, none, OwnBankCatalogue.Good);
         int shops = OwnBankRules.RivalLoanBp(c, none, OwnBankCatalogue.Shops), firms = OwnBankRules.RivalLoanBp(c, none, OwnBankCatalogue.Companies);
         int poor = OwnBankRules.RivalLoanBp(c, none, OwnBankCatalogue.Poor);
-        Check(fair == 1300 && good == 800 && shops == 1000 && firms == 600 && poor == 2500,
-            "own bank: the rivals price each kind of borrower as they price the player (13%, 8%, a shop 10%, a firm 6%; the poor at the fair rate and 12 points)");
-        Check(OwnBankRules.RivalLoanBp(up, none, OwnBankCatalogue.Fair) == 1400 && OwnBankRules.RivalLoanBp(up, none, OwnBankCatalogue.Good) == 900, "own bank: the central bank's point on every loan");
+        Check(fair == 1700 && good == 1200 && shops == 1400 && firms == 1000 && poor == 2900,
+            "own bank: the rivals price each kind of borrower as they price the player, from a bank's own 12% (17%, 12%, a shop 14%, a firm 10%; the poor at the fair rate and 12 points)");
+        Check(OwnBankRules.RivalLoanBp(up, none, OwnBankCatalogue.Fair) == 1800 && OwnBankRules.RivalLoanBp(up, none, OwnBankCatalogue.Good) == 1300, "own bank: the central bank's point on every loan");
         BankCity hard = c;
         hard.Multiplier = 2000;
-        Check(OwnBankRules.RivalLoanBp(hard, none, OwnBankCatalogue.Good) == 1600 && OwnBankRules.RivalSaverBp(hard, none, 0) == 150, "own bank: the game's interest multiplier on loans, not on savings");
+        Check(OwnBankRules.RivalLoanBp(hard, none, OwnBankCatalogue.Good) == 2400 && OwnBankRules.RivalSaverBp(hard, none, 0) == 150, "own bank: the game's interest multiplier on loans, not on savings");
         BankCity noHouse = c;
         noHouse.HouseRate = 0;
         Check(OwnBankRules.RivalLoanBp(noHouse, none, OwnBankCatalogue.Good) == good, "own bank: a city with no bank to read prices as one at the usual rate");
 
         OwnBank b = NewBank(c);
         b.SaverOffset[0] = 100;
-        b.LoanOffset[OwnBankCatalogue.Good] = -900;
-        Check(OwnBankRules.SaverBp(c, b, 0) == 250 && OwnBankRules.LoanBp(c, b, OwnBankCatalogue.Good) == 100 && OwnBankRules.LoanBp(c, b, OwnBankCatalogue.Fair) == 1300,
+        b.LoanOffset[OwnBankCatalogue.Good] = OwnBankCatalogue.LoanOffsetLeast;
+        BankCity cheapCity = c;
+        cheapCity.HouseRate = 3;
+        Check(OwnBankRules.SaverBp(c, b, 0) == 250 && OwnBankRules.LoanBp(c, b, OwnBankCatalogue.Good) == 900 && OwnBankRules.LoanBp(cheapCity, b, OwnBankCatalogue.Good) == 100
+              && OwnBankRules.LoanBp(c, b, OwnBankCatalogue.Fair) == 1700,
             "own bank: the player's points over the rivals; a loan never under a point");
         b.SaverOffset[0] = -400;
         Check(OwnBankRules.SaverBp(c, b, 0) == 0, "own bank: savers are never charged to save");
         b.Deposits[OwnBankCatalogue.People] = OwnBankRules.SavingsPool(c, 0) / 10;
         b.Loans[OwnBankCatalogue.Fair] = OwnBankRules.DemandPool(c, OwnBankCatalogue.Fair) / 5;
-        Check(OwnBankRules.RivalSaverBp(c, b, 0) == 200 && OwnBankRules.RivalSaverBp(c, b, 1) == 150 && OwnBankRules.RivalLoanBp(c, b, OwnBankCatalogue.Fair) == 1200,
+        Check(OwnBankRules.RivalSaverBp(c, b, 0) == 200 && OwnBankRules.RivalSaverBp(c, b, 1) == 150 && OwnBankRules.RivalLoanBp(c, b, OwnBankCatalogue.Fair) == 1600,
             "own bank: the rivals answer where the bank has taken their customers: half a point at a tenth, a point at most");
     }
 
@@ -289,7 +292,7 @@ internal static partial class Program
         t.Reserves = t.Capital + t.Savings - t.Lent;
         int loanBp = OwnBankRules.LoanBp(c, t, OwnBankCatalogue.Good), saverBp = OwnBankRules.SaverBp(c, t, OwnBankCatalogue.People);
         OwnBankRules.Day(t, c, 2, null, day);
-        Check(loanBp == 798 && saverBp == 151 && day.Interest == 100000000L * loanBp / (10000L * BankYear) && day.Savers == 100000000L * saverBp / (10000L * BankYear)
+        Check(loanBp == 1198 && saverBp == 151 && day.Interest == 100000000L * loanBp / (10000L * BankYear) && day.Savers == 100000000L * saverBp / (10000L * BankYear)
               && day.Profit == day.Income - day.Costs && OwnBankRules.Balanced(t),
             "own bank: a day's interest on its loans and to its savers at their rates");
         Check(day.Staff >= OwnBankCatalogue.StaffDayCents && day.Defaulted > 0 && day.Repaid > 0, "own bank: a day's staff, defaults and repayments");

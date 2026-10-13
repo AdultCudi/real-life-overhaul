@@ -81,7 +81,7 @@ namespace RealLifeOverhaul.Economy
         // under the threshold, so the yardstick is the fair price and PoorPremium more, a long way under the private lender's.
         public static readonly int[] TypicalScore = { 0, 620, 740, 660, 780 };
         public const int PoorPremium = 1200;
-        public const int HouseRateDefault = 8;   // a bank's own rate in a city that has none to read (whole per cent)
+        public const int HouseRateDefault = 12;  // a bank's own rate in a city that has none to read, whole per cent (the game's largest bank ships at 12%)
         public const int LoanOffsetLeast = -300, LoanOffsetMost = 900, LoanOffsetStep = 25;
 
         public static readonly int[] OwnLoanHold = { 120, 70, 70, 80, 60 };   // the private lender's customers come readily to a bank

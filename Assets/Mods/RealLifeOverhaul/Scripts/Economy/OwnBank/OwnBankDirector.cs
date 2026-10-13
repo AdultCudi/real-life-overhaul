@@ -57,6 +57,8 @@ namespace RealLifeOverhaul.Economy
         private OwnBankApp _view;
         private Action _second, _onSave, _onDay;
         private int _warnedDay = -1;
+        private int _watchTold = int.MinValue;   // the day the regulator's watch was last told (once a month at most, as a ratio hovers on the line)
+        private bool _keepLine;                  // the save has a line of the bank's that could not be read: it is left there, never written over with none
         private string _beforeTests;   // the bank's line before the first test of the session, for "put my bank back"
         private readonly BankDay _day = new BankDay();
         private readonly List<FundQuote> _quotes = new List<FundQuote>(160);
@@ -155,6 +157,11 @@ namespace RealLifeOverhaul.Economy
             int version = 0;
             OwnBank bank = save.modData.TryGetValue(OwnBankStore.Key, out string line) ? OwnBankStore.Read(line, out version) : null;
             bool fresh = bank == null;
+            _keepLine = fresh && line != null;
+            if (_keepLine)
+            {
+                Logger?.Warn("Own bank: the save's line for the bank could not be read; it is left in the save as it is, and the feature starts with no bank.");
+            }
             bank = bank ?? new OwnBank();
             bool mended = OwnBankStore.Mend(bank);
             if (bank.Running)
@@ -343,8 +350,9 @@ namespace RealLifeOverhaul.Economy
                 Tell(NotificationType.Success, "reallife_ob_toast_cured", TabBank, "bank", name);
                 Print("reallife_ob_news_cured", "bank", name);
             }
-            if (_day.Watched)
+            if (_day.Watched && day - _watchTold >= city.MonthDays)
             {
+                _watchTold = day;
                 Tell(NotificationType.Warning, "reallife_ob_toast_watch", TabBank, "ratio", OwnBankText.Ratio(OwnBankRules.Ratio(_bank)));
             }
             if (_day.FireSold > 0)
@@ -389,8 +397,9 @@ namespace RealLifeOverhaul.Economy
             if (_bank.Exists)
             {
                 save.modData[OwnBankStore.Key] = OwnBankStore.Write(_bank);
+                _keepLine = false;
             }
-            else
+            else if (!_keepLine)
             {
                 save.modData.Remove(OwnBankStore.Key);   // (no bank: a save without the feature's line)
             }
