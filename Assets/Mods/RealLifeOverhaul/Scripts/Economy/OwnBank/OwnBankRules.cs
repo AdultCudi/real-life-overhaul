@@ -40,6 +40,38 @@ namespace RealLifeOverhaul.Economy
 
         public static long CapitalLeast(int level) => At(OwnBankCatalogue.CapitalLeastCents, level);
 
+        /// <summary>The capital a new bank must pay in when the regulator has closed this many of the player's banks before: the least, and AgainCapital thousandths more for each.</summary>
+        public static long CapitalLeast(int level, int closures)
+        {
+            return At(OwnBankCatalogue.CapitalLeastCents * (1000 + Math.Max(0, closures) * OwnBankCatalogue.AgainCapital) / 1000, level);
+        }
+
+        public const string AgainWaitKey = "reallife_ob_why_closed_before", AgainIntegrityKey = "reallife_ob_why_closed_integrity";
+
+        /// <summary>The first day a new licence may be applied for after the regulator closed the bank: a game year (of the save's length) after the closure. 0 if the bank was not closed.</summary>
+        public static int AgainDay(OwnBank b, int daysPerYear)
+        {
+            return b.State == OwnBankState.Closed ? b.EndDay + Math.Max(1, daysPerYear) : 0;
+        }
+
+        /// <summary>
+        /// Why the regulator will not license the player again yet after closing their bank: the year not yet passed
+        /// (AgainWaitKey), or, with Standing on, their integrity as an owner not yet back to AgainIntegrity
+        /// (AgainIntegrityKey). Null if a licence may be applied for (or the bank was not closed).
+        /// </summary>
+        public static string AgainWhy(OwnBank b, int today, int daysPerYear, bool standing, int integrity)
+        {
+            if (b.State != OwnBankState.Closed)
+            {
+                return null;
+            }
+            if (today < AgainDay(b, daysPerYear))
+            {
+                return AgainWaitKey;
+            }
+            return standing && integrity < OwnBankCatalogue.AgainIntegrity ? AgainIntegrityKey : null;
+        }
+
         /// <summary>What is put in or taken out, to the step below.</summary>
         public static long ToStep(long cents)
         {
@@ -394,6 +426,10 @@ namespace RealLifeOverhaul.Economy
             long assets = b.Reserves + b.Lent * OwnBankCatalogue.WindPerforming / 1000 + b.InArrears * OwnBankCatalogue.WindArrears / 1000 + b.FundValue * OwnBankCatalogue.WindFund / 1000;
             long left = b.Test ? 0 : Math.Max(0, assets - b.Savings) * (1000 - OwnBankCatalogue.WindFee) / 1000;   // (a bank a test founded pays its owner nothing)
             End(b, OwnBankState.Closed, day, left, why);
+            if (!b.Test)
+            {
+                b.Closures++;
+            }
             return left;
         }
 

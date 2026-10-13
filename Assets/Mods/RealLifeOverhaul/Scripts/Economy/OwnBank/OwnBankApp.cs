@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using BAModAPI;
 using Localizor;
 using Localizor.LanguageChangeEvent;
@@ -265,14 +266,32 @@ namespace RealLifeOverhaul.Economy
                 if (b.State == OwnBankState.Closed)
                 {
                     box.Line(OwnBankText.Fill("reallife_ob_box_closed", "bank", b.Name, "day", FinanceText.Day(b.EndDay), "why", OwnBankText.T(OwnBankText.WhyKey(b.Why)), "left", OwnBankText.Money(b.EndCents)));
-                    box.Line(OwnBankText.T("reallife_ob_box_closed_after"));
-                    return;
+                    int again = OwnBankRules.AgainDay(b, GameCalendar.DaysPerYear);
+                    string wait = OwnBankGame.AgainWhy(b);
+                    long next = OwnBankRules.CapitalLeast(level, b.Closures);
+                    if (wait != null)
+                    {
+                        // Not yet: the date a licence may be applied for, and the stricter terms the next bank is held to.
+                        box.Line(OwnBankText.Fill(wait == OwnBankRules.AgainWaitKey ? "reallife_ob_box_closed_after" : "reallife_ob_box_closed_integrity", "day", FinanceText.Day(again),
+                            "least", OwnBankCatalogue.AgainIntegrity.ToString(CultureInfo.InvariantCulture), "now", OwnBankGame.Integrity.ToString(CultureInfo.InvariantCulture)));
+                        if (b.Closures > 0)   // (a bank a test founded and closed raises nothing)
+                        {
+                            box.Line(OwnBankText.Fill("reallife_ob_box_closed_terms", "capital", OwnBankText.Money(next), "first", OwnBankText.Money(OwnBankRules.CapitalLeast(level))));
+                        }
+                        if (wait == OwnBankRules.AgainWaitKey && OwnBankGame.StandingOn)
+                        {
+                            box.Line(OwnBankText.Fill("reallife_ob_box_closed_standing", "least", OwnBankCatalogue.AgainIntegrity.ToString(CultureInfo.InvariantCulture),
+                                "now", OwnBankGame.Integrity.ToString(CultureInfo.InvariantCulture)));
+                        }
+                        return;
+                    }
+                    box.Line(OwnBankText.Fill("reallife_ob_box_closed_open", "day", FinanceText.Day(again)));
                 }
                 if (b.State == OwnBankState.Sold)
                 {
                     box.Line(OwnBankText.Fill("reallife_ob_box_sold", "bank", b.Name, "day", FinanceText.Day(b.EndDay), "price", OwnBankText.Money(b.EndCents)));
                 }
-                long licence = OwnBankRules.Licence(level), capital = OwnBankRules.CapitalLeast(level);
+                long licence = OwnBankRules.Licence(level), capital = OwnBankRules.CapitalLeast(level, b.Closures);
                 box.Line(OwnBankText.Fill("reallife_ob_box_intro", "licence", OwnBankText.Money(licence), "capital", OwnBankText.Money(capital), "ratio", OwnBankText.Ratio(OwnBankCatalogue.MinRatio)));
                 box.Line(OwnBankText.Fill("reallife_ob_box_rivals", "savers", OwnBankText.Rate(OwnBankRules.RivalSaverBp(c, b, 0)), "loans", OwnBankText.Rate(OwnBankRules.RivalLoanBp(c, b, OwnBankCatalogue.Good))));
                 box.Line(hq != null ? OwnBankText.T("reallife_ob_box_hq", "name", OwnBankGame.Name(hq)) : OwnBankText.T("reallife_ob_box_need_hq"));

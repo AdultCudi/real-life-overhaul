@@ -56,6 +56,7 @@ namespace RealLifeOverhaul.Economy
         public ClosedWhy Why;
         public int LastDay;                     // the last day run
         public bool Test;                       // founded by a test tool, its capital the test's: it pays nothing out
+        public int Closures;                    // banks of the player's the regulator has closed (kept when a new one is founded): the next one's capital is higher
 
         // ---- the balance sheet, cents
         public long Capital, Reserves;

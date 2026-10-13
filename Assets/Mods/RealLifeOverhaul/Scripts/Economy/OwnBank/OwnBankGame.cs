@@ -32,6 +32,9 @@ namespace RealLifeOverhaul.Economy
         /// <summary>True if the bank has the qualified person the licence asks for (Careers: a finance qualification of the player's, or a senior professional of theirs in finance). Default: yes.</summary>
         public static Func<bool> Qualified;
 
+        /// <summary>True while Standing keeps the player's reputation, so that their integrity is theirs and not a newcomer's stand-in. Default: no.</summary>
+        public static Func<bool> StandingOn;
+
         public static void Reset()
         {
             Integrity = null;
@@ -40,6 +43,7 @@ namespace RealLifeOverhaul.Economy
             Quotes = null;
             Moved = null;
             Qualified = null;
+            StandingOn = null;
         }
     }
 
@@ -71,6 +75,15 @@ namespace RealLifeOverhaul.Economy
 
         public static GameInstance Save => SaveGameManager.Current;
         public static int Today => Save != null ? Save.Day : 0;
+
+        /// <summary>The player's integrity as an owner now (Standing), 0 to 100: 50, a newcomer's, with no bridge.</summary>
+        public static int Integrity => OwnBankBridges.Integrity != null ? Mathf.Clamp(OwnBankBridges.Integrity(), 0, 100) : 50;
+
+        /// <summary>True while Standing keeps the player's integrity (OwnBankBridges.StandingOn).</summary>
+        public static bool StandingOn => OwnBankBridges.StandingOn != null && OwnBankBridges.StandingOn();
+
+        /// <summary>Why a new licence may not be applied for yet after the regulator closed the bank (OwnBankRules.AgainWhy), with today, the save's year and the player's integrity; null if it may.</summary>
+        public static string AgainWhy(OwnBank b) => OwnBankRules.AgainWhy(b, Today, GameCalendar.DaysPerYear, StandingOn, Integrity);
 
         /// <summary>The player's cash in cents (what the game holds as money, floored).</summary>
         public static long Cash => Save != null ? (long)Math.Floor(Math.Max(0.0, Save.Money) * 100.0) : 0;
