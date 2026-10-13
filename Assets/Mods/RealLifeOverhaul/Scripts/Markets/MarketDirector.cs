@@ -53,6 +53,7 @@ namespace RealLifeOverhaul.Markets
         private readonly List<long> _checks = new List<long>(8);   // a guest: the host's checks still to come (moment, sum)
         private readonly System.Text.StringBuilder _shared = new System.Text.StringBuilder(256);   // the host: tape lines its guests have not had
         private long _checkedAt;
+        private long _hostFrontier;                                // a guest: the furthest moment the host has played
         private Action<int, int, long> _tradeSink;
 
         /// <summary>Raised after the market has moved on or something the player did changed it (the app shows it again).</summary>
@@ -192,7 +193,7 @@ namespace RealLifeOverhaul.Markets
                 long target = Target();
                 if (_following)
                 {
-                    target = Math.Min(target, _engine.ReplayUntil);   // the host's furthest moment: the market goes no further while it follows
+                    target = Math.Min(target, _hostFrontier);   // the host's furthest moment: the market goes no further while it follows
                     if (_checks.Count >= 2 && _checks[0] > _engine.State.Now && _checks[0] < target)
                     {
                         target = _checks[0];   // a moment the host checked: played to, looked at, then on
@@ -458,16 +459,17 @@ namespace RealLifeOverhaul.Markets
             }
             if (!whole)
             {
-                if (!_following || !MarketShare.Follow(_engine.Tape, text, _checks))
+                if (!_following || !MarketShare.Follow(_engine.Tape, text, _checks, ref _hostFrontier))
                 {
                     return false;
                 }
-                _engine.Follow(_engine.Tape.Frontier);
+                _engine.Follow(_hostFrontier);
                 return true;
             }
             MarketTape tape;
+            long frontier;
             var checks = new List<long>(4);
-            MarketState state = MarketShare.Adopt(_engine.State, text, checks, out tape);
+            MarketState state = MarketShare.Adopt(_engine.State, text, checks, HostTape(text), out tape, out frontier);
             if (state == null)
             {
                 return false;
@@ -478,8 +480,9 @@ namespace RealLifeOverhaul.Markets
             }
             ulong was = _engine.State.Id;
             _engine = new MarketEngine(state, tape, _world);
-            _engine.Follow(tape.Frontier);
+            _engine.Follow(frontier);
             _engine.TradeSink = _tradeSink;
+            _hostFrontier = frontier;
             MarketTapeFile.Rewrite(state.Id, tape.Whole());
             _frontierWritten = tape.Frontier;
             _following = true;
@@ -492,6 +495,22 @@ namespace RealLifeOverhaul.Markets
                          + tape.FrontierDay + "/" + tape.FrontierPhase + (was != state.Id ? "; this save's own market was another playthrough's" : string.Empty) + "), with this player's "
                          + state.Positions.Count + " holding(s) and " + state.Orders.Count + " order(s).");
             return true;
+        }
+
+        // The tape a guest already has of the host's market (this machine's own, or a copy of the host's from an earlier
+        // session), so that its past is kept; null for a market it has never followed.
+        private MarketTape HostTape(string text)
+        {
+            int at = text.IndexOf("~h:", StringComparison.Ordinal);
+            if (at < 0 || text.Length < at + 19 || !ulong.TryParse(text.Substring(at + 3, 16), System.Globalization.NumberStyles.HexNumber, System.Globalization.CultureInfo.InvariantCulture, out ulong id))
+            {
+                return null;
+            }
+            if (_engine.Tape.Id == id)
+            {
+                return _engine.Tape;
+            }
+            return System.IO.File.Exists(MarketTapeFile.PathOf(id)) ? MarketTapeFile.Read(id) : null;
         }
 
         // A guest at a moment the host checked: the same prices, or the market is asked for again.

@@ -321,7 +321,7 @@ internal static partial class Program
         string snapshot = SharedThrough(SharedKind.Snapshot, 'M', MarketShare.Write(host.State, host.Tape));
         Check(snapshot != null && snapshot.Length < SharedCityWire.MostUnpacked, "shared city, market: the host's market goes whole through a message (" + (snapshot != null ? snapshot.Length / 1024 : 0) + " KB of text)");
         var checks = new List<long>();
-        MarketState adopted = MarketShare.Adopt(own.State, snapshot, checks, out MarketTape tape);
+        MarketState adopted = MarketShare.Adopt(own.State, snapshot, checks, null, out MarketTape tape, out long frontier);
         Check(adopted != null && adopted.Id == host.State.Id && adopted.Now == host.State.Now, "shared city, market: the guest takes the host's market, at the host's moment");
         Check(adopted != null && adopted.Held(first.Id) == 400 && adopted.Watching(own.State.Stocks[7].Id) && adopted.Trades.Count == own.State.Trades.Count && adopted.Account.Commission == own.State.Account.Commission,
             "shared city, market: with the guest's own holdings, watch list, trades and account in it");
@@ -329,7 +329,7 @@ internal static partial class Program
             "shared city, market: and nothing of the host's own (the host's line for its guests has no holdings in it)");
         var sent = new List<string>();
         var guest = new MarketEngine(adopted, tape, guestWorld);
-        guest.Follow(tape.Frontier);
+        guest.Follow(frontier);
         guest.TradeSink = (stock, micros, shares) => sent.Add(stock + "|" + micros + "|" + shares);
         Check(SamePrices(host.State, guest.State, out string why), "shared city, market: the same prices as the host's at once (" + why + ")");
 
@@ -360,12 +360,12 @@ internal static partial class Program
                     continue;
                 }
                 update = SharedThrough(SharedKind.Update, 'm', update);
-                if (!MarketShare.Follow(guest.Tape, update, checks))
+                if (!MarketShare.Follow(guest.Tape, update, checks, ref frontier))
                 {
                     mismatches++;
                     continue;
                 }
-                guest.Follow(guest.Tape.Frontier);
+                guest.Follow(frontier);
                 int work = int.MaxValue;
                 guest.RunTo(guest.ReplayUntil, ref work);
                 steps++;
@@ -404,8 +404,32 @@ internal static partial class Program
         Check(guest.State.Now > left && guest.State.Held(guestPick.Id) == guestFills * 2500L && guestWorld.Secrets > 0,
             "shared city, market: a guest that leaves goes on from the host's last moment alone, with its holdings and secrets of its own");
 
+        // It joins again: its copy of the host's tape keeps its past, what it played alone since is forgotten, and from the
+        // host's market it follows the host's tape again to the cent.
+        RunTo(host, 66, MarketCatalogue.PhaseOpen + 10);
+        host.Tape.WriteFrontier();
+        host.Tape.TakePending();
+        var rejoinChecks = new List<long>();
+        MarketState rejoined = MarketShare.Adopt(guest.State, MarketShare.Write(host.State, host.Tape), rejoinChecks, guest.Tape, out MarketTape copy, out long rejoinFrontier);
+        Check(rejoined != null && copy == guest.Tape && copy.Secret(5, out _) && rejoined.Held(guestPick.Id) == guestFills * 2500L && SamePrices(host.State, rejoined, out why),
+            "shared city, market: a guest that joins again takes the host's market into its own copy of the tape, which keeps its past (" + why + ")");
+        var back = new MarketEngine(rejoined, copy, guestWorld);
+        back.Follow(rejoinFrontier);
+        long hostAt = 0;
+        for (int day = 66; day <= 70; day++)
+        {
+            RunTo(host, day, MarketCatalogue.PhaseClose);
+            host.Tape.WriteFrontier();
+            string lines = MarketShare.Changes(host.Tape.TakePending(), host.State, ref hostAt);
+            MarketShare.Follow(back.Tape, lines, rejoinChecks, ref rejoinFrontier);
+            back.Follow(rejoinFrontier);
+            int w = int.MaxValue;
+            back.RunTo(rejoinFrontier, ref w);
+        }
+        Check(SamePrices(host.State, back.State, out why), "shared city, market: and plays the host's moments again, not the ones it played alone (" + why + ")");
+
         // A damaged market is refused whole.
-        Check(MarketShare.Adopt(own.State, "v=1~h:x\nF 1 2\n", checks, out _) == null && MarketShare.Adopt(own.State, snapshot.Replace("\nD ", "\nD zz "), checks, out _) == null,
+        Check(MarketShare.Adopt(own.State, "v=1~h:x\nF 1 2\n", checks, null, out _, out _) == null && MarketShare.Adopt(own.State, snapshot.Replace("\nD ", "\nD zz "), checks, guest.Tape, out _, out _) == null,
             "shared city, market: a damaged line or a damaged tape line is refused, and nothing of it is taken");
         Check(line.Length > 0, "shared city, market: (the host's own save line is written as ever)");
     }

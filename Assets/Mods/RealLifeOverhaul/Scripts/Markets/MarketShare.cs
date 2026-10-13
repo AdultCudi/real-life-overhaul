@@ -78,13 +78,17 @@ namespace RealLifeOverhaul.Markets
 
         /// <summary>
         /// The host's market for a guest: a new state, the host's city with the guest's own holdings, orders, trades,
-        /// watch list, account and dividends owed, and the host's tape from that day. Null (and nothing changed) for a
-        /// text that cannot be read. A holding in a company the host's market does not have (it should not happen: the
-        /// companies are the catalogue's) is kept, its company standing still at its last price.
+        /// watch list, account and dividends owed, and the host's tape from that day, put on <paramref name="into"/> if it
+        /// is a tape of the host's market (a guest's own copy of it from an earlier session: its past is kept, what it
+        /// played alone since is forgotten) or on a new one. <paramref name="frontier"/> is the furthest moment the host has
+        /// played. Null (and nothing changed) for a text that cannot be read. A holding in a company the host's market does
+        /// not have (it should not happen: the companies are the catalogue's) is kept, its company standing still at its
+        /// last price.
         /// </summary>
-        public static MarketState Adopt(MarketState mine, string text, List<long> checks, out MarketTape tape)
+        public static MarketState Adopt(MarketState mine, string text, List<long> checks, MarketTape into, out MarketTape tape, out long frontier)
         {
             tape = null;
+            frontier = 0;
             int cut = text != null ? text.IndexOf('\n') : -1;
             if (mine == null || cut <= 0)
             {
@@ -104,10 +108,17 @@ namespace RealLifeOverhaul.Markets
             {
                 return null;
             }
-            var follow = new MarketTape(host.Id);
-            if (!Follow(follow, text.Substring(cut + 1), checks))
+            var lines = new MarketTape(host.Id);
+            if (!Follow(lines, text.Substring(cut + 1), checks, ref frontier))
             {
-                return null;
+                return null;   // (read once on a tape of its own first: a damaged text leaves the guest's tape as it was)
+            }
+            MarketTape follow = lines;
+            if (into != null && into.Id == host.Id)
+            {
+                follow = into;
+                follow.Forget(host.Now);
+                Follow(follow, text.Substring(cut + 1), null, ref frontier);
             }
             host.NextOrderId = Math.Max(1, mine.NextOrderId);
             host.CarriedOver = mine.CarriedOver;
@@ -154,9 +165,10 @@ namespace RealLifeOverhaul.Markets
 
         /// <summary>
         /// The host's tape lines put on a guest's tape: the host's secret and city of a day in place of any it had, what
-        /// happened, the host's furthest moment; the checks (moment, sum) into the list. False for lines that cannot be read.
+        /// happened, the host's furthest moment (into <paramref name="frontier"/>, which only grows); the checks (moment,
+        /// sum) into the list. False for lines that cannot be read.
         /// </summary>
-        public static bool Follow(MarketTape tape, string lines, List<long> checks)
+        public static bool Follow(MarketTape tape, string lines, List<long> checks, ref long frontier)
         {
             if (tape == null || lines == null)
             {
@@ -200,6 +212,7 @@ namespace RealLifeOverhaul.Markets
                             return false;
                         }
                         tape.Reach(at[0], at[1], true);
+                        frontier = Math.Max(frontier, MarketState.Time(at[0], at[1]));
                         break;
                     case "K":
                         if (f.Length < 4 || !Ints(f, 1, 2, out int[] moment) || !long.TryParse(f[3], NumberStyles.Integer, Inv, out long sum))

@@ -122,6 +122,24 @@ namespace RealLifeOverhaul.Markets
             _pending.Append('\n');
         }
 
+        /// <summary>
+        /// Every event from a moment on, forgotten: a guest that takes the host's market again keeps its tape's past, but what
+        /// it played alone after it last followed is not the host's (the host's lines take its place; a day's secret and city
+        /// are replaced as they come).
+        /// </summary>
+        public void Forget(long from)
+        {
+            _events.RemoveAll(e => MarketState.Time(e.Day, e.Phase) >= from);
+            _traded.Clear();
+            for (int i = 0; i < _events.Count; i++)
+            {
+                if (_events[i].Kind == MarketInputs.EventTrade)
+                {
+                    _traded.Add(_events[i].Day);
+                }
+            }
+        }
+
         /// <summary>The tape from a day on, as lines of the file: what a guest needs to play the host's market from that day.</summary>
         public string From(int day)
         {
