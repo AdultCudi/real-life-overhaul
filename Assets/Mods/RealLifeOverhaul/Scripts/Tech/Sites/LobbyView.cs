@@ -20,6 +20,7 @@ namespace RealLifeOverhaul.Tech
     ///   the ceiling          the game's own flush lamps along the way in, where a ray finds the ceiling
     ///
     /// What stands on the floor is cut out of the navigation mesh (this is the city's own empty building, never a player's).
+    /// The rest of the floor, round the lobby, is fitted out by FitOut/FitView from the same measured room (TechSites).
     /// The people: a receptionist behind the desk, and a visitor or two waiting on the seats now and then; the mod's own
     /// people, put out under the fade and looked after once a second. All of it goes when the player leaves.
     /// </summary>
@@ -56,8 +57,26 @@ namespace RealLifeOverhaul.Tech
 
         public string Said => _said.ToString();
 
-        /// <summary>The player is in a headquarters' unit: the lobby measured, planned and furnished. False to be asked again a second later.</summary>
-        public bool Begin(BuildingManager building, Headquarters.Hq hq)
+        /// <summary>The room's floor as measured on the way in, for the rest of the floor's fit-out (FitOut/FitView); null while no lobby stands.</summary>
+        public RoomGrid Grid { get; private set; }
+
+        public float Floor { get; private set; }
+
+        public Vector3 Door => _door;
+
+        public Vector3 Inward { get; private set; }
+
+        /// <summary>The lobby as planned: what stands in it, and where the receptionist and a visitor at the desk stand.</summary>
+        public Lobby Plan => _plan;
+
+        /// <summary>The seats of the lobby, whose fronts are to be kept free.</summary>
+        public IReadOnlyList<Transform> SeatsOf => _seats;
+
+        /// <summary>
+        /// The player is in a headquarters' unit: the lobby measured, planned and furnished; its ceiling lamps hung unless the
+        /// rest of the floor brings its own (<paramref name="lamps"/>). False to be asked again a second later.
+        /// </summary>
+        public bool Begin(BuildingManager building, Headquarters.Hq hq, bool lamps = true)
         {
             End();
             PlayerController player = Helpers.PlayerHelper.PlayerController;
@@ -79,6 +98,9 @@ namespace RealLifeOverhaul.Tech
             LobbyPlan.Plan(grid, door.x, door.z, ix, iz, _plan);
             Company = hq.Company;
             _door = door;
+            Grid = grid;
+            Floor = floor;
+            Inward = new Vector3(ix, 0f, iz);
             _root = new GameObject("RealLifeOverhaul Lobby").transform;
             HqColours.Of(hq.Company, false, out float r, out float g, out float b);
             var main = new Color(r, g, b);
@@ -120,7 +142,10 @@ namespace RealLifeOverhaul.Tech
                         break;
                 }
             }
-            Lamps(door, inward, floor);
+            if (lamps)
+            {
+                Lamps(door, inward, floor);
+            }
             if (_plan.HasDesk)
             {
                 _staff = new Vector3(_plan.StaffX, floor, _plan.StaffZ);
@@ -188,6 +213,15 @@ namespace RealLifeOverhaul.Tech
                 _scratch.Clear();
                 GameFurniture.Seats(piece, _scratch);
                 _seats.AddRange(_scratch);
+            }
+        }
+
+        /// <summary>The lobby's own ceiling lamps, when the rest of the floor has hung none.</summary>
+        public void HangLamps()
+        {
+            if (_root != null && Grid != null)
+            {
+                Lamps(_door, Inward, Floor);
             }
         }
 
@@ -297,6 +331,7 @@ namespace RealLifeOverhaul.Tech
                 UnityEngine.Object.Destroy(_root.gameObject);
             }
             _root = null;
+            Grid = null;
             Company = -1;
         }
     }

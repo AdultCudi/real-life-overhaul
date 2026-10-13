@@ -19,6 +19,9 @@ namespace RealLifeOverhaul.Tech
     /// they go amber and red and the room's own lights are dimmed (put back on the way out and when it is over); with no
     /// power or no connection the lights go red.
     ///
+    /// The rest of the warehouse's floor round the hall: stores, a staging floor, a staff desk and a break corner
+    /// (FitOut/FitView, a little a frame), kept clear of the player's own furniture and of the drive-in bays.
+    ///
     /// The technicians: one or two of the mod's people (People/ActorPool) when the data centre has technicians, walking
     /// the cold aisles end to end and stopping at each end; looked after once a second.
     ///
@@ -59,6 +62,8 @@ namespace RealLifeOverhaul.Tech
         private int _items;
         private int _staff;
         private bool _hidden;
+        private FitOut.FitView _floor;                                    // the rest of the warehouse's floor, round the hall
+        private readonly FitOut.FitView.Request _floorRequest = new FitOut.FitView.Request();
 
         public ServerRoomView(IModLogger logger)
         {
@@ -109,6 +114,7 @@ namespace RealLifeOverhaul.Tech
             _setA = SiteProps.Own(Green, Glow);
             _setB = SiteProps.Own(Blue, Faint);
             Build(floor);
+            Floor(building, grid, floor, door, inward, centre);
             ReadLights(building);
             _state = (State)(-1);
             Apply(centre, day);
@@ -180,6 +186,60 @@ namespace RealLifeOverhaul.Tech
                 cut.position = row.Value.center;
                 SiteProps.Solid(cut, Vector3.zero, row.Value.size);
             }
+        }
+
+        // The rest of the warehouse's floor round the hall (FitOut/FitView): stores, a staging floor for deliveries of kit,
+        // a staff desk, a break corner, never within reach of the player's own furniture, never on a drive-in bay's way, the
+        // hall and its walkway kept. Only to be seen, as the room is: it never changes the warehouse's walls and floors.
+        private void Floor(BuildingManager building, RoomGrid grid, float floor, Vector3 door, Vector3 inward, DataCentre centre)
+        {
+            if (_floor == null)
+            {
+                _floor = new FitOut.FitView(_logger);
+                _floor.Built += v => _logger?.Info("Tech sites: server room's floor: " + v.Said + ".");
+            }
+            _floor.End();
+            if (FitOut.FitOutDirector.Instance == null)
+            {
+                return;
+            }
+            FitOut.FitView.Request r = _floorRequest;
+            r.Reset();
+            r.Name = centre.Name + "'s floor";
+            r.Kind = FitOut.FitKind.DataCentre;
+            r.Seed = TechRandom.Of(centre.Place);
+            r.Building = building;
+            r.Grid = grid;
+            r.Floor = floor;
+            r.Door = door;
+            r.Inward = inward;
+            r.Look = false;
+            r.Carve = _plan.Carve || _plan.Servers + _plan.Accelerators == 0;
+            r.Site.Windows = false;
+            bool hall = _plan.X1 - _plan.X0 > 0.5f && _plan.Z1 - _plan.Z0 > 0.5f;
+            if (hall)
+            {
+                r.Site.Fixed.Add(new FitOut.FitRect(_plan.X0, _plan.Z0, _plan.X1, _plan.Z1, true));
+                r.Site.KeepFree.Add(new FitOut.FitRect(_plan.X0 - 1.0f, _plan.Z0 - 1.0f, _plan.X1 + 1.0f, _plan.Z1 + 1.0f, false));
+            }
+            for (int i = 0; i < _plan.Pieces.Count; i++)
+            {
+                SitePiece p = _plan.Pieces[i];
+                bool inHall = hall && p.X >= _plan.X0 && p.X <= _plan.X1 && p.Z >= _plan.Z0 && p.Z <= _plan.Z1;
+                if (p.Stands && !inHall)
+                {
+                    r.Site.Fixed.Add(FitOut.FitRect.Around(p.X, p.Z, p.HalfX, p.HalfZ, true));
+                }
+            }
+            if (_plan.HasDesk)
+            {
+                r.Site.Keep.Add(new FitOut.FitSpot(_plan.ChairX, _plan.ChairZ, 0.5f));
+            }
+            for (int i = 0; i + 1 < _plan.Patrol.Count; i += 2)
+            {
+                r.Site.Keep.Add(new FitOut.FitSpot(_plan.Patrol[i], _plan.Patrol[i + 1], 0.5f));
+            }
+            _floor.Begin(r, FitOut.FitOutDirector.Instance);
         }
 
         private static void Lights(Transform rack, string id, Material material, Vector3 at)
@@ -280,6 +340,7 @@ namespace RealLifeOverhaul.Tech
             {
                 _hidden = placing;
                 _root.gameObject.SetActive(!placing);
+                _floor?.Hide(placing);
                 if (placing)
                 {
                     EndCast();
@@ -299,6 +360,7 @@ namespace RealLifeOverhaul.Tech
             Apply(centre, day);
             _staff = Math.Min(_technicians.Length, Math.Max(0, centre.Technicians));
             Cast(now);
+            _floor?.Tick(now);
             return false;
         }
 
@@ -363,6 +425,7 @@ namespace RealLifeOverhaul.Tech
             {
                 EndCast();
                 Dim(false);
+                _floor?.End();
             }
             catch (Exception e)
             {

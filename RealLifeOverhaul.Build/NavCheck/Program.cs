@@ -13,7 +13,7 @@ using RealLifeOverhaul.Nav;
 // the phone (TaxiCheck.cs), the rules of the horn and the reckless drivers (StreetCheck.cs),
 // the minimap's buildings and water (BaseCheck.cs), and the small rules of the panels, the bars and the
 // camera's stand-down (PolishCheck.cs), the ambulance crew's way as geometry (CrewCheck.cs; with --crew it prints what a
-// planning's worth of ways costs), the game-free parts of the work against long frames (HitchCheck.cs), and getting out of the driving school's car (CarExitCheck.cs), and the furnished police station's walkways and cast (StationCheck.cs), and the tow truck's bed, pull and stand (TowCheck.cs), and the tech sector's buildings (TechSiteCheck.cs), and whose a car is in a Going Public session and which car of the traffic pool may be put on the road (CarCheck.cs).
+// planning's worth of ways costs), the game-free parts of the work against long frames (HitchCheck.cs), and getting out of the driving school's car (CarExitCheck.cs), and the furnished police station's walkways and cast (StationCheck.cs), and the tow truck's bed, pull and stand (TowCheck.cs), and the tech sector's buildings (TechSiteCheck.cs), and the fit-out of the mod's buildings (FitCheck.cs; with --fit it draws the plans), and whose a car is in a Going Public session and which car of the traffic pool may be put on the road (CarCheck.cs).
 internal static partial class Program
 {
     private static int _failed, _run;
@@ -56,10 +56,15 @@ internal static partial class Program
         Station();
         Tow();
         TechSites();
+        Fits();
         Cars();
         if (Array.IndexOf(args, "--sites") >= 0)
         {
             DrawSites();
+        }
+        if (Array.IndexOf(args, "--fit") >= 0)
+        {
+            DrawFits();
         }
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         if (_failed == 0 && args.Length > 0 && File.Exists(args[0]))

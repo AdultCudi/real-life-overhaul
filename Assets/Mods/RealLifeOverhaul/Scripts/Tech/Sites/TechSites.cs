@@ -15,7 +15,9 @@ namespace RealLifeOverhaul.Tech
     ///   server rooms   the player's data centres furnished while the player is inside (ServerRoomView), by their tier and
     ///                  racks: option "Server rooms in data centres", with the tech sector
     ///   headquarters   the city's tech companies each in an empty office building of the city's, named, on the map, with
-    ///                  a furnished lobby (Headquarters, LobbyView); where their jobs are: option "Tech company headquarters"
+    ///                  a furnished lobby (Headquarters, LobbyView) and the rest of the floor fitted out round it, the game's
+    ///                  own office design for the unit and rooms of a tech company's (FitOut/FitView, built a little a frame
+    ///                  on FitOut/FitOutDirector); where their jobs are: option "Tech company headquarters"
     ///   frontages      the data centres' signs, booth, barrier and fence, and "Your cloud" on the map (Frontages):
     ///                  option "Data centre signs and security", with the tech sector
     ///   tech offices   a few fittings in an office a tech firm of the player's runs in (OfficeView): option "Tech fittings
@@ -43,6 +45,8 @@ namespace RealLifeOverhaul.Tech
         private Frontages _fronts;
         private ServerRoomView _room;
         private LobbyView _lobby;
+        private FitOut.FitView _hqFloor;                                  // the rest of a headquarters' floor, round its lobby
+        private readonly FitOut.FitView.Request _hqRequest = new FitOut.FitView.Request();
         private OfficeView _office;
         private Action<Address> _onEnter, _onExit, _enterSeen, _exitSeen;
         private string _inside;          // the building the views were last asked about ("street~number"), null outdoors
@@ -50,6 +54,7 @@ namespace RealLifeOverhaul.Tech
         private bool _soon;              // the player has just gone in or out: looked at again next frame
         private bool _roomBroken, _hqBroken, _frontBroken, _officeBroken, _lobbyBroken;
         private DataCentre _preview;     // the test button's data centre, while its room stands
+        private bool _testFloor;         // the test button's tech company's floor stands in a place of the player's
 
         private static GameInstance Save => SaveGameManager.Current;
 
@@ -64,6 +69,8 @@ namespace RealLifeOverhaul.Tech
             _fronts = new Frontages(Logger);
             _room = new ServerRoomView(Logger);
             _lobby = new LobbyView(Logger);
+            _hqFloor = new FitOut.FitView(Logger);
+            _hqFloor.Built += HqFloorBuilt;
             _office = new OfficeView(Logger);
             _onEnter = _ => Soon();
             _onExit = _ => Soon();
@@ -227,6 +234,12 @@ namespace RealLifeOverhaul.Tech
                 return;
             }
             float now = Time.time;
+            if (_testFloor)
+            {
+                _hqFloor.Hide(BigAmbitions.PlacementSystem.PlacementSystem.IsInPlacementMode);
+                _hqFloor.Tick(now);   // (the test's floor, until the player leaves: nothing else of this is built meanwhile)
+                return;
+            }
             BuildingRegistration reg = manager.buildingRegistration;
             InfraFile infra = TechDirector.Instance != null ? TechDirector.Instance.Infra : null;
             DataCentre centre = _preview ?? (infra != null && GoingPublic.Mine(reg) ? infra.CentreAt(key) : null);
@@ -272,23 +285,31 @@ namespace RealLifeOverhaul.Tech
                         if (!_lobby.Active && _tries < TriesMost)
                         {
                             _tries++;
-                            if (_lobby.Begin(manager, hq))
+                            bool floor = FitOut.FitOutDirector.Instance != null;
+                            if (_lobby.Begin(manager, hq, lamps: !floor))
                             {
                                 Logger?.Info("Tech sites: headquarters: " + _lobby.Said + ".");
+                                if (!floor || !HqFloor(manager, hq))
+                                {
+                                    _lobby.HangLamps();
+                                }
                             }
                         }
                         _lobby.Tick(now);
+                        _hqFloor.Tick(now);
                         return;
                     }
                     if (_lobby.Active)
                     {
                         _lobby.End();
+                        _hqFloor.End();
                     }
                 }
                 catch (Exception e)
                 {
                     Fault(ref _lobbyBroken, "the lobby", e);
                     _lobby.End();
+                    _hqFloor.End();
                 }
             }
             if (!_officeBroken)
@@ -325,6 +346,76 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        // The kinds of business whose designs of the game's furnish a company's offices, in order: a software house's are the
+        // web agencies', a games studio's the graphic designers', the rest (hardware, chips, payments, networks) a head office's.
+        private static readonly string[] SoftwareDesigns = { "WebDevelopmentAgency", "GraphicDesigner", "Headquarters", "MarketingAgency", "LawFirm" };
+        private static readonly string[] StudioDesigns = { "GraphicDesigner", "WebDevelopmentAgency", "Headquarters", "MarketingAgency", "LawFirm" };
+        private static readonly string[] OfficeDesigns = { "Headquarters", "WebDevelopmentAgency", "GraphicDesigner", "LawFirm", "MarketingAgency" };
+
+        private static string[] DesignsOf(string company)
+        {
+            if (company.IndexOf("Games", StringComparison.Ordinal) >= 0)
+            {
+                return StudioDesigns;
+            }
+            return company.IndexOf("Software", StringComparison.Ordinal) >= 0 || company.IndexOf("Online", StringComparison.Ordinal) >= 0
+                   || company.IndexOf("Analytics", StringComparison.Ordinal) >= 0 || company.IndexOf("Search", StringComparison.Ordinal) >= 0
+                ? SoftwareDesigns
+                : OfficeDesigns;
+        }
+
+        // The rest of a headquarters' floor round its lobby (FitOut/FitView): the game's design for the unit and the plan's own
+        // rooms of a tech company, the lobby's pieces and the ways to its desk and seats kept. False if it could not be begun.
+        private bool HqFloor(BuildingManager manager, Headquarters.Hq hq)
+        {
+            FitOut.FitView.Request r = _hqRequest;
+            r.Reset();
+            r.Name = hq.Name + "'s headquarters";
+            r.Kind = FitOut.FitKind.TechOffice;
+            r.Seed = TechRandom.Of(hq.Name);
+            r.Building = manager;
+            r.Grid = _lobby.Grid;
+            r.Floor = _lobby.Floor;
+            r.Door = _lobby.Door;
+            r.Inward = _lobby.Inward;
+            r.DesignKinds.AddRange(DesignsOf(hq.Name));
+            Lobby lobby = _lobby.Plan;
+            for (int i = 0; i < lobby.Pieces.Count; i++)
+            {
+                SitePiece p = lobby.Pieces[i];
+                r.Site.Fixed.Add(FitOut.FitRect.Around(p.X, p.Z, p.HalfX, p.HalfZ, p.Stands, wall: p.Kind == SitePieceKind.Screen));
+            }
+            if (lobby.HasDesk)
+            {
+                r.Site.Keep.Add(new FitOut.FitSpot(lobby.StaffX, lobby.StaffZ, 0.5f));
+                r.Site.Keep.Add(new FitOut.FitSpot(lobby.FrontX, lobby.FrontZ, 0.5f));
+                // The way from the door to the desk, and round it to the receptionist's side.
+                Vector3 door = _lobby.Door;
+                r.Site.KeepFree.Add(new FitOut.FitRect(Mathf.Min(door.x, lobby.FrontX) - 0.7f, Mathf.Min(door.z, lobby.FrontZ) - 0.7f,
+                    Mathf.Max(door.x, lobby.FrontX) + 0.7f, Mathf.Max(door.z, lobby.FrontZ) + 0.7f, false));
+                r.Site.KeepFree.Add(FitOut.FitRect.Around(lobby.StaffX, lobby.StaffZ, 0.7f, 0.7f, false));
+            }
+            IReadOnlyList<Transform> seats = _lobby.SeatsOf;
+            for (int i = 0; i < seats.Count; i++)
+            {
+                if (seats[i] != null)
+                {
+                    Vector3 front = seats[i].position + seats[i].forward * 0.5f;
+                    r.Site.Keep.Add(new FitOut.FitSpot(front.x, front.z, 0.5f));
+                }
+            }
+            return _hqFloor.Begin(r, FitOut.FitOutDirector.Instance);
+        }
+
+        private void HqFloorBuilt(FitOut.FitView view)
+        {
+            Logger?.Info("Tech sites: headquarters' floor: " + view.Said + ".");
+            if (!view.HasLamps && _lobby.Active)
+            {
+                _lobby.HangLamps();   // (neither the design nor the plan's rooms hung any)
+            }
+        }
+
         private static string TypeOf(BuildingRegistration reg)
         {
             try
@@ -341,8 +432,10 @@ namespace RealLifeOverhaul.Tech
         {
             _room.End();
             _lobby.End();
+            _hqFloor.End();
             _office.End();
             _preview = null;
+            _testFloor = false;
         }
 
         private void Fault(ref bool broken, string what, Exception e)
@@ -454,6 +547,52 @@ namespace RealLifeOverhaul.Tech
             catch (Exception e)
             {
                 Fault(ref _roomBroken, "the server room", e);
+            }
+        }
+
+        /// <summary>
+        /// The test button: the room of the player's they stand in (an office or a warehouse) fitted out as a tech company's floor
+        /// is round their furniture, the plan's own rooms only (never the game's design over their furniture, never a change
+        /// to their walls and floors), until they leave. What a headquarters of that size and shape would look like, without
+        /// walking to one.
+        /// </summary>
+        public void TestFloor()
+        {
+            BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
+            BuildingRegistration reg = BuildingManager.IsInsideBuilding && manager != null ? manager.buildingRegistration : null;
+            PlayerController player = Helpers.PlayerHelper.PlayerController;
+            if (reg == null || player == null || !GoingPublic.Mine(reg) || FitOut.FitOutDirector.Instance == null)
+            {
+                Notifications.Show(NotificationType.Warning, "reallife_sites_test_floor_where", null, 8f, trackOnSaveGame: false);
+                return;
+            }
+            try
+            {
+                EndViews();
+                _inside = TalentGame.Place(reg);
+                RoomGrid grid = null;
+                float floor = 0f;
+                if (RoomMeasure.Door(manager, player.transform.position, player.transform.forward, out Vector3 door, out Vector3 inward))
+                {
+                    grid = RoomMeasure.Measure(manager, door, true, out floor);
+                }
+                FitOut.FitView.Request r = _hqRequest;
+                r.Reset();
+                r.Name = "the test floor in " + TalentGame.NameOf(reg);
+                r.Kind = FitOut.FitKind.TechOffice;
+                r.Seed = TechRandom.Of(_inside);
+                r.Building = manager;
+                r.Grid = grid;
+                r.Floor = floor;
+                r.Door = door;
+                r.Inward = inward;
+                r.Look = false;
+                _testFloor = grid != null && _hqFloor.Begin(r, FitOut.FitOutDirector.Instance);
+                Notifications.Show(_testFloor ? NotificationType.Success : NotificationType.Warning, _testFloor ? "reallife_sites_test_floor_done" : "reallife_sites_test_floor_failed", null, 8f, trackOnSaveGame: false);
+            }
+            catch (Exception e)
+            {
+                Fault(ref _lobbyBroken, "the lobby", e);
             }
         }
 
