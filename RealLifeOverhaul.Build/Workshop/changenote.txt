@@ -2,3 +2,6 @@
 
 New
 - Property: each unit of a building you let yourself now has a tenant and a lease of its own, with its own asking rent, applicants, arrears, notice and empty days. The Mine tab shows how a building's units stand and opens each one's lease, and a save from before keeps its tenant in the first unit.
+
+Fixed
+- The Stocks app takes orders again right after a load: the Buy and Sell buttons are always lit, and when an order cannot be placed the ticket says why.
