@@ -177,7 +177,7 @@ namespace RealLifeOverhaul.Markets
             }
             SaveHook.Keep(_onSave);
             MarketBridges.Poll?.Invoke(_say);   // (a guest that follows the host's market hears nothing of its own: the tape's events are the host's)
-            _engine.TradesAsEvents = SharedCity.Leading;
+            _engine.TradesAsEvents = SharedCity.Leading || _engine.Tape.Traded(_engine.State.Day);   // (for the rest of a day that had a shared trade: a replay of it takes every move from the tape)
             InstallApp();
         }
 

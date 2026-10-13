@@ -100,6 +100,9 @@ namespace RealLifeOverhaul
         private Action<NotificationType, string, string[], float> _heard;
         private Action<string, string> _reported;
         private const char Gap = '\u001f';   // between the fields of one notice (never in a text)
+        private const string Mod = "reallife";                       // (apart, so that the locale check does not take a prefix for a key)
+        private const string CivicKeys = Mod + "_civic_";             // the only keys a host's notice may name
+        private const string PollsKeys = Mod + "_civic_polls_open";   // the polls opening: each guest says its own
 
         /// <summary>True once the save's civic state is loaded and nothing has switched civic life off.</summary>
         public bool Running => _loaded && !_failed && Settings.Civic;
@@ -296,9 +299,16 @@ namespace RealLifeOverhaul
                 else
                 {
                     bool leading = SharedCity.Leading;
+                    int ran;
                     Listen(leading);
-                    int ran = Government.Tick(day, hour);
-                    Listen(false);
+                    try
+                    {
+                        ran = Government.Tick(day, hour);
+                    }
+                    finally
+                    {
+                        Listen(false);
+                    }
                     if (ran > 0 && leading)
                     {
                         SharedCity.Changed('G');
@@ -380,7 +390,7 @@ namespace RealLifeOverhaul
 
         private void Heard(NotificationType type, string key, string[] pairs, float seconds)
         {
-            if (key.StartsWith("reallife_civic_polls_open", StringComparison.Ordinal) || _notices.Length > 8192)
+            if (key.StartsWith(PollsKeys, StringComparison.Ordinal) || _notices.Length > 8192)
             {
                 return;   // each guest says its own polling place
             }
@@ -428,7 +438,7 @@ namespace RealLifeOverhaul
             {
                 string[] f = lines[i].Split(Gap);
                 if (f.Length >= 4 && f[0] == "T" && int.TryParse(f[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int type)
-                    && float.TryParse(f[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float seconds) && f[3].StartsWith("reallife_civic_", StringComparison.Ordinal))
+                    && float.TryParse(f[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float seconds) && f[3].StartsWith(CivicKeys, StringComparison.Ordinal))
                 {
                     string[] pairs = null;
                     if (f.Length > 4)
@@ -438,7 +448,7 @@ namespace RealLifeOverhaul
                     }
                     CivicText.Show((NotificationType)type, f[3], pairs, Mathf.Clamp(seconds, 4f, 20f));
                 }
-                else if (f.Length >= 3 && f[0] == "R" && f[1].StartsWith("reallife_civic_", StringComparison.Ordinal) && f[2].StartsWith("reallife_civic_", StringComparison.Ordinal))
+                else if (f.Length >= 3 && f[0] == "R" && f[1].StartsWith(CivicKeys, StringComparison.Ordinal) && f[2].StartsWith(CivicKeys, StringComparison.Ordinal))
                 {
                     CivicBridges.Report(f[1], f[2]);
                 }
