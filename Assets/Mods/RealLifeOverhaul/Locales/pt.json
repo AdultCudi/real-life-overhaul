@@ -13181,5 +13181,9 @@
   "reallife_keys_empire_tools": "o Empire Motors também age nesta tecla, faça este mod o que fizer: as ferramentas dele para os carros do showroom",
   "reallife_estate_hire_no_stock": "Esse carro faz parte do estoque de uma concessionária do Empire Motors: é dela para vender e não pode ser alugado.",
   "reallife_garage_refused_stock": "Esse carro faz parte do estoque de uma concessionária do Empire Motors. Ele é da concessionária para vender como veio: a oficina de personalização só trabalha nos seus próprios carros.",
-  "reallife_svc_refuse_stock": "Venda primeiro os carros da concessionária no Empire Motors: o estoque dela não pode ir junto com a venda do negócio."
+  "reallife_svc_refuse_stock": "Venda primeiro os carros da concessionária no Empire Motors: o estoque dela não pode ir junto com a venda do negócio.",
+  "reallife_books_empire_stock": "Carros para o showroom",
+  "reallife_books_empire_running": "Suprimentos e campanhas da concessionária",
+  "reallife_empire_deduct": "Concessionária: estoque e custos de operação",
+  "reallife_transaction_empire_costs": "Custos da concessionária"
 }

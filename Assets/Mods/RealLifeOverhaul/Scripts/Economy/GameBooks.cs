@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using Entities;
 using Helpers;
+using Localizor;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Economy
@@ -30,6 +31,15 @@ namespace RealLifeOverhaul.Economy
     /// the save keeps (the day's transactions, and the order book where the game booked no takings of its own: a
     /// factory's exports), never from the statement itself, so entering them twice counts nothing twice and a refresh
     /// after another entry loses nothing. Once or twice a day, one look at the day's transactions.
+    ///
+    /// A dealership of Empire Motors, another author's mod (Core/EmpireMotors), is booked here as well: the game counts
+    /// nothing it takes or spends, as that mod books its money under types of its own with no category and, but for a car
+    /// sold with no trade-in, no address. Its car sales, finance payments and warranty premiums (less refunds) are among its
+    /// takings, at its address or, booked with none, shared evenly between the player's dealerships; the cars it buys,
+    /// inspects, reconditions and services are a row among its goods, and its supplies, campaigns, specialism and warranty
+    /// claims another. Its order book's day is given the takings and a customer for each car sold, which is what the
+    /// mod's business pressure, brands and company read there. And the game's tax deducts those costs as it deducts a
+    /// shop's goods (<see cref="Deduct"/>), so that it counts the dealership's margin rather than its takings.
     /// </summary>
     public static class GameBooks
     {
@@ -50,6 +60,15 @@ namespace RealLifeOverhaul.Economy
         private const int Salary = 0, RentLine = 1, MarketingLine = 2, LicensingLine = 3, Sales = 4, CitySales = 5, Sold = 6, CityRent = 7, OwnSales = 8, Width = 9;
 
         private const string OurKeys = "reallife" + "_";   // every key of the mod's begins so (split: it is no key itself)
+
+        // Empire Motors' dealerships of the player's, and what each took on the day being booked: takings, then cars sold.
+        private static readonly List<Address> Dealers = new List<Address>(4);
+        private static readonly Dictionary<Address, float[]> DealerDay = new Dictionary<Address, float[]>(4);
+        private static GameInstance _deductedSave;   // the save and the day whose dealership costs the tax was last given
+        private static int _deductedDay = int.MinValue;
+
+        /// <summary>For the log: the dealership takings and costs the last refresh booked.</summary>
+        public static float DealerTakings, DealerCosts;
 
         /// <summary>True for a transaction of the mod's own (its type is one of the mod's keys).</summary>
         public static bool Ours(Transaction t)
@@ -86,10 +105,19 @@ namespace RealLifeOverhaul.Economy
             Func<string, bool> takings = EconomyBridges.Takings;
             Func<string, string> costRow = EconomyBridges.CostRow;
             float unassigned = 0f;
+            EmpireMotors.Dealerships(Dealers);
+            DealerDay.Clear();
+            DealerTakings = DealerCosts = 0f;
             foreach (Transaction t in save.Transactions)
             {
                 if (t == null || t.timestamp == null || t.timestamp.Day != day)
                 {
+                    continue;
+                }
+                DealerLine dealer = Dealers.Count > 0 ? EmpireMotors.LineOf(t, Dealers.Count) : DealerLine.None;
+                if (dealer != DealerLine.None)
+                {
+                    Dealer(t, dealer, byAddress, ref goods);   // (it has none of the game's categories: nothing below would count it)
                     continue;
                 }
                 float amount = t.amount;
@@ -197,6 +225,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 businesses += statement.TotalProfit;
             }
+            DealerOrders(day);
 
             // A rented home: the game's daily rent and the city's line on it.
             float homes = 0f;
@@ -247,6 +276,119 @@ namespace RealLifeOverhaul.Economy
         private static float Sum(Dictionary<string, float> byCategory, string category)
         {
             return byCategory.TryGetValue(category, out float sum) ? sum : 0f;
+        }
+
+        // A transaction of an Empire Motors dealership's, into the day's figures of the dealership at its address, or with
+        // none, a share into each of the player's dealerships: takings among its own takings, a cost in its row among the goods.
+        private static void Dealer(Transaction t, DealerLine kind, Dictionary<Address, float[]> byAddress, ref Dictionary<Address, Dictionary<string, float>> goods)
+        {
+            bool here = !ReferenceEquals(t.address, null);
+            int count = here ? 1 : Dealers.Count;
+            float amount = here ? t.amount : EmpireMotorsLines.Share(t.amount, count);
+            float car = t.transactionType == EmpireMotorsLines.SoldType && t.amount > 0f ? 1f / count : 0f;   // a car sold: a customer served
+            string row = EmpireMotorsLines.RowOf(kind);
+            for (int i = 0; i < count; i++)
+            {
+                Address at = here ? t.address : Dealers[i];
+                if (kind == DealerLine.Takings)
+                {
+                    if (!byAddress.TryGetValue(at, out float[] line))
+                    {
+                        line = new float[Width];
+                        byAddress[at] = line;
+                    }
+                    line[OwnSales] += amount;
+                    if (!DealerDay.TryGetValue(at, out float[] took))
+                    {
+                        took = new float[2];
+                        DealerDay[at] = took;
+                    }
+                    took[0] += amount;
+                    took[1] += car;
+                    DealerTakings += amount;
+                }
+                else if (row != null)
+                {
+                    goods = goods ?? new Dictionary<Address, Dictionary<string, float>>();
+                    if (!goods.TryGetValue(at, out Dictionary<string, float> rows))
+                    {
+                        rows = new Dictionary<string, float>(2);
+                        goods[at] = rows;
+                    }
+                    rows.TryGetValue(row, out float spent);
+                    rows[row] = spent - amount;
+                    DealerCosts -= amount;
+                }
+            }
+        }
+
+        // Each dealership's order book for the day: what it took and a customer for each car sold, beside what the game
+        // booked there (its own customers: none come to a dealership). Set, never added to, so a second refresh changes nothing.
+        private static void DealerOrders(int day)
+        {
+            foreach (KeyValuePair<Address, float[]> took in DealerDay)
+            {
+                BuildingRegistration reg = BuildingHelper.GetBuildingRegistration(took.Key);
+                List<OrderHistoryEntry> history = reg != null ? reg.orderHistory : null;
+                for (int i = history != null ? history.Count - 1 : -1; i >= 0; i--)
+                {
+                    OrderHistoryEntry entry = history[i];
+                    if (entry == null || entry.dayNumber != day)
+                    {
+                        continue;
+                    }
+                    double sold = 0.0;
+                    for (int s = 0; entry.itemSales != null && s < entry.itemSales.Count; s++)
+                    {
+                        sold += entry.itemSales[s] != null ? entry.itemSales[s].totalPrice : 0f;
+                    }
+                    entry.totalRevenue = Mathf.Max(0f, (float)sold + took.Value[0]);
+                    entry.totalCustomers = Mathf.Max(entry.totalCustomers, Mathf.RoundToInt(took.Value[1]));
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// What the player's Empire Motors dealerships spent on the day, less refunds, given to the game's tax as an expense
+        /// it deducts, as it deducts what a shop pays for its goods (TaxHelper.TrackTransaction, with a transaction of the
+        /// mod's own making that goes in no list). Once a day, after the game's day (EconomyDirector.OnDay); the same day
+        /// of the same save is never given twice. Returns what was deducted.
+        /// </summary>
+        public static float Deduct(int day)
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (save == null || save.Transactions == null || !EmpireMotors.On || (day == _deductedDay && ReferenceEquals(save, _deductedSave)))
+            {
+                return 0f;
+            }
+            _deductedDay = day;
+            _deductedSave = save;
+            EmpireMotors.Dealerships(Dealers);
+            if (Dealers.Count == 0)
+            {
+                return 0f;
+            }
+            float stock = 0f, running = 0f;
+            foreach (Transaction t in save.Transactions)
+            {
+                if (t == null || t.timestamp == null || t.timestamp.Day != day)
+                {
+                    continue;
+                }
+                DealerLine line = EmpireMotors.LineOf(t, Dealers.Count);
+                stock += line == DealerLine.Stock ? t.amount : 0f;
+                running += line == DealerLine.Running ? t.amount : 0f;
+            }
+            float deductible = Mathf.Round(EmpireMotorsLines.Deductible(stock, running) * 100f) / 100f;
+            if (deductible <= 0f)
+            {
+                return 0f;
+            }
+            var info = new TransactionInfo("reallife_transaction_empire_costs");
+            info.SetTaxDeductibleName("reallife_empire_deduct".GetLocalization());   // written as words, as the mod's other costs are
+            TaxHelper.TrackTransaction(new Transaction(info) { amount = -deductible });
+            return deductible;
         }
 
         // A business whose takings the game did not book (no customers came: a headquarters, a warehouse; or its sales are

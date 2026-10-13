@@ -19,7 +19,9 @@
        trading and what it costs, orders, dividends, splits, failures, candles, the analysis tools, the tape and the save's line, and
        (LedgerChecks.cs) the City Ledger: what each piece is, its headline, the subscription's round, the copy, the page's choices and the save's line, and
        (NewsstandChecks.cs) the City Ledger online: the titles' prices, the connection rule, the weeks, the pass, the editions kept, what each title prints and the save's line, and
-       (SharedCityChecks.cs) the shared city of a Going Public session: its messages, another version's, a damaged one, and each shared part applied to a guest's own state, and (FlareChecks.cs) Flare, the social media app
+       (SharedCityChecks.cs) the shared city of a Going Public session: its messages, another version's, a damaged one, and each shared part applied to a guest's own state, and (FlareChecks.cs) Flare, the social media app, and (EmpireChecks.cs) the
+       books of a dealership of Empire Motors, another author's mod: its takings and costs, a share of what has no address,
+       its stock among its records and what the tax deducts
        Compiles the mod's own files, so it checks exactly what ships.
        the lender of last resort and the ways out of debt, and (VenturesChecks.cs) investors, the pitch, deals and the
        stock market. Compiles the mod's own files, so it checks exactly what ships.
@@ -53,6 +55,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityEconomy.cs" Link="Mod\CityEconomy.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CalendarRules.cs" Link="Mod\CalendarRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\Prices.cs" Link="Mod\Prices.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\EmpireMotorsLines.cs" Link="Mod\EmpireMotorsLines.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\UtilitiesCatalogue.cs" Link="Mod\UtilitiesCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\UtilitiesModel.cs" Link="Mod\UtilitiesModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\UtilitiesRules.cs" Link="Mod\UtilitiesRules.cs" />

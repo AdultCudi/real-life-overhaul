@@ -13181,5 +13181,9 @@
   "reallife_keys_empire_tools": "Empire Motors acts on this key too, whatever this mod does: its own tools for the showroom's cars",
   "reallife_estate_hire_no_stock": "That car is part of an Empire Motors dealership's stock: it is the dealership's to sell, and cannot go on hire.",
   "reallife_garage_refused_stock": "That car is part of an Empire Motors dealership's stock. It is the dealership's to sell as it came: the custom shop works on your own cars only.",
-  "reallife_svc_refuse_stock": "Sell the dealership's cars in Empire Motors first: its stock cannot go with a sale of the business."
+  "reallife_svc_refuse_stock": "Sell the dealership's cars in Empire Motors first: its stock cannot go with a sale of the business.",
+  "reallife_books_empire_stock": "Cars for the showroom",
+  "reallife_books_empire_running": "Dealership supplies and campaigns",
+  "reallife_empire_deduct": "Car dealership: stock and running costs",
+  "reallife_transaction_empire_costs": "Car dealership costs"
 }
