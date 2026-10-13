@@ -75,6 +75,11 @@ namespace RealLifeOverhaul
     /// kerb's edge stays, and the bus stands that much further out (TransitMap.KerbLine).
     /// The zone is painted (BusStopDressing, RoadPaint): the game's own kind of road paint.
     ///
+    /// AT EVERY STOP, bay or not, the boarding strip is cleared too: the game's plain street furniture (a pole, a bin, a
+    /// bollard, a sign, a hydrant, a plain bench) standing on the kerb from beyond the middle door to beyond the front door, or
+    /// on a walkway 1.5 m wide from the waiting place to either door (BusInside.BoardingStrips, TransitMap.FindBoarding), is
+    /// switched off whole the same way and put back with the rest. Never a tree, a building, or the mod's own shelter and sign.
+    ///
     /// A stop has a bay only where all of that can be done. A parking lane that is not a plain run
     /// along the kerb (angled bays, a curve, a delivery van's spot, disabled parking, parking kept
     /// for particular vehicles) is never cut; a zone in the middle of a run is laid out only where no
@@ -361,7 +366,7 @@ namespace RealLifeOverhaul
                 for (int i = 0; i < TransitMap.Stops.Count; i++)
                 {
                     TransitStop stop = TransitMap.Stops[i];
-                    if (stop.HasBay && stop.Zone != null && !stop.Zone.Made)
+                    if ((stop.HasBay && stop.Zone != null && !stop.Zone.Made) || (stop.Boarding.Count > 0 && !stop.BoardingMade))
                     {
                         Pending.Add(stop);
                     }
@@ -386,8 +391,52 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Makes one stop's zone. False if it must wait (some of it is in view); it is then asked again on a later slice.
+        // Makes one stop's zone and clears its boarding strip. False if either must wait (some of it is in view).
         private static bool Make(TransitStop stop)
+        {
+            bool zone = !stop.HasBay || stop.Zone == null || MakeZone(stop);
+            bool boarding = ClearBoarding(stop);
+            return zone && boarding;
+        }
+
+        // The game's street furniture on the stop's boarding strip (TransitMap.FindBoarding: the kerb by the doors and the ways
+        // to them from the waiting place) is switched off whole, as the furniture in a bay's strip is, and put back with it.
+        // Never while any of it is in view.
+        private static bool ClearBoarding(TransitStop stop)
+        {
+            if (stop.BoardingMade || stop.Boarding.Count == 0)
+            {
+                return true;
+            }
+            try
+            {
+                for (int i = 0; i < stop.Boarding.Count; i++)
+                {
+                    if (stop.Boarding[i] != null && stop.Boarding[i].activeSelf && CitySpots.InView(stop.Boarding[i].transform.position))
+                    {
+                        return false;
+                    }
+                }
+                for (int i = 0; i < stop.Boarding.Count; i++)
+                {
+                    GameObject prop = stop.Boarding[i];
+                    if (prop != null && prop.activeSelf)
+                    {
+                        prop.SetActive(false);
+                        Hidden.Add(prop);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+            stop.BoardingMade = true;
+            return true;
+        }
+
+        // Makes one stop's zone. False if it must wait (some of it is in view); it is then asked again on a later slice.
+        private static bool MakeZone(TransitStop stop)
         {
             BusZone zone = stop.Zone;
             if (zone.Made)
@@ -555,6 +604,7 @@ namespace RealLifeOverhaul
             _queued = false;
             for (int i = 0; i < TransitMap.Stops.Count; i++)
             {
+                TransitMap.Stops[i].BoardingMade = false;
                 BusZone zone = TransitMap.Stops[i].Zone;
                 if (zone != null)
                 {
@@ -585,10 +635,15 @@ namespace RealLifeOverhaul
 
         private static void Report()
         {
-            int zones = 0, made = 0, lanes = 0, furniture = 0, cars = 0, trees = 0;
+            int zones = 0, made = 0, lanes = 0, furniture = 0, cars = 0, trees = 0, strips = 0, boarding = 0;
             float cut = 0f, lost = 0f;
             for (int i = 0; i < TransitMap.Stops.Count; i++)
             {
+                if (TransitMap.Stops[i].Boarding.Count > 0)
+                {
+                    strips++;
+                    boarding += TransitMap.Stops[i].BoardingMade ? TransitMap.Stops[i].Boarding.Count : 0;
+                }
                 BusZone zone = TransitMap.Stops[i].Zone;
                 if (zone == null || !TransitMap.Stops[i].HasBay)
                 {
@@ -609,7 +664,8 @@ namespace RealLifeOverhaul
             }
             Logger?.Info("Transit check (zones): " + made + " of " + zones + " bus zones made: " + cut.ToString("F0") + " m of the game's parking cut from " + lanes + " lane(s) ("
                          + lost.ToString("F0") + " m of it beyond the zones), " + furniture + " piece(s) of street furniture switched off, " + cars + " parked car(s) taken in, "
-                         + trees + " street tree(s) at the kerb left standing; " + (made == zones ? "PASS" : (zones - made) + " still waiting to be out of view") + ".");
+                         + trees + " street tree(s) at the kerb left standing; " + boarding + " piece(s) of street furniture switched off on the boarding strips of " + strips + " stop(s) (the kerb by the doors and the ways to them); "
+                         + (made == zones ? "PASS" : (zones - made) + " still waiting to be out of view") + ".");
         }
 
         private static Vector3 Flat(Vector3 vector)

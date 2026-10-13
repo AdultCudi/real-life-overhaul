@@ -199,6 +199,155 @@ namespace RealLifeOverhaul
         /// <summary>True while the bus is in front of the camera within the distance things are looked at.</summary>
         public bool InView => Vehicle != null && CitySpots.InView(Vehicle.transform.position);
 
+        /// <summary>
+        /// Set while the player rides a bus through the city at the game's fast forward (TransitDirector.Journey): the game has
+        /// taken its traffic off and stopped its traffic system meanwhile, so the street counts as running all the same, and no
+        /// light is waited at (the lights stand still with the traffic system).
+        /// </summary>
+        public static bool FastRide;
+
+        /// <summary>The street can have a bus on it: the game's traffic is running, or stopped only for a fast-forwarded ride.</summary>
+        public static bool StreetReady => TrafficTools.Ready || (FastRide && TrafficTools.Paused);
+
+        /// <summary>True while its doors stand open.</summary>
+        public bool DoorsOpen => Vehicle != null && !Vehicle.DoorsShut;
+
+        /// <summary>
+        /// Why a bus could not drive its line between two of the line's points in real time, or null if it can: every lane
+        /// point there in the road graph, and no gap between two of them that the graph does not join.
+        /// </summary>
+        public static string GapWhy(TransitLine line, int fromIndex, int toIndex)
+        {
+            if (line == null || line.Path == null || fromIndex < 0 || toIndex >= line.Path.Length || fromIndex > toIndex)
+            {
+                return "the line's points are not there";
+            }
+            Waypoint last = null;
+            for (int i = fromIndex; i <= toIndex; i++)
+            {
+                Waypoint point = TransitMap.Point(line.Path[i]);
+                if (point == null)
+                {
+                    return "lane point " + line.Path[i] + " of the line is missing from the road graph";
+                }
+                if (last != null)
+                {
+                    bool joined = (last.neighbors != null && last.neighbors.Contains(line.Path[i])) || (last.otherLanes != null && last.otherLanes.Contains(line.Path[i]));
+                    float apart = CitySpots.Flat(point.position - last.position);
+                    if ((!joined && apart > LooseGap * LooseGap) || apart > MostGap * MostGap)
+                    {
+                        return "a gap of " + Mathf.Sqrt(apart).ToString("F0") + " m in the line's path at lane point " + line.Path[i] + (joined ? "" : " that the road graph does not join");
+                    }
+                }
+                last = point;
+            }
+            return null;
+        }
+
+        private const float MostGap = 60f;     // metres between two lane points of a line, at the most
+        private const float LooseGap = 12f;    // ...and between two the road graph does not join (the line's search crossed between them)
+
+        /// <summary>
+        /// With a rider aboard who goes further: once it has left its stop and is out on its lane, it drives on along its line
+        /// to the next stop instead of out of sight, and stands there as at any stop (in its bay if that is free). False, with
+        /// why, if it cannot now.
+        /// </summary>
+        public bool CarryTo(TransitStop next, out string refusal)
+        {
+            refusal = null;
+            if (State != Phase.Leaving || _awaitGap || _bayTo > 0 || _goingOut || _line == null || Stop == null || Vehicle == null || !Held)
+            {
+                refusal = "it is not out on its lane leaving its stop";
+                return false;
+            }
+            if (next == null || next.Line != Stop.Line || next.PathIndex <= Stop.PathIndex)
+            {
+                refusal = "the stop is not further along its line";
+                return false;
+            }
+            TransitLine line = _line;
+            int from = LineIndexAhead(line);
+            if (from < 0 || from >= next.PathIndex - 1)
+            {
+                refusal = "it is already past the place to turn in for the stop";
+                return false;
+            }
+            refusal = GapWhy(line, from, next.PathIndex);
+            if (refusal != null)
+            {
+                return false;
+            }
+            Unpark();
+            Stop = next;
+            _route.Clear();
+            _routePoints.Clear();
+            _gate = -1;
+            _gateWhy = Hold.None;
+            Waiting = Hold.None;
+            _bayFrom = 0;
+            _bayTo = 0;
+            _bayLooked = false;
+            _bayMode = false;
+            _bay = BayOpen(next, sendAway: true);
+            if (_bay)
+            {
+                RouteToBay(line, next, from);
+            }
+            else
+            {
+                _laneNext = from;
+                RouteToLane(line, next);
+            }
+            StartedBack = next.Metres - line.Metres[from];
+            State = Phase.Approaching;
+            Lost = false;
+            Took = 0f;
+            _since = Time.time;
+            Vehicle.Indicate(0);
+            Begin();
+            Remaining = _driver.RouteLeft;
+            return true;
+        }
+
+        // The first point of its line ahead of its front axle: the next lane point of its route, else the nearest ahead by
+        // where it is (on the path out of a bay its route's points are its own).
+        private int LineIndexAhead(TransitLine line)
+        {
+            for (int k = Mathf.Max(0, _driver.NextPoint); k < _routePoints.Count; k++)
+            {
+                if (_routePoints[k] < 0)
+                {
+                    continue;
+                }
+                for (int i = Stop.PathIndex + 1; i < line.Path.Length; i++)
+                {
+                    if (line.Path[i] == _routePoints[k])
+                    {
+                        return i;
+                    }
+                }
+            }
+            Vector3 front = _driver.Front;
+            for (int i = Stop.PathIndex + 1; i + 1 < line.Path.Length; i++)
+            {
+                Waypoint point = TransitMap.Point(line.Path[i]);
+                Waypoint after = TransitMap.Point(line.Path[i + 1]);
+                if (point == null || after == null)
+                {
+                    return -1;
+                }
+                Vector3 way = after.position - point.position;
+                way.y = 0f;
+                Vector3 to = point.position - front;
+                to.y = 0f;
+                if (Vector3.Dot(to, way) > 0.5f && to.sqrMagnitude > 4f)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
         // ---------------------------------------------------------------- putting it on the road
 
         /// <summary>Puts a bus on its line some way before a stop, heading for it. False, with why, if it cannot.</summary>
@@ -662,7 +811,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            if (!Held || !TrafficTools.Ready)
+            if (!Held || !StreetReady)
             {
                 // Taken off the street under it (traffic shut down for a building or a time skip).
                 bool wanted = State == Phase.Approaching || State == Phase.Standing;
@@ -852,9 +1001,10 @@ namespace RealLifeOverhaul
         }
 
         // The game only runs the lights of junctions near the player; further off a light stays as it was for good. Those are not waited at.
+        // Nor are any while the game fast-forwards a ride: its traffic system, the lights with it, stands still meanwhile.
         private static bool Lit(Waypoint point)
         {
-            return CitySpots.Flat(point.position - PlayerHelper.GetPosition()) < LitWithin * LitWithin;
+            return !FastRide && CitySpots.Flat(point.position - PlayerHelper.GetPosition()) < LitWithin * LitWithin;
         }
 
         private bool GateOpen()
@@ -1100,7 +1250,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            if (!remove && Held && TrafficTools.Ready && InView && GoOut())
+            if (!remove && Held && StreetReady && InView && GoOut())
             {
                 return;
             }
