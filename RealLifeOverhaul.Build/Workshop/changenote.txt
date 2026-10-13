@@ -1,4 +1,4 @@
-0.3.7
+0.3.8
 
 New
-- Living with Going Public, the multiplayer mod: in one of its sessions this mod passes no time of its own (custody, prison, rides and outings take none, and photo mode does not pause), never treats another player's business or home as yours, and leaves what takes cars out of the traffic to the host. Holidays, nights in a hotel, selling a business or a building and hiring out cars wait until you play alone. A notice says so once, the options that do nothing in a session are greyed with the reason, and the Guide has a page on it.
+- Newsstand, the City Ledger online: a new app on the phone that opens in the full-screen phone, with the City Ledger and three new papers of their own (The Exchange Gazette for money and the markets, The Street Sheet for the street, The Weekend Review for what's on and the city after dark), each read as one scrolling column with the mouse wheel or by dragging. They are subscribed to a week at a time, with a pass for all four, and need a working internet connection at one of your homes: while it is down nothing new comes and nothing is charged. The editions of the last four mornings can be read again, the Planner shows each renewal, and the printed paper and the kiosks are as they were.
