@@ -43,6 +43,9 @@ namespace RealLifeOverhaul
                 TechBridges.Prosecute = TaxCases.FileDataProtection;
                 TechBridges.Claim = Claim;
                 TechBridges.Fame = Fame;
+                TechBridges.Supplied = Supplied;
+                TechBridges.Mbps = Mbps;
+                TechBridges.UtilityCents = (service, use) => Utilities.UtilitiesRules.DayCents(service == 0 ? Utilities.Service.Power : Utilities.Service.Water, use, Prices.Level, false);
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
             }
@@ -86,6 +89,45 @@ namespace RealLifeOverhaul
                 {
                     Fault("TechLinks.Held", e);
                     return false;
+                }
+            }
+
+            private static bool Supplied(BuildingRegistration reg, int service)
+            {
+                try
+                {
+                    return Utilities.UtilitiesDirector.Supplied(reg, service == 0 ? Utilities.Service.Power : Utilities.Service.Water);
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Supplied", e);
+                    return true;
+                }
+            }
+
+            // A building's connection: its plan's speed while it is up, 0 with none, cut or in an outage.
+            private static int Mbps(BuildingRegistration reg)
+            {
+                try
+                {
+                    Utilities.UtilitiesDirector d = Utilities.UtilitiesDirector.Instance;
+                    Utilities.UtilitiesState state = d != null ? d.State : null;
+                    if (state == null || !Settings.Utilities || reg == null)
+                    {
+                        return int.MaxValue;   // (no utilities to ask: the data centre is taken to be connected)
+                    }
+                    Utilities.Account a = state.Find(Utilities.UtilitiesGame.Place(reg), Utilities.Service.Internet);
+                    if (a == null || a.State != Utilities.SupplyState.Active || Utilities.InternetRules.InOutage(a, SaveGameManager.Current.Day * 24 + SaveGameManager.Current.Hour))
+                    {
+                        return 0;
+                    }
+                    Utilities.Provider p = Utilities.InternetRules.Get(a.Provider);
+                    return p != null && p.Mbps != null && a.Plan >= 0 && a.Plan < p.Mbps.Length ? p.Mbps[a.Plan] : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Mbps", e);
+                    return int.MaxValue;
                 }
             }
 

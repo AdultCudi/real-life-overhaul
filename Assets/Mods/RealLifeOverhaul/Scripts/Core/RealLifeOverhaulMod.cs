@@ -747,6 +747,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_tech_test_offer", () => Tech.TechDirector.Instance?.TestContractOffer())
                 .AddButton("reallife_tech_test_outage", () => Tech.TechDirector.Instance?.TestOutage())
                 .AddButton("reallife_tech_test_breach", () => Tech.TechDirector.Instance?.TestBreach())
+                .AddButton("reallife_infra_test_down", () => Tech.TechDirector.Instance?.TestCentreDown())
+                .AddButton("reallife_infra_test_price_war", () => Tech.TechDirector.Instance?.TestPriceWar())
                 .AddToggle(Settings.TechStartupsId, "reallife_vc_enabled", Settings.TechStartups,
                     v => Settings.TechStartups = v)
                 .AddButton("reallife_vc_test_pitch", () => Tech.TechDirector.Instance?.TestPitch())

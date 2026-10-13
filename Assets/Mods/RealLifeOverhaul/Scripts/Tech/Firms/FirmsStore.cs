@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Tech
     ///     v=1~h:seed|first day|last day|next id|last tender~f:...~p:...~c:...
     ///
     ///   f  each firm: place|kind|founded|focus|debt|reputation|registered until|breaches|outages|research costs|relief day|last 30 days|the 30 days' takings divided by commas
-    ///   p  each product: id|place|name|kind|segment|stage|features|progress|bugs|users|free|tier|marketing|share|launched|hype|scope|revenue|rival features|rival tier|last release|carry
+    ///   p  each product: id|place|name|kind|segment|stage|features|progress|bugs|users|free|tier|marketing|share|launched|hype|scope|revenue|rival features|rival tier|last release|carry|training|training level
     ///   c  each contract: id|place|kind|client|own place|council|points|done|value|paid|start|due|end|satisfaction|stage|bid|rivals|last billed
     /// </summary>
     public static class FirmsStore
@@ -61,7 +61,7 @@ namespace RealLifeOverhaul.Tech
             foreach (Product p in f.Products)
             {
                 w.Record().Add(p.Id).Place(p.Place).Add(p.Name).Add(p.Kind).Add(p.Segment).Add(p.Stage).Add(p.Features).Add(p.Progress).Add(p.Bugs).Add(p.Users).Add(p.Free).Add(p.Tier)
-                    .Add(p.Marketing).Add(p.Share).Add(p.Launched).Add(p.Hype).Add(p.Scope).Add(p.Revenue).Add(p.RivalFeatures).Add(p.RivalTier).Add(p.LastRelease).Add(p.Carry);
+                    .Add(p.Marketing).Add(p.Share).Add(p.Launched).Add(p.Hype).Add(p.Scope).Add(p.Revenue).Add(p.RivalFeatures).Add(p.RivalTier).Add(p.LastRelease).Add(p.Carry).Add(p.Compute).Add(p.Train);
             }
             w.Part('c');
             foreach (Contract c in f.Contracts)
@@ -108,7 +108,7 @@ namespace RealLifeOverhaul.Tech
                     Id = x.Int(), Place = x.Place(), Name = x.Text(), Kind = TalentCatalogue.Clamp(x.Int(), 0, (int)ProductKind.Count - 1), Segment = TalentCatalogue.Clamp(x.Int(), 0, 2),
                     Stage = x.Int(), Features = x.Int(), Progress = x.Int(), Bugs = x.Int(), Users = x.Long(), Free = x.Long(), Tier = TalentCatalogue.Clamp(x.Int(1), 0, 2), Marketing = x.Int(),
                     Share = x.Int(100), Launched = x.Int(), Hype = x.Int(), Scope = x.Int(), Revenue = x.Long(), RivalFeatures = x.Int(), RivalTier = TalentCatalogue.Clamp(x.Int(1), 0, 2),
-                    LastRelease = x.Int(), Carry = x.Long()
+                    LastRelease = x.Int(), Carry = x.Long(), Compute = x.Long(), Train = x.Int(2)
                 };
                 if (f.Products.Count < FirmsCatalogue.ProductsMost * 2)
                 {

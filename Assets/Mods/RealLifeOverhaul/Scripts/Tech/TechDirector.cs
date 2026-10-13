@@ -202,6 +202,7 @@ namespace RealLifeOverhaul.Tech
                 if (_firmsOn)
                 {
                     FirmsDay(Save.Day);
+                    InfraDay(Save.Day);
                 }
                 if (_ventureOn)
                 {
@@ -239,6 +240,7 @@ namespace RealLifeOverhaul.Tech
                 if (_firmsOn)
                 {
                     WriteFirms(Save.modData);
+                    WriteInfra(Save.modData);
                 }
                 if (_ventureOn)
                 {
@@ -352,6 +354,7 @@ namespace RealLifeOverhaul.Tech
             _hiring = null;
             _firmsFile = null;
             _venture = null;
+            _infra = null;
             _news = new TechNews();
         }
     }

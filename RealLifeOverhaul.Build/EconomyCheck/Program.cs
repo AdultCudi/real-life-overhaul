@@ -112,6 +112,7 @@ internal static partial class Program
         Shared();
         Fame();
         Endings();
+        Infra2();
         Ventures2();
         Firms();
         Hiring();

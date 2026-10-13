@@ -64,6 +64,7 @@ namespace RealLifeOverhaul.Tech
             _firmsFile = file;
             _firmsOn = true;
             ReadFirms(save.Day);
+            StartInfra();
             Logger?.Info("Tech: firms " + (fresh ? "opened for this save" : "loaded (version " + version + ")") + " on day " + save.Day + ": " + _firms.Count + " firm(s), " + _firmsFile.Products.Count
                          + " product(s), " + _firmsFile.Contracts.Count + " contract(s).");
         }
@@ -77,6 +78,7 @@ namespace RealLifeOverhaul.Tech
             if (keep && Save != null && _firmsFile != null)
             {
                 WriteFirms(Save.modData);
+                WriteInfra(Save.modData);
             }
             _firmsOn = false;
             _firms.Clear();
@@ -409,6 +411,10 @@ namespace RealLifeOverhaul.Tech
                 int dated = day - 1;
                 FirmsGame.Takings(firm.Today, firm.Reg, file.Name, dated);
                 FirmsGame.Cost(hosting, FirmsGame.HostingKey, firm.Reg, file.Name, dated);
+                if (HostingRate(file.Place) < 1000)
+                {
+                    _ownHosting += hosting;   // (paid to the player's own cloud: its takings on the infrastructure's day)
+                }
                 FirmsGame.Cost((long)c.Seats * FirmsCatalogue.SoftwarePerSeat * level / 1000, FirmsGame.SoftwareKey, firm.Reg, file.Name, dated);
                 FirmsGame.Cost(marketing * level / 1000, FirmsGame.MarketingKey, firm.Reg, file.Name, dated);
                 FirmsRules.Roll(file, day, firm.Today);
@@ -438,7 +444,7 @@ namespace RealLifeOverhaul.Tech
         /// <summary>What the firm's hosting costs, thousandths of the list price: the rival clouds' list price until the player runs a cloud of their own.</summary>
         internal int HostingRate(string place)
         {
-            return 1000;
+            return Save != null && OwnCloud(Save.Day) ? InfraCatalogue.OwnHostingShare : 1000;
         }
 
         // A contract has paid: the firm takes it; a client of the player's own pays it from that business.

@@ -84,5 +84,18 @@ namespace RealLifeOverhaul.Tech
             .Column("reallife_vc_col_runway", 170f, TableSort.Number)
             .Column("reallife_tech_col_stage", 220f, TableSort.Text, right: true)
             .Empty("reallife_vc_empty_funding");
+
+        /// <summary>Infra: 0 place, 1 district, 2 tier, 3 racks, 4 AI racks, 5 let, 6 technicians, 7 takings over 30 days, 8 state.</summary>
+        public static readonly TableSpec Infra = new TableSpec("Tech", "Infra")
+            .Column("reallife_infra_col_place", 300f, TableSort.Text, flexible: true)
+            .Column("reallife_infra_col_district", 240f, TableSort.Text)
+            .Column("reallife_infra_col_tier", 130f, TableSort.Number)
+            .Column("reallife_infra_col_racks", 150f, TableSort.Number)
+            .Column("reallife_infra_col_gpu", 150f, TableSort.Number)
+            .Column("reallife_infra_col_let", 130f, TableSort.Number)
+            .Column("reallife_infra_col_technicians", 190f, TableSort.Text)
+            .Column("reallife_tech_col_month", 230f, TableSort.Money, sums: true)
+            .Column("reallife_tech_col_stage", 220f, TableSort.Text, right: true)
+            .Empty("reallife_infra_empty");
     }
 }

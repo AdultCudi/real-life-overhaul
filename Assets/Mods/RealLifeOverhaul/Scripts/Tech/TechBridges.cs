@@ -45,6 +45,15 @@ namespace RealLifeOverhaul.Tech
         /// <summary>Other investors' money in the player's fund, cents (a bank's or investors' feature brings it). Default: none.</summary>
         public static Func<long> FundOthers;
 
+        /// <summary>True if a building has the city's power (service 0) or water (1) now. Default: always.</summary>
+        public static Func<BuildingRegistration, int, bool> Supplied;
+
+        /// <summary>The speed of a building's internet connection in Mbps; 0 with none or in an outage. Default: unknown (a data centre is taken to be connected).</summary>
+        public static Func<BuildingRegistration, int> Mbps;
+
+        /// <summary>A day's power (service 0, thousandths of a kWh) or water (1, thousandths of a cubic metre) at the city's utilities' tariff, cents at today's prices. Default: a plain tariff.</summary>
+        public static Func<int, long, long> UtilityCents;
+
         public static int EsteemNow()
         {
             try
@@ -69,6 +78,9 @@ namespace RealLifeOverhaul.Tech
             Claim = null;
             Fame = null;
             Ipo = null;
+            Supplied = null;
+            Mbps = null;
+            UtilityCents = null;
             FundOthers = null;
         }
     }

@@ -68,8 +68,13 @@ namespace RealLifeOverhaul.Tech
             else
             {
                 p.Progress = (int)Math.Min(int.MaxValue, p.Progress + feature);
-                while (p.Features < FirmsCatalogue.FeaturesMost && p.Progress >= FeatureCost(p.Features))
+                while (p.Features < FirmsCatalogue.FeaturesMost && p.Progress >= FeatureCost(p.Features)
+                       && (p.K != ProductKind.Model || p.Compute >= InfraRules.TrainNeed(p.Features)))
                 {
+                    if (p.K == ProductKind.Model)
+                    {
+                        p.Compute -= InfraRules.TrainNeed(p.Features);   // (an AI model's feature is a generation's training as well as its engineering)
+                    }
                     p.Progress -= FeatureCost(p.Features);
                     p.Features++;
                     finished++;
@@ -327,6 +332,7 @@ namespace RealLifeOverhaul.Tech
             };
             p.RivalFeatures = FirmsCatalogue.RivalFeaturesAtStart[p.Segment];
             p.RivalTier = 1;
+            p.Train = kind == ProductKind.Model ? 2 : 0;
             return p;
         }
 

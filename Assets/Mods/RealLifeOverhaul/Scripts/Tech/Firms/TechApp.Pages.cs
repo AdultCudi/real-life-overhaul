@@ -258,6 +258,10 @@ namespace RealLifeOverhaul.Tech
                 box.Line(TechText.Fill("reallife_tech_product_sales", "customers", TechText.Whole(p.Users), "free", TechText.Whole(p.Free), "monthly", TechText.Cents(Level(FirmsRules.MonthlyRevenue(p))),
                     "support", FirmsRules.SupportNeeded(p).ToString(), "have", firm != null ? firm.Crew.Support.ToString() : "0"));
             }
+            if (p.K == ProductKind.Model)
+            {
+                box.Line(TechText.Fill("reallife_tech_product_training", "done", TechText.Whole(p.Compute), "need", TechText.Whole(InfraRules.TrainNeed(p.Features)), "inference", InfraRules.Inference(p).ToString()));
+            }
             box.Line(TechText.Fill("reallife_tech_product_quality", "quality", TechText.Mille(FirmsRules.Quality(p)), "bugs", p.Bugs.ToString(),
                 "appeal", firm != null ? TechText.Mille(FirmsRules.Appeal(p, firm.File, firm.Crew)) : "-"));
             if (box.HasSelector && p.Stage < 2)
@@ -268,6 +272,11 @@ namespace RealLifeOverhaul.Tech
                         i => Do(() => _director.SetProduct(id, i, -1, -1)));
                 }
                 box.Selector(FirmsCatalogue.MarketingDay.Length, p.Marketing, TechText.MarketingLevel, i => Do(() => _director.SetProduct(id, -1, i, -1)));
+                if (p.K == ProductKind.Model)
+                {
+                    box.Selector(InfraRules.TrainLevels.Length, p.Train, i => TechText.Fill("reallife_tech_product_train", "units", InfraRules.TrainLevels[i].ToString(),
+                        "cost", TechText.Cents(_director.Level((long)InfraRules.TrainLevels[i] * InfraCatalogue.GpuUnitDay * InfraCatalogue.RentedGpuShare / 1000))), i => Do(() => _director.SetTraining(id, i)));
+                }
                 int at = 0;
                 for (int i = 0; i < Shares.Length; i++)
                 {

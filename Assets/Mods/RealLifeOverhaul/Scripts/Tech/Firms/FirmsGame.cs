@@ -33,6 +33,7 @@ namespace RealLifeOverhaul.Tech
         public const string ServicesKey = "reallife_transaction_tech_it_services";
         public const string ReliefKey = "reallife_transaction_tech_relief";
         public const string CostRow = "reallife_books_tech_hosting";
+        public const string PowerRow = "reallife_books_tech_power";
         private const string DeductKey = "reallife_tech_deduct";
         private const string ReliefDeductKey = "reallife_tech_relief_deduct";
         private const string Marketing = "ba:transactioncategory_marketing";
@@ -44,10 +45,11 @@ namespace RealLifeOverhaul.Tech
         private static GameInstance Save => SaveGameManager.Current;
 
         /// <summary>True for a transaction type that is the tech sector's takings (for the economy's books).</summary>
-        public static bool IsTakings(string type) => type == TakingsKey;
+        public static bool IsTakings(string type) => type == TakingsKey || type == InfraGame.TakingsKey;
 
         /// <summary>The row of a business's costs a transaction type of the tech sector's belongs to; null for none.</summary>
-        public static string RowOf(string type) => type == HostingKey || type == SoftwareKey ? CostRow : null;
+        public static string RowOf(string type) => type == HostingKey || type == SoftwareKey || type == InfraGame.ComputeKey ? CostRow
+            : type == InfraGame.PowerKey || type == InfraGame.WaterKey ? PowerRow : null;
 
         /// <summary>The firm kind of a business's type, or -1 for a business that is no tech firm.</summary>
         public static int KindOf(string type)

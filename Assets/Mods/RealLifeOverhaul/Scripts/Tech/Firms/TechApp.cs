@@ -17,6 +17,8 @@ namespace RealLifeOverhaul.Tech
     ///   Contracts   offers, the council's tenders and work under way; pick one to take it, bid for it or give it up
     ///   Startups    the city's startups, what they claim and what the player holds of them; pick one to meet its founders,
     ///               look into it, back it or follow on; with nothing picked, the portfolio and the player's fund
+    ///   Infra       data centres in the player's warehouses, warehouses that could be one, and the cloud; pick one to fit
+    ///               it out, buy racks, launch the cloud, price it or renew its licence
     ///   Funding     the player's firms with investors: the cap table, the board and its target, the runway; pick one to
     ///               raise, meet a venture firm, take a term sheet, borrow a bridge, grant share options or sell shares
     ///
@@ -24,9 +26,9 @@ namespace RealLifeOverhaul.Tech
     /// </summary>
     public sealed partial class TechApp
     {
-        public const string FirmRow = "firm:", ProductRow = "prod:", ContractRow = "work:", StartupRow = "start:", CapRow = "cap:";
+        public const string FirmRow = "firm:", ProductRow = "prod:", ContractRow = "work:", StartupRow = "start:", CapRow = "cap:", CentreRow = "dc:", CloudRow = "cloud", FitRow = "fit:";
         private const string NewProductRow = "newprod:";
-        private static readonly string[] TabKeys = { "reallife_tech_tab_firms", "reallife_tech_tab_products", "reallife_tech_tab_contracts", "reallife_tech_tab_startups", "reallife_tech_tab_funding" };
+        private static readonly string[] TabKeys = { "reallife_tech_tab_firms", "reallife_tech_tab_products", "reallife_tech_tab_contracts", "reallife_tech_tab_startups", "reallife_tech_tab_funding", "reallife_tech_tab_infra" };
 
         public static IModLogger Logger;
 
@@ -154,6 +156,7 @@ namespace RealLifeOverhaul.Tech
                         case TechDirector.TabContracts: table = WriteContracts(box, f, day); break;
                         case TechDirector.TabStartups: table = WriteStartups(box, day); break;
                         case TechDirector.TabFunding: table = WriteFunding(box, day); break;
+                        case TechDirector.TabInfra: table = WriteInfra(box, day); break;
                         default: table = WriteFirms(box, f, day); break;
                     }
                 }

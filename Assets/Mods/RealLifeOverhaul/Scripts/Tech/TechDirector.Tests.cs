@@ -326,5 +326,37 @@ namespace RealLifeOverhaul.Tech
             }
             Notifications.ShowError("reallife_vc_test_no_board");
         }
+
+        /// <summary>The first data centre goes down now.</summary>
+        public void TestCentreDown()
+        {
+            if (!_firmsOn || _infra == null || Save == null || _infra.Centres.Count == 0)
+            {
+                Notifications.ShowError("reallife_infra_test_none");
+                return;
+            }
+            DataCentre d = _infra.Centres[0];
+            d.DownUntil = Save.Day + 1;
+            d.Outages++;
+            _infra.Cloud.Reputation = System.Math.Max(0, _infra.Cloud.Reputation - 80);
+            Tell2(NotificationType.Warning, "reallife_infra_note_outage", Data("name", d.Name), TabInfra, TechApp.CentreRow + d.Place);
+            ChangedTech();
+        }
+
+        /// <summary>The rival clouds cut their prices now, as they would against a cloud that takes too much of the city.</summary>
+        public void TestPriceWar()
+        {
+            if (!_firmsOn || _infra == null || Save == null || !_infra.Cloud.Open)
+            {
+                Notifications.ShowError("reallife_infra_test_no_cloud");
+                return;
+            }
+            Cloud c = _infra.Cloud;
+            c.LastCut = Save.Day - FirmsCatalogue.MonthDays;
+            InfraRules.PriceWar(c, InfraCatalogue.CloudDemand, Save.Day);
+            TechBridges.Stock?.Invoke(107, -30);
+            Tell2(NotificationType.Info, "reallife_infra_note_price_war", Data("name", c.Name, "price", TechText.Mille(c.RivalPrice)), TabInfra, TechApp.CloudRow);
+            ChangedTech();
+        }
     }
 }

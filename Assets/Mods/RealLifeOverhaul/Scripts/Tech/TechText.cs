@@ -90,6 +90,9 @@ namespace RealLifeOverhaul.Tech
 
         public static string StartupStateName(StartupState s) => T(Mod + "_vc_state_" + s.ToString().ToLowerInvariant());
 
+        /// <summary>A data centre's tier of redundancy, 0 to 3: "Tier I" to "Tier IV".</summary>
+        public static string InfraTier(int tier) => T(Mod + "_infra_tier_" + TalentCatalogue.Clamp(tier, 0, InfraCatalogue.Tiers - 1).ToString(Inv));
+
         public static string Work(int work) => T(work == (int)Arrangement.Remote ? "reallife_talent_work_remote" : work == (int)Arrangement.Hybrid ? "reallife_talent_work_hybrid" : "reallife_talent_work_onsite");
 
         /// <summary>Years and days of a 365-day year as whole years: "7 years", "1 year", "under a year".</summary>
