@@ -1049,6 +1049,7 @@ namespace RealLifeOverhaul
             if (_gameLooking && !looking)
             {
                 _lightLook++;   // the game's look at every building is over
+                RealLifeOverhaul.SpecialBuildings.Unlist();   // the mod's buildings are not to let nor for sale: out of those rows (lit again below where a row of ours wants them)
             }
             _gameLooking = looking;
             for (int i = 0; i < Lights.Count; i++)

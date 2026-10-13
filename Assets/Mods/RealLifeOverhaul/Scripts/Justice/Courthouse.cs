@@ -11,7 +11,8 @@ namespace RealLifeOverhaul
     /// The city's courthouse: one of the game's own buildings, the same one in every game on the
     /// same map. The game has no court, so the most civic building it does have is taken: the tax
     /// office first (the one government building), then a bank, then a school, the largest of its
-    /// kind, ties broken by address; failing all of those, the largest office building.
+    /// kind, ties broken by address; failing all of those, the largest office building. Never one the player rents or
+    /// owns (it moves off one that becomes theirs).
     ///
     /// Its frontage is dressed with one sign (the modelled <c>courthouse_sign</c> when the prop
     /// bundle has it, otherwise a plain board on two posts lettered with the game's font), stood
@@ -34,6 +35,7 @@ namespace RealLifeOverhaul
         private readonly IModLogger _logger;
         private GameObject _sign;
         private int _waited;
+        private int _look;
         private bool _failed;
 
         public Courthouse(IModLogger logger)
@@ -71,11 +73,36 @@ namespace RealLifeOverhaul
             return offset.y > -2f && offset.y < 2f && offset.x * offset.x + offset.z * offset.z < reach * reach;
         }
 
-        /// <summary>Once a second until <see cref="Searched"/>: finds the building, then stands the sign.</summary>
+        /// <summary>Changes each time the courthouse is chosen (for the map).</summary>
+        public int Moves { get; private set; }
+
+        /// <summary>
+        /// Once a second: until <see cref="Searched"/>, finds the building, then stands the sign; after that, every five
+        /// seconds, a courthouse whose building has become the player's moves off it. (The game's own services, which it
+        /// takes first, are never to let or for sale; only the largest office it falls back on could be.)
+        /// </summary>
         public void Tick()
         {
-            if (Searched || _failed)
+            if (_failed)
             {
+                return;
+            }
+            if (Searched)
+            {
+                if (Building != null && ++_look >= 5)
+                {
+                    _look = 0;
+                    if (SpecialBuildings.Players(Building))
+                    {
+                        _logger?.Info("Justice: the courthouse's building, " + Name + ", is the player's; the courthouse moves to another.");
+                        Dispose();
+                        SpecialBuildings.Remove("courthouse");
+                        Building = null;
+                        Address = null;
+                        Name = string.Empty;
+                        Searched = false;
+                    }
+                }
                 return;
             }
             try
@@ -100,6 +127,7 @@ namespace RealLifeOverhaul
                 }
                 Address = picked.building.Address;
                 Building = picked;
+                Moves++;
                 Name = Address.ToFormattedString();
                 bool placed = Place(picked);
                 if (!placed && JobSpots.Front(picked, out Vector3 door))
@@ -151,7 +179,7 @@ namespace RealLifeOverhaul
                 {
                     CityBuildingController building = buildings[i];
                     if (building == null || building.building == null || building.entranceDoors == null || building.entranceDoors.Length == 0
-                        || building.building.locatedInsidePrivateFenceIndex >= 0)
+                        || building.building.locatedInsidePrivateFenceIndex >= 0 || SpecialBuildings.Players(building))   // (one the player rents or owns stays theirs)
                     {
                         continue;
                     }
