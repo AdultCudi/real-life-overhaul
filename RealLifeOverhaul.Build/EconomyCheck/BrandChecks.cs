@@ -33,6 +33,7 @@ internal static partial class Program
         FranchiseEndings();
         FranchiseAsks();
         FranchiseChains();
+        KeptPriceRules();
         BrandSave();
         BrandBalance();
         BrandTiming();
