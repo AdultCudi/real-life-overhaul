@@ -1,4 +1,4 @@
-0.9.4
+0.9.5
 
 New
-- The mod's notifications now carry their own icon and colour, so you can tell them from the game's at a glance, and their texts are shorter.
+- The mod's apps are easier to follow: the figures that matter come first, and long explanations sit at the foot of each page with a pointer to its Guide page.
