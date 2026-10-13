@@ -697,6 +697,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyCleaning = v)
                 .AddToggle(Settings.EconomySaleId, "reallife_svc_sale_enabled", Settings.EconomySale,
                     v => Settings.EconomySale = v)
+                .AddToggle(Settings.EconomyBankId, "reallife_ob_enabled", Settings.EconomyBank,
+                    v => Settings.EconomyBank = v)
                 .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
                     v => Settings.EconomyCompanyLevel = v)
@@ -713,6 +715,13 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rota_test_plans", () => Economy.CompanyDirector.Instance?.TestRotaPlans())
                 .AddButton("reallife_rota_test_fill", () => Economy.CompanyDirector.Instance?.TestRotaFillAll())
                 .AddButton("reallife_rota_test_back", () => Economy.CompanyDirector.Instance?.TestRotaBackAll())
+                .AddButton("reallife_ob_test_found", () => Economy.OwnBankDirector.Instance?.TestFound())
+                .AddButton("reallife_ob_test_month", () => Economy.OwnBankDirector.Instance?.TestMonth())
+                .AddButton("reallife_ob_test_hard", () => Economy.OwnBankDirector.Instance?.TestHardMonth())
+                .AddButton("reallife_ob_test_run", () => Economy.OwnBankDirector.Instance?.TestRun())
+                .AddButton("reallife_ob_test_deadline", () => Economy.OwnBankDirector.Instance?.TestDeadline())
+                .AddButton("reallife_ob_test_fund", () => Economy.OwnBankDirector.Instance?.TestFund())
+                .AddButton("reallife_ob_test_back", () => Economy.OwnBankDirector.Instance?.TestBack())
                 .AddHeader("reallife_estate_header")
                 .AddToggle(Settings.EstateId, "reallife_estate_enabled", Settings.Estate,
                     v => Settings.Estate = v)
@@ -1050,6 +1059,8 @@ namespace RealLifeOverhaul
             Economy.EstateDirector.Logger = context.Logger;
             Economy.EstateApp.Logger = context.Logger;
             _root.AddComponent<Economy.EstateDirector>();   // property: the market, letting, works, selling, an agency, a hotel and car hire, and the Property app (Scripts/Economy/Estate)
+            Economy.OwnBankDirector.Logger = context.Logger;
+            _root.AddComponent<Economy.OwnBankDirector>();   // the player's own bank: a licence, savers, loans, a fund and a regulator, and its app (Scripts/Economy/OwnBank); after the company, so that its day's books come after the company's
             Economy.Brands.BrandsDirector.Logger = context.Logger;
             Economy.Brands.BrandsApp.Logger = context.Logger;
             _root.AddComponent<Economy.Brands.BrandsDirector>();   // brands and franchises: recognition, standards, franchised shops, city chains and the Brands app (Scripts/Economy/Brands; after the company: its day follows the company's)
