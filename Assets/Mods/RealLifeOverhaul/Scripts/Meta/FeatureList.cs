@@ -1119,6 +1119,7 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_estate_header")
                 .About("reallife_guide_economy_estate_about").Help("reallife_guide_economy_estate")
                 .Owns(Settings.EstateId, Settings.EstateHotelId, Settings.EstateHireId)
+                .Preset(Settings.EstateRentId, 150, 100, 80)   // rental income: Relaxed, Realistic, Hardcore (Standard is its default, 100)
                 .StandsAside(GoingPublic.OwnershipSentence, Settings.EstateHireId)   // a hired car leaves the city and comes back as another (Core/GoingPublic)
                 .Data(Economy.EstateStore.Key, Economy.EstateStore.TestKey)
                 .Cleanup(() => Economy.EstateDirector.Instance?.StopAll(), -2)

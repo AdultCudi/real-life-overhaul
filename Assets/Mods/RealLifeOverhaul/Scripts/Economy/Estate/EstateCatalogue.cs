@@ -114,6 +114,7 @@ namespace RealLifeOverhaul.Economy
         public const int YieldPerIncomePoint = 5;   // hundredths of a thousandth for each point of income off the middle: dear districts yield less
         public const int YieldLeast = 40, YieldMost = 90;
         public const int RentLeverShare = 50;       // thousandths off (or on) the rent of homes when the council controls (or frees) rents
+        public const int RentScaleLeast = 500, RentScaleMost = 3000;   // the options' rental income, thousandths of the market's rent (50% to 300%)
 
         public const int AskLeast = 800, AskMost = 1300, AskStep = 50, AskStart = 1000;   // the asking rent against the market's
         public const int ApplicantChance = 350;     // thousandths a day at the market's rent in a steady economy

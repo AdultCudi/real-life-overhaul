@@ -3665,6 +3665,7 @@ Standard is always an option's default; the other three are declared with `Featu
 | `player_offences` | off | on | on | on |
 | `crime_frequency` | 1 | 2 | 3 | 5 |
 | `job_pay` | 125 | 100 | 100 | 80 |
+| `economy_estate_rent` | 150 | 100 | 100 | 80 |
 | `life_frequency` | 4 | 5 | 6 | 8 |
 | `police_presence` | 4 | 5 | 6 | 8 |
 | `patrol_frequency` | 2 | 3 | 4 | 6 |

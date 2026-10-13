@@ -114,6 +114,7 @@ namespace RealLifeOverhaul
         public const string EstateId = "economy_estate";
         public const string EstateHotelId = "economy_estate_hotel";
         public const string EstateHireId = "economy_estate_hire";
+        public const string EstateRentId = "economy_estate_rent";
         public const string EconomyOnlineId = "economy_online";
         public const string TechPeopleId = "tech_people";
         public const string TechJobsId = "tech_jobs";
@@ -325,6 +326,7 @@ namespace RealLifeOverhaul
         public static bool EconomyRota = true;           // the staff rota planner: a customer forecast, the hours worth opening, the people they take and a rota at a press, on the Company app's Rota tab (off: the tab says so and nothing is worked out) (Scripts/Economy/Company/CompanyDirector.Rota.cs)
         public static bool Estate = true;                // property: a market that moves, letting a building yourself, works, selling and an estate agency, with the Property app (off: every value and rent is the game's own) (Scripts/Economy/Estate)
         public static bool EstateHotel = true;           // owning a hotel of the city's as a business (off: a hotel that is held stands still and nothing is taken or paid)
+        public static int EstateRent = 100;              // rental income: percent of the market's rent of a unit the player lets himself, and so of what is asked, offered and renewed at (50 to 300) (Scripts/Economy/Estate/EstateRules.MarketRent)
         public static bool EstateHire = true;            // car hire: the player's own vehicles go out to customers from a lot (off: no car goes out, and one that is out is called back)
         public static bool TechPeople = true;            // professionals: roles, levels and skills of their own for the player's professional staff, reviews, promotions, courses, notice and severance, rivals' offers, in the Open Roles app (off: the game's own staff alone; files are kept) (Scripts/Tech/People)
         public static bool TechJobs = true;              // the jobs board and the labour market: ads in the Open Roles app, applicants from the city's job seekers, interviews, offers, executive search, and more candidates from the recruitment office (off: the game's own hiring alone) (Scripts/Tech/Hiring)
@@ -588,6 +590,7 @@ namespace RealLifeOverhaul
             Estate = Bool(modId, EstateId, Estate);
             EstateHotel = Bool(modId, EstateHotelId, EstateHotel);
             EstateHire = Bool(modId, EstateHireId, EstateHire);
+            EstateRent = Int(modId, EstateRentId, EstateRent);
             EconomyOnline = Bool(modId, EconomyOnlineId, EconomyOnline);
             TechPeople = Bool(modId, TechPeopleId, TechPeople);
             TechJobs = Bool(modId, TechJobsId, TechJobs);

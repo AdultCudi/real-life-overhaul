@@ -220,6 +220,16 @@ namespace RealLifeOverhaul.Economy
             {
                 Install();
             }
+            int scale = EstateGame.RentScale;
+            if (scale != _climate.RentScale)
+            {
+                // The rental income option was moved: the market's rent of every unit, and so what is asked, offered and
+                // renewed at, follows from now on; a lease keeps the rent it was agreed at.
+                int was = EstateRules.RentShare(_climate.RentScale);
+                _climate.RentScale = scale;
+                Changed();
+                Logger?.Info("Estate: rental income set to " + (scale / 10) + "% of the market's rent (was " + (was / 10) + "%); leases already agreed keep their rent.");
+            }
             int parts = PartsOn();
             if (parts == _parts)
             {

@@ -16,6 +16,7 @@ namespace RealLifeOverhaul.Economy
         public int Event;           // what is on today, the event calendar's own number
         public int Season;          // 0 spring to 3 winter
         public int Weekday;         // 0 Monday to 6 Sunday
+        public int RentScale;       // the options' rental income, thousandths of the market's rent: 1000 as it was (0 is read as 1000)
 
         public static EstateClimate Steady => new EstateClimate { Cycle = 1, Index = EstateCatalogue.IndexStart, DaysPerYear = EstateCatalogue.DaysPerYearDefault, TaxPercent = 20 };
     }
@@ -183,8 +184,21 @@ namespace RealLifeOverhaul.Economy
             {
                 r = r * (1000 - Math.Sign(c.RentLever) * EstateCatalogue.RentLeverShare) / 1000;
             }
+            r = r * RentShare(c.RentScale) / 1000;
             r /= 1000L * Math.Max(8, c.DaysPerYear);
             return (int)Math.Max(1, Math.Min(int.MaxValue / 4, r));
+        }
+
+        /// <summary>
+        /// The options' rental income as a share of the market's rent, thousandths, within its bounds; 0 (a climate that
+        /// never had it set) is the market's own. Everything a tenant is asked, offers, renews at or is measured against
+        /// comes from <see cref="MarketRent(int, int, int, int, int, EstateClimate)"/>, so all of it moves together, and the
+        /// chance that somebody applies, which reads only the asking rent's share of the market, does not change: a higher
+        /// setting is a richer city of tenants, not emptier buildings. A lease keeps the rent it was agreed at.
+        /// </summary>
+        public static int RentShare(int scale)
+        {
+            return scale <= 0 ? 1000 : EstateCatalogue.Clamp(scale, EstateCatalogue.RentScaleLeast, EstateCatalogue.RentScaleMost);
         }
 
         public static int MarketRent(EstateHolding h, EstateClimate c)

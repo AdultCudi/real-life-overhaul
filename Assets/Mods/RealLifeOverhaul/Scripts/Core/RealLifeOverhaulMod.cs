@@ -741,6 +741,7 @@ namespace RealLifeOverhaul
                     v => Settings.EstateHotel = v)
                 .AddToggle(Settings.EstateHireId, "reallife_estate_opt_hire", Settings.EstateHire,
                     v => Settings.EstateHire = v)
+                .AddSlider(Settings.EstateRentId, "reallife_estate_opt_rent", 50, 300, Settings.EstateRent, v => Settings.EstateRent = v, Meta.SettingsTable.SliderPercent)
                 .AddButton("reallife_estate_test_applicant", () => Economy.EstateDirector.Instance?.TestApplicant())
                 .AddButton("reallife_estate_test_arrears", () => Economy.EstateDirector.Instance?.TestArrears())
                 .AddButton("reallife_estate_test_works", () => Economy.EstateDirector.Instance?.TestWorks())

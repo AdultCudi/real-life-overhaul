@@ -140,9 +140,13 @@ namespace RealLifeOverhaul.Economy
                 TaxPercent = save != null && save.gameVariables != null ? Mathf.Max(0, save.gameVariables.taxPercentage) : 0,
                 Event = EstateBridges.EventOn != null ? EstateBridges.EventOn(day) : 0,
                 Season = Mathf.Clamp((int)TravelCatalogue.Season(day), 0, 3),
-                Weekday = Mathf.Clamp((int)TimeHelper.GetDayOfWeek(day) - 1, 0, 6)
+                Weekday = Mathf.Clamp((int)TimeHelper.GetDayOfWeek(day) - 1, 0, 6),
+                RentScale = RentScale
             };
         }
+
+        /// <summary>The options' rental income (percent) as the rules take it: thousandths of the market's rent.</summary>
+        public static int RentScale => EstateRules.RentShare(Settings.EstateRent * 10);
 
         // ---------------------------------------------------------------- the city's buildings and their values
 
