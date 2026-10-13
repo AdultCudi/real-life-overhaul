@@ -295,6 +295,13 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       PermadeathGame     everything it touches of the game: the game's own "the player is dead", the fade, the save, the main menu, the tutorial and missions; the machine's memorial
       Mortality          the one door the features where a life is in danger call (crash, hit on foot, mugging, the lender's men, the flu)
       PermadeathSettings its options block and its feature entry (Guide figures from the rules)
+    Districts/ the district view on the city map: ten layers in its filter list tint each district, with a key, a card and the districts in order
+      DistrictRules      the layers, their scales and five bands, the colours, the key's ranges; DistrictLog, the crimes reported by district (game-free: EconomyCheck runs it)
+      DistrictBridges    what it asks of the others, one reading per district (Wiring/DistrictLinks fills them in)
+      DistrictGame       everything it touches of the game: the map's district zones and their colour, the figures from the buildings, the mouse on the map
+      DistrictPanel      its window, a copy of the map's filter window beside it: the key, the card, the districts
+      DistrictView       the one component: the layer ticked (Core/MapPlaces.RegisterChoice), the map's opening and the day, the tint, the card, the crime log; the test buttons
+      DistrictGuide      its options block and its feature entry (Guide figures from the rules)
 CharacterAssets/                   asset pipeline for the new looks (outside Assets, Unity ignores it)
   scripts/                         Blender scripts: make the meshes and textures, write them to build/
   PreviewProject/, preview.ps1     the game's character rebuilt under HDRP: a look is judged here before it ships
