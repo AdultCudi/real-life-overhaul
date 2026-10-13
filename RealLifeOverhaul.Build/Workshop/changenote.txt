@@ -1,4 +1,4 @@
-0.3.9
+0.4.0
 
 New
-- Flare, a social media app on the phone: post your pictures, selfies, outings, promotions, new shops, votes and good turns, gain followers, and see your friends like and answer. A post about your shop brings customers, a sponsored post is a new campaign in the Company app, and a viral moment reaches the City Ledger, the brands, the election, the police and your boss. The city has influencers of its own who post about real places and events, grow, fade and have scandals; hire them for a post, a series, an ambassador deal, a plan, a launch or a giveaway, and follow the accounts you want to hear from. People you have still to meet may answer a post, your partner reads your posts, the stock market and the City Ledger post too, and the five newest pictures show in their posts.
+- In a Going Public session the city is one city for every player, the host's: its economy (the bank rate, prices, the good and bad times, the districts, supply), its government (the mayor, the council, policies, elections, petitions and the building sites) and its stock market, with the same prices on every screen. A guest's vote, donation, petition, complaint or trade counts in the host's city, a guest who leaves carries on from the city as it was, and each player's money, shares and businesses stay their own.
