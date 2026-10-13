@@ -9,7 +9,6 @@ namespace RealLifeOverhaul.FitOut
     {
         TechOffice,    // a tech company's headquarters: open-plan desks, meeting rooms, a kitchen, a lounge, printers, a server closet
         CivicOffice,   // a city office or the back of a police station: desks, filing, an interview table, a break corner, waiting seats
-        Campus,        // the university: lecture rooms, a library, study desks, a lounge, a café corner
         DataCentre     // the floor of a data centre round its server hall: stores, a workbench, a staff desk, a break corner
     }
 
@@ -347,16 +346,15 @@ namespace RealLifeOverhaul.FitOut
             switch (prefab)
             {
                 case "officedesk1": return new FitSize(1.8f, 0.9f, 0.75f, 0f, 0f, 0.74f);
-                case "officechair": case "officechair2": case "multipurposechair": return new FitSize(0.62f, 0.62f, 1.0f);
+                case "officechair": case "officechair2": return new FitSize(0.62f, 0.62f, 1.0f);
                 case "regularchair": return new FitSize(0.5f, 0.5f, 0.9f);
-                case "computer": case "desktopcomputer": return new FitSize(0.5f, 0.3f, 0.45f);
+                case "computer": return new FitSize(0.5f, 0.3f, 0.45f);
                 case "computermonitor": return new FitSize(0.55f, 0.2f, 0.45f);
                 case "deskplant01": return new FitSize(0.2f, 0.2f, 0.3f);
                 case "largemeetingtable": return new FitSize(1.2f, 3.0f, 0.75f, 0f, 0f, 0.75f);
                 case "table1": return new FitSize(1.2f, 0.8f, 0.75f, 0f, 0f, 0.75f);
                 case "roundtable": return new FitSize(1.0f, 1.0f, 0.75f, 0f, 0f, 0.75f);
                 case "wallmountedtv": return new FitSize(1.5f, 0.1f, 0.9f);
-                case "board01": return new FitSize(2.4f, 0.1f, 1.2f);
                 case "counter1": return new FitSize(1.0f, 0.65f, 0.9f, 0f, 0f, 0.88f);
                 case "cheapcoffeemachine": return new FitSize(0.35f, 0.35f, 0.4f);
                 case "standardfridge": return new FitSize(0.8f, 0.75f, 1.9f);
@@ -371,7 +369,6 @@ namespace RealLifeOverhaul.FitOut
                 case "metalshelf": return new FitSize(1.2f, 0.5f, 2.0f);
                 case "palletshelf": return new FitSize(2.8f, 1.1f, 3.0f);
                 case "officelockers": return new FitSize(0.9f, 0.5f, 1.9f);
-                case "largebookshelf": return new FitSize(2.0f, 0.45f, 2.2f);
                 case "waitingroomchairs": return new FitSize(2.0f, 0.65f, 0.85f);
                 case "recyclingbinpaper": case "trashbin": return new FitSize(0.45f, 0.45f, 0.8f);
                 case "decorativepalletwithboxes01": case "decorativepalletwithboxes02": case "decorativepalletwithboxes03": return new FitSize(1.2f, 1.0f, 1.2f);
@@ -412,11 +409,6 @@ namespace RealLifeOverhaul.FitOut
                     crew.AtDesks = Clamp(deskSeats / 3, deskSeats > 0 ? 1 : 0, 4);
                     crew.Waiting = waitingSeats > 0 ? 1 : 0;
                     crew.Walking = stops >= 2 ? 1 : 0;
-                    break;
-                case FitKind.Campus:
-                    crew.AtDesks = Clamp(deskSeats / 4, deskSeats > 0 ? 2 : 0, 6);
-                    crew.InLounge = loungeSeats > 0 ? 1 : 0;
-                    crew.Walking = stops >= 2 ? 2 : 0;
                     break;
                 default:
                     crew.AtDesks = deskSeats > 0 ? 1 : 0;

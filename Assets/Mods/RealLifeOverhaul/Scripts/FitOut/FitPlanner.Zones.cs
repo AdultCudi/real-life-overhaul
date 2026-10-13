@@ -16,8 +16,6 @@ namespace RealLifeOverhaul.FitOut
     ///   server      a server closet: two of the mod's small racks (the game has none) and a cabinet along the wall
     ///   filing      lockers, cabinets and shelving along the wall
     ///   waiting     waiting seats along the wall, a water cooler, a plant
-    ///   lecture     a board on the front wall, the lecturer's desk before it facing the room, rows of desks facing the board
-    ///   library     bookshelves along the wall and a reading table
     ///   stores      shelving, a workbench (the mod's) and a pallet of boxes
     ///   staging     deliveries on pallets waiting to be racked, a workbench and a bin, free-standing
     ///   plants      plants in the corners, where nothing else fits
@@ -27,20 +25,18 @@ namespace RealLifeOverhaul.FitOut
     public static partial class FitPlanner
     {
         /// <summary>The kinds of room the plan lays out.</summary>
-        public enum ZoneType { Desks, Meeting, Kitchen, Lounge, Printer, Server, Filing, Waiting, Lecture, Library, Stores, Staging, Plants }
+        public enum ZoneType { Desks, Meeting, Kitchen, Lounge, Printer, Server, Filing, Waiting, Stores, Staging, Plants }
 
-        public const int ZoneTypeCount = 13;
+        public const int ZoneTypeCount = 11;
         private const float ChairOut = 0.75f;         // the game seats somebody this far out from a desk's pivot, along its front
 
         // The rooms each kind of building is given, in turn, and how many of each at most (by ZoneType).
         private static readonly ZoneType[] TechOrder = { ZoneType.Desks, ZoneType.Meeting, ZoneType.Kitchen, ZoneType.Desks, ZoneType.Lounge, ZoneType.Server, ZoneType.Printer, ZoneType.Desks, ZoneType.Meeting, ZoneType.Lounge, ZoneType.Printer };
-        private static readonly int[] TechMost = { 99, 3, 1, 2, 2, 1, 0, 0, 0, 0, 0, 0, 99 };
+        private static readonly int[] TechMost = { 99, 3, 1, 2, 2, 1, 0, 0, 0, 0, 99 };
         private static readonly ZoneType[] CivicOrder = { ZoneType.Desks, ZoneType.Filing, ZoneType.Meeting, ZoneType.Kitchen, ZoneType.Desks, ZoneType.Printer, ZoneType.Waiting, ZoneType.Filing };
-        private static readonly int[] CivicMost = { 99, 2, 1, 0, 1, 0, 3, 1, 0, 0, 0, 0, 99 };
-        private static readonly ZoneType[] CampusOrder = { ZoneType.Lecture, ZoneType.Library, ZoneType.Desks, ZoneType.Lecture, ZoneType.Lounge, ZoneType.Kitchen, ZoneType.Printer, ZoneType.Lecture, ZoneType.Library };
-        private static readonly int[] CampusMost = { 3, 1, 1, 2, 1, 0, 0, 0, 4, 2, 0, 0, 99 };
+        private static readonly int[] CivicMost = { 99, 2, 1, 0, 1, 0, 3, 1, 0, 0, 99 };
         private static readonly ZoneType[] DataOrder = { ZoneType.Stores, ZoneType.Staging, ZoneType.Desks, ZoneType.Kitchen, ZoneType.Stores, ZoneType.Staging, ZoneType.Filing };
-        private static readonly int[] DataMost = { 1, 0, 1, 0, 0, 0, 2, 0, 0, 0, 4, 3, 99 };
+        private static readonly int[] DataMost = { 1, 0, 1, 0, 0, 0, 2, 0, 4, 3, 99 };
 
         private static readonly string[] PrinterRun = { "printer", "smallcabinet", "recyclingbinpaper" };
         private static readonly string[] ServerRun = { "rlo:closetrack", "rlo:closetrack", "smallcabinet" };
@@ -64,13 +60,6 @@ namespace RealLifeOverhaul.FitOut
             "storageshelf", "waitingroomchairs", "groundplant01", "groundplant02", "groundplant03", "groundplant05", "ceilinglampsquare"
         };
 
-        private static readonly string[] CampusPieces =
-        {
-            "officedesk1", "officechair", "multipurposechair", "desktopcomputer", "board01", "largebookshelf", "largemeetingtable", "table1", "regularchair",
-            "wallmountedtv", "counter1", "cheapcoffeemachine", "standardfridge", "watercooler", "sofaluxury", "coffeetable1", "armchair1", "printer",
-            "smallcabinet", "recyclingbinpaper", "groundplant01", "groundplant02", "groundplant03", "groundplant04", "groundplant05", "ceilinglampsquare"
-        };
-
         private static readonly string[] DataPieces =
         {
             "officedesk1", "officechair", "computer", "computermonitor", "deskplant01", "table1", "regularchair", "counter1", "cheapcoffeemachine",
@@ -85,7 +74,6 @@ namespace RealLifeOverhaul.FitOut
             switch (kind)
             {
                 case FitKind.CivicOffice: return CivicPieces;
-                case FitKind.Campus: return CampusPieces;
                 case FitKind.DataCentre: return DataPieces;
                 default: return TechPieces;
             }
@@ -96,7 +84,6 @@ namespace RealLifeOverhaul.FitOut
             switch (kind)
             {
                 case FitKind.CivicOffice: most = CivicMost; return CivicOrder;
-                case FitKind.Campus: most = CampusMost; return CampusOrder;
                 case FitKind.DataCentre: most = DataMost; return DataOrder;
                 default: most = TechMost; return TechOrder;
             }
@@ -137,18 +124,6 @@ namespace RealLifeOverhaul.FitOut
                     u = 6.0f;
                     v = 2.4f;
                     return;
-                case ZoneType.Lecture:
-                    u = 4f * Math.Max(0.9f, desk.W) + 0.8f;
-                    v = 13f;
-                    return;
-                case ZoneType.Library:
-                    u = 4f * (s.Size("largebookshelf").W + 0.05f) + 0.6f;
-                    v = s.Size("largebookshelf").D + 1.3f + 2f * seat.D + table.D + 0.8f;
-                    return;
-                case ZoneType.Staging:
-                    u = 2f * s.Size(PalletKinds[0]).W + s.Size("rlo:bench").W + 2.4f;
-                    v = 2f * s.Size(PalletKinds[0]).D + 1.6f;
-                    return;
                 case ZoneType.Stores:
                     u = 3f * (s.Size("storageshelf").W + 0.15f) + s.Size("rlo:bench").W + 0.6f;
                     v = s.Size("storageshelf").D + 1.4f + s.Size("decorativepalletwithboxes01").D + 0.6f;
@@ -172,8 +147,6 @@ namespace RealLifeOverhaul.FitOut
                 case ZoneType.Server: return WallRun(w, b, zone, ServerRun, 2, true, FitUse.Stop);
                 case ZoneType.Filing: return WallRun(w, b, zone, w.Site.Kind == FitKind.DataCentre ? DataFilingRun : FilingRun, 3, true, FitUse.None);
                 case ZoneType.Waiting: return Waiting(w, b, zone);
-                case ZoneType.Lecture: return Lecture(w, b, zone);
-                case ZoneType.Library: return Library(w, b, zone);
                 case ZoneType.Stores: return Stores(w, b, zone);
                 case ZoneType.Staging: return Staging(w, b, zone);
                 default: return Plants(w, b, zone, true);
@@ -185,7 +158,7 @@ namespace RealLifeOverhaul.FitOut
         {
             FitKind kind = w.Site.Kind;
             const string desk = "officedesk1";
-            string chair = kind == FitKind.Campus ? "multipurposechair" : kind == FitKind.TechOffice ? "officechair2" : "officechair";
+            string chair = kind == FitKind.TechOffice ? "officechair2" : "officechair";
             FitSize d = w.Site.Size(desk), c = w.Site.Size(chair);
             float deskW = Math.Max(0.9f, d.W), deskD = Math.Max(0.5f, d.D);
             float behind = ChairOut + c.D * 0.5f + 0.35f;              // from a desk's pivot to the back of the room its sitter needs
@@ -257,11 +230,6 @@ namespace RealLifeOverhaul.FitOut
             FitPiece d = w.Into.Pieces[deskAt];
             w.Put(b, chair, FitRole.Seat, FitUse.Desk, u - fu * ChairOut, v - fv * ChairOut, fu, fv, deskAt, zone, centred: false);
             FitSize s = w.Site.Size(desk);
-            if (w.Site.Kind == FitKind.Campus)
-            {
-                w.OnTop(deskAt, "desktopcomputer", 0f, 0.05f, 0f, s.Top);
-                return true;
-            }
             w.OnTop(deskAt, "computer", 0f, 0.05f, 0f, s.Top);
             w.OnTop(deskAt, "computermonitor", -s.W * 0.36f, 0.05f, 45f, s.Top);
             if (((int)Math.Floor(d.X * 7f + d.Z * 3f) & 3) == 0)
@@ -457,71 +425,6 @@ namespace RealLifeOverhaul.FitOut
             }
             Plants(w, b, zone, false);
             return true;
-        }
-
-        // A lecture room: a board on the front wall, the lecturer's desk before it facing the room, rows of desks facing the board.
-        private static bool Lecture(Work w, Box b, int zone)
-        {
-            if (!b.WallV0 || b.LU < 3.6f)
-            {
-                return false;
-            }
-            FitSize d = w.Site.Size("officedesk1"), c = w.Site.Size("multipurposechair");
-            float deskW = Math.Max(0.9f, d.W), deskD = Math.Max(0.5f, d.D);
-            float lecturer = 1.5f + ChairOut;                       // the lecturer's desk, its chair between it and the board
-            float firstRow = lecturer + deskD + 1.6f;
-            float pitch = deskD + ChairOut + c.D * 0.5f + 0.7f;
-            if (firstRow + ChairOut + c.D + 0.3f > b.LV)
-            {
-                return false;
-            }
-            w.Hang(b, "board01", b.LU * 0.5f, 2.0f, zone);
-            Workstation(w, b, zone, "officedesk1", "officechair", b.LU * 0.5f, lecturer, 0f, 1f);
-            int perRow = Math.Min(4, (int)((b.LU - 0.2f) / deskW));
-            float u0 = (b.LU - perRow * deskW) * 0.5f + deskW * 0.5f;
-            int rows = 0;
-            for (float v = firstRow; v + ChairOut + c.D + 0.3f <= b.LV && rows < 4; v += pitch, rows++)
-            {
-                for (int k = 0; k < perRow; k++)
-                {
-                    Workstation(w, b, zone, "officedesk1", "multipurposechair", u0 + k * deskW, v, 0f, -1f);
-                }
-            }
-            return rows > 0;
-        }
-
-        // A library: bookshelves along the wall and a reading table in front.
-        private static bool Library(Work w, Box b, int zone)
-        {
-            if (!b.WallV0 || b.FacadeV0)
-            {
-                return false;
-            }
-            FitSize shelf = w.Site.Size("largebookshelf");
-            int count = Math.Min(4, (int)((b.LU - 0.2f) / (shelf.W + 0.05f)));
-            if (count < 2)
-            {
-                return false;
-            }
-            float u = (b.LU - count * (shelf.W + 0.05f)) * 0.5f + shelf.W * 0.5f;
-            int placed = 0;
-            for (int k = 0; k < count; k++)
-            {
-                placed += w.AgainstWall(b, "largebookshelf", u, k == 0 ? FitUse.Stop : FitUse.None, zone) >= 0 ? 1 : 0;
-                u += shelf.W + 0.05f;
-            }
-            FitSize table = w.Site.Size("table1"), chair = w.Site.Size("regularchair");
-            float vTable = b.WallBack + shelf.D + 1.3f + chair.D + table.D * 0.5f;
-            if (vTable + table.D * 0.5f + chair.D + 0.4f <= b.LV)
-            {
-                int t = w.Put(b, "table1", FitRole.Floor, FitUse.None, b.LU * 0.5f, vTable, 0f, 1f, -1, zone, centred: true);
-                if (t >= 0)
-                {
-                    w.Put(b, "regularchair", FitRole.Seat, FitUse.Lounge, b.LU * 0.5f, vTable - table.D * 0.5f - chair.D * 0.5f - 0.05f, 0f, 1f, t, zone, centred: true);
-                    w.Put(b, "regularchair", FitRole.Seat, FitUse.Lounge, b.LU * 0.5f, vTable + table.D * 0.5f + chair.D * 0.5f + 0.05f, 0f, -1f, t, zone, centred: true);
-                }
-            }
-            return placed >= 2;
         }
 
         // A data centre's stores: shelving along the wall, a workbench, and a pallet of boxes.

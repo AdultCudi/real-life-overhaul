@@ -30,6 +30,10 @@ namespace RealLifeOverhaul.Careers
     ///
     /// One object per press of Study, made only while the player is inside the school and on a course there (Careers
     /// director, one reference comparison a frame then). If the game's activity is not as expected, it is left alone.
+    ///
+    /// At Hudson City University (Careers/CampusInterior) the classrooms are the school's own, with one of the university's
+    /// courses in each: there the panel is the class's alone (<see cref="DeskOffer.Only"/>): the room's course as its
+    /// headline, where it is and when its class is, Cancel and the class's button, and none of the game's courses.
     /// </summary>
     internal sealed class SchoolDesk : IPlayerActivity
     {
@@ -44,6 +48,7 @@ namespace RealLifeOverhaul.Careers
         private readonly CareersDirector _director;
         private readonly DeskOffer _offer;
         private ButtonInfo[] _buttons;
+        private LabelInfo[] _labels;
 
         private bool _mine;
         private Sitting _sitting;
@@ -61,6 +66,9 @@ namespace RealLifeOverhaul.Careers
             public bool Can;
             public string Key;
             public object Arguments;
+            public bool Only;          // the class's panel alone (a classroom of the university): no course of the game's
+            public string Title;       // ...its headline
+            public string[] Lines;     // ...and its lines
         }
 
         private SchoolDesk(StudyActivity inner, EntityController door, StudyDiploma place, CareersDirector director, DeskOffer offer)
@@ -74,6 +82,27 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>True while it runs the mod's class (from the press of its button until it is over).</summary>
         public bool Open => _mine && _state != PlayerActivityState.Finished;
+
+        /// <summary>The classroom door the game's study activity was opened at, or null.</summary>
+        public static EntityController DoorOf(StudyActivity game)
+        {
+            if (_failed || game == null)
+            {
+                return null;
+            }
+            try
+            {
+                if (_doorField == null)
+                {
+                    _doorField = typeof(StudyActivity).GetField("_educationDoor", Hidden);
+                }
+                return _doorField != null ? _doorField.GetValue(game) as EntityController : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
 
         /// <summary>
         /// The game's panel has just opened its own study activity at a desk of the school: it is handed to a desk of ours
@@ -281,13 +310,39 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        // The class's panel alone: closed without anything of the game's.
+        private void Close()
+        {
+            if (!_mine)
+            {
+                _inner.ChangeState(PlayerActivityState.Finished);
+            }
+        }
+
         public LabelInfo GetHeadlineLabel()
         {
-            return _mine && _sitting != null ? new LabelInfo(_sitting.SkipTitle, GameUi.WorldPanel.White(), false) : _inner.GetHeadlineLabel();
+            if (_mine && _sitting != null)
+            {
+                return new LabelInfo(_sitting.SkipTitle, GameUi.WorldPanel.White(), false);
+            }
+            return _offer.Only && !_mine ? new LabelInfo(_offer.Title ?? string.Empty, GameUi.WorldPanel.White(), false) : _inner.GetHeadlineLabel();
         }
 
         public LabelInfo[] GetLabels()
         {
+            if (!_mine && _offer.Only)
+            {
+                if (_labels == null)
+                {
+                    int n = _offer.Lines != null ? _offer.Lines.Length : 0;
+                    _labels = new LabelInfo[n];
+                    for (int i = 0; i < n; i++)
+                    {
+                        _labels[i] = new LabelInfo(_offer.Lines[i] ?? string.Empty, GameUi.WorldPanel.White(), false);
+                    }
+                }
+                return _labels;
+            }
             if (!_mine)
             {
                 return _inner.GetLabels();
@@ -302,6 +357,14 @@ namespace RealLifeOverhaul.Careers
                 return _state == PlayerActivityState.Running
                     ? _stop ?? (_stop = new[] { new ButtonInfo("StopRealLifeClass", "reallife_job_skip_stop", "gray", Finish, PlayerAction.Cancel) })
                     : null;
+            }
+            if (_offer.Only)
+            {
+                return _buttons ?? (_buttons = new[]
+                {
+                    new ButtonInfo("CancelRealLifeClass", "common_cancel", "gray", Close, PlayerAction.Cancel),
+                    new ButtonInfo("RealLifeClass", _offer.Key, _offer.Arguments, "blue", Press, PlayerAction.SecondaryInteract, _offer.Can)
+                });
             }
             ButtonInfo[] game = _inner.GetButtons();
             if (_inner.GetState() != PlayerActivityState.NotStarted)
@@ -321,15 +384,15 @@ namespace RealLifeOverhaul.Careers
             return _buttons;
         }
 
-        public bool HasFastForward() => _mine ? _state == PlayerActivityState.Running : _inner.HasFastForward();
+        public bool HasFastForward() => _mine ? _state == PlayerActivityState.Running : !_offer.Only && _inner.HasFastForward();
 
-        public bool HasTimeMachine() => _mine ? _state == PlayerActivityState.Running : _inner.HasTimeMachine();
+        public bool HasTimeMachine() => _mine ? _state == PlayerActivityState.Running : !_offer.Only && _inner.HasTimeMachine();
 
         public int GetRemainingMinutesForTimeMachine() => _mine ? Math.Max(0, _length - _done) : _inner.GetRemainingMinutesForTimeMachine();
 
         public Timestamp GetTimeMachineGoal() => _mine ? TimeHelper.Now().AddMinutes(GetRemainingMinutesForTimeMachine()) : _inner.GetTimeMachineGoal();
 
-        public bool HasProgressBar() => _mine ? _state == PlayerActivityState.Running : _inner.HasProgressBar();
+        public bool HasProgressBar() => _mine ? _state == PlayerActivityState.Running : !_offer.Only && _inner.HasProgressBar();
 
         public float GetProgressBarPercentageValue() => _mine ? 100f * _done / Math.Max(1, _length) : _inner.GetProgressBarPercentageValue();
 
@@ -343,7 +406,7 @@ namespace RealLifeOverhaul.Careers
             return ("playeractivityui_time_remaining", new { hours = left / 60, minutes = left % 60 });
         }
 
-        public bool HasSlider() => !_mine && _inner.HasSlider();
+        public bool HasSlider() => !_mine && !_offer.Only && _inner.HasSlider();
 
         public int GetMinSliderValue() => _inner.GetMinSliderValue();
 

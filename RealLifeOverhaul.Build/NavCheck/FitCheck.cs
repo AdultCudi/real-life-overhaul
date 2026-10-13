@@ -6,10 +6,9 @@ using RealLifeOverhaul.Tech;
 
 // The fit-out of the mod's buildings (FitOut/FitRules.cs, FitPlanner.cs, FitPlanner.Zones.cs): a tech company's
 // headquarters behind its lobby, from bare floor and round the game's own design; a station's bare back office round its
-// counter and cell; a data centre's floor round its server hall and its drive-in bay; the university's lecture rooms
-// and library. Every plan: nothing on anything else, nothing at a door or in the street wall's windows, every seat and
-// every piece walked up to reached from the door, no corner of the floor closed off, the floor fitted out to its edges,
-// the same plan every time, and quickly.
+// counter and cell; a data centre's floor round its server hall and its drive-in bay. Every plan: nothing on anything
+// else, nothing at a door or in the street wall's windows, every seat and every piece walked up to reached from the
+// door, no corner of the floor closed off, the floor fitted out to its edges, the same plan every time, and quickly.
 internal static partial class Program
 {
     private static RoomGrid FitFloor(float wide, float deep)
@@ -340,7 +339,7 @@ internal static partial class Program
             FitKeeps(g, site, plan, at);
             Check(plan.Seats(FitUse.Desk) >= 4 && FitZones(plan, FitPlanner.ZoneType.Filing) >= 1, at + "desks and filing (" + plan.Seats(FitUse.Desk) + " desks)");
             Check(plan.BareAfter <= plan.FloorArea * 0.12f, at + "no floor left bare (" + plan.BareAfter.ToString("F0") + " of " + plan.FloorArea.ToString("F0") + " square metres)");
-            Check(FitCount(plan, "rlo:closetrack") == 0 && FitCount(plan, "board01") == 0, at + "nothing of another kind of building");
+            Check(FitCount(plan, "rlo:closetrack") == 0, at + "nothing of another kind of building");
         }
 
         // ---------------------------------------------------------------- a data centre's floor round its hall, with a drive-in bay: 30 x 24 m
@@ -386,19 +385,6 @@ internal static partial class Program
             Check(apart, at + "nothing stands within 0.9 m of the player's furniture");
         }
 
-        // ---------------------------------------------------------------- the university: 24 x 30 m
-        {
-            RoomGrid g = FitFloor(24f, 30f);
-            FitSite site = FitSiteAt(FitKind.Campus, 12f, 0.35f, 0f, 1f);
-            var plan = new FitPlan();
-            FitPlanner.Plan(g, site, null, plan);
-            string at = "fit: the university: ";
-            FitKeeps(g, site, plan, at);
-            Check(FitZones(plan, FitPlanner.ZoneType.Lecture) >= 1 && FitCount(plan, "board01") >= 1, at + "a lecture room with its board (" + FitZones(plan, FitPlanner.ZoneType.Lecture) + ")");
-            Check(FitZones(plan, FitPlanner.ZoneType.Library) >= 1, at + "a library");
-            Check(plan.BareAfter <= plan.FloorArea * 0.12f, at + "no floor left bare (" + plan.BareAfter.ToString("F0") + " of " + plan.FloorArea.ToString("F0") + ")");
-        }
-
         // ---------------------------------------------------------------- a room with a back room through a doorway, and a column: nothing closes either off
         {
             RoomGrid g = FitFloor(18f, 20f);
@@ -432,15 +418,15 @@ internal static partial class Program
             Check(few.Total == 3 && few.AtDesks == 3, "fit: with three people to spare, all three at desks (" + few.AtDesks + ")");
             FitCrew none = FitCrew.For(FitKind.CivicOffice, 6, 0, 0, 2, 4, 0);
             Check(none.Total == 0, "fit: with nobody to spare, nobody");
-            FitCrew campus = FitCrew.For(FitKind.Campus, 24, 0, 2, 0, 6, 12);
-            Check(campus.AtDesks >= 4 && campus.Walking == 2 && campus.InLounge == 1, "fit: students at the desks, two walking, one in the lounge");
+            FitCrew office = FitCrew.For(FitKind.CivicOffice, 12, 0, 0, 2, 6, 12);
+            Check(office.AtDesks == 4 && office.Walking == 1 && office.Waiting == 1, "fit: a city office's clerks at the desks, one walking, somebody waiting");
         }
 
         // Every piece a plan of a kind lays out is among the pieces the game side makes ready for that kind.
         {
             bool listed = true;
             string missing = null;
-            foreach (FitKind kind in new[] { FitKind.TechOffice, FitKind.CivicOffice, FitKind.Campus, FitKind.DataCentre })
+            foreach (FitKind kind in new[] { FitKind.TechOffice, FitKind.CivicOffice, FitKind.DataCentre })
             {
                 foreach (float wide in new[] { 9f, 16f, 24f })
                 {
@@ -527,11 +513,6 @@ internal static partial class Program
         var withDesign = new FitPlan();
         FitPlanner.Plan(g, site, FitDesign(21f, 29f, out _), withDesign);
         DrawFit(g, site, withDesign, "the same round a design: " + withDesign.KeptDesign + " of the design's pieces, " + withDesign.Zones + " rooms of the plan's");
-        RoomGrid u = FitFloor(24f, 30f);
-        FitSite campus = FitSiteAt(FitKind.Campus, 12f, 0.35f, 0f, 1f);
-        var lectures = new FitPlan();
-        FitPlanner.Plan(u, campus, null, lectures);
-        DrawFit(u, campus, lectures, "the university of 24 x 30 m: " + lectures.Zones + " rooms");
         RoomGrid dc = FitFloor(30f, 24f);
         FitSite centre = FitSiteAt(FitKind.DataCentre, 0.35f, 12f, 1f, 0f);
         centre.Windows = false;

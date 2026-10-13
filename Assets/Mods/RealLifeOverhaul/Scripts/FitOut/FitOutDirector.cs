@@ -13,8 +13,9 @@ namespace RealLifeOverhaul.FitOut
     /// frame (<see cref="FitView"/>: the tech companies' headquarters behind their lobbies, Tech/Sites/TechSites; the bare
     /// back of a police station, Law/StationInterior.Fill.cs; a data centre's floor round its server hall,
     /// Tech/Sites/ServerRoomView), and the fit-out of the mod's other named buildings when the player is inside one that
-    /// stands empty: the university (Careers/CampusBuilding: lecture rooms, a library, study desks, a lounge) and, should
-    /// one be walked into, the City Utilities office and the courthouse (a city office's desks, filing, waiting seats).
+    /// stands empty: should one be walked into, the City Utilities office and the courthouse (a city office's desks,
+    /// filing, waiting seats). The university is not among them: inside it is the game's own furnished school
+    /// (Careers/CampusInterior), and its registration while the player is there holds the school's business.
     ///
     /// Only a building the mod names as its own (Core/SpecialBuildings), with its feature on, and standing empty: nobody
     /// rents or owns it, not the player, not another player in a Going Public session, not a rival, and nothing of the
@@ -181,10 +182,6 @@ namespace RealLifeOverhaul.FitOut
             }
             switch (holder)
             {
-                case "campus":
-                    kind = FitKind.Campus;
-                    name = "the university";
-                    return Careers.CareersDirector.UniversityOpen;
                 case "utilities_office":
                     name = "the City Utilities office";
                     return Settings.Utilities;
@@ -192,7 +189,7 @@ namespace RealLifeOverhaul.FitOut
                     name = "the courthouse";
                     return JusticeSettings.Enabled && JusticeSettings.Courthouse;
                 default:
-                    return false;   // (the headquarters and the police stations fit out their own; the hotels are never walked into)
+                    return false;   // (the headquarters and the police stations fit out their own; the university is the game's school; the hotels are never walked into)
             }
         }
 
@@ -225,8 +222,7 @@ namespace RealLifeOverhaul.FitOut
             _request.Floor = floor;
             _request.Door = door;
             _request.Inward = inward;
-            // No design of the game's furnishes a university or a city office: the plan's own rooms do, on the walls and
-            // floors of an office design of the game's for the unit.
+            // A city office is furnished by the plan's own rooms, on the walls and floors of an office design of the game's for the unit.
             _request.LookKinds.Add("LawFirm");
             _request.LookKinds.Add("Headquarters");
             _view.Begin(_request, this);
