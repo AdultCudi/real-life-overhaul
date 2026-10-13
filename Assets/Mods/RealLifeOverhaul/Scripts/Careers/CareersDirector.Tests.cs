@@ -364,6 +364,45 @@ namespace RealLifeOverhaul.Careers
                 Fault("a test", e);
             }
         }
+        /// <summary>A degree passed now with a first (the first one under way, else law), and its ceremony set for today.</summary>
+        public void TestGraduate()
+        {
+            string why;
+            if (!TestReady(out why))
+            {
+                return;
+            }
+            if (!UniversityOpen)
+            {
+                Notifications.Show(NotificationType.Warning, "reallife_degrees_test_off", null, 8f);
+                return;
+            }
+            try
+            {
+                Enrolment e = null;
+                for (int i = 0; i < _study.Courses.Count && e == null; i++)
+                {
+                    e = _study.Courses[i].Def != null && _study.Courses[i].Def.Higher ? _study.Courses[i] : null;
+                }
+                if (e == null)
+                {
+                    e = new Enrolment { Course = StudyCatalogue.Law, Start = Save.Day, Instalments = 3 };
+                    _study.Courses.Add(e);
+                }
+                e.Seen = e.Done = e.Def.Sessions;
+                e.Homework = e.Def.Homework;
+                StudyRules.Sit(e, 75, Save.Day);
+                Results(e, Save.Day, true);
+                _study.GraduationDay = Save.Day;
+                Logger?.Info("Careers test: " + e.Def.Key + " passed with a first, its ceremony today at " + CeremonyHour + ":00.");
+                Changed();
+            }
+            catch (Exception ex)
+            {
+                Fault("a test", ex);
+            }
+        }
+
         /// <summary>Twenty points more in four of the player's skills, one of the trades among them.</summary>
         public void TestSkills()
         {

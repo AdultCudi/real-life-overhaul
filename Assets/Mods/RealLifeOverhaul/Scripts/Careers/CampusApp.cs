@@ -433,6 +433,15 @@ namespace RealLifeOverhaul.Careers
             box.Title(CareersText.T("reallife_campus_studying_title"));
             box.Line(CareersText.T("reallife_campus_studying_about", "early", StudyCatalogue.ArriveEarlyMinutes.ToString(), "late", StudyCatalogue.LateMinutes.ToString()));
             box.Line(CareersText.Pair("reallife_campus_sum_week", CareersText.Minutes(f.WeekOf == (day - 1) / 7 ? f.WeekMinutes : 0)));
+            if (f.GraduationCourse >= 0 && f.GraduationDay >= day)
+            {
+                box.Line(CareersText.Fill("reallife_campus_ceremony", "course", CareersText.Course(f.GraduationCourse), "day", CareersText.Day(f.GraduationDay),
+                    "hour", CareersText.Hour(CareersDirector.CeremonyHour), "place", _director.PlaceOf(StudyCatalogue.Find(f.GraduationCourse), StudyMode.FullTime)));
+                if (f.GraduationDay == day)
+                {
+                    InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_campus_button_graduate", () => Do(_director.Graduate));
+                }
+            }
             if (f.LoanCents > 0)
             {
                 box.Line(CareersText.Pair("reallife_campus_sum_loan", CareersText.Cents(f.LoanCents)));

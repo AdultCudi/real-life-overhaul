@@ -288,6 +288,7 @@ namespace RealLifeOverhaul.Meta
                 S("jobs").For("jobs").Main("jobs").Opts("job_pay").Also("gig gigs shift wage employment"),
                 S("careers").For("careers").Opt("careers", "jobs").Also("employer promotion rank review"),
                 S("study").For("careers_study").Main("careers_study").Also("school course courses class classes diploma education study learn skill skills homework exam timetable"),
+                S("degrees").For("careers_degrees").Opt("careers_degrees", "careers_study").Also("university degree degrees bachelor master mba law nursing certificate certificates exam student loan grant scholarship graduation tuition fees"),
                 S("projobs").For("careers_jobs").Opt("careers_jobs", "careers_study").Also("profession professional job jobs apply application interview offer salary employer developer lawyer accountant nurse teacher architect engineer rival vacancy vacancies"),
                 S("worklife").For("careers_life").Opt("careers_life", "careers_jobs").Also("review reviews promotion promoted rise raise bonus overtime burnout boss office politics headhunter poached redundancy redundant benefit pension retire retirement options shares conflict interest"),
                 S("ownwork").For("careers_own").Opt("careers_own", "careers_jobs").Also("freelance freelancing contract contracts client clients practice self employed startup found founder spin out colleagues restraint clause non compete side work"),

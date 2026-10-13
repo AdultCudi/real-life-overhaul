@@ -59,6 +59,7 @@ namespace RealLifeOverhaul.Careers
                 CloseSitting();
                 StopWork(true);
                 StopStudy(false, true);
+                CampusGone();
             }
             catch (Exception e)
             {
@@ -121,6 +122,7 @@ namespace RealLifeOverhaul.Careers
             {
                 StopWork(false);
             }
+            CampusTick();
             if (_skip != null && !_skip.Open)
             {
                 _skip = null;

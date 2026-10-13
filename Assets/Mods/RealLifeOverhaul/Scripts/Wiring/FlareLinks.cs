@@ -91,6 +91,7 @@ namespace RealLifeOverhaul
                 FlareBridges.PublicStanding = () => LawState.Loaded ? Standing.Public : FlareRules.ReputationStart;
                 FlareBridges.Civic = Civic;
                 FlareBridges.Career = Career;
+                FlareBridges.Graduated = () => Careers.CareersDirector.Instance != null ? Careers.CareersDirector.Instance.GraduatedToday() : null;
                 PhotoMode.Saved += PictureSaved;
                 SocialLinks.OutingDone = OutingDone;
                 Reputation.Deed += Deed;

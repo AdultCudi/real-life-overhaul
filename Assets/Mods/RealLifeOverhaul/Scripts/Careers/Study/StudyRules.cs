@@ -369,6 +369,17 @@ namespace RealLifeOverhaul.Careers
             return c == null ? 0 : Math.Max(StudyCatalogue.RetakeFeeLeast, c.Fee * StudyCatalogue.RetakeFeeShare / 1000);
         }
 
+        /// <summary>The day of a degree's graduation: the first Saturday at least two days after the result.</summary>
+        public static int CeremonyDay(int resultDay)
+        {
+            int on = resultDay + 2;
+            while ((on - 1) % 7 != 5)
+            {
+                on++;
+            }
+            return on;
+        }
+
         // ---------------------------------------------------------------- starting a course
 
         /// <summary>Whether the player may start a course now, and why not.</summary>

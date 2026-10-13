@@ -867,6 +867,11 @@ namespace RealLifeOverhaul.Careers
                 _study.LoanCents -= repay;
                 _study.LoanRepaid += repay;
                 CareersGame.Take(repay / 100f, LoanKey, name);
+                if (_study.LoanCents <= 0)
+                {
+                    _study.LoanCents = 0;
+                    LoanCleared();
+                }
             }
             PaidMore(j, cents, overtime);
         }
@@ -993,6 +998,8 @@ namespace RealLifeOverhaul.Careers
         partial void WorkedMore(Job j, Sitting s, int minutes, bool whole, int day);
 
         partial void PaidMore(Job j, long cents, bool overtime);
+
+        partial void LoanCleared();
 
         /// <summary>A notification that opens the Career app on a tab with a row picked.</summary>
         internal void Tell2(NotificationType type, string key, Dictionary<string, string> data, int tab, string pick)

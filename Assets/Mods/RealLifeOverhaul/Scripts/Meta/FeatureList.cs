@@ -656,6 +656,15 @@ namespace RealLifeOverhaul.Meta
                 .Data(Careers.CareersStore.Key, Careers.CareersStore.NewsKey)
                 .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
+            // The university: degrees, certificates, the student loan and graduation day. It runs with the courses.
+            Careers.CareersGuide.AddDegreeFacts(Features.Add("careers_degrees", "reallife_meta_title_careers_degrees")
+                .About("reallife_guide_careers_degrees_about").Help("reallife_guide_careers_degrees")
+                .Owns(Settings.CareersDegreesId)
+                .Test("reallife_degrees_test_graduate")
+                .Objects("RealLifeOverhaul University Sign")
+                .Data(Careers.CareersStore.Key)
+                .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
             // Professional jobs: the city's employers take the player on by qualifications and skills, in the Career app. It runs
             // with the courses, whose skills it reads. Off, no vacancies; a job held is kept in the save.
             Careers.CareersGuide.AddWorkFacts(Features.Add("careers_jobs", "reallife_meta_title_careers_jobs")

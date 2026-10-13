@@ -41,6 +41,30 @@ namespace RealLifeOverhaul.Careers
                 .Fact("study_exam_close", () => CareersText.Hour(StudyCatalogue.ExamCloses));
         }
 
+        public static void AddDegreeFacts(Feature f)
+        {
+            f.Fact("degrees_list", () => Courses(CourseKind.Degree))
+                .Fact("degrees_after", () => Courses(CourseKind.Postgrad))
+                .Fact("degrees_certs", () => Courses(CourseKind.Certificate))
+                .Fact("degrees_pass", () => Whole(StudyCatalogue.DegreePass))
+                .Fact("degrees_lower", () => Whole(StudyCatalogue.LowerSecond))
+                .Fact("degrees_upper", () => Whole(StudyCatalogue.UpperSecond))
+                .Fact("degrees_first", () => Whole(StudyCatalogue.First))
+                .Fact("degrees_parts", () => Whole(StudyCatalogue.InstalmentsHigher))
+                .Fact("degrees_merit", () => Mille(StudyCatalogue.MeritGrantShare))
+                .Fact("degrees_need", () => Mille(StudyCatalogue.NeedGrantShare))
+                .Fact("degrees_need_cash", () => Guide.Money(Prices.At(StudyCatalogue.NeedGrantCash)))
+                .Fact("degrees_council", () => Mille(StudyCatalogue.CouncilShare))
+                .Fact("degrees_grant_most", () => Mille(StudyCatalogue.GrantMost))
+                .Fact("degrees_loan_rate", () => Bp(StudyCatalogue.LoanRateBp))
+                .Fact("degrees_loan_share", () => Bp(StudyCatalogue.LoanShareBp))
+                .Fact("degrees_loan_threshold", () => Guide.Money(Prices.At(StudyCatalogue.LoanThreshold) / 100f))
+                .Fact("degrees_loan_most", () => Guide.Money(Prices.At(StudyCatalogue.LoanMost)))
+                .Fact("degrees_part_time", () => CareersText.Timetable(StudyCatalogue.PartTimeDaysUniversity, StudyCatalogue.PartTimeHourUniversity))
+                .Fact("degrees_ceremony", () => CareersText.Hour(CareersDirector.CeremonyHour))
+                .Fact("degrees_window", () => Whole(StudyCatalogue.ExamWindowDays * 2));
+        }
+
         public static void AddWorkFacts(Feature f)
         {
             f.Fact("work_professions", Professions)

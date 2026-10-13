@@ -42,6 +42,9 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The city's economy: 0 boom, 1 steady, 2 slowdown, 3 recession. Default: steady.</summary>
         public static Func<int> Cycle;
 
+        /// <summary>The student loan on the credit file: 0 money borrowed (the amount, whole), 1 paid off (Economy's credit rating). Default: nothing is told.</summary>
+        public static Action<int, int> Credit;
+
         /// <summary>A former employer files a civil claim over a restraint clause: the amount (whole money) and its name; the claim's number or 0 (Justice). Default: none.</summary>
         public static Func<int, string, int> Claim;
 
@@ -139,6 +142,7 @@ namespace RealLifeOverhaul.Careers
         {
             Board = null;
             Claim = null;
+            Credit = null;
             TechFirm = null;
             JoinFirm = null;
             TookAd = null;

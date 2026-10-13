@@ -180,6 +180,8 @@ internal static partial class Program
         Check(!StudyRules.ExamMissed(lapse, 17) && StudyRules.ExamMissed(lapse, 18) && lapse.Stage == (int)EnrolStage.Retake, "study: an exam not sat in its days counts as a fail");
         var pass = new Enrolment { Course = plumber.Id, Stage = (int)EnrolStage.Exam };
         Check(StudyRules.Sit(pass, 66, 12) && pass.Stage == (int)EnrolStage.Passed && pass.Grade == 2 && pass.Ended == 12, "study: a pass keeps its grade and day");
+        Check(StudyRules.CeremonyDay(1) == 6 && StudyRules.CeremonyDay(5) == 13 && StudyRules.CeremonyDay(6) == 13 && (StudyRules.CeremonyDay(30) - 1) % 7 == 5 && StudyRules.CeremonyDay(30) >= 32,
+            "study: graduation is the first Saturday at least two days after the result");
         Check(StudyRules.RetakeFee(plumber) == Math.Max(StudyCatalogue.RetakeFeeLeast, plumber.Fee * StudyCatalogue.RetakeFeeShare / 1000)
               && StudyRules.RetakeFee(StudyCatalogue.Find(StudyCatalogue.DrivingRefresher)) == StudyCatalogue.RetakeFeeLeast, "study: a retake costs a share of the fee, never under the least");
     }

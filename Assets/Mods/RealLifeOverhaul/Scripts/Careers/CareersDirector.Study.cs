@@ -715,24 +715,17 @@ namespace RealLifeOverhaul.Careers
         /// <summary>True while the student loan can be used (the university's part).</summary>
         private static bool LoanOn => UniversityOpen;
 
-        /// <summary>True while the university's part is on: degrees, certificates and the student loan.</summary>
-        public static bool UniversityOpen => false;
 
         private void Lend(Enrolment e, int whole)
         {
             e.Loan += whole;
             _study.LoanCents += whole * 100L;
             _study.LoanTaken += whole * 100L;
+            Borrowed(whole);
         }
+
+        partial void Borrowed(int whole);
 
         partial void PassedMore(Enrolment e, int day);
-
-        private bool AtUniversity() => false;
-
-        private string CampusWhere(Campus campus) => CareersText.Campus(campus);
-
-        private void GraduationDay(int day)
-        {
-        }
     }
 }

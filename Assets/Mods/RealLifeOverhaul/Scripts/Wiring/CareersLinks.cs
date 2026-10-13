@@ -26,6 +26,8 @@ namespace RealLifeOverhaul
         ///   Claim         a former employer's claim over a restraint clause is a civil suit of Justice's (RestraintClaims.File)
         ///   TechFirm, JoinFirm  colleagues who leave with the player join a tech firm of theirs on the payroll (TechDirector.JoinPayroll)
         ///   Founder       the venture firms read the player's record as a founder at a pitch (TechBridges.Founder)
+        ///   Credit        the student loan is an account of the credit file: borrowing and paying it off are on the record
+        ///   Council       the council's grants policy covers tuition too: a subsidy when it is up, a surcharge when it is down (CivicPolicy)
         ///   the paper     education's and careers' stories, chained on to the City Ledger's other pieces (News.Extra)
         ///   the Planner   a source of its own: the classes of the courses under way, and their exams
         ///
@@ -51,6 +53,9 @@ namespace RealLifeOverhaul
                 CareersBridges.Record = () => Standing.HasRecord;
                 CareersBridges.Cycle = () => Economy.CityEconomy.Running ? (int)Economy.CityEconomy.State : 1;
                 CareersBridges.Claim = (amount, employer) => RestraintClaims.File(amount, employer);
+                CareersBridges.Credit = Credit;
+                CareersBridges.Council = () => CivicPolicy.Position(Lever.Grants);
+                Economy.CreditLedger.Register(Loan);
                 CareersBridges.TechFirm = TechFirm;
                 CareersBridges.JoinFirm = (place, role, level, count) => TechDirector.Instance != null && SaveGameManager.Current != null
                     ? TechDirector.Instance.JoinPayroll(place, role, level, count, SaveGameManager.Current.Day) : 0;
@@ -66,6 +71,7 @@ namespace RealLifeOverhaul
             {
                 CareersBridges.Reset();
                 TechBridges.Founder = null;
+                Economy.CreditLedger.Unregister(Loan);
                 News.Extra = _paperBefore;
                 _paperBefore = null;
             }
@@ -135,6 +141,52 @@ namespace RealLifeOverhaul
                 {
                     Fault("CareersLinks.Reputation", e);
                     return 0;
+                }
+            }
+
+            // ---------------------------------------------------------------- the student loan on the credit file
+
+            /// <summary>The student loan as one of the credit file's accounts: what is owed, no instalments (it is taken from pay).</summary>
+            private sealed class StudentLoan : Economy.ICreditAccount
+            {
+                public string Key => "studentloan";
+                public string NameKey => "reallife_study_loan_account";
+                public float Balance
+                {
+                    get
+                    {
+                        StudyFile f = CareersDirector.Instance != null ? CareersDirector.Instance.Study : null;
+                        return f != null ? f.LoanCents / 100f : 0f;
+                    }
+                }
+                public float Limit => Prices.At(StudyCatalogue.LoanMost);
+                public float PaymentDue => 0f;
+            }
+
+            private static readonly StudentLoan Loan = new StudentLoan();
+
+            private static void Credit(int kind, int amount)
+            {
+                try
+                {
+                    if (!Economy.CreditLedger.Ready || SaveGameManager.Current == null)
+                    {
+                        return;
+                    }
+                    Economy.CreditLedger.Register(Loan);   // (again, if the credit file was opened afresh since the city loaded)
+                    int day = SaveGameManager.Current.Day;
+                    if (kind == 0)
+                    {
+                        Economy.CreditLedger.Post(Economy.CreditKind.NewCredit, amount, day, Loan.Key);
+                    }
+                    else
+                    {
+                        Economy.CreditLedger.Post(Economy.CreditKind.PaidOff, 0, day, Loan.Key);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.Credit", e);
                 }
             }
 
@@ -362,7 +414,7 @@ namespace RealLifeOverhaul
                     WorkFile w = CareersDirector.Instance.Work;
                     for (int i = 0; i < w.Contracts.Count; i++)
                     {
-                        Contract c = w.Contracts[i];
+                        Careers.Contract c = w.Contracts[i];
                         if (c.Stage != (int)ContractStep.Taken)
                         {
                             continue;
@@ -401,6 +453,27 @@ namespace RealLifeOverhaul
                 {
                     CareersDirector director = CareersDirector.Instance;
                     StudyFile f = director.Study;
+                    if (f.GraduationCourse >= 0 && f.GraduationDay >= fromDay && f.GraduationDay <= toDay)
+                    {
+                        PlannerEntry g = into.Add(Id, 9000 + f.GraduationCourse, 0, PlannerCategory.Work, f.GraduationDay);
+                        if (g != null)
+                        {
+                            g.Start = CareersDirector.CeremonyHour * 60;
+                            g.End = (CareersDirector.CeremonyHour + CareersDirector.CeremonyMinutes / 60) * 60;
+                            g.Attend = true;
+                            CampusBuilding u = director.University;
+                            if (u != null && u.Usable)
+                            {
+                                g.Street = u.Street;
+                                g.Number = u.Number;
+                            }
+                            if (into.WantText)
+                            {
+                                g.Title = CareersText.T("reallife_planner_graduation_title", "course", CareersText.Course(f.GraduationCourse));
+                                g.What = CareersText.T("reallife_planner_graduation_what");
+                            }
+                        }
+                    }
                     for (int i = 0; i < f.Courses.Count; i++)
                     {
                         Enrolment e = f.Courses[i];
@@ -430,6 +503,12 @@ namespace RealLifeOverhaul
                                 p.Start = hour * 60;
                                 p.End = ((hour + c.Hours) % 24) * 60;
                                 p.Attend = true;
+                                CampusBuilding uni = director.University;
+                                if (mode != StudyMode.Distance && c.Campus == Campus.University && uni != null && uni.Usable)
+                                {
+                                    p.Street = uni.Street;
+                                    p.Number = uni.Number;
+                                }
                                 if (mode != StudyMode.Distance && c.Campus == Campus.School)
                                 {
                                     string street;
