@@ -67,18 +67,18 @@ occlusion, and nothing else: no Blender-only shading.
 | | limit | now |
 |---|---|---|
 | triangles, each prop | its own budget, beside its maker in the `PROPS` lists | see the tables below |
-| triangles, all props together | 130 000 | 120 198 (241 props: the two-wheelers are in the bundle whole and in parts, the city bus in parts, its roof apart) |
+| triangles, all props together | 130 000 | 123 232 (262 props: the two-wheelers are in the bundle whole and in parts, the city bus in parts, its roof apart) |
 | materials | 2, shared by everything | 2 |
-| textures | one atlas: 4096 x 2048 colour + 2048 x 1024 mask, BC7 (the bundle check fails on anything else); the two road paint pictures | 14.0 MB of video memory (10.7 + 2.7, and 0.7 for the road paint), 248 regions, 87 % of the atlas used |
-| meshes in memory | | 6.6 MB |
-| bundle on disk | 16 MB | 10.6 MB, loaded once per session, asynchronously |
+| textures | one atlas: 4096 x 2048 colour + 2048 x 1024 mask, BC7 (the bundle check fails on anything else); the two road paint pictures | 14.0 MB of video memory (10.7 + 2.7, and 0.7 for the road paint), 267 regions, 93 % of the atlas used |
+| meshes in memory | | 7.2 MB |
+| bundle on disk | 16 MB | 11.3 MB, loaded once per session, asynchronously |
 
 **Why the ceilings went up** (they were 30 000 triangles, a 2048 x 2048 atlas and 9 MB for 77 props). The first two
 rounds were things in a hand and a cordon. The later rounds are a police station's frontage, bus stops and a bus,
 a fire engine, hotels, street events, home and social life, a garage and a building site: 240 props, among
 them vehicle bodies of 3 700 to 6 300 triangles. None of it is drawn unless a feature places it, a placed prop is one
 instanced draw call with one of two materials, and a scene shows a dozen at most: the totals are what sits in memory,
-not what is rendered. Memory is the real cost: about 6.6 MB of meshes and 14.0 MB of texture, where the game's own
+not what is rendered. Memory is the real cost: about 7.2 MB of meshes and 14.0 MB of texture, where the game's own
 city uses gigabytes. The atlas doubled in width only (BC7 keeps it at one byte a pixel); `PropLibrary` reads exactly
 one bundle with one colour and one mask texture, so a second bundle or a second atlas would have needed code and a
 third material. If the atlas fills again, 4096 x 4096 is the next step (27 MB); nothing else changes.
@@ -555,6 +555,41 @@ Not asked for by code (made for an earlier wish-list; kept because they are done
 Atlas: 28 regions (5 swatches: `site_party_0` .. `_3`, `site_door`; 23 decals), 465 536 pixels with their gutters. One word is one strip that several props share (`site_vote` is on ten props), the stars are geometry. Module total 12 633 triangles.
 <!-- end: site -->
 <!-- end: site -->
+
+### The tech sector's buildings (`scripts\props_tech.py`, painted by `paint_tech.py`, measured by `checks_tech.py`)
+
+**The code is the specification** (`Scripts\Tech\Sites\SiteProps.cs` asks `PropLibrary` for each id and draws a box of
+the same size until the bundle has it; `Scripts\Tech\Sites\SitePlan.cs` and `RoomPlans.cs` lay them out). Nothing is
+lettered on these models: the company's name on the logo wall and the cloud's name on the sign are the mod's own
+lettering in the game's font. The racks' status lights are painted dark on the doors; `dc_leds_a` and `dc_leds_b` lie
+exactly over them and the mod draws them in two materials of its own that it makes blink, out of step with each other.
+
+| id | size (X x Y x Z, Unity) | triangles | material | pivot and facing | use |
+|---|---|---|---|---|---|
+| `dc_rack` | 0.60 x 2.00 x 1.09 | 116 | lit | ground centre of its 0.60 x 1.07 footprint; **front +Z at 0.535** (the handle 0.02 proud) | 42-unit rack of eleven servers; in rows, fronts on a cold aisle |
+| `dc_rack_ai` | 0.60 x 2.00 x 1.20 | 216 | lit | ground centre; front +Z at 0.600 | AI accelerator sleds behind the door, liquid cooling's two pipes and manifold at the back |
+| `dc_rack_network` | 0.60 x 2.45 x 1.09 | 172 | lit | as `dc_rack` | Patch panels, switches and their cables; a cable riser from its top to the tray 2.45 up |
+| `dc_leds_a`, `dc_leds_b` | 0.04 x 1.55 x 0 | 28, 32 | glow (the mod's own) | **a rack's pivot** (0.065 forward on `dc_rack_ai`) | The doors' status lights, 0.002 m proud of the front, in two sets |
+| `dc_cooling` | 1.80 x 1.96 x 0.90 | 70 | lit | ground centre; front +Z | Computer room air conditioner: louvres, panel, filter; at the end of a hot aisle |
+| `dc_ups` | 0.80 x 1.90 x 0.85 | 58 | lit | ground centre; front +Z | Battery cabinet against a side wall |
+| `dc_tray` | 0.46 x 0.58 x 2.00 | 252 | lit | **the middle of the tray's underside**; runs along Z | Ladder tray (0.40 between the rails) with a loom and a fibre duct, hanger rods 0.55 up; 2.45 m over a row, scaled along Z to the row |
+| `dc_floor` | 2.40 x 0.02 x 2.40 | 12 | lit | ground centre | Four by four raised floor tiles; scaled to the panel |
+| `dc_floor_vent` | 0.60 x 0.024 x 2.40 | 12 | lit | ground centre; runs along Z | Four perforated tiles, lying on the panels down a cold aisle |
+| `dc_ops_desk` | 1.60 x 1.21 x 0.80 | 378 | lit | ground centre; **whoever works at it stands at +Z** | Operations desk, top 0.75, three screens of dashboards |
+| `hq_reception` | 2.64 x 1.20 x 0.94 | 282 | lit | ground centre of its 0.90 deep footprint; **visitors at +Z** | Counter 1.10 up, the work surface 0.75 behind; a dark band across the front from 0.25 to 0.35 up (face at z 0.452) that the mod covers in the company's colour |
+| `hq_logo_wall` | 3.42 x 2.61 x 0.30 | 156 | lit | ground centre; front +Z | Free-standing slatted wall; the dark plate 2.50 x 1.10, centred 1.60 up with its face at z 0.080, takes the company's colour and name |
+| `hq_screen` | 1.60 x 0.95 x 0.06 | 58 | lit | **the middle of its back**; front +Z | Wall screen of dashboards, hung with its back on the wall |
+| `tech_rack_small` | 0.60 x 1.20 x 0.82 | 114 | lit | ground centre; front +Z | A server closet rack in a tech office |
+| `tech_bench` | 1.40 x 1.21 x 0.70 | 320 | lit | ground centre; whoever works at it stands at +Z | A developer's desk with two screens of code and a tower |
+| `tech_whiteboard` | 1.81 x 1.21 x 0.08 | 74 | lit | the middle of its back; front +Z | A whiteboard with a sketch of a system and notes |
+| `dc_sign` | 2.40 x 1.42 x 0.40 | 112 | lit | ground centre; read from +Z | Monument sign; a glass plate 2.00 x 0.60 centred 0.95 up, face at z 0.126, for the cloud's name |
+| `dc_booth` | 1.84 x 2.42 x 1.84 | 220 | lit | ground centre; front +Z | Security booth glazed on three sides, its door at the back, SECURITY over the front |
+| `dc_barrier` | 0.48 x 4.45 x 0.40 | 92 | lit | ground centre of the post | A vehicle barrier with its arm raised |
+| `dc_fence` | 2.50 x 2.20 x 0.25 | 192 | lit | ground centre; runs along X | 2.5 m of security fence with an outrigger |
+
+Scenes: `scene_server_room`, `scene_hq_lobby`, `scene_tech_office`, `scene_dc_frontage`. Atlas: 19 regions (4 swatches,
+15 decals), 529 024 pixels with their gutters. Module total 2 966 triangles.
+<!-- end: tech -->
 
 ## Fit to the character
 

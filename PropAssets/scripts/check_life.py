@@ -67,6 +67,9 @@ def top_near(name, x, y, reach=0.03, across=None, below=9.0):
     return float(v[near, 2].max())
 
 
+EXTRA.append("tech")       # the tech sector's buildings (checks_tech.py)
+
+
 def main():
     print("Life props: grips and heights")
     grip("mop", (0, 0, 0.95), (0, 0, 1))

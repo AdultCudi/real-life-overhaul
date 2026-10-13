@@ -1049,6 +1049,9 @@ def extra_modules():
     return [__import__("paint_" + name) for name in names if os.path.exists(os.path.join(HERE, "paint_" + name + ".py"))]
 
 
+EXTRA.append("tech")       # the tech sector's buildings (paint_tech.py): a module of its own, painted after the others
+
+
 def build():
     layers = {"tape": paint_tape()}
     layers.update({name: paint() for name, paint in DECALS.items()})
