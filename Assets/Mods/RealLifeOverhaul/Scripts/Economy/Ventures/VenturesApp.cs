@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Economy.Ventures
     public sealed partial class VenturesApp
     {
         private static readonly string[] TabKeys = { "reallife_ven_tab_investors", "reallife_ven_tab_property" };
+        private const string GuideTitle = "reallife_meta_title_ventures";   // the Guide's page every page of the app points to at its foot
         public static IModLogger Logger;
 
         private readonly VenturesDirector _director;
