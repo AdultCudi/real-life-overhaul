@@ -181,7 +181,9 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       TransitBus       one bus: a van from the traffic pool with a route board, driven by the traffic system on a scripted route, stopped "in point" at the stop
       BusBay           the geometry of a bus bay and nothing else (game-free: NavCheck drives a model bus through it): where the bus stands, the curves in and out
       TransitBays      a bay on the street as it is now: whether its length of the strip is free; the game's parked cars standing in it out of view are taken in
-      TransitRide      the ride itself (fade, the game's time machine, put down at the far end), for bus and subway; TransitState: day pass and ride counts in modData
+      TransitRide      the time a ride takes (fade, the game's time machine, put down at the far end), for bus and subway; TransitState: day pass, ride counts, a fare owed back, in modData
+      BusRider         the bus ride seen: the game's walk to the front door, the fare, board_step up, the validator, the aisle, a seat (strap_hang on a full bus), the pull-away; at the far end up and off by the middle door; every way out
+      BusInside        the inside of the bus as a rider walks it (game-free: EconomyCheck walks every path; PropAssets/checks_service.py measures each place on the mesh), and the ride's fare and fade rules
       SubwayJourney    the game's own subway taking a journey's time: the panel at each entrance, service by the clock (frequency, delays), the day pass, the City Transit contact
       CarDash          what a car needs as one more reading in the game's own vehicle panel (a copy of its "Condition" reading)
       CarGarage        CarRecord (per owned car, in modData by vehicle id), CarRules (every price, interval and chance; game-free)

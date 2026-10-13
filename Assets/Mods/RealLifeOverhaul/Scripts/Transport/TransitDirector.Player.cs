@@ -30,6 +30,11 @@ namespace RealLifeOverhaul
     ///   bus stands, the ride begins. Picked while waiting, the stop is kept and the player gets on by themselves when
     ///   the bus stands, so nobody has to catch the moment. Should the game's window not be copied, the same list stands
     ///   in the middle of the screen (<see cref="GameUi.TravelList"/>).
+    /// - ON THE BUS. The game walks the player to its front door; they pay there, step in, tap their card on the
+    ///   validator, go down the aisle and sit down (on a full bus they stand and hold on), and are seen riding as it
+    ///   pulls away (<see cref="BusRider"/>); then the time passes under a fade. At the far end they get up and off the
+    ///   bus that stands there. Where that cannot be done (the props are older than the bus's inside, no place by its
+    ///   door), the ride is the fade at the stop, as it always was.
     ///
     /// Nothing here runs per frame. On the director's 0.25 s timer the place is tested, and a text is built only
     /// when what it says has changed. The game asks <see cref="Offer"/> only for what the pointer is on.
@@ -116,6 +121,11 @@ namespace RealLifeOverhaul
                 Wire();
             }
             Pointers();
+            if (_rider.Active)
+            {
+                HidePanel();   // (on the way to the bus's door, on the bus, or getting off it)
+                return;
+            }
             if (_ride.Riding || (_picker != null && _picker.IsOpen))
             {
                 return;   // (the city map is up with the stops on it, and the game's clock stands still under it)
@@ -204,7 +214,7 @@ namespace RealLifeOverhaul
                 }
                 standing = _bus.State == TransitBus.Phase.Standing && _bus.Vehicle != null;
             }
-            if (_booked != null && standing && !_busFull && !_seat.Active && _bus.Standing >= 1f && TransitRide.CanStart())
+            if (_booked != null && standing && !_seat.Active && _bus.Standing >= 1f && TransitRide.CanStart())
             {
                 // The stop was picked while waiting: the bus stands, so they get on.
                 TransitStop to = _booked;
@@ -306,7 +316,7 @@ namespace RealLifeOverhaul
             }
             else
             {
-                string first = standing && !_busFull && _booked == null ? ButtonBoard : _booked != null ? ButtonChange : ButtonChoose;
+                string first = standing && _booked == null ? ButtonBoard : _booked != null ? ButtonChange : ButtonChoose;
                 _panel.Buttons(first, _onChoose, true, _sitAt != null && !standing ? ButtonSit : null, _onSit, true);
             }
         }
@@ -453,13 +463,13 @@ namespace RealLifeOverhaul
 
         private string PointerOffer(TransitPointer pointer)
         {
-            if (_failed || !Settings.Buses || _ride.Riding || _seat.Active || (_list != null && _list.IsOpen) || (_picker != null && _picker.IsOpen) || PlayerHelper.IsUsingVehicle || BuildingManager.IsInsideBuilding)
+            if (_failed || !Settings.Buses || _ride.Riding || _rider.Active || _seat.Active || (_list != null && _list.IsOpen) || (_picker != null && _picker.IsOpen) || PlayerHelper.IsUsingVehicle || BuildingManager.IsInsideBuilding)
             {
                 return null;
             }
             if (pointer.What == TransitPointer.Kind.Bus)
             {
-                return _served != null && _bus.State == TransitBus.Phase.Standing && !_busFull ? TransitCta.Board : null;
+                return _served != null && _bus.State == TransitBus.Phase.Standing ? TransitCta.Board : null;
             }
             BusStopDressing dressing = pointer.Dressing;
             if (dressing == null || dressing.Stop == null)
@@ -885,7 +895,7 @@ namespace RealLifeOverhaul
             TransitLine line = TransitMap.Lines[trip.To.Line];
             string what = "the player picks " + StopLabel(trip.To) + " at " + StopLabel(_served) + " (" + (trip.Direct ? "the same bus" : "with a change of bus") + ", "
                           + trip.Metres.ToString("F0") + " m, " + trip.Minutes.ToString("F0") + " game minutes)";
-            if (_bus.State == TransitBus.Phase.Standing && !_busFull && TransitRide.CanStart())
+            if (_bus.State == TransitBus.Phase.Standing && TransitRide.CanStart())
             {
                 Logger?.Info("Transit check (choice): " + what + " while the bus stands: they board now: PASS.");
                 Board(trip.To, "picks " + StopLabel(trip.To) + " from the list");
@@ -894,7 +904,7 @@ namespace RealLifeOverhaul
             _booked = trip.To;
             Notifications.Show(NotificationType.Info, "reallife_transit_booked",
                 new Dictionary<string, string>(2) { { "route", TransitMap.Lines[_served.Line].Number }, { "name", StopName(trip.To) } }, 7f);
-            Logger?.Info("Transit check (choice): " + what + " with no bus to board yet (bus: " + PanelWords() + "): the stop is kept and they board when a bus that is not full stands and they are at the stop (line of the stop: "
+            Logger?.Info("Transit check (choice): " + what + " with no bus to board yet (bus: " + PanelWords() + "): the stop is kept and they board when a bus stands and they are at the stop (line of the stop: "
                          + line.Number + "): PASS.");
         }
 
@@ -955,13 +965,34 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- the ride
 
-        // The fare is paid and the ride begins. False if it cannot begin now, or the fare could not be paid (the game says so).
+        // The ride begins. Seen where it can be (BusRider: the walk to the door, where the fare is paid, the step up, the seat);
+        // else the fare is paid and the ride is the fade at the stop. False if it cannot begin now, or the fare could not be paid (the game says so).
         private bool Board(TransitStop to, string how)
         {
-            if (_served == null || to == null || to == _served || !TransitRide.CanStart() || _bus.State != TransitBus.Phase.Standing || _busFull)
+            if (_served == null || to == null || to == _served || !TransitRide.CanStart() || _bus.State != TransitBus.Phase.Standing || _rider.Active)
             {
                 return false;
             }
+            string why = !_doorFound ? "there is no place on the road at its front door to step in from" : null;
+            if (why == null && !BusRider.Possible(_bus.Vehicle))
+            {
+                why = _bus.Vehicle != null && _bus.Vehicle.HasInside ? "the clips for it cannot be played" : "the props are older than the bus's inside";
+            }
+            if (why == null)
+            {
+                _seat.Abort();
+                if (_rider.Board(_bus, _served, to, _door, _busFull, out why))
+                {
+                    _rideTo = to;
+                    HideHud();
+                    return true;
+                }
+                if (_rider.RefusedFare)
+                {
+                    return false;   // (the game has said why: the fare is more than they have)
+                }
+            }
+            Logger?.Info("Transit check (boarding): the player " + how + " but is not walked onto the bus (" + why + "): the ride is the fade at the stop: FAIL.");
             bool pass = TransitState.HasPass;
             if (!TransitState.Pay(TransitState.BusFare, "reallife_transaction_bus_fare"))
             {
@@ -1002,7 +1033,110 @@ namespace RealLifeOverhaul
                              + " m of road (the straight line times " + TransitTrips.RoadFactor.ToString("F2") + "), " + minutes.ToString("F0") + " game minutes with "
                              + TransitTrips.ChangeMinutes.ToString("F0") + " for the change, " + paid + ": " + (sound ? "PASS" : "FAIL (not a ride to another stop)") + ".");
             }
-            _ride.Begin(minutes, to.Wait, "reallife_transit_ride_fade", RideFaded, RideArrived);
+            _ride.Begin(minutes, to.Wait, "reallife_transit_ride_fade", RideFaded, RideArrived, arriveAboard: _arriveAboard ?? (_arriveAboard = ArriveAboard));
+        }
+
+        private Func<bool> _arriveAboard;
+        private Action _atBlack;
+
+        // At the far end under the fade: the bus that stands at the stop with the player in it (BusRider), if one can.
+        private bool ArriveAboard()
+        {
+            return _rideTo != null && Settings.Buses && !_failed && _rider.ArriveAboard(_seenOff, _rideTo);
+        }
+
+        // ---------------------------------------------------------------- the ride seen (BusRider calls these)
+
+        /// <summary>True while the time of a ride is passing under its fade (TransitRide).</summary>
+        internal bool RideRunning => _ride.Riding;
+
+        /// <summary>The player has reached the bus's front door and paid: they step in.</summary>
+        internal void RiderBoards(TransitStop from, TransitStop to, bool pass)
+        {
+            Logger?.Info("Transit check (boarding): the player is at the front door of the bus at " + StopLabel(from) + " for " + StopLabel(to) + " and "
+                         + (pass ? "shows the day pass" : "pays the fare of " + TransitState.BusFare.ToString("F2")) + ": PASS.");
+            _player = PlayerStep.Riding;
+        }
+
+        /// <summary>The bus has been seen pulling away with the player in it: the time of the ride passes under a fade.</summary>
+        internal void RiderRides(TransitStop from, TransitStop to)
+        {
+            TransitTrip trip = TransitTrips.Between(from, to);
+            _rideTo = to;
+            TransitState.BusRides++;
+            Logger?.Info("Transit check (ride): the player rides from " + StopLabel(from) + " to " + StopLabel(to) + (trip.Direct ? " on the same bus" : " with a change of bus") + ": "
+                         + trip.Metres.ToString("F0") + " m, " + trip.Minutes.ToString("F0") + " game minutes under the fade: " + (to != from && trip.Minutes >= 1f ? "PASS" : "FAIL (not a ride to another stop)") + ".");
+            _ride.Begin(trip.Minutes, to.Wait, "reallife_transit_ride_fade", RideFaded, RideArrived, tap: false, atBlack: _atBlack ?? (_atBlack = _rider.AtBlack),
+                arriveAboard: _arriveAboard ?? (_arriveAboard = ArriveAboard));
+        }
+
+        /// <summary>The player has stepped down off a bus: at the far end it closes its doors and goes once they are clear of it; at the start (they got off again) they are at the stop.</summary>
+        internal void RiderOff(TransitBus bus, bool arriving)
+        {
+            if (arriving)
+            {
+                _offBus = bus;
+                _offAt = Time.time;
+                return;
+            }
+            _player = PlayerStep.None;
+            _panelKey = int.MinValue;
+        }
+
+        /// <summary>A fare given back: the ride did not happen (got off again, ended early, or a save of part of the way was loaded).</summary>
+        internal void RiderFareBack(float fare, string why)
+        {
+            if (fare <= 0f)
+            {
+                return;
+            }
+            bool given = GameManager.ChangeMoneySafe(fare, new TransactionInfo("reallife_transaction_bus_fare_back"), null, null, force: true, showNotification: true);
+            Notifications.Show(NotificationType.Info, "reallife_transit_fare_back", new Dictionary<string, string>(1) { { "fare", TransitText.Money(fare) } }, 6f);
+            Logger?.Info("Transit check (fare back): " + why + ": the fare of " + fare.ToString("F2") + " is given back: " + (given ? "PASS" : "FAIL (the game would not pay it)") + ".");
+        }
+
+        // The bus the player stepped down from at the far end: it goes once they are clear of its door, or after a few seconds.
+        private void SeeOff(float now)
+        {
+            TransitBus bus = _offBus;
+            if (bus == null || bus.State != TransitBus.Phase.Standing || bus.Vehicle == null)
+            {
+                _offBus = null;
+                return;
+            }
+            bus.MiddleDoorPlace(out Vector3 door, out _);
+            float clear = Mathf.Sqrt(CitySpots.Flat(PlayerHelper.GetPosition() - door));
+            if (clear < 1.6f && now - _offAt < 3f)
+            {
+                return;
+            }
+            _offBus = null;
+            bus.Depart();
+            Logger?.Info("Transit check (departure): the bus the player got off closes its doors and leaves " + StopLabel(bus.Stop) + ", the player " + clear.ToString("F1")
+                         + " m from its door: PASS.");
+        }
+
+        internal static void DoorSound(Vector3 at)
+        {
+            JobCast.DoorSound(at);
+        }
+
+        // The reader's beep as the card is held to it.
+        internal static void TapSound()
+        {
+            try
+            {
+                var game = InstanceBehavior<GameManager>.Instance;
+                SfxManager sounds = InstanceBehavior<SfxManager>.Instance;
+                if (sounds != null && game != null && game.playerController != null)
+                {
+                    sounds.PlayAudio(BigAmbitions.SoundSystem.SoundType.PurchaseSuccess, game.playerController.transform.position);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
         }
 
         private void RideFaded()
@@ -1021,11 +1155,17 @@ namespace RealLifeOverhaul
                 return;
             }
             DressNear(to.Sign, true, Time.time);
+            ModState.AddModifier(ModState.MoodUp);
+            Notifications.Show(NotificationType.Info, "reallife_transit_ride_arrived", new Dictionary<string, string>(1) { { "name", StopName(to) } }, 6f);
+            if (_rider.ArrivalBus != null)
+            {
+                Logger?.Info("Transit check (arrival aboard): the bus stands at " + StopLabel(to) + (_rider.ArrivalBus.InBay ? " in its bay" : " in the lane")
+                             + " with the player " + (_rider.Now == BusRider.Step.Arrived ? "in it" : "") + " as the screen clears; they get off by the middle door: PASS.");
+                return;
+            }
             // The bus that brought them pulls away: put on the lane while the screen is still dark (traffic may need a moment to start again).
             _seeOff = to;
             _seeOffBy = Time.time + 1.2f;
-            ModState.AddModifier(ModState.MoodUp);
-            Notifications.Show(NotificationType.Info, "reallife_transit_ride_arrived", new Dictionary<string, string>(1) { { "name", StopName(to) } }, 6f);
             Vector3 at = PlayerHelper.GetPosition();
             float off = Mathf.Sqrt(CitySpots.Flat(at - to.Wait));
             bool onPavement = CitySpots.Pavement(at, 0.3f, out _);
