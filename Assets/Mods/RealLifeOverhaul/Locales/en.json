@@ -16839,7 +16839,7 @@
   "reallife_bus_ride_title": "Bus to {name}",
   "reallife_bus_ride_get_off": "Get off at the next stop",
   "reallife_bus_ride_stay_on": "Stay on",
-  "reallife_bus_ride_bar": "{count} stops to go. Next: {name}",
+  "reallife_bus_ride_bar": "Next: {name}. Stops to go: {count}",
   "reallife_bus_ride_bar_last": "Next stop: {name}",
   "reallife_bus_ride_bar_here": "At {name}",
   "reallife_bus_ride_getting_off": "You will get off at {name}.",
