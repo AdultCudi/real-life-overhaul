@@ -11776,7 +11776,7 @@
   "reallife_law_station_furniture": "Furnished police stations",
   "reallife_opt_tip_law_station_furniture": "The station is furnished with the game's own desks, computers, lockers, plants and lamps, and the cell has a toilet. Off, only the counter, bench, desks and cell.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Buses: you are seen getting on and off. Board and you walk to the front door, pay, step in, tap your card on the validator and sit down by the middle door, or stand and hold a strap when the bus is full. You ride as it pulls away, and from above its roof is taken off so that you can see in. At your stop the doors open, you get up and step off by the middle door, and the bus leaves. A full bus now takes you, standing.",
+  "reallife_changes_next": "Nothing yet.",
   "reallife_changes_002_4_title": "0.2.4",
   "reallife_changes_002_4": "Each of the city's banks has its own app on the phone, under the game's name for it: your current account and statement, the loans you owe that bank with paying part or all of one, your card, what it offers you today and how it sees your rating. The banks' terms differ a little, so choosing one matters, and under a rating of 580 none of them lends. The mod's contacts have real pictures from the game: people show their faces, and services show a logo. Contacts has a search box at the top. Police stations are furnished with the game's own furniture: desks with computers, lockers, a water cooler, plants, a clock, lamps, and a toilet in the cell. Fixed: with all of the mod's apps on, the row of apps at the top of the full screen menu ran under the money and the date and off the screen; it now has pages, centred between the app's name and the money, turned with the wheel or the dots. Fixed: on the city map, a row of the mod's (Courthouse, Custom shops and the rest) could be unticked while its places stayed on the map; the places now follow the tick you see.",
   "reallife_rota_box_stock_ok": "Its goods keep up with the advised plan.",
@@ -13815,5 +13815,7 @@
   "reallife_changes_004_6_title": "0.4.6",
   "reallife_changes_004_6": "District view on the city map: ten new rows in its filter list tint each district by wealth, rents, property prices, footfall and demand, crime, your standing, power and water, the internet, competition or the council. Beside the filters a window gives the colours' key, a card with every figure for the district under the pointer, and the districts in order. The Guide has a page on it.",
   "reallife_transaction_bus_fare_back": "Bus fare given back",
-  "reallife_transit_fare_back": "The bus fare of {fare} is given back: you did not ride."
+  "reallife_transit_fare_back": "The bus fare of {fare} is given back: you did not ride.",
+  "reallife_changes_004_7_title": "0.4.7",
+  "reallife_changes_004_7": "Buses: you are seen getting on and off. Board and you walk to the front door, pay, step in, tap your card on the validator and sit down by the middle door, or stand and hold a strap when the bus is full. You ride as it pulls away, and from above its roof is taken off so that you can see in. At your stop the doors open, you get up and step off by the middle door, and the bus leaves. A full bus now takes you, standing."
 }
