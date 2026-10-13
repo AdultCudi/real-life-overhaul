@@ -68,11 +68,12 @@ namespace RealLifeOverhaul.Tech
             }
             _picked = null;
             box.Title(TechText.T("reallife_roles_team_title"));
-            box.Line(TechText.T("reallife_roles_team_about"));
-            box.Line(TechText.Pair("reallife_roles_sum_people", people.Count.ToString()));
             box.Line(TechText.Pair("reallife_roles_sum_waiting", waiting.ToString()));
+            box.Line(TechText.Pair("reallife_roles_sum_people", people.Count.ToString()));
             box.Line(TechText.Pair("reallife_roles_sum_leaving", leaving.ToString()));
             box.Line(TechText.Pair("reallife_roles_sum_morale", people.Count > 0 ? TechText.Mille(morale / people.Count) : "-"));
+            box.Line(TechText.T("reallife_roles_team_about"));
+            Meta.Guide.Point(box, PeopleGuide);
             return RolesColumns.Team;
         }
 
@@ -129,6 +130,19 @@ namespace RealLifeOverhaul.Tech
             Profile p = person.File;
             RoleDef r = p.Def;
             box.Title(person.Name);
+            bool offer = TalentRules.OfferOpen(p, day);
+            if (offer)
+            {
+                box.Line(TechText.Fill("reallife_roles_file_offer", "rival", p.PoachBy, "percent", TechText.Bp(p.PoachBp), "day", p.PoachDay.ToString()));
+            }
+            else if (p.RaiseAsk > 0)
+            {
+                box.Line(TechText.Fill("reallife_roles_file_asks", "percent", TechText.Bp(p.RaiseAsk), "day", p.AskEnd.ToString()));
+            }
+            else if (p.NoticeEnd > 0)
+            {
+                box.Line(TechText.T(LeaveKey(p), "day", p.NoticeEnd.ToString()));
+            }
             box.Line(TechText.Fill("reallife_roles_file_role", "role", TechText.Role(p.Role), "level", TechText.Level(p.Level), "main", TechText.Percent(person.MainPoints),
                 "payroll", person.Game == null ? TechText.T("reallife_roles_file_payroll") : string.Empty));
             box.Line(TechText.Fill("reallife_roles_file_skills", "a", TechText.Skill(r.SkillA), "a_score", TechText.Score(p.A), "b", TechText.Skill(r.SkillB), "b_score", TechText.Score(p.B)));
@@ -139,29 +153,27 @@ namespace RealLifeOverhaul.Tech
             box.Line(p.Rating > 0
                 ? TechText.Fill("reallife_roles_file_review", "rating", p.Rating.ToString(), "day", p.ReviewDay.ToString())
                 : TechText.T("reallife_roles_file_review_none", "day", p.ReviewDay.ToString()));
-            Transform answer = box.ButtonRow();
             string key = p.Id;
-            if (TalentRules.OfferOpen(p, day))
+            if (offer || p.RaiseAsk > 0)
             {
-                box.Line(TechText.Fill("reallife_roles_file_offer", "rival", p.PoachBy, "percent", TechText.Bp(p.PoachBp), "day", p.PoachDay.ToString()));
-                InfoBox.Button(answer, InfoBox.Positive, "reallife_roles_button_match", () => Do(() => _director.AnswerRival(key, true)));
-                InfoBox.Button(answer, InfoBox.Negative, "reallife_roles_button_let_them", () => Do(() => _director.AnswerRival(key, false)));
-            }
-            else if (p.RaiseAsk > 0)
-            {
-                box.Line(TechText.Fill("reallife_roles_file_asks", "percent", TechText.Bp(p.RaiseAsk), "day", p.AskEnd.ToString()));
-                int ask = p.RaiseAsk;
-                InfoBox.Button(answer, InfoBox.Positive, "reallife_roles_button_give", () => Do(() => _director.GiveRise(key, ask)));
-                InfoBox.Button(answer, InfoBox.Negative, "reallife_roles_button_refuse", () => Do(() => _director.RefuseRise(key)));
-            }
-            else if (p.NoticeEnd > 0)
-            {
-                box.Line(TechText.T(LeaveKey(p), "day", p.NoticeEnd.ToString()));
+                Transform answer = box.ButtonRow();
+                if (offer)
+                {
+                    InfoBox.Button(answer, InfoBox.Positive, "reallife_roles_button_match", () => Do(() => _director.AnswerRival(key, true)));
+                    InfoBox.Button(answer, InfoBox.Negative, "reallife_roles_button_let_them", () => Do(() => _director.AnswerRival(key, false)));
+                }
+                else
+                {
+                    int ask = p.RaiseAsk;
+                    InfoBox.Button(answer, InfoBox.Positive, "reallife_roles_button_give", () => Do(() => _director.GiveRise(key, ask)));
+                    InfoBox.Button(answer, InfoBox.Negative, "reallife_roles_button_refuse", () => Do(() => _director.RefuseRise(key)));
+                }
             }
             Transform more = box.ButtonRow();
             InfoBox.Button(more, InfoBox.Positive, "reallife_roles_button_career", () => Page(PageCareer));
             InfoBox.Button(more, InfoBox.Additional, "reallife_roles_button_contract", () => Page(PageContract));
             InfoBox.Button(more, InfoBox.Additional, "common_close", ClosePick);
+            Meta.Guide.Point(box, PeopleGuide);
         }
 
         private static string LeaveKey(Profile p)
@@ -218,17 +230,14 @@ namespace RealLifeOverhaul.Tech
                 int feeA = (int)((long)Prices.At(TalentRules.CourseFee(p.A / 1000)) * share / 10000), feeB = (int)((long)Prices.At(TalentRules.CourseFee(p.B / 1000)) * share / 10000);
                 box.Line(TechText.Fill("reallife_roles_career_courses", "a", TechText.Skill(r.SkillA), "a_gain", TalentRules.CourseGain(p.A / 1000).ToString(), "a_fee", TechText.Money(feeA),
                     "b", TechText.Skill(r.SkillB), "b_gain", TalentRules.CourseGain(p.B / 1000).ToString(), "b_fee", TechText.Money(feeB), "days", TalentCatalogue.CourseDays.ToString()));
-                Transform courses = box.ButtonRow();
-                InfoBox.Button(courses, InfoBox.Additional, "reallife_roles_button_course_a", () => Do(() => _director.Course(key, 0)));
-                InfoBox.Button(courses, InfoBox.Additional, "reallife_roles_button_course_b", () => Do(() => _director.Course(key, 1)));
-                if (TechBridges.DegreeFee != null && TechBridges.DegreeFee() > 0)
+                bool degree = TechBridges.DegreeFee != null && TechBridges.DegreeFee() > 0;
+                if (degree)
                 {
-                    int degree = TechBridges.DegreeFee();
-                    box.Line(TechText.Fill("reallife_roles_career_degree", "fee", TechText.Money(degree), "days", TalentCatalogue.Scaled(TalentCatalogue.DegreeDays, year).ToString(),
+                    box.Line(TechText.Fill("reallife_roles_career_degree", "fee", TechText.Money(TechBridges.DegreeFee()), "days", TalentCatalogue.Scaled(TalentCatalogue.DegreeDays, year).ToString(),
                         "gain", TalentCatalogue.DegreeGain.ToString()));
-                    InfoBox.Button(courses, InfoBox.Additional, "reallife_roles_button_degree", () => Do(() => _director.SponsorDegree(key)));
                 }
                 _certs.Clear();
+                int examCert = -1;
                 for (int c = 0; c < TalentCatalogue.CertCount; c++)
                 {
                     TalentCatalogue.CertDef cert = TalentCatalogue.Certs[c];
@@ -255,11 +264,24 @@ namespace RealLifeOverhaul.Tech
                         : TechText.Fill("reallife_roles_career_exam_short", "cert", TechText.Cert(cert), "needs", TechText.Percent(TalentCatalogue.Certs[cert].Needs)));
                     if (chance > 0)
                     {
-                        InfoBox.Button(courses, InfoBox.Positive, "reallife_roles_button_exam", () => Do(() => _director.Exam(key, cert)));
+                        examCert = cert;
                     }
+                }
+                Transform courses = box.ButtonRow();
+                InfoBox.Button(courses, InfoBox.Additional, "reallife_roles_button_course_a", () => Do(() => _director.Course(key, 0)));
+                InfoBox.Button(courses, InfoBox.Additional, "reallife_roles_button_course_b", () => Do(() => _director.Course(key, 1)));
+                if (degree)
+                {
+                    InfoBox.Button(courses, InfoBox.Additional, "reallife_roles_button_degree", () => Do(() => _director.SponsorDegree(key)));
+                }
+                if (examCert >= 0)
+                {
+                    int sit = examCert;
+                    InfoBox.Button(courses, InfoBox.Positive, "reallife_roles_button_exam", () => Do(() => _director.Exam(key, sit)));
                 }
             }
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_roles_button_back", () => Page(PageFile));
+            Meta.Guide.Point(box, PeopleGuide);
         }
 
         // The roles this professional can be moved to: the roles of their game skill, or for the mod's own payroll the roles without one of the same family.
@@ -325,6 +347,7 @@ namespace RealLifeOverhaul.Tech
                 }
             }
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_roles_button_back", () => Page(PageFile));
+            Meta.Guide.Point(box, PeopleGuide);
         }
 
         private void Do(System.Action act)

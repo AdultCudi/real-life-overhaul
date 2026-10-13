@@ -26,6 +26,8 @@ namespace RealLifeOverhaul.Tech
     public sealed partial class RolesApp
     {
         private static readonly string[] TabKeys = { "reallife_roles_tab_team", "reallife_roles_tab_jobs", "reallife_roles_tab_applicants", "reallife_roles_tab_market", "reallife_roles_tab_search" };
+        // The Guide's pages the tabs point to at their foot: professionals (the Team tab) and the jobs board (the rest).
+        private const string PeopleGuide = "reallife_meta_title_tech_people", JobsGuide = "reallife_meta_title_tech_jobs";
 
         public static IModLogger Logger;
 
