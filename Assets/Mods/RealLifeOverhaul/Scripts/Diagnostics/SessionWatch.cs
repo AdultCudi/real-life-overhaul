@@ -65,6 +65,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class SessionWatch : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("diagnostics", "SessionWatch", typeof(SessionWatch));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float Every = 60f;           // seconds between two lines
         private const float LongFrame = 0.080f;    // seconds: a frame this long gets a line of its own
         private const int LongFramesPerMinute = 12;   // lines for long frames in one minute; the rest are only counted
@@ -273,6 +275,23 @@ namespace RealLifeOverhaul
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             // The time the frame before this one took, loading screens and pauses left out: they are not stutter.
             float took = Time.unscaledDeltaTime;

@@ -20,6 +20,8 @@ namespace RealLifeOverhaul.Nav
     /// </summary>
     public sealed class NavCityMap : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("navigation", "NavCityMap", typeof(NavCityMap));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public const string ObjectName = "RealLife Map Route";
         private const float TapSeconds = 0.3f;
         private const float TapPixels = 6f;
@@ -102,6 +104,23 @@ namespace RealLifeOverhaul.Nav
 
         private void LateUpdate()
         {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnLateUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnLateUpdate()
+        {
             if (_failed || _count < 2)
             {
                 return;
@@ -155,6 +174,23 @@ namespace RealLifeOverhaul.Nav
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             if (!Clicks || _failed)
             {

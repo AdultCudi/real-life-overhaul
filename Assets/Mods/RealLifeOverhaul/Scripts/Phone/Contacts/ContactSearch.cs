@@ -35,6 +35,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class ContactSearch : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("phone", "ContactSearch", typeof(ContactSearch));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const int Longest = 24;                 // characters
         private const float Gap = 16f;                  // between the buttons, the box and the list, on the game's canvas
 
@@ -228,6 +230,23 @@ namespace RealLifeOverhaul
 
         // Only while the Contacts app shows (the box is part of it): whether the box has the keyboard, and whether the game made its list again.
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             bool typing = _input != null && _input.isFocused;
             if (typing != _typing)

@@ -42,6 +42,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class TaxiDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("taxi", "TaxiDirector", typeof(TaxiDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float TickInterval = 0.25f;
         private const float QuoteGoodFor = 45f;      // seconds a quote's plan may be used for the taxi that is sent
         private const float QuoteMoved = 12f;        // ...unless the caller has walked this far since
@@ -88,7 +90,7 @@ namespace RealLifeOverhaul
             var host = new GameObject("RealLifeOverhaul Taxi");
             host.transform.SetParent(transform, false);
             _cab = new TaxiCab(host);
-            _onMap = OnMap;
+            _onMap = Guard.Wrap<bool>(OnMap);
         }
 
         private void OnDestroy()
@@ -112,6 +114,23 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- the clock
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             float now = Time.time;
             if (now < _nextTick)

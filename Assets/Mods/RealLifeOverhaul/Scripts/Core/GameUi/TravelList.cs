@@ -480,9 +480,28 @@ namespace RealLifeOverhaul.GameUi
     [DefaultExecutionOrder(-31000)]
     public sealed class TravelListKeys : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "TravelListKeys", typeof(TravelListKeys));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public TravelList Owner;
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             if (Owner == null || !Owner.IsOpen)
             {

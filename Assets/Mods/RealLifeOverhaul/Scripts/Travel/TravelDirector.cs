@@ -31,6 +31,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class TravelDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("travel", "TravelDirector", typeof(TravelDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const NavigationBlocker Block = NavigationBlocker.PaidActivity;   // one of the game's own, used by nothing that can run at the same time
         private const float SkipPatience = 240f;                                  // real seconds a time skip may take before it is given up on
 
@@ -124,6 +126,23 @@ namespace RealLifeOverhaul
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             if (_failed)
             {

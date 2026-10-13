@@ -71,8 +71,8 @@ namespace RealLifeOverhaul.Economy.Ventures
         {
             Instance = this;
             _onSave = OnSave;
-            _onHour = OnHour;
-            _onDay = OnDay;
+            _onHour = Guard.Wrap(OnHour);
+            _onDay = Guard.Wrap(OnDay);
             _openInvestors = () => Open(VenturesPhone.Investors);
             _fileClaim = amount => EconomyBridges.FileClaim != null ? EconomyBridges.FileClaim(amount) : 0;
             StartCoroutine(Tick());

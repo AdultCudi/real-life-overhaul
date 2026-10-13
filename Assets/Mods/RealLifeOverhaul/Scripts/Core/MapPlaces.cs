@@ -1175,6 +1175,8 @@ namespace RealLifeOverhaul
         /// </summary>
         private sealed class Driver : MonoBehaviour
         {
+            private static readonly FeatureGuard FrameGuard = Guard.For("navigation", "MapPlaces.Driver", typeof(MapPlaces.Driver));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
             private readonly WaitForSecondsRealtime _second = new WaitForSecondsRealtime(1f);
             private BuildingResume _card;
             private EntityController _carded;
@@ -1221,7 +1223,7 @@ namespace RealLifeOverhaul
                     _hookIn = 3;
                     if (_onMap == null)
                     {
-                        _onMap = OnMap;
+                        _onMap = Guard.Wrap<bool>(OnMap);
                     }
                     EventHold.Keep(ref GlobalEvents.onCityMapToggle, _onMap, ref _mapSeen);   // put back only when the game's event is not the one last seen
                 }
@@ -1307,6 +1309,23 @@ namespace RealLifeOverhaul
             // After the game's own work of the frame: its look at the buildings (GameManager.Update), and the card it writes
             // the moment a building comes under the mouse or is picked.
             private void LateUpdate()
+            {
+                if (FrameGuard.Off)
+                {
+                    enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                    return;
+                }
+                try
+                {
+                    OnLateUpdate();
+                }
+                catch (System.Exception e)
+                {
+                    Guard.Fail(FrameGuard, e, this);
+                }
+            }
+
+            private void OnLateUpdate()
             {
                 if (_mapOpen)
                 {

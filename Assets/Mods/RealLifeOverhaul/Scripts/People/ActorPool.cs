@@ -45,6 +45,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class ActorPool : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("people", "ActorPool", typeof(ActorPool));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         /// <summary>Hard cap on mod characters alive at once, across all scenes.</summary>
         public const int MaxActors = 12;
 
@@ -125,6 +127,23 @@ namespace RealLifeOverhaul
 
         // Runs only while somebody is out. Hides whoever cannot be seen; shows them again the frame they can.
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             try
             {

@@ -22,6 +22,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class PolicePursuit : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "PolicePursuit", typeof(PolicePursuit));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float StopWindow = 12f;           // seconds to stop after the crash
         private const float StopRadius = 40f;           // ...within this far of it
         private const float StoppedSpeedSqr = 1f;       // (m/s) squared
@@ -261,6 +263,23 @@ namespace RealLifeOverhaul
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             if (Time.unscaledTime >= _nextFineCheck)
             {

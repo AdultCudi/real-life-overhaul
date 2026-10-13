@@ -13,6 +13,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class ChaseCamera : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("camera", "ChaseCamera", typeof(ChaseCamera));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const int LivePriority = 100;
         private const int IdlePriority = -100;
         private const float TargetHeight = 1.3f;
@@ -51,6 +53,23 @@ namespace RealLifeOverhaul
         private Vector3 _lastPos;
 
         private void LateUpdate()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnLateUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnLateUpdate()
         {
             var gm = InstanceBehavior<GameManager>.Instance;
             VehicleController vehicle = gm != null ? gm.selectedVehicle : null;

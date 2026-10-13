@@ -142,8 +142,10 @@ namespace RealLifeOverhaul
                 _switcherTypes ??= FindSwitcherTypes();
             }
             // In front of the game's own map handlers: when they run, every renderer is as the game left it.
-            GlobalEvents.onCityMapToggle = (Action<bool>)Delegate.Combine(new Action<bool>(OnMapToggled), GlobalEvents.onCityMapToggle);
-            RenderPipelineManager.beginCameraRendering += OnCameraRendering;
+            _onMap = _onMap ?? Guard.Wrap<bool>(OnMapToggled);   // (a fault here never reaches the game's own handlers, or the pipeline: Core/Guard)
+            _onCamera = _onCamera ?? Guard.Wrap<ScriptableRenderContext, Camera>(OnCameraRendering);
+            GlobalEvents.onCityMapToggle = (Action<bool>)Delegate.Combine(_onMap, GlobalEvents.onCityMapToggle);
+            RenderPipelineManager.beginCameraRendering += _onCamera;
             _hooked = true;
             _settled = false;
             _main = GameManager.GetMainCamera();
@@ -464,6 +466,9 @@ namespace RealLifeOverhaul
             _heldRenderers = _heldCells = _scenery = _leftAlone = 0;
         }
 
+        private Action<bool> _onMap;
+        private Action<ScriptableRenderContext, Camera> _onCamera;
+
         // Runs before the game's own handlers (see Apply): the map shows the whole city.
         private void OnMapToggled(bool open)
         {
@@ -520,8 +525,8 @@ namespace RealLifeOverhaul
             if (_hooked)
             {
                 _hooked = false;
-                GlobalEvents.onCityMapToggle = (Action<bool>)Delegate.Remove(GlobalEvents.onCityMapToggle, new Action<bool>(OnMapToggled));
-                RenderPipelineManager.beginCameraRendering -= OnCameraRendering;
+                GlobalEvents.onCityMapToggle = (Action<bool>)Delegate.Remove(GlobalEvents.onCityMapToggle, _onMap);
+                RenderPipelineManager.beginCameraRendering -= _onCamera;
             }
             GiveBackAll();
             foreach (Scene known in _sceneryScenes)

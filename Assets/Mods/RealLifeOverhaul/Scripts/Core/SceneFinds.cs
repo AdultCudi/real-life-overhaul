@@ -74,6 +74,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class ScenePrewarm : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "ScenePrewarm", typeof(ScenePrewarm));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private static readonly List<Func<bool>> Work = new List<Func<bool>>(8);
         private static readonly List<string> Names = new List<string>(8);
         private static ScenePrewarm _instance;
@@ -137,6 +139,23 @@ namespace RealLifeOverhaul
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             if (Work.Count == 0)
             {

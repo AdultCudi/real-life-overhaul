@@ -31,6 +31,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class ContactPainter : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("phone", "ContactPainter", typeof(ContactPainter));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float PaceSeconds = 0.4f;     // between two pictures: never two in one frame
         private const float FacePaceSeconds = 2f;   // after a face drawn by the portrait camera
         private const float FaceTimeout = 15f;      // seconds to wait for the camera's read-back before trying again
@@ -74,6 +76,23 @@ namespace RealLifeOverhaul
         private static string Folder => Path.Combine(Application.persistentDataPath, "RealLifeOverhaul", "Portraits");
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             if (_drawing != null)
             {

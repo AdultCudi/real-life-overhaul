@@ -56,8 +56,8 @@ namespace RealLifeOverhaul.Fame
         {
             Instance = this;
             _onSave = OnSave;
-            _onHour = OnHour;
-            _onDay = OnDay;
+            _onHour = Guard.Wrap(OnHour);
+            _onDay = Guard.Wrap(OnDay);
             _openPage = () => FameBridges.Open?.Invoke();
             StartCoroutine(Tick());
         }

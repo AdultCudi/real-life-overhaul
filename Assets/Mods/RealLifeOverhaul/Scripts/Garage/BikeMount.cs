@@ -27,6 +27,8 @@ namespace RealLifeOverhaul
     [DefaultExecutionOrder(5000)]   // after the game has posed the rider, before the mod redraws the player (Character/PlayerDouble)
     public sealed class BikeMount : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("garage", "BikeMount", typeof(BikeMount));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float CadencePerMetre = 1.41f;   // radians of crank per metre: 75 turns a minute at 20 km/h
         private const float AnkleAbovePedal = 0.10f;
         private const float BicycleRolling = 6f;       // N m per wheel: a bicycle coasts; the scooter's own tyres stop it in a few metres
@@ -716,6 +718,23 @@ namespace RealLifeOverhaul
 
         private void FixedUpdate()
         {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnFixedUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnFixedUpdate()
+        {
             if (!_ridden || _rigidbody == null)
             {
                 return;
@@ -764,6 +783,23 @@ namespace RealLifeOverhaul
         }
 
         private void LateUpdate()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnLateUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnLateUpdate()
         {
             if (!_ridden || _body == null || _nwh == null)
             {

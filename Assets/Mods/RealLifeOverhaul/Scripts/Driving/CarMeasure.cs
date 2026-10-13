@@ -14,6 +14,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class CarMeasure : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("driving", "CarMeasure", typeof(CarMeasure));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float WaitFor = 90f;      // seconds the button stays armed
         private const float RunFor = 20f;
         private const float Standing = 0.3f;    // m/s
@@ -59,6 +61,23 @@ namespace RealLifeOverhaul
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             NwhVehicle vehicle = _vehicle;
             var gm = InstanceBehavior<GameManager>.Instance;

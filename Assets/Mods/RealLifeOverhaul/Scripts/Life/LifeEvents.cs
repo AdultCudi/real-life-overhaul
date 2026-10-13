@@ -80,7 +80,7 @@ namespace RealLifeOverhaul
             if (Time.unscaledTime >= _nextHookCheck)
             {
                 _nextHookCheck = Time.unscaledTime + 2f;
-                SaveHook.Keep(_onSave ?? (_onSave = OnSaveGame));   // the mod's one relay in the game's save event (Core/SaveHook): nothing is allocated while that event has not changed
+                SaveHook.KeepEssential(_onSave ?? (_onSave = OnSaveGame));   // the mod's one relay in the game's save event (Core/SaveHook): nothing is allocated while that event has not changed; run whatever is off, for the mod's moods must leave the save
             }
 
             if (TimeHelper.CurrentHour != _lastHour)

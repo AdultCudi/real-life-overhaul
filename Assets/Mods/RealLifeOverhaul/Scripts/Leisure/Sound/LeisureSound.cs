@@ -29,6 +29,8 @@ namespace RealLifeOverhaul.Leisure
     /// </summary>
     public sealed class LeisureSound : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("leisure", "LeisureSound", typeof(LeisureSound));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const int Rate = 22050;
         private const int Layers = 4;
         private const int Birds = 0, Crickets = 1, Hum = 2, Crowd = 3;
@@ -123,6 +125,23 @@ namespace RealLifeOverhaul.Leisure
         // ---------------------------------------------------------------- the bed
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             if (_failed)
             {

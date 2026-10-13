@@ -82,6 +82,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class SocialDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("social", "SocialDirector", typeof(SocialDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float TickInterval = 0.2f;
         private const float CardSeconds = 11f;
         private const string ButtonAnswer = "reallife_social_button_answer";
@@ -212,6 +214,23 @@ namespace RealLifeOverhaul
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             float real = Time.unscaledTime;
             if (_broken || (_scene == null && !_ringing && real < _nextSlow))

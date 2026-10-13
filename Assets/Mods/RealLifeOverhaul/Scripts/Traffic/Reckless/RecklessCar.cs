@@ -40,6 +40,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class RecklessCar : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("streets", "RecklessCar", typeof(RecklessCar));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public enum Hit { None, Car, Player, Solid, Bend }
 
         private const float RouteLength = 1100f;     // metres of road it is given ahead of it
@@ -430,6 +432,23 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- every other physics step
 
         private void FixedUpdate()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnFixedUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnFixedUpdate()
         {
             _skip = !_skip;
             if (_skip || Struck != Hit.None || !InUse)

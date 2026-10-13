@@ -36,6 +36,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class EmergencyDriver : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "EmergencyDriver", typeof(EmergencyDriver));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public const float DefaultCruiseSpeed = 14f;    // m/s, about 50 km/h
         private const float CarefulSpeed = 6.5f;    // while turning hard or passing
         private const float TurnRate = 120f;        // degrees per second
@@ -498,6 +500,23 @@ namespace RealLifeOverhaul
         }
 
         private void FixedUpdate()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnFixedUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnFixedUpdate()
         {
             if (!Active)
             {

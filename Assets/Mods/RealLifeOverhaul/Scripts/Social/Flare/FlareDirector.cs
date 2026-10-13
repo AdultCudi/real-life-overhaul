@@ -55,8 +55,8 @@ namespace RealLifeOverhaul.Flare
         {
             Instance = this;
             _onSave = OnSave;
-            _onHour = OnHour;
-            _onDay = OnDay;
+            _onHour = Guard.Wrap(OnHour);
+            _onDay = Guard.Wrap(OnDay);
             _openFeed = () => Open(TabMe);
             _openFeedTab = () => Open(TabFeed);
             _openBusinessTab = () => Open(TabBusiness);

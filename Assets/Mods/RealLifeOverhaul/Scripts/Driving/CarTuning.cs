@@ -24,6 +24,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class CarTuning : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("driving", "CarTuning", typeof(CarTuning));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float BrakeOnset = 0.25f;   // seconds for the brakes to come on fully with the eased pedal
         private const float MaxTopKmh = 350f;     // whatever the slider says: beyond this a car covers two metres a physics step
 
@@ -79,6 +81,23 @@ namespace RealLifeOverhaul
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             var gm = InstanceBehavior<GameManager>.Instance;
             var car = gm != null ? gm.selectedVehicle as CarController : null;

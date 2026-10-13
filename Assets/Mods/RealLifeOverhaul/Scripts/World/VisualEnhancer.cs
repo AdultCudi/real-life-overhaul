@@ -14,6 +14,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class VisualEnhancer : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("visuals", "VisualEnhancer", typeof(VisualEnhancer));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public static IModLogger Logger;
 
         private Volume _volume;
@@ -46,6 +48,23 @@ namespace RealLifeOverhaul
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             if (_volume == null)
             {

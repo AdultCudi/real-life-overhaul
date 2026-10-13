@@ -804,9 +804,28 @@ namespace RealLifeOverhaul.GameUi
     /// <summary>On the window's own object, so it runs only while the window is open: <see cref="MapPicker"/> once a frame.</summary>
     public sealed class MapPickerWatch : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "MapPickerWatch", typeof(MapPickerWatch));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public MapPicker Owner;
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             if (Owner == null)
             {

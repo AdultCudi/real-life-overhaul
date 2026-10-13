@@ -610,6 +610,8 @@ namespace RealLifeOverhaul.Meta
         /// </summary>
         private sealed class ScrollToTop : MonoBehaviour
         {
+            private static readonly FeatureGuard FrameGuard = Guard.For(null, "OptionsLayout.ScrollToTop", typeof(OptionsLayout.ScrollToTop));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
             public ScrollRect Scroll;
 
             private GameObject _anchor;
@@ -627,6 +629,23 @@ namespace RealLifeOverhaul.Meta
             }
 
             private void LateUpdate()
+            {
+                if (FrameGuard.Off)
+                {
+                    enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                    return;
+                }
+                try
+                {
+                    OnLateUpdate();
+                }
+                catch (System.Exception e)
+                {
+                    Guard.Fail(FrameGuard, e, this);
+                }
+            }
+
+            private void OnLateUpdate()
             {
                 try
                 {

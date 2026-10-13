@@ -19,6 +19,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class ActivityAnimators : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("citylife", "ActivityAnimators", typeof(ActivityAnimators));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private static ActivityAnimators _instance;
         private static readonly Dictionary<int, ActivityAnimator> Players = new Dictionary<int, ActivityAnimator>(16);
         private static readonly List<ActivityAnimator> Stepping = new List<ActivityAnimator>(16);
@@ -143,6 +145,23 @@ namespace RealLifeOverhaul
 
         private void Update()
         {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             try
             {
                 StepAll(Time.deltaTime);
@@ -158,6 +177,23 @@ namespace RealLifeOverhaul
         }
 
         private void LateUpdate()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnLateUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnLateUpdate()
         {
             try
             {

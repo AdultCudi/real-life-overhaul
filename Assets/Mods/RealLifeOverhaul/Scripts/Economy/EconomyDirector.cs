@@ -54,6 +54,9 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static Action AfterHour, AfterDay;
 
+        // The game's new hour and new day for the economy and every feature that follows it (AfterHour, AfterDay).
+        private static readonly FeatureGuard Ticks = Guard.For(null, "EconomyDirector's hour and day");
+
         private readonly GameLoans _loans = new GameLoans();
         private readonly List<LoanView> _live = new List<LoanView>(8);
         private readonly List<LoanFinding> _findings = new List<LoanFinding>(8);
@@ -92,8 +95,8 @@ namespace RealLifeOverhaul.Economy
             _deskSave = _desk.BeforeSave;
             _deskRefused = _desk.Refused;
             _onSave = OnSave;
-            _onHour = OnHour;
-            _onDay = OnDay;
+            _onHour = Guard.Wrap(Ticks, OnHour);   // (the economy's hour and day are every economic feature's: a guard of their own, not the credit file's)
+            _onDay = Guard.Wrap(Ticks, OnDay);
             _onGrade = OnGrade;
             _onPosted = OnPosted;
             StartCoroutine(Tick());
@@ -152,7 +155,7 @@ namespace RealLifeOverhaul.Economy
                         Fault("the timer", e);
                     }
                 }
-                Second?.Invoke();
+                Guard.Each(Second);   // each feature's second in a try of its own (Core/Guard)
             }
         }
 
@@ -417,7 +420,7 @@ namespace RealLifeOverhaul.Economy
             {
                 Fault("the hour", e);
             }
-            AfterHour?.Invoke();
+            Guard.Each(AfterHour);
         }
 
         // GlobalEvents.onNewDay: after the game's daily run (GameManager.NewDay; LoanHelper.RunDaily is in BusinessHelper.RunDaily before it).
@@ -435,7 +438,7 @@ namespace RealLifeOverhaul.Economy
             {
                 Fault("the day", e);
             }
-            AfterDay?.Invoke();
+            Guard.Each(AfterDay);
             try
             {
                 // The game built yesterday's statement before the mod's day: the costs booked for it since are put into it.

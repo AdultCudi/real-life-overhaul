@@ -317,7 +317,130 @@ namespace RealLifeOverhaul
             }
         }
 
+        // ---------------------------------------------------------------- whose a handler is
+
+        private static readonly Dictionary<System.Reflection.MethodInfo, FeatureGuard> ByMethod = new Dictionary<System.Reflection.MethodInfo, FeatureGuard>(64);
+
+        // Directors whose feature (Meta/FeatureList) is not their namespace's.
+        private static readonly Dictionary<string, string> OwnerFeature = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            { "CityEconomyDirector", "economy_city" }, { "CompanyDirector", "economy_company" }, { "EstateDirector", "economy_estate" },
+            { "OnlineDirector", "economy_online" }, { "OwnBankDirector", "economy_ownbank" }, { "ServicesDirector", "economy_cleaning" },
+            { "BanksDirector", "economy_banks" }, { "BrandsDirector", "economy_brands" }, { "DealerDirector", "economy_dealer" },
+            { "EconomyDirector", "economy" }, { "VenturesDirector", "ventures" }, { "ListingDirector", "markets_listing" },
+            { "DistrictView", "districtview" }, { "MapPlaces", "navigation" }, { "HomeDirector", "home" }, { "CleanerJob", "jobs" },
+            { "JobDirector", "jobs" }, { "BusinessDirector", "business" }, { "CivicDirector", "civic" }, { "EventDirector", "events" },
+            { "GarageDirector", "garage" }, { "JusticeDirector", "justice" }, { "LicenceDirector", "licences" }, { "SocialDirector", "social" },
+            { "TravelDirector", "travel" }, { "TransitDirector", "transport" }, { "CarOwnership", "transport" }, { "TaxiDirector", "taxi" },
+            { "LifeEvents", "life" }, { "MarketDirector", "markets" }, { "LedgerDirector", "ledger" },
+        };
+
+        // The rest by namespace: RealLifeOverhaul.X.
+        private static readonly Dictionary<string, string> NamespaceFeature = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            { "RealLifeOverhaul.Economy", "economy" }, { "RealLifeOverhaul.Economy.Ventures", "ventures" }, { "RealLifeOverhaul.Economy.Brands", "economy_brands" },
+            { "RealLifeOverhaul.Economy.Dealership", "economy_dealer" }, { "RealLifeOverhaul.Tech", "tech_sector" }, { "RealLifeOverhaul.Markets", "markets" },
+            { "RealLifeOverhaul.Ledger", "ledger" }, { "RealLifeOverhaul.Family", "family" }, { "RealLifeOverhaul.Leisure", "leisure" },
+            { "RealLifeOverhaul.Utilities", "utilities" }, { "RealLifeOverhaul.Flare", "flare" }, { "RealLifeOverhaul.Fame", "standing" },
+            { "RealLifeOverhaul.Law", "law" }, { "RealLifeOverhaul.Roommates", "home_roommates" }, { "RealLifeOverhaul.Nav", "navigation" },
+            { "RealLifeOverhaul.Events", "events" }, { "RealLifeOverhaul.Permadeath", "permadeath" }, { "RealLifeOverhaul.Planner", "planner" },
+            { "RealLifeOverhaul.Districts", "districtview" },
+        };
+
+        /// <summary>The feature of Meta/FeatureList a class of the mod belongs to, or null for the mod's own machinery.</summary>
+        public static string FeatureOf(Type owner)
+        {
+            if (owner == null)
+            {
+                return null;
+            }
+            if (OwnerFeature.TryGetValue(owner.Name, out string feature))
+            {
+                return feature;
+            }
+            return owner.Namespace != null && NamespaceFeature.TryGetValue(owner.Namespace, out feature) ? feature : null;
+        }
+
+        /// <summary>
+        /// The guard of the class a handler is a method of (a lambda's: the class it is written in), made the first time
+        /// it is asked for. Its faults count for that class, and a feature switched off skips it.
+        /// </summary>
+        public static FeatureGuard OfHandler(Delegate handler)
+        {
+            if (handler == null)
+            {
+                return null;
+            }
+            System.Reflection.MethodInfo method = handler.Method;
+            lock (ByMethod)
+            {
+                if (ByMethod.TryGetValue(method, out FeatureGuard known))
+                {
+                    return known;
+                }
+            }
+            Type owner = method.DeclaringType;
+            while (owner != null && owner.DeclaringType != null && owner.Name.IndexOf('<') >= 0)
+            {
+                owner = owner.DeclaringType;   // (a lambda's class is the compiler's, inside the class it is written in)
+            }
+            FeatureGuard guard = OfOwner(owner) ?? For(FeatureOf(owner), owner != null ? owner.Name : "a handler", owner);
+            lock (ByMethod)
+            {
+                ByMethod[method] = guard;
+            }
+            return guard;
+        }
+
+        /// <summary>
+        /// Calls each handler of one of the mod's own events in turn, each in a try of its own: a handler that throws is
+        /// written to Player.log against its class's guard and the others still run; a handler whose feature was
+        /// switched off is skipped. For the economy's second, hour and day, which a dozen features share.
+        /// </summary>
+        public static void Each(Action handlers)
+        {
+            if (handlers == null)
+            {
+                return;
+            }
+            Delegate[] list = handlers.GetInvocationList();
+            for (int i = 0; i < list.Length; i++)
+            {
+                var handler = (Action)list[i];
+                FeatureGuard guard = OfHandler(handler);
+                if (guard != null && guard.Off)
+                {
+                    continue;
+                }
+                try
+                {
+                    handler();
+                }
+                catch (Exception e)
+                {
+                    Fail(guard, e);
+                }
+            }
+        }
+
         // ---------------------------------------------------------------- the game's events
+
+        /// <summary>As <see cref="Wrap(FeatureGuard, Action)"/>, with the guard of the handler's class.</summary>
+        public static Action Wrap(Action handler)
+        {
+            return Wrap(OfHandler(handler), handler);
+        }
+
+        public static Action<T> Wrap<T>(Action<T> handler)
+        {
+            return Wrap(OfHandler(handler), handler);
+        }
+
+        public static Action<T1, T2> Wrap<T1, T2>(Action<T1, T2> handler)
+        {
+            return Wrap(OfHandler(handler), handler);
+        }
+
 
         /// <summary>A handler for one of the game's events that can never throw into the game's own code. Made once and kept: event holders compare it.</summary>
         public static Action Wrap(FeatureGuard guard, Action handler)

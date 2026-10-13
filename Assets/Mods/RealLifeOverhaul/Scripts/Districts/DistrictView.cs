@@ -39,6 +39,8 @@ namespace RealLifeOverhaul.Districts
     /// </summary>
     public sealed class DistrictView : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("districtview", "DistrictView", typeof(DistrictView));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public const string ChoiceId = "districts";
         private const string Mod = "reallife";       // the start of every key; a layer's words are its id after one of the stems below
         private const float PointEvery = 0.1f;       // seconds (real time) between looks at what the mouse is over
@@ -79,8 +81,8 @@ namespace RealLifeOverhaul.Districts
         private void Awake()
         {
             Instance = this;
-            _onMap = OnMap;
-            _onDay = OnDay;
+            _onMap = Guard.Wrap<bool>(OnMap);
+            _onDay = Guard.Wrap(OnDay);
             _onSave = OnSave;
             enabled = false;   // (LateUpdate only while a layer shows)
         }
@@ -352,6 +354,23 @@ namespace RealLifeOverhaul.Districts
         // ---------------------------------------------------------------- while a layer shows
 
         private void LateUpdate()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnLateUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnLateUpdate()
         {
             if (_broken || !_mapOpen)
             {

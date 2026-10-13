@@ -31,6 +31,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class CarStrikes : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("ragdoll", "CarStrikes", typeof(CarStrikes));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float MinSpeed = 1.4f;        // m/s, about 5 km/h: slower than this the car only nudges
         private const float PersonRadius = 0.3f;
         private const float LookupInterval = 0.5f;  // how often it asks which car the player is driving
@@ -90,6 +92,23 @@ namespace RealLifeOverhaul
         }
 
         private void FixedUpdate()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnFixedUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnFixedUpdate()
         {
             _skip = !_skip;
             if (_skip || !Settings.Ragdolls)

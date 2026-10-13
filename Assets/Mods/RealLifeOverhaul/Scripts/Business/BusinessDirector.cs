@@ -35,6 +35,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class BusinessDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("business", "BusinessDirector", typeof(BusinessDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float VisitTick = 0.25f;
         private const int DefaultDueHour = 18;
 
@@ -95,6 +97,23 @@ namespace RealLifeOverhaul
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             if (_broken)
             {

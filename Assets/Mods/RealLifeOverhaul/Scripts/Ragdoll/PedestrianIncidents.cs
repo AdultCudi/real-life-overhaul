@@ -31,6 +31,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class PedestrianIncidents : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("ragdoll", "PedestrianIncidents", typeof(PedestrianIncidents));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float CheckInterval = 20f;
         private const float TickInterval = 0.25f;
         private const float KnockSpeed = 15f / 3.6f;     // m/s: below this nobody is hurt
@@ -76,6 +78,23 @@ namespace RealLifeOverhaul
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             float now = Time.time;
             if (!_anyone)

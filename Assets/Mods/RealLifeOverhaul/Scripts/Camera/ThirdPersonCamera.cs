@@ -28,6 +28,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class ThirdPersonCamera : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("camera", "ThirdPersonCamera", typeof(ThirdPersonCamera));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float MinMoveSpeed = 0.6f;   // m/s before the camera starts swinging behind
         private const float MinDistance = 2.5f;
         private const float MinPitch = -60f;       // out of doors; under 0 the view looks up, to the tops of the buildings
@@ -138,6 +140,23 @@ namespace RealLifeOverhaul
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             var gm = InstanceBehavior<GameManager>.Instance;
             if (gm == null || gm.playerController == null)

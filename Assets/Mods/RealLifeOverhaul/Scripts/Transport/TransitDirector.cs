@@ -77,6 +77,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed partial class TransitDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("transport", "TransitDirector", typeof(TransitDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float TickInterval = 0.25f;
         private const float ArrivedBeyond = 60f;    // metres between two passes that no walk or drive covers: the player was set down here
         private const float SolidWithin = 60f;      // metres: on foot this near, a dressed stop's boxes cut the navigation mesh
@@ -264,6 +266,23 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- the two clocks
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             if (_failed)
             {

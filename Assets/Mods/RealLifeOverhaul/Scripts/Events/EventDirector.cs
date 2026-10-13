@@ -38,6 +38,8 @@ namespace RealLifeOverhaul.Events
     /// </summary>
     public sealed class EventDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("events", "EventDirector", typeof(EventDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const string StateKey = "reallife:events";
         private const string BulletinId = "reallife-bulletin";
         private const float RollInterval = 20f;
@@ -163,6 +165,23 @@ namespace RealLifeOverhaul.Events
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             if (_failed)
             {

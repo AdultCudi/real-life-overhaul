@@ -103,6 +103,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class CharacterQuality : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("character", "CharacterQuality", typeof(CharacterQuality));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float SearchSeconds = 0.5f;
         private const int CreationSearchAttempts = 60;   // each one walks the (small) creation scene
         private const int CitySearchAttempts = 600;      // each one is a single lookup; the city can take minutes to load
@@ -159,6 +161,23 @@ namespace RealLifeOverhaul
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             try
             {

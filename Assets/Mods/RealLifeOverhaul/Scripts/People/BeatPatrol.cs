@@ -18,6 +18,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class BeatPatrol : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("people", "BeatPatrol", typeof(BeatPatrol));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float CheckInterval = 8f;
         private const float TickInterval = 0.5f;
         private const float MinDistance = 35f;
@@ -59,6 +61,23 @@ namespace RealLifeOverhaul
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             float now = Time.time;
             if (_step == Step.None)

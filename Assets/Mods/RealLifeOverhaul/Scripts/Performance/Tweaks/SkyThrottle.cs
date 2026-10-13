@@ -41,10 +41,12 @@ namespace RealLifeOverhaul
 
         protected override void Apply()
         {
-            GlobalEvents.onEnterBuilding += OnBuilding;
-            GlobalEvents.onExitBuilding += OnBuilding;
-            GlobalEvents.onCityMapToggle += OnMap;
-            GlobalEvents.onNewHour += Refresh;
+            _onBuilding = _onBuilding ?? Guard.Wrap<Address>(OnBuilding);   // (a fault here never reaches the game's own handlers: Core/Guard)
+            _onMap = _onMap ?? Guard.Wrap<bool>(OnMap);
+            GlobalEvents.onEnterBuilding += _onBuilding;
+            GlobalEvents.onExitBuilding += _onBuilding;
+            GlobalEvents.onCityMapToggle += _onMap;
+            GlobalEvents.onNewHour += Hourly;
             _hooked = true;
             Sweep();
         }
@@ -114,6 +116,10 @@ namespace RealLifeOverhaul
 
         private void OnBuilding(Address address) => Refresh();
 
+        private static readonly Action Hourly = Guard.Wrap(Refresh);
+        private Action<Address> _onBuilding;
+        private Action<bool> _onMap;
+
         private void OnMap(bool open) => Refresh();
 
         // The sky is about to be a different one: have the pipeline take it up on the next frame, not on the period.
@@ -130,10 +136,10 @@ namespace RealLifeOverhaul
             if (_hooked)
             {
                 _hooked = false;
-                GlobalEvents.onEnterBuilding -= OnBuilding;
-                GlobalEvents.onExitBuilding -= OnBuilding;
-                GlobalEvents.onCityMapToggle -= OnMap;
-                GlobalEvents.onNewHour -= Refresh;
+                GlobalEvents.onEnterBuilding -= _onBuilding;
+                GlobalEvents.onExitBuilding -= _onBuilding;
+                GlobalEvents.onCityMapToggle -= _onMap;
+                GlobalEvents.onNewHour -= Hourly;
             }
             foreach (Saved saved in _saved)
             {

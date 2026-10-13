@@ -35,6 +35,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class BusDriver : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("transport", "BusDriver", typeof(BusDriver));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float StopGap = 3f;            // metres between its nose and a vehicle it stands behind
         private const float PersonGap = 2.5f;        // ...and a person
         private const float GateShort = 1.0f;        // its nose this far short of a point it is told to pull up at
@@ -231,6 +233,23 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- driving
 
         private void FixedUpdate()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnFixedUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnFixedUpdate()
         {
             if (!Active)
             {

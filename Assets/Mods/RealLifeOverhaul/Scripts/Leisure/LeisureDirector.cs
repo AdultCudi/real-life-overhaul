@@ -27,6 +27,8 @@ namespace RealLifeOverhaul.Leisure
     /// </summary>
     public sealed class LeisureDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("leisure", "LeisureDirector", typeof(LeisureDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float TickInterval = 0.2f;
         private const float CardSeconds = 9f;
 
@@ -157,6 +159,23 @@ namespace RealLifeOverhaul.Leisure
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             if (_broken)
             {

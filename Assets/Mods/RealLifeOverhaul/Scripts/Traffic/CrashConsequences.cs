@@ -15,6 +15,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class CrashConsequences : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "CrashConsequences", typeof(CrashConsequences));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         internal const float LiabilityLeast = 150f, LiabilityMost = 3000f;   // damages to another car, at the start's prices
         // Impact speeds in m/s (relative velocity of the two colliders).
         private const float LiabilitySpeed = 7f;    // ~25 km/h
@@ -30,6 +32,23 @@ namespace RealLifeOverhaul
         private float _lastCrashTime = -100f;
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             var gm = InstanceBehavior<GameManager>.Instance;
             var car = gm != null ? gm.selectedVehicle as CarController : null;

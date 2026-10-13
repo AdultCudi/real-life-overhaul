@@ -33,6 +33,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class CityPeople : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("citylife", "CityPeople", typeof(CityPeople));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public const int MaxPeople = 8;
 
         private const string CharacterPrefab = "Characters/HumanDefinitionLow";
@@ -268,6 +270,23 @@ namespace RealLifeOverhaul
         // Runs only while somebody is out: hides whoever cannot be seen, shows them again the frame they can.
         private void Update()
         {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             try
             {
                 Camera camera = GameManager.GetMainCamera();
@@ -314,6 +333,23 @@ namespace RealLifeOverhaul
         }
 
         private void FixedUpdate()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnFixedUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnFixedUpdate()
         {
             _skip = !_skip;
             if (_skip || _strikesFailed || !Settings.Ragdolls)

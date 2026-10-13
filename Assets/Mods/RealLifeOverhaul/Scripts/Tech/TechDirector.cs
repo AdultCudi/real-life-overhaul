@@ -44,8 +44,8 @@ namespace RealLifeOverhaul.Tech
             HiringGame.Logger = Logger;
             FirmsGame.Logger = Logger;
             _onSave = OnSave;
-            _onHour = OnHour;
-            _onDay = OnDay;
+            _onHour = Guard.Wrap(OnHour);
+            _onDay = Guard.Wrap(OnDay);
             StartCoroutine(Tick());
         }
 

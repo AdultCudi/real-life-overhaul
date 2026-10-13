@@ -36,6 +36,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class PoliceAttention : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("crime", "PoliceAttention", typeof(PoliceAttention));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float TickInterval = 0.1f;
         private const float LookupInterval = 0.5f;
         private const float ComplyWindow = 15f;        // seconds to stop once the lights are on
@@ -240,6 +242,23 @@ namespace RealLifeOverhaul
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             float now = Time.time;
             if (now < _nextTick)

@@ -477,6 +477,8 @@ namespace RealLifeOverhaul.GameUi
     /// <summary>A fade of one canvas group on the unscaled clock (the game is paused while the menu is open). Switched on only while it lasts.</summary>
     public sealed class PanelFade : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "PanelFade", typeof(PanelFade));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private CanvasGroup _group;
         private float _from, _for;
 
@@ -490,6 +492,23 @@ namespace RealLifeOverhaul.GameUi
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             float t = _group != null && _for > 0f ? (Time.unscaledTime - _from) / _for : 1f;
             if (_group != null)

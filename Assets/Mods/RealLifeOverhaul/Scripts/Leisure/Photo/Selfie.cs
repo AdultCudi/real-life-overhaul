@@ -40,6 +40,8 @@ namespace RealLifeOverhaul.Leisure
     /// </summary>
     public sealed class Selfie : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("leisure", "Selfie", typeof(Selfie));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float Near = 0.40f;          // metres from the eyes the phone comes at nearest: the elbow well bent...
         private const float Far = 0.85f;           // ...and at farthest: a straight arm with the phone at the fingertips
         private const float StartDistance = 0.62f; // metres where it starts: the arm out, the elbow soft
@@ -324,6 +326,23 @@ namespace RealLifeOverhaul.Leisure
         // own evaluation this frame (which advances nothing while paused) draws where this one left it.
         private void Update()
         {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             try
             {
                 if (_body == null || _animator == null || !_body.gameObject.activeInHierarchy)
@@ -374,6 +393,23 @@ namespace RealLifeOverhaul.Leisure
         // After the animation: the phone arm out to the lens, the head turned into it. Every turn is to a direction
         // worked out afresh, so it is the same whether or not the animator wrote the bones again this frame.
         private void LateUpdate()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnLateUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnLateUpdate()
         {
             try
             {

@@ -44,6 +44,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class BusVehicle : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("transport", "BusVehicle", typeof(BusVehicle));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         // Its measurements: the bays are laid out for them (BusBay), and the modelled body is built to them
         // (PropAssets/scripts/props_service.py, city_bus).
         public const float Length = BusBay.BusLength;
@@ -485,6 +487,23 @@ namespace RealLifeOverhaul
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             float dt = Time.deltaTime;
             float doors = Mathf.MoveTowards(_doors, _doorsWanted ? 1f : 0f, dt / DoorSeconds);

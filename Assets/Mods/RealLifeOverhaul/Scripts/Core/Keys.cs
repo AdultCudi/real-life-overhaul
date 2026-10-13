@@ -445,6 +445,8 @@ namespace RealLifeOverhaul
         /// <summary>Exists only between a click on a rebind button and the next key (or eight seconds).</summary>
         private sealed class KeyCapture : MonoBehaviour
         {
+            private static readonly FeatureGuard FrameGuard = Guard.For("keys", "Keys.KeyCapture", typeof(Keys.KeyCapture));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
             private static readonly KeyCode[] Codes = (KeyCode[])Enum.GetValues(typeof(KeyCode));
             private static KeyCapture _live;
 
@@ -480,6 +482,23 @@ namespace RealLifeOverhaul
             }
 
             private void Update()
+            {
+                if (FrameGuard.Off)
+                {
+                    enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                    return;
+                }
+                try
+                {
+                    OnUpdate();
+                }
+                catch (System.Exception e)
+                {
+                    Guard.Fail(FrameGuard, e, this);
+                }
+            }
+
+            private void OnUpdate()
             {
                 if (Time.unscaledTime > _until || Input.GetKeyDown(KeyCode.Escape))
                 {

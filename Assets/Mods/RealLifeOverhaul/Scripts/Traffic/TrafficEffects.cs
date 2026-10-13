@@ -740,6 +740,8 @@ namespace RealLifeOverhaul
 
         private sealed class Flasher : MonoBehaviour
         {
+            private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "TrafficEffects.Flasher", typeof(TrafficEffects.Flasher));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
             public Light A;
             public Light B;
             public float Interval;
@@ -748,6 +750,23 @@ namespace RealLifeOverhaul
 
             // Only touches the lights on the frames where the state flips.
             private void Update()
+            {
+                if (FrameGuard.Off)
+                {
+                    enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                    return;
+                }
+                try
+                {
+                    OnUpdate();
+                }
+                catch (System.Exception e)
+                {
+                    Guard.Fail(FrameGuard, e, this);
+                }
+            }
+
+            private void OnUpdate()
             {
                 if (Interval <= 0f)
                 {
@@ -772,11 +791,30 @@ namespace RealLifeOverhaul
 
         private sealed class Flicker : MonoBehaviour
         {
+            private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "TrafficEffects.Flicker", typeof(TrafficEffects.Flicker));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
             public HDAdditionalLightData Light;
 
             private float _next;
 
             private void Update()
+            {
+                if (FrameGuard.Off)
+                {
+                    enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                    return;
+                }
+                try
+                {
+                    OnUpdate();
+                }
+                catch (System.Exception e)
+                {
+                    Guard.Fail(FrameGuard, e, this);
+                }
+            }
+
+            private void OnUpdate()
             {
                 if (Light == null || Time.time < _next)
                 {

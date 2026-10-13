@@ -33,6 +33,8 @@ namespace RealLifeOverhaul.Permadeath
     /// </summary>
     public sealed partial class PermadeathDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("permadeath", "PermadeathDirector", typeof(PermadeathDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public static IModLogger Logger;
         public static PermadeathDirector Instance { get; private set; }
 
@@ -82,6 +84,23 @@ namespace RealLifeOverhaul.Permadeath
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             if (!_pageUp)
             {

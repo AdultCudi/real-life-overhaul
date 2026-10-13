@@ -20,6 +20,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class PhoneSkin : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("phone", "PhoneSkin", typeof(PhoneSkin));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const int TextureSize = 256;
         private const int SliceBorder = 72;
         private const float CornerRadius = 62f;
@@ -57,6 +59,23 @@ namespace RealLifeOverhaul
         private int _clockMinute = -1;
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             if (Settings.PhoneSkin != _applied)
             {

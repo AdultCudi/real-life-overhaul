@@ -48,6 +48,8 @@ namespace RealLifeOverhaul.Ledger
     /// </summary>
     public sealed class NewsstandGlide : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("ledger", "NewsstandGlide", typeof(NewsstandGlide));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float Speed = 14f;       // how quickly it closes on the target: most of the way in a sixth of a second
 
         internal ScrollRect Scroll;
@@ -88,6 +90,23 @@ namespace RealLifeOverhaul.Ledger
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             if (Scroll == null || Scroll.content == null)
             {

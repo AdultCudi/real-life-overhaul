@@ -31,6 +31,8 @@ namespace RealLifeOverhaul.Markets
     /// </summary>
     public sealed partial class MarketDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("markets", "MarketDirector", typeof(MarketDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public const string AppId = "RealLifeStocks";
         private const int WorkPerFrame = 3000;           // company-steps a frame at most (a step of the session is one for every listed company)
         private const float FrontierEvery = 1f;          // real seconds between writing the furthest moment played to the tape
@@ -184,6 +186,23 @@ namespace RealLifeOverhaul.Markets
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             if (!_running || _broken || Save == null || LoadScene.isLoading)
             {

@@ -61,6 +61,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public class HornReactions : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("people", "HornReactions", typeof(HornReactions));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float LookupInterval = 0.5f;   // how often it asks which car the player is driving
         private const float CareInterval = 0.1f;     // how often it checks that the people reacting are still there to react
         private const float TurnRate = 420f;         // degrees a second somebody turns to face the car
@@ -163,6 +165,23 @@ namespace RealLifeOverhaul
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             float now = Time.time;
             if (_active > 0)

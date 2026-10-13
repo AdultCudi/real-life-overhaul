@@ -12,6 +12,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class PerfDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("performance", "PerfDirector", typeof(PerfDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private const float SettleSeconds = 3f;   // after the city loads, before the first tweak looks at the scene
 
         public static IModLogger Logger;
@@ -95,6 +97,23 @@ namespace RealLifeOverhaul
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             if (Keys.Down(KeyAction.PerfBench))
             {

@@ -1253,6 +1253,8 @@ namespace RealLifeOverhaul.Events
     /// </summary>
     internal sealed class HoseHold : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("events", "HoseHold", typeof(HoseHold));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         private static readonly Vector3 RightOnNozzle = new Vector3(0f, 0f, 0.06f);
         private static readonly Vector3 LeftOnNozzle = new Vector3(0f, -0.02f, 0.30f);
 
@@ -1312,6 +1314,23 @@ namespace RealLifeOverhaul.Events
         }
 
         private void LateUpdate()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnLateUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnLateUpdate()
         {
             try
             {

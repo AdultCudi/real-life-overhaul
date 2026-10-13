@@ -20,6 +20,8 @@ namespace RealLifeOverhaul.Planner
     /// </summary>
     public sealed class PlannerDirector : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("planner", "PlannerDirector", typeof(PlannerDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         public const string AppId = "RealLifePlanner";
         private const int BadgeMinutes = 120;      // the badge counts what begins within two hours
 
@@ -91,7 +93,7 @@ namespace RealLifeOverhaul.Planner
             PlannerStore.Reset();
             Samples = false;
             _onSave = OnSave;
-            _onHour = OnHour;
+            _onHour = Guard.Wrap(OnHour);
         }
 
         private void OnDestroy()
@@ -112,6 +114,23 @@ namespace RealLifeOverhaul.Planner
         }
 
         private void Update()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
         {
             float now = Time.unscaledTime;
             if (now < _next)

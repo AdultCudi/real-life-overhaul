@@ -95,7 +95,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             _onSave = OnSave;
             _onHour = OnHour;
             _onDay = OnDay;
-            _onEnter = OnEnter;
+            _onEnter = Guard.Wrap<Address>(OnEnter);
             EconomyDirector.Second += _second;
             EconomyDirector.AfterHour += _onHour;
             EconomyDirector.AfterDay += _onDay;

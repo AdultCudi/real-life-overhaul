@@ -35,6 +35,8 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class PerfSampler : MonoBehaviour
     {
+        private static readonly FeatureGuard FrameGuard = Guard.For("performance", "PerfSampler", typeof(PerfSampler));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+
         /// <summary>One of the engine's profiler statistics, read once per frame while a window is open.</summary>
         public sealed class Stat
         {
@@ -243,6 +245,23 @@ namespace RealLifeOverhaul
 
         private void Update()
         {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnUpdate()
+        {
             if (_skipFirst)
             {
                 _skipFirst = false;
@@ -290,6 +309,23 @@ namespace RealLifeOverhaul
         }
 
         private void FixedUpdate()
+        {
+            if (FrameGuard.Off)
+            {
+                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                return;
+            }
+            try
+            {
+                OnFixedUpdate();
+            }
+            catch (System.Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+            }
+        }
+
+        private void OnFixedUpdate()
         {
             _fixedSteps++;
         }
