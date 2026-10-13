@@ -1,4 +1,8 @@
-0.7.5
+0.7.6
+
+New
+- More bus lines: up to 16 routes between the subway stations, laid so that every station has three lines where the roads allow, gathered on the avenues, where the lines share their stops. A stop's panel lists every line that calls there with its next bus, and the city map offers each stop with the line to take and, where one is needed, the change of bus. More buses: every line runs to a timetable, every 36 minutes on the main lines at the rush hours, less often in the evening, and between 01:00 and 05:00 only the main lines run; the bus of the next line can follow close behind. A journey with a change of bus is driven on both buses with the ride panel, with a walk to the second stop where it is not the same one, on one fare. You board by the nearer of the bus's two doors, tapping in at a validator by each. In a Going Public session the ride is driven in real time too, on the host's machine, with no fast forward.
 
 Fixed
-- Under a bright street lamp at night your character's hair could look bald from above. The strands now darken towards their edges, as real strands do in each other's shade, and stay as full from the street camera's distance as close up. The same goes for every character drawn in that hair, other players' in a Going Public session included; nothing of anyone's look is saved or sent differently.
+- A bus could stand still in the road and vanish, at the end of its line or when it was let go where you could see it. A bus now drives on out of sight before it is taken away, and never appears where you can see it or near you.
+- Delayed showed for buses that were on time. The time shown is now the timetable's, and the bus is sent so as to keep it; Delayed shows only when a bus is held up, with its new time.
