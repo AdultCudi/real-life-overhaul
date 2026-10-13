@@ -815,7 +815,7 @@ namespace RealLifeOverhaul.Economy
                 for (int i = 0; i < _state.Holdings.Count; i++)
                 {
                     EstateHolding h = _state.Holdings[i];
-                    waiting += h.Applicants.Count + (h.Offer > 0 ? 1 : 0) + (EstateRules.MayServeNotice(h, day) || EstateRules.MayGoToCourt(h, day) ? 1 : 0);
+                    waiting += h.ApplicantCount + (h.Offer > 0 ? 1 : 0) + EstateRules.UnitsToAnswer(h, day);
                 }
                 for (int i = 0; i < _state.Agency.Open.Count; i++)
                 {

@@ -49,6 +49,7 @@ namespace RealLifeOverhaul.Economy
         public float Custom;        // the game's own custom price, as it was found: put back when the feature stops
         public int Base;            // the game's own value of it
         public int Key;             // a number for its address
+        public int Units = 1;       // the units the game counts in it (EstateRules.UnitCount)
         public string Place, District;
         public EstateHolding Holding;   // the player's, while they own it
     }
@@ -56,7 +57,8 @@ namespace RealLifeOverhaul.Economy
     /// <summary>
     /// Everything the property business reads from or does to the game, in one place.
     ///
-    /// READ: every building's own value and district (Building.GetMarketValue, Neighbourhood); the buildings the
+    /// READ: every building's own value and district (Building.GetMarketValue, Neighbourhood), and the units it is
+    /// let in (its floor, Building.totalSqm, over its unit's size, BuildingSizeData.squareMeters); the buildings the
     /// player owns and what the game recorded of the purchase (GameInstance.realEstate); the game's listings
     /// (GameInstance.buildingsForSale); the employees at the agency's office (EmployeeInstance); Travel's hotels
     /// and rooms; the player's vehicles (GameInstance.VehicleInstances, VehicleHelper.AllPlayerVehicles).
@@ -195,7 +197,11 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                var c = new CityBuilding { B = b, Custom = b.customMarketPrice, Base = Mathf.RoundToInt(Mathf.Min(value, int.MaxValue / 8)), Place = place, Key = EstateRules.Hash(place), District = b.Neighbourhood ?? string.Empty };
+                var c = new CityBuilding
+                {
+                    B = b, Custom = b.customMarketPrice, Base = Mathf.RoundToInt(Mathf.Min(value, int.MaxValue / 8)), Place = place, Key = EstateRules.Hash(place), District = b.Neighbourhood ?? string.Empty,
+                    Units = EstateRules.UnitCount(b.totalSqm, UnitSqm(b))
+                };
                 City.Add(c);
                 ByPlace[place] = c;
                 long sum;
@@ -206,6 +212,22 @@ namespace RealLifeOverhaul.Economy
                 SqmCount[c.District] = count + 1;
             }
             return City.Count > 0;
+        }
+
+        // The size of the unit the game lets on its own in a building and lets the player take for a business (its
+        // BuildingSizeData, as Building.GetBuildingDailyMarketRent and RealEstate.MaxOccupancy read it); 0 for a size
+        // the game has no data of (BuildingSizeHelper.GetData looks it up in a dictionary and throws for one it lacks).
+        private static int UnitSqm(Building b)
+        {
+            try
+            {
+                BuildingSizeData size = BuildingSizeHelper.GetData(b.BuildingSize);
+                return size != null ? Mathf.Max(0, size.squareMeters) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
         }
 
         internal static CityBuilding Find(string place)
@@ -362,6 +384,7 @@ namespace RealLifeOverhaul.Economy
                 h.Income = Income(c.District);
                 h.Name = e.address.ToFormattedString();
                 h.Self = reg != null && GoingPublic.Mine(reg);
+                EstateRules.FitUnits(h, c.Units);
                 c.Holding = h;
             }
             for (int i = s.Holdings.Count - 1; i >= 0; i--)
@@ -376,11 +399,12 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// The game is told what its nightly run should pay for a building the player lets himself: the agreed rent
-        /// or nothing. With <paramref name="own"/> the figures are the game's own again (the market's rent, half
-        /// let). A rent set in the game's own app meanwhile is taken off: the tenancy's rent is the agreed one.
-        /// False if the game no longer has the building as the player's.
+        /// of every unit whose tenant owes nothing (EstateRules.PayingRent), or nothing. With <paramref name="own"/>
+        /// the figures are the game's own again (the market's rent, half let). A rent set in the game's own app
+        /// meanwhile is taken off: the tenancies' rents are the agreed ones. False if the game no longer has the
+        /// building as the player's.
         /// </summary>
-        public static bool WriteRent(EstateHolding h, bool pays, bool own)
+        public static bool WriteRent(EstateHolding h, bool own)
         {
             RealEstate e = Estate(h.Place);
             if (e == null)
@@ -397,7 +421,8 @@ namespace RealLifeOverhaul.Economy
                 return true;
             }
             float occupancy, price;
-            EstateRules.Encode(h.Rent, pays && h.Let, e.totalSqm, e.MaxOccupancy, out occupancy, out price);
+            int rent = EstateRules.PayingRent(h);
+            EstateRules.Encode(rent, rent > 0, e.totalSqm, e.MaxOccupancy, out occupancy, out price);
             e.occupancy = occupancy;
             e.pricePerSqm = price;
             return true;

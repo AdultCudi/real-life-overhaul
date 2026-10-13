@@ -20,8 +20,8 @@ namespace RealLifeOverhaul.Economy
     ///               its price and the button that opens the game's purchase screen
     ///   Mine        every building owned, the hotels held and the hire lot; pick a building to let it yourself,
     ///               insure it, put it up for sale or answer an offer
-    ///   Tenants     who is in each building the player lets, and who has applied; pick one to answer, set the
-    ///               asking rent, serve notice or go to court
+    ///   Tenants     who is in each unit of the buildings the player lets, and who has applied; pick one to answer,
+    ///               set the unit's asking rent, serve notice or go to court
     ///   Works       each building's condition and level; pick one for repairs, a refurbishment or a change of use
     ///   Agency      the office, the negotiators and the instructions; pick one to take it on or decline
     ///   Hotel       each hotel's night; pick one for its rates, its staff, a campaign, a group that asks
@@ -438,6 +438,10 @@ namespace RealLifeOverhaul.Economy
             box.Line(rent > 0
                 ? EstateText.T("reallife_estate_listing_rent", "use", EstateText.Use(use), "amount", EstateText.Money(rent), "yield", EstateText.Yield((int)((long)rent * c.DaysPerYear * 10000 / Math.Max(1, value))))
                 : EstateText.T("reallife_estate_listing_unfit"));
+            if (b.Units > 1 && rent > 0)
+            {
+                box.Line(EstateText.T("reallife_estate_listing_units", "units", b.Units.ToString(), "amount", EstateText.Money(Math.Max(1, rent / b.Units))));
+            }
             box.Line(EstateText.T("reallife_estate_listing_how"));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_estate_btn_offer", () => _director.Buy(place));
