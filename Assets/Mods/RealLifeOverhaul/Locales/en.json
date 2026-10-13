@@ -11776,7 +11776,7 @@
   "reallife_law_station_furniture": "Furnished police stations",
   "reallife_opt_tip_law_station_furniture": "Desks, chairs, lockers, a briefing room, a break room and the game's own walls and floors, with officers at work and visitors waiting. Off, the station is bare as before.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Fixed: in a Going Public session, crashing, being arrested, going to prison or being stopped without a licence in another player's car no longer tows or impounds their car or charges you for it. It stays where you stopped. Fixed: when the city had no free ambulance, the one sent to a crash could be taken from another crash scene or vanish from the road in front of you. Fixed: a private driver's car could be pulled into a traffic accident or a street crime. Private drivers are now left alone.",
+  "reallife_changes_next": "Nothing yet.",
   "reallife_changes_002_4_title": "0.2.4",
   "reallife_changes_002_4": "Each of the city's banks has its own app on the phone, under the game's name for it: your current account and statement, the loans you owe that bank with paying part or all of one, your card, what it offers you today and how it sees your rating. The banks' terms differ a little, so choosing one matters, and under a rating of 580 none of them lends. The mod's contacts have real pictures from the game: people show their faces, and services show a logo. Contacts has a search box at the top. Police stations are furnished with the game's own furniture: desks with computers, lockers, a water cooler, plants, a clock, lamps, and a toilet in the cell. Fixed: with all of the mod's apps on, the row of apps at the top of the full screen menu ran under the money and the date and off the screen; it now has pages, centred between the app's name and the money, turned with the wheel or the dots. Fixed: on the city map, a row of the mod's (Courthouse, Custom shops and the rest) could be unticked while its places stayed on the map; the places now follow the tick you see.",
   "reallife_rota_box_stock_ok": "Its goods keep up with the advised plan.",
@@ -17105,5 +17105,7 @@
   "reallife_net_box_grace_place": "Grace period: {left} of {days} days left. It may open without a connection until the end of {day}.",
   "reallife_changes_009_2_title": "0.9.2",
   "reallife_changes_009_2": "Fixed: on a save from before the internet, or with the mod newly installed on a save, web design and software companies and the headquarters were closed at once for want of a connection. The ones you already have now get 7 days on the game's clock to get connected, with the days left in the Utilities app.",
-  "reallife_tow_not_yours": "The car you were driving is another player's. It stays where it stopped, and you pay no towing for it."
+  "reallife_tow_not_yours": "The car you were driving is another player's. It stays where it stopped, and you pay no towing for it.",
+  "reallife_changes_009_3_title": "0.9.3",
+  "reallife_changes_009_3": "Fixed: in a Going Public session, crashing, being arrested, going to prison or being stopped without a licence in another player's car no longer tows or impounds their car or charges you for it. It stays where you stopped. Fixed: when the city had no free ambulance, the one sent to a crash could be taken from another crash scene or vanish from the road in front of you. Fixed: a private driver's car could be pulled into a traffic accident or a street crime. Private drivers are now left alone."
 }
