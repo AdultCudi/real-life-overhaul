@@ -11776,7 +11776,7 @@
   "reallife_law_station_furniture": "Delegacias mobiliadas",
   "reallife_opt_tip_law_station_furniture": "A delegacia é mobiliada com mesas, computadores, armários, plantas e luminárias do próprio jogo, e a cela tem um vaso. Desligado, só o balcão, o banco, as mesas e a cela.",
   "reallife_changes_next_title": "Próxima versão",
-  "reallife_changes_next": "Ônibus: agora você é visto embarcando e descendo. Ao embarcar, você vai até a porta da frente, paga, entra, passa o cartão no validador e se senta perto da porta do meio, ou vai em pé segurando uma alça quando o ônibus está lotado. Você viaja enquanto ele parte, e de cima o teto é tirado para que você veja o interior. No seu ponto as portas se abrem, você se levanta e desce pela porta do meio, e o ônibus vai embora. Um ônibus lotado agora leva você, em pé.",
+  "reallife_changes_next": "Nada ainda.",
   "reallife_changes_002_4_title": "0.2.4",
   "reallife_changes_002_4": "Cada banco da cidade tem seu próprio app no celular, com o nome que o jogo dá a ele: sua conta corrente e o extrato, os empréstimos que você deve àquele banco, podendo pagar parte ou tudo, seu cartão, o que ele oferece a você hoje e como ele vê sua pontuação. As condições dos bancos diferem um pouco, então escolher um faz diferença, e abaixo de uma pontuação de 580 nenhum deles empresta. Os contatos do mod têm fotos de verdade do jogo: as pessoas mostram o rosto e os serviços mostram um logotipo. Contatos tem uma caixa de busca no alto. As delegacias são mobiliadas com os móveis do próprio jogo: mesas com computadores, armários, um bebedouro, plantas, um relógio, luminárias e um vaso sanitário na cela. Corrigido: com todos os apps do mod, a fileira de apps no alto do menu de tela cheia passava por baixo do dinheiro e da data e saía da tela; agora ela tem páginas, centralizadas entre o nome do app e o dinheiro, viradas com a roda do mouse ou com os pontos. Corrigido: no mapa da cidade, uma linha do mod (Tribunal, Oficinas de personalização e as outras) podia ficar desmarcada enquanto os seus lugares continuavam no mapa; agora os lugares seguem a marcação que você vê.",
   "reallife_rota_box_stock_ok": "As mercadorias dão conta do plano recomendado.",
@@ -13815,5 +13815,7 @@
   "reallife_changes_004_6_title": "0.4.6",
   "reallife_changes_004_6": "Visão dos bairros no mapa da cidade: dez novos itens na lista de filtros colorem cada bairro por riqueza, aluguéis, preços dos imóveis, movimento e demanda, crime, a sua reputação, luz e água, internet, concorrência ou a prefeitura. Ao lado dos filtros uma janela mostra a legenda das cores, um cartão com todos os dados do bairro sob o ponteiro e os bairros em ordem. O Guia tem uma página sobre ela.",
   "reallife_transaction_bus_fare_back": "Passagem de ônibus devolvida",
-  "reallife_transit_fare_back": "A passagem de ônibus de {fare} foi devolvida: você não viajou."
+  "reallife_transit_fare_back": "A passagem de ônibus de {fare} foi devolvida: você não viajou.",
+  "reallife_changes_004_7_title": "0.4.7",
+  "reallife_changes_004_7": "Ônibus: agora você é visto embarcando e descendo. Ao embarcar, você vai até a porta da frente, paga, entra, passa o cartão no validador e se senta perto da porta do meio, ou vai em pé segurando uma alça quando o ônibus está lotado. Você viaja enquanto ele parte, e de cima o teto é tirado para que você veja o interior. No seu ponto as portas se abrem, você se levanta e desce pela porta do meio, e o ônibus vai embora. Um ônibus lotado agora leva você, em pé."
 }
