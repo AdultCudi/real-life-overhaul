@@ -48,8 +48,24 @@ namespace RealLifeOverhaul.Fame
 
         public delegate bool NeedAsk(out UnityEngine.Vector3 where);
 
+        /// <summary>Somebody the player has still to meet in the social life is met at an evening (a place of meeting of its own). Their name, or null. Default: nobody.</summary>
+        public static Func<string> Meet;
+
+        /// <summary>The changes the council could be pushed to make now, for a business owner, into the list given. Default: none (no lobbying).</summary>
+        public static Action<List<FameLever>> Levers;
+
+        /// <summary>A push on the council won: the lever is to move to the position on the day given. False if it could not. Default: never.</summary>
+        public static Func<int, int, int, bool> Lobbied;
+
+        /// <summary>A bribe of so much came out: a court case is opened. Its number, or 0 with no court. Default: none.</summary>
+        public static Func<int, int> Investigate;
+
         public static void Reset()
         {
+            Meet = null;
+            Levers = null;
+            Lobbied = null;
+            Investigate = null;
             Footfall = null;
             Story = null;
             Need = null;
@@ -280,6 +296,65 @@ namespace RealLifeOverhaul.Fame
         public static void Face(ThirdPersonCharacter who, CharacterEmojiName emoji)
         {
             ActorPool.Instance?.ShowEmoji(who, emoji, 3.5f);
+        }
+
+        /// <summary>The player pays for something of Standing's: false (with the game's own "not enough money" notice) if they cannot.</summary>
+        public static bool Pay(int amount, string transaction)
+        {
+            return amount <= 0 || GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transaction), null, null, false, true);
+        }
+
+        /// <summary>One of the game's own rivals by name, for the other side of a push on the council; null while the game's rivals are off.</summary>
+        public static string Rival(int pick)
+        {
+            try
+            {
+                if (SaveGameManager.Current == null || !BigAmbitions.Rivals.RivalsHelper.IsFeatureEnabled)
+                {
+                    return null;
+                }
+                var rivals = BigAmbitions.Rivals.RivalsHelper.GetSpecialRivals();
+                var names = new List<string>(8);
+                if (rivals != null)
+                {
+                    foreach (var rival in rivals)
+                    {
+                        string name = rival != null && rival.rivalData != null ? rival.rivalData.rivalName : null;
+                        if (!string.IsNullOrEmpty(name) && !names.Contains(name))
+                        {
+                            names.Add(name);
+                        }
+                    }
+                }
+                return names.Count > 0 ? names[Math.Abs(pick) % names.Count] : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>The district where the player has most businesses, or the one they are in; null if neither is known.</summary>
+        public static string BusiestDistrict()
+        {
+            List<BuildingRegistration> all = Businesses();
+            string best = null;
+            int most = 0;
+            for (int i = 0; i < all.Count; i++)
+            {
+                string d = all[i].Neighborhood;
+                int n = 0;
+                for (int k = 0; k < all.Count; k++)
+                {
+                    n += all[k].Neighborhood == d ? 1 : 0;
+                }
+                if (!string.IsNullOrEmpty(d) && n > most)
+                {
+                    most = n;
+                    best = d;
+                }
+            }
+            return best ?? DistrictHere();
         }
     }
 }

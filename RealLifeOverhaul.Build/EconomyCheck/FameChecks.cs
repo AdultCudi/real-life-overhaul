@@ -18,6 +18,7 @@ internal static partial class Program
         FameProfiles();
         FameSave();
         FamePressChecks();
+        FameCityChecks();
     }
 
     private static FameInputs FameSample()

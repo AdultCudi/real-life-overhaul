@@ -46,7 +46,18 @@ namespace RealLifeOverhaul
         ///                 (BusinessDirector.WeightOf, after the city's economy's own), 0.6 to 1.8 times
         ///   Esteem        the workers' reputation, -10 to 10, for the company's hiring and its rivals (CompanyBridges.Esteem)
         ///   Story         a piece for the City Ledger (Paper.Print, NewsKind.Story)
-        ///   the Planner   an invitation accepted is an appointment, one offered a deadline, a promise its day (a source of its own)
+        ///   the Planner   an invitation accepted is an appointment, one offered a deadline, a promise its day, a request
+        ///                 the last day to answer it, a push on the council the day it is decided (a source of its own)
+        ///
+        /// Connections and power:
+        ///   Meet          somebody the player has still to meet is met at an evening with investors or a reception: a place
+        ///                 of meeting of its own (SocialOrigin.Event, appended), met as the social life meets (SocialLife.Meet)
+        ///   Levers, Lobbied  the council's policies for business and growth and better transport, offered to push for while
+        ///                 the player has the influence; one won is the council's own change, announced on its day
+        ///                 (CivicGovernment.Lobbied, Settled: new)
+        ///   BribeAsk, Bribed an official on the Business desk who would make an inspection or a licence a formality for
+        ///                 cash (BusinessDirector.BribeAsk and Bribed, new; one more option of the issue's)
+        ///   Investigate   a bribe come out is one of Justice's own cases on a summons (TaxCases.FileBribery, JusticeLaw.Bribery: new)
         ///
         /// Everything is read from what those features already keep in public or heard through an event they already
         /// raise; nothing of theirs is changed but through an entry of theirs. COST: nothing per frame. The reads are made
@@ -78,6 +89,13 @@ namespace RealLifeOverhaul
                 BusinessDirector.WeightOf = Weight;
                 CompanyBridges.Esteem = Esteem;
                 PlannerDirector.Instance?.AddSource(Source);
+                FameBridges.Meet = MeetAtEvening;
+                FameBridges.Levers = Levers;
+                FameBridges.Lobbied = (lever, position, day) => Settings.Civic && CivicDirector.Instance != null && CivicDirector.Instance.Government != null
+                                                               && CivicDirector.Instance.Government.Lobbied((Lever)lever, position, day);
+                FameBridges.Investigate = TaxCases.FileBribery;
+                BusinessDirector.BribeAsk = (kind, place, ask, seed) => FameDirector.Instance != null ? FameDirector.Instance.BribeAsk(kind, place, ask, seed) : 0;
+                BusinessDirector.Bribed = (kind, place, amount) => FameDirector.Instance?.Bribed(kind, place, amount);
             }
 
             internal static void Disconnect()
@@ -92,6 +110,49 @@ namespace RealLifeOverhaul
                 BusinessDirector.WeightOf = _weightBefore;
                 _weightBefore = null;
                 CompanyBridges.Esteem = null;
+                BusinessDirector.BribeAsk = null;
+                BusinessDirector.Bribed = null;
+            }
+
+            // Somebody the player has still to meet is met at an evening: a place of meeting of its own (SocialOrigin.Event).
+            private static string MeetAtEvening()
+            {
+                try
+                {
+                    SocialPerson stranger = Settings.Social && Settings.SocialMeetings && SocialState.Loaded && SocialDirector.Instance != null ? SocialDirector.NextStranger() : null;
+                    if (stranger == null)
+                    {
+                        return null;
+                    }
+                    stranger.Origin = SocialOrigin.Event;
+                    SocialLife.Meet(stranger, true);
+                    return stranger.Name;
+                }
+                catch (Exception e)
+                {
+                    Fault("StandingLinks.MeetAtEvening", e);
+                    return null;
+                }
+            }
+
+            // The council's changes a business owner might push for (its own policies for business and growth, and better
+            // transport near the shops), that neither stand already nor are on their way.
+            private static void Levers(List<FameLever> into)
+            {
+                CivicGovernment gov = Settings.Civic && CivicDirector.Instance != null ? CivicDirector.Instance.Government : null;
+                if (gov == null)
+                {
+                    return;
+                }
+                for (int i = 0; i < CivicCatalogue.All.Length; i++)
+                {
+                    PolicyDef p = CivicCatalogue.All[i];
+                    bool wanted = p.Issue == Issue.Business || p.Issue == Issue.Growth || (p.Lever == Lever.Transit && p.Dir > 0);
+                    if (wanted && !gov.Settled(p.Lever, p.Dir))
+                    {
+                        into.Add(new FameLever { Lever = (int)p.Lever, Position = p.Dir, Name = CivicText.T(p.Name), Effect = CivicText.Effect(p) });
+                    }
+                }
             }
 
             private static Func<BuildingRegistration, int> _ambientBefore;
@@ -167,8 +228,9 @@ namespace RealLifeOverhaul
 
             /// <summary>
             /// Standing's rows of the Planner: an invitation accepted on its day and hour (to be there), one offered on the
-            /// last day to accept it, an open promise on its day. It reads the file and changes nothing. Ids: 1 an
-            /// invitation accepted, 2 one offered, 3 a promise, with its number.
+            /// last day to accept it, an open promise on its day, a request on the last day to answer it, a push on the
+            /// council on the day it is decided. It reads the file and changes nothing. Ids: 1 an invitation accepted, 2 one
+            /// offered, 3 a promise, 4 a request, 5 a push on the council, with its number.
             /// </summary>
             private sealed class StandingSource : IPlannerSource
             {
@@ -207,6 +269,31 @@ namespace RealLifeOverhaul
                                 e.Title = PlannerText.T("reallife_fame_plan_answer_title", "what", FameText.InviteName(v.Kind));
                                 e.What = PlannerText.T("reallife_fame_plan_answer_what", "day", v.Day.ToString());
                             }
+                        }
+                    }
+                    for (int i = 0; i < f.Requests.Count; i++)
+                    {
+                        FameRequest r = f.Requests[i];
+                        if (r.State != FameRequestState.Open)
+                        {
+                            continue;
+                        }
+                        PlannerEntry e = into.Add(Id, 4, r.Id, PlannerCategory.Money, r.Until);
+                        if (e != null && into.WantText)
+                        {
+                            e.Title = FameText.RequestTitle(r);
+                            e.What = PlannerText.T("reallife_fame_plan_request_what");
+                            e.Money = PlannerText.T("reallife_planner_costs", "amount", FameText.Money(r.Amount));
+                        }
+                    }
+                    FameLobby lobby = FameCity.Pending(f);
+                    if (lobby != null)
+                    {
+                        PlannerEntry e = into.Add(Id, 5, lobby.Id, PlannerCategory.City, lobby.DecideDay);
+                        if (e != null && into.WantText)
+                        {
+                            e.Title = PlannerText.T("reallife_fame_plan_lobby_title");
+                            e.What = PlannerText.T("reallife_fame_plan_lobby_what", "chance", lobby.Chance.ToString());
                         }
                     }
                     for (int i = 0; i < f.Promises.Count; i++)

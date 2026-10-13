@@ -136,8 +136,11 @@ namespace RealLifeOverhaul.Fame
             }
         }
 
+        partial void CityDay(int day);
+
         partial void DayMore(int day)
         {
+            CityDay(day);
             Footfall();
             if (!Settings.StandingPress)
             {

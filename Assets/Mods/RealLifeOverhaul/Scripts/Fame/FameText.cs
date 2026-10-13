@@ -162,6 +162,48 @@ namespace RealLifeOverhaul.Fame
             "reallife_fame_news_partnership", "reallife_fame_news_event"
         };
 
+        // ---- the city: requests (the sponsor's two wordings first), what each is, how it stands; the council's pushes
+        private static readonly string[] RequestTitleKeys =
+        {
+            "reallife_fame_request_0", "reallife_fame_request_0b", "reallife_fame_request_1", "reallife_fame_request_2", "reallife_fame_request_3", "reallife_fame_request_4"
+        };
+        private static readonly string[] RequestAboutKeys =
+        {
+            "reallife_fame_request_about_0", "reallife_fame_request_about_0b", "reallife_fame_request_about_1", "reallife_fame_request_about_2", "reallife_fame_request_about_3",
+            "reallife_fame_request_about_4"
+        };
+        private static readonly string[] RequestStateKeys =
+        {
+            "reallife_fame_request_state_0", "reallife_fame_request_state_1", "reallife_fame_request_state_2", "reallife_fame_request_state_3", "reallife_fame_request_state_4"
+        };
+        private static readonly string[] LobbyStateKeys = { "reallife_fame_lobby_state_0", "reallife_fame_lobby_state_1", "reallife_fame_lobby_state_2" };
+
+        private static int RequestAt(FameRequest r)
+        {
+            int kind = FameRules.Clamp((int)r.Kind, 0, 4);
+            return kind == 0 ? (r.Seed & 1) : kind + 1;
+        }
+
+        public static string RequestTitle(FameRequest r)
+        {
+            return Fill(RequestTitleKeys[RequestAt(r)], "district", FameGame.DistrictName(r.District));
+        }
+
+        public static string RequestAbout(FameRequest r)
+        {
+            return Fill(RequestAboutKeys[RequestAt(r)], "district", FameGame.DistrictName(r.District), "amount", Money(r.Amount));
+        }
+
+        public static string RequestState(FameRequestState state)
+        {
+            return T(RequestStateKeys[FameRules.Clamp((int)state, 0, RequestStateKeys.Length - 1)]);
+        }
+
+        public static string LobbyState(FameLobbyState state)
+        {
+            return T(LobbyStateKeys[FameRules.Clamp((int)state, 0, LobbyStateKeys.Length - 1)]);
+        }
+
         /// <summary>A question's keys: the question, the first answer's button, the second's.</summary>
         public static string[] QuestionKeys(FameAsk ask)
         {

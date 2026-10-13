@@ -159,6 +159,12 @@ namespace RealLifeOverhaul.Fame
             {
                 box.Line(FameText.Pair(LabelKeys[i], FameText.Rep(f.Rep[i])));
             }
+            int day = FameGame.Day;
+            box.Line(FameText.Pair("reallife_fame_label_influence", FameText.N(FameCity.Influence(f))));
+            if (FameCity.InScandal(f, day))
+            {
+                box.Line(FameText.Fill("reallife_fame_scandal_line", "day", FameText.N(f.ScandalUntil)));
+            }
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_fame_back", back);
         }
 

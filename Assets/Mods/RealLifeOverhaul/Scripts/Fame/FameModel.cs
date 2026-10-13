@@ -208,6 +208,13 @@ namespace RealLifeOverhaul.Fame
         public readonly List<FameInvite> Invites = new List<FameInvite>(FamePress.InvitesMost);
         public readonly List<FamePromise> Promises = new List<FamePromise>(FamePress.PromisesMost);
 
+        // ---- the city: requests, bribes, the council (FameCity, saved under its own key)
+        public int RequestDay = -100, CharityDay = -1, ScandalUntil = -1, LobbyRest = -100, LobbyCredit;
+        public readonly List<FameRequest> Requests = new List<FameRequest>(FameCity.RequestsMost);
+        public readonly List<FameBribe> Bribes = new List<FameBribe>(FameCity.BribesMost);
+        public readonly List<FameLobby> Lobbies = new List<FameLobby>(FameCity.LobbiesMost);
+        public readonly List<FameBoost> Boosts = new List<FameBoost>(FameCity.BoostsMost);
+
         public int Overall => FameRules.Overall(Rep);
 
         public FameInvite Invite(int id)

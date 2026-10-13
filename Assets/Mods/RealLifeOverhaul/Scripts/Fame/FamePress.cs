@@ -581,7 +581,8 @@ namespace RealLifeOverhaul.Fame
 
         /// <summary>
         /// An issue's share of business pressure's deal, thousandths: complaints by the customers and the neighbourhoods,
-        /// praise by the customers, inspections and audits by integrity, and more of them for somebody well known.
+        /// praise by the customers, inspections and audits by integrity, and more of them for somebody well known, and more
+        /// again while a scandal runs (FameCity).
         /// </summary>
         public static int IssueScale(FameFile f, FameIssue issue)
         {
@@ -591,15 +592,17 @@ namespace RealLifeOverhaul.Fame
             {
                 case FameIssue.Complaint: scale = 1000 + (FameRules.Start - (2 * customers + neighbourhood) / 3) * 10; break;
                 case FameIssue.Praise: scale = 1000 + (customers - FameRules.Start) * 10; break;
-                default: scale = 1000 + (FameRules.Start - integrity) * 10 + f.Recognition * ScrutinyStep; break;
+                default:
+                    scale = 1000 + (FameRules.Start - integrity) * 10 + f.Recognition * ScrutinyStep + (FameCity.InScandal(f, f.SettledDay) ? FameCity.ScandalScrutiny : 0);
+                    break;
             }
             return FameRules.Clamp(scale, IssueLeast, IssueMost);
         }
 
-        /// <summary>What it is like to work for the player as the city tells it, -10 to 10, for the company's hiring and its rivals.</summary>
+        /// <summary>What it is like to work for the player as the city tells it, -10 to 10, for the company's hiring and its rivals; worse while a scandal runs.</summary>
         public static int Esteem(FameFile f)
         {
-            return FameRules.Clamp((f.Rep[(int)FamePart.Workers] - FameRules.Start) / EsteemStep, -10, 10);
+            return FameRules.Clamp((f.Rep[(int)FamePart.Workers] - FameRules.Start) / EsteemStep - (FameCity.InScandal(f, f.SettledDay) ? FameCity.ScandalEsteem : 0), -10, 10);
         }
 
         // ---------------------------------------------------------------- help refused

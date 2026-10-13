@@ -452,7 +452,7 @@ namespace RealLifeOverhaul.Fame
             }
             moved += Math.Abs(f.Rep[2] - neighbourhood);
             f.Target[3] = Start;
-            if ((day - f.StartDay) % ForgetDays == 0 && f.Rep[3] != Start)
+            if ((day - f.StartDay) % ForgetDays == 0 && f.Rep[3] != Start && day >= f.ScandalUntil)   // (not while a scandal runs)
             {
                 f.Rep[3] += Math.Sign(Start - f.Rep[3]);
                 moved++;

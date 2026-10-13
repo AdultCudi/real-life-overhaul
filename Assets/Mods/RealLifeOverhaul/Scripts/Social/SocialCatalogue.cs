@@ -95,14 +95,14 @@ namespace RealLifeOverhaul
         public static readonly string[] OriginDesc =
         {
             "reallife_contact_mom_desc", "reallife_contact_friend_desc", "reallife_social_desc_gym", "reallife_social_desc_work", "reallife_social_desc_cart",
-            "reallife_social_desc_neighbour", "reallife_social_desc_helped", "reallife_social_desc_customer", "reallife_social_desc_online"
+            "reallife_social_desc_neighbour", "reallife_social_desc_helped", "reallife_social_desc_customer", "reallife_social_desc_online", "reallife_social_desc_event"
         };
 
         /// <summary>The first text in a new contact's thread.</summary>
         public static readonly string[] OriginWelcome =
         {
             "reallife_text_mom_welcome", "reallife_text_friend_welcome", "reallife_social_welcome_gym", "reallife_social_welcome_work", "reallife_social_welcome_cart",
-            "reallife_social_welcome_neighbour", "reallife_social_welcome_helped", "reallife_social_welcome_customer", "reallife_social_welcome_online"
+            "reallife_social_welcome_neighbour", "reallife_social_welcome_helped", "reallife_social_welcome_customer", "reallife_social_welcome_online", "reallife_social_welcome_event"
         };
 
         /// <summary>What they say when they walk up, two ways each, by origin (from Gym on).</summary>
@@ -115,7 +115,8 @@ namespace RealLifeOverhaul
             new[] { "reallife_social_meet_neighbour_1", "reallife_social_meet_neighbour_2" },
             new[] { "reallife_social_meet_helped_1", "reallife_social_meet_helped_2" },
             new[] { "reallife_social_meet_customer_1", "reallife_social_meet_customer_2" },
-            new[] { "reallife_social_meet_online_1", "reallife_social_meet_online_2" }
+            new[] { "reallife_social_meet_online_1", "reallife_social_meet_online_2" },
+            new[] { "reallife_social_meet_event_1", "reallife_social_meet_event_2" }
         };
 
         // The pairs of traits a person can have: never two that contradict each other.

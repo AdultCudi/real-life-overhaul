@@ -9,7 +9,7 @@ namespace RealLifeOverhaul
     public enum SocialStage { Stranger, Acquaintance, Friend, CloseFriend, Dating, Partner }
 
     /// <summary>Where somebody is met. One person of the cast per origin.</summary>
-    public enum SocialOrigin { Family, OldFriend, Gym, Work, CoffeeCart, Neighbour, Helped, Customer, Online }   // saved as a number: new ones go at the end (Online: answered a post on Flare)
+    public enum SocialOrigin { Family, OldFriend, Gym, Work, CoffeeCart, Neighbour, Helped, Customer, Online, Event }   // saved as a number: new ones go at the end (Online: answered a post on Flare; Event: met at an evening of Standing's)
 
     [Flags]
     public enum SocialTrait
@@ -626,7 +626,7 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
-                if (p.Origin < SocialOrigin.Family || p.Origin > SocialOrigin.Online)
+                if (p.Origin < SocialOrigin.Family || p.Origin > SocialOrigin.Event)
                 {
                     p.Origin = SocialOrigin.OldFriend;   // a place of meeting of a later version's: read as an old friend, never as a number past the tables
                 }

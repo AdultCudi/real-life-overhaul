@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Helpers;
 using UI.Notification;
 using UnityEngine;
@@ -161,6 +162,106 @@ namespace RealLifeOverhaul.Fame
                 FameInvite invite = FamePress.Offer(_file, FameInviteKind.Show, Save.Day - FamePress.InviteAhead, Save.Hour);
                 invite.State = FameInviteState.Accepted;
                 StartScene(invite);
+            });
+        }
+
+        /// <summary>Test: the city asks something of the player now: the next kind of request each time.</summary>
+        public void TestRequest()
+        {
+            if (!TestReady("Standing request"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                List<BuildingRegistration> shops = FameGame.Businesses();
+                string place = shops.Count > 0 ? FameGame.Place(shops[0]) : null;
+                for (int i = 0; i < _file.Requests.Count; i++)
+                {
+                    if (_file.Requests[i].State == FameRequestState.Open)
+                    {
+                        _file.Requests[i].State = FameRequestState.Lapsed;   // (a test's request takes the place of one open)
+                    }
+                }
+                FameRequestKind kind = (FameRequestKind)(_testRequest++ % ((int)FameRequestKind.Partnership + (place != null ? 1 : 0)));
+                Requested(FameCity.Offer(_file, kind, Save.Day, Random.Range(0, 1000), FameGame.BusiestDistrict(), place));
+            });
+        }
+
+        private int _testRequest;
+
+        /// <summary>Test: an evening with investors now (every other time, a reception at City Hall), as if accepted for this hour.</summary>
+        public void TestEvening()
+        {
+            if (!TestReady("Standing evening"))
+            {
+                return;
+            }
+            if (!Free())
+            {
+                TestRefusals.Tell(Logger, "Standing evening", TestRefusal.ScreenBusy);
+                return;
+            }
+            Guarded(() =>
+            {
+                Parts();
+                FameInvite invite = FamePress.Offer(_file, _testRequest++ % 2 == 0 ? FameInviteKind.Investors : FameInviteKind.CityEvent, Save.Day - FamePress.InviteAhead, Save.Hour);
+                invite.State = FameInviteState.Accepted;
+                StartScene(invite);
+            });
+        }
+
+        /// <summary>Test: a bribe comes out now (one is paid first if there is none), with its case and its scandal.</summary>
+        public void TestBribe()
+        {
+            if (!TestReady("Standing bribe"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                FameBribe open = null;
+                for (int i = 0; i < _file.Bribes.Count; i++)
+                {
+                    open = _file.Bribes[i].Surfaced < 0 ? _file.Bribes[i] : open;
+                }
+                if (open == null)
+                {
+                    open = FameCity.Bribed(_file, "test", 500, Save.Day);
+                }
+                open.Day = Save.Day - FameCity.SurfaceAfterDays;
+                FameBribe b = FameCity.Surface(_file, Save.Day, -1);
+                if (b != null)
+                {
+                    Surfaced(b, Save.Day);
+                }
+            });
+        }
+
+        /// <summary>Test: a push on the council decided now (one is made for the first change on offer if none is pending).</summary>
+        public void TestCouncil()
+        {
+            if (!TestReady("Standing council"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                FameLobby l = FameCity.Pending(_file);
+                if (l == null)
+                {
+                    var levers = new List<FameLever>(16);
+                    FameBridges.Levers?.Invoke(levers);
+                    if (levers.Count == 0)
+                    {
+                        TestRefusals.Tell(Logger, "Standing council", TestRefusal.FeatureOff);
+                        return;
+                    }
+                    l = FameCity.Lobby(_file, levers[0].Lever, levers[0].Position, Save.Day, Random.Range(0, 1000));
+                }
+                l.DecideDay = Save.Day;
+                FameStory story = FameCity.Decide(_file, l, Save.Day, Random.Range(0, 100));
+                Decided(l, story, Save.Day);
             });
         }
 
