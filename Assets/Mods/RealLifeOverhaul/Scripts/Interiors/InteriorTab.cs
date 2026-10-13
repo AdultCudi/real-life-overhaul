@@ -49,6 +49,14 @@ namespace RealLifeOverhaul.Interiors
 
         // ---------------------------------------------------------------- putting it there
 
+        /// <summary>A new session (a city loaded): the tab may be put in again, and its fit is logged again.</summary>
+        public static void Begin()
+        {
+            _failed = false;
+            _fitLogged = false;
+            Dirty = false;
+        }
+
         /// <summary>Once a second from the director: the tab is put in BizMan once the game's BizMan is there.</summary>
         public static void Keep()
         {

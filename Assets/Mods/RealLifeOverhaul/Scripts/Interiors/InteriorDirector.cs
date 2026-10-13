@@ -55,6 +55,7 @@ namespace RealLifeOverhaul.Interiors
         {
             Instance = this;
             InteriorGame.Logger = Logger;
+            InteriorTab.Begin();
             _onSave = OnSaveGame;
         }
 
