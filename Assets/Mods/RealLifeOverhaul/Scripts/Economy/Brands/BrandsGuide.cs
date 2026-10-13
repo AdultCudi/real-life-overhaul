@@ -17,6 +17,9 @@ namespace RealLifeOverhaul.Economy.Brands
         public static void AddFacts(Feature f)
         {
             f.Fact("br_brands_most", () => Whole(BrandCatalogue.BrandsMost))
+                .Fact("br_local", () => Tenths(BrandCatalogue.LocalBand))
+                .Fact("br_keep_margin", () => Tenths(BrandCatalogue.ChainPriceMargin))
+                .Fact("br_keep_round", () => Whole(BrandCatalogue.KeepPerRound))
                 .Fact("br_w_sat", () => Whole(BrandCatalogue.WeightSatisfaction))
                 .Fact("br_w_clean", () => Whole(BrandCatalogue.WeightClean))
                 .Fact("br_w_stock", () => Whole(BrandCatalogue.WeightStock))

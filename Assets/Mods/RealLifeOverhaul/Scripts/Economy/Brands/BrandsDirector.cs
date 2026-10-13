@@ -35,7 +35,9 @@ namespace RealLifeOverhaul.Economy.Brands
     ///              takes its step; then the footfall figures are written and the Planner's rows are made again. The
     ///              rules for a city with sixty franchised shops take under 0.2 ms (checked offline); the pass says how
     ///              many milliseconds it took with "Developer diagnostics" on.
-    ///   the hour   the footfall figure of a shop where the brand asks for something is kept: one write for each
+    ///   the hour   the footfall figure of a shop where the brand asks for something is kept: one write for each;
+    ///              and one round over the shops whose prices are kept (BrandsDirector.Prices): a dictionary look-up
+    ///              a product, and a write only where a price is not as it should stand
     ///   the save   the footfall figures are the game's own in the save; the state is written
     ///
     /// EVERY EFFECT AND HOW IT IS UNDONE
@@ -51,7 +53,9 @@ namespace RealLifeOverhaul.Economy.Brands
     ///                so that the game's own market does not close it (BrandsGame.Keep); for a shop that traded
     ///                before the agreement the day it had is put back when the agreement ends
     ///   prices, hours   written when the player presses the button, as the game's own screens write them: the
-    ///                player's own settings from then on, not taken back
+    ///                player's own settings from then on, not taken back. Kept prices (the player's switch) are
+    ///                written each day and put back each hour while the switch is on; switched off, they stay as
+    ///                they stand
     ///
     /// A fault switches the feature off for the session with one line: the footfall figures are put back, and the
     /// game's daily run and the rest of the economy are left alone.
@@ -293,6 +297,8 @@ namespace RealLifeOverhaul.Economy.Brands
             _alerts.Clear();
             _sites.Clear();
             _sitesFor = 0;
+            _books.Clear();   // (kept prices stay as they stand: what was written is looked at afresh when this starts again)
+            _keepFrom = 0;
             if (!unloading)
             {
                 BrandsGame.Marks(null, false, _markName);
@@ -388,6 +394,7 @@ namespace RealLifeOverhaul.Economy.Brands
                     return;   // (the game's run writes every footfall figure afresh in a moment, and the day event follows it)
                 }
                 WriteAll(false, false);
+                KeepRound(false);
             }
             catch (Exception e)
             {
@@ -414,6 +421,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 _state.LastDay = day;   // (a jump of many days is one pass, for today)
                 int left;
                 Read(day, out left);
+                KeepRound(true);   // (before the chains look at the prices)
                 float read = Time.realtimeSinceStartup;
                 RulesDay(day);
                 Recount();
