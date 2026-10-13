@@ -236,6 +236,7 @@ namespace RealLifeOverhaul.Economy.Brands
                             table = WriteBrands(box, state, day, ref selected);
                             break;
                     }
+                    Meta.Guide.Point(box, "reallife_meta_title_economy_brands");   // (every page of the app ends with the Guide's page, after its buttons)
                 }
                 box.Done();
                 _table.Show(table, _rows, selected);
