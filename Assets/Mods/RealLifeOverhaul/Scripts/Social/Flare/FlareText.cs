@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Flare
             "reallife_flare_draft_arrested", "reallife_flare_draft_photo", "reallife_flare_draft_scandal", "reallife_flare_draft_photo",
             "reallife_flare_draft_photo", "reallife_flare_draft_photo", "reallife_flare_draft_photo", "reallife_flare_draft_photo", "reallife_flare_draft_photo",
             "reallife_flare_draft_photo", "reallife_flare_draft_photo", "reallife_flare_draft_photo", "reallife_flare_draft_shares", "reallife_flare_draft_photo",
-            "reallife_flare_draft_photo", "reallife_flare_draft_issue_safety"
+            "reallife_flare_draft_photo", "reallife_flare_draft_issue_safety", "reallife_flare_draft_campaign"
         };
         private static readonly string[][] PostKeys =
         {
@@ -56,7 +56,8 @@ namespace RealLifeOverhaul.Flare
             null, null, null, null, null, null, null, null,   // the city's own accounts' sources: worded in Other
             new[] { "reallife_flare_post_shares_1", "reallife_flare_post_shares_2" },
             null, null,
-            new[] { "reallife_flare_post_issue_safety_1", "reallife_flare_post_issue_safety_2" }
+            new[] { "reallife_flare_post_issue_safety_1", "reallife_flare_post_issue_safety_2" },
+            new[] { "reallife_flare_post_campaign_1", "reallife_flare_post_campaign_2" }
         };
         private static readonly string[] RoadsKeys = { "reallife_flare_post_issue_roads_1", "reallife_flare_post_issue_roads_2" };
         private static readonly string[][] ToneLineKeys =

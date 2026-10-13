@@ -260,7 +260,8 @@ namespace RealLifeOverhaul.Meta
                 S("crime").For("crime").Main("street_crime").Opts("crime_frequency").FreeOpts("crime_against_player").Also("robbery mugging thief theft burglar scam pickpocket"),
                 S("courts").For("justice").Main("justice").Opts("justice_lawyers", "justice_courthouse", "justice_no_prison", "justice_prison_cap", "justice_community",
                     "justice_civil", "justice_aftermath").Opt("justice_phone", "phone_contacts").Also("trial judge lawyer prison jail sentence bail"),
-                S("council").For("civic").Main("civic").Opts("civic_elections", "civic_construction").Also("election vote mayor politics roadworks city hall"),
+                S("council").For("civic").Main("civic").Opts("civic_elections").Opt("civic_office", "civic_elections").Opts("civic_construction")
+                    .Also("election vote mayor politics roadworks city hall candidate campaign councillor stand office"),
                 S("sounds").Guide("leisure").Need("leisure").Main("ambient_sound").Opts("ambient_birds", "ambient_night", "ambient_city", "ambient_crowd").Also("audio volume noise")),
 
             G("around",
@@ -295,7 +296,8 @@ namespace RealLifeOverhaul.Meta
                 S("banks").For("economy_banks").Need("economy").Opts("economy_banks").Also("bank app current account statement card loan apply"),
                 S("cityeco").For("economy_city").Need("economy").Main("economy_city").Opts("economy_city_level").Also("prices rates boom recession inflation"),
                 S("ventures").For("ventures").Opts("ventures_investors", "ventures_level").Also("invest investor pitch deal"),
-                S("markets").For("markets").Main("ventures_market").Opts("markets_margin").Also("shares stocks invest dividend broker trading candles chart margin short")),
+                S("markets").For("markets", "markets_listing").Main("ventures_market").Opts("markets_margin", "markets_listing")
+                    .Also("shares stocks invest dividend broker trading candles chart margin short").Also("markets_listing", "listing flotation offer prospectus shareholders takeover")),
 
             G("business",
                 S("company").For("economy_company").Need("economy").Main("economy_company").Opts("economy_company_staff", "economy_company_cover",

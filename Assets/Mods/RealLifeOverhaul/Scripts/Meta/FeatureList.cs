@@ -754,10 +754,19 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_civic_about").Help("reallife_guide_civic")
                 .Fact("refit_least", () => Guide.Money(CivicCatalogue.RefitPriceNow(0)))
                 .Fact("refit_most", () => Guide.Money(CivicCatalogue.RefitPriceNow(CivicCatalogue.RefitPrice.Length - 1)))
-                .Owns(Settings.CivicId, Settings.CivicElectionsId, Settings.CivicConstructionId)
-                .Data("reallife:civic_gov", "reallife:civic_works")
+                .Owns(Settings.CivicId, Settings.CivicElectionsId, Settings.CivicOfficeId, Settings.CivicConstructionId)
+                .Data("reallife:civic_gov", "reallife:civic_works", CivicDirector.KeyOffice)
                 .Contact(CityHallPhone.ContactId)
                 .Fact("civic_levers", () => CivicCatalogue.Levers.ToString(CultureInfo.InvariantCulture))
+                .Fact("office_signatures_council", () => OfficeRules.SignaturesCouncil.ToString(CultureInfo.InvariantCulture))
+                .Fact("office_signatures_mayor", () => OfficeRules.SignaturesMayor.ToString(CultureInfo.InvariantCulture))
+                .Fact("office_deposit_council", () => Guide.Money(Prices.At(OfficeRules.DepositCouncil)))
+                .Fact("office_deposit_mayor", () => Guide.Money(Prices.At(OfficeRules.DepositMayor)))
+                .Fact("office_limit_council", () => Guide.Money(Prices.At(OfficeRules.DonorLimitCouncil)))
+                .Fact("office_limit_mayor", () => Guide.Money(Prices.At(OfficeRules.DonorLimitMayor)))
+                .Fact("office_salary_council", () => Guide.Money(Prices.At(OfficeRules.SalaryCouncil)))
+                .Fact("office_salary_mayor", () => Guide.Money(Prices.At(OfficeRules.SalaryMayor)))
+                .Fact("office_open", () => OfficeRules.NominationsOpen.ToString(CultureInfo.InvariantCulture))
                 .Repair(CityHallPhone.Setup);
 
             // Its clean-up runs before the living city's: a wedding borrows up to four of the city's people and gives them back.
@@ -1076,6 +1085,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("mkt_borrow_most", () => Guide.Percent(Markets.MarketCatalogue.BorrowFeeMostBp / 10000f))
                 .Cleanup(() => Markets.MarketDirector.Instance?.StopAll())
                 .ResetData(() => Markets.MarketDirector.Instance?.Forget());   // the director opens a new market from the (now empty) save on its next second
+            Markets.ListingGuide.Register();   // the player's own company on the market: its switch, its tests and its Guide figures (Scripts/Markets/Listing; its data is the market's line)
 
             // The bank apps: one for each of the city's three largest banks, each a front on the credit desk. They keep no data:
             // off, no bank app is on the phone and every account and loan stays as it is. They run only while the economy core does.

@@ -120,6 +120,73 @@ namespace RealLifeOverhaul
         /// </summary>
         public const string FareGivenBack = "reallife_transaction_subway_pass";
 
+        // ---- what running for office asks (Civic/CivicOffice; set by Wiring/CivicLinks)
+
+        /// <summary>The city's economy, as the cycle stands: 0 a boom, 1 steady, 2 a slowdown, 3 a recession. Default: steady.</summary>
+        public static Func<int> Economy;
+
+        /// <summary>The player's weight with the council, 0 to 100 (Standing's influence). Default: none.</summary>
+        public static Func<int> Influence;
+
+        /// <summary>How well the city knows the player, 0 to 100 (Standing's recognition). Default: nobody knows them.</summary>
+        public static Func<int> Recognition;
+
+        /// <summary>What the city makes of the player's integrity, 0 to 100 (Standing). Default: 50.</summary>
+        public static Func<int> Integrity;
+
+        /// <summary>A conviction that still counts. Default: none.</summary>
+        public static Func<bool> Convicted;
+
+        /// <summary>A case before the court. Default: none.</summary>
+        public static Func<bool> CaseOpen;
+
+        /// <summary>The player lets property to tenants (a vote on rent is then a conflict of interest). Default: no.</summary>
+        public static Func<bool> Landlord;
+
+        /// <summary>Something the player did in politics moves Standing: integrity points, and tenths of a point of recognition from the press. Default: nothing.</summary>
+        public static Action<int, int> StandingMoved;
+
+        /// <summary>Opens a case in court on a summons: 0 campaign finance, 1 misconduct in public office; the amount involved. Its number, or 0 with no court.</summary>
+        public static Func<int, int, int> FileCase;
+
+        /// <summary>A moment of the campaign or the office the player may post about on social media: what (CivicOffice.Post*) and a name. Default: none.</summary>
+        public static Action<int, string> CampaignPost;
+
+        internal static int Cycle()
+        {
+            return Ask(Economy, 1, 0, 3);
+        }
+
+        internal static int Ask(Func<int> question, int fallback, int min, int max)
+        {
+            try
+            {
+                if (question != null)
+                {
+                    int answer = question();
+                    return answer < min ? min : answer > max ? max : answer;
+                }
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+            }
+            return fallback;
+        }
+
+        internal static bool Ask(Func<bool> question)
+        {
+            try
+            {
+                return question != null && question();
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+                return false;
+            }
+        }
+
         /// <summary>Crimes and accidents other features have told civic life about since it last looked.</summary>
         internal static int Crimes, Accidents;
 

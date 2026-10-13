@@ -674,10 +674,18 @@ namespace RealLifeOverhaul
                     v => Settings.Markets = v)
                 .AddToggle(Settings.MarketsMarginId, "reallife_mkt_opt_margin", Settings.MarketsMargin,
                     v => Settings.MarketsMargin = v)
+                .AddToggle(Settings.MarketsListingId, "reallife_lst_opt", Settings.MarketsListing,
+                    v => Settings.MarketsListing = v)
                 .AddButton("reallife_mkt_test_open", () => Markets.MarketDirector.Instance?.TestOpen())
                 .AddButton("reallife_mkt_test_crisis", () => Markets.MarketDirector.Instance?.TestNews(true))
                 .AddButton("reallife_mkt_test_windfall", () => Markets.MarketDirector.Instance?.TestNews(false))
                 .AddButton("reallife_mkt_test_bid", () => Markets.MarketDirector.Instance?.TestBid())
+                .AddButton("reallife_lst_test_list", () => Markets.MarketDirector.Instance?.TestListing())
+                .AddButton("reallife_lst_test_results", () => Markets.MarketDirector.Instance?.TestOwnResults())
+                .AddButton("reallife_lst_test_meeting", () => Markets.MarketDirector.Instance?.TestOwnMeeting())
+                .AddButton("reallife_lst_test_activist", () => Markets.MarketDirector.Instance?.TestOwnActivist())
+                .AddButton("reallife_lst_test_bid", () => Markets.MarketDirector.Instance?.TestOwnBid())
+                .AddButton("reallife_lst_test_off", () => Markets.MarketDirector.Instance?.TestOwnOff())
                 .AddHeader("reallife_co_header")
                 .AddToggle(Settings.EconomyCompanyId, "reallife_co_enabled", Settings.EconomyCompany,
                     v => Settings.EconomyCompany = v)
@@ -803,6 +811,8 @@ namespace RealLifeOverhaul
                     v => Settings.CivicElections = v)
                 .AddToggle(Settings.CivicConstructionId, "reallife_civic_construction", Settings.CivicConstruction,
                     v => Settings.CivicConstruction = v)
+                .AddToggle(Settings.CivicOfficeId, "reallife_civic_office_option", Settings.CivicOffice,
+                    v => Settings.CivicOffice = v)
                 .AddButton("reallife_civic_test_campaign", () => CivicDirector.Instance?.TestCampaign())
                 .AddButton("reallife_civic_test_rally", () => CivicDirector.Instance?.TestRally())
                 .AddButton("reallife_civic_test_election", () => CivicDirector.Instance?.TestElectionDay())
@@ -814,6 +824,11 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_civic_test_utility", () => CivicDirector.Instance?.TestSite(SiteKind.Utility))
                 .AddButton("reallife_civic_test_advance", () => CivicDirector.Instance?.TestAdvance())
                 .AddButton("reallife_civic_test_clear", () => CivicDirector.Instance?.TestClear())
+                .AddButton("reallife_civic_test_office_council", () => CivicDirector.Instance?.TestStand(OfficeRace.Council))
+                .AddButton("reallife_civic_test_office_mayor", () => CivicDirector.Instance?.TestStand(OfficeRace.Mayor))
+                .AddButton("reallife_civic_test_office_seat", () => CivicDirector.Instance?.TestOffice(OfficeRace.Council))
+                .AddButton("reallife_civic_test_office_mayoralty", () => CivicDirector.Instance?.TestOffice(OfficeRace.Mayor))
+                .AddButton("reallife_civic_test_office_scene", () => CivicDirector.Instance?.TestScene())
                 .AddSplitter()
                 .AddHeader("reallife_util_header")
                 .AddToggle(Settings.UtilitiesId, "reallife_util_enabled", Settings.Utilities,

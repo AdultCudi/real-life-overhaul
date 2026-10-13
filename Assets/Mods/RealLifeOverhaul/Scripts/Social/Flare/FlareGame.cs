@@ -116,6 +116,9 @@ namespace RealLifeOverhaul.Flare
         /// <summary>A post raised an issue (FlareIssue) in the council, by so many thousandths of a point. Default: nothing.</summary>
         public static Action<int, int> Issue;
 
+        /// <summary>A post about the player's own run for office went out: what it is worth to the campaign, thousandths of a point. Default: nothing.</summary>
+        public static Action<int> Campaign;
+
         public static void Reset()
         {
             People = null;
@@ -147,6 +150,7 @@ namespace RealLifeOverhaul.Flare
             MarketBuzz = null;
             Headlines = null;
             Issue = null;
+            Campaign = null;
         }
 
         internal static T Ask<T>(Func<T> bridge, T otherwise)

@@ -10,12 +10,15 @@ namespace RealLifeOverhaul.Meta
     /// line. One row per released version, newest first. 0.1.0 is the first public release; the numbers the mod
     /// carried while it was being developed (0.13 to 0.46) were never released and are not listed.
     ///
+    /// Numbers are MAJOR.MINOR.PATCH: a new feature raises MINOR (0.6.0), a fix alone raises PATCH (0.5.1, up to 0.5.99),
+    /// and MAJOR is for a change that old saves cannot follow.
+    ///
     /// A NEW VERSION is four edits, and the build fails if the first three disagree (the CheckVersion target of
     /// the csproj): &lt;Version&gt; in RealLifeOverhaul.Build/RealLifeOverhaul.csproj (the assembly's version, which
     /// is what the running mod reports), <see cref="Latest"/> below, Version in ModManifest.asset, and one row at
     /// the top of <see cref="All"/> with its two texts at the end of en.json (reallife_changes_ and three digits,
     /// major then two of minor, and the same with _title: 0.2.0 is "002", order 2000; a third number is added after
-    /// an underscore: 0.1.1 is "001_1", order 1010). Work merged before it has a
+    /// an underscore: 0.1.1 is "001_1", order 1010; 0.5.12 is "005_12", order 5120). Work merged before it has a
     /// number goes in a row of order <see cref="Unnumbered"/>, which takes the new number when the version is set.
     /// </summary>
     public static class Changelog
@@ -28,7 +31,7 @@ namespace RealLifeOverhaul.Meta
 
         public sealed class Entry
         {
-            public readonly int Order;          // OrderOf its version: 0.1.0 is 1000, 0.1.1 is 1010, 0.12.0 is 12000, 1.0.0 is 100000
+            public readonly int Order;          // OrderOf its version: 0.1.0 is 1000, 0.1.1 is 1010, 0.5.12 is 5120, 0.12.0 is 12000, 1.0.0 is 100000
             public readonly string TitleKey;
             public readonly string TextKey;
 
@@ -104,7 +107,7 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
-        /// <summary>"0.1.0" is 1000, "0.1.1" is 1010, "0.12.3" is 12030, "1.0.0" is 100000 (a third number above 9 counts as 9); anything that is not a version is 0.</summary>
+        /// <summary>"0.1.0" is 1000, "0.1.1" is 1010, "0.5.12" is 5120, "0.12.3" is 12030, "1.0.0" is 100000 (a third number above 99 counts as 99); anything that is not a version is 0.</summary>
         public static int OrderOf(string version)
         {
             if (string.IsNullOrEmpty(version))
@@ -122,7 +125,7 @@ namespace RealLifeOverhaul.Meta
             {
                 int.TryParse(parts[2], NumberStyles.Integer, CultureInfo.InvariantCulture, out patch);
             }
-            return (major * 100 + minor) * 100 + Math.Min(9, Math.Max(0, patch)) * 10;
+            return (major * 100 + minor) * 1000 + Math.Min(99, Math.Max(0, patch)) * 10;
         }
 
         /// <summary>Compares two versions number by number; a missing part counts as 0.</summary>

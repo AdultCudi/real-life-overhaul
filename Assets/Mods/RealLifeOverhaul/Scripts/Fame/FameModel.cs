@@ -47,7 +47,8 @@ namespace RealLifeOverhaul.Fame
         Lobby = 26,
         Partnership = 27,
         Forgotten = 28,      // time: the city forgets slowly
-        Press = 29           // what the papers wrote
+        Press = 29,          // what the papers wrote
+        Office = 30          // standing for office and holding it (Civic/CivicOffice, through Wiring/CivicLinks)
     }
 
     /// <summary>How well the city knows the player, by their recognition.</summary>

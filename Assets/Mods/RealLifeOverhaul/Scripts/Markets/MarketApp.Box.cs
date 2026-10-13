@@ -97,13 +97,19 @@ namespace RealLifeOverhaul.Markets
                 {
                     continue;
                 }
-                box.Line(MarketText.News(n, s));
+                string news = MarketText.News(n, s);
+                if (news.Length == 0)
+                {
+                    continue;   // (a player's company's refusals and the like are no news)
+                }
+                box.Line(news);
                 said++;
             }
             if (said == 0)
             {
                 box.Line(MarketText.T("reallife_mkt_box_no_news"));
             }
+            OwnButton(box);
 
             TableRow index = Row(SectorRow, -1);
             WriteIndex(index, MarketText.T("reallife_mkt_index"), s.IndexLast, s.IndexPrevClose, s.IndexDaily, null);
@@ -185,7 +191,7 @@ namespace RealLifeOverhaul.Markets
                 row.Set(6, double.IsNaN(pe) ? "-" : pe.ToString("0.0", CultureInfo.CurrentCulture), double.IsNaN(pe) ? double.NaN : pe);
                 int yield = YieldBp(k);
                 row.Set(7, yield > 0 ? MarketText.Percent(yield) : "-", yield);
-                long held = s.Held(k.Id);
+                long held = HeldOrFounder(s, k);
                 row.Set(8, held != 0 ? Count(held) : string.Empty, held);
             }
             box.Title(MarketText.T(watched ? "reallife_mkt_tab_watch" : "reallife_mkt_tab_companies"));
@@ -283,6 +289,7 @@ namespace RealLifeOverhaul.Markets
         private TableSpec WritePortfolio(InfoBox box, MarketState s)
         {
             long worth = 0, cost = 0, dividends = 0;
+            FounderRow(s);
             for (int i = 0; i < s.Positions.Count; i++)
             {
                 Position p = s.Positions[i];
@@ -313,6 +320,7 @@ namespace RealLifeOverhaul.Markets
                 row.Set(7, MarketText.Money(p.Dividends), p.Dividends);
             }
             WriteAccount(box, s, worth, cost, dividends);
+            OwnButton(box);
             return MarketTables.Portfolio;
         }
 
@@ -432,6 +440,11 @@ namespace RealLifeOverhaul.Markets
 
         private void WriteTicket(InfoBox box, MarketState s, Stock k)
         {
+            if (k.Own != null && _director.Engine != null && _director.Engine.Mine(k))
+            {
+                WriteOwnTicket(box, s, k);   // the founder deals by the rules of their own (MarketApp.Own.cs)
+                return;
+            }
             box.Title(k.Name + "  <size=70%>" + k.Ticker + "</size>");
             Quote q = MarketTrading.QuoteOf(s, k, s.Phase);
             int bp = Bp(k.Last, k.PrevClose);

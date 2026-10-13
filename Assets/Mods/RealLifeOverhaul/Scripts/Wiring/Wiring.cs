@@ -89,6 +89,7 @@ namespace RealLifeOverhaul
             Step("the city's economy", CityLinks.Connect);
             Step("investors", VenturesLinks.Connect);
             Step("the stock market", MarketLinks.Connect);
+            Step("the player's company on the market", ListingLinks.Connect);
             Step("the City Ledger", LedgerLinks.Connect);
             Step("running a business", CompanyLinks.Connect);
             Step("property", EstateLinks.Connect);
@@ -129,6 +130,7 @@ namespace RealLifeOverhaul
             Step("credit and debt", DebtLinks.Disconnect);
             Step("the economy", EconomyLinks.Disconnect);
             Step("the City Ledger", LedgerLinks.Disconnect);
+            Step("the player's company on the market", ListingLinks.Disconnect);
             Step("the stock market", MarketLinks.Disconnect);
             Step("investors", VenturesLinks.Disconnect);
             Step("the minimap and the GPS", NavLinks.Disconnect);

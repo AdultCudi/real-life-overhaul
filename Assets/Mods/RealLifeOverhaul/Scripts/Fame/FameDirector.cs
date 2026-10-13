@@ -393,6 +393,24 @@ namespace RealLifeOverhaul.Fame
             }
         }
 
+        /// <summary>What the papers and the television made of something the player did (told by Wiring): tenths of a point of recognition, within the bounds.</summary>
+        public int Publicised(int tenths, FameCause cause)
+        {
+            if (!Running || Save == null || tenths == 0)
+            {
+                return 0;
+            }
+            try
+            {
+                return FameRules.Publicity(_file, tenths, Save.Day, cause);
+            }
+            catch (Exception e)
+            {
+                Fault("publicity", e);
+                return 0;
+            }
+        }
+
         // ---------------------------------------------------------------- saying things
 
         /// <summary>A notification of the game's: the key's text with its names filled in (name, value, name, value).</summary>

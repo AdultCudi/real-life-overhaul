@@ -120,6 +120,19 @@ namespace RealLifeOverhaul.Markets
                 follow.Forget(host.Now);
                 Follow(follow, text.Substring(cut + 1), null, ref frontier);
             }
+            host.Me = mine.Me;
+            host.Listing = mine.Listing ?? new ListingFile();   // (the player's own way to the market and books: theirs, never the host's)
+            // The player's own listed company is not in the host's city: it is set aside, whole, until they play alone again
+            // (MarketEngine.Alone), and nothing of it moves meanwhile.
+            for (int i = 0; i < mine.Stocks.Count; i++)
+            {
+                Stock own = mine.Stocks[i];
+                if (own.Listed && own.Own != null && mine.Me != 0UL && own.Own.Owner == mine.Me)
+                {
+                    host.Listing.Suspended = MarketStore.StockLine(mine, own);
+                    host.Listing.SetAsideDay = Math.Max(1, mine.BusinessDay);
+                }
+            }
             host.NextOrderId = Math.Max(1, mine.NextOrderId);
             host.CarriedOver = mine.CarriedOver;
             host.HeldDay = host.HeldPhase = 0;   // (what the guest has seen is what the host has played: nothing to hold back)
@@ -144,6 +157,10 @@ namespace RealLifeOverhaul.Markets
             for (int i = 0; i < mine.Stocks.Count; i++)
             {
                 Stock own = mine.Stocks[i];
+                if (own.Own != null && own.Own.Owner == mine.Me && mine.Me != 0UL)
+                {
+                    continue;   // (set aside above)
+                }
                 Stock city = host.Stock(own.Id);
                 if (city != null)
                 {

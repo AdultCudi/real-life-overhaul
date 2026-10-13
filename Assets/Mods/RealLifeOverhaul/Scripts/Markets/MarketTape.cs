@@ -339,6 +339,13 @@ namespace RealLifeOverhaul.Markets
             {
                 t.Append(',').Append(e.TradeOf[i].ToString(Inv)).Append(',').Append(e.TradeSales[i].ToString(Inv));
             }
+            // A player's own company's day (Markets/Listing), only while it has one: a day without is written as before.
+            if (e.OwnDays > 0 || e.OwnStanding >= 0 || e.OwnDebt != 0 || e.OwnPress != 0 || e.OwnScandal != 0)
+            {
+                t.Append(',').Append(e.OwnFrom.ToString(Inv)).Append(',').Append(e.OwnDays.ToString(Inv)).Append(',').Append(e.OwnRev.ToString(Inv)).Append(',')
+                    .Append(e.OwnProfit.ToString(Inv)).Append(',').Append(e.OwnStanding.ToString(Inv)).Append(',').Append(e.OwnPress.ToString(Inv)).Append(',')
+                    .Append(e.OwnScandal.ToString(Inv)).Append(',').Append(e.OwnDebt.ToString(Inv));
+            }
         }
 
         public static bool ReadEnv(string text, out MarketEnv e)
@@ -379,7 +386,24 @@ namespace RealLifeOverhaul.Markets
                 e.TradeSales[i] = Math.Max(0, Int(f[at + 2 + i * 2]));
                 e.Trades++;
             }
+            int own = at + 1 + trades * 2;
+            if (own + 7 < f.Length)
+            {
+                e.OwnFrom = Int(f[own]);
+                e.OwnDays = Clamp(Int(f[own + 1]), 0, 400);
+                e.OwnRev = Math.Max(0L, Long(f[own + 2]));
+                e.OwnProfit = Long(f[own + 3]);
+                e.OwnStanding = Clamp(Int(f[own + 4]), -1, 100);
+                e.OwnPress = Clamp(Int(f[own + 5]), -10000, 10000);
+                e.OwnScandal = Clamp(Int(f[own + 6]), 0, 10);
+                e.OwnDebt = Math.Max(0L, Long(f[own + 7]));
+            }
             return true;
+        }
+
+        private static long Long(string text)
+        {
+            return long.TryParse(text, NumberStyles.Integer, Inv, out long value) ? value : 0L;
         }
 
         private static int Clamp(int value, int least, int most)
