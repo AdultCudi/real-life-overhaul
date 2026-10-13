@@ -387,6 +387,11 @@ namespace RealLifeOverhaul.Law
                 }
                 int rank = Rank(building.building);
                 BuildingRegistration registration = building.buildingRegistration;
+                string holder = SpecialBuildings.HolderOf(building);
+                if (holder != null && !holder.StartsWith("police_", StringComparison.Ordinal))
+                {
+                    continue;   // (a building another feature has made its own: a tech company's headquarters, the university)
+                }
                 // Never the player's own premises, and somewhere with a pavement at the door.
                 if (rank < 0 || registration == null || registration.RentedByPlayer || registration.BuildingOwnedByPlayer || !StreetSpots.OnPavement(door, 6f, out _))
                 {

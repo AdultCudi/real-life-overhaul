@@ -63,6 +63,15 @@ namespace RealLifeOverhaul.Careers
         /// </summary>
         public static Func<bool> OthersPicked;
 
+        /// <summary>Where a building is, by the name the city knows it by.</summary>
+        public delegate bool PlaceOf(string name, out string street, out int number);
+
+        /// <summary>
+        /// A tech company's headquarters (Tech/Sites: one of the city's office buildings, the same on every machine), by the
+        /// company's name: where its jobs are. Default: none, and a tech company's job is at an office building given by its name.
+        /// </summary>
+        public static PlaceOf Headquarters;
+
         public static bool HomeOnline()
         {
             try
@@ -150,6 +159,7 @@ namespace RealLifeOverhaul.Careers
         public static void Reset()
         {
             OthersPicked = null;
+            Headquarters = null;
             Board = null;
             Claim = null;
             Credit = null;

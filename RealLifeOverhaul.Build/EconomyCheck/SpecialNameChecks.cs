@@ -116,5 +116,19 @@ internal static partial class Program
         book.Clear();
         Check(book.Count == 0 && book.At("Fifth Avenue", 120) == null && book.NameAt("Fifth Avenue", 120, false, words) == null,
             "special names: emptied with the city");
+
+        // ---------------------------------------------------------------- a proper name (a tech company's headquarters)
+        asked = 0;
+        Check(book.Set("techhq_1", "Park Row", 9, SpecialKind.Other, "Skyvault Systems", "reallife_hq_card_type", null, literal: true)
+              && book.NameAt("Park Row", 9, false, words) == "Skyvault Systems" && asked == 0,
+            "special names: a company's proper name is shown as it is, never looked up as a key");
+        book.Forget();
+        Check(book.NameAt("Park Row", 9, false, words) == "Skyvault Systems" && asked == 0, "special names: ...and kept when the language changes");
+        Check(book.NameAt("Park Row", 9, true, words) == null, "special names: a company's building the player rents keeps the game's name");
+        Check(book.HolderOf("Park Row", 9) == "techhq_1" && book.HolderOf("Park Row", 10) == null && book.HolderOf(null, 9) == null,
+            "special names: who holds a building, so that another feature passes over it");
+        Check(!book.Set("police_3", "Park Row", 9, SpecialKind.Police, "reallife_law_precinct_3") && book.HolderOf("Park Row", 9) == "techhq_1",
+            "special names: a building a tech company holds is refused to another feature");
+        book.Clear();
     }
 }

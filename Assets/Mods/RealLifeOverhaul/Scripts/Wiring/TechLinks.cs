@@ -24,6 +24,8 @@ namespace RealLifeOverhaul
         ///   Fame       a launch, an outage or a breach moves the customers' or the integrity part of Standing
         ///   the paper  the tech sector's stories, chained on to the City Ledger's other pieces (News.Extra), the same for a
         ///              day however often it is asked
+        ///   OthersPicked  the utilities office, the courthouse, the police stations and the university have chosen their
+        ///              buildings (or are off), so that the tech companies' headquarters (Tech/Sites) take none of them
         ///
         /// Everything is read from what those features already keep in public; nothing of theirs is changed.
         /// </summary>
@@ -46,6 +48,7 @@ namespace RealLifeOverhaul
                 TechBridges.Supplied = Supplied;
                 TechBridges.Ipo = Ipo;
                 TechBridges.Mbps = Mbps;
+                TechBridges.OthersPicked = OthersPicked;
                 TechBridges.UtilityCents = (service, use) => Utilities.UtilitiesRules.DayCents(service == 0 ? Utilities.Service.Power : Utilities.Service.Water, use, Prices.Level, false);
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
@@ -111,6 +114,18 @@ namespace RealLifeOverhaul
                     Fault("TechLinks.Ipo", e);
                     return false;
                 }
+            }
+
+            private static bool OthersPicked()
+            {
+                Utilities.UtilitiesDirector utilities = Utilities.UtilitiesDirector.Instance;
+                bool office = !Settings.Utilities || (utilities != null && utilities.Office != null && utilities.Office.Searched);
+                JusticeDirector justice = JusticeDirector.Instance;
+                bool court = !(JusticeSettings.Enabled && JusticeSettings.Courthouse) || (justice != null && justice.Court != null && justice.Court.Searched);
+                Careers.CareersDirector careers = Careers.CareersDirector.Instance;
+                bool campus = !Careers.CareersDirector.UniversityOpen || (careers != null && careers.University != null && careers.University.Searched);
+                bool law = !Settings.LawPrecincts || Law.LawDirector.PrecinctsChosen;
+                return office && court && campus && law;
             }
 
             private static bool Supplied(BuildingRegistration reg, int service)

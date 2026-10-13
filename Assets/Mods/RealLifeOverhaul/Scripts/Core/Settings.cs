@@ -121,6 +121,10 @@ namespace RealLifeOverhaul
         public const string TechJobsId = "tech_jobs";
         public const string TechSectorId = "tech_sector";
         public const string TechStartupsId = "tech_startups";
+        public const string TechSiteRoomsId = "tech_site_rooms";
+        public const string TechSiteHqId = "tech_site_hq";
+        public const string TechSiteCloudId = "tech_site_cloud";
+        public const string TechSiteOfficesId = "tech_site_offices";
         public const string EconomyDealerId = "economy_dealer";
         public const string EconomyCleaningId = "economy_cleaning";
         public const string EconomySaleId = "economy_sale";
@@ -339,6 +343,10 @@ namespace RealLifeOverhaul
         public static bool TechPeople = true;            // professionals: roles, levels and skills of their own for the player's professional staff, reviews, promotions, courses, notice and severance, rivals' offers, in the Open Roles app (off: the game's own staff alone; files are kept) (Scripts/Tech/People)
         public static bool TechJobs = true;              // the jobs board and the labour market: ads in the Open Roles app, applicants from the city's job seekers, interviews, offers, executive search, and more candidates from the recruitment office (off: the game's own hiring alone) (Scripts/Tech/Hiring)
         public static bool TechSector = true;            // the tech sector: software studios, game studios, IT consultancies, cybersecurity firms and AI labs of the player's, products with customers and recurring revenue, client contracts and tenders, outages and breaches, in the Tech app (off: those businesses earn nothing of their own; their files are kept) (Scripts/Tech/Firms)
+        public static bool TechSiteRooms = true;         // a data centre's server room furnished while the player is inside: rows of racks by its tier and the racks bought, cooling, power, trays, a raised floor, status lights, technicians; amber and dim in an outage (Scripts/Tech/Sites)
+        public static bool TechSiteHq = true;            // the city's tech companies each given an empty office building as their headquarters: its name on the map, the GPS and the card, a furnished lobby, and the jobs there (Scripts/Tech/Sites)
+        public static bool TechSiteCloud = true;         // the player's data centres signed outside with the cloud's name, with a security booth and a barrier where there is room, and on the map as "Your cloud" (Scripts/Tech/Sites)
+        public static bool TechSiteOffices = true;       // a few tech fittings (a server closet, a developer's desk, a whiteboard) in an office a tech firm of the player's runs in, where there is room (Scripts/Tech/Sites)
         public static bool TechStartups = true;          // startups and venture capital: the city's startups that grow, raise, fail or are bought, their pitches to the player, an angel portfolio and a fund, and the player's own tech firms raising from venture firms with a board and share options (off: no startup is founded or pitches; holdings are kept) (Scripts/Tech/Venture)
         public static bool EconomyOnline = true;         // online shops: a business or a warehouse sells what it stocks to the whole city, picked by its staff and delivered by van or courier, with the Web shop app (off: no orders come, nothing is charged or paid) (Scripts/Economy/Online)
         public static bool EconomyDealer = true;         // the car dealership: a business type of the mod's own that buys cars new, used and at auction and sells them to customers, with its own finance and warranties and the Dealership app (off: its dealerships do not trade; their cars stay on the lots) (Scripts/Economy/Dealer)
@@ -611,6 +619,10 @@ namespace RealLifeOverhaul
             TechJobs = Bool(modId, TechJobsId, TechJobs);
             TechSector = Bool(modId, TechSectorId, TechSector);
             TechStartups = Bool(modId, TechStartupsId, TechStartups);
+            TechSiteRooms = Bool(modId, TechSiteRoomsId, TechSiteRooms);
+            TechSiteHq = Bool(modId, TechSiteHqId, TechSiteHq);
+            TechSiteCloud = Bool(modId, TechSiteCloudId, TechSiteCloud);
+            TechSiteOffices = Bool(modId, TechSiteOfficesId, TechSiteOffices);
             EconomyDealer = Bool(modId, EconomyDealerId, EconomyDealer);
             EconomyCleaning = Bool(modId, EconomyCleaningId, EconomyCleaning);
             EconomySale = Bool(modId, EconomySaleId, EconomySale);

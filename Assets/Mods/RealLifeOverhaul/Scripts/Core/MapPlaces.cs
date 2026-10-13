@@ -16,7 +16,7 @@ namespace RealLifeOverhaul
     /// <summary>The glyphs a map category can be given without bringing a sprite of its own. Each is drawn in code, once, white on nothing.</summary>
     public enum MapIcon
     {
-        Shield, Target, Bus, Bed, Scales, Wheel, Bicycle, Wrench, Briefcase, Ballot, Cone, Cross, Star, Flag, Paper, Custom
+        Shield, Target, Bus, Bed, Scales, Wheel, Bicycle, Wrench, Briefcase, Ballot, Cone, Cross, Star, Flag, Paper, Tower, Cloud, Custom
     }
 
     /// <summary>One place of the mod's on the city map.</summary>
@@ -1476,6 +1476,29 @@ namespace RealLifeOverhaul
                     Rect(true, 17f, 15f, 27f, 18f);
                     Rect(true, 34f, 22f, 47f, 36.5f);
                     Rect(true, 34f, 15f, 47f, 18f);
+                    break;
+                case MapIcon.Tower:
+                    // An office tower: its block, three columns of windows, the door at its foot (y runs up).
+                    Rect(true, 14f, 4f, 50f, 60f);
+                    for (int floor = 0; floor < 5; floor++)
+                    {
+                        for (int column = 0; column < 3; column++)
+                        {
+                            Rect(false, 19f + column * 10f, 18f + floor * 8.4f, 25f + column * 10f, 23.5f + floor * 8.4f);
+                        }
+                    }
+                    Rect(false, 28f, 4f, 36f, 13f);
+                    break;
+                case MapIcon.Cloud:
+                    // A cloud over a rack's two lit servers.
+                    Disc(true, 22f, 40f, 11f);
+                    Disc(true, 36f, 45f, 13f);
+                    Disc(true, 47f, 37f, 9f);
+                    Rect(true, 12f, 30f, 54f, 40f);
+                    Rect(true, 18f, 6f, 46f, 15f);
+                    Rect(true, 18f, 18f, 46f, 27f);
+                    Rect(false, 21f, 9f, 25f, 12f);
+                    Rect(false, 21f, 21f, 25f, 24f);
                     break;
                 default:
                     Rect(true, 24f, 7f, 40f, 57f);

@@ -20,6 +20,8 @@ namespace RealLifeOverhaul
     ///   Hotels                       the eight hotels (Hotels.Sites)                           yes      yes
     ///   Courthouse                   the courthouse (Courthouse.Front)                         yes      yes
     ///   Places to study              the university, the game's school, the hospitals' wards   yes      yes
+    ///   Tech companies               the city's tech companies' headquarters (Tech/Sites)      yes      yes
+    ///   Your cloud                   the player's data centres: the cloud's regions            yes      no
     ///   Driving schools              the learner-plate boards (LicenceDesks)                   yes      yes
     ///   Bike hire and two-wheelers   docks, bicycle racks, motorbike stands (BikePlaces.All)   yes      no
     ///   Custom shops                 the repair stations whose bays the custom shop works at   yes      no
@@ -286,6 +288,22 @@ namespace RealLifeOverhaul
                 Enabled = () => Settings.CareersStudy,
                 Stamp = StudyStamp,
                 Fill = StudyPlaces
+            });
+            // Tech: the city's tech companies, each in a building of its own (Tech/Sites/Headquarters), where their jobs are.
+            _links.Add(new Link
+            {
+                Id = "tech_hq", TitleKey = "reallife_map_row_tech_hq", Colour = new Color(0.18f, 0.42f, 0.82f), Icon = MapIcon.Tower, InStreet = true,
+                Enabled = () => Settings.TechSiteHq,
+                Stamp = () => Tech.TechSites.Instance != null ? Tech.TechSites.Instance.HeadquartersStamp : 0,
+                Fill = places => Tech.TechSites.Instance.HeadquartersPlaces(places)
+            });
+            // Tech: the player's data centres, the regions of their cloud (a hyperscaler shows them all).
+            _links.Add(new Link
+            {
+                Id = "tech_cloud", TitleKey = "reallife_map_row_cloud", Colour = new Color(0.08f, 0.62f, 0.68f), Icon = MapIcon.Cloud,
+                Enabled = () => Settings.TechSiteCloud && Settings.TechSector,
+                Stamp = () => Tech.TechSites.Instance != null ? Tech.TechSites.Instance.CloudStamp : 0,
+                Fill = places => Tech.TechSites.Instance.CloudPlaces(places)
             });
             // Licences: the learner-plate boards at the school buildings (found a few buildings a second).
             _links.Add(new Link

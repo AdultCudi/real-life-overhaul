@@ -319,6 +319,8 @@ namespace RealLifeOverhaul.Meta
                 S("jobsboard").For("tech_jobs").Opt("tech_jobs", "tech_people").Also("jobs board hire hiring recruit recruitment applicants interview offer headhunter search labour market candidates"),
                 S("techsector").For("tech_sector").Opt("tech_sector", "tech_people").Also("tech software saas app game studio consultancy cybersecurity security breach outage product subscription contract tender developer"),
                 S("startups").For("tech_startups").Opt("tech_startups", "tech_sector").Also("startup startups venture capital vc angel fund pitch term sheet valuation equity round board shares options dilution"),
+                S("techsites").For("tech_sites").Opt("tech_site_rooms", "tech_sector").Opts("tech_site_hq").Opt("tech_site_cloud", "tech_sector").Opt("tech_site_offices", "tech_sector")
+                    .Also("data centre data center server servers rack racks cooling headquarters hq lobby reception office cloud hyperscaler sign buildings"),
                 S("dealer").For("economy_dealer").Need("economy").Opts("economy_dealer").Also("car dealership showroom auction wholesale used cars finance warranty"),
                 S("estate").For("economy_estate").Need("economy").Opts("economy_estate", "economy_estate_hotel", "economy_estate_hire", "economy_estate_rent")
                     .Also("buildings landlord tenant letting rent rental income").Also("economy_estate", "rent tenant landlord letting"),

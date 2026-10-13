@@ -78,6 +78,30 @@ namespace RealLifeOverhaul
             return done;
         }
 
+        /// <summary>
+        /// The same with a proper name that is never translated (a company's), by address. The name is shown as it is
+        /// given; the line under it is still a locale key.
+        /// </summary>
+        public static bool SetNamed(string id, string street, int number, SpecialKind kind, string name, string typeKey = null, Func<bool> shown = null)
+        {
+            bool done = Book.Set(id, street, number, kind, name, typeKey, shown, literal: true);
+            if (!done)
+            {
+                SpecialEntry there = Book.At(street, number);
+                Logger?.Info("Special buildings: '" + id + "' at " + street + " " + number + " keeps the game's name ("
+                             + (there != null ? "the building is already '" + there.Id + "'" : "nothing to name it by") + ").");
+            }
+            SpecialNames.Changed();
+            return done;
+        }
+
+        /// <summary>The id of the feature that holds a building, shown or not; null for none (a feature choosing a building passes over the others').</summary>
+        public static string HolderOf(CityBuildingController building)
+        {
+            Address address = building != null && building.building != null ? building.building.Address : null;
+            return address != null ? Book.HolderOf(address.streetName, address.streetNumber) : null;
+        }
+
         /// <summary>Takes the id's building out of the book: it has the game's own name again.</summary>
         public static bool Remove(string id)
         {
