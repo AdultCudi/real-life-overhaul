@@ -861,6 +861,7 @@ namespace RealLifeOverhaul
             Meta.OptionsLayout.Dispose();
             OptionsService.RemoveModOptions(_context.ModId);
             Keys.Dispose();
+            EmpireView.Release();   // Empire Motors' view from the driver's seat as it was without this mod (Camera/EmpireView)
             return Task.CompletedTask;
         }
     }
@@ -900,6 +901,7 @@ namespace RealLifeOverhaul
             GoingPublic.Reset();
             GoingPublic.Look();   // a Going Public session is known before any feature starts (Core/GoingPublic)
             CameraYield.Logger = context.Logger;
+            EmpireView.Logger = context.Logger;
             GameUi.WorldPanel.Logger = context.Logger;
             ThirdPersonCamera.Logger = context.Logger;
             VisualEnhancer.Logger = context.Logger;

@@ -154,6 +154,7 @@ namespace RealLifeOverhaul
                 }
             }
 
+            EmpireView.Claim(gm);   // Empire Motors' view on the same key kept off while the key is V (Camera/EmpireView): once a run
             _yaw = vehicle.transform.eulerAngles.y;
             _pitch = RestPitch;
             _hasFloor = false;
