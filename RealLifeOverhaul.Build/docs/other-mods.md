@@ -64,6 +64,8 @@ Read in its decompiled code (`evidence/othermods/GoingPublic`), never run. What 
 
 - **One save per player.** Each player's own save (money, businesses, this mod's state) is kept on the host's machine and
   loaded on join; the shared world is laid over it. So this mod's money, records and phone are each player's, and right.
+  The city's economy, government and stock market are not: they are the host's, one city for everybody (see "The shared
+  city" below).
 - **The clock is everyone's.** In a session it stops `TimeMachine.StartTimeMachine` as soon as it starts (and never runs
   `TimeMachine.Update`), refuses `GameSpeedController.SetPause`, `SetPauseState` and `DisableTimeControl`, unlocks a time
   lock every half second, sets `Time.timeScale` itself every frame, and pins back any jump of the clock it did not make.
@@ -98,6 +100,90 @@ machine hosts a session. ...` / `... is a guest in a session. ...` / `... the se
 Proven (read): everything above. Inferred (not seen with two players): that a franchised shop the host opens shows on the
 guest, that the mod's shift skip goes through the vote as the game's own work does, and how the phone's pages sit with
 Going Public's two buttons and the phone it makes one row taller.
+
+### The shared city (`Core/SharedCity`, `Core/SharedCityWire`, `Core/GoingPublicLink`)
+
+In a session the city's economy, its government and its stock market are ONE city for every player: the host's. Without
+this each player's save ran its own and they drifted apart (a different bank rate, mayor, election and share prices on
+every screen).
+
+**How an add-on talks through Going Public** (read in `BampExtras/LocationNet.cs` and
+`ForeignTradeMultiplayer/GoingPublicAdapter.cs`): there is no call to register a message. An add-on picks a number of
+`MessageType` that Going Public does not use (Extras 250, Friend Trade 249; Going Public's own end at 222), puts a Harmony
+prefix on its two receivers, `MPServer.OnReceive(MPLink peer, byte[] bytes)` (host) and `MPClient.OnReceive(byte[] bytes)`
+(guest), takes the frames that are its own and returns false for them, and sends with Going Public's own
+`MessageEnvelope`: `MPClient.SendEnvelope(env)` to the host, `MPLink.Send(env)` (or `MPServer.SendHubTo`) to one guest, a
+loop over `MPServer._clients` for all. Every send is reliable and ordered (Steam's reliable lane, cut into fragments when
+large; LiteNetLib's ReliableOrdered). The receivers run on the transport's thread (LiteNetLib polls on one of its own), so
+the work is queued for the game's thread (the add-ons use `GameStatePatcher.EnqueueOnMainThread`). An envelope over 4 KB
+of JSON is deflated by Going Public; an envelope with an `Attachment` (its binary frame, `02 'B' 'Z' 'A'`, the type in
+bytes 4 and 5) is sent as it is. Going Public logs a size warning over 300 KB and sends anything; the host drops a frame
+from a link that has not said hello to it (`_peerNames`). A guest is in the world when `MPClient.IsClientInWorld`; its
+connection is up while `MPClient.IsConnected`. Going Public itself replays its world state to a joiner
+(`SendWorldStateTo`, `ResendJoinerState` at its world-ready) and keeps nothing for an add-on: an add-on that needs a joiner
+to have its state must send it itself.
+
+**This mod's way in.** Message type **231** (free in Going Public's enum and its add-ons'; checked at start, the link stays
+off if Going Public ever takes it). Everything is found by reflection when Going Public is switched on, Harmony included
+(Going Public brings it; the game has none); nothing of either is referenced at build time. A missing piece leaves the link
+off with one warning, and each player's city goes on as their own. The prefixes only copy this mod's bytes into a queue;
+`SharedCity.Frame` drains it on the game's thread (a field read a frame while nothing has come).
+
+**The messages** (`SharedCityWire`): `RLOZ`, the lengths, and deflated: `RLOC`, the layout's number, the kind, this mod's
+version, a sequence, the parts (a letter and a text each) and a CRC-32. A damaged message is dropped whole; a message of
+another version or layout is never applied. Kinds: Hello (a guest in the world, every 5 s until answered: a late join and a
+rejoin are the same), Snapshot (the host's answer: every part it runs, whole), Update (host to every guest that said hello,
+at most every 10 s of real time, only what changed), Request (a guest's doings, within the second), Refused (another
+version: the guest is told once and keeps its own city), Resync (a part came out different: it is sent whole again).
+
+| part | whole | an update | the player's own, kept |
+|---|---|---|---|
+| E economy (`Economy/City/CityShare`) | `CityStore`'s line without the player's figures | whole, when a day is counted | carried rent, wages, takings, the last rival, the goods stocked |
+| G government (`Civic/CivicShare`) | mayor, council, levers, what is on its way, the election (candidates, polls, momentum, the count, every player's ballot), approval, heat, petition, council calendar | whole, after each hour run | donations, endorsement, leaflets, rallies, the ballot, scandal, favours, the weekly account, the petition's being theirs |
+| W building sites | every site, none anybody's own | whole, each hour | the guest's own refit (ids from 1,000,000), when its shopfront was refitted, what is next door |
+| N notices | (nothing) | the city's toasts and stories of the hours just run | the polls opening (each guest's own polling place) |
+| S street events' calendar | the salt the calendar and the weather's spells are drawn from | (never changes) | |
+| M stock market (`Markets/MarketShare`) | `MarketStore`'s city line (every company with all its candles, the indices, the news) and the tape from that day | the tape's new lines (day's secret, city of the day, events, the frontier) and a check of the prices | holdings, orders, trades, watch list, account, dividends owed, recent trading |
+
+The market is exact (the same state, secret, city and events give the same moments to the cent), so a guest's market plays
+the host's tape and never passes the host's furthest moment: no price is ever sent. Every player's trades move the one
+market: in a session a trade's lasting move is an event on the host's tape (`EventTrade`, `EventVolume`) that every market
+plays at the next moment; a day played in a session and replayed after a load takes those moves from the tape, once. Each
+update carries the host's prices at its moment (a checksum); a guest that comes out different asks for the market again.
+
+**A guest steps none of it**: no day of the economy (`CityEconomyDirector.OnDay` does only the player's own part of the
+day), no hour of the government (`CivicGovernment.FollowTick`), no site but its own refit (`CivicWorks.Shared`), no market
+moment past the host's. It applies the host's state to its own game as alone (prices, the bank rate, footfall, the policies'
+effects, posters, sites in the street). A guest's vote, donation, endorsement, leaflets, rally, petition, signature,
+complaint, report of an unsafe site, a favour that became a story, the crime it saw and its trades are done at once in
+its game and sent as requests; the host applies them to the city within bounds and they come back with the next update.
+A guest's ballot is counted in the host's election (`GovState.OthersVotes`, at the end of the save's line).
+
+**Leaving**: nothing is undone; each system steps again from the host's last state, which is now the player's own.
+**Saves**: each system writes its state as ever, and on a guest that state is the host's city, so Going Public's
+coordinated saves (`MPSaveCoordinator`, which runs the game's own save on every machine) keep the shared city in every
+guest's save.
+
+Not shared, and why: the paper's event log (accidents and crimes near each player: what each saw, on their own machine),
+the wording of the paper's lines (drawn per machine), each player's own business and friends' pieces; each player's
+settings (a guest's economy strength or street-event frequency still shapes what it applies; the host's settings shaped
+the model); the market's city of the day counts the host's businesses only as competitors of the listed companies.
+
+Test: Options, Test tools, Going Public: "Record the city as a host would send it" keeps a snapshot; "Apply the recorded
+city as a guest" pretends a joined session and applies it through the very path a guest's messages take (then nothing of
+the city moves until the pretence ends, and it carries on from there). `RealLifeOverhaul.Build/EconomyCheck`
+(`SharedCityChecks.cs`) checks the messages, every part's snapshot and update, and sixty market days of a host and a guest
+trading with the same prices at every check.
+
+Diagnostics: `Other mods: Going Public's messaging is in place for the shared city ...`, `Shared city: this guest follows
+the host's city: ...`, `Shared city: the whole city (...) sent to ...`, `Shared city: the host runs version ...`, `Stock
+market: at d/p this guest's market is not the host's ...`, `Shared city: the host's city is no longer followed (...)`.
+
+Proven (read, and checked offline): how the add-ons send and receive, the frame this mod's bytes are told apart by, the
+messages, every part's snapshot and update and the market's lockstep. Inferred (not seen with two players): that Harmony's
+prefix on Going Public's receivers takes this mod's frames on both transports as it does the add-ons', that a guest's
+coordinated save runs this mod's save handlers on the guest's machine (Going Public calls the game's own
+`SaveGameManager.Save` there), and that the host's frontier reaches a guest within the update's ten seconds.
 
 ## Adding the next one
 

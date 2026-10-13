@@ -24,6 +24,10 @@ namespace RealLifeOverhaul
     /// down, so no new building goes up: the fourth kind of site is the refit of an empty retail
     /// unit that nobody rents (hoarding over the shopfront, "opening soon", then the hoarding
     /// comes down and the unit is back on the market as the game has it).
+    ///
+    /// IN A GOING PUBLIC SESSION the programme is the city's (Core/SharedCity, part W): the host runs it as alone, and a
+    /// guest takes the host's sites (Civic/CivicShare) and works only its own refit (<see cref="Shared"/>); a complaint
+    /// or a report of an unsafe site is the guest's at once and goes to the host as well (<see cref="HostRequest"/>).
     /// </summary>
     public sealed class CivicWorks
     {
@@ -40,6 +44,9 @@ namespace RealLifeOverhaul
 
         /// <summary>Where the permits lever stands; set by the director when levers change.</summary>
         public int Permits;
+
+        /// <summary>A guest of a Going Public session that follows the host's programme: only its own refit is worked here, and no site is started or let.</summary>
+        public bool Shared;
 
         /// <summary>Sites running more than a third over their time: the government hears of it.</summary>
         public int Late { get; private set; }
@@ -102,7 +109,7 @@ namespace RealLifeOverhaul
             for (int i = State.Sites.Count - 1; i >= 0; i--)
             {
                 SiteState site = State.Sites[i];
-                if (!Working(site, day, hour))
+                if (!Working(site, day, hour) || (Shared && !site.Mine))
                 {
                     continue;
                 }
@@ -151,7 +158,7 @@ namespace RealLifeOverhaul
             for (int i = State.Sites.Count - 1; i >= 0; i--)
             {
                 SiteState site = State.Sites[i];
-                if (site.Kind == SiteKind.Refit && !site.Mine && live && Let(site))
+                if (site.Kind == SiteKind.Refit && !site.Mine && live && !Shared && Let(site))
                 {
                     State.Sites.RemoveAt(i);
                     SitesChanged?.Invoke();
@@ -169,7 +176,10 @@ namespace RealLifeOverhaul
             }
             if (live)
             {
-                TopUp(day);
+                if (!Shared)
+                {
+                    TopUp(day);
+                }
                 Earshots();
             }
         }
@@ -221,7 +231,7 @@ namespace RealLifeOverhaul
         /// <summary>Starts sites until the programme is full. Needs the city's buildings and the player; does nothing without them.</summary>
         public void TopUp(int day)
         {
-            if (PlayerHelper.PlayerController == null || InstanceBehavior<CityManager>.Instance == null || BuildingManager.IsInsideBuilding)
+            if (Shared || PlayerHelper.PlayerController == null || InstanceBehavior<CityManager>.Instance == null || BuildingManager.IsInsideBuilding)
             {
                 return;   // indoors the city's buildings are not all there to choose from: tomorrow will do
             }
@@ -408,6 +418,11 @@ namespace RealLifeOverhaul
             SiteState site = Start(kind, place, day, ref random);
             site.Mine = mine;
             site.Local = !mine;
+            if (Shared)
+            {
+                State.NextId--;                          // (the host's programme counts its own ids)
+                site.Id = CivicShare.NextOwnId(State);   // the guest's own refit, apart from every site of the host's
+            }
             if (hours > 0f)
             {
                 site.Needed = hours;
@@ -425,6 +440,12 @@ namespace RealLifeOverhaul
 
         /// <summary>The player complains about the noise. Returns the locale key of the answer.</summary>
         public string Complain(SiteState site, int day)
+        {
+            Share("k|", site);
+            return ComplaintOf(site, day);
+        }
+
+        private string ComplaintOf(SiteState site, int day)
         {
             site.Complaints++;
             if (Permits > 0)
@@ -447,15 +468,59 @@ namespace RealLifeOverhaul
         /// <summary>The player reports a site as unsafe. True if it was: the inspector stops it for a working day and has it put right.</summary>
         public bool ReportUnsafe(SiteState site, int day)
         {
+            Share("u|", site);
+            return Report(site, day, true);
+        }
+
+        private bool Report(SiteState site, int day, bool mine)
+        {
             bool was = site.Unsafe;
             site.Reported = true;
             if (was)
             {
                 site.HaltUntil = day + 2;
-                ModState.AddModifier(ModState.Helped);
+                if (mine)
+                {
+                    ModState.AddModifier(ModState.Helped);
+                }
                 SitesChanged?.Invoke();
             }
             return was;
+        }
+
+        // A guest's complaint or report about one of the host's sites goes to the host as well.
+        private void Share(string what, SiteState site)
+        {
+            if (Shared && site != null && site.Id < CivicShare.OwnSites)
+            {
+                SharedCity.Ask('W', what + site.Id);
+            }
+        }
+
+        /// <summary>The host of a Going Public session: a guest's complaint (k) or report of an unsafe site (u), by the site's id. The guest has had its own answer.</summary>
+        public bool HostRequest(string line, int day)
+        {
+            string[] f = line.Split('|');
+            if (f.Length < 2 || !int.TryParse(f[1], out int id))
+            {
+                return false;
+            }
+            SiteState site = Find(id);
+            if (site == null)
+            {
+                return false;
+            }
+            if (f[0] == "k")
+            {
+                ComplaintOf(site, day);
+                return true;
+            }
+            if (f[0] == "u")
+            {
+                Report(site, day, false);
+                return true;
+            }
+            return false;
         }
 
         /// <summary>The whole days until a site is done, as things stand (weekends, hours and speed counted; weather not).</summary>

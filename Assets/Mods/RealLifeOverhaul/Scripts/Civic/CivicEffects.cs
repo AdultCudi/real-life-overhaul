@@ -68,14 +68,25 @@ namespace RealLifeOverhaul
             return CivicCatalogue.Parties[candidate.Party].GetLocalization();
         }
 
+        /// <summary>
+        /// Set by the director while the host of a Going Public session runs the city's hours: every toast of the city's is
+        /// heard as well (type, key, names and values, seconds), to be shown to the guests (Core/SharedCity, part N).
+        /// </summary>
+        public static Action<NotificationType, string, string[], float> Heard;
+
         /// <summary>A toast with no names in it. Not kept in the save: the key would mean nothing without the mod.</summary>
         public static void Toast(NotificationType type, string key, float seconds = 9f)
         {
+            Heard?.Invoke(type, key, null, seconds);
             Notifications.Show(type, key, null, seconds, null, null, true, false);
         }
 
         public static void Toast(NotificationType type, string key, string name, string value, float seconds = 9f)
         {
+            if (Heard != null)
+            {
+                Heard(type, key, new[] { name, value }, seconds);
+            }
             // A new dictionary each time: the game keeps hold of it for as long as the toast is listed.
             var data = new Dictionary<string, string>(1) { { name, value } };
             Notifications.Show(type, key, data, seconds, null, null, true, false);
@@ -83,13 +94,36 @@ namespace RealLifeOverhaul
 
         public static void Toast(NotificationType type, string key, string name, string value, string name2, string value2, float seconds = 9f)
         {
+            if (Heard != null)
+            {
+                Heard(type, key, new[] { name, value, name2, value2 }, seconds);
+            }
             var data = new Dictionary<string, string>(2) { { name, value }, { name2, value2 } };
             Notifications.Show(type, key, data, seconds, null, null, true, false);
         }
 
         public static void Toast(NotificationType type, string key, string name, string value, string name2, string value2, string name3, string value3, float seconds = 9f)
         {
+            if (Heard != null)
+            {
+                Heard(type, key, new[] { name, value, name2, value2, name3, value3 }, seconds);
+            }
             var data = new Dictionary<string, string>(3) { { name, value }, { name2, value2 }, { name3, value3 } };
+            Notifications.Show(type, key, data, seconds, null, null, true, false);
+        }
+
+        /// <summary>A toast of the host's, shown on a guest as the host's player saw it (names and values in pairs).</summary>
+        public static void Show(NotificationType type, string key, string[] pairs, float seconds)
+        {
+            Dictionary<string, string> data = null;
+            if (pairs != null && pairs.Length > 1)
+            {
+                data = new Dictionary<string, string>(pairs.Length / 2);
+                for (int i = 0; i + 1 < pairs.Length; i += 2)
+                {
+                    data[pairs[i]] = pairs[i + 1] ?? string.Empty;
+                }
+            }
             Notifications.Show(type, key, data, seconds, null, null, true, false);
         }
     }

@@ -103,6 +103,7 @@ namespace RealLifeOverhaul
         public int Winner = -1;                   // of the election last counted
         public readonly float[] Final = new float[CivicCatalogue.MaxCandidates];      // its city-wide shares
         public int Turnout;                       // votes cast in it
+        public readonly int[] OthersVotes = new int[CivicCatalogue.MaxCandidates];   // the other players' ballots in a Going Public session (Civic/CivicShare)
 
         // ---- between elections
         public int Favours;                       // faster permits owed to the player for donating to the winner
@@ -145,6 +146,7 @@ namespace RealLifeOverhaul
             Array.Clear(Momentum, 0, Momentum.Length);
             Array.Clear(Donated, 0, Donated.Length);
             Array.Clear(Final, 0, Final.Length);
+            Array.Clear(OthersVotes, 0, OthersVotes.Length);
             Endorsed = -1;
             Volunteered = -1;
             Rallies = 0;
@@ -193,6 +195,7 @@ namespace RealLifeOverhaul
             w.Int(Favours).Float(CrimeHeat).Float(CrashHeat);
             w.Int(PetitionPolicy).Int(PetitionSigned).Int(PetitionNeeded).Int(PetitionEnds).Bool(PetitionMine).Bool(PetitionISigned).Int(PetitionRest).Int(NextCouncilVote);
             w.Int(SettleDay).Float(OwedTax).Float(OwedTrade).Int(SeenDay).Float(SeenFines).Float(SeenRides).Int(SeenTickets);
+            for (int i = 0; i < OthersVotes.Length; i++) w.Int(OthersVotes[i]);   // (added with the shared city, at the end: an older line has none)
             return w.ToString();
         }
 
@@ -264,6 +267,11 @@ namespace RealLifeOverhaul
                 SeenFines = r.Float();
                 SeenRides = r.Float();
                 SeenTickets = r.Int();
+                Array.Clear(OthersVotes, 0, OthersVotes.Length);
+                for (int i = 0; i < OthersVotes.Length && r.More; i++)
+                {
+                    OthersVotes[i] = Math.Max(0, r.Int());
+                }
                 if (PetitionPolicy >= CivicCatalogue.All.Length)
                 {
                     PetitionPolicy = -1;
@@ -282,7 +290,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < c.Platform.Length; i++) w.Int(c.Platform[i]);
         }
 
-        private static void ReadCandidate(CivicReader r, Candidate c)
+        internal static void ReadCandidate(CivicReader r, Candidate c)
         {
             c.First = Wrap(r.Int(), CivicCatalogue.FirstNames.Length);
             c.Last = Wrap(r.Int(), CivicCatalogue.LastNames.Length);
@@ -515,6 +523,9 @@ namespace RealLifeOverhaul
 
         /// <summary>True once something was asked for that was not there or was not a number.</summary>
         public bool Failed { get; private set; }
+
+        /// <summary>True while there are fields left to read (a line ends with a divider, so its last field is empty).</summary>
+        public bool More => _next < _fields.Length - 1;
 
         private string Field()
         {

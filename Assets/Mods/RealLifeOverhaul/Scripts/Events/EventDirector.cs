@@ -120,6 +120,23 @@ namespace RealLifeOverhaul.Events
             _fire = new FireScene(this);
             _street = new StreetEventScene(this);
             _nextRoll = Time.time + 60f;   // the city settles first
+            // The street events' calendar and the weather's spells are drawn from the salt and the day: in a Going Public
+            // session the host's salt is everybody's, so every player's city has the same days (Core/SharedCity, part S).
+            SharedCity.Register(new SharedCityPart
+            {
+                Id = 'S', Name = "street events' calendar",
+                Ready = () => _stateLoaded && EventCalendar.Salt != 0,
+                Write = () => EventCalendar.Salt.ToString(CultureInfo.InvariantCulture),
+                Apply = (text, whole) =>
+                {
+                    if (!int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int salt) || salt == 0)
+                    {
+                        return false;
+                    }
+                    EventCalendar.Salt = salt;
+                    return true;
+                }
+            });
         }
 
         private void OnDestroy()

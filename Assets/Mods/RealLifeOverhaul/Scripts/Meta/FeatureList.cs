@@ -350,12 +350,17 @@ namespace RealLifeOverhaul.Meta
                 .Diagnostic(KeyAction.PerfProbe, KeyAction.PerfBench, KeyAction.PhoneDump, KeyAction.CharacterReport);
 
             // Going Public, the multiplayer mod: what this mod does differently in one of its sessions (Core/GoingPublic). The rows
-            // that do nothing in a session are greyed in their own sections, with the reason after them.
+            // that do nothing in a session are greyed in their own sections, with the reason after them. The city's economy,
+            // government and stock market are the host's in a session (Core/SharedCity): a row says whose they are now.
             Features.Add("multiplayer", "reallife_meta_title_multiplayer").As(FeatureKind.Tools)
                 .About("reallife_guide_multiplayer_about").Help("reallife_guide_multiplayer")
                 .Fact("session", GoingPublic.Words)
+                .Fact("city", SharedCity.Words)
                 .Row(new ButtonOption("reallife_gp_tell_button", GoingPublic.Tell))
-                .Test("reallife_test_gp_pretend", GoingPublic.TestPretend);
+                .Row(new ButtonOption("reallife_gp_city_button", SharedCity.Tell))
+                .Test("reallife_test_gp_pretend", GoingPublic.TestPretend)
+                .Test("reallife_test_gp_record", SharedCity.TestRecord)
+                .Test("reallife_test_gp_apply", SharedCity.TestApply);
 
             Features.Add("tests", "reallife_meta_title_tests").As(FeatureKind.Tools).OpenAtFirst();
 
