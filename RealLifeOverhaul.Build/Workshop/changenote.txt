@@ -1,5 +1,4 @@
-0.9.9
+0.9.10
 
-Fixed
-- Hudson City University could not be entered: it shared an office building with a business of the game's, and the door said closed. It now has a building of its own with the classrooms of Manhattan Business School inside, on several floors: choose the floor at its door, and each classroom shows its course.
-- The university never said when it was open. The building card, the door and the Campus app now say when it closes and when it opens again, and going to a class from the Campus app takes you to the right floor and room.
+New
+- The mod's buildings are fitted out across their whole floor. The tech companies' headquarters have open-plan desks with computers behind their lobbies, meeting rooms, a kitchen, a lounge, printers and a server closet, mostly from the game's own office designs for the building, with staff at the desks and a few walking about. The floor a large police station still left bare gets back offices. Your data centres' floor round the server hall gets stores, deliveries waiting to be racked, a workbench and a staff corner. Every way from the door stays clear, and a building goes up a little at a time as you walk in, so going in causes no stutter.
