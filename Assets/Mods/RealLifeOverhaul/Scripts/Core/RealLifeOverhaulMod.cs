@@ -809,6 +809,16 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_vc_test_pitch", () => Tech.TechDirector.Instance?.TestPitch())
                 .AddButton("reallife_vc_test_sale", () => Tech.TechDirector.Instance?.TestSale())
                 .AddButton("reallife_vc_test_board", () => Tech.TechDirector.Instance?.TestBoard())
+                .AddToggle(Settings.TechSiteRoomsId, "reallife_sites_rooms", Settings.TechSiteRooms,
+                    v => Settings.TechSiteRooms = v)
+                .AddToggle(Settings.TechSiteHqId, "reallife_sites_hq", Settings.TechSiteHq,
+                    v => Settings.TechSiteHq = v)
+                .AddToggle(Settings.TechSiteCloudId, "reallife_sites_cloud", Settings.TechSiteCloud,
+                    v => Settings.TechSiteCloud = v)
+                .AddToggle(Settings.TechSiteOfficesId, "reallife_sites_offices", Settings.TechSiteOffices,
+                    v => Settings.TechSiteOffices = v)
+                .AddButton("reallife_sites_test_room", () => Tech.TechSites.Instance?.TestRoom())
+                .AddButton("reallife_sites_test_hq", () => Tech.TechSites.Instance?.TestHeadquarters())
                 .AddToggle(Settings.EconomyOnlineId, "reallife_online_enabled", Settings.EconomyOnline,
                     v => Settings.EconomyOnline = v)
                 .AddButton("reallife_online_test_open", () => Economy.OnlineDirector.Instance?.TestOpen())
@@ -1163,6 +1173,8 @@ namespace RealLifeOverhaul
             _root.AddComponent<Economy.CompanyDirector>();   // running a business: staff, insurance, marketing, tax and licences, and the Company app (Scripts/Economy/Company)
             _root.AddComponent<Tech.TechDirector>();   // the professions and the tech sector: roles, skills and the Open Roles app (Scripts/Tech); after the company, so that its day follows the company's
             _root.AddComponent<Careers.CareersDirector>();   // education and careers: the city's courses, the player's skills and the Campus app (Scripts/Careers); after the tech sector, whose roles it reads
+            Tech.TechSites.Logger = context.Logger;
+            _root.AddComponent<Tech.TechSites>();   // the tech sector's buildings: server rooms, the tech companies' headquarters, data centre frontages, tech offices (Scripts/Tech/Sites): a look once a second, nothing per frame
             Economy.EstateDirector.Logger = context.Logger;
             Economy.EstateApp.Logger = context.Logger;
             _root.AddComponent<Economy.EstateDirector>();   // property: the market, letting, works, selling, an agency, a hotel and car hire, and the Property app (Scripts/Economy/Estate)

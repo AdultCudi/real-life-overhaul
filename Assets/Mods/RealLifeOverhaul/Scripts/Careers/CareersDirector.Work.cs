@@ -189,6 +189,51 @@ namespace RealLifeOverhaul.Careers
             _employersDay = day;
             WorkGame.Employers(_employers, _offices);
             WorkGame.PublicPlaces();
+            AtHeadquarters();
+        }
+
+        // The tech companies' vacancies, applications and the job at their headquarters (Tech/Sites), where one was given an
+        // office building by its name before the company had a headquarters, or before it moved (its building was let).
+        private void AtHeadquarters()
+        {
+            if (CareersBridges.Headquarters == null || _study == null)
+            {
+                return;
+            }
+            WorkFile w = _study.Work;
+            for (int i = 0; i < w.Openings.Count; i++)
+            {
+                AtHeadquarters(w.Openings[i]);
+            }
+            for (int i = 0; i < w.Applications.Count; i++)
+            {
+                AtHeadquarters(w.Applications[i].Post);
+            }
+            if (w.Job != null)
+            {
+                AtHeadquarters(w.Job.Post);
+            }
+        }
+
+        private static void AtHeadquarters(Opening o)
+        {
+            if (o == null || o.Kind != (int)EmployerKind.TechFirm || Array.IndexOf(HiringCatalogue.RivalFirms, o.Employer) < 0)
+            {
+                return;
+            }
+            try
+            {
+                if (CareersBridges.Headquarters(o.Employer, out string street, out int number) && (o.Street != street || o.Number != number))
+                {
+                    o.Street = street;
+                    o.Number = number;
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                CareersBridges.Headquarters = null;   // (asked no more this session)
+            }
         }
 
         /// <summary>The vacancies renewed: the lapsed ones go, the rivals' ads on the jobs board are added, and the city's own fill up to their number.</summary>
@@ -284,7 +329,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>Where a company of the jobs board works: a rival's own office business if it has one, else an office building given by its name.</summary>
+        /// <summary>Where a company of the jobs board works: a rival's own office business if it has one, else its headquarters (Tech/Sites), else an office building given by its name.</summary>
         private EmployerRef OfficeFor(string company, Profession p)
         {
             for (int i = 0; i < _employers.Count; i++)
@@ -294,6 +339,10 @@ namespace RealLifeOverhaul.Careers
                 {
                     return e;
                 }
+            }
+            if (CareersBridges.Headquarters != null && CareersBridges.Headquarters(company, out string street, out int number))
+            {
+                return new EmployerRef { Name = company, Street = street, Number = number, Kind = EmployerKind.TechFirm };
             }
             if (_offices.Count == 0)
             {

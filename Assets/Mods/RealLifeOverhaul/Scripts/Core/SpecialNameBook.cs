@@ -28,6 +28,7 @@ namespace RealLifeOverhaul
         public string NameKey;     // the locale key of its name
         public string TypeKey;     // the locale key of what it is, for the line under the name on the game's card; may be null
         public Func<bool> Shown;   // the feature's own option; null for always
+        public bool Literal;       // NameKey is the name itself (a company's proper name), never looked up
 
         internal string Name;      // NameKey in the language of the moment, made the first time it is asked for
     }
@@ -74,7 +75,7 @@ namespace RealLifeOverhaul
         /// under the id, for a kind that keeps its own name, a missing street or name, or an address another id holds (a
         /// missing id: false, and the book as it was).
         /// </summary>
-        public bool Set(string id, string street, int number, SpecialKind kind, string nameKey, string typeKey = null, Func<bool> shown = null)
+        public bool Set(string id, string street, int number, SpecialKind kind, string nameKey, string typeKey = null, Func<bool> shown = null, bool literal = false)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -89,7 +90,7 @@ namespace RealLifeOverhaul
             var entry = new SpecialEntry
             {
                 Id = id, Street = street, Number = number, Kind = kind, NameKey = nameKey,
-                TypeKey = string.IsNullOrEmpty(typeKey) ? null : typeKey, Shown = shown
+                TypeKey = string.IsNullOrEmpty(typeKey) ? null : typeKey, Shown = shown, Literal = literal, Name = literal ? nameKey : null
             };
             _byId[id] = entry;
             _byAddress[key] = entry;
@@ -172,6 +173,12 @@ namespace RealLifeOverhaul
             return best;
         }
 
+        /// <summary>The id of the feature that holds the building at an address, whether or not its name is shown just now; null for none.</summary>
+        public string HolderOf(string street, int number)
+        {
+            return _byAddress.Count > 0 && !string.IsNullOrEmpty(street) && _byAddress.TryGetValue(Key(street, number), out SpecialEntry entry) ? entry.Id : null;
+        }
+
         /// <summary>The entry an id holds, shown or not, or null.</summary>
         public SpecialEntry Of(string id)
         {
@@ -206,7 +213,7 @@ namespace RealLifeOverhaul
         {
             foreach (SpecialEntry entry in _byId.Values)
             {
-                entry.Name = null;
+                entry.Name = entry.Literal ? entry.NameKey : null;
             }
             Stamp++;
         }

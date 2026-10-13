@@ -62,6 +62,12 @@ namespace RealLifeOverhaul
             {
                 CareersBridges.HomeInternet = HomeInternet;
                 CareersBridges.OthersPicked = OthersPicked;
+                CareersBridges.Headquarters = (string name, out string street, out int number) =>
+                {
+                    street = null;
+                    number = 0;
+                    return Tech.TechSites.Instance != null && Tech.TechSites.Instance.HeadquartersOf(name, out street, out number);
+                };
                 CareersBridges.Refresher = Refresher;
                 CareersBridges.Standing = Moved;
                 CareersBridges.Reputation = Reputation;

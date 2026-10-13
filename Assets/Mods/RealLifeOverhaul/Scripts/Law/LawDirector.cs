@@ -74,6 +74,9 @@ namespace RealLifeOverhaul.Law
         private Action<Address> _enterSeen;   // the game's two building events as they were when the hooks were last put on them
         private Action<Address> _exitSeen;
 
+        /// <summary>True once the precincts have been designated for this city (other features that take a building choose after).</summary>
+        public static bool PrecinctsChosen => Instance != null && Instance._precincts != null && Instance._precincts.Chosen;
+
         /// <summary>How many precincts the city has (0 until they have been designated).</summary>
         public static int PrecinctCount => Instance != null && Instance._precincts != null ? Instance._precincts.Count : 0;
 

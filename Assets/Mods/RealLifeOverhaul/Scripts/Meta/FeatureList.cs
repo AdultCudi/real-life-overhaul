@@ -1228,6 +1228,15 @@ namespace RealLifeOverhaul.Meta
                 .Data(Tech.VentureStore.Key)
                 .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Tech.TechDirector.Instance?.Forget()));
+            // The tech sector's buildings: server rooms in the player's data centres, the city's tech companies' headquarters with
+            // a lobby, the data centres' frontages and the tech offices' fittings. Only what is seen: nothing of it is saved.
+            Features.Add("tech_sites", "reallife_meta_title_tech_sites")
+                .About("reallife_guide_tech_sites_about").Help("reallife_guide_tech_sites")
+                .Fact("sites_most", () => Guide.Number(Tech.ServerRoomPlan.MostShown))
+                .Fact("sites_companies", () => Guide.Number(Tech.HiringCatalogue.RivalFirms.Length))
+                .Owns(Settings.TechSiteRoomsId, Settings.TechSiteHqId, Settings.TechSiteCloudId, Settings.TechSiteOfficesId)
+                .Test("reallife_sites_test_room", "reallife_sites_test_hq")
+                .Cleanup(() => Tech.TechSites.Instance?.StopAll(), -1);
             // The car dealership: a business type of the mod's own. Its row stands under the company's header on the options page;
             // the Dealership app is its own. Off, its dealerships do not trade and their cars stay on the lots. It runs only while
             // the economy core does. (Cleaned up before the core: order -2.)

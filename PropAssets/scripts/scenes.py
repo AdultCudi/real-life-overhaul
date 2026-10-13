@@ -151,6 +151,9 @@ SCENES = {
 }
 
 
+SCENES.update(getattr(__import__("props_tech"), "SCENES", {}))   # the tech sector's buildings: a server room, a lobby, an office, a frontage
+
+
 def main():
     arguments = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     names = [a for a in arguments if not a.startswith("--")] or list(SCENES)

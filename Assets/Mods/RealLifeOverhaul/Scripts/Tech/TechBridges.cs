@@ -59,6 +59,13 @@ namespace RealLifeOverhaul.Tech
         /// <summary>A degree the business sponsors for a professional: its fee now, whole money, or 0 with the university closed (Careers). Default: none.</summary>
         public static Func<int> DegreeFee;
 
+        /// <summary>
+        /// True once the features that take one of the city's buildings before the tech companies' headquarters have chosen
+        /// theirs (the utilities office, the courthouse, the police stations, the university: Wiring/TechLinks), so that a
+        /// headquarters is never one of them. Default: true.
+        /// </summary>
+        public static Func<bool> OthersPicked;
+
 
         public static int CourseShare()
         {
@@ -165,6 +172,7 @@ namespace RealLifeOverhaul.Tech
             Founder = null;
             CourseShareBp = null;
             DegreeFee = null;
+            OthersPicked = null;
         }
     }
 }
