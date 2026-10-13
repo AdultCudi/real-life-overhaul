@@ -1,4 +1,4 @@
-0.4.1
+0.4.2
 
 New
-- A shop under a city chain can have its prices kept inside the chain's range: each morning every product is priced as high as the district bears, and a price changed by anything else, another mod included, is put back within the hour, so the chain never writes about prices. A brand can keep its member shops on the flagship's prices instead of copying them once, with a small adjustment for each district if you want one.
+- Property: each unit of a building you let yourself now has a tenant and a lease of its own, with its own asking rent, applicants, arrears, notice and empty days. The Mine tab shows how a building's units stand and opens each one's lease, and a save from before keeps its tenant in the first unit.
