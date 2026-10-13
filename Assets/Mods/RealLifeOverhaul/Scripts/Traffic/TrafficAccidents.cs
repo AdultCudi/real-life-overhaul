@@ -24,7 +24,8 @@ namespace RealLifeOverhaul
     /// This class decides what happens and when; ResponseUnit drives the vehicles,
     /// SceneParking says where they may stand, SceneCordon closes and tapes off the road,
     /// TrafficEffects builds what the vehicles and wrecks wear, and AccidentCast and
-    /// RoadsideStop put the people on the road (drivers, crews, an arrest). Wrecked and parked
+    /// RoadsideStop put the people on the road (drivers, crews, and an arrest at the roadside for a
+    /// driver who ran and was caught: a driver who stays is questioned and ticketed, never arrested). Wrecked and parked
     /// cars are frozen in place (kinematic), so holding a scene costs nothing per frame beyond
     /// a few timers and the on-screen marker.
     /// </summary>
@@ -273,7 +274,6 @@ namespace RealLifeOverhaul
         // The people. Both are told what happens and ticked from here; neither runs by itself.
         private readonly AccidentCast _people = new AccidentCast();
         private readonly RoadsideStop _arrest = new RoadsideStop();
-        private Wreck _faultWreck;   // the car whose driver is at fault: once they are arrested it is towed, not driven off
 
         // Scene control: the road closed round the wrecks at once, taped off when the police arrive.
         private SceneCordon _cordon;
@@ -663,8 +663,7 @@ namespace RealLifeOverhaul
                 _people.BeginCasualty(casualty, _scene, car, fatal, now);
                 if (car != null)
                 {
-                    _people.AtFault(worst: true);   // the driver who knocked them down
-                    _faultWreck = _leadWreck;
+                    _people.AtFault(worst: true);   // the driver who knocked them down and stayed: questioned and ticketed
                 }
                 PlanResponse(now, true, Settings.Police, now + Random.Range(4f, 10f), now + Random.Range(3f, 14f), casualty, shut: true);
                 News.Report(NewsKind.PedestrianHit, _scene, null, fatal ? 1 : 0);
@@ -1301,9 +1300,9 @@ namespace RealLifeOverhaul
             if (!planned)
             {
                 // The car that caused it is the lead car, and here the worst-hit one (a reckless driver's own crash, the staged
-                // crash's first car): its driver is arrested at the scene. A hit-and-run's runner is the chase's.
+                // crash's first car): its driver stayed, so is questioned and ticketed at the scene, not arrested. Only a
+                // hit-and-run's runner is arrested, and that is the chase's (RoadChase, if the patrol car catches them).
                 _people.AtFault(worst: true);
-                _faultWreck = worst;
             }
 
             // Each unit is sent after its own delay, so who gets there first varies. A minor bump closes nothing.
@@ -2027,9 +2026,7 @@ namespace RealLifeOverhaul
                     // The ambulance never drives off from under its own crew: with the stretcher out it waits until they are
                     // aboard, however long the way back is (the scene's own hard limit is the only thing that ends that).
                     bool waitsForCrew = !attendance.Police && _people.CrewOut && now < _hardLimit - CrewLastCall;
-                    // ...and the patrol car never from under an arrest: the officer making it comes aboard with the driver.
-                    bool waitsForArrest = attendance.Police && _people.Arresting && now < _hardLimit - CrewLastCall;
-                    if ((aboard && (attendance.Recalled || finished)) || (attendance.Recalled && now >= attendance.At && !waitsForCrew && !waitsForArrest))
+                    if ((aboard && (attendance.Recalled || finished)) || (attendance.Recalled && now >= attendance.At && !waitsForCrew))
                     {
                         Depart(attendance, now);
                     }
@@ -3075,13 +3072,7 @@ namespace RealLifeOverhaul
             _cordon.Open();
             SceneObstacles.Clear();
 
-            // Then the people: they go in every case, whatever state the cars are in. (A car whose driver was arrested has
-            // nobody to drive it: it is towed.)
-            if (_faultWreck != null && _people.FaultArrested)
-            {
-                _faultWreck.Towed = true;
-            }
-            _faultWreck = null;
+            // Then the people: they go in every case, whatever state the cars are in.
             _people.Clear();
             _arrest.Clear();
             CollectCasualty();   // nobody is left lying in the road once the scene is over
