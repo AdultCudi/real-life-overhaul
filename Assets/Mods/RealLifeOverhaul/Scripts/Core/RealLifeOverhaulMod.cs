@@ -251,6 +251,10 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_life_test_review", () => Careers.CareersDirector.Instance?.TestReview())
                 .AddButton("reallife_life_test_matter", () => Careers.CareersDirector.Instance?.TestMatter())
                 .AddButton("reallife_life_test_approach", () => Careers.CareersDirector.Instance?.TestApproach())
+                .AddToggle(Settings.CareersOwnId, "reallife_own_enabled", Settings.CareersOwn,
+                    v => Settings.CareersOwn = v)
+                .AddButton("reallife_own_test_contract", () => Careers.CareersDirector.Instance?.TestContract())
+                .AddButton("reallife_own_test_found", () => Careers.CareersDirector.Instance?.TestFound())
                 .AddSplitter()
                 .AddHeader("reallife_business_header")
                 .AddToggle(Settings.BusinessId, "reallife_business_enabled", Settings.Business,

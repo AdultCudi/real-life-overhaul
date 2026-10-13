@@ -23,6 +23,9 @@ namespace RealLifeOverhaul
         ///   Friends       friends of the social life put the player forward now and then (a referral)
         ///   Record        the law's record, as an employer reads it
         ///   Cycle         the city's economy: how many vacancies there are and how choosy employers are
+        ///   Claim         a former employer's claim over a restraint clause is a civil suit of Justice's (RestraintClaims.File)
+        ///   TechFirm, JoinFirm  colleagues who leave with the player join a tech firm of theirs on the payroll (TechDirector.JoinPayroll)
+        ///   Founder       the venture firms read the player's record as a founder at a pitch (TechBridges.Founder)
         ///   the paper     education's and careers' stories, chained on to the City Ledger's other pieces (News.Extra)
         ///   the Planner   a source of its own: the classes of the courses under way, and their exams
         ///
@@ -47,15 +50,22 @@ namespace RealLifeOverhaul
                 CareersBridges.Friends = Friends;
                 CareersBridges.Record = () => Standing.HasRecord;
                 CareersBridges.Cycle = () => Economy.CityEconomy.Running ? (int)Economy.CityEconomy.State : 1;
+                CareersBridges.Claim = (amount, employer) => RestraintClaims.File(amount, employer);
+                CareersBridges.TechFirm = TechFirm;
+                CareersBridges.JoinFirm = (place, role, level, count) => TechDirector.Instance != null && SaveGameManager.Current != null
+                    ? TechDirector.Instance.JoinPayroll(place, role, level, count, SaveGameManager.Current.Day) : 0;
+                TechBridges.Founder = () => CareersDirector.Instance != null ? CareersDirector.Instance.FounderBonus() : 0;
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
                 PlannerDirector.Instance?.AddSource(Classes);
                 PlannerDirector.Instance?.AddSource(Jobs);
+                PlannerDirector.Instance?.AddSource(Contracts);
             }
 
             internal static void Disconnect()
             {
                 CareersBridges.Reset();
+                TechBridges.Founder = null;
                 News.Extra = _paperBefore;
                 _paperBefore = null;
             }
@@ -173,6 +183,28 @@ namespace RealLifeOverhaul
                 }
             }
 
+            // The first business of the player's of the tech sector's own types: a firm former colleagues can join.
+            private static string TechFirm()
+            {
+                try
+                {
+                    var mine = new List<BuildingRegistration>(8);
+                    TalentGame.Businesses(mine);
+                    for (int i = 0; i < mine.Count; i++)
+                    {
+                        if (TechTypes.Is(mine[i].businessTypeName))
+                        {
+                            return TalentGame.Place(mine[i]);
+                        }
+                    }
+                    return null;
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.TechFirm", e);
+                    return null;
+                }
+            }
             // Friends and close friends of the social life (a partner counts as well).
             private static int Friends()
             {
@@ -318,6 +350,42 @@ namespace RealLifeOverhaul
                     }
                 }
             }
+
+            private sealed class ContractSource : IPlannerSource
+            {
+                public string Id => "freelance";
+
+                public bool Available => Settings.CareersOwn && CareersDirector.Instance != null && CareersDirector.Instance.Work != null;
+
+                public void Collect(int fromDay, int toDay, PlannerList into)
+                {
+                    WorkFile w = CareersDirector.Instance.Work;
+                    for (int i = 0; i < w.Contracts.Count; i++)
+                    {
+                        Contract c = w.Contracts[i];
+                        if (c.Stage != (int)ContractStep.Taken)
+                        {
+                            continue;
+                        }
+                        PlannerEntry e = into.Add(Id, c.Id, 0, PlannerCategory.Work, Math.Max(fromDay, c.Due));
+                        if (e == null)
+                        {
+                            continue;
+                        }
+                        e.Deadline = true;
+                        e.End = 23 * 60;
+                        if (into.WantText)
+                        {
+                            e.Title = CareersText.T("reallife_planner_contract_title", "client", c.Client);
+                            e.What = CareersText.T("reallife_planner_contract_what", "time", CareersText.Minutes(OwnRules.Left(c)));
+                            e.Money = CareersText.T("reallife_planner_contract_pays", "fee", CareersText.Money(Prices.At((int)c.Fee)));
+                            e.IfMissed = CareersText.T("reallife_planner_contract_missed", "cut", (OwnRules.LateCutBp / 100).ToString() + "%");
+                        }
+                    }
+                }
+            }
+
+            private static readonly ContractSource Contracts = new ContractSource();
 
             private static readonly WorkSource Jobs = new WorkSource();
 

@@ -50,6 +50,21 @@ namespace RealLifeOverhaul.Tech
         /// <summary>A day's power (service 0, thousandths of a kWh) or water (1, thousandths of a cubic metre) at the city's utilities' tariff, cents at today's prices. Default: a plain tariff.</summary>
         public static Func<int, long, long> UtilityCents;
 
+        /// <summary>What the player's record as a founder adds to a pitch, thousandths (Careers: the rungs reached in a tech profession, the years, their name). Default: nothing.</summary>
+        public static Func<int> Founder;
+
+        public static int FounderNow()
+        {
+            try
+            {
+                return Founder != null ? Math.Max(0, Math.Min(200, Founder())) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
         public static int EsteemNow()
         {
             try
@@ -77,6 +92,7 @@ namespace RealLifeOverhaul.Tech
             Supplied = null;
             Mbps = null;
             UtilityCents = null;
+            Founder = null;
         }
     }
 }

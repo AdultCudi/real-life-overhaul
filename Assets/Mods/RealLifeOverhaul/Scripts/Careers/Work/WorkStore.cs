@@ -14,6 +14,9 @@ namespace RealLifeOverhaul.Careers
     ///      minutes|overtime|burnout|rating|review day|low runs|warnings|raises|politics|politics day|favour|options|vest day|restraint|exclusive|
     ///      notice end|leaving|declared|conflict seen|earned|bonus|rise asked|signed off until
     ///   y  profession|top rank|kind|employer|from|to|reference|leaving|earned
+    ///   f  founder day|profession|top rank|from|restraint until|profession|colleagues|employer|week's pay|claim|tested|colleagues until|count|profession|level|
+    ///      practice profession|opened|name|served|late|practice to open
+    ///   k  each contract: id|profession|rank|client|street|number|hours|minutes|fee|due|lapse|stage|practice
     /// </summary>
     public static class WorkStore
     {
@@ -46,6 +49,15 @@ namespace RealLifeOverhaul.Careers
             {
                 Spell s = f.History[i];
                 w.Record().Add(s.Prof).Add(s.Top).Add(s.Kind).Add(s.Employer).Add(s.From).Add(s.To).Add(s.Reference).Add(s.Leaving).Add(s.Earned);
+            }
+            w.Part('f').Record().Add(f.FounderDay).Add(f.FounderProf).Add(f.FounderTop).Add(f.FounderFrom).Add(f.RestraintUntil).Add(f.RestraintProf).Add(f.RestraintColleagues)
+                .Add(f.RestraintEmployer).Add(f.RestraintWeek).Add(f.ClaimNumber).Add(f.RestraintTested).Add(f.ColleaguesUntil).Add(f.ColleaguesCount).Add(f.ColleaguesProf).Add(f.ColleaguesLevel)
+                .Add(f.Practice.Prof).Add(f.Practice.Opened).Add(f.Practice.Reputation).Add(f.Practice.Served).Add(f.Practice.Late).Add(f.PracticeAfter);
+            w.Part('k');
+            for (int i = 0; i < f.Contracts.Count && i < OwnRules.ContractsMost * 2; i++)
+            {
+                Contract c = f.Contracts[i];
+                w.Record().Add(c.Id).Add(c.Prof).Add(c.Rank).Add(c.Client).Add(c.Street).Add(c.Number).Add(c.Hours).Add(c.Minutes).Add(c.Fee).Add(c.Due).Add(c.Lapse).Add(c.Stage).Add(c.Practice);
             }
         }
 
@@ -184,6 +196,41 @@ namespace RealLifeOverhaul.Careers
                 if (ProCatalogue.Find(s.Prof) != null && f.History.Count < WorkFile.HistoryMost)
                 {
                     f.History.Add(s);
+                }
+            }
+            Fields own = r.One('f');
+            f.FounderDay = own.Int();
+            f.FounderProf = own.Int(-1);
+            f.FounderTop = Math.Max(0, own.Int());
+            f.FounderFrom = own.Text();
+            f.RestraintUntil = own.Int();
+            f.RestraintProf = own.Int(-1);
+            f.RestraintColleagues = Math.Max(0, own.Int());
+            f.RestraintEmployer = own.Text();
+            f.RestraintWeek = Math.Max(0, own.Long());
+            f.ClaimNumber = own.Int();
+            f.RestraintTested = own.Bool();
+            f.ColleaguesUntil = own.Int();
+            f.ColleaguesCount = TalentCatalogue.Clamp(own.Int(), 0, OwnRules.ColleaguesMost);
+            f.ColleaguesProf = own.Int(-1);
+            f.ColleaguesLevel = Math.Max(0, own.Int());
+            int practice = own.Int(-1);
+            f.Practice.Prof = ProCatalogue.Find(practice) != null ? practice : -1;
+            f.Practice.Opened = own.Int();
+            f.Practice.Reputation = TalentCatalogue.Clamp(own.Int(OwnRules.PracticeStart), 0, 100);
+            f.Practice.Served = Math.Max(0, own.Int());
+            f.Practice.Late = Math.Max(0, own.Int());
+            f.PracticeAfter = own.Int(-1);
+            foreach (Fields x in r.Records('k'))
+            {
+                var c = new Contract
+                {
+                    Id = x.Int(), Prof = x.Int(-1), Rank = Math.Max(0, x.Int()), Client = x.Text(), Street = x.Text(), Number = x.Int(), Hours = Math.Max(1, x.Int(1)), Minutes = Math.Max(0, x.Int()),
+                    Fee = Math.Max(0, x.Long()), Due = x.Int(), Lapse = x.Int(), Stage = TalentCatalogue.Clamp(x.Int(), 0, (int)ContractStep.Dropped), Practice = x.Bool()
+                };
+                if (c.Def != null && f.Contracts.Count < OwnRules.ContractsMost * 2)
+                {
+                    f.Contracts.Add(c);
                 }
             }
         }

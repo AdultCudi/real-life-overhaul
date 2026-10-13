@@ -48,6 +48,20 @@ namespace RealLifeOverhaul.Careers
             .Column("reallife_career_col_state", 300f, TableSort.None, right: true)
             .Empty("reallife_career_empty_job");
 
+        public const int ContractOpen = 0, ContractDone = 1;
+        private static readonly string[] ContractKinds = { "reallife_own_kind_open", "reallife_own_kind_done" };
+
+        /// <summary>Own work: 0 client, 1 profession, 2 hours, 3 fee, 4 due, 5 state.</summary>
+        public static readonly TableSpec Own = new TableSpec("Career", "Own")
+            .Column("reallife_own_col_client", 360f, TableSort.Text, flexible: true)
+            .Column("reallife_career_col_profession", 260f, TableSort.Text)
+            .Column("reallife_own_col_hours", 220f, TableSort.Number)
+            .Column("reallife_own_col_fee", 200f, TableSort.Money)
+            .Column("reallife_own_col_due", 180f, TableSort.Number)
+            .Column("reallife_career_col_state", 240f, TableSort.Text, right: true)
+            .Filter("reallife_own_all_contracts", ContractKinds)
+            .Empty("reallife_own_empty_contracts");
+
         public const int CvJobs = 0, CvQualifications = 1;
         private static readonly string[] CvKinds = { "reallife_career_kind_jobs", "reallife_career_kind_qualifications" };
 

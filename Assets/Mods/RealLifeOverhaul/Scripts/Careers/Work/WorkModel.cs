@@ -159,6 +159,18 @@ namespace RealLifeOverhaul.Careers
         public int HeadhuntDay;       // the last day a search firm came
         public int BenefitPaid;       // the last day benefit was paid
         public bool RetiredEarly;     // retired before the age: the pension pays less
+        // ---- working for oneself (Careers/Work/OwnRules)
+        public readonly List<Contract> Contracts = new List<Contract>(8);
+        public readonly Practice Practice = new Practice();
+        public int FounderDay, FounderProf = -1, FounderTop;   // the player left a profession to found a company
+        public string FounderFrom = string.Empty;
+        public int RestraintUntil, RestraintProf = -1, RestraintColleagues;   // a restraint clause binding the player after leaving
+        public string RestraintEmployer = string.Empty;
+        public long RestraintWeek;   // the last week's pay there, cents at the start's prices
+        public int ClaimNumber;      // the claim filed over it (Justice), 0 none
+        public bool RestraintTested; // the former employer has looked at what the player did
+        public int ColleaguesUntil, ColleaguesCount, ColleaguesProf = -1, ColleaguesLevel;   // former colleagues waiting to join the player's firm
+        public int PracticeAfter = -1;   // a practice of this profession to open when the notice ends
 
         public const int OpeningsMost = 40, ApplicationsMost = 24, HistoryMost = 16;
 

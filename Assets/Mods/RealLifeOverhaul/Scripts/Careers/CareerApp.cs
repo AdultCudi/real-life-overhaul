@@ -19,6 +19,8 @@ namespace RealLifeOverhaul.Careers
     ///   Applications   every application: invited to an interview, an offer to take, ask more for or turn down
     ///   My job         the job now, its working days and where they are worked; start the day, give notice
     ///   CV             the jobs before with their references, and the qualifications passed
+    ///   Own work       freelance contracts, the player's practice, leaving to found a company or a practice, former
+    ///                  colleagues to bring along, and a restraint clause that binds (CareerApp.Own.cs)
     ///
     /// Everything on it is the game's. Nothing runs while the app is closed: the rows and figures are made when it opens,
     /// when a tab is picked and when the player changes something in it.
@@ -28,7 +30,7 @@ namespace RealLifeOverhaul.Careers
         public const string OpeningRow = "post:", ApplicationRow = "app:";
         private const string DayRow = "day:", SpellRow = "spell:", QualRow = "qual:";
 
-        private static readonly string[] TabKeys = { "reallife_career_tab_jobs", "reallife_career_tab_applications", "reallife_career_tab_job", "reallife_career_tab_cv" };
+        private static readonly string[] TabKeys = { "reallife_career_tab_jobs", "reallife_career_tab_applications", "reallife_career_tab_job", "reallife_career_tab_cv", "reallife_career_tab_own" };
 
         private readonly CareersDirector _director;
         private readonly List<TableRow> _rows = new List<TableRow>(64);
@@ -156,6 +158,7 @@ namespace RealLifeOverhaul.Careers
                         case CareersDirector.TabApplications: table = WriteApplications(box, w, day); break;
                         case CareersDirector.TabJob: table = WriteJob(box, w, f, day); break;
                         case CareersDirector.TabCv: table = WriteCv(box, w, f, day); break;
+                        case CareersDirector.TabOwn: table = WriteOwn(box, w, f, day); break;
                         default: table = WriteJobs(box, w, f, day); break;
                     }
                 }

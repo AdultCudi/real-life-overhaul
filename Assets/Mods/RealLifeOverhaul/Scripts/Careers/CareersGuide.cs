@@ -103,6 +103,27 @@ namespace RealLifeOverhaul.Careers
                 .Fact("life_share_exec", () => Bp(LifeRules.ProfitShareExecBp));
         }
 
+        public static void AddOwnFacts(Feature f)
+        {
+            f.Fact("own_colleagues", () => Whole(OwnRules.ColleaguesMost))
+                .Fact("own_colleagues_days", () => Whole(OwnRules.ColleaguesDays))
+                .Fact("own_founder_most", () => Mille(OwnRules.FounderMost))
+                .Fact("own_restraint_days", () => Whole(TalentCatalogue.Scaled(OwnRules.RestraintDays, GameCalendar.DaysPerYear)))
+                .Fact("own_claim_weeks", () => Whole(OwnRules.ClaimWeeks))
+                .Fact("own_claim_colleague", () => Whole(OwnRules.ClaimWeeksPerColleague))
+                .Fact("own_claim_colleagues", () => Mille(OwnRules.ClaimColleagues))
+                .Fact("own_claim_field", () => Mille(OwnRules.ClaimSameField))
+                .Fact("own_freelance", () => Bp(OwnRules.FreelanceBp))
+                .Fact("own_practice", () => Bp(OwnRules.PracticeBp))
+                .Fact("own_office", () => Bp(OwnRules.OfficeBp))
+                .Fact("own_late", () => Bp(OwnRules.LateCutBp))
+                .Fact("own_side", () => Mille(OwnRules.SideWorkFound))
+                .Fact("own_contracts", () => Whole(OwnRules.ContractsMost))
+                .Fact("own_offer_days", () => Whole(OwnRules.OfferDays))
+                .Fact("own_register_law", () => Guide.Money(Prices.At(OwnRules.RegisterFee(ProCatalogue.Find(ProCatalogue.Lawyer)))))
+                .Fact("own_register_least", () => Guide.Money(Prices.At(OwnRules.RegisterFee(ProCatalogue.Find(ProCatalogue.Designer)))));
+        }
+
         /// <summary>Every profession with its ladder and what its first and top rungs pay now, one bullet each.</summary>
         private static string Professions()
         {

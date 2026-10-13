@@ -127,6 +127,10 @@ namespace RealLifeOverhaul.Careers
             Applications(day);
             Vacancies(day);
             WorkDayMore(day);
+            if (OwnOn)
+            {
+                OwnDay(day);
+            }
         }
 
         /// <summary>A working day over: worked or missed. A missed one is a warning; the third is the sack, as the game's own employer has it.</summary>
@@ -748,6 +752,7 @@ namespace RealLifeOverhaul.Careers
             w.Remember(s);
             w.Job = null;
             Ended(j, why, day);
+            EndedOwn(j, why, day);
             if (tell)
             {
                 Tell2(NotificationType.Info, "reallife_work_note_left", Data("employer", CareersText.Employer(j.Post.Employer), "reference", CareersText.Reference(s.Reference)), TabCv, null);
@@ -982,6 +987,8 @@ namespace RealLifeOverhaul.Careers
         partial void Hired(Job j, int day);
 
         partial void Ended(Job j, LeaveReason why, int day);
+
+        partial void EndedOwn(Job j, LeaveReason why, int day);
 
         partial void WorkedMore(Job j, Sitting s, int minutes, bool whole, int day);
 

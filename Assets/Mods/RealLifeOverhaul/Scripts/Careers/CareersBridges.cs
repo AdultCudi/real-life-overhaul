@@ -42,6 +42,15 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The city's economy: 0 boom, 1 steady, 2 slowdown, 3 recession. Default: steady.</summary>
         public static Func<int> Cycle;
 
+        /// <summary>A former employer files a civil claim over a restraint clause: the amount (whole money) and its name; the claim's number or 0 (Justice). Default: none.</summary>
+        public static Func<int, string, int> Claim;
+
+        /// <summary>A tech firm of the player's (a business of the tech sector's types) to bring colleagues to: its place key, or null. Default: none.</summary>
+        public static Func<string> TechFirm;
+
+        /// <summary>Former colleagues join a firm of the player's: the place, the role, the level and how many; returns how many joined (Tech/People). Default: none.</summary>
+        public static Func<string, int, int, int, int> JoinFirm;
+
         public static bool HomeOnline()
         {
             try
@@ -129,6 +138,9 @@ namespace RealLifeOverhaul.Careers
         public static void Reset()
         {
             Board = null;
+            Claim = null;
+            TechFirm = null;
+            JoinFirm = null;
             TookAd = null;
             Shortage = null;
             Friends = null;

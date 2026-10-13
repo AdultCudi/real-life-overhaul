@@ -165,6 +165,8 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The key of an office matter's words (reallife_life_matter_{key}), or of one of its answers (with "_a" or "_b").</summary>
         public static string MatterKey(Matter m, string answer = "") => Mod + "_life_matter_" + m.Key + answer;
 
+        public static string ContractState(ContractStep step) => T(Mod + "_own_step_" + step.ToString().ToLowerInvariant());
+
         public static string Boss(BossKind kind) => T(Mod + "_life_boss_" + kind.ToString().ToLowerInvariant());
 
         /// <summary>Whole weeks of a number of days, at least one: "8 weeks", "1 week".</summary>

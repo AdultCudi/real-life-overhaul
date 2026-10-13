@@ -674,6 +674,15 @@ namespace RealLifeOverhaul.Meta
                 .Data(Careers.CareersStore.Key)
                 .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
+            // Working for oneself: founding a company or a practice out of a profession, colleagues, restraint clauses, freelance
+            // contracts. It runs with professional jobs. Off, no contracts come; a practice is kept in the save.
+            Careers.CareersGuide.AddOwnFacts(Features.Add("careers_own", "reallife_meta_title_careers_own")
+                .About("reallife_guide_careers_own_about").Help("reallife_guide_careers_own")
+                .Owns(Settings.CareersOwnId)
+                .Test("reallife_own_test_contract", "reallife_own_test_found")
+                .Data(Careers.CareersStore.Key)
+                .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
             Features.Add("business", "reallife_meta_title_business")
                 .Group("reallife_business_header")
                 .About("reallife_guide_business_about").Help("reallife_guide_business")

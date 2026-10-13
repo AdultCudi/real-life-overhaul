@@ -301,6 +301,69 @@ namespace RealLifeOverhaul.Careers
                 Fault("a test", e);
             }
         }
+        // ---------------------------------------------------------------- working for oneself
+
+        /// <summary>A freelance contract offered now, in the profession the player works in or is best qualified for.</summary>
+        public void TestContract()
+        {
+            if (!WorkReady())
+            {
+                return;
+            }
+            if (!OwnOn)
+            {
+                Notifications.Show(NotificationType.Warning, "reallife_own_test_off", null, 8f);
+                return;
+            }
+            try
+            {
+                WorkFile w = _study.Work;
+                int before = w.Contracts.Count;
+                OfferContract(Save.Day, 1 + before, true);
+                Contract c = w.Contracts.Count > before ? w.Contracts[w.Contracts.Count - 1] : null;
+                if (c == null)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_own_test_none", null, 8f);
+                    return;
+                }
+                Logger?.Info("Careers test: a contract from " + c.Client + " for " + c.Hours + " hours.");
+                Changed();
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
+
+        /// <summary>The player leaves their job now to found a company, with colleagues, whatever the rung: the notice is skipped.</summary>
+        public void TestFound()
+        {
+            if (!WorkReady())
+            {
+                return;
+            }
+            if (!OwnOn || _study.Work.Job == null)
+            {
+                Notifications.Show(NotificationType.Warning, "reallife_own_test_no_job", null, 8f);
+                return;
+            }
+            try
+            {
+                Job j = _study.Work.Job;
+                j.NonCompete = true;
+                _study.Work.ColleaguesCount = OwnRules.ColleaguesMost;
+                _study.Work.ColleaguesProf = j.Post.Prof;
+                _study.Work.ColleaguesLevel = 1;
+                _study.Work.PracticeAfter = -1;
+                EndJob(LeaveReason.SpunOut, Save.Day, true);
+                Logger?.Info("Careers test: left to found a company, with colleagues, under a restraint clause.");
+                Changed();
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
         /// <summary>Twenty points more in four of the player's skills, one of the trades among them.</summary>
         public void TestSkills()
         {

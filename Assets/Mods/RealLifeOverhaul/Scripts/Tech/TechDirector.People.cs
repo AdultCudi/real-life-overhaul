@@ -270,6 +270,40 @@ namespace RealLifeOverhaul.Tech
             return n;
         }
 
+
+        /// <summary>
+        /// Former colleagues the player brings along to a firm of theirs (Careers, through Wiring/CareersLinks): each joins the
+        /// mod's own payroll at the business, in a role and at a level given, at the going rate. Returns how many joined.
+        /// </summary>
+        internal int JoinPayroll(string place, int role, int level, int count, int day)
+        {
+            if (!_peopleOn || _talent == null || string.IsNullOrEmpty(place))
+            {
+                return 0;
+            }
+            int joined = 0;
+            for (int i = 0; i < count && _talent.People.Count < TalentStore.PeopleMost; i++)
+            {
+                Profile p = TalentRules.Make(Seed, day * 53 + i * 7 + 3, role, Math.Max(0, level - (i == 0 ? 0 : 1)), day);
+                p.Id = "pro:" + _talent.NextPro++;
+                p.Name = VentureGame.Founder();
+                p.Place = place;
+                p.Work = (int)Arrangement.Hybrid;
+                p.Wage = Math.Max(TalentCatalogue.RateLeast, TalentRules.Going(TalentGame.GameRate(p.Def.GameSkill, p.Main / 1000), p.Def, Shortage(p.Def.Family), 0));
+                p.Joined = day;
+                p.LevelDay = day;
+                p.ReviewDay = TalentRules.FirstReview(day, Year);
+                p.Morale = 700;
+                _talent.People.Add(p);
+                joined++;
+            }
+            if (joined > 0)
+            {
+                ReadPeople(day);
+                Changed();
+            }
+            return joined;
+        }
         /// <summary>The labour market's shortage of a family, thousandths (1000: as many seekers as places).</summary>
         internal int Shortage(Family family)
         {
