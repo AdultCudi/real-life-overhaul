@@ -58,7 +58,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         public GameObject Build(FullMenu menu, Transform dormant)
         {
             _menu = menu;
-            SessionWatch.Mark("ventures: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
+            using var piece = SessionWatch.Piece("ventures: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
             _shell = AppShell.Make(menu, dormant, VenturesDirector.AppId);
             _table = DataTable.On(_shell, "Ventures");
             if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(VenturesTables.Off))

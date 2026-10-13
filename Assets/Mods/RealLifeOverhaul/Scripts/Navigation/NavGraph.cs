@@ -129,7 +129,7 @@ namespace RealLifeOverhaul.Nav
             {
                 return false;   // the city's roads are not there yet
             }
-            SessionWatch.Mark("the GPS's road graph");
+            using var piece = SessionWatch.Piece("the GPS's road graph");
             Stopwatch watch = Stopwatch.StartNew();
             _points = data.allWaypoints;
             int count = _points.Length;
@@ -169,7 +169,7 @@ namespace RealLifeOverhaul.Nav
 
         private void OnFootAndIndex()
         {
-            SessionWatch.Mark("the GPS's walking graph");
+            using var piece = SessionWatch.Piece("the GPS's walking graph");
             Stopwatch watch = Stopwatch.StartNew();
             NavEdges.TwoWay(Drive.Count, Drive.EdgeStart, Drive.EdgeTo, out int[] start, out int[] to, out float[] extra);
             Walk = new RouteSearch(Drive);
@@ -225,7 +225,7 @@ namespace RealLifeOverhaul.Nav
                 Logger?.Warn("Navigation: the map picture could not be drawn, so the minimap shows no roads. " + job.Fault);
                 return;
             }
-            SessionWatch.Mark("the minimap's picture");
+            using var piece = SessionWatch.Piece("the minimap's picture");
             Stopwatch watch = Stopwatch.StartNew();
             var picture = new Texture2D(job.Width, job.Height, TextureFormat.Alpha8, false, true)
             {

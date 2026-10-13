@@ -58,7 +58,7 @@ namespace RealLifeOverhaul.Flare
         /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
         {
-            SessionWatch.Mark("flare: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
+            using var piece = SessionWatch.Piece("flare: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
             _shell = AppShell.Make(menu, dormant, FlareDirector.AppId);
             _table = DataTable.On(_shell, "Flare");
             if (_table == null || !_shell.SetTabCount(FlareText.TabKeys.Length) || !_shell.SetColumns(FlareTables.Off))

@@ -180,8 +180,10 @@ namespace RealLifeOverhaul.Utilities
 
         // ---------------------------------------------------------------- running
 
+        private static readonly int HotUpdate = HotSpots.Slot("Utilities: UtilitiesDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_failed)
             {
                 return;

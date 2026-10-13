@@ -206,8 +206,10 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("Careers: CareersDirector.LateUpdate");
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (!_deskWatch || _activityUi == null)
             {
                 return;

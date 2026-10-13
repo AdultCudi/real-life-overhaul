@@ -943,7 +943,7 @@ namespace RealLifeOverhaul
 
         private float MedicsOut(VehicleComponent ambulance, float latest, float now)
         {
-            SessionWatch.Mark("accident: the ambulance crew being sent out (their way planned, the cordon run round it, a lane shut)");
+            using var piece = SessionWatch.Piece("accident: the ambulance crew being sent out (their way planned, the cordon run round it, a lane shut)");
             _msPlan = _msCrew = _msWheel = _msCordon = _msLane = 0f;
             OutWatch.Restart();
             // Out at the rear doors of their own vehicle; a side door or the road beside it if the rear is walled in.

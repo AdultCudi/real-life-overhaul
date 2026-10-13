@@ -215,7 +215,7 @@ namespace RealLifeOverhaul
                 UiClone.Fallback("the game's top bar is not built as expected, so hygiene, stress and home have no bars (the Wellbeing contact still gives the figures)");
                 return false;
             }
-            SessionWatch.Mark("game UI: the needs bars being copied from the game's top bar");
+            using var piece = SessionWatch.Piece("game UI: the needs bars being copied from the game's top bar");
             GameSprites.Want(Pictures);       // (one look through the game's pictures for all of them)
             GameSprites.Want(PicturesElse);
             Transform holder = UiClone.Dormant(bar, "RealLifeOverhaul Needs Holder");

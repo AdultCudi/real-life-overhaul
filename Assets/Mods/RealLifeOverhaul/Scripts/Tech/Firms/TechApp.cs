@@ -49,7 +49,7 @@ namespace RealLifeOverhaul.Tech
 
         public GameObject Build(FullMenu menu, Transform dormant)
         {
-            SessionWatch.Mark("tech: the app being built from the game's MyEmployees");
+            using var piece = SessionWatch.Piece("tech: the app being built from the game's MyEmployees");
             _shell = AppShell.Make(menu, dormant, TechDirector.TechAppId);
             _table = DataTable.On(_shell, "Tech");
             if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(TechColumns.Off))

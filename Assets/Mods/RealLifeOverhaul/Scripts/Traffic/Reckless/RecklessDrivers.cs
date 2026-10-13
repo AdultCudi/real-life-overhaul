@@ -160,8 +160,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Traffic: RecklessDrivers.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             float now = Time.time;
             if (_struck)
             {
@@ -322,7 +324,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             Vector3 player = PlayerHelper.GetPosition();
-            SessionWatch.Mark("streets: a reckless driver being picked");
+            using var piece = SessionWatch.Piece("streets: a reckless driver being picked");
             // (A car whose road ahead is too short is passed over: the next one is tried, a few times.)
             for (int attempt = 0; attempt < 4; attempt++)
             {
@@ -1114,7 +1116,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             Vector3 player = PlayerHelper.GetPosition();
-            SessionWatch.Mark("streets: somebody to step into the road being picked");
+            using var piece = SessionWatch.Piece("streets: somebody to step into the road being picked");
             if (!Jaywalker.Find(player, mode == 0 ? 10f : 6f, mode == 0 ? 60f : 90f, late, mode, out Pedestrian walker, out VehicleComponent car, out Vector3 across, out Vector3 lane))
             {
                 return false;
@@ -1154,7 +1156,7 @@ namespace RealLifeOverhaul
         {
             metres = 0f;
             Vector3 player = PlayerHelper.GetPosition();
-            SessionWatch.Mark("streets: a crowd to cross the road being picked");
+            using var piece = SessionWatch.Piece("streets: a crowd to cross the road being picked");
             int sent = 0;
             for (int i = 0; i < _crowd.Length; i++)
             {

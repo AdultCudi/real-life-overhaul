@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using BAModAPI;
 using Localizor;
@@ -48,7 +49,9 @@ namespace RealLifeOverhaul
     ///
     /// The cost: nothing per frame but one comparison with the real clock (<see cref="Tick"/>); once a second of real
     /// time, two property reads of the other mod's. <see cref="Role"/> and everything built on it are a field read.
-    /// The notice and the log lines are made on a change only.
+    /// The notice and the log lines are made on a change only. The other players' figures on this machine are read
+    /// from Going Public's own list (RemotePlayerManager.GetRemotePlayerTransforms) only when asked for
+    /// (<see cref="RemotePlayers"/>): a local read, nothing sent or changed.
     /// </summary>
     public static class GoingPublic
     {
@@ -61,6 +64,8 @@ namespace RealLifeOverhaul
         private static Func<bool> _hosting;
         private static Func<bool> _inWorld;
         private static Func<BuildingRegistration, bool> _hidden;
+        private static Func<List<Transform>> _remotes;   // Going Public's list of the other players' figures on this machine
+        private static bool _remotesFailed;
         private static bool _readFailed;
         private static bool _ownerFailed;
         private static GoingPublicRole _role = GoingPublicRole.Absent;
@@ -197,6 +202,12 @@ namespace RealLifeOverhaul
                 MethodInfo hosting = server?.GetProperty("IsRunning", Static)?.GetGetMethod(true);
                 MethodInfo inWorld = client?.GetProperty("IsClientInWorld", Static)?.GetGetMethod(true);
                 MethodInfo hidden = patcher?.GetMethod("HideFromOwnAssetLists", Static, null, new[] { typeof(BuildingRegistration) }, null);
+                Type players = assembly != null ? assembly.GetType("BigAmbitionsMP.RemotePlayerManager", false) : null;
+                MethodInfo remotes = players?.GetMethod("GetRemotePlayerTransforms", Static, null, Type.EmptyTypes, null);
+                if (remotes != null && remotes.ReturnType == typeof(List<Transform>))
+                {
+                    _remotes = (Func<List<Transform>>)Delegate.CreateDelegate(typeof(Func<List<Transform>>), remotes);
+                }
                 if (hosting != null && hosting.ReturnType == typeof(bool) && inWorld != null && inWorld.ReturnType == typeof(bool))
                 {
                     _hosting = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), hosting);
@@ -382,6 +393,36 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// The other players' figures on this machine in a session, from Going Public's own list (a local read: nothing is
+        /// sent, nothing of theirs is changed), added to <paramref name="into"/>. Nothing outside a session, or where the list
+        /// cannot be read. For a look every few seconds, not per frame (the other mod makes a new list for each call).
+        /// </summary>
+        public static void RemotePlayers(List<Transform> into)
+        {
+            if (into == null || !InSession || _pretend != GoingPublicRole.Absent || _remotes == null || _remotesFailed)
+            {
+                return;
+            }
+            try
+            {
+                List<Transform> found = _remotes();
+                for (int i = 0; found != null && i < found.Count; i++)
+                {
+                    if (found[i] != null)
+                    {
+                        into.Add(found[i]);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                _remotesFailed = true;
+                Logger?.Warn("Other mods: Going Public's list of the other players could not be read (" + e.GetType().Name + ": " + e.Message
+                             + "); their hair keeps the game's look until the next door or loading screen.");
+            }
+        }
+
         /// <summary>A new city: the test's pretence ends with it. What the player was told this run stays told.</summary>
         public static void Reset()
         {
@@ -420,8 +461,10 @@ namespace RealLifeOverhaul
     /// <summary>The one per-frame call of <see cref="GoingPublic"/>: a comparison with the real clock and a look once a second, and the shared city's inbox (a field read).</summary>
     public sealed class GoingPublicWatch : MonoBehaviour
     {
+        private static readonly int HotUpdate = HotSpots.Slot("Core: GoingPublicWatch.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             GoingPublic.Tick();
             SharedCity.Frame();   // (a field read while nothing of the shared city's has come)
         }

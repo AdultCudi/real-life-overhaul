@@ -50,8 +50,10 @@ namespace RealLifeOverhaul
         private float _lastMouseTime;
         private Vector3 _lastPos;
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("Camera: ChaseCamera.LateUpdate");
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             var gm = InstanceBehavior<GameManager>.Instance;
             VehicleController vehicle = gm != null ? gm.selectedVehicle : null;
             bool drive = !CameraYield.StoodDown && Settings.CameraEnabled && Settings.CarCamera && vehicle != null

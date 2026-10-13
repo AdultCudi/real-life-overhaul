@@ -91,8 +91,8 @@ namespace RealLifeOverhaul
     /// seconds (the game regenerates its lanes every day, and a lane may come back whole), and a
     /// lane or a car that has come back is dealt with the same way.
     /// Street furniture standing in the strip itself, on the road's side of the kerb (a bin, a
-    /// barricade), and the game's parking meters along the bay's kerb are switched off whole, each
-    /// as soon as it is out of view (<see cref="Hide"/>). Nothing else on the pavement is touched:
+    /// barricade), and the game's parking meters along the bay's kerb are switched off whole, all of a
+    /// stop's in one frame once none of them is in view (<see cref="Hide"/>). Nothing else on the pavement is touched:
     /// a tree or a lamp at the kerb's edge stays, and the bus stands that much further out
     /// (TransitMap.KerbLine).
     /// The zone is painted (BusStopDressing, RoadPaint): the game's own kind of road paint.
@@ -190,7 +190,8 @@ namespace RealLifeOverhaul
         private static readonly List<Transform> Cars = new List<Transform>(16);
         private static readonly List<Component> Parts = new List<Component>(32);
         private static readonly List<Collider> Colliders = new List<Collider>(16);
-        private static NavMeshObstacle[] _obstacles;   // the game's, found once a city when a piece is first switched off
+        private static NavMeshObstacle[] _obstacles;   // the game's, found once a city behind the loading screen (Prewarm)
+        private static readonly List<NavMeshObstacle> Carving = new List<NavMeshObstacle>(4);
         private static int _parkingMask;
         private static bool _queued;
         private static bool _reported;
@@ -222,6 +223,18 @@ namespace RealLifeOverhaul
                 }
                 return _parkingMask;
             }
+        }
+
+        /// <summary>
+        /// The game's navigation obstacles, listed once a city behind the loading screen (Core/SceneFinds, ScenePrewarm) for
+        /// the street furniture switched off at the stops. It used to be listed when the first piece was switched off, in
+        /// play, beside the bus stop: a search of the whole scene in the middle of a frame. Kept until the city goes (each
+        /// city lists its own: the list is made again here whatever was kept).
+        /// </summary>
+        public static bool Prewarm()
+        {
+            _obstacles = SceneFinds.All<NavMeshObstacle>("transit: the game's navigation obstacles being listed for the bus stops (a search of the whole scene, once a city)");
+            return true;
         }
 
         /// <summary>A piece of street furniture that must stay as it is: switching it off would leave a hole in the walkable ground nobody could see (it is baked in).</summary>
@@ -503,17 +516,41 @@ namespace RealLifeOverhaul
         }
 
         // Makes one stop's zone and clears its boarding strip. False if either must wait (some of it is in view).
+        // All of the stop's street furniture, of the bay and of the boarding strip, is switched off in one frame, once none of
+        // it is in view, so that the walkable ground is cut again once for the stop and not piece by piece over several
+        // seconds as each came out of view. The parking is still cut at once.
         private static bool Make(TransitStop stop)
         {
-            bool zone = !stop.HasBay || stop.Zone == null || MakeZone(stop);
-            bool boarding = ClearBoarding(stop);
+            bool unseen = !AnyInView(stop);
+            bool zone = !stop.HasBay || stop.Zone == null || MakeZone(stop, unseen);
+            bool boarding = ClearBoarding(stop, unseen);
             return zone && boarding;
+        }
+
+        // Whether any piece of the stop's still to be switched off is in view.
+        private static bool AnyInView(TransitStop stop)
+        {
+            BusZone zone = stop.HasBay && stop.Zone != null && !stop.Zone.Made ? stop.Zone : null;
+            return (zone != null && (InView(zone.Clear) || InView(zone.Meters))) || (!stop.BoardingMade && InView(stop.Boarding));
+        }
+
+        private static bool InView(List<GameObject> pieces)
+        {
+            for (int i = 0; i < pieces.Count; i++)
+            {
+                GameObject piece = pieces[i];
+                if (piece != null && piece.activeSelf && !Stay.Contains(piece) && CitySpots.InView(piece.transform.position))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         // The game's street furniture on the stop's boarding strip (TransitMap.FindBoarding: the kerb by the doors and the ways
         // to them from the waiting place) is switched off whole, as the furniture in a bay's strip is, and put back with it.
         // Each piece once it is out of view.
-        private static bool ClearBoarding(TransitStop stop)
+        private static bool ClearBoarding(TransitStop stop, bool unseen)
         {
             if (stop.BoardingMade || stop.Boarding.Count == 0)
             {
@@ -521,7 +558,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                if (!HideAll(stop.Boarding, stop))
+                if (!HideAll(stop.Boarding, stop, unseen))
                 {
                     return false;
                 }
@@ -534,8 +571,9 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // Switches off each of the pieces that is out of view. True when none is left standing that is to go.
-        private static bool HideAll(List<GameObject> pieces, TransitStop stop)
+        // Switches off every piece still to go, when none of the stop's is in view (<paramref name="unseen"/>, Make). True
+        // when none is left standing that is to go.
+        private static bool HideAll(List<GameObject> pieces, TransitStop stop, bool unseen)
         {
             bool all = true;
             for (int i = 0; i < pieces.Count; i++)
@@ -545,7 +583,7 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
-                if (CitySpots.InView(piece.transform.position))
+                if (!unseen)
                 {
                     all = false;
                     continue;
@@ -556,7 +594,7 @@ namespace RealLifeOverhaul
         }
 
         // Makes one stop's zone. False if it must wait (something of it is in view); it is then asked again a second later.
-        private static bool MakeZone(TransitStop stop)
+        private static bool MakeZone(TransitStop stop, bool unseen)
         {
             BusZone zone = stop.Zone;
             if (zone.Made)
@@ -582,8 +620,8 @@ namespace RealLifeOverhaul
                     zone.ParkingCut = true;
                     zone.Note = why;   // (a lane found to be other than plain since the bay was laid out: left as it is, and said)
                 }
-                bool pieces = HideAll(zone.Clear, stop);
-                pieces &= HideAll(zone.Meters, stop);
+                bool pieces = HideAll(zone.Clear, stop, unseen);
+                pieces &= HideAll(zone.Meters, stop, unseen);
                 bool cars = Sweep(stop, right, out int sent);
                 zone.CarsSent += sent;
                 zone.Made = pieces && cars;
@@ -843,10 +881,18 @@ namespace RealLifeOverhaul
         {
             Bounds bounds = Footprint(piece);
             var hid = new Hid { Piece = piece, Where = stop.Name, Foot = new Vector3(bounds.center.x, bounds.min.y, bounds.center.z), Reach = Mathf.Max(bounds.extents.x, bounds.extents.z), ProbeAt = Time.unscaledTime + ProbeAfter };
+            // What of the walkable ground changes: the piece's own obstacles that are on, and those of the game's beside it.
+            piece.GetComponentsInChildren(false, Carving);
+            int changed = 0;
+            for (int i = 0; i < Carving.Count; i++)
+            {
+                changed += Carving[i] != null && Carving[i].enabled && Carving[i].carving ? 1 : 0;
+            }
+            Carving.Clear();
             piece.SetActive(false);
             if (_obstacles == null)
             {
-                _obstacles = UnityEngine.Object.FindObjectsOfType<NavMeshObstacle>();
+                Prewarm();   // (made behind the loading screen as a rule: this is for a city where that could not be done)
             }
             Bounds near = bounds;
             near.Expand(new Vector3(0.6f, 2f, 0.6f));
@@ -876,8 +922,9 @@ namespace RealLifeOverhaul
                 }
                 obstacle.enabled = false;
                 hid.Off.Add(obstacle);
+                changed += obstacle.carving ? 1 : 0;
             }
-            MeshCuts.Note("street furniture switched off at a bus stop", Mathf.Max(1, hid.Off.Count));
+            MeshCuts.Note("street furniture switched off at a bus stop", changed);   // (a piece with no obstacle changes nothing of the ground, and is not counted)
             Hidden.Add(hid);
         }
 
@@ -957,11 +1004,32 @@ namespace RealLifeOverhaul
                         hid.Off[k].enabled = true;
                     }
                 }
+                MeshCuts.Note("street furniture put back at a bus stop (its hole is baked in)", Carves(hid));
                 Stay.Add(hid.Piece);
                 Hidden.RemoveAt(i--);
                 _putBack++;
                 Logger?.Info("Transit: '" + hid.Piece.name + "' at " + hid.Where + " is put back: the walkable ground under it is baked without it, so with it switched off it would stop the player unseen.");
             }
+        }
+
+        // How many carving obstacles switching a piece back on changes: its own that are on, and the game's beside it.
+        private static int Carves(Hid hid)
+        {
+            int count = 0;
+            if (hid.Piece != null)
+            {
+                hid.Piece.GetComponentsInChildren(false, Carving);
+                for (int i = 0; i < Carving.Count; i++)
+                {
+                    count += Carving[i] != null && Carving[i].enabled && Carving[i].carving ? 1 : 0;
+                }
+                Carving.Clear();
+            }
+            for (int k = 0; k < hid.Off.Count; k++)
+            {
+                count += hid.Off[k] is NavMeshObstacle obstacle && obstacle != null && obstacle.carving ? 1 : 0;
+            }
+            return count;
         }
 
         private static bool OnMesh(Vector3 place)
@@ -1001,6 +1069,7 @@ namespace RealLifeOverhaul
                         Logger?.Error(e);
                     }
                 }
+                int carves = 0;
                 for (int i = 0; i < Hidden.Count; i++)
                 {
                     Hid hid = Hidden[i];
@@ -1015,17 +1084,19 @@ namespace RealLifeOverhaul
                             hid.Off[k].enabled = true;
                         }
                     }
+                    carves += Carves(hid);
                 }
+                MeshCuts.Note("the street furniture of the bus stops put back", carves);   // (all in one frame)
             }
             else
             {
                 Stay.Clear();
+                _obstacles = null;   // (the list is the city's: kept while the buses are switched off and on again)
             }
             Originals.Clear();
             Verdicts.Clear();
             Hidden.Clear();
             Pending.Clear();
-            _obstacles = null;
             _queued = false;
             _putBack = 0;
             _carsSince = 0;

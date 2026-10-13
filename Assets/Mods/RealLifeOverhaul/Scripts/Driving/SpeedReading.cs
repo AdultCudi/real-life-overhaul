@@ -111,7 +111,7 @@ namespace RealLifeOverhaul
                 UiClone.Fallback("the game's vehicle panel has no condition reading to copy, so the speed is not shown there");
                 return false;
             }
-            SessionWatch.Mark("game UI: the speed reading being copied from the game's vehicle panel");
+            using var piece = SessionWatch.Piece("game UI: the speed reading being copied from the game's vehicle panel");
             Transform holder = UiClone.Dormant(info, "RealLifeOverhaul Speed Holder");
             GameObject copy = UiClone.Asleep(condition.gameObject, holder, "RealLifeOverhaul Speed");
             UiClone.StripGameScripts(copy, null);

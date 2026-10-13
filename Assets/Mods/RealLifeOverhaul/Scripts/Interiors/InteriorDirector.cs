@@ -77,8 +77,10 @@ namespace RealLifeOverhaul.Interiors
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Interiors: InteriorDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_broken || Time.unscaledTime < _nextSlow)
             {
                 return;

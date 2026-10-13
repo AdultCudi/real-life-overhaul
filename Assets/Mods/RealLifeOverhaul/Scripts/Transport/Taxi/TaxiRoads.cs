@@ -140,7 +140,7 @@ namespace RealLifeOverhaul
             }
             else
             {
-                SessionWatch.Mark("the taxi's road graph");
+                using var piece = SessionWatch.Piece("the taxi's road graph");
                 _search = RoadGraph.Build(_points, LaneChangeCost, out _);
             }
             if (Meta.Dev.Verbose)
@@ -167,7 +167,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            SessionWatch.Mark("a taxi's route");
+            using var piece = SessionWatch.Piece("a taxi's route");
             Stopwatch watch = Stopwatch.StartNew();
             Collect(caller, type, Mathf.Max(least, NeverNearer), most, mayBeSeen);
             plan.Starts = _starts.Count;

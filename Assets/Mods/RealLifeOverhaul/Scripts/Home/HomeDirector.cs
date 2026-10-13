@@ -198,8 +198,10 @@ namespace RealLifeOverhaul
             _wishUntil = Time.unscaledTime + 20f;
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Home: HomeDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_broken)
             {
                 return;
@@ -667,8 +669,10 @@ namespace RealLifeOverhaul
         private System.Action<string> _onGameEvent;
         private System.Action<string> _gameEventSeen;
 
+        private static readonly int HotOnGameEvent = HotSpots.Slot("Home: HomeDirector.OnGameEvent");
         private void OnGameEvent(string gameEvent)
         {
+            using var hotSpot = HotSpots.Time(HotOnGameEvent);
             if (gameEvent != "ba:gameevent_foodeaten" || !HomeState.Loaded || _broken)
             {
                 return;

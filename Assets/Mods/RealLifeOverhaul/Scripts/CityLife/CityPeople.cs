@@ -116,7 +116,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            SessionWatch.Mark("people: a character being made");
+            using var piece = SessionWatch.Piece("people: a character being made");
             var character = PrefabHelper.CreatePrefab<ThirdPersonCharacter>(CharacterPrefab, near, Quaternion.identity, transform);
             character.name = "RealLifeOverhaul Citizen";
             // Idle fidgets would play over the poses activities set.
@@ -265,9 +265,11 @@ namespace RealLifeOverhaul
             _people.Clear();
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("CityLife: CityPeople.Update");
         // Runs only while somebody is out: hides whoever cannot be seen, shows them again the frame they can.
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             try
             {
                 Camera camera = GameManager.GetMainCamera();
@@ -313,8 +315,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotFixedUpdate = HotSpots.Slot("CityLife: CityPeople.FixedUpdate");
         private void FixedUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotFixedUpdate);
             _skip = !_skip;
             if (_skip || _strikesFailed || !Settings.Ragdolls)
             {
