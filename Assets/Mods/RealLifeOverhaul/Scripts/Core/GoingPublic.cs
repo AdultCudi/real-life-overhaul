@@ -156,6 +156,7 @@ namespace RealLifeOverhaul
             }
             _next = Time.unscaledTime + Every;
             Read();
+            SharedCity.Second();   // the shared city's second: hello, updates, what a guest asked for (Core/SharedCity)
             if (!_told && InSession && ModState.Loaded)
             {
                 _told = true;   // once in a run of the game, not on every load: the first look after the save is in
@@ -199,6 +200,7 @@ namespace RealLifeOverhaul
                     _hosting = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), hosting);
                     _inWorld = (Func<bool>)Delegate.CreateDelegate(typeof(Func<bool>), inWorld);
                 }
+                GoingPublicLink.Install(assembly);   // this mod's own messages through Going Public's connection, for the shared city
                 if (hidden != null && hidden.ReturnType == typeof(bool))
                 {
                     _hidden = (Func<BuildingRegistration, bool>)Delegate.CreateDelegate(typeof(Func<BuildingRegistration, bool>), hidden);
@@ -374,6 +376,27 @@ namespace RealLifeOverhaul
         public static void Reset()
         {
             _pretend = GoingPublicRole.Absent;
+            SharedCity.Reset();
+        }
+
+        /// <summary>True while the test pretends a session.</summary>
+        public static bool Pretending => _pretend != GoingPublicRole.Absent;
+
+        /// <summary>For the shared city's test: the pretence is set to a role at once (Absent ends it).</summary>
+        public static void Pretend(GoingPublicRole role)
+        {
+            if (role == GoingPublicRole.Alone)
+            {
+                role = GoingPublicRole.Absent;
+            }
+            if (role == _pretend)
+            {
+                return;
+            }
+            _pretend = role;
+            _told = false;
+            _next = 0f;
+            Read();
         }
 
         /// <summary>For the guide and the self-check: one line on where this machine stands.</summary>
@@ -384,12 +407,13 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>The one per-frame call of <see cref="GoingPublic"/>: a comparison with the real clock, and a look once a second.</summary>
+    /// <summary>The one per-frame call of <see cref="GoingPublic"/>: a comparison with the real clock and a look once a second, and the shared city's inbox (a field read).</summary>
     public sealed class GoingPublicWatch : MonoBehaviour
     {
         private void Update()
         {
             GoingPublic.Tick();
+            SharedCity.Frame();   // (a field read while nothing of the shared city's has come)
         }
     }
 }

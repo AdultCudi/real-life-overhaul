@@ -856,6 +856,8 @@ namespace RealLifeOverhaul
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on; warnings and errors always
             OtherMods.Look(context.Logger);   // other authors' mods this one stands aside for: one walk over the loaded assemblies (Core/OtherMods)
             GoingPublic.Logger = context.Logger;
+            GoingPublicLink.Logger = context.Logger;
+            SharedCity.Logger = context.Logger;
             GoingPublic.Reset();
             GoingPublic.Look();   // a Going Public session is known before any feature starts (Core/GoingPublic)
             CameraYield.Logger = context.Logger;
