@@ -1,4 +1,4 @@
-0.7.7
+0.7.8
 
-Fixed
-- The Guide's page of known limits no longer calls this the mod's first public release, nor the bus a minibus.
+Changed
+- A bank the regulator closed no longer bars you from banking for good. A year after the closure you may apply for a new licence, on stricter terms: more capital for the next bank and, with Standing on, an integrity as an owner that has recovered. The Your bank app shows the date and what is still missing.
