@@ -93,6 +93,7 @@ namespace RealLifeOverhaul.Ledger
             K("_ledger_policy_on", LedgerSection.City, 68, "policy_on"),
             K("_ledger_policy_off", LedgerSection.City, 58, "policy_off"),
             K("_event_today", LedgerSection.AroundTown, 18),
+            K("_event_tomorrow", LedgerSection.AroundTown, 16),
 
             // the economy (Economy/City, through the paper's Extra pieces)
             K("_macro_news_rate_up", LedgerSection.Economy, 88, "rate_up"),
@@ -150,6 +151,7 @@ namespace RealLifeOverhaul.Ledger
             K("_news_rained", LedgerSection.Weather, 10),
             K("_news_dry", LedgerSection.Weather, 10),
             K("_ledger_spell", LedgerSection.Weather, 14),
+            K("_ledger_night", LedgerSection.AroundTown, 13),
             K("_news_person", LedgerSection.People, 20),
             K("_news_filler", LedgerSection.AroundTown, 5),
             K("_news_masthead", LedgerSection.AroundTown, -1)   // the old paper's masthead: the page has its own (left out)

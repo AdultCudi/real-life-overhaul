@@ -480,14 +480,16 @@ namespace RealLifeOverhaul.Meta
                 })
                 .Repair(() => SocialPhone.Setup(SocialDirector.Logger));
 
-            // The City Ledger: the morning paper as a newspaper, for a player who has it delivered or buys it at a kiosk. Its
-            // words are the city's paper (Social/News, which the social life's data keeps) and the market's close; its contact
-            // is the subscriptions desk. Off: no paper, no kiosk, no delivery and nothing charged; a subscription is kept as it is.
+            // The City Ledger: the morning paper as a newspaper, for a player who has it delivered or buys it at a kiosk, and
+            // online (Newsstand): the paper and three other titles read on the phone by subscription over the home's internet.
+            // Its words are the city's paper (Social/News, which the social life's data keeps) and the market's close; its
+            // contact is the subscriptions desk. Off: no paper, no kiosk, no delivery, no online edition and nothing charged;
+            // the subscriptions are kept as they are.
             Features.Add("ledger", "reallife_meta_title_ledger")
                 .Group("reallife_ledger_header")
                 .About("reallife_guide_ledger_about").Help("reallife_guide_ledger")
-                .Owns(Settings.SocialNewspaperId, Settings.LedgerKiosksId)
-                .Data(Ledger.LedgerStore.Key)
+                .Owns(Settings.SocialNewspaperId, Settings.LedgerKiosksId, Settings.LedgerOnlineId, Settings.LedgerOnlineNotesId)
+                .Data(Ledger.LedgerStore.Key, Ledger.NewsstandStore.Key)
                 .Contact(SocialPhone.LedgerId)
                 .Objects("RealLifeOverhaul Ledger Copy")
                 .Fact("ledger_copy", () => Guide.Money(Prices.At(Ledger.LedgerCatalogue.CopyAtStart)))
@@ -499,6 +501,12 @@ namespace RealLifeOverhaul.Meta
                 .Fact("ledger_kiosks", () => Whole(Ledger.LedgerCatalogue.KiosksWanted))
                 .Fact("ledger_far", () => Whole((int)Ledger.LedgerCatalogue.KioskFurthest))
                 .Fact("ledger_chart", () => Whole(Ledger.LedgerCatalogue.ChartDays))
+                .Fact("ledger_online_ledger", () => Guide.Money(Prices.At(Ledger.NewsstandCatalogue.WeekAtStart[Ledger.NewsstandCatalogue.Ledger])))
+                .Fact("ledger_online_exchange", () => Guide.Money(Prices.At(Ledger.NewsstandCatalogue.WeekAtStart[Ledger.NewsstandCatalogue.Exchange])))
+                .Fact("ledger_online_street", () => Guide.Money(Prices.At(Ledger.NewsstandCatalogue.WeekAtStart[Ledger.NewsstandCatalogue.Street])))
+                .Fact("ledger_online_review", () => Guide.Money(Prices.At(Ledger.NewsstandCatalogue.WeekAtStart[Ledger.NewsstandCatalogue.Review])))
+                .Fact("ledger_online_pass", () => Guide.Money(Prices.At(Ledger.NewsstandCatalogue.WeekAtStart[Ledger.NewsstandCatalogue.Pass])))
+                .Fact("ledger_online_days", () => Whole(Ledger.NewsstandCatalogue.KeepDays))
                 .Cleanup(() => Ledger.LedgerDirector.Instance?.StopAll())
                 .ResetData(() => Ledger.LedgerDirector.Instance?.Forget());   // the director reads the (now empty) save again on its next second
 
