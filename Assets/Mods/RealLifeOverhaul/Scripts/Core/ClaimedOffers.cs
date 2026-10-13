@@ -163,8 +163,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("Core: ClaimedPresentation.LateUpdate");
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (_failed)
             {
                 return;
@@ -302,8 +304,10 @@ namespace RealLifeOverhaul
             _seen = null;
         }
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("Core: ClaimedRealEstate.LateUpdate");
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (_failed || Table == null)
             {
                 return;

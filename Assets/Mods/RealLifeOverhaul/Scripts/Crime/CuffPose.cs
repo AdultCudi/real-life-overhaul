@@ -116,8 +116,10 @@ namespace RealLifeOverhaul
             pose.enabled = any;
         }
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("Crime: CuffPose.LateUpdate");
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             try
             {
                 bool any = false;

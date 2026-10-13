@@ -13,8 +13,9 @@ namespace RealLifeOverhaul
     /// the RED lamp of the cars that drive over it. The game lets its pedestrians walk exactly while
     /// that lamp is lit (PedestrianMovementHandler.CanCrossCrosswalk), so lit means the cars have red
     /// and the people have the crossing.
-    /// It is listed once, the first time somebody asks after a city has loaded: one search of the
-    /// scene for that one component (a few hundred objects), put in a coarse grid. After that a
+    /// It is listed once a city, behind the loading screen (Prewarm), or else the first time somebody
+    /// asks: one search of the scene for that one component (a few hundred objects, but the search
+    /// walks the whole city: some 90 ms), put in a coarse grid. After that a
     /// question looks at the handful of boxes in one grid square. If the game has no such component
     /// any more, or none is found, it says so once and every question answers "not on a crossing".
     /// </summary>
@@ -76,7 +77,7 @@ namespace RealLifeOverhaul
             _builtAt = Time.time;
             try
             {
-                SessionWatch.Mark("streets: the city's crossings being listed");
+                using var piece = SessionWatch.Piece("streets: the city's crossings being listed");
                 Build();
                 Logger?.Info("Streets: " + All.Count + " marked crossings listed, in " + Cells.Count + " grid squares.");
             }
@@ -91,9 +92,24 @@ namespace RealLifeOverhaul
             return All.Count > 0;
         }
 
+        /// <summary>
+        /// Behind the loading screen (Traffic/Solid/SolidStreets.Prewarm): the list made now, not at the first look of the
+        /// traffic in play, where its search of the scene was a frame of some 90 ms. False while the city has none to give
+        /// (it is looked for again behind the next black screen out of doors, not a minute later in play).
+        /// </summary>
+        public static bool Prewarm()
+        {
+            if (Ensure() || _failed)
+            {
+                return true;
+            }
+            Reset();
+            return false;
+        }
+
         private static void Build()
         {
-            CrosswalkToTrafficLightLink[] links = Object.FindObjectsByType<CrosswalkToTrafficLightLink>(FindObjectsSortMode.None);
+            CrosswalkToTrafficLightLink[] links = SceneFinds.All<CrosswalkToTrafficLightLink>("streets: the city's marked crossings being looked for (a search of the whole scene, once a city)");
             for (int i = 0; i < links.Length; i++)
             {
                 CrosswalkToTrafficLightLink link = links[i];

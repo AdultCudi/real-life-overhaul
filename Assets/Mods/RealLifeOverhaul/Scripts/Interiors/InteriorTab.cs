@@ -657,8 +657,10 @@ namespace RealLifeOverhaul.Interiors
             InteriorTab.Dirty = true;
         }
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("Interiors: InteriorTabKeeper.LateUpdate");
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (InteriorTab.Dirty)
             {
                 UiClone.Safe(InteriorTab.Fix);

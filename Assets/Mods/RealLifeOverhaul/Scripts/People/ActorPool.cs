@@ -123,9 +123,11 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("People: ActorPool.Update");
         // Runs only while somebody is out. Hides whoever cannot be seen; shows them again the frame they can.
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             try
             {
                 Camera camera = GameManager.GetMainCamera();
@@ -638,7 +640,7 @@ namespace RealLifeOverhaul
         // wanted, in the same frame.
         private StreetActor Create(Vector3 birth)
         {
-            SessionWatch.Mark("people: a character being made");
+            using var piece = SessionWatch.Piece("people: a character being made");
             var character = PrefabHelper.CreatePrefab<ThirdPersonCharacter>(CharacterPrefab, birth, Quaternion.identity, transform);
             character.name = "RealLifeOverhaul Actor";
             // Idle fidgets would play over the poses scenes set (lying down, on the phone).

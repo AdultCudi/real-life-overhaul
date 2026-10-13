@@ -429,8 +429,10 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- every other physics step
 
+        private static readonly int HotFixedUpdate = HotSpots.Slot("Traffic: RecklessCar.FixedUpdate");
         private void FixedUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotFixedUpdate);
             _skip = !_skip;
             if (_skip || Struck != Hit.None || !InUse)
             {

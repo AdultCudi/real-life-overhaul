@@ -492,8 +492,10 @@ namespace RealLifeOverhaul
             _indicate = side;
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Transport: BusVehicle.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             float dt = Time.deltaTime;
             float doors = Mathf.MoveTowards(_doors, _doorsWanted ? 1f : 0f, dt / DoorSeconds);
             if (doors != _doors)

@@ -206,8 +206,10 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("Careers: CareersDirector.LateUpdate");
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             _interior?.Card(false);   // (one reference comparison: the game's card over the university)
             bool rooms = _interior != null && _interior.Floor > 0;   // (from the frame the player is on a floor: no course of the game's opens there)
             if (!_deskWatch && !rooms)

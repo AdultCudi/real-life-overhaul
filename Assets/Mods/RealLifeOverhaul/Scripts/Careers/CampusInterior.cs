@@ -571,9 +571,14 @@ namespace RealLifeOverhaul.Careers
             return first >= 0 ? CampusRules.FloorOf(first) : 1;
         }
 
+        private static readonly int HotEntered = HotSpots.Slot("Careers: CampusInterior.Entered");
+        private static readonly int HotLeft = HotSpots.Slot("Careers: CampusInterior.Left");
+        private static readonly int HotNoticed = HotSpots.Slot("Careers: CampusInterior.Noticed");
+
         // The game has entered a building.
         private void Entered(Address address)
         {
+            using var hotSpot = HotSpots.Time(HotEntered);
             try
             {
                 CampusBuilding campus = Campus;
@@ -606,6 +611,7 @@ namespace RealLifeOverhaul.Careers
 
         private void Left(Address address)
         {
+            using var hotSpot = HotSpots.Time(HotLeft);
             CampusBuilding campus = Campus;
             if (Floor == 0 || campus == null || address == null || address.streetName != campus.Street || address.streetNumber != campus.Number)
             {
@@ -1122,6 +1128,7 @@ namespace RealLifeOverhaul.Careers
         // The game's own refusal at a door: when it is the university's, said in the log and to the player with the hours.
         private void Noticed(NotificationType type, string key, Dictionary<string, string> data, float seconds, string duplicate, Action click, bool sound, bool track)
         {
+            using var hotSpot = HotSpots.Time(HotNoticed);
             if (key != "buildingmanager_notification_business_closed" && key != "buildingmanager_notification_private_property" && key != "educationdoorcontroller_closed")
             {
                 return;

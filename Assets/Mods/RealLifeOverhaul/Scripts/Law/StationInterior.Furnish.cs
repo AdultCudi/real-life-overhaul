@@ -80,7 +80,7 @@ namespace RealLifeOverhaul.Law
             {
                 return;   // the old bare station: the counter, the bench, the desks and the cell, with the people as they were
             }
-            SessionWatch.Mark("law: the station furnished with the game's own furniture");   // the first visit copies the pieces
+            using var piece = SessionWatch.Piece("law: the station furnished with the game's own furniture");   // the first visit copies the pieces
             _taken.Clear();
             _pieces = 0;
             for (int i = 0; i < _kindCount.Length; i++)

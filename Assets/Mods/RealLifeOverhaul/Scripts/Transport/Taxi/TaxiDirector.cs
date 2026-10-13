@@ -111,8 +111,10 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- the clock
 
+        private static readonly int HotUpdate = HotSpots.Slot("Transport: TaxiDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             float now = Time.time;
             if (now < _nextTick)
             {
@@ -267,8 +269,10 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- the game's map and its taxi
 
+        private static readonly int HotOnMap = HotSpots.Slot("Transport: TaxiDirector.OnMap");
         private void OnMap(bool open)
         {
+            using var hotSpot = HotSpots.Time(HotOnMap);
             if (_step != Step.Idle)
             {
                 NoteMapTaxi();

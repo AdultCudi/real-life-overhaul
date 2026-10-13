@@ -320,10 +320,12 @@ namespace RealLifeOverhaul.Leisure
             _clip = null;
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Leisure: Selfie.Update");
         // The clip pose, stepped by the real clock: the game's is stopped. Before the animation pass, so the engine's
         // own evaluation this frame (which advances nothing while paused) draws where this one left it.
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             try
             {
                 if (_body == null || _animator == null || !_body.gameObject.activeInHierarchy)
@@ -371,10 +373,12 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("Leisure: Selfie.LateUpdate");
         // After the animation: the phone arm out to the lens, the head turned into it. Every turn is to a direction
         // worked out afresh, so it is the same whether or not the animator wrote the bones again this frame.
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             try
             {
                 if (_head == null)

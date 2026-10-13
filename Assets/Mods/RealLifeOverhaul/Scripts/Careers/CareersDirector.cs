@@ -150,8 +150,10 @@ namespace RealLifeOverhaul.Careers
 
         // ---------------------------------------------------------------- the game's hour, day and save
 
+        private static readonly int HotOnHour = HotSpots.Slot("Careers: CareersDirector.OnHour");
         private void OnHour()
         {
+            using var hotSpot = HotSpots.Time(HotOnHour);
             if (_broken || Save == null)
             {
                 return;
@@ -173,8 +175,10 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        private static readonly int HotOnDay = HotSpots.Slot("Careers: CareersDirector.OnDay");
         private void OnDay()
         {
+            using var hotSpot = HotSpots.Time(HotOnDay);
             if (_broken || Save == null)
             {
                 return;

@@ -1,4 +1,6 @@
-0.9.5
+0.9.7
 
-New
-- The mod's apps are easier to follow: the figures that matter come first, and long explanations sit at the foot of each page with a pointer to its Guide page.
+Fixed
+- The city bus could stop short of its stop and stand there for good, the stop's panel saying DELAYED and nobody able to get on. Held up near the stop, by a car, somebody in the road or you, it now opens its doors where it stands, and a car of the traffic that waits for the bus while the bus waits for it is let go.
+- At a narrow stop the bus braked for people waiting at the kerb.
+- An old file left in the mod's folder by an earlier version could dress the city bus in the wrong textures, fuel price boards and fire engine lettering. The mod now ignores such files, and the steps for installing from the zip say to delete the old folder first.

@@ -100,8 +100,10 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("Navigation: NavCityMap.LateUpdate");
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (_failed || _count < 2)
             {
                 return;
@@ -154,8 +156,10 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Navigation: NavCityMap.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (!Clicks || _failed)
             {
                 return;

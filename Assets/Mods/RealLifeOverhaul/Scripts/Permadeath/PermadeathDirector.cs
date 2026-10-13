@@ -81,8 +81,10 @@ namespace RealLifeOverhaul.Permadeath
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Permadeath: PermadeathDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (!_pageUp)
             {
                 return;

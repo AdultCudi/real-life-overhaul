@@ -147,8 +147,10 @@ namespace RealLifeOverhaul.Leisure
             UI.Notification.Notifications.Show(UI.Notification.NotificationType.Info, "reallife_photo_armed", null, 6f);
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Leisure: PhotoMode.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_failed)
             {
                 return;

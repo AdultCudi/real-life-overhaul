@@ -443,8 +443,10 @@ namespace RealLifeOverhaul.Economy.Dealership
 
         // ---------------------------------------------------------------- entering a dealership
 
+        private static readonly int HotOnEnter = HotSpots.Slot("Economy: DealerDirector.OnEnter");
         private void OnEnter(Address address)
         {
+            using var hotSpot = HotSpots.Time(HotOnEnter);
             if (!_running || _broken || Save == null)
             {
                 return;

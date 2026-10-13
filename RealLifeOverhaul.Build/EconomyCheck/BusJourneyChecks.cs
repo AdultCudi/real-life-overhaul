@@ -53,6 +53,108 @@ internal static partial class Program
         Console.WriteLine("  Bus journey, as the bus drives it (no lights, no traffic): " + RideRules.StopApart.ToString("F0") + " m to the next stop " + hop.ToString("F0") + " s, 250 m " + one.ToString("F0")
                           + " s; three stops " + three.ToString("F0") + " s (" + (three / RideRules.FastForward).ToString("F0") + " s fast-forwarded); five stops " + five.ToString("F0") + " s ("
                           + (five / RideRules.FastForward).ToString("F0") + " s fast-forwarded)");
+        BusHolds();
+    }
+
+    // A bus held up on its way (Scripts/Transport/RideRules, TransitBus.OnTheWay): when it counts as standing at its stop where
+    // it is, when a car of the traffic that waits for it is told to go on, and how a hold is timed for the log. The 13 October
+    // report: the M9 stood still beside the player short of its place, never counted as arrived, and the player waited for it.
+    private static void BusHolds()
+    {
+        const float kerb = 3.92f, narrow = 1.84f, side = BusBay.BusSideHalf, half = BusBay.BusLength * 0.5f;
+        // A door by the kerb for the bus's middle so many metres along the lane from the pole's lane point, its place Stand on from it.
+        bool OnKerb(float middle, float stand, float angle = 0f, float aside = side, float kerbAside = kerb) =>
+            RideRules.DoorOnKerb(middle + BusInside.FrontDoor, middle + BusInside.MiddleDoor, aside, angle, stand, kerbAside);
+
+        // A door by the stop's kerb.
+        Check(OnKerb(0f, 0f) && OnKerb(0.5f, 0.5f) && OnKerb(-1f, -1f), "bus holds: at its place, a door by the stop's kerb");
+        Check(OnKerb(-3f, 0f) && OnKerb(-5.95f, 0f) && !OnKerb(-6.1f, 0f), "bus holds: up to 6 m short of its place, the front door is still by the stop's kerb strip");
+        Check(OnKerb(5.95f, 0f) && !OnKerb(6.1f, 0f), "bus holds: up to 6 m past it, the middle door is");
+        Check(!OnKerb(-5.95f, 1f) && OnKerb(-4.95f, 1f), "bus holds: measured from its place: with it 1 m on from the pole, 6 m short of the pole is 7 m short of its place");
+        Check(OnKerb(0f, 0f, RideRules.KerbAngleMost) && !OnKerb(0f, 0f, RideRules.KerbAngleMost + 1f), "bus holds: near enough parallel to the kerb, 15 degrees at the most");
+        Check(!OnKerb(0f, 0f, 0f, -0.1f) && !OnKerb(0f, 0f, 0f, kerb + RideRules.KerbOver + 0.1f) && OnKerb(0f, 0f, 0f, side, narrow),
+              "bus holds: its doors on the kerb's side of the lane's line, never over the kerb, at the narrowest kerb as at a wide one");
+        Check(!OnKerb(-27f, 0f), "bus holds: 27 m short of its place (the M9 of the report), no door is by the kerb: it is not at the stop there");
+
+        // When it counts as standing at the stop.
+        Check(!RideRules.StandsWhereItIs(RideRules.StandShortAfter - 0.1f, true, false, 3f) && RideRules.StandsWhereItIs(RideRules.StandShortAfter, true, false, 3f),
+              "bus holds: still for two seconds with a door by the kerb, it stands at the stop where it is");
+        Check(!RideRules.StandsWhereItIs(600f, false, false, 3f), "bus holds: held up anywhere else by anything but the player, it is not at the stop, however long");
+        Check(RideRules.StandsWhereItIs(RideRules.StandShortAfter, false, true, 12f) && !RideRules.StandsWhereItIs(RideRules.StandShortAfter, false, true, RideRules.PlayerHoldsWithin + 1f),
+              "bus holds: held up by the player near its place, it stands there for them; far from it, not");
+
+        // Never the player waiting for the bus while the bus waits for the player: wherever they stand in the road at the stop
+        // (from 3 m short of the pole to 6 m past it) and wherever the bus comes to a stand behind them (its nose 2.5 m to 6 m
+        // short of them: PersonGap, and its looks of 3 m), it is at the stop once it has stood StandShortAfter.
+        bool always = true;
+        string worst = null;
+        for (float player = -3f; player <= 6.01f && always; player += 0.25f)
+        {
+            for (float gap = 2.5f; gap <= 6.01f && always; gap += 0.25f)
+            {
+                float middle = player - gap - half;
+                float routeLeft = -middle;   // (its front axle's metres to where it is at its place, on a straight lane)
+                if (!RideRules.StandsWhereItIs(RideRules.StandShortAfter, OnKerb(middle, 0f), true, routeLeft))
+                {
+                    always = false;
+                    worst = "the player " + player.ToString("F2") + " m along, its nose " + gap.ToString("F2") + " m short of them";
+                }
+            }
+        }
+        Check(always, "bus holds: no deadlock with the player in the road at the stop" + (worst != null ? " (" + worst + ")" : ""));
+        // Somebody else (or a car) standing in the road at the front door's place: the bus comes to rest behind them (its looks are
+        // 3 m long: it creeps up until they are in the first, and stands 3 m short at the most; 4.75 here, to spare) with its front
+        // door by the kerb.
+        bool behind = true;
+        for (float gap = 0.5f; gap <= 4.76f; gap += 0.25f)
+        {
+            behind &= OnKerb(BusInside.FrontDoor - gap - half, 0f);
+        }
+        Check(behind, "bus holds: held up by somebody at the front door's place, its front door is by the kerb, so it is at the stop");
+
+        // The hold's clock: within a metre it is the one hold; once it moves on, a new one, and the log says each once.
+        var clock = new RideRules.HoldClock();
+        Check(clock.At(0f, 0f, 10f) == 0f && Near(clock.At(0.5f, 0f, 13f), 3f, 1e-4f) && Near(clock.At(0.95f, 0f, 16f), 6f, 1e-4f), "bus holds: standing within a metre, the hold goes on");
+        clock.Logged = true;
+        clock.Yielded = true;
+        Check(clock.At(0.9f, 0.1f, 17f) > 0f && clock.Logged && clock.Yielded, "bus holds: what was done once a hold is kept while it lasts");
+        Check(clock.At(1.2f, 0f, 18f) == 0f && !clock.Logged && !clock.Yielded, "bus holds: moved on over a metre, the hold is over and the next one is said again");
+        clock.Clear();
+        Check(clock.For == 0f && clock.At(5f, 5f, 30f) == 0f, "bus holds: cleared at a stop, the next hold starts afresh");
+        // Creeping up behind a queue at 0.3 m/s, looked at four times a second: one hold until it has gone a metre.
+        clock.Clear();
+        float longest = 0f;
+        int holds = 0;
+        for (int tick = 0; tick <= 80; tick++)
+        {
+            float now = tick * 0.25f, still = clock.At(0.3f * now, 0f, now);
+            holds += still == 0f ? 1 : 0;
+            longest = Math.Max(longest, still);
+        }
+        Check(holds >= 6 && holds <= 7 && longest > 3f && longest < 3.5f, "bus holds: creeping 0.3 m a second, a hold every metre (" + holds + " in 6 m, the longest " + longest.ToString("F2") + " s)");
+        int lines = 0;
+        clock.Clear();
+        for (int tick = 0; tick <= 120; tick++)
+        {
+            float still = clock.At(0f, 0f, tick * 0.25f);
+            if (!clock.Logged && still >= RideRules.HoldLogAfter)
+            {
+                clock.Logged = true;
+                lines++;
+            }
+        }
+        Check(lines == 1 && RideRules.HoldLogAfter <= 5f && RideRules.HoldLogAfter > RideRules.StandShortAfter,
+              "bus holds: 30 s standing still is written to the log once, after 5 s, later than it can count as at its stop");
+
+        // A car of the traffic that waits for the bus while the bus waits for it.
+        Check(RideRules.Yield(RideRules.YieldAfter, true, true, true, false, false) && !RideRules.Yield(RideRules.YieldAfter - 0.1f, true, true, true, false, false),
+              "bus holds: after four seconds behind a car that stands for the bus, the car is told the bus is not in its way");
+        Check(!RideRules.Yield(60f, false, true, true, false, false), "bus holds: never on a Going Public guest, whose traffic is the host's");
+        Check(!RideRules.Yield(60f, true, false, true, false, false) && !RideRules.Yield(60f, true, true, false, false, false),
+              "bus holds: not a car that is moving, nor one that stands for something else");
+        Check(!RideRules.Yield(60f, true, true, true, true, false), "bus holds: not when the bus is on the car's own way ahead: it would drive into it");
+        Check(!RideRules.Yield(60f, true, true, true, false, true), "bus holds: once a hold");
+        Check(RideRules.YieldAfter < 25f && RideRules.HoldLogAfter < 25f, "bus holds: all of it long before the en route line says a bus is getting nowhere (25 s)");
     }
 
     private static void BusBoarding()

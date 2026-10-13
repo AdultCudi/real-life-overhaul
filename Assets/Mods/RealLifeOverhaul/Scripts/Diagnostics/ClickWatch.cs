@@ -25,8 +25,10 @@ namespace RealLifeOverhaul
         private PointerEventData _pointer;
         private float _next;
 
+        private static readonly int HotUpdate = HotSpots.Slot("Diagnostics: ClickWatch.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (!Meta.Dev.Verbose || !Input.GetMouseButtonUp(0) || Time.unscaledTime < _next)
             {
                 return;

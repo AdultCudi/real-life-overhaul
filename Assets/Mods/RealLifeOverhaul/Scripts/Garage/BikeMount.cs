@@ -714,8 +714,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotFixedUpdate = HotSpots.Slot("Garage: BikeMount.FixedUpdate");
         private void FixedUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotFixedUpdate);
             if (!_ridden || _rigidbody == null)
             {
                 return;
@@ -763,8 +765,10 @@ namespace RealLifeOverhaul
             _lastVelocity = velocity;
         }
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("Garage: BikeMount.LateUpdate");
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (!_ridden || _body == null || _nwh == null)
             {
                 return;

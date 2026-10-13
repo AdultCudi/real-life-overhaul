@@ -211,8 +211,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Social: SocialDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             float real = Time.unscaledTime;
             if (_broken || (_scene == null && !_ringing && real < _nextSlow))
             {

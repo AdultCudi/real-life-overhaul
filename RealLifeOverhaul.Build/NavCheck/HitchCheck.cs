@@ -5,7 +5,8 @@ using RealLifeOverhaul;
 // Checks for the game-free parts of the work against long frames, compiled as they ship: the keeper of handlers on the
 // game's event fields (Core/EventHold.cs: several holders on one event must not put each other back for ever), and the
 // two fixed rings the session record reads for the line of a long frame (Core/WorkRings.cs: the last pieces of work
-// the mod named, with their times, and the navigation obstacles it changed).
+// the mod named, with their times, and the navigation obstacles it changed); and, in HotSpotCheck.cs, the timing of the
+// mod's own scripts by feature and method (Core/HotSpots.cs) and when the whole scene may be searched (Core/SearchPace.cs).
 //
 // What is not here: anything of the game or the engine. Whether a frame is long, and what was in it, is for the game
 // to show in the "Session: a frame of ..." lines of Player.log; whether a search of the scene was made in play, in its
@@ -22,6 +23,7 @@ internal static partial class Program
         HoldCost();
         Marks();
         Counts();
+        HotSpotChecks();
     }
 
     private static Action Handler(int[] calls, int slot)

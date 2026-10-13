@@ -489,8 +489,10 @@ namespace RealLifeOverhaul.GameUi
             enabled = true;
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Core: PanelFade.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             float t = _group != null && _for > 0f ? (Time.unscaledTime - _from) / _for : 1f;
             if (_group != null)
             {

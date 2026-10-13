@@ -112,8 +112,10 @@ namespace RealLifeOverhaul.Ledger
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Ledger: LedgerDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_state == null || _broken || _kiosks == null)
             {
                 return;

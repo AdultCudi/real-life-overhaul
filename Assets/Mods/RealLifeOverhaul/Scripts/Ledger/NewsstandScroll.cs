@@ -87,8 +87,10 @@ namespace RealLifeOverhaul.Ledger
             return Mathf.Max(0f, Scroll.content.rect.height - Scroll.viewport.rect.height);
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Ledger: NewsstandGlide.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (Scroll == null || Scroll.content == null)
             {
                 enabled = false;

@@ -1093,8 +1093,10 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- the driver
 
+        private static readonly int HotOnMap = HotSpots.Slot("Core: MapPlaces.OnMap");
         private static void OnMap(bool open)
         {
+            using var hotSpot = HotSpots.Time(HotOnMap);
             _mapOpen = open;
             _lightLook++;   // (every place is lit afresh on the map that has just opened)
             _gameLooking = false;
@@ -1307,10 +1309,12 @@ namespace RealLifeOverhaul
                 }
             }
 
+            private static readonly int HotLateUpdate = HotSpots.Slot("Core: Driver.LateUpdate");
             // After the game's own work of the frame: its look at the buildings (GameManager.Update), and the card it writes
             // the moment a building comes under the mouse or is picked.
             private void LateUpdate()
             {
+                using var hotSpot = HotSpots.Time(HotLateUpdate);
                 if (_mapOpen)
                 {
                     try

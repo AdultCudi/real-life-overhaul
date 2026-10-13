@@ -26,8 +26,10 @@ namespace RealLifeOverhaul
             enabled = false;
         }
 
+        private static readonly int HotFixedUpdate = HotSpots.Slot("Driving: CarDrag.FixedUpdate");
         private void FixedUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotFixedUpdate);
             if (_body == null)
             {
                 enabled = false;   // the car was taken away under us

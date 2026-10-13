@@ -543,7 +543,7 @@ namespace RealLifeOverhaul.Law
 
         private void PlaceStatics()
         {
-            SessionWatch.Mark("law: a precinct's front being put out");
+            using var piece = SessionWatch.Piece("law: a precinct's front being put out");
             if (!Shapes.Available)
             {
                 _statics = true;

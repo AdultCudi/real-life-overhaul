@@ -200,7 +200,7 @@ namespace RealLifeOverhaul.Ledger
 
         private GameObject Build(FullMenu menu, Transform dormant)
         {
-            SessionWatch.Mark("ledger: Newsstand being built from the game's MyEmployees");   // once per city
+            using var piece = SessionWatch.Piece("ledger: Newsstand being built from the game's MyEmployees");   // once per city
             _shell = AppShell.Make(menu, dormant, AppId);
             _table = DataTable.On(_shell, "Newsstand");
             if (_table == null || !_shell.SetColumns(Titles))

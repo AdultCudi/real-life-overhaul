@@ -99,10 +99,12 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        private static readonly int HotSoon = HotSpots.Slot("Tech: TechSites.Soon");
         // The player has just gone in or out: the room is looked at as soon as the game has put it together (under its
         // fade), not at the next second. A few frames' look at one flag, then once.
         private void Soon()
         {
+            using var hotSpot = HotSpots.Time(HotSoon);
             if (!_soon && isActiveAndEnabled)
             {
                 _soon = true;

@@ -99,8 +99,10 @@ namespace RealLifeOverhaul
 
         private static bool Wanted => Settings.Police && Settings.People && Settings.PolicePresence > 0 && ModState.Loaded && TrafficTools.Ready;
 
+        private static readonly int HotUpdate = HotSpots.Slot("People: PolicePresence.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             float now = Time.time;
             bool anything = _carOut || _postOut;
             if (now < (anything ? Mathf.Min(_nextTick, _nextCheck) : _nextCheck))

@@ -490,8 +490,10 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- the card
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("Core: SpecialNames.LateUpdate");
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (ReferenceEquals(_card, null) || _cardFailed)
             {
                 return;
@@ -579,8 +581,10 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- inside
 
+        private static readonly int HotInside = HotSpots.Slot("Core: SpecialNames.Inside");
         private void Inside()
         {
+            using var hotSpot = HotSpots.Time(HotInside);
             if (!SpecialBuildings.Active && !_headlineNamed)
             {
                 return;
@@ -588,7 +592,11 @@ namespace RealLifeOverhaul
             if (!_lookedForInside)
             {
                 _lookedForInside = true;
-                _inside = UnityEngine.Object.FindObjectOfType<CurrentBuildingUI>(true);
+                // The game's own reference to its panel, not a search of the scene: FindObjectOfType with switched-off objects
+                // included walked the whole city, a frame of some 100 ms the first time the player went into a building.
+                UIs uis = InstanceBehavior<UIs>.Instance;
+                UI.PlayerHUD.PlayerHUD hud = uis != null ? uis.playerHUD : null;
+                _inside = hud != null ? hud.currentBuildingUI : null;
                 if (_headlineField == null)
                 {
                     _headlineField = typeof(CurrentBuildingUI).GetField("headlineLabel", Hidden);
@@ -623,10 +631,12 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- the city map's search
 
+        private static readonly int HotSearch = HotSpots.Slot("Core: SpecialNames.Search");
         // The game lists every building with a business name, as "name, address", and finds them by the name. The list is
         // made again the way the game makes it, with the special names, only when the game has made its own anew since.
         private void Search()
         {
+            using var hotSpot = HotSpots.Time(HotSearch);
             if (_searchFailed)
             {
                 return;

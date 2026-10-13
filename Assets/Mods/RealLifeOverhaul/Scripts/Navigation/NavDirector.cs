@@ -153,8 +153,10 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Navigation: NavDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_broken)
             {
                 return;
@@ -924,9 +926,11 @@ namespace RealLifeOverhaul.Nav
 
         // ---------------------------------------------------------------- the city map
 
+        private static readonly int HotOnMap = HotSpots.Slot("Navigation: NavDirector.OnMap");
         // The game's own event (and the slow tick, if the event was missed). Nothing thrown here reaches the game.
         private void OnMap(bool open)
         {
+            using var hotSpot = HotSpots.Time(HotOnMap);
             try
             {
                 MapToggled(open);

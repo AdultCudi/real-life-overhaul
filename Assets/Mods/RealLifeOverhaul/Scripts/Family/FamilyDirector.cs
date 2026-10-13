@@ -131,8 +131,10 @@ namespace RealLifeOverhaul.Family
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Family: FamilyDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_failed)
             {
                 return;

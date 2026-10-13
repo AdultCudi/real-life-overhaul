@@ -183,8 +183,10 @@ namespace RealLifeOverhaul.Meta
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Meta: MetaUi.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             try
             {
                 if (_open.Count == 0)

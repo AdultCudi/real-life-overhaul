@@ -166,8 +166,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Jobs: JobDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_broken)
             {
                 // Jobs are off for the session, but a van that was out on hire is still seen back.

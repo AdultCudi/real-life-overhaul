@@ -388,9 +388,11 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- the hour and the day
 
+        private static readonly int HotOnHour = HotSpots.Slot("Economy: EconomyDirector.OnHour");
         // GlobalEvents.onNewHour: every game hour, and first thing in the game's NewDay, before its daily run.
         private void OnHour()
         {
+            using var hotSpot = HotSpots.Time(HotOnHour);
             if (!_running || _broken || Save == null)
             {
                 return;
@@ -420,9 +422,11 @@ namespace RealLifeOverhaul.Economy
             AfterHour?.Invoke();
         }
 
+        private static readonly int HotOnDay = HotSpots.Slot("Economy: EconomyDirector.OnDay");
         // GlobalEvents.onNewDay: after the game's daily run (GameManager.NewDay; LoanHelper.RunDaily is in BusinessHelper.RunDaily before it).
         private void OnDay()
         {
+            using var hotSpot = HotSpots.Time(HotOnDay);
             if (!_running || _broken || Save == null)
             {
                 return;

@@ -89,8 +89,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotFixedUpdate = HotSpots.Slot("Ragdoll: CarStrikes.FixedUpdate");
         private void FixedUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotFixedUpdate);
             _skip = !_skip;
             if (_skip || !Settings.Ragdolls)
             {

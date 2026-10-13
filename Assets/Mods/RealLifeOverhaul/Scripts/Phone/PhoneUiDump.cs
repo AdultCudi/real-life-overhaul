@@ -19,8 +19,10 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger;
 
+        private static readonly int HotUpdate = HotSpots.Slot("Phone: PhoneUiDump.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (!Keys.Down(KeyAction.PhoneDump))
             {
                 return;

@@ -75,8 +75,10 @@ namespace RealLifeOverhaul
             Restore(stand: false);
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Ragdoll: PlayerKnockdown.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             float now = Time.time;
             if (_down)
             {

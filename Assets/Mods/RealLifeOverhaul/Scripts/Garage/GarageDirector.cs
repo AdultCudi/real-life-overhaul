@@ -64,8 +64,10 @@ namespace RealLifeOverhaul
             gameObject.AddComponent<GarageTuning>();
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Garage: GarageDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_failed)
             {
                 return;

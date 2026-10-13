@@ -1091,6 +1091,7 @@ namespace RealLifeOverhaul
             ScenePrewarm.Add("roads: the traffic system's road data being found for the city", RoadData.Prewarm);
             ScenePrewarm.Add("traffic: the game's smoke effect being found for accidents and fires", TrafficEffects.Prewarm);
             ScenePrewarm.Add("game UI: the game's font being found", FindFont);
+            ScenePrewarm.Add("transit: the game's navigation obstacles being listed for the bus stops", BusZones.Prewarm);
             GameUi.NoticeLook.Logger = context.Logger;
             _root.AddComponent<GameUi.NoticeLook>();   // the mod's notifications told from the game's by a picture of their kind on the mod's colour (Core/GameUi/NoticeLook): nothing per frame, a few writes per notification shown
             ScenePrewarm.Add("game UI: the game's notification toast and list being found, and the notifications' pictures", GameUi.NoticeLook.Prewarm);

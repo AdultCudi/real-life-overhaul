@@ -282,8 +282,10 @@ namespace RealLifeOverhaul
             _stepFor = lasts;
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Traffic: TowService.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             float now = Time.time;
             try
             {
@@ -791,9 +793,11 @@ namespace RealLifeOverhaul
             return centre + end * _job.HalfLength - car.up * (_localCentre.y - CableAbove);
         }
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("Traffic: TowService.LateUpdate");
         // While it is carried, every frame after the truck has moved: the wreck where it stands on the bed.
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (_carried)
             {
                 Carry();

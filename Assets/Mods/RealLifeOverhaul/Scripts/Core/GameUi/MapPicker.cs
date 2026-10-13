@@ -126,7 +126,7 @@ namespace RealLifeOverhaul.GameUi
                 string labelPath = entryOriginal.stationNameLabel != null ? PathUnder(entryOriginal.transform, entryOriginal.stationNameLabel.transform) : "Label";
                 string buttonPath = entryOriginal.travelButton != null ? PathUnder(entryOriginal.transform, entryOriginal.travelButton.transform) : null;
                 string backgroundPath = entryOriginal.background != null ? PathUnder(entryOriginal.transform, entryOriginal.background.transform) : null;
-                SessionWatch.Mark("game UI: the map's list of places being copied from the game's list of subway stations");
+                using var piece = SessionWatch.Piece("game UI: the map's list of places being copied from the game's list of subway stations");
                 holder = UiClone.Dormant(canvas, name + " Holder");
                 root = UiClone.Asleep(original.gameObject, holder, name);
                 UiClone.StripGameScripts(root, script => Array.IndexOf(Harmless, script.GetType().Name) >= 0);
@@ -806,8 +806,10 @@ namespace RealLifeOverhaul.GameUi
     {
         public MapPicker Owner;
 
+        private static readonly int HotUpdate = HotSpots.Slot("Core: MapPickerWatch.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (Owner == null)
             {
                 return;

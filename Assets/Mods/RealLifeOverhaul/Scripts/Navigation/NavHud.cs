@@ -245,7 +245,7 @@ namespace RealLifeOverhaul.Nav
                 }
                 return null;
             }
-            SessionWatch.Mark("the minimap's panel");
+            using var piece = SessionWatch.Piece("the minimap's panel");
             NavMarks.Prepare();   // the round base of the game's map markers, for the markers made here
             Transform dormant = UiClone.Dormant(uis.playerHUD.transform, DormantName);
             GameObject panel = UiClone.Asleep(tasks.gameObject, dormant, PanelName);
