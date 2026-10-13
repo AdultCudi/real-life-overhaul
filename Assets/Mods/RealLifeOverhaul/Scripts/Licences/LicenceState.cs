@@ -273,6 +273,28 @@ namespace RealLifeOverhaul
             return false;
         }
 
+        /// <summary>
+        /// A driving refresher course passed (Careers, through Wiring/CareersLinks): the newest entries still counting come off
+        /// the record, whole, up to so many points. Nothing comes off while a suspension runs. Returns the points taken off.
+        /// </summary>
+        public static int TakeOff(int points, int day)
+        {
+            if (!Loaded || points <= 0 || SuspendedUntil > day)
+            {
+                return 0;
+            }
+            int off = 0;
+            for (int i = Record.Count - 1; i >= 0; i--)
+            {
+                Entry e = Record[i];
+                if (day - e.Day < LicenceLaw.PointsExpireDays && e.Points > 0 && off + e.Points <= points)
+                {
+                    off += e.Points;
+                    Record.RemoveAt(i);
+                }
+            }
+            return off;
+        }
         /// <summary>A new day: entries that no longer count go, and a suspension that has run out ends with a clean slate. True if a suspension ended.</summary>
         public static bool NewDay(int day)
         {

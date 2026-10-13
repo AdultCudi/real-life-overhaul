@@ -208,6 +208,7 @@ namespace RealLifeOverhaul
         public const string HolidaysId = "travel_holidays";
         public const string TravelExtrasId = "travel_extras";
         public const string CareersId = "careers";
+        public const string CareersStudyId = "careers_study";
         public const string BusinessId = "business_pressure";
         public const string BusinessFrequencyId = "business_frequency";
         public const string BusinessEasyId = "business_easy";
@@ -439,6 +440,7 @@ namespace RealLifeOverhaul
         public static bool Holidays = true;              // trips bought at the game's travel agencies; burnout after weeks without a break
         public static bool TravelExtras = true;          // suitcase, travel insurance, a companion, trade fair invitations
         public static bool Careers = true;               // employers behind the help-wanted boards: rota, reviews, ranks (Jobs/Career*)
+        public static bool CareersStudy = true;          // the city's courses: short courses and diplomas at the school with a timetable, homework and an exam, and the player's own skills, in the Campus app (off: the game's own courses alone; records are kept) (Scripts/Careers)
         public static bool Business = true;              // rival moves, inspections, staff and supplier trouble, opportunities for the player's businesses
         public static int BusinessFrequency = 4;         // 1 = something every couple of weeks, 10 = most days (never more than two open at once)
         public static bool BusinessEasy = false;         // "easy business": only the opportunities are left
@@ -682,6 +684,7 @@ namespace RealLifeOverhaul
             Holidays = Bool(modId, HolidaysId, Holidays);
             TravelExtras = Bool(modId, TravelExtrasId, TravelExtras);
             Careers = Bool(modId, CareersId, Careers);
+            CareersStudy = Bool(modId, CareersStudyId, CareersStudy);
             Business = Bool(modId, BusinessId, Business);
             BusinessFrequency = Int(modId, BusinessFrequencyId, BusinessFrequency);
             BusinessEasy = Bool(modId, BusinessEasyId, BusinessEasy);

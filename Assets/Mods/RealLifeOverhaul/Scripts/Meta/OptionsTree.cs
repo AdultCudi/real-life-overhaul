@@ -287,6 +287,7 @@ namespace RealLifeOverhaul.Meta
             G("work",
                 S("jobs").For("jobs").Main("jobs").Opts("job_pay").Also("gig gigs shift wage employment"),
                 S("careers").For("careers").Opt("careers", "jobs").Also("employer promotion rank review"),
+                S("study").For("careers_study").Main("careers_study").Also("school course courses class classes diploma education study learn skill skills homework exam timetable"),
                 S("planner").For("planner").Main("planner").Opts("planner_reminders").Also("diary calendar notes to do")),
 
             G("money",

@@ -236,6 +236,11 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_career_dispatch", () => JobDirector.Instance?.TestShift(CareerWork.Dispatch, false))
                 .AddButton("reallife_test_career_lead", () => JobDirector.Instance?.TestShift(CareerWork.Lead, false))
                 .AddButton("reallife_test_career_gig", () => JobDirector.Instance?.TestGig())
+                .AddToggle(Settings.CareersStudyId, "reallife_study_enabled", Settings.CareersStudy,
+                    v => Settings.CareersStudy = v)
+                .AddButton("reallife_study_test_class", () => Careers.CareersDirector.Instance?.TestClass())
+                .AddButton("reallife_study_test_exam", () => Careers.CareersDirector.Instance?.TestExam())
+                .AddButton("reallife_study_test_skills", () => Careers.CareersDirector.Instance?.TestSkills())
                 .AddSplitter()
                 .AddHeader("reallife_business_header")
                 .AddToggle(Settings.BusinessId, "reallife_business_enabled", Settings.Business,
@@ -1029,6 +1034,8 @@ namespace RealLifeOverhaul
             Tech.HiringGame.Logger = context.Logger;
             Tech.FirmsGame.Logger = context.Logger;
             Tech.TechApp.Logger = context.Logger;
+            Careers.CareersDirector.Logger = context.Logger;
+            Careers.CampusApp.Logger = context.Logger;
 
             _root = new GameObject(RootName);
             SessionWatch.Logger = context.Logger;
@@ -1118,6 +1125,7 @@ namespace RealLifeOverhaul
             _root.AddComponent<Economy.ServicesDirector>();   // the cleaning service and selling a business, and the Services app (Scripts/Economy/Services)
             _root.AddComponent<Economy.CompanyDirector>();   // running a business: staff, insurance, marketing, tax and licences, and the Company app (Scripts/Economy/Company)
             _root.AddComponent<Tech.TechDirector>();   // the professions and the tech sector: roles, skills and the Open Roles app (Scripts/Tech); after the company, so that its day follows the company's
+            _root.AddComponent<Careers.CareersDirector>();   // education and careers: the city's courses, the player's skills and the Campus app (Scripts/Careers); after the tech sector, whose roles it reads
             Economy.EstateDirector.Logger = context.Logger;
             Economy.EstateApp.Logger = context.Logger;
             _root.AddComponent<Economy.EstateDirector>();   // property: the market, letting, works, selling, an agency, a hotel and car hire, and the Property app (Scripts/Economy/Estate)

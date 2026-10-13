@@ -119,6 +119,7 @@ internal static partial class Program
         Firms();
         Hiring();
         Tech();
+        Careers();
         Districts();
         BusRide();
         PlayerBank();
