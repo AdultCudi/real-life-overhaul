@@ -110,6 +110,58 @@ namespace RealLifeOverhaul.Careers
         /// <summary>Points of a skill kept in thousandths, whole: "42".</summary>
         public static string Points(int thousandths) => (thousandths / 1000).ToString(Inv);
 
+        // ---------------------------------------------------------------- working
+
+        /// <summary>An employer's name as kept: a name of the city's, or "@" and a locale key for one of the mod's (the public sector), which follows the language.</summary>
+        public static string Employer(string kept)
+        {
+            if (string.IsNullOrEmpty(kept))
+            {
+                return "?";
+            }
+            return kept[0] == '@' ? T(kept.Substring(1)) : kept;
+        }
+
+        /// <summary>A name kept as a locale key (see <see cref="Employer"/>).</summary>
+        public static string KeyName(string key) => "@" + key;
+
+        public static string ProName(int prof)
+        {
+            Profession p = ProCatalogue.Find(prof);
+            return p != null ? T(Mod + "_pro_name_" + p.Key) : "?";
+        }
+
+        /// <summary>A rank's title: reallife_pro_rank_{profession}_{n}.</summary>
+        public static string Title(int prof, int rank)
+        {
+            Profession p = ProCatalogue.Find(prof);
+            if (p == null)
+            {
+                return "?";
+            }
+            rank = rank < 0 ? 0 : rank >= p.Ranks.Length ? p.Ranks.Length - 1 : rank;
+            return T(Mod + "_pro_rank_" + p.Key + "_" + rank.ToString(Inv));
+        }
+
+        /// <summary>A profession's working week: "Mon, Tue, Wed, Thu, Fri, 09:00 to 17:00".</summary>
+        public static string Hours(Profession p)
+        {
+            return Fill("reallife_work_hours", "days", DayList(p.Days), "from", Hour(p.Hour), "to", Hour((p.Hour + p.Hours) % 24));
+        }
+
+        public static string WorkWay(int mode) => T(Mod + "_work_mode_" + ((WorkMode)(mode < 0 ? 0 : mode > 2 ? 2 : mode)).ToString().ToLowerInvariant());
+
+        public static string Kind(EmployerKind kind) => T(Mod + "_work_kind_" + kind.ToString().ToLowerInvariant());
+
+        public static string ViaName(int via) => T(Mod + "_work_via_" + ((Via)(via < 0 ? 0 : via > 4 ? 4 : via)).ToString().ToLowerInvariant());
+
+        public static string Step(ApplyStep step) => T(Mod + "_work_step_" + step.ToString().ToLowerInvariant());
+
+        /// <summary>A reference: none, poor, fair, good.</summary>
+        public static string Reference(int reference) => T(Mod + "_work_reference_" + (reference < 0 ? 0 : reference > 3 ? 3 : reference).ToString(Inv));
+
+        public static string Leaving(int why) => T(Mod + "_work_leaving_" + ((LeaveReason)(why < 0 ? 0 : why > 8 ? 8 : why)).ToString().ToLowerInvariant());
+
         /// <summary>Whole weeks of a number of days, at least one: "8 weeks", "1 week".</summary>
         public static string Weeks(int days)
         {

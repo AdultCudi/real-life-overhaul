@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Careers
     ///   s  each skill the player has or had: skill|thousandths|best|day last used
     ///   c  each course under way, r each one finished: course|mode|start|seen|done|settled day|homework|fee|instalments|loan|on loan|
     ///      grant|stage|exam from|exam to|retakes|score|grade|ended|graduated|fee late
+    ///   w, o, a, j, y  the working life (Careers/Work/WorkStore)
     /// </summary>
     public static class CareersStore
     {
@@ -62,6 +63,7 @@ namespace RealLifeOverhaul.Careers
             {
                 Course(w, f.Results[i]);
             }
+            WorkStore.Write(w, f.Work);
             return w.ToString();
         }
 
@@ -114,6 +116,7 @@ namespace RealLifeOverhaul.Careers
                     f.Results.Add(e);
                 }
             }
+            WorkStore.Read(r, f.Work);
             return f;
         }
 

@@ -63,6 +63,27 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        /// <summary>True inside a building of the game's own of a kind (a recruitment office).</summary>
+        public static bool InsideType(string type)
+        {
+            try
+            {
+                if (!BuildingManager.IsInsideBuilding)
+                {
+                    return false;
+                }
+                BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
+                Building b = manager != null ? manager.building : null;
+                string service = b != null && b.SpecialService != null ? b.SpecialService.businessTypeName : null;
+                string business = manager != null && manager.buildingRegistration != null ? manager.buildingRegistration.businessTypeName : null;
+                return service == type || business == type;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         public static bool InHospital()
         {
             try

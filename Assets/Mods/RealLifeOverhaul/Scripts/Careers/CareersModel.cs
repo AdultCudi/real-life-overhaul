@@ -46,7 +46,8 @@ namespace RealLifeOverhaul.Careers
 
     /// <summary>
     /// The player's learning and skills: the courses under way and done, the skills (thousandths of a point, with the best
-    /// ever reached and the day each was last used), the student loan and the week's hours of study. Game-free.
+    /// ever reached and the day each was last used), the student loan and the week's hours of study; and their working life
+    /// (<see cref="Work"/>), which is judged on them. Game-free.
     /// </summary>
     public sealed class StudyFile
     {
@@ -61,7 +62,8 @@ namespace RealLifeOverhaul.Careers
         public long LoanRepaid;
         public int WeekOf = -1, WeekMinutes;   // the week (day / 7) and the minutes of classes and homework in it
         public int GraduationDay, GraduationCourse = -1;   // a graduation ceremony to come
-        public int Taught;           // minutes of tutoring given, ever (Stage F)
+        public int Taught;           // minutes of tutoring given, ever
+        public readonly WorkFile Work = new WorkFile();   // the working life, kept in the same line (Careers/Work)
 
         public const int ResultsMost = 40;
 

@@ -656,6 +656,15 @@ namespace RealLifeOverhaul.Meta
                 .Data(Careers.CareersStore.Key, Careers.CareersStore.NewsKey)
                 .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
+            // Professional jobs: the city's employers take the player on by qualifications and skills, in the Career app. It runs
+            // with the courses, whose skills it reads. Off, no vacancies; a job held is kept in the save.
+            Careers.CareersGuide.AddWorkFacts(Features.Add("careers_jobs", "reallife_meta_title_careers_jobs")
+                .About("reallife_guide_careers_jobs_about").Help("reallife_guide_careers_jobs")
+                .Owns(Settings.CareersJobsId)
+                .Test("reallife_work_test_offer", "reallife_work_test_day", "reallife_work_test_vacancies")
+                .Data(Careers.CareersStore.Key)
+                .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
             Features.Add("business", "reallife_meta_title_business")
                 .Group("reallife_business_header")
                 .About("reallife_guide_business_about").Help("reallife_guide_business")

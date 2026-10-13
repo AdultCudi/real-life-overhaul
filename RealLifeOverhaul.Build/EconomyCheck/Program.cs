@@ -120,6 +120,7 @@ internal static partial class Program
         Hiring();
         Tech();
         Careers();
+        Work();
         Districts();
         BusRide();
         PlayerBank();

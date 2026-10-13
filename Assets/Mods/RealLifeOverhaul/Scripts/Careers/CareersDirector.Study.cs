@@ -73,6 +73,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 WriteStudy(Save.modData);
             }
+            StopWork(unloading);
             _studyOn = false;
             if (_sitting != null && (_sitting.Kind == SittingKind.Class || _sitting.Kind == SittingKind.Homework || _sitting.Kind == SittingKind.Exam))
             {

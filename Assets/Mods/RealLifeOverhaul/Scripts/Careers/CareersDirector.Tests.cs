@@ -98,6 +98,129 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        // ---------------------------------------------------------------- the working life
+
+        private bool WorkReady()
+        {
+            string why;
+            if (!TestReady(out why))
+            {
+                return false;
+            }
+            if (!_workOn)
+            {
+                Notifications.Show(NotificationType.Warning, "reallife_work_test_off", null, 8f);
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>An offer now for the first vacancy the player could hold (or the first of all), as if the interview had gone well.</summary>
+        public void TestOffer()
+        {
+            if (!WorkReady())
+            {
+                return;
+            }
+            try
+            {
+                WorkFile w = _study.Work;
+                Vacancies(Save.Day);
+                Opening pick = null;
+                for (int i = 0; i < w.Openings.Count && pick == null; i++)
+                {
+                    pick = ProRules.Qualified(_study, w.Openings[i].Def, w.Openings[i].Rank) ? w.Openings[i] : null;
+                }
+                if (pick == null && w.Openings.Count > 0)
+                {
+                    pick = w.Openings[0];
+                }
+                if (pick == null)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_work_test_none", null, 8f);
+                    return;
+                }
+                var a = new Application { Day = Save.Day, Score = Math.Max(70, ProRules.HireScore(CandidateFor(pick))) };
+                pick.CopyTo(a.Post);
+                Offer(a, Save.Day);
+                w.Applications.Add(a);
+                Logger?.Info("Careers test: an offer from " + pick.Employer + " for " + pick.Def.Key + " rank " + pick.Rank + ".");
+                Changed();
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
+
+        /// <summary>The rest of a working day now, here, whatever the hour and the place (a job is given for it if there is none).</summary>
+        public void TestWorkDay()
+        {
+            if (!WorkReady())
+            {
+                return;
+            }
+            try
+            {
+                WorkFile w = _study.Work;
+                if (w.Job == null)
+                {
+                    Vacancies(Save.Day);
+                    if (w.Openings.Count == 0)
+                    {
+                        Notifications.Show(NotificationType.Warning, "reallife_work_test_none", null, 8f);
+                        return;
+                    }
+                    var a = new Application { Day = Save.Day, Score = 70 };
+                    w.Openings[0].CopyTo(a.Post);
+                    a.Offer = a.Post.Pay;
+                    Begin(a, Save.Day);
+                }
+                Job j = w.Job;
+                Profession p = j.Def;
+                j.TodayDay = Save.Day;
+                j.SettledDay = Math.Min(j.SettledDay, Save.Day - 1);
+                string busy = Offer(new Sitting(this, SittingKind.Work, 0, p.Hours * 60, CareersText.Fill("reallife_work_skip_title", "title", CareersText.Title(j.Post.Prof, j.Post.Rank),
+                    "employer", CareersText.Employer(j.Post.Employer)), true, CareersText.T("reallife_work_skip_pay", "pay", CareersText.Rate(Prices.At(j.Pay)))));
+                if (busy != null)
+                {
+                    Notifications.Show(NotificationType.Warning, busy, null, 8f);
+                }
+                Logger?.Info("Careers test: a working day at " + j.Post.Employer + (busy == null ? " offered." : " not offered (" + busy + ")."));
+                Changed();
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
+
+        /// <summary>The city's vacancies made again now.</summary>
+        public void TestVacancies()
+        {
+            if (!WorkReady())
+            {
+                return;
+            }
+            try
+            {
+                WorkFile w = _study.Work;
+                w.Openings.Clear();
+                w.OpeningsDay = -1;
+                _employersDay = -1;
+                Vacancies(Save.Day);
+                Notifications.Show(NotificationType.Success, "reallife_work_test_vacancies_done", new System.Collections.Generic.Dictionary<string, string>
+                {
+                    { "count", w.Openings.Count.ToString() }, { "employers", _employers.Count.ToString() }
+                }, 8f);
+                Logger?.Info("Careers test: " + w.Openings.Count + " vacancies made from " + _employers.Count + " employers, " + _offices.Count + " office buildings.");
+                Changed();
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
         /// <summary>Twenty points more in four of the player's skills, one of the trades among them.</summary>
         public void TestSkills()
         {

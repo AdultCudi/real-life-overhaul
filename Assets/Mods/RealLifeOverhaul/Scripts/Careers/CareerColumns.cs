@@ -1,0 +1,65 @@
+using RealLifeOverhaul.GameUi;
+
+namespace RealLifeOverhaul.Careers
+{
+    /// <summary>
+    /// The Career app's tables, declared as data (GameUi.TableSpec): for each tab its columns, how each sorts, what its rows
+    /// can be filtered by and the sentence shown when a filter leaves nothing.
+    /// </summary>
+    public static class CareerColumns
+    {
+        public const int Open = 0, Short = 1, Applied = 2;
+        private static readonly string[] States = { "reallife_career_kind_open", "reallife_career_kind_short", "reallife_career_kind_applied" };
+
+        public static readonly TableSpec Off = new TableSpec("Career", "Off").Column("reallife_career_col_post", 600f, TableSort.None, flexible: true);
+
+        /// <summary>Jobs: 0 post, 1 profession, 2 employer, 3 how it came, 4 pay, 5 days worked, 6 closes, 7 fit, 8 state.</summary>
+        public static readonly TableSpec Jobs = new TableSpec("Career", "Jobs")
+            .Column("reallife_career_col_post", 330f, TableSort.Text, flexible: true)
+            .Column("reallife_career_col_profession", 230f, TableSort.Text)
+            .Column("reallife_career_col_employer", 330f, TableSort.Text)
+            .Column("reallife_career_col_via", 220f, TableSort.Text)
+            .Column("reallife_career_col_pay", 180f, TableSort.Number)
+            .Column("reallife_career_col_mode", 170f, TableSort.Text)
+            .Column("reallife_career_col_closes", 160f, TableSort.Number)
+            .Column("reallife_career_col_fit", 170f, TableSort.Number)
+            .Column("reallife_career_col_state", 220f, TableSort.Text, right: true)
+            .Filter("reallife_career_all_professions")
+            .Filter("reallife_career_all_states", States)
+            .Empty("reallife_career_empty_jobs");
+
+        /// <summary>Applications: 0 post, 1 employer, 2 sent, 3 how it came, 4 interview, 5 offer, 6 answer by, 7 step.</summary>
+        public static readonly TableSpec Applications = new TableSpec("Career", "Applications")
+            .Column("reallife_career_col_post", 330f, TableSort.Text, flexible: true)
+            .Column("reallife_career_col_employer", 330f, TableSort.Text)
+            .Column("reallife_career_col_sent", 160f, TableSort.Number)
+            .Column("reallife_career_col_via", 220f, TableSort.Text)
+            .Column("reallife_career_col_interview", 260f, TableSort.Number)
+            .Column("reallife_career_col_offer", 180f, TableSort.Number)
+            .Column("reallife_career_col_by", 160f, TableSort.Number)
+            .Column("reallife_career_col_state", 260f, TableSort.Text, right: true)
+            .Empty("reallife_career_empty_applications");
+
+        /// <summary>My job: 0 day, 1 hours, 2 where, 3 state.</summary>
+        public static readonly TableSpec Days = new TableSpec("Career", "Job")
+            .Column("reallife_career_col_day", 300f, TableSort.None, flexible: true)
+            .Column("reallife_career_col_hours", 300f, TableSort.None)
+            .Column("reallife_career_col_where", 360f, TableSort.None)
+            .Column("reallife_career_col_state", 300f, TableSort.None, right: true)
+            .Empty("reallife_career_empty_job");
+
+        public const int CvJobs = 0, CvQualifications = 1;
+        private static readonly string[] CvKinds = { "reallife_career_kind_jobs", "reallife_career_kind_qualifications" };
+
+        /// <summary>CV: 0 what, 1 where, 2 from, 3 to, 4 detail, 5 earned.</summary>
+        public static readonly TableSpec Cv = new TableSpec("Career", "CV")
+            .Column("reallife_career_col_what", 360f, TableSort.Text, flexible: true)
+            .Column("reallife_career_col_where", 330f, TableSort.Text)
+            .Column("reallife_career_col_from", 160f, TableSort.Number)
+            .Column("reallife_career_col_to", 160f, TableSort.Number)
+            .Column("reallife_career_col_detail", 330f, TableSort.Text)
+            .Column("reallife_career_col_earned", 200f, TableSort.Money, sums: true, right: true)
+            .Filter("reallife_career_all_cv", CvKinds)
+            .Empty("reallife_career_empty_cv");
+    }
+}

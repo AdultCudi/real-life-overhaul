@@ -288,6 +288,7 @@ namespace RealLifeOverhaul.Meta
                 S("jobs").For("jobs").Main("jobs").Opts("job_pay").Also("gig gigs shift wage employment"),
                 S("careers").For("careers").Opt("careers", "jobs").Also("employer promotion rank review"),
                 S("study").For("careers_study").Main("careers_study").Also("school course courses class classes diploma education study learn skill skills homework exam timetable"),
+                S("projobs").For("careers_jobs").Opt("careers_jobs", "careers_study").Also("profession professional job jobs apply application interview offer salary employer developer lawyer accountant nurse teacher architect engineer rival vacancy vacancies"),
                 S("planner").For("planner").Main("planner").Opts("planner_reminders").Also("diary calendar notes to do")),
 
             G("money",

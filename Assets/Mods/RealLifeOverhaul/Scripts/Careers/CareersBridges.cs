@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Careers
 {
@@ -22,6 +23,24 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>The player's standing as a professional, -10 to 10 (Standing's recognition and integrity, as an employer reads a name). Default: 0.</summary>
         public static Func<int> Reputation;
+
+        /// <summary>The rivals' ads on the jobs board the city shares (Tech/Hiring), into the list given. Default: none.</summary>
+        public static Action<List<BoardAd>> Board;
+
+        /// <summary>The player took the post of a rival's ad: the ad is filled (a rival's name, the family and the level). Default: nothing.</summary>
+        public static Action<string, int, int> TookAd;
+
+        /// <summary>The labour market's shortage of a family of the jobs board, thousandths (1000 as many seekers as places). Default: 1000.</summary>
+        public static Func<int, int> Shortage;
+
+        /// <summary>Friends and close friends the player has (social life). Default: none.</summary>
+        public static Func<int> Friends;
+
+        /// <summary>True if the player has a record an employer would mind (the law). Default: no.</summary>
+        public static Func<bool> Record;
+
+        /// <summary>The city's economy: 0 boom, 1 steady, 2 slowdown, 3 recession. Default: steady.</summary>
+        public static Func<int> Cycle;
 
         public static bool HomeOnline()
         {
@@ -59,13 +78,74 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        public static int ShortageOf(int family)
+        {
+            try
+            {
+                return Shortage != null && family >= 0 ? Math.Max(850, Math.Min(1500, Shortage(family))) : 1000;
+            }
+            catch (Exception)
+            {
+                return 1000;
+            }
+        }
+
+        public static int FriendsNow()
+        {
+            try
+            {
+                return Friends != null ? Math.Max(0, Friends()) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        public static bool RecordNow()
+        {
+            try
+            {
+                return Record != null && Record();
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        public static int CycleNow()
+        {
+            try
+            {
+                return Cycle != null ? Math.Max(0, Math.Min(3, Cycle())) : 1;
+            }
+            catch (Exception)
+            {
+                return 1;
+            }
+        }
+
         public static void Reset()
         {
+            Board = null;
+            TookAd = null;
+            Shortage = null;
+            Friends = null;
+            Record = null;
+            Cycle = null;
             HomeInternet = null;
             Council = null;
             Refresher = null;
             Standing = null;
             Reputation = null;
         }
+    }
+
+    /// <summary>One rival's ad on the jobs board, as careers read it.</summary>
+    public struct BoardAd
+    {
+        public string Rival;
+        public int Family, Level, To, PayBp;
     }
 }

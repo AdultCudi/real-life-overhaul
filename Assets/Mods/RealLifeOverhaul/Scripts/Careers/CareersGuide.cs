@@ -40,6 +40,48 @@ namespace RealLifeOverhaul.Careers
                 .Fact("study_exam_close", () => CareersText.Hour(StudyCatalogue.ExamCloses));
         }
 
+        public static void AddWorkFacts(Feature f)
+        {
+            f.Fact("work_professions", Professions)
+                .Fact("work_self_taught", () => Whole(ProRules.SelfTaughtExtra))
+                .Fact("work_live", () => Whole(CareersDirector.ApplicationsLive))
+                .Fact("work_screen", () => Whole(ProRules.ScreenPass))
+                .Fact("work_offer", () => Whole(ProRules.OfferPass))
+                .Fact("work_offer_days", () => Whole(ProRules.OfferDays))
+                .Fact("work_ask_small", () => Bp(ProRules.AskSmallBp))
+                .Fact("work_ask_large", () => Bp(ProRules.AskLargeBp))
+                .Fact("work_asks", () => Whole(ProRules.AsksMost))
+                .Fact("work_early", () => Whole(ProRules.ClockEarlyMinutes))
+                .Fact("work_late", () => Whole(ProRules.ClockLateMinutes))
+                .Fact("work_late_after", () => Whole(ProRules.LateAfterMinutes))
+                .Fact("work_counted", () => Mille(ProRules.CountedShare))
+                .Fact("work_warnings", () => Whole(CareersDirector.WarningsToGo))
+                .Fact("work_agency_days", () => Whole(ProRules.AgencyDays))
+                .Fact("work_agency_more", () => Whole(ProRules.OpeningsAgency))
+                .Fact("work_friends", () => Whole(ProRules.FriendsForReferral))
+                .Fact("work_tech_pay", () => Mille(ProRules.KindFactor(EmployerKind.TechFirm) - 1000))
+                .Fact("work_rival_pay", () => Mille(ProRules.KindFactor(EmployerKind.Rival) - 1000))
+                .Fact("work_public_pay", () => Mille(1000 - ProRules.KindFactor(EmployerKind.Public)))
+                .Fact("work_loan_share", () => Bp(StudyCatalogue.LoanShareBp))
+                .Fact("work_loan_threshold", () => Guide.Money(Prices.At(StudyCatalogue.LoanThreshold) / 100f));
+        }
+
+        /// <summary>Every profession with its ladder and what its first and top rungs pay now, one bullet each.</summary>
+        private static string Professions()
+        {
+            var b = new StringBuilder(2048);
+            for (int i = 0; i < ProCatalogue.All.Length; i++)
+            {
+                Profession p = ProCatalogue.All[i];
+                b.Append(b.Length > 0 ? "\n- " : "- ").Append(CareersText.ProName(p.Id)).Append(": ").Append(CareersText.Title(p.Id, 0)).Append(" (")
+                    .Append(Guide.Money(Prices.At(p.Ranks[0].Pay) / 100f)).Append(") ").Append(CareersText.T("reallife_guide_work_to")).Append(' ')
+                    .Append(CareersText.Title(p.Id, p.Ranks.Length - 1)).Append(" (").Append(Guide.Money(Prices.At(p.Ranks[p.Ranks.Length - 1].Pay) / 100f)).Append(')');
+            }
+            return b.ToString();
+        }
+
+        private static string Bp(int bp) => (bp / 100f).ToString("0.#", Inv) + "%";
+
         // ---------------------------------------------------------------- shared
 
         /// <summary>The courses of the kinds given, each with its fee at today's prices: "First aid (120), Barista (150)".</summary>

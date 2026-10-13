@@ -57,6 +57,7 @@ namespace RealLifeOverhaul.Careers
             try
             {
                 CloseSitting();
+                StopWork(true);
                 StopStudy(false, true);
             }
             catch (Exception e)
@@ -111,6 +112,15 @@ namespace RealLifeOverhaul.Careers
             {
                 StopStudy(true, false);
             }
+            bool work = Settings.CareersJobs && _studyOn;
+            if (work && !_workOn)
+            {
+                StartWork();
+            }
+            else if (!work && _workOn)
+            {
+                StopWork(false);
+            }
             if (_skip != null && !_skip.Open)
             {
                 _skip = null;
@@ -127,6 +137,10 @@ namespace RealLifeOverhaul.Careers
             {
                 InstallCampus();
             }
+            if (_workOn && _careerApp == null && !_careerGaveUp)
+            {
+                InstallCareer();
+            }
         }
 
         // ---------------------------------------------------------------- the game's hour, day and save
@@ -142,6 +156,10 @@ namespace RealLifeOverhaul.Careers
                 if (_studyOn)
                 {
                     StudyHour(Save.Day, Save.Hour);
+                }
+                if (_workOn)
+                {
+                    WorkHour(Save.Day, Save.Hour);
                 }
             }
             catch (Exception e)
@@ -162,6 +180,10 @@ namespace RealLifeOverhaul.Careers
                 if (_studyOn)
                 {
                     StudyDay(Save.Day);
+                }
+                if (_workOn)
+                {
+                    WorkDayRun(Save.Day);
                 }
                 Changed();
                 if (Verbose)
@@ -258,6 +280,22 @@ namespace RealLifeOverhaul.Careers
                             StudyEnded(sitting, minutes, whole);
                         }
                         break;
+                    case SittingKind.Work:
+                    case SittingKind.Overtime:
+                        if (_workOn)
+                        {
+                            WorkEnded(sitting, minutes, whole);
+                        }
+                        break;
+                    case SittingKind.Interview:
+                        if (_workOn)
+                        {
+                            InterviewEnded(sitting, minutes, whole);
+                        }
+                        break;
+                    default:
+                        OtherEnded(sitting, minutes, whole);
+                        break;
                 }
                 Changed();
             }
@@ -266,6 +304,9 @@ namespace RealLifeOverhaul.Careers
                 Fault("the end of a sitting", e);
             }
         }
+
+        /// <summary>A sitting of a later part (contract work, tutoring, a ceremony): settled by that part.</summary>
+        partial void OtherEnded(Sitting sitting, int minutes, bool whole);
 
         private void CloseSitting()
         {
@@ -321,6 +362,7 @@ namespace RealLifeOverhaul.Careers
             try
             {
                 CloseSitting();
+                StopWork(false);
                 StopStudy(false, false);
             }
             catch (Exception second)
@@ -355,6 +397,8 @@ namespace RealLifeOverhaul.Careers
         {
             _campusView?.Changed();
             CampusBadge();
+            _careerView?.Changed();
+            CareerBadge();
         }
 
         // ---------------------------------------------------------------- for the save tools
@@ -365,6 +409,7 @@ namespace RealLifeOverhaul.Careers
             try
             {
                 CloseSitting();
+                StopWork(false);
                 StopStudy(true, false);
             }
             catch (Exception e)
@@ -379,6 +424,7 @@ namespace RealLifeOverhaul.Careers
             try
             {
                 CloseSitting();
+                StopWork(false);
                 StopStudy(false, false);
             }
             catch (Exception e)

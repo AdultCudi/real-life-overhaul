@@ -18,6 +18,11 @@ namespace RealLifeOverhaul
         ///   Refresher     a driving refresher takes penalty points off the licence (Licences: LicenceState.TakeOff)
         ///   Standing      a qualification or a career's turn moves a part of Standing (FameDirector.Moved)
         ///   Reputation    the player's name as a professional: Standing's recognition and integrity
+        ///   Board, TookAd the rivals' ads on the jobs board are vacancies too; one the player takes is filled (TechDirector.FillRivalAd)
+        ///   Shortage      the labour market's shortage of a family sets what a post pays (Tech/Hiring)
+        ///   Friends       friends of the social life put the player forward now and then (a referral)
+        ///   Record        the law's record, as an employer reads it
+        ///   Cycle         the city's economy: how many vacancies there are and how choosy employers are
         ///   the paper     education's and careers' stories, chained on to the City Ledger's other pieces (News.Extra)
         ///   the Planner   a source of its own: the classes of the courses under way, and their exams
         ///
@@ -36,9 +41,16 @@ namespace RealLifeOverhaul
                 CareersBridges.Refresher = Refresher;
                 CareersBridges.Standing = Moved;
                 CareersBridges.Reputation = Reputation;
+                CareersBridges.Board = Board;
+                CareersBridges.TookAd = TookAd;
+                CareersBridges.Shortage = Shortage;
+                CareersBridges.Friends = Friends;
+                CareersBridges.Record = () => Standing.HasRecord;
+                CareersBridges.Cycle = () => Economy.CityEconomy.Running ? (int)Economy.CityEconomy.State : 1;
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
                 PlannerDirector.Instance?.AddSource(Classes);
+                PlannerDirector.Instance?.AddSource(Jobs);
             }
 
             internal static void Disconnect()
@@ -116,6 +128,70 @@ namespace RealLifeOverhaul
                 }
             }
 
+            // ---------------------------------------------------------------- the jobs board (Tech/Hiring)
+
+            private static void Board(List<BoardAd> into)
+            {
+                try
+                {
+                    HiringFile h = TechDirector.Instance != null ? TechDirector.Instance.Hiring : null;
+                    for (int i = 0; h != null && i < h.RivalAds.Count; i++)
+                    {
+                        RivalAd ad = h.RivalAds[i];
+                        into.Add(new BoardAd { Rival = ad.Rival, Family = ad.Family, Level = ad.Level, To = ad.To, PayBp = ad.PayBp });
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.Board", e);
+                }
+            }
+
+            private static void TookAd(string rival, int family, int level)
+            {
+                try
+                {
+                    TechDirector.Instance?.FillRivalAd(rival, family, level);
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.TookAd", e);
+                }
+            }
+
+            private static int Shortage(int family)
+            {
+                try
+                {
+                    TechDirector d = TechDirector.Instance;
+                    return d != null && d.Hiring != null && family >= 0 && family < (int)Tech.Family.Count ? d.Shortage((Tech.Family)family) : 1000;
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.Shortage", e);
+                    return 1000;
+                }
+            }
+
+            // Friends and close friends of the social life (a partner counts as well).
+            private static int Friends()
+            {
+                try
+                {
+                    int n = 0;
+                    for (int i = 0; SocialState.Loaded && Settings.Social && i < SocialRules.CastSize; i++)
+                    {
+                        SocialPerson p = SocialState.Get(i);
+                        n += p != null && p.Met && p.Stage >= SocialStage.Friend ? 1 : 0;
+                    }
+                    return n;
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.Friends", e);
+                    return 0;
+                }
+            }
             private static void Paper(int day, List<NewsItem> into)
             {
                 try
@@ -156,6 +232,94 @@ namespace RealLifeOverhaul
                     Fault("CareersLinks.Paper", e);
                 }
             }
+
+            // ---------------------------------------------------------------- the Planner: working days and interviews
+
+            private sealed class WorkSource : IPlannerSource
+            {
+                public string Id => "profession";
+
+                public bool Available => Settings.CareersJobs && CareersDirector.Instance != null && CareersDirector.Instance.Work != null;
+
+                public void Collect(int fromDay, int toDay, PlannerList into)
+                {
+                    WorkFile w = CareersDirector.Instance.Work;
+                    Careers.Job j = w.Job;
+                    if (j != null)
+                    {
+                        Profession p = j.Def;
+                        string title = CareersText.Title(j.Post.Prof, j.Post.Rank), employer = CareersText.Employer(j.Post.Employer);
+                        for (int day = Math.Max(fromDay, Math.Max(j.Hired, j.SettledDay + 1)); day <= toDay; day++)
+                        {
+                            if (!ProRules.WorkDay(p, day) || (j.NoticeEnd > 0 && day > j.NoticeEnd))
+                            {
+                                continue;
+                            }
+                            PlannerEntry e = into.Add(Id, 0, day, PlannerCategory.Work, day);
+                            if (e == null)
+                            {
+                                continue;
+                            }
+                            e.Start = p.Hour * 60;
+                            e.End = ((p.Hour + p.Hours) % 24) * 60;
+                            e.Attend = true;
+                            bool home = ProRules.FromHome((WorkMode)j.Work, day);
+                            if (!home && p.Place != Workplace.Hospital)
+                            {
+                                e.Street = j.Post.Street;
+                                e.Number = j.Post.Number;
+                            }
+                            if (into.WantText)
+                            {
+                                e.Title = CareersText.T("reallife_planner_pro_title", "title", title);
+                                e.Where = home ? CareersText.T("reallife_career_row_home") : employer;
+                                e.What = CareersText.T("reallife_planner_pro_what", "employer", employer);
+                                e.Money = CareersText.T("reallife_planner_pro_pays", "pay", CareersText.Rate(Prices.At(j.Pay)));
+                                e.IfMissed = CareersText.T("reallife_planner_pro_missed", "most", CareersDirector.WarningsToGo.ToString());
+                            }
+                        }
+                    }
+                    for (int i = 0; i < w.Applications.Count; i++)
+                    {
+                        Application a = w.Applications[i];
+                        if (a.Stage != (int)ApplyStep.Interview && a.Stage != (int)ApplyStep.Offered)
+                        {
+                            continue;
+                        }
+                        bool interview = a.Stage == (int)ApplyStep.Interview;
+                        PlannerEntry e = into.Add(Id, a.Post.Id, interview ? 1 : 2, PlannerCategory.Work, interview ? a.InterviewDay : a.Lapse);
+                        if (e == null)
+                        {
+                            continue;
+                        }
+                        string employer = CareersText.Employer(a.Post.Employer);
+                        if (interview)
+                        {
+                            e.Start = a.InterviewHour * 60;
+                            e.End = (a.InterviewHour + 1) * 60;
+                            e.Attend = true;
+                            if (a.Post.Work != (int)WorkMode.Remote && a.Post.Def.Place != Workplace.Hospital)
+                            {
+                                e.Street = a.Post.Street;
+                                e.Number = a.Post.Number;
+                            }
+                        }
+                        else
+                        {
+                            e.Deadline = true;
+                            e.End = 23 * 60;
+                        }
+                        if (into.WantText)
+                        {
+                            e.Title = CareersText.T(interview ? "reallife_planner_interview_title" : "reallife_planner_offer_title", "employer", employer);
+                            e.What = CareersText.T(interview ? "reallife_planner_interview_what" : "reallife_planner_offer_what", "title", CareersText.Title(a.Post.Prof, a.Post.Rank));
+                            e.IfMissed = CareersText.T(interview ? "reallife_planner_interview_missed" : "reallife_planner_offer_missed");
+                        }
+                    }
+                }
+            }
+
+            private static readonly WorkSource Jobs = new WorkSource();
 
             // ---------------------------------------------------------------- the Planner: classes and exams
 
