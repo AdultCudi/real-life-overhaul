@@ -36,7 +36,9 @@ namespace RealLifeOverhaul
     ///    the player's assets. This mod does the same through <see cref="Mine"/>, with Going Public's own test
     ///    (GameStatePatcher.HideFromOwnAssetLists) where it can be read;
     ///  - a guest's traffic near the host is the host's cars, placed from the host's figures (TrafficManager.Update is
-    ///    not run there): nothing may be taken out of it, stopped or steered. <see cref="TrafficMirrored"/>.
+    ///    not run there): nothing may be taken out of it, stopped or steered. <see cref="TrafficMirrored"/>;
+    ///  - the city's economy, government and stock market of this mod are the host's in a session, one city for every
+    ///    player, through this mod's own messages on Going Public's connection: Core/SharedCity.
     ///
     /// How it is known, without a reference to it: by its assembly and a type of its own (<see cref="OtherMods"/>),
     /// then by three of its statics, read by reflection once and called through delegates made then:
@@ -265,13 +267,15 @@ namespace RealLifeOverhaul
                     Logger?.Warn("Going Public: this machine hosts a session" + pretend + ". The clock is the session's: nothing of this mod pauses, skips or speeds it "
                                  + "(custody, prison, rides, outings and the family's occasions pass no time; photo mode does not pause; holidays and hotel nights "
                                  + "are not offered). Selling a business or a building and hiring out cars wait until the game is played alone. Other players' "
-                                 + "businesses and homes are not this player's. Street life, scenes and the HUD are this machine's own.");
+                                 + "businesses and homes are not this player's. Street life, scenes and the HUD are this machine's own. The city's economy, government and stock "
+                                 + "market are this machine's, and every guest that runs this mod in the same version follows them (Core/SharedCity).");
                 }
                 else if (now == GoingPublicRole.Guest)
                 {
                     Logger?.Warn("Going Public: this machine is a guest in a session" + pretend + ". As for the host, the clock is the session's and nothing of this "
                                  + "mod pauses, skips or speeds it; and the traffic is the host's: accidents, chases, patrols and everything else that takes cars "
-                                 + "out of the traffic are left to the host, and franchised shops open in this player's books only.");
+                                 + "out of the traffic are left to the host, and franchised shops open in this player's books only. The city's economy, government and "
+                                 + "stock market are the host's once it answers (Core/SharedCity).");
                     if (ModState.Loaded)
                     {
                         // In the middle of play: whatever of the traffic's this mod holds is given back now, before the next figures of
