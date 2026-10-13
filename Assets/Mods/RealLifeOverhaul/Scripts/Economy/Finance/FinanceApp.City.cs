@@ -76,8 +76,9 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(FinanceText.Pair("reallife_macro_page_carried", FinanceText.Money(carried)));
             }
-            box.Line(FinanceText.T("reallife_macro_page_note"));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_macro_back", HideCity);
+            box.Line(FinanceText.T("reallife_macro_page_note"));
+            Meta.Guide.Point(box, "reallife_meta_title_economy_city");
 
             // One table of four kinds of row, which the filter over it tells apart: each row's third and fourth cells
             // carry the figure they are ordered by (an income level, a price against the usual, a share, a value).

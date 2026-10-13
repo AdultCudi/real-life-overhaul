@@ -329,7 +329,6 @@ namespace RealLifeOverhaul.Economy
         {
             CreditDesk desk = Desk;
             box.Title(FinanceText.T(ProductKeys[_product]));
-            box.Line(About(_product));
             switch (_product)
             {
                 case Overdraft: WriteLimit(box, desk, ProductKind.Overdraft); break;
@@ -339,6 +338,8 @@ namespace RealLifeOverhaul.Economy
                 case HomeLoan: WriteFinance(box, desk, ProductKind.Mortgage); break;
                 default: WriteConsolidate(box, desk); break;
             }
+            box.Line(About(_product));
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         // What a kind of credit is, in one sentence: the white box does not scroll, so the page keeps to its figures and
@@ -762,6 +763,7 @@ namespace RealLifeOverhaul.Economy
                 box.Line(FinanceText.T("reallife_econ_private_terms", "day", file.Shark.DueDay.ToString(), "perDay", FinanceText.Money(SharkRules.ADay(file.Shark.Borrowed)),
                     "cap", FinanceText.Money(SharkRules.Cap(file.Shark.Borrowed))));
                 box.Line(FinanceText.T("reallife_econ_private_how"));
+                Meta.Guide.Point(box, GuideTitle);
             }
             else if (selected == ApprovalRow)
             {
@@ -769,10 +771,12 @@ namespace RealLifeOverhaul.Economy
                 box.Title(FinanceText.T(ProductKeys[_product]));
                 WriteFinance(box, desk, (ProductKind)file.Relief.ApprovedKind);
                 _product = -1;
+                Meta.Guide.Point(box, GuideTitle);
             }
             else if (selected == WaysRow)
             {
                 WriteWays(box, desk);
+                Meta.Guide.Point(box, GuideTitle);
             }
             else
             {
@@ -782,6 +786,7 @@ namespace RealLifeOverhaul.Economy
                 box.Line(FinanceText.Pair("reallife_econ_over_leaves", FinanceText.Money(due.Loans + due.Accounts)));
                 box.Line(FinanceText.T("reallife_econ_accounts_pick"));
                 box.Line(FinanceText.T("reallife_econ_accounts_order"));
+                Meta.Guide.Point(box, GuideTitle);
             }
             return selected;
         }
@@ -876,12 +881,12 @@ namespace RealLifeOverhaul.Economy
         {
             bool revolving = ProductCatalogue.Revolving(a.Kind), instalment = ProductCatalogue.Instalment(a.Kind);
             box.Title(CreditDesk.Name(a));
-            string about = AboutKind(a.Kind);
-            if (about != null)
+            LadderState s = a.Ladder;
+            StandsLines(box, FinanceText.State(a), s, a.Secured, !a.Frozen && a.Owed > 0);
+            if (s.RepoPending)
             {
-                box.Line(about);
+                box.Line(FinanceText.T("reallife_econ_account_repo", "thing", CreditDesk.Thing(a)));
             }
-            box.Line(FinanceText.T("reallife_tab_account_opened", "lender", CreditDesk.LenderName(a), "day", a.OpenedDay.ToString()));
             box.Line(FinanceText.Pair("reallife_econ_over_owed", a.Agreed > 0
                 ? FinanceText.T("reallife_econ_row_owed_of", "owed", FinanceText.Money(a.Owed), "total", FinanceText.Money(a.Agreed)) : FinanceText.Money(a.Owed)));
             if (revolving && a.Agreed > 0)
@@ -894,10 +899,7 @@ namespace RealLifeOverhaul.Economy
             }
             if (a.RateBp > 0)
             {
-                // The rate and why it is what it is: agreed by the rating, moved by the bank rate (overdraft, card), raised by a penalty.
-                box.Line(FinanceText.Pair("reallife_econ_offer_rate", Rate(a.RateNow)) + " "
-                         + (a.Ladder.Penalty ? FinanceText.T("reallife_econ_account_penalty", "points", ProductCatalogue.PenaltyPoints.ToString(), "run", ProductCatalogue.PenaltyClearRun.ToString())
-                             : revolving ? FinanceText.T("reallife_tab_account_rate_moves", "agreed", Rate(a.RateBp)) : FinanceText.T("reallife_tab_account_rate_fixed")));
+                RateLines(box, Rate(a.RateNow), a.Ladder.Penalty);
             }
             int due = AccountRules.DueTomorrow(a, today);
             switch (a.Kind)
@@ -925,24 +927,21 @@ namespace RealLifeOverhaul.Economy
                         break;
                     }
             }
-            LadderState s = a.Ladder;
-            box.Line(FinanceText.Pair("reallife_econ_account_stands", FinanceText.State(a)));
-            if (!a.Frozen && a.Owed > 0)
-            {
-                NextStepLine(box, s, a.Secured);
-            }
             if (s.PlanLeft > 0)
             {
                 box.Line(FinanceText.T("reallife_econ_account_plan", "left", FinanceText.Money(s.PlanLeft), "payment", FinanceText.Money(s.PlanPerDay)));
             }
-            if (s.RepoPending)
+            box.Line(FinanceText.T("reallife_tab_account_opened", "lender", CreditDesk.LenderName(a), "day", a.OpenedDay.ToString()));
+            if (!a.Frozen)   // (in a debt arrangement it is paid by the arrangement, not here)
             {
-                box.Line(FinanceText.T("reallife_econ_account_repo", "thing", CreditDesk.Thing(a)));
+                AccountButtons(box, desk, a, s, due);
             }
-            if (a.Frozen)
-            {
-                return;   // in a debt arrangement: it is paid by the arrangement, not here
-            }
+            AboutLines(box, AboutKind(a.Kind), a.RateBp > 0 && !a.Ladder.Penalty ? (revolving ? FinanceText.T("reallife_tab_account_rate_moves", "agreed", Rate(a.RateBp)) : FinanceText.T("reallife_tab_account_rate_fixed")) : null, GuideTitle);
+        }
+
+        // The buttons of one of the mod's accounts: the collections call's answers when it is due, else paying, drawing and closing.
+        private void AccountButtons(InfoBox box, CreditDesk desk, CreditAccount a, LadderState s, int due)
+        {
             Transform buttons = box.ButtonRow();
             var debt = new Debt(a);
             if (s.CallDue)
@@ -969,6 +968,43 @@ namespace RealLifeOverhaul.Economy
             {
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_econ_account_close", () => Said(desk.CloseAccount(a)));
             }
+        }
+
+        /// <summary>
+        /// How a debt stands, at the head of its page: its state, and what missing payments would bring next. The one
+        /// order every page of a debt has, in Finance and in each bank's app.
+        /// </summary>
+        internal static void StandsLines(InfoBox box, string state, LadderState s, bool secured, bool nextStep)
+        {
+            box.Line(FinanceText.Pair("reallife_econ_account_stands", state));
+            if (nextStep)
+            {
+                NextStepLine(box, s, secured);
+            }
+        }
+
+        /// <summary>The rate a year, and under it the penalty in it while there is one.</summary>
+        internal static void RateLines(InfoBox box, string rate, bool penalty)
+        {
+            box.Line(FinanceText.Pair("reallife_econ_offer_rate", rate));
+            if (penalty)
+            {
+                box.Line(FinanceText.T("reallife_econ_account_penalty", "points", ProductCatalogue.PenaltyPoints.ToString(), "run", ProductCatalogue.PenaltyClearRun.ToString()));
+            }
+        }
+
+        /// <summary>The foot of a debt's page: what the kind of credit is and how its rate is set (either may be null), then the Guide's page given.</summary>
+        internal static void AboutLines(InfoBox box, string about, string rateNote, string guideTitle)
+        {
+            if (about != null)
+            {
+                box.Line(about);
+            }
+            if (rateNote != null)
+            {
+                box.Line(rateNote);
+            }
+            Meta.Guide.Point(box, guideTitle);
         }
 
         private void Paid(CreditDesk desk, CreditAccount a, int amount)
@@ -1023,31 +1059,25 @@ namespace RealLifeOverhaul.Economy
             int today = SaveGameManager.Current.Day;
             bool frozen = (m.Held & LoanHold.Frozen) != 0;
             box.Title(GameLoans.BankName(loan));
-            box.Line(FinanceText.T("reallife_tab_loan_about", "kind", FinanceText.T(FinanceTables.DebtKinds[FinanceTables.OfLoan(m.Purpose)]), "day", m.FirstDay.ToString()));
+            StandsLines(box, FinanceText.State(m.Ladder, frozen, false), m.Ladder, m.Purpose == LoanPurpose.Business && Books.Business(m.Security) != null, !frozen);
             box.Line(FinanceText.Pair("reallife_econ_over_owed", FinanceText.T("reallife_econ_row_owed_of", "owed", FinanceText.Money(loan.remainingAmount), "total", FinanceText.Money(loan.totalAmount))));
-            box.Line(FinanceText.T("reallife_tab_account_paid", "paid", FinanceText.Money(Mathf.Max(0f, loan.PaidAmount)), "total", FinanceText.Money(loan.totalAmount)));
-            float yearly = YearlyRate(loan, Mathf.Max(1, AccountRules.DaysPerYear));
-            if (yearly > 0f)
-            {
-                box.Line(FinanceText.Pair("reallife_econ_offer_rate", FinanceText.T("reallife_econ_row_rate", "rate", yearly.ToString("0.#"))) + " " + FinanceText.T("reallife_tab_loan_rate_note"));
-            }
             box.Line(FinanceText.Pair("reallife_econ_offer_payment", FinanceText.Money(loan.dailyPayment)));
             if (loan.dailyPayment > 0 && !frozen)
             {
                 int left = Mathf.CeilToInt(loan.remainingAmount / loan.dailyPayment);
                 box.Line(FinanceText.T("reallife_tab_loan_left", "days", left.ToString(), "day", (today + left).ToString()));
             }
-            box.Line(FinanceText.Pair("reallife_econ_offer_interest", FinanceText.Money(loan.dailyInterest))
-                     + ((m.Held & LoanHold.Penalty) != 0 ? " " + FinanceText.T("reallife_econ_account_penalty", "points", ProductCatalogue.PenaltyPoints.ToString(), "run", ProductCatalogue.PenaltyClearRun.ToString()) : string.Empty));
+            box.Line(FinanceText.T("reallife_tab_account_paid", "paid", FinanceText.Money(Mathf.Max(0f, loan.PaidAmount)), "total", FinanceText.Money(loan.totalAmount)));
+            float yearly = YearlyRate(loan, Mathf.Max(1, AccountRules.DaysPerYear));
+            if (yearly > 0f)
+            {
+                RateLines(box, FinanceText.T("reallife_econ_row_rate", "rate", yearly.ToString("0.#")), (m.Held & LoanHold.Penalty) != 0);
+            }
+            box.Line(FinanceText.Pair("reallife_econ_offer_interest", FinanceText.Money(loan.dailyInterest)));
             if (m.Purpose == LoanPurpose.Business)
             {
                 BuildingRegistration shop = Books.Business(m.Security);
                 box.Line(shop != null ? FinanceText.T("reallife_econ_account_secured", "thing", shop.BusinessName) : FinanceText.T("reallife_econ_loan_unsecured"));
-            }
-            box.Line(FinanceText.Pair("reallife_econ_account_stands", FinanceText.State(m.Ladder, frozen, false)));
-            if (!frozen)
-            {
-                NextStepLine(box, m.Ladder, m.Purpose == LoanPurpose.Business && Books.Business(m.Security) != null);
             }
             if (m.Ladder.PlanLeft > 0)
             {
@@ -1061,9 +1091,13 @@ namespace RealLifeOverhaul.Economy
             if (m.Ladder.CallDue)
             {
                 CallButtons(buttons, desk, debt);
-                return;
             }
-            InfoBox.Button(buttons, InfoBox.Additional, "reallife_econ_open_econoview", OpenEconoView);
+            else
+            {
+                InfoBox.Button(buttons, InfoBox.Additional, "reallife_econ_open_econoview", OpenEconoView);
+            }
+            AboutLines(box, FinanceText.T("reallife_tab_loan_about", "kind", FinanceText.T(FinanceTables.DebtKinds[FinanceTables.OfLoan(m.Purpose)]), "day", m.FirstDay.ToString()),
+                yearly > 0f && (m.Held & LoanHold.Penalty) == 0 ? FinanceText.T("reallife_tab_loan_rate_note") : null, GuideTitle);
         }
 
         // The ways out of debt, with the player's own figures; the two that change anything are confirmed in the game's question box.
