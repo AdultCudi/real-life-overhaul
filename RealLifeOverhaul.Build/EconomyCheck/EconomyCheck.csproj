@@ -23,7 +23,8 @@
        books of a dealership of Empire Motors, another author's mod: its takings and costs, a share of what has no address,
        its stock among its records and what the tax deducts, and (FameChecks.cs) Standing:
        wealth, recognition, the four reputations, the daily round, the street, the press, the city's requests and the save's line, and
-       (PermadeathChecks.cs) Permadeath: the odds, the warnings first, when nothing can happen, the flu's course, the switch per save, a dead save, the life's line and the obituary's sentences
+       (PermadeathChecks.cs) Permadeath: the odds, the warnings first, when nothing can happen, the flu's course, the switch per save, a dead save, the life's line and the obituary's sentences, and
+       (OwnBankChecks.cs) the player's own bank: the rival banks' rates, the city's savers and borrowers, defaults, arrears, the regulator's ratio, a run, the fund, a sale and the save's line
        Compiles the mod's own files, so it checks exactly what ships.
        the lender of last resort and the ways out of debt, and (VenturesChecks.cs) investors, the pitch, deals and the
        stock market. Compiles the mod's own files, so it checks exactly what ships.
@@ -169,6 +170,11 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Permadeath\PermadeathState.cs" Link="Mod\PermadeathState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Permadeath\LifeStory.cs" Link="Mod\LifeStory.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Permadeath\PermadeathStory.cs" Link="Mod\PermadeathStory.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankCatalogue.cs" Link="Mod\OwnBankCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankModel.cs" Link="Mod\OwnBankModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankRules.cs" Link="Mod\OwnBankRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankFund.cs" Link="Mod\OwnBankFund.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankStore.cs" Link="Mod\OwnBankStore.cs" />
   </ItemGroup>
 
 </Project>
