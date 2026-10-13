@@ -299,8 +299,8 @@ mods do, and would count customers or baskets twice:
 | --- | --- | --- |
 | The district standard's shortfall: its customers lost (8% at most at Standard, 12% at Strict) and its complaints | Meaningful Interiors is on | that mod sets each district's minimum and acts on it itself |
 | The reward over the standard: its customers (3% at most at Standard, 4% at Generous) | Meaningful Interiors is on | the same |
-| The basket: one more product for a customer over the standard | Meaningful Interiors is on | that mod adds to baskets itself |
-| The decor's customers (5% by default, 20% at the strongest) | Meaningful Ambience is on | that mod adds customers for decor itself |
+| Bigger baskets: over the standard, each customer's order times a share of the way to 85 (10% at most where the standard is lowest, 6% where it is highest, at Standard), as that mod's own | Meaningful Interiors is on | that mod adds to baskets itself |
+| The decor's customers (10% by default, as Meaningful Ambience's; 20% at the strongest) | Meaningful Ambience is on | that mod adds customers for decor itself |
 | An office's extra clients, booked an hour ahead | Meaningful Ambience is on | that mod books offices' clients itself |
 
 The rest keeps running (the scores, the price tolerance, wear and its refresh, brands, Standing, staff, offices' hiring and

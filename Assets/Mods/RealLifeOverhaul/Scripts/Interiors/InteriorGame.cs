@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Interiors
     ///   the placed items    reg.itemInstances, each sorted once by its item's own tags and types (ItemsGetter.GetByName)
     ///   the floor area      BuildingHelper.GetBuildingSquareMeters
     ///   the minimum         NeighborhoodData.minimumInteriorScore, read live (another mod may set it)
-    ///   the basket          one OrderEntry more in a customer of the coming hour, as the game itself adds one
+    ///   the basket          OrderEntries more in a customer of the coming hour, by the size of its order, as the game itself adds them
     ///                       (CustomerEntriesCalculatorRetail.AddProductsToCustomersEntriesList): a product the shop has on
     ///                       its shelves (reg.cachedAvailableProducts), never an entrance fee or a ticket, a service only
     ///                       once a customer. The game checks the stock and the price when the customer pays.
@@ -751,18 +751,20 @@ namespace RealLifeOverhaul.Interiors
 
         /// <summary>
         /// The customers still to come at a shop this hour (not those due in the next two minutes) and the next hour,
-        /// each looked at once: with a chance (per mille) one more product it sells and has on its shelves. Returns how
-        /// many were added. Only a shop the game draws retail customers for (not a casino, a cinema or a theatre, whose
-        /// customers come for tickets). Asked once a game hour, as the hour turns.
+        /// each looked at once: the products in its order (never the door's entrance fee) times the share (per mille,
+        /// InteriorRules.BasketExtra) more of what the shop sells and has on its shelves, each a different one while there
+        /// are enough. Returns how many were added. Only a shop the game draws retail customers for (not a casino, a cinema
+        /// or a theatre, whose customers come for tickets). Asked once a game hour, as the hour turns.
         /// </summary>
-        public static int Basket(BuildingRegistration reg, int chance)
+        public static int Basket(BuildingRegistration reg, int share, bool office)
         {
-            if (chance <= 0 || reg == null || reg.temporarilyClosed || !Retail(reg))
+            if (share <= 0 || reg == null || reg.temporarilyClosed || !Retail(reg))
             {
                 return 0;
             }
             List<CustomerEntry> entries = CustomerDraw.Entries(reg);
-            if (entries == null || entries.Count == 0 || !Sellable(reg))
+            BusinessType type = BusinessTypeHelper.GetData(reg);
+            if (entries == null || entries.Count == 0 || type == null || !Sellable(reg, type))
             {
                 return 0;
             }
@@ -778,20 +780,41 @@ namespace RealLifeOverhaul.Interiors
                     continue;
                 }
                 Seen.Add(e, Mark);
-                if (Random.Range(0, 1000) >= chance)
+                int more = InteriorRules.BasketExtra(Lines(e, type), share, Random.Range(0, 1000), office);
+                if (more <= 0)
                 {
                     continue;
                 }
-                string product = Products[Random.Range(0, Products.Count)];
-                if (Service(product) && Has(e, product))
+                int start = Random.Range(0, Products.Count);
+                for (int k = 0, tried = 0; k < more && tried < Products.Count; tried++)
                 {
-                    continue;   // a service is had once a customer, as the game draws them
+                    string product = Products[(start + tried) % Products.Count];
+                    if (Service(product) && Has(e, product))
+                    {
+                        continue;   // a service is had once a customer, as the game draws them
+                    }
+                    e.order.entries.Add(new OrderEntry { itemName = product });
+                    added++;
+                    k++;
                 }
-                e.order.entries.Add(new OrderEntry { itemName = product });
-                added++;
             }
             Products.Clear();
             return added;
+        }
+
+        // The products in a customer's order: every line but the door's entrance fee.
+        private static int Lines(CustomerEntry e, BusinessType type)
+        {
+            int n = 0;
+            for (int i = 0; i < e.order.entries.Count; i++)
+            {
+                string name = e.order.entries[i] != null ? e.order.entries[i].itemName : null;
+                if (!string.IsNullOrEmpty(name) && name != type.defaultEntranceFee && name != type.weekendOnlyEntranceFee)
+                {
+                    n++;
+                }
+            }
+            return n;
         }
 
         // A shop whose customers the game draws as retail ones, buying products off its shelves.
@@ -812,11 +835,10 @@ namespace RealLifeOverhaul.Interiors
         }
 
         // What the shop has on its shelves now, less entrance fees and tickets, into Products. False if it has nothing.
-        private static bool Sellable(BuildingRegistration reg)
+        private static bool Sellable(BuildingRegistration reg, BusinessType type)
         {
             Products.Clear();
             List<string> stocked = reg.cachedAvailableProducts;
-            BusinessType type = BusinessTypeHelper.GetData(reg);
             for (int i = 0; stocked != null && type != null && i < stocked.Count; i++)
             {
                 string name = stocked[i];

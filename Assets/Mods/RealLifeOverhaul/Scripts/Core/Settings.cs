@@ -242,6 +242,9 @@ namespace RealLifeOverhaul
         // The switches the five strengths above replaced (0.8.0): read once, when a strength has no saved choice yet, so
         // that a part switched off stays off. They have no row of their own any more.
         private const string StandardSwitchWas = "interiors_standard", DecorSwitchWas = "interiors_decor", PricesSwitchWas = "interiors_prices", WearSwitchWas = "interiors_wear";
+        // Set once the basket's and the decor's old defaults (off, and 5%: level 1) were moved to the new ones (MoveInteriorDefaults). No row of its own.
+        private const string InteriorDefaultsMoved = "interiors_defaults_moved";
+        private const int DecorLevelWas = 1, DecorLevelNow = 2;   // (InteriorRules.DecorDefault)
         public const string InteriorsStandingId = "interiors_standing";
         public const string InteriorsStaffId = "interiors_staff";
         public const string PermadeathId = "permadeath";
@@ -490,11 +493,11 @@ namespace RealLifeOverhaul
         public static bool BusinessOpportunities = true;
         public static bool Interiors = true;                // how a business looks counts: the game's interior design score, a decor score from the placed items, wear, the district's standard, and a BizMan tab (off: none of the parts below, and the tab is gone) (Scripts/Interiors)
         public static int InteriorsStandardLevel = 2;   // (InteriorRules.StandardDefault) each district expects a standard: what falling short of it costs (customers, complaints): 0 Off, 1 Gentle, 2 Standard, 3 Strict (with Meaningful Interiors on: nothing) (Scripts/Interiors)
-        public static int InteriorsRewardLevel = 3;       // (InteriorRules.RewardDefault) what being over it brings (customers, the basket's chance): 0 Off, 1 Low, 2 Conservative, 3 Standard, 4 Generous (with Meaningful Interiors on: nothing) (Scripts/Interiors)
-        public static int InteriorsDecorLevel = 1;         // (InteriorRules.DecorDefault) the customers decor brings, and an office's clients: 0 Off, 1 5%, 2 10%, 3 15%, 4 20% at a decor score of 100 (with Meaningful Ambience on: nothing) (Scripts/Interiors)
+        public static int InteriorsRewardLevel = 3;       // (InteriorRules.RewardDefault) what being over it brings (customers, the basket's share): 0 Off, 1 Low, 2 Conservative, 3 Standard, 4 Generous (with Meaningful Interiors on: nothing) (Scripts/Interiors)
+        public static int InteriorsDecorLevel = 2;         // (InteriorRules.DecorDefault) the customers decor brings, and an office's clients: 0 Off, 1 5%, 2 10%, 3 15%, 4 20% at a decor score of 100 (with Meaningful Ambience on: nothing) (Scripts/Interiors)
         public static int InteriorsPricesLevel = 3;        // (InteriorRules.PriceDefault) how much more (or less) of the price the district bears: 0 Off, 1 Low, 2 Conservative, 3 Standard, 4 Generous (Scripts/Interiors)
         public static int InteriorsWearLevel = 2;           // (InteriorRules.WearDefault) how fast finishes wear and get dirty: 0 Off, 1 Slow, 2 Standard, 3 Fast (Scripts/Interiors)
-        public static bool InteriorsBasket = false;         // over the standard a customer may take one more product the shop has in stock; off by default: it adds to the game's own list of the hour's customers (with Meaningful Interiors on: nothing) (Scripts/Interiors)
+        public static bool InteriorsBasket = true;          // over the standard each customer takes more products the shop has in stock, by the size of their order (it adds to the game's own list of the hour's customers) (with Meaningful Interiors on: nothing) (Scripts/Interiors)
         public static bool InteriorsStanding = true;        // a well kept place lifts its brand's standards and Standing's customers, and makes the news; a shabby one the other way (Scripts/Interiors)
         public static bool InteriorsStaff = true;           // plants, good light and a rest corner lift staff; a good office helps hiring and a firm's bids (Scripts/Interiors)
         public static bool Permadeath = false;           // what the options page shows; the switch itself is kept per save (Permadeath/PermadeathState.Armed), off unless switched on
@@ -756,6 +759,7 @@ namespace RealLifeOverhaul
             Interiors = Bool(modId, InteriorsId, Interiors);
             InteriorsStandardLevel = Int(modId, InteriorsStandardLevelId, Bool(modId, StandardSwitchWas, true) ? InteriorsStandardLevel : 0);
             InteriorsRewardLevel = Int(modId, InteriorsRewardLevelId, Bool(modId, StandardSwitchWas, true) ? InteriorsRewardLevel : 0);
+            MoveInteriorDefaults(modId);
             InteriorsDecorLevel = Int(modId, InteriorsDecorLevelId, Bool(modId, DecorSwitchWas, true) ? InteriorsDecorLevel : 0);
             InteriorsPricesLevel = Int(modId, InteriorsPricesLevelId, Bool(modId, PricesSwitchWas, true) ? InteriorsPricesLevel : 0);
             InteriorsWearLevel = Int(modId, InteriorsWearLevelId, Bool(modId, WearSwitchWas, true) ? InteriorsWearLevel : 0);
@@ -792,6 +796,31 @@ namespace RealLifeOverhaul
                 UnityEngine.PlayerPrefs.SetInt(key, on ? 1 : 0);
             }
             return changed;
+        }
+
+        /// <summary>
+        /// Once only (the marker below): the basket came on by default and the customers decor brings went from 5% to 10%,
+        /// as the other authors' Meaningful Interiors and Meaningful Ambience have them. A saved basket still at its old
+        /// default (off) is switched on, and a saved decor choice still at its old default (5%) moves to 10%. Any other
+        /// value stays as it is, and whatever is chosen afterwards is never touched again.
+        /// </summary>
+        private static void MoveInteriorDefaults(string modId)
+        {
+            string done = Key(modId, InteriorDefaultsMoved);
+            if (UnityEngine.PlayerPrefs.GetInt(done, 0) != 0)
+            {
+                return;
+            }
+            string basket = Key(modId, InteriorsBasketId), decor = Key(modId, InteriorsDecorLevelId);
+            if (UnityEngine.PlayerPrefs.HasKey(basket) && UnityEngine.PlayerPrefs.GetInt(basket, 0) == 0)
+            {
+                UnityEngine.PlayerPrefs.SetInt(basket, 1);
+            }
+            if (UnityEngine.PlayerPrefs.HasKey(decor) && UnityEngine.PlayerPrefs.GetInt(decor, 0) == DecorLevelWas)
+            {
+                UnityEngine.PlayerPrefs.SetInt(decor, DecorLevelNow);
+            }
+            UnityEngine.PlayerPrefs.SetInt(done, 1);
         }
 
         // Same key format the game uses when it saves mod options.

@@ -26,6 +26,7 @@ internal static partial class Program
         InteriorStaffAndOffices();
         InteriorStepAside();
         InteriorStrengths();
+        InteriorBasket();
         InteriorSelling();
         InteriorOfficeClients();
         InteriorCustomerSplit();
@@ -154,7 +155,8 @@ internal static partial class Program
             "interiors: 1% fewer customers for each 4 points short, rounded up");
         Check(InteriorRules.StandardFootfall(0, 70) == -InteriorRules.ShortFootfallMost && InteriorRules.StandardFootfall(0, 70) == -8, "interiors: short of the standard costs 8% at most");
         Check(InteriorRules.StandardFootfall(48, 40) == 1 && InteriorRules.StandardFootfall(100, 15) == 3, "interiors: over it 1% for each 8 points, 3% at most");
-        Check(InteriorRules.DecorFootfall(100, 5) == 5 && InteriorRules.DecorFootfall(0, 5) == 0 && InteriorRules.DecorFootfall(150, 5) == 5, "interiors: decor brings up to 5% more customers by default");
+        Check(InteriorRules.DecorFootfall(100, 5) == 5 && InteriorRules.DecorFootfall(0, 5) == 0 && InteriorRules.DecorFootfall(150, 5) == 5
+              && InteriorRules.DecorFootfall(100, InteriorRules.DecorPercents[InteriorRules.DecorDefault]) == 10, "interiors: decor brings up to 10% more customers by default, as Meaningful Ambience");
         Check(InteriorRules.Footfall(3, 5) == 8 && InteriorRules.Footfall(-8, 0) == -8 && InteriorRules.Footfall(-8, 5) == -3, "interiors: the footfall parts are added");
         Check(InteriorRules.FootfallLeast == BusinessCatalogue.InteriorMostDip && InteriorRules.FootfallMost == BusinessCatalogue.InteriorMostBoost,
             "interiors: its footfall is business pressure's interior part, with the same bounds");
@@ -166,8 +168,6 @@ internal static partial class Program
             "interiors: prices 3% over the district's are borne in full at a fine place");
         Check(InteriorRules.ComplaintChance(31, 40) == 0 && InteriorRules.ComplaintChance(30, 40) == 40 && InteriorRules.ComplaintChance(0, 70) == 120,
             "interiors: a complaint from 10 points short, 4 per mille a point, 12% a day at most");
-        Check(InteriorRules.BasketChance(40, 40) == 0 && InteriorRules.BasketChance(50, 40) == 20 && InteriorRules.BasketChance(100, 15) == 60 && InteriorRules.BasketChance(10, 40) == 0,
-            "interiors: the basket's chance is 2 per mille a point over the standard, 6% at most, nothing under it");
         Check(InteriorRules.BrandPoints(50) == 0 && InteriorRules.BrandPoints(80) == 2 && InteriorRules.BrandPoints(100) == 3 && InteriorRules.BrandPoints(0) == -3,
             "interiors: a brand's shop counts up to 3 points either way");
         Check(InteriorRules.StandingPoints(70) == 1 && InteriorRules.StandingPoints(100) == 2 && InteriorRules.StandingPoints(0) == -2,
@@ -211,7 +211,7 @@ internal static partial class Program
     {
         InteriorParts mi = InteriorRules.Parts(InteriorRules.StandardDefault, InteriorRules.RewardDefault, InteriorRules.DecorDefault, InteriorRules.PriceDefault, InteriorRules.WearDefault,
             true, true, true, true, false);
-        Check(mi.StandardScale == 0 && mi.RewardScale == 0 && !mi.Basket && mi.DecorPercent == 5 && mi.PriceScale == 1000 && mi.WearScale == 1000 && mi.Staff && mi.Standing,
+        Check(mi.StandardScale == 0 && mi.RewardScale == 0 && !mi.Basket && mi.DecorPercent == 10 && mi.PriceScale == 1000 && mi.WearScale == 1000 && mi.Staff && mi.Standing,
             "interiors: with Meaningful Interiors on, the shortfall, the reward over the standard and the basket are left to it; the rest keeps running");
         InteriorParts ma = InteriorRules.Parts(InteriorRules.StandardDefault, InteriorRules.RewardDefault, InteriorRules.DecorDefault, InteriorRules.PriceDefault, InteriorRules.WearDefault,
             true, true, true, false, true);
@@ -222,9 +222,9 @@ internal static partial class Program
 
     private static void InteriorStrengths()
     {
-        Check(InteriorRules.DecorPercents[InteriorRules.DecorDefault] == 5 && InteriorRules.RewardScales[InteriorRules.RewardDefault] == 1000
+        Check(InteriorRules.DecorPercents[InteriorRules.DecorDefault] == 10 && InteriorRules.RewardScales[InteriorRules.RewardDefault] == 1000
               && InteriorRules.StandardScales[InteriorRules.StandardDefault] == 1000 && InteriorRules.PriceScales[InteriorRules.PriceDefault] == 1000
-              && InteriorRules.WearScales[InteriorRules.WearDefault] == 1000, "interiors: every strength's default gives the figures of before");
+              && InteriorRules.WearScales[InteriorRules.WearDefault] == 1000, "interiors: every strength's default gives the rules' own figures, and decor 10% as Meaningful Ambience");
         Check(string.Join(",", InteriorRules.DecorPercents) == "0,5,10,15,20" && string.Join(",", InteriorRules.RewardScales) == "0,500,750,1000,1250"
               && string.Join(",", InteriorRules.StandardScales) == "0,500,1000,1500" && string.Join(",", InteriorRules.WearScales) == "0,500,1000,1500",
             "interiors: the choices cover the other mods' ranges (decor Off to 20%, the reward Off to 1.25 times)");
@@ -259,8 +259,6 @@ internal static partial class Program
             }
         }
         Check(inside, "interiors: at every choice of every strength, its footfall stays inside its bounds");
-        Check(InteriorRules.BasketChance(100, 15, 1250) == 75 && InteriorRules.BasketChance(100, 15, 500) == 30 && InteriorRules.BasketChance(100, 15, 0) == 0,
-            "interiors: the basket's chance follows the reward: 7.5% at most when Generous, 3% when Low");
         Check(InteriorRules.Bears(100, 15, 1250) == 38 && InteriorRules.Bears(0, 70, 500) == -10 && InteriorRules.Bears(100, 15, 0) == 0,
             "interiors: the price borne follows its strength either way");
         Check(InteriorRules.ComplaintChance(0, 70, 1500) == 180 && InteriorRules.ComplaintChance(0, 70, 500) == 60 && InteriorRules.ComplaintChance(0, 70, 0) == 0,
@@ -274,6 +272,51 @@ internal static partial class Program
               && BusinessCatalogue.Written(40, 0, 7, 0, b) == BusinessCatalogue.Written(40, 0, 7, b), "interiors: its part counts as much as the same of the ambient one, and nothing changes nothing");
         Check(BusinessCatalogue.PromotionFor(30, 0, 15, 20, b) > BusinessCatalogue.PromotionFor(30, 0, 15, 0, b),
             "interiors: its part is not lost under the ambient one's bound when the rest of the mod already adds its most");
+    }
+
+    // The basket, as Meaningful Interiors has it: an order's products times a share of the way from the standard to 85.
+    private static void InteriorBasket()
+    {
+        Check(InteriorRules.BasketMost(15) == 100 && InteriorRules.BasketMost(70) == 60 && InteriorRules.BasketMost(InteriorRules.Standard(100, 0)) == 81
+              && InteriorRules.BasketMost(0) == 100 && InteriorRules.BasketMost(100) == 60, "interiors: the basket's most is 10% of an order where the standard is lowest, 6% where it is highest");
+        Check(InteriorRules.BasketShare(40, 40) == 0 && InteriorRules.BasketShare(10, 40) == 0 && InteriorRules.BasketShare(50, 15) == 50 && InteriorRules.BasketShare(85, 15) == 100
+              && InteriorRules.BasketShare(100, 15) == 100 && InteriorRules.BasketShare(77, 70) == 28 && InteriorRules.BasketShare(63, 42) == 39 && InteriorRules.BasketShare(95, 90) == 60,
+            "interiors: the basket's share rises from nothing at the standard to the district's most at 85, and nothing under the standard");
+        Check(InteriorRules.BasketShare(100, 15, 1250) == 125 && InteriorRules.BasketShare(100, 15, 750) == 75 && InteriorRules.BasketShare(100, 15, 500) == 50
+              && InteriorRules.BasketShare(100, 15, 0) == 0 && InteriorRules.RewardScales[InteriorRules.RewardDefault] == 1000,
+            "interiors: the basket follows the reward's strength as Meaningful Interiors' own: 12.5% at most when Generous, 5% when Low, nothing when Off");
+        Check(InteriorRules.BasketExtra(3, 100, 299, false) == 1 && InteriorRules.BasketExtra(3, 100, 300, false) == 0 && InteriorRules.BasketExtra(10, 100, 999, false) == 1
+              && InteriorRules.BasketExtra(25, 100, 0, false) == 3 && InteriorRules.BasketExtra(25, 100, 500, false) == 2 && InteriorRules.BasketExtra(25, 100, 499, false) == 3,
+            "interiors: a customer's extra products are the whole part for certain and one more with the rest as its chance");
+        Check(InteriorRules.BasketExtra(0, 100, 0, false) == 0 && InteriorRules.BasketExtra(5, 0, 0, false) == 0 && InteriorRules.BasketExtra(-2, 100, 0, false) == 0
+              && InteriorRules.BasketExtra(5, InteriorRules.BasketShare(100, 15, 0), 0, false) == 0 && InteriorRules.BasketExtra(5, InteriorRules.BasketShare(30, 40), 0, false) == 0,
+            "interiors: no products, no share, Off or under the standard: nothing extra");
+        Check(InteriorRules.BasketExtra(25, 100, 0, true) == 1 && InteriorRules.BasketExtra(12, 100, 0, true) == 1 && InteriorRules.BasketExtra(3, 100, 999, true) == 0
+              && InteriorRules.BasketExtra(40, 1000, 0, true) == InteriorRules.BasketOfficeMost, "interiors: an office's client takes one more at most");
+        bool expected = true;
+        int[] orders = { 1, 2, 3, 4, 6, 10 };
+        int[] shares = { 0, 28, 39, 50, 81, 100, 125 };
+        for (int o = 0; o < orders.Length; o++)
+        {
+            for (int k = 0; k < shares.Length; k++)
+            {
+                int sum = 0;
+                for (int d = 0; d < 1000; d++)
+                {
+                    sum += InteriorRules.BasketExtra(orders[o], shares[k], d, false);
+                }
+                expected &= sum == orders[o] * shares[k];
+            }
+        }
+        Check(expected, "interiors: over every draw a customer takes on average their order's products times the share (3 products at 8.1%: 0.243 more)");
+        InteriorShop shop = InteriorSample(InteriorKind.Shop);
+        InteriorRules.Work(shop, 0, InteriorDefaults());
+        InteriorShop offBasket = InteriorSample(InteriorKind.Shop);
+        InteriorRules.Work(offBasket, 0, InteriorDefaults(false));
+        InteriorShop low = InteriorSample(InteriorKind.Shop);
+        InteriorRules.Work(low, 0, InteriorRules.Parts(InteriorRules.StandardDefault, 1, InteriorRules.DecorDefault, InteriorRules.PriceDefault, InteriorRules.WearDefault, true, true, true, false, false));
+        Check(shop.Basket == InteriorRules.BasketShare(shop.Overall, shop.Standard) && shop.Basket > 0 && offBasket.Basket == 0 && low.Basket == InteriorRules.BasketShare(low.Overall, low.Standard, 500),
+            "interiors: a worked shop's basket is the rules' share at the reward's strength (" + shop.Basket + " per mille), nothing with its switch off");
     }
 
     private static void InteriorSelling()
@@ -328,7 +371,7 @@ internal static partial class Program
         InteriorShop ambience = InteriorSample(InteriorKind.Office);
         InteriorRules.Work(ambience, 0, InteriorRules.Parts(InteriorRules.StandardDefault, InteriorRules.RewardDefault, InteriorRules.DecorDefault, InteriorRules.PriceDefault,
             InteriorRules.WearDefault, true, true, true, false, true));
-        Check(office.OfficeBoost == InteriorRules.OfficeBoost(office.Overall, 5) && office.OfficeBoost > 0 && shop.OfficeBoost == 0 && idle.OfficeBoost == 0 && ambience.OfficeBoost == 0,
+        Check(office.OfficeBoost == InteriorRules.OfficeBoost(office.Overall, 10) && office.OfficeBoost > 0 && shop.OfficeBoost == 0 && idle.OfficeBoost == 0 && ambience.OfficeBoost == 0,
             "interiors: only an office is booked more clients; not while it sells nothing, and not while Meaningful Ambience is on");
     }
 
