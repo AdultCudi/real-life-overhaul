@@ -665,6 +665,15 @@ namespace RealLifeOverhaul.Meta
                 .Data(Careers.CareersStore.Key)
                 .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
+            // Working life in a profession: reviews, promotions, office matters, search firms, downturns, options and the pension.
+            // It runs with professional jobs. Off, a job is its days and its pay alone.
+            Careers.CareersGuide.AddLifeFacts(Features.Add("careers_life", "reallife_meta_title_careers_life")
+                .About("reallife_guide_careers_life_about").Help("reallife_guide_careers_life")
+                .Owns(Settings.CareersLifeId)
+                .Test("reallife_life_test_review", "reallife_life_test_matter", "reallife_life_test_approach")
+                .Data(Careers.CareersStore.Key)
+                .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Careers.CareersDirector.Instance?.Forget()));
             Features.Add("business", "reallife_meta_title_business")
                 .Group("reallife_business_header")
                 .About("reallife_guide_business_about").Help("reallife_guide_business")

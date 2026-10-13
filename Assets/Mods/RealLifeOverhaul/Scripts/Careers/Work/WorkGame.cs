@@ -166,6 +166,20 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        /// <summary>A rival's takings over the last week, whole money (the game's own figure); 0 if it cannot be told.</summary>
+        public static float RivalWeekly(string id)
+        {
+            try
+            {
+                RivalData r = string.IsNullOrEmpty(id) ? null : RivalsHelper.GetRivalData(id);
+                return r != null && r.ownedRetailOfficeBusinesses != null ? Mathf.Max(0f, r.WeeklyIncome) : 0f;
+            }
+            catch (Exception)
+            {
+                return 0f;
+            }
+        }
+
         /// <summary>The address the game writes for a place.</summary>
         public static string Address(string street, int number)
         {

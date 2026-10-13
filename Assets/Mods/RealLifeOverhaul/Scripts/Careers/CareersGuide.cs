@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using RealLifeOverhaul.Meta;
+using RealLifeOverhaul.Tech;
 
 namespace RealLifeOverhaul.Careers
 {
@@ -64,6 +65,42 @@ namespace RealLifeOverhaul.Careers
                 .Fact("work_public_pay", () => Mille(1000 - ProRules.KindFactor(EmployerKind.Public)))
                 .Fact("work_loan_share", () => Bp(StudyCatalogue.LoanShareBp))
                 .Fact("work_loan_threshold", () => Guide.Money(Prices.At(StudyCatalogue.LoanThreshold) / 100f));
+        }
+
+        public static void AddLifeFacts(Feature f)
+        {
+            f.Fact("life_review_days", () => Whole(LifeRules.ReviewEvery(GameCalendar.DaysPerYear)))
+                .Fact("life_rise", () => Bp(LifeRules.RiseBp))
+                .Fact("life_rise_top", () => Bp(LifeRules.RiseBp * 2))
+                .Fact("life_rise_half", () => Bp(LifeRules.RiseBp / 2))
+                .Fact("life_rises", () => Whole(LifeRules.RaisesMost))
+                .Fact("life_bonus_4", () => Whole(LifeRules.BonusWeeks4))
+                .Fact("life_bonus_5", () => Whole(LifeRules.BonusWeeks5))
+                .Fact("life_promote", () => Bp(LifeRules.PromoteBp))
+                .Fact("life_low_runs", () => Whole(LifeRules.LowRunsToGo))
+                .Fact("life_ask", () => Bp(LifeRules.AskRiseBp))
+                .Fact("life_ask_days", () => Whole(LifeRules.AskGapDays))
+                .Fact("life_overtime", () => Whole(LifeRules.OvertimeMinutes / 60))
+                .Fact("life_long_week", () => Whole(LifeRules.LongWeekHours))
+                .Fact("life_matter_days", () => Whole(LifeRules.MatterDays))
+                .Fact("life_poach_premium", () => Bp(LifeRules.PoachPremiumBp))
+                .Fact("life_severance", () => Whole(LifeRules.SeveranceWeeksPerYear))
+                .Fact("life_severance_least", () => Whole(LifeRules.SeveranceLeastWeeks))
+                .Fact("life_benefit_weeks", () => Whole(LifeRules.BenefitWeeks))
+                .Fact("life_benefit_share", () => Mille(LifeRules.BenefitShare))
+                .Fact("life_benefit_most", () => Guide.Money(Prices.At(LifeRules.BenefitMost)))
+                .Fact("life_options", () => Whole(LifeRules.OptionsPerRank))
+                .Fact("life_vest_days", () => Whole(TalentCatalogue.Scaled(LifeRules.VestQuarterDays, GameCalendar.DaysPerYear)))
+                .Fact("life_pension_own", () => Bp(LifeRules.PensionOwnBp))
+                .Fact("life_pension_employer", () => Bp(LifeRules.PensionEmployerBp))
+                .Fact("life_pension_public", () => Bp(LifeRules.PensionPublicBp))
+                .Fact("life_pension_growth", () => Bp(LifeRules.PensionGrowthBp))
+                .Fact("life_retire", () => Whole(LifeRules.RetireAge))
+                .Fact("life_retire_early", () => Whole(LifeRules.RetireEarlyAge))
+                .Fact("life_retire_cut", () => Bp(LifeRules.EarlyCutBp))
+                .Fact("life_pension_years", () => Whole(LifeRules.PensionYears))
+                .Fact("life_share_chief", () => Bp(LifeRules.ProfitShareChiefBp))
+                .Fact("life_share_exec", () => Bp(LifeRules.ProfitShareExecBp));
         }
 
         /// <summary>Every profession with its ladder and what its first and top rungs pay now, one bullet each.</summary>

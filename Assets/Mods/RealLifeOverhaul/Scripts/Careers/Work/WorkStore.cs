@@ -6,13 +6,13 @@ namespace RealLifeOverhaul.Careers
     /// <summary>
     /// The working life's parts of the careers line (Careers/CareersStore). Game-free.
     ///
-    ///   w  next id|last day|vacancies day|recruitment office until|earned|days worked|pension|benefit until|benefit a week|retired|search firm day
+    ///   w  next id|last day|vacancies day|recruitment office until|earned|days worked|pension|benefit until|benefit a week|retired|search firm day|benefit paid|retired early
     ///   o  each vacancy, a each application, j the job now (one), y each job before
     ///      a vacancy: id|profession|rank|kind|employer|street|number|rival|pay|mode|from|to|via|family|level
     ///      an application: the vacancy, then day|stage|answer|interview day|interview hour|score|offer|asks|lapse|start
     ///      the job: the vacancy, then hired|rank day|pay|mode|boss|settled|today|today's minutes|clocked in|due|worked|late|absent|week|week's
     ///      minutes|overtime|burnout|rating|review day|low runs|warnings|raises|politics|politics day|favour|options|vest day|restraint|exclusive|
-    ///      notice end|leaving|declared|conflict seen|earned|bonus
+    ///      notice end|leaving|declared|conflict seen|earned|bonus|rise asked|signed off until
     ///   y  profession|top rank|kind|employer|from|to|reference|leaving|earned
     /// </summary>
     public static class WorkStore
@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Careers
         public static void Write(TechWriter w, WorkFile f)
         {
             w.Part('w').Record().Add(f.NextId).Add(f.LastDay).Add(f.OpeningsDay).Add(f.AgencyUntil).Add(f.Earned).Add(f.DaysWorked).Add(f.Pension).Add(f.BenefitUntil)
-                .Add(f.BenefitWeek).Add(f.Retired).Add(f.HeadhuntDay);
+                .Add(f.BenefitWeek).Add(f.Retired).Add(f.HeadhuntDay).Add(f.BenefitPaid).Add(f.RetiredEarly);
             w.Part('o');
             for (int i = 0; i < f.Openings.Count && i < WorkFile.OpeningsMost; i++)
             {
@@ -39,7 +39,7 @@ namespace RealLifeOverhaul.Careers
                 Post(w.Record(), j.Post).Add(j.Hired).Add(j.RankDay).Add(j.Pay).Add(j.Work).Add(j.Boss).Add(j.SettledDay).Add(j.TodayDay).Add(j.TodayMinutes).Add(j.ClockIn)
                     .Add(j.Due).Add(j.Worked).Add(j.Late).Add(j.Absent).Add(j.WeekOf).Add(j.WeekMinutes).Add(j.Overtime).Add(j.Burnout).Add(j.Rating).Add(j.ReviewDay).Add(j.LowRuns)
                     .Add(j.Warnings).Add(j.Raises).Add(j.Politics).Add(j.PoliticsDay).Add(j.Favour).Add(j.Options).Add(j.VestDay).Add(j.NonCompete).Add(j.Exclusive).Add(j.NoticeEnd)
-                    .Add(j.Leaving).Add(j.Declared).Add(j.ConflictSeen).Add(j.Earned).Add(j.Bonus);
+                    .Add(j.Leaving).Add(j.Declared).Add(j.ConflictSeen).Add(j.Earned).Add(j.Bonus).Add(j.AskDay).Add(j.OffUntil);
             }
             w.Part('y');
             for (int i = 0; i < f.History.Count; i++)
@@ -95,6 +95,8 @@ namespace RealLifeOverhaul.Careers
             f.BenefitWeek = Math.Max(0, h.Int());
             f.Retired = h.Int();
             f.HeadhuntDay = h.Int();
+            f.BenefitPaid = h.Int();
+            f.RetiredEarly = h.Bool();
             foreach (Fields x in r.Records('o'))
             {
                 var o = new Opening();
@@ -167,6 +169,8 @@ namespace RealLifeOverhaul.Careers
                 j.ConflictSeen = x.Int();
                 j.Earned = Math.Max(0, x.Long());
                 j.Bonus = Math.Max(0, x.Int());
+                j.AskDay = x.Int(-1000);
+                j.OffUntil = x.Int();
                 f.Job = j;
                 break;
             }

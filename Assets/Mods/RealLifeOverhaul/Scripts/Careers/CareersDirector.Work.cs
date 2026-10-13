@@ -143,7 +143,7 @@ namespace RealLifeOverhaul.Careers
                 _study.Work.DaysWorked++;
                 return;
             }
-            if (Excused(day))
+            if (Excused(day) || j.OffUntil >= day)
             {
                 j.Absent = Math.Max(0, j.Absent - 1);
                 j.Due = Math.Max(0, j.Due - 1);

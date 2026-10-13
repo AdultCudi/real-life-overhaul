@@ -37,6 +37,20 @@ namespace RealLifeOverhaul.Careers
 
         public static float Energy => Save != null ? Save.Energy : 0f;
 
+        /// <summary>The player's age in whole years, as the game counts it.</summary>
+        public static int AgeYears()
+        {
+            try
+            {
+                CharacterData data = PlayerHelper.CharacterData ?? (Save != null && Save.charactersData != null && Save.charactersData.Count > 0 ? Save.charactersData[0] : null);
+                return data != null ? TimeHelper.GetYearsByDays(data.ageInDays) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
         // ---------------------------------------------------------------- where the player is
 
         private static Building Inside()

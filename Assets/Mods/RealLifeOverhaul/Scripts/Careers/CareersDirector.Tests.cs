@@ -221,6 +221,86 @@ namespace RealLifeOverhaul.Careers
                 Fault("a test", e);
             }
         }
+        // ---------------------------------------------------------------- working life
+
+        private Job LifeReady()
+        {
+            if (!WorkReady())
+            {
+                return null;
+            }
+            if (!Settings.CareersLife)
+            {
+                Notifications.Show(NotificationType.Warning, "reallife_life_test_off", null, 8f);
+                return null;
+            }
+            if (_study.Work.Job == null)
+            {
+                Notifications.Show(NotificationType.Warning, "reallife_life_test_no_job", null, 8f);
+                return null;
+            }
+            return _study.Work.Job;
+        }
+
+        /// <summary>A review of the job now, on the days worked so far.</summary>
+        public void TestReview()
+        {
+            Job j = LifeReady();
+            if (j == null)
+            {
+                return;
+            }
+            try
+            {
+                Logger?.Info("Careers test: a review at " + j.Post.Employer + " now.");
+                Review(j, Save.Day);
+                Changed();
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
+
+        /// <summary>An office matter to answer now.</summary>
+        public void TestMatter()
+        {
+            Job j = LifeReady();
+            if (j == null)
+            {
+                return;
+            }
+            try
+            {
+                j.Politics = -1;
+                j.PoliticsDay = Save.Day;
+                Matters(j, Save.Day);
+                Changed();
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
+
+        /// <summary>A search firm's offer now, as if the last review had been a five.</summary>
+        public void TestApproach()
+        {
+            Job j = LifeReady();
+            if (j == null)
+            {
+                return;
+            }
+            try
+            {
+                Approach(j, Save.Day, true);
+                Changed();
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
         /// <summary>Twenty points more in four of the player's skills, one of the trades among them.</summary>
         public void TestSkills()
         {

@@ -162,6 +162,11 @@ namespace RealLifeOverhaul.Careers
 
         public static string Leaving(int why) => T(Mod + "_work_leaving_" + ((LeaveReason)(why < 0 ? 0 : why > 8 ? 8 : why)).ToString().ToLowerInvariant());
 
+        /// <summary>The key of an office matter's words (reallife_life_matter_{key}), or of one of its answers (with "_a" or "_b").</summary>
+        public static string MatterKey(Matter m, string answer = "") => Mod + "_life_matter_" + m.Key + answer;
+
+        public static string Boss(BossKind kind) => T(Mod + "_life_boss_" + kind.ToString().ToLowerInvariant());
+
         /// <summary>Whole weeks of a number of days, at least one: "8 weeks", "1 week".</summary>
         public static string Weeks(int days)
         {

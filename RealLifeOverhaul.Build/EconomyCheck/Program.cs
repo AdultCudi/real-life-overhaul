@@ -121,6 +121,7 @@ internal static partial class Program
         Tech();
         Careers();
         Work();
+        Life();
         Districts();
         BusRide();
         PlayerBank();

@@ -119,6 +119,8 @@ namespace RealLifeOverhaul.Careers
         public int ConflictSeen;      // the day a conflict was last looked into
         public long Earned;           // cents earned here
         public int Bonus;             // whole money of a bonus awarded and not yet paid
+        public int AskDay = -1000;    // the last time the player asked for a rise between reviews
+        public int OffUntil;          // signed off for burnout until this day: its working days are excused
 
         public Profession Def => Post.Def;
 
@@ -155,6 +157,8 @@ namespace RealLifeOverhaul.Careers
         public int BenefitWeek;       // ...this much a week, whole money at the start's prices
         public int Retired;           // the day the player retired; 0 working
         public int HeadhuntDay;       // the last day a search firm came
+        public int BenefitPaid;       // the last day benefit was paid
+        public bool RetiredEarly;     // retired before the age: the pension pays less
 
         public const int OpeningsMost = 40, ApplicationsMost = 24, HistoryMost = 16;
 

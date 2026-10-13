@@ -289,6 +289,7 @@ namespace RealLifeOverhaul.Meta
                 S("careers").For("careers").Opt("careers", "jobs").Also("employer promotion rank review"),
                 S("study").For("careers_study").Main("careers_study").Also("school course courses class classes diploma education study learn skill skills homework exam timetable"),
                 S("projobs").For("careers_jobs").Opt("careers_jobs", "careers_study").Also("profession professional job jobs apply application interview offer salary employer developer lawyer accountant nurse teacher architect engineer rival vacancy vacancies"),
+                S("worklife").For("careers_life").Opt("careers_life", "careers_jobs").Also("review reviews promotion promoted rise raise bonus overtime burnout boss office politics headhunter poached redundancy redundant benefit pension retire retirement options shares conflict interest"),
                 S("planner").For("planner").Main("planner").Opts("planner_reminders").Also("diary calendar notes to do")),
 
             G("money",
