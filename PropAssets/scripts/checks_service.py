@@ -98,8 +98,16 @@ def run(c):
     # ---- the doors: open where the leaves are, down to the floor and no wider; clear of the leaves, shut and sliding open.
     for middle in DOORS:
         where = "door at y %+.2f" % middle
-        far, _ = bus.hits([(1.6, middle + du, z) for du in np.linspace(-0.57, 0.57, 9) for z in np.linspace(0.37, 2.59, 9)], (-1, 0, 0))
-        c.report(np.all(1.6 - far < 0.5), "%-19s %s open behind its leaves: nothing of the body nearer than %.2f in from the side" % (BUS, where, 1.20 - (1.6 - far).max()))
+        rays = [(1.6, middle + du, z) for du in np.linspace(-0.57, 0.57, 9) for z in np.linspace(0.37, 2.59, 9)]
+        far, _ = bus.hits(rays, (-1, 0, 0))
+        # The middle door's own validator stands in it on its rear pole, by design (BusInside's Furniture, x 0.90..1.07,
+        # along -1.05..-0.95, 1.10 to 1.40 up): what a ray meets of it is left out, and nothing else.
+        y, z = np.array(rays)[:, 1], np.array(rays)[:, 2]
+        meet = 1.6 - far
+        reader = (meet > 0.89) & (meet < 1.075) & (y > -1.055) & (y < -0.94) & (z > 1.09) & (z < 1.41)
+        meet = np.where(reader, 0.0, meet)
+        c.report(np.all(meet < 0.5), "%-19s %s open behind its leaves: nothing of the body nearer than %.2f in from the side%s"
+                 % (BUS, where, 1.20 - meet.max(), " (but its validator)" if reader.any() else ""))
         far, _ = bus.hits([(1.6, middle + side * 0.61, z) for side in (1, -1) for z in (0.5, 1.5, 2.4)] + [(1.6, middle, 2.67), (1.6, middle, 0.30)], (-1, 0, 0))
         c.report(np.all(np.abs(1.6 - far - 1.20) < 0.04), "%-19s %s no wider or higher than its leaves: the side is there 1 cm outside them" % (BUS, where))
         far, _ = bus.hits([(1.0, middle, 1.5)], (0, 0, -1))
@@ -286,9 +294,13 @@ def inside(c, bus, roof):
         named["Feet%d" % i] = (x, y + consts["SeatFeet"])
     for i, q in enumerate(lists["Aisle"]):
         named["Aisle%d" % i] = q
+    for i, q in enumerate(lists["AisleUp"]):
+        named["AisleUp%d" % i] = q
     paths = [("Aboard", "Reader"), ("Reader", "Aisle0", "Aisle1", "Aisle2", "SeatTurn", "Feet0"), ("SeatTurn", "WindowOut", "Feet1"), ("Aisle2", "Strap"),
              ("Feet0", "OffSeat", "Exit"), ("Feet1", "WindowOut", "OffSeat", "Exit"), ("Strap", "Exit"), ("Aisle2", "BackToAisle", "Exit"),
-             ("Reader", "FrontExit"), ("Aboard", "FrontExit")]
+             ("Reader", "FrontExit"), ("Aboard", "FrontExit"),
+             ("MiddleAboard", "MiddleReader"), ("MiddleReader", "DoorIn", "Strap"), ("MiddleReader", "DoorIn", "BackToAisle", "SeatTurn", "Feet0"),
+             ("MiddleAboard", "DoorIn", "AisleUp0", "AisleUp1", "AisleUp2", "AisleUp3", "Reader")]
     worst, blocked = 0.0, []
     for path in paths:
         for a, b in zip(path, path[1:]):
@@ -319,6 +331,16 @@ def inside(c, bus, roof):
     c.report(abs(met - lens[0]) < 0.003 and bool(bus.on(faces, ("svc_lens_clear",))[0]) and abs(reach - consts["ReaderAhead"]) < 0.02
              and abs(consts["ReaderY"] - floor - consts["ReaderUp"]) < 0.01,
              "%-19s the validator's lens at x %.3f, %.3f over the floor; the rider before it %.2f from it (pay_tap %.2f and %.3f)"
+             % (BUS, met, consts["ReaderY"] - floor, reach, consts["ReaderAhead"], consts["ReaderUp"]))
+
+    # The middle door's validator: its lens facing forward (+y) at MiddleReaderZ, the rider before it ReaderAhead away.
+    lens = np.array((consts["MiddleReaderX"], consts["MiddleReaderZ"]))
+    far, faces = bus.hits([(lens[0], lens[1] + 0.30, consts["ReaderY"])], (0, -1, 0))
+    met = lens[1] + 0.30 - far[0]
+    reach = np.linalg.norm(np.array(spots["MiddleReader"]) - lens)
+    c.report(abs(met - lens[1]) < 0.003 and bool(bus.on(faces, ("svc_lens_clear",))[0]) and abs(reach - consts["ReaderAhead"]) < 0.02
+             and abs(consts["ReaderY"] - floor - consts["ReaderUp"]) < 0.01,
+             "%-19s the middle door's validator's lens at y %.3f, %.3f over the floor; the rider before it %.2f from it (pay_tap %.2f and %.3f)"
              % (BUS, met, consts["ReaderY"] - floor, reach, consts["ReaderAhead"], consts["ReaderUp"]))
 
     # The strap: strap_hang holds it StrapUp over the feet, StrapRight to the right and StrapAhead ahead of them.
