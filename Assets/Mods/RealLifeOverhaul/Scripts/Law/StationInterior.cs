@@ -219,6 +219,7 @@ namespace RealLifeOverhaul.Law
             // Everything is measured before anything is switched on: what is switched on is cut out of the mesh that is being measured.
             bool desk = PlanDesk();
             bool bench = PlanWaiting(out int benchSide);
+            _benchSide = bench ? benchSide : 0;
             bool cell = PlanCell(out int cellSide);
             PlanOffice(cell);
             PlanBoard(bench ? -benchSide : 1);
@@ -239,6 +240,7 @@ namespace RealLifeOverhaul.Law
             }
             Furnish(desk, bench, cell);   // the game's own furniture round all of it (StationInterior.Furnish.cs)
             _nextPeople = 0f;
+            BeginCast(desk);              // its people, seated and at work at once, under the fade (StationInterior.Cast.cs)
             _logger?.Info($"Law: {precinct.Name}: inside: room {_length:F1} m deep from the door: {_fitted}.");
         }
 
@@ -288,6 +290,11 @@ namespace RealLifeOverhaul.Law
             for (int i = 0; i < _staff.Length; i++)
             {
                 _staff[i].Tick(now);
+            }
+            if (_cast)
+            {
+                CastTick(now);   // the furnished station's people (StationInterior.Cast.cs)
+                return;
             }
             if (now < _nextPeople || !Settings.People)
             {
@@ -357,7 +364,9 @@ namespace RealLifeOverhaul.Law
                 {
                     Show(_desks[i], false);
                 }
+                EndCast();
                 HideFurniture();
+                RestoreLook();
             }
             catch (Exception e)
             {
@@ -366,6 +375,7 @@ namespace RealLifeOverhaul.Law
             Dressed = false;
             HasCell = false;
             Precinct = null;
+            _cast = false;
             _deskDepth = -1f;
             _hasVisitor = false;
             _cellBenchFits = false;
@@ -820,7 +830,10 @@ namespace RealLifeOverhaul.Law
                 _desks[i] = StationProps.Holder("Office Desk " + (i + 1), _holder, StationProps.OfficeDesk, Pivot.Floor, new Vector3(1.4f, 0.75f, 0.7f), out Vector3 size, out modelled);
                 if (!modelled)
                 {
-                    StationProps.OfficeDeskStandIn(_desks[i]);
+                    // (in a holder of its own: the game's own desk takes its place in a furnished station)
+                    var standIn = new GameObject(StandInName).transform;
+                    standIn.SetParent(_desks[i], false);
+                    StationProps.OfficeDeskStandIn(standIn);
                 }
                 StationProps.Solid(_desks[i], new Vector3(0f, 0.4f, 0f), new Vector3(Mathf.Min(size.x, 1.6f), 0.8f, Mathf.Min(size.z, 0.8f)));
             }

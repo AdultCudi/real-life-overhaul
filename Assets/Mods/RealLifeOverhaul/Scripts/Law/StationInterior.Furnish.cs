@@ -17,6 +17,9 @@ namespace RealLifeOverhaul.Law
     //   the ceiling      flush lamps along the middle of the room, where a ray finds the ceiling
     //   the floor        a carpet in the waiting part
     //   the cell         a toilet and a sink, where the cell is big enough for them beside its bench
+    //   the rooms        waiting chairs, a queue, a briefing row and a break table (StationInterior.Rooms.cs), and the game's
+    //                    own design for the unit round all of it, its walls and floors too (StationInterior.Design.cs);
+    //                    then the walkway check, and the people who use it all (StationInterior.Cast.cs)
     //
     // Nothing runs while the player is in the room: this is one pass on the way in, under the game's own fade. Its cost is
     // a few thousand walkable-floor samples and the first copy of each piece (kept for every later visit).
@@ -43,10 +46,12 @@ namespace RealLifeOverhaul.Law
         private static readonly WallKind[] WallKinds =
         {
             new WallKind { Prefab = "OfficeLockers", Most = 2 },
-            new WallKind { Prefab = "Printer", Most = 1 },
-            new WallKind { Prefab = "StorageShelf", Most = 1 },
-            new WallKind { Prefab = "CheapCoffeeMachine", Most = 1 },
             new WallKind { Prefab = "UniformLocker", Most = 2 },
+            new WallKind { Prefab = "CheapCoffeeMachine", Most = 1 },
+            new WallKind { Prefab = "StandardFridge", Most = 1 },
+            new WallKind { Prefab = "Printer", Most = 1 },
+            new WallKind { Prefab = "BigCabinet", Most = 1 },
+            new WallKind { Prefab = "StorageShelf", Most = 1 },
             new WallKind { Prefab = "GroundPlant03", Most = 1 },
             new WallKind { Prefab = "WaterCooler", Most = 1, Public = true },
             new WallKind { Prefab = "GroundPlant03", Most = 1, Public = true },
@@ -69,9 +74,11 @@ namespace RealLifeOverhaul.Law
         private void Furnish(bool desk, bool bench, bool cell)
         {
             HideFurniture();
+            StandIns(true);
+            ClearRooms();
             if (!Settings.LawStationFurniture)
             {
-                return;
+                return;   // the old bare station: the counter, the bench, the desks and the cell, with the people as they were
             }
             SessionWatch.Mark("law: the station furnished with the game's own furniture");   // the first visit copies the pieces
             _taken.Clear();
@@ -81,6 +88,7 @@ namespace RealLifeOverhaul.Law
                 _kindCount[i] = 0;
             }
             Reserve(desk, bench, cell);
+            MeasureGrid();
             if (desk)
             {
                 DressCounter();
@@ -95,18 +103,37 @@ namespace RealLifeOverhaul.Law
             float counterFront = desk ? _deskDepth - _deskSize.z * 0.5f - 0.2f : _length * 0.4f;
             float counterBack = desk ? _deskDepth + _deskSize.z * 0.5f + 1.2f : _length * 0.4f;
             float back = cell ? _cellBack - _cellDeep - 0.9f : _length - 0.4f;
+            // The rooms first (StationInterior.Rooms.cs): seats to wait on and the queue in the public part; a briefing
+            // row facing a screen and a break table behind the counter. Then what stands along the walls.
+            PlanWaitingChairs(bench ? _benchSide : 0, counterFront);
+            PlanQueue(desk);
+            PlanBriefing(counterBack, back);
             for (int side = -1; side <= 1; side += 2)
             {
                 AlongWall(side, 1.5f, counterFront, true);
                 AlongWall(side, counterBack, back, false);
             }
+            PlanBreak(counterBack, back);   // (after the walls: the table goes near the coffee machine if there is one)
             if (cell)
             {
                 DressCell();
             }
-            Carpet(desk, bench);
+            // The game's own design for this very unit, round all of that (StationInterior.Design.cs), then every way
+            // that has to stay open is checked and whatever closes one is left out.
+            PlaceDesign();
+            KeepWays(cell);
+            Activate();
+            if (!_designCarpet)
+            {
+                Carpet(desk, bench);
+            }
             Hang(desk);
-            Lamps();
+            if (!_designLamps)
+            {
+                Lamps();
+            }
+            ApplyLook();
+            _cast = true;
             _fitted.Append(_pieces).Append(" piece(s) of the game's furniture; ");
         }
 
@@ -121,6 +148,7 @@ namespace RealLifeOverhaul.Law
             {
                 float half = _deskSize.x * 0.5f, deep = _deskSize.z * 0.5f;
                 Take(_deskAside, _deskDepth, half + 0.1f, deep + 0.1f);
+                Fixed(_deskAside, _deskDepth, half, deep);
                 Take(_deskAside, _deskDepth + deep + 0.65f, half, 0.65f);                        // the sergeant's side
                 Take(_deskAside - half - 0.55f, _deskDepth, 0.6f, deep + 1.0f);                  // round either end
                 Take(_deskAside + half + 0.55f, _deskDepth, 0.6f, deep + 1.0f);
@@ -130,6 +158,7 @@ namespace RealLifeOverhaul.Law
             {
                 Vector3 b = _bench.position - _origin;
                 Take(Vector3.Dot(b, _right), Vector3.Dot(b, _in), 0.9f + 0.6f, _benchSize.x * 0.5f + 0.1f);   // the bench, its side of the room, and the visitor in front
+                Fixed(Vector3.Dot(b, _right), Vector3.Dot(b, _in), _benchSize.z * 0.5f, _benchSize.x * 0.5f);
                 Vector3 v = _visitorAt - _origin;
                 Take(Vector3.Dot(v, _right), Vector3.Dot(v, _in), 0.4f, 0.4f);
             }
@@ -141,12 +170,14 @@ namespace RealLifeOverhaul.Law
                 }
                 Vector3 d = _desks[i].position - _origin, s = _staffAt[i] - _origin;
                 Take(Vector3.Dot(d, _right), Vector3.Dot(d, _in), 0.75f, 0.9f);
+                Fixed(Vector3.Dot(d, _right), Vector3.Dot(d, _in), 0.4f, 0.75f);
                 Take(Vector3.Dot(s, _right), Vector3.Dot(s, _in), 0.45f, 0.45f);
             }
             if (cell)
             {
                 // The cell, the bars, and the floor in front of them where an officer stands and a prisoner is walked in.
                 Take(_cellAside, _cellBack - _cellDeep * 0.5f, _cellPanel * 0.5f + 0.15f, _cellDeep * 0.5f + 0.15f);
+                Fixed(_cellAside, _cellBack - _cellDeep * 0.5f, _cellPanel * 0.5f, _cellDeep * 0.5f);   // (the cell itself: nobody walks into it)
                 Take(_cellAside, _cellBack - _cellDeep - 0.8f, _cellPanel * 0.5f, 0.8f);
                 float from = desk ? _deskDepth + _deskSize.z * 0.5f : 2f, to = _cellBack - _cellDeep;
                 Take(_cellAside, (from + to) * 0.5f, Aisle, Mathf.Max(0.1f, (to - from) * 0.5f));   // the way to the cell
@@ -273,8 +304,8 @@ namespace RealLifeOverhaul.Law
         // On an officer's desk, facing the officer in front of it: a monitor, a phone and a small plant.
         private void DressDesk(Transform desk)
         {
-            Bounds size = default;
-            if (desk.childCount > 0 && !_sizes.TryGetValue(desk, out size))
+            // The game's own desk and chair in place of the stand-in (StationInterior.Rooms.cs); its top is what is dressed.
+            if (!GameDesk(desk, out Bounds size) && desk.childCount > 0 && !_sizes.TryGetValue(desk, out size))
             {
                 size = GameFurniture.LocalBounds(desk);
                 _sizes[desk] = size;
@@ -318,6 +349,12 @@ namespace RealLifeOverhaul.Law
                     if (TryWall(kind.Prefab, side, depth, to, out float width))
                     {
                         _kindCount[k]++;
+                        if (kind.Prefab == "CheapCoffeeMachine" && _lastWall != null)
+                        {
+                            _hasCoffee = true;
+                            _coffeeFront = _lastWall.position + _lastWall.forward * 0.9f;   // where somebody stands to use it
+                            _lastCoffeeFace = -_lastWall.forward;
+                        }
                         depth += width + 0.25f;
                         placed = true;
                     }
@@ -357,8 +394,19 @@ namespace RealLifeOverhaul.Law
             }
             Vector3 at = At(depth, aside) - Rotate(side, new Vector3(size.center.x, 0f, size.center.z));
             at.y = _floor;
-            Put(piece, size, at, Quaternion.LookRotation(_right * -side, Vector3.up), true);
+            Quaternion facing = Quaternion.LookRotation(_right * -side, Vector3.up);
+            if (_stageWall != SeatUse.None)
+            {
+                // A seat along the wall (the waiting chairs): staged, so that the walkway check may still leave it out.
+                _lastStaged = Stage(piece, size, at, facing, true, -1, _stageWall, false);
+            }
+            else
+            {
+                Put(piece, size, at, facing, true);
+                Fixed(aside, depth, deep * 0.5f, width * 0.5f);
+            }
             Take(aside, depth, deep * 0.5f, width * 0.5f);
+            _lastWall = piece;
             Take(side * (wall - deep - Clearance * 0.5f), depth, Clearance * 0.5f, width * 0.5f);
             return true;
         }
@@ -487,6 +535,10 @@ namespace RealLifeOverhaul.Law
             if (_board != null && _board.gameObject.activeSelf && CitySpots.Flat(_board.position - surface) < 1.6f * 1.6f)
             {
                 return false;   // the notice board hangs there
+            }
+            if (NearHung(surface, 1.0f))
+            {
+                return false;   // something of the game's design hangs there
             }
             Transform piece = Piece(prefab, out Bounds size);
             if (piece == null)
