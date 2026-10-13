@@ -13,7 +13,7 @@ import numpy as np
 
 BUILD = os.environ.get("PROPS_BUILD") or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "build")
 failures = []
-EXTRA = ["civic", "service", "events", "everyday", "garage", "family", "site"]
+EXTRA = ["civic", "service", "events", "everyday", "garage", "family", "site", "tow"]
 
 
 def kit(name, triangles=False):

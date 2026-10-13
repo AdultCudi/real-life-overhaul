@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import prop_kit as kit  # noqa: E402
 import props  # noqa: E402
 import props_service  # noqa: E402
+import props_tow  # noqa: E402
 
 
 def city_bus(x, z, turn=0.0, open_doors=False, roof=True):
@@ -27,8 +28,21 @@ def city_bus(x, z, turn=0.0, open_doors=False, roof=True):
     return things
 
 
+def tow_truck(x, z, t=0.0):
+    """The tow truck put together as Traffic/Tow/TowTruck does it (props_tow.truck_parts), its origin on the road at (x, z),
+    facing +Z, its bed at deck pose t (0 at rest, 1 with the tail on the road: props_tow.posed)."""
+    things = [("tow_truck", (x, 0.0, z), 0.0)]
+    for name, (px, py, pz), spin in props_tow.truck_parts():
+        if name in ("tow_truck_tilt", "tow_truck_bed"):
+            (kx, ky, kz), pitch = props_tow.posed(name, t)
+            things.append((name, (x + kx, kz, z + ky), 0.0, pitch))
+        else:
+            things.append((name, (x + px, pz, z + py), -spin))
+    return things
+
+
 # name: (things, walls, people, camera). A thing is (prop id, (x, y, z), turn about the vertical in degrees: 0 faces +Z,
-# 90 faces +X). A wall is ((sx, sy, sz), (cx, cy, cz)). A person is ((x, z), facing). Camera: (target, azimuth, elevation,
+# 90 faces +X), and may have a fourth number: degrees it is turned nose up about its own X axis (the tow truck's bed). A wall is ((sx, sy, sz), (cx, cy, cz)). A person is ((x, z), facing). Camera: (target, azimuth, elevation,
 # distance, fov), azimuth 0 looking at the scene from +Z.
 SCENES = {
     "precinct": (
@@ -124,6 +138,16 @@ SCENES = {
         [((7.0, 2.6, 0.2), (-0.5, 1.3, -0.75))],
         [((0, 0.68), 180)],
         ((0.4, 0.8, 0), 15, 14, 12.0, 38)),
+    "tow_loading": (   # the bed down on the road, a car (a grey box) at its foot, the operator at the levers, the cable's way up the bed
+        tow_truck(0.0, 0.0, 1.0),
+        [((1.80, 1.45, 4.50), (0.0, 0.73, -11.75))],
+        [((1.70, 0.75), 270)],
+        ((0.0, 1.0, -4.5), 225, 22, 21.0, 40)),
+    "tow_loaded": (    # the bed at rest with a car on it, as the truck drives off
+        tow_truck(0.0, 0.0, 0.0),
+        [((1.80, 1.45, 4.50), (0.0, 1.06 + 0.73, -1.25))],
+        [],
+        ((0.0, 1.2, -0.8), 140, 20, 17.0, 40)),
 }
 
 
@@ -141,9 +165,12 @@ def main():
             print("scene %s skipped: no %s" % (name, ", ".join(missing)))
             continue
         scene, camera = kit.new_scene()
-        for prop, (x, y, z), turn in things:
+        for thing in things:
+            prop, (x, y, z), turn = thing[:3]
             if prop in made:
-                kit.place(made[prop], (x, z, y), turn=-turn)
+                placed = kit.place(made[prop], (x, z, y), turn=-turn)
+                if len(thing) > 3:
+                    placed.rotation_euler = (math.radians(thing[3]), 0.0, math.radians(-turn))
         for (sx, sy, sz), (cx, cy, cz) in walls:
             kit.reference_box((sx, sz, sy), (cx, cz, cy), (0.50, 0.47, 0.44))
         for where, facing in people:
