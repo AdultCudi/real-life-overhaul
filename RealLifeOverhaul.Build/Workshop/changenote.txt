@@ -1,7 +1,4 @@
-0.4.2
+0.4.3
 
 New
-- Property: each unit of a building you let yourself now has a tenant and a lease of its own, with its own asking rent, applicants, arrears, notice and empty days. The Mine tab shows how a building's units stand and opens each one's lease, and a save from before keeps its tenant in the first unit.
-
-Fixed
-- The Stocks app takes orders again right after a load: the Buy and Sell buttons are always lit, and when an order cannot be placed the ticket says why.
+- Empire Motors, the car dealership mod of the Steam Workshop, works beside this mod. Its dealerships are businesses like any other here: their car sales and costs are in the game's statement, so the Company app, brands, the price of a sale and business loans see what they make, and the game's tax counts their margin. The cars of their stock are left to the dealership (no Garage page, records, car finance, hire or custom shop for them), a dealership with stock is not sold, and the Company app sells no campaign for it, as Empire Motors brings its customers itself. In a car, V is left to its view from the driver's seat, its other keys are named beside this mod's on the options page, and its Mustang GT and BMW G82 add-ons have their own figures in car tuning.
