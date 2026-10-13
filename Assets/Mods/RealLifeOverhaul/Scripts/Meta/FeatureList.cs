@@ -1235,7 +1235,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("sites_most", () => Guide.Number(Tech.ServerRoomPlan.MostShown))
                 .Fact("sites_companies", () => Guide.Number(Tech.HiringCatalogue.RivalFirms.Length))
                 .Owns(Settings.TechSiteRoomsId, Settings.TechSiteHqId, Settings.TechSiteCloudId, Settings.TechSiteOfficesId)
-                .Test("reallife_sites_test_room", "reallife_sites_test_hq")
+                .Test("reallife_sites_test_room", "reallife_sites_test_hq", "reallife_sites_test_floor")
                 .Cleanup(() => Tech.TechSites.Instance?.StopAll(), -1);
             // The car dealership: a business type of the mod's own. Its row stands under the company's header on the options page;
             // the Dealership app is its own. Off, its dealerships do not trade and their cars stay on the lots. It runs only while

@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Tech
     /// Each carries its company's name wherever the game names a building (Core/SpecialBuildings: the card, the map's
     /// search, the GPS, the headline inside) and is on the city map in the "Tech companies" row (World/MapLinks). Its
     /// doors let the player in (the game's own "always open" flag, put back when the option is off), and inside the
-    /// lobby is furnished (LobbyView). Careers sends the player there for a job at the company (CareersBridges.Headquarters).
+    /// lobby is furnished (LobbyView) and the rest of the floor fitted out round it (FitOut/FitView, from TechSites). Careers sends the player there for a job at the company (CareersBridges.Headquarters).
     /// Nothing of it is saved. Nothing here runs by itself: TechSites ticks it once a second.
     /// </summary>
     internal sealed class Headquarters

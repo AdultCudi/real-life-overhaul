@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.FitOut
 {
@@ -47,6 +48,48 @@ namespace RealLifeOverhaul.FitOut
         private static readonly string[] DataFilingRun = { "officelockers", "officelockers", "metalshelf", "bigcabinet" };
         private static readonly string[] PalletKinds = { "decorativepalletwithboxes01", "decorativepalletwithboxes02", "decorativepalletwithboxes03" };
         private static readonly string[] PlantKinds = { "groundplant03", "groundplant01", "groundplant05", "groundplant02" };
+
+        // Every piece the rooms of each kind of building may lay out: what the game side makes ready before the plan.
+        private static readonly string[] TechPieces =
+        {
+            "officedesk1", "officechair2", "computer", "computermonitor", "deskplant01", "largemeetingtable", "table1", "regularchair", "wallmountedtv",
+            "counter1", "cheapcoffeemachine", "standardfridge", "watercooler", "sofaluxury", "coffeetable1", "armchair1", "printer", "smallcabinet",
+            "recyclingbinpaper", "rlo:closetrack", "groundplant01", "groundplant02", "groundplant03", "groundplant04", "groundplant05", "ceilinglampsquare"
+        };
+
+        private static readonly string[] CivicPieces =
+        {
+            "officedesk1", "officechair", "computer", "computermonitor", "deskplant01", "largemeetingtable", "table1", "regularchair", "wallmountedtv",
+            "counter1", "cheapcoffeemachine", "standardfridge", "watercooler", "printer", "smallcabinet", "recyclingbinpaper", "officelockers", "bigcabinet",
+            "storageshelf", "waitingroomchairs", "groundplant01", "groundplant02", "groundplant03", "groundplant05", "ceilinglampsquare"
+        };
+
+        private static readonly string[] CampusPieces =
+        {
+            "officedesk1", "officechair", "multipurposechair", "desktopcomputer", "board01", "largebookshelf", "largemeetingtable", "table1", "regularchair",
+            "wallmountedtv", "counter1", "cheapcoffeemachine", "standardfridge", "watercooler", "sofaluxury", "coffeetable1", "armchair1", "printer",
+            "smallcabinet", "recyclingbinpaper", "groundplant01", "groundplant02", "groundplant03", "groundplant04", "groundplant05", "ceilinglampsquare"
+        };
+
+        private static readonly string[] DataPieces =
+        {
+            "officedesk1", "officechair", "computer", "computermonitor", "deskplant01", "table1", "regularchair", "counter1", "cheapcoffeemachine",
+            "standardfridge", "watercooler", "officelockers", "metalshelf", "bigcabinet", "storageshelf", "rlo:bench", "decorativepalletwithboxes01",
+            "decorativepalletwithboxes02", "decorativepalletwithboxes03", "trashbin", "groundplant01", "groundplant02", "groundplant03", "groundplant05",
+            "ceilinglampwarehouse"
+        };
+
+        /// <summary>Every piece the rooms of a kind of building may lay out, the game's and the mod's.</summary>
+        public static IReadOnlyList<string> Pieces(FitKind kind)
+        {
+            switch (kind)
+            {
+                case FitKind.CivicOffice: return CivicPieces;
+                case FitKind.Campus: return CampusPieces;
+                case FitKind.DataCentre: return DataPieces;
+                default: return TechPieces;
+            }
+        }
 
         private static ZoneType[] Order(FitKind kind, out int[] most)
         {
@@ -268,7 +311,7 @@ namespace RealLifeOverhaul.FitOut
             }
             if (b.WallV0)
             {
-                w.Hang(b, "wallmountedtv", uMid, 1.5f, zone);
+                w.Hang(b, "wallmountedtv", uMid, 1.8f, zone);
             }
             Plants(w, b, zone, false);
             return true;

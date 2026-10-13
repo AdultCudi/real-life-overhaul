@@ -822,6 +822,7 @@ namespace RealLifeOverhaul
                     v => Settings.TechSiteOffices = v)
                 .AddButton("reallife_sites_test_room", () => Tech.TechSites.Instance?.TestRoom())
                 .AddButton("reallife_sites_test_hq", () => Tech.TechSites.Instance?.TestHeadquarters())
+                .AddButton("reallife_sites_test_floor", () => Tech.TechSites.Instance?.TestFloor())
                 .AddToggle(Settings.EconomyOnlineId, "reallife_online_enabled", Settings.EconomyOnline,
                     v => Settings.EconomyOnline = v)
                 .AddButton("reallife_online_test_open", () => Economy.OnlineDirector.Instance?.TestOpen())
@@ -1180,6 +1181,8 @@ namespace RealLifeOverhaul
             _root.AddComponent<Economy.CompanyDirector>();   // running a business: staff, insurance, marketing, tax and licences, and the Company app (Scripts/Economy/Company)
             _root.AddComponent<Tech.TechDirector>();   // the professions and the tech sector: roles, skills and the Open Roles app (Scripts/Tech); after the company, so that its day follows the company's
             _root.AddComponent<Careers.CareersDirector>();   // education and careers: the city's courses, the player's skills and the Campus app (Scripts/Careers); after the tech sector, whose roles it reads
+            FitOut.FitOutDirector.Logger = context.Logger;
+            _root.AddComponent<FitOut.FitOutDirector>();   // the mod's buildings fitted out across their whole floor while the player is in one, a little a frame (Scripts/FitOut): before the features whose floors it builds
             Tech.TechSites.Logger = context.Logger;
             _root.AddComponent<Tech.TechSites>();   // the tech sector's buildings: server rooms, the tech companies' headquarters, data centre frontages, tech offices (Scripts/Tech/Sites): a look once a second, nothing per frame
             Economy.EstateDirector.Logger = context.Logger;

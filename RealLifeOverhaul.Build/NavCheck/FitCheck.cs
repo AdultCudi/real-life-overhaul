@@ -360,6 +360,32 @@ internal static partial class Program
             Check(FitCount(plan, "officedesk1") <= 2 && FitCount(plan, "wallmountedtv") == 0, at + "a small staff desk at most, no meeting room");
         }
 
+        // ---------------------------------------------------------------- the same data centre with the player's own shelving along a wall
+        {
+            RoomGrid g = FitFloor(30f, 24f);
+            Furnish(g, 0.3f, 18f, 1.0f, 23.7f);                              // a run of the player's shelves by the door wall
+            FitSite site = FitSiteAt(FitKind.DataCentre, 0.35f, 12f, 1f, 0f);
+            site.Windows = false;
+            site.Fixed.Add(new FitRect(9f, 3f, 27f, 21f, true));
+            site.KeepFree.Add(new FitRect(8f, 2f, 28f, 22f, false));
+            var plan = new FitPlan();
+            FitPlanner.Plan(g, site, null, plan);
+            string at = "fit: a data centre with the player's shelving: ";
+            FitKeeps(g, site, plan, at);
+            var near = new bool[g.Count];
+            g.NearFurniture(FitPlanner.FromFurniture - 0.05f, near);
+            bool apart = true;
+            for (int i = 0; i < g.Count; i++)
+            {
+                g.Centre(i, out float x, out float z);
+                foreach (FitPiece p in plan.Pieces)
+                {
+                    apart &= !(near[i] && Standing(p) && p.Contains(x, z, -0.01f));
+                }
+            }
+            Check(apart, at + "nothing stands within 0.9 m of the player's furniture");
+        }
+
         // ---------------------------------------------------------------- the university: 24 x 30 m
         {
             RoomGrid g = FitFloor(24f, 30f);
@@ -408,6 +434,34 @@ internal static partial class Program
             Check(none.Total == 0, "fit: with nobody to spare, nobody");
             FitCrew campus = FitCrew.For(FitKind.Campus, 24, 0, 2, 0, 6, 12);
             Check(campus.AtDesks >= 4 && campus.Walking == 2 && campus.InLounge == 1, "fit: students at the desks, two walking, one in the lounge");
+        }
+
+        // Every piece a plan of a kind lays out is among the pieces the game side makes ready for that kind.
+        {
+            bool listed = true;
+            string missing = null;
+            foreach (FitKind kind in new[] { FitKind.TechOffice, FitKind.CivicOffice, FitKind.Campus, FitKind.DataCentre })
+            {
+                foreach (float wide in new[] { 9f, 16f, 24f })
+                {
+                    RoomGrid g = FitFloor(wide, 30f);
+                    FitSite site = FitSiteAt(kind, wide * 0.5f, 0.35f, 0f, 1f);
+                    site.Windows = kind != FitKind.DataCentre;
+                    var plan = new FitPlan();
+                    FitPlanner.Plan(g, site, null, plan);
+                    var known = new HashSet<string>(FitPlanner.Pieces(kind));
+                    foreach (FitPiece p in plan.Pieces)
+                    {
+                        if (p.Kept && !known.Contains(p.Prefab))
+                        {
+                            listed = false;
+                            missing = kind + ": " + p.Prefab;
+                        }
+                    }
+                    FitKeeps(g, site, plan, "fit: a " + kind + " of " + wide + " x 30 m: ");
+                }
+            }
+            Check(listed, "fit: every piece laid out is one the game side makes ready (" + missing + ")");
         }
 
         Check(slowest < 1500, "fit: a plan takes under a second and a half here (" + slowest.ToString("F0") + " ms at most); it is made once a visit, off the main thread");

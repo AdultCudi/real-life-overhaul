@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.FitOut
         public const float ZoneLeast = 2.5f;          // the smallest side of a bare rectangle that is given a room
         public const float Reach = 0.6f;              // a piece is reached if the walkway comes this near it
         public const float BareReach = 2.0f;          // floor further than this from anything counts as bare
+        public const float FromFurniture = 0.9f;      // metres of floor kept free round anything of the player's
         public const int PocketCells = 6;             // a closed-off part of the floor smaller than this (or a cell wide) is a gap behind something, not a room
         private const int RoundsMost = 90;
         private const int LooksMost = 80;             // bare rectangles looked at in one plan at most
@@ -383,7 +384,7 @@ namespace RealLifeOverhaul.FitOut
                 bool bestWall = false, bestFacade = false;
                 for (int s = 0; s < 4; s++)
                 {
-                    // The four sides: 0 low x, 1 high x, 2 low z, 3 high z. A side is a wall if most of the cells beyond it are not floor.
+                    // The four sides: 0 low x, 1 high x, 2 low z, 3 high z. A side is a wall if most of the cells beyond it are outside the floor.
                     int beyond = 0, solid = 0;
                     float half = g.Cell * 0.5f;
                     bool alongZ = s < 2;
@@ -392,7 +393,7 @@ namespace RealLifeOverhaul.FitOut
                     {
                         float x = s == 0 ? x0 - half : s == 1 ? x1 + half : t, z = s == 2 ? z0 - half : s == 3 ? z1 + half : t;
                         beyond++;
-                        solid += g.CellOf(x, z, out int c, out int r) && g.IsOpen(c, r) ? 0 : 1;
+                        solid += !g.CellOf(x, z, out int c, out int r) || g[c, r] == RoomGrid.Outside ? 1 : 0;   // (never the player's furniture: nothing backs onto it)
                     }
                     bool wall = beyond > 0 && solid >= beyond * 0.7f;
                     float mx = s == 0 ? x0 : s == 1 ? x1 : (x0 + x1) * 0.5f, mz = s == 2 ? z0 : s == 3 ? z1 : (z0 + z1) * 0.5f;
@@ -430,6 +431,8 @@ namespace RealLifeOverhaul.FitOut
             public readonly bool[] Usable;
             private readonly bool[] _fixedClosed, _base, _closed, _after, _seen, _narrow, _trial;
             private readonly bool[] _keepValid;
+            private readonly bool[] _sides;              // the floor beside the player's furniture, from which it is used
+            private bool _hasSides;
             private readonly int[] _stack;
             private readonly float _margin;
 
@@ -448,6 +451,7 @@ namespace RealLifeOverhaul.FitOut
                 _stack = new int[n];
                 _narrow = new bool[n];
                 _trial = new bool[n];
+                _sides = new bool[n];
                 _keepValid = new bool[site.Keep.Count];
                 _margin = Math.Max(0.1f, site.Erosion);   // (what stands is cut out of the walkable floor by a walker's width, as the game cuts its own)
             }
@@ -468,6 +472,7 @@ namespace RealLifeOverhaul.FitOut
                     return false;
                 }
                 Narrow();
+                _hasSides = G.FurnitureSides(_base, _sides) > 0;
                 // (a place the building could not reach before is not the plan's to keep)
                 Array.Copy(_base, _after, _after.Length);
                 for (int i = 0; i < _keepValid.Length; i++)
@@ -963,6 +968,24 @@ namespace RealLifeOverhaul.FitOut
                         return false;
                     }
                 }
+                // Every place the player's own furniture is used from.
+                for (int i = 0; _hasSides && i < _sides.Length; i++)
+                {
+                    if (!_sides[i] || _after[i])
+                    {
+                        continue;
+                    }
+                    unreached++;
+                    if (!found)
+                    {
+                        found = true;
+                        G.Centre(i, out px, out pz);
+                    }
+                    if (stopAtFirst)
+                    {
+                        return false;
+                    }
+                }
                 // Every seat and every piece somebody walks up to.
                 for (int i = 0; i < pieces.Count; i++)
                 {
@@ -1131,6 +1154,15 @@ namespace RealLifeOverhaul.FitOut
                 {
                     FitRect r = Site.KeepFree[i];
                     CloseRect(r.X0 - 0.3f, r.Z0 - 0.3f, r.X1 + 0.3f, r.Z1 + 0.3f, near);
+                }
+                if (_hasSides)
+                {
+                    var furniture = new bool[near.Length];
+                    G.NearFurniture(FromFurniture, furniture);
+                    for (int i = 0; i < near.Length; i++)
+                    {
+                        near[i] |= furniture[i];
+                    }
                 }
                 for (int i = 0; i < Into.Pieces.Count; i++)
                 {
