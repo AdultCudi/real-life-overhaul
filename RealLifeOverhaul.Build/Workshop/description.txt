@@ -1,43 +1,45 @@
 [h1]Real Life Overhaul[/h1]
-Real Life Overhaul adds everyday life to the city of Big Ambitions: things happen in the street, to other people and to you, and you can take part in them. Every part can be switched off by itself, and four presets set how much of it happens to you.
+Real Life Overhaul adds everyday life to the city of Big Ambitions: things happen in the street, to other people and to you, and you can take part in them. Study and work your way up a career, stand for mayor, list your company, found a bank or a cloud, or just ride the bus. Every part can be switched off by itself, and four presets set how much of it happens to you.
 
 [h1]What it adds[/h1]
 [list]
-[*][b]A living street.[/b] People chat, eat, queue and busk. There are accidents with ambulances and police, fires, crimes, street events and weather. Accidents come from drivers you can watch go wrong, and traffic brakes and sounds its horn for people in the road.
-[*][b]Driving.[/b] Cars that handle by their kind, a third-person and a chase camera, a speed reading, a garage for paint, parts and tuning, running costs, and people who react to your horn. A driving school with lessons, a theory test and a practical test.
-[*][b]Getting around.[/b] The mod's own city buses with stops, bays and zones of their own, the subway, a taxi called from your phone, bicycles and scooters, and a minimap with a GPS route.
-[*][b]Police and courts.[/b] Offences, fines, arrests, a cell, bail, hearings, community service and prison. A council and a mayor you can vote for, and campaigns you can help.
-[*][b]Home and family.[/b] Cooking, chores, a partner, a wedding, a baby, friends and outings, leisure such as fishing and chess, and a roommate who shares the rent.
-[*][b]Work.[/b] Jobs you do yourself, with shifts and uniforms, gigs called by phone, and a career.
-[*][b]Money and credit.[/b] A credit rating from 300 to 850. A Finance app with loans, an overdraft, a card, car finance and a mortgage, and real consequences for not paying. Each bank has its own app too.
-[*][b]The city's economy.[/b] A bank rate, prices that rise and fall, booms and recessions, and districts with their own income. Every price of the mod's follows the city's prices, and each business's daily statement, the game's taxes and its bank count what the mod charges and pays.
-[*][b]Bills and the internet.[/b] Power and water for every home and business you rent or own, a utilities office to apply at in person, and a Utilities app with auto debit. Internet from four rival providers, and late in the game a broadband company of your own.
-[*][b]Investors and the market.[/b] Investors who put money into your business for a share, and a stock market of some 136 of the city's companies in a Stocks app, with candle charts and every usual kind of order. The City Ledger, a morning paper at your door or from a kiosk.
-[*][b]Running a business.[/b] Staff who ask for raises and may strike, insurance, marketing with results, a quarterly tax return and licences. A rota planner that forecasts customers, counts the goods on the shelves and shows what each further hire would add.
-[*][b]Growing a business.[/b] A cleaning crew shared between shops. Brands and franchises. Online shops that sell from your real stock. Selling a business for what it is worth.
-[*][b]Property.[/b] Buy, let, repair and sell buildings, run an estate agency, own or lease a hotel, and put your own cars out on hire.
-[*][b]Tools.[/b] A Planner and a Guide on your phone, four presets (Relaxed, Standard, Realistic, Hardcore), tables that sort and filter, settings export and import, every key rebindable, and a tool that takes the mod out of a save.
+[*][b]A living street.[/b] People chat, eat, queue and busk. Accidents with ambulances and police, fires, crimes, street events and weather. Police stations with officers at work.
+[*][b]Getting around.[/b] The mod's own city buses on many lines: walk on by either door, ride in real time or skip, and change between lines. The subway, taxis, bicycles, scooters, and a minimap with a GPS route.
+[*][b]Driving.[/b] Cars that handle by their kind, chase and third person cameras, a garage for paint, parts and tuning, running costs and a driving school.
+[*][b]Police, courts and the council.[/b] Fines, arrests, bail, hearings and prison. A council and a mayor you vote for, or stand yourself: a campaign, a debate, the count by district and the city's policies if you win.
+[*][b]Home and family.[/b] Cooking, chores, a partner, a wedding, children, friends, outings, leisure, a roommate and selfies.
+[*][b]Education and careers.[/b] Courses at the school, and degrees and certificates at the university, with fees, loans and exams. 25 professions at the city's businesses and your rivals' companies, with ranks up to the top seat, freelance work and a firm of your own. Street jobs and gigs too.
+[*][b]Standing.[/b] The city knows how rich, how known and how well thought of you are: reporters, a night show, promises remembered, invitations, lobbying, and bribes that can come out.
+[*][b]Money and credit.[/b] A credit rating from 300 to 850, and a Finance app with loans, an overdraft, a card, car finance and a mortgage, with real consequences for not paying.
+[*][b]The city's economy.[/b] A bank rate, prices that rise and fall, booms and recessions, districts with their own income and a district view on the map. The game's statements and taxes count what the mod charges and pays.
+[*][b]Bills and the internet.[/b] Power and water from a utilities office, auto debit, rival internet providers, and late on a broadband company of your own.
+[*][b]Markets and news.[/b] A stock market of some 136 companies with charts and orders, and your own company listed on it: results, dividends, a shareholders' meeting and takeover bids. The City Ledger and online papers. Flare, a social network with influencers.
+[*][b]Running a business.[/b] Staff who ask for raises and may strike, insurance, marketing, a quarterly tax return, licences and a rota planner. Professional staff with skills, and a jobs board your rivals hire from too.
+[*][b]Growing a business.[/b] Brands and franchises that keep their prices, online shops, investors, selling a business, your own bank and your own car dealership.
+[*][b]The tech sector.[/b] Software and game studios, IT consultancies, security firms and AI labs, startups and venture capital, data centres, a cloud and in time a hyperscaler.
+[*][b]Property.[/b] Buy, let and sell buildings with a tenant in each unit, set your rental income, run an estate agency or a hotel, and hire out cars.
+[*][b]Permadeath, if you want it.[/b] Off unless you switch it on: rare deaths after warnings, hunger among them, and an obituary in the City Ledger.
+[*][b]Tools.[/b] A Planner and a Guide on your phone, presets, tables that sort and filter, settings export and import, every key rebindable, and a tool that takes the mod out of a save.
 [/list]
 The Guide in the game has a page for every feature: what it is, how to start it and what it costs.
 
 [h1]How to start[/h1]
 [list]
 [*]Subscribe, start the game and load a save or begin a new one. A notice appears once for each new version; click it to open the Guide.
-[*]The mod's page is in the game's Options, on the Mods tab. It is in ten groups and opens on "Start here": the Guide and the presets. A search box finds any option. The mod starts on Standard.
-[*]The Guide and the Planner are apps on your phone. The phone shows eight apps a page: scroll the mouse wheel over them for the next page.
+[*]The mod's page is in the game's Options, on the Mods tab. It opens on "Start here": the Guide and the presets. A search box finds any option. The mod starts on Standard.
+[*]The Guide and the Planner are apps on your phone. Scroll the mouse wheel over the apps for the next page.
 [/list]
 
 [h1]Performance[/h1]
-No frame-rate figures are claimed. Apart from the cameras, the mod's features do their work on timers (most of them once a second), not every frame. The mod also has a few optional switches for the base game's own drawing work; each says on its line what changes on screen, and none promises a gain.
+No frame rate figures are claimed. Apart from the cameras, buses in view and hair in motion, the mod does its work on timers, most of it once a second, not every frame.
 
 [h1]Compatibility[/h1]
 [list]
-[*]Built against the Steam version of Big Ambitions as of October 2026 (Steam build 25482473, Unity 2022.3.62f2).
-[*]Windows. The mod's models and animations are built for Windows only.
+[*]Built against the Steam version of Big Ambitions as of October 2026 (Steam build 25482473, Unity 2022.3.62f2). Windows only.
 [*]English, Brazilian Portuguese and Simplified Chinese. The mod follows the language the game is set to; in any other language it is in English.
-[*]One DLL, a text file for each language and three asset files. No game files are replaced.
-[*]While another camera mod such as "Immersion - RPG Camera" drives the camera, this mod's cameras stand aside and come back when it stops.
-[*]It can be added to an existing save.
+[*]One DLL, a text file for each language and three asset files. No game files are replaced. It can be added to an existing save.
+[*]Made to work with Going Public, the multiplayer mod: what would put players out of step, such as fast forward, is set aside in a session.
+[*]Works beside Empire Motors. While a camera mod such as "Immersion - RPG Camera" drives the camera, this mod's cameras stand aside.
 [/list]
 
 [h1]Removing the mod[/h1]
@@ -48,16 +50,15 @@ No frame-rate figures are claimed. Apart from the cameras, the mod's features do
 [/olist]
 
 [h1]Known limits[/h1]
-The mod is new, and parts of it have had little play.
+Parts of the mod, the newest most of all, have had little play.
 [list]
-[*]Courts and prison, the family, hotels and two-wheelers have had little or no play from start to finish.
-[*]The bus ride and the subway journey are a fade to black while time passes. There is no bus or train interior.
-[*]A hotel is its door and lists of choices: you do not walk around a room. Most holidays are told as messages.
-[*]On an outing that goes indoors your companion goes in at the door and the screen fades. Nobody sits at a table.
+[*]The subway journey, and a bus journey with two or more changes, pass under a fade.
+[*]A hotel is its door and lists of choices, and most holidays are told as messages.
+[*]On an outing that goes indoors the screen fades at the door.
 [*]A court hearing and prison are pages of text with choices.
 [*]Children are never seen as characters, and a partner at home never lies down.
 [*]One incident at a time: no crime starts while an accident, a fire or a street event is on.
-[*]A job in progress ends when its save is loaded: you are paid what you were owed. A home routine or a leisure activity in progress is simply over.
+[*]A job in progress ends when its save is loaded: you are paid what you were owed.
 [/list]
 The Guide's "Known limits" page has the full list.
 
@@ -66,7 +67,7 @@ The Guide's "Known limits" page has the full list.
 [*]On the options page, under Troubleshooting, switch on "Developer diagnostics" and make the problem happen again.
 [*]Attach Player.log from that session. It is in %USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions and is overwritten when the game starts again.
 [*]Add a screenshot, what you were doing, what you expected, the mod version (0.7.6) and which other mods are on.
-[*]For stutter, or a frame rate that drops the longer you play: switch on "Developer diagnostics" before you start, play for ten minutes or more until it happens, and send Player.log from that session with your processor, graphics card and memory. The mod writes a line a minute there that shows where the time goes.
+[*]For stutter: switch diagnostics on before you start, play until it happens, and send Player.log with your processor, graphics card and memory.
 [/list]
 
 [h1]Discord[/h1]
