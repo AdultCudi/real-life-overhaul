@@ -688,6 +688,8 @@ namespace RealLifeOverhaul
         public static bool TogglePlayer => Input.GetKeyDown(KeyCode.Alpha1);
         public static bool ToggleHelp => Input.GetKeyDown(KeyCode.Alpha2);
         public static bool ResetView => Input.GetKeyDown(KeyCode.Alpha3);
+        public static bool Selfie => Input.GetKeyDown(KeyCode.Alpha4);
+        public static bool NextPose => Input.GetKeyDown(KeyCode.Alpha5);
 
         private static float Axis(KeyCode plus, KeyCode minus)
         {

@@ -29,9 +29,13 @@ namespace RealLifeOverhaul.Leisure
     /// with the interface away. Everything touched
     /// is recorded on the way in and put back exactly on the way out, on every way out (the
     /// key, a menu opening, the game being unpaused, the city unloading).
+    /// One key turns the free camera into a selfie (<see cref="Selfie"/>): the camera is held at
+    /// arm's length in front of the player, the mouse and the wheel move it round and nearer, and
+    /// every other setting goes on working; the same key brings the free camera back where it was.
+    /// Never in a vehicle or on the bus: the game's own notification says so.
     ///
     /// Idle cost: one key test a frame. While the mode is on it runs every frame, which is the
-    /// point of it, and allocates only when the notification is asked for.
+    /// point of it, and allocates only when a notification is asked for.
     /// </summary>
     public sealed class PhotoMode : MonoBehaviour
     {
@@ -92,9 +96,18 @@ namespace RealLifeOverhaul.Leisure
         private int _enteredFrame;
         private bool _failed;
 
+        private const float SelfieFieldOfView = 65f;   // degrees: about what a phone's front camera sees
+
+        private Selfie _selfie;
+        private bool _inSelfie;
+        private Vector3 _freePosition;  // where the free camera was when the selfie started: it goes back there
+        private string _liked;          // the friend who liked the selfie just saved, or null
+
         private void Awake()
         {
             Instance = this;
+            Selfie.Logger = Logger;
+            _selfie = gameObject.AddComponent<Selfie>();   // switched off until a selfie is asked for
         }
 
         private void OnDestroy()
@@ -293,10 +306,31 @@ namespace RealLifeOverhaul.Leisure
                 return;
             }
             float delta = Mathf.Min(Time.unscaledDeltaTime, 0.05f);
+            if (_inSelfie && !_selfie.On)
+            {
+                FreeCamera();   // the selfie ended itself (the player went away, or a fault): back to flying
+            }
+            if (PhotoKeys.Selfie)
+            {
+                if (_inSelfie)
+                {
+                    _selfie.End();
+                    FreeCamera();
+                }
+                else
+                {
+                    StartSelfie();
+                }
+            }
 
             float sensitivity = 0.6f + Settings.MouseSensitivity * 0.2f;
-            _yaw += Input.GetAxis("Mouse X") * sensitivity * (_fov / 60f);
-            _pitch = Mathf.Clamp(_pitch - Input.GetAxis("Mouse Y") * sensitivity * (_fov / 60f), -88f, 88f);
+            float mouseX = Input.GetAxis("Mouse X") * sensitivity;
+            float mouseY = Input.GetAxis("Mouse Y") * sensitivity;
+            if (!_inSelfie)
+            {
+                _yaw += mouseX * (_fov / 60f);
+                _pitch = Mathf.Clamp(_pitch - mouseY * (_fov / 60f), -88f, 88f);
+            }
             float roll = PhotoKeys.Roll;
             if (roll != 0f)
             {
@@ -304,7 +338,7 @@ namespace RealLifeOverhaul.Leisure
                 _stateDirty = true;
             }
             float wheel = Input.mouseScrollDelta.y;
-            if (wheel != 0f)
+            if (wheel != 0f && !_inSelfie)
             {
                 _fov = Mathf.Clamp(_fov - wheel * 3f, 8f, 100f);
                 _stateDirty = true;
@@ -331,9 +365,13 @@ namespace RealLifeOverhaul.Leisure
                 _blur = !_blur;
                 _stateDirty = true;
             }
-            if (PhotoKeys.TogglePlayer)
+            if (PhotoKeys.TogglePlayer && !_inSelfie)
             {
                 ShowPlayer(_playerHidden);
+            }
+            if (PhotoKeys.NextPose && _inSelfie)
+            {
+                Say(JobText.T("reallife_photo_pose").Replace("{pose}", JobText.T(_selfie.NextPose())), 5f);
             }
             if (PhotoKeys.ToggleHelp)
             {
@@ -344,7 +382,14 @@ namespace RealLifeOverhaul.Leisure
                     Help();
                 }
             }
-            if (PhotoKeys.ResetView)
+            if (PhotoKeys.ResetView && _inSelfie)
+            {
+                _selfie.Recentre();
+                _focus = _selfie.Distance;
+                _roll = 0f;
+                _stateDirty = true;
+            }
+            else if (PhotoKeys.ResetView)
             {
                 _camera.transform.SetPositionAndRotation(_startPosition, _startRotation);
                 Vector3 angles = _startRotation.eulerAngles;
@@ -355,20 +400,20 @@ namespace RealLifeOverhaul.Leisure
                 _stateDirty = true;
             }
 
-            Transform view = _camera.transform;
-            Quaternion look = Quaternion.Euler(_pitch, _yaw, _roll);
-            float speed = 6f * (PhotoKeys.Fast ? 4f : 1f) * (PhotoKeys.Slow ? 0.2f : 1f) * delta;
-            Vector3 move = look * new Vector3(PhotoKeys.Sideways, 0f, PhotoKeys.Forward) + Vector3.up * PhotoKeys.Rise;
-            Vector3 position = view.position + move * speed;
-            // Never further from the player than the city is drawn round them.
-            Vector3 home = PlayerHelper.PlayerController != null ? PlayerHelper.PlayerController.transform.position : _startPosition;
-            Vector3 away = position - home;
-            if (away.sqrMagnitude > 150f * 150f)
+            if (_inSelfie)
             {
-                position = home + away.normalized * 150f;
+                float was = _selfie.Distance;
+                _selfie.Steer(mouseX, mouseY, wheel, _roll);
+                if (_blur && Mathf.Abs(_selfie.Distance - was) > 0.001f)
+                {
+                    _focus = _selfie.Distance;   // the face stays sharp as the phone comes nearer or goes farther
+                    _stateDirty = true;
+                }
             }
-            view.SetPositionAndRotation(position, look);
-            _camera.fieldOfView = _fov;
+            else
+            {
+                Fly(delta);
+            }
 
             if (_stateDirty)
             {
@@ -384,6 +429,70 @@ namespace RealLifeOverhaul.Leisure
                 Cursor.lockState = CursorLockMode.Locked;
                 Cursor.visible = false;
             }
+        }
+
+        // The free camera: W A S D and the rest, within 150 m of the player.
+        private void Fly(float delta)
+        {
+            Transform view = _camera.transform;
+            Quaternion look = Quaternion.Euler(_pitch, _yaw, _roll);
+            float speed = 6f * (PhotoKeys.Fast ? 4f : 1f) * (PhotoKeys.Slow ? 0.2f : 1f) * delta;
+            Vector3 move = look * new Vector3(PhotoKeys.Sideways, 0f, PhotoKeys.Forward) + Vector3.up * PhotoKeys.Rise;
+            Vector3 position = view.position + move * speed;
+            // Never further from the player than the city is drawn round them.
+            Vector3 home = PlayerHelper.PlayerController != null ? PlayerHelper.PlayerController.transform.position : _startPosition;
+            Vector3 away = position - home;
+            if (away.sqrMagnitude > 150f * 150f)
+            {
+                position = home + away.normalized * 150f;
+            }
+            view.SetPositionAndRotation(position, look);
+            _camera.fieldOfView = _fov;
+        }
+
+        // The selfie: on foot only (indoors or out); the game's own notification says why not otherwise.
+        private void StartSelfie()
+        {
+            PlayerController player = PlayerHelper.PlayerController;
+            if (player == null || PlayerHelper.IsUsingVehicle || TransitDirector.Riding)
+            {
+                UI.Notification.Notifications.Show(UI.Notification.NotificationType.Error, "reallife_photo_selfie_vehicle", null, 6f);
+                return;
+            }
+            if (_playerHidden)
+            {
+                ShowPlayer(true);   // a selfie of nobody is not one
+            }
+            _freePosition = _camera.transform.position;
+            if (!_selfie.Begin(_camera, player, _freePosition))
+            {
+                UI.Notification.Notifications.Show(UI.Notification.NotificationType.Error, "reallife_photo_selfie_cannot", null, 6f);
+                return;
+            }
+            _inSelfie = true;
+            _camera.fieldOfView = SelfieFieldOfView;   // the free camera's zoom is its own: Fly puts it back
+            _focus = _selfie.Distance;
+            _stateDirty = true;
+            if (_help)
+            {
+                Say(JobText.T("reallife_photo_selfie_help").Replace("{pose}", JobText.T(_selfie.PoseKey)), 12f);
+            }
+            Logger?.Info("Photo mode: selfie.");
+        }
+
+        // Back to flying from where the free camera was before the selfie, looking the way it looked.
+        private void FreeCamera()
+        {
+            _inSelfie = false;
+            _camera.transform.SetPositionAndRotation(_freePosition, Quaternion.Euler(_pitch, _yaw, _roll));
+            _stateDirty = true;
+        }
+
+        // One line in one of the game's notifications. Only on a key press or a saved picture: the text is built then.
+        private static void Say(string text, float seconds)
+        {
+            UI.Notification.Notifications.Show(UI.Notification.NotificationType.Info, "reallife_leisure_text",
+                new System.Collections.Generic.Dictionary<string, string>(1) { { "text", text } }, seconds);
         }
 
         // The Volume's values and the line that names them. Called when one changes.
@@ -456,10 +565,12 @@ namespace RealLifeOverhaul.Leisure
                     {
                         string folder = Path.Combine(Application.persistentDataPath, "RealLifeOverhaul", "Shots");
                         Directory.CreateDirectory(folder);
-                        _shotPath = Path.Combine(folder, "RealLifeOverhaul_" + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png");
+                        _shotPath = Path.Combine(folder, (_inSelfie ? "RealLifeOverhaul_Selfie_" : "RealLifeOverhaul_") + DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png");
                         ScreenCapture.CaptureScreenshot(_shotPath);
                         LeisureSound.Cue(LeisureCue.Shutter);
                         Logger?.Info("Photo mode: saved " + _shotPath + " (" + Screen.width + " x " + Screen.height + ").");
+                        // A selfie on an outing with the friend beside the player: they like it (once an outing).
+                        _liked = _inSelfie && PlayerHelper.PlayerController != null ? SocialHooks.Selfie(PlayerHelper.PlayerController.transform.position) : null;
                     }
                     catch (Exception e)
                     {
@@ -473,11 +584,13 @@ namespace RealLifeOverhaul.Leisure
                     Interface(_help);
                     if (_help)
                     {
-                        UI.Notification.Notifications.Show(UI.Notification.NotificationType.Info, "reallife_leisure_text",
-                            new System.Collections.Generic.Dictionary<string, string>(1)
-                            {
-                                { "text", _shotPath != null ? JobText.T("reallife_photo_saved").Replace("{path}", _shotPath) : JobText.T("reallife_photo_save_failed") }
-                            }, 8f);
+                        Say(_shotPath != null ? JobText.T("reallife_photo_saved").Replace("{path}", _shotPath) : JobText.T("reallife_photo_save_failed"), 8f);
+                    }
+                    if (_liked != null)
+                    {
+                        // Said with the interface away too: it is news, and it waits in the game's list.
+                        Say(JobText.T("reallife_photo_selfie_liked").Replace("{name}", _liked), 8f);
+                        _liked = null;
                     }
                     break;
             }
@@ -494,8 +607,14 @@ namespace RealLifeOverhaul.Leisure
             }
             Active = false;
             _shotStep = 0;
+            _liked = null;
             try
             {
+                if (_selfie != null)
+                {
+                    _selfie.End();   // first: the body's facing and the near plane, before the camera goes back
+                }
+                _inSelfie = false;
                 if (_playerHidden)
                 {
                     ShowPlayer(true);
