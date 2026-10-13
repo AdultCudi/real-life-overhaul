@@ -77,7 +77,8 @@ namespace RealLifeOverhaul.Interiors
                 .About("reallife_guide_interiors_standard_about").Help("reallife_guide_interiors_standard")
                 .Owns(Settings.InteriorsStandardLevelId, Settings.InteriorsRewardLevelId, Settings.InteriorsBasketId)
                 .Preset(Settings.InteriorsStandardLevelId, 1, 2, 3)   // Relaxed Gentle, Realistic Standard, Hardcore Strict
-                .Preset(Settings.InteriorsRewardLevelId, 4, 2, 1)     // Relaxed Generous, Realistic Conservative, Hardcore Low (the basket keeps its own switch: off)
+                .Preset(Settings.InteriorsRewardLevelId, 4, 2, 1)     // Relaxed Generous, Realistic Conservative, Hardcore Low
+                .Preset(Settings.InteriorsBasketId, 1, 1, 1)          // the basket on in every preset, as by default (its size follows the reward)
                 .StandsAside(InteriorsSentence, Settings.InteriorsStandardLevelId, Settings.InteriorsRewardLevelId, Settings.InteriorsBasketId)
                 .Fact("in_grace", () => N(InteriorRules.GraceDays))
                 .Fact("in_standard_least", () => N(InteriorRules.StandardLeast))
@@ -92,15 +93,18 @@ namespace RealLifeOverhaul.Interiors
                 .Fact("in_complaint_from", () => N(InteriorRules.ComplaintFrom))
                 .Fact("in_complaint_per", () => Share(InteriorRules.ComplaintPerPoint))
                 .Fact("in_complaint_most", () => Share(InteriorRules.ComplaintMost))
-                .Fact("in_basket_per", () => Share(InteriorRules.BasketPerPoint))
-                .Fact("in_basket_most", () => Share(InteriorRules.BasketMost));
+                .Fact("in_basket_full", () => N(InteriorRules.BasketFullAt))
+                .Fact("in_basket_poor", () => Share(InteriorRules.BasketMostPoor))
+                .Fact("in_basket_rich", () => Share(InteriorRules.BasketMostRich))
+                .Fact("in_basket_middle", () => Share(InteriorRules.BasketShare(InteriorRules.BasketFullAt, InteriorRules.Standard(InteriorRules.IncomeMiddle, 0))));
 
             Features.Add("interiors_decor", "reallife_meta_title_interiors_decor")
                 .About("reallife_guide_interiors_decor_about").Help("reallife_guide_interiors_decor")
                 .Owns(Settings.InteriorsDecorLevelId)
-                .Preset(Settings.InteriorsDecorLevelId, 2, 1, 1)      // Relaxed 10%, Realistic and Hardcore 5%
+                .Preset(Settings.InteriorsDecorLevelId, 3, 2, 2)      // Relaxed 15%, Realistic and Hardcore 10% (the default, as Meaningful Ambience's)
                 .StandsAside(AmbienceSentence, Settings.InteriorsDecorLevelId)
                 .Fact("in_decor_most", () => N(InteriorRules.DecorPercents[InteriorRules.DecorDefault]))
+                .Fact("in_decor_least", () => N(InteriorRules.DecorPercents[1]))
                 .Fact("in_decor_top", () => N(InteriorRules.DecorPercents[InteriorRules.DecorPercents.Length - 1]))
                 .Fact("in_recent", () => N(InteriorRules.RecentOrders));
         }

@@ -570,7 +570,8 @@ namespace RealLifeOverhaul.Interiors
                 b.Line(InteriorText.T("reallife_interior_line_customers", "footfall", InteriorText.Signed(s.Footfall), "standard", InteriorText.Signed(s.StandardFootfall),
                     "decor", InteriorText.Signed(s.DecorFootfall)));
                 b.Line(InteriorDirector.Parts.PriceScale > 0 ? InteriorText.T("reallife_interior_line_prices", "bears", InteriorText.SignedMille(s.Bears)) : "reallife_interior_line_prices_off".GetLocalization());
-                b.Line(InteriorDirector.BasketOn ? InteriorText.T("reallife_interior_line_basket", "chance", InteriorText.Mille(s.Basket))
+                b.Line(InteriorDirector.BasketOn ? InteriorText.T("reallife_interior_line_basket", "share", InteriorText.Mille(s.Basket),
+                        "most", InteriorText.Mille(InteriorRules.BasketShare(InteriorRules.BasketFullAt, s.Standard, InteriorDirector.Parts.RewardScale)), "full", InteriorText.N(InteriorRules.BasketFullAt))
                     : OtherMods.MeaningfulInteriors.Loaded && Settings.InteriorsBasket ? InteriorText.T("reallife_interior_line_basket_other", "mod", OtherMods.MeaningfulInteriors.Name)
                     : "reallife_interior_line_basket_off".GetLocalization());
                 if (InteriorDirector.StandardOn)

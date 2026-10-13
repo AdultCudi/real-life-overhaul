@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Interiors
     /// customers (business pressure's footfall, through <see cref="BusinessGame.Ambient"/>), the price the district
     /// bears (the city's economy), complaints (business pressure's own), the brand's standards, Standing, the staff's
     /// comfort, the jobs board and a firm's bids (all through Wiring/InteriorLinks), and the news. Once a game hour,
-    /// with the basket switched on, the customers of the coming hour may take one more product.
+    /// with the basket switched on, the customers of the coming hour take more products, by the size of their orders.
     ///
     /// Two other authors' mods do parts of this (Core/OtherMods): with Meaningful Interiors switched on the district
     /// standard's footfall and complaints and the basket stay off; with Meaningful Ambience the decor's footfall does.
@@ -401,7 +401,7 @@ namespace RealLifeOverhaul.Interiors
                     continue;
                 }
                 BuildingRegistration reg = BusinessGame.Find(s.Place);
-                _basketToday += reg != null ? InteriorGame.Basket(reg, s.Basket) : 0;
+                _basketToday += reg != null ? InteriorGame.Basket(reg, s.Basket, s.Kind == InteriorKind.Office) : 0;
             }
         }
 
