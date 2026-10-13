@@ -58,7 +58,9 @@ occlusion, and nothing else: no Blender-only shading.
   shapes carry chamfers and area-weighted normals instead, which is what gives the edges their highlight.
 - **Swatches and decals.** A swatch is one surface finish whose patch gets dirtier towards the bottom; a part
   mapped onto it by height picks up grime and contact shadow where it meets the ground, with no unwrap. A decal
-  is a painted face (the barrier board, a badge). The tape's row spans the whole atlas so it tiles along U.
+  is a painted face (the barrier board, a badge). The tape's row spans the whole atlas so it tiles along U. A swatch
+  is 40 x 80 pixels (it was 56 x 96 until the tow truck and the tech buildings filled the atlas): it is read 7 px in from
+  its edges, and a plain finish with its grime needs no more.
 - **No colliders, scripts or materials in the bundle**, meshes are not kept readable, textures are BC7 with
   mipmaps. `PropLibrary` does nothing per frame.
 
@@ -67,18 +69,18 @@ occlusion, and nothing else: no Blender-only shading.
 | | limit | now |
 |---|---|---|
 | triangles, each prop | its own budget, beside its maker in the `PROPS` lists | see the tables below |
-| triangles, all props together | 130 000 | 124 220 (250 props: the two-wheelers are in the bundle whole and in parts, the city bus and the tow truck in parts) |
+| triangles, all props together | 130 000 | 127 186 (271 props: the two-wheelers are in the bundle whole and in parts, the city bus and the tow truck in parts) |
 | materials | 2, shared by everything | 2 |
-| textures | one atlas: 4096 x 2048 colour + 2048 x 1024 mask, BC7 (the bundle check fails on anything else); the two road paint pictures | 14.0 MB of video memory (10.7 + 2.7, and 0.7 for the road paint), 258 regions, 90 % of the atlas used |
-| meshes in memory | | 7.1 MB |
-| bundle on disk | 16 MB | 11.1 MB, loaded once per session, asynchronously |
+| textures | one atlas: 4096 x 2048 colour + 2048 x 1024 mask, BC7 (the bundle check fails on anything else); the two road paint pictures | 14.0 MB of video memory (10.7 + 2.7, and 0.7 for the road paint), 277 regions, 94 % of the atlas used (swatches are 40 x 80) |
+| meshes in memory | | 7.3 MB |
+| bundle on disk | 16 MB | 11.5 MB, loaded once per session, asynchronously |
 
 **Why the ceilings went up** (they were 30 000 triangles, a 2048 x 2048 atlas and 9 MB for 77 props). The first two
 rounds were things in a hand and a cordon. The later rounds are a police station's frontage, bus stops and a bus,
 a fire engine, hotels, street events, home and social life, a garage and a building site: 240 props, among
 them vehicle bodies of 3 700 to 6 300 triangles. None of it is drawn unless a feature places it, a placed prop is one
 instanced draw call with one of two materials, and a scene shows a dozen at most: the totals are what sits in memory,
-not what is rendered. Memory is the real cost: about 7.1 MB of meshes and 14.0 MB of texture, where the game's own
+not what is rendered. Memory is the real cost: about 7.3 MB of meshes and 14.0 MB of texture, where the game's own
 city uses gigabytes. The atlas doubled in width only (BC7 keeps it at one byte a pixel); `PropLibrary` reads exactly
 one bundle with one colour and one mask texture, so a second bundle or a second atlas would have needed code and a
 third material. If the atlas fills again, 4096 x 4096 is the next step (27 MB); nothing else changes.
@@ -281,7 +283,7 @@ The police station, the bus stop and the hotel frontage. Three of them carry a p
 | `suitcase` | 0.45 x 0.65 x 0.25 | 608 | lit | ground centre; standing, handle up | hard-shell case (light blue, ribbed on both broad faces, four wheels inside its height). **Carried by the bar over its top: along X, centred (0, 0.630, 0), 0.028 thick, 0.12 of it straight, 0.030 clear above the shell** (whose top is 0.585). For `carry_bag_walk` (right hand); not used by code yet |
 | `street_bin` | 0.54 x 0.90 x 0.54 | 546 | lit | ground centre; round | Events, `FireScene` (`EventProps.Bin`): the flames are put 0.85 m up in the middle, so the top is open (rim 0.90 m, inside 0.45 across, litter in it 0.64 to 0.69 m up). Dark green, a gold band at 0.59 to 0.67 m and a thin one under the black rim |
 
-Atlas: 18 regions (4 swatches `civic_iron`, `civic_grey`, `civic_lamp_blue`, `civic_leather`; 14 decals), 942 424 pixels with their gutters. Module total 10 834 triangles.
+Atlas: 18 regions (4 swatches `civic_iron`, `civic_grey`, `civic_lamp_blue`, `civic_leather`; 14 decals), 931 672 pixels with their gutters. Module total 10 834 triangles.
 <!-- end: civic -->
 
 <!-- module: service -->
@@ -426,7 +428,7 @@ Careers and business (none placed by code yet: each needs a line of placement):
 <!-- module: family -->
 ### Family and driving school (`scripts\props_family.py`, `paint_family.py`, `checks_family.py`)
 
-**The code is the specification** for the first seven: each has the pivot, facing and size of the plain-shape stand-in it replaces (`Scripts\Family\FamilyCast.cs` `FamilyProps.StandIn`, looked up at line 452; `Scripts\Licences\LicenceProps.cs` `Make`, looked up at line 49), and `checks_family.py` measures them on the built meshes. The other seven are **not asked for by code yet**: their numbers are their own contract. All points are in Unity axes from the prop's pivot (x right, y up, z forward). 14 ids, 7 254 triangles, 163 840 atlas pixels (13 regions: 9 decals, 4 swatches).
+**The code is the specification** for the first seven: each has the pivot, facing and size of the plain-shape stand-in it replaces (`Scripts\Family\FamilyCast.cs` `FamilyProps.StandIn`, looked up at line 452; `Scripts\Licences\LicenceProps.cs` `Make`, looked up at line 49), and `checks_family.py` measures them on the built meshes. The other seven are **not asked for by code yet**: their numbers are their own contract. All points are in Unity axes from the prop's pivot (x right, y up, z forward). 14 ids, 7 254 triangles, 153 088 atlas pixels (13 regions: 9 decals, 4 swatches).
 
 | id | size (X x Y x Z, Unity) | triangles | material | pivot and facing | use / grips / which feature |
 |---|---|---|---|---|---|
@@ -552,7 +554,7 @@ Not asked for by code (made for an earlier wish-list; kept because they are done
 | `gavel` | 0.10 x 0.07 x 0.28 | 320 | lit | ground centre; lying on its side, head across X at the +Z end | Judge's gavel; the handle is 0.022 thick. Justice wants only its sound |
 | `gavel_block` | 0.12 x 0.03 x 0.12 | 130 | lit | ground centre; round | Sound block |
 
-Atlas: 28 regions (5 swatches: `site_party_0` .. `_3`, `site_door`; 23 decals), 465 536 pixels with their gutters. One word is one strip that several props share (`site_vote` is on ten props), the stars are geometry. Module total 12 633 triangles.
+Atlas: 28 regions (5 swatches: `site_party_0` .. `_3`, `site_door`; 23 decals), 452 096 pixels with their gutters. One word is one strip that several props share (`site_vote` is on ten props), the stars are geometry. Module total 12 633 triangles.
 <!-- end: site -->
 <!-- end: site -->
 
@@ -614,7 +616,7 @@ exactly over them and the mod draws them in two materials of its own that it mak
 | `dc_fence` | 2.50 x 2.20 x 0.25 | 192 | lit | ground centre; runs along X | 2.5 m of security fence with an outrigger |
 
 Scenes: `scene_server_room`, `scene_hq_lobby`, `scene_tech_office`, `scene_dc_frontage`. Atlas: 19 regions (4 swatches,
-15 decals), 529 024 pixels with their gutters. Module total 2 966 triangles.
+15 decals), 465 024 pixels with their gutters (the floor tiles at 128 x 128). Module total 2 966 triangles.
 <!-- end: tech -->
 
 ## Fit to the character

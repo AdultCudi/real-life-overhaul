@@ -14,7 +14,7 @@ props_tech.py, which puts the lights exactly on them.
     tech_rack_back      64 x 224     0.52 x 1.80           the rear: fans, power strips, cable looms
     tech_crac           192 x 208    1.70 x 1.84           a cooling unit's front: louvres, its panel, the filter
     tech_ups            96 x 224     0.70 x 1.70           a battery cabinet: display, status bar, grille
-    tech_tiles          256 x 256    2.40 x 2.40           four by four floor tiles
+    tech_tiles          128 x 128    2.40 x 2.40           four by four floor tiles
     tech_vent           64 x 256     0.60 x 2.40           four perforated tiles
     tech_dashboard      192 x 112    screens               charts on a dark screen
     tech_code           160 x 96     screens               a code editor
@@ -179,18 +179,18 @@ def register(a):
         layer.rect(42, 120, 54, 150, (0.22, 0.23, 0.25), metal=0.6, radius=2)          # the handle
         return layer.finish(grime=0.3, grain=0.03, blotch=0.04)
 
-    def tiles():
-        layer = a.Layer(256, 256, (0.58, 0.59, 0.60), 0.0, 0.32)
+    def tiles():                # (a flat grey with its seams: 128 px for 2.40 m is enough, 19 mm a pixel)
+        layer = a.Layer(128, 128, (0.58, 0.59, 0.60), 0.0, 0.32)
         for k in range(16):
-            x, y = (k % 4) * 64, (k // 4) * 64
+            x, y = (k % 4) * 32, (k // 4) * 32
             shade = 0.56 + rng.uniform(-0.02, 0.02)
-            layer.rect(x + 1, y + 1, x + 63, y + 63, (shade, shade + 0.01, shade + 0.02))
-            for _ in range(30):
-                sx, sy = x + rng.uniform(3, 61), y + rng.uniform(3, 61)
-                layer.disc(sx, sy, 0.6, (shade - 0.08, shade - 0.07, shade - 0.06))
+            layer.rect(x + 0.5, y + 0.5, x + 31.5, y + 31.5, (shade, shade + 0.01, shade + 0.02))
+            for _ in range(15):
+                sx, sy = x + rng.uniform(2, 30), y + rng.uniform(2, 30)
+                layer.disc(sx, sy, 0.4, (shade - 0.08, shade - 0.07, shade - 0.06))
         for k in range(5):
-            layer.rect(k * 64 - 1, 0, k * 64 + 1, 256, (0.30, 0.31, 0.32), metal=0.6)
-            layer.rect(0, k * 64 - 1, 256, k * 64 + 1, (0.30, 0.31, 0.32), metal=0.6)
+            layer.rect(k * 32 - 0.6, 0, k * 32 + 0.6, 128, (0.30, 0.31, 0.32), metal=0.6)
+            layer.rect(0, k * 32 - 0.6, 128, k * 32 + 0.6, (0.30, 0.31, 0.32), metal=0.6)
         return layer.finish(grain=0.025, blotch=0.03)
 
     def vent():

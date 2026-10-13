@@ -185,7 +185,7 @@ SWATCHES = {
     "paper": ((0.93, 0.92, 0.88), 0.0, 0.18, 0.1),
     "cardboard": ((0.62, 0.47, 0.30), 0.0, 0.12, 0.4),
 }
-SWATCH_SIZE = (56, 96)
+SWATCH_SIZE = (40, 80)     # a swatch is one finish and its grime, read 7 px in from its edges: smaller swatches leave the atlas room for more modules
 
 
 def paint_swatch(name):
