@@ -1083,6 +1083,7 @@ namespace RealLifeOverhaul.Meta
                 .Cleanup(() => Economy.Brands.BrandsDirector.Instance?.StopAll(), -3)
                 .ResetData(() => Economy.Brands.BrandsDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
             Roommates.RoommateGuide.Register();   // sharing the flat: the feature, its option, its save line, its tests and its Guide figures (Scripts/Home/Roommates)
+            Permadeath.PermadeathGuide.Register();   // an ending the player chooses: the feature, its switch, its save lines, its tests and its Guide figures (Scripts/Permadeath)
         }
 
         private static string Whole(int value)

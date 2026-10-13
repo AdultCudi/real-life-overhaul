@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using BAModAPI;
 using BigAmbitions.Mods;
 using RealLifeOverhaul;
+using RealLifeOverhaul.Permadeath;
 using UnityEngine;
 
 [assembly: RegisterModClass(typeof(RealLifeOverhaulInit))]
@@ -813,6 +814,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_family_test_page", () => Family.FamilyDirector.Instance?.TestPage())
                 .AddButton("reallife_family_test_clear", () => Family.FamilyDirector.Instance?.TestClear())
                 .AddSplitter()
+                .AddPermadeath()   // an ending the player chooses, off unless switched on (Scripts/Permadeath)
                 .AddRoommates()
                 .AddControls()
                 .AddPerformance();
@@ -1042,6 +1044,8 @@ namespace RealLifeOverhaul
             Flare.FlareDirector.Logger = context.Logger;
             Flare.FlareApp.Logger = context.Logger;
             _root.AddComponent<Flare.FlareDirector>();   // Flare, the city's social media app (Scripts/Social/Flare): after the company and the brands, so that its day follows theirs
+            PermadeathDirector.Logger = context.Logger;
+            _root.AddComponent<PermadeathDirector>();   // an ending the player chooses: a death after warnings, the obituary, the save ended (Scripts/Permadeath)
             CarTuning.Logger = context.Logger;
             SpeedReading.Logger = context.Logger;
             CarMeasure.Logger = context.Logger;

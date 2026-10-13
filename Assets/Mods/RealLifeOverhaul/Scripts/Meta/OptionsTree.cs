@@ -239,6 +239,7 @@ namespace RealLifeOverhaul.Meta
                 S("leisure").For("leisure").Main("leisure").Opt("leisure_chess", "city_life").Opts("leisure_fishing", "leisure_night_out", "leisure_sights", "leisure_cinema")
                     .Opt("night_life", "city_life").Opts("photo_mode").Buttons("reallife_leisure_test_records").Also("fun hobby nightclub bar"),
                 S("lifeevents").For("life").Main("life_events").Opts("life_frequency").Also("random luck surprise"),
+                S("permadeath").For("permadeath").Opts("permadeath").Also("death die dead obituary ending hardcore funeral"),
                 S("phone").For("phone").Opts("phone_contacts", "phone_skin").Also("call numbers wallpaper")),
 
             G("city",
