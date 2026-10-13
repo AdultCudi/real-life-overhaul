@@ -29,6 +29,7 @@ namespace RealLifeOverhaul.Markets
     {
         public const int OwnPage = -2;   // the player's own company's page (a company's page is its id, the index's IndexPage)
         private const string OwnRow = "own:";
+        private const string ListingGuideTitle = "reallife_meta_title_markets_listing";   // the Guide's page the company's pages point to
 
         private int _floatBp = ListingCatalogue.FloatDefault;
         private int _walk;              // the least price taken: 0 the range's bottom, 1 its middle, 2 any price
@@ -108,7 +109,12 @@ namespace RealLifeOverhaul.Markets
             {
                 box.Line(MarketText.T("reallife_lst_box_off"));
                 BackRow(box);
+                Meta.Guide.Point(box, ListingGuideTitle);
                 return spec;
+            }
+            if (f.Fees > 0)
+            {
+                box.Line(MarketText.Fill("reallife_lst_box_fees", "amount", MarketText.Money(f.Fees)));
             }
             switch (f.Stage)
             {
@@ -120,7 +126,6 @@ namespace RealLifeOverhaul.Markets
                         met += r[i].Met ? 1 : 0;
                     }
                     box.Line(MarketText.Fill("reallife_lst_box_met", "met", met.ToString(), "count", r.Length.ToString()));
-                    box.Line(MarketText.T("reallife_lst_box_steps"));
                     bool ready = ListingBook.ReadyForAdvisers(r);
                     long fee = _director.Retainer();
                     box.Line(MarketText.Fill(ready ? "reallife_lst_box_advisers" : "reallife_lst_box_not_ready", "amount", MarketText.Money(fee)));
@@ -178,10 +183,11 @@ namespace RealLifeOverhaul.Markets
                     BackRow(box);
                     break;
             }
-            if (f.Fees > 0)
+            if (f.Stage == ListingStage.None)
             {
-                box.Line(MarketText.Fill("reallife_lst_box_fees", "amount", MarketText.Money(f.Fees)));
+                box.Line(MarketText.T("reallife_lst_box_steps"));   // the way, in one line, under the buttons
             }
+            Meta.Guide.Point(box, ListingGuideTitle);
             return spec;
         }
 
@@ -382,6 +388,7 @@ namespace RealLifeOverhaul.Markets
                 AskCount(board, InfoBox.Additional, "reallife_lst_issue", "reallife_mkt_shares_placeholder", false, n => Confirm(k, OwnAction.Issue, n));
                 InfoBox.Button(board, InfoBox.Negative, "reallife_lst_private", () => UiClone.Safe(() => Confirm(k, OwnAction.Private, 0)));
             }
+            Meta.Guide.Point(box, ListingGuideTitle);
             if (_ownView == 0)
             {
                 WriteRegister(k);
@@ -500,10 +507,13 @@ namespace RealLifeOverhaul.Markets
             box.Title(k.Name + "  <size=70%>" + k.Ticker + "</size>");
             Quote q = MarketTrading.QuoteOf(s, k, s.Phase);
             box.Line(MarketText.Fill("reallife_mkt_ticket_quote", "bid", MarketText.Price(q.Bid), "ask", MarketText.Price(q.Ask), "last", MarketText.Price(k.Last), "change", MarketText.Change(Bp(k.Last, k.PrevClose))));
+            bool closed = ListingRules.Closed(k, s.Day, s.YearDays);
+            if (closed || s.Day < o.LockDay)
+            {
+                box.Line(closed ? MarketText.Fill("reallife_lst_ticket_closed", "day", ListingRules.OpensAgain(k, s.Day, s.YearDays).ToString())
+                    : MarketText.Fill("reallife_lst_ticket_lockup", "day", o.LockDay.ToString()));
+            }
             box.Line(MarketText.Fill("reallife_lst_ticket_held", "count", Count(o.Founder), "share", MarketText.Percent(o.StakeBp(k))));
-            box.Line(ListingRules.Closed(k, s.Day, s.YearDays)
-                ? MarketText.Fill("reallife_lst_ticket_closed", "day", ListingRules.OpensAgain(k, s.Day, s.YearDays).ToString())
-                : s.Day < o.LockDay ? MarketText.Fill("reallife_lst_ticket_lockup", "day", o.LockDay.ToString()) : MarketText.Fill("reallife_lst_ticket_rules", "days", Math.Max(1, s.YearDays / ListingCatalogue.ShortSwingYearShare).ToString()));
             box.Selector(OwnSideKeys.Length, (int)_ownSide, i => MarketText.T(OwnSideKeys[i]), i => UiClone.Safe(() =>
             {
                 _ownSide = (OwnSide)i;
@@ -534,6 +544,11 @@ namespace RealLifeOverhaul.Markets
                 Refresh();
             }));
             InfoBox.Button(buttons, InfoBox.Negative, "reallife_mkt_back", () => UiClone.Safe(ClosePage));
+            if (!closed && s.Day >= o.LockDay)
+            {
+                box.Line(MarketText.Fill("reallife_lst_ticket_rules", "days", Math.Max(1, s.YearDays / ListingCatalogue.ShortSwingYearShare).ToString()));
+            }
+            Meta.Guide.Point(box, ListingGuideTitle);
         }
 
         private void ConfirmDeal(Stock k, long shares)

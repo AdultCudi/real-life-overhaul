@@ -39,6 +39,7 @@ namespace RealLifeOverhaul.Economy
         private static readonly string[] TabKeys = { "reallife_bank_tab_accounts", "reallife_bank_tab_loans", "reallife_bank_tab_card", "reallife_bank_tab_apply", "reallife_bank_tab_rating" };
         private static readonly int[] AmountSteps = { 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000, 2500000, 5000000 };
         private static readonly string[] ProfileKeys = { "reallife_bank_profile_0", "reallife_bank_profile_1", "reallife_bank_profile_2" };
+        private const string GuideTitle = "reallife_meta_title_economy_banks";   // the Guide's page every page of the app points to at its foot
 
         public static IModLogger Logger;
 
@@ -366,6 +367,7 @@ namespace RealLifeOverhaul.Economy
             }
             OverdraftLines(box);
             Statement(box, save.Day);
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         private void OverdraftLines(InfoBox box)
@@ -374,23 +376,24 @@ namespace RealLifeOverhaul.Economy
             CreditAccount a = HeldHere(ProductKind.Overdraft);
             if (a != null)
             {
-                box.Line(FinanceText.Pair("reallife_econ_offer_limit", FinanceText.Money(a.Agreed)) + "  " + FinanceText.Pair("reallife_econ_offer_drawn", FinanceText.Money(a.Owed)));
-                box.Line(FinanceText.Pair("reallife_econ_offer_rate", FinanceApp.Rate(a.RateNow)) + " " + FinanceText.T("reallife_econ_account_overdraft", "free", FinanceText.Money(a.Free), "float", FinanceText.Money(ProductCatalogue.OverdraftFloat)));
-                if (a.Frozen)
+                box.Line(FinanceText.Pair("reallife_econ_offer_drawn", FinanceText.Money(a.Owed)));
+                box.Line(FinanceText.Pair("reallife_econ_offer_limit", FinanceText.Money(a.Agreed)));
+                box.Line(FinanceText.Pair("reallife_econ_offer_rate", FinanceApp.Rate(a.RateNow)));
+                if (!a.Frozen)
                 {
-                    return;
+                    Transform buttons = box.ButtonRow();
+                    CreditDesk desk = Desk;
+                    if (a.Owed > 0)
+                    {
+                        AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", a.Owed, amount => Paid(desk, a, amount));
+                        InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_account_pay_off", () => Paid(desk, a, a.Owed));
+                    }
+                    else
+                    {
+                        InfoBox.Button(buttons, InfoBox.Negative, "reallife_econ_account_close", () => Said(desk.CloseAccount(a)));
+                    }
                 }
-                Transform buttons = box.ButtonRow();
-                CreditDesk desk = Desk;
-                if (a.Owed > 0)
-                {
-                    AskAmount(buttons, "reallife_econ_account_pay", "reallife_econ_account_pay_how_much", a.Owed, amount => Paid(desk, a, amount));
-                    InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_account_pay_off", () => Paid(desk, a, a.Owed));
-                }
-                else
-                {
-                    InfoBox.Button(buttons, InfoBox.Negative, "reallife_econ_account_close", () => Said(desk.CloseAccount(a)));
-                }
+                box.Line(FinanceText.T("reallife_econ_account_overdraft", "free", FinanceText.Money(a.Free), "float", FinanceText.Money(ProductCatalogue.OverdraftFloat)));
                 return;
             }
             string other = HeldWith(ProductKind.Overdraft);
@@ -501,8 +504,9 @@ namespace RealLifeOverhaul.Economy
                     row.Set(4, FinanceText.Money(-entry.Amount), -entry.Amount, TableRow.Red);
                 }
             }
-            box.Line(FinanceText.Pair("reallife_econ_cash_in", FinanceText.Money(came)) + "  " + FinanceText.Pair("reallife_econ_cash_out", FinanceText.Money(went)));
             box.Line(FinanceText.Pair("reallife_econ_cash_net", FinanceText.Money(came - went)));
+            box.Line(FinanceText.Pair("reallife_econ_cash_in", FinanceText.Money(came)));
+            box.Line(FinanceText.Pair("reallife_econ_cash_out", FinanceText.Money(went)));
             if (_rows.Count == 0)
             {
                 Say("none", FinanceText.T("reallife_bank_row_no_movements", "bank", Bank.Name));
@@ -525,7 +529,6 @@ namespace RealLifeOverhaul.Economy
 
             box.Title(FinanceText.T("reallife_econ_rating_value", "score", score.Value.ToString(), "grade", FinanceText.Grade(score.Grade)));
             box.Line(FinanceText.T(score.Lends ? "reallife_bank_rating_lends" : "reallife_bank_rating_refuses", "bank", Bank.Name, "threshold", threshold.ToString()));
-            box.Line(FinanceText.T(ProfileKeys[Mathf.Clamp(Bank.Rank, 0, ProfileKeys.Length - 1)]));
             int next = Mathf.Min(CreditCatalogue.ScoreMax, (score.Value / 50 + 1) * 50);
             if (next > score.Value && score.Value < best)
             {
@@ -542,7 +545,9 @@ namespace RealLifeOverhaul.Economy
                     box.Line(FinanceText.Tip(score, _tips[i]));
                 }
             }
+            box.Line(FinanceText.T(ProfileKeys[Mathf.Clamp(Bank.Rank, 0, ProfileKeys.Length - 1)]));
             box.Line(FinanceText.T("reallife_bank_rating_note"));
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         private static float Multiplier => SaveGameManager.Current != null && SaveGameManager.Current.gameVariables != null ? SaveGameManager.Current.gameVariables.bankInterestMultiplier : 1f;

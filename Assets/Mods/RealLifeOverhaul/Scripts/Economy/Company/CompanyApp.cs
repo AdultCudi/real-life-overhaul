@@ -253,6 +253,7 @@ namespace RealLifeOverhaul.Economy
             _spec = CompanyTables.Off;
             box.Title(CompanyText.T(TabKeys[_tab]));
             box.Line(CompanyText.T("reallife_co_part_off"));
+            Guide(box);
             Say("off", CompanyText.T("reallife_co_part_off_row"));
             return false;
         }
@@ -323,9 +324,17 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
+        /// <summary>The foot of a picked thing's page: the way back, then the Guide's page.</summary>
         private void BackButton(InfoBox box)
         {
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_co_back", Back);
+            Guide(box);
+        }
+
+        // The Guide's page for the tab that shows: the rota planner's own, or running a business for the rest.
+        private void Guide(InfoBox box)
+        {
+            Meta.Guide.Point(box, _tab == CompanyDirector.TabRota ? "reallife_meta_title_economy_rota" : "reallife_meta_title_economy_company");
         }
 
         // ---------------------------------------------------------------- Overview
@@ -360,12 +369,9 @@ namespace RealLifeOverhaul.Economy
                 return selected;
             }
             box.Title(CompanyText.T("reallife_co_app"));
-            box.Line(FinanceText.Pair("reallife_co_over_businesses", shops.Count.ToString()));
-            box.Line(FinanceText.Pair("reallife_co_over_staff", state.Staff.Count.ToString()));
-            box.Line(FinanceText.Pair("reallife_co_over_quarter", CompanyText.T("reallife_co_over_quarter_value", "quarter", state.Tax.Quarter.ToString(), "day", state.Tax.QuarterFrom.ToString())));
             IReadOnlyList<CompanyAlert> alerts = _director.Alerts;
             box.Headline("reallife_co_over_alerts");
-            for (int i = 0; i < alerts.Count && i < 6; i++)
+            for (int i = 0; i < alerts.Count && i < AlertsShown; i++)
             {
                 box.Line("<b>" + alerts[i].Title + "</b> " + alerts[i].What);
             }
@@ -373,16 +379,23 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(CompanyText.T("reallife_co_over_no_alerts"));
             }
-            else if (alerts.Count > 6)
+            else if (alerts.Count > AlertsShown)
             {
-                box.Line(CompanyText.T("reallife_co_over_more", "count", (alerts.Count - 6).ToString()));
+                box.Line(CompanyText.T("reallife_co_over_more", "count", (alerts.Count - AlertsShown).ToString()));
             }
+            box.Headline("reallife_co_tab_overview");
+            box.Line(FinanceText.Pair("reallife_co_over_businesses", shops.Count.ToString()));
+            box.Line(FinanceText.Pair("reallife_co_over_staff", state.Staff.Count.ToString()));
+            box.Line(FinanceText.Pair("reallife_co_over_quarter", CompanyText.T("reallife_co_over_quarter_value", "quarter", state.Tax.Quarter.ToString(), "day", state.Tax.QuarterFrom.ToString())));
             Transform others = ServicesDirector.CanClean || OwnBankDirector.CanOpen ? box.ButtonRow() : null;
             if (ServicesDirector.CanClean) InfoBox.Button(others, InfoBox.Additional, "reallife_svc_open_cleaning", ServicesDirector.OpenCleaning);   // (the cleaning service: Economy/Services)
             if (OwnBankDirector.CanOpen) InfoBox.Button(others, InfoBox.Positive, "reallife_ob_open", OwnBankDirector.OpenApp);   // (the player's bank: Economy/OwnBank)
             WriteListingLine(box);
+            Guide(box);
             return null;
         }
+
+        private const int AlertsShown = 4;   // the alerts at the head of the overview; the rest are counted in one line (each business's row shows what waits there)
 
         // The company and the city's market (Markets/Listing): where it stands, and a button to its page in the Stocks app.
         private static void WriteListingLine(InfoBox box)
@@ -432,19 +445,19 @@ namespace RealLifeOverhaul.Economy
         {
             ShopFile file = shop.File;
             box.Title(shop.Name);
-            box.Line(FinanceText.Pair("reallife_co_shop_district", CompanyText.T("reallife_co_shop_district_value", "district", CompanyText.District(shop.District), "income", shop.Income.ToString())));
+            if (_director.On(CompanyPart.Staff) && file.StrikeFrom > 0)
+            {
+                box.Line(CompanyText.T(file.Striking(day) ? "reallife_co_shop_strike_on" : "reallife_co_shop_strike_called", "day", (file.Striking(day) ? file.StrikeEnd : file.StrikeFrom).ToString()));
+            }
             box.Line(shop.HasBooks
                 ? CompanyText.T("reallife_co_shop_yesterday", "takings", CompanyText.Money(shop.Takings), "profit", CompanyText.Money(shop.Profit))
                 : CompanyText.T("reallife_co_shop_no_books"));
+            box.Line(FinanceText.Pair("reallife_co_shop_district", CompanyText.T("reallife_co_shop_district_value", "district", CompanyText.District(shop.District), "income", shop.Income.ToString())));
             if (_director.On(CompanyPart.Staff))
             {
                 box.Line(shop.Staff > 0
                     ? CompanyText.T("reallife_co_shop_staff", "count", shop.Staff.ToString(), "standing", (shop.Standing / shop.Staff).ToString(), "low", shop.Low.ToString())
                     : CompanyText.T("reallife_co_shop_no_staff"));
-                if (file.StrikeFrom > 0)
-                {
-                    box.Line(CompanyText.T(file.Striking(day) ? "reallife_co_shop_strike_on" : "reallife_co_shop_strike_called", "day", (file.Striking(day) ? file.StrikeEnd : file.StrikeFrom).ToString()));
-                }
             }
             if (_director.On(CompanyPart.Cover))
             {

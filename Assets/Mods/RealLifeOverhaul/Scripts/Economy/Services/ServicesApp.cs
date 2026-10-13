@@ -283,9 +283,17 @@ namespace RealLifeOverhaul.Economy
             return _pick != null && _pick.StartsWith(prefix, StringComparison.Ordinal) ? _pick.Substring(prefix.Length) : null;
         }
 
+        /// <summary>The foot of a picked thing's page: the way back, then the Guide's page.</summary>
         private void BackButton(InfoBox box)
         {
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_co_back", Back);
+            Guide(box);
+        }
+
+        // The Guide's page for the tab that shows: selling a business, or the cleaning service for the rest.
+        private void Guide(InfoBox box)
+        {
+            Meta.Guide.Point(box, _tab == ServicesDirector.TabSale ? "reallife_meta_title_economy_sale" : "reallife_meta_title_economy_cleaning");
         }
     }
 }

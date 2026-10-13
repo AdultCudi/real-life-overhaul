@@ -236,6 +236,22 @@ namespace RealLifeOverhaul.GameUi
         }
 
         /// <summary>
+        /// A labelled row, as the game writes an employee's "Age: <b>31</b>": the label (a locale key, often a column's
+        /// title), a colon and the value in bold. The one form every app's figures are written in, so that a page reads as a
+        /// list of short rows rather than sentences.
+        /// </summary>
+        public TMP_Text Row(string labelKey, string value)
+        {
+            return RowWords(labelKey.GetLocalization(), value);
+        }
+
+        /// <summary>The same with the label in final words.</summary>
+        public TMP_Text RowWords(string label, string value)
+        {
+            return Line(label + ": <b>" + value + "</b>", null);
+        }
+
+        /// <summary>
         /// A picture in the box (a post's thumbnail), at a width and the height its texture's shape gives, never past the
         /// height given. The texture is the caller's: the box only shows it, and its row goes with the page.
         /// </summary>

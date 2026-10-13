@@ -29,6 +29,7 @@ namespace RealLifeOverhaul.Economy
     public sealed partial class OnlineApp
     {
         private static readonly string[] TabKeys = { "reallife_online_tab_shops", "reallife_online_tab_orders", "reallife_online_tab_catalogue" };
+        private const string GuideTitle = "reallife_meta_title_economy_online";   // the Guide's page every page of the app points to at its foot
 
         public static IModLogger Logger;
 

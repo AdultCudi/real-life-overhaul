@@ -83,13 +83,14 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
             _picked = null;
             box.Title(FinanceText.T("reallife_ven_tab_property"));
-            box.Line(FinanceText.T("reallife_ven_prop_what"));
-            box.Line(Pair("reallife_ven_prop_count", buildings.ToString()));
-            box.Line(Pair("reallife_ven_prop_paid", Money((float)paid)));
             box.Line(Pair("reallife_ven_prop_week", Money(week)));
             box.Line(Pair("reallife_ven_prop_month", Money(month)));
-            box.Line(FinanceText.T("reallife_ven_prop_yield_note", "days", year.ToString()));
+            box.Line(Pair("reallife_ven_prop_count", buildings.ToString()));
+            box.Line(Pair("reallife_ven_prop_paid", Money((float)paid)));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_ven_prop_bizman", OpenBizMan);
+            box.Line(FinanceText.T("reallife_ven_prop_what"));
+            box.Line(FinanceText.T("reallife_ven_prop_yield_note", "days", year.ToString()));
+            Meta.Guide.Point(box, GuideTitle);
             return VenturesTables.Property;
         }
 
@@ -156,6 +157,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_ven_prop_bizman", OpenBizMan);
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         // Rents are set, and buildings bought and sold, where the game has them: BizMan.

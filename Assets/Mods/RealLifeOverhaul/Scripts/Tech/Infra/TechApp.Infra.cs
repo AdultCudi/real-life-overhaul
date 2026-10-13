@@ -76,12 +76,13 @@ namespace RealLifeOverhaul.Tech
             {
                 _picked = null;
                 box.Title(TechText.T("reallife_infra_title"));
-                box.Line(TechText.Fill("reallife_infra_about", "mbps", InfraCatalogue.NetNeeded.ToString(), "per", InfraCatalogue.RacksPerTechnician.ToString()));
                 if (f.Cloud.Open)
                 {
                     box.Line(TechText.Fill("reallife_infra_cloud_line", "sold", f.Cloud.Sold.ToString(), "own", f.Cloud.Own.ToString(), "gpu", f.Cloud.GpuSold.ToString(), "rival", TechText.Mille(f.Cloud.RivalPrice),
                         "regions", InfraRules.Regions(f.Centres).ToString()));
                 }
+                box.Line(TechText.Fill("reallife_infra_about", "mbps", InfraCatalogue.NetNeeded.ToString(), "per", InfraCatalogue.RacksPerTechnician.ToString()));
+                Meta.Guide.Point(box, SectorGuide);
             }
             return TechColumns.Infra;
         }
@@ -106,19 +107,20 @@ namespace RealLifeOverhaul.Tech
                 }
             }));
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
+            Meta.Guide.Point(box, SectorGuide);
         }
 
         private void WriteCentre(InfoBox box, DataCentre d, int day)
         {
             string place = d.Place;
             box.Title(TechText.T("reallife_infra_centre_title", "name", d.Name, "tier", TechText.InfraTier(d.Tier)));
-            box.Line(TechText.Fill("reallife_infra_centre_racks", "racks", d.Racks.ToString(), "gpu", d.GpuRacks.ToString(), "room", InfraRules.Room(d).ToString(), "let", d.Colo.ToString(),
-                "book", TechText.Cents(_director.Level(d.Book))));
             long power = InfraRules.Power(d), water = InfraRules.Water(d);
             box.Line(TechText.Fill("reallife_infra_centre_power", "kwh", (power / 1000).ToString("N0", System.Globalization.CultureInfo.InvariantCulture),
                 "water", (water / 1000f).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture), "supplied", TechText.T(d.Power ? "reallife_infra_yes" : "reallife_infra_no"),
                 "net", TechText.T(d.Net ? "reallife_infra_yes" : "reallife_infra_no")));
             box.Line(TechText.Fill("reallife_infra_centre_staff", "have", d.Technicians.ToString(), "need", InfraRules.TechniciansNeeded(d).ToString(), "outages", d.Outages.ToString()));
+            box.Line(TechText.Fill("reallife_infra_centre_racks", "racks", d.Racks.ToString(), "gpu", d.GpuRacks.ToString(), "room", InfraRules.Room(d).ToString(), "let", d.Colo.ToString(),
+                "book", TechText.Cents(_director.Level(d.Book))));
             if (d.Tier < InfraCatalogue.Tiers - 1)
             {
                 box.Line(TechText.T("reallife_infra_centre_upgrade", "tier", TechText.InfraTier(d.Tier + 1), "cost", TechText.Cents(_director.Level(InfraRules.UpgradeCost(d.Sqm, d.Tier, d.Tier + 1)))));
@@ -138,6 +140,7 @@ namespace RealLifeOverhaul.Tech
             });
             InfoBox.Button(more, InfoBox.Additional, "common_close", ClosePick);
             box.Line(TechText.Fill("reallife_infra_centre_prices", "rack", TechText.Cents(_director.Level(InfraCatalogue.RackCost)), "gpu", TechText.Cents(_director.Level(InfraCatalogue.GpuRackCost))));
+            Meta.Guide.Point(box, SectorGuide);
         }
 
         private void WriteCloud(InfoBox box, InfraFile f, int day)
@@ -147,8 +150,6 @@ namespace RealLifeOverhaul.Tech
             {
                 int needs = _director.CloudNeeds();
                 box.Title(TechText.T("reallife_infra_cloud_title_new"));
-                box.Line(TechText.Fill("reallife_infra_cloud_about", "racks", InfraCatalogue.CloudRacksLeast.ToString(), "engineers", InfraCatalogue.CloudEngineersLeast.ToString(),
-                    "cash", TechText.Cents(_director.Level(InfraCatalogue.CloudCashLeast)), "licence", TechText.Cents(_director.Level(InfraCatalogue.LicenceFee))));
                 box.Line(needs == 0 ? TechText.T("reallife_infra_cloud_ready") : _director.Needs(needs, true));
                 Transform buttons = box.ButtonRow();
                 UIs uis = InstanceBehavior<UIs>.Instance;
@@ -158,13 +159,16 @@ namespace RealLifeOverhaul.Tech
                         uis.textInputUi.Show("reallife_infra_cloud_name_placeholder", "common_confirm", text => UiClone.Safe(() => Do(() => _director.LaunchCloud(text))), null, string.Empty, false, 30));
                 }
                 InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
+                box.Line(TechText.Fill("reallife_infra_cloud_about", "racks", InfraCatalogue.CloudRacksLeast.ToString(), "engineers", InfraCatalogue.CloudEngineersLeast.ToString(),
+                    "cash", TechText.Cents(_director.Level(InfraCatalogue.CloudCashLeast)), "licence", TechText.Cents(_director.Level(InfraCatalogue.LicenceFee))));
+                Meta.Guide.Point(box, SectorGuide);
                 return;
             }
             box.Title(TechText.T("reallife_infra_cloud_title", "name", c.Name));
-            box.Line(TechText.Fill("reallife_infra_cloud_line", "sold", c.Sold.ToString(), "own", c.Own.ToString(), "gpu", c.GpuSold.ToString(), "rival", TechText.Mille(c.RivalPrice),
-                "regions", InfraRules.Regions(f.Centres).ToString()));
             box.Line(TechText.Fill("reallife_infra_cloud_state", "reputation", TechText.Mille(c.Reputation), "day", c.LicenceUntil.ToString(),
                 "hyper", c.Hyper ? TechText.T("reallife_infra_state_hyper") : _director.Needs(_director.HyperNeeds(), false)));
+            box.Line(TechText.Fill("reallife_infra_cloud_line", "sold", c.Sold.ToString(), "own", c.Own.ToString(), "gpu", c.GpuSold.ToString(), "rival", TechText.Mille(c.RivalPrice),
+                "regions", InfraRules.Regions(f.Centres).ToString()));
             int at = 2;
             for (int i = 0; i < CloudPrices.Length; i++)
             {
@@ -181,6 +185,7 @@ namespace RealLifeOverhaul.Tech
                 InfoBox.Button(row, InfoBox.Positive, "reallife_infra_button_licence", () => Do(() => _director.RenewLicence()));
             }
             InfoBox.Button(row, InfoBox.Additional, "common_close", ClosePick);
+            Meta.Guide.Point(box, SectorGuide);
         }
     }
 }

@@ -50,6 +50,7 @@ namespace RealLifeOverhaul.Interiors
         private static ScrollRect _rightScroll;
         private static int _shown;                   // the right column's page, kept for the session
         public const int Pages = 4;                  // what it does, the items, today's customers, the game's rules
+        private const string GuideTitle = "reallife_meta_title_interiors";   // the Guide's page each column points to at its foot
         private static readonly List<InteriorItem> Sorted = new List<InteriorItem>(16);
         private static readonly List<GameRule> GameRules = new List<GameRule>(16);
         private static FieldInfo _tabsField;
@@ -348,6 +349,7 @@ namespace RealLifeOverhaul.Interiors
             {
                 _left.Title(BusinessGame.Name(reg));
                 _left.Line("reallife_interior_none".GetLocalization());
+                Meta.Guide.Point(_left, GuideTitle);
                 _left.Done();
                 _right.Done();
                 return;
@@ -382,6 +384,7 @@ namespace RealLifeOverhaul.Interiors
                 case 3: WriteRules(reg); break;
                 default: WriteEffects(s, reg); break;
             }
+            Meta.Guide.Point(_right, GuideTitle);
             _right.Done();
             if (_rightScroll != null)
             {
@@ -527,9 +530,12 @@ namespace RealLifeOverhaul.Interiors
         {
             InfoBox b = _left;
             b.Title(s.Name);
+            if (!OtherMods.MeaningfulInteriors.Loaded && s.Fitting && s.Kind == InteriorKind.Shop && InteriorDirector.StandardOn)
+            {
+                b.Line(InteriorText.T("reallife_interior_line_fitting", "day", InteriorText.N(s.StandardFrom)));
+            }
             b.Headline("reallife_interior_head_place");
-            b.Line(InteriorText.T(s.InteriorNow != s.Interior ? "reallife_interior_line_interior_worn" : "reallife_interior_line_interior",
-                "score", InteriorText.N(s.Interior), "now", InteriorText.N(s.InteriorNow)));
+            b.Line(InteriorText.T("reallife_interior_line_overall", "overall", InteriorText.N(s.Overall)));
             if (OtherMods.MeaningfulInteriors.Loaded)
             {
                 b.Line(InteriorText.T("reallife_interior_line_minimum_other", "minimum", InteriorText.N(s.GameMinimum), "mod", OtherMods.MeaningfulInteriors.Name));
@@ -537,14 +543,11 @@ namespace RealLifeOverhaul.Interiors
             else
             {
                 b.Line(InteriorText.T("reallife_interior_line_standard", "standard", InteriorText.N(s.Standard), "district", Districts.DistrictGame.Name(s.District)));
-                if (s.Fitting && s.Kind == InteriorKind.Shop && InteriorDirector.StandardOn)
-                {
-                    b.Line(InteriorText.T("reallife_interior_line_fitting", "day", InteriorText.N(s.StandardFrom)));
-                }
             }
+            b.Line(InteriorText.T(s.InteriorNow != s.Interior ? "reallife_interior_line_interior_worn" : "reallife_interior_line_interior",
+                "score", InteriorText.N(s.Interior), "now", InteriorText.N(s.InteriorNow)));
             b.Line(InteriorText.T(s.Decor != s.DecorRaw ? "reallife_interior_line_decor_worn" : "reallife_interior_line_decor",
                 "score", InteriorText.N(s.DecorRaw), "now", InteriorText.N(s.Decor)));
-            b.Line(InteriorText.T("reallife_interior_line_overall", "overall", InteriorText.N(s.Overall)));
             b.Headline("reallife_interior_head_decor");
             for (int i = 0; i < InteriorRules.Categories; i++)
             {
@@ -555,6 +558,7 @@ namespace RealLifeOverhaul.Interiors
             b.Headline("reallife_interior_head_condition");
             b.Line(InteriorText.T(InteriorDirector.Parts.WearScale > 0 ? "reallife_interior_line_wear" : "reallife_interior_line_wear_off", "wear", InteriorText.N(s.Wear / 10)));
             b.Line(InteriorText.T("reallife_interior_line_clean", "clean", InteriorText.N(s.Clean)));
+            Meta.Guide.Point(b, GuideTitle);
         }
 
         private static void WriteEffects(InteriorShop s, BuildingRegistration reg)

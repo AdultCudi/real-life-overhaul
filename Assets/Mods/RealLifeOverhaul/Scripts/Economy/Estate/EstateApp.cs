@@ -260,6 +260,7 @@ namespace RealLifeOverhaul.Economy
             }
             box.Title(EstateText.T(EstateTables.Tabs[_tab]));
             box.Line(EstateText.T("reallife_estate_part_off"));
+            Meta.Guide.Point(box, GuideTitle);
             Say("off", EstateText.T("reallife_estate_part_off_row"));
             return false;
         }
@@ -320,6 +321,8 @@ namespace RealLifeOverhaul.Economy
         {
             return _pick != null && _pick.StartsWith(prefix, StringComparison.Ordinal) ? _pick.Substring(prefix.Length) : null;
         }
+
+        private const string GuideTitle = "reallife_meta_title_economy_estate";   // the Guide's page every page of the app points to at its foot
 
         private void BackButton(Transform buttons)
         {
@@ -412,12 +415,13 @@ namespace RealLifeOverhaul.Economy
             else
             {
                 box.Title(EstateText.T("reallife_estate_tab_market"));
-                box.Line(EstateText.T("reallife_estate_market_what"));
                 box.Line(EstateText.Pair("reallife_estate_market_level", EstateText.Share(state.Real)));
                 box.Line(EstateText.T("reallife_estate_market_heading", "cycle", EstateText.Cycle(c.Cycle), "target", EstateText.Share(EstateRules.RealTarget(c.Cycle, c.Quarters))));
                 box.Line(EstateText.Pair("reallife_estate_market_prices", EstateText.Share(c.Index)));
+                box.Line(EstateText.T("reallife_estate_market_what"));
                 box.Line(EstateText.T("reallife_estate_market_rents"));
                 box.Line(EstateText.T("reallife_estate_market_mortgage"));
+                Meta.Guide.Point(box, GuideTitle);
             }
         }
 
@@ -442,10 +446,11 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(EstateText.T("reallife_estate_listing_units", "units", b.Units.ToString(), "amount", EstateText.Money(Math.Max(1, rent / b.Units))));
             }
-            box.Line(EstateText.T("reallife_estate_listing_how"));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_estate_btn_offer", () => _director.Buy(place));
             BackButton(buttons);
+            box.Line(EstateText.T("reallife_estate_listing_how"));
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         private void WriteHotelForSale(InfoBox box, EstateState state, HotelSlot slot, EstateClimate c)
@@ -454,16 +459,17 @@ namespace RealLifeOverhaul.Economy
             int price = EstateGame.HotelPrice(slot, state.Real, c.DaysPerYear);
             string id = slot.Id;
             box.Title(EstateGame.HotelName(slot));
+            box.Line(EstateText.Pair("reallife_estate_listing_price", EstateText.Money(price)));
             box.Line(EstateText.Fill("reallife_estate_hotel_rooms", "count0", HotelRules.Rooms(tier, 0).ToString(), "room0", EstateGame.RoomName(tier, 0), "count1", HotelRules.Rooms(tier, 1).ToString(),
                 "room1", EstateGame.RoomName(tier, 1)));
-            box.Line(EstateText.Pair("reallife_estate_listing_price", EstateText.Money(price)));
             box.Line(EstateText.T("reallife_estate_hotel_price_what", "years", (EstateCatalogue.HotelMultiple / 1000f).ToString("0.#"), "share", EstateText.Share(EstateCatalogue.Occupancy), "market", EstateText.Share(state.Real)));
             box.Line(EstateText.T("reallife_estate_hotel_lease_what", "deposit", EstateText.Money(HotelRules.LeaseDeposit(tier, price, c.DaysPerYear)), "amount", EstateText.Money(HotelRules.LeaseDaily(tier, price, c.DaysPerYear))));
-            box.Line(EstateText.T("reallife_estate_hotel_held_what"));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_estate_btn_buy_hotel", () => _director.TakeHotel(id, false));
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_estate_btn_lease_hotel", () => _director.TakeHotel(id, true));
             BackButton(box.ButtonRow());
+            box.Line(EstateText.T("reallife_estate_hotel_held_what"));
+            Meta.Guide.Point(box, GuideTitle);
         }
     }
 }

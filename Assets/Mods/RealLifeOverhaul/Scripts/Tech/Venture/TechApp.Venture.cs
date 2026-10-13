@@ -80,6 +80,7 @@ namespace RealLifeOverhaul.Tech
                 {
                     InfoBox.Button(buttons, InfoBox.Additional, "reallife_vc_button_fund_out", () => Do(() => _director.FundOut()));
                 }
+                Meta.Guide.Point(box, StartupsGuide);
             }
             return TechColumns.Startups;
         }
@@ -92,6 +93,15 @@ namespace RealLifeOverhaul.Tech
             long mine = VentureRules.PlayerValue(s, out share, out put);
             bool known = s.Diligence || (s.Revealed & 1) != 0;
             box.Title(TechText.T("reallife_vc_startup_title", "name", s.Name, "sector", TechText.VentureName((Venture)s.Sector)));
+            if (s.Ask != null)
+            {
+                box.Line(TechText.Fill("reallife_vc_startup_ask", "amount", TechText.Cents(_director.Level(s.Ask.Amount)), "pre", TechText.Cents(_director.Level(s.Ask.Pre)), "share", TechText.Mille(s.Ask.EquityMille),
+                    "day", s.Ask.Lapse.ToString()));
+            }
+            if (put > 0)
+            {
+                box.Line(TechText.Fill("reallife_vc_startup_yours", "share", TechText.Mille(share), "value", TechText.Cents(_director.Level(mine)), "invested", TechText.Cents(_director.Level(put))));
+            }
             box.Line(TechText.Fill("reallife_vc_startup_line", "founder", s.Founder, "stage", TechText.RoundName((RoundStage)s.Stage), "founded", s.Founded.ToString(),
                 "revenue", TechText.Cents(_director.Level(known ? s.Mrr : VentureRules.Claimed(s))), "said", TechText.T(known ? "reallife_vc_startup_true" : "reallife_vc_startup_claimed"),
                 "value", TechText.Cents(_director.Level(s.Post))));
@@ -99,24 +109,22 @@ namespace RealLifeOverhaul.Tech
                 ? TechText.Fill("reallife_vc_startup_diligence", "quality", TechText.T(s.Quality >= 700 ? "reallife_vc_quality_strong" : s.Quality >= 400 ? "reallife_vc_quality_fair" : "reallife_vc_quality_weak"),
                     "claim", TechText.Bp(s.ClaimBp), "runway", VentureRules.Runway(s.Cash, s.Burn, s.Mrr) == int.MaxValue ? "-" : VentureRules.Runway(s.Cash, s.Burn, s.Mrr).ToString())
                 : TechText.T("reallife_vc_startup_no_diligence", "fee", TechText.Cents(_director.Level(VentureCatalogue.DiligenceFee))));
-            if (put > 0)
+            bool followOn = put > 0 && s.Alive && day - s.LastRound <= VentureCatalogue.ProRataDays && VentureRules.FollowOnAmount(s) > 0;
+            if (followOn)
             {
-                box.Line(TechText.Fill("reallife_vc_startup_yours", "share", TechText.Mille(share), "value", TechText.Cents(_director.Level(mine)), "invested", TechText.Cents(_director.Level(put))));
+                box.Line(TechText.T("reallife_vc_startup_follow_on", "amount", TechText.Cents(_director.Level(VentureRules.FollowOnAmount(s)))));
             }
             Transform buttons = box.ButtonRow();
             if (s.Ask != null)
             {
-                box.Line(TechText.Fill("reallife_vc_startup_ask", "amount", TechText.Cents(_director.Level(s.Ask.Amount)), "pre", TechText.Cents(_director.Level(s.Ask.Pre)), "share", TechText.Mille(s.Ask.EquityMille),
-                    "day", s.Ask.Lapse.ToString()));
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_vc_button_meet", () => Do(() => _director.MeetFounders(id)));
             }
             if (!s.Diligence && s.Alive)
             {
                 InfoBox.Button(buttons, InfoBox.Additional, "reallife_vc_button_diligence", () => Do(() => _director.Diligence(id)));
             }
-            if (put > 0 && s.Alive && day - s.LastRound <= VentureCatalogue.ProRataDays && VentureRules.FollowOnAmount(s) > 0)
+            if (followOn)
             {
-                box.Line(TechText.T("reallife_vc_startup_follow_on", "amount", TechText.Cents(_director.Level(VentureRules.FollowOnAmount(s)))));
                 Transform follow = box.ButtonRow();
                 InfoBox.Button(follow, InfoBox.Positive, "reallife_vc_button_follow_angel", () => Do(() => _director.FollowOn(id, false)));
                 if (_director.FundOpen)
@@ -125,6 +133,7 @@ namespace RealLifeOverhaul.Tech
                 }
             }
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
+            Meta.Guide.Point(box, StartupsGuide);
         }
 
         // ---------------------------------------------------------------- funding
@@ -183,6 +192,7 @@ namespace RealLifeOverhaul.Tech
                 _picked = null;
                 box.Title(TechText.T("reallife_vc_funding_title"));
                 box.Line(TechText.Fill("reallife_vc_funding_about", "days", VentureCatalogue.RaiseDays.ToString(), "growth", TechText.Mille(VentureCatalogue.TargetGrowth), "target", VentureCatalogue.TargetDays.ToString()));
+                Meta.Guide.Point(box, StartupsGuide);
             }
             return TechColumns.Funding;
         }
@@ -192,6 +202,9 @@ namespace RealLifeOverhaul.Tech
             string place = firm.File.Place;
             Cap c = _director.CapFor(place, false);
             box.Title(TechText.T("reallife_vc_cap_title", "firm", firm.File.Name));
+            long profit = _director.FirmProfit(firm);
+            box.Line(profit < 0 ? TechText.Fill("reallife_vc_cap_burn", "burn", TechText.Cents(-profit), "days", (VentureGame.Cash / -profit).ToString())
+                : TechText.T("reallife_vc_cap_profit", "profit", TechText.Cents(profit)));
             if (c != null)
             {
                 long total = System.Math.Max(1, c.Total);
@@ -214,9 +227,6 @@ namespace RealLifeOverhaul.Tech
             {
                 box.Line(TechText.T("reallife_vc_cap_all_yours"));
             }
-            long profit = _director.FirmProfit(firm);
-            box.Line(profit < 0 ? TechText.Fill("reallife_vc_cap_burn", "burn", TechText.Cents(-profit), "days", (VentureGame.Cash / -profit).ToString())
-                : TechText.T("reallife_vc_cap_profit", "profit", TechText.Cents(profit)));
             // the chief executive: the player, or one of the firm's professionals
             _chiefs.Clear();
             IReadOnlyList<Person> people = _director.People;
@@ -253,6 +263,7 @@ namespace RealLifeOverhaul.Tech
             }
             InfoBox.Button(more, InfoBox.Additional, "reallife_vc_button_listing", () => Do(() => _director.PrepareListing(place)));
             InfoBox.Button(more, InfoBox.Additional, "common_close", ClosePick);
+            Meta.Guide.Point(box, StartupsGuide);
         }
 
         private void WriteRaise(InfoBox box, FirmPlace firm, int day)
@@ -260,20 +271,31 @@ namespace RealLifeOverhaul.Tech
             string place = firm.File.Place;
             Cap c = _director.CapFor(place, false);
             box.Title(TechText.T("reallife_vc_raise_title", "firm", firm.File.Name));
-            Transform buttons = box.ButtonRow();
-            if (c == null || c.RaiseUntil == 0)
+            bool raising = c != null && c.RaiseUntil != 0;
+            box.Line(raising ? TechText.Fill("reallife_vc_raise_on", "day", c.RaiseUntil.ToString(), "met", c.Meetings.ToString(), "most", VentureCatalogue.VcMeetingsMost.ToString())
+                : TechText.Fill("reallife_vc_raise_about", "days", VentureCatalogue.RaiseDays.ToString(), "meetings", VentureCatalogue.VcMeetingsMost.ToString()));
+            if (c != null && c.Bridge > 0)
             {
-                box.Line(TechText.Fill("reallife_vc_raise_about", "days", VentureCatalogue.RaiseDays.ToString(), "meetings", VentureCatalogue.VcMeetingsMost.ToString()));
+                box.Line(TechText.T("reallife_vc_bridge_owed", "amount", TechText.Cents(_director.Level(c.Bridge))));
+            }
+            Transform buttons = box.ButtonRow();
+            if (!raising)
+            {
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_vc_button_raise", () => Do(() => _director.StartRaise(place)));
             }
-            else
+            else if (c.Meetings < VentureCatalogue.VcMeetingsMost)
             {
-                box.Line(TechText.Fill("reallife_vc_raise_on", "day", c.RaiseUntil.ToString(), "met", c.Meetings.ToString(), "most", VentureCatalogue.VcMeetingsMost.ToString()));
-                if (c.Meetings < VentureCatalogue.VcMeetingsMost)
-                {
-                    InfoBox.Button(buttons, InfoBox.Positive, "reallife_vc_button_meet_vc", () => Do(() => _director.MeetVc(place)));
-                }
+                InfoBox.Button(buttons, InfoBox.Positive, "reallife_vc_button_meet_vc", () => Do(() => _director.MeetVc(place)));
             }
+            if (c != null && c.VcSeats > 0 && c.Bridge == 0)
+            {
+                InfoBox.Button(buttons, InfoBox.Additional, "reallife_vc_button_bridge", () => Do(() => _director.TakeBridge(place)));
+            }
+            InfoBox.Button(buttons, InfoBox.Additional, "reallife_roles_button_back", () =>
+            {
+                _page = PageCap;
+                Refresh();
+            });
             for (int i = 0; c != null && i < c.Sheets.Count; i++)
             {
                 TermSheet t = c.Sheets[i];
@@ -283,19 +305,7 @@ namespace RealLifeOverhaul.Tech
                 InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_vc_button_take_sheet", () => HudConfirm.Show("reallife_vc_confirm_sheet_title", "reallife_vc_confirm_sheet_body",
                     () => UiClone.Safe(() => Do(() => _director.TakeSheet(place, index))), null, null, null, true, false));
             }
-            if (c != null && c.VcSeats > 0 && c.Bridge == 0)
-            {
-                InfoBox.Button(buttons, InfoBox.Additional, "reallife_vc_button_bridge", () => Do(() => _director.TakeBridge(place)));
-            }
-            else if (c != null && c.Bridge > 0)
-            {
-                box.Line(TechText.T("reallife_vc_bridge_owed", "amount", TechText.Cents(_director.Level(c.Bridge))));
-            }
-            InfoBox.Button(buttons, InfoBox.Additional, "reallife_roles_button_back", () =>
-            {
-                _page = PageCap;
-                Refresh();
-            });
+            Meta.Guide.Point(box, StartupsGuide);
         }
     }
 }

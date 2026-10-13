@@ -27,6 +27,7 @@ namespace RealLifeOverhaul.Economy.Dealership
     public sealed partial class DealerApp
     {
         private static readonly string[] TabKeys = { "reallife_dealer_tab_stock", "reallife_dealer_tab_market", "reallife_dealer_tab_offers", "reallife_dealer_tab_finance", "reallife_dealer_tab_lots" };
+        private const string GuideTitle = "reallife_meta_title_economy_dealer";   // the Guide's page every page of the app points to at its foot
 
         public static IModLogger Logger;
 

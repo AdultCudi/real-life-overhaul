@@ -243,6 +243,8 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- the bank
 
+        private const string GuideTitle = "reallife_meta_title_economy_ownbank";   // the Guide's page every page of the app points to at its foot
+
         private void WriteBank(InfoBox box, OwnBank b, BankCity c)
         {
             int ratio = OwnBankRules.Ratio(b);
@@ -283,6 +285,7 @@ namespace RealLifeOverhaul.Economy
                             box.Line(OwnBankText.Fill("reallife_ob_box_closed_standing", "least", OwnBankCatalogue.AgainIntegrity.ToString(CultureInfo.InvariantCulture),
                                 "now", OwnBankGame.Integrity.ToString(CultureInfo.InvariantCulture)));
                         }
+                        Meta.Guide.Point(box, GuideTitle);
                         return;
                     }
                     box.Line(OwnBankText.Fill("reallife_ob_box_closed_open", "day", FinanceText.Day(again)));
@@ -292,33 +295,23 @@ namespace RealLifeOverhaul.Economy
                     box.Line(OwnBankText.Fill("reallife_ob_box_sold", "bank", b.Name, "day", FinanceText.Day(b.EndDay), "price", OwnBankText.Money(b.EndCents)));
                 }
                 long licence = OwnBankRules.Licence(level), capital = OwnBankRules.CapitalLeast(level, b.Closures);
+                box.Line(hq != null ? OwnBankText.T("reallife_ob_box_hq", "name", OwnBankGame.Name(hq)) : OwnBankText.T("reallife_ob_box_need_hq"));
                 box.Line(OwnBankText.Fill("reallife_ob_box_intro", "licence", OwnBankText.Money(licence), "capital", OwnBankText.Money(capital), "ratio", OwnBankText.Ratio(OwnBankCatalogue.MinRatio)));
                 box.Line(OwnBankText.Fill("reallife_ob_box_rivals", "savers", OwnBankText.Rate(OwnBankRules.RivalSaverBp(c, b, 0)), "loans", OwnBankText.Rate(OwnBankRules.RivalLoanBp(c, b, OwnBankCatalogue.Good))));
-                box.Line(hq != null ? OwnBankText.T("reallife_ob_box_hq", "name", OwnBankGame.Name(hq)) : OwnBankText.T("reallife_ob_box_need_hq"));
                 if (hq != null)
                 {
                     InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_ob_box_found", () => AskName(hq, licence, capital));
                 }
+                Meta.Guide.Point(box, GuideTitle);
                 return;
             }
             int conf = OwnBankRules.Confidence(c, b, ratio), trust = OwnBankRules.Trust(c, b, OwnBankGame.Today, conf);
             box.Title(b.Name);
-            box.Line(OwnBankText.Pair("reallife_ob_box_trust", OwnBankText.Fill("reallife_ob_box_trust_value", "trust", OwnBankText.Ratio(trust), "confidence", OwnBankText.Ratio(conf))));
-            box.Line(OwnBankText.Pair("reallife_ob_box_ratio", OwnBankText.Fill("reallife_ob_box_ratio_value", "ratio", OwnBankText.Ratio(ratio), "law", OwnBankText.Ratio(OwnBankCatalogue.MinRatio),
-                "watch", OwnBankText.Ratio(OwnBankCatalogue.WatchRatio))));
             box.Line(OwnBankText.Pair("reallife_ob_box_regulator", OwnBankText.Stage(b)));
             if (b.Run)
             {
                 box.Line(OwnBankText.T("reallife_ob_box_run"));
             }
-            if (b.HistoryCount > 0)
-            {
-                box.Line(OwnBankText.Pair("reallife_ob_box_last", OwnBankText.Fill("reallife_ob_box_last_value", "income", OwnBankText.Money(b.LastIncome), "costs", OwnBankText.Money(b.LastCosts),
-                    "profit", OwnBankText.Signed(b.LastIncome - b.LastCosts))));
-            }
-            box.Line(OwnBankText.Pair("reallife_ob_box_year", OwnBankText.Signed(OwnBankRules.YearProfit(b))));
-            long value = OwnBankRules.SaleValue(b), most = OwnBankRules.MostOut(b, level);
-            box.Line(OwnBankText.Pair("reallife_ob_box_value", OwnBankText.Money(value)));
             if (b.Test)
             {
                 box.Line(OwnBankText.T("reallife_ob_box_test"));
@@ -327,6 +320,17 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(OwnBankText.T("reallife_ob_box_no_hq"));
             }
+            box.Line(OwnBankText.Pair("reallife_ob_box_ratio", OwnBankText.Fill("reallife_ob_box_ratio_value", "ratio", OwnBankText.Ratio(ratio), "law", OwnBankText.Ratio(OwnBankCatalogue.MinRatio),
+                "watch", OwnBankText.Ratio(OwnBankCatalogue.WatchRatio))));
+            box.Line(OwnBankText.Pair("reallife_ob_box_trust", OwnBankText.Fill("reallife_ob_box_trust_value", "trust", OwnBankText.Ratio(trust), "confidence", OwnBankText.Ratio(conf))));
+            if (b.HistoryCount > 0)
+            {
+                box.Line(OwnBankText.Pair("reallife_ob_box_last", OwnBankText.Fill("reallife_ob_box_last_value", "income", OwnBankText.Money(b.LastIncome), "costs", OwnBankText.Money(b.LastCosts),
+                    "profit", OwnBankText.Signed(b.LastIncome - b.LastCosts))));
+            }
+            box.Line(OwnBankText.Pair("reallife_ob_box_year", OwnBankText.Signed(OwnBankRules.YearProfit(b))));
+            long value = OwnBankRules.SaleValue(b), most = OwnBankRules.MostOut(b, level);
+            box.Line(OwnBankText.Pair("reallife_ob_box_value", OwnBankText.Money(value)));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_ob_box_put_in", () => AskAmount("reallife_ob_ask_put_in", OwnBankCatalogue.CapitalStepCents * 10, cents =>
             {
@@ -346,6 +350,7 @@ namespace RealLifeOverhaul.Economy
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_ob_box_sell", () => Ask("reallife_ob_confirm_sell_title".Localize(new { bank = b.Name }),
                     "reallife_ob_confirm_sell_body".Localize(new { price = OwnBankText.Money(value), years = OwnBankCatalogue.SaleYears.ToString() }), "reallife_ob_box_sell", true, () => _director.Sell(out string why) ? null : why));
             }
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         // A line of the balance sheet: not to be picked.
@@ -387,10 +392,18 @@ namespace RealLifeOverhaul.Economy
             {
                 _pick = null;
                 box.Title(OwnBankText.T("reallife_ob_tab_savers"));
+                if (b.Run)
+                {
+                    box.Line(OwnBankText.T("reallife_ob_box_run"));
+                }
                 box.Line(OwnBankText.Pair("reallife_ob_box_deposits", OwnBankText.Money(b.Savings)));
                 box.Line(OwnBankText.Pair("reallife_ob_box_trust", OwnBankText.Fill("reallife_ob_box_trust_value", "trust", OwnBankText.Ratio(trust), "confidence", OwnBankText.Ratio(conf))));
+                if (!b.Run)
+                {
+                    box.Line(OwnBankText.T("reallife_ob_box_savers_pick"));
+                }
                 box.Line(OwnBankText.T("reallife_ob_box_savers_intro"));
-                box.Line(OwnBankText.T(b.Run ? "reallife_ob_box_run" : "reallife_ob_box_savers_pick"));
+                Meta.Guide.Point(box, GuideTitle);
                 return;
             }
             int kind = picked;
@@ -406,8 +419,9 @@ namespace RealLifeOverhaul.Economy
                     _director.SetSaverRate(kind, least + i * step);
                     Refresh();
                 }));
-            box.Line(OwnBankText.T(kind == OwnBankCatalogue.Firms ? "reallife_ob_box_firms_note" : "reallife_ob_box_people_note"));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_ob_box_back", Back);
+            box.Line(OwnBankText.T(kind == OwnBankCatalogue.Firms ? "reallife_ob_box_firms_note" : "reallife_ob_box_people_note"));
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         // ---------------------------------------------------------------- lending
@@ -438,12 +452,21 @@ namespace RealLifeOverhaul.Economy
             {
                 _pick = null;
                 box.Title(OwnBankText.T("reallife_ob_tab_lending"));
+                bool stopped = b.Run || b.Stage == Regulator.Breach;
+                if (stopped)
+                {
+                    box.Line(OwnBankText.T("reallife_ob_box_no_lending"));
+                }
                 box.Line(OwnBankText.Pair("reallife_ob_box_lent", OwnBankText.Money(b.Lent)));
                 box.Line(OwnBankText.Pair("reallife_ob_box_arrears", OwnBankText.Money(b.InArrears)));
                 box.Line(OwnBankText.Pair("reallife_ob_box_written", OwnBankText.Fill("reallife_ob_box_written_value", "month", OwnBankText.Money(b.LastLost), "all", OwnBankText.Money(b.LostAll),
                     "back", OwnBankText.Money(b.RecoveredAll))));
+                if (!stopped)
+                {
+                    box.Line(OwnBankText.T("reallife_ob_box_lending_pick"));
+                }
                 box.Line(OwnBankText.T(c.Courts ? "reallife_ob_box_courts_on" : "reallife_ob_box_courts_off"));
-                box.Line(OwnBankText.T(b.Run || b.Stage == Regulator.Breach ? "reallife_ob_box_no_lending" : "reallife_ob_box_lending_pick"));
+                Meta.Guide.Point(box, GuideTitle);
                 return;
             }
             int seg = picked;
@@ -468,8 +491,9 @@ namespace RealLifeOverhaul.Economy
                 _director.SetLending(seg, on);
                 Refresh();
             }));
-            box.Line(OwnBankText.T(seg == OwnBankCatalogue.Poor ? "reallife_ob_box_poor_note" : OwnBankCatalogue.IsBusiness(seg) ? "reallife_ob_box_firm_note" : "reallife_ob_box_person_note"));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_ob_box_back", Back);
+            box.Line(OwnBankText.T(seg == OwnBankCatalogue.Poor ? "reallife_ob_box_poor_note" : OwnBankCatalogue.IsBusiness(seg) ? "reallife_ob_box_firm_note" : "reallife_ob_box_person_note"));
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         // ---------------------------------------------------------------- the fund
@@ -509,6 +533,7 @@ namespace RealLifeOverhaul.Economy
                 Refresh();
             }));
             box.Line(OwnBankText.Fill("reallife_ob_box_fund_rules", "companies", OwnBankCatalogue.FundCompanies[Math.Max(1, b.Strategy)].ToString(), "weight", OwnBankText.Ratio(OwnBankCatalogue.FundWeight)));
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         // ---------------------------------------------------------------- questions and amounts

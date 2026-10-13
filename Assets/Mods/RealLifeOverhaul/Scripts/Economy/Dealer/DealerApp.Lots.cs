@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             box.Title(DealerText.T("reallife_dealer_lots_title"));
             box.Line(DealerText.T("reallife_dealer_lots_about"));
             box.Line(DealerText.T("reallife_dealer_lots_staff"));
+            Meta.Guide.Point(box, GuideTitle);
             return DealerColumns.Lots;
         }
 
@@ -83,15 +84,15 @@ namespace RealLifeOverhaul.Economy.Dealership
         {
             DealerBook w = Week(y);
             box.Title(y.Name);
+            if (reg != null && DealerGame.Salespeople(reg) == 0)
+            {
+                box.Line(DealerText.T("reallife_dealer_yard_no_staff"));
+            }
             box.Line(y.Laid ? DealerText.T("reallife_dealer_yard_lot", "cars", y.Cars.Count.ToString(), "places", y.Spots.Count.ToString()) : DealerText.T("reallife_dealer_yard_unlaid"));
             box.Line(DealerText.Fill("reallife_dealer_yard_today", "visitors", y.Today.Visitors.ToString(), "served", y.Today.Served.ToString(), "lost", y.Today.Lost.ToString(),
                 "offers", y.Today.Offers.ToString(), "sold", y.Today.Sold.ToString()));
             box.Line(DealerText.Fill("reallife_dealer_yard_week", "sold", (w.Sold + y.Today.Sold).ToString(), "takings", DealerText.Money(w.Takings + y.Today.Takings),
                 "bought", DealerText.Money(w.Bought + y.Today.Bought), "margin", DealerText.Money(w.Margin + y.Today.Margin), "claims", DealerText.Money(w.Claims + y.Today.Claims)));
-            if (reg != null && DealerGame.Salespeople(reg) == 0)
-            {
-                box.Line(DealerText.T("reallife_dealer_yard_no_staff"));
-            }
             int steps = (DealerCatalogue.StaffFloorMost - DealerCatalogue.StaffFloorLeast) / DealerCatalogue.StaffFloorStep + 1;
             int at = (y.StaffFloor - DealerCatalogue.StaffFloorLeast) / DealerCatalogue.StaffFloorStep;
             Choose(box, steps, at, i => DealerText.T("reallife_dealer_yard_floor", "share", DealerText.Share(DealerCatalogue.StaffFloorLeast + i * DealerCatalogue.StaffFloorStep)),
@@ -105,6 +106,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 InfoBox.Button(more, InfoBox.Positive, "reallife_dealer_button_relay", () => Confirm("reallife_dealer_q_relay_title", DealerText.T("reallife_dealer_q_relay"), () => _director.Relay(y.Place), false));
             }
             InfoBox.Button(more, InfoBox.Additional, "common_close", ClosePick);
+            Meta.Guide.Point(box, GuideTitle);
         }
     }
 }

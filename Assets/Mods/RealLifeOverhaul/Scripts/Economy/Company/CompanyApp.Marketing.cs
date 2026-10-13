@@ -77,6 +77,7 @@ namespace RealLifeOverhaul.Economy
                 box.Line(CompanyText.T("reallife_co_push_measure"));
                 box.Line(CompanyText.T("reallife_co_push_game"));
                 box.Line(CompanyText.T("reallife_co_push_pick"));
+                Guide(box);
             }
         }
 
@@ -124,6 +125,7 @@ namespace RealLifeOverhaul.Economy
             int chosen = kind;
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_co_push_book", () => _director.BookCampaign(place, chosen));
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", Back);
+            Guide(box);
         }
 
         private void WriteReport(InfoBox box, CampaignReport r)
