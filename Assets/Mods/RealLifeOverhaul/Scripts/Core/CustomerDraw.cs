@@ -29,6 +29,9 @@ namespace RealLifeOverhaul
     {
         public static IModLogger Logger;
 
+        /// <summary>A business's customers still to come today were drawn again (by this mod): whatever it had booked for it is gone. Raised after each redraw; a handler must not throw.</summary>
+        public static event Action<BuildingRegistration> Redrawn;
+
         private static FieldInfo _table;
         private static bool _looked;
         private static readonly List<CustomerEntry> Kept = new List<CustomerEntry>(32);
@@ -77,6 +80,29 @@ namespace RealLifeOverhaul
                 return;
             }
             DayOfWeekOrdered day = TimeHelper.GetDayOfWeek();
+            try
+            {
+                Draw(reg, day);
+            }
+            finally
+            {
+                Action<BuildingRegistration> told = Redrawn;
+                if (told != null)
+                {
+                    try
+                    {
+                        told(reg);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger?.Error(e);
+                    }
+                }
+            }
+        }
+
+        private static void Draw(BuildingRegistration reg, DayOfWeekOrdered day)
+        {
             if (!OtherMods.MeaningfulAmbience.Loaded)
             {
                 CustomerEntriesHelper.UpdateCustomerEntriesForPlayerBusiness(reg, day);

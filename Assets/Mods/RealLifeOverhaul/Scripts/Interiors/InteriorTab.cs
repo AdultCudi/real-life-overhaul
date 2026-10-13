@@ -13,9 +13,13 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Interiors
 {
     /// <summary>
-    /// The "Interior" tab of BizMan for a business of the player's: the interior score against the district's
-    /// standard, the decor score and each category's share, wear and cleanliness, what each figure is doing, and what
-    /// to add next, with a button to refresh the finishes.
+    /// The "Interior" tab of BizMan for a business of the player's. On the left: the interior score against the
+    /// district's standard, the decor score and each category's share, wear and cleanliness. On the right, four pages
+    /// chosen with the game's own previous/next selector: what each figure is doing and what to add next (with a button
+    /// to refresh the finishes); every placed item that counts, by category, with its points; today's customers by where
+    /// they came from, as the game counts them; and the game's own rules for the business's type, what its customers
+    /// want and what it needs to open, each met or not and the items that meet it. Both columns are copies of the scroll
+    /// view BizMan shows a business's details in, so a long page scrolls.
     ///
     /// How it sits in the game's BizMan (BizManBusiness, decompiled): the tab buttons are the children of its private
     /// "menu", each a text with a button, named by its tab; the pages are the children of "containers" of the same
@@ -23,8 +27,9 @@ namespace RealLifeOverhaul.Interiors
     /// business is opened (SetUpTabs, which hides every other button), and switches page with its private SetTab.
     /// So the tab is a copy of the game's own "Marketing" button and a page of the same name, its name is put back at
     /// the end of "_tabs" each time the game has made the list again, and a click asks the game's own SetTab (after the
-    /// same question the game asks about unsaved settings). The page is two white boxes of the game's (MyEmployees'
-    /// own, Core/GameUi/InfoBox), written when the page is shown and after a refresh.
+    /// same question the game asks about unsaved settings). The page is two of BizMan's own scroll views (its business
+    /// details' white box) holding MyEmployees' lines, headlines, selector and buttons (Core/GameUi/InfoBox.Into),
+    /// written when the page is shown, when its page is changed and after a refresh.
     ///
     /// Two other authors' mods add a tab to the same row (Meaningful Interiors, Meaningful Ambience): each keeps its
     /// own just before "Settings" every frame. This one goes after "Marketing" (or before "Settings" where a business
@@ -42,6 +47,11 @@ namespace RealLifeOverhaul.Interiors
         private static Transform _menu, _containers;
         private static GameObject _button, _page;
         private static InfoBox _left, _right;
+        private static ScrollRect _rightScroll;
+        private static int _shown;                   // the right column's page, kept for the session
+        public const int Pages = 4;                  // what it does, the items, today's customers, the game's rules
+        private static readonly List<InteriorItem> Sorted = new List<InteriorItem>(16);
+        private static readonly List<GameRule> GameRules = new List<GameRule>(16);
         private static FieldInfo _tabsField;
         private static MethodInfo _setTab;
         private static bool _failed, _fitLogged;
@@ -93,6 +103,8 @@ namespace RealLifeOverhaul.Interiors
             Transform template = _menu != null ? (_menu.Find("Marketing") ?? _menu.Find("Insight") ?? _menu.Find("Settings")) : null;
             Transform shape = _containers != null ? _containers.Find("Settings") : null;
             Transform source = menu.myEmployees != null ? menu.myEmployees.transform.Find("Layout 30-70/Left/WhiteBox") : null;
+            Transform details = type.GetField("businessInfo", Private)?.GetValue(business) as Transform;
+            Transform scroll = details != null ? details.Find("WhiteBox") : null;   // BizMan's own scroll view of a business's details
             if (_menu == null || _containers == null || _tabsField == null || _setTab == null || template == null || shape == null || source == null
                 || template.GetComponent<TextMeshProUGUI>() == null)
             {
@@ -121,8 +133,8 @@ namespace RealLifeOverhaul.Interiors
             to.pivot = from.pivot;
             to.anchoredPosition = from.anchoredPosition;
             to.sizeDelta = from.sizeDelta;
-            _left = Box(source, 0);
-            _right = Box(source, 1);
+            _left = Column(source, scroll, 0, out ScrollRect unused);
+            _right = Column(source, scroll, 1, out _rightScroll);
             if (_left == null || _right == null)
             {
                 _failed = true;
@@ -135,29 +147,69 @@ namespace RealLifeOverhaul.Interiors
             InteriorDirector.Logger?.Info("Interiors: the Interior tab is in BizMan.");
         }
 
-        // A copy of MyEmployees' white box as one column of the page.
-        private static InfoBox Box(Transform source, int column)
+        // One column of the page: a copy of BizMan's scroll view of a business's details, emptied, its content written with
+        // MyEmployees' white box's parts. Where that scroll view is not there, MyEmployees' white box itself (it does not scroll).
+        private static InfoBox Column(Transform source, Transform scrollSource, int column, out ScrollRect scrolls)
         {
+            scrolls = null;
             Transform dormant = UiClone.Dormant(_page.transform, "Templates" + column);
-            GameObject copy = UiClone.Asleep(source.gameObject, dormant, "Box" + column);
-            if (copy == null)
+            GameObject parts = UiClone.Asleep(source.gameObject, dormant, "Parts" + column);
+            if (parts == null)
             {
                 return null;
             }
-            UiClone.StripGameScripts(copy, script => Array.IndexOf(AppShell.Harmless, script.GetType().Name) >= 0);
-            InfoBox box = InfoBox.From(copy.transform, dormant);
-            if (box == null)
+            UiClone.StripGameScripts(parts, script => Array.IndexOf(AppShell.Harmless, script.GetType().Name) >= 0);
+            GameObject scroll = scrollSource != null ? UiClone.Asleep(scrollSource.gameObject, dormant, "Box" + column) : null;
+            Transform content = scroll != null ? scroll.transform.Find("Viewport/Content") : null;
+            ScrollRect rect = scroll != null ? scroll.GetComponent<ScrollRect>() : null;
+            if (content != null && rect != null)
             {
-                return null;
+                UiClone.StripGameScripts(scroll, script => Array.IndexOf(AppShell.Harmless, script.GetType().Name) >= 0);
+                for (int i = content.childCount - 1; i >= 0; i--)
+                {
+                    UnityEngine.Object.DestroyImmediate(content.GetChild(i).gameObject);
+                }
+                var layout = content.GetComponent<VerticalLayoutGroup>();
+                if (layout != null)
+                {
+                    layout.spacing = 30f;   // as MyEmployees' white box spaces its lines
+                    layout.childControlWidth = true;
+                    layout.childForceExpandWidth = true;
+                    layout.childControlHeight = true;
+                    layout.childForceExpandHeight = false;
+                }
+                InfoBox box = InfoBox.Into(parts.transform, dormant, content);
+                if (box != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(parts);
+                    Place(scroll.transform, column);
+                    scrolls = rect;
+                    return box;
+                }
             }
-            copy.transform.SetParent(_page.transform, false);
-            var rect = (RectTransform)copy.transform;
-            rect.anchorMin = new Vector2(0f, 0f);   // the page's whole height, a column wide
+            if (scroll != null)
+            {
+                UiClone.Fallback("BizMan's scroll view of a business is not built as expected, so the Interior tab's columns do not scroll");
+                UnityEngine.Object.DestroyImmediate(scroll);
+            }
+            InfoBox plain = InfoBox.From(parts.transform, dormant);
+            if (plain != null)
+            {
+                Place(parts.transform, column);
+            }
+            return plain;
+        }
+
+        // A column of the page: its whole height, a column wide.
+        private static void Place(Transform column, int index)
+        {
+            column.SetParent(_page.transform, false);
+            var rect = (RectTransform)column;
+            rect.anchorMin = new Vector2(0f, 0f);
             rect.anchorMax = rect.pivot = new Vector2(0f, 1f);
-            rect.anchoredPosition = new Vector2(column * (BoxWidth + BoxGap), 0f);
+            rect.anchoredPosition = new Vector2(index * (BoxWidth + BoxGap), 0f);
             rect.sizeDelta = new Vector2(BoxWidth, 0f);
-            copy.SetActive(true);
-            return box;
+            column.gameObject.SetActive(true);
         }
 
         /// <summary>Everything of the tab's taken out of BizMan.</summary>
@@ -194,6 +246,7 @@ namespace RealLifeOverhaul.Interiors
             }
             _button = _page = null;
             _left = _right = null;
+            _rightScroll = null;
             _business = null;
         }
 
@@ -300,13 +353,173 @@ namespace RealLifeOverhaul.Interiors
                 return;
             }
             WriteScores(s);
-            WriteEffects(s, reg);
             _left.Done();
-            _right.Done();
+            WriteRight(s, reg);
             if (!_fitLogged)
             {
-                _fitLogged = true;   // once a session: how the two columns fit the page (the boxes do not scroll)
+                _fitLogged = true;   // once a session: how the two columns' pages fit (they scroll when they do not)
                 InteriorDirector.Logger?.Info("Interiors: the Interior tab's columns: " + _left.Fit() + "; " + _right.Fit() + ".");
+            }
+        }
+
+        // The right column: the page selector, then the page chosen.
+        private static void WriteRight(InteriorShop s, BuildingRegistration reg)
+        {
+            _right.Clear();
+            _right.Selector(Pages, _shown, InteriorText.Page, page =>
+            {
+                _shown = page;
+                InteriorShop now = InteriorDirector.At(reg);
+                if (now != null)
+                {
+                    WriteRight(now, reg);
+                }
+            });
+            switch (InteriorRules.Clamp(_shown, 0, Pages - 1))
+            {
+                case 1: WriteItems(s); break;
+                case 2: WriteCustomers(s, reg); break;
+                case 3: WriteRules(reg); break;
+                default: WriteEffects(s, reg); break;
+            }
+            _right.Done();
+            if (_rightScroll != null)
+            {
+                _rightScroll.verticalNormalizedPosition = 1f;   // a new page starts at its top
+            }
+        }
+
+        // Every placed item that counts, by category: its copies and its points, and each category's total against its share.
+        private static void WriteItems(InteriorShop s)
+        {
+            InfoBox b = _right;
+            b.Title(InteriorText.Page(1));
+            if (s.Placed.Count == 0)
+            {
+                b.Line("reallife_interior_items_none".GetLocalization());
+            }
+            for (int c = 0; c < InteriorRules.Categories; c++)
+            {
+                Sorted.Clear();
+                for (int i = 0; i < s.Placed.Count; i++)
+                {
+                    if ((int)s.Placed[i].Category == c)
+                    {
+                        Sorted.Add(s.Placed[i]);
+                    }
+                }
+                if (Sorted.Count == 0)
+                {
+                    continue;
+                }
+                Sorted.Sort((x, y) => y.Points != x.Points ? y.Points.CompareTo(x.Points) : string.CompareOrdinal(x.Name, y.Name));
+                int cap = (int)((long)s.Target * InteriorRules.CapShare[c] / 1000);
+                b.HeadlineWords(InteriorText.T("reallife_interior_items_head", "category", InteriorText.Category(c), "points", InteriorText.Tenths(s.Capped[c]), "cap", InteriorText.Tenths(cap)));
+                for (int i = 0; i < Sorted.Count; i++)
+                {
+                    b.Line(InteriorText.T("reallife_interior_items_line", "item", InteriorGame.ItemName(Sorted[i].Name), "copies", InteriorText.N(Sorted[i].Copies),
+                        "points", InteriorText.Tenths(Sorted[i].Points)));
+                }
+            }
+            Sorted.Clear();
+            b.Line(InteriorText.T("reallife_interior_items_note", "repeat", InteriorText.N(InteriorRules.RepeatShare / 10), "most", InteriorText.N(InteriorRules.RepeatMost),
+                "target", InteriorText.Tenths(s.Target)));
+        }
+
+        // Today's customers by where they came from, as the game counts them.
+        private static void WriteCustomers(InteriorShop s, BuildingRegistration reg)
+        {
+            InfoBox b = _right;
+            b.Title(InteriorText.Page(2));
+            InteriorDirector d = InteriorDirector.Instance;
+            CustomerCount c;
+            if (d == null || !InteriorGame.Count(reg, d.Ours, out c))
+            {
+                b.Line("reallife_interior_cust_none".GetLocalization());
+                return;
+            }
+            CustomerSplit split = InteriorRules.Split(c.Drawn, c.Booked, c.OtherMod, c.BaseMille, c.Traffic, c.Own, c.Written, BusinessCatalogue.ClampInterior(s.Footfall), c.OtherPercent);
+            b.Line(InteriorText.T("reallife_interior_cust_total", "total", InteriorText.N(split.Total), "served", InteriorText.N(c.Served)));
+            b.Line(InteriorText.T("reallife_interior_cust_game", "count", InteriorText.N(split.Game)));
+            b.Line(InteriorText.T("reallife_interior_cust_marketing", "count", InteriorText.N(split.Marketing)));
+            b.Line(InteriorText.T("reallife_interior_cust_interiors", "count", InteriorText.SignedN(split.Interiors)));
+            b.Line(InteriorText.T("reallife_interior_cust_others", "count", InteriorText.SignedN(split.Others)));
+            if (OtherMods.MeaningfulAmbience.Loaded)
+            {
+                b.Line(InteriorText.T("reallife_interior_cust_ambience", "mod", OtherMods.MeaningfulAmbience.Name, "count", InteriorText.N(split.OtherMod)));
+            }
+            if (c.Booked > 0)
+            {
+                b.Line(InteriorText.T("reallife_interior_cust_booked", "count", InteriorText.N(c.Booked)));
+            }
+            if (s.Stop != SaleStop.None)
+            {
+                b.Line(InteriorText.T("reallife_interior_line_paused", "reason", InteriorText.Stop(s.Stop)));
+            }
+            b.Line(InteriorText.T("reallife_interior_cust_note", "traffic", InteriorText.N(c.Traffic), "marketing", InteriorText.N(c.Marketing), "figure", InteriorText.N(c.Written)));
+        }
+
+        // The game's own rules for the business's type: what its customers want and what it needs to open.
+        private static void WriteRules(BuildingRegistration reg)
+        {
+            InfoBox b = _right;
+            b.Title(InteriorText.Page(3));
+            InteriorGame.Rules(reg, GameRules);
+            int demands = 0, needs = 0;
+            b.Headline("reallife_interior_rules_demands_head");
+            for (int i = 0; i < GameRules.Count; i++)
+            {
+                if (GameRules[i].Demand)
+                {
+                    demands++;
+                    Rule(b, GameRules[i]);
+                }
+            }
+            if (demands == 0)
+            {
+                b.Line("reallife_interior_rules_none".GetLocalization());
+            }
+            b.Headline("reallife_interior_rules_needs_head");
+            for (int i = 0; i < GameRules.Count; i++)
+            {
+                if (!GameRules[i].Demand)
+                {
+                    needs++;
+                    Rule(b, GameRules[i]);
+                }
+            }
+            if (needs == 0)
+            {
+                b.Line("reallife_interior_rules_none".GetLocalization());
+            }
+            b.Line("reallife_interior_rules_note".GetLocalization());
+            GameRules.Clear();
+        }
+
+        private static void Rule(InfoBox b, GameRule rule)
+        {
+            string state = (rule.Met ? "reallife_interior_rules_met" : "reallife_interior_rules_missing").GetLocalization();
+            if (rule.Demand)
+            {
+                b.Line(InteriorText.T("reallife_interior_rules_demand", "name", InteriorText.Demand(rule), "state", state, "chance", InteriorText.N(Math.Max(0, rule.Chance))));
+                string detail = InteriorText.DemandDetail(rule);
+                if (detail != null)
+                {
+                    b.Line(detail);
+                }
+            }
+            else
+            {
+                b.Line(InteriorText.T(rule.Need > 1 ? "reallife_interior_rules_need_count" : "reallife_interior_rules_need", "name", InteriorGame.ItemName(rule.Kind), "state", state,
+                    "have", InteriorText.N(Math.Max(0, rule.Have)), "need", InteriorText.N(rule.Need)));
+            }
+            if (rule.Placed.Count > 0)
+            {
+                b.Line(InteriorText.T("reallife_interior_rules_by", "items", string.Join(", ", rule.Placed)));
+            }
+            else if (rule.Examples.Count > 0)
+            {
+                b.Line(InteriorText.T("reallife_interior_rules_add", "items", string.Join(", ", rule.Examples)));
             }
         }
 
@@ -324,7 +537,7 @@ namespace RealLifeOverhaul.Interiors
             else
             {
                 b.Line(InteriorText.T("reallife_interior_line_standard", "standard", InteriorText.N(s.Standard), "district", Districts.DistrictGame.Name(s.District)));
-                if (s.Fitting && s.Kind == InteriorKind.Shop && Settings.InteriorsStandard)
+                if (s.Fitting && s.Kind == InteriorKind.Shop && InteriorDirector.StandardOn)
                 {
                     b.Line(InteriorText.T("reallife_interior_line_fitting", "day", InteriorText.N(s.StandardFrom)));
                 }
@@ -340,19 +553,23 @@ namespace RealLifeOverhaul.Interiors
             }
             b.Line(InteriorText.T("reallife_interior_line_area", "sqm", InteriorText.N(s.Sqm)));
             b.Headline("reallife_interior_head_condition");
-            b.Line(InteriorText.T(Settings.InteriorsWear ? "reallife_interior_line_wear" : "reallife_interior_line_wear_off", "wear", InteriorText.N(s.Wear / 10)));
+            b.Line(InteriorText.T(InteriorDirector.Parts.WearScale > 0 ? "reallife_interior_line_wear" : "reallife_interior_line_wear_off", "wear", InteriorText.N(s.Wear / 10)));
             b.Line(InteriorText.T("reallife_interior_line_clean", "clean", InteriorText.N(s.Clean)));
         }
 
         private static void WriteEffects(InteriorShop s, BuildingRegistration reg)
         {
             InfoBox b = _right;
-            b.Title("reallife_interior_effects_title".GetLocalization());
+            b.Title(InteriorText.Page(0));
+            if (s.Stop != SaleStop.None)
+            {
+                b.Line(InteriorText.T("reallife_interior_line_paused", "reason", InteriorText.Stop(s.Stop)));
+            }
             if (s.Kind == InteriorKind.Shop)
             {
                 b.Line(InteriorText.T("reallife_interior_line_customers", "footfall", InteriorText.Signed(s.Footfall), "standard", InteriorText.Signed(s.StandardFootfall),
                     "decor", InteriorText.Signed(s.DecorFootfall)));
-                b.Line(Settings.InteriorsPrices ? InteriorText.T("reallife_interior_line_prices", "bears", InteriorText.SignedMille(s.Bears)) : "reallife_interior_line_prices_off".GetLocalization());
+                b.Line(InteriorDirector.Parts.PriceScale > 0 ? InteriorText.T("reallife_interior_line_prices", "bears", InteriorText.SignedMille(s.Bears)) : "reallife_interior_line_prices_off".GetLocalization());
                 b.Line(InteriorDirector.BasketOn ? InteriorText.T("reallife_interior_line_basket", "chance", InteriorText.Mille(s.Basket))
                     : OtherMods.MeaningfulInteriors.Loaded && Settings.InteriorsBasket ? InteriorText.T("reallife_interior_line_basket_other", "mod", OtherMods.MeaningfulInteriors.Name)
                     : "reallife_interior_line_basket_off".GetLocalization());
@@ -368,6 +585,16 @@ namespace RealLifeOverhaul.Interiors
             else
             {
                 b.Line("reallife_interior_line_office".GetLocalization());
+                if (s.OfficeBoost > 0)
+                {
+                    int standing;
+                    int booked = InteriorDirector.Instance != null ? InteriorDirector.Instance.BookedToday(reg, out standing) : 0;
+                    b.Line(InteriorText.T("reallife_interior_line_clients", "boost", InteriorText.SignedMille(s.OfficeBoost), "booked", InteriorText.N(booked)));
+                }
+                else if (OtherMods.MeaningfulAmbience.Loaded)
+                {
+                    b.Line(InteriorText.T("reallife_interior_line_clients_other", "mod", OtherMods.MeaningfulAmbience.Name));
+                }
             }
             if (Settings.InteriorsStaff)
             {
@@ -397,7 +624,7 @@ namespace RealLifeOverhaul.Interiors
             {
                 b.Line("reallife_interior_next_rest".GetLocalization());
             }
-            if (Settings.InteriorsWear)
+            if (InteriorDirector.Parts.WearScale > 0)
             {
                 if (s.Wear >= InteriorRules.WornFrom)
                 {
@@ -409,7 +636,7 @@ namespace RealLifeOverhaul.Interiors
                     InteriorDirector d = InteriorDirector.Instance;
                     if (d != null && d.Refresh(reg))
                     {
-                        Write();
+                        UiClone.Safe(Write);
                     }
                 });
                 b.Line(InteriorText.T("reallife_interior_refresh_cost", "amount", Economy.FinanceText.Money(InteriorGame.RefreshCost(s.Sqm))));

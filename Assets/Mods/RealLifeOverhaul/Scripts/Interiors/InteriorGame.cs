@@ -8,7 +8,9 @@ using BigAmbitions.Neighborhoods;
 using BigAmbitions.Tags;
 using Entities;
 using Helpers;
+using Buildings.BuildingTypes.Shared.BusinessRequirement;
 using InteriorDesign;
+using Localizor;
 using RealLifeOverhaul.Economy;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -64,6 +66,28 @@ namespace RealLifeOverhaul.Interiors
     ///   a refresh           the charge through business pressure's own (GameManager.ChangeMoneySafe at the address)
     /// Nothing here runs on a timer of its own.
     /// </summary>
+    /// <summary>Today's customers of a business as the game counts them (InteriorGame.Count), for InteriorRules.Split.</summary>
+    public struct CustomerCount
+    {
+        public int Drawn, Booked, OtherMod, Served;          // the game's own draw (this mod's figure on it), the feature's bookings, Meaningful Ambience's, served so far
+        public int BaseMille, Traffic, Marketing, Own, Written;   // the game's base multiplier (thousandths) and the promotion figure's parts
+        public int OtherPercent;                             // the rest of this mod's per cent: an issue's change and the ambient sum
+    }
+
+    /// <summary>One of the game's own rules for a business type, as the tab shows it.</summary>
+    public sealed class GameRule
+    {
+        public const int NamesMost = 5;
+        public bool Demand;                // a want of its customers; otherwise a requirement to open
+        public string Kind = string.Empty; // the want's type, or the requirement's own text key
+        public string Class = string.Empty;   // the game's class of it
+        public bool Met;
+        public int Chance = -1;            // per cent of customers who want it
+        public int Have = -1, Need = -1;   // placed and needed (a count), or the interior score and its minimum
+        public readonly List<string> Placed = new List<string>(GameRule.NamesMost);    // placed items that meet it
+        public readonly List<string> Examples = new List<string>(GameRule.NamesMost);  // where none is placed: some of the game's own that would
+    }
+
     internal static class InteriorGame
     {
         private const string Headquarters = "ba:businesstype_headquarters";
@@ -215,6 +239,7 @@ namespace RealLifeOverhaul.Interiors
         {
             Array.Clear(s.Points, 0, s.Points.Length);
             Array.Clear(s.Items, 0, s.Items.Length);
+            s.Placed.Clear();
             s.Kinds = 0;
             s.RestCorner = false;
             Copies.Clear();
@@ -244,7 +269,9 @@ namespace RealLifeOverhaul.Interiors
             foreach (KeyValuePair<string, int> kind in Copies)
             {
                 int category = Sorted[kind.Key] & 0xff;
-                s.Points[category] += InteriorRules.KindPoints((DecorCategory)category, kind.Value);
+                int points = InteriorRules.KindPoints((DecorCategory)category, kind.Value);
+                s.Points[category] += points;
+                s.Placed.Add(new InteriorItem { Name = kind.Key, Category = (DecorCategory)category, Copies = kind.Value, Points = points });
                 s.Items[category] += kind.Value;
                 if (category < (int)DecorCategory.Furniture)
                 {
@@ -328,6 +355,396 @@ namespace RealLifeOverhaul.Interiors
                 return 0xff | extra;
             }
             return (int)c | extra;
+        }
+
+        // ---------------------------------------------------------------- the tab's pages: today's customers
+
+        /// <summary>
+        /// Today's customers of a business as the game counts them, for the tab's page of where they came from: the day's
+        /// own list (CustomerDraw.Entries: those served and those to come), the ones the feature booked (an office's),
+        /// with Meaningful Ambience on what is over the game's own draw of each hour (its calculator's GetCustomersByHour),
+        /// and the parts of the business's promotion figure (BusinessHelper.UpdatePromotion's: its street's traffic, its
+        /// marketing at the district's marketing strength; what this mod wrote; the rest of this mod's per cent). Read when
+        /// the page is shown, never per frame. False when the game keeps no list for it.
+        /// </summary>
+        public static bool Count(BuildingRegistration reg, Func<CustomerEntry, bool> ours, out CustomerCount c)
+        {
+            c = new CustomerCount();
+            List<CustomerEntry> entries = CustomerDraw.Entries(reg);
+            if (entries == null)
+            {
+                return false;
+            }
+            try
+            {
+                int today = TimeHelper.CurrentDay;
+                var perHour = new int[24];
+                for (int i = 0; i < entries.Count; i++)
+                {
+                    CustomerEntry e = entries[i];
+                    if (e == null || e.spawnTime == null || e.spawnTime.Day != today)
+                    {
+                        continue;
+                    }
+                    c.Served += e.completed ? 1 : 0;
+                    if (ours != null && ours(e))
+                    {
+                        c.Booked++;
+                    }
+                    else if (e.spawnTime.Hour >= 0 && e.spawnTime.Hour < 24)
+                    {
+                        perHour[e.spawnTime.Hour]++;
+                    }
+                }
+                int drawn = 0;
+                for (int h = 0; h < 24; h++)
+                {
+                    drawn += perHour[h];
+                }
+                if (OtherMods.MeaningfulAmbience.Loaded)
+                {
+                    CustomerEntriesCalculator calculator = CustomerEntriesCalculatorFactory.GetCustomerEntriesCalculator(reg);
+                    float initial = calculator.GetInitialCustomers();
+                    var day = TimeHelper.GetDayOfWeek();
+                    for (int h = 0; h < 24; h++)
+                    {
+                        if (perHour[h] > 0)
+                        {
+                            int target = BusinessHelper.IsBusinessOpen(reg, h) ? calculator.GetCustomersByHour(h, day, initial) : 0;
+                            c.OtherMod += Math.Max(0, perHour[h] - target);
+                        }
+                    }
+                }
+                c.Drawn = drawn - c.OtherMod;
+                c.BaseMille = Mathf.RoundToInt(SaveGameManager.Current.gameVariables.baseCustomerPromotionMultiplier * 1000f);
+                Promotion promotion = reg.promotion;
+                if (promotion != null)
+                {
+                    float strength = 0.5f;
+                    try
+                    {
+                        strength = NeighborhoodHelper.GetData(reg.Neighborhood).marketingStrength;
+                    }
+                    catch (Exception)
+                    {
+                        // (the game's own default strength)
+                    }
+                    c.Traffic = InteriorRules.Clamp(promotion.trafficIndex, 0, 100);
+                    c.Own = InteriorRules.Clamp(Mathf.RoundToInt(promotion.trafficIndex + promotion.marketing * strength), 0, 100);
+                    c.Written = InteriorRules.Clamp(promotion.total, 0, 100);
+                    c.Marketing = c.Own - c.Traffic;
+                }
+                string place = BusinessGame.Place(reg);
+                int issue = BusinessState.Loaded && BusinessState.EffectAt(place) >= 0 ? BusinessState.Effects[BusinessState.EffectAt(place)].Percent : 0;
+                c.OtherPercent = BusinessCatalogue.ClampFootfall(issue) + BusinessCatalogue.ClampAmbient(BusinessGame.Ambient != null ? BusinessGame.Ambient(reg) : 0);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return false;
+            }
+        }
+
+        // ---------------------------------------------------------------- the tab's pages: the game's own rules
+
+        /// <summary>
+        /// The game's own rules for the business's type, for the tab's page of them: what its customers may want
+        /// (BusinessType.customerDemandSets, each a CustomerDemand of the game's: music, seating, sinks, toilets, privacy,
+        /// uniforms, workout variety, the interior design) and what the business needs to open (BusinessType
+        /// .businessRequirements: tills, workstations, products, the licence...). Whether each is met is the game's own
+        /// answer: its daily list of the wants met (reg.cachedFulfilledCustomerDemands) and BusinessHelper.IsRequirementMet.
+        /// The items named are the placed ones that meet it, or, where none is placed, a few of the game's own that would.
+        /// Read when the page is shown; nothing is changed.
+        /// </summary>
+        public static void Rules(BuildingRegistration reg, List<GameRule> into)
+        {
+            into.Clear();
+            BusinessType type = BusinessTypeHelper.GetData(reg);
+            if (type == null)
+            {
+                return;
+            }
+            float weight = 0f;
+            try
+            {
+                weight = NeighborhoodHelper.GetData(reg.Neighborhood).customerDemandsWeight;
+            }
+            catch (Exception)
+            {
+                weight = 0f;
+            }
+            for (int i = 0; type.customerDemandSets != null && i < type.customerDemandSets.Count; i++)
+            {
+                CustomerDemandSet set = type.customerDemandSets[i];
+                if (set == null || string.IsNullOrEmpty(set.type))
+                {
+                    continue;
+                }
+                var rule = new GameRule { Demand = true, Kind = set.type, Chance = Mathf.RoundToInt(Mathf.Clamp01(weight * set.weight) * 100f) };
+                rule.Met = reg.cachedFulfilledCustomerDemands != null && reg.cachedFulfilledCustomerDemands.Contains(set.type);
+                CustomerDemand demand = null;
+                try
+                {
+                    demand = CustomerDemandHelper.GetByType(set.type);
+                }
+                catch (Exception)
+                {
+                    demand = null;
+                }
+                rule.Class = demand != null ? demand.GetType().Name : string.Empty;
+                Func<BigAmbitions.Items.Item, bool> meets = Meets(rule.Class);
+                if (meets != null)
+                {
+                    Named(reg, meets, rule);
+                }
+                if (demand is InteriorDesignCustomerDemand)
+                {
+                    rule.Have = InteriorScore(reg);
+                    rule.Need = Minimum(reg.Neighborhood);
+                }
+                into.Add(rule);
+            }
+            for (int i = 0; type.businessRequirements != null && i < type.businessRequirements.Count; i++)
+            {
+                BusinessRequirement need = type.businessRequirements[i];
+                if (need == null)
+                {
+                    continue;
+                }
+                var rule = new GameRule { Demand = false, Class = need.GetType().Name };
+                try
+                {
+                    rule.Kind = need.GetLocalizeKey();
+                    rule.Met = BusinessHelper.IsRequirementMet(reg, need);
+                    string[] items = need.GetItems();
+                    ItemType of = need.GetItemType();
+                    if (need is SpecificItemsInBuildingBySqm bySqm)
+                    {
+                        rule.Need = bySqm.GetRequiredItemCount(reg);
+                    }
+                    else if (need is ItemsOfTypeInBuildingBySqm typeBySqm)
+                    {
+                        rule.Need = typeBySqm.GetRequiredItemCount(reg);
+                    }
+                    if (items != null && items.Length > 0)
+                    {
+                        var wanted = new HashSet<string>(items, StringComparer.Ordinal);
+                        Named(reg, item => wanted.Contains(item.itemName), rule);
+                    }
+                    else if (of != 0)
+                    {
+                        Named(reg, item => (item.type & of) != 0, rule);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logger?.Error(e);
+                }
+                into.Add(rule);
+            }
+        }
+
+        // The game's own test of each kind of want, as a test of one item: what each CustomerDemand looks for.
+        private static Func<BigAmbitions.Items.Item, bool> Meets(string demandClass)
+        {
+            switch (demandClass)
+            {
+                case "MusicCustomerDemand": return item => (item.type & ItemType.RadioSource) != 0;
+                case "SeatingCustomerDemand": return item => (item.type & ItemType.Seat) != 0;
+                case "SinkCustomerDemand": return item => (item.type & ItemType.Sink) != 0;
+                case "ToiletCustomerDemand": return item => (item.type & ItemType.Toilet) != 0;
+                case "ToiletPrivacyCustomerDemand": return item => item.HasTag(TagRef.Itemtag.isprivacytoilet);
+                case "WorkoutVarietyCustomerDemand": return item => (item.type & ItemType.WorkoutMachine) != 0;
+                default: return null;
+            }
+        }
+
+        // The placed items that meet a rule (how many, and the names of a few), or a few of the game's own that would.
+        private static void Named(BuildingRegistration reg, Func<BigAmbitions.Items.Item, bool> meets, GameRule rule)
+        {
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            int count = 0;
+            if (reg.itemInstances != null)
+            {
+                foreach (ItemInstance instance in reg.itemInstances.Values)
+                {
+                    BigAmbitions.Items.Item item = instance != null ? instance.ItemCached : null;
+                    if (item == null || !meets(item))
+                    {
+                        continue;
+                    }
+                    count++;
+                    if (seen.Add(item.itemName) && rule.Placed.Count < GameRule.NamesMost)
+                    {
+                        rule.Placed.Add(ItemName(item.itemName));
+                    }
+                }
+            }
+            if (rule.Have < 0)
+            {
+                rule.Have = count;
+            }
+            if (count > 0 || ItemsGetter.AllItems == null)
+            {
+                return;
+            }
+            var names = new List<string>(8);
+            foreach (BigAmbitions.Items.Item item in ItemsGetter.AllItems)
+            {
+                if (item != null && item.isFurniture && (item.type & (ItemType.RetailProduct | ItemType.ServiceProduct | ItemType.ForSale)) == 0 && !item.HasTag(TagRef.Itemtag.dev)
+                    && meets(item) && seen.Add(item.itemName))
+                {
+                    names.Add(ItemName(item.itemName));
+                }
+            }
+            names.Sort(StringComparer.CurrentCulture);
+            for (int i = 0; i < names.Count && rule.Examples.Count < GameRule.NamesMost; i++)
+            {
+                rule.Examples.Add(names[i]);
+            }
+        }
+
+        /// <summary>An item's name as the game shows it.</summary>
+        public static string ItemName(string item)
+        {
+            return string.IsNullOrEmpty(item) ? "?" : LocalizorManager.IsLocalizedKey(item) ? item.GetLocalization() : item;
+        }
+
+        // ---------------------------------------------------------------- selling nothing
+
+        /// <summary>
+        /// Why a business of the player's that takes money sells nothing now (InteriorRules.Stop), from the game's own
+        /// figures: its closed switch and today's opening (BuildingHelper.GetTodaySchedule), what it has to sell
+        /// (reg.cachedAvailableProducts: what is on its shelves, its services and entrances), the game's own test for a
+        /// station with nobody on shift (BusinessHelper.IsMissingEmployeeAlertNeeded, the one behind its "missing employee"
+        /// task), and today's completed orders (reg.unprocessedCompletedOrders), the last few of them. None for a place
+        /// that takes no money (a headquarters) or when it cannot be told.
+        /// </summary>
+        public static SaleStop Stop(BuildingRegistration reg)
+        {
+            try
+            {
+                if (!BusinessGame.IsBusiness(reg))
+                {
+                    return SaleStop.None;
+                }
+                ScheduleDay today = BuildingHelper.GetTodaySchedule(reg);
+                bool closed = reg.temporarilyClosed || today == null || !today.isOpen;
+                bool stocked = reg.cachedAvailableProducts != null && reg.cachedAvailableProducts.Count > 0;
+                bool staffed = !BusinessHelper.IsMissingEmployeeAlertNeeded(reg);
+                int recent = 0, refused = 0;
+                List<Order> orders = reg.unprocessedCompletedOrders;
+                for (int i = orders != null ? orders.Count - 1 : -1; i >= 0 && recent < InteriorRules.RecentOrders; i--)
+                {
+                    Order order = orders[i];
+                    if (order == null || order.entries == null || order.entries.Count == 0)
+                    {
+                        continue;
+                    }
+                    recent++;
+                    bool accepted = false;
+                    for (int k = 0; k < order.entries.Count && !accepted; k++)
+                    {
+                        accepted = order.entries[k] != null && order.entries[k].priceAccceptable;
+                    }
+                    refused += accepted ? 0 : 1;
+                }
+                return InteriorRules.Stop(closed, stocked, staffed, recent, refused);
+            }
+            catch (Exception)
+            {
+                return SaleStop.None;
+            }
+        }
+
+        // ---------------------------------------------------------------- an office's clients
+
+        /// <summary>
+        /// Books an office of the player's more clients for the coming hour, as the game books them: its own calculator
+        /// for offices (CustomerEntriesCalculatorOffice.GetCustomersEntriesForHour, with the district's demand weight), the
+        /// clients added to the day's list beside the game's. Only an office the game's office simulator serves
+        /// (BusinessType.simulator is OfficeBusinessSimulator) that takes money, meets its requirements and is open then;
+        /// never more than the stations staffed then (one client a station an hour, as the simulator serves them) less the
+        /// clients already booked. The booked ones are kept in <paramref name="ours"/>. Returns how many.
+        /// </summary>
+        public static int BookOffice(BuildingRegistration reg, int boostMille, ref int carryMille, HashSet<CustomerEntry> ours)
+        {
+            if (boostMille <= 0 || reg == null || reg.temporarilyClosed)
+            {
+                return 0;
+            }
+            BusinessType type = BusinessTypeHelper.GetData(reg);
+            int next = TimeHelper.CurrentHour + 1;
+            if (type == null || !(type.simulator is Buildings.Office.OfficeBusinessSimulator) || !type.HasTag(TagRef.Businesstag.generatesrevenue) || next > 23
+                || !BusinessHelper.IsBusinessOpen(reg, next) || !reg.AreAllRequirementsMet())
+            {
+                return 0;
+            }
+            var calculator = CustomerEntriesCalculatorFactory.GetCustomerEntriesCalculator(reg) as CustomerEntriesCalculatorOffice;
+            List<CustomerEntry> entries = CustomerDraw.Entries(reg);
+            if (calculator == null || entries == null)
+            {
+                return 0;
+            }
+            int today = TimeHelper.CurrentDay, game = 0, booked = 0;
+            for (int i = 0; i < entries.Count; i++)
+            {
+                CustomerEntry e = entries[i];
+                if (e != null && !e.completed && e.spawnTime != null && e.spawnTime.Day == today && e.spawnTime.Hour == next)
+                {
+                    booked++;
+                    game += ours.Contains(e) ? 0 : 1;
+                }
+            }
+            int n = InteriorRules.OfficeClients(game, Stations(reg, type, next) - booked, boostMille, ref carryMille);
+            if (n <= 0)
+            {
+                return 0;
+            }
+            List<CustomerEntry> made = calculator.GetCustomersEntriesForHour(next, n, NeighborhoodHelper.GetData(reg.Neighborhood).customerDemandsWeight);
+            int added = 0;
+            for (int i = 0; made != null && i < made.Count && added < n; i++)   // (the calculator's own list: taken from at once)
+            {
+                if (made[i] != null)
+                {
+                    entries.Add(made[i]);
+                    ours.Add(made[i]);
+                    added++;
+                }
+            }
+            return added;
+        }
+
+        // The stations an office's simulator serves a client at in an hour: a shift on it then (not a cleaning one) with
+        // somebody of the business type's own skills at it, and nothing the station needs missing.
+        private static int Stations(BuildingRegistration reg, BusinessType type, int hour)
+        {
+            ScheduleDay today = BuildingHelper.GetTodaySchedule(reg);
+            if (today == null || today.workShifts == null || type.employeePrimarySkills == null)
+            {
+                return 0;
+            }
+            int count = 0;
+            foreach (WorkShift shift in today.workShifts)
+            {
+                ItemInstance station;
+                if (shift == null || string.IsNullOrEmpty(shift.employeeId) || shift.type == WorkShiftType.Cleaning || shift.startingHour > hour || shift.endingHour <= hour
+                    || !reg.itemInstances.TryGetValue(shift.itemInstanceId, out station) || ItemHelper.HasAnyMissingRequirements(station))
+                {
+                    continue;
+                }
+                EmployeeInstance employee = EmployeeHelper.GetEmployeeAtStationAndHour(reg, station.id, hour);
+                for (int k = 0; employee != null && employee.characterData != null && employee.characterData.skills != null && k < employee.characterData.skills.Count; k++)
+                {
+                    if (Array.IndexOf(type.employeePrimarySkills, employee.characterData.skills[k].name) >= 0)
+                    {
+                        count++;
+                        break;
+                    }
+                }
+            }
+            return count;
         }
 
         // ---------------------------------------------------------------- the basket

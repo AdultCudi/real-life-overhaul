@@ -229,11 +229,15 @@ namespace RealLifeOverhaul
         public const string BusinessAuditId = "business_audit";
         public const string BusinessOpportunitiesId = "business_opportunities";
         public const string InteriorsId = "interiors";
-        public const string InteriorsStandardId = "interiors_standard";
-        public const string InteriorsDecorId = "interiors_decor";
-        public const string InteriorsPricesId = "interiors_prices";
+        public const string InteriorsStandardLevelId = "interiors_standard_level";
+        public const string InteriorsRewardLevelId = "interiors_reward_level";
+        public const string InteriorsDecorLevelId = "interiors_decor_level";
+        public const string InteriorsPricesLevelId = "interiors_prices_level";
+        public const string InteriorsWearLevelId = "interiors_wear_level";
         public const string InteriorsBasketId = "interiors_basket";
-        public const string InteriorsWearId = "interiors_wear";
+        // The switches the five strengths above replaced (0.8.0): read once, when a strength has no saved choice yet, so
+        // that a part switched off stays off. They have no row of their own any more.
+        private const string StandardSwitchWas = "interiors_standard", DecorSwitchWas = "interiors_decor", PricesSwitchWas = "interiors_prices", WearSwitchWas = "interiors_wear";
         public const string InteriorsStandingId = "interiors_standing";
         public const string InteriorsStaffId = "interiors_staff";
         public const string PermadeathId = "permadeath";
@@ -477,11 +481,12 @@ namespace RealLifeOverhaul
         public static bool BusinessAudit = true;
         public static bool BusinessOpportunities = true;
         public static bool Interiors = true;                // how a business looks counts: the game's interior design score, a decor score from the placed items, wear, the district's standard, and a BizMan tab (off: none of the parts below, and the tab is gone) (Scripts/Interiors)
-        public static bool InteriorsStandard = true;        // each district expects a standard: short of it fewer customers and complaints, over it a few more (off, or with Meaningful Interiors on: nothing) (Scripts/Interiors)
-        public static bool InteriorsDecor = true;           // decor brings up to a few per cent more customers (off, or with Meaningful Ambience on: nothing) (Scripts/Interiors)
-        public static bool InteriorsPrices = true;          // a nicer place lets the district bear a little more of the price, a shabby one less (Scripts/Interiors)
-        public static bool InteriorsBasket = false;         // over the standard a customer may take one more product the shop has in stock; off by default: it adds to the game's own list of the hour's customers (off, or with Meaningful Interiors on: nothing) (Scripts/Interiors)
-        public static bool InteriorsWear = true;            // finishes wear and get dirty, lowering the scores until refreshed; an inspector notices a worn place (off: no wear) (Scripts/Interiors)
+        public static int InteriorsStandardLevel = 2;   // (InteriorRules.StandardDefault) each district expects a standard: what falling short of it costs (customers, complaints): 0 Off, 1 Gentle, 2 Standard, 3 Strict (with Meaningful Interiors on: nothing) (Scripts/Interiors)
+        public static int InteriorsRewardLevel = 3;       // (InteriorRules.RewardDefault) what being over it brings (customers, the basket's chance): 0 Off, 1 Low, 2 Conservative, 3 Standard, 4 Generous (with Meaningful Interiors on: nothing) (Scripts/Interiors)
+        public static int InteriorsDecorLevel = 1;         // (InteriorRules.DecorDefault) the customers decor brings, and an office's clients: 0 Off, 1 5%, 2 10%, 3 15%, 4 20% at a decor score of 100 (with Meaningful Ambience on: nothing) (Scripts/Interiors)
+        public static int InteriorsPricesLevel = 3;        // (InteriorRules.PriceDefault) how much more (or less) of the price the district bears: 0 Off, 1 Low, 2 Conservative, 3 Standard, 4 Generous (Scripts/Interiors)
+        public static int InteriorsWearLevel = 2;           // (InteriorRules.WearDefault) how fast finishes wear and get dirty: 0 Off, 1 Slow, 2 Standard, 3 Fast (Scripts/Interiors)
+        public static bool InteriorsBasket = false;         // over the standard a customer may take one more product the shop has in stock; off by default: it adds to the game's own list of the hour's customers (with Meaningful Interiors on: nothing) (Scripts/Interiors)
         public static bool InteriorsStanding = true;        // a well kept place lifts its brand's standards and Standing's customers, and makes the news; a shabby one the other way (Scripts/Interiors)
         public static bool InteriorsStaff = true;           // plants, good light and a rest corner lift staff; a good office helps hiring and a firm's bids (Scripts/Interiors)
         public static bool Permadeath = false;           // what the options page shows; the switch itself is kept per save (Permadeath/PermadeathState.Armed), off unless switched on
@@ -737,11 +742,12 @@ namespace RealLifeOverhaul
             BusinessAudit = Bool(modId, BusinessAuditId, BusinessAudit);
             BusinessOpportunities = Bool(modId, BusinessOpportunitiesId, BusinessOpportunities);
             Interiors = Bool(modId, InteriorsId, Interiors);
-            InteriorsStandard = Bool(modId, InteriorsStandardId, InteriorsStandard);
-            InteriorsDecor = Bool(modId, InteriorsDecorId, InteriorsDecor);
-            InteriorsPrices = Bool(modId, InteriorsPricesId, InteriorsPrices);
+            InteriorsStandardLevel = Int(modId, InteriorsStandardLevelId, Bool(modId, StandardSwitchWas, true) ? InteriorsStandardLevel : 0);
+            InteriorsRewardLevel = Int(modId, InteriorsRewardLevelId, Bool(modId, StandardSwitchWas, true) ? InteriorsRewardLevel : 0);
+            InteriorsDecorLevel = Int(modId, InteriorsDecorLevelId, Bool(modId, DecorSwitchWas, true) ? InteriorsDecorLevel : 0);
+            InteriorsPricesLevel = Int(modId, InteriorsPricesLevelId, Bool(modId, PricesSwitchWas, true) ? InteriorsPricesLevel : 0);
+            InteriorsWearLevel = Int(modId, InteriorsWearLevelId, Bool(modId, WearSwitchWas, true) ? InteriorsWearLevel : 0);
             InteriorsBasket = Bool(modId, InteriorsBasketId, InteriorsBasket);
-            InteriorsWear = Bool(modId, InteriorsWearId, InteriorsWear);
             InteriorsStanding = Bool(modId, InteriorsStandingId, InteriorsStanding);
             InteriorsStaff = Bool(modId, InteriorsStaffId, InteriorsStaff);
         }

@@ -297,12 +297,17 @@ mods do, and would count customers or baskets twice:
 
 | Part of this mod's | Off while | Why |
 | --- | --- | --- |
-| The district standard: its footfall (up to -8% and +3%) and its complaints | Meaningful Interiors is on | that mod sets each district's minimum and acts on it itself |
+| The district standard's shortfall: its customers lost (8% at most at Standard, 12% at Strict) and its complaints | Meaningful Interiors is on | that mod sets each district's minimum and acts on it itself |
+| The reward over the standard: its customers (3% at most at Standard, 4% at Generous) | Meaningful Interiors is on | the same |
 | The basket: one more product for a customer over the standard | Meaningful Interiors is on | that mod adds to baskets itself |
-| The decor's footfall (up to +5%) | Meaningful Ambience is on | that mod adds customers for decor itself |
+| The decor's customers (5% by default, 20% at the strongest) | Meaningful Ambience is on | that mod adds customers for decor itself |
+| An office's extra clients, booked an hour ahead | Meaningful Ambience is on | that mod books offices' clients itself |
 
-The rest keeps running (the scores, the price tolerance, wear and its refresh, brands, Standing, staff, offices, the news,
-the Interior tab). The options page draws the rows that do nothing as the game draws a control that cannot be used, with
+The rest keeps running (the scores, the price tolerance, wear and its refresh, brands, Standing, staff, offices' hiring and
+bids, the news, the Interior tab with its pages of the items that count, today's customers by where they came from and the
+game's own rules). Each part has a strength of its own, chosen to cover the other mods' ranges (the reward Off, 0.5, 0.75,
+1 or 1.25 times as Meaningful Interiors' strength; the decor Off, 5%, 10%, 15% or 20% as Meaningful Ambience's), so a
+player can leave both mods out and set the same. The options page draws the rows that do nothing as the game draws a control that cannot be used, with
 "off while ... is switched on" (`Feature.StandsAside`), and the Interior tab says which mod has which part. The rule is
 game-free and checked offline (`InteriorRules.StandardOn`, `BasketOn`, `DecorFootfallOn`; EconomyCheck's InteriorChecks).
 
@@ -323,6 +328,9 @@ game-free and checked offline (`InteriorRules.StandardOn`, `BasketOn`, `DecorFoo
   the new customers again within two seconds, so it lost nothing that mattered.
 - *Footfall.* Meaningful Ambience works its customers out from the business's live promotion figure, so this mod's footfall
   changes feed into its figure; it caps the total at the building's limit itself. No double count.
+- *An office's clients.* Meaningful Ambience books an office's extra clients for the next hour; this mod books its own
+  the same way (the game's calculator for offices, never more than the stations staffed then less the clients already
+  booked) only while that mod is off, so an office is never booked twice.
 - *BizMan's tabs.* Both put a tab just before Settings and keep it there every frame; this mod's goes after Marketing (or
   before Settings where there is none), is added at the end of the game's list of tabs and is placed again only when the
   game makes that list again, so the three never take turns.

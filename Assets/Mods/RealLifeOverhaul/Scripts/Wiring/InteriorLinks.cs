@@ -21,9 +21,9 @@ namespace RealLifeOverhaul
         ///   Income        a district's income level from the city's economy (CityEconomy.DistrictIncome), for its standard
         ///
         /// What it does elsewhere:
-        ///   Ambient       its part of a business's customers (-8% to +8%) is added to <see cref="BusinessGame.Ambient"/>,
-        ///                 on top of the city's, the company's, the brands' and Flare's, and under business pressure's own
-        ///                 bounds for the sum (BusinessCatalogue.ClampAmbient)
+        ///   Interior      its part of a business's customers (-12% to +24% at the strongest choices) is business
+        ///                 pressure's interior part (<see cref="BusinessGame.Interior"/>), beside the city's, the company's,
+        ///                 the brands', Flare's and Standing's ambient sum, each inside its own bounds
         ///   Bears         the city's economy judges a business's prices against what its district bears with its
         ///                 interior's part on it (CityBridges.Bears: up to 3% more, 2% less)
         ///   Complain      a business short of its standard may get a customer's complaint, business pressure's own issue
@@ -39,8 +39,6 @@ namespace RealLifeOverhaul
         /// </summary>
         public static class InteriorLinks
         {
-            private static Func<BuildingRegistration, int> _ambientBefore;
-
             internal static void Connect()
             {
                 InteriorBridges.Footfall = (BuildingRegistration reg, bool redraw, bool newDay, out int own, out int written) => BusinessDirector.Footfall(reg, redraw, newDay, out own, out written);
@@ -49,8 +47,7 @@ namespace RealLifeOverhaul
                 InteriorBridges.Story = Paper.Print;
                 InteriorBridges.Striking = (place, name) => FlareDirector.Instance?.Happened(FlareSource.Interior, -1, place, name, 0);
                 InteriorBridges.Income = district => CityEconomy.Running ? Mathf.RoundToInt(CityEconomy.DistrictIncome(district)) : 0;
-                _ambientBefore = BusinessGame.Ambient;
-                BusinessGame.Ambient = Ambient;
+                BusinessGame.Interior = InteriorDirector.FootfallOf;
                 CityBridges.Bears = InteriorDirector.BearsOf;
                 BusinessDirector.Shabby = InteriorDirector.Shabby;
                 BusinessDirector.Inspected = InteriorDirector.Inspected;
@@ -85,8 +82,7 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 InteriorBridges.Reset();
-                BusinessGame.Ambient = _ambientBefore;   // (Flare's, the brands', the company's and the city's own pairings take theirs off in a moment)
-                _ambientBefore = null;
+                BusinessGame.Interior = null;
                 CityBridges.Bears = null;
                 BusinessDirector.Shabby = null;
                 BusinessDirector.Inspected = null;
@@ -96,11 +92,6 @@ namespace RealLifeOverhaul
                 TechBridges.Comfort = null;
                 TechBridges.Office = null;
                 TechBridges.OfficeBid = null;
-            }
-
-            private static int Ambient(BuildingRegistration reg)
-            {
-                return (_ambientBefore != null ? _ambientBefore(reg) : 0) + InteriorDirector.FootfallOf(reg);
             }
 
             private static bool Complain(BuildingRegistration reg)
