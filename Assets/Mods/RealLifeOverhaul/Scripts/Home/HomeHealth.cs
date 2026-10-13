@@ -204,6 +204,14 @@ namespace RealLifeOverhaul
                     HomeState.IllSince = now;
                     HomeState.IllTreated = false;
                 }
+                // With Permadeath on, a flu left untreated gets worse, with warnings, and from the first of them no longer
+                // clears up by itself: it is held on here until it is treated (Permadeath/PermadeathRules). Off, nothing changes.
+                bool flu = HomeState.Ill == Illness.Flu && ModState.IsSick;
+                if (Permadeath.Mortality.FluHour(flu, HomeState.IllSince, HomeState.IllTreated) && flu
+                    && HomeState.IllUntil < now + Permadeath.PermadeathRules.IllHoldMinutes)
+                {
+                    SetUntil(now + Permadeath.PermadeathRules.IllHoldMinutes);
+                }
                 if (HomeBalance.Infectious(HomeState.Ill))
                 {
                     if (!ModState.IsSick)

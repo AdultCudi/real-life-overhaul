@@ -11,7 +11,8 @@ namespace RealLifeOverhaul
     /// choose. Handing it over costs a capped share of the cash they carry and nothing else.
     /// Refusing is a coin toss between the mugger losing their nerve and the player being hurt
     /// (the same injury life events give) and losing a little anyway. Walking briskly away
-    /// before the mugger reaches them works too.
+    /// before the mugger reaches them works too. With Permadeath on the demand says what refusing
+    /// can cost, the first time it ends hurt is a near miss, and after that a hurt may end the life.
     /// </summary>
     internal sealed class PlayerMuggingScene : CrimeScene
     {
@@ -112,7 +113,7 @@ namespace RealLifeOverhaul
             First.Repeat(Reach, 2.5f, 4f, CharacterEmojiName.CommonRedAngry, 0.6f);
             int asked = ++_asked;
             _answered = false;
-            HudConfirm.Show("reallife_crime_mugged_header", "reallife_crime_mugged_body",
+            HudConfirm.Show("reallife_crime_mugged_header", Permadeath.Mortality.MuggingBody("reallife_crime_mugged_body"),
                 () => Answer(asked, true), () => Answer(asked, false),
                 "reallife_crime_mugged_comply", "reallife_crime_mugged_resist", allowConfirmationSkip: false);
             _promptOpen = true;
@@ -159,8 +160,15 @@ namespace RealLifeOverhaul
             else
             {
                 // A shove, a fall, and a hand in the jacket on the way down.
+                Permadeath.Verdict fate = Permadeath.Mortality.Judge(Permadeath.DeathCause.Mugging);
                 int taken = Crime.Rob(Share * 0.5f, Least, Most / 2, "reallife_transaction_mugging");
                 First.Gesture(Punch);
+                if (fate == Permadeath.Verdict.Death && Permadeath.Mortality.Die(Permadeath.DeathCause.Mugging))
+                {
+                    Flee(First, player);
+                    Go(Getaway, now, 2f);
+                    return;
+                }
                 LifeEvents life = LifeEvents.Instance;
                 CrimeEnding hurt = Entry.Ending("hurt");
                 if (life != null && hurt != null && hurt.Texts.Length > 0)
@@ -168,6 +176,10 @@ namespace RealLifeOverhaul
                     // Never enough to make a tired player faint.
                     float energy = SaveGameManager.Current.Energy > 35f ? 8f : 0f;
                     life.Injure(12, energy, hurt.Texts[Random.Range(0, hurt.Texts.Length)]);
+                }
+                if (fate == Permadeath.Verdict.NearMiss)
+                {
+                    Permadeath.Mortality.NearMiss(Permadeath.DeathCause.Mugging);
                 }
                 if (taken > 0)
                 {

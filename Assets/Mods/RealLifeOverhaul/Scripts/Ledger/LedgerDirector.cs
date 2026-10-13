@@ -43,6 +43,7 @@ namespace RealLifeOverhaul.Ledger
         private LedgerKiosks _kiosks;
         private LedgerHome _home;
         private LedgerPage _page;
+        private LedgerPage _spare;   // the page for a special front page while the paper itself is not running (ShowSpecial)
         private Action _onSave;
         private Func<bool> _payWeek;
         private bool _broken;
@@ -77,6 +78,8 @@ namespace RealLifeOverhaul.Ledger
             try
             {
                 StandDown(false);
+                _spare?.Remove();
+                _spare = null;
             }
             catch (Exception e)
             {
@@ -188,7 +191,8 @@ namespace RealLifeOverhaul.Ledger
             _homeLook = 0f;
             _kiosks = new LedgerKiosks(this);
             _home = new LedgerHome(this);
-            _page = new LedgerPage(this);
+            _page = _spare ?? new LedgerPage(this);   // the spare one is in the menu already: one page of the paper's name, never two
+            _spare = null;
             OnlineStart(save);
             Logger?.Info("City Ledger: ready; " + (_state.Subscribed ? "delivered to the door, paid until day " + _state.PaidUntil + (_state.Cancelled ? " (cancelled)" : string.Empty) : "no subscription")
                          + "; " + _state.Kiosks.Count + " kiosk(s) near the home; latest edition " + (_state.Edition != null ? "of day " + _state.Edition.Day : "none") + ".");
@@ -247,6 +251,32 @@ namespace RealLifeOverhaul.Ledger
             catch (Exception e)
             {
                 Logger?.Error(e);
+            }
+        }
+
+        /// <summary>
+        /// A front page of its own (Permadeath's obituary) on the paper's page, whether the paper itself runs or not: the
+        /// page is put in the menu if it is not there (its own spare one while the paper is off, which the paper takes over
+        /// if it starts), then opened on the special. <paramref name="closed"/> is told once when the page goes down. False
+        /// while the menu cannot have the page yet (the phone is built a little after the city): ask again a moment later.
+        /// Called on an event, never per frame.
+        /// </summary>
+        public bool ShowSpecial(LedgerSpecial special, Action closed)
+        {
+            try
+            {
+                LedgerPage page = _page;
+                if (page == null)
+                {
+                    page = _spare ?? (_spare = new LedgerPage(this));
+                }
+                page.Install();
+                return page.ShowSpecial(special, closed);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return false;
             }
         }
 

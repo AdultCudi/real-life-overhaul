@@ -104,6 +104,7 @@ namespace RealLifeOverhaul
         public readonly float[] Final = new float[CivicCatalogue.MaxCandidates];      // its city-wide shares
         public int Turnout;                       // votes cast in it
         public readonly int[] OthersVotes = new int[CivicCatalogue.MaxCandidates];   // the other players' ballots in a Going Public session (Civic/CivicShare)
+        public int VotesCast;                     // elections the player has voted in, ever (for Permadeath's obituary)
 
         // ---- between elections
         public int Favours;                       // faster permits owed to the player for donating to the winner
@@ -147,6 +148,7 @@ namespace RealLifeOverhaul
             Array.Clear(Donated, 0, Donated.Length);
             Array.Clear(Final, 0, Final.Length);
             Array.Clear(OthersVotes, 0, OthersVotes.Length);
+            VotesCast = 0;
             Endorsed = -1;
             Volunteered = -1;
             Rallies = 0;
@@ -196,6 +198,7 @@ namespace RealLifeOverhaul
             w.Int(PetitionPolicy).Int(PetitionSigned).Int(PetitionNeeded).Int(PetitionEnds).Bool(PetitionMine).Bool(PetitionISigned).Int(PetitionRest).Int(NextCouncilVote);
             w.Int(SettleDay).Float(OwedTax).Float(OwedTrade).Int(SeenDay).Float(SeenFines).Float(SeenRides).Int(SeenTickets);
             for (int i = 0; i < OthersVotes.Length; i++) w.Int(OthersVotes[i]);   // (added with the shared city, at the end: an older line has none)
+            w.Int(VotesCast);   // (added with Permadeath, after them: an older line has none, and counts from nought)
             return w.ToString();
         }
 
@@ -272,6 +275,7 @@ namespace RealLifeOverhaul
                 {
                     OthersVotes[i] = Math.Max(0, r.Int());
                 }
+                VotesCast = r.More ? Math.Max(0, r.Int()) : 0;
                 if (PetitionPolicy >= CivicCatalogue.All.Length)
                 {
                     PetitionPolicy = -1;

@@ -1185,6 +1185,7 @@ namespace RealLifeOverhaul
                 return "reallife_civic_vote_closed";
             }
             State.Voted = candidate;
+            State.VotesCast++;
             Share("v|" + candidate);
             ModState.AddModifier(ModState.CivicVoted);
             return "reallife_civic_vote_cast";

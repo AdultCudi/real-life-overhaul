@@ -334,6 +334,12 @@ namespace RealLifeOverhaul
             return InSession ? "reallife_gp_aside_ownership".GetLocalization() : null;
         }
 
+        /// <summary>For Permadeath's row: why it does nothing just now (another player's world is never ended), or null.</summary>
+        public static string PermadeathSentence()
+        {
+            return InSession ? "reallife_gp_aside_permadeath".GetLocalization() : null;
+        }
+
         /// <summary>The guide's word for where this machine stands.</summary>
         public static string Words()
         {

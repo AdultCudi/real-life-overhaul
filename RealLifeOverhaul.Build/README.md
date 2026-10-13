@@ -285,6 +285,16 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
                the options page in sections, the save tools (see "Meta" below)
     Navigation/ the minimap on the HUD and the GPS: a route along the roads to the game's destination (see "Minimap and GPS" below)
     Economy/   the credit rating, the banks' terms by it, loans from the phone and the Finance app (see "Economy" below)
+    Permadeath/ an ending the player chooses: off unless switched on, kept per save; a death after a warning, the obituary, the save ended
+      PermadeathRules    when a danger may end a life, the odds, the near miss that comes first, the flu's three warnings, the switch (game-free: EconomyCheck runs it)
+      PermadeathState    the save's part: the switch, the near misses had, the flu's warnings, the businesses run, a death and its record (game-free)
+      LifeStory          a life as the records tell it, taken down at its end: the one line the obituary is written from (game-free)
+      PermadeathStory    which sentences the obituary has, in the order of the page, chosen from the story (game-free)
+      PermadeathText     the obituary's words, every {name} filled from the story; PermadeathBridges (ObituaryPage, what it asks of the others)
+      PermadeathDirector the one component: a look a second, the switch, a death (fade, the game's save, the obituary, the main menu), an ended save; the test buttons
+      PermadeathGame     everything it touches of the game: the game's own "the player is dead", the fade, the save, the main menu, the tutorial and missions; the machine's memorial
+      Mortality          the one door the features where a life is in danger call (crash, hit on foot, mugging, the lender's men, the flu)
+      PermadeathSettings its options block and its feature entry (Guide figures from the rules)
 CharacterAssets/                   asset pipeline for the new looks (outside Assets, Unity ignores it)
   scripts/                         Blender scripts: make the meshes and textures, write them to build/
   PreviewProject/, preview.ps1     the game's character rebuilt under HDRP: a look is judged here before it ships

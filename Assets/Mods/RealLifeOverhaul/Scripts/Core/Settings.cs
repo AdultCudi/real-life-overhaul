@@ -210,6 +210,7 @@ namespace RealLifeOverhaul
         public const string BusinessCustomersId = "business_customers";
         public const string BusinessAuditId = "business_audit";
         public const string BusinessOpportunitiesId = "business_opportunities";
+        public const string PermadeathId = "permadeath";
 
         public static bool CameraEnabled = true;
         public static bool CameraIndoors = false;
@@ -431,6 +432,7 @@ namespace RealLifeOverhaul
         public static bool BusinessCustomers = true;
         public static bool BusinessAudit = true;
         public static bool BusinessOpportunities = true;
+        public static bool Permadeath = false;           // what the options page shows; the switch itself is kept per save (Permadeath/PermadeathState.Armed), off unless switched on
 
         private static string _modId;
 
@@ -447,7 +449,14 @@ namespace RealLifeOverhaul
         public static void Load(string modId)
         {
             Meta.SettingsTable.CaptureDefaults();   // the shipped values, before the first saved one replaces them
+            bool starting = _modId == null;   // the first read in this run of the game: no save is loaded yet
             _modId = modId;
+            if (starting)
+            {
+                // The game starts in the main menu, where the switch is no save's: off, until moved there for the next game begun.
+                UnityEngine.PlayerPrefs.SetInt(Key(modId, PermadeathId), 0);
+            }
+            Permadeath = Bool(modId, PermadeathId, false);
             CameraEnabled = Bool(modId, CameraEnabledId, CameraEnabled);
             CameraIndoors = Bool(modId, CameraIndoorsId, CameraIndoors);
             CameraPitch = Int(modId, CameraPitchId, CameraPitch);
@@ -670,6 +679,23 @@ namespace RealLifeOverhaul
             {
                 UnityEngine.PlayerPrefs.SetInt(Key(_modId, ClothesMustBeBoughtId), on ? 1 : 0);
             }
+        }
+
+        /// <summary>
+        /// "Permadeath" is kept per save (Permadeath/PermadeathState); the save being played writes it here and to PlayerPrefs,
+        /// so that the options page shows what holds for it, and the main menu writes it off. True if it changed.
+        /// </summary>
+        public static bool SetPermadeath(bool on)
+        {
+            bool changed = Permadeath != on;
+            Permadeath = on;
+            if (_modId != null)
+            {
+                string key = Key(_modId, PermadeathId);
+                changed |= UnityEngine.PlayerPrefs.GetInt(key, 0) != (on ? 1 : 0);
+                UnityEngine.PlayerPrefs.SetInt(key, on ? 1 : 0);
+            }
+            return changed;
         }
 
         // Same key format the game uses when it saves mod options.

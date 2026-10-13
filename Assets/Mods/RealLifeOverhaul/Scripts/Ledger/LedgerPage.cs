@@ -135,9 +135,9 @@ namespace RealLifeOverhaul.Ledger
         /// <summary>Opens the page on an edition. False if the page could not be put in the menu.</summary>
         public bool Show(LedgerEdition edition, int from)
         {
-            if (_app == null || !_app.Installed || edition == null)
+            if (_app == null || !_app.Installed || edition == null || _special != null)
             {
-                return false;
+                return false;   // (a special front page is up: it is not turned into the morning's paper under its reader)
             }
             if (!ReferenceEquals(edition, _edition))
             {
@@ -173,25 +173,29 @@ namespace RealLifeOverhaul.Ledger
             {
                 return;
             }
-            if (_edition == null)
+            if (_edition == null && _special == null)
             {
                 LedgerState state = _director.State;
                 _edition = state != null ? state.Edition : null;
             }
             Measure();
-            UiClone.Words(_shell.Header, LedgerText.T(FromKeys[_from]));
+            UiClone.Words(_shell.Header, _special != null ? _special.Header : LedgerText.T(FromKeys[_from]));
             Turn(_page);
         }
 
         private void Closed()
         {
-            // nothing runs while the page is down
+            // nothing runs while the page is down; a special front page tells whoever opened it
+            if (_special != null)
+            {
+                SpecialClosed();
+            }
         }
 
         // The page shown: its tab marked, its words written and placed now.
         private void Turn(int page)
         {
-            _page = Mathf.Clamp(page, 0, Pages - 1);
+            _page = _special != null ? Front : Mathf.Clamp(page, 0, Pages - 1);
             _shell.ShowTab(_page);
             for (int i = 0; i < Pages; i++)
             {
@@ -200,7 +204,7 @@ namespace RealLifeOverhaul.Ledger
                     _pages[i].gameObject.SetActive(i == _page);
                 }
             }
-            if (_edition == null || _height < 100f)
+            if ((_edition == null && _special == null) || _height < 100f)
             {
                 return;
             }
@@ -209,7 +213,16 @@ namespace RealLifeOverhaul.Ledger
             rules.Begin();
             switch (_page)
             {
-                case Front: WriteFront(_edition, rules); break;
+                case Front:
+                    if (_special != null)
+                    {
+                        WriteSpecial(_special, rules);
+                    }
+                    else
+                    {
+                        WriteFront(_edition, rules);
+                    }
+                    break;
                 case Markets: WriteMarkets(_edition, rules); break;
                 default: WritePrices(_edition, rules); break;
             }
