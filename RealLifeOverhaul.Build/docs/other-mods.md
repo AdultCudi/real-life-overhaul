@@ -38,6 +38,10 @@ name) and which holds the named type. `OtherMods.Look(logger)` does the walk and
 | --- | --- | --- | --- | --- |
 | Immersion - RPG Camera | `Immersion` (ships as `Immersion-1.2.0-test8`) | `Immersion.ImmersionEntry` | Adds its own Cinemachine virtual camera and gives it priority 1000 while its camera is on, -1000 while it is off (its key, default off) or a screen is open; locks the pointer while on. | `Camera/CameraYield`: while that camera is live, `ThirdPersonCamera` gives the game's on-foot cameras their own figures back and frees the pointer, and `ChaseCamera` lets go. Back 90 clean frames after it stops. The Camera section's options are drawn unusable with "unavailable: the camera is with Immersion - RPG Camera". |
 | Voogle Route | `VoogleRoute` | `VoogleRoute.VoogleRouteCityMod` | Draws its route as lines in the world: on the ground on foot and driving, and on the city map on the map's own layer (`CityMap.cityMapMask`); has its own click, bookmark panels and destination popup on the city map, and a phone app. No minimap on the HUD. | `Navigation/NavDirector`: nothing of this mod's is put on the city map (no `NavCityMap` object, no double click). This mod's route stays on its own minimap with its two lines, but the arrival notice and the end of the destination are left to that mod (one notice, one rule). With "Use the other mod's route line" on (the row is on the page only while that mod is on; default off) there is no route of this mod's at all. |
+| Going Public (multiplayer, Workshop 3765662670) | `BigAmbitionsMP` | `BigAmbitionsMP.MPServer` | Lets several players share one city. Each plays their own save; the clock, weather, market, who rents and owns what and (near the host) the traffic are the host's. Patches the game with Harmony (about 800 patches): stops the game's time skip and pause in a session and turns them into a vote of all players, pins the game speed, puts back clock jumps it did not make, mirrors the host's traffic on a guest (the traffic system does not run there), puts other players' businesses and homes on each machine as rented by the player with their id as owner. | `Core/GoingPublic`: see "Going Public" below. |
+| Going Public: Extras (3794606607) | `BampExtras` | `BampExtras.ModEntry` | Location and property sharing in Going Public's own hub and on the city map (its own markers; its own message type). | Nothing: logged only. |
+| Going Public Expansion-Friend Trade (3798559131) | `ForeignTradeMultiplayer` | `ForeignTradeMultiplayer.InitEntry` | Trades between players through the ForeignTrade mod's money and stock, its own phone button (a copy of the game's), `ftmp:` transactions and save keys. | Nothing: logged only. Its button is one more child of the phone's grid, which the pages take in. |
+| Going Public: Français (3794605892) | `BampFrancais` | `BampFrancais.ModEntry` | Rewrites Going Public's own English strings (a transpiler on its methods only). | Nothing: logged only. |
 
 ## How a foreign camera is seen without a name (`Camera/CameraYield`)
 
@@ -53,6 +57,47 @@ Two findings, each read once a frame, neither needing to know who:
 
 Nothing is counted while a screen is open: camera mods stand aside for the city map and the menus themselves. Nor
 during the player's funeral, the one scene the game films with cameras that are not on its list (a timeline's).
+
+## Going Public (`Core/GoingPublic`)
+
+Read in its decompiled code (`evidence/othermods/GoingPublic`), never run. What it does that this mod meets:
+
+- **One save per player.** Each player's own save (money, businesses, this mod's state) is kept on the host's machine and
+  loaded on join; the shared world is laid over it. So this mod's money, records and phone are each player's, and right.
+- **The clock is everyone's.** In a session it stops `TimeMachine.StartTimeMachine` as soon as it starts (and never runs
+  `TimeMachine.Update`), refuses `GameSpeedController.SetPause`, `SetPauseState` and `DisableTimeControl`, unlocks a time
+  lock every half second, sets `Time.timeScale` itself every frame, and pins back any jump of the clock it did not make.
+  Time runs faster only by a vote of every player, from an activity the game's panel shows (the mod's own shift skip is
+  one). So `GoingPublic.ClockShared` makes every skip of this mod's pass no time (custody, prison, rides, the garage,
+  outings, the family), photo mode leave the clock running, and refuses what needs days or a night (holidays, hotel sleep).
+- **Other players' buildings.** On each machine another player's business or home is `RentedByPlayer` with that player's
+  id in `businessOwnerRivalId`; Going Public keeps it out of the game's own lists of the player's assets
+  (`GameStatePatcher.HideFromOwnAssetLists`). Every place of this mod that asks "is this the player's?" asks
+  `GoingPublic.Mine(reg)` (which calls that test) instead of `RentedByPlayer`; places that ask "is it free for the
+  city?" still ask `!RentedByPlayer`, which is right for both.
+- **A guest's traffic is the host's.** On a guest the traffic system is not run (`TrafficManager.Update`/`FixedUpdate`
+  skipped) and the host's cars are placed from its figures. `TrafficTools.Ready` is false there; `TrafficTools.Street`
+  is the old "out on a running street" test for what only needs the street (jobs, outings, leisure, two-wheelers).
+- **Who owns what is the host's record.** The game's own ways of giving up or selling a business or building are patched
+  to tell the host; this mod's own sale of a business, a building's sale and car hire do not, so they wait in a session.
+  A guest cannot start a business of the city's (`CompetitionHelper.StartNewCompetitorBusiness` is host only): a guest's
+  franchised shop is in the books only.
+- **Closing a business.** `BuildingRegistration.TemporarilyClose` has a postfix that sends the player's own shop's state to
+  everyone at once, and a prefix that routes a merged company's shop to its owner. This mod closes only the player's own
+  (through `Mine`), so its closures reach the others.
+
+Found by its assembly and `BigAmbitionsMP.MPServer`; then three statics are read by reflection once and called through
+delegates: `MPServer.IsRunning` (host), `MPClient.IsClientInWorld` (guest), `GameStatePatcher.HideFromOwnAssetLists`.
+Read once a second of real time (`GoingPublicWatch`); a change logs one warning, gives back any traffic held, and the
+options page is drawn again. The notice is shown once a run, after the save is in. "Test: pretend a Going Public session"
+steps host, guest, alone.
+
+Diagnostics: `Other mods: 'Going Public' is also switched on (assembly BigAmbitionsMP). ...`, `Going Public: this
+machine hosts a session. ...` / `... is a guest in a session. ...` / `... the session is over ...`.
+
+Proven (read): everything above. Inferred (not seen with two players): that a franchised shop the host opens shows on the
+guest, that the mod's shift skip goes through the vote as the game's own work does, and how the phone's pages sit with
+Going Public's two buttons and the phone it makes one row taller.
 
 ## Adding the next one
 
