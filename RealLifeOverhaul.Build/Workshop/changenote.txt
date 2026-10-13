@@ -1,7 +1,4 @@
-0.7.1
-
-New
-- Bus rides now use the game's own activity panel once you are seated and the doors close. Let it run and the bus drives its route through the city in real time, calling at every stop on the way, where people get on and off, until it reaches yours. Use the panel's fast forward to ride at the game's fast speed, or skip to pass the rest of the ride under a fade as before. Move, or press the panel's button, to get off at the next stop; nothing is given back. A save during the ride puts you at the last stop the bus called at. A ride with a change of bus still passes under a fade.
+0.7.2
 
 Fixed
-- A pole, a bin or a bench by a bus stop could stop you reaching the bus's door. Street furniture on the kerb by the doors and on the way to them from the stop is now cleared, you are walked to a place by the door that can be reached, and as a last resort you get on by the middle door and walk up to the validator to pay.
+- Police stations stood nearly empty inside. They are now furnished. The walls, the floors and much of the furniture come from the game's own office designs for that very unit, with waiting chairs and a queue at the front desk, desks with computers, lockers, a briefing screen with a row of chairs, a break table by the coffee machine, and the holding cell. Officers sit at the desks typing, take a break, walk between the rooms and come on and off shift through the door, and now and then a member of the public waits on the chairs. The way to the front desk and to the cell is always kept clear. The option 'Furnished police stations' switches it off.
