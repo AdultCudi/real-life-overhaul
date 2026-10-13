@@ -72,7 +72,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        public enum Place { Aboard, Reader, Seat, WindowSeat, Strap }
+        public enum Place { Aboard, Reader, Seat, WindowSeat, Strap, MiddleAboard }
 
         // ---------------------------------------------------------------- the bus and the clips
 
@@ -129,6 +129,14 @@ namespace RealLifeOverhaul
         public static readonly Spot FrontExit = new Spot(1.00f, 4.45f);
         public static readonly Spot FrontExitTo = new Spot(1.50f, 4.45f);
 
+        /// <summary>On the road at the middle door, facing in, and where board_step leaves the rider there: the way in when the front door cannot be reached.</summary>
+        public static readonly Spot MiddleBoardFrom = new Spot(1.50f, -0.55f);
+        public static readonly Spot MiddleAboard = new Spot(1.06f, -0.55f);
+
+        // From the middle door's step up the aisle to the validator (the way in by the middle door), and back down it.
+        private static readonly Spot DoorIn = new Spot(0.60f, -0.40f);
+        private static readonly Spot[] AisleUp = { new Spot(0.15f, -0.20f), new Spot(0.15f, 0.25f), new Spot(0.15f, 3.40f), new Spot(0.45f, 4.30f) };
+
         // Along the aisle from the validator: past the platform's corner, between the front housings, to the space opposite the middle door.
         private static readonly Spot[] Aisle = { new Spot(0.45f, 4.30f), new Spot(0.15f, 3.40f), new Spot(0.15f, 0.25f) };
         private static readonly Spot SeatTurn = new Spot(-0.30f, -0.05f);       // short of the seats: they turn round there
@@ -152,6 +160,7 @@ namespace RealLifeOverhaul
                 case Place.Reader: return Reader;
                 case Place.Seat: return SeatFeetAt(0);
                 case Place.WindowSeat: return SeatFeetAt(1);
+                case Place.MiddleAboard: return MiddleAboard;
                 default: return Strap;
             }
         }
@@ -159,7 +168,7 @@ namespace RealLifeOverhaul
         /// <summary>The way a rider faces at a place once there.</summary>
         public static float FacingAt(Place place)
         {
-            return place == Place.Reader ? ReaderFacing : place == Place.Aboard ? -90f : 0f;
+            return place == Place.Reader ? ReaderFacing : place == Place.Aboard || place == Place.MiddleAboard ? -90f : 0f;
         }
 
         // ---------------------------------------------------------------- the furniture a path must keep clear of
@@ -215,6 +224,17 @@ namespace RealLifeOverhaul
                 into.Add(Reader);
                 return;
             }
+            if (from == Place.MiddleAboard && to == Place.Reader)
+            {
+                // In by the middle door: up the aisle to the validator by the driver, to pay as at the front.
+                into.Add(DoorIn);
+                for (int i = 0; i < AisleUp.Length; i++)
+                {
+                    into.Add(AisleUp[i]);
+                }
+                into.Add(Reader);
+                return;
+            }
             if (from != Place.Reader || (to != Place.Seat && to != Place.WindowSeat && to != Place.Strap))
             {
                 return;
@@ -266,6 +286,178 @@ namespace RealLifeOverhaul
                 into.Add(BackToAisle);
             }
             into.Add(Exit);
+            return false;
+        }
+
+        /// <summary>
+        /// The way off by a door chosen for the rider (the nearest one's step down may be blocked: <see cref="OffTries"/>): from
+        /// wherever they stand on the floor to that door's threshold, along the aisle when the other door is nearer. The last
+        /// place is Exit or FrontExit.
+        /// </summary>
+        public static void WayOutBy(Spot at, bool front, List<Spot> into)
+        {
+            bool nearFront = WayOut(at, into);
+            if (nearFront == front)
+            {
+                return;
+            }
+            into.RemoveAt(into.Count - 1);   // (the nearer door's threshold)
+            if (front)
+            {
+                if (at.Z > 0.30f)
+                {
+                    // Up the aisle already: on up it to the front platform.
+                    into.Clear();
+                    into.Add(at);
+                    into.Add(new Spot(0.15f, Math.Min(at.Z, 3.40f)));
+                    if (at.Z < 3.40f)
+                    {
+                        into.Add(AisleUp[2]);
+                    }
+                    into.Add(AisleUp[3]);
+                    into.Add(FrontExit);
+                    return;
+                }
+                // From the seats, the strap or the middle door (WayOut has brought them to the aisle's end): up it to the front platform.
+                for (int i = 0; i < AisleUp.Length; i++)
+                {
+                    into.Add(AisleUp[i]);
+                }
+                into.Add(FrontExit);
+                return;
+            }
+            // From the front platform down the aisle to the middle door.
+            for (int i = AisleUp.Length - 1; i >= 0; i--)
+            {
+                into.Add(AisleUp[i]);
+            }
+            into.Add(DoorIn);
+            into.Add(Exit);
+        }
+
+        // ---------------------------------------------------------------- reaching the doors from the street
+
+        /// <summary>A place on the road by one of the doors, a little along the side from its middle if need be.</summary>
+        public struct Approach
+        {
+            public readonly bool Middle;
+            public readonly float Along;
+
+            public Approach(bool middle, float along)
+            {
+                Middle = middle;
+                Along = along;
+            }
+
+            /// <summary>Where it is, in the bus's metres, on the road where one steps in and down.</summary>
+            public Spot At => new Spot(Outside, (Middle ? MiddleDoor : FrontDoor) + Along);
+        }
+
+        /// <summary>The most a place to walk to may be along the side from its door's middle: the rest is walked by hand along the bus.</summary>
+        public const float AlongMost = 1.0f;
+
+        /// <summary>
+        /// Where a rider is walked to, to get on, in the order tried: the front door's own place, then a little further
+        /// along the kerb each way (something on the road there, or no way to it on the walkable ground), and only then
+        /// the middle door, where they step in and walk up the aisle to the validator to pay.
+        /// </summary>
+        public static readonly Approach[] BoardTries =
+        {
+            new Approach(false, 0f), new Approach(false, 0.5f), new Approach(false, -0.5f), new Approach(false, AlongMost), new Approach(false, -AlongMost),
+            new Approach(true, 0f), new Approach(true, 0.5f), new Approach(true, -0.5f)
+        };
+
+        /// <summary>
+        /// Where a rider steps down to, to get off, in the order tried: beside the middle door, a little along the side each
+        /// way, then the front door. From the front platform the front door comes first.
+        /// </summary>
+        public static readonly Approach[] OffTries =
+        {
+            new Approach(true, 0f), new Approach(true, 0.4f), new Approach(true, -0.4f), new Approach(false, 0f), new Approach(false, -0.4f)
+        };
+
+        public static readonly Approach[] OffTriesFront =
+        {
+            new Approach(false, 0f), new Approach(false, -0.4f), new Approach(true, 0f), new Approach(true, 0.4f), new Approach(true, -0.4f)
+        };
+
+        /// <summary>The first of the tries that will do, by the caller's test (a path on the walkable ground, nothing standing there); -1 if none.</summary>
+        public static int First(Approach[] tries, Func<Approach, bool> will)
+        {
+            for (int i = 0; tries != null && will != null && i < tries.Length; i++)
+            {
+                if (will(tries[i]))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        // ---------------------------------------------------------------- the boarding strip at a stop
+
+        /// <summary>
+        /// A strip of the street at a stop that is kept clear of the game's street furniture (poles, bins, bollards, signs,
+        /// hydrants, benches): from one point to another, in metres along the stop's lane from the pole and aside from the
+        /// lane's line towards the kerb, and half as wide again either side.
+        /// </summary>
+        public struct Strip
+        {
+            public readonly float Along0, Aside0, Along1, Aside1, Half;
+
+            public Strip(float along0, float aside0, float along1, float aside1, float half)
+            {
+                Along0 = along0;
+                Aside0 = aside0;
+                Along1 = along1;
+                Aside1 = aside1;
+                Half = half;
+            }
+
+            public float Length => (float)Math.Sqrt((Along1 - Along0) * (Along1 - Along0) + (Aside1 - Aside0) * (Aside1 - Aside0));
+
+            /// <summary>Whether a point (along, aside) lies on the strip.</summary>
+            public bool Holds(float along, float aside)
+            {
+                float da = Along1 - Along0, ds = Aside1 - Aside0;
+                float length2 = da * da + ds * ds;
+                float k = length2 > 1e-6f ? Math.Max(0f, Math.Min(1f, ((along - Along0) * da + (aside - Aside0) * ds) / length2)) : 0f;
+                float pa = Along0 + da * k - along, ps = Aside0 + ds * k - aside;
+                return pa * pa + ps * ps <= Half * Half;
+            }
+        }
+
+        public const float WalkwayHalf = 0.75f;   // the walkway from the waiting place to a door: 1.5 m wide
+        public const float KerbBeyond = 1.0f;     // the kerb's strip runs this far beyond each door
+        public const float KerbHalf = 0.8f;       // ...and is 1.6 m wide, astride the kerb's edge
+        public const float KerbIn = 0.2f;         // ...its middle this far onto the pavement
+
+        /// <summary>
+        /// The strips kept clear at a stop, for a bus standing with its middle beside the pole (as it stands in the lane or its
+        /// bay): the kerb from beyond the middle door to beyond the front door, and a walkway from the waiting place to each
+        /// door. <paramref name="kerb"/> is metres from the lane's line to the kerb's edge; the waiting place is given the same way.
+        /// </summary>
+        public static Strip[] BoardingStrips(float kerb, float waitAlong, float waitAside)
+        {
+            float edge = kerb + KerbIn;
+            return new[]
+            {
+                new Strip(MiddleDoor - KerbBeyond, edge, FrontDoor + KerbBeyond, edge, KerbHalf),
+                new Strip(waitAlong, waitAside, FrontDoor, kerb, WalkwayHalf),
+                new Strip(waitAlong, waitAside, MiddleDoor, kerb, WalkwayHalf)
+            };
+        }
+
+        /// <summary>Whether something standing at (along, aside) is in the way of boarding, by the strips.</summary>
+        public static bool InStrips(Strip[] strips, float along, float aside)
+        {
+            for (int i = 0; strips != null && i < strips.Length; i++)
+            {
+                if (strips[i].Holds(along, aside))
+                {
+                    return true;
+                }
+            }
             return false;
         }
 
@@ -327,7 +519,7 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- the ride's own rules
 
         /// <summary>How far a rider has got with a ride, for what an end to it means.</summary>
-        public enum Stage { None, Walking, Boarding, Aboard, Leaving, Away, Arriving }
+        public enum Stage { None, Walking, Boarding, Aboard, Leaving, Away, Arriving, Riding }
 
         public const float ShowMetres = 30f;      // the bus is seen to pull away this far before the screen darkens
         public const float ShowMoving = 7f;       // ...or for this many seconds on the move
@@ -355,7 +547,18 @@ namespace RealLifeOverhaul
         /// </summary>
         public static bool SaveAtStart(Stage stage)
         {
-            return stage == Stage.Boarding || stage == Stage.Aboard || stage == Stage.Leaving || stage == Stage.Away;
+            return stage == Stage.Boarding || stage == Stage.Aboard || stage == Stage.Leaving || stage == Stage.Away || stage == Stage.Riding;
+        }
+
+        /// <summary>
+        /// Whether a save written now gives the fare back when it is loaded. Riding the bus through the city
+        /// (<see cref="Stage.Riding"/>, or its rest skipped under the fade) a save has the rider at the last stop the bus called
+        /// at, or at the one they boarded at before it has called at any: the fare is given back only in that case, as for a
+        /// save written as the bus pulls away, since the ride has then not happened.
+        /// </summary>
+        public static bool SaveFareBack(Stage stage, int stopsPassed)
+        {
+            return stopsPassed <= 0 && SaveAtStart(stage);
         }
     }
 }
