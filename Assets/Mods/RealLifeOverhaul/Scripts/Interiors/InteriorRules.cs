@@ -43,6 +43,8 @@ namespace RealLifeOverhaul.Interiors
         public readonly int[] Items = new int[InteriorRules.Categories];    // items placed, by category
         public int Kinds;                       // different kinds of decor item (furniture and equipment not counted)
         public bool RestCorner;                 // a seat, a table and something from a kitchen: somewhere for staff to take a break
+        public bool Fitting;                    // still in its first days: the district does not hold it to its standard yet
+        public int StandardFrom;                // ...and the day from which it does
 
         // worked out
         public int Target;                      // the points a place of this size needs for full marks, tenths
@@ -62,6 +64,10 @@ namespace RealLifeOverhaul.Interiors
         public int LastDay;            // the last day it was read
         public int StoryDay = -1000;   // the last day it was in the City Ledger or a Flare draft
         public int RefreshDay = -1;    // the last day its finishes were refreshed
+        public int FirstDay = Unset;   // the first day it was read (its fitting-out days count from it)
+
+        public const int Unset = int.MinValue;
+        public const int LongAgo = -1000;   // a business already trading when the feature first read it
     }
 
     /// <summary>
@@ -85,7 +91,8 @@ namespace RealLifeOverhaul.Interiors
     ///   Overall    six tenths interior, four tenths decor.
     ///
     /// THE DISTRICT'S STANDARD: 15 in the poorest district (income 60) up to 70 in the richest (140), rising with its
-    /// income level, and never under the game's own minimum for it (Midtown's).
+    /// income level, and never under the game's own minimum for it (Midtown's). A business gets its first 14 days to fit
+    /// out: falling short of the standard costs it nothing then (customers, prices, complaints), being over it counts.
     ///
     /// THE EFFECTS (each inside its cap; the footfall parts then inside business pressure's own -25% to +15% for
     /// everything the mod adds):
@@ -161,6 +168,7 @@ namespace RealLifeOverhaul.Interiors
         public const int ShabbyShort = 25;
         public const int StoryRestDays = 60;          // a business is in the news for its interior once in this many days at most
         public const int StoryChance = 100;           // per mille a day, once it is newsworthy
+        public const int GraceDays = 14;              // a new business's days to fit out before its district holds it to the standard
 
         public static int Clamp(int v, int least, int most)
         {
@@ -384,6 +392,12 @@ namespace RealLifeOverhaul.Interiors
             return day - lastStory >= StoryRestDays && draw < StoryChance;
         }
 
+        /// <summary>True while a business first read on <paramref name="firstDay"/> is still fitting out: the standard's shortfall does not count yet.</summary>
+        public static bool Fitting(int firstDay, int day)
+        {
+            return firstDay != InteriorFile.Unset && day - firstDay < GraceDays;
+        }
+
         // ---------------------------------------------------------------- living with the two other mods
 
         /// <summary>The district standard's part (its footfall and its complaints): its switch on, and not while the other author's interiors mod is.</summary>
@@ -425,10 +439,18 @@ namespace RealLifeOverhaul.Interiors
             s.Standard = Standard(s.Income, s.GameMinimum);
             bool shop = s.Kind == InteriorKind.Shop;
             s.StandardFootfall = shop && standardOn ? StandardFootfall(s.Overall, s.Standard) : 0;
+            if (s.Fitting)
+            {
+                s.StandardFootfall = Math.Max(0, s.StandardFootfall);   // fitting out: over the standard counts, short of it not yet
+            }
             s.DecorFootfall = shop && decorOn ? DecorFootfall(s.Decor) : 0;
             s.Footfall = Footfall(s.StandardFootfall, s.DecorFootfall);
             s.Bears = shop && pricesOn ? Bears(s.Overall, s.Standard) : 0;
-            s.ComplaintChance = shop && standardOn ? ComplaintChance(s.Overall, s.Standard) : 0;
+            if (s.Fitting)
+            {
+                s.Bears = Math.Max(0, s.Bears);
+            }
+            s.ComplaintChance = shop && standardOn && !s.Fitting ? ComplaintChance(s.Overall, s.Standard) : 0;
             s.Basket = shop && basketOn ? BasketChance(s.Overall, s.Standard) : 0;
             s.BrandPoints = shop && standingOn ? BrandPoints(s.Overall) : 0;
             s.StandingPoints = shop && standingOn ? StandingPoints(s.Overall) : 0;

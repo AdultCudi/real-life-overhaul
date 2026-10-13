@@ -7,7 +7,8 @@ namespace RealLifeOverhaul.Interiors
 {
     /// <summary>
     /// What the feature keeps in the save: one file per business of the player's it has seen, at most
-    /// <see cref="Most"/>. Its only line ("reallife:interiors"): "1|place,wear,interior,day,story,refresh|...". A place is
+    /// <see cref="Most"/>. Its only line ("reallife:interiors"): "2|place,wear,interior,day,story,refresh,first|...". A
+    /// line of the first version (without the first day) is read as businesses that were trading already. A place is
     /// business pressure's own key (the street escaped, so it holds no '|' and no ','). A line that cannot be read gives
     /// an empty store; a file that cannot be read is left out. Game-free, checked by EconomyCheck.
     /// </summary>
@@ -15,7 +16,8 @@ namespace RealLifeOverhaul.Interiors
     {
         public const string Key = "reallife:interiors";
         public const int Most = 200;
-        private const string Version = "1";
+        private const string Version = "2";
+        private const string VersionOne = "1";   // no first day: read as businesses that were trading already
 
         public readonly List<InteriorFile> Files = new List<InteriorFile>(16);
 
@@ -65,7 +67,8 @@ namespace RealLifeOverhaul.Interiors
                  .Append(',').Append(f.LastInterior.ToString(CultureInfo.InvariantCulture))
                  .Append(',').Append(f.LastDay.ToString(CultureInfo.InvariantCulture))
                  .Append(',').Append(f.StoryDay.ToString(CultureInfo.InvariantCulture))
-                 .Append(',').Append(f.RefreshDay.ToString(CultureInfo.InvariantCulture));
+                 .Append(',').Append(f.RefreshDay.ToString(CultureInfo.InvariantCulture))
+                 .Append(',').Append(f.FirstDay.ToString(CultureInfo.InvariantCulture));
             }
             return w.ToString();
         }
@@ -78,16 +81,18 @@ namespace RealLifeOverhaul.Interiors
                 return store;
             }
             string[] parts = line.Split('|');
-            if (parts[0] != Version)
+            bool one = parts[0] == VersionOne;
+            if (parts[0] != Version && !one)
             {
                 return store;
             }
+            int fields = one ? 6 : 7;
             for (int i = 1; i < parts.Length; i++)
             {
                 string[] f = parts[i].Split(',');
-                int wear, interior, day, story, refresh;
-                if (f.Length != 6 || f[0].Length == 0 || !Int(f[1], out wear) || !Int(f[2], out interior) || !Int(f[3], out day) || !Int(f[4], out story)
-                    || !Int(f[5], out refresh))
+                int wear, interior, day, story, refresh, first = InteriorFile.LongAgo;
+                if (f.Length != fields || f[0].Length == 0 || !Int(f[1], out wear) || !Int(f[2], out interior) || !Int(f[3], out day) || !Int(f[4], out story)
+                    || !Int(f[5], out refresh) || (!one && !Int(f[6], out first)))
                 {
                     continue;
                 }
@@ -101,6 +106,7 @@ namespace RealLifeOverhaul.Interiors
                 file.LastDay = day;
                 file.StoryDay = story;
                 file.RefreshDay = refresh;
+                file.FirstDay = first;
             }
             return store;
         }

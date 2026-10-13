@@ -172,7 +172,15 @@ namespace RealLifeOverhaul.Interiors
                 Logger?.Info("Interiors: " + _basketToday + " product(s) more in customers' baskets yesterday.");
             }
             _basketToday = 0;
-            Rework(day, true);
+            _firstRound = !events;
+            try
+            {
+                Rework(day, true);
+            }
+            finally
+            {
+                _firstRound = false;
+            }
             if (!events)
             {
                 return;   // nothing is decided in the first moments of a session
@@ -203,6 +211,12 @@ namespace RealLifeOverhaul.Interiors
                 int wear = 0;
                 if (f != null)
                 {
+                    if (f.FirstDay == InteriorFile.Unset)
+                    {
+                        f.FirstDay = _firstRound ? InteriorFile.LongAgo : day;   // (one already there when the session's first round reads the save has had its days)
+                    }
+                    s.Fitting = InteriorRules.Fitting(f.FirstDay, day);
+                    s.StandardFrom = s.Fitting ? f.FirstDay + InteriorRules.GraceDays : 0;
                     if (age && Settings.InteriorsWear)
                     {
                         int days = f.LastDay > 0 ? InteriorRules.Clamp(day - f.LastDay, 0, 30) : 0;
@@ -245,6 +259,7 @@ namespace RealLifeOverhaul.Interiors
         }
 
         private int _bestOffice = -1;
+        private bool _firstRound;   // the session's first round: a business without a file was trading before the save was read
 
         private InteriorShop Take()
         {
@@ -254,6 +269,8 @@ namespace RealLifeOverhaul.Interiors
             }
             InteriorShop s = _pool[_pool.Count - 1];
             _pool.RemoveAt(_pool.Count - 1);
+            s.Fitting = false;
+            s.StandardFrom = 0;
             return s;
         }
 
@@ -320,7 +337,7 @@ namespace RealLifeOverhaul.Interiors
             {
                 InteriorShop s = _shops[i];
                 InteriorFile f = _store.File(s.Place, false);
-                int kind = s.Kind == InteriorKind.Shop ? InteriorRules.Newsworthy(s.Overall, s.Standard, s.Wear, StandardOn) : 0;
+                int kind = s.Kind == InteriorKind.Shop ? InteriorRules.Newsworthy(s.Overall, s.Standard, s.Wear, StandardOn && !s.Fitting) : 0;
                 if (f == null || kind == 0 || !InteriorRules.Story(f.StoryDay, day, Random.Range(0, 1000)))
                 {
                     continue;

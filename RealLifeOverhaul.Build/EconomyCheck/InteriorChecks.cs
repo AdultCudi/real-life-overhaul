@@ -258,6 +258,20 @@ internal static partial class Program
         InteriorRules.Work(poor, 900, true, true, true, true, true, true);
         Check(poor.Footfall == -8 && poor.ComplaintChance > 0 && poor.Bears == -20, "interiors: a bare, worn shop in the richest district loses 8% and 2% of its prices and draws complaints, never all its customers");
         Check(InteriorRules.Next(poor) == (int)DecorCategory.Art, "interiors: with nothing placed, art comes first to add");
+        Check(InteriorRules.Fitting(10, 23) && !InteriorRules.Fitting(10, 24) && !InteriorRules.Fitting(InteriorFile.Unset, 5) && !InteriorRules.Fitting(InteriorFile.LongAgo, 1),
+            "interiors: a new business fits out for 14 days; one trading already, or not read yet, does not");
+        InteriorShop fitting = InteriorSample(InteriorKind.Shop);
+        fitting.Interior = 5;
+        Array.Clear(fitting.Points, 0, fitting.Points.Length);
+        fitting.Income = 140;
+        fitting.Fitting = true;
+        InteriorRules.Work(fitting, 0, true, true, true, true, true, true);
+        Check(fitting.StandardFootfall == 0 && fitting.Bears == 0 && fitting.ComplaintChance == 0 && fitting.Overall < fitting.Standard,
+            "interiors: fitting out, a bare shop loses nothing for falling short of its standard");
+        InteriorShop fine = InteriorSample(InteriorKind.Shop);
+        fine.Fitting = true;
+        InteriorRules.Work(fine, 0, true, true, true, true, true, true);
+        Check(fine.StandardFootfall == s.StandardFootfall && fine.Bears == s.Bears && fine.Footfall == s.Footfall, "interiors: fitting out, being over the standard counts at once");
         Check(InteriorRules.Next(s) == (int)DecorCategory.Audio, "interiors: the sample shop most needs audio next (" + InteriorRules.Next(s) + ")");
     }
 
@@ -270,16 +284,21 @@ internal static partial class Program
         a.LastDay = 30;
         a.StoryDay = 12;
         a.RefreshDay = 9;
+        a.FirstDay = 4;
         store.File("Park%20Ave~22", true).Wear = 1;
         Check(store.File("bad|place~1", true) == null && store.File("bad,place~1", true) == null && store.File(string.Empty, true) == null,
             "interiors: a place that would break the line is not kept");
         InteriorStore back = InteriorStore.Read(store.Write());
         InteriorFile b = back.File("Main%20St~1", false);
-        Check(back.Files.Count == 2 && b != null && b.Wear == 420 && b.LastInterior == 55 && b.LastDay == 30 && b.StoryDay == 12 && b.RefreshDay == 9,
+        Check(back.Files.Count == 2 && b != null && b.Wear == 420 && b.LastInterior == 55 && b.LastDay == 30 && b.StoryDay == 12 && b.RefreshDay == 9 && b.FirstDay == 4,
             "interiors: the save's line reads back what it wrote");
-        Check(InteriorStore.Read("2|x~1,1,1,1,1,1").Files.Count == 0 && InteriorStore.Read("1|x~1,a,1,1,1,1|y~2,5,1,1,1,1").Files.Count == 1 && InteriorStore.Read(null).Files.Count == 0,
+        Check(InteriorStore.Read("3|x~1,1,1,1,1,1,1").Files.Count == 0 && InteriorStore.Read("2|x~1,1,1,1,1,1").Files.Count == 0
+              && InteriorStore.Read("2|x~1,a,1,1,1,1,1|y~2,5,1,1,1,1,8").Files.Count == 1 && InteriorStore.Read(null).Files.Count == 0,
             "interiors: another version's line, or a file that cannot be read, is left out");
-        Check(InteriorStore.Read("1|x~1,99999,-50,1,1,1").File("x~1", false).Wear == InteriorRules.WearMost, "interiors: a wear read is kept inside its bounds");
+        InteriorStore old = InteriorStore.Read("1|x~1,a,1,1,1,1|y~2,5,1,1,1,1");
+        Check(old.Files.Count == 1 && old.File("y~2", false).Wear == 5 && old.File("y~2", false).FirstDay == InteriorFile.LongAgo,
+            "interiors: the first version's line is read, its businesses as trading already");
+        Check(InteriorStore.Read("2|x~1,99999,-50,1,1,1,1").File("x~1", false).Wear == InteriorRules.WearMost, "interiors: a wear read is kept inside its bounds");
         for (int i = 0; i < InteriorStore.Most + 20; i++)
         {
             store.File("Street~" + i, true);

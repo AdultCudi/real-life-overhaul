@@ -75,6 +75,7 @@ namespace RealLifeOverhaul.Interiors
                 .About("reallife_guide_interiors_standard_about").Help("reallife_guide_interiors_standard")
                 .Owns(Settings.InteriorsStandardId, Settings.InteriorsBasketId)
                 .StandsAside(InteriorsSentence, Settings.InteriorsStandardId, Settings.InteriorsBasketId)
+                .Fact("in_grace", () => N(InteriorRules.GraceDays))
                 .Fact("in_standard_least", () => N(InteriorRules.StandardLeast))
                 .Fact("in_standard_most", () => N(InteriorRules.StandardMost))
                 .Fact("in_income_least", () => N(InteriorRules.IncomeLeast))

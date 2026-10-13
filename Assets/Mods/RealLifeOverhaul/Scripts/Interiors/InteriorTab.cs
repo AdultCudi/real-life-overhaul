@@ -316,6 +316,10 @@ namespace RealLifeOverhaul.Interiors
             else
             {
                 b.Line(InteriorText.T("reallife_interior_line_standard", "standard", InteriorText.N(s.Standard), "district", Districts.DistrictGame.Name(s.District)));
+                if (s.Fitting && s.Kind == InteriorKind.Shop && Settings.InteriorsStandard)
+                {
+                    b.Line(InteriorText.T("reallife_interior_line_fitting", "day", InteriorText.N(s.StandardFrom)));
+                }
             }
             b.Line(InteriorText.T(s.Decor != s.DecorRaw ? "reallife_interior_line_decor_worn" : "reallife_interior_line_decor",
                 "score", InteriorText.N(s.DecorRaw), "now", InteriorText.N(s.Decor)));
