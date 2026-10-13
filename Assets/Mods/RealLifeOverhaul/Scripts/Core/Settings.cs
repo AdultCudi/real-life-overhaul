@@ -30,6 +30,7 @@ namespace RealLifeOverhaul
         public const string AccidentFrequencyId = "accident_frequency";
         public const string AccidentNoticesId = "accident_notices";
         public const string AccidentMarkerId = "accident_marker";
+        public const string TowTrucksId = "tow_trucks";
         public const string SirenId = "siren";
         public const string PoliceId = "police";
         public const string PolicePursuitId = "police_pursuit";
@@ -247,6 +248,7 @@ namespace RealLifeOverhaul
         public static bool TrafficAccidents = true;
         public static bool AccidentNotices = true;   // the notifications (and their sound) as an accident of other people's unfolds; off, it still happens
         public static bool AccidentMarker = true;    // the game's destination marker on an accident, and so the route to it
+        public static bool TowTrucks = true;         // a tow truck takes a wreck away once its scene has cleared (Traffic/Tow); off, the wreck simply goes
         public static int AccidentFrequency = 2;     // 1 = rare, 10 = constant
         public static bool Siren = true;
         public static bool Police = true;            // patrol cars attend accidents and chase hit-and-run drivers
@@ -512,6 +514,7 @@ namespace RealLifeOverhaul
             TrafficAccidents = Bool(modId, TrafficAccidentsId, TrafficAccidents);
             AccidentNotices = Bool(modId, AccidentNoticesId, AccidentNotices);
             AccidentMarker = Bool(modId, AccidentMarkerId, AccidentMarker);
+            TowTrucks = Bool(modId, TowTrucksId, TowTrucks);
             AccidentFrequency = Int(modId, AccidentFrequencyId, AccidentFrequency);
             Siren = Bool(modId, SirenId, Siren);
             Police = Bool(modId, PoliceId, Police);

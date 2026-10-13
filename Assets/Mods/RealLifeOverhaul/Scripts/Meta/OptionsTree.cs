@@ -273,7 +273,7 @@ namespace RealLifeOverhaul.Meta
                 S("garage").For("garage").Main("garage").Opts("garage_cosmetics", "garage_tuning", "garage_underglow", "garage_police").Buttons("reallife_garage_test_vehicles")
                     .Also("tuning paint parts custom"),
                 S("bikes").Guide("garage").Opt("two_wheelers", "garage").Also("bicycle bicycles motorbike motorbikes motorcycle scooter two-wheelers"),
-                S("traffic").For("streets").Opts("horn_reactions", "natural_accidents", "solid_streets").Also("pedestrians cars road"),
+                S("traffic").For("streets").Opts("horn_reactions", "natural_accidents", "solid_streets").Opt("tow_trucks", "traffic_accidents").Also("pedestrians cars road tow truck wreck recovery"),
                 S("transit").For("transport").Opts("transit_buses").Opt("transit_people", "transit_buses").Opts("transit_subway").Also("bus metro train public transport"),
                 S("taxi").For("taxi").Opts("transit_taxi_call").Also("cab cabs ride"),
                 S("nav").For("navigation").Main("nav_minimap").Opts("nav_rotate", "nav_size", "nav_zoom", "nav_base").FreeOpts("nav_gps").Opt("nav_other_route", "nav_gps")

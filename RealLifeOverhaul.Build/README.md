@@ -34,6 +34,11 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       PursuitPace       how fast a patrol car after the player may go (0.95 of their car's top speed, 130 to 200 km/h) and how long it keeps at it
       PursuitBackup     the second patrol car that joins a pursuit of the player after 45 s, if traffic has a car to give
       TrafficTools      what all of these need from the traffic system; a vehicle's real footprint from its colliders
+      Tow/              the tow truck that takes a cleared scene's wrecks away (TrafficAccidents hands them over in Clear)
+        TowService      one truck at a time: held out of sight, sent, the operator's work, the wreck winched up and carried, taken off the road unseen; the wreck goes as before wherever this cannot be done; the test button
+        TowTruck        the mod's own rollback (props tow_truck, tow_truck_tilt, tow_truck_bed, the bus's wheels): solid, driven by BusDriver, its bed posed, its light bar and lamps, the winch's cable
+        TowRoads        where it stands (ahead of the wreck in its lane, come by the lane beside) and where it starts (out of sight, 70 to 280 m back): once per truck sent
+        TowRules        game-free (NavCheck/TowCheck): the bed's motion, a car drawn along the road and up the bed, the stretch it takes, the time it is said to take, when it may come and go
     People/    the mod's street characters and the scenes they play
       ActorPool      the twelve characters every scene shares: created once, reused in the same outfit, hidden when out of view; four may be out only to be seen and give way to any scene
       Uniforms       the one outfit every officer wears and the one every paramedic wears: named garments, fixed colours; the hi-vis shirt
@@ -183,6 +188,7 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       TransitBays      a bay on the street as it is now: whether its length of the strip is free; the game's parked cars standing in it out of view are taken in
       TransitRide      the time a ride takes (fade, the game's time machine, put down at the far end), for bus and subway; TransitState: day pass, ride counts, a fare owed back, in modData
       BusRider         the bus ride seen: the game's walk to the front door, the fare, board_step up, the validator, the aisle, a seat (strap_hang on a full bus), the pull-away; at the far end up and off by the middle door; every way out
+      IDrivenVehicle   what BusDriver drives: the city bus and the tow truck, measured from their own middles
       BusInside        the inside of the bus as a rider walks it (game-free: EconomyCheck walks every path; PropAssets/checks_service.py measures each place on the mesh), and the ride's fare and fade rules
       SubwayJourney    the game's own subway taking a journey's time: the panel at each entrance, service by the clock (frequency, delays), the day pass, the City Transit contact
       CarDash          what a car needs as one more reading in the game's own vehicle panel (a copy of its "Condition" reading)
@@ -4158,6 +4164,7 @@ Read through after the merge: 67 `Update` / `LateUpdate` / `FixedUpdate` methods
 | `PerfDirector` and the tweaks that are on by default | one time comparison; the tweaks tick every 2 to 5 s | **before: every scene loaded or unloaded made `RefractionOff` look through every material in memory in that frame (`Resources.FindObjectsOfTypeAll<Material>`, seven engine calls a material) and, on the next tick, `StaleLampLights` through all 3,038 street lamps (three reflected fields each). After: unloads are ignored, a load asks for one look four seconds after the last scene arrived, and both looks go through their list 300 and 250 at a time, 20 times a second. The first look after the city loads is sliced the same way; refraction stays as the game has it until that look is finished** |
 | `TransitDirector` (4 times a second) | the stops in reach, the bus | **before: every second the label of each dressed stop was put together for a self-check that had already been made; and the self-check itself (a dozen questions to the navigation mesh, once per dressing) ran with diagnostics off, when nobody reads its line. After: neither** |
 | `MetaUi`, `CuffPose`, `HoseHold`, `CarMeasure`, `CarDrag`, `ActivityAnimators`, `RagdollSystem`, `Stretcher`, `EmergencyDriver`, `BikeMount`, `TipsyDriving`, `PerfSampler`, `PerfLoop` | disabled while idle | nothing to do |
+| `TowService` (added after this read-through) | disabled while there is nothing to tow; with a truck out, a time comparison a frame and a 0.25 s tick (a few distances; driving away, `TransitSight.Seen`'s rays) | at work a handful of transform writes a frame (the bed, the cable, the wreck); `TowTruck.Update` and its `BusDriver` run only while the truck is on the street |
 | `CityPeople.Update`, `ActorPool.Update` | off with nobody out; with people out, a distance and a dot product each to hide those out of view | left: it is what keeps unseen characters from being drawn |
 | `PlayerDouble.LateUpdate` | off by default; on: every bone copied | left: an option that says what it costs |
 | `CarStrikes.FixedUpdate` (driving above 5 km/h) | every other step: the car against walkers, standing figures and the mod's people | left: it is the hit test itself |
