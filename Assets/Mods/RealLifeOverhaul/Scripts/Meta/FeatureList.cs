@@ -1132,6 +1132,42 @@ namespace RealLifeOverhaul.Meta
                 .Data(Economy.OnlineStore.Key, Economy.OnlineStore.TestKey)
                 .Cleanup(() => Economy.OnlineDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Economy.OnlineDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
+            // Professionals: roles, levels and skills of their own for the player's professional staff. Their rows stand under
+            // their own header; the Open Roles app is theirs. Off, the game's own staff alone; the files are kept.
+            Tech.TechGuide.AddPeopleFacts(Features.Add("tech_people", "reallife_meta_title_tech_people")
+                .About("reallife_guide_tech_people_about").Help("reallife_guide_tech_people")
+                .Owns(Settings.TechPeopleId)
+                .Test("reallife_talent_test_review", "reallife_talent_test_offer", "reallife_talent_test_course")
+                .Data(Tech.TalentStore.Key, Tech.TechNews.Key)
+                .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Tech.TechDirector.Instance?.Forget()));
+            // The jobs board and the labour market: ads in the Open Roles app, applicants from the city's seekers, interviews
+            // and offers, executive search, and more candidates from the recruitment office. It runs with the professionals.
+            Tech.TechGuide.AddHiringFacts(Features.Add("tech_jobs", "reallife_meta_title_tech_jobs")
+                .About("reallife_guide_tech_jobs_about").Help("reallife_guide_tech_jobs")
+                .Owns(Settings.TechJobsId)
+                .Test("reallife_hire_test_applicants", "reallife_hire_test_market", "reallife_hire_test_search")
+                .Data(Tech.HiringStore.Key)
+                .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Tech.TechDirector.Instance?.Forget()));
+            // The tech sector: software studios, game studios, IT consultancies, cybersecurity firms and AI labs as business
+            // types of their own, and the game's web agencies and graphic designers in the same economy, with the Tech app.
+            Tech.TechGuide.AddSectorFacts(Features.Add("tech_sector", "reallife_meta_title_tech_sector")
+                .About("reallife_guide_tech_sector_about").Help("reallife_guide_tech_sector")
+                .Owns(Settings.TechSectorId)
+                .Test("reallife_tech_test_offer", "reallife_tech_test_outage", "reallife_tech_test_breach", "reallife_infra_test_down", "reallife_infra_test_price_war")
+                .Data(Tech.FirmsStore.Key, Tech.InfraStore.Key)
+                .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Tech.TechDirector.Instance?.Forget()));
+            // Startups and venture capital: the city's startups and venture firms, the player as an angel or through a fund,
+            // and the player's own tech firms raising. It runs with the tech sector.
+            Tech.TechGuide.AddVentureFacts(Features.Add("tech_startups", "reallife_meta_title_tech_startups")
+                .About("reallife_guide_tech_startups_about").Help("reallife_guide_tech_startups")
+                .Owns(Settings.TechStartupsId)
+                .Test("reallife_vc_test_pitch", "reallife_vc_test_sale", "reallife_vc_test_board")
+                .Data(Tech.VentureStore.Key)
+                .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Tech.TechDirector.Instance?.Forget()));
             // The car dealership: a business type of the mod's own. Its row stands under the company's header on the options page;
             // the Dealership app is its own. Off, its dealerships do not trade and their cars stay on the lots. It runs only while
             // the economy core does. (Cleaned up before the core: order -2.)

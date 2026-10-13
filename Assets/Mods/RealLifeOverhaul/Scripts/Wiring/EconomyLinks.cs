@@ -40,8 +40,10 @@ namespace RealLifeOverhaul
             {
                 Prices.Factor = () => Economy.CityEconomy.CostFactor;   // every price of the mod's follows the city's
                 EconomyBridges.GivenBack = GivenBack;
-                EconomyBridges.Takings = type => type == Utilities.BroadbandCatalogue.TakingsKey || OwnBankCatalogue.IsTakings(type);   // the broadband company bills from its headquarters, and the player's bank earns there
-                EconomyBridges.CostRow = type => type == Utilities.BroadbandCatalogue.NetworkKey || type == Utilities.BroadbandCatalogue.InstallsKey ? Utilities.BroadbandCatalogue.NetworkRow : OwnBankCatalogue.CostRow(type);
+                // the broadband company bills from its headquarters, the player's bank earns there, and a tech firm's takings are its
+                // products', contracts' and cloud's (Tech/Firms, Tech/Infra)
+                EconomyBridges.Takings = type => type == Utilities.BroadbandCatalogue.TakingsKey || OwnBankCatalogue.IsTakings(type) || Tech.FirmsGame.IsTakings(type);
+                EconomyBridges.CostRow = type => type == Utilities.BroadbandCatalogue.NetworkKey || type == Utilities.BroadbandCatalogue.InstallsKey ? Utilities.BroadbandCatalogue.NetworkRow : OwnBankCatalogue.CostRow(type) ?? Tech.FirmsGame.RowOf(type);
                 LifeAccounts.Card = HasCard;
                 LifeAccounts.Accountant = () => Economy.CompanyDirector.Instance != null && Economy.CompanyDirector.Instance.HasAccountant;
                 EconomyBridges.Legal = ReadLegal;

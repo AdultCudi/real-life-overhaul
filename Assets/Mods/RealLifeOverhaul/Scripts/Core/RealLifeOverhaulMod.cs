@@ -43,6 +43,8 @@ namespace RealLifeOverhaul
             Economy.Dealership.DealerType.Logger = log;
             Economy.Dealership.DealerType.Register();   // the car dealership's business type, before any save is read (Scripts/Economy/Dealer)
             Meta.Dev.Gated(context);   // (the option has been read now)
+            Tech.TechTypes.Logger = context.Logger;
+            Tech.TechTypes.Register();   // the tech sector's business types, before any save that holds one is loaded (Scripts/Tech/Firms/TechTypes)
 
             var options = new ModOptions()
                 .AddHeader("reallife_camera_header")
@@ -749,6 +751,29 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_estate_test_hire", () => Economy.EstateDirector.Instance?.TestHire())
                 .AddButton("reallife_estate_test_month", () => Economy.EstateDirector.Instance?.TestMonth())
                 .AddButton("reallife_estate_test_back", () => Economy.EstateDirector.Instance?.TestBack())
+                .AddHeader("reallife_talent_header")
+                .AddToggle(Settings.TechPeopleId, "reallife_talent_enabled", Settings.TechPeople,
+                    v => Settings.TechPeople = v)
+                .AddButton("reallife_talent_test_review", () => Tech.TechDirector.Instance?.TestReview())
+                .AddButton("reallife_talent_test_offer", () => Tech.TechDirector.Instance?.TestOffer())
+                .AddButton("reallife_talent_test_course", () => Tech.TechDirector.Instance?.TestCourse())
+                .AddToggle(Settings.TechJobsId, "reallife_hire_enabled", Settings.TechJobs,
+                    v => Settings.TechJobs = v)
+                .AddButton("reallife_hire_test_applicants", () => Tech.TechDirector.Instance?.TestApplicants())
+                .AddButton("reallife_hire_test_market", () => Tech.TechDirector.Instance?.TestMarketDay())
+                .AddButton("reallife_hire_test_search", () => Tech.TechDirector.Instance?.TestSearch())
+                .AddToggle(Settings.TechSectorId, "reallife_tech_enabled", Settings.TechSector,
+                    v => Settings.TechSector = v)
+                .AddButton("reallife_tech_test_offer", () => Tech.TechDirector.Instance?.TestContractOffer())
+                .AddButton("reallife_tech_test_outage", () => Tech.TechDirector.Instance?.TestOutage())
+                .AddButton("reallife_tech_test_breach", () => Tech.TechDirector.Instance?.TestBreach())
+                .AddButton("reallife_infra_test_down", () => Tech.TechDirector.Instance?.TestCentreDown())
+                .AddButton("reallife_infra_test_price_war", () => Tech.TechDirector.Instance?.TestPriceWar())
+                .AddToggle(Settings.TechStartupsId, "reallife_vc_enabled", Settings.TechStartups,
+                    v => Settings.TechStartups = v)
+                .AddButton("reallife_vc_test_pitch", () => Tech.TechDirector.Instance?.TestPitch())
+                .AddButton("reallife_vc_test_sale", () => Tech.TechDirector.Instance?.TestSale())
+                .AddButton("reallife_vc_test_board", () => Tech.TechDirector.Instance?.TestBoard())
                 .AddToggle(Settings.EconomyOnlineId, "reallife_online_enabled", Settings.EconomyOnline,
                     v => Settings.EconomyOnline = v)
                 .AddButton("reallife_online_test_open", () => Economy.OnlineDirector.Instance?.TestOpen())
@@ -930,6 +955,7 @@ namespace RealLifeOverhaul
             }
             _running = context.ModId;
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on; warnings and errors always
+            Tech.TechTypes.Register();   // (furnished as the game's web development agency once its type is known)
             OtherMods.Look(context.Logger);   // other authors' mods this one stands aside for: one walk over the loaded assemblies (Core/OtherMods)
             GoingPublic.Logger = context.Logger;
             GoingPublicLink.Logger = context.Logger;
@@ -998,6 +1024,11 @@ namespace RealLifeOverhaul
             LicenceDirector.Logger = context.Logger;
             CivicDirector.Logger = context.Logger;
             Family.FamilyDirector.Logger = context.Logger;
+            Tech.TechDirector.Logger = context.Logger;
+            Tech.RolesApp.Logger = context.Logger;
+            Tech.HiringGame.Logger = context.Logger;
+            Tech.FirmsGame.Logger = context.Logger;
+            Tech.TechApp.Logger = context.Logger;
 
             _root = new GameObject(RootName);
             SessionWatch.Logger = context.Logger;
@@ -1086,6 +1117,7 @@ namespace RealLifeOverhaul
             Economy.ServicesApp.Logger = context.Logger;
             _root.AddComponent<Economy.ServicesDirector>();   // the cleaning service and selling a business, and the Services app (Scripts/Economy/Services)
             _root.AddComponent<Economy.CompanyDirector>();   // running a business: staff, insurance, marketing, tax and licences, and the Company app (Scripts/Economy/Company)
+            _root.AddComponent<Tech.TechDirector>();   // the professions and the tech sector: roles, skills and the Open Roles app (Scripts/Tech); after the company, so that its day follows the company's
             Economy.EstateDirector.Logger = context.Logger;
             Economy.EstateApp.Logger = context.Logger;
             _root.AddComponent<Economy.EstateDirector>();   // property: the market, letting, works, selling, an agency, a hotel and car hire, and the Property app (Scripts/Economy/Estate)

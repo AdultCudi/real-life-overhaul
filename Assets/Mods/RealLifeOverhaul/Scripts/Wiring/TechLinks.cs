@@ -1,0 +1,263 @@
+using System;
+using System.Collections.Generic;
+using BigAmbitions.Rivals;
+using RealLifeOverhaul.Fame;
+using RealLifeOverhaul.Tech;
+
+namespace RealLifeOverhaul
+{
+    public static partial class Wiring
+    {
+        /// <summary>
+        /// The tech sector and the professions with the rest of the mod (Tech/TechBridges). The tech sector calls no other
+        /// feature and none calls it; what they have to do with each other is here.
+        ///
+        ///   Esteem     the player's standing as an employer, -10 to 10: Standing's workers (FamePress.Esteem), as the company reads it
+        ///   Rival      a rival of the game's own with businesses to its name, to put a name to an approach (BusinessGame.AnyRival)
+        ///   Held       the company's own rival offers and departures (CompanyState.Employee): nobody is approached twice at once
+        ///   Standing   a lay-off, a rise refused or a promotion moves the workers' part of Standing by a point (FameDirector.Moved)
+        ///   Books      the economy's books made again for a day once the firms have booked their takings (GameBooks.Refresh)
+        ///   Stock      news of a listed company (a product overtaking its rival's, the rival shipping) moves its price (the
+        ///              stock market's company event)
+        ///   Prosecute  a data protection offence heard by Justice (TaxCases.FileDataProtection)
+        ///   Claim      a breach's cost put to the company's liability cover (CompanyDirector.Loss)
+        ///   Fame       a launch, an outage or a breach moves the customers' or the integrity part of Standing
+        ///   the paper  the tech sector's stories, chained on to the City Ledger's other pieces (News.Extra), the same for a
+        ///              day however often it is asked
+        ///
+        /// Everything is read from what those features already keep in public; nothing of theirs is changed.
+        /// </summary>
+        public static class TechLinks
+        {
+            private static Action<int, List<NewsItem>> _paperBefore;
+            private static readonly List<TechStory> Stories = new List<TechStory>(4);
+
+            internal static void Connect()
+            {
+                TechBridges.Esteem = Esteem;
+                TechBridges.Rival = Rival;
+                TechBridges.Standing = Standing;
+                TechBridges.Held = Held;
+                TechBridges.Books = Books;
+                TechBridges.Stock = Stock;
+                TechBridges.Prosecute = TaxCases.FileDataProtection;
+                TechBridges.Claim = Claim;
+                TechBridges.Fame = Fame;
+                TechBridges.Supplied = Supplied;
+                TechBridges.Ipo = Ipo;
+                TechBridges.Mbps = Mbps;
+                TechBridges.UtilityCents = (service, use) => Utilities.UtilitiesRules.DayCents(service == 0 ? Utilities.Service.Power : Utilities.Service.Water, use, Prices.Level, false);
+                _paperBefore = News.Extra;
+                News.Extra = Paper;
+            }
+
+            internal static void Disconnect()
+            {
+                TechBridges.Reset();
+                News.Extra = _paperBefore;
+                _paperBefore = null;
+            }
+
+            private static int Esteem()
+            {
+                FameFile f = FameDirector.Instance != null ? FameDirector.Instance.File : null;
+                return f != null ? FamePress.Esteem(f) : 0;
+            }
+
+            private static string Rival(BuildingRegistration reg)
+            {
+                try
+                {
+                    RivalData rival = reg != null ? BusinessGame.AnyRival(reg) : null;
+                    return rival != null ? rival.rivalName : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Rival", e);
+                    return null;
+                }
+            }
+
+            private static bool Held(string id)
+            {
+                try
+                {
+                    Economy.CompanyDirector company = Economy.CompanyDirector.Instance;
+                    Economy.StaffFile f = company != null && company.Running && company.State != null ? company.State.Employee(id) : null;
+                    return f != null && (f.PoachDay > 0 || f.LeaveDay > 0);
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Held", e);
+                    return false;
+                }
+            }
+
+            // A firm's listing is the player's company's (Markets/Listing): its page opened, while the stock market and its listing run.
+            private static bool Ipo()
+            {
+                try
+                {
+                    Markets.MarketDirector m = Markets.MarketDirector.Instance;
+                    if (m == null || !Settings.MarketsListing || m.Listing == null)
+                    {
+                        return false;
+                    }
+                    m.OpenListing();
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Ipo", e);
+                    return false;
+                }
+            }
+
+            private static bool Supplied(BuildingRegistration reg, int service)
+            {
+                try
+                {
+                    return Utilities.UtilitiesDirector.Supplied(reg, service == 0 ? Utilities.Service.Power : Utilities.Service.Water);
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Supplied", e);
+                    return true;
+                }
+            }
+
+            // A building's connection: its plan's speed while it is up, 0 with none, cut or in an outage.
+            private static int Mbps(BuildingRegistration reg)
+            {
+                try
+                {
+                    Utilities.UtilitiesDirector d = Utilities.UtilitiesDirector.Instance;
+                    Utilities.UtilitiesState state = d != null ? d.State : null;
+                    if (state == null || !Settings.Utilities || reg == null)
+                    {
+                        return int.MaxValue;   // (no utilities to ask: the data centre is taken to be connected)
+                    }
+                    Utilities.Account a = state.Find(Utilities.UtilitiesGame.Place(reg), Utilities.Service.Internet);
+                    if (a == null || a.State != Utilities.SupplyState.Active || Utilities.InternetRules.InOutage(a, SaveGameManager.Current.Day * 24 + SaveGameManager.Current.Hour))
+                    {
+                        return 0;
+                    }
+                    Utilities.Provider p = Utilities.InternetRules.Get(a.Provider);
+                    return p != null && p.Mbps != null && a.Plan >= 0 && a.Plan < p.Mbps.Length ? p.Mbps[a.Plan] : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Mbps", e);
+                    return int.MaxValue;
+                }
+            }
+
+            private static void Books(int day)
+            {
+                try
+                {
+                    Economy.GameBooks.Refresh(day);
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Books", e);
+                }
+            }
+
+            private static void Stock(int stock, int bp)
+            {
+                try
+                {
+                    Markets.MarketDirector.Instance?.Engine?.Event(Markets.MarketInputs.EventCompany, stock, bp * 100);
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Stock", e);
+                }
+            }
+
+            private static void Claim(BuildingRegistration reg, int amount)
+            {
+                try
+                {
+                    Economy.CompanyDirector.Instance?.Loss(reg, Economy.CoverKind.Liability, amount);
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Claim", e);
+                }
+            }
+
+            private static void Fame(int part, int points)
+            {
+                try
+                {
+                    if (points != 0)
+                    {
+                        FameDirector.Instance?.Moved((FamePart)part, points < 0 ? FameCause.Scandal : FameCause.Press, points);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Fame", e);
+                }
+            }
+
+            private static void Standing(int points)
+            {
+                try
+                {
+                    if (points != 0)
+                    {
+                        FameDirector.Instance?.Moved(FamePart.Workers, FameCause.Staff, points);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Standing", e);
+                }
+            }
+
+            private static void Paper(int day, List<NewsItem> into)
+            {
+                try
+                {
+                    _paperBefore?.Invoke(day, into);
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Paper (the pieces before)", e);
+                }
+                try
+                {
+                    TechDirector director = TechDirector.Instance;
+                    if (director == null)
+                    {
+                        return;
+                    }
+                    Stories.Clear();
+                    director.Stories(day, Stories);
+                    for (int i = 0; i < Stories.Count; i++)
+                    {
+                        TechStory s = Stories[i];
+                        var data = new Dictionary<string, string>(2);
+                        if (s.AName.Length > 0)
+                        {
+                            data[s.AName] = s.A;
+                        }
+                        if (s.BName.Length > 0)
+                        {
+                            data[s.BName] = s.B;
+                        }
+                        into.Add(new NewsItem { Key = s.Key, Data = data });
+                    }
+                    Stories.Clear();
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Paper", e);
+                }
+            }
+        }
+    }
+}

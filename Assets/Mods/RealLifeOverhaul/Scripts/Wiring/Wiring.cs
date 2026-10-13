@@ -33,6 +33,7 @@ namespace RealLifeOverhaul
     ///     CompanyLinks    running a business with business pressure (footfall, closures, inspections, audits), fires, break-ins, the courts, the paper and the Planner
     ///     EstateLinks     property with the council's rent and permits policies, the event calendar, a hotel's reception and the Planner
     ///     OnlineLinks     the online shops with the company's campaigns, the calendar's seasons, the GPS's roads and the Planner
+    ///     TechLinks       the professions and the tech sector with Standing (the employer's esteem), the game's rivals and the paper
     ///     ServicesLinks   selling a business with Ventures (investors bought out), the credit side (business loans paid off) and running a business; the Planner
     ///     BrandLinks      brands and franchises with business pressure (footfall), the city's economy (prices), fires, inspections, strikes, the courts and the Planner
     ///     RoommateLinks   the roommate with family life (a partner who moves in), social life (friends, introductions) and the Planner
@@ -94,6 +95,7 @@ namespace RealLifeOverhaul
             Step("running a business", CompanyLinks.Connect);
             Step("property", EstateLinks.Connect);
             Step("online shops", OnlineLinks.Connect);
+            Step("the tech sector", TechLinks.Connect);
             Step("the cleaning service and selling a business", ServicesLinks.Connect);
             Step("brands and franchises", BrandLinks.Connect);
             Step("the roommate", RoommateLinks.Connect);
@@ -125,6 +127,7 @@ namespace RealLifeOverhaul
             Step("power and water", UtilityLinks.Disconnect);
             Step("the roommate", RoommateLinks.Disconnect);
             Step("running a business", CompanyLinks.Disconnect);
+            Step("the tech sector", TechLinks.Disconnect);
             Step("online shops", OnlineLinks.Disconnect);
             Step("the city's economy", CityLinks.Disconnect);
             Step("credit and debt", DebtLinks.Disconnect);

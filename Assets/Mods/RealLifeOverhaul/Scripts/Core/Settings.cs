@@ -115,6 +115,10 @@ namespace RealLifeOverhaul
         public const string EstateHotelId = "economy_estate_hotel";
         public const string EstateHireId = "economy_estate_hire";
         public const string EconomyOnlineId = "economy_online";
+        public const string TechPeopleId = "tech_people";
+        public const string TechJobsId = "tech_jobs";
+        public const string TechSectorId = "tech_sector";
+        public const string TechStartupsId = "tech_startups";
         public const string EconomyDealerId = "economy_dealer";
         public const string EconomyCleaningId = "economy_cleaning";
         public const string EconomySaleId = "economy_sale";
@@ -322,6 +326,10 @@ namespace RealLifeOverhaul
         public static bool Estate = true;                // property: a market that moves, letting a building yourself, works, selling and an estate agency, with the Property app (off: every value and rent is the game's own) (Scripts/Economy/Estate)
         public static bool EstateHotel = true;           // owning a hotel of the city's as a business (off: a hotel that is held stands still and nothing is taken or paid)
         public static bool EstateHire = true;            // car hire: the player's own vehicles go out to customers from a lot (off: no car goes out, and one that is out is called back)
+        public static bool TechPeople = true;            // professionals: roles, levels and skills of their own for the player's professional staff, reviews, promotions, courses, notice and severance, rivals' offers, in the Open Roles app (off: the game's own staff alone; files are kept) (Scripts/Tech/People)
+        public static bool TechJobs = true;              // the jobs board and the labour market: ads in the Open Roles app, applicants from the city's job seekers, interviews, offers, executive search, and more candidates from the recruitment office (off: the game's own hiring alone) (Scripts/Tech/Hiring)
+        public static bool TechSector = true;            // the tech sector: software studios, game studios, IT consultancies, cybersecurity firms and AI labs of the player's, products with customers and recurring revenue, client contracts and tenders, outages and breaches, in the Tech app (off: those businesses earn nothing of their own; their files are kept) (Scripts/Tech/Firms)
+        public static bool TechStartups = true;          // startups and venture capital: the city's startups that grow, raise, fail or are bought, their pitches to the player, an angel portfolio and a fund, and the player's own tech firms raising from venture firms with a board and share options (off: no startup is founded or pitches; holdings are kept) (Scripts/Tech/Venture)
         public static bool EconomyOnline = true;         // online shops: a business or a warehouse sells what it stocks to the whole city, picked by its staff and delivered by van or courier, with the Web shop app (off: no orders come, nothing is charged or paid) (Scripts/Economy/Online)
         public static bool EconomyDealer = true;         // the car dealership: a business type of the mod's own that buys cars new, used and at auction and sells them to customers, with its own finance and warranties and the Dealership app (off: its dealerships do not trade; their cars stay on the lots) (Scripts/Economy/Dealer)
         public static bool EconomyCleaning = true;       // the cleaning service: cleaners shared between businesses on a daily round, and cleaning contracts with other businesses, in the Services app (off: no round, no contracts, nothing cleaned or charged by it) (Scripts/Economy/Services)
@@ -581,6 +589,10 @@ namespace RealLifeOverhaul
             EstateHotel = Bool(modId, EstateHotelId, EstateHotel);
             EstateHire = Bool(modId, EstateHireId, EstateHire);
             EconomyOnline = Bool(modId, EconomyOnlineId, EconomyOnline);
+            TechPeople = Bool(modId, TechPeopleId, TechPeople);
+            TechJobs = Bool(modId, TechJobsId, TechJobs);
+            TechSector = Bool(modId, TechSectorId, TechSector);
+            TechStartups = Bool(modId, TechStartupsId, TechStartups);
             EconomyDealer = Bool(modId, EconomyDealerId, EconomyDealer);
             EconomyCleaning = Bool(modId, EconomyCleaningId, EconomyCleaning);
             EconomySale = Bool(modId, EconomySaleId, EconomySale);

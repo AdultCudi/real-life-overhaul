@@ -115,7 +115,8 @@ namespace RealLifeOverhaul.Utilities
                 case "ba:businesstype_importexport":
                     return PlaceKind.Office;
                 default:
-                    return PlaceKind.Retail;
+                    // the tech sector's own types (Tech/Firms/TechTypes) are offices
+                    return type != null && type.StartsWith("reallife:businesstype_", System.StringComparison.Ordinal) ? PlaceKind.Office : PlaceKind.Retail;
             }
         }
 

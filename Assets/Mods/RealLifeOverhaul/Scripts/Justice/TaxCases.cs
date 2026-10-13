@@ -93,6 +93,16 @@ namespace RealLifeOverhaul
             return Summons(JusticeLaw.Misconduct, "an interest not declared on a vote that it decided came out");
         }
 
+        /// <summary>
+        /// Opens a case for a data protection offence (the tech sector, through Wiring/TechLinks: a breach at a firm that was
+        /// off the register, or breached before), on a summons like a tax case: heard and fined by Justice's own table, on
+        /// top of the regulator's own fine. Its number, or 0 with no court to open it.
+        /// </summary>
+        public static int FileDataProtection(string firm)
+        {
+            return Summons(JusticeLaw.DataProtection, "a data protection offence (a breach at " + firm + ")");
+        }
+
         private static int Summons(string charge, string what)
         {
             if (!Justice.Active)
