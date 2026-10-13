@@ -1,4 +1,5 @@
-0.9.8
+0.9.9
 
 Fixed
-- Stutters every few seconds in the street, and short freezes the first time traffic met a crossing, the first time you went into a building and the first time a bus stop was cleared. The mod searched the whole city for other characters' hair every five seconds, and for the crossings, the building's panel and the street furniture the first time it needed them; it now does this only behind a loading screen or the dark screen at a door.
+- Hudson City University could not be entered: it shared an office building with a business of the game's, and the door said closed. It now has a building of its own with the classrooms of Manhattan Business School inside, on several floors: choose the floor at its door, and each classroom shows its course.
+- The university never said when it was open. The building card, the door and the Campus app now say when it closes and when it opens again, and going to a class from the Campus app takes you to the right floor and room.
