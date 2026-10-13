@@ -209,9 +209,90 @@ namespace RealLifeOverhaul
             FindableTypes.Clear();
         }
 
-        private static bool Players(BuildingRegistration registration)
+        /// <summary>
+        /// True for a building the player rents or owns (in a Going Public session another player's too: Going Public puts
+        /// it on this machine as rented by the player). No feature makes such a building its own: it chooses another, and
+        /// one whose building becomes the player's moves off it.
+        /// </summary>
+        public static bool Players(BuildingRegistration registration)
         {
-            return registration != null && (registration.RentedByPlayer || registration.BuildingOwnedByPlayer);
+            return registration != null && !SpecialNameBook.MaySit(registration.RentedByPlayer, registration.BuildingOwnedByPlayer);
+        }
+
+        /// <summary>The same for a building in the street.</summary>
+        public static bool Players(CityBuildingController building)
+        {
+            return building != null && Players(building.buildingRegistration);
+        }
+
+        // ---------------------------------------------------------------- off the market (Core/ClaimedOffers)
+
+        /// <summary>
+        /// The name of the feature a building is taken by, for the line that says so, while it is off the market here: a
+        /// feature holds it and is on, and the player neither rents nor owns it. Null for every other building (most of
+        /// them after one dictionary look). The same with the option for names off: the building is taken all the same.
+        /// </summary>
+        public static string TakenBy(BuildingRegistration registration)
+        {
+            if (registration == null || Book.Count == 0 || string.IsNullOrEmpty(registration.StreetName)
+                || Book.At(registration.StreetName, registration.StreetNumber) == null
+                || !Book.Refuses(registration.StreetName, registration.StreetNumber, registration.RentedByPlayer, registration.BuildingOwnedByPlayer))
+            {
+                return null;
+            }
+            return Book.NameAt(registration.StreetName, registration.StreetNumber, false, Localise);
+        }
+
+        /// <summary>The same by address.</summary>
+        public static string TakenBy(Address address)
+        {
+            if (address == null || Book.Count == 0 || Book.At(address.streetName, address.streetNumber) == null)
+            {
+                return null;
+            }
+            BuildingRegistration registration = null;
+            try
+            {
+                registration = BuildingHelper.GetBuildingRegistration(address);
+            }
+            catch (Exception)
+            {
+                // a place the game has no registration for: nothing to rent there
+            }
+            return TakenBy(registration);
+        }
+
+        private static readonly List<SpecialEntry> ShownNow = new List<SpecialEntry>(32);
+        private const string NoBusiness = "ba:businesstype_empty";
+
+        /// <summary>
+        /// When the game's look at the buildings on the open map is over (MapPlaces): a building taken by a feature that
+        /// the game lit because it is to let or for sale (its rows of units to let by kind, and "for sale") is put out, as
+        /// the game puts out a building it does not list. One that a row of the mod's lights is lit again by MapPlaces in
+        /// the same frame. A business in a taken building stays as the game's rows of businesses show it. Thirty-odd
+        /// dictionary looks, on the event only.
+        /// </summary>
+        internal static void Unlist()
+        {
+            CityManager city = Book.Count > 0 ? InstanceBehavior<CityManager>.Instance : null;
+            if (city == null)
+            {
+                return;
+            }
+            Book.Shown(ShownNow);
+            for (int i = 0; i < ShownNow.Count; i++)
+            {
+                SpecialEntry entry = ShownNow[i];
+                CityBuildingController building = city.FindCityBuildingController(new Address(entry.Street, entry.Number));
+                BuildingRegistration registration = building != null ? building.buildingRegistration : null;
+                if (registration == null || Players(registration) || (!string.IsNullOrEmpty(registration.businessTypeName) && registration.businessTypeName != NoBusiness)
+                    || (!registration.AvailableForRent && !registration.IsOnSale()))
+                {
+                    continue;
+                }
+                building.SetHighlight(false);
+            }
+            ShownNow.Clear();
         }
     }
 
@@ -236,6 +317,8 @@ namespace RealLifeOverhaul
     public sealed class SpecialNames : MonoBehaviour
     {
         private const BindingFlags Hidden = BindingFlags.NonPublic | BindingFlags.Instance;
+        private const string ToLet = "common_available_for_rent";   // the game's state line on the card for a unit to let
+        private const string NotToLet = "reallife_claimed_card";
 
         private static SpecialNames _instance;
 
@@ -321,6 +404,7 @@ namespace RealLifeOverhaul
                 // the game's interface is going too
             }
             SpecialBuildings.Clear();
+            ClaimedOffers.Forget();
             if (_instance == this)
             {
                 _instance = null;
@@ -369,6 +453,7 @@ namespace RealLifeOverhaul
             }
             EventHold.Keep(ref GlobalEvents.onEnterBuilding, _onEnter, ref _enterSeen);
             EventHold.Keep(ref GlobalEvents.onCityMapToggle, _onMap, ref _mapSeen);
+            ClaimedOffers.Keep();   // the mod's buildings off the market (Core/ClaimedOffers): two null tests once its pages are watched
             UIs uis = InstanceBehavior<UIs>.Instance;
             BuildingResume card = uis != null ? uis.buildingResume : null;
             if (!ReferenceEquals(card, _card))
@@ -432,6 +517,13 @@ namespace RealLifeOverhaul
             }
             try
             {
+                // A building off the market (Core/ClaimedOffers) is not said to be to let.
+                if (_card.openStateLabel != null && string.Equals(_card.openStateLabel.Key, ToLet, StringComparison.Ordinal)
+                    && SpecialBuildings.TakenBy(building.buildingRegistration) != null)
+                {
+                    _card.openStateLabel.Key = NotToLet;
+                    _card.openStateLabel.Prefix = string.Empty;
+                }
                 if (_card.businessNameLabel != null)
                 {
                     _card.businessNameLabel.gameObject.SetActive(true);

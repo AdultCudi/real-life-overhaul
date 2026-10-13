@@ -316,6 +316,38 @@ internal static partial class Program
             }
             Check(Array.IndexOf(after, rented) < 0 && after[3] != rented && Distinct(after), "sites: a building the player rents is never a headquarters");
             Check(moved <= 3, "sites: the company whose building is let moves, and few others (" + moved + " moved)");
+            // Any number of buildings the players rent or own (an old save, every player of a session): never a headquarters,
+            // and a rental of a building that is no headquarters moves nobody.
+            var rnd = new Random(20261013);
+            bool neverLet = true, nobodyMoves = true;
+            for (int round = 0; round < 200; round++)
+            {
+                var let = new bool[all.Count];
+                for (int i = 0; i < let.Length; i++)
+                {
+                    let[i] = rnd.Next(3) == 0;
+                }
+                int[] chosen = new int[companies.Count];
+                HqPick.Pick(all, companies, i => let[i], chosen);
+                foreach (int i in chosen)
+                {
+                    neverLet &= i < 0 || !let[i];
+                }
+                int spare = -1;
+                for (int i = 0; i < let.Length && spare < 0; i++)
+                {
+                    spare = !let[i] && Array.IndexOf(chosen, i) < 0 ? i : -1;
+                }
+                if (spare >= 0)
+                {
+                    let[spare] = true;
+                    int[] later = new int[companies.Count];
+                    HqPick.Pick(all, companies, i => let[i], later);
+                    nobodyMoves &= Same(chosen, later);
+                }
+            }
+            Check(neverLet, "sites: in 200 cities a building a player rents or owns is never a headquarters");
+            Check(nobodyMoves, "sites: a building let that is no headquarters moves no company");
             // Another of the mod's buildings and the player's own: passed over too.
             int[] withHeld = new int[companies.Count];
             HqPick.Pick(all, companies, i => i % 2 == 0, withHeld);

@@ -28,6 +28,7 @@ namespace RealLifeOverhaul.Law
         internal MapPlace Place;        // on the city map (Core/MapPlaces)
         internal bool[] DoorWas;        // the doors' own "always open" flags, to be put back
         internal bool DoorsOpen;
+        internal bool Stays;            // on the player's building with nowhere else in its district to go: not looked for again this session
     }
 
     /// <summary>
@@ -205,7 +206,7 @@ namespace RealLifeOverhaul.Law
                 foreach (string address in LawState.PrecinctAddresses.Split(';'))
                 {
                     CityBuildingController found = Find(buildings, address);
-                    if (found != null && Usable(found, out _) && !saved.ContainsKey(found.building.Neighbourhood))
+                    if (found != null && Usable(found, out _) && !SpecialBuildings.Players(found) && !saved.ContainsKey(found.building.Neighbourhood))   // (one the player has since rented or bought gives way)
                     {
                         saved[found.building.Neighbourhood] = found;
                     }
@@ -558,7 +559,7 @@ namespace RealLifeOverhaul.Law
 
         /// <summary>
         /// Every few seconds: a precinct whose unit has been let (to the player, to a rival) moves to another empty one in
-        /// its district and says so; the doors of the ones that can be walked into are kept flagged open, and put back as
+        /// its district and says so, and one with its desk at the door moves off a building that has become the player's; the doors of the ones that can be walked into are kept flagged open, and put back as
         /// the game had them when walk-in stations are switched off.
         /// </summary>
         /// <param name="inside">The precinct the player is standing in, which is left alone until they have gone.</param>
@@ -572,7 +573,7 @@ namespace RealLifeOverhaul.Law
             for (int i = 0; i < _all.Count; i++)
             {
                 Precinct precinct = _all[i];
-                if (precinct.WalkIn && precinct != inside && !Custody.Active && !Vacant(precinct.Building))
+                if (precinct != inside && !Custody.Active && (precinct.WalkIn ? !Vacant(precinct.Building) : !precinct.Stays && SpecialBuildings.Players(precinct.Building)))
                 {
                     Move(precinct);
                 }
@@ -598,11 +599,16 @@ namespace RealLifeOverhaul.Law
             }
             Vector3 middle = sum.w > 0f ? new Vector3(sum.x, sum.y, sum.z) / sum.w : precinct.Door;
             Doors(precinct, false);
-            if (!Best(buildings, precinct.District, middle, precinct.Building, out Candidate best) || !best.WalkIn)
+            bool players = SpecialBuildings.Players(precinct.Building);   // (off the player's building to any other that will do, empty or not)
+            if (!Best(buildings, precinct.District, middle, precinct.Building, out Candidate best) || (!best.WalkIn && !players))
             {
-                // Nowhere empty to go: it stays where it is, with its desk at the door.
+                // Nowhere empty to go: it stays where it is, with its desk at the door (and is not looked at again for it).
+                if (precinct.WalkIn)
+                {
+                    _logger?.Info("Law: " + precinct.Name + ": its unit has been let and the district has no other empty one; it stays, with the front desk at its door.");
+                }
                 precinct.WalkIn = false;
-                _logger?.Info("Law: " + precinct.Name + ": its unit has been let and the district has no other empty one; it stays, with the front desk at its door.");
+                precinct.Stays = players;
                 return;
             }
             if (_frontage.Dressed == precinct)
@@ -612,7 +618,7 @@ namespace RealLifeOverhaul.Law
             precinct.Building = best.Building;
             precinct.Door = best.Door;
             precinct.Address = best.Address;
-            precinct.WalkIn = true;
+            precinct.WalkIn = best.WalkIn;
             precinct.Score = best.Score;
             Mark(precinct);
             Remember();
