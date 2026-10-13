@@ -25,6 +25,7 @@ namespace RealLifeOverhaul
         public static int SubwayRides;
         public static int ToldDelay = -1;     // the three-hour window whose delays were last sent to the phone
         public static int ToldClosure = -1;   // the night whose closure was last sent (no station closes now: kept, so that the saved line keeps its shape)
+        public static float FareBack;         // read from a save written part of the way through a bus ride (BusRider): given back once the city is up
 
         public static bool HasPass => PassDay > 0 && PassDay == TimeHelper.CurrentDay;
 
@@ -36,6 +37,7 @@ namespace RealLifeOverhaul
             SubwayRides = 0;
             ToldDelay = -1;
             ToldClosure = -1;
+            FareBack = 0f;
         }
 
         public static void Load(Dictionary<string, string> data)
@@ -54,18 +56,25 @@ namespace RealLifeOverhaul
                         int.TryParse(parts[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out ToldDelay);
                         int.TryParse(parts[4], NumberStyles.Integer, CultureInfo.InvariantCulture, out ToldClosure);
                     }
+                    if (parts.Length >= 6 && float.TryParse(parts[5], NumberStyles.Float, CultureInfo.InvariantCulture, out float back))
+                    {
+                        FareBack = back > 0f && back < 1000f ? back : 0f;
+                    }
                 }
             }
             Loaded = true;
         }
 
-        public static void Save(Dictionary<string, string> data)
+        /// <param name="fareBack">A fare paid for a ride that is part of the way through as the save is written (the save has the
+        /// player back at the stop they boarded at): given back when this save is loaded. 0 for none.</param>
+        public static void Save(Dictionary<string, string> data, float fareBack = 0f)
         {
             if (Loaded && data != null)
             {
                 data[Key] = PassDay.ToString(CultureInfo.InvariantCulture) + "|" + BusRides.ToString(CultureInfo.InvariantCulture) + "|"
                             + SubwayRides.ToString(CultureInfo.InvariantCulture) + "|" + ToldDelay.ToString(CultureInfo.InvariantCulture) + "|"
-                            + ToldClosure.ToString(CultureInfo.InvariantCulture);
+                            + ToldClosure.ToString(CultureInfo.InvariantCulture)
+                            + (fareBack > 0f ? "|" + fareBack.ToString("F2", CultureInfo.InvariantCulture) : string.Empty);
             }
         }
 
@@ -102,11 +111,17 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The ride itself, for the bus and the subway alike: the player steps out of the world, the
-    /// screen fades with a line saying what is happening, the game's own time machine runs the
+    /// The time a ride takes, for the bus and the subway alike: the screen fades with a line saying
+    /// what is happening, the player steps out of the world, the game's own time machine runs the
     /// clock forward by the journey, and the player is put down at the far end, exactly as the
-    /// game's taxi does it (TaxiSystem.TravelCoroutine). A seated interior was not attempted:
-    /// the game has no vehicle interiors and no camera for one.
+    /// game's taxi does it (TaxiSystem.TravelCoroutine).
+    ///
+    /// On the bus the player has been seen to get on, sit down and pull away before this begins
+    /// (<see cref="BusRider"/>); the rider's own steps come in at two places: as the screen is
+    /// black, before the player is taken out of the world (<c>atBlack</c>: they are taken off the
+    /// moving bus), and at the far end before the screen clears (<c>arriveAboard</c>: they are put
+    /// in their seat on the bus standing at the stop they get off at; if that cannot be done they
+    /// are put down on the pavement as before).
     /// Every way out puts the player back: the routine's own end, a fault part of the way
     /// through, and the city unloading under it (<see cref="Abort"/>).
     /// </summary>
@@ -138,17 +153,19 @@ namespace RealLifeOverhaul
         /// <param name="onFaded">Called once the screen is black (the bus drives off, people are taken in).</param>
         /// <param name="onArrived">Called with the player standing at the far end, before the screen clears.</param>
         /// <param name="tap">The card was just tapped on the reader (TransitDirector.TapCard): the fade waits for the tap to land.</param>
-        public void Begin(float minutes, Vector3 arrive, string fadeKey, Action onFaded, Action onArrived, bool tap = true)
+        /// <param name="atBlack">Called once the screen is black, before the player is taken out of the world.</param>
+        /// <param name="arriveAboard">Called at the far end with the player back in the world, before the screen clears: true if it has placed them itself.</param>
+        public void Begin(float minutes, Vector3 arrive, string fadeKey, Action onFaded, Action onArrived, bool tap = true, Action atBlack = null, Func<bool> arriveAboard = null)
         {
             if (Riding || _host == null || !_host.isActiveAndEnabled)
             {
                 return;
             }
             Riding = true;
-            _host.StartCoroutine(Run(minutes, arrive, fadeKey, onFaded, onArrived, tap));
+            _host.StartCoroutine(Run(minutes, arrive, fadeKey, onFaded, onArrived, tap, atBlack, arriveAboard));
         }
 
-        private IEnumerator Run(float minutes, Vector3 arrive, string fadeKey, Action onFaded, Action onArrived, bool tap)
+        private IEnumerator Run(float minutes, Vector3 arrive, string fadeKey, Action onFaded, Action onArrived, bool tap, Action atBlack, Func<bool> arriveAboard)
         {
             var game = InstanceBehavior<GameManager>.Instance;
             UIs uis = InstanceBehavior<UIs>.Instance;
@@ -173,6 +190,7 @@ namespace RealLifeOverhaul
                 }
                 _faded = true;
                 yield return UiFader.Fade(0.8f, fadeKey);
+                Call(atBlack);
                 _player.Character.ToggleVisibility(show: false);
                 _hidden = true;
                 Call(onFaded);
@@ -191,13 +209,20 @@ namespace RealLifeOverhaul
                     yield return null;
                 }
 
-                _player.Character.WarpSafely(arrive);
+                if (arriveAboard == null)
+                {
+                    _player.Character.WarpSafely(arrive);
+                }
                 arrived = true;
                 _player.Character.ToggleVisibility(show: true);
                 _hidden = false;
                 _player.UnsetNavigationBlocker(NavigationBlocker.Taxi);
                 _blocked = false;
                 _player.Character.Reset();
+                if (arriveAboard != null && !Aboard(arriveAboard))
+                {
+                    _player.Character.WarpSafely(arrive);   // (in the world again: the agent is there to be warped)
+                }
                 Call(onArrived);
                 _faded = false;
                 yield return UiFader.UnFade();
@@ -250,6 +275,19 @@ namespace RealLifeOverhaul
             _hidden = false;
             _blocked = false;
             _faded = false;
+        }
+
+        private static bool Aboard(Func<bool> arriveAboard)
+        {
+            try
+            {
+                return arriveAboard();
+            }
+            catch (Exception e)
+            {
+                TransitDirector.Logger?.Error(e);
+                return false;
+            }
         }
 
         private static void Call(Action action)

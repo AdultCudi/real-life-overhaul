@@ -18,6 +18,7 @@ scripts\
   checks_<name>.py          its own measurements for check_life.py
   scenes.py               whole scenes made of the exported props: previews\scene_<name>.png
   build_props.py          builds every prop into build\ and renders previews\
+  newer_props.py          ships props remade since the bundle was last built beside it (Bundles\props_newer), while Unity cannot build it
   check_life.py           measures the handles and heights that animation clips rely on; the build fails if one has moved
   overview.py             stacks preview sheets into one image
 UnityProject\             a bare 2022.3 project whose only job is to turn build\ into the bundle
@@ -66,7 +67,7 @@ occlusion, and nothing else: no Blender-only shading.
 | | limit | now |
 |---|---|---|
 | triangles, each prop | its own budget, beside its maker in the `PROPS` lists | see the tables below |
-| triangles, all props together | 130 000 | 118 104 (240 props: the two-wheelers are in the bundle whole and in parts, the city bus in parts) |
+| triangles, all props together | 130 000 | 120 198 (241 props: the two-wheelers are in the bundle whole and in parts, the city bus in parts, its roof apart) |
 | materials | 2, shared by everything | 2 |
 | textures | one atlas: 4096 x 2048 colour + 2048 x 1024 mask, BC7 (the bundle check fails on anything else); the two road paint pictures | 14.0 MB of video memory (10.7 + 2.7, and 0.7 for the road paint), 248 regions, 87 % of the atlas used |
 | meshes in memory | | 6.6 MB |
@@ -289,7 +290,22 @@ Atlas: 18 regions (4 swatches `civic_iron`, `civic_grey`, `civic_lamp_blue`, `ci
 **The city bus is the mod's own vehicle** (`Transport/BusVehicle`), on no vehicle of the game's: its body and its parts
 are props of their own that the code puts together, spinning and steering the wheels, sliding the door leaves and
 switching a mesh of lit lamps for each group of them; without the bundle it builds plain shapes of the same sizes in
-the same places. **The fire engine is a body that stands over one of the game's own traffic vehicles** while **all**
+the same places. **The body has its inside and its roof is a prop of its own** (`city_bus_roof`, the ceiling under
+it): a floor from end to end at the doors' threshold (0.33 m), walls below the windows, the closed cab, the wheel
+housings over the axles (open on the wall's side, so that an arch looks into one), seats facing forward, poles, two
+rails along the aisle with straps, the validator by the driver and a seat across the back. While the player rides,
+the code stops drawing the roof whenever the camera is over it (it still casts its shadow), so the view from above
+looks in. The rider's places (`Transport/BusInside.cs`: where board_step leaves them, the validator for pay_tap, the
+two seats opposite the middle door for sit_bench, the strap for strap_hang, the paths between) are read from that file
+by `checks_service.py` and measured on the mesh: the floor under every path with nothing over it, each seat 0.46 m up,
+the lens and the strap where the clips put the hands. `scene_bus_inside.png` shows it from above with its roof off.
+
+**Props newer than the bundle.** Building the bundle takes Unity and a licence. When it cannot be built, run
+`newer_props.py <id> ...` after `build_props.py`: the listed props' meshes (the very files the bundle is built from)
+and their catalogue rows go into `Assets\Mods\RealLifeOverhaul\Bundles\props_newer`, and the mod reads them after the
+bundle and uses them in place of its own of the same id, with its atlas (so a remade prop may only use paints the atlas
+already has: check that `build\atlas.json` has not changed). All of them or none. `build_bundle.ps1` removes the folder
+once a bundle has been built with them in it. **The fire engine is a body that stands over one of the game's own traffic vehicles** while **all**
 of that vehicle's renderers are hidden (`EngineLivery.Dress`), so it carries its own wheels. Both are lofted hulls
 (cross-sections along the length, windows let in 2.4 cm with a chamfered surround), not boxes. **A body over a game's
 vehicle is made to that vehicle: the same length, and its axles where that vehicle's are**, so that the hidden
