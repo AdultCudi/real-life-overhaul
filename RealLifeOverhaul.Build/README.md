@@ -3742,7 +3742,8 @@ When the version is bumped: `Changelog.Latest`, and the row `Changelog.Unnumbere
 
 `Scripts/Civic/`: a city government with elections, and a construction programme. Everything is data that
 moves once per in-game hour; the street only shows what is near the player. Options group "Civic life":
-a master switch, "Elections and the mayor" and "Construction sites", and eleven test buttons.
+a master switch, "Elections and the mayor", "Standing for office" (needs the elections) and "Construction sites", and
+sixteen test buttons.
 
 ```
 CivicDirector     the clock, the save (two lines in modData), the toggles, faults, key prompts, the test buttons
@@ -3758,7 +3759,12 @@ RoadClosure       one lane closed for roadworks through the traffic system's swi
 CampaignWorld     posters, boards, the canvasser, rallies, the polling place's sign; VolunteerShift (the player canvassing)
 CivicCast         civic life's own five people (a second instance of CityPeople), CivicCrew (walk in, work, walk off); CivicScreen: the game's panel and job panel for its prompts and shift figures
 CivicProps        pooled props by id: the bundle's model if it has one, else a plain stand-in built to the same size
-CityHallPhone     the City Hall contact (four topics), the ballot and the site notice in the game's conversation panel
+CityHallPhone     the City Hall contact (five topics), the ballot and the site notice in the game's conversation panel
+OfficeRules       running for office by rule: nominations, who may stand, donors and the law, the vote model by district, doors, rallies, the debate, attacks, endorsements, the council's odds, conflicts of interest, the city's budget, approval, recall (game-free)
+OfficeState       the player's run, result and office, and the city's budget, as one line (game-free)
+CivicOffice       the player's run and office on the government's clock: its hooks (PlayerStands, PlayerTerm, PlayerLocal, Counted, DayBegins, OfficeSits, ToAgenda, ApprovalExtra, DepartmentLevel)
+OfficePhone       City Hall's fifth topic: standing, the papers, the platform, the fund, spending, endorsements, attacks; the agenda, the budget, orders, the register
+OfficeScenes      a door, the player's rally, the debate, result night and the council's meetings, in the game's list window (OfficePanel)
 ```
 
 **On screen (Civic).** The mod draws nothing of its own for civic life (`CivicHud` is gone; `CivicScreen` takes its place). The polling station, the campaign canvasser, the site notice and the canvassing shift's "offer a leaflet" are the game's panel over the player (`GameUi.DoorPanel`, one button the game labels with the player's key); the shift's figures (leaflets taken, seconds left) are the headline and first line of a copy of the game's job panel (`ShiftCard`), or a notification each time they change if that copy cannot be made. The council's meetings and ballots were already the game's phone dialogue (`CityHallPhone`). Cost: nothing per frame; the prompt is offered once a second and told to the panel only when it changed. Log lines with diagnostics on: `Civic check (prompt panel)`, `Civic check (shift card)`. Not seen in the game.
@@ -3815,13 +3821,74 @@ one endorsement (worth more with every business they run; a scandal with a crimi
 bridge), an afternoon's canvassing, standing through a rally. The debate is 3 days before at 19:00. On the day
 the polls are open 07:00 to 20:00 at one designated building per district (a school if there is one, else a
 bank, an agency, a clinic, else the first building by address); the count is at 21:00, by district, from an
-electorate derived from the district's floor space (the game keeps no population). The winner takes office the
+electorate derived from the district's floor space (the game keeps no population): each district's shares are the city's
+final poll leaned by how each platform fits what that district cares about against the city, and by each candidate's local
+appeal there (for the player: their home, businesses, doors and posters in it), kept in the save with the count
+(`GovState.DistrictShares`). A sitting mayor carries the economy too (OfficeRules.EconomyTerm: the cycle of Economy/City,
+a boom helps them, a recession their challengers), in the polls and in their approval. The winner takes office the
 next morning and their policies come in one a day at 09:00, each with a notice. Between elections: approval
 follows crime, accidents, late sites and promises kept; petitions (2 % of the electorate in 14 days force a
 council vote; the city starts some, the player can start or sign one); a council vote on one policy about every
 12 days; a recall election after 7 days under 25 %.
 
-Standing for a council seat is not implemented.
+### Running for office (`CivicOffice`, `OfficeRules`, `OfficeState`)
+
+The player can stand for the council seat of the district their home is in, or for mayor. Nominations open 14 days before
+election day and close at the end of the campaign's second day (papers filed in the campaign join it at once). To stand:
+a home in the city, no conviction that still counts, no case before the court, a platform of one to four policies (one a
+lever), and either signatures (council 60, mayor 300: the businesses' sheets once, 8 a business, ten at most, half the
+player's recognition, and doors) or the deposit (council 1,000, mayor 5,000; back with a tenth of the vote). A party
+(each stands for issue `party % 6`) gives a grant (1,500 / 4,000) and wants a plank on its issue; an independent gets the
+outsider's lift while the mayor's approval is under 40. Not offered in a Going Public session.
+
+The mayor's race is the city's own: the player's candidate takes a slot of `GovState.Candidates` (their party's
+candidate stands down, else a free slot, else the last challenger's; a mayor standing again takes slot 0) and is
+`Candidate.Player` (named by the game; `GovState.PlayerSlot`, `MayorIsPlayer`). Their score adds `PlayerTerm`: Standing
+(recognition, public opinion, integrity: 0.4 at most either way), what the fund has spent against the others (diminishing,
+0.3 at most), a party's machine (0.08), the outsider's lift, the campaign's own support and the district's (doors and
+posters), and the economy for a challenger. The council race is the district's alone: two rivals from the city's pools (one
+of the mayor's party holds the seat unless the player does), the same polls a third of the way a day, counted at 21:00
+with the mayor's, and the seat is `Council[4]`.
+
+The fund: the player's own money (500 a step), the party's grant, donors (an offer a day at most, likelier the better
+known and placed; at most 500 or 1,000 from one donor). Over the limit, cash from nobody named and straw donors are
+against the law: taken, the money can come out on any day for 28 days after it was taken or after the election (2 % a
+day, up to 10 more by how much, up to 2 more for somebody well known, 12 % at most), when it is forfeited, a summons for breach of campaign
+finance law is filed (`TaxCases.FileCampaignFinance`), support or approval falls and the City Ledger prints it. Spending:
+posters (300 for 12, put up by the player on a shop wall: the five rays of the campaign's own posters, from where they
+stand), a City Ledger or a social media advert (800 / 500, less each time), a rally (600: `CampaignWorld.OwnRally`, a box and
+a crowd and no speaker; the speech is the player's, `OfficeScenes.Rally`), canvassers (400: 30 doors in the district).
+Doors: between 10:00 and 20:00 at the street door of a home that is not the player's (`CivicDirector.OfficePrompt`), once a
+building a day; the person's worry is drawn from the district's issues. Endorsements: seven bodies, each for an issue (the
+City Ledger's editorial for the platform and integrity); asked once (odds by fit and influence), or deciding for whoever fits
+best four days out. Attacks: about one day in three (one in two in the last three days), on what is true of the player
+if anything is (a record, money taken, meetings or the debate missed, integrity under 45, promises not kept, never having
+won), else on something thin; answered within a day or it stands. The debate is the player's scene at 19:00 three days
+before; an empty chair costs 0.05. Result night is the count's pages, district by district, and a speech.
+
+In office: a councillor is paid 600 a week, a mayor 1,800. The council meets every 7 days at 18:00 (not on election day)
+while the player sits (`OfficeSits`: the government's own council votes and petitions go to the agenda instead). A
+councillor votes on each motion and may table one; a mayor sets the agenda (two of their own, petitions, the budget),
+speaks for or against each (0.15 on their own party's members) and orders the levers that are how the city is kept
+(cleaning, events, permits, transit: once a fortnight, without the council). The city's budget: four departments at -2 to
+2 steps, 12 % of a department's share a step; police and streets take 8 % a step off the crime and accidents the city
+counts, every department a point of approval a step, by how much its issue matters; a deficit runs the reserve down and
+costs up to ten points (with the option off the budget is kept as data and does nothing). A vote on a lever that touches
+the player's businesses or property is a conflict of interest: declared, the player stands aside; not declared, it can come
+out within 21 days (4 % a day, 7 % if the vote decided it, more for somebody well known, twice as likely while no register
+of interests is filed; the register is due in the first 7 days): a scandal, and a summons for misconduct in public office if it decided the motion
+(`TaxCases.FileMisconduct`). A councillor's approval is their own (`OfficeRules.CouncillorTarget`); under 25 for 7 days
+brings a recall vote in 7 days, kept by approval and the campaign against it. A mayor's is the city's. Standing again needs
+neither signatures nor deposit.
+
+The player's moments are a draft in Flare (`FlareSource.Campaign`; a post of it adds a little support) and pieces in the
+next morning's City Ledger (`OfficeState.Stories`, through `LedgerBridges.Extra`: filing, the race, attacks,
+endorsements, adverts, the debate, the result, scandals, recalls, orders, the budget). Standing hears of it
+(`FameCause.Office`: integrity and the papers' notice). The Planner has the last day to file, the debate, result night, an
+attack to answer, the meetings, the register, the budget and a recall vote.
+
+While the option is off nothing new begins and nothing is offered; papers already filed stay on the ballot and are counted,
+and an office held lasts to the next count with the council voting by itself.
 
 ### Construction sites
 
@@ -3855,6 +3922,8 @@ CivicBridges.CityPeopleOut = () => ...;       // City life: civic life makes no 
 CivicBridges.FinesScaledAtSource = true;      // Law, if it multiplies its own fines by CivicPolicy.FineScale
 CivicBridges.FaresScaledAtSource = true;      // Transport, likewise for fares
 CivicBridges.NoteCrime();  CivicBridges.NoteAccident();   // anything that happens out of the player's sight
+CivicBridges.Economy, Influence, Recognition, Integrity, Convicted, CaseOpen, Landlord   // running for office: what it reads
+CivicBridges.StandingMoved, FileCase, CampaignPost                                     // ...and what it tells
 ```
 
 ### Wish-list (assets)
@@ -3902,7 +3971,7 @@ its caller: a fault is logged once per place (`Wiring.Fault`) and the default an
 | `LawJustice.cs` | `Wiring.Arrests`: Law's cell and Justice's case for the same arrest; `Justice.Bridges.Law` |
 | `LicenceLinks.cs` | `Licences.Law`, `Justice.Bridges.Licences`, and what Licences reports to the courts instead of fining |
 | `Scenes.cs` | `Wiring.Scenes`: the one question every street scene asks before it starts; `PlayerHeld` for panels |
-| `CivicLinks.cs` | `CivicBridges` (record, reputation, scenes, weather, news, city people); `Wiring.Paper.Print`: a finished story for the City Ledger |
+| `CivicLinks.cs` | `CivicBridges` (record, reputation, scenes, weather, news, city people; for running for office the economy's cycle, Standing's influence, recognition and integrity, a conviction or a case, a let building, Standing's notice, a summons); `Wiring.Paper.Print`: a finished story for the City Ledger |
 | `LifeLinks.cs` | `SocialLinks`, `CareerLinks`, `TravelBridges`, `Justice.Bridges.Social`, `GarageBridges.RoadIsWet` |
 | `EconomyLinks.cs` | `Economy.EconomyBridges` (the record the credit rating reads, the fines and court debts the Finance app lists), the Finance rows of the Planner, and the banks' own terms put back on unload |
 

@@ -210,7 +210,9 @@ internal static partial class Program
         var back = new GovState();
         Check(back.Read(line) && back.OthersVotes[1] == 3, "shared city, government: the save's line keeps the other players' ballots");
         string older = line.Substring(0, line.Length - 1);
-        for (int i = 0; i < guest.OthersVotes.Length; i++)
+        // (after the ballots: the elections voted in, Permadeath's, and running for office's three fields and its district shares)
+        int after = guest.OthersVotes.Length + 1 + 3 + guest.DistrictsCounted * CivicCatalogue.MaxCandidates;
+        for (int i = 0; i < after; i++)
         {
             older = older.Substring(0, older.LastIndexOf('|'));
         }

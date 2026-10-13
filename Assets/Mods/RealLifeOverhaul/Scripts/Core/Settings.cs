@@ -83,6 +83,7 @@ namespace RealLifeOverhaul
         public const string CivicId = "civic";
         public const string CivicElectionsId = "civic_elections";
         public const string CivicConstructionId = "civic_construction";
+        public const string CivicOfficeId = "civic_office";
         public const string DrivingLicenceId = "driving_licence";
         public const string StartWithLicenceId = "licence_start_with";
         public const string DrivingSchoolId = "driving_school";
@@ -289,6 +290,7 @@ namespace RealLifeOverhaul
         public static bool Civic = true;                 // civic life: a city government and a construction programme (Scripts/Civic)
         public static bool CivicElections = true;        // elections, the mayor's policies and their effects, the campaign in the street
         public static bool CivicConstruction = true;     // construction sites that progress over days
+        public static bool CivicOffice = true;           // the player may stand for the council or for mayor (Civic/CivicOffice)
         public static bool DrivingLicence = true;        // driving needs a licence for the class of vehicle; unlicensed driving is punished when police stop the player
         public static bool StartWithLicence = false;     // a save that owns no vehicle the first time the rule runs is given a car licence anyway
         public static bool DrivingSchool = true;         // the desks at the school buildings, the written test, lessons and the driven test
@@ -545,6 +547,7 @@ namespace RealLifeOverhaul
             Civic = Bool(modId, CivicId, Civic);
             CivicElections = Bool(modId, CivicElectionsId, CivicElections);
             CivicConstruction = Bool(modId, CivicConstructionId, CivicConstruction);
+            CivicOffice = Bool(modId, CivicOfficeId, CivicOffice);
             DrivingLicence = Bool(modId, DrivingLicenceId, DrivingLicence);
             StartWithLicence = Bool(modId, StartWithLicenceId, StartWithLicence);
             DrivingSchool = Bool(modId, DrivingSchoolId, DrivingSchool);

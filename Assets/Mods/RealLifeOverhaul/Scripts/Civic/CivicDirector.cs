@@ -20,6 +20,8 @@ namespace RealLifeOverhaul
     ///   CampaignWorld     posters, boards, the canvasser, rallies, the polling place
     ///   SiteDresser       the sites near the player as props, a closed lane, a crew
     ///   CityHallPhone     the City Hall contact, the ballot, the site notice
+    ///   CivicOffice       the player standing for office, the campaign, an office held (OfficeRules, OfficeState: game-free;
+    ///                     OfficePhone its City Hall pages, OfficeScenes its scenes in the game's list window)
     ///
     /// COST. Idle, this is two comparisons a frame and one tick a second. The tick reads the
     /// game's clock; only when the hour has changed does anything of the government or the
@@ -29,7 +31,7 @@ namespace RealLifeOverhaul
     /// every four seconds during a campaign; a site once when the player first comes near).
     /// Nothing allocates on the tick; texts are built when a page or a prompt is shown.
     ///
-    /// SAVE. Two lines of text in the save's modData (reallife:civic_gov, reallife:civic_works).
+    /// SAVE. Three lines of text in the save's modData (reallife:civic_gov, reallife:civic_works, reallife:civic_office).
     /// Nothing else is written: no policy changes a value the game saves. A save made with this
     /// loads without the mod; a save made without it starts with a mayor in office and the
     /// first election two weeks off.
@@ -51,8 +53,9 @@ namespace RealLifeOverhaul
     {
         private const string KeyGov = "reallife:civic_gov";
         private const string KeyWorks = "reallife:civic_works";
+        public const string KeyOffice = "reallife:civic_office";
 
-        private enum PromptKind { None, Vote, Leaflet, Notice }
+        private enum PromptKind { None, Vote, Leaflet, Notice, Knock, Poster }
 
         public static IModLogger Logger;
         public static CivicDirector Instance { get; private set; }
@@ -72,6 +75,16 @@ namespace RealLifeOverhaul
         public CivicWorks Works { get; private set; }
         public CivicCity City { get; private set; }
         public VolunteerShift Volunteer { get; private set; }
+        public CivicOffice Office { get; private set; }
+        private OfficeScenes _scenes;
+        private int _knockBuilding;
+        private string _knockDistrict, _knockAddress;
+        private Vector3 _posterAt, _posterNormal;
+        private string _knockFirst, _posterFirst;
+        private const string ButtonKnock = "reallife_civic_office_panel_knock";
+        private const string ButtonPoster = "reallife_civic_office_panel_poster";
+        private static readonly Collider[] Nearby = new Collider[24];
+        private static int _buildingMask;
 
         private CivicEffects _effects;
         private CivicProps _props;
@@ -122,6 +135,11 @@ namespace RealLifeOverhaul
             _campaign = new CampaignWorld(_props, Government, City, _cast);
             _hud = new CivicScreen(Logger, PromptPressed);
             Volunteer = new VolunteerShift(Government, this);
+            Office = new CivicOffice(Government, City);
+            _scenes = new OfficeScenes(Office, Government, City);
+            _campaign.OwnShare = () => Office.Campaigning && Office.State.Race == OfficeRace.Council ? Mathf.Min(0.5f, 0.15f + Office.State.PostersUp * 0.02f) : 0f;
+            _campaign.OwnColour = () => Office.State.Race == OfficeRace.Mayor && Government.State.PlayerSlot >= 0 ? Government.State.PlayerSlot : 3;
+            _campaign.OwnArrived = (listeners, over) => _scenes.Rally(listeners, over);
             Government.LeversChanged = OnLevers;
             _nextSlow = Time.time + 3f;
             _heard = Heard;
@@ -166,6 +184,7 @@ namespace RealLifeOverhaul
                 CivicPolicy.Publish(null);
                 _hud.Dispose();
                 _props.Dispose();
+                _scenes.Destroy();
             }
             catch (Exception e)
             {
@@ -317,6 +336,10 @@ namespace RealLifeOverhaul
                 if (newDay)
                 {
                     _effects.Daily(Government.State, day);
+                }
+                if (!SharedCity.Follows('G'))
+                {
+                    _scenes.Tick(day, hour);   // the player's own debate, result night and council meetings (a guest's city is the host's)
                 }
                 if (newHour)
                 {
@@ -623,6 +646,17 @@ namespace RealLifeOverhaul
 
         private Action _clearSites, _clearCampaign, _clearCast, _clearShift, _clearHud;
 
+        /// <summary>The player's own rally is set up near them (paid for from their fund). False if there is no room for one now.</summary>
+        public bool OwnRally()
+        {
+            if (_worldFailed || BuildingManager.IsInsideBuilding || !_campaign.OwnRally())
+            {
+                return false;
+            }
+            _worldOut = true;
+            return true;
+        }
+
         private static void Step(Action step)
         {
             try
@@ -653,6 +687,10 @@ namespace RealLifeOverhaul
                 {
                     kind = PromptKind.Notice;
                 }
+                else if (Elections && CivicOffice.Enabled && !SharedCity.Follows('G') && !_scenes.Active)
+                {
+                    kind = OfficePrompt(player, day, hour);
+                }
             }
             _prompt = kind;
             _promptSite = site;
@@ -675,6 +713,16 @@ namespace RealLifeOverhaul
             {
                 _leafletFirst = _leafletFirst ?? CivicText.T("reallife_civic_door_leaflet");
                 _hud.Offer(_leafletFirst, ButtonLeaflet, player);
+            }
+            else if (kind == PromptKind.Knock)
+            {
+                _knockFirst = _knockFirst ?? CivicText.T("reallife_civic_office_door_prompt");
+                _hud.Offer(_knockFirst, ButtonKnock, player);
+            }
+            else if (kind == PromptKind.Poster)
+            {
+                _posterFirst = _posterFirst ?? CivicText.T("reallife_civic_office_poster_prompt");
+                _hud.Offer(_posterFirst, ButtonPoster, player);
             }
             else
             {
@@ -726,7 +774,88 @@ namespace RealLifeOverhaul
                         CityHallPhone.OpenNotice(_promptSite);
                     }
                     break;
+                case PromptKind.Knock:
+                    _scenes.Door(_knockBuilding, _knockDistrict, _knockAddress);
+                    break;
+                case PromptKind.Poster:
+                    PutUpPoster();
+                    break;
             }
+        }
+
+        // The player's own politics in the street: a poster to put up on the wall in front of them, a door to knock on. Looked at once a second, and only during a run.
+        private PromptKind OfficePrompt(Vector3 player, int day, int hour)
+        {
+            OfficeState s = Office.State;
+            if (!s.Running)
+            {
+                return PromptKind.None;
+            }
+            PlayerController controller = PlayerHelper.PlayerController;
+            // (never beside a door: there the key is the door's)
+            if (s.PostersHeld > 0 && Office.Campaigning && controller != null && NearestDoor(player, 2.5f) == null
+                && _campaign.WallAhead(player, controller.transform.forward, out _posterAt, out _posterNormal))
+            {
+                return PromptKind.Poster;
+            }
+            if (hour < OfficeRules.DoorsFrom || hour >= OfficeRules.DoorsTo)
+            {
+                return PromptKind.None;
+            }
+            // Somebody's home: a residential building's street door, not the player's own (the key opens every other door as before).
+            CityBuildingController building = NearestDoor(player, 3f);
+            if (building == null || building.building == null || building.building.BuildingType != "ba:buildingtype_residential"
+                || !Office.MayKnock(day, hour, building.building.Neighbourhood, building.GetInstanceID()) || CivicOffice.IsMine(building))
+            {
+                return PromptKind.None;
+            }
+            _knockBuilding = building.GetInstanceID();
+            _knockDistrict = building.building.Neighbourhood;
+            _knockAddress = building.building.Address != null ? building.building.Address.ToFormattedStringSafe() : null;
+            return PromptKind.Knock;
+        }
+
+        // The building whose street door is nearest the player, within reach: found through the colliders round the player, as the mod's own way into a building is.
+        private static CityBuildingController NearestDoor(Vector3 player, float reach)
+        {
+            if (_buildingMask == 0)
+            {
+                _buildingMask = LayerMask.GetMask("Buildings", "BuildingsOutlined");
+                if (_buildingMask == 0)
+                {
+                    _buildingMask = Physics.AllLayers;
+                }
+            }
+            CityBuildingController best = null;
+            float bestSqr = reach * reach;
+            int count = Physics.OverlapSphereNonAlloc(player, 12f, Nearby, _buildingMask, QueryTriggerInteraction.Collide);
+            for (int i = 0; i < count; i++)
+            {
+                CityBuildingController controller = Nearby[i] != null ? Nearby[i].GetComponentInParent<CityBuildingController>() : null;
+                if (!CivicCity.HasDoor(controller) || controller.building.locatedInsidePrivateFenceIndex >= 0)
+                {
+                    continue;
+                }
+                float sqr = (controller.entranceDoors[0].doorTransform.position - player).sqrMagnitude;
+                if (sqr < bestSqr)
+                {
+                    bestSqr = sqr;
+                    best = controller;
+                }
+            }
+            return best;
+        }
+
+        private void PutUpPoster()
+        {
+            Vector3 player = PlayerHelper.GetPosition();
+            if (Office.State.PostersHeld <= 0 || !_campaign.PutUp(_posterAt, _posterNormal, player))
+            {
+                return;
+            }
+            Office.PosterUp(NeighborhoodHelper.CurrentNeighborhood);
+            _worldOut = true;
+            CivicText.Toast(UI.Notification.NotificationType.Info, "reallife_civic_office_poster_up", "count", Office.State.PostersHeld.ToString(), 6f);
         }
 
         // ---------------------------------------------------------------- the save
@@ -744,6 +873,10 @@ namespace RealLifeOverhaul
             {
                 Works.State.Sites.Clear();
                 Works.State.LastHour = now;
+            }
+            if (data == null || !data.TryGetValue(KeyOffice, out string office) || string.IsNullOrEmpty(office) || !Office.State.Read(office))
+            {
+                Office.State.Reset();
             }
             _loaded = true;
             _lastDay = day;
@@ -770,6 +903,7 @@ namespace RealLifeOverhaul
                 }
                 SaveGameManager.Current.modData[KeyGov] = Government.State.Write();
                 SaveGameManager.Current.modData[KeyWorks] = Works.State.Write();
+                SaveGameManager.Current.modData[KeyOffice] = Office.State.Write();
             }
             catch (Exception e)
             {
@@ -1098,6 +1232,99 @@ namespace RealLifeOverhaul
                 _campaign.ForceRally();
                 _worldOut = true;
                 CivicText.Toast(NotificationType.Info, "reallife_civic_test_rally_started", 9f);
+            }
+            catch (Exception e)
+            {
+                Fail(e);
+            }
+        }
+
+        // ---------------------------------------------------------------- the player's own politics: test buttons
+
+        private bool OfficeTestReady(string test)
+        {
+            if (!TestReady(test, false) || HostOwns(test, 'G'))
+            {
+                return false;
+            }
+            if (!Settings.CivicElections || !Settings.CivicOffice)
+            {
+                TestRefusals.Tell(Logger, test, TestRefusal.FeatureOff);
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>Test: the player is a candidate for a race now (a campaign is started if none is on), papers filed, a platform drawn for them.</summary>
+        public void TestStand(OfficeRace race)
+        {
+            string test = "Civic stand for " + race;
+            if (!OfficeTestReady(test))
+            {
+                return;
+            }
+            try
+            {
+                CivicText.Toast(UI.Notification.NotificationType.Info, Office.TestFile(race, TimeHelper.CurrentDay), 9f);
+                Logger?.Info("Civic test: the player is a candidate for " + race + " in the election of day " + Government.State.ElectionDay + ".");
+            }
+            catch (Exception e)
+            {
+                Fail(e);
+            }
+        }
+
+        /// <summary>Test: the player holds an office now, as if just elected; the council meets today.</summary>
+        public void TestOffice(OfficeRace race)
+        {
+            string test = "Civic office " + race;
+            if (!OfficeTestReady(test))
+            {
+                return;
+            }
+            try
+            {
+                Office.TestOffice(race, TimeHelper.CurrentDay);
+                OnLevers();
+                CivicText.Toast(UI.Notification.NotificationType.Info, race == OfficeRace.Mayor ? "reallife_civic_office_test_mayor" : "reallife_civic_office_test_council", 9f);
+            }
+            catch (Exception e)
+            {
+                Fail(e);
+            }
+        }
+
+        /// <summary>Test: today's scene of the player's run or office now (the debate while a candidate, else a council meeting while in office).</summary>
+        public void TestScene()
+        {
+            if (!OfficeTestReady("Civic office scene"))
+            {
+                return;
+            }
+            try
+            {
+                if (_scenes.Active || !OfficeScenes.Free())
+                {
+                    TestRefusals.Tell(Logger, "Civic office scene", TestRefusal.ScreenBusy);
+                    return;
+                }
+                int day = TimeHelper.CurrentDay;
+                if (Office.Campaigning)
+                {
+                    Government.State.ElectionDay = day + CivicCatalogue.DebateBefore;
+                    Office.State.ForDay = Government.State.ElectionDay;
+                    Office.State.Debate = 0;
+                    _scenes.Tick(day, 19);
+                }
+                else if (Office.State.InOffice)
+                {
+                    Office.State.NextMeeting = day;
+                    _scenes.Tick(day, OfficeRules.MeetingHour);
+                }
+                else
+                {
+                    TestRefusals.Tell(Logger, "Civic office scene", TestRefusal.NothingFits, 0, "the player is neither a candidate nor in office");
+                }
             }
             catch (Exception e)
             {

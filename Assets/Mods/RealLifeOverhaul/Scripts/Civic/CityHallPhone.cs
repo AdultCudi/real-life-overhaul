@@ -24,6 +24,7 @@ namespace RealLifeOverhaul
     ///   Construction   the sites nearest the player with phase and days left, complaints,
     ///                  reports, calling in a permit favour; ordering a refit of the player's own shopfront
     ///   Petitions      the one that is open (sign it), or starting one
+    ///   Your politics  standing for the council or for mayor, the campaign, and an office held (Civic/OfficePhone)
     /// The same panel, face to face, is the ballot at a polling place and a site's notice board.
     /// Everything is built when a page is shown; nothing here runs on a tick.
     /// </summary>
@@ -144,7 +145,7 @@ namespace RealLifeOverhaul
 
     public class CityHallDialog : Dialog
     {
-        private const int Topics = 4;
+        private const int Topics = 5;
 
         public CityHallDialog()
         {
@@ -210,6 +211,8 @@ namespace RealLifeOverhaul
                     open = () => SitePage(0);
                     openKey = "reallife_civic_button_sites";
                     break;
+                case 4:
+                    return OfficePhone.Topic(() => Topic(0));
                 default:
                     text = state.PetitionPolicy >= 0
                         ? CivicText.T("reallife_civic_topic_petition_open", "policy", CivicText.T(CivicCatalogue.All[state.PetitionPolicy].Name),
@@ -355,6 +358,13 @@ namespace RealLifeOverhaul
                 return state.DebateHeld ? Debate(0) : Topic(1);
             }
             Candidate candidate = state.Candidates[index];
+            if (candidate.Player)
+            {
+                int after = index + 1;
+                return CityHallPhone.Page(CivicText.T("reallife_civic_office_candidate_you").Replace("{share}", CivicGovernment.Percent(state.Polls[index]))
+                        .Replace("{platform}", CityHallPhone.Platform(candidate)).Replace("{slogan}", CivicText.T(CivicCatalogue.Slogans[candidate.Slogan])),
+                    "reallife_civic_office_button_campaign", () => OfficePhone.Topic(() => Topic(1)), "reallife_civic_button_next_candidate", () => CandidatePage(after));
+            }
             string text = CivicText.T(candidate.Incumbent ? "reallife_civic_candidate_incumbent" : "reallife_civic_candidate")
                 .Replace("{name}", CivicText.Name(candidate)).Replace("{party}", CivicText.Party(candidate))
                 .Replace("{slogan}", CivicText.T(CivicCatalogue.Slogans[candidate.Slogan])).Replace("{issue}", CivicText.T(CivicCatalogue.IssueNames[candidate.Lead]))

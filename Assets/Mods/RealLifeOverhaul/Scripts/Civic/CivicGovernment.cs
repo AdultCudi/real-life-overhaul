@@ -65,6 +65,51 @@ namespace RealLifeOverhaul
         public Action LeversChanged;
         public Action CampaignChanged;
 
+        // ---- the player's own part in it (Civic/CivicOffice sets these; each is optional and runs no hour of its own)
+        /// <summary>A campaign is starting (true: a recall): the player's candidate if they have filed for mayor, else null.</summary>
+        public Func<bool, Candidate> PlayerStands;
+        /// <summary>What the player has beyond their platform in a district (-1 the city): their standing, the campaign, home, the economy's part for a challenger.</summary>
+        public Func<int, float> PlayerTerm;
+        /// <summary>What the player has of their own in a district at the count: home, businesses, doors and posters.</summary>
+        public Func<int, float> PlayerLocal;
+        /// <summary>The campaign's doors knocked in a district (a little more of it turns out).</summary>
+        public Func<int, int> DistrictDoors;
+        /// <summary>The count is in: the player's council race and office follow (the day).</summary>
+        public Action<int> Counted;
+        /// <summary>A new day has been run (after approval, petitions and the council).</summary>
+        public Action<int> DayBegins;
+        /// <summary>True while the player sits on the council or is mayor: the council meets on the player's calendar instead of voting by itself.</summary>
+        public Func<bool> OfficeSits;
+        /// <summary>A motion for the council's next meeting while the player sits (the policy, and whether a petition put it there).</summary>
+        public Action<int, bool> ToAgenda;
+        /// <summary>Points of the mayor's approval beyond the city's own (the city's budget, scandals): the player's office.</summary>
+        public Func<float> ApprovalExtra;
+        /// <summary>The city budget's level for a department, -2 to 2 (0 as the city came).</summary>
+        public Func<Department, int> DepartmentLevel;
+
+        private int Level(Department department)
+        {
+            try
+            {
+                return DepartmentLevel != null ? DepartmentLevel(department) : 0;
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+                return 0;
+            }
+        }
+
+        /// <summary>The mayor's office is left empty (the player stood down as mayor): an election for it in a week, unless one is on its way already.</summary>
+        public void Vacate(int day)
+        {
+            if (State.Phase == ElectionPhase.None)
+            {
+                State.ElectionDay = day + CivicCatalogue.CampaignDays;
+                StartCampaign(day, false);
+            }
+        }
+
         public CivicGovernment(CivicCity city)
         {
             _city = city;
@@ -76,6 +121,7 @@ namespace RealLifeOverhaul
         public void NewSave(int day, long hour)
         {
             State.Reset();
+            State.Mayor.Player = false;
             int seed = CivicRandom.Mix(day * 7919 + 17, (int)(DateTime.UtcNow.Ticks & 0x7FFFFFFF), Environment.TickCount);
             State.Seed = seed == 0 ? 1 : seed;
             State.FirstDay = day;
@@ -305,8 +351,9 @@ namespace RealLifeOverhaul
         private void NewDay(int day)
         {
             // Yesterday's crime and accidents, with what other features reported, fading a fifth a day.
-            State.CrimeHeat = State.CrimeHeat * 0.8f + _crimesToday + CivicBridges.Crimes;
-            State.CrashHeat = State.CrashHeat * 0.8f + _crashesToday + CivicBridges.Accidents;
+            // (the city's budget for the police and the streets: 8 % less of each a step up, Civic/CivicOffice)
+            State.CrimeHeat = State.CrimeHeat * 0.8f + (_crimesToday + CivicBridges.Crimes) * OfficeRules.HeatScale(Level(Department.Police));
+            State.CrashHeat = State.CrashHeat * 0.8f + (_crashesToday + CivicBridges.Accidents) * OfficeRules.HeatScale(Level(Department.Streets));
             _crimesToday = 0;
             _crashesToday = 0;
             CivicBridges.Crimes = 0;
@@ -315,6 +362,7 @@ namespace RealLifeOverhaul
             Approve(day);
             Petition(day);
             Council(day);
+            DayBegins?.Invoke(day);
 
             if (State.Phase == ElectionPhase.Counted && day > State.ElectionDay + 1)
             {
@@ -364,6 +412,15 @@ namespace RealLifeOverhaul
             target += inForce * 2.5f;
             target -= (State.Mayor.Planks - inForce) * 1.5f;   // promises not yet kept
             target += State.Levers[(int)Lever.Cleaning] * 3f + State.Levers[(int)Lever.Events] * 2f - State.Levers[(int)Lever.BusinessTax] * 2f;
+            target += OfficeRules.EconomyTerm(CivicBridges.Cycle(), true) * 20f;   // the economy: four points in a boom, six off in a recession
+            try
+            {
+                target += ApprovalExtra != null ? ApprovalExtra() : 0f;
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+            }
             int inOffice = day - State.TermStart;
             if (inOffice < 14)
             {
@@ -422,7 +479,14 @@ namespace RealLifeOverhaul
                 CivicText.Toast(NotificationType.Success, "reallife_civic_petition_met", "policy", CivicText.T(asked.Name), "signed", State.PetitionSigned.ToString("N0"), 12f);
                 int policy = State.PetitionPolicy;
                 ClosePetition(day);
-                CouncilVote(policy, day, true);
+                if (Sits())
+                {
+                    ToAgenda?.Invoke(policy, true);   // to the next meeting, where the player has a vote
+                }
+                else
+                {
+                    CouncilVote(policy, day, true);
+                }
             }
             else if (day >= State.PetitionEnds)
             {
@@ -455,9 +519,9 @@ namespace RealLifeOverhaul
             {
                 State.NextCouncilVote = day + CivicCatalogue.CouncilVoteEvery;
             }
-            if (day < State.NextCouncilVote || State.Phase != ElectionPhase.None)
+            if (day < State.NextCouncilVote || State.Phase != ElectionPhase.None || Sits())
             {
-                return;
+                return;   // (while the player sits, the council's business is put to its weekly meetings: Civic/CivicOffice)
             }
             var random = new CivicRandom(CivicRandom.Mix(State.Seed, day, 67));
             State.NextCouncilVote = day + CivicCatalogue.CouncilVoteEvery + random.Range(-3, 4);
@@ -494,6 +558,80 @@ namespace RealLifeOverhaul
             {
                 CivicText.Toast(NotificationType.Info, "reallife_civic_council_failed", "policy", CivicText.T(policy.Name), "ayes", ayes.ToString(), "noes", noes.ToString(), 12f);
             }
+        }
+
+        private bool Sits()
+        {
+            try
+            {
+                return OfficeSits != null && OfficeSits();
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+                return false;
+            }
+        }
+
+        /// <summary>What the council would take up itself today (a policy that is not in force nor on its way, from what matters most); -1 for none.</summary>
+        public int CityMotion(int day)
+        {
+            var random = new CivicRandom(CivicRandom.Mix(State.Seed, day, 67));
+            return PickPolicy(ref random);
+        }
+
+        /// <summary>A motion the council passed at a meeting the player sat in: the change comes in tomorrow, announced on its day.</summary>
+        public void Passed(int policyIndex, int day)
+        {
+            PolicyDef policy = CivicCatalogue.At(policyIndex);
+            if (policy != null)
+            {
+                Schedule((int)policy.Lever, policy.Dir, day + 1);
+            }
+        }
+
+        /// <summary>A mayor's order on a lever that is theirs to set (OfficeRules.ByOrder): in tomorrow. False if it stands there or is on its way.</summary>
+        public bool Ordered(Lever lever, int position, int day)
+        {
+            return Lobbied(lever, position, day + 1);
+        }
+
+        /// <summary>A policy's weight in the city today, 0 to 1 against what matters most.</summary>
+        public float Support(int policyIndex)
+        {
+            PolicyDef policy = CivicCatalogue.At(policyIndex);
+            if (policy == null)
+            {
+                return 0f;
+            }
+            Salience();
+            return _salience[(int)policy.Issue] / MaxSalience();
+        }
+
+        /// <summary>How much an issue matters in the city today (1 is ordinary).</summary>
+        public float Weight(int issue)
+        {
+            Salience();
+            return issue >= 0 && issue < _salience.Length ? _salience[issue] : 1f;
+        }
+
+        /// <summary>The issues' weights today, into the array given (six).</summary>
+        public void Weights(float[] into)
+        {
+            Salience();
+            Array.Copy(_salience, into, Math.Min(into.Length, _salience.Length));
+        }
+
+        /// <summary>How much a district cares about an issue against the city: 0.7 to 1.3, fixed for the save.</summary>
+        public float DistrictLean(int district, int issue)
+        {
+            return Lean(district, issue);
+        }
+
+        /// <summary>True if a policy is in a candidate's platform.</summary>
+        public static bool Promised(Candidate candidate, int policyIndex)
+        {
+            return InPlatform(candidate, policyIndex);
         }
 
         // A policy that is not in force (nor on its way), from the issues that matter most now.
@@ -648,6 +786,12 @@ namespace RealLifeOverhaul
             State.Winner = -1;
             State.Turnout = 0;
             Array.Clear(State.OthersVotes, 0, State.OthersVotes.Length);
+            State.PlayerSlot = -1;
+            State.DistrictsCounted = 0;
+            for (int i = 0; i < State.Candidates.Length; i++)
+            {
+                State.Candidates[i].Player = false;
+            }
 
             var random = new CivicRandom(CivicRandom.Mix(State.Seed, State.Number, 7));
             State.CandidateCount = random.Value < 0.5f ? 3 : 4;
@@ -660,7 +804,9 @@ namespace RealLifeOverhaul
                 State.Polls[i] = 0f;
             }
             // The mayor stands again three times in four (always, to answer a recall), in slot 0 with promises for the next term.
-            bool mayorStands = recall || random.Value < 0.75f;
+            // A mayor who is the player stands again only if they have filed their papers (Civic/CivicOffice).
+            bool mayorRolls = random.Value < 0.75f;
+            bool mayorStands = !State.Mayor.Player && (recall || mayorRolls);
             for (int i = 0; i < State.CandidateCount; i++)
             {
                 Candidate candidate = State.Candidates[i];
@@ -687,6 +833,19 @@ namespace RealLifeOverhaul
                 usedParties |= 1 << candidate.Party;
                 usedLeads |= 1 << candidate.Lead;
             }
+            Candidate me = null;
+            try
+            {
+                me = PlayerStands != null ? PlayerStands(recall) : null;
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+            }
+            if (me != null)
+            {
+                Seat(me);
+            }
             // The first poll is where the city stands today, straight.
             Targets(day);
             for (int i = 0; i < State.CandidateCount; i++)
@@ -696,6 +855,80 @@ namespace RealLifeOverhaul
             CivicText.Toast(NotificationType.Info, recall ? "reallife_civic_campaign_recall" : "reallife_civic_campaign_begins",
                 "count", State.CandidateCount.ToString(), "days", Mathf.Max(1, State.ElectionDay - day).ToString(), 14f);
             CampaignChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// The player's candidate joins the campaign under way (papers filed in its first days): in the place of their party's
+        /// candidate, else in a place of their own, else in the last challenger's. Returns the slot, or -1 with no campaign on.
+        /// </summary>
+        public int JoinRace(Candidate me)
+        {
+            if (!Campaigning || me == null)
+            {
+                return -1;
+            }
+            int slot = Seat(me);
+            Targets(TimeHelper.CurrentDay);
+            State.Polls[slot] = _scores[slot];
+            float total = 0f;
+            for (int c = 0; c < State.CandidateCount; c++)
+            {
+                total += State.Polls[c];
+            }
+            for (int c = 0; c < State.CandidateCount && total > 0f; c++)
+            {
+                State.Polls[c] /= total;
+            }
+            CampaignChanged?.Invoke();
+            return slot;
+        }
+
+        // Where the player's candidate stands in the race: the sitting mayor's place if they are the mayor, their party's, a free one, or the last challenger's.
+        private int Seat(Candidate me)
+        {
+            int slot = -1;
+            if (State.Mayor.Player)
+            {
+                slot = 0;
+                if (State.CandidateCount > 0 && !State.Candidates[0].Incumbent && State.CandidateCount < CivicCatalogue.MaxCandidates)
+                {
+                    // Nobody is in the mayor's place: the field moves up one.
+                    for (int i = State.CandidateCount; i > 0; i--)
+                    {
+                        State.Candidates[i].CopyFrom(State.Candidates[i - 1]);
+                        State.Polls[i] = State.Polls[i - 1];
+                        State.Momentum[i] = State.Momentum[i - 1];
+                        State.Donated[i] = State.Donated[i - 1];
+                    }
+                    State.CandidateCount++;
+                }
+            }
+            for (int i = 0; slot < 0 && i < State.CandidateCount; i++)
+            {
+                if (me.Party < CivicCatalogue.Parties.Length && State.Candidates[i].Party == me.Party && !State.Candidates[i].Incumbent)
+                {
+                    slot = i;   // the party's nomination is the player's: its own candidate stands down
+                }
+            }
+            if (slot < 0)
+            {
+                slot = State.CandidateCount < CivicCatalogue.MaxCandidates ? State.CandidateCount++ : State.CandidateCount - 1;
+                if (State.Candidates[slot].Incumbent && slot > 0)
+                {
+                    slot--;
+                }
+            }
+            if (State.CandidateCount == 0)
+            {
+                State.CandidateCount = 1;
+            }
+            State.Candidates[slot].CopyFrom(me);
+            State.Candidates[slot].Player = true;
+            State.Candidates[slot].Incumbent = State.Mayor.Player;
+            State.Momentum[slot] = 0f;
+            State.Donated[slot] = 0;
+            State.PlayerSlot = slot;
+            return slot;
         }
 
         // A mayor standing again keeps what they have delivered at the head of their platform.
@@ -729,7 +962,7 @@ namespace RealLifeOverhaul
 
         // Somebody from the pools: a name, a party and an issue nobody else in this race has, and three or four planks on different levers,
         // at least two of them about that issue.
-        private static void Generate(Candidate candidate, ref CivicRandom random, int usedParties, int usedLeads)
+        internal static void Generate(Candidate candidate, ref CivicRandom random, int usedParties, int usedLeads)
         {
             candidate.First = random.Range(0, CivicCatalogue.FirstNames.Length);
             candidate.Last = random.Range(0, CivicCatalogue.LastNames.Length);
@@ -849,7 +1082,7 @@ namespace RealLifeOverhaul
         private void Targets(int day, int district = -1)
         {
             Salience();
-            float total = 0f;
+            int cycle = CivicBridges.Cycle();
             for (int c = 0; c < State.CandidateCount; c++)
             {
                 Candidate candidate = State.Candidates[c];
@@ -862,18 +1095,30 @@ namespace RealLifeOverhaul
                     planks += stance;
                 }
                 float score = (planks > 0f ? fit / planks : 1f) * 1.1f;
-                score += Appeal(c, district);
+                score += candidate.Player ? Player(district) : Appeal(c, district);
                 score += State.Momentum[c];
                 if (candidate.Incumbent)
                 {
-                    score += (State.Approval - 50f) / 40f;
+                    score += (State.Approval - 50f) / 40f + OfficeRules.EconomyTerm(cycle, true);
                 }
-                _scores[c] = Mathf.Exp(score * Sharpness);
-                total += _scores[c];
+                _raw[c] = score;
             }
-            for (int c = 0; c < CivicCatalogue.MaxCandidates; c++)
+            OfficeRules.Shares(_raw, State.CandidateCount, _scores);
+        }
+
+        private readonly float[] _raw = new float[CivicCatalogue.MaxCandidates];
+
+        // The player's own part of a score: their standing, the campaign, the outsider's lift, the economy's part for a challenger (Civic/CivicOffice).
+        private float Player(int district)
+        {
+            try
             {
-                _scores[c] = c < State.CandidateCount && total > 0f ? _scores[c] / total : 0f;
+                return PlayerTerm != null ? PlayerTerm(district) : 0f;
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+                return 0f;
             }
         }
 
@@ -941,6 +1186,13 @@ namespace RealLifeOverhaul
             {
                 return 0;
             }
+            if (district < State.DistrictsCounted)
+            {
+                // The count's own shares for the district: the voters' preferences there (Count).
+                var roll = new CivicRandom(CivicRandom.Mix(State.Seed, State.Number, district + 701));
+                float turnedOut = OfficeRules.Turnout(roll.Value, Doors(district));
+                return OfficeRules.Votes(_city.Districts[district].Electorate, turnedOut, State.DistrictShares[district * CivicCatalogue.MaxCandidates + candidate]);
+            }
             float total = 0f, own = 0f;
             for (int c = 0; c < State.CandidateCount; c++)
             {
@@ -973,6 +1225,69 @@ namespace RealLifeOverhaul
             return votes;
         }
 
+        private int Doors(int district)
+        {
+            try
+            {
+                return DistrictDoors != null ? DistrictDoors(district) : 0;
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+                return 0;
+            }
+        }
+
+        private readonly float[] _cityFit = new float[CivicCatalogue.MaxCandidates], _districtFit = new float[CivicCatalogue.MaxCandidates];
+        private readonly float[] _local = new float[CivicCatalogue.MaxCandidates], _share = new float[CivicCatalogue.MaxCandidates];
+        private readonly float[] _lean = new float[CivicCatalogue.Issues];
+
+        // Each district's shares, from what its voters prefer: a candidate's city share leaned by how their platform fits the
+        // district against the city, by their local appeal there, and for the player by their home, businesses, doors and posters.
+        private void CountDistricts()
+        {
+            int districts = Math.Min(_city.Districts.Count, CivicCatalogue.MaxDistricts);
+            for (int c = 0; c < State.CandidateCount; c++)
+            {
+                _cityFit[c] = OfficeRules.Fit(State.Candidates[c], null);
+            }
+            for (int d = 0; d < districts; d++)
+            {
+                for (int i = 0; i < _lean.Length; i++)
+                {
+                    _lean[i] = Lean(d, i);
+                }
+                for (int c = 0; c < State.CandidateCount; c++)
+                {
+                    Candidate candidate = State.Candidates[c];
+                    _districtFit[c] = OfficeRules.Fit(candidate, _lean);
+                    float local = 0f;
+                    if (candidate.Player)
+                    {
+                        try
+                        {
+                            local = PlayerLocal != null ? PlayerLocal(d) : 0f;
+                        }
+                        catch (Exception e)
+                        {
+                            CivicDirector.Logger?.Error(e);
+                        }
+                    }
+                    else
+                    {
+                        local = Appeal(c, d) - Appeal(c, -1);
+                    }
+                    _local[c] = local;
+                }
+                OfficeRules.DistrictShares(State.Final, _cityFit, _districtFit, _local, State.CandidateCount, _share);
+                for (int c = 0; c < CivicCatalogue.MaxCandidates; c++)
+                {
+                    State.DistrictShares[d * CivicCatalogue.MaxCandidates + c] = _share[c];
+                }
+            }
+            State.DistrictsCounted = districts;
+        }
+
         // The count: the last poll with election-day movement is fixed, every district is added up, the winner is named and takes office tomorrow.
         private void Count(int day)
         {
@@ -981,6 +1296,7 @@ namespace RealLifeOverhaul
             {
                 State.Final[c] = c < State.CandidateCount ? State.Polls[c] : 0f;
             }
+            CountDistricts();
             int winner = 0, total = 0;
             for (int c = 0; c < State.CandidateCount; c++)
             {
@@ -1042,6 +1358,7 @@ namespace RealLifeOverhaul
             }
             State.Mayor.CopyFrom(elected);
             State.Mayor.Incumbent = true;
+            State.MayorIsPlayer = elected.Player;
             State.TermStart = day + 1;
             State.Approval = Mathf.Clamp(46f + State.Final[winner] * 30f, 40f, 72f);
             State.LowDays = 0;
@@ -1058,6 +1375,14 @@ namespace RealLifeOverhaul
             CivicBridges.Report(held ? "reallife_civic_news_held" : "reallife_civic_news_won", "reallife_civic_news_result_body");
             CivicDirector.Logger?.Info("Civic: election " + State.Number + " counted: winner slot " + winner + " with " + _votes[winner] + " of " + total + " votes; "
                                        + State.Pending.Count + " policy change(s) scheduled.");
+            try
+            {
+                Counted?.Invoke(day);
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+            }
             CampaignChanged?.Invoke();
         }
 
@@ -1082,6 +1407,10 @@ namespace RealLifeOverhaul
             if (!Campaigning || candidate < 0 || candidate >= State.CandidateCount)
             {
                 return "reallife_civic_no_campaign";
+            }
+            if (State.Candidates[candidate].Player)
+            {
+                return "reallife_civic_office_own_campaign";
             }
             int step = CivicCatalogue.DonationStepNow;
             if (State.Donated[candidate] >= CivicCatalogue.DonationCapNow)
@@ -1126,6 +1455,10 @@ namespace RealLifeOverhaul
             if (State.Endorsed >= 0)
             {
                 return "reallife_civic_endorse_already";
+            }
+            if (State.Candidates[candidate].Player)
+            {
+                return "reallife_civic_office_own_campaign";
             }
             State.Endorsed = candidate;
             if (CivicBridges.HasRecord())
