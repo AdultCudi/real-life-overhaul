@@ -27,6 +27,8 @@ internal static partial class Program
         HairCaps();
         HairCover();
         HairGain();
+        HairShade();
+        HairKeepCover();
         HairTiming();
     }
 
@@ -415,6 +417,77 @@ internal static partial class Program
         Check(same, "hair gain: the same texture gets the same gain every time");
     }
 
+    private static void HairShade()
+    {
+        const float deep = HairRules.DeepShade;
+        Check(HairRules.Shade(1f, deep) == 1f && HairRules.Shade(0.9f, deep) == 1f, "hair shade: the middle of a strand keeps the game's colour");
+        Check(Near(HairRules.Shade(0f, deep), deep, 1e-6f) && Near(HairRules.Shade(0.1f, deep), deep, 1e-6f), "hair shade: the faint edge of a strand and the space between strands get the deep shade (" + deep.ToString("F2") + ")");
+        bool rises = true, within = true;
+        float last = -1f;
+        for (int a = 0; a <= 255; a++)
+        {
+            float s = HairRules.Shade(a / 255f, deep);
+            rises &= s >= last - 1e-6f;
+            within &= s >= deep - 1e-6f && s <= 1f;
+            last = s;
+        }
+        Check(rises && within, "hair shade: the shade never falls as a strand grows more solid, and stays between the deep shade and 1");
+        Check(HairRules.Shade(0f, 1f) == 1f && HairRules.Shade(0f, float.NaN) == 1f && HairRules.Shade(0.5f, 2f) == 1f, "hair shade: a deep shade of 1, more or not a number changes nothing (the finish as before)");
+        Check(Near(HairRules.Shade(0f, -1f), 0f, 1e-6f), "hair shade: a deep shade below 0 is read as 0");
+    }
+
+    private static void HairKeepCover()
+    {
+        const float core = 0.95f;
+        Check(HairRules.CoverScale(null, core, 0.3f) == 1f && HairRules.CoverScale(new int[HairRules.Levels], core, 0.3f) == 1f
+              && HairRules.CoverScale(new int[16], core, 0.3f) == 1f && HairRules.CoverScale(StrandTexture(10, 10, 200, 10), core, 0f) == 1f,
+            "hair mipmaps: no histogram, a blank one, a wrong-sized one and nothing to keep all leave alpha as it is");
+
+        // A level that is already as solid as the full size needs nothing.
+        int[] kept = StrandTexture(300, 0, 1, 700);
+        Check(HairRules.CoverScale(kept, core, 0.3f) == 1f && Near(HairRules.SolidAt(kept, core, 1f), 0.3f, 1e-6f), "hair mipmaps: a level as solid as the full size is left alone");
+
+        // Strands averaged into their gaps: 30% at alpha 128 (half), 70% empty. Solid again at 0.95 x 255 / 128 = 1.89.
+        var half = new int[HairRules.Levels];
+        half[128] = 300;
+        half[0] = 700;
+        float scale = HairRules.CoverScale(half, core, 0.3f);
+        Check(scale > 1.8f && scale < 1.95f && Near(HairRules.SolidAt(half, core, scale), 0.3f, 1e-6f) && HairRules.SolidAt(half, core, scale - HairRules.CoverScaleStep) < 0.3f,
+            "hair mipmaps: strands averaged to half get the smallest scale that makes them solid again (x" + scale.ToString("F2") + ")");
+        Check(HairRules.SolidAt(half, core, 1f) == 0f, "hair mipmaps: plain mipmaps would leave none of that level solid");
+
+        // Too faint for the most allowed: the highest scale, and never more.
+        var faint = new int[HairRules.Levels];
+        faint[20] = 300;
+        faint[0] = 700;
+        Check(HairRules.CoverScale(faint, core, 0.3f) == HairRules.MaxCoverScale, "hair mipmaps: a level too faint to keep gets the highest scale, " + HairRules.MaxCoverScale.ToString("F0") + ", and no more");
+
+        var random = new Random(20261013);
+        bool bounded = true, onStep = true, nearest = true, never = true;
+        for (int t = 0; t < 300; t++)
+        {
+            var histogram = new int[HairRules.Levels];
+            int top = 1 + random.Next(255);
+            for (int i = 0; i < 3000; i++)
+            {
+                histogram[random.Next(top + 1)]++;
+            }
+            float wanted = (float)random.NextDouble() * 0.6f;
+            float s = HairRules.CoverScale(histogram, core, wanted);
+            bounded &= s >= 1f && s <= HairRules.MaxCoverScale;
+            onStep &= Near((s - 1f) / HairRules.CoverScaleStep, (float)Math.Round((s - 1f) / HairRules.CoverScaleStep), 0.0001f);
+            float off = Math.Abs(HairRules.SolidAt(histogram, core, s) - wanted);
+            for (float o = 1f; o <= HairRules.MaxCoverScale + 1e-4f; o += HairRules.CoverScaleStep)
+            {
+                nearest &= Math.Abs(HairRules.SolidAt(histogram, core, o) - wanted) >= off - 1e-6f;
+            }
+            never &= HairRules.SolidAt(histogram, core, s) >= HairRules.SolidAt(histogram, core, 1f);
+        }
+        Check(bounded && onStep, "hair mipmaps: on 300 random levels the scale is between 1 and 4, on a step of 1/64");
+        Check(nearest, "hair mipmaps: and no other allowed scale comes nearer the wanted solid share");
+        Check(never, "hair mipmaps: keeping the cover never makes a level less solid than plain mipmaps");
+    }
+
     private static void HairTiming()
     {
         // A change of look runs the rule on two to seven layers; the first wear of a texture runs the gain once.
@@ -432,7 +505,14 @@ internal static partial class Program
             sum += HairRules.Gain(thin, 0.95f, 0.04f, 0.7f) + HairRules.Measure(thin, 4.5f, 0.95f, 0.04f).Core;
         }
         double gain = watch.Elapsed.TotalMilliseconds / 20000.0;
+        watch.Restart();
+        for (int i = 0; i < 2000; i++)
+        {
+            sum += HairRules.CoverScale(thin, 0.95f, 0.3f);
+        }
+        double keep = watch.Elapsed.TotalMilliseconds / 2000.0;
         Check(rule < 0.02 && sum > 0f, "hair timing: the rule for one layer takes under 0.02 ms (" + (rule * 1000.0).ToString("F2") + " microseconds)");
+        Check(keep < 0.5, "hair timing: the scale that keeps one mip level's cover takes under 0.5 ms (" + (keep * 1000.0).ToString("F1") + " microseconds)");
         Check(gain < 0.2, "hair timing: the gain and the cover of the histogram of one texture take under 0.2 ms (" + (gain * 1000.0).ToString("F1") + " microseconds)");
     }
 }

@@ -78,6 +78,22 @@ namespace RealLifeOverhaul
         /// <summary>Of the strands a texture draws, this share must be solid after the gain: below it a layer is mostly haze, and haze lets skin through.</summary>
         public const float WantedCore = 0.7f;
 
+        /// <summary>
+        /// The mip level the far numbers of a <see cref="Cover"/> are read at: an eighth of the texture's size, about what
+        /// a head gets from the city camera's usual distance (the strands then cover 2 to 4 texels of the full size each).
+        /// </summary>
+        public const int FarLevel = 3;
+        /// <summary>A mip level's alpha is multiplied by at most this to keep its solid share (<see cref="CoverScale"/>).</summary>
+        public const float MaxCoverScale = 4f;
+        public const float CoverScaleStep = 1f / 64f;
+        /// <summary>
+        /// The colour of a strand where it is faintest, as a share of its middle (<see cref="Shade"/>). The game's strand
+        /// textures are white throughout (measured on all 22: the colour is the same in the middle of a strand, at its
+        /// edge and between strands), so under one strong lamp, with nothing of the hair casting a shadow, every strand on
+        /// the crown is lit alike and the top of the head is one smooth patch of colour: read as a bald scalp.
+        /// </summary>
+        public const float DeepShade = 0.6f;
+
         /// <summary>What a strand texture is made of once its alpha is multiplied: shares of its area, summing to 1.</summary>
         public struct Cover
         {
@@ -85,6 +101,12 @@ namespace RealLifeOverhaul
             public float Edge;    // drawn but see-through
             public float Empty;   // not drawn at all
             public float Gain;
+            /// <summary>The solid share at <see cref="FarLevel"/> as plain mipmaps would have it, and as the copy has it.</summary>
+            public float FarCorePlain, FarCore;
+            /// <summary>What <see cref="FarLevel"/>'s alpha was multiplied by to keep it (1 = nothing).</summary>
+            public float FarScale;
+            /// <summary>The mean of <see cref="Shade"/> over the drawn strands, weighted by how much each is drawn: how much darker the hair's colour comes out on average.</summary>
+            public float Shade;
         }
 
         /// <summary>What a layer is given, in the shader's own terms (colours linear).</summary>
@@ -346,6 +368,90 @@ namespace RealLifeOverhaul
                 }
             }
             return MaxGain;
+        }
+
+        /// <summary>
+        /// The colour a texel of a strand texture is given, as a share of the game's: 1 in the middle of a strand (alpha
+        /// as painted 0.9 and up), <paramref name="deep"/> at its faint edge and between strands (0.1 and under), smoothly
+        /// between. Under a single lamp the hair then shows darker at the edges of its strands, as strands are where they
+        /// lie in each other's shade. <paramref name="deep"/> 1 or more (or not a number) = no change.
+        /// </summary>
+        public static float Shade(float paintedAlpha, float deep)
+        {
+            if (!(deep < 1f))
+            {
+                return 1f;
+            }
+            deep = Clamp01(deep);
+            float t = Clamp01((paintedAlpha - 0.1f) / 0.8f);
+            return deep + (1f - deep) * t * t * (3f - 2f * t);
+        }
+
+        /// <summary>
+        /// What one mip level's alpha is multiplied by so that the share of it that is solid (at or above
+        /// <paramref name="coreAlpha"/>) is as near <paramref name="wanted"/> as can be: the level-0 share. Plain mipmaps
+        /// average strands into the gaps between them, so with distance less and less of the hair is solid (the game's
+        /// T_MaleHair04_BC: 19% of it as near as the camera comes, 4% at an eighth of the size) and the head turns into
+        /// a haze through which the skull shows. <paramref name="histogram"/>: the level's alpha in <see cref="Levels"/> bins.
+        /// From 1 to <see cref="MaxCoverScale"/> in steps of <see cref="CoverScaleStep"/>; the smallest of equally near ones
+        /// (the largest if those all fall short of it); 1 if there is nothing to keep or no histogram.
+        /// </summary>
+        public static float CoverScale(int[] histogram, float coreAlpha, float wanted)
+        {
+            if (histogram == null || histogram.Length < Levels || !(coreAlpha > 0f) || !(wanted > 0f))
+            {
+                return 1f;
+            }
+            var above = new long[Levels + 1];   // above[a]: texels in bin a or higher
+            for (int a = Levels - 1; a >= 0; a--)
+            {
+                above[a] = above[a + 1] + (histogram[a] > 0 ? histogram[a] : 0);
+            }
+            if (above[0] == 0)
+            {
+                return 1f;
+            }
+            float best = 1f, nearest = float.MaxValue;
+            int steps = (int)Math.Round((MaxCoverScale - 1f) / CoverScaleStep);
+            for (int i = 0; i <= steps; i++)
+            {
+                float scale = 1f + i * CoverScaleStep;
+                float share = (float)((double)above[FirstSolid(coreAlpha, scale)] / above[0]);
+                float off = Math.Abs(share - wanted);
+                // Of equally near scales the smallest, unless they all fall short: then the largest, which still makes the
+                // level more opaque where it cannot make it solid.
+                if (off < nearest - 1e-6f || (off <= nearest + 1e-6f && share < wanted))
+                {
+                    nearest = Math.Min(nearest, off);
+                    best = scale;
+                }
+            }
+            return best;
+        }
+
+        /// <summary>The share of a level that is solid once its alpha is multiplied by <paramref name="scale"/>.</summary>
+        public static float SolidAt(int[] histogram, float coreAlpha, float scale)
+        {
+            if (histogram == null || histogram.Length < Levels)
+            {
+                return 0f;
+            }
+            long all = 0, solid = 0;
+            int first = FirstSolid(coreAlpha, scale);
+            for (int a = 0; a < Levels; a++)
+            {
+                int count = histogram[a] > 0 ? histogram[a] : 0;
+                all += count;
+                solid += a >= first ? count : 0;
+            }
+            return all == 0 ? 0f : (float)((double)solid / all);
+        }
+
+        // The lowest bin that is solid at this scale: a / 255 x scale >= coreAlpha.
+        private static int FirstSolid(float coreAlpha, float scale)
+        {
+            int first = (int)Math.Ceiling(coreAlpha * (Levels - 1) / Math.Max(scale, 1e-6f) - 1e-4);
+            return first < 0 ? 0 : (first > Levels ? Levels : first);
         }
 
         /// <summary>Whether a layer is painted on the skull rather than made of strands: the game names such materials "Scalp".</summary>

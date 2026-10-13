@@ -106,12 +106,15 @@ namespace RealLifeOverhaul
         private const float SearchSeconds = 0.5f;
         private const int CreationSearchAttempts = 60;   // each one walks the (small) creation scene
         private const int CitySearchAttempts = 600;      // each one is a single lookup; the city can take minutes to load
+        private const float OthersSeconds = 5f;          // the city is looked through this often for other characters in strand hair
+        private const int OthersLogged = 6;              // a line for each of the first few found in a scene, then one more
 
         private sealed class Managed
         {
             public AppearanceSetter Character;
             public Action Handler;
             public bool SharedPreview;   // the shop preview also shows employees; the player's looks go on it only while it shows the player
+            public bool Other;           // not a character on show: the hair finish only (FindOthers)
         }
 
         public static IModLogger Logger;
@@ -121,6 +124,11 @@ namespace RealLifeOverhaul
         public bool CreationScene;
 
         private readonly List<Managed> _characters = new List<Managed>(3);
+        // Everyone else drawn here in the game's strand hair (another player's character in a Going Public session, or
+        // anyone the game builds from the detailed set): the hair finish only, on the materials of this machine's renderers.
+        private readonly List<Managed> _others = new List<Managed>(4);
+        private int _othersFound;
+        private float _nextOthers;
         private CharacterLighting _lighting;
         private GridLooks _creatorLooks;
         private bool _hairOn;
@@ -209,6 +217,12 @@ namespace RealLifeOverhaul
                     ApplyLooksToAll();
                     _looksVersion = CharacterCatalogue.Version;   // applying may itself take a look off (the game's piece under it changed)
                     _creatorLooks?.Refresh();
+                }
+
+                if (!CreationScene && _hairOn && !_hairSuspended && !_stopped && Time.unscaledTime >= _nextOthers)
+                {
+                    _nextOthers = Time.unscaledTime + OthersSeconds;
+                    FindOthers();
                 }
 
                 if (_lighting != null && Settings.CharacterLighting != _lighting.Applied)
@@ -307,6 +321,88 @@ namespace RealLifeOverhaul
             return true;
         }
 
+        // ---------------------------------------------------------------- everyone else in strand hair
+
+        // Every few seconds in the city: any character drawn in the game's strand hair that is not one on show gets the
+        // hair finish too, and from then on again on each change of its look (the game announces it). Only the materials
+        // on this machine's renderers are swapped: the character's appearance data (what a save keeps and what Going
+        // Public sends to the other players) is neither read for this nor written. Cost: one lookup of the characters and
+        // a look at their renderers' materials every five seconds; the finish itself only on a change of look.
+        private void FindOthers()
+        {
+            for (int i = _others.Count - 1; i >= 0; i--)
+            {
+                if (_others[i].Character == null)
+                {
+                    _others.RemoveAt(i);   // gone with its scene or its session; its hair records go with HairLook.Prune
+                }
+            }
+            AppearanceSetter[] all = FindObjectsByType<AppearanceSetter>(FindObjectsSortMode.None);
+            for (int i = 0; i < all.Length; i++)
+            {
+                AppearanceSetter character = all[i];
+                if (character == null || Known(character) || !HairLook.WearsStrandHair(character))
+                {
+                    continue;
+                }
+                var other = new Managed { Character = character, Other = true };
+                other.Handler = () => RefreshOther(other);
+                character.visualsUpdated += other.Handler;
+                _others.Add(other);
+                _othersFound++;
+                if (_othersFound <= OthersLogged)
+                {
+                    bool session = GoingPublic.Role == GoingPublicRole.Host || GoingPublic.Role == GoingPublicRole.Guest;
+                    Logger?.Info("Hair: the finish is on '" + character.name + "' too (drawn here in the game's strand hair"
+                                 + (session ? ", in a Going Public session" : "") + "; only this machine's materials change, nothing of its look is saved or sent).");
+                }
+                else if (_othersFound == OthersLogged + 1)
+                {
+                    Logger?.Info("Hair: more characters in strand hair get the finish; the F9 report counts them.");
+                }
+                HairLook.Prune();
+                RefreshOther(other);
+            }
+        }
+
+        private bool Known(AppearanceSetter character)
+        {
+            for (int i = 0; i < _characters.Count; i++)
+            {
+                if (_characters[i].Character == character)
+                {
+                    return true;
+                }
+            }
+            for (int i = 0; i < _others.Count; i++)
+            {
+                if (_others[i].Character == character)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // Runs inside the game's own appearance update, so nothing may escape from it.
+        private void RefreshOther(Managed other)
+        {
+            try
+            {
+                if (other.Character != null && _hairOn && !_hairSuspended && !_stopped)
+                {
+                    SayHair(other.Character, HairLook.Apply(other.Character));
+                }
+            }
+            catch (Exception e)
+            {
+                DisableHair(e);
+            }
+        }
+
+        /// <summary>How many characters other than the ones on show the hair finish looks after, for the F9 report.</summary>
+        public int OtherCharacters => _others.Count;
+
         // ---------------------------------------------------------------- characters
 
         /// <summary>Hair and textures for this character, now and whenever the game changes its look.</summary>
@@ -383,11 +479,12 @@ namespace RealLifeOverhaul
             SayHair(managed.Character, hairChanged);
         }
 
-        // The self-check line of the hair finish: one per character per change of its hair, with diagnostics on, after
-        // the scalp underlay is on too (an underlay still on its way in from the bundle is said to be none).
+        // The self-check line of the hair finish: once per character per scene whatever the options, then one per change
+        // of its hair with diagnostics on, after the scalp underlay is on too (an underlay still on its way in from the
+        // bundle is said to be none).
         private static void SayHair(AppearanceSetter character, bool changed)
         {
-            if (!changed || character == null || !Meta.Dev.Verbose)
+            if (!changed || character == null || !(Meta.Dev.Verbose | HairLook.FirstSay(character)))
             {
                 return;
             }
@@ -481,6 +578,13 @@ namespace RealLifeOverhaul
                         SayHair(_characters[i].Character, HairLook.Apply(_characters[i].Character));
                     }
                 }
+                for (int i = 0; i < _others.Count; i++)
+                {
+                    if (_others[i].Character != null)
+                    {
+                        SayHair(_others[i].Character, HairLook.Apply(_others[i].Character));
+                    }
+                }
             }
             catch (Exception e)
             {
@@ -555,6 +659,21 @@ namespace RealLifeOverhaul
                 }
             }
             _characters.Clear();
+            for (int i = 0; i < _others.Count; i++)
+            {
+                try
+                {
+                    if (_others[i].Character != null)
+                    {
+                        _others[i].Character.visualsUpdated -= _others[i].Handler;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Logger?.Error(e);
+                }
+            }
+            _others.Clear();
             try
             {
                 _creatorLooks?.Dispose();
