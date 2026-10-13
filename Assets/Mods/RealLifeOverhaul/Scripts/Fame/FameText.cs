@@ -123,6 +123,102 @@ namespace RealLifeOverhaul.Fame
             return keys != null ? keys[FameRules.Clamp(roll, 0, 999) % keys.Length] : null;
         }
 
+        // ---- the press: questions (the question, the first answer's button, the second's), what the player says, promises, invitations, pieces
+        private static readonly string[] RiseKeys = { "reallife_fame_q_rise", "reallife_fame_a_rise_0", "reallife_fame_a_rise_1" };
+        private static readonly string[] PlansKeys = { "reallife_fame_q_plans", "reallife_fame_a_plans_0", "reallife_fame_a_plans_1" };
+        private static readonly string[] PromiseAskKeys = { "reallife_fame_q_promise", "reallife_fame_a_promise_0", "reallife_fame_a_promise_1" };
+        private static readonly string[][] HardKeys =
+        {
+            new[] { "reallife_fame_q_hard_0", "reallife_fame_a_honest", "reallife_fame_a_deflect" },
+            new[] { "reallife_fame_q_hard_1", "reallife_fame_a_honest", "reallife_fame_a_deflect" },
+            new[] { "reallife_fame_q_hard_2", "reallife_fame_a_honest", "reallife_fame_a_deflect" },
+            new[] { "reallife_fame_q_hard_3", "reallife_fame_a_honest", "reallife_fame_a_deflect" }
+        };
+        private static readonly string[] RiseSays = { "reallife_fame_say_rise_0", "reallife_fame_say_rise_1" };
+        private static readonly string[] PlansSays = { "reallife_fame_say_plans_0", "reallife_fame_say_plans_1" };
+        private static readonly string[] PromiseSays = { "reallife_fame_say_promise_0", "reallife_fame_say_promise_1" };
+        private static readonly string[][] HardSays =
+        {
+            new[] { "reallife_fame_say_honest_0", "reallife_fame_say_deflect_0" },
+            new[] { "reallife_fame_say_honest_1", "reallife_fame_say_deflect_1" },
+            new[] { "reallife_fame_say_honest_2", "reallife_fame_say_deflect_2" },
+            new[] { "reallife_fame_say_honest_3", "reallife_fame_say_deflect_3" }
+        };
+        private static readonly string[] PromiseKeys = { "reallife_fame_promise_0", "reallife_fame_promise_1", "reallife_fame_promise_2", "reallife_fame_promise_3" };
+        private static readonly string[] InviteKeys = { "reallife_fame_invite_0", "reallife_fame_invite_1", "reallife_fame_invite_2", "reallife_fame_invite_3" };
+        private static readonly string[] InviteStateKeys =
+        {
+            "reallife_fame_invite_state_0", "reallife_fame_invite_state_1", "reallife_fame_invite_state_2", "reallife_fame_invite_state_3", "reallife_fame_invite_state_4",
+            "reallife_fame_invite_state_5"
+        };
+        private static readonly string[] PromiseStateKeys = { "reallife_fame_promise_state_0", "reallife_fame_promise_state_1", "reallife_fame_promise_state_2" };
+        private static readonly string[] StoryKeys =
+        {
+            null, "reallife_fame_news_shops_2", "reallife_fame_news_shops_5", "reallife_fame_news_shops_10", "reallife_fame_news_shops_20", "reallife_fame_news_property_1",
+            "reallife_fame_news_property_5", "reallife_fame_news_conditions", "reallife_fame_news_trust", "reallife_fame_news_jobs", "reallife_fame_news_rents",
+            "reallife_fame_news_interview_good", "reallife_fame_news_interview_hard", "reallife_fame_news_show", "reallife_fame_news_show_bad", "reallife_fame_news_magazine",
+            "reallife_fame_news_promise_kept", "reallife_fame_news_promise_broken", "reallife_fame_news_refused", "reallife_fame_news_sponsor", "reallife_fame_news_charity",
+            "reallife_fame_news_rescue", "reallife_fame_news_renovation", "reallife_fame_news_lobby_won", "reallife_fame_news_lobby_lost", "reallife_fame_news_investigation",
+            "reallife_fame_news_partnership", "reallife_fame_news_event"
+        };
+
+        /// <summary>A question's keys: the question, the first answer's button, the second's.</summary>
+        public static string[] QuestionKeys(FameAsk ask)
+        {
+            switch (ask.Question)
+            {
+                case FameQuestion.Rise: return RiseKeys;
+                case FameQuestion.Plans: return PlansKeys;
+                case FameQuestion.Hard: return HardKeys[FameRules.Clamp((int)ask.Topic, 0, HardKeys.Length - 1)];
+                default: return PromiseAskKeys;
+            }
+        }
+
+        /// <summary>What the player says with each of the two answers, as the scene's page shows it under the button.</summary>
+        public static string[] SayKeys(FameAsk ask)
+        {
+            switch (ask.Question)
+            {
+                case FameQuestion.Rise: return RiseSays;
+                case FameQuestion.Plans: return PlansSays;
+                case FameQuestion.Hard: return HardSays[FameRules.Clamp((int)ask.Topic, 0, HardSays.Length - 1)];
+                default: return PromiseSays;
+            }
+        }
+
+        public static string PromiseWords(FamePromiseKind kind)
+        {
+            return T(PromiseKeys[FameRules.Clamp((int)kind, 0, PromiseKeys.Length - 1)]);
+        }
+
+        public static string InviteName(FameInviteKind kind)
+        {
+            return T(InviteKeys[FameRules.Clamp((int)kind, 0, InviteKeys.Length - 1)]);
+        }
+
+        public static string InviteState(FameInviteState state)
+        {
+            return T(InviteStateKeys[FameRules.Clamp((int)state, 0, InviteStateKeys.Length - 1)]);
+        }
+
+        public static string PromiseState(FamePromiseState state)
+        {
+            return T(PromiseStateKeys[FameRules.Clamp((int)state, 0, PromiseStateKeys.Length - 1)]);
+        }
+
+        /// <summary>The locale key of a piece for the City Ledger; null for none.</summary>
+        public static string StoryKey(FameStory story)
+        {
+            int at = (int)story;
+            return at > 0 && at < StoryKeys.Length ? StoryKeys[at] : null;
+        }
+
+        /// <summary>An hour as the game writes the time.</summary>
+        public static string Hour(int hour)
+        {
+            return hour.GetFormattedTime(0f, true);
+        }
+
         public static Dictionary<string, string> Data(params string[] pairs)
         {
             var data = new Dictionary<string, string>(pairs.Length / 2);   // (a dictionary each: the game keeps a notification's data)

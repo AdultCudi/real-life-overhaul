@@ -199,7 +199,28 @@ namespace RealLifeOverhaul.Fame
         public readonly List<string> Visited = new List<string>(4);
         public int NoticeDay = -1;                 // the day the one routine notice was shown
 
+        // ---- the press (FamePress, saved under its own key)
+        public int NextId = 1;
+        public int ReporterDay = -100, PhotoDay = -100, InviteDay = -100, StoryDay = -1, RefusalDay = -100;
+        public int Milestones;                     // bits: what the papers have told of (FamePress.MilestoneFrom)
+        public bool MilestonesSeen;                // what there was when the file was opened is known: it is no news
+        public int ConditionsDay = -100, TrustDay = -100, JobsDay = -100, RentsDay = -100;   // the last piece of each kind
+        public readonly List<FameInvite> Invites = new List<FameInvite>(FamePress.InvitesMost);
+        public readonly List<FamePromise> Promises = new List<FamePromise>(FamePress.PromisesMost);
+
         public int Overall => FameRules.Overall(Rep);
+
+        public FameInvite Invite(int id)
+        {
+            for (int i = 0; i < Invites.Count; i++)
+            {
+                if (Invites[i].Id == id)
+                {
+                    return Invites[i];
+                }
+            }
+            return null;
+        }
 
         public FameTier Tier => FameRules.TierOf(Recognition);
 

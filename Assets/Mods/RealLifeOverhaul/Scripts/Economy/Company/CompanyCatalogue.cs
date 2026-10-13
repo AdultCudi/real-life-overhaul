@@ -106,6 +106,8 @@ namespace RealLifeOverhaul.Economy
         // ---------------------------------------------------------------- staff: standing (0 to 100, the mod's own figure)
 
         public const int StandingStart = 60;
+        public const int EsteemMost = 10;           // what the city thinks of the player as an employer moves a newcomer's standing by this much at most...
+        public const int EsteemPoachStep = 25;      // ...and a rival's approach by so many thousandths a point the other way
         public const int StandingCalm = 65;         // paid fairly, standing climbs back to this by itself
         public const int StandingMost = 100;
         public const int StandAgree = 10;

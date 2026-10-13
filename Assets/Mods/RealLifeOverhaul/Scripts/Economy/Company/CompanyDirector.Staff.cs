@@ -128,7 +128,7 @@ namespace RealLifeOverhaul.Economy
         private void Approach(int day)
         {
             CompanyState s = _state;
-            if (_fit.Count == 0 || day < s.PoachRest || !StaffRules.Approach(s.Seed, s.Age, _level))
+            if (_fit.Count == 0 || day < s.PoachRest || !StaffRules.Approach(s.Seed, s.Age, _level, CompanyBridges.EsteemNow()))
             {
                 return;
             }

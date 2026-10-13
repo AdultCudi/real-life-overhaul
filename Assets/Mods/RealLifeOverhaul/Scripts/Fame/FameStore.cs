@@ -14,6 +14,11 @@ namespace RealLifeOverhaul.Fame
     ///         street minute|shop day|shop today|visit day|place;place|notice day
     ///     D|district|opinion                                    a district's opinion of the player
     ///     N|day|part|cause|delta|district                       a change the Standing page lists
+    ///   reallife:standing_press
+    ///     SP1|next id|reporter day|photo day|invite day|story day|refusal day|milestones|milestones seen|conditions day|
+    ///         trust day|jobs day|rents day
+    ///     I|id|kind|offered|answer by|day|hour|state            an invitation
+    ///     P|id|kind|made|due|goal|state|source                  a promise
     ///
     /// Every number is written in the invariant culture. What is not understood is left out a line at a time: a note of
     /// a part or a cause this version does not know (from a later one) is dropped, never read as something else, so an
@@ -23,6 +28,8 @@ namespace RealLifeOverhaul.Fame
     public static class FameStore
     {
         public const string FileKey = "reallife:standing_file";
+        public const string PressKey = "reallife:standing_press";
+        private const string PressVersion = "SP1";
         public const string Keys = "reallife:standing_*";
         private const string Version = "ST1";
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -30,6 +37,10 @@ namespace RealLifeOverhaul.Fame
         // The kinds this version knows: anything past them is from a later one.
         private const int Parts = (int)FamePart.Integrity + 1;
         private const int Causes = (int)FameCause.Press + 1;
+        private const int InviteKinds = (int)FameInviteKind.CityEvent + 1;
+        private const int InviteStates = (int)FameInviteState.Lapsed + 1;
+        private const int PromiseKinds = (int)FamePromiseKind.Charity + 1;
+        private const int PromiseStates = (int)FamePromiseState.Broken + 1;
 
         public static void Save(Dictionary<string, string> data, FameFile f)
         {
@@ -38,13 +49,97 @@ namespace RealLifeOverhaul.Fame
                 return;
             }
             data[FileKey] = Write(f);
+            data[PressKey] = WritePress(f);
         }
 
         /// <summary>The save's file, or null if it has none this version can read (a new one is opened then).</summary>
         public static FameFile Load(Dictionary<string, string> data)
         {
-            string text;
-            return data != null && data.TryGetValue(FileKey, out text) ? Read(text) : null;
+            string text, press;
+            FameFile f = data != null && data.TryGetValue(FileKey, out text) ? Read(text) : null;
+            if (f != null && data.TryGetValue(PressKey, out press))
+            {
+                ReadPress(f, press);
+            }
+            return f;
+        }
+
+        public static string WritePress(FameFile f)
+        {
+            var b = new StringBuilder(128 + f.Invites.Count * 32 + f.Promises.Count * 32);
+            b.Append(PressVersion);
+            Join(b, f.NextId, f.ReporterDay, f.PhotoDay, f.InviteDay, f.StoryDay, f.RefusalDay, f.Milestones, f.MilestonesSeen ? 1 : 0, f.ConditionsDay, f.TrustDay, f.JobsDay, f.RentsDay);
+            for (int i = 0; i < f.Invites.Count; i++)
+            {
+                FameInvite v = f.Invites[i];
+                b.Append("\nI");
+                Join(b, v.Id, (int)v.Kind, v.Offered, v.AnswerBy, v.Day, v.Hour, (int)v.State);
+            }
+            for (int i = 0; i < f.Promises.Count; i++)
+            {
+                FamePromise p = f.Promises[i];
+                b.Append("\nP");
+                Join(b, p.Id, (int)p.Kind, p.Made, p.Due, p.Goal, (int)p.State, (int)p.Source);
+            }
+            return b.ToString();
+        }
+
+        /// <summary>The press's line into a file. What is not understood is left out a line at a time; another version's entry leaves the file without it.</summary>
+        public static void ReadPress(FameFile f, string text)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+            try
+            {
+                string[] lines = text.Split('\n');
+                string[] h = lines[0].TrimEnd('\r').Split('|');
+                if (h.Length < 13 || h[0] != PressVersion)
+                {
+                    return;
+                }
+                f.NextId = Math.Max(1, I(h, 1, 1));
+                f.ReporterDay = I(h, 2, -100);
+                f.PhotoDay = I(h, 3, -100);
+                f.InviteDay = I(h, 4, -100);
+                f.StoryDay = I(h, 5, -1);
+                f.RefusalDay = I(h, 6, -100);
+                f.Milestones = I(h, 7);
+                f.MilestonesSeen = I(h, 8) != 0;
+                f.ConditionsDay = I(h, 9, -100);
+                f.TrustDay = I(h, 10, -100);
+                f.JobsDay = I(h, 11, -100);
+                f.RentsDay = I(h, 12, -100);
+                for (int i = 1; i < lines.Length; i++)
+                {
+                    string[] c = lines[i].TrimEnd('\r').Split('|');
+                    if (c[0] == "I" && c.Length >= 8 && f.Invites.Count < FamePress.InvitesMost)
+                    {
+                        int kind = I(c, 2, -1), state = I(c, 7, -1);
+                        if (kind < 0 || kind >= InviteKinds || state < 0 || state >= InviteStates)
+                        {
+                            continue;   // a kind of a later version's
+                        }
+                        f.Invites.Add(new FameInvite { Id = I(c, 1), Kind = (FameInviteKind)kind, Offered = I(c, 3), AnswerBy = I(c, 4), Day = I(c, 5), Hour = FameRules.Clamp(I(c, 6), 0, 23), State = (FameInviteState)state });
+                    }
+                    else if (c[0] == "P" && c.Length >= 8 && f.Promises.Count < FamePress.PromisesMost)
+                    {
+                        int kind = I(c, 2, -1), state = I(c, 6, -1), source = I(c, 7, 0);
+                        if (kind < 0 || kind >= PromiseKinds || state < 0 || state >= PromiseStates)
+                        {
+                            continue;
+                        }
+                        f.Promises.Add(new FamePromise { Id = I(c, 1), Kind = (FamePromiseKind)kind, Made = I(c, 3), Due = I(c, 4), Goal = I(c, 5), State = (FamePromiseState)state,
+                            Source = source >= 0 && source < Causes ? (FameCause)source : FameCause.Interview });
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                f.Invites.Clear();
+                f.Promises.Clear();
+            }
         }
 
         public static string Write(FameFile f)

@@ -5,6 +5,7 @@ using RealLifeOverhaul.Economy.Brands;
 using RealLifeOverhaul.Fame;
 using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.Law;
+using RealLifeOverhaul.Planner;
 
 namespace RealLifeOverhaul
 {
@@ -29,9 +30,23 @@ namespace RealLifeOverhaul
         ///                 left, praise shared, an inspection passed or failed (the customers), a strike settled or
         ///                 refused, an argument left to fester, somebody poached (the workers)
         ///
+        ///   HelpedNow     the player helped somebody (ModState.HelpedNow): walking on afterwards is no refusal
+        ///   Need          an accident nobody has helped at yet (TrafficAccidents.Needing) or a crime with a victim in the
+        ///                 street (CrimeDirector.Victim): walking past it in front of others costs integrity
+        ///
         /// What Standing does elsewhere:
         ///   Visited       a visit to a business whose staff are proud or nervous: their standing a point either way,
         ///                 through the company (CompanyDirector.Visited)
+        ///   Footfall      Standing's part of a business's customers (the customers' reputation and the district's
+        ///                 opinion, 5% at most either way) is added to <see cref="BusinessGame.Ambient"/> after everybody
+        ///                 else's and written by business pressure's own writer (BusinessDirector.Footfall), which keeps the
+        ///                 sum inside its own bounds; on a new day a business the others have had drawn already is not drawn again
+        ///   WeightOf      business pressure's deal: complaints by the customers and the neighbourhoods, praise by the
+        ///                 customers, inspections, licences and audits by integrity and more for somebody well known
+        ///                 (BusinessDirector.WeightOf, after the city's economy's own), 0.6 to 1.8 times
+        ///   Esteem        the workers' reputation, -10 to 10, for the company's hiring and its rivals (CompanyBridges.Esteem)
+        ///   Story         a piece for the City Ledger (Paper.Print, NewsKind.Story)
+        ///   the Planner   an invitation accepted is an appointment, one offered a deadline, a promise its day (a source of its own)
         ///
         /// Everything is read from what those features already keep in public or heard through an event they already
         /// raise; nothing of theirs is changed but through an entry of theirs. COST: nothing per frame. The reads are made
@@ -53,6 +68,16 @@ namespace RealLifeOverhaul
                 EconomyBridges.Standing = new StandingPage { On = FamePage.On, Spec = FamePage.Spec, Write = FamePage.Write };
                 Reputation.Deed += Deed;
                 BusinessEvents.Closed += IssueClosed;
+                ModState.HelpedNow += Helped;
+                FameBridges.Need = Need;
+                FameBridges.Story = Paper.Print;
+                _ambientBefore = BusinessGame.Ambient;
+                BusinessGame.Ambient = Ambient;
+                FameBridges.Footfall = Footfall;
+                _weightBefore = BusinessDirector.WeightOf;
+                BusinessDirector.WeightOf = Weight;
+                CompanyBridges.Esteem = Esteem;
+                PlannerDirector.Instance?.AddSource(Source);
             }
 
             internal static void Disconnect()
@@ -61,6 +86,145 @@ namespace RealLifeOverhaul
                 EconomyBridges.Standing = null;
                 Reputation.Deed -= Deed;
                 BusinessEvents.Closed -= IssueClosed;
+                ModState.HelpedNow -= Helped;
+                BusinessGame.Ambient = _ambientBefore;   // (Flare's, the brands', the company's and the city's own pairings take theirs off in a moment)
+                _ambientBefore = null;
+                BusinessDirector.WeightOf = _weightBefore;
+                _weightBefore = null;
+                CompanyBridges.Esteem = null;
+            }
+
+            private static Func<BuildingRegistration, int> _ambientBefore;
+            private static Func<string, int, int> _weightBefore;
+            private static readonly StandingSource Source = new StandingSource();
+
+            private static int Ambient(BuildingRegistration reg)
+            {
+                return (_ambientBefore != null ? _ambientBefore(reg) : 0) + FameDirector.FootfallOf(reg);
+            }
+
+            private static bool Footfall(BuildingRegistration reg, bool newDay)
+            {
+                try
+                {
+                    bool drawn = newDay && (CityEconomyDirector.FootfallOf(reg) != 0 || CompanyDirector.FootfallOf(reg) != 0 || BrandsDirector.FootfallOf(reg) != 0 || FlareDirector.FootfallOf(reg) != 0);
+                    int own, written;
+                    return BusinessDirector.Footfall(reg, !drawn, newDay, out own, out written);
+                }
+                catch (Exception e)
+                {
+                    Fault("StandingLinks.Footfall", e);
+                    return false;
+                }
+            }
+
+            // Business pressure's share of the deal for a kind of issue: the city's economy's first, then the player's standing on it.
+            private static int Weight(string kind, int weight)
+            {
+                int w = _weightBefore != null ? _weightBefore(kind, weight) : weight;
+                FameFile f = FameDirector.Instance != null ? FameDirector.Instance.File : null;
+                if (f == null)
+                {
+                    return w;
+                }
+                switch (kind)
+                {
+                    case BusinessCatalogue.Complaint: return (int)((long)w * FamePress.IssueScale(f, FameIssue.Complaint) / 1000);
+                    case BusinessCatalogue.Praise: return (int)((long)w * FamePress.IssueScale(f, FameIssue.Praise) / 1000);
+                    case BusinessCatalogue.Health:
+                    case BusinessCatalogue.Fire:
+                    case BusinessCatalogue.Licence: return (int)((long)w * FamePress.IssueScale(f, FameIssue.Inspection) / 1000);
+                    case BusinessCatalogue.Audit: return (int)((long)w * FamePress.IssueScale(f, FameIssue.Audit) / 1000);
+                    default: return w;
+                }
+            }
+
+            private static int Esteem()
+            {
+                FameFile f = FameDirector.Instance != null ? FameDirector.Instance.File : null;
+                return f != null ? FamePress.Esteem(f) : 0;
+            }
+
+            // Somebody in the street who needs help now: an accident nobody has helped at, or a crime's victim.
+            private static bool Need(out UnityEngine.Vector3 where)
+            {
+                try
+                {
+                    return TrafficAccidents.Needing(out where) || CrimeDirector.Victim(out where);
+                }
+                catch (Exception e)
+                {
+                    Fault("StandingLinks.Need", e);
+                    where = UnityEngine.Vector3.zero;
+                    return false;
+                }
+            }
+
+            private static void Helped()
+            {
+                FameDirector.Instance?.Helped();
+            }
+
+            /// <summary>
+            /// Standing's rows of the Planner: an invitation accepted on its day and hour (to be there), one offered on the
+            /// last day to accept it, an open promise on its day. It reads the file and changes nothing. Ids: 1 an
+            /// invitation accepted, 2 one offered, 3 a promise, with its number.
+            /// </summary>
+            private sealed class StandingSource : IPlannerSource
+            {
+                public string Id => "standing";
+
+                public bool Available => Settings.Standing && FameDirector.Instance != null && FameDirector.Instance.File != null && SaveGameManager.Current != null;
+
+                public void Collect(int fromDay, int toDay, PlannerList into)
+                {
+                    FameFile f = FameDirector.Instance.File;
+                    for (int i = 0; i < f.Invites.Count; i++)
+                    {
+                        FameInvite v = f.Invites[i];
+                        if (v.State == FameInviteState.Accepted)
+                        {
+                            PlannerEntry e = into.Add(Id, 1, v.Id, PlannerCategory.City, v.Day);
+                            if (e == null)
+                            {
+                                continue;
+                            }
+                            e.Start = v.Hour * 60;
+                            e.End = ((v.Hour + 2) % 24) * 60;
+                            e.Attend = true;
+                            if (into.WantText)
+                            {
+                                e.Title = FameText.InviteName(v.Kind);
+                                e.What = PlannerText.T("reallife_fame_plan_invite_what");
+                                e.IfMissed = PlannerText.T("reallife_fame_plan_invite_missed");
+                            }
+                        }
+                        else if (v.State == FameInviteState.Offered)
+                        {
+                            PlannerEntry e = into.Add(Id, 2, v.Id, PlannerCategory.City, v.AnswerBy);
+                            if (e != null && into.WantText)
+                            {
+                                e.Title = PlannerText.T("reallife_fame_plan_answer_title", "what", FameText.InviteName(v.Kind));
+                                e.What = PlannerText.T("reallife_fame_plan_answer_what", "day", v.Day.ToString());
+                            }
+                        }
+                    }
+                    for (int i = 0; i < f.Promises.Count; i++)
+                    {
+                        FamePromise p = f.Promises[i];
+                        if (p.State != FamePromiseState.Open)
+                        {
+                            continue;
+                        }
+                        PlannerEntry e = into.Add(Id, 3, p.Id, PlannerCategory.Business, p.Due);
+                        if (e != null && into.WantText)
+                        {
+                            e.Title = PlannerText.T("reallife_fame_plan_promise_title");
+                            e.What = PlannerText.T("reallife_fame_plan_promise_what", "promise", FameText.PromiseWords(p.Kind));
+                            e.IfMissed = PlannerText.T("reallife_fame_plan_promise_missed");
+                        }
+                    }
+                }
             }
 
             private static int Followers()

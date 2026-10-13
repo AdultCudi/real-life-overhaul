@@ -118,5 +118,79 @@ namespace RealLifeOverhaul.Fame
         }
 
         partial void TestBackMore();
+
+        /// <summary>Test: a reporter of the City Ledger comes up to the player now, whatever the odds.</summary>
+        public void TestReporter()
+        {
+            if (!TestReady("Standing reporter"))
+            {
+                return;
+            }
+            if (BuildingManager.IsInsideBuilding || PlayerHelper.IsUsingVehicle)
+            {
+                TestRefusals.Tell(Logger, "Standing reporter", TestRefusal.OnFootOnly);
+                return;
+            }
+            Guarded(() =>
+            {
+                Parts();
+                if (_reporter == null || _reporter.Active || !_reporter.Begin(false))
+                {
+                    TestRefusals.Tell(Logger, "Standing reporter", TestRefusal.NoWayIn);
+                    return;
+                }
+                Logger?.Info("Standing: test, a reporter comes up to the player.");
+            });
+        }
+
+        /// <summary>Test: the night show now, as if the player had accepted an invitation for this hour.</summary>
+        public void TestShow()
+        {
+            if (!TestReady("Standing night show"))
+            {
+                return;
+            }
+            if (!Free())
+            {
+                TestRefusals.Tell(Logger, "Standing night show", TestRefusal.ScreenBusy);
+                return;
+            }
+            Guarded(() =>
+            {
+                Parts();
+                FameInvite invite = FamePress.Offer(_file, FameInviteKind.Show, Save.Day - FamePress.InviteAhead, Save.Hour);
+                invite.State = FameInviteState.Accepted;
+                StartScene(invite);
+            });
+        }
+
+        /// <summary>Test: every open promise judged now, as if its day had come.</summary>
+        public void TestPromises()
+        {
+            if (!TestReady("Standing promises"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                int judged = 0;
+                for (int i = 0; i < _file.Promises.Count; i++)
+                {
+                    if (_file.Promises[i].State == FamePromiseState.Open)
+                    {
+                        _file.Promises[i].Due = Save.Day;
+                        judged++;
+                    }
+                }
+                if (judged == 0)
+                {
+                    FamePress.Promise(_file, FamePress.PromiseFor(_file), FameCause.Interview, Save.Day - FamePress.PromiseDays);
+                }
+                _file.NoticeDay = -1;
+                _file.StoryDay = -1;
+                DayMore(Save.Day);
+                Tell(NotificationType.Info, "reallife_fame_test_promises_done", _openPage, "count", FameText.N(Math.Max(1, judged)));
+            });
+        }
     }
 }

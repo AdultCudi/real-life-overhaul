@@ -145,6 +145,17 @@ namespace RealLifeOverhaul
         /// <summary>True while the scene is about someone lying in the road who has not been taken away yet.</summary>
         public bool HasCasualty => _phase != Phase.None && _casualty != null && _casualty.Present;
 
+        /// <summary>
+        /// True while an accident the player did not cause is on the street and nobody has helped yet, and where it is
+        /// (Wiring/StandingLinks: walking past it in front of others is noticed). Two field reads; asked a few times a minute.
+        /// </summary>
+        public static bool Needing(out Vector3 where)
+        {
+            TrafficAccidents a = Instance;
+            where = a != null ? a._scene : Vector3.zero;
+            return a != null && a.HasActiveAccident && a._thanksForStopping && !a._playerHelped;
+        }
+
         private sealed class Wreck
         {
             public VehicleComponent Car;

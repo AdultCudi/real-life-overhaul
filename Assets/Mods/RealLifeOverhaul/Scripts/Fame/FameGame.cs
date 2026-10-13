@@ -37,8 +37,22 @@ namespace RealLifeOverhaul.Fame
         /// <summary>The Standing page is opened (a notification was clicked). Default: nothing.</summary>
         public static Action Open;
 
+        /// <summary>Has a business's customers written again now that Standing's part of them has changed (business pressure's own writer), and whether it is the new day. Default: nothing is written.</summary>
+        public static Func<BuildingRegistration, bool, bool> Footfall;
+
+        /// <summary>A finished piece for the morning paper (one locale key). Default: nothing is printed.</summary>
+        public static Action<string> Story;
+
+        /// <summary>Somebody in the street needs help now (an accident, a crime's victim, a person down) and where. Default: nobody.</summary>
+        public static NeedAsk Need;
+
+        public delegate bool NeedAsk(out UnityEngine.Vector3 where);
+
         public static void Reset()
         {
+            Footfall = null;
+            Story = null;
+            Need = null;
             Followers = null;
             Staff = null;
             Holdings = null;
