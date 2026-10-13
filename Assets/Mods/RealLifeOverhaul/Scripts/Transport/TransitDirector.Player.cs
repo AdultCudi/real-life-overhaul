@@ -1407,7 +1407,7 @@ namespace RealLifeOverhaul
         }
 
         // A stop for the log: its line and its name, in plain words whatever the game's language.
-        private static string StopLabel(TransitStop stop)
+        internal static string StopLabel(TransitStop stop)
         {
             if (stop == null)
             {
