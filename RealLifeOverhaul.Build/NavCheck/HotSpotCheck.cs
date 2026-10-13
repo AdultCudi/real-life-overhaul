@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using RealLifeOverhaul;
 
 // Checks for the timing of the mod's own scripts that the session record reads (Core/HotSpots.cs: the frame before
@@ -66,17 +67,9 @@ internal static partial class Program
         _hotFrame = 2;
         HotSpots.Settle(2);
         Check(HotSpots.FrameMs(1) == 0.0 && !HotSpots.FrameTop(1, 0, out _, out _), "hot spots: off, nothing is measured");
-        var watch = new Stopwatch();
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        watch.Start();
-        for (int i = 0; i < 1000000; i++)
-        {
-            using var hotSpot = HotSpots.Time(a);
-        }
-        watch.Stop();
-        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        long allocated = OffScopes(a, out double ms);
         Check(allocated == 0, "hot spots: off, a million scopes allocate nothing (" + allocated + " bytes)");
-        Console.WriteLine("hot spots: a scope while the session record is off: " + (watch.Elapsed.TotalMilliseconds * 1000000.0 / 1000000).ToString("F2") + " ns");
+        Console.WriteLine("hot spots: a scope while the session record is off: " + (ms * 1000000.0 / 1000000).ToString("F2") + " ns");
     }
 
     // One frame read whole the frame after: the total, the order, a scope inside another counted once in the total.
@@ -272,23 +265,51 @@ internal static partial class Program
         HotSpots.HeapSource = () => GC.GetTotalMemory(false);
         int a = HotSpots.Slot("Check: A.Update");
         const int Scopes = 1000000;
+        long allocated = OnScopes(a, Scopes, out double ms);
+        double each = ms * 1000000.0 / Scopes;
+        Check(allocated == 0, "hot spots: on, a million scopes allocate nothing (" + allocated + " bytes)");
+        Check(each < 2000.0, "hot spots: on, a scope costs well under two microseconds (" + each.ToString("F0") + " ns)");
+        Console.WriteLine("hot spots: a scope while the session record runs: " + each.ToString("F0") + " ns; a frame of the city's 138 scopes: " + (each * 138 / 1000.0).ToString("F1") + " microseconds");
+    }
+
+    // The two measured loops are compiled in full before they run. Left to the .NET runtime's tiers, a loop of a million
+    // turns is swapped for compiled code part way through (on-stack replacement), and the swap itself is counted as
+    // about 6 KB allocated on this thread: the runtime's, not the scopes' (seen on 0.9.10's checks; with tiering or the
+    // swap switched off the count is 0). The game runs the mod on Unity's own runtime, which does no such swap.
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
+    private static long OffScopes(int slot, out double ms)
+    {
         var watch = new Stopwatch();
         long before = GC.GetAllocatedBytesForCurrentThread();
         watch.Start();
-        for (int i = 0; i < Scopes; i++)
+        for (int i = 0; i < 1000000; i++)
+        {
+            using var hotSpot = HotSpots.Time(slot);
+        }
+        watch.Stop();
+        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        ms = watch.Elapsed.TotalMilliseconds;
+        return allocated;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
+    private static long OnScopes(int slot, int scopes, out double ms)
+    {
+        var watch = new Stopwatch();
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        watch.Start();
+        for (int i = 0; i < scopes; i++)
         {
             if (i % 120 == 0)
             {
                 _hotFrame++;   // a hundred and twenty scopes a frame, as in the city
             }
-            using var hotSpot = HotSpots.Time(a);
+            using var hotSpot = HotSpots.Time(slot);
         }
         watch.Stop();
         long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-        double each = watch.Elapsed.TotalMilliseconds * 1000000.0 / Scopes;
-        Check(allocated == 0, "hot spots: on, a million scopes allocate nothing (" + allocated + " bytes)");
-        Check(each < 2000.0, "hot spots: on, a scope costs well under two microseconds (" + each.ToString("F0") + " ns)");
-        Console.WriteLine("hot spots: a scope while the session record runs: " + each.ToString("F0") + " ns; a frame of the city's 138 scopes: " + (each * 138 / 1000.0).ToString("F1") + " microseconds");
+        ms = watch.Elapsed.TotalMilliseconds;
+        return allocated;
     }
 
     private static void Pace()
