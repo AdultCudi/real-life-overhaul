@@ -277,6 +277,14 @@ namespace RealLifeOverhaul.Economy
             SaleRules.Record(_state, name, price, m.Gain, day);
             try
             {
+                ServicesBridges.Sold?.Invoke(place, price);   // (a listed company's business sold: its price is all its holders')
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Selling a business: the stock market could not be told that '" + name + "' was sold (" + e.Message + ").");
+            }
+            try
+            {
                 ServicesBridges.BusinessGone?.Invoke(place);
             }
             catch (Exception e)

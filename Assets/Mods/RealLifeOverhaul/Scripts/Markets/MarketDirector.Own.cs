@@ -134,6 +134,39 @@ namespace RealLifeOverhaul.Markets
                 HandOverNow(save.Day);
             }
             YearlyFees(save.Day);
+            ProceedsHeard();
+        }
+
+        /// <summary>A business of the player's sold (Economy/Services): while their company is listed its price is the company's, every holder's by their shares.</summary>
+        public void BusinessSold(int price)
+        {
+            Stock own = MyCompany;
+            if (own == null || own.Own.Test || price <= 0)
+            {
+                return;
+            }
+            _engine.State.Listing.Proceeds += price;
+            Logger?.Info("Listing: a business of " + own.Name + " sold for " + price + "; the other holders' part goes into their reserve at the market's next moment.");
+            ProceedsHeard();
+        }
+
+        // Money from businesses sold, put on the tape for the market (it waits while the market is catching up or held).
+        private void ProceedsHeard()
+        {
+            ListingFile f = _engine.State.Listing;
+            if (f.Proceeds < 1000 || _following || Behind || _engine.Held)
+            {
+                return;
+            }
+            Stock own = _engine.MineListed();
+            if (own == null)
+            {
+                f.Proceeds = 0;
+                return;
+            }
+            long thousands = Math.Min(int.MaxValue, f.Proceeds / 1000);
+            _engine.Event(MarketInputs.EventOwn + (int)OwnAction.Proceeds, own.Id, (int)thousands);
+            f.Proceeds -= thousands * 1000;
         }
 
         // Once a game year while listed: the exchange's fee and the year's audit, whose findings the market hears (an event

@@ -510,9 +510,9 @@ namespace RealLifeOverhaul.Markets
                 return OwnWhy.NotListed;
             }
             OwnListing o = s.Own;
-            if (action == OwnAction.Audit)
+            if (action == OwnAction.Audit || action == OwnAction.Proceeds)
             {
-                return OwnWhy.None;   // (the auditors' findings, not the founder's to ask)
+                return OwnWhy.None;   // (the auditors' findings and a business sold: not the founder's to ask)
             }
             bool board = action == OwnAction.Pay || action == OwnAction.Dividend || action == OwnAction.BuyBack || action == OwnAction.Issue || action == OwnAction.Private;
             if (board && !o.Board)
@@ -540,7 +540,11 @@ namespace RealLifeOverhaul.Markets
                     {
                         return OwnWhy.Bid;
                     }
-                    return value <= 0 || value > s.Shares * ListingCatalogue.BuyBackMostBp / 10000L || value > o.Others(s) - s.Shares * o.ActBp / 10000L ? OwnWhy.TooLarge : OwnWhy.None;
+                    if (value <= 0 || value > MarketTrading.MostPerOrder(s) || value > o.Others(s) - s.Shares * o.ActBp / 10000L)
+                    {
+                        return OwnWhy.TooLarge;
+                    }
+                    return ListingRules.YearUsedBp(o, State.Day, Year, o.BackBp) + ListingRules.Bp(value, s.Shares) > ListingCatalogue.BuyBackMostBp ? OwnWhy.YearLimit : OwnWhy.None;
                 case OwnAction.Issue:
                     if (ListingRules.Closed(s, State.Day, Year))
                     {
@@ -606,7 +610,7 @@ namespace RealLifeOverhaul.Markets
                 }
                 case OwnAction.Private:
                     q.Shares = Math.Max(0L, o.Others(s));
-                    q.Cents = (int)Math.Round(s.Last * (1.0 + ListingCatalogue.PrivatePremiumBp / 10000.0));
+                    q.Cents = ListingRules.PrivateCents(s, State.Day, Year);
                     q.Value = MarketTrading.Value(q.Shares, q.Cents, true);
                     q.Reserve = (long)Math.Floor(reserveEach * q.Shares);
                     q.Total = q.Value - q.Reserve;
@@ -652,6 +656,16 @@ namespace RealLifeOverhaul.Markets
                 case OwnAction.Private:
                     TakePrivate(s);
                     break;
+                case OwnAction.Proceeds:
+                {
+                    // A business of the company's sold: the price is the company's, every holder's by their shares; the other
+                    // holders' part goes from the founder's cash into the reserve.
+                    double each = Math.Max(0, e.B) * 1000.0 / Math.Max(1L, s.Shares);
+                    Pay(s, (long)Math.Floor(each * Math.Max(0L, o.Others(s))), ListingMoney.Proceeds);
+                    o.Rps += each;
+                    s.Equity += Math.Max(0, e.B) * 1000.0;
+                    break;
+                }
                 case OwnAction.Audit:
                     if ((e.B & ListingBook.Qualifying) != 0)
                     {
@@ -682,6 +696,8 @@ namespace RealLifeOverhaul.Markets
             }
             Pay(s, q.Fee, MarketMoney.Commission);
             o.Founder += shares;
+            int bp = ListingRules.Bp(Math.Abs(shares), s.Shares);
+            ListingRules.Count(o, State.Day, Year, shares > 0 ? bp : 0, shares < 0 ? bp : 0, 0);
             long gain = ListingRules.ShortSwing(o, State.Day, shares, q.Cents, Year);
             if (gain > 0)
             {
@@ -698,6 +714,7 @@ namespace RealLifeOverhaul.Markets
             OwnQuote q = Quote(s, OwnAction.BuyBack, shares);
             Pay(s, q.Total, ListingMoney.BuyBack);
             long before = s.Shares;
+            ListingRules.Count(s.Own, State.Day, Year, 0, 0, ListingRules.Bp(shares, before));
             Reshare(s, -shares);
             Moved(s, true, shares, ListingRules.Reading(shares, before, ListingCatalogue.BuyBackKickBp));
             Say(new MarketNews { Day = State.Day, Kind = MarketNewsKind.OwnBuyBack, Stock = s.Id, A = (int)Math.Min(int.MaxValue, shares), B = q.Cents });

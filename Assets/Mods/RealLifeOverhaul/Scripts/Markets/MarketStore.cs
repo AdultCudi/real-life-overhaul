@@ -213,6 +213,7 @@ namespace RealLifeOverhaul.Markets
                     .Append(q.Days.ToString(Inv));
             }
             Join(t, f.SetAsideDay, f.Trade, f.TestBooks ? 1 : 0);
+            L(t, f.Proceeds);
             t.Append('|').Append(Clean(f.HandOverTo));
             Join(t, f.HandOverBy);
             L(t, f.HandOverOwed);
@@ -245,11 +246,12 @@ namespace RealLifeOverhaul.Markets
             f.SetAsideDay = Math.Max(0, I(c, 28));
             f.Trade = Clamp(I(c, 29, -1), -1, MarketInputs.Trades.Length - 1);
             f.TestBooks = I(c, 30) != 0;
-            f.HandOverTo = S(c, 31).Length > 0 ? S(c, 31) : null;
-            f.HandOverBy = Math.Max(0, I(c, 32));
-            f.HandOverOwed = Math.Max(0, L(c, 33));
-            f.HandOverCount = Math.Max(0, I(c, 34));
-            foreach (string place in S(c, 35).Length > 0 ? c[35].Split(':') : Array.Empty<string>())
+            f.Proceeds = Math.Max(0, L(c, 31));
+            f.HandOverTo = S(c, 32).Length > 0 ? S(c, 32) : null;
+            f.HandOverBy = Math.Max(0, I(c, 33));
+            f.HandOverOwed = Math.Max(0, L(c, 34));
+            f.HandOverCount = Math.Max(0, I(c, 35));
+            foreach (string place in S(c, 36).Length > 0 ? c[36].Split(':') : Array.Empty<string>())
             {
                 if (place.Length > 0 && f.HandOver.Count < 64)
                 {
@@ -370,7 +372,8 @@ namespace RealLifeOverhaul.Markets
                 .Append(o.YearScandals.ToString(Inv)).Append(',').Append(o.YearDividendCents.ToString(Inv)).Append(',').Append(o.LastStanding.ToString(Inv)).Append(',')
                 .Append(o.ActBp.ToString(Inv)).Append(',').Append(((int)o.ActDemand).ToString(Inv)).Append(',').Append(o.ActDay.ToString(Inv)).Append(',').Append(o.Votes.ToString(Inv)).Append(',')
                 .Append(o.VotesAgainstBp.ToString(Inv)).Append(',').Append(o.IssuedYear.ToString(Inv)).Append(',').Append(o.IssuedBp.ToString(Inv)).Append(',').Append(o.SaleDay.ToString(Inv))
-                .Append(',').Append(R(o.Carry));
+                .Append(',').Append(R(o.Carry)).Append(',').Append(o.DealYear.ToString(Inv)).Append(',').Append(o.BoughtBp.ToString(Inv)).Append(',').Append(o.SoldBp.ToString(Inv)).Append(',')
+                .Append(o.BackBp.ToString(Inv));
             t.Append('|');
             for (int i = 0; i < o.Deals.Count; i++)
             {
@@ -405,7 +408,8 @@ namespace RealLifeOverhaul.Markets
                 AgmDay = Math.Max(0, I(f, 15)), YearCents = Math.Max(0, I(f, 16)), YearIndex = Math.Max(0, I(f, 17)), YearScandals = Math.Max(0, I(f, 18)), YearDividendCents = Math.Max(0, I(f, 19)),
                 LastStanding = Clamp(I(f, 20, -1), -1, 100), ActBp = Clamp(I(f, 21), 0, 10000), ActDemand = (ActivistDemand)Clamp(I(f, 22), 0, (int)ActivistDemand.Count - 1),
                 ActDay = Math.Max(0, I(f, 23)), Votes = Math.Max(0, I(f, 24)), VotesAgainstBp = Clamp(I(f, 25), 0, 10000), IssuedYear = I(f, 26, -1), IssuedBp = Math.Max(0, I(f, 27)),
-                SaleDay = Math.Max(0, I(f, 28)), Carry = Clamp(F(f, 29, 0.0), -1.0, 1.0), DebtBp = debtBp
+                SaleDay = Math.Max(0, I(f, 28)), Carry = Clamp(F(f, 29, 0.0), -1.0, 1.0), DebtBp = debtBp, DealYear = I(f, 30, -1), BoughtBp = Math.Max(0, I(f, 31)), SoldBp = Math.Max(0, I(f, 32)),
+                BackBp = Math.Max(0, I(f, 33))
             };
             foreach (string r in S(c, 65).Length > 0 ? c[65].Split(':') : Array.Empty<string>())
             {

@@ -15,12 +15,13 @@ namespace RealLifeOverhaul.Markets
     }
 
     /// <summary>What the founder of a listed company asks for (a tape event: MarketInputs.EventOwn + this). Saved as a number.</summary>
-    public enum OwnAction { Pay = 0, Dividend = 1, Deal = 2, BuyBack = 3, Issue = 4, Private = 5, Audit = 6, Count }   // (Audit: the yearly audit's findings, B the bits: not the founder's to ask)
+    // (Audit: the yearly audit's findings, B the bits; Proceeds: a business of the company's sold, B the price in thousands. Neither is the founder's to ask.)
+    public enum OwnAction { Pay = 0, Dividend = 1, Deal = 2, BuyBack = 3, Issue = 4, Private = 5, Audit = 6, Proceeds = 7, Count }
 
     /// <summary>Why something the founder asked for cannot be done. Saved as a number (in the news); each has a sentence.</summary>
     public enum OwnWhy
     {
-        None = 0, NotListed, Shut, Held, Closed, LockedUp, NoMoney, NoShares, TooMuch, TooLarge, Board, Bid, Reserve, Control, Suspended, Off, NotReady, Count
+        None = 0, NotListed, Shut, Held, Closed, LockedUp, NoMoney, NoShares, TooMuch, TooLarge, Board, Bid, Reserve, Control, Suspended, Off, NotReady, YearLimit, Count
     }
 
     /// <summary>What an investor who buys in to press the board asks for. Saved as a number.</summary>
@@ -45,6 +46,7 @@ namespace RealLifeOverhaul.Markets
         public const string Takeover = "reallife_transaction_shares_takeover";
         public const string DividendTax = "reallife_transaction_shares_dividend_tax";
         public const string Kept = "reallife_transaction_shares_takeover_kept";             // businesses a takeover's buyer could not be handed in time, paid for
+        public const string Proceeds = "reallife_transaction_shares_proceeds";              // the other holders' part of a business of the company's sold, into the reserve
 
         /// <summary>True for the costs of being listed that are a business's costs, which the game's own tax deducts.</summary>
         public static bool Deductible(string key)
@@ -110,6 +112,8 @@ namespace RealLifeOverhaul.Markets
         public int IssuedYear = -1;              // the year new shares were last sold in
         public int IssuedBp;                     // ...and how many, against the company then
         public int SaleDay;                      // its holders voted to sell it: a bid is made on this day (0 none)
+        public int DealYear = -1;                // the game year the founder's dealing and the buy-backs below are counted for
+        public int BoughtBp, SoldBp, BackBp;     // ...what the founder bought and sold of the company in it, and what it bought back
         public double Carry;                     // the other holders' part of the profit not yet moved, under a whole unit
         public readonly List<OwnDeal> Deals = new List<OwnDeal>(8);
 
@@ -158,6 +162,7 @@ namespace RealLifeOverhaul.Markets
         public int BooksDay;                     // the last statement day counted into the books
         public string Suspended;                 // the company's record while its founder is a guest in another player's city
         public int SetAsideDay;                  // ...the day it was set aside: the founder's statements from it on are counted when it is back
+        public long Proceeds;                    // money from businesses of the listed company sold, not yet heard by the market
         public string HandOverTo;                // a bid took the company: the buyer its businesses pass to...
         public int HandOverBy;                   // ...by this day (those that cannot be handed over by then are paid for)...
         public long HandOverOwed;                // ...at the company's price, shared out over them
@@ -169,7 +174,7 @@ namespace RealLifeOverhaul.Markets
 
         /// <summary>True for a file with nothing in it (a save's line then has no part for it, as before there was a listing).</summary>
         public bool Empty => Stage == ListingStage.None && Books.Count == 0 && AuditDay == 0 && StockId == 0 && Fees == 0 && FirstDay == 0 && string.IsNullOrEmpty(Suspended)
-                             && string.IsNullOrEmpty(Name) && AdvisedDay == 0 && AuditFrom == 0 && HandOver.Count == 0 && string.IsNullOrEmpty(HandOverTo);
+                             && string.IsNullOrEmpty(Name) && AdvisedDay == 0 && AuditFrom == 0 && HandOver.Count == 0 && string.IsNullOrEmpty(HandOverTo) && Proceeds == 0;
 
         /// <summary>The books' quarter of a number, or null-like (Quarter -1) if none.</summary>
         public int IndexOf(int quarter)

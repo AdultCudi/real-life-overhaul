@@ -181,6 +181,7 @@ internal static partial class Program
         ListingActivistAndBidChecks();
         ListingTaxChecks();
         ListingAuditEventChecks();
+        ListingProceedsChecks();
         ListingStoreChecks();
         ListingTapeChecks();
         ListingSessionChecks();
@@ -620,6 +621,15 @@ internal static partial class Program
         Check(ListingRules.DealBlocked(s, closes, LYear, 10) == OwnWhy.Closed, "nothing in a closed time");
         s.Adv = 100;
         Check(ListingRules.DealBlocked(s, from, LYear, 50) == OwnWhy.TooLarge, "no deal larger than an order may be");
+        s.Adv = 100000;
+        ListingRules.Count(o, from, LYear, 900, 0, 0);
+        Check(ListingRules.DealBlocked(s, from, LYear, 100) == OwnWhy.None && ListingRules.DealBlocked(s, from, LYear, 101) == OwnWhy.YearLimit,
+            "in a game year the founder buys at most a tenth of the company (9% bought: 1% more, and no more)");
+        Check(ListingRules.DealBlocked(s, from, LYear, -10) == OwnWhy.None, "...and sells against a limit of its own");
+        s.Quarter = MarketCatalogue.QuarterOf(from + LYear, LYear);
+        Check(ListingRules.DealBlocked(s, from + LYear, LYear, 1000) == OwnWhy.None, "a new year begins with nothing used");
+        ListingRules.Count(o, from + LYear, LYear, 0, 0, 0);
+        Check(o.BoughtBp == 0 && o.DealYear == MarketCatalogue.YearOf(from + LYear, LYear), "...and the counts start again");
     }
 
     // ---------------------------------------------------------------- the founder's deals
@@ -715,6 +725,7 @@ internal static partial class Program
         RunTo(m, day, m.State.Phase + 1);
         Check(own.Shares == shares - back && o.Others(own) == others - back && o.StakeBp(own) > stakeBefore, "a buy-back takes shares out of issue: the founder's stake grows");
         Check(Math.Abs((cash - world.Purse.Money) - q.Total) <= q.Total / 50 + 2, "it costs the shares less their reserve, with commission (" + (cash - world.Purse.Money) + ")");
+        Check(m.CanAsk(own, OwnAction.BuyBack, own.Shares * ListingCatalogue.BuyBackMostBp / 10000L) != OwnWhy.None, "no more than a tenth of the company bought back in a year");
         long room = ListingRules.IssueRoom(own, day, LYear);
         Check(room == own.Shares * ListingCatalogue.IssueMostBpYear / 10000L, "the year's room for new shares (" + room + ")");
         long fresh = room / 2;
@@ -734,7 +745,13 @@ internal static partial class Program
         // Taking it private: every other holder at the premium, less the reserve they had.
         cash = world.Purse.Money;
         OwnQuote qp = m.Quote(own, OwnAction.Private, 0);
-        Check(qp.Why == OwnWhy.None && qp.Cents == (int)Math.Round(own.Last * (1 + ListingCatalogue.PrivatePremiumBp / 10000.0)), "taking it private: every other share at the premium");
+        Check(qp.Why == OwnWhy.None && qp.Cents >= (int)Math.Round(own.Last * (1 + ListingCatalogue.PrivatePremiumBp / 10000.0)) && qp.Cents >= o.ListedCents, "taking it private: every other share at the premium at least, and never under the offer's price in its first year");
+        int highest = 0;
+        for (int i = 0; i < own.Daily.Count; i++)
+        {
+            highest = Math.Max(highest, own.Daily[i].C);
+        }
+        Check(qp.Cents >= highest, "...nor under its highest close of the last year (" + qp.Cents + " against " + highest + ")");
         m.Event(MarketInputs.EventOwn + (int)OwnAction.Private, own.Id, 0);
         RunTo(m, day, m.State.Phase + 1);
         Check(!own.Listed && m.State.Listing.Stage == ListingStage.None && world.Count(MarketNewsKind.OwnPrivate) == 1, "it leaves the market and is the founder's alone again");
@@ -919,6 +936,27 @@ internal static partial class Program
         Check(ListingMoney.Deductible(ListingMoney.Audit) && ListingMoney.Deductible(ListingMoney.Exchange) && !ListingMoney.Deductible(ListingMoney.Holders)
               && !ListingMoney.Deductible(ListingMoney.Underwriting) && !ListingMoney.Deductible(ListingMoney.DividendTax),
             "the audit and the exchange's fees are business costs the game's tax deducts; the holders' part, the underwriters and the dividend tax are not");
+    }
+
+    // ---------------------------------------------------------------- a business of the company's sold
+
+    private static void ListingProceedsChecks()
+    {
+        var world = new OwnWorld(97);
+        MarketEngine m = LListed(97, world, 4000, out Stock own);
+        if (own == null)
+        {
+            Check(false, "the company is listed for the sale's checks");
+            return;
+        }
+        double rps = own.Own.Rps;
+        long cash = world.Purse.Money;
+        m.Event(MarketInputs.EventOwn + (int)OwnAction.Proceeds, own.Id, 500);   // a business sold for 500,000
+        RunTo(m, MarketTrading.NextTradingDay(m.State.Day), MarketCatalogue.PhaseNone + 1);
+        double each = 500000.0 / own.Shares;
+        Check(Math.Abs(own.Own.Rps - (rps + each)) < 1e-9, "a business sold: its price is every holder's, a share's part into the reserve");
+        Check(Math.Abs((cash - world.Purse.Money) - Math.Floor(each * own.Own.Others(own))) <= 1, "...the other holders' part from the founder's cash (" + (cash - world.Purse.Money) + ")");
+        Check(m.CanAsk(own, OwnAction.Proceeds, 1) == OwnWhy.None, "...heard whatever the hour");
     }
 
     // ---------------------------------------------------------------- the year's audit, heard by the market

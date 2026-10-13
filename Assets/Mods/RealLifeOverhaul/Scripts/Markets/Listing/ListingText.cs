@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Markets
         private const string P = "reallife";   // (apart, so that a key made from parts is not taken for a whole one)
 
         private static readonly string[] WhyKeys = Keys(P + "_lst_why_", "none", "not_listed", "shut", "held", "closed", "locked_up", "no_money", "no_shares", "too_much", "too_large",
-            "board", "bid", "reserve", "control", "suspended", "off", "not_ready");
+            "board", "bid", "reserve", "control", "suspended", "off", "not_ready", "year_limit");
 
         private static readonly string[] DemandKeys = Keys(P + "_lst_demand_", "none", "payout", "pay", "board", "sale");
 
@@ -47,6 +47,10 @@ namespace RealLifeOverhaul.Markets
             if (why == OwnWhy.Control)
             {
                 return MarketText.Fill("reallife_lst_why_control", "least", MarketText.Percent(ListingCatalogue.PrivateLeastBp));
+            }
+            if (why == OwnWhy.YearLimit)
+            {
+                return MarketText.Fill("reallife_lst_why_year_limit", "deals", MarketText.Percent(ListingCatalogue.FounderDealMostBpYear), "back", MarketText.Percent(ListingCatalogue.BuyBackMostBp));
             }
             return Of(WhyKeys, (int)why);
         }

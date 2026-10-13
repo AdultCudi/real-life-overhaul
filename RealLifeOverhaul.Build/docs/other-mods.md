@@ -153,6 +153,16 @@ market: in a session a trade's lasting move is an event on the host's tape (`Eve
 plays at the next moment; a day played in a session and replayed after a load takes those moves from the tape, once. Each
 update carries the host's prices at its moment (a checksum); a guest that comes out different asks for the market again.
 
+**A player's own listed company** (`Markets/Listing`) is a company of the market like any other, with its founder's hash
+(`OwnListing.Owner`; `MarketState.Me` is this machine's player). The host's company is in the city's line and every guest
+plays it from the host's tape: its day's books are in the host's city of the day (`MarketEnv.Own*`), its founder's deals,
+buy-backs, new shares, pay, dividend, taking private, audit and a business sold are tape events (`MarketInputs.EventOwn`),
+and only the founder's machine moves money for it (`MarketEngine.Mine`). A guest's own company is not in the host's city:
+`MarketShare.Adopt` sets it aside whole (`ListingFile.Suspended`, in the guest's own part of the save) and nothing of it
+moves; its way to the market waits. When the guest plays alone again (`MarketEngine.Alone`, on leaving or on opening a save
+made as a guest) every other player's company leaves the market, the guest's holding in it paid at its last price, and
+the guest's own company is back, the profit of the days away counted from its books at the next open.
+
 **A guest steps none of it**: no day of the economy (`CityEconomyDirector.OnDay` does only the player's own part of the
 day), no hour of the government (`CivicGovernment.FollowTick`), no site but its own refit (`CivicWorks.Shared`), no market
 moment past the host's. It applies the host's state to its own game as alone (prices, the bank rate, footfall, the policies'
@@ -161,7 +171,8 @@ complaint, report of an unsafe site, a favour that became a story, the crime it 
 its game and sent as requests; the host applies them to the city within bounds and they come back with the next update.
 A guest's ballot is counted in the host's election (`GovState.OthersVotes`, at the end of the save's line).
 
-**Leaving**: nothing is undone; each system steps again from the host's last state, which is now the player's own.
+**Leaving**: nothing is undone; each system steps again from the host's last state, which is now the player's own (but
+for the market's companies of other players, which leave it, and the player's own company, which is back).
 **Saves**: each system writes its state as ever, and on a guest that state is the host's city, so Going Public's
 coordinated saves (`MPSaveCoordinator`, which runs the game's own save on every machine) keep the shared city in every
 guest's save.

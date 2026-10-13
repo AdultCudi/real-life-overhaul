@@ -34,6 +34,9 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Tells "running a business" that a business is no longer the player's, by its place. Default: nobody to tell.</summary>
         public static Action<string> BusinessGone;
 
+        /// <summary>A business sold, by its place, and its whole price (all its parts): the player's listed company hears of it (Markets/Listing). Default: nobody.</summary>
+        public static Action<string, int> Sold;
+
         public static void Reset()
         {
             InvestorsOwed = null;
@@ -41,6 +44,7 @@ namespace RealLifeOverhaul.Economy
             LoansOwed = null;
             SettleLoans = null;
             BusinessGone = null;
+            Sold = null;
         }
     }
 

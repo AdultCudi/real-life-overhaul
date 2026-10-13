@@ -64,14 +64,15 @@ namespace RealLifeOverhaul.Markets
         public const int ShortSwingYearShare = 4;         // a founder's gain on shares bought and sold within a year / this goes back to the company
         public const int ClosedShare = 3;                 // no dealing from the last 1 / this of a quarter until its results are out
         public const int FounderMostBp = 9000;            // the founder holds at most this (beyond it, the company is taken private)
+        public const int FounderDealMostBpYear = 1000;    // the founder buys at most this of the company in a game year, and sells at most as much
         public const int DealKickBp = 60;                 // the market's reading of a founder's deal: for each 1% of the company, up for buying, down for selling
         public const int BuyBackKickBp = 40;              // for each 1% of the company bought back
         public const int IssueKickBp = -50;               // for each 1% the company grows by new shares
         public const int KickMostBp = 800;                // a deal's reading at most, either way
         public const double PlacingDiscount = 0.05;       // new shares are placed this far under the bid
         public const int IssueMostBpYear = 2000;          // new shares in a year: at most this against the company
-        public const int BuyBackMostBp = 1000;            // shares bought back at once: at most this of the company
-        public const int PrivatePremiumBp = 2500;         // taking it private: every other holder is paid this much over the price
+        public const int BuyBackMostBp = 1000;            // shares bought back in a game year: at most this of the company
+        public const int PrivatePremiumBp = 2500;         // taking it private: every other holder is paid this much over the price, and never less than its highest close of the last year
         public const int PrivateLeastBp = 5000;           // ...which the founder may do while they hold at least this
         public const int StandingKickBp = 12;             // the market's mood, for each point the founder's Standing moved...
         public const int StandingKickMostBp = 150;        // ...at most, in a day

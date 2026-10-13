@@ -557,7 +557,61 @@ namespace RealLifeOverhaul.Markets
             {
                 return OwnWhy.TooLarge;
             }
+            if (YearUsedBp(o, day, year, shares > 0 ? o.BoughtBp : o.SoldBp) + Bp(Math.Abs(shares), s.Shares) > ListingCatalogue.FounderDealMostBpYear)
+            {
+                return OwnWhy.YearLimit;
+            }
             return OwnWhy.None;
+        }
+
+        /// <summary>A count of shares as bp of so many (rounded up: the year's limits are never passed by a rounding).</summary>
+        public static int Bp(long shares, long of)
+        {
+            return of > 0 ? (int)Math.Min(100000L, (shares * 10000L + of - 1) / of) : 100000;
+        }
+
+        /// <summary>What has been used of a year's limit this game year (nothing once a new year has begun).</summary>
+        public static int YearUsedBp(OwnListing o, int day, int year, int used)
+        {
+            return o.DealYear == MarketCatalogue.YearOf(day, Math.Max(8, year)) ? used : 0;
+        }
+
+        /// <summary>A deal, a buy-back, counted against the year's limits.</summary>
+        public static void Count(OwnListing o, int day, int year, int bought, int sold, int back)
+        {
+            int y = MarketCatalogue.YearOf(day, Math.Max(8, year));
+            if (o.DealYear != y)
+            {
+                o.DealYear = y;
+                o.BoughtBp = o.SoldBp = o.BackBp = 0;
+            }
+            o.BoughtBp += bought;
+            o.SoldBp += sold;
+            o.BackBp += back;
+        }
+
+        /// <summary>
+        /// The price a share the founder pays every other holder to take the company private: its price with the premium,
+        /// and never less than its highest close over the last year of market days, nor (in its first year) what it came to
+        /// the market at. So a company run down to buy it back cheap is bought back at what it was.
+        /// </summary>
+        public static int PrivateCents(Stock s, int day, int year)
+        {
+            int cents = (int)Math.Round(s.Last * (1.0 + ListingCatalogue.PrivatePremiumBp / 10000.0));
+            int since = day - Math.Max(8, year);
+            for (int i = s.Daily.Count - 1; i >= 0 && s.Daily[i].Day >= since; i--)
+            {
+                cents = Math.Max(cents, s.Daily[i].C);
+            }
+            for (int i = s.Monthly.Count - 1; i >= 0 && s.Monthly[i].Day >= since; i--)
+            {
+                cents = Math.Max(cents, s.Monthly[i].C);
+            }
+            if (s.ListedDay >= since && s.Own != null)
+            {
+                cents = Math.Max(cents, s.Own.ListedCents);
+            }
+            return Math.Max(1, cents);
         }
     }
 }

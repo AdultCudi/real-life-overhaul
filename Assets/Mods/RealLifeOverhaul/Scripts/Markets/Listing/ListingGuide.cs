@@ -48,6 +48,7 @@ namespace RealLifeOverhaul.Markets
                 .Fact("lst_lockup", () => Whole(Year() / ListingCatalogue.LockUpYearShare))
                 .Fact("lst_swing", () => Whole(Year() / ListingCatalogue.ShortSwingYearShare))
                 .Fact("lst_founder_most", () => Bp(ListingCatalogue.FounderMostBp))
+                .Fact("lst_deal_year", () => Bp(ListingCatalogue.FounderDealMostBpYear))
                 .Fact("lst_private_premium", () => Bp(ListingCatalogue.PrivatePremiumBp))
                 .Fact("lst_private_least", () => Bp(ListingCatalogue.PrivateLeastBp))
                 .Fact("lst_placing", () => Guide.Percent((float)ListingCatalogue.PlacingDiscount))

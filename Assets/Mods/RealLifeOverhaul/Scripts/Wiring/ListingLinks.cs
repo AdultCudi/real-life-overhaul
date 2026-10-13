@@ -31,6 +31,8 @@ namespace RealLifeOverhaul
         ///               came out, and the loans (MarketLinks.City puts them in the day's city, which the tape keeps)
         ///   Businesses  the places of the player's businesses (Economy/Services' own key), for a takeover's hand-over
         ///   HandOver    one business passed to the buyer as a sale completes (ServicesDirector.HandOver)
+        ///   Sold        a business sold while the company is listed (ServicesBridges.Sold): its price is the company's, so
+        ///               the other holders' part goes into their reserve (MarketDirector.BusinessSold)
         ///   Name, Trade the player's largest business by yesterday's takings: its name for the company to begin with, and
         ///               the trade the market knows it by (MarketInputs.TradeOf)
         ///   the Company the Overview's line on the company and the market, and its button to the Stocks app's page
@@ -123,6 +125,7 @@ namespace RealLifeOverhaul
                 MarketBridges.Trade = Trade;
                 CompanyBridges.ListingLine = Line;
                 CompanyBridges.OpenListing = () => MarketDirector.Instance?.OpenListing();
+                ServicesBridges.Sold = (place, price) => MarketDirector.Instance?.BusinessSold(price);
                 PlannerDirector.Instance?.AddSource(Source);
             }
 
@@ -136,6 +139,7 @@ namespace RealLifeOverhaul
                 MarketBridges.Trade = null;
                 CompanyBridges.ListingLine = null;
                 CompanyBridges.OpenListing = null;
+                ServicesBridges.Sold = null;
             }
 
             // The Company app's line: the market's own words for where the player's company stands.
