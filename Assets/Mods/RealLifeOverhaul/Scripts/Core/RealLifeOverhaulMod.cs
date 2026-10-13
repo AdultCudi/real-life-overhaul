@@ -729,6 +729,12 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_estate_test_hire", () => Economy.EstateDirector.Instance?.TestHire())
                 .AddButton("reallife_estate_test_month", () => Economy.EstateDirector.Instance?.TestMonth())
                 .AddButton("reallife_estate_test_back", () => Economy.EstateDirector.Instance?.TestBack())
+                .AddHeader("reallife_talent_header")
+                .AddToggle(Settings.TechPeopleId, "reallife_talent_enabled", Settings.TechPeople,
+                    v => Settings.TechPeople = v)
+                .AddButton("reallife_talent_test_review", () => Tech.TechDirector.Instance?.TestReview())
+                .AddButton("reallife_talent_test_offer", () => Tech.TechDirector.Instance?.TestOffer())
+                .AddButton("reallife_talent_test_course", () => Tech.TechDirector.Instance?.TestCourse())
                 .AddToggle(Settings.EconomyOnlineId, "reallife_online_enabled", Settings.EconomyOnline,
                     v => Settings.EconomyOnline = v)
                 .AddButton("reallife_online_test_open", () => Economy.OnlineDirector.Instance?.TestOpen())
@@ -958,6 +964,8 @@ namespace RealLifeOverhaul
             LicenceDirector.Logger = context.Logger;
             CivicDirector.Logger = context.Logger;
             Family.FamilyDirector.Logger = context.Logger;
+            Tech.TechDirector.Logger = context.Logger;
+            Tech.RolesApp.Logger = context.Logger;
 
             _root = new GameObject(RootName);
             SessionWatch.Logger = context.Logger;
@@ -1043,6 +1051,7 @@ namespace RealLifeOverhaul
             Economy.ServicesApp.Logger = context.Logger;
             _root.AddComponent<Economy.ServicesDirector>();   // the cleaning service and selling a business, and the Services app (Scripts/Economy/Services)
             _root.AddComponent<Economy.CompanyDirector>();   // running a business: staff, insurance, marketing, tax and licences, and the Company app (Scripts/Economy/Company)
+            _root.AddComponent<Tech.TechDirector>();   // the professions and the tech sector: roles, skills and the Open Roles app (Scripts/Tech); after the company, so that its day follows the company's
             Economy.EstateDirector.Logger = context.Logger;
             Economy.EstateApp.Logger = context.Logger;
             _root.AddComponent<Economy.EstateDirector>();   // property: the market, letting, works, selling, an agency, a hotel and car hire, and the Property app (Scripts/Economy/Estate)

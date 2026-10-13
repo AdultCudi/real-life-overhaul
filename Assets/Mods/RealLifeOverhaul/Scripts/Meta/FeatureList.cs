@@ -1122,6 +1122,15 @@ namespace RealLifeOverhaul.Meta
                 .Data(Economy.OnlineStore.Key, Economy.OnlineStore.TestKey)
                 .Cleanup(() => Economy.OnlineDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Economy.OnlineDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
+            // Professionals: roles, levels and skills of their own for the player's professional staff. Their rows stand under
+            // their own header; the Open Roles app is theirs. Off, the game's own staff alone; the files are kept.
+            Tech.TechGuide.AddPeopleFacts(Features.Add("tech_people", "reallife_meta_title_tech_people")
+                .About("reallife_guide_tech_people_about").Help("reallife_guide_tech_people")
+                .Owns(Settings.TechPeopleId)
+                .Test("reallife_talent_test_review", "reallife_talent_test_offer", "reallife_talent_test_course")
+                .Data(Tech.TalentStore.Key, Tech.TechNews.Key)
+                .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Tech.TechDirector.Instance?.Forget()));
             // The cleaning service and selling a business. Their rows stand under the company's header on the options page
             // and their pages are the Services app. They share one line of the save. Off, the cleaning service plans no
             // round, shows no cleaner and charges nothing; selling a business offers, pays and charges nothing.

@@ -169,6 +169,13 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Permadeath\PermadeathState.cs" Link="Mod\PermadeathState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Permadeath\LifeStory.cs" Link="Mod\LifeStory.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Permadeath\PermadeathStory.cs" Link="Mod\PermadeathStory.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\TechRandom.cs" Link="Mod\TechRandom.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\TechCodec.cs" Link="Mod\TechCodec.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\TechNews.cs" Link="Mod\TechNews.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\TalentCatalogue.cs" Link="Mod\TalentCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\TalentModel.cs" Link="Mod\TalentModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\TalentRules.cs" Link="Mod\TalentRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\TalentStore.cs" Link="Mod\TalentStore.cs" />
   </ItemGroup>
 
 </Project>
