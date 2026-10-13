@@ -328,6 +328,7 @@ RealLifeOverhaul.Build/            command-line build and checks (outside Assets
   NavCheck/                        checks the game-free parts of the minimap and the GPS, the shared route search (see "Minimap and GPS"), the bus bays (see "Transport", "Bays") and the taxi called from the phone (see "Transport", "A taxi by phone")
   NavCheck/                        checks the game-free parts of the minimap and the GPS, the shared route search (see "Minimap and GPS") and the bus bays (see "Transport", "Bays")
   EconomyCheck/                    checks the economy's game-free parts: the rating, the terms, the fee, the credit file and its line in the save, the loans (see "Economy")
+  ContractCheck/                   checks the mod against a version of the game on disk: the game contract, the compiled references, the game's keys (see "After a game update")
 ```
 
 ## Setup on a new machine
@@ -568,6 +569,35 @@ Three more check programs compile the mod's own game-free files and run them on 
 "The Planner"), `NavCheck` (see "Minimap and GPS"; it also covers `Core/RouteSearch.cs`, which the bus network uses,
 and in `HitchCheck.cs` the keeper of handlers on the game's events, `Core/EventHold.cs`, and the session record's
 rings, `Core/WorkRings.cs`) and `EconomyCheck` (see "Economy"). Each ends with `ALL CHECKS PASSED`.
+
+## After a game update
+
+`ContractCheck` checks the mod against a version of the game, read from its files on disk (nothing of the game is
+loaded): build the mod first, then
+
+`dotnet build RealLifeOverhaul.Build/ContractCheck -c Release`, then
+`dotnet RealLifeOverhaul.Build/ContractCheck/bin/Release/net10.0/ContractCheck.dll ["<game>/Big Ambitions_Data/Managed"]`
+
+(the Steam folder on G: when no folder is given, or the one in `BA_MANAGED`). It ends with `ALL CHECKS PASSED`, or
+with one `FAIL` line for each thing to fix:
+
+- **the game contract** (`Scripts/Core/GameContract.cs`): every private field, method, property and type of the game
+  the mod reaches by name, with the type it expects. A line names the piece, what changed ("the field is missing",
+  "the field's type is now X", "the method now takes (...)") and the parts of the mod, and their features, that the
+  running mod switches off for it. Fix the line in `GameContract.cs` (and the code that uses it), or mark the piece
+  `Optional` when the code has another way.
+- **the mod's compiled references**: every type, field and method of the game's and Unity's assemblies the built
+  mod's code names. One that is gone stops each method that uses it the first time it runs (the guard keeps that to
+  the feature); the line says which of the mod's classes use it.
+- **the game's keys** (`ContractCheck/GameKeys.txt`): the keys of the game's own texts and data (business types,
+  items, skills, districts, transactions, vehicles) the mod's code names, against the game's `StreamingAssets/locale/
+  en.json`, and that the list holds every one the code names.
+
+It also runs the checks of the contract's logic, the guard's fault count and the kept save lines. When it passes
+against the new game, set `ContractBook.CheckedBuild` (`Scripts/Core/ContractBook.cs`) to the game's build: the running
+mod reads the game's build (`GameVersion.buildNumber`) and, when the game is newer, says so in `Player.log`, gently in
+the notice if something is off. The layers the mod names (`GameContract.Layers`) are the game's project settings, not in
+its assemblies: the running mod checks those as it starts.
 
 ## Adding a crime
 
