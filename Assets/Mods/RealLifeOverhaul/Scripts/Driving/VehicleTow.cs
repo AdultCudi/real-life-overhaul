@@ -89,8 +89,30 @@ namespace RealLifeOverhaul
             return null;
         }
 
+        /// <summary>
+        /// Parks one of the player's cars in the nearest free kerbside space the game's auto-park would offer near a place,
+        /// leaving out any space <paramref name="refuse"/> turns down (BusZones: one in view, or in a bus zone). No fee and
+        /// no message: the caller says what it must. False, with the car where it was, if there is none.
+        /// </summary>
+        public static bool ParkNearby(VehicleController vehicle, Vector3 near, Func<Vector3, bool> refuse)
+        {
+            if (vehicle == null || vehicle.vehicleInstance == null)
+            {
+                return false;
+            }
+            try
+            {
+                return TryParkNear(vehicle, near, refuse);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return false;
+            }
+        }
+
         // Kerbside spaces are generated per parking lane on demand, so ask each nearby lane for its spaces.
-        private static bool TryParkNear(VehicleController vehicle, Vector3 near)
+        private static bool TryParkNear(VehicleController vehicle, Vector3 near, Func<Vector3, bool> refuse = null)
         {
             float length = VehicleHelper.GetVehicleColliderCenterAndSize(vehicle.vehicleInstance.vehicleTypeName).Item2.z;
             int count = Physics.OverlapSphereNonAlloc(near, SearchRadius, Lanes, LayerHelper.parkingAreaLayerMask, QueryTriggerInteraction.Collide);
@@ -141,7 +163,7 @@ namespace RealLifeOverhaul
                     Vector3 position = spot.transform.position;
                     Quaternion rotation = spot.transform.parent.rotation;
                     float width = spot.visuals != null ? spot.visuals.size.y : 2.4f;
-                    if (IsOccupied(vehicle, position, rotation, width, length))
+                    if (IsOccupied(vehicle, position, rotation, width, length) || (refuse != null && refuse(position)))
                     {
                         continue;
                     }

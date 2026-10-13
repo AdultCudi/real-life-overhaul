@@ -28,6 +28,7 @@ internal static partial class Program
         BusBoarding();
         BusMiddleDoor();
         BusNetwork();
+        BusStopStreet();
         Console.WriteLine("  Bus ride: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 

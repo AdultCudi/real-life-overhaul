@@ -1278,7 +1278,7 @@ namespace RealLifeOverhaul
             Vector3 back = bus.transform.TransformPoint(new Vector3(BusInside.MiddleBoardFrom.X, 0f, BusInside.MiddleBoardFrom.Z));
             _byChoice = BusInside.ByMiddleDoor(Mathf.Sqrt(CitySpots.Flat(from - front)), Mathf.Sqrt(CitySpots.Flat(from - back)));
             _tries = _byChoice ? BusInside.BoardTriesMiddle : BusInside.BoardTries;
-            if (!_byChoice && !Furnished(door) && Reachable(start, door))
+            if (!_byChoice && !Furnished(door) && !ByPole(door) && Reachable(start, door))
             {
                 return 0;
             }
@@ -1286,7 +1286,7 @@ namespace RealLifeOverhaul
             int chosen = BusInside.First(_tries, a =>
             {
                 BusInside.Spot spot = a.At;
-                return Ground(bus.transform.TransformPoint(new Vector3(spot.X, 0f, spot.Z)), bus, out found) && !Furnished(found) && Reachable(start, found);
+                return Ground(bus.transform.TransformPoint(new Vector3(spot.X, 0f, spot.Z)), bus, out found) && !Furnished(found) && !ByPole(found) && Reachable(start, found);
             });
             if (chosen < 0)
             {
@@ -1320,6 +1320,18 @@ namespace RealLifeOverhaul
                 _way = new NavMeshPath();
             }
             return NavMesh.CalculatePath(from, to, NavMesh.AllAreas, _way) && _way.status == NavMeshPathStatus.PathComplete;
+        }
+
+        // The stop's own pole (the mod's, on no layer the game's furniture is on) standing where a person would, or so near it
+        // that the last steps to the door and the turn to it would walk into it or its timetable plate. Never a place to board from.
+        private bool ByPole(Vector3 at)
+        {
+            if (_from == null)
+            {
+                return false;
+            }
+            float reach = BusInside.PoleReach + BusInside.PoleClear + 0.22f;
+            return CitySpots.Flat(at - _from.Sign) < reach * reach;
         }
 
         // Street furniture standing where a person would: a pole, a bin, a bench.

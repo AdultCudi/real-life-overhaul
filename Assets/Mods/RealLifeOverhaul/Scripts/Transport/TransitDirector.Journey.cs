@@ -204,6 +204,12 @@ namespace RealLifeOverhaul
             {
                 return;
             }
+            if (!TransitSight.Near(on.Wait, ChangeKeep))
+            {
+                Logger?.Info("Transit check (journey): the change at " + StopLabel(on.At) + " is let go: the player is no longer near it: PASS.");
+                DropPlan();
+                return;
+            }
             if (_served != on.At)
             {
                 if (_served != null)
@@ -520,11 +526,19 @@ namespace RealLifeOverhaul
             _served = stop.At;
             _calls = Mathf.Min(_served.Calls.Count, MostCalls);
             _frontCall = _served.Calls.IndexOf(stop);
+            if (_frontCall >= MostCalls)
+            {
+                _frontCall = -1;
+            }
             for (int i = 0; i < MostCalls; i++)
             {
                 _pinned[i] = i == _frontCall;
                 _doneAt[i] = double.MinValue;
                 _callAt[i] = double.MaxValue;
+            }
+            if (_frontCall >= 0)
+            {
+                _callAt[_frontCall] = NowMinutes() + Mathf.Max(1f, _bus.Estimate(_pace)) * _minutesPerSecond;   // (the bus carrying the player: when it will be there)
             }
             _nextCall = -1;
             _wasStanding = false;
@@ -542,6 +556,10 @@ namespace RealLifeOverhaul
             }
             _journey = false;
             TransitBus.FastRide = false;
+            if (_bus.State != TransitBus.Phase.Standing)
+            {
+                Unpin(_frontCall);   // (the ride ended before the bus stood at the stop it was driving to: the timetable is the place's again)
+            }
             if (why != null)
             {
                 Logger?.Info("Transit check (journey): " + why + " after " + (Time.unscaledTime - _jBegan).ToString("F0") + " s, " + _jCalls + " stop(s) called at; the game's panel is closed: PASS.");

@@ -652,6 +652,10 @@ namespace RealLifeOverhaul
                 // Well away from it, or standing on foot at another dressed stop (the other side of the street, say): that one is
                 // served instead. On a journey's change the place of the next bus is kept while the player walks to it.
                 TransitStop stood = PlayerHelper.IsUsingVehicle || AtStop(_served, at) ? null : StoodAt(at);
+                if (_changing && _hasPlan && stood == _plan.ChangeOff.At)
+                {
+                    stood = null;   // (just off the first bus, at the stop they are walking from)
+                }
                 float keep = _changing ? ChangeKeep : ServeKeep;
                 if (CitySpots.Flat(_served.Sign - at) > keep * keep || !Dressed(_served) || (stood != null && stood != _served))
                 {
@@ -827,7 +831,10 @@ namespace RealLifeOverhaul
             {
                 if (_pinned[k])
                 {
-                    anchor = Math.Max(anchor, _callAt[k]);
+                    if (_callAt[k] < double.MaxValue)
+                    {
+                        anchor = Math.Max(anchor, _callAt[k]);
+                    }
                     continue;
                 }
                 TransitStop call = calls[k];
@@ -947,9 +954,17 @@ namespace RealLifeOverhaul
                         break;
                     }
                     int soonest = Soonest();
+                    if (_eta.State == TransitEta.Mode.Here || _frontCall >= _calls)
+                    {
+                        _frontCall = -1;   // (the bus that stood here has gone and was kept: the next call is the timetable's)
+                    }
                     if (soonest != _frontCall && !(_frontCall >= 0 && _pinned[_frontCall]))
                     {
                         _frontCall = soonest;
+                        if (_frontCall >= 0 && _frontCall == _nextCall && _next.State == TransitBus.Phase.Idle)
+                        {
+                            _nextCall = -1;   // (the bus behind was given up: this call is the front one's now)
+                        }
                         _shownAt = -1f;
                         _wasDelayed = false;
                         if (_frontCall >= 0 && _callAt[_frontCall] < double.MaxValue)
@@ -1052,8 +1067,19 @@ namespace RealLifeOverhaul
             {
                 return;
             }
+            if (_next.State == TransitBus.Phase.Standing && _bus.State != TransitBus.Phase.Standing && !_rider.Active && !_ride.Riding)
+            {
+                // The bus behind has pulled in while the front one is not standing here (kept driving off, or gone): it is the front one now.
+                HandOff(ref _bus);
+                Promote();
+                return;
+            }
             if (_next.State == TransitBus.Phase.Idle)
             {
+                if (_nextCall >= 0 && _nextCall == _frontCall)
+                {
+                    _nextCall = -1;
+                }
                 if (_rider.Active || _ride.Riding || _bus.State == TransitBus.Phase.Idle || _player == PlayerStep.Choosing)
                 {
                     return;
@@ -1305,7 +1331,7 @@ namespace RealLifeOverhaul
             bool placed = inBay ? Mathf.Abs(along) <= 2.5f && toLane >= -0.15f && toKerb >= 0f && angle <= 3f   // (its rear corner a hand's breadth in the lane at the narrowest bay: NavCheck)
                                 : Mathf.Abs(along) <= 2.5f && Mathf.Abs(aside) <= 1.2f && angle <= 12f;
             Logger?.Info("Transit check (arrival): the " + line.Number + " stands at " + StopLabel(stop) + (inBay ? " in its bay" : "") + " with its middle " + Mathf.Abs(along).ToString("F1") + " m "
-                         + (along >= 0f ? "past" : "short of") + " the pole, " + Mathf.Abs(aside).ToString(inBay ? "F2" : "F1") + " m " + (aside >= 0f ? "towards the kerb" : "away from the kerb")
+                         + (along >= 0f ? "past" : "short of") + (Mathf.Abs(stop.Stand) > 0.01f ? " its place " + Mathf.Abs(stop.Stand).ToString("F1") + " m " + (stop.Stand > 0f ? "on from" : "short of") + " the pole" : " the pole") + ", " + Mathf.Abs(aside).ToString(inBay ? "F2" : "F1") + " m " + (aside >= 0f ? "towards the kerb" : "away from the kerb")
                          + " off the lane's line" + (inBay ? " (the bay's line is " + stop.BayOffset.ToString("F2") + ")" : "") + ", " + angle.ToString(inBay ? "F1" : "F0")
                          + " degrees off the lane's direction, door side to the kerb with " + toKerb.ToString(inBay ? "F2" : "F1") + " m of road between"
                          + (inBay ? ", its body " + toLane.ToString("F2") + " m clear of the lane's edge (a lorry on the lane's line passes " + (toLane + BusBay.LaneHalf - BusBay.WidestHalf).ToString("F2")
@@ -1823,6 +1849,12 @@ namespace RealLifeOverhaul
             }
             _away.Clear();
             _seenOff.Release(remove: true);
+            if (_changing)
+            {
+                DropPlan();   // (off the street at the change: the journey ends there; the fare of it still covers a bus for a while)
+                _booked = null;
+                _bookedLine = -1;
+            }
             _served = null;
             _frontCall = -1;
             _nextCall = -1;
@@ -1975,7 +2007,7 @@ namespace RealLifeOverhaul
             _frontCall = 0;
             _pinned[0] = true;
             _callAt[0] = NowMinutes() + BusLead * _minutesPerSecond;
-            _eta.Timetable(BusLead);
+            _eta.NoService();
             TransitStop call = _served.Calls.Count > 0 ? _served.Calls[0] : stop;
             if (!_bus.Send(call, false, out string refusal) && !_bus.Send(call, true, out refusal))
             {

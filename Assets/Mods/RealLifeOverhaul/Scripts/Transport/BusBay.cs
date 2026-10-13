@@ -371,6 +371,40 @@ namespace RealLifeOverhaul
             return true;
         }
 
+        /// <summary>Metres a parked car's body is kept clear of each end of a bus zone: no bumper over its line.</summary>
+        public const float CarMargin = 1f;
+
+        /// <summary>
+        /// Whether a parked car stands in a bus zone, or too near it: its body runs from <paramref name="carStart"/> to
+        /// <paramref name="carEnd"/> metres along the stop's lane and the zone from <paramref name="from"/> to
+        /// <paramref name="to"/>, and the body must keep <paramref name="margin"/> clear of both ends. A car that only
+        /// touches the margin is in it.
+        /// </summary>
+        public static bool CarInZone(float carStart, float carEnd, float from, float to, float margin = CarMargin)
+        {
+            if (carEnd < carStart)
+            {
+                float swap = carEnd;
+                carEnd = carStart;
+                carStart = swap;
+            }
+            return carEnd > from - margin && carStart < to + margin;
+        }
+
+        /// <summary>
+        /// The game's parking spots given up when a run of kerbside parking <paramref name="was"/> metres long is cut to
+        /// <paramref name="now"/> metres, at one spot each <paramref name="spot"/> metres (ParkingLaneGenerator lays its cars
+        /// a spot at a time from one end, and a spot that no longer fits whole is never laid).
+        /// </summary>
+        public static int SpotsLost(float was, float now, float spot)
+        {
+            if (spot < 0.1f || was <= now)
+            {
+                return 0;
+            }
+            return Math.Max(0, (int)Math.Floor(was / spot + 1e-4f) - (int)Math.Floor(Math.Max(0f, now) / spot + 1e-4f));
+        }
+
         /// <summary>
         /// How many times a broken line's pattern (a dash and its gap, of which <paramref name="paint"/> is the dash's
         /// share) is laid along a line <paramref name="length"/> metres long, for a pattern <paramref name="repeat"/>

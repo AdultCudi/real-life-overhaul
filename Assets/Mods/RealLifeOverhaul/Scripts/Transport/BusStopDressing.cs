@@ -15,6 +15,11 @@ namespace RealLifeOverhaul
     /// (<c>bus_stop_sign</c>, <c>bus_shelter</c>); otherwise the same things are built from
     /// plain shapes to the same dimensions.
     ///
+    /// THE POLE stands where TransitMap put it (BusInside.SignPlaces): beside the shelter's far end set back from the kerb,
+    /// or behind the waiting place, or beyond an end of the bus, and never on the kerb by either door or on the way to one
+    /// (it used to stand at the kerb beside the bus's middle, in the middle door's way and, with the bus a little along,
+    /// in the front door's). Its cut in the mesh takes in its timetable plate.
+    ///
     /// IT IS SOLID. The game moves everyone on foot on the navigation mesh (the player by click
     /// and by the mod's own controls alike; colliders stop nobody), so what must not be walked
     /// through is cut out of the mesh, the way the cordon's walls and the frontage's cars are:
@@ -451,7 +456,7 @@ namespace RealLifeOverhaul
         // The boxes, for the walker's radius: the cut is that much wider than a box all round.
         private void Lay()
         {
-            Set(_blocks[0], new Vector3(0f, 1f, 0f), new Vector3(0.08f, 2f, 0.08f), true);
+            Set(_blocks[0], new Vector3(0.12f, 1f, 0f), new Vector3(0.40f, 2f, 0.08f), true);   // the pole and its timetable plate, on the pavement side of it
             Set(_blocks[1], new Vector3(BackX, 1f, 0f), new Vector3(0.04f, 2f, ShelterLength), true);
             Set(_blocks[2], new Vector3(0f, 1f, EndZ), new Vector3(BackX * 2f + 0.04f, 2f, 0.04f), true);
             Set(_blocks[3], new Vector3(BackX - 0.24f, 1f, -EndZ), new Vector3(0.48f, 2f, 0.04f), true);

@@ -586,11 +586,11 @@ namespace RealLifeOverhaul
             Vector3 front;
             if (bay)
             {
-                front = stop.Lane + stop.Along * -_middleAhead + right * _curveIn.Offset;   // where RouteToBay has it come to rest
+                front = stop.Lane + stop.Along * (stop.Stand - _middleAhead) + right * _curveIn.Offset;   // where RouteToBay has it come to rest
             }
             else
             {
-                front = stop.Lane + stop.Along * -_middleAhead;                           // ...and RouteToLane
+                front = stop.Lane + stop.Along * (stop.Stand - _middleAhead);            // ...and RouteToLane
                 if (SceneParking.InStrip(stop.Lane - stop.Along * (BodyLength * 0.5f + 1f), stop.Lane + stop.Along * (BodyLength * 0.5f + 1f), BodyHalfWidth + 0.2f,
                         _made != null ? _made.Body : null, TrafficTools.VehicleMask) != null)
                 {
@@ -814,7 +814,7 @@ namespace RealLifeOverhaul
                 Add(line, i);
             }
             _laneNext = stop.PathIndex;
-            _route.Add(stop.Lane + stop.Along * (FinalShort - _middleAhead));
+            _route.Add(stop.Lane + stop.Along * (stop.Stand + FinalShort - _middleAhead));   // (Stand: where neither door lines up with what stays on the kerb)
             _routePoints.Add(-1);
         }
 
@@ -828,7 +828,7 @@ namespace RealLifeOverhaul
             float offset = curve.Offset;
             int points = curve.Points;
             float settle = BusBay.Settle;
-            float leaves = points * BusBay.Step + settle + _middleAhead + 0.5f;   // metres of line before the stop at which the path leaves the lane
+            float leaves = points * BusBay.Step + settle + _middleAhead + 0.5f - stop.Stand;   // metres of line before the stop at which the path leaves the lane
             int i = from;
             for (; i < stop.PathIndex && stop.Metres - line.Metres[i] > leaves; i++)
             {
@@ -837,7 +837,7 @@ namespace RealLifeOverhaul
             _laneNext = i;
             _bayFrom = _route.Count;
             Vector3 right = Vector3.Cross(Vector3.up, stop.Along);
-            Vector3 rest = stop.Lane + stop.Along * -_middleAhead + right * offset;
+            Vector3 rest = stop.Lane + stop.Along * (stop.Stand - _middleAhead) + right * offset;
             for (int k = points; k >= 1; k--)
             {
                 float before = k * BusBay.Step;
@@ -965,7 +965,7 @@ namespace RealLifeOverhaul
                         // Let go where somebody could see it, or near the player: it goes once nobody can and the player is not
                         // near. At the end of its route it drives on along the road, out of sight; only after GoOutMost, still
                         // seen, does it stand where it is (it is never taken off where it can be seen).
-                        bool seen = InView || Near;
+                        bool seen = InView || (Near && now - _since < GoOutMost);   // (after GoOutMost only being seen keeps it)
                         if (!seen)
                         {
                             Release(remove: true);
@@ -1208,7 +1208,7 @@ namespace RealLifeOverhaul
             Vector3 right = Vector3.Cross(Vector3.up, Stop.Along);
             Vector3 offset = centre - Stop.Lane;
             offset.y = 0f;
-            along = Vector3.Dot(offset, Stop.Along);
+            along = Vector3.Dot(offset, Stop.Along) - Stop.Stand;   // (from where it is to stand: Stop.Stand on from the pole)
             aside = Vector3.Dot(offset, right);
             angle = Vector3.Angle(forward, Stop.Along);
             float halfLength = (_noseAhead + _tailBehind) * 0.5f;
@@ -1435,6 +1435,9 @@ namespace RealLifeOverhaul
             _awaitGap = false;
             if (_route.Count < 2)
             {
+                _gate = -1;        // (pulled up at a light, say: it is no longer waiting for one)
+                _gateWhy = Hold.None;
+                _driver.Stop();
                 return true;   // nowhere at all to drive to: it stands there until nobody can see it
             }
             Begin();

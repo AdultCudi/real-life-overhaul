@@ -476,6 +476,16 @@ namespace RealLifeOverhaul
                 float pa = Along0 + da * k - along, ps = Aside0 + ds * k - aside;
                 return pa * pa + ps * ps <= Half * Half;
             }
+
+            /// <summary>Metres from a point (along, aside) to the strip's middle line: within <see cref="Half"/> of it, the point is on the strip.</summary>
+            public float Distance(float along, float aside)
+            {
+                float da = Along1 - Along0, ds = Aside1 - Aside0;
+                float length2 = da * da + ds * ds;
+                float k = length2 > 1e-6f ? Math.Max(0f, Math.Min(1f, ((along - Along0) * da + (aside - Aside0) * ds) / length2)) : 0f;
+                float pa = Along0 + da * k - along, ps = Aside0 + ds * k - aside;
+                return (float)Math.Sqrt(pa * pa + ps * ps);
+            }
         }
 
         public const float WalkwayHalf = 0.75f;   // the walkway from the waiting place to a door: 1.5 m wide
@@ -487,16 +497,144 @@ namespace RealLifeOverhaul
         /// The strips kept clear at a stop, for a bus standing with its middle beside the pole (as it stands in the lane or its
         /// bay): the kerb from beyond the middle door to beyond the front door, and a walkway from the waiting place to each
         /// door. <paramref name="kerb"/> is metres from the lane's line to the kerb's edge; the waiting place is given the same way.
+        /// <paramref name="stand"/> is metres the bus stands on from the pole (<see cref="StandShift"/>): its doors are that much further on.
         /// </summary>
-        public static Strip[] BoardingStrips(float kerb, float waitAlong, float waitAside)
+        public static Strip[] BoardingStrips(float kerb, float waitAlong, float waitAside, float stand = 0f)
         {
             float edge = kerb + KerbIn;
             return new[]
             {
-                new Strip(MiddleDoor - KerbBeyond, edge, FrontDoor + KerbBeyond, edge, KerbHalf),
-                new Strip(waitAlong, waitAside, FrontDoor, kerb, WalkwayHalf),
-                new Strip(waitAlong, waitAside, MiddleDoor, kerb, WalkwayHalf)
+                new Strip(MiddleDoor + stand - KerbBeyond, edge, FrontDoor + stand + KerbBeyond, edge, KerbHalf),
+                new Strip(waitAlong, waitAside, FrontDoor + stand, kerb, WalkwayHalf),
+                new Strip(waitAlong, waitAside, MiddleDoor + stand, kerb, WalkwayHalf)
             };
+        }
+
+        // ---------------------------------------------------------------- the stop's pole, and where the bus stands by it
+
+        /// <summary>What of the stop's pole stands out from its middle at a walker's height: the pole and its timetable plate (the flag is over head height).</summary>
+        public const float PoleReach = 0.35f;
+
+        /// <summary>Metres a walker needs between the pole and the way to a door: the navigation mesh's walker radius and a hand more.</summary>
+        public const float PoleClear = 0.30f;
+
+        /// <summary>Half a door's opening along the bus (<see cref="InDoor"/>).</summary>
+        public const float DoorHalf = 0.59f;
+
+        /// <summary>Metres onto the pavement from the kerb's edge that a door's step and the people at it take up.</summary>
+        public const float DoorStep = 1.2f;
+
+        /// <summary>Metres between the edge of a door's opening and anything standing on the kerb beside it, at the least.</summary>
+        public const float DoorBy = 0.25f;
+
+        /// <summary>
+        /// The metres the bus may stand on from the pole (negative: short of it), in the order tried: beside the pole first.
+        /// In a bay only those from 0 to <see cref="BayStandMost"/> (TransitMap.LayBay leaves that much slack ahead and none behind).
+        /// </summary>
+        public static readonly float[] StandShifts = { 0f, 0.5f, -0.5f, 1.0f, -1.0f };
+
+        /// <summary>The most a bus may stand on from the pole in its bay: half the slack its bay has ahead (TransitMap.BayAheadSlack).</summary>
+        public const float BayStandMost = 0.5f;
+
+        /// <summary>
+        /// The places the pole may stand, in the order tried: X metres onto the pavement from the kerb's edge, Z metres along
+        /// from where the bus's middle stands. Beside the shelter's far end, set back from the kerb; set back behind the
+        /// waiting place; at the bus's rear end; ahead of its nose. Every one is clear of the boarding strips and of both
+        /// doors however the bus stands (<see cref="StandShifts"/>): the economy check says so.
+        /// </summary>
+        public static readonly Spot[] SignPlaces =
+        {
+            new Spot(2.0f, 5.5f),
+            new Spot(1.6f, -3.2f),
+            new Spot(0.5f, -(BusBay.BusLength * 0.5f + 1.0f)),
+            new Spot(0.5f, FrontDoor + KerbBeyond + 2.7f)
+        };
+
+        /// <summary>The one of <see cref="SignPlaces"/> that is only taken where the stop has a shelter (it stands by its end panel).</summary>
+        public const int SignByShelter = 0;
+
+        /// <summary>
+        /// Whether the pole may stand at (along, aside): clear of every boarding strip and of both doors' openings and their
+        /// steps by <see cref="PoleReach"/> and <see cref="PoleClear"/>, with the bus standing <paramref name="stand"/> on.
+        /// </summary>
+        public static bool SignClear(float along, float aside, float kerb, float waitAlong, float waitAside, float stand)
+        {
+            float reach = PoleReach + PoleClear;
+            Strip[] strips = BoardingStrips(kerb, waitAlong, waitAside, stand);
+            for (int i = 0; i < strips.Length; i++)
+            {
+                if (strips[i].Distance(along, aside) < strips[i].Half + reach)
+                {
+                    return false;
+                }
+            }
+            return !InDoorWay(along, aside, kerb, stand, reach);
+        }
+
+        /// <summary>The same, for every way the bus may stand (<see cref="StandShifts"/>).</summary>
+        public static bool SignClearAlways(float along, float aside, float kerb, float waitAlong, float waitAside)
+        {
+            for (int i = 0; i < StandShifts.Length; i++)
+            {
+                if (!SignClear(along, aside, kerb, waitAlong, waitAside, StandShifts[i]))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>Whether something reaching <paramref name="reach"/> from (along, aside) stands in a door's opening or at its step.</summary>
+        public static bool InDoorWay(float along, float aside, float kerb, float stand, float reach)
+        {
+            if (aside > kerb + DoorStep + reach)
+            {
+                return false;
+            }
+            return Math.Abs(along - (FrontDoor + stand)) < DoorHalf + reach || Math.Abs(along - (MiddleDoor + stand)) < DoorHalf + reach;
+        }
+
+        /// <summary>
+        /// Where the bus stands, in metres on from the pole: the first of <see cref="StandShifts"/> from
+        /// <paramref name="least"/> to <paramref name="most"/> at which neither door lines up with anything standing on the
+        /// kerb, else the first at which the front door (the way in) does not, else beside the pole. The things are given
+        /// by where their middles are along the lane (<paramref name="at"/>) and how far each reaches along it either way
+        /// (<paramref name="half"/>); the first <paramref name="count"/> count.
+        /// </summary>
+        public static float StandShift(float[] at, float[] half, int count, float least, float most)
+        {
+            float frontOnly = float.NaN;
+            for (int i = 0; i < StandShifts.Length; i++)
+            {
+                float shift = StandShifts[i];
+                if (shift < least - 1e-4f || shift > most + 1e-4f)
+                {
+                    continue;
+                }
+                bool front = DoorFree(FrontDoor + shift, at, half, count);
+                if (front && DoorFree(MiddleDoor + shift, at, half, count))
+                {
+                    return shift;
+                }
+                if (front && float.IsNaN(frontOnly))
+                {
+                    frontOnly = shift;
+                }
+            }
+            return float.IsNaN(frontOnly) ? 0f : frontOnly;
+        }
+
+        /// <summary>Whether a door whose middle is <paramref name="door"/> metres along has nothing on the kerb within <see cref="DoorBy"/> of its opening.</summary>
+        public static bool DoorFree(float door, float[] at, float[] half, int count)
+        {
+            for (int i = 0; at != null && half != null && i < count && i < at.Length && i < half.Length; i++)
+            {
+                if (Math.Abs(at[i] - door) < DoorHalf + DoorBy + half[i])
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         /// <summary>Whether something standing at (along, aside) is in the way of boarding, by the strips.</summary>

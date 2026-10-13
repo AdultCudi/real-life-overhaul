@@ -180,7 +180,7 @@ namespace RealLifeOverhaul
             else
             {
                 CharacterLighting lighting = quality.Lighting;
-                text.AppendLine("character quality: managed characters " + quality.ManagedCharacters
+                text.AppendLine("character quality: managed characters " + quality.ManagedCharacters + ", others in strand hair with the hair finish " + quality.OtherCharacters
                                 + ", " + HairLook.Describe()
                                 + ", textures sharpened " + CharacterTools.SharpenedCount
                                 + ", lighting " + (lighting == null ? "no set-up found" : (lighting.Applied ? "applied" : "not applied") + " (softened " + lighting.SoftenedLights + ", added " + lighting.AddedLights + ")"));
