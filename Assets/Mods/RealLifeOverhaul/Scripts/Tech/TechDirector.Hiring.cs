@@ -34,6 +34,28 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The labour market and the player's hiring; null while the part is off.</summary>
         public HiringFile Hiring => _hiringOn ? _hiring : null;
 
+        /// <summary>
+        /// The player has taken the post of a rival's ad (Careers, through Wiring/CareersLinks): the first ad of that company for
+        /// that family and level is filled, as an ad a seeker takes is. True if there was one.
+        /// </summary>
+        internal bool FillRivalAd(string rival, int family, int level)
+        {
+            if (!_hiringOn || _hiring == null)
+            {
+                return false;
+            }
+            for (int i = 0; i < _hiring.RivalAds.Count; i++)
+            {
+                RivalAd ad = _hiring.RivalAds[i];
+                if (ad.Rival == rival && ad.Family == family && ad.Level == level)
+                {
+                    _hiring.RivalAds.RemoveAt(i);
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public IReadOnlyList<string> Districts => _districts;
 
         // ---------------------------------------------------------------- starting and stopping

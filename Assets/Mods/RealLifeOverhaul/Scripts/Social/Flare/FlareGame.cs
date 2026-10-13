@@ -119,6 +119,9 @@ namespace RealLifeOverhaul.Flare
         /// <summary>A post about the player's own run for office went out: what it is worth to the campaign, thousandths of a point. Default: nothing.</summary>
         public static Action<int> Campaign;
 
+        /// <summary>The degree the player graduated with today at the university's ceremony, in words, or null (Careers). Default: never.</summary>
+        public static Func<string> Graduated;
+
         public static void Reset()
         {
             People = null;
@@ -151,6 +154,7 @@ namespace RealLifeOverhaul.Flare
             Headlines = null;
             Issue = null;
             Campaign = null;
+            Graduated = null;
         }
 
         internal static T Ask<T>(Func<T> bridge, T otherwise)

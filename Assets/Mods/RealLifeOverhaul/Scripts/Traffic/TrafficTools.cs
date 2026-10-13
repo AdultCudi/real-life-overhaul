@@ -39,6 +39,15 @@ namespace RealLifeOverhaul
             TrafficManager.HasInstance && TrafficManager.IsInitialized && !BuildingManager.IsInsideBuilding
             && TrafficManager.Instance.enabled;
 
+        /// <summary>
+        /// True while the player is out on a street whose traffic the game has stopped for its fast forward (the game's
+        /// GameSpeedController takes every ordinary car off and switches the traffic system off while time runs six times
+        /// as fast). The road graph is all there; nothing drives on it. For a bus ride fast-forwarded on the game's panel.
+        /// </summary>
+        public static bool Paused =>
+            TrafficManager.HasInstance && TrafficManager.IsInitialized && !BuildingManager.IsInsideBuilding
+            && !TrafficManager.Instance.enabled && !GoingPublic.TrafficMirrored;
+
         /// <summary>Layers that hold vehicles of any kind; 0 if the game's layer names ever change.</summary>
         public static int VehicleMask
         {

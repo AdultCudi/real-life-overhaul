@@ -50,6 +50,40 @@ namespace RealLifeOverhaul.Tech
         /// <summary>A day's power (service 0, thousandths of a kWh) or water (1, thousandths of a cubic metre) at the city's utilities' tariff, cents at today's prices. Default: a plain tariff.</summary>
         public static Func<int, long, long> UtilityCents;
 
+        /// <summary>What the player's record as a founder adds to a pitch, thousandths (Careers: the rungs reached in a tech profession, the years, their name). Default: nothing.</summary>
+        public static Func<int> Founder;
+
+        /// <summary>What a course costs the player's staff, basis points of its fee (Careers: half with an academy of the player's own). Default: the whole fee.</summary>
+        public static Func<int> CourseShareBp;
+
+        /// <summary>A degree the business sponsors for a professional: its fee now, whole money, or 0 with the university closed (Careers). Default: none.</summary>
+        public static Func<int> DegreeFee;
+
+
+        public static int CourseShare()
+        {
+            try
+            {
+                return CourseShareBp != null ? Math.Max(0, Math.Min(10000, CourseShareBp())) : 10000;
+            }
+            catch (Exception)
+            {
+                return 10000;
+            }
+        }
+
+        public static int FounderNow()
+        {
+            try
+            {
+                return Founder != null ? Math.Max(0, Math.Min(200, Founder())) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
         public static int EsteemNow()
         {
             try
@@ -77,6 +111,9 @@ namespace RealLifeOverhaul.Tech
             Supplied = null;
             Mbps = null;
             UtilityCents = null;
+            Founder = null;
+            CourseShareBp = null;
+            DegreeFee = null;
         }
     }
 }

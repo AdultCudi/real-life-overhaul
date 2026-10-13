@@ -45,6 +45,8 @@ namespace RealLifeOverhaul
             Meta.Dev.Gated(context);   // (the option has been read now)
             Tech.TechTypes.Logger = context.Logger;
             Tech.TechTypes.Register();   // the tech sector's business types, before any save that holds one is loaded (Scripts/Tech/Firms/TechTypes)
+            Careers.AcademyType.Logger = context.Logger;
+            Careers.AcademyType.Register();   // the player's own training academy, a business type, before any save that holds one is loaded (Scripts/Careers/AcademyType)
 
             var options = new ModOptions()
                 .AddHeader("reallife_camera_header")
@@ -238,6 +240,31 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_career_dispatch", () => JobDirector.Instance?.TestShift(CareerWork.Dispatch, false))
                 .AddButton("reallife_test_career_lead", () => JobDirector.Instance?.TestShift(CareerWork.Lead, false))
                 .AddButton("reallife_test_career_gig", () => JobDirector.Instance?.TestGig())
+                .AddToggle(Settings.CareersStudyId, "reallife_study_enabled", Settings.CareersStudy,
+                    v => Settings.CareersStudy = v)
+                .AddButton("reallife_study_test_class", () => Careers.CareersDirector.Instance?.TestClass())
+                .AddButton("reallife_study_test_exam", () => Careers.CareersDirector.Instance?.TestExam())
+                .AddButton("reallife_study_test_skills", () => Careers.CareersDirector.Instance?.TestSkills())
+                .AddToggle(Settings.CareersDegreesId, "reallife_degrees_enabled", Settings.CareersDegrees,
+                    v => Settings.CareersDegrees = v)
+                .AddButton("reallife_degrees_test_graduate", () => Careers.CareersDirector.Instance?.TestGraduate())
+                .AddToggle(Settings.CareersFamilyId, "reallife_family_study_enabled", Settings.CareersFamily,
+                    v => Settings.CareersFamily = v)
+                .AddButton("reallife_family_test_tutor", () => Careers.CareersDirector.Instance?.TestTutor())
+                .AddToggle(Settings.CareersJobsId, "reallife_work_enabled", Settings.CareersJobs,
+                    v => Settings.CareersJobs = v)
+                .AddButton("reallife_work_test_offer", () => Careers.CareersDirector.Instance?.TestOffer())
+                .AddButton("reallife_work_test_day", () => Careers.CareersDirector.Instance?.TestWorkDay())
+                .AddButton("reallife_work_test_vacancies", () => Careers.CareersDirector.Instance?.TestVacancies())
+                .AddToggle(Settings.CareersLifeId, "reallife_life_enabled", Settings.CareersLife,
+                    v => Settings.CareersLife = v)
+                .AddButton("reallife_life_test_review", () => Careers.CareersDirector.Instance?.TestReview())
+                .AddButton("reallife_life_test_matter", () => Careers.CareersDirector.Instance?.TestMatter())
+                .AddButton("reallife_life_test_approach", () => Careers.CareersDirector.Instance?.TestApproach())
+                .AddToggle(Settings.CareersOwnId, "reallife_own_enabled", Settings.CareersOwn,
+                    v => Settings.CareersOwn = v)
+                .AddButton("reallife_own_test_contract", () => Careers.CareersDirector.Instance?.TestContract())
+                .AddButton("reallife_own_test_found", () => Careers.CareersDirector.Instance?.TestFound())
                 .AddSplitter()
                 .AddHeader("reallife_business_header")
                 .AddToggle(Settings.BusinessId, "reallife_business_enabled", Settings.Business,
@@ -959,6 +986,7 @@ namespace RealLifeOverhaul
             _running = context.ModId;
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on; warnings and errors always
             Tech.TechTypes.Register();   // (furnished as the game's web development agency once its type is known)
+            Careers.AcademyType.Register();   // (furnished as the game's recruitment office once its type is known)
             OtherMods.Look(context.Logger);   // other authors' mods this one stands aside for: one walk over the loaded assemblies (Core/OtherMods)
             GoingPublic.Logger = context.Logger;
             GoingPublicLink.Logger = context.Logger;
@@ -1033,6 +1061,8 @@ namespace RealLifeOverhaul
             Tech.HiringGame.Logger = context.Logger;
             Tech.FirmsGame.Logger = context.Logger;
             Tech.TechApp.Logger = context.Logger;
+            Careers.CareersDirector.Logger = context.Logger;
+            Careers.CampusApp.Logger = context.Logger;
 
             _root = new GameObject(RootName);
             SessionWatch.Logger = context.Logger;
@@ -1125,6 +1155,7 @@ namespace RealLifeOverhaul
             _root.AddComponent<Economy.ServicesDirector>();   // the cleaning service and selling a business, and the Services app (Scripts/Economy/Services)
             _root.AddComponent<Economy.CompanyDirector>();   // running a business: staff, insurance, marketing, tax and licences, and the Company app (Scripts/Economy/Company)
             _root.AddComponent<Tech.TechDirector>();   // the professions and the tech sector: roles, skills and the Open Roles app (Scripts/Tech); after the company, so that its day follows the company's
+            _root.AddComponent<Careers.CareersDirector>();   // education and careers: the city's courses, the player's skills and the Campus app (Scripts/Careers); after the tech sector, whose roles it reads
             Economy.EstateDirector.Logger = context.Logger;
             Economy.EstateApp.Logger = context.Logger;
             _root.AddComponent<Economy.EstateDirector>();   // property: the market, letting, works, selling, an agency, a hotel and car hire, and the Property app (Scripts/Economy/Estate)

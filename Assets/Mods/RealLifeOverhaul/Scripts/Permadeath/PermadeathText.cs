@@ -109,6 +109,8 @@ namespace RealLifeOverhaul.Permadeath
                 .Replace("{convictions}", Count(s.Convictions, "reallife_pd_n_time_one", "reallife_pd_n_time_many"))
                 .Replace("{followers}", Number(s.Followers))
                 .Replace("{elections}", Number(s.Elections))
+                .Replace("{degree}", s.Degree)
+                .Replace("{career}", s.Career)
                 .Replace("{mourners}", Join(Names));
         }
 

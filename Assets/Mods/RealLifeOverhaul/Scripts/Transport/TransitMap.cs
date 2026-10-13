@@ -41,6 +41,11 @@ namespace RealLifeOverhaul
         public string NoBay;      // why it has none, for the log
         public BusZone Zone;      // where it has one, what its zone needs done to the street (BusZones)
 
+        // The boarding strip (BusInside.BoardingStrips): the game's street furniture standing on the kerb by the doors or on the
+        // way from the waiting place to them, switched off while the buses run (BusZones), so that nobody walks round it to board.
+        public readonly List<GameObject> Boarding = new List<GameObject>(4);
+        public bool BoardingMade; // switched off now
+
         /// <summary>The length of strip the bay takes up.</summary>
         public float BayLength => BayBehind + BayAhead;
     }
@@ -773,6 +778,7 @@ namespace RealLifeOverhaul
             }
             stop.Sign = sign;
             stop.Wait = wait;
+            FindBoarding(stop, right, edge);
             stop.Parking = _parkingMask != 0 && Physics.CheckSphere(lane + right * (edge * 0.5f + 0.6f) + Vector3.up * 0.5f, 0.6f, _parkingMask, QueryTriggerInteraction.Collide);
             if (!bayOnly)
             {
@@ -789,6 +795,72 @@ namespace RealLifeOverhaul
                 stop.ShelterAt = floor;
             }
             return stop;
+        }
+
+        // ---------------------------------------------------------------- the boarding strip
+
+        private static readonly Collider[] BoardHits = new Collider[24];
+        private const float BoardingPieceMost = 2.6f;   // metres across a piece of furniture may be, at the most, to be switched off
+
+        // The street furniture standing on the boarding strip at a stop (BusInside.BoardingStrips): the kerb from beyond the
+        // middle door to beyond the front door and a walkway 1.5 m wide from the waiting place to each door. Only plain
+        // pieces of the game's street furniture (BusZones.PropOf), not too big; never a tree, a building or anything of the mod's
+        // own. Three boxes, once per stop as the network is laid out.
+        private static void FindBoarding(TransitStop stop, Vector3 right, float kerb)
+        {
+            stop.Boarding.Clear();
+            stop.BoardingMade = false;
+            if (_propsLayer < 0)
+            {
+                return;
+            }
+            Vector3 toWait = stop.Wait - stop.Lane;
+            BusInside.Strip[] strips = BusInside.BoardingStrips(kerb, Vector3.Dot(Flat(toWait), stop.Along), Vector3.Dot(Flat(toWait), right));
+            for (int s = 0; s < strips.Length; s++)
+            {
+                BusInside.Strip strip = strips[s];
+                Vector3 a = stop.Lane + stop.Along * strip.Along0 + right * strip.Aside0;
+                Vector3 b = stop.Lane + stop.Along * strip.Along1 + right * strip.Aside1;
+                Vector3 way = Flat(b - a);
+                if (way.sqrMagnitude < 0.01f)
+                {
+                    continue;
+                }
+                Vector3 centre = (a + b) * 0.5f;
+                centre.y = stop.Wait.y + 1.2f;
+                int found = Physics.OverlapBoxNonAlloc(centre, new Vector3(strip.Half, 1.1f, strip.Length * 0.5f), BoardHits, Quaternion.LookRotation(way.normalized), 1 << _propsLayer,
+                    QueryTriggerInteraction.Ignore);
+                for (int i = 0; i < found; i++)
+                {
+                    Collider hit = BoardHits[i];
+                    BoardHits[i] = null;
+                    GameObject prop = hit != null ? BoardingPiece(hit) : null;
+                    if (prop != null && !stop.Boarding.Contains(prop) && (stop.Zone == null || !stop.Zone.Clear.Contains(prop)))
+                    {
+                        stop.Boarding.Add(prop);
+                    }
+                }
+            }
+        }
+
+        // A piece of the game's street furniture that may be switched off for the boarding strip, or null.
+        private static GameObject BoardingPiece(Collider hit)
+        {
+            if (hit.attachedRigidbody != null || hit.gameObject.layer != _propsLayer || hit.GetComponentInParent<TreeController>() != null)
+            {
+                return null;   // a thing that moves, not street furniture, or a street tree
+            }
+            Transform root = hit.transform.root;
+            if (root != null && root.name.StartsWith("RealLifeOverhaul", StringComparison.Ordinal))
+            {
+                return null;   // the mod's own: the shelter, the stop's sign
+            }
+            Vector3 size = hit.bounds.size;
+            if (size.x > BoardingPieceMost || size.z > BoardingPieceMost)
+            {
+                return null;   // a kiosk, a wall: not a piece of furniture to take away
+            }
+            return BusZones.PropOf(hit);
         }
 
         // Another lane of the road to the right of a lane point (the road graph names the lanes that run beside one).

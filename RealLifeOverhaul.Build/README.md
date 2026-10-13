@@ -297,6 +297,27 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       PermadeathGame     everything it touches of the game: the game's own "the player is dead", the fade, the save, the main menu, the tutorial and missions; the machine's memorial
       Mortality          the one door the features where a life is in danger call (crash, hit on foot, mugging, the lender's men, the flu)
       PermadeathSettings its options block and its feature entry (Guide figures from the rules)
+    Careers/   education and careers: the city's courses and the player's own skills, the professions at the city's employers,
+               working life, working for oneself, the university, the family's schooling and an academy of the player's own
+      Study/StudyCatalogue  every course (short, diploma, degree, after a degree, certificate), the timetable, exams, grades, fees,
+                            grants, the student loan, learning and fading (game-free: EconomyCheck runs it)
+      Study/StudyRules      the rules of studying: classes joined and missed, homework, the exam's mark, retakes, fees, the loan,
+                            skills, a child's degree, tutoring, an academy's students (game-free)
+      Work/ProCatalogue     twenty-five professions, each a ladder of ranks on the professions' roles and the player's skills (game-free)
+      Work/ProRules         what a rank asks, an employer's score, the interview, the offer and haggling, the working day, notice,
+                            references, the city's vacancies (game-free)
+      Work/LifeRules        reviews, rises, bonuses, promotion, burnout, office matters, search firms, redundancy, benefit, options,
+                            the pension, the top seats of a rival's company, a conflict of interest (game-free)
+      Work/OwnRules         founding a company or a practice, a founder's record, restraint clauses and claims, freelance contracts (game-free)
+      CareersModel, Work/WorkModel, CareersStore, Work/WorkStore   the save's records and its one line (game-free)
+      CareersDirector       the one component (no Update): a one-second timer, the game's hour and day, the parts in partial files
+                            (.Study, .Work, .Life, .Own, .Degrees, .Family, .Tests)
+      Sitting               a class, homework, an exam, a working day, a contract, tutoring or a ceremony left to the game's own
+                            activity panel and clock (Jobs/ShiftSkip)
+      CampusApp, CareerApp  the Campus and Career apps in the game's own frame (GameUi.AppShell)
+      CampusBuilding        Hudson City University: the largest office building of the city, with its sign
+      AcademyType           the player's own training academy, a business type of the game's (registered at the start, stripped for removal)
+      CareersBridges        what it asks of the others (Wiring/CareersLinks fills them in)
     Districts/ the district view on the city map: ten layers in its filter list tint each district, with a key, a card and the districts in order
       DistrictRules      the layers, their scales and five bands, the colours, the key's ranges; DistrictLog, the crimes reported by district (game-free: EconomyCheck runs it)
       DistrictBridges    what it asks of the others, one reading per district (Wiring/DistrictLinks fills them in)

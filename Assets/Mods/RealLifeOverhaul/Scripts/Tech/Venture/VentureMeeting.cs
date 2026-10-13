@@ -86,7 +86,7 @@ namespace RealLifeOverhaul.Tech
             _revenue = revenue;
             _growth = growthMille;
             _people = people;
-            _score = 500;
+            _score = 500 + TechBridges.FounderNow();   // (a founder who left a profession to start this is listened to: Careers)
             _heard = TechText.T("reallife_vc_meet_player_open", "firm", VentureCatalogue.Firms[TalentCatalogue.Clamp(vc, 0, VentureCatalogue.FirmCount - 1)].Name);
             return Begin();
         }

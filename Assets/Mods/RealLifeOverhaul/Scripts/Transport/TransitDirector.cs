@@ -250,7 +250,8 @@ namespace RealLifeOverhaul
                     {
                         SaveGameManager.Current.LastPlayerPosition = place;
                         Logger?.Info("Transit check (save): written part of the way through a bus ride (" + _rider.Now + "): the save has the player at "
-                                     + (BusInside.SaveAtStart(_rider.Stage) ? "the stop they boarded at" + (fareBack > 0f ? ", the fare to be given back" : "") : "the stop they get off at") + ": PASS.");
+                                     + (_rider.Stage == BusInside.Stage.Arriving ? "the stop they get off at" : _rider.Passed != null ? StopLabel(_rider.Passed) + ", the last stop the bus called at"
+                                         : "the stop they boarded at") + (fareBack > 0f ? ", the fare to be given back" : "") + ": PASS.");
                     }
                     TransitState.Save(SaveGameManager.Current.modData, fareBack);
                 }
@@ -274,6 +275,10 @@ namespace RealLifeOverhaul
                 if (_rider.Active)
                 {
                     _rider.Frame(Time.deltaTime, Time.time);
+                }
+                if (_journey)
+                {
+                    JourneyFrame();
                 }
                 if (_seat.Active)
                 {
@@ -359,7 +364,7 @@ namespace RealLifeOverhaul
 
             _subway.Tick(now, at, onFoot && !_ride.Riding && !_rider.Active && _player != PlayerStep.Choosing && !_seat.Active);
 
-            if (!Settings.Buses || !TrafficTools.Ready)
+            if (!Settings.Buses || !TransitBus.StreetReady)
             {
                 // Switched off, indoors, or traffic shut down: nothing of the buses stays on the street.
                 if (!_streetClear)
@@ -421,6 +426,10 @@ namespace RealLifeOverhaul
                 {
                     _seat.Abort();
                 }
+            }
+            if (_journey)
+            {
+                RunJourney(now);
             }
             RunBus(now);
             RunRiders(now);
@@ -554,6 +563,10 @@ namespace RealLifeOverhaul
         // Which stop has people waiting and a bus coming: the nearest dressed one, kept until the player is well away.
         private void Serve(Vector3 at, float now)
         {
+            if (_journey)
+            {
+                return;   // (the stop the player's bus drives to is the one served: Journey)
+            }
             if (_served != null && _player != PlayerStep.Choosing && !_ride.Riding)
             {
                 // Well away from it, or standing on foot at another dressed stop (the other side of the street, say): that one is served instead.
@@ -687,7 +700,7 @@ namespace RealLifeOverhaul
             {
                 case TransitBus.Phase.Idle:
                     bool due = _eta.Seconds <= BusLead || _eta.State == TransitEta.Mode.Delayed;
-                    if (due && now >= _nextTry && _player != PlayerStep.Choosing && !_ride.Riding)
+                    if (due && now >= _nextTry && _player != PlayerStep.Choosing && !_ride.Riding && !_journey)
                     {
                         // Out of view first; from the third refusal on it may start in view, far off.
                         if (_bus.Send(_served, _refusals >= 3, out string refusal))
@@ -713,7 +726,10 @@ namespace RealLifeOverhaul
 
                 case TransitBus.Phase.Approaching:
                     _eta.Track(TickInterval, _bus.Remaining, _bus.Waiting != TransitBus.Hold.None, _bus.SecondsLeft);
-                    Watch(now);
+                    if (!_journey)
+                    {
+                        Watch(now);   // (with the player aboard it is never moved up its line: Journey gives it up instead)
+                    }
                     break;
 
                 case TransitBus.Phase.Standing:
@@ -728,7 +744,7 @@ namespace RealLifeOverhaul
                     {
                         busy |= _waiting[i].Step == RiderStep.Rising || _waiting[i].Step == RiderStep.Boarding || _waiting[i].Step == RiderStep.Entering;
                     }
-                    bool held = (_player == PlayerStep.Choosing && now < _chooseUntil) || _ride.Riding || _rider.HoldsBus;   // (the player on the way to its door, getting on, or getting off again)
+                    bool held = (_player == PlayerStep.Choosing && now < _chooseUntil) || _ride.Riding || _rider.HoldsBus || _rider.Holds(_bus);   // (the player on the way to its door, getting on, or getting off again)
                     if (_rider.WantsDeparture && !busy)
                     {
                         Leave(now);   // they sit (or hold on): the doors close and it goes
@@ -928,9 +944,9 @@ namespace RealLifeOverhaul
             {
                 _seat.Stand(now);   // the bus is here: up off the bench
             }
-            if (_doorFound && Random.value < 0.6f)
+            if (_doorFound && Random.value < 0.6f && !(_journey && _served == _jOff))
             {
-                Alight(now);
+                Alight(now);   // (not where the player gets off: the middle door is theirs)
             }
             // How long it stands at the least. In the lane it is in the way of everything behind it, so where nobody at all
             // has business with it (nobody waiting or walking up, nobody getting out, the player not near and not aboard
