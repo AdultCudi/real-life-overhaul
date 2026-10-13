@@ -1,4 +1,6 @@
-0.9.2
+0.9.3
 
 Fixed
-- On a save from before the internet, or with the mod newly installed on a save, web design and software companies and the headquarters were closed at once for want of a connection. The ones you already have now get 7 days on the game's clock to get connected, with the days left in the Utilities app.
+- In a Going Public session, crashing, being arrested, going to prison or being stopped without a licence in another player's car no longer tows or impounds their car or charges you for it. It stays where you stopped.
+- When the city had no free ambulance, the one sent to a crash could be taken from another crash scene or vanish from the road in front of you.
+- A private driver's car could be pulled into a traffic accident or a street crime. Private drivers are now left alone.
