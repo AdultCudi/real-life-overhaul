@@ -31,6 +31,9 @@ namespace RealLifeOverhaul.Economy
         /// <summary>A rival opens near a business and undercuts it, as the business feature's own story. False if that feature will not start one there today. Default: never.</summary>
         public static Func<BuildingRegistration, bool> Copycat;
 
+        /// <summary>Thousandths more (or less) of the price a district bears at one business for its interior (Scripts/Interiors). Default: nothing.</summary>
+        public static Func<BuildingRegistration, int> Bears;
+
         public delegate bool FootfallWriter(BuildingRegistration reg, bool redraw, bool newDay, out int own, out int written);
 
         public static void Reset()
@@ -38,6 +41,7 @@ namespace RealLifeOverhaul.Economy
             Day = null;
             Footfall = null;
             Copycat = null;
+            Bears = null;
         }
     }
 
@@ -432,7 +436,7 @@ namespace RealLifeOverhaul.Economy
                 shop.Cycle = cycle;
                 shop.Area = CityModel.DistrictFootfall(shop.District);
                 int ratio = PriceRatio(reg, district, ref buys);
-                shop.Against = ratio > 0 ? CityModel.Against(ratio, CityModel.Tolerance(state, shop.District, level)) : 0;
+                shop.Against = ratio > 0 ? CityModel.Against(ratio, CityModel.WithBears(CityModel.Tolerance(state, shop.District, level), BearsAt(reg))) : 0;
                 shop.Over = shop.Against > 0 && CityModel.Over(shop.Against);
                 shop.Price = CityModel.PriceFootfall(shop.Against);
                 shop.Wanted = CityModel.Footfall(shop.Cycle, shop.Area, shop.Price);
@@ -455,6 +459,19 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             state.Buys = buys;
+        }
+
+        // What the business's interior adds to what its district bears (CityModel.WithBears keeps it inside its bounds).
+        private static int BearsAt(BuildingRegistration reg)
+        {
+            try
+            {
+                return CityBridges.Bears != null ? CityBridges.Bears(reg) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
         }
 
         // The game lets the one seller of a product in a neighbourhood charge more (ItemHelper.CalculateMaxAcceptablePrice): the same allowance is made here.

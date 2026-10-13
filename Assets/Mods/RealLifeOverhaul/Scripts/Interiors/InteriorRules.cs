@@ -32,7 +32,6 @@ namespace RealLifeOverhaul.Interiors
         public string Name = string.Empty;
         public string District = string.Empty;
         public InteriorKind Kind;
-        public bool Brand;                      // trades under one of the player's brands, or is a firm of the tech sector (filled by the links)
 
         // read from the game
         public int Interior;                    // the game's own interior design score, 0 to 100 (walls and floors)
@@ -307,12 +306,6 @@ namespace RealLifeOverhaul.Interiors
             return gap >= 0 ? Math.Min(BearsOverMost, gap) : -Math.Min(BearsUnderMost, -gap);
         }
 
-        /// <summary>A tolerance with the interior's part on it, thousandths.</summary>
-        public static int Tolerance(int tolerance, int bears)
-        {
-            return (int)((long)tolerance * (1000 + Clamp(bears, -BearsUnderMost, BearsOverMost)) / 1000);
-        }
-
         /// <summary>The chance a complaint about the place starts today, per mille: nothing until 10 short of the standard, then 4 a point, 120 at most.</summary>
         public static int ComplaintChance(int overall, int standard)
         {
@@ -353,12 +346,6 @@ namespace RealLifeOverhaul.Interiors
             return Clamp(comfort, 0, ComfortMost);
         }
 
-        /// <summary>The level staff paid fairly settle at, with the comfort of their workplace on it.</summary>
-        public static int Calm(int calm, int comfort)
-        {
-            return calm + Clamp(comfort, 0, ComfortMost);
-        }
-
         /// <summary>Thousandths a professional's morale heads higher for the comfort of their workplace.</summary>
         public static int Morale(int comfort)
         {
@@ -375,12 +362,6 @@ namespace RealLifeOverhaul.Interiors
         public static int OfficeBid(int overall)
         {
             return Clamp((overall - BidFrom) * BidMost / (100 - BidFrom), 0, BidMost);
-        }
-
-        /// <summary>A bid's weighed figure with the office's part: lower is better.</summary>
-        public static long Weighed(long bid, int reputation, int office)
-        {
-            return bid * (1500 - reputation - Clamp(office, 0, BidMost)) / 1000;
         }
 
         /// <summary>1 for a striking interior, -1 for a shabby one, 0 for neither.</summary>

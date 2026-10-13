@@ -325,6 +325,16 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       DistrictPanel      its window, a copy of the map's filter window beside it: the key, the card, the districts
       DistrictView       the one component: the layer ticked (Core/MapPlaces.RegisterChoice), the map's opening and the day, the tint, the card, the crime log; the test buttons
       DistrictGuide      its options block and its feature entry (Guide figures from the rules)
+    Interiors/ interiors and decor that matter: the game's interior design score, a decor score from the placed items, wear,
+               each district's standard, and what they do to customers, prices, complaints, brands, Standing, staff, hiring and bids
+      InteriorRules      the decor score (diminishing returns by item kind, each category's share, variety), the target by floor area,
+                         wear and dirt, the district's standard, every effect and its cap, the parts the other authors' mods take over (game-free)
+      InteriorStore      each business's wear and news in the save's one line (game-free)
+      InteriorGame       everything it touches of the game: the interior score, the placed items sorted by the game's own tags and
+                         types, the floor area, the district's minimum, the basket, a refresh's charge; InteriorBridges, what it asks of the others
+      InteriorDirector   the one component: the morning's round, the hourly basket, footfall written, complaints and news, the test buttons
+      InteriorTab        the Interior tab in BizMan: a copy of the game's own tab button and two of MyEmployees' white boxes
+      InteriorText, InteriorGuide   its words, its options block and its three feature entries (Guide figures from the rules)
 CharacterAssets/                   asset pipeline for the new looks (outside Assets, Unity ignores it)
   scripts/                         Blender scripts: make the meshes and textures, write them to build/
   PreviewProject/, preview.ps1     the game's character rebuilt under HDRP: a look is judged here before it ships

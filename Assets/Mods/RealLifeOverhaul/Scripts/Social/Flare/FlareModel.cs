@@ -32,7 +32,8 @@ namespace RealLifeOverhaul.Flare
         Headline = 24,     // the City Ledger's own account: a headline of the morning paper
         Issue = 25,        // the player about an issue in the city (safety after a crime, the roads after a crash)
         Campaign = 26,     // the player about their own run for office or their office (Civic/CivicOffice, through Wiring/FlareLinks)
-        Graduated = 27     // the player graduated at the university's ceremony (Careers, through Wiring/FlareLinks)
+        Graduated = 27,    // the player graduated at the university's ceremony (Careers, through Wiring/FlareLinks)
+        Interior = 28      // a business of the player's with a striking interior (Scripts/Interiors, through Wiring/InteriorLinks)
     }
 
     /// <summary>The issues a post can raise, as Flare knows them (Wiring/FlareLinks turns them into the council's own).</summary>

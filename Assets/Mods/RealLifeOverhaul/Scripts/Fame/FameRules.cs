@@ -64,6 +64,7 @@ namespace RealLifeOverhaul.Fame
         public const int DriftShare = 8;           // an eighth of the way a day...
         public const int DriftMost = 2;            // ...and never more than this
         public const int SatisfactionShare = 70;   // the customers: satisfaction against the prices
+        public const int InteriorMost = 2;         // points a shop's interior moves its figure in the customers' reputation, at most (Scripts/Interiors)
         public const int LowPenalty = 20;          // the workers: points at most for the share who stand low...
         public const int StrikePenalty = 15;       // ...and for a strike
         public const int ForgetDays = 7;           // integrity forgets a point towards 50 this often
@@ -173,7 +174,7 @@ namespace RealLifeOverhaul.Fame
             {
                 if (shops[i].Figures)
                 {
-                    sum += Clamp((Clamp(shops[i].Satisfaction, 0, 100) * SatisfactionShare + Clamp(shops[i].Pricing, 0, 100) * (100 - SatisfactionShare)) / 100 + Clamp(shops[i].Interior, -2, 2), 0, 100);
+                    sum += Clamp((Clamp(shops[i].Satisfaction, 0, 100) * SatisfactionShare + Clamp(shops[i].Pricing, 0, 100) * (100 - SatisfactionShare)) / 100 + Clamp(shops[i].Interior, -InteriorMost, InteriorMost), 0, 100);
                     n++;
                 }
             }

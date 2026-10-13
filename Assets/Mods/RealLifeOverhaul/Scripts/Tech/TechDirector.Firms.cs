@@ -274,7 +274,7 @@ namespace RealLifeOverhaul.Tech
                 if (t.Stage == (int)WorkStage.Bid && day >= t.End)
                 {
                     FirmPlace bidder = FirmOf(t.Place);
-                    if (bidder != null && FirmsRules.Decide(_firmsFile, t, bidder.File, day))
+                    if (bidder != null && FirmsRules.Decide(_firmsFile, t, bidder.File, day, TechBridges.OfficeBidAt(t.Place)))
                     {
                         long upfront = FirmsRules.Take(t, t.Place, day);
                         bidder.Today += upfront * Prices.Level / 1000;

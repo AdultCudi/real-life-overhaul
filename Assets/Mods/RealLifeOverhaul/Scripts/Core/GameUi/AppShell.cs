@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.GameUi
         public static IModLogger Logger;
 
         // What only draws or sounds stays on the copy; every other script of the game's is taken off.
-        private static readonly string[] Harmless =
+        internal static readonly string[] Harmless =
         {
             "ButtonEffects", "ToggleClickSound", "Badge", "HoverEffect", "ScrollBarDraggingComponent", "ScrollBarHandleSizeLimiter"
         };

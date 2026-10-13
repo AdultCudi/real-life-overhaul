@@ -120,6 +120,7 @@ namespace RealLifeOverhaul.Economy.Brands
         public const int RecFootfallMost = 12;      // at recognition of 100 in the district
         public const int LowStandards = 40;         // under this the brand's name is worth half
         public const int ToleranceMost = 4;         // of the customers prices cost, given back at standards of 100; nothing at 50 or under
+        public const int InteriorMost = 3;          // points a shop's interior counts more or less in its standards (Scripts/Interiors), at most
         public const int CannibalRadius = 150;      // metres: a franchised shop in the books this near takes customers
         public const int CannibalEach = 4;          // at no distance at all, falling to nothing at the radius
         public const int CannibalMost = 8;          // from all of them together

@@ -16,8 +16,9 @@ namespace RealLifeOverhaul
     /// not yet served, the hour under way included, and draws them all again. Meaningful Ambience, another author's
     /// mod, adds its customers for the hour under way once, when the hour turns: a redraw in the middle of the hour
     /// threw them away until the next. So while that mod is switched on, the customers of the hour under way are kept
-    /// as they were (theirs and the game's) and only the hours after it are drawn again. Without it the redraw is the
-    /// game's own, untouched.
+    /// as they were (theirs and the game's) and only the hours after it are drawn again, unless the business is not
+    /// open this hour or the game draws it no customers (then the hour is as the game leaves it: empty). Without that mod
+    /// the redraw is the game's own, untouched.
     ///
     /// The list is the game's private table of every business's customers for the day, read by reflection once (the
     /// field is looked up the first time; afterwards it is a dictionary lookup). Nothing of the game's is called that
@@ -98,9 +99,9 @@ namespace RealLifeOverhaul
                 }
                 CustomerEntriesHelper.UpdateCustomerEntriesForPlayerBusiness(reg, day);
                 List<CustomerEntry> after = Entries(reg);
-                if (after == null || Kept.Count == 0)
+                if (after == null || Kept.Count == 0 || !BusinessHelper.IsBusinessOpen(reg, hour) || !reg.AreAllRequirementsMet())
                 {
-                    return;
+                    return;   // (a business shut now, or that the game draws no customers for, has none this hour: as the game left it)
                 }
                 // The hour under way as it was: what the game has just drawn for it goes, what was there comes back.
                 after.RemoveAll(e => e != null && !e.completed && e.spawnTime != null && e.spawnTime.Day == today && e.spawnTime.Hour == hour && !KeptSet.Contains(e));

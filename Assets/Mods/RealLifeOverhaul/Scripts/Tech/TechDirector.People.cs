@@ -392,7 +392,7 @@ namespace RealLifeOverhaul.Tech
                 var d = new WorkDay
                 {
                     Day = day, Year = year, Hours = hours, WeekHours = p.WeekHours, MainPoints = person.MainPoints, Mentored = person.Mentored, Paid = p.GameWage, Going = p.Going,
-                    Esteem = esteem, OnCall = false, Wanted = TalentRules.Content(p, Seed)
+                    Esteem = esteem, OnCall = false, Wanted = TalentRules.Content(p, Seed), Comfort = TechBridges.ComfortAt(p.Place)
                 };
                 TalentRules.Mood(p, d);
                 if (person.Game != null)

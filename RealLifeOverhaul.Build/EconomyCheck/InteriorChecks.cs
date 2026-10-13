@@ -167,9 +167,10 @@ internal static partial class Program
         }
         Check(InteriorRules.Bears(60, 40) == 20 && InteriorRules.Bears(100, 15) == 30 && InteriorRules.Bears(20, 40) == -20 && InteriorRules.Bears(0, 70) == -20,
             "interiors: the district bears 1 per mille a point over the standard (3% at most) and 1 a point under (2% at most)");
-        Check(InteriorRules.Tolerance(1000, 30) == 1030 && InteriorRules.Tolerance(1000, 500) == 1030 && InteriorRules.Tolerance(1100, -20) == 1078,
-            "interiors: the interior's part goes on the district's own tolerance, inside its bounds");
-        Check(CityModel.Against(1030, InteriorRules.Tolerance(1000, 30)) == 1000, "interiors: prices 3% over the district's are borne in full at a fine place");
+        Check(CityModel.WithBears(1000, 30) == 1030 && CityModel.WithBears(1000, 500) == 1100 && CityModel.WithBears(1100, -20) == 1078 && CityModel.WithBears(1000, 0) == 1000,
+            "interiors: the interior's part goes on the district's own tolerance (the city's economy keeps it to a tenth whatever is asked)");
+        Check(CityModel.Against(1030, CityModel.WithBears(1000, InteriorRules.BearsOverMost)) == 1000 && !CityModel.Over(CityModel.Against(1050, CityModel.WithBears(1000, InteriorRules.BearsOverMost))),
+            "interiors: prices 3% over the district's are borne in full at a fine place");
         Check(InteriorRules.ComplaintChance(31, 40) == 0 && InteriorRules.ComplaintChance(30, 40) == 40 && InteriorRules.ComplaintChance(0, 70) == 120,
             "interiors: a complaint from 10 points short, 4 per mille a point, 12% a day at most");
         Check(InteriorRules.BasketChance(40, 40) == 0 && InteriorRules.BasketChance(50, 40) == 20 && InteriorRules.BasketChance(100, 15) == 60 && InteriorRules.BasketChance(10, 40) == 0,
@@ -191,14 +192,14 @@ internal static partial class Program
             "interiors: plants give 1 point of comfort, 2 with three or more");
         Check(InteriorRules.Comfort(0, 30, 200, false) == 1 && InteriorRules.Comfort(0, 29, 200, false) == 0, "interiors: good light (half its share) gives 1");
         Check(InteriorRules.Comfort(5, 60, 200, true) == 5 && InteriorRules.Comfort(0, 0, 200, true) == 2, "interiors: a rest corner gives 2, and comfort is 5 at most");
-        Check(InteriorRules.Calm(CompanyCatalogue.StandingCalm, 5) == CompanyCatalogue.StandingCalm + 5 && InteriorRules.Calm(CompanyCatalogue.StandingCalm, 50) == CompanyCatalogue.StandingCalm + 5,
-            "interiors: comfort lifts the calm level by 5 points at most");
+        Check(BrandCatalogue.InteriorMost == InteriorRules.BrandMost && FameRules.InteriorMost == InteriorRules.StandingMost,
+            "interiors: the brands and Standing take the interior's part with the rules' own bounds");
         Check(InteriorRules.Morale(5) == 40 && InteriorRules.Morale(9) == 40, "interiors: comfort lifts a professional's morale target by 4% at most");
         Check(InteriorRules.OfficeEsteem(59) == 0 && InteriorRules.OfficeEsteem(60) == 1 && InteriorRules.OfficeEsteem(80) == 2 && InteriorRules.OfficeEsteem(-1) == 0,
             "interiors: the best office adds 1 to the jobs board's esteem at 60, 2 at 80");
         Check(InteriorRules.OfficeBid(50) == 0 && InteriorRules.OfficeBid(75) == 10 && InteriorRules.OfficeBid(100) == 20, "interiors: an office over 50 weighs bids up to 2% better");
-        Check(InteriorRules.Weighed(1000000, 500, 20) < InteriorRules.Weighed(1000000, 500, 0) && InteriorRules.Weighed(1000000, 500, 99) == InteriorRules.Weighed(1000000, 500, 20),
-            "interiors: a better office's bid weighs less, never by more than 2%");
+        Check(InteriorRules.OfficeBid(100) <= 50 && InteriorRules.Morale(InteriorRules.ComfortMost) <= 100 && InteriorRules.ComfortMost <= 10 && InteriorRules.OfficeEsteem(100) <= 3,
+            "interiors: the office's and comfort's parts are inside what the company and the tech sector take");
     }
 
     private static void InteriorStepAside()

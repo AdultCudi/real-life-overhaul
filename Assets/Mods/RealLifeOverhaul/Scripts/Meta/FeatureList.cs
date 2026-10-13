@@ -717,6 +717,7 @@ namespace RealLifeOverhaul.Meta
                 // Read from the (now empty) save: the director's own stand-down (footfall and closures put back) runs when the option goes off or the city unloads.
                 .ResetData(() => BusinessState.Load(SaveGameManager.Current.modData, TimeHelper.CurrentDay))
                 .Repair(BusinessDesk.Setup);
+            Interiors.InteriorGuide.Register();   // interiors and decor that matter: three features (the whole, the district standard, the decor's footfall), their switches, save line, tests and Guide figures (Scripts/Interiors)
 
             Features.Add("garage", "reallife_meta_title_garage")
                 .Group("reallife_garage_header")
