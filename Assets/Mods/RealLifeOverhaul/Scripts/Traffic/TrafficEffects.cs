@@ -763,9 +763,11 @@ namespace RealLifeOverhaul
 
             private bool _on;
 
+            private static readonly int HotUpdate = HotSpots.Slot("Traffic: Flasher.Update");
             // Only touches the lights on the frames where the state flips.
             private void Update()
             {
+                using var hotSpot = HotSpots.Time(HotUpdate);
                 if (Interval <= 0f)
                 {
                     return;
@@ -793,8 +795,10 @@ namespace RealLifeOverhaul
 
             private float _next;
 
+            private static readonly int HotUpdate = HotSpots.Slot("Traffic: Flicker.Update");
             private void Update()
             {
+                using var hotSpot = HotSpots.Time(HotUpdate);
                 if (Light == null || Time.time < _next)
                 {
                     return;

@@ -141,8 +141,10 @@ namespace RealLifeOverhaul.Law
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Law: LawDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             try
             {
                 if (_entered || _exited)

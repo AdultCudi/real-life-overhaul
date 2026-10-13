@@ -183,8 +183,10 @@ namespace RealLifeOverhaul.Markets
             InstallApp();
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Markets: MarketDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (!_running || _broken || Save == null || LoadScene.isLoading)
             {
                 return;

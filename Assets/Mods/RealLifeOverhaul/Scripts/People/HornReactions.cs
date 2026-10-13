@@ -162,8 +162,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("People: HornReactions.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             float now = Time.time;
             if (_active > 0)
             {

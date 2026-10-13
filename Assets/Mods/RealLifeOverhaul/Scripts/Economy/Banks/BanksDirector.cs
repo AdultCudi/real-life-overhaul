@@ -234,9 +234,11 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- the badges
 
+        private static readonly int HotBadges = HotSpots.Slot("Economy: BanksDirector.Badges");
         // The number on each bank's button: its debts that are behind or whose collections call waits for an answer.
         private void Badges()
         {
+            using var hotSpot = HotSpots.Time(HotBadges);
             try
             {
                 for (int i = 0; i < _slots.Length; i++)

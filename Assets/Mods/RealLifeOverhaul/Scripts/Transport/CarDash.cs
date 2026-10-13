@@ -139,7 +139,7 @@ namespace RealLifeOverhaul
                 UiClone.Fallback("the game's vehicle panel has no condition reading to copy, so what a car needs is not shown there (the Garage contact says it)");
                 return false;
             }
-            SessionWatch.Mark("game UI: the car's reading being copied from the game's vehicle panel");
+            using var piece = SessionWatch.Piece("game UI: the car's reading being copied from the game's vehicle panel");
             Transform holder = UiClone.Dormant(info, "RealLifeOverhaul Service Holder");
             GameObject copy = UiClone.Asleep(condition.gameObject, holder, "RealLifeOverhaul Service");
             UiClone.StripGameScripts(copy, null);

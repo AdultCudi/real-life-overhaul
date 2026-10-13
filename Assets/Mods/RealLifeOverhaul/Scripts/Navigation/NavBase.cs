@@ -293,7 +293,7 @@ namespace RealLifeOverhaul.Nav
             _data.HullOf = _hullOf.ToArray();
             _data.HullX = _hullX.ToArray();
             _data.HullZ = _hullZ.ToArray();
-            SessionWatch.Mark("the minimap's buildings");
+            using var piece = SessionWatch.Piece("the minimap's buildings");
             NavBaseWater.Prepare(_data);
             // From over every roof down to under the lowest road.
             float[] y = _graph.Drive.Y;
@@ -390,7 +390,7 @@ namespace RealLifeOverhaul.Nav
                 Fail("its picture could not be drawn. " + (job != null ? job.Fault : string.Empty));
                 return;
             }
-            SessionWatch.Mark("the minimap's base picture");
+            using var piece = SessionWatch.Piece("the minimap's base picture");
             Stopwatch watch = Stopwatch.StartNew();
             var picture = new Texture2D(job.Width, job.Height, TextureFormat.RGBA32, false, false)
             {

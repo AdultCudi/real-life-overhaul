@@ -1311,8 +1311,10 @@ namespace RealLifeOverhaul.Events
             enabled = false;
         }
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("Events: HoseHold.LateUpdate");
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             try
             {
                 if (_animator == null || _nozzle == null)

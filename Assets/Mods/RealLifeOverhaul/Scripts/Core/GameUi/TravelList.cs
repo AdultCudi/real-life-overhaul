@@ -123,7 +123,7 @@ namespace RealLifeOverhaul.GameUi
                     UiClone.Fallback("the game's list of subway stations is not there to copy, so '" + name + "' is not made");
                     return null;
                 }
-                SessionWatch.Mark("game UI: the travel list being copied from the game's list of subway stations");
+                using var piece = SessionWatch.Piece("game UI: the travel list being copied from the game's list of subway stations");
                 holder = UiClone.Dormant(canvas, name + " Holder");
                 root = UiClone.Asleep(uis.cityMapSubwayStations.gameObject, holder, name);
                 UiClone.StripGameScripts(root, script => Array.IndexOf(Harmless, script.GetType().Name) >= 0);
@@ -482,8 +482,10 @@ namespace RealLifeOverhaul.GameUi
     {
         public TravelList Owner;
 
+        private static readonly int HotUpdate = HotSpots.Slot("Core: TravelListKeys.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (Owner == null || !Owner.IsOpen)
             {
                 return;

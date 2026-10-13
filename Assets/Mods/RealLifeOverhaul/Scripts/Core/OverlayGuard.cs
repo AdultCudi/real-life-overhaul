@@ -91,8 +91,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Core: OverlayGuard.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (!_failed && !GameManager.isCitySceneBeingUnloaded)
             {
                 Check();

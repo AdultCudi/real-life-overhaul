@@ -241,8 +241,10 @@ namespace RealLifeOverhaul
             return (float)(total / frames);
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Performance: PerfSampler.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_skipFirst)
             {
                 _skipFirst = false;
@@ -289,8 +291,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotFixedUpdate = HotSpots.Slot("Performance: PerfSampler.FixedUpdate");
         private void FixedUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotFixedUpdate);
             _fixedSteps++;
         }
 

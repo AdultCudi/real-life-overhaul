@@ -165,8 +165,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("CityLife: CityLifeDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_failed)
             {
                 return;
@@ -479,7 +481,7 @@ namespace RealLifeOverhaul
 
         private bool Open(CityEntry entry, Vector3 anchor, Vector3 origin, float now, bool raining, bool test)
         {
-            SessionWatch.Mark("city life: a site being set up");
+            using var piece = SessionWatch.Piece("city life: a site being set up");
             ICityActivity activity = entry.Activity;
             _site.Anchor = anchor;
             _site.Test = test;

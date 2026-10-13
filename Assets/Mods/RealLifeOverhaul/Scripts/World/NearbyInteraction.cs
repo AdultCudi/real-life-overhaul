@@ -24,8 +24,10 @@ namespace RealLifeOverhaul
 
         private float _nextHint;   // when the "not through a door while on a job" hint may be shown again
 
+        private static readonly int HotUpdate = HotSpots.Slot("World: NearbyInteraction.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             // A job's key prompt is on screen, or the job has the key for the whole shift (flyers on foot): the key is its.
             if (!Settings.EnterWithKey || JobDirector.TakesInteractKey || TransitDirector.TakesInteractKey || CarOwnership.TakesInteractKey || HomeDirector.TakesInteractKey || GarageDirector.TakesInteractKey || Leisure.LeisureDirector.TakesInteractKey || SocialDirector.TakesInteractKey || TravelDirector.TakesInteractKey || Justice.TakesInteractKey || LicenceDirector.TakesInteractKey || CivicDirector.TakesInteractKey || Family.FamilyDirector.TakesInteractKey || Law.LawDirector.TakesInteractKey || Roommates.RoommateDirector.TakesInteractKey || Ledger.LedgerDirector.TakesInteractKey || Careers.CareersDirector.TakesInteractKey)
             {

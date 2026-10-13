@@ -83,7 +83,7 @@ namespace RealLifeOverhaul.Economy
         public GameObject Build(FullMenu menu, Transform dormant)
         {
             _menu = menu;
-            SessionWatch.Mark("banks: an app being built from the game's MyEmployees");   // once per bank and city: a few hundred objects copied in one frame
+            using var piece = SessionWatch.Piece("banks: an app being built from the game's MyEmployees");   // once per bank and city: a few hundred objects copied in one frame
             _shell = AppShell.Make(menu, dormant, _id);
             _table = DataTable.On(_shell, _id);
             if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(_tables.Off))

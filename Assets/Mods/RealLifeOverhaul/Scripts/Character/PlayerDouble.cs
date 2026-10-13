@@ -109,14 +109,18 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotOnPlayerLookChanged = HotSpots.Slot("Character: PlayerDouble.OnPlayerLookChanged");
         // Called from inside the game's own appearance code: note it and leave. The work is done in LateUpdate.
         private void OnPlayerLookChanged()
         {
+            using var hotSpot = HotSpots.Time(HotOnPlayerLookChanged);
             _lookChanged = true;
         }
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("Character: PlayerDouble.LateUpdate");
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             try
             {
                 Tick();

@@ -70,7 +70,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
         {
-            SessionWatch.Mark("stocks: the app being built from the game's MyEmployees");   // once per city
+            using var piece = SessionWatch.Piece("stocks: the app being built from the game's MyEmployees");   // once per city
             _shell = AppShell.Make(menu, dormant, MarketDirector.AppId);
             _table = DataTable.On(_shell, "Stocks");
             if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(MarketTables.Off))

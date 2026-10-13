@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Careers
 
         public GameObject Build(FullMenu menu, Transform dormant)
         {
-            SessionWatch.Mark("career: the app being built from the game's MyEmployees");
+            using var piece = SessionWatch.Piece("career: the app being built from the game's MyEmployees");
             _shell = AppShell.Make(menu, dormant, CareersDirector.CareerAppId);
             _table = DataTable.On(_shell, "Career");
             if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(CareerColumns.Off))

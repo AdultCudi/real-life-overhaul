@@ -111,8 +111,10 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Planner: PlannerDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             float now = Time.unscaledTime;
             if (now < _next)
             {
@@ -288,10 +290,12 @@ namespace RealLifeOverhaul.Planner
 
         // ---------------------------------------------------------------- the hour
 
+        private static readonly int HotOnHour = HotSpots.Slot("Planner: PlannerDirector.OnHour");
         // The game's own hour event (GlobalEvents.onNewHour; a new day raises it too). Nothing here builds a text
         // unless a reminder is due.
         private void OnHour()
         {
+            using var hotSpot = HotSpots.Time(HotOnHour);
             if (_broken || !PlannerStore.Loaded || SaveGameManager.Current == null)
             {
                 return;

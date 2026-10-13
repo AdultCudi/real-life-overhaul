@@ -122,8 +122,10 @@ namespace RealLifeOverhaul.Leisure
 
         // ---------------------------------------------------------------- the bed
 
+        private static readonly int HotUpdate = HotSpots.Slot("Leisure: LeisureSound.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_failed)
             {
                 return;

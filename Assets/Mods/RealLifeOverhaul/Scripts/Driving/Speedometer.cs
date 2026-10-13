@@ -17,8 +17,10 @@ namespace RealLifeOverhaul
         private bool _imperial;
         private bool _shown;
 
+        private static readonly int HotUpdate = HotSpots.Slot("Driving: Speedometer.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             var gm = InstanceBehavior<GameManager>.Instance;
             VehicleController vehicle = gm != null ? gm.selectedVehicle : null;
             if (vehicle != _vehicle)

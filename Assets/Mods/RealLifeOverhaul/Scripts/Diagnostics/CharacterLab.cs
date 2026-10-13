@@ -54,8 +54,10 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger;
 
+        private static readonly int HotUpdate = HotSpots.Slot("Diagnostics: CharacterLab.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (!Keys.Down(KeyAction.CharacterReport))
             {
                 return;

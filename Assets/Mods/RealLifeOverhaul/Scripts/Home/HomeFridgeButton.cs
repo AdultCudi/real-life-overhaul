@@ -66,7 +66,7 @@ namespace RealLifeOverhaul
                     UiClone.Fallback("the game's fridge panel has no button to copy, so cooking is offered on the cookers only");
                     return false;
                 }
-                SessionWatch.Mark("game UI: the fridge panel's cooking button being copied from the game's own");
+                using var piece = SessionWatch.Piece("game UI: the fridge panel's cooking button being copied from the game's own");
                 Transform holder = UiClone.Dormant(list, "RealLifeOverhaul Cook Holder");
                 GameObject copy = UiClone.Asleep(original.gameObject, holder, "RealLifeOverhaul Cook");
                 UiClone.Rewire(copy.transform, Clicked);

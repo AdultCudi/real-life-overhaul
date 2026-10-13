@@ -481,8 +481,10 @@ namespace RealLifeOverhaul.Events
 
         private int _shown = -1;
 
+        private static readonly int HotUpdate = HotSpots.Slot("Events: BarFlash.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             int shown = Interval > 0f && Mathf.FloorToInt(Time.unscaledTime / Interval) % 2 == 0 ? 0 : 1;
             if (shown != _shown)
             {

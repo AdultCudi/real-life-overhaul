@@ -626,8 +626,10 @@ namespace RealLifeOverhaul.Meta
                 enabled = true;
             }
 
+            private static readonly int HotLateUpdate = HotSpots.Slot("Meta: ScrollToTop.LateUpdate");
             private void LateUpdate()
             {
+                using var hotSpot = HotSpots.Time(HotLateUpdate);
                 try
                 {
                     Place();

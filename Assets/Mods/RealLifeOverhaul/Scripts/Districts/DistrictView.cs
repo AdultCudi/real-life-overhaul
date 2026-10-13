@@ -189,8 +189,10 @@ namespace RealLifeOverhaul.Districts
 
         // ---------------------------------------------------------------- the map's events
 
+        private static readonly int HotOnMap = HotSpots.Slot("Districts: DistrictView.OnMap");
         private void OnMap(bool open)
         {
+            using var hotSpot = HotSpots.Time(HotOnMap);
             try
             {
                 _mapOpen = open;
@@ -208,8 +210,10 @@ namespace RealLifeOverhaul.Districts
             }
         }
 
+        private static readonly int HotOnDay = HotSpots.Slot("Districts: DistrictView.OnDay");
         private void OnDay()
         {
+            using var hotSpot = HotSpots.Time(HotOnDay);
             try
             {
                 if (SaveGameManager.Current != null)
@@ -351,8 +355,10 @@ namespace RealLifeOverhaul.Districts
 
         // ---------------------------------------------------------------- while a layer shows
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("Districts: DistrictView.LateUpdate");
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (_broken || !_mapOpen)
             {
                 enabled = false;

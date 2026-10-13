@@ -63,7 +63,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
         {
-            SessionWatch.Mark("estate: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
+            using var piece = SessionWatch.Piece("estate: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
             _shell = AppShell.Make(menu, dormant, EstateDirector.AppId);
             _table = DataTable.On(_shell, "Property");
             if (_table == null || !_shell.SetTabCount(EstateTables.Tabs.Length) || !_shell.SetColumns(EstateTables.Off))

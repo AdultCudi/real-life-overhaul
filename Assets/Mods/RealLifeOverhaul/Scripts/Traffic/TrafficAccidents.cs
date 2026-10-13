@@ -309,8 +309,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Traffic: TrafficAccidents.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             TrafficWatch.Tick(Time.time);   // one comparison a frame; looks at the traffic five times a second
             try
             {
@@ -1317,7 +1319,7 @@ namespace RealLifeOverhaul
             }
 
             News.Report(NewsKind.Accident, _scene, null, (int)_severity);
-            SessionWatch.Mark("traffic: an accident being staged");
+            using var piece = SessionWatch.Piece("traffic: an accident being staged");
             Logger?.Info($"Accident {(_inPlace ? "scene begun where it happened" : "staged")}: {_severity}, {_wrecks.Count} car(s){(alone ? " (single vehicle)" : "")}, clears within {total:F0} s{(planned ? ", hit-and-run planned" : "")}.");
         }
 

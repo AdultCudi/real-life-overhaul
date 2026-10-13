@@ -111,8 +111,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Crime: CrimeDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             float now = Time.time;
             if (_scene != null)
             {
@@ -326,7 +328,7 @@ namespace RealLifeOverhaul
 
         private bool Begin(CrimeEntry entry, CrimePlace place, float now, bool forced, float amount)
         {
-            SessionWatch.Mark("crime: a scene starting");
+            using var piece = SessionWatch.Piece("crime: a scene starting");
             if (!_scenes.TryGetValue(entry.Id, out ICrimeScene scene))
             {
                 return false;

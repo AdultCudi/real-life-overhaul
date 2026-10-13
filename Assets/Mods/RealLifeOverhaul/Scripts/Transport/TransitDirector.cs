@@ -297,8 +297,10 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- the two clocks
 
+        private static readonly int HotUpdate = HotSpots.Slot("Transport: TransitDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_failed)
             {
                 return;

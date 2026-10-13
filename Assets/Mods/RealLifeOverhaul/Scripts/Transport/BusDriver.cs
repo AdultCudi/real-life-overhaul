@@ -243,8 +243,10 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- driving
 
+        private static readonly int HotFixedUpdate = HotSpots.Slot("Transport: BusDriver.FixedUpdate");
         private void FixedUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotFixedUpdate);
             if (!Active)
             {
                 return;

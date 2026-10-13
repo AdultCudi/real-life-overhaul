@@ -48,7 +48,7 @@ namespace RealLifeOverhaul.Tech
 
         public GameObject Build(FullMenu menu, Transform dormant)
         {
-            SessionWatch.Mark("open roles: the app being built from the game's MyEmployees");
+            using var piece = SessionWatch.Piece("open roles: the app being built from the game's MyEmployees");
             _shell = AppShell.Make(menu, dormant, TechDirector.RolesAppId);
             _table = DataTable.On(_shell, "Open Roles");
             if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(RolesColumns.Off))

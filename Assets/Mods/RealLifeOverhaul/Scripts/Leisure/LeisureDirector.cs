@@ -156,8 +156,10 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Leisure: LeisureDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_broken)
             {
                 return;
