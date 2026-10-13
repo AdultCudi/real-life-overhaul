@@ -818,6 +818,13 @@ namespace RealLifeOverhaul
 
         private IEnumerator SleepRoutine(RoomType room, HotelSlot hotel, Timestamp goal, bool night)
         {
+            if (GoingPublic.ClockShared)
+            {
+                // A Going Public session's clock passes faster only by everyone's vote, from a bed of the game's own (Core/GoingPublic).
+                Say(TravelText.T("reallife_gp_hotel_no_skip"));
+                Show();
+                yield break;
+            }
             float minutes = goal.GetMinutesFromNow();
             if (minutes < 10f)
             {
@@ -872,6 +879,12 @@ namespace RealLifeOverhaul
         private IEnumerator RestRoutine(RoomType room)
         {
             Timestamp goal = Capped(TimeHelper.GetTimeInHours(2));
+            if (GoingPublic.ClockShared)
+            {
+                Say(TravelText.T("reallife_gp_hotel_no_skip"));   // no time of its own in a Going Public session (Core/GoingPublic)
+                Show();
+                yield break;
+            }
             if (goal.GetMinutesFromNow() < 10f)
             {
                 Say(TravelText.T("reallife_travel_room_sleep_no_time"));
@@ -918,6 +931,12 @@ namespace RealLifeOverhaul
                 yield break;
             }
             Timestamp goal = Capped(TimeHelper.GetTimeInHours(2));
+            if (GoingPublic.ClockShared)
+            {
+                Say(TravelText.T("reallife_gp_hotel_no_skip"));   // no time of its own in a Going Public session (Core/GoingPublic)
+                Show();
+                yield break;
+            }
             if (goal.GetMinutesFromNow() < 10f)
             {
                 Say(TravelText.T("reallife_travel_room_sleep_no_time"));

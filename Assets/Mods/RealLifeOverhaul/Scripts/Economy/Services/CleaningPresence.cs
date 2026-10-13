@@ -60,7 +60,7 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static bool Show(BuildingRegistration reg, EmployeeInstance e, int hour)
         {
-            if (_broken || reg == null || e == null || !reg.RentedByPlayer)
+            if (_broken || reg == null || e == null || !GoingPublic.Mine(reg))
             {
                 return false;   // (a business that is not the player's has its own people: its schedule is never touched)
             }

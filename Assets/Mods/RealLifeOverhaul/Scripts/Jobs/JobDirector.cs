@@ -466,7 +466,7 @@ namespace RealLifeOverhaul
             {
                 reasonKey = "reallife_job_no_indoors";
             }
-            else if (!TrafficTools.Ready)
+            else if (!TrafficTools.Street)
             {
                 reasonKey = "reallife_test_refused_traffic_off";   // out of doors, but the street is not running yet (a menu, fast-forward)
             }
@@ -680,7 +680,7 @@ namespace RealLifeOverhaul
                     reasonKey = "reallife_job_end_indoors";
                 }
             }
-            else if (!TrafficTools.Ready && now - _lastInside > 6f)   // the street takes a moment to start up again outside a door
+            else if (!TrafficTools.Street && now - _lastInside > 6f)   // the street takes a moment to start up again outside a door
             {
                 reasonKey = "reallife_job_end_indoors";
             }
@@ -1094,7 +1094,7 @@ namespace RealLifeOverhaul
         // Once a second while no job is on: where the boards stand, and whether the player is at one.
         private void Boards(GameManager gm)
         {
-            bool onFoot = Settings.Jobs && JobState.Loaded && !BuildingManager.IsInsideBuilding && gm.selectedVehicle == null && TrafficTools.Ready;
+            bool onFoot = Settings.Jobs && JobState.Loaded && !BuildingManager.IsInsideBuilding && gm.selectedVehicle == null && TrafficTools.Street;
             if (!onFoot)
             {
                 _boards.Away();
@@ -1390,7 +1390,7 @@ namespace RealLifeOverhaul
             List<VehicleController> own = VehicleHelper.AllPlayerVehicles;
             for (int i = 0; i < own.Count; i++)
             {
-                if (!(own[i] is CarController car) || !car.isActiveAndEnabled || car.vehicleInstance == null || !Usable(car))
+                if (!(own[i] is CarController car) || !car.isActiveAndEnabled || car.vehicleInstance == null || !GoingPublic.MineVehicle(car) || !Usable(car))
                 {
                     continue;
                 }

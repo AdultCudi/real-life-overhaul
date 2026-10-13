@@ -179,7 +179,11 @@ namespace RealLifeOverhaul
 
                 Timestamp until = TimeHelper.Now();
                 until.AddMinutes(Mathf.Clamp(minutes, 1f, 240f));
-                uis.timeMachine.StartTimeMachine(until, disableCancel: true, fadeKey);
+                if (!GoingPublic.ClockShared)
+                {
+                    // (In a Going Public session the ride takes no time, as Going Public's own taxi ride does: Core/GoingPublic.)
+                    uis.timeMachine.StartTimeMachine(until, disableCancel: true, fadeKey);
+                }
                 float waited = 0f;
                 while (uis != null && uis.timeMachine != null && uis.timeMachine.isRunning && waited < 120f)
                 {

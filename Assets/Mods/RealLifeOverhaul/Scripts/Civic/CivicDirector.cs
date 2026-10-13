@@ -564,7 +564,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < save.BuildingRegistrations.Count; i++)
             {
                 BuildingRegistration registration = save.BuildingRegistrations[i];
-                if (registration == null || !registration.RentedByPlayer || !registration.HasEstablishedBusiness)
+                if (registration == null || !GoingPublic.Mine(registration) || !registration.HasEstablishedBusiness)
                 {
                     continue;
                 }

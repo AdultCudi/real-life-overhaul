@@ -24,7 +24,8 @@ namespace RealLifeOverhaul.Ledger
     ///   the copy       inside the home, the copy the player has lies by the door, a click away (LedgerHome)
     ///
     /// No subscription and no copy bought: no paper. The page itself is the full menu's (LedgerPage); the phone's City
-    /// Ledger contact is the subscriptions desk (LedgerDesk). Per frame only the kiosk's counter is looked at, and only
+    /// Ledger contact is the subscriptions desk (LedgerDesk). Online, the paper and three other titles are read on the
+    /// phone by subscription over the home's internet (Newsstand: LedgerDirector.Online, NewsstandApp). Per frame only the kiosk's counter is looked at, and only
     /// while the player was near a kiosk at the last second's look.
     /// </summary>
     public sealed partial class LedgerDirector : MonoBehaviour
@@ -170,6 +171,7 @@ namespace RealLifeOverhaul.Ledger
             _kiosks.Slow(home, skipping);
             _home.Slow(AtHome() && LedgerRules.HasCopy(_state));
             _page.Install();
+            OnlineSlow(day, hour, skipping);
         }
 
         // ---------------------------------------------------------------- starting and stopping
@@ -187,6 +189,7 @@ namespace RealLifeOverhaul.Ledger
             _kiosks = new LedgerKiosks(this);
             _home = new LedgerHome(this);
             _page = new LedgerPage(this);
+            OnlineStart(save);
             Logger?.Info("City Ledger: ready; " + (_state.Subscribed ? "delivered to the door, paid until day " + _state.PaidUntil + (_state.Cancelled ? " (cancelled)" : string.Empty) : "no subscription")
                          + "; " + _state.Kiosks.Count + " kiosk(s) near the home; latest edition " + (_state.Edition != null ? "of day " + _state.Edition.Day : "none") + ".");
         }
@@ -198,10 +201,12 @@ namespace RealLifeOverhaul.Ledger
             if (keep && _state != null && Save != null && ReferenceEquals(Save, _save) && Save.modData != null)
             {
                 LedgerStore.Save(Save.modData, _state);
+                OnlineSave(Save.modData);
             }
             _kiosks?.Dispose();
             _home?.Dispose();
             _page?.Remove();
+            OnlineStop();
             _kiosks = null;
             _home = null;
             _page = null;
@@ -220,6 +225,7 @@ namespace RealLifeOverhaul.Ledger
                 _kiosks?.Dispose();
                 _home?.Dispose();
                 _page?.Remove();
+                _stand?.Remove();
             }
             catch (Exception second)
             {
@@ -235,6 +241,7 @@ namespace RealLifeOverhaul.Ledger
                 if (_state != null && Save != null && ReferenceEquals(Save, _save) && Save.modData != null)
                 {
                     LedgerStore.Save(Save.modData, _state);
+                    OnlineSave(Save.modData);
                 }
             }
             catch (Exception e)
@@ -314,8 +321,10 @@ namespace RealLifeOverhaul.Ledger
                 e.Pieces.Sort((a, b) => b.Weight.CompareTo(a.Weight));
                 e.Pieces.RemoveRange(LedgerCatalogue.PiecesMost, e.Pieces.Count - LedgerCatalogue.PiecesMost);
             }
+            KeepEarlier(_state.Edition, day);   // the edition it replaces, to be read again on the phone
             _state.Edition = e;
             _page?.Changed();
+            _stand?.Changed();
             Logger?.Info("City Ledger: the edition of day " + day + (again ? " written again" : string.Empty) + " has " + e.Pieces.Count + " pieces"
                          + (e.HasMarket ? ", the market's close of day " + e.MarketDay + " (" + e.Quotes.Count + " companies)" : ", no market report") + ".");
         }
@@ -398,10 +407,10 @@ namespace RealLifeOverhaul.Ledger
         {
             if (Time.unscaledTime < _homeLook)
             {
-                return _homeReg != null && _homeReg.RentedByPlayer ? _homeReg : null;
+                return _homeReg != null && GoingPublic.Mine(_homeReg) ? _homeReg : null;
             }
             _homeLook = Time.unscaledTime + 5f;
-            if (_homeReg != null && _homeReg.RentedByPlayer)
+            if (_homeReg != null && GoingPublic.Mine(_homeReg))
             {
                 return _homeReg;
             }
@@ -411,7 +420,7 @@ namespace RealLifeOverhaul.Ledger
                 List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
                 for (int i = 0; all != null && i < all.Count; i++)
                 {
-                    if (all[i] != null && all[i].RentedByPlayer && all[i].GetBuildingType() == Residential)
+                    if (all[i] != null && GoingPublic.Mine(all[i]) && all[i].GetBuildingType() == Residential)
                     {
                         _homeReg = all[i];
                         break;
@@ -433,7 +442,7 @@ namespace RealLifeOverhaul.Ledger
                 return false;
             }
             var manager = InstanceBehavior<BuildingManager>.Instance;
-            return manager != null && manager.building != null && manager.IsPlayerOwnedBusiness && manager.building.BuildingType == Residential;
+            return manager != null && manager.building != null && GoingPublic.Mine(manager.buildingRegistration) && manager.building.BuildingType == Residential;
         }
 
         /// <summary>The home's address as the game writes it, or null without a home.</summary>

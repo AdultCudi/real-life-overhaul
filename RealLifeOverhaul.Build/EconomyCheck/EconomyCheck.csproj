@@ -16,7 +16,8 @@
        the market, a purchase on the existing mortgage, tenancies, works, a sale, the agency, a hotel's night, car hire,
        the yearly returns and the save's line, and (MarketChecks.cs) the city's stock market: prices over thousands of days,
        trading and what it costs, orders, dividends, splits, failures, candles, the analysis tools, the tape and the save's line, and
-       (LedgerChecks.cs) the City Ledger: what each piece is, its headline, the subscription's round, the copy, the page's choices and the save's line, and (FlareChecks.cs) Flare, the social media app: the follower curve, the limits on posting, the friends' answers, the daily round and the save's lines.
+       (LedgerChecks.cs) the City Ledger: what each piece is, its headline, the subscription's round, the copy, the page's choices and the save's line, and
+       (NewsstandChecks.cs) the City Ledger online: the titles' prices, the connection rule, the weeks, the pass, the editions kept, what each title prints and the save's line, and (FlareChecks.cs) Flare, the social media app
        Compiles the mod's own files, so it checks exactly what ships.
        the lender of last resort and the ways out of debt, and (VenturesChecks.cs) investors, the pitch, deals and the
        stock market. Compiles the mod's own files, so it checks exactly what ships.
@@ -141,6 +142,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerCatalogue.cs" Link="Mod\LedgerCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerRules.cs" Link="Mod\LedgerRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerStore.cs" Link="Mod\LedgerStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\NewsstandCatalogue.cs" Link="Mod\NewsstandCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\NewsstandModel.cs" Link="Mod\NewsstandModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\NewsstandRules.cs" Link="Mod\NewsstandRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\NewsstandStore.cs" Link="Mod\NewsstandStore.cs" />
   </ItemGroup>
 
 </Project>

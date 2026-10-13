@@ -54,7 +54,7 @@ namespace RealLifeOverhaul.Utilities
             }
             foreach (BuildingRegistration reg in save.BuildingRegistrations)
             {
-                if (reg == null || !reg.RentedByPlayer || !reg.HasValidAddress)
+                if (reg == null || !GoingPublic.Mine(reg) || !reg.HasValidAddress)
                 {
                     continue;
                 }
@@ -181,7 +181,7 @@ namespace RealLifeOverhaul.Utilities
             for (int i = 0; save != null && save.BuildingRegistrations != null && i < save.BuildingRegistrations.Count; i++)
             {
                 BuildingRegistration reg = save.BuildingRegistrations[i];
-                if (reg != null && reg.RentedByPlayer && reg.HasValidAddress && reg.businessTypeName == HeadquartersType)
+                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.businessTypeName == HeadquartersType)
                 {
                     return reg;
                 }

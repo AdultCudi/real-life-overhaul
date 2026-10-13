@@ -81,7 +81,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < registrations.Count; i++)
             {
                 BuildingRegistration r = registrations[i];
-                if (r.RentedByPlayer && !r.BuildingOwnedByPlayer && r.RentPerDay > 0f && (!homeRentFree || r.GetBuildingType() != Residential))
+                if (GoingPublic.Mine(r) && !r.BuildingOwnedByPlayer && r.RentPerDay > 0f && (!homeRentFree || r.GetBuildingType() != Residential))
                 {
                     o.Rent += r.RentPerDay;
                 }
@@ -116,7 +116,7 @@ namespace RealLifeOverhaul.Economy
         {
             try
             {
-                if (r == null || !r.RentedByPlayer || !r.HasEstablishedBusiness || string.IsNullOrEmpty(r.businessTypeName) || r.businessTypeName == EmptyType || !r.HasValidAddress)
+                if (r == null || !GoingPublic.Mine(r) || !r.HasEstablishedBusiness || string.IsNullOrEmpty(r.businessTypeName) || r.businessTypeName == EmptyType || !r.HasValidAddress)
                 {
                     return false;
                 }
@@ -214,7 +214,7 @@ namespace RealLifeOverhaul.Economy
             List<BuildingRegistration> all = save != null ? save.BuildingRegistrations : null;
             for (int i = 0; all != null && i < all.Count; i++)
             {
-                if (all[i] != null && all[i].RentedByPlayer && all[i].HasValidAddress && Key(all[i].Address) == key)
+                if (all[i] != null && GoingPublic.Mine(all[i]) && all[i].HasValidAddress && Key(all[i].Address) == key)
                 {
                     return all[i];
                 }

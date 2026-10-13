@@ -46,7 +46,7 @@ namespace RealLifeOverhaul
         /// <summary>Traffic cars on the road right now (the pool's active ones); 0 while traffic is not simulating.</summary>
         public static int CarsDriving()
         {
-            if (!TrafficTools.Ready)
+            if (!TrafficTools.Street)
             {
                 return 0;
             }
@@ -90,7 +90,7 @@ namespace RealLifeOverhaul
         /// <summary>The game's own populations, for the probe's report. Walks every object: report time only.</summary>
         public static void Describe(StringBuilder text)
         {
-            if (TrafficTools.Ready)
+            if (TrafficTools.Street)
             {
                 List<VehicleComponent> cars = Manager.GetVehicleList();
                 int driving = 0, lit = 0;

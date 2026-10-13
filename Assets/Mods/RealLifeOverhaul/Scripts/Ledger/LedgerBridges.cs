@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Ledger
 {
+    /// <summary>How the internet stands at the best of the player's homes, with that home's name (null for none).</summary>
+    public delegate NetState NetLook(out string home);
+
     /// <summary>
     /// What the City Ledger asks of the rest of the mod, set by the wiring (Wiring/LedgerLinks). The paper calls no other
     /// feature: it reads the morning's news, the market's close and the economy's figures through these, and each one left
@@ -38,6 +41,15 @@ namespace RealLifeOverhaul.Ledger
         /// <summary>A message from the City Ledger's contact on the phone: a locale key and the names that fill it.</summary>
         public static Action<string, Dictionary<string, string>> Say;
 
+        /// <summary>
+        /// How the internet stands at the best of the player's homes (Utilities), and that home's name: what Newsstand's
+        /// editions come over. Unset, or NotKept (the utilities are off), a home counts as connected.
+        /// </summary>
+        public static NetLook Connection;
+
+        /// <summary>Opens the Utilities app on its internet page, where a connection is bought; false if it is not on the phone.</summary>
+        public static Func<bool> OpenUtilities;
+
         public static void Reset()
         {
             PaperDay = null;
@@ -48,6 +60,8 @@ namespace RealLifeOverhaul.Ledger
             Council = null;
             Taken = null;
             Say = null;
+            Connection = null;
+            OpenUtilities = null;
         }
     }
 }

@@ -234,8 +234,8 @@ namespace RealLifeOverhaul.Meta
                     .Opt("social_texts_max", "social_texts").Also("friends dating date people"),
                 S("flare").For("flare").Main("social_media").Opts("social_media_notices")
                     .Also("social media app followers posts likes selfie influencer"),
-                S("ledger").For("ledger").Main("social_newspaper").Opts("ledger_kiosks")
-                    .Also("newspaper paper news kiosk subscription delivery"),
+                S("ledger").For("ledger").Main("social_newspaper").Opts("ledger_kiosks", "ledger_online").Opt("ledger_online_notes", "ledger_online")
+                    .Also("newspaper paper news kiosk subscription delivery online newsstand internet phone"),
                 S("leisure").For("leisure").Main("leisure").Opt("leisure_chess", "city_life").Opts("leisure_fishing", "leisure_night_out", "leisure_sights", "leisure_cinema")
                     .Opt("night_life", "city_life").Opts("photo_mode").Buttons("reallife_leisure_test_records").Also("fun hobby nightclub bar"),
                 S("lifeevents").For("life").Main("life_events").Opts("life_frequency").Also("random luck surprise"),
@@ -325,6 +325,8 @@ namespace RealLifeOverhaul.Meta
                     .Also("uninstall remove backup save"),
                 S("diagnostics").For("diagnostics").Opts("dev_diagnostics", "show_test_tools").Buttons("reallife_meta_check_button", "reallife_meta_welcome_button")
                     .Also("debug log developer"),
+                S("multiplayer").For("multiplayer").Buttons("reallife_gp_tell_button")
+                    .Also("going public multiplayer online friends host guest session"),
                 S("measure").Guide("performance").Opts("perf_step_timing").Buttons("reallife_perf_probe_button", "reallife_perf_bench_button4",
                     "reallife_keys_perf_probe", "reallife_keys_perf_bench", "reallife_keys_phone_dump", "reallife_keys_character_report")
                     .Also("benchmark fps developer keys")),

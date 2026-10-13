@@ -332,7 +332,7 @@ namespace RealLifeOverhaul.Leisure
                 _rack.TakeIn(_props);
             }
 
-            bool street = !indoors && TrafficTools.Ready;
+            bool street = !indoors && TrafficTools.Street;
             if (street)
             {
                 LeisureVenues.FindLandmarks();
@@ -636,7 +636,7 @@ namespace RealLifeOverhaul.Leisure
             _context.Player = gm.playerController;
             _body.Bind(gm.playerController);
             bool indoors = BuildingManager.IsInsideBuilding;
-            if (!indoors && !TrafficTools.Ready)
+            if (!indoors && !TrafficTools.Street)
             {
                 refusalKey = "reallife_test_refused_traffic_off";
                 return false;

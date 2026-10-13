@@ -476,7 +476,12 @@ namespace RealLifeOverhaul
                     v => Settings.SocialNewspaper = v)
                 .AddToggle(Settings.LedgerKiosksId, "reallife_ledger_opt_kiosks", Settings.LedgerKiosks,
                     v => Settings.LedgerKiosks = v)
+                .AddToggle(Settings.LedgerOnlineId, "reallife_ledger_opt_online", Settings.LedgerOnline,
+                    v => Settings.LedgerOnline = v)
+                .AddToggle(Settings.LedgerOnlineNotesId, "reallife_ledger_opt_online_notes", Settings.LedgerOnlineNotes,
+                    v => Settings.LedgerOnlineNotes = v)
                 .AddButton("reallife_ledger_test_open", () => Ledger.LedgerDirector.Instance?.TestOpen())
+                .AddButton("reallife_ledger_test_online", () => Ledger.LedgerDirector.Instance?.TestOnline())
                 .AddButton("reallife_social_test_paper", () =>
                 {
                     SocialDirector.Instance?.TestPaper();   // the city's paper written again from its log...
@@ -866,6 +871,9 @@ namespace RealLifeOverhaul
             _running = context.ModId;
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on; warnings and errors always
             OtherMods.Look(context.Logger);   // other authors' mods this one stands aside for: one walk over the loaded assemblies (Core/OtherMods)
+            GoingPublic.Logger = context.Logger;
+            GoingPublic.Reset();
+            GoingPublic.Look();   // a Going Public session is known before any feature starts (Core/GoingPublic)
             CameraYield.Logger = context.Logger;
             GameUi.WorldPanel.Logger = context.Logger;
             ThirdPersonCamera.Logger = context.Logger;
@@ -929,6 +937,7 @@ namespace RealLifeOverhaul
             _root = new GameObject(RootName);
             SessionWatch.Logger = context.Logger;
             _root.AddComponent<SessionWatch>();   // the record of the session for "it stutters after a while": disabled unless "Developer diagnostics" is on
+            _root.AddComponent<GoingPublicWatch>();   // a look at Going Public's session once a second of real time: one comparison a frame otherwise
             _root.AddComponent<ScenePrewarm>();   // one-off searches of the scene done behind the loading screen (Core/SceneFinds): disabled unless a piece is waiting
             ScenePrewarm.Add("roads: the traffic system's road data being found for the city", RoadData.Prewarm);
             ScenePrewarm.Add("traffic: the game's smoke effect being found for accidents and fires", TrafficEffects.Prewarm);

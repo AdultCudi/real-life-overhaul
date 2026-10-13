@@ -361,7 +361,7 @@ namespace RealLifeOverhaul.Economy
                 h.District = c.District;
                 h.Income = Income(c.District);
                 h.Name = e.address.ToFormattedString();
-                h.Self = reg != null && reg.RentedByPlayer;
+                h.Self = reg != null && GoingPublic.Mine(reg);
                 c.Holding = h;
             }
             for (int i = s.Holdings.Count - 1; i >= 0; i--)
@@ -495,7 +495,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg != null && reg.RentedByPlayer && reg.HasValidAddress && reg.GetBuildingType() == OfficeType)
+                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.GetBuildingType() == OfficeType)
                 {
                     into.Add(reg);
                 }
@@ -541,7 +541,7 @@ namespace RealLifeOverhaul.Economy
             }
             Address office = AddressOf(agency.Office);
             BuildingRegistration reg = office != null ? BuildingHelper.GetBuildingRegistration(office) : null;
-            if (reg == null || !reg.RentedByPlayer)
+            if (reg == null || !GoingPublic.Mine(reg))
             {
                 agency.Office = string.Empty;   // the office is no longer held: the agency is shut, what it had in hand lapses by its own days
                 return;
@@ -615,7 +615,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg != null && reg.HasValidAddress && (reg.RentedByPlayer || reg.BuildingOwnedByPlayer) && !reg.BuildingCached.IsHamptonsHouse())
+                if (reg != null && reg.HasValidAddress && (GoingPublic.Mine(reg) || reg.BuildingOwnedByPlayer) && !reg.BuildingCached.IsHamptonsHouse())
                 {
                     into.Add(reg);
                 }
@@ -627,7 +627,7 @@ namespace RealLifeOverhaul.Economy
         {
             Address address = AddressOf(lot);
             BuildingRegistration reg = address != null ? BuildingHelper.GetBuildingRegistration(address) : null;
-            if (reg == null || (!reg.RentedByPlayer && !reg.BuildingOwnedByPlayer))
+            if (reg == null || (!GoingPublic.Mine(reg) && !reg.BuildingOwnedByPlayer))
             {
                 return 0;
             }
@@ -694,7 +694,11 @@ namespace RealLifeOverhaul.Economy
             GameInstance save = Save;
             VehicleController controller = v != null ? Controller(v.id) : null;
             Vector3 door;
-            if (v == null || save == null || v.VehicleType == null || !v.VehicleType.IsMotorVehicle || v.zeroSellingPrice || v.VehicleType.spawnInPlayerObject)
+            if (GoingPublic.InSession)
+            {
+                why = "reallife_gp_estate_hire";   // a car taken out of the city and made again would not be the same car to Going Public's other players (Core/GoingPublic)
+            }
+            else if (v == null || save == null || v.VehicleType == null || !v.VehicleType.IsMotorVehicle || v.zeroSellingPrice || v.VehicleType.spawnInPlayerObject)
             {
                 why = "reallife_estate_hire_no_kind";
             }

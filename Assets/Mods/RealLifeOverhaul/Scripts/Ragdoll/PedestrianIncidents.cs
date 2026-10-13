@@ -123,7 +123,7 @@ namespace RealLifeOverhaul
         {
             PlayerController player = PlayerHelper.PlayerController;
             // Indoors or fast-forwarding the street is gone, and the game has taken its pedestrians back.
-            if (!Settings.Ragdolls || !TrafficTools.Ready || player == null)
+            if (!Settings.Ragdolls || !TrafficTools.Street || player == null)
             {
                 ClearAll();
                 return;

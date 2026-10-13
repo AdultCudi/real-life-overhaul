@@ -83,7 +83,7 @@ namespace RealLifeOverhaul
             return new LawFirm
             {
                 Name = string.IsNullOrEmpty(registration.BusinessName) ? JusticeText.T("reallife_justice_firm_unnamed") : registration.BusinessName,
-                Street = registration.StreetName, Number = registration.StreetNumber, Stars = Mathf.Clamp(stars, 1, 5), Own = registration.RentedByPlayer
+                Street = registration.StreetName, Number = registration.StreetNumber, Stars = Mathf.Clamp(stars, 1, 5), Own = GoingPublic.Mine(registration)
             };
         }
 

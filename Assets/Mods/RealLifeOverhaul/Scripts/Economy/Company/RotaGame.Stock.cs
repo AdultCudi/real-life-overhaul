@@ -323,7 +323,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 var warehouse = BuildingHelper.GetBuildingRegistration(plan.targetAddress) as Warehouse;
                 EmployeeInstance manager = EmployeeHelper.GetEmployeeById(plan.assignedEmployeeId);
-                if (warehouse == null || !warehouse.RentedByPlayer || manager == null || !manager.IsEmployeeAvailable())
+                if (warehouse == null || !GoingPublic.Mine(warehouse) || manager == null || !manager.IsEmployeeAvailable())
                 {
                     continue;
                 }

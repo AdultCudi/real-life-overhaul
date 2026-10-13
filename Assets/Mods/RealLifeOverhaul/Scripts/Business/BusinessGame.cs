@@ -57,7 +57,7 @@ namespace RealLifeOverhaul
         {
             try
             {
-                if (reg == null || !reg.RentedByPlayer || !reg.HasEstablishedBusiness || string.IsNullOrEmpty(reg.businessTypeName)
+                if (reg == null || !GoingPublic.Mine(reg) || !reg.HasEstablishedBusiness || string.IsNullOrEmpty(reg.businessTypeName)
                     || reg.businessTypeName == EmptyType || !reg.HasValidAddress)
                 {
                     return false;
@@ -133,7 +133,7 @@ namespace RealLifeOverhaul
         public static BuildingRegistration Held(string place)
         {
             BuildingRegistration reg = At(place);
-            return reg != null && reg.RentedByPlayer ? reg : null;
+            return reg != null && GoingPublic.Mine(reg) ? reg : null;
         }
 
         // The building registered at a remembered place, whoever has it; null if there is none.

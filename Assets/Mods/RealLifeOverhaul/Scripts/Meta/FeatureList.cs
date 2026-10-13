@@ -216,6 +216,7 @@ namespace RealLifeOverhaul.Meta
             Features.Add("people", "reallife_meta_title_people")
                 .About("reallife_guide_people_about").Help("reallife_guide_people")
                 .Owns(Settings.PeopleId, Settings.OfficersOnPatrolId)
+                .StandsAside(GoingPublic.TrafficSentence, Settings.OfficersOnPatrolId, Settings.PolicePresenceId, Settings.PatrolFrequencyId)   // their patrol cars are the traffic's (Core/GoingPublic)
                 .Preset(Settings.PolicePresenceId, 4, 6, 8)
                 .Preset(Settings.PatrolFrequencyId, 2, 4, 6)
                 .Fact("pool_people", () => ActorPool.MaxActors.ToString(CultureInfo.InvariantCulture))
@@ -250,6 +251,8 @@ namespace RealLifeOverhaul.Meta
                 .Fact("crash_least", () => Guide.Money(Prices.At(CrashConsequences.LiabilityLeast)))
                 .Fact("crash_most", () => Guide.Money(Prices.At(CrashConsequences.LiabilityMost)))
                 .Owns(Settings.TrafficAccidentsId, Settings.AccidentNoticesId, Settings.AccidentMarkerId, Settings.SirenId, Settings.PoliceId)
+                // A guest of a Going Public session has the host's traffic, which nothing of this mod's takes cars from (Core/GoingPublic).
+                .StandsAside(GoingPublic.TrafficSentence, Settings.TrafficAccidentsId, Settings.AccidentFrequencyId, Settings.PoliceId, Settings.PolicePursuitId, Settings.SirenId)
                 .Preset(Settings.AccidentFrequencyId, 1, 3, 4)
                 .Preset(Settings.CrashConsequencesId, 0, 1, 1)
                 .Preset(Settings.PolicePursuitId, 0, 1, 1)
@@ -274,6 +277,7 @@ namespace RealLifeOverhaul.Meta
             Features.Add("streets", "reallife_meta_title_streets")
                 .About("reallife_guide_streets_about").Help("reallife_guide_streets")
                 .Owns(Settings.HornReactionsId, Settings.NaturalAccidentsId, Settings.SolidStreetsId)
+                .StandsAside(GoingPublic.TrafficSentence, Settings.HornReactionsId, Settings.NaturalAccidentsId, Settings.SolidStreetsId)   // (Core/GoingPublic: the host's traffic)
                 .Test("reallife_test_streets_speeder", "reallife_test_streets_redlight", "reallife_test_streets_drunk", "reallife_test_streets_jaywalker",
                     "reallife_test_streets_hit", "reallife_test_streets_crash", "reallife_test_streets_patrol",
                     "reallife_test_solid_room", "reallife_test_solid_close", "reallife_test_solid_dawdle", "reallife_test_solid_late",
@@ -345,6 +349,14 @@ namespace RealLifeOverhaul.Meta
                 .Test("reallife_test_block_say", BlockTests.Say)
                 .Diagnostic(KeyAction.PerfProbe, KeyAction.PerfBench, KeyAction.PhoneDump, KeyAction.CharacterReport);
 
+            // Going Public, the multiplayer mod: what this mod does differently in one of its sessions (Core/GoingPublic). The rows
+            // that do nothing in a session are greyed in their own sections, with the reason after them.
+            Features.Add("multiplayer", "reallife_meta_title_multiplayer").As(FeatureKind.Tools)
+                .About("reallife_guide_multiplayer_about").Help("reallife_guide_multiplayer")
+                .Fact("session", GoingPublic.Words)
+                .Row(new ButtonOption("reallife_gp_tell_button", GoingPublic.Tell))
+                .Test("reallife_test_gp_pretend", GoingPublic.TestPretend);
+
             Features.Add("tests", "reallife_meta_title_tests").As(FeatureKind.Tools).OpenAtFirst();
 
             // ------------------------------------------------------------ features merged later: one statement each, below this line
@@ -389,6 +401,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("subway_fare", () => Guide.Money(SubwayStation.PricePerRide))
                 .Fact("car_excess", () => Guide.Money(CarRules.Excess))
                 .Owns(Settings.BusesId, Settings.TransitPeopleId, Settings.SubwayJourneyId, Settings.CarOwnershipId)
+                .StandsAside(GoingPublic.TrafficSentence, Settings.BusesId)   // the bus drives in the traffic (Core/GoingPublic)
                 .Preset(Settings.CarEasyId, 1, 0, 0)
                 .Data("reallife:transit", "reallife:garage")
                 .Contact(TransitPhone.ContactId, CarPhone.GarageId, CarPhone.RoadsideId)
@@ -408,6 +421,7 @@ namespace RealLifeOverhaul.Meta
             Features.Add("taxi", "reallife_meta_title_taxi")
                 .About("reallife_guide_taxi_about").Help("reallife_guide_taxi")
                 .Owns(Settings.TaxiCallId)
+                .StandsAside(GoingPublic.TrafficSentence, Settings.TaxiCallId)   // the cab is one of the traffic's (Core/GoingPublic)
                 .Test("reallife_test_taxi_call", "reallife_test_taxi_bring", "reallife_test_taxi_cancel")
                 .Contact(TaxiPhone.ContactId)
                 .Fact("taxi_callout", () => Guide.Money(TaxiRules.CallOut))
@@ -456,6 +470,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("fire_repair_most", () => Guide.Money(Prices.At(Events.FireDamage.RepairMost)))
                 .Fact("snack_price", () => Guide.Money(Events.StreetEventScene.SnackPrice))
                 .Owns(Settings.CityFiresId, Settings.StreetEventsId)
+                .StandsAside(GoingPublic.TrafficSentence, Settings.CityFiresId, Settings.FireFrequencyId, Settings.StreetEventsId, Settings.StreetEventFrequencyId)   // the engines and the closed road are the traffic's (Core/GoingPublic)
                 .Preset(Settings.FireFrequencyId, 1, 3, 4)
                 .OnFrom(Settings.WeatherMattersId, Intensity.Standard)
                 .Preset(Settings.WeatherFrequencyId, 3, 5, 7)
@@ -480,14 +495,16 @@ namespace RealLifeOverhaul.Meta
                 })
                 .Repair(() => SocialPhone.Setup(SocialDirector.Logger));
 
-            // The City Ledger: the morning paper as a newspaper, for a player who has it delivered or buys it at a kiosk. Its
-            // words are the city's paper (Social/News, which the social life's data keeps) and the market's close; its contact
-            // is the subscriptions desk. Off: no paper, no kiosk, no delivery and nothing charged; a subscription is kept as it is.
+            // The City Ledger: the morning paper as a newspaper, for a player who has it delivered or buys it at a kiosk, and
+            // online (Newsstand): the paper and three other titles read on the phone by subscription over the home's internet.
+            // Its words are the city's paper (Social/News, which the social life's data keeps) and the market's close; its
+            // contact is the subscriptions desk. Off: no paper, no kiosk, no delivery, no online edition and nothing charged;
+            // the subscriptions are kept as they are.
             Features.Add("ledger", "reallife_meta_title_ledger")
                 .Group("reallife_ledger_header")
                 .About("reallife_guide_ledger_about").Help("reallife_guide_ledger")
-                .Owns(Settings.SocialNewspaperId, Settings.LedgerKiosksId)
-                .Data(Ledger.LedgerStore.Key)
+                .Owns(Settings.SocialNewspaperId, Settings.LedgerKiosksId, Settings.LedgerOnlineId, Settings.LedgerOnlineNotesId)
+                .Data(Ledger.LedgerStore.Key, Ledger.NewsstandStore.Key)
                 .Contact(SocialPhone.LedgerId)
                 .Objects("RealLifeOverhaul Ledger Copy")
                 .Fact("ledger_copy", () => Guide.Money(Prices.At(Ledger.LedgerCatalogue.CopyAtStart)))
@@ -499,6 +516,12 @@ namespace RealLifeOverhaul.Meta
                 .Fact("ledger_kiosks", () => Whole(Ledger.LedgerCatalogue.KiosksWanted))
                 .Fact("ledger_far", () => Whole((int)Ledger.LedgerCatalogue.KioskFurthest))
                 .Fact("ledger_chart", () => Whole(Ledger.LedgerCatalogue.ChartDays))
+                .Fact("ledger_online_ledger", () => Guide.Money(Prices.At(Ledger.NewsstandCatalogue.WeekAtStart[Ledger.NewsstandCatalogue.Ledger])))
+                .Fact("ledger_online_exchange", () => Guide.Money(Prices.At(Ledger.NewsstandCatalogue.WeekAtStart[Ledger.NewsstandCatalogue.Exchange])))
+                .Fact("ledger_online_street", () => Guide.Money(Prices.At(Ledger.NewsstandCatalogue.WeekAtStart[Ledger.NewsstandCatalogue.Street])))
+                .Fact("ledger_online_review", () => Guide.Money(Prices.At(Ledger.NewsstandCatalogue.WeekAtStart[Ledger.NewsstandCatalogue.Review])))
+                .Fact("ledger_online_pass", () => Guide.Money(Prices.At(Ledger.NewsstandCatalogue.WeekAtStart[Ledger.NewsstandCatalogue.Pass])))
+                .Fact("ledger_online_days", () => Whole(Ledger.NewsstandCatalogue.KeepDays))
                 .Cleanup(() => Ledger.LedgerDirector.Instance?.StopAll())
                 .ResetData(() => Ledger.LedgerDirector.Instance?.Forget());   // the director reads the (now empty) save again on its next second
 
@@ -537,6 +560,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("trip_hamptons", () => Guide.Money(Prices.At(TravelCatalogue.TripById("hamptons").Price)))
                 .Fact("trip_europe", () => Guide.Money(Prices.At(TravelCatalogue.TripById("europe").Price)))
                 .Owns(Settings.HotelsId, Settings.HolidaysId, Settings.TravelExtrasId)
+                .StandsAside(GoingPublic.ClockSentence, Settings.HolidaysId)   // days away cannot pass for one player of a session (Core/GoingPublic)
                 .Data(TravelState.SaveKey)
                 .Contact(TravelPhone.TripsId, TravelPhone.AgentId)
                 .Objects("RealLifeOverhaul Travel UI")
@@ -1016,6 +1040,7 @@ namespace RealLifeOverhaul.Meta
                 .Group("reallife_estate_header")
                 .About("reallife_guide_economy_estate_about").Help("reallife_guide_economy_estate")
                 .Owns(Settings.EstateId, Settings.EstateHotelId, Settings.EstateHireId)
+                .StandsAside(GoingPublic.OwnershipSentence, Settings.EstateHireId)   // a hired car leaves the city and comes back as another (Core/GoingPublic)
                 .Data(Economy.EstateStore.Key, Economy.EstateStore.TestKey)
                 .Cleanup(() => Economy.EstateDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Economy.EstateDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
@@ -1041,6 +1066,7 @@ namespace RealLifeOverhaul.Meta
             Economy.ServicesGuide.AddSaleFacts(Features.Add("economy_sale", "reallife_meta_title_economy_sale")
                 .About("reallife_guide_economy_sale_about").Help("reallife_guide_economy_sale")
                 .Owns(Settings.EconomySaleId)
+                .StandsAside(GoingPublic.OwnershipSentence, Settings.EconomySaleId)   // who rents what is the host's record in a session (Core/GoingPublic)
                 .Test("reallife_svc_test_offer", "reallife_svc_test_sale_paper", "reallife_svc_test_part"));
             // Brands and franchises. Off, none of it runs, nothing is paid and every shop's footfall is without it. It runs only while the
             // economy core does. (Cleaned up before the company, the city's economy and the core: order -3.)

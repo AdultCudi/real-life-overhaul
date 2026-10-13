@@ -210,6 +210,13 @@ namespace RealLifeOverhaul.Economy
                 return false;
             }
             int price = h.SalePrice;
+            if (GoingPublic.InSession)
+            {
+                // Who owns what is the host's record in a Going Public session, told by the game's own sales and not by this one
+                // (Core/GoingPublic): the sale completes the first day the game is played alone.
+                h.SaleDay = day + 1;
+                return false;
+            }
             if (!EstateGame.Sell(h, price))
             {
                 h.SaleDay = day + 1;   // the player is standing inside it, as the game's own sale would not have it either: tomorrow

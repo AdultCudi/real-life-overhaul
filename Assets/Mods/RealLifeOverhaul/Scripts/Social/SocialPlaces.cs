@@ -384,9 +384,9 @@ namespace RealLifeOverhaul
                 }
                 if (kind == PlanKind.Business)
                 {
-                    return registration.RentedByPlayer;
+                    return GoingPublic.Mine(registration);
                 }
-                if (registration.RentedByPlayer)
+                if (GoingPublic.Mine(registration))
                 {
                     return false;
                 }

@@ -78,6 +78,7 @@ namespace RealLifeOverhaul.Utilities
     public sealed class UtilitiesApp
     {
         private const int TabAccounts = 0, TabInternet = 1, TabNetwork = 2;
+        public const int InternetTab = TabInternet;
         private static readonly string[] TabKeys = { "reallife_util_tab_accounts", "reallife_util_tab_internet", "reallife_util_tab_network" };
         private static Network _cityAsItIs;   // the city's market before any company, for a district's rivals before founding
 
@@ -137,6 +138,14 @@ namespace RealLifeOverhaul.Utilities
         public void Closed()
         {
             _ready = false;
+        }
+
+        /// <summary>The tab shown when the app next opens (another app sends the player here: Newsstand, for a connection).</summary>
+        public void Want(int tab)
+        {
+            _tab = Math.Max(0, Math.Min(TabKeys.Length - 1, tab));
+            _pick = null;
+            _choosing = false;
         }
 
         /// <summary>The director says something has changed: the page is written again if it is showing.</summary>

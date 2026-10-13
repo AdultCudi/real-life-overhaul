@@ -1049,7 +1049,7 @@ namespace RealLifeOverhaul
             D.Cast.Seat(_friend);
             Line = null;
             var uis = InstanceBehavior<UI.UIs>.Instance;
-            if (_def.Minutes > 0 && uis != null && uis.timeMachine != null && !uis.timeMachine.isRunning)
+            if (_def.Minutes > 0 && !GoingPublic.ClockShared && uis != null && uis.timeMachine != null && !uis.timeMachine.isRunning)   // in a Going Public session no time passes (Core/GoingPublic)
             {
                 D.Body.Hold();
                 _skipping = true;

@@ -1,4 +1,4 @@
-0.3.6
+0.3.8
 
 New
-- Photo mode takes selfies: press 4 and the camera is held out at arm's length in front of you, with your back to what the free camera was looking at. The mouse moves it round your face, the wheel brings it nearer or farther, and 5 changes the pose: the phone held out, a wave, a fist in the air or talking to the camera. Enter saves it. A selfie with a friend beside you on an outing pleases them.
+- Newsstand, the City Ledger online: a new app on the phone that opens in the full-screen phone, with the City Ledger and three new papers of their own (The Exchange Gazette for money and the markets, The Street Sheet for the street, The Weekend Review for what's on and the city after dark), each read as one scrolling column with the mouse wheel or by dragging. They are subscribed to a week at a time, with a pass for all four, and need a working internet connection at one of your homes: while it is down nothing new comes and nothing is charged. The editions of the last four mornings can be read again, the Planner shows each renewal, and the printed paper and the kiosks are as they were.

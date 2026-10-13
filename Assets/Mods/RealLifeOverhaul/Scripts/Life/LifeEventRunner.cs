@@ -77,7 +77,7 @@ namespace RealLifeOverhaul
             }
             foreach (BuildingRegistration registration in save.BuildingRegistrations)
             {
-                if (registration != null && registration.RentedByPlayer && registration.businessTypeName != EmptyBusinessType
+                if (registration != null && GoingPublic.Mine(registration) && registration.businessTypeName != EmptyBusinessType
                     && !string.IsNullOrEmpty(registration.BusinessName))
                 {
                     return true;

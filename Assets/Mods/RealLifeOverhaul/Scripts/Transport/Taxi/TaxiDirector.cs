@@ -294,8 +294,9 @@ namespace RealLifeOverhaul
             failed = _failed;
             bool riding = (InstanceBehavior<TaxiSystem>.IsInitialized && TaxiSystem.IsTraveling) || SubwaySystem.IsRiding || CasinoBoatManager.IsOnCasinoBoat
                           || (TaxiBridges.Riding != null && TaxiBridges.Riding());
-            bool indoors = BuildingManager.IsInsideBuilding || UndergroundParkingManager.IsInsideParking || !TrafficTools.Ready;
-            return TaxiRules.Refuse(Settings.TaxiCall && !_failed, riding, TaxiBridges.Held != null && TaxiBridges.Held(), _step != Step.Idle,
+            bool indoors = BuildingManager.IsInsideBuilding || UndergroundParkingManager.IsInsideParking || !TrafficTools.Street;
+            // A guest of a Going Public session has the host's traffic: no cab of it can be sent (Core/GoingPublic), so the service is off.
+            return TaxiRules.Refuse(Settings.TaxiCall && !_failed && !GoingPublic.TrafficMirrored, riding, TaxiBridges.Held != null && TaxiBridges.Held(), _step != Step.Idle,
                 PlayerHelper.IsUsingVehicle && VehicleHelper.IsInsideVehicle(), indoors);
         }
 

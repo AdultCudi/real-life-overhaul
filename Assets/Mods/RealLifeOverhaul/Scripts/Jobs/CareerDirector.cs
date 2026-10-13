@@ -470,7 +470,7 @@ namespace RealLifeOverhaul
             try
             {
                 if (JobHelper.IsPlayerWorking() && BuildingManager.IsInsideBuilding
-                    && !InstanceBehavior<BuildingManager>.Instance.IsPlayerOwnedBusiness)
+                    && !GoingPublic.Mine(InstanceBehavior<BuildingManager>.Instance.buildingRegistration))
                 {
                     CareerState.CashierHours++;
                 }

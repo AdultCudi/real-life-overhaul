@@ -688,7 +688,9 @@ namespace RealLifeOverhaul.Economy.Brands
             try
             {
                 AiBusinessDefault chosen = Default(type, reg);
-                if (chosen != null && Free(reg))
+                // A guest of a Going Public session opens it in the books only: the city's own businesses are the host's there, and
+                // Going Public does not let a guest start one (CompetitionHelper.StartNewCompetitorBusiness; Core/GoingPublic).
+                if (chosen != null && Free(reg) && !GoingPublic.IsGuest)
                 {
                     CompetitionHelper.StartNewCompetitorBusiness(type, reg, true, chosen, CompetitionHelper.GetRivalIdForBusinessDefault(chosen));
                     f.Hold = Hold.Opened;
@@ -866,6 +868,10 @@ namespace RealLifeOverhaul.Economy.Brands
             if (f.Hold != Hold.Opened || !Stands(f, type))
             {
                 return;
+            }
+            if (GoingPublic.IsGuest)
+            {
+                return;   // the business stands in the host's city, which a guest of a Going Public session does not close (Core/GoingPublic)
             }
             try
             {

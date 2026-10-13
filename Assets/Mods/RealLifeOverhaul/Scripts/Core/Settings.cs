@@ -189,6 +189,8 @@ namespace RealLifeOverhaul
         public const string SocialMediaId = "social_media";
         public const string SocialMediaNoticesId = "social_media_notices";
         public const string LedgerKiosksId = "ledger_kiosks";
+        public const string LedgerOnlineId = "ledger_online";
+        public const string LedgerOnlineNotesId = "ledger_online_notes";
         public const string HotelsId = "travel_hotels";
         public const string HolidaysId = "travel_holidays";
         public const string TravelExtrasId = "travel_extras";
@@ -404,6 +406,8 @@ namespace RealLifeOverhaul
         public static bool SocialMediaNotices = true;    // Flare's few notifications (off: none at all; the app's badge still counts)
         public static bool SocialNewspaper = true;       // the City Ledger: a morning newspaper, delivered to subscribers' homes and sold at kiosks (Scripts/Ledger)
         public static bool LedgerKiosks = true;          // newspaper kiosks near the player's home sell the paper (off: subscribers only)
+        public static bool LedgerOnline = true;          // Newsstand: the City Ledger and three other titles read on the phone by subscription, over the home's internet
+        public static bool LedgerOnlineNotes = true;     // a notification each morning the online editions are in
         public static bool Hotels = true;                // eight places to stay: reception at the door, the room as a panel (Scripts/Travel)
         public static bool Holidays = true;              // trips bought at the game's travel agencies; burnout after weeks without a break
         public static bool TravelExtras = true;          // suitcase, travel insurance, a companion, trade fair invitations
@@ -624,6 +628,8 @@ namespace RealLifeOverhaul
             SocialMedia = Bool(modId, SocialMediaId, SocialMedia);
             SocialMediaNotices = Bool(modId, SocialMediaNoticesId, SocialMediaNotices);
             LedgerKiosks = Bool(modId, LedgerKiosksId, LedgerKiosks);
+            LedgerOnline = Bool(modId, LedgerOnlineId, LedgerOnline);
+            LedgerOnlineNotes = Bool(modId, LedgerOnlineNotesId, LedgerOnlineNotes);
             Hotels = Bool(modId, HotelsId, Hotels);
             Holidays = Bool(modId, HolidaysId, Holidays);
             TravelExtras = Bool(modId, TravelExtrasId, TravelExtras);

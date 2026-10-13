@@ -1030,7 +1030,7 @@ namespace RealLifeOverhaul.Utilities
                 return null;
             }
             BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
-            return manager != null && manager.IsPlayerOwnedBusiness ? manager.buildingRegistration : null;
+            return manager != null && GoingPublic.Mine(manager.buildingRegistration) ? manager.buildingRegistration : null;
         }
 
         // ---------------------------------------------------------------- the second: the office, its panel, the app
@@ -1113,6 +1113,18 @@ namespace RealLifeOverhaul.Utilities
                 }
             }
             return null;
+        }
+
+        /// <summary>Opens the Utilities app on its internet page (Newsstand: a connection is what its editions need). False if the app is not on the phone.</summary>
+        public bool OpenInternet()
+        {
+            if (!_loaded || _app == null || _view == null || !_app.Installed)
+            {
+                return false;
+            }
+            _view.Want(UtilitiesApp.InternetTab);
+            _app.Open();
+            return true;
         }
 
         /// <summary>The app is opening: the places are read again so that it shows today's.</summary>

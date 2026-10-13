@@ -402,7 +402,7 @@ namespace RealLifeOverhaul
                 Pend(SocialOrigin.Work, 0.3f, real, 12f);
             }
             _wasOnShift = shift;
-            if (!_wasInside || !TrafficTools.Ready)
+            if (!_wasInside || !TrafficTools.Street)
             {
                 return;
             }
@@ -438,7 +438,7 @@ namespace RealLifeOverhaul
             {
                 BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
                 BuildingRegistration registration = manager != null ? manager.buildingRegistration : null;
-                if (registration != null && registration.RentedByPlayer && registration.HasEstablishedBusiness)
+                if (registration != null && GoingPublic.Mine(registration) && registration.HasEstablishedBusiness)
                 {
                     return Inside.OwnShop;
                 }
@@ -1309,7 +1309,7 @@ namespace RealLifeOverhaul
                 _lastInsideAt = now;
                 return SceneBreak.Indoors;
             }
-            if (!TrafficTools.Ready && now - _lastInsideAt > 6f)
+            if (!TrafficTools.Street && now - _lastInsideAt > 6f)
             {
                 return SceneBreak.StreetNotReady;
             }
@@ -1358,7 +1358,7 @@ namespace RealLifeOverhaul
         {
             UIs uis = InstanceBehavior<UIs>.Instance;
             GameInstance save = SaveGameManager.Current;
-            return uis != null && save != null && !LoadScene.isLoading && !BuildingManager.IsInsideBuilding && TrafficTools.Ready
+            return uis != null && save != null && !LoadScene.isLoading && !BuildingManager.IsInsideBuilding && TrafficTools.Street
                    && (uis.timeMachine == null || !uis.timeMachine.isRunning) && !JobDirector.OnShift && !FuneralHelper.PlayerDead && !EnergyHelper.goingToHospital;
         }
 
