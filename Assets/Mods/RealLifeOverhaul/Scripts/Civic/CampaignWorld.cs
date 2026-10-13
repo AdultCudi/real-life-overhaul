@@ -79,6 +79,21 @@ namespace RealLifeOverhaul
         private bool _forced;           // a test button asked: the hours of the day do not apply
         private int _stageTries;
 
+        // ---- the player's own campaign (Civic/CivicOffice)
+        private bool _own;              // the rally being held is the player's own: no speaker but them
+        private bool _ownArrived;
+        private float _ownGone;         // when the crowd at the player's rally stops waiting, or goes after the speech
+        private int _ownColour;
+
+        /// <summary>The share of the posters and boards put up that are the player's own in a council race (the mayor's race draws them by its polls).</summary>
+        public Func<float> OwnShare;
+
+        /// <summary>The colour of the player's posters and boards.</summary>
+        public Func<int> OwnColour;
+
+        /// <summary>The player has reached their own rally: the speech is theirs (the number listening, and what to call when it is over).</summary>
+        public Func<int, Action<bool>, bool> OwnArrived;
+
         private Transform _pollSign;
         private Vector3 _pollStand;
         private District _pollDistrict;
@@ -165,6 +180,104 @@ namespace RealLifeOverhaul
             _rally = Rally.None;
             _rallyFor = -1;
             _forced = false;
+            _own = false;
+        }
+
+        /// <summary>
+        /// The player's own rally (paid for from their fund): a box and a crowd near the player, out of view, for them to
+        /// walk to and speak at. False if a rally is on or gathering already, or a street scene is on.
+        /// </summary>
+        public bool OwnRally()
+        {
+            if (_rally != Rally.None || CivicBridges.SceneOn() || CivicBridges.WorkStopped() || BuildingManager.IsInsideBuilding)
+            {
+                return false;
+            }
+            _own = true;
+            _ownArrived = false;
+            _ownColour = Colour();
+            _rallyFor = -1;
+            _rally = Rally.Gathering;
+            _nextPeople = 0f;
+            _stageTries = 0;
+            return true;
+        }
+
+        private int Colour()
+        {
+            try
+            {
+                return OwnColour != null ? Mathf.Abs(OwnColour()) % PosterIds.Length : 0;
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// A wall in front of the player where a poster of theirs can go (the same five rays as the campaign's own, from
+        /// where they stand). Five rays, once a second, only while the player has posters to put up.
+        /// </summary>
+        public bool WallAhead(Vector3 player, Vector3 forward, out Vector3 at, out Vector3 normal)
+        {
+            at = normal = Vector3.zero;
+            forward.y = 0f;
+            if (forward.sqrMagnitude < 0.01f || !CivicSpots.Wall(player, forward.normalized, 1.55f, 1.6f, out RaycastHit middle) || middle.normal.y > 0.2f)
+            {
+                return false;
+            }
+            Vector3 outward = new Vector3(middle.normal.x, 0f, middle.normal.z).normalized;
+            Vector3 stand = middle.point + outward * 0.6f;
+            stand.y = player.y;
+            Vector3 across = Vector3.Cross(Vector3.up, outward) * 0.27f;
+            float distance = 0.6f;
+            if (!Agrees(stand, outward, 1.95f, distance) || !Agrees(stand, outward, 1.15f, distance) || !Agrees(stand + across, outward, 1.55f, distance) || !Agrees(stand - across, outward, 1.55f, distance))
+            {
+                return false;
+            }
+            at = middle.point + middle.normal * 0.012f;
+            normal = middle.normal;
+            for (int i = 0; i < _posters.Count; i++)
+            {
+                if (_posters[i] != null && (_posters[i].position - at).sqrMagnitude < 4f)
+                {
+                    return false;   // one is up here already
+                }
+            }
+            return true;
+        }
+
+        /// <summary>The player puts one of their posters up where <see cref="WallAhead"/> found room. The furthest of the campaign's makes way if there are too many.</summary>
+        public bool PutUp(Vector3 at, Vector3 normal, Vector3 player)
+        {
+            if (_posters.Count >= MaxPosters)
+            {
+                int far = -1;
+                float farSqr = -1f;
+                for (int i = 0; i < _posters.Count; i++)
+                {
+                    float sqr = _posters[i] != null ? CivicCity.Flat(_posters[i].position - player) : float.MaxValue;
+                    if (sqr > farSqr)
+                    {
+                        farSqr = sqr;
+                        far = i;
+                    }
+                }
+                if (far >= 0)
+                {
+                    _props.Return(_posters[far]);
+                    _posters.RemoveAt(far);
+                }
+            }
+            Transform poster = _props.Stand(PosterIds[Colour()], at, normal);
+            if (poster == null)
+            {
+                return false;
+            }
+            _posters.Add(poster);
+            return true;
         }
 
         /// <summary>Test button: a rally gathers near the player now, whatever the day and hour.</summary>
@@ -237,6 +350,19 @@ namespace RealLifeOverhaul
         private int DrawCandidate()
         {
             GovState state = _government.State;
+            float own = 0f;
+            try
+            {
+                own = OwnShare != null ? Mathf.Clamp01(OwnShare()) : 0f;
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+            }
+            if (own > 0f && Random.value < own)
+            {
+                return Colour();   // the player's own, in the council race
+            }
             float roll = Random.value, sum = 0f;
             for (int c = 0; c < state.CandidateCount; c++)
             {
@@ -462,15 +588,20 @@ namespace RealLifeOverhaul
                 }
 
                 case Rally.Gathering:
-                    if ((!_forced && hour >= 15) || CivicBridges.SceneOn() || CivicBridges.WorkStopped() || _stageTries > 12)
+                    if ((!_forced && !_own && hour >= 15) || CivicBridges.SceneOn() || CivicBridges.WorkStopped() || _stageTries > 12)
                     {
                         if (_stageTries > 12)
                         {
                             CivicDirector.Logger?.Info("Civic: no pavement wide enough for a rally was found near the player; none today.");
                         }
+                        if (_own)
+                        {
+                            OwnGivenUp();
+                        }
                         _rally = Rally.None;
                         _rallyDay = day;
                         _stageTries = 0;
+                        _own = false;
                         return;
                     }
                     if (_canvasser)
@@ -491,6 +622,12 @@ namespace RealLifeOverhaul
                         _attended = 0f;
                         _nextClap = now + Random.Range(18f, 30f);
                         _rallyEnds = now + 420f;
+                        if (_own)
+                        {
+                            _ownGone = now + 600f;   // ten minutes to walk there
+                            CivicText.Toast(NotificationType.Info, "reallife_civic_office_rally_ready", "metres", Mathf.RoundToInt(Vector3.Distance(player, _rallyAt)).ToString(), 14f);
+                            return;
+                        }
                         Candidate candidate = state.Candidates[_rallyFor];
                         CivicText.Toast(NotificationType.Info, "reallife_civic_rally_on", "name", CivicText.Name(candidate),
                             "metres", Mathf.RoundToInt(Vector3.Distance(player, _rallyAt)).ToString(), 12f);
@@ -498,6 +635,11 @@ namespace RealLifeOverhaul
                     return;
 
                 case Rally.On:
+                    if (_own)
+                    {
+                        TickOwn(now, player, day, onFoot);
+                        return;
+                    }
                     if ((!_forced && hour >= 15) || now >= _rallyEnds || _crew.Disturbed || _crew.Count == 0 || CivicBridges.SceneOn() || CivicBridges.WorkStopped()
                         || CivicCity.Flat(_rallyAt - player) > 140f * 140f)
                     {
@@ -536,9 +678,59 @@ namespace RealLifeOverhaul
                     {
                         _rally = Rally.None;
                         _rallyFor = -1;
+                        _own = false;
                     }
                     return;
             }
+        }
+
+        // The player's own rally: the crowd waits for them; at the box, the speech is theirs (OfficeScenes); then applause, and the crowd goes.
+        private void TickOwn(float now, Vector3 player, int day, bool onFoot)
+        {
+            bool over = _crew.Disturbed || _crew.Count == 0 || CivicBridges.SceneOn() || now >= _ownGone || CivicCity.Flat(_rallyAt - player) > 160f * 160f;
+            if (!over && !_ownArrived && onFoot && _crew.Present >= 2 && CivicCity.Flat(_rallyAt - player) < RallyReach * RallyReach)
+            {
+                _ownArrived = true;
+                bool begun = false;
+                try
+                {
+                    begun = OwnArrived != null && OwnArrived(_crew.Present, Spoken);
+                }
+                catch (Exception e)
+                {
+                    CivicDirector.Logger?.Error(e);
+                }
+                if (!begun)
+                {
+                    _ownArrived = false;   // a conversation or another window is open: they try again in a second
+                }
+                return;
+            }
+            if (over)
+            {
+                if (!_ownArrived)
+                {
+                    OwnGivenUp();
+                }
+                _rally = Rally.Over;
+                _rallyDay = day;
+                _crew.Dismiss();
+            }
+        }
+
+        // The speech is over: applause, and the crowd goes in half a minute.
+        private void Spoken(bool given)
+        {
+            if (given)
+            {
+                _crew.AllPlay("clap", 0);
+            }
+            _ownGone = Time.time + 30f;
+        }
+
+        private void OwnGivenUp()
+        {
+            CivicText.Toast(NotificationType.Warning, "reallife_civic_office_rally_gone", 10f);
         }
 
         /// <summary>The candidate whose rally is on within reach of the player; -1 if none.</summary>
@@ -571,14 +763,15 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
-                int candidate = _rallyFor;
+                int candidate = _own ? _ownColour : _rallyFor;
                 Transform box = _props.Stand("soapbox", spot, facing);
                 if (box != null)
                 {
                     _stage.Add(box);
                 }
                 // The speaker waits with folded arms until somebody is standing in front of them (see TickRally): nobody speaks to nobody.
-                if (!_crew.Add(CityLook.Civilian, spot, spot + facing, "arms_crossed", null, box != null ? BoxTop : 0f))
+                // At the player's own rally the box is theirs: the crowd waits for them.
+                if (!_own && !_crew.Add(CityLook.Civilian, spot, spot + facing, "arms_crossed", null, box != null ? BoxTop : 0f))
                 {
                     _props.ReturnAll(_stage);
                     return false;

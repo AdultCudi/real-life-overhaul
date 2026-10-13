@@ -60,12 +60,34 @@ namespace RealLifeOverhaul
 
         public static string Name(Candidate candidate)
         {
+            if (candidate.Player)
+            {
+                return PlayerName();
+            }
             return CivicCatalogue.FirstNames[candidate.First].GetLocalization() + " " + CivicCatalogue.LastNames[candidate.Last].GetLocalization();
+        }
+
+        /// <summary>The player's own name, as the game has it; "you" if it has none.</summary>
+        public static string PlayerName()
+        {
+            try
+            {
+                CharacterData data = PlayerHelper.CharacterData;
+                if (data != null && !string.IsNullOrEmpty(data.name))
+                {
+                    return data.name;
+                }
+            }
+            catch (Exception)
+            {
+                // the player's character is not there yet: the word below
+            }
+            return T("reallife_civic_office_you");
         }
 
         public static string Party(Candidate candidate)
         {
-            return CivicCatalogue.Parties[candidate.Party].GetLocalization();
+            return CivicCatalogue.PartyKey(candidate.Party).GetLocalization();
         }
 
         /// <summary>
