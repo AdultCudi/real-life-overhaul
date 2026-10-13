@@ -1,4 +1,4 @@
-0.9.1
+0.9.2
 
 Fixed
-- A nicer interior now sells more to each customer, as Meaningful Interiors does. At Standard, with an overall figure of 85, each order takes up to 10% more products in the poorest districts, 8.1% in a district of middle income and 6% in the richest, and it is on by default. Decor brings up to 10% more customers by default, as Meaningful Ambience does. If you had the old defaults (no extra products, decor 5%), they move to the new ones once; any other choice stays.
+- On a save from before the internet, or with the mod newly installed on a save, web design and software companies and the headquarters were closed at once for want of a connection. The ones you already have now get 7 days on the game's clock to get connected, with the days left in the Utilities app.
