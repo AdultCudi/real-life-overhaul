@@ -204,6 +204,12 @@ namespace RealLifeOverhaul
             return All[(int)action].Key;
         }
 
+        /// <summary>The modifier the action's key is bound with (None for the key alone).</summary>
+        public static KeyModifier Modifier(KeyAction action)
+        {
+            return All[(int)action].Modifier;
+        }
+
         private static bool Modified(Binding binding)
         {
             return binding.Modifier != KeyModifier.None
@@ -424,6 +430,11 @@ namespace RealLifeOverhaul
             {
                 string used = GameUse(binding.Key);
                 text = used == null ? binding.Label : binding.Label + "   (" + "reallife_keys_conflict".GetLocalization() + " " + used + ")";
+                string other = EmpireMotors.KeyUse(binding.Key, binding.Modifier);   // another author's mod that acts on the key by itself (Core/EmpireMotors)
+                if (other != null)
+                {
+                    text += "   (" + other.GetLocalization() + ")";
+                }
             }
             row.Suffix = ":  " + text;
         }
