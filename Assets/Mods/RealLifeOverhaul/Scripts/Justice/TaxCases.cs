@@ -35,6 +35,25 @@ namespace RealLifeOverhaul
             return opened.Number;
         }
 
+        /// <summary>
+        /// Opens a case for market abuse (Wiring/FlareLinks: shares sold soon after a viral post talking the company up), on a
+        /// summons like a tax case: heard and fined by Justice's own table. Its number, or 0 with no court to open it.
+        /// </summary>
+        public static int FileMarketAbuse(string company)
+        {
+            if (!Justice.Active)
+            {
+                return 0;
+            }
+            JusticeCase opened = Justice.Summon(new JusticeReport(JusticeLaw.MarketAbuse) { Complied = true, Evidence = new[] { Evidence } });
+            if (opened == null)
+            {
+                return 0;
+            }
+            JusticeDirector.Logger?.Info("Justice: case " + opened.Number + " opened on a summons for market abuse (shares of " + company + " sold after a viral post about them), to be heard on day " + opened.CourtDay + ".");
+            return opened.Number;
+        }
+
         /// <summary>True while a case with this number is still before the court.</summary>
         public static bool Open(int number)
         {

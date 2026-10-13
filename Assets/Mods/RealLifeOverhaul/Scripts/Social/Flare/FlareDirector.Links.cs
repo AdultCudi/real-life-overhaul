@@ -156,6 +156,10 @@ namespace RealLifeOverhaul.Flare
         public void Scandal(string place, string name, int lost, int scale)
         {
             Happened(FlareSource.Scandal, -1, place, name, FlareRules.Answered(lost, scale));
+            if (Running)
+            {
+                FlareBridges.MarketBuzz?.Invoke(place, -1);   // the talk reaches the market for its trade
+            }
         }
 
         /// <summary>For the company: a sponsored post at a business can be booked now (from Local on), at these shares of its base cost and of its customers.</summary>

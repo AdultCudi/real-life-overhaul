@@ -525,6 +525,8 @@ namespace RealLifeOverhaul.Meta
                 .Fact("flare_sponsored_from", () => Whole(Flare.FlareRules.SponsoredFrom))
                 .Fact("flare_arrest_share", () => Whole(Flare.FlareRules.ArrestShare / 10))
                 .Fact("flare_cast_most", () => Whole(Flare.FlareCast.Most))
+                .Fact("flare_never_days", () => Whole(Flare.FlareRules.NeverPostedDays))
+                .Fact("flare_abuse_days", () => Whole(Flare.FlareRules.AbuseDays))
                 .ResetData(() => Flare.FlareDirector.Instance?.Forget());   // a new account opens from the (now empty) save on the next second
 
             Features.Add("travel", "reallife_meta_title_travel")

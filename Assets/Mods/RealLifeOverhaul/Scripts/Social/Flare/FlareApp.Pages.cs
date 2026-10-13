@@ -53,12 +53,55 @@ namespace RealLifeOverhaul.Flare
             }
             else
             {
-                box.Title(FlareText.T("reallife_flare_app"));
+                box.Title(FlareText.T("reallife_flare_trending"));
+                Trending(box, file, day);
                 box.Line(FlareText.T("reallife_flare_intro_what"));
-                box.Line(FlareText.T("reallife_flare_intro_friends"));
                 box.Line(FlareText.T("reallife_flare_intro_post"));
             }
             return FlareTables.Feed;
+        }
+
+        // Trending: the day's most liked post, the market's biggest mover, the busiest business.
+        private void Trending(InfoBox box, FlareFile file, int day)
+        {
+            FlarePost top = null;
+            for (int i = 0; i < file.Posts.Count; i++)
+            {
+                FlarePost p = file.Posts[i];
+                top = p.Day == day && (top == null || p.Likes > top.Likes) ? p : top;
+            }
+            int lines = 0;
+            if (top != null)
+            {
+                box.Line(FlareText.Fill("reallife_flare_trend_post", "who", AuthorName(top, file), "likes", FlareText.N(top.Likes)));
+                lines++;
+            }
+            if (_director.MoverName != null)
+            {
+                box.Line(FlareText.Fill("reallife_flare_trend_mover", "name", _director.MoverName, "change", (_director.MoverBp >= 0 ? "+" : string.Empty) + (_director.MoverBp / 100f).ToString("0.0") + "%"));
+                lines++;
+            }
+            string talked = null;
+            int most = 0;
+            for (int i = 0; i < file.Buzz.Count; i++)
+            {
+                int at = file.BuzzAt(file.Buzz[i].Place, day);
+                if (at > most)
+                {
+                    most = at;
+                    talked = file.Buzz[i].Place;
+                }
+            }
+            BuildingRegistration reg = talked != null ? FlareGame.Business(talked) : null;
+            if (reg != null)
+            {
+                box.Line(FlareText.Fill("reallife_flare_trend_shop", "name", FlareGame.Name(reg), "percent", most.ToString()));
+                lines++;
+            }
+            if (lines == 0)
+            {
+                box.Line(FlareText.T("reallife_flare_trend_none"));
+            }
         }
 
         private string Words(FlarePost p)
@@ -80,7 +123,11 @@ namespace RealLifeOverhaul.Flare
             box.Line(Words(p));
             if (p.Source == FlareSource.Photo || p.Source == FlareSource.Selfie)
             {
-                box.Line(FlareText.Pair("reallife_flare_picture", p.Name ?? string.Empty));
+                Texture2D picture = p.Author == FlareAuthor.Player ? _pictures.Of(file, p) : null;
+                if (picture == null || box.Picture(picture, FlareRules.ThumbWidth, _pictures.Height) == null)
+                {
+                    box.Line(FlareText.Pair("reallife_flare_picture", p.Name ?? string.Empty));   // not one of the newest five, still being read, or the file is gone
+                }
             }
             box.Line(FlareText.Fill("reallife_flare_post_figures", "reach", FlareText.N(p.Reach), "likes", FlareText.N(p.Likes), "replies", FlareText.N(p.Replies)));
             if (p.Author == FlareAuthor.Player)

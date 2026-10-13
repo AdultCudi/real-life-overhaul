@@ -105,6 +105,15 @@ namespace RealLifeOverhaul.Flare
                 Logger?.Info("Flare: " + HandleOf(_visits[i].Who) + " visited " + _visits[i].Name + " and posted about it: " + now + "% more customers there.");
                 Rewrite(_visits[i].Place, true);
             }
+        }
+
+        // The one notification of a day for the accounts the player follows, in the morning once the paper and the market have posted.
+        private void FollowedNotice(int day, int hour)
+        {
+            if (hour < 8 || _file.FollowNoticeDay == day)
+            {
+                return;
+            }
             int followed = FlareCast.FollowedPosts(_file, day);
             if (FlareCast.FollowNotice(_file, day, followed, Settings.SocialMediaNotices))
             {
@@ -252,6 +261,7 @@ namespace RealLifeOverhaul.Flare
                     _file.NewsToday = 0;
                 }
                 _file.NewsToday |= bit;
+                IssueFrom(bit);
             }
         }
 

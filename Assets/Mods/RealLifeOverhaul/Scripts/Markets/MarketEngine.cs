@@ -137,6 +137,24 @@ namespace RealLifeOverhaul.Markets
         private static readonly double SectorNews = Math.Sqrt(1.0 - MarketCatalogue.SectorMoodShare), SectorMood = Math.Sqrt(MarketCatalogue.SectorMoodShare);
         private static readonly double OwnNews = Math.Sqrt(1.0 - MarketCatalogue.OwnMoodShare), OwnMood = Math.Sqrt(MarketCatalogue.OwnMoodShare);
 
+        // The sector of the first listed company in a trade (MarketInputs.Trades), or -1 for none.
+        private int SectorOfTrade(int trade)
+        {
+            if (trade < 0 || trade >= MarketInputs.Trades.Length)
+            {
+                return -1;
+            }
+            for (int i = 0; i < State.Stocks.Count; i++)
+            {
+                Stock s = State.Stocks[i];
+                if (s.Listed && s.Def != null && s.Def.Trade == MarketInputs.Trades[trade])
+                {
+                    return (int)s.Sector;
+                }
+            }
+            return -1;
+        }
+
         /// <summary>Something happened in the city now that the market answers at once. Ignored while the tape is being followed.</summary>
         public void Event(int kind, int a, int b)
         {
@@ -270,6 +288,7 @@ namespace RealLifeOverhaul.Markets
 
         private void Apply(in MarketEvent e)
         {
+            int tradeSector = e.Kind == MarketInputs.EventBuzz ? SectorOfTrade(e.A) : -1;
             for (int i = 0; i < State.Stocks.Count; i++)
             {
                 Stock s = State.Stocks[i];
@@ -278,6 +297,10 @@ namespace RealLifeOverhaul.Markets
                     continue;
                 }
                 int bp = MarketInputs.EventBp(e, s.Sector);
+                if (tradeSector >= 0)
+                {
+                    bp += MarketInputs.BuzzBp(e, s.Sector, (MarketSector)tradeSector);
+                }
                 if (e.Kind == MarketInputs.EventFire && e.A >= 0 && s.Def.Trade != null && e.A < MarketInputs.Trades.Length && MarketInputs.Trades[e.A] == s.Def.Trade)
                 {
                     bp += MarketInputs.FireTradeKickBp * (s.Size == MarketSize.Small ? 2 : s.Size == MarketSize.Mid ? 1 : 0) / 2;

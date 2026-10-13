@@ -32,7 +32,10 @@ namespace RealLifeOverhaul.Flare
         {
             "reallife_flare_draft_photo", "reallife_flare_draft_photo", "reallife_flare_draft_selfie", "reallife_flare_draft_outing", "reallife_flare_draft_promotion",
             "reallife_flare_draft_opened", "reallife_flare_draft_record", "reallife_flare_draft_voted", "reallife_flare_draft_endorsed", "reallife_flare_draft_deed",
-            "reallife_flare_draft_arrested", "reallife_flare_draft_photo", "reallife_flare_draft_scandal", "reallife_flare_draft_photo"
+            "reallife_flare_draft_arrested", "reallife_flare_draft_photo", "reallife_flare_draft_scandal", "reallife_flare_draft_photo",
+            "reallife_flare_draft_photo", "reallife_flare_draft_photo", "reallife_flare_draft_photo", "reallife_flare_draft_photo", "reallife_flare_draft_photo",
+            "reallife_flare_draft_photo", "reallife_flare_draft_photo", "reallife_flare_draft_photo", "reallife_flare_draft_shares", "reallife_flare_draft_photo",
+            "reallife_flare_draft_photo", "reallife_flare_draft_issue_safety"
         };
         private static readonly string[][] PostKeys =
         {
@@ -49,8 +52,13 @@ namespace RealLifeOverhaul.Flare
             new[] { "reallife_flare_post_arrested_1", "reallife_flare_post_arrested_2" },
             new[] { "reallife_flare_post_photo_1", "reallife_flare_post_photo_2" },
             new[] { "reallife_flare_post_scandal_1", "reallife_flare_post_scandal_2" },
-            new[] { "reallife_flare_post_sponsored_1", "reallife_flare_post_sponsored_2" }
+            new[] { "reallife_flare_post_sponsored_1", "reallife_flare_post_sponsored_2" },
+            null, null, null, null, null, null, null, null,   // the city's own accounts' sources: worded in Other
+            new[] { "reallife_flare_post_shares_1", "reallife_flare_post_shares_2" },
+            null, null,
+            new[] { "reallife_flare_post_issue_safety_1", "reallife_flare_post_issue_safety_2" }
         };
+        private static readonly string[] RoadsKeys = { "reallife_flare_post_issue_roads_1", "reallife_flare_post_issue_roads_2" };
         private static readonly string[][] ToneLineKeys =
         {
             new[] { "reallife_flare_tone_0_1", "reallife_flare_tone_0_2" },
@@ -153,7 +161,8 @@ namespace RealLifeOverhaul.Flare
         public static string Draft(FlareDraft d, string friend)
         {
             bool with = d.Person >= 0 && !string.IsNullOrEmpty(friend) && (d.Source == FlareSource.Selfie || d.Source == FlareSource.Photo);
-            string key = with ? (d.Source == FlareSource.Selfie ? "reallife_flare_draft_selfie_with" : "reallife_flare_draft_photo_with") : Of(DraftKeys, (int)d.Source);
+            string key = with ? (d.Source == FlareSource.Selfie ? "reallife_flare_draft_selfie_with" : "reallife_flare_draft_photo_with")
+                : d.Source == FlareSource.Issue && d.Arg == (int)FlareIssue.Roads ? "reallife_flare_draft_issue_roads" : Of(DraftKeys, (int)d.Source);
             return Fill(key, "name", d.Name, "friend", friend, "kind", Outing(d.Arg));
         }
 
@@ -180,8 +189,12 @@ namespace RealLifeOverhaul.Flare
                 Words.Append(Fill(topic[p.Arg % 10 % topic.Length], "job", job, "district", district));
                 return Words.ToString();
             }
-            string[] post = PostKeys[FlareRules.Clamp((int)p.Source, 0, PostKeys.Length - 1)];
+            string[] post = p.Source == FlareSource.Issue && p.Arg == (int)FlareIssue.Roads ? RoadsKeys : PostKeys[FlareRules.Clamp((int)p.Source, 0, PostKeys.Length - 1)] ?? PostKeys[1];
             Words.Append(Fill(post[Pick(p.Seed, 1, post.Length) - 1], "name", p.Name, "kind", Outing(p.Arg)));
+            if (p.Disclosed)
+            {
+                Words.Append(' ').Append(Fill("reallife_flare_disclosure", "name", p.Name));
+            }
             if (!string.IsNullOrEmpty(tagged))
             {
                 Words.Append(' ').Append(Fill("reallife_flare_with", "friend", tagged));
@@ -253,6 +266,8 @@ namespace RealLifeOverhaul.Flare
                 case FlareSource.Election: keys = p.Author == FlareAuthor.Candidate ? CandidateKeys : VoteKeys; break;
                 case FlareSource.Apology: keys = SorryKeys; break;
                 case FlareSource.BrandNews: keys = BrandKeys; break;
+                case FlareSource.Results: return Fill(p.Arg == 1 ? "reallife_flare_results_beat" : "reallife_flare_results_missed", "name", p.Name);
+                case FlareSource.Headline: return p.Name ?? string.Empty;
                 case FlareSource.CityNews:
                     for (int bit = 0; bit < CityNewsKeys.Length; bit++)
                     {

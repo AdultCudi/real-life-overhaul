@@ -39,9 +39,18 @@ namespace RealLifeOverhaul.Flare
         private bool _ready;               // the director has read the people for this opening
         private bool _writing;             // a page is being written: a change it causes does not write it again
 
+        private readonly FlarePictures _pictures;
+
         public FlareApp(FlareDirector director)
         {
             _director = director;
+            _pictures = new FlarePictures(director, Changed);
+        }
+
+        /// <summary>The city is unloading or Flare stops: every picture's texture goes.</summary>
+        public void Dispose()
+        {
+            _pictures.Clear();
         }
 
         // ---------------------------------------------------------------- building it from the game's parts
@@ -109,6 +118,7 @@ namespace RealLifeOverhaul.Flare
         public void Closed()
         {
             _ready = false;
+            _pictures.Clear();
         }
 
         /// <summary>The director says something has changed: the page is written again if it is showing.</summary>

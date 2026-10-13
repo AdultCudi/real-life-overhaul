@@ -42,7 +42,7 @@ namespace RealLifeOverhaul.Flare
         public const int FeedRows = 20;            // the Feed shows this many
 
         // ---- what a post is worth, thousandths, by FlareSource (Life: a friend's own, worth nothing to the player)
-        public static readonly int[] SourceQuality = { 0, 600, 750, 700, 1000, 1000, 850, 500, 650, 750, 900, 0, 800, 0 };
+        public static readonly int[] SourceQuality = { 0, 600, 750, 700, 1000, 1000, 850, 500, 650, 750, 900, 0, 800, 0, 0, 0, 0, 0, 0, 0, 0, 0, 700, 0, 0, 650 };
         public const int WithFriend = 250;         // a friend tagged in it
         public const int InsideShop = 100;         // a picture taken in one of the player's businesses
 
@@ -62,7 +62,19 @@ namespace RealLifeOverhaul.Flare
             {  600,  500, 1200,  550 },   // Arrested: only honesty does not go badly
             { 1000, 1000, 1000, 1000 },   // Life
             {  600,  550, 1200,  500 },   // Scandal: the same
-            { 1000, 1000, 1000, 1000 }    // Sponsored
+            { 1000, 1000, 1000, 1000 },   // Sponsored
+            { 1000, 1000, 1000, 1000 },   // Niche ... CityNews: the city's own accounts, never the player's
+            { 1000, 1000, 1000, 1000 },
+            { 1000, 1000, 1000, 1000 },
+            { 1000, 1000, 1000, 1000 },
+            { 1000, 1000, 1000, 1000 },
+            { 1000, 1000, 1000, 1000 },
+            { 1000, 1000, 1000, 1000 },
+            { 1000, 1000, 1000, 1000 },
+            {  900, 1000, 1150,  700 },   // Shares: honest is best; cheeky about money is not liked
+            { 1000, 1000, 1000, 1000 },   // Results
+            { 1000, 1000, 1000, 1000 },   // Headline
+            {  800,  900, 1150,  950 }    // Issue
         };
         public const int BadFit = 650;             // a fit under this goes badly
         public const int GoodFit = 1150;           // ...one at or over this is well liked: a point of reputation
@@ -106,6 +118,22 @@ namespace RealLifeOverhaul.Flare
         public const int BossStep = 150;
         public const int SponsoredFrom = 500;      // followers: a sponsored post is offered from Local on
         public const int SponsoredLeast = 250, SponsoredMost = 1500;   // thousandths of radio's customers a day, by followers
+
+        // ---- the rest of the city: people met online, the partner, friends, the market, the council and the courts
+        public static readonly int[] OnlinePerMonth = { 0, 2, 3, 4, 5 };   // people the player has still to meet who answer a post and become contacts, by tier
+        public const int OnlineGapDays = 5;
+        public const int NeverPostedDays = 21;     // the partner not posted this long, while others are: they mind
+        public const int OthersLately = 7;
+        public const int NeglectPosts = 3;         // posts in a day while a friend's texts wait
+        public const int NeglectGapDays = 7;
+        public const int MoodBadNews = 8;          // the feed's mood about the city's running: each kind of bad news today
+        public const int MoodIssuePost = 10;       // ...a post of the player's about an issue
+        public const int MoodKeep = 800;           // thousandths of yesterday's mood kept
+        public const int IssueMost = 300;          // thousandths of a point of an issue's weight in the council a post can add, at the most
+        public const int AbuseDays = 2;            // selling shares this soon after a viral post about the company is market abuse
+        public const int FameFee = 150;            // thousandths more a lawyer asks of a Celebrity
+        public const int Thumbs = 5;               // the newest pictures shown in their posts
+        public const int ThumbWidth = 256;         // pixels
 
         // ---------------------------------------------------------------- the account
 
@@ -395,6 +423,20 @@ namespace RealLifeOverhaul.Flare
                 }
             }
             p.Gained = gain;
+            p.Disclosed = d.Source == FlareSource.Shares && Discloses(f);
+            if (p.Viral && d.Source == FlareSource.Shares)
+            {
+                f.ViralShares.Add(new FlareViralShares { Stock = d.Arg, Name = d.Name, Day = day });
+            }
+            if (tag >= 0)
+            {
+                bool partner = false;
+                for (int i = 0; people != null && i < people.Count; i++)
+                {
+                    partner |= people[i].Index == tag && people[i].Partner;
+                }
+                Tagged(f, partner, day);
+            }
             f.Followers = Math.Max(0, followers + gain);
             f.Reputation = Clamp(f.Reputation + reputation, 0, 100);
             f.LastPostDay = day;
@@ -531,6 +573,130 @@ namespace RealLifeOverhaul.Flare
         public static int SponsoredCost(int reach, int reputation)
         {
             return (int)((long)reach * (1100 - 2 * Clamp(reputation, 0, 100)) / 1000);
+        }
+
+        // ---------------------------------------------------------------- the rest of the city
+
+        /// <summary>Whether, on a day after a post, somebody the player has still to meet answers it and becomes a contact: a few a month, more for a bigger account.</summary>
+        public static bool MeetsOnline(FlareFile f, int day, bool postedYesterday)
+        {
+            int perMonth = OnlinePerMonth[Clamp((int)f.Tier, 0, OnlinePerMonth.Length - 1)];
+            return postedYesterday && perMonth > 0 && day - f.OnlineDay >= OnlineGapDays && Roll(f.Seed, day, 901) < perMonth * 1000 / 30;
+        }
+
+        /// <summary>How a partner takes a post of the player with somebody they could fall for.</summary>
+        public enum PartnerView { Proud = 0, Cool = 1, Jealous = 2 }
+
+        public static PartnerView ViewOf(FlareTaste partner)
+        {
+            return (partner & FlareTaste.Cheers) != 0 ? PartnerView.Proud : (partner & FlareTaste.Cool) != 0 ? PartnerView.Jealous : PartnerView.Cool;
+        }
+
+        /// <summary>A tag noted: the partner's, or somebody else's (for "you never post us").</summary>
+        public static void Tagged(FlareFile f, bool partner, int day)
+        {
+            if (partner)
+            {
+                f.PartnerTagDay = day;
+            }
+            else
+            {
+                f.OthersTagDay = day;
+            }
+        }
+
+        /// <summary>The partner has not been in a post for three weeks while others have been lately: they mind it, once in three weeks.</summary>
+        public static bool NeverPosted(FlareFile f, int day, bool partner)
+        {
+            if (!partner || day - Math.Max(f.PartnerTagDay, f.StartDay) < NeverPostedDays || f.OthersTagDay < 0 || day - f.OthersTagDay > OthersLately || day - f.NeverDay < NeverPostedDays)
+            {
+                return false;
+            }
+            f.NeverDay = day;
+            return true;
+        }
+
+        /// <summary>A friend whose texts wait minds the player posting all day: three posts yesterday, once a week.</summary>
+        public static bool Neglect(FlareFile f, int day, int postsYesterday, bool unanswered)
+        {
+            if (!unanswered || postsYesterday < NeglectPosts || day - f.NeglectDay < NeglectGapDays)
+            {
+                return false;
+            }
+            f.NeglectDay = day;
+            return true;
+        }
+
+        /// <summary>The feed's mood about the city's running for a day: four fifths of yesterday's, less for each kind of bad news.</summary>
+        public static int Mood(FlareFile f, int badNews)
+        {
+            f.MayorMood = Clamp(f.MayorMood * MoodKeep / 1000 - MoodBadNews * Math.Max(0, badNews), -100, 100);
+            return f.MayorMood;
+        }
+
+        /// <summary>What the mood pulls on the mayor's approval a day, in tenths of a point: a point at most either way.</summary>
+        public static int ApprovalPull(int mood)
+        {
+            return Clamp(mood / 10, -10, 10);
+        }
+
+        /// <summary>What a post about an issue adds to its weight in the council, thousandths of a point: by followers on a log scale, at most 0.3.</summary>
+        public static int IssueWeight(int followers)
+        {
+            return (int)(IssueMost * Math.Min(1.0, Math.Log10(1.0 + Math.Max(0, followers)) / Math.Log10(1.0 + EndorseFull)));
+        }
+
+        /// <summary>A post about a company the player holds carries a disclosure from Known on.</summary>
+        public static bool Discloses(FlareFile f)
+        {
+            return f.Tier >= FlareTier.Known;
+        }
+
+        /// <summary>Selling a company's shares on a day: market abuse if the player's post about it went viral within two days. The viral post it was, or null (spent if found).</summary>
+        public static FlareViralShares Abuse(FlareFile f, int stock, int day)
+        {
+            for (int i = 0; i < f.ViralShares.Count; i++)
+            {
+                FlareViralShares v = f.ViralShares[i];
+                if (v.Stock == stock && day - v.Day <= AbuseDays && day >= v.Day)
+                {
+                    f.ViralShares.RemoveAt(i);
+                    return v;
+                }
+            }
+            return null;
+        }
+
+        /// <summary>Viral posts about shares older than the window are let go.</summary>
+        public static void AbuseDay(FlareFile f, int day)
+        {
+            for (int i = f.ViralShares.Count - 1; i >= 0; i--)
+            {
+                if (day - f.ViralShares[i].Day > AbuseDays)
+                {
+                    f.ViralShares.RemoveAt(i);
+                }
+            }
+        }
+
+        /// <summary>What a lawyer asks more of a Celebrity, thousandths.</summary>
+        public static int Fame(FlareFile f)
+        {
+            return f.Tier >= FlareTier.Celebrity ? FameFee : 0;
+        }
+
+        /// <summary>The newest pictures of the player's posts, the ones shown with their picture: their post numbers into the list given, newest first.</summary>
+        public static void Pictures(FlareFile f, List<int> into)
+        {
+            into.Clear();
+            for (int i = f.Posts.Count - 1; i >= 0 && into.Count < Thumbs; i--)
+            {
+                FlarePost p = f.Posts[i];
+                if (p.Author == FlareAuthor.Player && (p.Source == FlareSource.Photo || p.Source == FlareSource.Selfie) && !string.IsNullOrEmpty(p.Name))
+                {
+                    into.Add(p.Id);
+                }
+            }
         }
 
         public static int Count(int bits)

@@ -6,6 +6,7 @@ using RealLifeOverhaul.Economy.Brands;
 using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.Law;
 using RealLifeOverhaul.Leisure;
+using RealLifeOverhaul.Markets;
 
 namespace RealLifeOverhaul
 {
@@ -54,6 +55,18 @@ namespace RealLifeOverhaul
         ///                 (SocialDirector.NextStranger, QueueIntroduction)
         ///   CityNews      what the city's news reported today is what local news posts about (News.Reported)
         ///
+        /// The rest of the city:
+        ///   MeetOnline    somebody the player has still to meet answers a post: met online (SocialOrigin.Online, SocialLife.Meet)
+        ///   PartnerSees, PartnerMinds, FriendMinds  the partner proud, cool or jealous; never posted; a friend whose texts
+        ///                 wait (SocialLife.Change)
+        ///   Market, Sold, MarketAbuse, MarketBuzz  the stock market's results and biggest move, the player's sales, a case
+        ///                 of market abuse (TaxCases.FileMarketAbuse, Justice's own summons) and a buzz for a trade
+        ///                 (MarketInputs.EventBuzz, MarketEngine.Event)
+        ///   Headlines     the City Ledger's own account: the morning paper's headlines (News.Today)
+        ///   Issue, Mood   a post raising an issue (CivicGovernment.Raised) and the feed's mood on the mayor's approval
+        ///                 (CivicBridges.Mood), a point a day at most
+        ///   Fame, Heard   a Celebrity pays a lawyer a little more and their hearing is in the paper (Justice.Bridges)
+        ///
         /// Everything is read from what those features already keep in public or heard through an event they already
         /// raise; nothing of theirs is changed but through an entry of theirs. COST: nothing per frame. A draft is one
         /// call when the thing happens; the people are read when Flare plays its day, makes a post or the app opens (a
@@ -64,6 +77,9 @@ namespace RealLifeOverhaul
             private const int PostFamiliarity = 1, PostAffection = 1;   // a friend tagged in a post that went well
             private const int PartnerAffection = 2;                     // ...the partner, more
             private const int BadTrust = -2;                            // ...one that went badly
+            private const float ProudAffection = 1f, CoolAffection = -1f, JealousAffection = -2f, JealousTrust = -3f;   // the partner sees a post with somebody they could fall for
+            private const float PartnerNeverAffection = -2f;           // ...and is never in a post
+            private const float NeglectTrust = -1f;                    // a friend whose texts wait
 
             private static Func<BuildingRegistration, int> _ambientBefore;
 
@@ -99,6 +115,25 @@ namespace RealLifeOverhaul
                 FlareBridges.Book = Book;
                 FlareBridges.BrandScandal = place => BrandsDirector.Instance?.Heard(place, Scandal.Influencer);
                 FlareBridges.MeetStar = MeetStar;
+                FlareBridges.MeetOnline = MeetOnline;
+                FlareBridges.PartnerSees = PartnerSees;
+                FlareBridges.PartnerMinds = () => Closer(SocialState.Loaded ? SocialState.Partner : null, 0f, PartnerNeverAffection, 0f, "minds never being posted");
+                FlareBridges.FriendMinds = person => Closer(SocialState.Loaded ? SocialState.Get(person) : null, 0f, 0f, NeglectTrust, "minds the player posting all day while their texts wait");
+                FlareBridges.Market = Market;
+                FlareBridges.Sold = Sold;
+                FlareBridges.MarketAbuse = company => TaxCases.FileMarketAbuse(company);
+                FlareBridges.MarketBuzz = MarketBuzz;
+                FlareBridges.Headlines = Headlines;
+                FlareBridges.Issue = (issue, weight) => CivicDirector.Instance?.Government?.Raised(issue == (int)FlareIssue.Safety ? (int)RealLifeOverhaul.Issue.Safety : (int)RealLifeOverhaul.Issue.Roads, weight / 1000f);
+                CivicBridges.Mood = () => FlareDirector.Instance != null ? FlareDirector.Instance.ApprovalPull() : 0f;
+                Justice.Bridges.Fame = () => FlareDirector.Instance != null ? FlareDirector.Instance.Fame() : 0;
+                Justice.Bridges.Heard = () =>
+                {
+                    if (FlareDirector.Instance != null && FlareDirector.Instance.Fame() > 0)
+                    {
+                        Paper.Print("reallife_flare_news_celebrity_court");
+                    }
+                };
             }
 
             internal static void Disconnect()
@@ -115,6 +150,9 @@ namespace RealLifeOverhaul
                 CivicBridges.Following = null;
                 CompanyBridges.Outside = null;
                 CompanyBridges.Booked = null;
+                CivicBridges.Mood = null;
+                Justice.Bridges.Fame = null;
+                Justice.Bridges.Heard = null;
             }
 
             // What was asked for before this pairing, and Flare's talk on top. Business pressure keeps the sum inside its own bounds.
@@ -287,6 +325,182 @@ namespace RealLifeOverhaul
                 }
             }
 
+            // Somebody the player has still to meet answers a post and they swap numbers: met online.
+            private static string MeetOnline()
+            {
+                try
+                {
+                    SocialPerson stranger = Settings.Social && Settings.SocialMeetings && SocialState.Loaded && SocialDirector.Instance != null ? SocialDirector.NextStranger() : null;
+                    if (stranger == null)
+                    {
+                        return null;
+                    }
+                    stranger.Origin = SocialOrigin.Online;
+                    SocialLife.Meet(stranger, true);
+                    return stranger.Name;
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareLinks.MeetOnline", e);
+                    return null;
+                }
+            }
+
+            private static void PartnerSees(int partner, int view)
+            {
+                SocialPerson p = SocialState.Loaded ? SocialState.Get(partner) : null;
+                if (view == (int)FlareRules.PartnerView.Proud)
+                {
+                    Closer(p, 0f, ProudAffection, 0f, "is proud of the post");
+                }
+                else if (view == (int)FlareRules.PartnerView.Jealous)
+                {
+                    Closer(p, 0f, JealousAffection, JealousTrust, "is jealous of the post");
+                }
+                else
+                {
+                    Closer(p, 0f, CoolAffection, 0f, "is cool about the post");
+                }
+            }
+
+            // One small change to a relationship, said once.
+            private static void Closer(SocialPerson p, float familiarity, float affection, float trust, string why)
+            {
+                try
+                {
+                    if (p == null || !p.Met || !Settings.Social)
+                    {
+                        return;
+                    }
+                    SocialLife.Change(p, familiarity, affection, trust);
+                    SocialDirector.Logger?.Info("Social: " + p.Name + " " + why + " (affection " + affection + ", trust " + trust + ").");
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareLinks.Closer", e);
+                }
+            }
+
+            // The stock market's news of yesterday: results and the biggest move, with whether the player holds the company.
+            private static void Market(List<FlareMarketNote> into)
+            {
+                MarketState s = MarketDirector.Instance != null ? MarketDirector.Instance.State : null;
+                if (s == null)
+                {
+                    return;
+                }
+                int day = SaveGameManager.Current != null ? SaveGameManager.Current.Day - 1 : -1;
+                FlareMarketNote mover = default(FlareMarketNote);
+                bool moved = false;
+                for (int i = 0; i < s.News.Count; i++)
+                {
+                    MarketNews n = s.News[i];
+                    if (n.Day != day || (n.Kind != MarketNewsKind.Results && n.Kind != MarketNewsKind.Mover))
+                    {
+                        continue;
+                    }
+                    Stock stock = StockOf(s, n.Stock);
+                    if (stock == null)
+                    {
+                        continue;
+                    }
+                    if (n.Kind == MarketNewsKind.Mover)
+                    {
+                        if (!moved || Math.Abs(n.A) > Math.Abs(mover.MoveBp))
+                        {
+                            mover = new FlareMarketNote { Stock = n.Stock, Name = stock.Name, Mover = true, MoveBp = n.A };
+                            moved = true;
+                        }
+                        continue;
+                    }
+                    into.Add(new FlareMarketNote { Stock = n.Stock, Name = stock.Name, Beat = n.A >= n.B, MoveBp = n.C, Held = Holds(s, n.Stock) });
+                }
+                if (moved)
+                {
+                    into.Add(mover);
+                }
+            }
+
+            private static Stock StockOf(MarketState s, int id)
+            {
+                for (int i = 0; i < s.Stocks.Count; i++)
+                {
+                    if (s.Stocks[i].Id == id)
+                    {
+                        return s.Stocks[i];
+                    }
+                }
+                return null;
+            }
+
+            private static bool Holds(MarketState s, int stock)
+            {
+                for (int i = 0; i < s.Positions.Count; i++)
+                {
+                    if (s.Positions[i].StockId == stock && s.Positions[i].Shares > 0 && !s.Positions[i].Test)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            private static bool Sold(int stock, int fromDay)
+            {
+                MarketState s = MarketDirector.Instance != null ? MarketDirector.Instance.State : null;
+                for (int i = 0; s != null && i < s.Trades.Count; i++)
+                {
+                    Trade t = s.Trades[i];
+                    if (t.Kind == TradeKind.Sold && t.StockId == stock && t.Day >= fromDay && !t.Test)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            // A buzz on the market for the trade of one of the player's businesses: a viral post (+1) or a brand's scandal (-1).
+            private static void MarketBuzz(string place, int sign)
+            {
+                try
+                {
+                    BuildingRegistration reg = BusinessGame.Find(place);
+                    int trade = reg != null ? MarketInputs.TradeOf(reg.businessTypeName) : -1;
+                    if (trade >= 0)
+                    {
+                        MarketDirector.Instance?.Engine?.Event(MarketInputs.EventBuzz, trade, Math.Sign(sign));
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareLinks.MarketBuzz", e);
+                }
+            }
+
+            // The morning paper's headlines, as the City Ledger's own account posts them: each piece's words up to its first full stop.
+            private static void Headlines(List<string> into)
+            {
+                IReadOnlyList<NewsItem> today = News.Today;
+                for (int i = 1; today != null && i < today.Count && into.Count < 3; i++)   // (the first is the masthead)
+                {
+                    NewsItem item = today[i];
+                    if (string.IsNullOrEmpty(item.Key))
+                    {
+                        continue;
+                    }
+                    string text = item.Key.GetLocalization();
+                    if (item.Data != null)
+                    {
+                        foreach (KeyValuePair<string, string> pair in item.Data)
+                        {
+                            text = text.Replace("{" + pair.Key + "}", pair.Value ?? string.Empty);
+                        }
+                    }
+                    int stop = text.IndexOf(". ", StringComparison.Ordinal);
+                    into.Add(stop > 0 ? text.Substring(0, stop + 1) : text);
+                }
+            }
+
             // A star influencer: the first person the player has still to meet is them, and a friend will bring them along.
             private static int MeetStar(string handle)
             {
@@ -330,7 +544,8 @@ namespace RealLifeOverhaul
                     }
                     into.Add(new FlarePerson
                     {
-                        Index = p.Index, First = SocialLife.First(p), Stage = (int)p.Stage, Taste = Taste(p), Closeness = p.Closeness, Partner = p.Together,
+                        Index = p.Index, First = SocialLife.First(p), Stage = (int)p.Stage, Taste = Taste(p), Closeness = p.Closeness, Partner = p.Together, Compatible = p.Compatible,
+                        Unanswered = p.LastTextDay > p.LastContactDay && SocialLife.Day - p.LastTextDay <= 3,
                         Job = SocialCatalogue.Jobs[Math.Max(0, Math.Min(p.Job, SocialCatalogue.Jobs.Length - 1))].GetLocalization(), District = SocialPlaces.District(p.District)
                     });
                 }

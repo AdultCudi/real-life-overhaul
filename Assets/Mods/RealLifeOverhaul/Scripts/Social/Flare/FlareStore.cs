@@ -11,10 +11,12 @@ namespace RealLifeOverhaul.Flare
     ///   reallife:flare_account
     ///     FL1|seed|start|settled|followers|reputation|last post day|last post minute|posts day|posts today|last viral|
     ///         posts|likes|next id|unseen|following|civic seen|career|history,history,...|notice day|hype day|
-    ///         complaint day|noticed day|story day|arrest day
+    ///         complaint day|noticed day|story day|arrest day|online day|partner tag day|others tag day|never day|neglect day|
+    ///         ledger day|mayor mood|issue day
     ///     D|id|source|day|hour|person|place|name|arg          a draft
     ///     S|place|first day|best|days                         a business as Flare has seen it
     ///     B|place|percent|until                               talk about a business, in its customers
+    ///     V|stock|name|day                                    a viral post about a company the player holds
     ///   reallife:flare_posts
     ///     P|id|day|hour|author|who|source|tone|tag|place|name|arg|seed|quality|reach|likes|replies|likers|repliers|gained|flags
     ///   reallife:flare_cast
@@ -39,9 +41,9 @@ namespace RealLifeOverhaul.Flare
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
         // The kinds this version knows: anything past them is from a later one.
-        private const int Sources = (int)FlareSource.CityNews + 1;
+        private const int Sources = (int)FlareSource.Issue + 1;
         private const int Tones = (int)FlareTone.Cheeky + 1;
-        private const int Authors = (int)FlareAuthor.Candidate + 1;
+        private const int Authors = (int)FlareAuthor.Ledger + 1;
         private const int Niches = (int)FlareNiche.Business + 1;
         private const int Styles = (int)FlareStyle.Wholesome + 1;
 
@@ -195,7 +197,8 @@ namespace RealLifeOverhaul.Flare
             {
                 b.Append(i > 0 ? "," : string.Empty).Append(f.History[i].ToString(Inv));
             }
-            Join(b, f.NoticeDay, f.HypeDay, f.ComplaintDay, f.NoticedDay, f.StoryDay, f.ArrestDay);
+            Join(b, f.NoticeDay, f.HypeDay, f.ComplaintDay, f.NoticedDay, f.StoryDay, f.ArrestDay, f.OnlineDay, f.PartnerTagDay, f.OthersTagDay, f.NeverDay, f.NeglectDay,
+                f.LedgerDay, f.MayorMood, f.IssueDay);
             for (int i = 0; i < f.Drafts.Count; i++)
             {
                 FlareDraft d = f.Drafts[i];
@@ -215,6 +218,14 @@ namespace RealLifeOverhaul.Flare
                 b.Append("\nB|").Append(Clean(z.Place));
                 Join(b, z.Percent, z.Until);
             }
+            for (int i = 0; i < f.ViralShares.Count; i++)
+            {
+                FlareViralShares v = f.ViralShares[i];
+                b.Append("\nV");
+                Join(b, v.Stock);
+                b.Append('|').Append(Clean(v.Name));
+                Join(b, v.Day);
+            }
             return b.ToString();
         }
 
@@ -227,7 +238,7 @@ namespace RealLifeOverhaul.Flare
                 b.Append(i > 0 ? "\nP" : "P");
                 Join(b, p.Id, p.Day, p.Hour, (int)p.Author, p.Who, (int)p.Source, (int)p.Tone, p.Tag);
                 b.Append('|').Append(Clean(p.Place)).Append('|').Append(Clean(p.Name));
-                Join(b, p.Arg, p.Seed, p.Quality, p.Reach, p.Likes, p.Replies, p.Likers, p.Repliers, p.Gained, (p.Viral ? 1 : 0) | (p.Bad ? 2 : 0));
+                Join(b, p.Arg, p.Seed, p.Quality, p.Reach, p.Likes, p.Replies, p.Likers, p.Repliers, p.Gained, (p.Viral ? 1 : 0) | (p.Bad ? 2 : 0) | (p.Disclosed ? 4 : 0));
             }
             return b.ToString();
         }
@@ -252,7 +263,9 @@ namespace RealLifeOverhaul.Flare
                     LastPostDay = I(h, 6, -1), LastPostMinute = I(h, 7, -1), PostsDay = I(h, 8, -1), PostsToday = Math.Max(0, I(h, 9)), LastViralDay = I(h, 10, -100),
                     TotalPosts = Math.Max(0, I(h, 11)), TotalLikes = Math.Max(0, I(h, 12)), NextId = Math.Max(1, I(h, 13, 1)), Unseen = Math.Max(0, I(h, 14)),
                     Following = I(h, 15), CivicSeen = I(h, 16), CareerKey = I(h, 17, -1), NoticeDay = I(h, 19, -1),
-                    HypeDay = I(h, 20, -100), ComplaintDay = I(h, 21, -1), NoticedDay = I(h, 22, -1), StoryDay = I(h, 23, -1), ArrestDay = I(h, 24, -1)
+                    HypeDay = I(h, 20, -100), ComplaintDay = I(h, 21, -1), NoticedDay = I(h, 22, -1), StoryDay = I(h, 23, -1), ArrestDay = I(h, 24, -1),
+                    OnlineDay = I(h, 25, -100), PartnerTagDay = I(h, 26, -1), OthersTagDay = I(h, 27, -1), NeverDay = I(h, 28, -100), NeglectDay = I(h, 29, -100), LedgerDay = I(h, 30, -1),
+                    MayorMood = FlareRules.Clamp(I(h, 31), -100, 100), IssueDay = I(h, 32, -1)
                 };
                 string[] history = h[18].Split(',');
                 for (int i = 0; i < f.History.Length; i++)
@@ -276,6 +289,10 @@ namespace RealLifeOverhaul.Flare
                     else if (c[0] == "S" && c.Length >= 5 && c[1].Length > 0 && f.Shops.Count < 64)
                     {
                         f.Shops.Add(new FlareShopSeen { Place = c[1], FirstDay = I(c, 2), Best = Math.Max(0, I(c, 3)), Days = Math.Max(0, I(c, 4)) });
+                    }
+                    else if (c[0] == "V" && c.Length >= 4 && f.ViralShares.Count < 16)
+                    {
+                        f.ViralShares.Add(new FlareViralShares { Stock = I(c, 1, -1), Name = Text(c[2]), Day = I(c, 3) });
                     }
                     else if (c[0] == "B" && c.Length >= 4 && c[1].Length > 0 && f.Buzz.Count < 64)
                     {
@@ -315,7 +332,7 @@ namespace RealLifeOverhaul.Flare
                 {
                     Id = I(c, 1), Day = I(c, 2), Hour = I(c, 3), Author = (FlareAuthor)author, Who = I(c, 5, -1), Source = (FlareSource)source, Tone = (FlareTone)tone, Tag = I(c, 8, -1),
                     Place = Text(c[9]), Name = Text(c[10]), Arg = I(c, 11), Seed = I(c, 12), Quality = I(c, 13), Reach = Math.Max(0, I(c, 14)), Likes = Math.Max(0, I(c, 15)),
-                    Replies = Math.Max(0, I(c, 16)), Likers = I(c, 17), Repliers = I(c, 18), Gained = I(c, 19), Viral = (flags & 1) != 0, Bad = (flags & 2) != 0
+                    Replies = Math.Max(0, I(c, 16)), Likers = I(c, 17), Repliers = I(c, 18), Gained = I(c, 19), Viral = (flags & 1) != 0, Bad = (flags & 2) != 0, Disclosed = (flags & 4) != 0
                 });
             }
         }

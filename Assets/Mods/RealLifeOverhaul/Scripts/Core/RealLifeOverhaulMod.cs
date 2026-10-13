@@ -498,6 +498,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_flare_test_month", () => Flare.FlareDirector.Instance?.TestMonth())
                 .AddButton("reallife_flare_test_arrival", () => Flare.FlareDirector.Instance?.TestArrival())
                 .AddButton("reallife_flare_test_inf_scandal", () => Flare.FlareDirector.Instance?.TestInfluencerScandal())
+                .AddButton("reallife_flare_test_online", () => Flare.FlareDirector.Instance?.TestOnline())
+                .AddButton("reallife_flare_test_city", () => Flare.FlareDirector.Instance?.TestCity())
                 .AddButton("reallife_flare_test_back", () => Flare.FlareDirector.Instance?.TestBack())
                 .AddSplitter()
                 .AddHeader("reallife_travel_header")

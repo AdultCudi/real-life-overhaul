@@ -84,6 +84,38 @@ namespace RealLifeOverhaul.Flare
         /// <summary>A star influencer: somebody the player has still to meet in the social life is them, and a friend will introduce them. Their number, or -1. Default: nobody.</summary>
         public static Func<string, int> MeetStar;
 
+        // ---- the rest of the city
+
+        /// <summary>Somebody the player has still to meet answers a post and becomes a contact (met online). Their name, or null. Default: nobody.</summary>
+        public static Func<string> MeetOnline;
+
+        /// <summary>The partner (the social life's number) sees a post with somebody they could fall for: how they take it (FlareRules.PartnerView). Default: nothing.</summary>
+        public static Action<int, int> PartnerSees;
+
+        /// <summary>The partner minds never being posted. Default: nothing.</summary>
+        public static Action PartnerMinds;
+
+        /// <summary>A friend (the social life's number) whose texts wait minds the player posting all day. Default: nothing.</summary>
+        public static Action<int> FriendMinds;
+
+        /// <summary>The stock market's news of the day, into the list given: results and the biggest move. Default: none.</summary>
+        public static Action<List<FlareMarketNote>> Market;
+
+        /// <summary>True if the player has sold shares of a company (its number) since a day. Default: never.</summary>
+        public static Func<int, int, bool> Sold;
+
+        /// <summary>A case of market abuse is opened (the company). Default: nothing.</summary>
+        public static Action<string> MarketAbuse;
+
+        /// <summary>A buzz on the stock market for the trade of a business (its place), one way or the other. Default: nothing.</summary>
+        public static Action<string, int> MarketBuzz;
+
+        /// <summary>The morning paper's headlines, into the list given. Default: none.</summary>
+        public static Action<List<string>> Headlines;
+
+        /// <summary>A post raised an issue (FlareIssue) in the council, by so many thousandths of a point. Default: nothing.</summary>
+        public static Action<int, int> Issue;
+
         public static void Reset()
         {
             People = null;
@@ -105,6 +137,16 @@ namespace RealLifeOverhaul.Flare
             Book = null;
             BrandScandal = null;
             MeetStar = null;
+            MeetOnline = null;
+            PartnerSees = null;
+            PartnerMinds = null;
+            FriendMinds = null;
+            Market = null;
+            Sold = null;
+            MarketAbuse = null;
+            MarketBuzz = null;
+            Headlines = null;
+            Issue = null;
         }
 
         internal static T Ask<T>(Func<T> bridge, T otherwise)

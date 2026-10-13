@@ -38,6 +38,9 @@ namespace RealLifeOverhaul
         public readonly GovState State = new GovState();
         private readonly CivicCity _city;
         private readonly float[] _salience = new float[CivicCatalogue.Issues];
+        private readonly float[] _raised = new float[CivicCatalogue.Issues];   // what posts on social media have added to each issue lately (fades by a fifth a day; not saved)
+        public const float RaisedMost = 0.5f;          // at most, on top of the city's own weight of an issue
+        public const float MoodPullMost = 1f;          // points of approval a day social media's mood moves, at most
         private readonly float[] _scores = new float[CivicCatalogue.MaxCandidates];
         private readonly int[] _votes = new int[CivicCatalogue.MaxCandidates];
         private bool _crimeWasOn, _crashWasOn;
@@ -228,7 +231,20 @@ namespace RealLifeOverhaul
                 target += (14 - inOffice) * 0.6f;   // the honeymoon
             }
             var random = new CivicRandom(CivicRandom.Mix(State.Seed, day, 31));
-            State.Approval = Mathf.Clamp(State.Approval + (Mathf.Clamp(target, 5f, 90f) - State.Approval) * 0.15f + random.Range(-1f, 1f), 3f, 95f);
+            float mood = 0f;
+            try
+            {
+                mood = CivicBridges.Mood != null ? Mathf.Clamp(CivicBridges.Mood(), -MoodPullMost, MoodPullMost) : 0f;   // social media's mood: a point a day at most
+            }
+            catch (Exception e)
+            {
+                CivicDirector.Logger?.Error(e);
+            }
+            for (int i = 0; i < _raised.Length; i++)
+            {
+                _raised[i] *= 0.8f;
+            }
+            State.Approval = Mathf.Clamp(State.Approval + (Mathf.Clamp(target, 5f, 90f) - State.Approval) * 0.15f + random.Range(-1f, 1f) + mood, 3f, 95f);
 
             State.LowDays = State.Approval < CivicCatalogue.RecallBelow ? State.LowDays + 1 : 0;
             if (State.LowDays >= CivicCatalogue.RecallDays && State.Phase == ElectionPhase.None && inOffice > 14 && State.ElectionDay - day > CivicCatalogue.CampaignDays + 7)
@@ -626,6 +642,20 @@ namespace RealLifeOverhaul
             _salience[(int)Issue.Living] += (State.Levers[(int)Lever.Rent] > 0 ? 0.35f : 0f) + (State.Levers[(int)Lever.BusinessTax] > 0 ? 0.1f : 0f);
             _salience[(int)Issue.Business] += State.Levers[(int)Lever.BusinessTax] > 0 ? 0.3f : 0f;
             _salience[(int)Issue.Growth] += State.Levers[(int)Lever.Permits] < 0 ? 0.25f : 0f;
+            for (int i = 0; i < _salience.Length; i++)
+            {
+                _salience[i] += _raised[i];
+            }
+        }
+
+        /// <summary>A post on social media raised an issue (Wiring/FlareLinks): its weight in the council a little more, up to half a point, fading by a fifth a day.</summary>
+        public void Raised(int issue, float weight)
+        {
+            if (issue >= 0 && issue < _raised.Length && weight > 0f)
+            {
+                _raised[issue] = Mathf.Min(RaisedMost, _raised[issue] + weight);
+                Salience();
+            }
         }
 
         private float MaxSalience()

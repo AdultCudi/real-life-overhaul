@@ -493,6 +493,8 @@ namespace RealLifeOverhaul.Flare
                 case FlareAuthor.Influencer: return "i:" + p.Who;
                 case FlareAuthor.Brand: return "b:" + p.Name;
                 case FlareAuthor.Candidate: return "c:" + p.Name;
+                case FlareAuthor.Company: return "m:" + p.Name;
+                case FlareAuthor.Ledger: return "l:ledger";
                 default: return null;
             }
         }

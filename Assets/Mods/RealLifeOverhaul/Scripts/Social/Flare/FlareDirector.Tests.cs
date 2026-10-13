@@ -180,6 +180,43 @@ namespace RealLifeOverhaul.Flare
             });
         }
 
+        /// <summary>Test: somebody the player has still to meet answers a post now and becomes a contact (met online).</summary>
+        public void TestOnline()
+        {
+            if (!TestReady("Flare met online"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                string name = FlareBridges.MeetOnline != null ? FlareBridges.MeetOnline() : null;
+                if (name == null)
+                {
+                    TestRefusals.Tell(Logger, "Flare met online", TestRefusal.AllMet);
+                    return;
+                }
+                _file.OnlineDay = Save.Day;
+                Logger?.Info("Flare: test: " + name + " answered a post and is a new contact, met online.");
+            });
+        }
+
+        /// <summary>Test: the City Ledger's account posts this morning's headlines now, and the market's news of yesterday is read.</summary>
+        public void TestCity()
+        {
+            if (!TestReady("Flare city accounts"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                _file.LedgerDay = -1;
+                CityHour(Save.Day, Math.Max(7, Save.Hour));
+                Market(Save.Day);
+                Tell(NotificationType.Info, "reallife_flare_test_city_done", _openFeedTab);
+                Changed();
+            });
+        }
+
         /// <summary>Test: the account starts again, as for a save that has never had Flare.</summary>
         public void TestBack()
         {

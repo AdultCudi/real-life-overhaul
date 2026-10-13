@@ -26,7 +26,18 @@ namespace RealLifeOverhaul.Flare
         Election = 18,     // an influencer or a candidate about the election
         Apology = 19,      // an influencer's own scandal
         BrandNews = 20,    // a brand's or a city chain's own post
-        CityNews = 21      // an influencer of local news about what happened in the city today
+        CityNews = 21,     // an influencer of local news about what happened in the city today
+        Shares = 22,       // the player about a listed company they hold shares in (its results)
+        Results = 23,      // a listed company's own post of its results
+        Headline = 24,     // the City Ledger's own account: a headline of the morning paper
+        Issue = 25         // the player about an issue in the city (safety after a crime, the roads after a crash)
+    }
+
+    /// <summary>The issues a post can raise, as Flare knows them (Wiring/FlareLinks turns them into the council's own).</summary>
+    public enum FlareIssue
+    {
+        Safety = 0,
+        Roads = 1
     }
 
     /// <summary>What an influencer posts about. Saved as a number: new ones go at the end.</summary>
@@ -66,7 +77,9 @@ namespace RealLifeOverhaul.Flare
         Friend = 1,
         Influencer = 2,
         Brand = 3,
-        Candidate = 4
+        Candidate = 4,
+        Company = 5,      // a listed company of the stock market
+        Ledger = 6        // the City Ledger's own account
     }
 
     /// <summary>The account's tier, by followers (FlareRules.TierFrom).</summary>
@@ -107,6 +120,8 @@ namespace RealLifeOverhaul.Flare
         public bool Partner;         // dating or partner
         public string Job;           // their job and their part of town, in words
         public string District;
+        public bool Compatible;      // a romance with them is possible
+        public bool Unanswered;      // they texted lately and the player has not answered
 
         /// <summary>Acquaintances and closer follow the player.</summary>
         public bool Follows => Stage >= FlareRules.FollowFromStage;
@@ -150,6 +165,7 @@ namespace RealLifeOverhaul.Flare
         public int Gained;           // followers it brought (less what it cost)
         public bool Viral;
         public bool Bad;             // it went badly: the wrong tone for what it was about
+        public bool Disclosed;       // a post about a company the player holds, from an account big enough to say so
     }
 
     /// <summary>A business of the player's as Flare has seen it: since when, and its best day, for the record day draft.</summary>
@@ -204,6 +220,15 @@ namespace RealLifeOverhaul.Flare
         public int NewsDay = -1;
         public int ViralNicheDay = -100; // a viral post of the player's about a business: its niche draws a newcomer for a month
         public int ViralNiche = -1;
+        public int OnlineDay = -100;     // the last day somebody the player had still to meet answered a post and became a contact
+        public int PartnerTagDay = -1;   // the last day the player's partner was tagged
+        public int OthersTagDay = -1;    // ...and somebody else
+        public int NeverDay = -100;      // the last day the partner minded never being posted
+        public int NeglectDay = -100;    // the last day a friend minded unanswered texts while the player posted all day
+        public int LedgerDay = -1;       // the last day the City Ledger's account posted the morning's headlines
+        public int MayorMood;            // -100 to 100: how the feed feels about the city's running, which pulls a little on the mayor's approval
+        public int IssueDay = -1;        // the last day an issue was drafted
+        public readonly List<FlareViralShares> ViralShares = new List<FlareViralShares>(4);   // viral posts about companies the player holds: selling soon after is market abuse
 
         public FlareInfluencer Influencer(int id)
         {
@@ -304,6 +329,14 @@ namespace RealLifeOverhaul.Flare
                 return n;
             }
         }
+    }
+
+    /// <summary>A viral post about a listed company the player holds: its stock and the day.</summary>
+    public sealed class FlareViralShares
+    {
+        public int Stock;
+        public string Name;
+        public int Day;
     }
 
     /// <summary>Talk on Flare about a business: so many per cent of customers until a day (Wiring/FlareLinks adds it to business pressure's figure).</summary>

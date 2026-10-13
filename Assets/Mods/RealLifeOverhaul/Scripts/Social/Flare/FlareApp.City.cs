@@ -28,6 +28,7 @@ namespace RealLifeOverhaul.Flare
                 case FlareAuthor.Influencer:
                     FlareInfluencer inf = file.Influencer(p.Who);
                     return inf == null ? "?" : inf.Person >= 0 && _director.PersonName(inf.Person) != null ? FlareText.Fill("reallife_flare_handle_known", "handle", inf.Handle, "name", _director.PersonName(inf.Person)) : inf.Handle;
+                case FlareAuthor.Ledger: return FlareText.T("reallife_flare_ledger_name");
                 default: return p.Name ?? "?";
             }
         }

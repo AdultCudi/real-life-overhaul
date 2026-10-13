@@ -175,6 +175,10 @@ namespace RealLifeOverhaul.Flare
             }
             _running = false;
             _file = null;
+            if (_view != null)
+            {
+                _view.Dispose();
+            }
             if (_app != null)
             {
                 _app.Remove();
@@ -272,6 +276,7 @@ namespace RealLifeOverhaul.Flare
 
         private void Look(int day, int hour)
         {
+            CityHour(day, hour);
             if (FlareBridges.Career != null)
             {
                 string employer;
@@ -324,6 +329,7 @@ namespace RealLifeOverhaul.Flare
             FlareDayReport r = FlareRules.Day(_file, day, FlareBridges.Standing(), _people);
             Rewrite(_talked, true);
             CastDay(day);
+            CityDay(day);
             List<BuildingRegistration> shops = FlareGame.Businesses();
             for (int i = 0; i < shops.Count; i++)
             {
@@ -451,6 +457,7 @@ namespace RealLifeOverhaul.Flare
                     Tell(NotificationType.Success, "reallife_flare_note_viral", _openFeed, "followers", FlareText.N(p.Gained));
                 }
                 Influence(p, d);
+                CityInfluence(p, d);
                 Changed();
                 return true;
             }
