@@ -84,6 +84,12 @@ namespace RealLifeOverhaul
         /// <summary>The player's standing in the city, -100 to 100. Default: 0.</summary>
         public static Func<int> Reputation;
 
+        /// <summary>What the player's following on social media adds to their endorsement, before the cap of two businesses' worth. Default: nothing (Wiring/FlareLinks sets it).</summary>
+        public static Func<float> Following;
+
+        /// <summary>Social media's mood about the city's running, points of the mayor's approval a day (one at most either way). Default: none.</summary>
+        public static Func<float> Mood;
+
         /// <summary>True while something large is on in the street near the player. Default: an accident scene or a crime scene of this mod.</summary>
         public static Func<bool> LargeScene;
 

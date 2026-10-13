@@ -1174,6 +1174,14 @@ namespace RealLifeOverhaul
             JusticeCase c = result.Case;
             int today = TimeHelper.CurrentDay;
             c.LawyerQuality = LegalCounsel.Quality(c);
+            try
+            {
+                Justice.Bridges.Heard?.Invoke();
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
             if (result.Outcome == CaseOutcome.Dismissed)
             {
                 Dismiss(c, announce: false);

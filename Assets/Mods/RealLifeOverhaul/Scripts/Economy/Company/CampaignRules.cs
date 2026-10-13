@@ -45,8 +45,14 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The customers a campaign adds, per cent: its own figure by the district, the economy and repeats; one at least, never over the most.</summary>
         public static int Effect(int kind, int suit, CycleState cycle, int repeat)
         {
+            return Effect(kind, suit, cycle, repeat, 1000);
+        }
+
+        /// <summary>The same for a campaign whose reach is given from outside, thousandths of the catalogue's figure (a sponsored post: by the account's followers).</summary>
+        public static int Effect(int kind, int suit, CycleState cycle, int repeat, int reach)
+        {
             int state = CompanyCatalogue.Clamp((int)cycle, 0, CompanyCatalogue.CampaignCycle.Length - 1);
-            long effect = (long)CompanyCatalogue.CampaignFootfall[kind] * suit * CompanyCatalogue.CampaignCycle[state] / 1000 * repeat / 1000;   // thousandths of a per cent
+            long effect = (long)CompanyCatalogue.CampaignFootfall[kind] * suit * CompanyCatalogue.CampaignCycle[state] / 1000 * repeat / 1000 * Math.Max(0, reach) / 1000;   // thousandths of a per cent
             return CompanyCatalogue.Clamp((int)((effect + 500) / 1000), 1, CompanyCatalogue.CampaignMost);
         }
 

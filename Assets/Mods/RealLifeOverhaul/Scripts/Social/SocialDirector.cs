@@ -59,6 +59,13 @@ namespace RealLifeOverhaul
             SocialDirector director = SocialDirector.Instance;
             return director != null ? director.OnSelfie(where) : null;
         }
+
+        /// <summary>The friend on an outing with the player who stands beside <paramref name="where"/> now (the social life's number), or -1.</summary>
+        public static int Companion(Vector3 where)
+        {
+            SocialDirector director = SocialDirector.Instance;
+            return director != null ? director.Companion(where) : -1;
+        }
     }
 
     /// <summary>
@@ -505,6 +512,11 @@ namespace RealLifeOverhaul
                 Logger?.Error(e);
                 return null;
             }
+        }
+
+        internal int Companion(Vector3 where)
+        {
+            return !_broken && SocialState.Loaded && Settings.Social && _scene is OutingScene outing && outing.Beside(where, SocialRules.SelfieWithin) ? outing.Who.Index : -1;
         }
 
         internal void OnArrested()
@@ -1609,6 +1621,17 @@ namespace RealLifeOverhaul
             Unguide();
             Car = null;
             _carBody = null;
+            if (why == SceneEnd.Done && scene is OutingScene outing && outing.Greeted && SocialLinks.OutingDone != null)
+            {
+                try
+                {
+                    SocialLinks.OutingDone(outing.Who, outing.Kind);   // an outing gone to its end: whoever keeps Flare may offer it as a post
+                }
+                catch (Exception e)
+                {
+                    Logger?.Error(e);
+                }
+            }
         }
 
         private static void SafeEnd(SocialScene scene, SceneEnd why)

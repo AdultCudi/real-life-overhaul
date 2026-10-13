@@ -34,7 +34,8 @@ namespace RealLifeOverhaul.Economy.Brands
     {
         Inspection = 0,       // a failed health or fire safety inspection
         Strike = 1,
-        Fire = 2
+        Fire = 2,
+        Influencer = 3        // an influencer the shop hired caught in a scandal of their own (Wiring/FlareLinks)
     }
 
     /// <summary>Why terms put to an applicant are not taken.</summary>
@@ -100,8 +101,9 @@ namespace RealLifeOverhaul.Economy.Brands
         public const int CityStepBp = 500;          // ten-thousandths of the way there each day (5%)
         public const int CityFloorShare = 500;      // thousandths of the city-wide figure a district is never counted under
 
-        public static readonly int[] ScandalLoss = { 400, 300, 200 };   // a failed inspection, a strike, a fire: in the district; a quarter of it city-wide
+        public static readonly int[] ScandalLoss = { 400, 300, 200, 250 };   // a failed inspection, a strike, a fire, a hired influencer's scandal: in the district; a quarter of it city-wide
         public const int ScandalCityShare = 250;    // thousandths
+        public const int ScandalScaleLeast = 800, ScandalScaleMost = 1250;   // thousandths of a scandal's loss: how the talk of it spreads, at most either way
         public const int FailureLoss = 800;         // a franchisee that closes
         public const int UnfairLoss = 600;          // an agreement ended without cause
         public const int UnfairCityLoss = 150;

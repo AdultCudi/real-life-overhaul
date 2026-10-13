@@ -165,7 +165,7 @@ namespace RealLifeOverhaul.Markets
         /// the lasting part of its move (A the company, B the move in millionths of the log price) and its shares (B).
         /// They are 9 and 10 (8 is Flare's buzz, from social media).
         /// </summary>
-        public const int EventFire = 1, EventCrime = 2, EventBreakIn = 3, EventAccident = 4, EventPolicy = 5, EventElection = 6, EventStorm = 7, EventTrade = 9, EventVolume = 10,
+        public const int EventFire = 1, EventCrime = 2, EventBreakIn = 3, EventAccident = 4, EventPolicy = 5, EventElection = 6, EventStorm = 7, EventBuzz = 8, EventTrade = 9, EventVolume = 10,
             EventCount = 11;
 
         /// <summary>A trade's lasting move of a price, in the millionths the tape keeps it in.</summary>
@@ -184,10 +184,18 @@ namespace RealLifeOverhaul.Markets
             new[] { G(MarketSector.Insurance, -4), G(MarketSector.Transport, -2) },
             new Cell[0],
             new Cell[0],
-            new[] { G(MarketSector.Insurance, -25), G(MarketSector.Transport, -15), G(MarketSector.Stores, -10), G(MarketSector.Power, 8) });
+            new[] { G(MarketSector.Insurance, -25), G(MarketSector.Transport, -15), G(MarketSector.Stores, -10), G(MarketSector.Power, 8) },
+            new Cell[0]);   // a buzz: the sector of its trade, below (BuzzKickBp)
 
         public const int ElectionKickBp = 30;            // the whole market, when an election is counted (the doubt is over)
         public const int FireTradeKickBp = -60;          // a listed company in the trade of a business that burned
+        public const int BuzzKickBp = 25;                // the sector of a trade social media buzzes about (Flare: a viral post, or a brand's scandal), either way, at most
+
+        /// <summary>A buzz's move of a sector, in bp: A the trade, B which way (a viral post +1, a scandal -1, held to one step), for the sector of the trade's listed companies.</summary>
+        public static int BuzzBp(in MarketEvent e, MarketSector sector, MarketSector tradeSector)
+        {
+            return e.Kind == EventBuzz && sector == tradeSector ? Capped(Math.Sign(e.B) * BuzzKickBp, BuzzKickBp) : 0;
+        }
 
         /// <summary>
         /// A sector's move, in bp, when the market hears of an event. A policy (its lever and the step it moved: A, B) has

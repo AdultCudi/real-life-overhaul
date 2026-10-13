@@ -80,6 +80,10 @@ namespace RealLifeOverhaul.Economy
                     t.Append('|');
                     Join(t, l.Until, l.Auto ? 1 : 0, l.Reminded ? 1 : 0);
                 }
+                for (int k = CompanyCatalogue.CampaignOwnKinds; k < shop.PushEnded.Length; k++)
+                {
+                    t.Append('|').Append(shop.PushEnded[k].ToString(Inv));   // kinds added later: after everything an older version reads, which it leaves alone
+                }
             }
             t.Append("^e:");
             for (int i = 0; i < s.Staff.Count && i < CompanyCatalogue.StaffMost; i++)
@@ -260,7 +264,7 @@ namespace RealLifeOverhaul.Economy
             }
             for (int k = 0; k < shop.PushEnded.Length; k++)
             {
-                shop.PushEnded[k] = Math.Max(0, I(c, 8 + k));
+                shop.PushEnded[k] = Math.Max(0, I(c, k < CompanyCatalogue.CampaignOwnKinds ? 8 + k : ShopFields + shop.Cover.Length * PolicyFields + shop.Permits.Length * LicenceFields + k - CompanyCatalogue.CampaignOwnKinds));
             }
             shop.StrikeFrom = Math.Max(0, I(c, 12));
             shop.StrikeEnd = Math.Max(0, I(c, 13));

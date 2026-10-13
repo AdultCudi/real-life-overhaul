@@ -223,6 +223,12 @@ namespace RealLifeOverhaul
             Crashes++;
         }
 
+        /// <summary>A complaint that is not a failed shift: the boss saw the player posting on social media on shift (Wiring/FlareLinks).</summary>
+        public static void Complaint()
+        {
+            Complaints++;
+        }
+
         public static void PoliceStop()
         {
             Stops++;
