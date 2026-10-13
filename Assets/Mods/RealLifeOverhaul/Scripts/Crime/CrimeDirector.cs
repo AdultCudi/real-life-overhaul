@@ -43,6 +43,17 @@ namespace RealLifeOverhaul
         /// <summary>True while a crime scene is running. Only one incident of any kind runs at a time.</summary>
         public static bool IsActive => Instance != null && Instance._scene != null;
 
+        /// <summary>
+        /// True while a crime with a victim in the street is going on (an assault, a mugging, a snatch: not one done to the
+        /// player), and where (Wiring/StandingLinks: walking away from it in front of others is noticed). A few field reads.
+        /// </summary>
+        public static bool Victim(out Vector3 where)
+        {
+            ICrimeScene scene = Instance != null ? Instance._scene : null;
+            where = scene != null ? scene.Focus : Vector3.zero;
+            return scene != null && scene.Active && scene.ShowsMarker && !scene.Indoors && (scene.Id == "assault" || scene.Id == "mugging" || scene.Id == "snatch");
+        }
+
         /// <summary>The patrol car scenes share: the one that collects an arrested suspect, or chases a car.</summary>
         internal static ResponseUnit Patrol => Instance != null ? Instance._patrol : null;
 

@@ -152,7 +152,15 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Whether a rival makes an approach today; the same answer for a seed and a day.</summary>
         public static bool Approach(int seed, int age, int level)
         {
-            return CityModel.Draw(seed, PurposePoach, age, 1000) < CompanyCatalogue.PoachChance[CompanyCatalogue.Level(level)];
+            return Approach(seed, age, level, 0);
+        }
+
+        /// <summary>The same, with the player's esteem as an employer (-10 to 10): a rival approaches less often an employer people think well of.</summary>
+        public static bool Approach(int seed, int age, int level, int esteem)
+        {
+            int chance = CompanyCatalogue.PoachChance[CompanyCatalogue.Level(level)];
+            esteem = CompanyCatalogue.Clamp(esteem, -CompanyCatalogue.EsteemMost, CompanyCatalogue.EsteemMost);
+            return CityModel.Draw(seed, PurposePoach, age, 1000) < chance * (1000 - esteem * CompanyCatalogue.EsteemPoachStep) / 1000;
         }
 
         /// <summary>Which of so many who fit is approached.</summary>

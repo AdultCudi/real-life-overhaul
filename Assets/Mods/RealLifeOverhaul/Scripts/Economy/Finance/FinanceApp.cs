@@ -144,6 +144,9 @@ namespace RealLifeOverhaul.Economy
             }
             _city = _wantCity && _tab == Finance.Overview;
             _wantCity = false;
+            _standing = _wantStanding && _tab == Finance.Overview && StandingOn() != null;
+            _wantStanding = false;
+            _city &= !_standing;
             _ready = _director.AppOpened();
             Refresh();
         }
@@ -155,10 +158,12 @@ namespace RealLifeOverhaul.Economy
 
         private void ShowTab(int tab)
         {
-            if (tab != _tab || _city)
+            if (tab != _tab || _city || _standing)
             {
                 _tab = tab;
                 _city = false;
+                _standing = false;
+                _standingPick = null;
                 _factor = -1;
                 Refresh();
             }
@@ -178,7 +183,8 @@ namespace RealLifeOverhaul.Economy
             }
             _rows.Clear();
             bool city = _city && _tab == Finance.Overview && CityState() != null;
-            _shell.ShowTab(city ? -1 : _tab);   // (on the city's page no tab is the one showing: Overview's can be clicked to go back)
+            StandingPage standing = _standing && _tab == Finance.Overview ? StandingOn() : null;
+            _shell.ShowTab(city || standing != null ? -1 : _tab);   // (on the city's page and the Standing page no tab is the one showing: Overview's can be clicked to go back)
             InfoBox box = _shell.Box;
             box.Clear();
             string selected = null;
@@ -200,7 +206,12 @@ namespace RealLifeOverhaul.Economy
                     case Finance.CashFlow: WriteCashFlow(box); break;
                     case Finance.Accounts: selected = WriteAccounts(box); break;
                     default:
-                        if (city)
+                        if (standing != null)
+                        {
+                            WriteStanding(box, standing);
+                            selected = _standingPick;
+                        }
+                        else if (city)
                         {
                             WriteCity(box);
                         }
@@ -323,6 +334,10 @@ namespace RealLifeOverhaul.Economy
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_macro_open", ShowCity);
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_econ_open_econoview", OpenEconoView);
+            if (StandingOn() != null)
+            {
+                InfoBox.Button(buttons, InfoBox.Additional, "reallife_fame_open", ShowStanding);   // the player's standing, its own page (Scripts/Fame through EconomyBridges.Standing)
+            }
         }
 
         // The Overview's first four cells of a debt: who it is owed to, its kind, what is owed and what it takes tomorrow.
@@ -656,6 +671,19 @@ namespace RealLifeOverhaul.Economy
 
         private void RowClicked(TableRow row)
         {
+            if (_standing && _tab == Finance.Overview)
+            {
+                if (row != null && row.Pick)
+                {
+                    _standingPick = row.Id;
+                    Refresh();
+                }
+                else
+                {
+                    _table.ClearSelection();
+                }
+                return;
+            }
             if (row != null && row.Pick && _tab == Finance.Credit && !_city)
             {
                 _factor = row.Index;
@@ -688,6 +716,7 @@ namespace RealLifeOverhaul.Economy
             _product = -1;
             _picked = null;
             _factor = -1;
+            _standingPick = null;
             _table.ClearSelection();
             Refresh();
         }

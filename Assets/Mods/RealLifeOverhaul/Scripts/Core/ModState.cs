@@ -238,6 +238,9 @@ namespace RealLifeOverhaul
             PendingFineDue = 0f;
         }
 
+        /// <summary>Raised when the player has just helped somebody (the "helped" mood, newly earned): Standing hears it through Wiring/StandingLinks.</summary>
+        public static event Action HelpedNow;
+
         public static void AddModifier(string type, int hours = -1)
         {
             if (!ModifiersReady)
@@ -253,6 +256,7 @@ namespace RealLifeOverhaul
                     if (hours < 0)
                     {
                         Law.Reputation.GoodDeed();   // (not when a saved modifier is put back on load: those come with their hours)
+                        HelpedNow?.Invoke();
                     }
                 }
             }

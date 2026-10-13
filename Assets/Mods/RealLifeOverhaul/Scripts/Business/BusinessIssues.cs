@@ -476,6 +476,7 @@ namespace RealLifeOverhaul
                     if (issue.B == 0 && issue.C == 0)   // not once the inspector is in the shop
                     {
                         n = Paid(into, n, reg, "reallife_biz_health_do_clean", "reallife_biz_health_clean", BusinessCatalogue.HealthCleanShare, 40, 400);
+                        n = Bribe(into, n, issue, reg);
                     }
                     break;
 
@@ -483,11 +484,13 @@ namespace RealLifeOverhaul
                     if (issue.B == 0 && issue.C == 0)   // not once the inspector is in the shop
                     {
                         n = Paid(into, n, reg, "reallife_biz_fire_do_check", "reallife_biz_fire_check", BusinessCatalogue.FireCheckShare, 50, 500);
+                        n = Bribe(into, n, issue, reg);
                     }
                     break;
 
                 case BusinessCatalogue.Licence:
                     into[n++] = new IssueOption { Label = "reallife_biz_licence_do_pay", Text = "reallife_biz_licence_pay", Amount = issue.A, Blocked = BusinessGame.Cash < issue.A };
+                    n = Bribe(into, n, issue, reg);
                     break;
 
                 case BusinessCatalogue.Strike:
@@ -553,6 +556,60 @@ namespace RealLifeOverhaul
             return n;
         }
 
+        // An official who would make an inspection or a licence a formality for cash (Standing's corruption, through
+        // BusinessDirector.BribeAsk): one more way, read out with what it costs, like any other. Nobody asks while it is not set.
+        private static int Bribe(IssueOption[] into, int n, BusinessIssue issue, BuildingRegistration reg)
+        {
+            int ask = 0;
+            try
+            {
+                if (BusinessDirector.BribeAsk != null && n < MostOptions)
+                {
+                    int catalogue = issue.Kind == BusinessCatalogue.Licence ? Mathf.Max(1, issue.A * 6 / 10) : BusinessGame.Fee(reg, BribeShare, 60, 900);
+                    ask = BusinessDirector.BribeAsk(issue.Kind, issue.Place, catalogue, issue.StartDay * 31 + issue.Stage * 7 + issue.Kind.Length);
+                }
+            }
+            catch (System.Exception e)
+            {
+                BusinessGame.Logger?.Error(e);
+                ask = 0;
+            }
+            if (ask > 0)
+            {
+                into[n++] = new IssueOption
+                {
+                    Label = "reallife_biz_bribe_do_pay", Text = issue.Kind == BusinessCatalogue.Licence ? "reallife_biz_bribe_licence" : "reallife_biz_bribe_inspection", Amount = ask,
+                    Blocked = BusinessGame.Cash < ask
+                };
+            }
+            return n;
+        }
+
+        private const float BribeShare = 0.3f;   // of a day's income, $60 to $900: what an inspector asks
+
+        // The bribe is paid: a licence goes through, an inspection is to be a formality. Whoever listens hears of it.
+        private static string PayBribe(BusinessIssue issue, BuildingRegistration reg, int amount)
+        {
+            if (!BusinessGame.Charge(reg, amount, "reallife_transaction_biz_bribe"))
+            {
+                return "reallife_biz_cannot";
+            }
+            try
+            {
+                BusinessDirector.Bribed?.Invoke(issue.Kind, issue.Place, amount);
+            }
+            catch (System.Exception e)
+            {
+                BusinessGame.Logger?.Error(e);
+            }
+            if (issue.Kind == BusinessCatalogue.Licence)
+            {
+                return Done(issue, "reallife_biz_bribe_licence_done");
+            }
+            issue.B = 2;   // (2: paid off; 1 is the clean or the check booked)
+            return "reallife_biz_bribe_inspection_done";   // stays open: the inspector still comes, as a formality
+        }
+
         private static int Paid(IssueOption[] into, int n, BuildingRegistration reg, string label, string text, float share, int floor, int ceiling)
         {
             int amount = Mathf.Clamp(Mathf.RoundToInt(BusinessGame.DailyRevenue(reg) * share), floor, ceiling);
@@ -585,6 +642,10 @@ namespace RealLifeOverhaul
             int day = TimeHelper.CurrentDay;
             string place = issue.Place;
             BusinessGame.Logger?.Info("Business: '" + issue.Kind + "' at " + BusinessGame.Name(reg) + ": option " + option + " (" + picked.Label + ").");
+            if (picked.Label == "reallife_biz_bribe_do_pay")
+            {
+                return PayBribe(issue, reg, picked.Amount);
+            }
             switch (issue.Kind)
             {
                 case BusinessCatalogue.Undercut:
@@ -937,6 +998,12 @@ namespace RealLifeOverhaul
 
                 case BusinessCatalogue.Fire:
                 {
+                    if (issue.B == 2)
+                    {
+                        type = NotificationType.Success;
+                        key = Done(issue, "reallife_biz_bribe_passed");   // paid off: a formality
+                        break;
+                    }
                     int clean = BusinessGame.Cleanliness(reg);
                     int facility = BusinessGame.Facility(reg);
                     bool cleanOk = clean >= BusinessCatalogue.FirePass;
@@ -1052,6 +1119,11 @@ namespace RealLifeOverhaul
         // The health inspector calls: the game's own cleanliness figure decides.
         private static string Inspect(BusinessIssue issue, BuildingRegistration reg, Dictionary<string, string> data, out NotificationType type)
         {
+            if (issue.B == 2)
+            {
+                type = NotificationType.Success;
+                return Done(issue, "reallife_biz_bribe_passed");   // paid off: a formality
+            }
             int clean = BusinessGame.Cleanliness(reg);
             data["clean"] = clean.ToString();
             if (InspectorCalls(issue, reg))

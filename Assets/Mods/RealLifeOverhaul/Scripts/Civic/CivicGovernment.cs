@@ -594,6 +594,28 @@ namespace RealLifeOverhaul
             return true;
         }
 
+        /// <summary>
+        /// A push on the council that won (Wiring/StandingLinks: the player's lobbying): one lever is to move to a position in
+        /// so many days, announced on the day as any change is. False, and nothing changed, if it stands there already or a
+        /// change of it is on its way.
+        /// </summary>
+        public bool Lobbied(Lever lever, int position, int day)
+        {
+            position = Math.Sign(position);
+            if (State.Levers[(int)lever] == position || IsPending((int)lever))
+            {
+                return false;
+            }
+            Schedule((int)lever, position, day);
+            return true;
+        }
+
+        /// <summary>True if a lever stands at a position now or a change of it is on its way (a push on it would change nothing).</summary>
+        public bool Settled(Lever lever, int position)
+        {
+            return State.Levers[(int)lever] == Math.Sign(position) || IsPending((int)lever);
+        }
+
         /// <summary>Every lever back where the city came, at once, and nothing left on its way.</summary>
         public void RevertAll()
         {

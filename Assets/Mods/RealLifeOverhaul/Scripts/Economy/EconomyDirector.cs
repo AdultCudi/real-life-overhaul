@@ -788,6 +788,16 @@ namespace RealLifeOverhaul.Economy
             Open(Finance.Credit);
         }
 
+        /// <summary>The Finance app on the Standing page.</summary>
+        public void OpenStanding()
+        {
+            if (_app != null && _view != null && _running)
+            {
+                _view.WantStanding();
+                _app.Open();
+            }
+        }
+
         /// <summary>The Finance app on the city's page.</summary>
         public void OpenCity()
         {
