@@ -35,6 +35,16 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The player's standing with the public moves: the part (0 customers, 3 integrity) and the points. Default: nobody is told.</summary>
         public static Action<int, int> Fame;
 
+        /// <summary>
+        /// A company of the player's or a startup the player holds asks to list its shares: its name, its value in cents and
+        /// the player's share in thousandths. True if the share issue's own feature has taken it on (it runs the listing).
+        /// Default: none, and the company is told a listing is not open yet.
+        /// </summary>
+        public static Func<string, long, int, bool> Ipo;
+
+        /// <summary>Other investors' money in the player's fund, cents (a bank's or investors' feature brings it). Default: none.</summary>
+        public static Func<long> FundOthers;
+
         public static int EsteemNow()
         {
             try
@@ -58,6 +68,8 @@ namespace RealLifeOverhaul.Tech
             Prosecute = null;
             Claim = null;
             Fame = null;
+            Ipo = null;
+            FundOthers = null;
         }
     }
 }

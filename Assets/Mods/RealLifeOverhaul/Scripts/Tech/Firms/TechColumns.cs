@@ -54,5 +54,35 @@ namespace RealLifeOverhaul.Tech
             .Column("reallife_tech_col_stage", 230f, TableSort.Text, right: true)
             .Filter("reallife_tech_all_contracts", WorkKinds)
             .Empty("reallife_tech_empty_contracts");
+
+        // ---- a startup and the player
+        public const int Yours = 0, AsksYou = 1, Others = 2, Closed = 3;
+        private static readonly string[] StartupKinds = { "reallife_vc_kind_yours", "reallife_vc_kind_asks", "reallife_vc_kind_others", "reallife_vc_kind_closed" };
+
+        /// <summary>Startups: 0 name, 1 sector, 2 stage, 3 revenue a month (as the deck says until it is looked into), 4 value, 5 your share, 6 your value, 7 state.</summary>
+        public static readonly TableSpec Startups = new TableSpec("Tech", "Startups")
+            .Column("reallife_vc_col_startup", 280f, TableSort.Text, flexible: true)
+            .Column("reallife_vc_col_sector", 240f, TableSort.Text)
+            .Column("reallife_vc_col_stage", 180f, TableSort.Number)
+            .Column("reallife_vc_col_revenue", 240f, TableSort.Money)
+            .Column("reallife_vc_col_value", 240f, TableSort.Money)
+            .Column("reallife_vc_col_share", 150f, TableSort.Number)
+            .Column("reallife_vc_col_yours", 230f, TableSort.Money, sums: true)
+            .Column("reallife_tech_col_stage", 220f, TableSort.Text, right: true)
+            .Filter("reallife_vc_all_startups", StartupKinds)
+            .Empty("reallife_vc_empty_startups");
+
+        /// <summary>Funding: 0 firm, 1 stage, 2 your share, 3 value, 4 raised, 5 board, 6 target, 7 runway, 8 state.</summary>
+        public static readonly TableSpec Funding = new TableSpec("Tech", "Funding")
+            .Column("reallife_tech_col_firm", 300f, TableSort.Text, flexible: true)
+            .Column("reallife_vc_col_stage", 180f, TableSort.Number)
+            .Column("reallife_vc_col_share", 150f, TableSort.Number)
+            .Column("reallife_vc_col_value", 230f, TableSort.Money)
+            .Column("reallife_vc_col_raised", 230f, TableSort.Money, sums: true)
+            .Column("reallife_vc_col_board", 150f, TableSort.Text)
+            .Column("reallife_vc_col_target", 230f, TableSort.Money)
+            .Column("reallife_vc_col_runway", 170f, TableSort.Number)
+            .Column("reallife_tech_col_stage", 220f, TableSort.Text, right: true)
+            .Empty("reallife_vc_empty_funding");
     }
 }

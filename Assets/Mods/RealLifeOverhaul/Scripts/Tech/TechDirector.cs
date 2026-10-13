@@ -56,10 +56,12 @@ namespace RealLifeOverhaul.Tech
             GlobalEvents.onNewDay -= _onDay;
             try
             {
+                StopVenture(false);
                 StopFirms(false, true);
                 StopHiring(false);
                 StopPeople(false, true);
                 _interview?.Dispose();
+                _pitch?.Dispose();
             }
             catch (Exception e)
             {
@@ -131,7 +133,17 @@ namespace RealLifeOverhaul.Tech
             {
                 StopFirms(true, false);
             }
+            bool startups = Settings.TechStartups && _firmsOn;
+            if (startups && !_ventureOn)
+            {
+                StartVenture();
+            }
+            else if (!startups && _ventureOn)
+            {
+                StopVenture(true);
+            }
             _interview?.Watch();
+            _pitch?.Watch();
             if (!_peopleOn)
             {
                 return;
@@ -191,6 +203,10 @@ namespace RealLifeOverhaul.Tech
                 {
                     FirmsDay(Save.Day);
                 }
+                if (_ventureOn)
+                {
+                    VentureDay(Save.Day);
+                }
                 Changed();
                 if (Verbose)
                 {
@@ -223,6 +239,10 @@ namespace RealLifeOverhaul.Tech
                 if (_firmsOn)
                 {
                     WriteFirms(Save.modData);
+                }
+                if (_ventureOn)
+                {
+                    WriteVenture(Save.modData);
                 }
                 if (_news != null && ReferenceEquals(_newsOf, Save))
                 {
@@ -270,6 +290,7 @@ namespace RealLifeOverhaul.Tech
             Logger?.Error(e);
             try
             {
+                StopVenture(false);
                 StopFirms(false, false);
                 StopHiring(false);
                 StopPeople(false, false);
@@ -302,6 +323,7 @@ namespace RealLifeOverhaul.Tech
         {
             try
             {
+                StopVenture(true);
                 StopFirms(true, false);
                 StopHiring(true);
                 StopPeople(true, false);
@@ -317,6 +339,7 @@ namespace RealLifeOverhaul.Tech
         {
             try
             {
+                StopVenture(false);
                 StopFirms(false, false);
                 StopHiring(false);
                 StopPeople(false, false);
@@ -328,6 +351,7 @@ namespace RealLifeOverhaul.Tech
             _talent = null;
             _hiring = null;
             _firmsFile = null;
+            _venture = null;
             _news = new TechNews();
         }
     }

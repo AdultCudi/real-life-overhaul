@@ -84,6 +84,12 @@ namespace RealLifeOverhaul.Tech
         /// <summary>A game's size, 0 to 2.</summary>
         public static string Scope(int scope) => T(Mod + "_tech_scope_" + TalentCatalogue.Clamp(scope, 0, 2).ToString(Inv));
 
+        public static string VentureName(Venture v) => T(Mod + "_vc_sector_" + v.ToString().ToLowerInvariant());
+
+        public static string RoundName(RoundStage r) => T(Mod + "_vc_round_" + r.ToString().ToLowerInvariant());
+
+        public static string StartupStateName(StartupState s) => T(Mod + "_vc_state_" + s.ToString().ToLowerInvariant());
+
         public static string Work(int work) => T(work == (int)Arrangement.Remote ? "reallife_talent_work_remote" : work == (int)Arrangement.Hybrid ? "reallife_talent_work_hybrid" : "reallife_talent_work_onsite");
 
         /// <summary>Years and days of a 365-day year as whole years: "7 years", "1 year", "under a year".</summary>

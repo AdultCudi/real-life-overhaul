@@ -747,6 +747,11 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_tech_test_offer", () => Tech.TechDirector.Instance?.TestContractOffer())
                 .AddButton("reallife_tech_test_outage", () => Tech.TechDirector.Instance?.TestOutage())
                 .AddButton("reallife_tech_test_breach", () => Tech.TechDirector.Instance?.TestBreach())
+                .AddToggle(Settings.TechStartupsId, "reallife_vc_enabled", Settings.TechStartups,
+                    v => Settings.TechStartups = v)
+                .AddButton("reallife_vc_test_pitch", () => Tech.TechDirector.Instance?.TestPitch())
+                .AddButton("reallife_vc_test_sale", () => Tech.TechDirector.Instance?.TestSale())
+                .AddButton("reallife_vc_test_board", () => Tech.TechDirector.Instance?.TestBoard())
                 .AddToggle(Settings.EconomyOnlineId, "reallife_online_enabled", Settings.EconomyOnline,
                     v => Settings.EconomyOnline = v)
                 .AddButton("reallife_online_test_open", () => Economy.OnlineDirector.Instance?.TestOpen())

@@ -15,14 +15,18 @@ namespace RealLifeOverhaul.Tech
     ///   Products    every product with its features against its rival's, customers, recurring revenue and quality; pick one
     ///               to price it, market it, give it engineering time, launch it or withdraw it
     ///   Contracts   offers, the council's tenders and work under way; pick one to take it, bid for it or give it up
+    ///   Startups    the city's startups, what they claim and what the player holds of them; pick one to meet its founders,
+    ///               look into it, back it or follow on; with nothing picked, the portfolio and the player's fund
+    ///   Funding     the player's firms with investors: the cap table, the board and its target, the runway; pick one to
+    ///               raise, meet a venture firm, take a term sheet, borrow a bridge, grant share options or sell shares
     ///
     /// Nothing runs while the app is closed.
     /// </summary>
     public sealed partial class TechApp
     {
-        public const string FirmRow = "firm:", ProductRow = "prod:", ContractRow = "work:";
+        public const string FirmRow = "firm:", ProductRow = "prod:", ContractRow = "work:", StartupRow = "start:", CapRow = "cap:";
         private const string NewProductRow = "newprod:";
-        private static readonly string[] TabKeys = { "reallife_tech_tab_firms", "reallife_tech_tab_products", "reallife_tech_tab_contracts" };
+        private static readonly string[] TabKeys = { "reallife_tech_tab_firms", "reallife_tech_tab_products", "reallife_tech_tab_contracts", "reallife_tech_tab_startups", "reallife_tech_tab_funding" };
 
         public static IModLogger Logger;
 
@@ -32,7 +36,7 @@ namespace RealLifeOverhaul.Tech
 
         private AppShell _shell;
         private DataTable _table;
-        private int _tab, _wanted = -1;
+        private int _tab, _wanted = -1, _page;
         private string _wantPick, _picked;
         private bool _ready, _writing;
 
@@ -148,6 +152,8 @@ namespace RealLifeOverhaul.Tech
                     {
                         case TechDirector.TabProducts: table = WriteProducts(box, f, day); break;
                         case TechDirector.TabContracts: table = WriteContracts(box, f, day); break;
+                        case TechDirector.TabStartups: table = WriteStartups(box, day); break;
+                        case TechDirector.TabFunding: table = WriteFunding(box, day); break;
                         default: table = WriteFirms(box, f, day); break;
                     }
                 }
@@ -200,12 +206,14 @@ namespace RealLifeOverhaul.Tech
                 return;
             }
             _picked = row.Id;
+            _page = 0;
             Refresh();
         }
 
         private void ClosePick()
         {
             _picked = null;
+            _page = 0;
             _table.ClearSelection();
             Refresh();
         }

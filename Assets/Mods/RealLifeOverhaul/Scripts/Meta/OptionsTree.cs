@@ -307,6 +307,7 @@ namespace RealLifeOverhaul.Meta
                 S("people").For("tech_people").Opts("tech_people").Also("professionals staff employees skills skill percent role promotion review course certificate notice severance lay off poach"),
                 S("jobsboard").For("tech_jobs").Opt("tech_jobs", "tech_people").Also("jobs board hire hiring recruit recruitment applicants interview offer headhunter search labour market candidates"),
                 S("techsector").For("tech_sector").Opt("tech_sector", "tech_people").Also("tech software saas app game studio consultancy cybersecurity security breach outage product subscription contract tender developer"),
+                S("startups").For("tech_startups").Opt("tech_startups", "tech_sector").Also("startup startups venture capital vc angel fund pitch term sheet valuation equity round board shares options dilution"),
                 S("estate").For("economy_estate").Need("economy").Opts("economy_estate", "economy_estate_hotel", "economy_estate_hire")
                     .Also("buildings landlord tenant letting rent rental").Also("economy_estate", "rent tenant landlord letting"),
                 S("bizevents").For("business").Main("business_pressure").Opts("business_frequency", "business_easy").Also("trouble pressure competition"),

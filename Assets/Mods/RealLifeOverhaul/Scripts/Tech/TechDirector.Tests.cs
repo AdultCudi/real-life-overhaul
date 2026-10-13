@@ -242,5 +242,89 @@ namespace RealLifeOverhaul.Tech
             Breach(firm, p, r, Save.Day);
             ChangedTech();
         }
+
+        private bool TestVentures()
+        {
+            if (!_ventureOn || Save == null)
+            {
+                Notifications.ShowError("reallife_vc_test_off");
+                return false;
+            }
+            return true;
+        }
+
+        /// <summary>The first startup that is not raising starts its raise and comes to the player.</summary>
+        public void TestPitch()
+        {
+            if (!TestVentures())
+            {
+                return;
+            }
+            for (int i = 0; i < _venture.Startups.Count; i++)
+            {
+                Startup s = _venture.Startups[i];
+                if (s.Alive && s.Ask == null && s.Stage < (int)RoundStage.Growth)
+                {
+                    int mood = VentureRules.Mood(HiringGame.Cycle);
+                    s.State = (int)StartupState.Raising;
+                    s.LastRound = Save.Day;
+                    long round = VentureRules.RoundSize(s.Stage + 1);
+                    s.Ask = new TermSheet { Amount = System.Math.Max(VentureCatalogue.TicketLeast, round * VentureCatalogue.AskPlayerShare / 1000), Pre = VentureRules.PreMoney(s.Mrr, VentureRules.Growth(s, mood, HypeNow), mood, s.Stage + 1),
+                        Lapse = Save.Day + 7, ProRata = true };
+                    Heard(new VentureNote { Kind = VentureRules.NotePitch, Startup = s.Id, Amount = s.Ask.Amount }, Save.Day);
+                    ChangedVenture();
+                    return;
+                }
+            }
+            Notifications.ShowError("reallife_vc_test_none");
+        }
+
+        /// <summary>The first startup the player holds is bought now at four times its recurring revenue a year (at least half its value).</summary>
+        public void TestSale()
+        {
+            if (!TestVentures())
+            {
+                return;
+            }
+            for (int i = 0; i < _venture.Startups.Count; i++)
+            {
+                Startup s = _venture.Startups[i];
+                if (s.Alive && Holds(s))
+                {
+                    _ventureNotes.Clear();
+                    VentureRules.Sell(_venture, s, System.Math.Max(s.Mrr * 12 * 4, s.Post / 2), VentureRules.NoteAcquired, _ventureNotes);
+                    for (int n = 0; n < _ventureNotes.Count; n++)
+                    {
+                        Heard(_ventureNotes[n], Save.Day);
+                    }
+                    ChangedVenture();
+                    return;
+                }
+            }
+            Notifications.ShowError("reallife_vc_test_no_holding");
+        }
+
+        /// <summary>The board of the first firm of the player's with investors looks at its target now.</summary>
+        public void TestBoard()
+        {
+            if (!TestVentures())
+            {
+                return;
+            }
+            for (int i = 0; i < _venture.Caps.Count; i++)
+            {
+                Cap c = _venture.Caps[i];
+                if (c.VcSeats > 0)
+                {
+                    c.TargetDay = Save.Day;
+                    _venture.LastDay = Save.Day - 1;
+                    CapsDay(Save.Day, VentureRules.Mood(HiringGame.Cycle));
+                    _venture.LastDay = Save.Day;
+                    ChangedVenture();
+                    return;
+                }
+            }
+            Notifications.ShowError("reallife_vc_test_no_board");
+        }
     }
 }

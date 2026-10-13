@@ -501,7 +501,8 @@ namespace RealLifeOverhaul.Tech
 
         /// <summary>
         /// Whether a rival comes for a professional today: seniors and above, not already going or approached, by the
-        /// family's shortage, low morale, pay under the going rate, a restraint clause (half) and the player's standing.
+        /// family's shortage, low morale, pay under the going rate, a restraint clause (half), share options and the
+        /// player's standing.
         /// </summary>
         public static bool Approached(int seed, Profile p, int day, int shortage, int esteem, int paid, int going)
         {
@@ -519,6 +520,10 @@ namespace RealLifeOverhaul.Tech
             if (p.NonCompete)
             {
                 chance = chance * TalentCatalogue.NonCompetePoach / 1000;
+            }
+            if (p.Options > 0)
+            {
+                chance = chance * VentureCatalogue.OptionPoach / 1000;   // (share options not yet vested keep people)
             }
             chance = chance * (1000 - TalentCatalogue.Clamp(esteem, -10, 10) * 25) / 1000;
             return TechRandom.Hash(seed, TechRandom.Of(p.Id), day, 61) % 1000000u < (uint)Math.Max(0, chance);

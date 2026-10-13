@@ -1149,6 +1149,15 @@ namespace RealLifeOverhaul.Meta
                 .Data(Tech.FirmsStore.Key)
                 .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Tech.TechDirector.Instance?.Forget()));
+            // Startups and venture capital: the city's startups and venture firms, the player as an angel or through a fund,
+            // and the player's own tech firms raising. It runs with the tech sector.
+            Tech.TechGuide.AddVentureFacts(Features.Add("tech_startups", "reallife_meta_title_tech_startups")
+                .About("reallife_guide_tech_startups_about").Help("reallife_guide_tech_startups")
+                .Owns(Settings.TechStartupsId)
+                .Test("reallife_vc_test_pitch", "reallife_vc_test_sale", "reallife_vc_test_board")
+                .Data(Tech.VentureStore.Key)
+                .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Tech.TechDirector.Instance?.Forget()));
             // The cleaning service and selling a business. Their rows stand under the company's header on the options page
             // and their pages are the Services app. They share one line of the save. Off, the cleaning service plans no
             // round, shows no cleaner and charges nothing; selling a business offers, pays and charges nothing.

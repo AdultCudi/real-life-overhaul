@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using System.Text;
 using RealLifeOverhaul.Meta;
@@ -100,6 +101,66 @@ namespace RealLifeOverhaul.Tech
             {
                 text.Append("- ").Append(TechText.Fill("reallife_guide_tech_game", "size", TechText.Scope(s), "points", Whole(FirmsCatalogue.GameScope[s]),
                     "price", Guide.Money(Prices.At(FirmsCatalogue.GamePrice[s]) / 100f))).Append('\n');
+            }
+            return text.ToString();
+        }
+
+        public static void AddVentureFacts(Feature f)
+        {
+            f.Fact("vc_firms", Firms)
+                .Fact("vc_rounds", Rounds)
+                .Fact("vc_most", () => Whole(VentureCatalogue.StartupsMost))
+                .Fact("vc_raise_when", () => Whole(VentureCatalogue.RaiseWhenMonths))
+                .Fact("vc_raised_months", () => Whole(VentureCatalogue.RunwayMonthsRaised))
+                .Fact("vc_pool", () => Mille(VentureCatalogue.OptionPool))
+                .Fact("vc_down", () => Mille(VentureCatalogue.DownRoundCut))
+                .Fact("vc_failed", () => Whole(VentureCatalogue.FailedRaisesToDie))
+                .Fact("vc_acquire_least", () => Whole(VentureCatalogue.AcquireMultipleLeast))
+                .Fact("vc_acquire_most", () => Whole(VentureCatalogue.AcquireMultipleMost))
+                .Fact("vc_acquihire", () => Mille(VentureCatalogue.AcquihireShare))
+                .Fact("vc_multiple_least", () => Whole(VentureCatalogue.MultipleLeast))
+                .Fact("vc_multiple_most", () => Whole(VentureCatalogue.MultipleMost))
+                .Fact("vc_ticket", () => Guide.Money(Prices.At((int)(VentureCatalogue.TicketLeast / 100))))
+                .Fact("vc_ask_share", () => Mille(VentureCatalogue.AskPlayerShare))
+                .Fact("vc_diligence", () => Guide.Money(Prices.At(VentureCatalogue.DiligenceFee / 100)))
+                .Fact("vc_haggle", () => Mille(VentureCatalogue.HaggleCut))
+                .Fact("vc_pro_rata_days", () => Whole(VentureCatalogue.ProRataDays))
+                .Fact("vc_raise_days", () => Whole(VentureCatalogue.RaiseDays))
+                .Fact("vc_meetings", () => Whole(VentureCatalogue.VcMeetingsMost))
+                .Fact("vc_sheet_days", () => Whole(VentureCatalogue.TermSheetDays))
+                .Fact("vc_target", () => Mille(VentureCatalogue.TargetGrowth))
+                .Fact("vc_target_days", () => Whole(VentureCatalogue.TargetDays))
+                .Fact("vc_misses", () => Whole(VentureCatalogue.MissesToReplace))
+                .Fact("vc_bridge_months", () => Whole(VentureCatalogue.BridgeMonths))
+                .Fact("vc_bridge_interest", () => Bp(VentureCatalogue.BridgeInterestBp))
+                .Fact("vc_bridge_discount", () => Mille(VentureCatalogue.BridgeDiscount))
+                .Fact("vc_grant", () => Mille(VentureCatalogue.OptionGrant))
+                .Fact("vc_vest", () => Whole(VentureCatalogue.VestYears))
+                .Fact("vc_cliff", () => Whole(VentureCatalogue.CliffYears))
+                .Fact("vc_option_poach", () => Whole(100 - VentureCatalogue.OptionPoach / 10) + "%");
+        }
+
+        // One line per venture firm: its name, the stages it leads and whether it is a group of angels.
+        private static string Firms()
+        {
+            var text = new StringBuilder();
+            for (int i = 0; i < VentureCatalogue.Firms.Length; i++)
+            {
+                VcDef vc = VentureCatalogue.Firms[i];
+                text.Append("- ").Append(TechText.Fill(vc.Angels ? "reallife_guide_vc_angels" : "reallife_guide_vc_firm", "name", vc.Name, "least", TechText.RoundName((RoundStage)vc.Least),
+                    "most", TechText.RoundName((RoundStage)vc.Most))).Append('\n');
+            }
+            return text.ToString();
+        }
+
+        // One line per round: the revenue it needs and the least it values a company at.
+        private static string Rounds()
+        {
+            var text = new StringBuilder();
+            for (int r = 1; r < (int)RoundStage.Count; r++)
+            {
+                text.Append("- ").Append(TechText.Fill("reallife_guide_vc_round", "round", TechText.RoundName((RoundStage)r), "bar", Guide.Money(Prices.At((int)(VentureCatalogue.RoundBar[r] / 100))),
+                    "floor", Guide.Money(Prices.At((int)Math.Min(int.MaxValue, VentureCatalogue.FloorValue[r] / 100))), "burn", Guide.Money(Prices.At(VentureCatalogue.BurnByStage[r] / 100)))).Append('\n');
             }
             return text.ToString();
         }

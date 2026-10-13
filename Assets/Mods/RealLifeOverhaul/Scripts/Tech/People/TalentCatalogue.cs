@@ -148,13 +148,14 @@ namespace RealLifeOverhaul.Tech
             new RoleDef(32, "civil_engineer", Family.Built, string.Empty, Structures, Planning, 1050, Junior, Principal, false, false),
             new RoleDef(33, "data_protection_officer", Family.Security, string.Empty, Law, SecurityOps, 1100, Mid, Principal, true, true),
             new RoleDef(34, "research_scientist", Family.Data, Programmer, Learning, Statistics, 1350, Mid, Principal, true, true),
-            new RoleDef(35, "data_centre_technician", Family.Infrastructure, string.Empty, Troubleshooting, Networking, 700, Junior, Senior, false, true)
+            new RoleDef(35, "data_centre_technician", Family.Infrastructure, string.Empty, Troubleshooting, Networking, 700, Junior, Senior, false, true),
+            new RoleDef(36, "chief_executive", Family.Corporate, string.Empty, Leadership, Delivery, 2600, Staff, Principal, true, true)
         };
 
-        public const int RoleCount = 36;
+        public const int RoleCount = 37;
         public const int SoftwareEngineer = 0, DevOps = 4, Sre = 5, DataScientist = 7, MlEngineer = 8, SecurityAnalyst = 9, QaTester = 10, ItSupport = 11, NetworkEngineer = 12,
             EngineeringManager = 13, Cto = 14, ProductManager = 17, UxDesigner = 18, GraphicDesignerRole = 19, WebDesigner = 20, AccountManager = 21, CustomerSuccess = 22,
-            SalesExecutive = 23, Accountant = 28, DataProtection = 33, ResearchScientist = 34, Technician = 35;
+            SalesExecutive = 23, Accountant = 28, DataProtection = 33, ResearchScientist = 34, Technician = 35, ChiefExecutive = 36;
 
         public static RoleDef Role(int id)
         {
