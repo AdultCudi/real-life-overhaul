@@ -24,6 +24,7 @@ internal static partial class Program
         BankRunChecks();
         BankFundChecks();
         BankEndChecks();
+        BankAgainChecks();
         BankStoreChecks();
         BankTimingChecks();
         Console.WriteLine("  Own bank: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
@@ -584,6 +585,65 @@ internal static partial class Program
         long left = OwnBankRules.WindUp(w, 50, ClosedWhy.Strikes);
         long assets = (w.EndCents > 0 ? 0 : 0) + (500000000L + 900000000L - 1000000000L) + 1000000000L * OwnBankCatalogue.WindPerforming / 1000;
         Check(left == (assets - 900000000L) * (1000 - OwnBankCatalogue.WindFee) / 1000 && w.State == OwnBankState.Closed && w.Why == ClosedWhy.Strikes, "own bank: wound up, its savers paid first and the regulator's charge taken, the rest the owner's");
+    }
+
+    // ---------------------------------------------------------------- a licence again, after a closure
+
+    private static void BankAgainChecks()
+    {
+        BankCity c = BankCity.Quiet(BankYear);
+        string wait = OwnBankRules.AgainWaitKey, mend = OwnBankRules.AgainIntegrityKey;
+        int least = OwnBankCatalogue.AgainIntegrity;
+        OwnBank b = NewBank(c);
+        Check(OwnBankRules.AgainDay(b, BankYear) == 0 && OwnBankRules.AgainWhy(b, 5, BankYear, true, 0) == null && b.Closures == 0,
+            "own bank, again: a bank that is running, or none closed, is held to no wait");
+        OwnBank sold = NewBank(c);
+        OwnBankRules.Sell(sold, 40);
+        Check(OwnBankRules.AgainWhy(sold, 41, BankYear, true, 0) == null && sold.Closures == 0 && OwnBankRules.CapitalLeast(c.Level, sold.Closures) == OwnBankRules.CapitalLeast(c.Level),
+            "own bank, again: a bank that was sold is no closure: a new one may be founded at once, on the first terms");
+
+        OwnBankRules.WindUp(b, 50, ClosedWhy.Strikes);
+        Check(b.State == OwnBankState.Closed && b.Closures == 1 && OwnBankRules.AgainDay(b, BankYear) == 50 + BankYear, "own bank, again: a closure is counted, and a new licence may be applied for a game year after it");
+        Check(OwnBankRules.AgainDay(b, 365) == 415 && OwnBankRules.AgainDay(b, 60) == 110 && OwnBankRules.AgainDay(b, 0) == 51, "own bank, again: the wait is the save's own year, whatever its length");
+        Check(OwnBankRules.AgainWhy(b, 51, BankYear, false, 100) == wait && OwnBankRules.AgainWhy(b, 50 + BankYear - 1, BankYear, false, 100) == wait
+              && OwnBankRules.AgainWhy(b, 50 + BankYear - 1, BankYear, true, 100) == wait,
+            "own bank, again: no licence on any day of the year after the closure, whatever the player's integrity");
+        Check(OwnBankRules.AgainWhy(b, 50 + BankYear, BankYear, false, 0) == null && OwnBankRules.AgainWhy(b, 50 + BankYear, BankYear, false, 50) == null,
+            "own bank, again: with Standing off, the year is all that is asked");
+        Check(OwnBankRules.AgainWhy(b, 50 + BankYear, BankYear, true, least - 1) == mend && OwnBankRules.AgainWhy(b, 50 + 5 * BankYear, BankYear, true, 42) == mend
+              && OwnBankRules.AgainWhy(b, 50 + BankYear, BankYear, true, least) == null && OwnBankRules.AgainWhy(b, 50 + BankYear, BankYear, true, 100) == null,
+            "own bank, again: with Standing on, an integrity under " + least + " waits however long it has been, and one at " + least + " or over is licensed");
+        Check(least > 50 && least - 8 < 50, "own bank, again: the integrity asked for is over a newcomer's, so a newcomer whose bank was closed must earn it back");
+
+        Check(OwnBankRules.CapitalLeast(PriceRules.Start, 0) == OwnBankRules.CapitalLeast(PriceRules.Start) && OwnBankRules.CapitalLeast(PriceRules.Start, 1) == 750000000L
+              && OwnBankRules.CapitalLeast(PriceRules.Start, 2) == 1000000000L && OwnBankRules.CapitalLeast(1250, 1) == 937500000L && OwnBankRules.CapitalLeast(PriceRules.Start, -3) == 500000000L,
+            "own bank, again: the next bank pays in half as much capital again for each bank closed before ($7.5m after one, $10m after two), at today's prices");
+
+        long capital = OwnBankRules.CapitalLeast(c.Level, b.Closures);
+        OwnBankRules.Found(b, 50 + BankYear, 9, capital, "Second Savings");
+        Check(b.Running && b.Closures == 1 && b.Capital == capital && b.EndDay == 0 && OwnBankRules.AgainWhy(b, 50 + BankYear, BankYear, true, 0) == null && OwnBankRules.Balanced(b),
+            "own bank, again: a new bank founded after the year is a bank like any other, and the closure stays counted");
+        OwnBankRules.WindUp(b, 400, ClosedWhy.Run);
+        Check(b.Closures == 2 && OwnBankRules.AgainDay(b, BankYear) == 400 + BankYear && OwnBankRules.CapitalLeast(c.Level, b.Closures) > capital,
+            "own bank, again: a second closure waits a year from its own day, and asks more capital again");
+        OwnBank test = NewBank(c);
+        test.Test = true;
+        OwnBankRules.WindUp(test, 20, ClosedWhy.Insolvent);
+        Check(test.Closures == 0 && OwnBankRules.AgainDay(test, BankYear) == 20 + BankYear, "own bank, again: a bank a test founded and closed raises no capital");
+
+        // The save: the count is kept, and a line of a version before it, with a closed bank, counts that one.
+        string line = OwnBankStore.Write(b);
+        OwnBank back = OwnBankStore.Read(line, out _);
+        Check(back != null && back.Closures == 2 && back.State == OwnBankState.Closed && back.EndDay == 400 && OwnBankStore.Write(back) == line, "own bank, again: the closures are kept in the save");
+        string old = line.Replace("|2^d:", "^d:");
+        OwnBank older = OwnBankStore.Read(old, out _);
+        Check(old != line && older != null && older.Closures == 1 && OwnBankRules.AgainWhy(older, 400 + BankYear - 1, BankYear, false, 50) == wait
+              && OwnBankRules.AgainWhy(older, 400 + BankYear, BankYear, false, 50) == null && OwnBankRules.CapitalLeast(c.Level, older.Closures) == OwnBankRules.CapitalLeast(c.Level, 1),
+            "own bank, again: an older save with a closed bank follows the new rule: a year from its closure, then the stricter terms");
+        OwnBank running = NewBank(c);
+        string oldRunning = OwnBankStore.Write(running).Replace("|0^d:", "^d:");
+        OwnBank stillRunning = OwnBankStore.Read(oldRunning, out _);
+        Check(stillRunning != null && stillRunning.Running && stillRunning.Closures == 0, "own bank, again: an older save with a bank that is running counts no closure");
     }
 
     // ---------------------------------------------------------------- the save

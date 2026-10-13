@@ -22,6 +22,8 @@ namespace RealLifeOverhaul.Economy
                 .Test("reallife_ob_test_found", "reallife_ob_test_month", "reallife_ob_test_hard", "reallife_ob_test_run", "reallife_ob_test_deadline", "reallife_ob_test_fund", "reallife_ob_test_back")
                 .Fact("ob_licence", () => Money(OwnBankRules.Licence(Prices.Level)))
                 .Fact("ob_capital", () => Money(OwnBankRules.CapitalLeast(Prices.Level)))
+                .Fact("ob_again_capital", () => Money(OwnBankRules.CapitalLeast(Prices.Level, 1)))
+                .Fact("ob_again_integrity", () => Whole(OwnBankCatalogue.AgainIntegrity))
                 .Fact("ob_step", () => Money(OwnBankCatalogue.CapitalStepCents))
                 .Fact("ob_min", () => OwnBankText.Ratio(OwnBankCatalogue.MinRatio))
                 .Fact("ob_watch", () => OwnBankText.Ratio(OwnBankCatalogue.WatchRatio))

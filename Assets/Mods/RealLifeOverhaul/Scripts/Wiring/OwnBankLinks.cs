@@ -31,6 +31,7 @@ namespace RealLifeOverhaul
             internal static void Connect()
             {
                 OwnBankBridges.Integrity = () => Standing.Integrity;
+                OwnBankBridges.StandingOn = () => FameDirector.Instance != null && FameDirector.Instance.File != null;
                 OwnBankBridges.Policy = Policy;
                 OwnBankBridges.Courts = Courts;
                 OwnBankBridges.Quotes = Quotes;

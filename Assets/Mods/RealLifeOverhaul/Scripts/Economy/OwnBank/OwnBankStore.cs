@@ -13,7 +13,8 @@ namespace RealLifeOverhaul.Economy
     /// Parts are divided by '^' and begin with a letter and a colon; records inside a part by ';', fields by '|'.
     ///   s  the bank: state|name|seed|founded|end day|end cents|why|last day|capital|reserves|strategy|fund limit|
     ///      rebalance|scare|run|run from|stage|deadline|strikes|fined|month from|month|month income|month costs|
-    ///      last income|last costs|month lost|last lost|lost in all|recovered in all|history count|founded by a test
+    ///      last income|last costs|month lost|last lost|lost in all|recovered in all|history count|founded by a test|
+    ///      banks closed by the regulator (a line without it that has a closed bank counts one)
     ///   d  each kind of saver: deposits|points over the rivals
     ///   l  each kind of borrower: loans|arrears|recovering|its days|points over the rivals|lending
     ///   f  the fund's holdings: stock|ticker|name|shares|cost|last price|dividend
@@ -41,7 +42,7 @@ namespace RealLifeOverhaul.Economy
             {
                 (int)b.State, 0, b.Seed, b.FoundedDay, b.EndDay, b.EndCents, (int)b.Why, b.LastDay, b.Capital, b.Reserves, b.Strategy, b.FundLimit, b.Rebalance ? 1 : 0, b.Scare,
                 b.Run ? 1 : 0, b.RunFrom, (int)b.Stage, b.Deadline, b.Strikes, b.FinedCents, b.MonthFrom, b.Month, b.MonthIncome, b.MonthCosts, b.LastIncome, b.LastCosts,
-                b.MonthLost, b.LastLost, b.LostAll, b.RecoveredAll, b.HistoryCount, b.Test ? 1 : 0
+                b.MonthLost, b.LastLost, b.LostAll, b.RecoveredAll, b.HistoryCount, b.Test ? 1 : 0, b.Closures
             };
             for (int f = 0; f < head.Length; f++)
             {
@@ -210,6 +211,11 @@ namespace RealLifeOverhaul.Economy
             b.RecoveredAll = Math.Max(0, L(c, 29));
             b.HistoryCount = Clamp(I(c, 30), 0, OwnBankCatalogue.HistoryMonths);
             b.Test = I(c, 31) != 0;
+            b.Closures = Clamp(I(c, 32), 0, 1000);
+            if (b.Closures == 0 && b.State == OwnBankState.Closed && !b.Test)
+            {
+                b.Closures = 1;   // (a save from before the count: its bank was closed once)
+            }
             return true;
         }
 

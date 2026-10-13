@@ -19,6 +19,15 @@ namespace RealLifeOverhaul.Economy
         public const long CapitalLeastCents = 500000000L;  // the capital the regulator wants paid in at the least: $5,000,000
         public const long CapitalStepCents = 10000000L;    // what is put in or taken out is a whole number of these: $100,000
 
+        // ---------------------------------------------------------------- a licence again, after a bank was closed
+
+        // A bank the regulator closed is wound up; a new licence may be applied for a game year after the closure
+        // (OwnBankRules.AgainDay), and then on stricter terms: each bank closed before adds AgainCapital thousandths
+        // to the capital the next one must pay in, and with Standing on the player's integrity as an owner must have
+        // come back to AgainIntegrity (a closure costs 8 points of it).
+        public const int AgainCapital = 500;      // half as much capital again for each bank closed before
+        public const int AgainIntegrity = 55;     // a little over a newcomer's 50
+
         // ---------------------------------------------------------------- the regulator
 
         public const int MinRatio = 100;        // capital against risk-weighted assets, thousandths: 10% is the law
