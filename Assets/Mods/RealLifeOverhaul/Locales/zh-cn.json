@@ -11776,7 +11776,7 @@
   "reallife_law_station_furniture": "配有家具的警察局",
   "reallife_opt_tip_law_station_furniture": "办公桌、椅子、储物柜、简报室、休息室，以及游戏自带的墙面和地面，警员在工作，市民在等候。关闭时警察局像以前一样空荡。",
   "reallife_changes_next_title": "下一版本",
-  "reallife_changes_next": "室内与装饰：各部分现在在选项中有强度设置，而不只是开关。区域标准可选关闭、宽松、标准或严格；高于标准的奖励和价格可选关闭、低、保守、标准或慷慨；装饰带来的顾客可选关闭或5%至20%；磨损可选关闭、慢、标准或快。默认值即0.8.0的数值，你关闭过的部分保持关闭，预设也会设定它们。室内带来的顾客现在单独计算，与本模组其他部分并列，最强的装饰选项不会被它们的上限吞掉。",
+  "reallife_changes_next": "室内与装饰：各部分现在在选项中有强度设置，而不只是开关。区域标准可选关闭、宽松、标准或严格；高于标准的奖励和价格可选关闭、低、保守、标准或慷慨；装饰带来的顾客可选关闭或5%至20%；磨损可选关闭、慢、标准或快。默认值即0.8.0的数值，你关闭过的部分保持关闭，预设也会设定它们。室内带来的顾客现在单独计算，与本模组其他部分并列，最强的装饰选项不会被它们的上限吞掉。 目前没有卖出任何东西的企业（不营业、货架为空、无人值班，或最近的顾客都嫌价格太高），在恢复销售之前不会因室内获得额外顾客，“室内”标签页会说明原因。",
   "reallife_changes_002_4_title": "0.2.4",
   "reallife_changes_002_4": "城里的每家银行在手机上都有自己的应用，使用游戏中该银行的名称：你的活期账户和对账单、你欠该银行的贷款（可偿还部分或全部）、你的信用卡、它今天能为你提供的产品，以及它如何看待你的评级。各银行的条款略有不同，因此选哪家很重要，评级低于 580 时没有任何银行会放贷。本模组的联系人有了来自游戏的真实头像：人物显示面孔，服务显示标志。联系人顶部有了搜索框。警察局配上了游戏自带的家具：带电脑的办公桌、储物柜、饮水机、植物、时钟、灯具，拘留室里还有马桶。修复：开启本模组所有应用时，全屏菜单顶部的应用行会延伸到金钱和日期下方并超出屏幕；现在它分页显示，居中于应用名称和金钱之间，可用滚轮或圆点翻页。修复：在城市地图上，本模组的某一行（法院、改装店等）取消勾选后，其地点仍留在地图上；现在地点会跟随你看到的勾选状态。",
   "reallife_rota_box_stock_ok": "它的货品能跟上建议方案。",
@@ -16921,7 +16921,7 @@
   "reallife_guide_interiors_standard_about": "每个区域都有自己的期望标准；达不到会损失顾客并招来投诉。",
   "reallife_guide_interiors_standard": "# 标准\n- 每个区域都有期望的标准，最穷的区域（收入{in_income_least}）为{in_standard_least}，最富的区域（{in_income_most}）为{in_standard_most}，随城市经济中该区域的收入而提高。它永远不会低于游戏自身对该区域设定的最低要求，例如中城区。\n- 你的综合评分会与之比较。新企业有{in_grace}天装修期：在此之前低于标准不受影响，高于标准则立即生效。\n\n# 低于标准\n- 每低{in_short_points}分顾客减少1%，最多{in_short_most}%。绝不会没有顾客。\n- 低于{in_complaint_from}分起可能出现顾客投诉：每分每天{in_complaint_per}%，最多{in_complaint_most}%。\n\n# 高于标准\n- 每高{in_over_points}分顾客增加1%，最多{in_over_most}%。加上装饰部分，室内最多增减{in_footfall_most}%。\n- 购物篮（需你开启）：顾客可能会多买一件你在售且货架上有的商品，每高1分{in_basket_per}%，最多{in_basket_most}%。绝不会是门票或入场费。默认关闭，因为它会修改游戏自身的下一小时顾客名单。\n\n# 与 Meaningful Interiors 一起\n- 该模组开启时，它会自行设定每个区域的最低要求并增加购物篮商品，所以这部分保持关闭。“室内”标签页会显示它的最低要求。",
   "reallife_guide_interiors_decor_about": "好的装饰每天会多带来一些顾客。",
-  "reallife_guide_interiors_decor": "# 装饰与顾客\n- 装饰默认每天最多多带来{in_decor_most}%的顾客，最强选项为{in_decor_top}%，随磨损和脏污后的装饰评分而定。加上区域标准，室内最多增减{in_footfall_most}%，且在本模组其他部分合计可增加的范围之内。\n\n# 与 Meaningful Ambience 一起\n- 该模组开启时，它会自行为装饰增加顾客，所以这部分保持关闭。评分、价格、磨损、员工和标签页照常运作；重新生成当天顾客时会保留当前小时，这样该模组为这一小时增加的顾客也会保留。",
+  "reallife_guide_interiors_decor": "# 装饰与顾客\n- 装饰默认每天最多多带来{in_decor_most}%的顾客，最强选项为{in_decor_top}%，随磨损和脏污后的装饰评分而定。加上区域标准，室内最多增减{in_footfall_most}%，与本模组其他部分的增减并列计算。\n- 企业没有卖出任何东西时（不营业、货架上没有商品、没有人值班，或最近{in_recent}位顾客都嫌价格太高），室内不会额外带来顾客，也不会往购物篮里加东西。一旦能卖出东西就会恢复。低于标准的代价照旧。\n\n# 与 Meaningful Ambience 一起\n- 该模组开启时，它会自行为装饰增加顾客，所以这部分保持关闭。评分、价格、磨损、员工和标签页照常运作；重新生成当天顾客时会保留当前小时，这样该模组为这一小时增加的顾客也会保留。",
   "reallife_interior_aside": "{mod}开启时不可用：它会自行处理",
   "reallife_interior_tab": "室内",
   "reallife_interior_none": "暂无数据。数据每天早上计算一次，只针对你自己的企业和办公室，并需开启“室内与装饰”。",
@@ -17009,5 +17009,10 @@
   "reallife_opt_tip_interiors_reward_level": "高于区域标准带来的好处：多一些顾客，以及购物篮开启时的概率。",
   "reallife_opt_tip_interiors_decor_level": "好的装饰在最佳情况下多带来多少顾客，以及办公室多接多少客户。",
   "reallife_opt_tip_interiors_prices_level": "店面更好时区域能多接受多少价格，破旧时少接受多少。",
-  "reallife_opt_tip_interiors_wear_level": "装修和装饰磨损变脏的速度，评分会下降，直到你在“室内”标签页中翻新。"
+  "reallife_opt_tip_interiors_wear_level": "装修和装饰磨损变脏的速度，评分会下降，直到你在“室内”标签页中翻新。",
+  "reallife_interior_line_paused": "目前没有卖出任何东西：{reason}。在有东西卖出之前，室内不会额外带来顾客。",
+  "reallife_interior_stop_closed": "今天不营业",
+  "reallife_interior_stop_empty": "货架上没有商品",
+  "reallife_interior_stop_staff": "工位上没有人值班",
+  "reallife_interior_stop_prices": "最近的顾客都嫌价格太高"
 }

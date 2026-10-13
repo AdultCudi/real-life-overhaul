@@ -348,6 +348,10 @@ namespace RealLifeOverhaul.Interiors
         {
             InfoBox b = _right;
             b.Title("reallife_interior_effects_title".GetLocalization());
+            if (s.Stop != SaleStop.None)
+            {
+                b.Line(InteriorText.T("reallife_interior_line_paused", "reason", InteriorText.Stop(s.Stop)));
+            }
             if (s.Kind == InteriorKind.Shop)
             {
                 b.Line(InteriorText.T("reallife_interior_line_customers", "footfall", InteriorText.Signed(s.Footfall), "standard", InteriorText.Signed(s.StandardFootfall),

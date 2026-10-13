@@ -68,6 +68,17 @@ namespace RealLifeOverhaul.Interiors
             "reallife_interior_next_art", "reallife_interior_next_greenery", "reallife_interior_next_lighting", "reallife_interior_next_audio", "reallife_interior_next_floor"
         };
 
+        private static readonly string[] StopKeys =
+        {
+            "reallife_interior_stop_closed", "reallife_interior_stop_closed", "reallife_interior_stop_empty", "reallife_interior_stop_staff", "reallife_interior_stop_prices"
+        };
+
+        /// <summary>Why a business sells nothing just now, as the tab says it.</summary>
+        public static string Stop(SaleStop stop)
+        {
+            return StopKeys[InteriorRules.Clamp((int)stop, 0, StopKeys.Length - 1)].GetLocalization();
+        }
+
         /// <summary>A category's name.</summary>
         public static string Category(int category)
         {

@@ -17,6 +17,19 @@ namespace RealLifeOverhaul.Interiors
         Equipment = 6    // shelves, tills, workstations, machines: counted up to a smaller share still
     }
 
+    /// <summary>
+    /// Why a business sells nothing just now, so that its interior brings it nobody extra (a shortfall of the standard
+    /// still costs it, as it costs the customers who do come). Shown in the Interior tab; not saved.
+    /// </summary>
+    public enum SaleStop
+    {
+        None = 0,
+        Closed = 1,      // closed by its switch, or not open at all today
+        Empty = 2,       // nothing to sell: no product on its shelves, no service, no entrance
+        NoStaff = 3,     // open, and nobody on shift at a station that needs somebody
+        Prices = 4       // every one of its last customers turned its prices down
+    }
+
     /// <summary>What sort of place the business is, for what its interior can do.</summary>
     public enum InteriorKind
     {
@@ -62,6 +75,7 @@ namespace RealLifeOverhaul.Interiors
         public bool RestCorner;                 // a seat, a table and something from a kitchen: somewhere for staff to take a break
         public bool Fitting;                    // still in its first days: the district does not hold it to its standard yet
         public int StandardFrom;                // ...and the day from which it does
+        public SaleStop Stop;                   // why it sells nothing just now (looked at once a game hour), or None
 
         // worked out
         public int Target;                      // the points a place of this size needs for full marks, tenths
@@ -120,7 +134,9 @@ namespace RealLifeOverhaul.Interiors
     ///                8 points, 3% at most. Never no customers.
     ///   decor        5% more customers at a decor score of 100 (20% at the strongest).
     ///   footfall     the two together, -12% to +24% at the strongest: a part of business pressure's footfall of its
-    ///                own (BusinessCatalogue.ClampInterior), beside what the rest of the mod adds.
+    ///                own (BusinessCatalogue.ClampInterior), beside what the rest of the mod adds. While the business
+    ///                sells nothing (closed, nothing on its shelves, nobody on shift, its last 8 customers all turning
+    ///                its prices down) it brings nobody extra and adds nothing to a basket; a shortfall still costs.
     ///   prices       over the standard the district bears 1 thousandth more of the price for each point, 3% at
     ///                most; under it 1 thousandth less for each point, 2% at most.
     ///   basket       over the standard, a chance of 2 per mille a point (6% at most) that a customer takes one more
@@ -188,6 +204,7 @@ namespace RealLifeOverhaul.Interiors
         public const int StoryRestDays = 60;          // a business is in the news for its interior once in this many days at most
         public const int StoryChance = 100;           // per mille a day, once it is newsworthy
         public const int GraceDays = 14;              // a new business's days to fit out before its district holds it to the standard
+        public const int RecentOrders = 8;            // the last completed orders looked at for prices turned down, and no fewer
 
         // ---- the strengths: each option's choices, in the order of its drop-down, and the default's place in it
         public static readonly int[] StandardScales = { 0, 500, 1000, 1500 };        // Off, Gentle, Standard, Strict
@@ -495,6 +512,30 @@ namespace RealLifeOverhaul.Interiors
             return firstDay != InteriorFile.Unset && day - firstDay < GraceDays;
         }
 
+        // ---------------------------------------------------------------- no customers wasted
+
+        /// <summary>
+        /// Why a business sells nothing now, from the first that holds: closed, nothing to sell, nobody on shift, every one
+        /// of its last <see cref="RecentOrders"/> customers (and no fewer) turning its prices down. None when it can sell:
+        /// once something is on the shelves, somebody on shift, or one customer of the last few bought, it starts again.
+        /// </summary>
+        public static SaleStop Stop(bool closed, bool stocked, bool staffed, int recent, int refused)
+        {
+            if (closed)
+            {
+                return SaleStop.Closed;
+            }
+            if (!stocked)
+            {
+                return SaleStop.Empty;
+            }
+            if (!staffed)
+            {
+                return SaleStop.NoStaff;
+            }
+            return recent >= RecentOrders && refused >= recent ? SaleStop.Prices : SaleStop.None;
+        }
+
         // ---------------------------------------------------------------- one business, worked out
 
         /// <summary>
@@ -521,6 +562,11 @@ namespace RealLifeOverhaul.Interiors
                 s.StandardFootfall = Math.Max(0, s.StandardFootfall);   // fitting out: over the standard counts, short of it not yet
             }
             s.DecorFootfall = shop ? DecorFootfall(s.Decor, p.DecorPercent) : 0;
+            if (s.Stop != SaleStop.None)
+            {
+                s.StandardFootfall = Math.Min(0, s.StandardFootfall);   // selling nothing: nobody extra, the shortfall's cost stays
+                s.DecorFootfall = 0;
+            }
             s.Footfall = Footfall(s.StandardFootfall, s.DecorFootfall);
             s.Bears = shop ? Bears(s.Overall, s.Standard, p.PriceScale) : 0;
             if (s.Fitting)
@@ -528,7 +574,7 @@ namespace RealLifeOverhaul.Interiors
                 s.Bears = Math.Max(0, s.Bears);
             }
             s.ComplaintChance = shop && !s.Fitting ? ComplaintChance(s.Overall, s.Standard, p.StandardScale) : 0;
-            s.Basket = shop && p.Basket ? BasketChance(s.Overall, s.Standard, p.RewardScale) : 0;
+            s.Basket = shop && p.Basket && s.Stop == SaleStop.None ? BasketChance(s.Overall, s.Standard, p.RewardScale) : 0;
             s.BrandPoints = shop && p.Standing ? BrandPoints(s.Overall) : 0;
             s.StandingPoints = shop && p.Standing ? StandingPoints(s.Overall) : 0;
             s.Comfort = s.Kind != InteriorKind.None && p.Staff

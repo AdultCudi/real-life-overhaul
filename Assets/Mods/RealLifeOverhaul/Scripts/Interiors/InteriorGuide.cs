@@ -101,7 +101,8 @@ namespace RealLifeOverhaul.Interiors
                 .Preset(Settings.InteriorsDecorLevelId, 2, 1, 1)      // Relaxed 10%, Realistic and Hardcore 5%
                 .StandsAside(AmbienceSentence, Settings.InteriorsDecorLevelId)
                 .Fact("in_decor_most", () => N(InteriorRules.DecorPercents[InteriorRules.DecorDefault]))
-                .Fact("in_decor_top", () => N(InteriorRules.DecorPercents[InteriorRules.DecorPercents.Length - 1]));
+                .Fact("in_decor_top", () => N(InteriorRules.DecorPercents[InteriorRules.DecorPercents.Length - 1]))
+                .Fact("in_recent", () => N(InteriorRules.RecentOrders));
         }
 
         /// <summary>Why the district standard's rows do nothing just now (Meaningful Interiors is on), or null.</summary>

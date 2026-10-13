@@ -330,6 +330,53 @@ namespace RealLifeOverhaul.Interiors
             return (int)c | extra;
         }
 
+        // ---------------------------------------------------------------- selling nothing
+
+        /// <summary>
+        /// Why a business of the player's that takes money sells nothing now (InteriorRules.Stop), from the game's own
+        /// figures: its closed switch and today's opening (BuildingHelper.GetTodaySchedule), what it has to sell
+        /// (reg.cachedAvailableProducts: what is on its shelves, its services and entrances), the game's own test for a
+        /// station with nobody on shift (BusinessHelper.IsMissingEmployeeAlertNeeded, the one behind its "missing employee"
+        /// task), and today's completed orders (reg.unprocessedCompletedOrders), the last few of them. None for a place
+        /// that takes no money (a headquarters) or when it cannot be told.
+        /// </summary>
+        public static SaleStop Stop(BuildingRegistration reg)
+        {
+            try
+            {
+                if (!BusinessGame.IsBusiness(reg))
+                {
+                    return SaleStop.None;
+                }
+                ScheduleDay today = BuildingHelper.GetTodaySchedule(reg);
+                bool closed = reg.temporarilyClosed || today == null || !today.isOpen;
+                bool stocked = reg.cachedAvailableProducts != null && reg.cachedAvailableProducts.Count > 0;
+                bool staffed = !BusinessHelper.IsMissingEmployeeAlertNeeded(reg);
+                int recent = 0, refused = 0;
+                List<Order> orders = reg.unprocessedCompletedOrders;
+                for (int i = orders != null ? orders.Count - 1 : -1; i >= 0 && recent < InteriorRules.RecentOrders; i--)
+                {
+                    Order order = orders[i];
+                    if (order == null || order.entries == null || order.entries.Count == 0)
+                    {
+                        continue;
+                    }
+                    recent++;
+                    bool accepted = false;
+                    for (int k = 0; k < order.entries.Count && !accepted; k++)
+                    {
+                        accepted = order.entries[k] != null && order.entries[k].priceAccceptable;
+                    }
+                    refused += accepted ? 0 : 1;
+                }
+                return InteriorRules.Stop(closed, stocked, staffed, recent, refused);
+            }
+            catch (Exception)
+            {
+                return SaleStop.None;
+            }
+        }
+
         // ---------------------------------------------------------------- the basket
 
         /// <summary>

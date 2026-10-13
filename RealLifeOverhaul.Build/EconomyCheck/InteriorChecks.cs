@@ -26,6 +26,7 @@ internal static partial class Program
         InteriorStaffAndOffices();
         InteriorStepAside();
         InteriorStrengths();
+        InteriorSelling();
         InteriorWork();
         InteriorSave();
         InteriorElsewhere();
@@ -271,6 +272,29 @@ internal static partial class Program
               && BusinessCatalogue.Written(40, 0, 7, 0, b) == BusinessCatalogue.Written(40, 0, 7, b), "interiors: its part counts as much as the same of the ambient one, and nothing changes nothing");
         Check(BusinessCatalogue.PromotionFor(30, 0, 15, 20, b) > BusinessCatalogue.PromotionFor(30, 0, 15, 0, b),
             "interiors: its part is not lost under the ambient one's bound when the rest of the mod already adds its most");
+    }
+
+    private static void InteriorSelling()
+    {
+        Check(InteriorRules.Stop(true, false, false, 8, 8) == SaleStop.Closed && InteriorRules.Stop(false, false, false, 8, 8) == SaleStop.Empty
+              && InteriorRules.Stop(false, true, false, 8, 8) == SaleStop.NoStaff && InteriorRules.Stop(false, true, true, 8, 8) == SaleStop.Prices
+              && InteriorRules.Stop(false, true, true, 8, 0) == SaleStop.None, "interiors: why a business sells nothing, the first reason that holds");
+        Check(InteriorRules.Stop(false, true, true, 7, 7) == SaleStop.None && InteriorRules.Stop(false, true, true, 8, 7) == SaleStop.None
+              && InteriorRules.Stop(false, true, true, 0, 0) == SaleStop.None, "interiors: prices count as turned down only when every one of the last 8 customers, and no fewer, turned them down");
+        InteriorShop selling = InteriorSample(InteriorKind.Shop);
+        InteriorRules.Work(selling, 0, InteriorDefaults());
+        InteriorShop stopped = InteriorSample(InteriorKind.Shop);
+        stopped.Stop = SaleStop.Empty;
+        InteriorRules.Work(stopped, 0, InteriorDefaults());
+        Check(selling.Footfall > 0 && selling.Basket > 0 && stopped.Footfall == 0 && stopped.DecorFootfall == 0 && stopped.StandardFootfall == 0 && stopped.Basket == 0
+              && stopped.Bears == selling.Bears && stopped.Overall == selling.Overall, "interiors: selling nothing, a fine shop's interior brings nobody extra and adds nothing to a basket; its scores and prices stay");
+        InteriorShop poor = InteriorSample(InteriorKind.Shop);
+        poor.Interior = 5;
+        Array.Clear(poor.Points, 0, poor.Points.Length);
+        poor.Income = 140;
+        poor.Stop = SaleStop.NoStaff;
+        InteriorRules.Work(poor, 0, InteriorDefaults());
+        Check(poor.Footfall == -8 && poor.ComplaintChance > 0, "interiors: selling nothing, a shortfall of the standard still costs what it costs");
     }
 
     private static InteriorShop InteriorSample(InteriorKind kind)

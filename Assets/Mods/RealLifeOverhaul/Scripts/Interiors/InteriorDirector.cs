@@ -245,6 +245,7 @@ namespace RealLifeOverhaul.Interiors
                     }
                     wear = p.WearScale > 0 ? f.Wear : 0;
                 }
+                s.Stop = InteriorGame.Stop(reg);
                 InteriorRules.Work(s, wear, p);
                 if (s.Kind == InteriorKind.Office)
                 {
@@ -375,6 +376,7 @@ namespace RealLifeOverhaul.Interiors
 
         private void Hourly()
         {
+            Selling();
             if (!BasketOn)
             {
                 return;
@@ -388,6 +390,32 @@ namespace RealLifeOverhaul.Interiors
                 }
                 BuildingRegistration reg = BusinessGame.Find(s.Place);
                 _basketToday += reg != null ? InteriorGame.Basket(reg, s.Basket) : 0;
+            }
+        }
+
+        // Whether each business sells anything this hour: one that stops brings nobody extra from its interior until it
+        // sells again, and its footfall is written again when that changes what it brings.
+        private void Selling()
+        {
+            InteriorParts parts = Parts;
+            foreach (KeyValuePair<BuildingRegistration, InteriorShop> pair in _byReg)
+            {
+                InteriorShop s = pair.Value;
+                SaleStop stop = InteriorGame.Stop(pair.Key);
+                if (stop == s.Stop)
+                {
+                    continue;
+                }
+                int was = s.Footfall;
+                SaleStop before = s.Stop;
+                s.Stop = stop;
+                InteriorRules.Work(s, s.Wear, parts);
+                Logger?.Info("Interiors: " + s.Name + (stop != SaleStop.None ? " sells nothing just now (" + stop + "): its interior brings nobody extra until it does."
+                                                                              : " sells again (it was " + before + "): its interior's customers are back."));
+                if (s.Kind == InteriorKind.Shop && s.Footfall != was)
+                {
+                    Write(pair.Key, false);
+                }
             }
         }
 
