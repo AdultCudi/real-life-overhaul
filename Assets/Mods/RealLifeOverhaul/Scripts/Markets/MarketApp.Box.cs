@@ -494,11 +494,8 @@ namespace RealLifeOverhaul.Markets
             }
             Transform buttons = box.ButtonRow();
             Stock company = k;
-            UnityEngine.UI.Button place = InfoBox.Button(buttons, InfoBox.Positive, _side == OrderSide.Buy ? "reallife_mkt_buy" : "reallife_mkt_sell", () => UiClone.Safe(() => Confirm(company, e, price)));
-            if (place != null)
-            {
-                place.interactable = e.Why == OrderWhy.None;
-            }
+            // (always lit: an order that cannot be placed has its reason in the line above, and pressed, in the game's notification)
+            InfoBox.Button(buttons, InfoBox.Positive, _side == OrderSide.Buy ? "reallife_mkt_buy" : "reallife_mkt_sell", () => UiClone.Safe(() => Confirm(company, price)));
             bool watching = s.Watching(k.Id);
             InfoBox.Button(buttons, InfoBox.Additional, watching ? "reallife_mkt_unwatch" : "reallife_mkt_watch", () => UiClone.Safe(() =>
             {
@@ -588,8 +585,9 @@ namespace RealLifeOverhaul.Markets
         }
 
         // The order, as it will be placed, put to the player before it is.
-        private void Confirm(Stock k, Estimate e, int price)
+        private void Confirm(Stock k, int price)
         {
+            Estimate e = _director.Estimate(k.Id, _side, _type, _qty, _type == OrderType.Limit ? price : 0, _type == OrderType.Stop ? price : 0);   // (as it is now, not as it was drawn)
             if (e.Why != OrderWhy.None)
             {
                 Error(e.Why, k);

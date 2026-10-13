@@ -14,21 +14,14 @@ namespace RealLifeOverhaul.Economy
     }
 
     /// <summary>
-    /// One building the player owns, as the property business keeps it. The fields from <see cref="Base"/> down to
-    /// <see cref="Name"/> are read from the game each morning and are not saved.
+    /// One unit of a building the player lets himself: its own asking rent, lease and applicants. A building has as
+    /// many as the game counts in it (<see cref="EstateRules.UnitCount"/>); its condition, level, cover and works are
+    /// the building's and count for every unit.
     /// </summary>
-    public sealed class EstateHolding
+    public sealed class EstateUnit
     {
-        public string Place;            // the address, written as business pressure writes a place
-        public int Paid, BoughtDay;     // as the game recorded the purchase
-        public int Spent;               // refurbishment and conversion paid for: counted against a gain
-        public int Use;                 // EstateUse: what it is let as
-        public int Cond = EstateCatalogue.ConditionNew;
-        public int Level;               // refurbishment, 0 to 3
-        public int Ask = EstateCatalogue.AskStart;   // the asking rent against the market's
-        public bool Managed;            // the player lets it himself; false: the game lets it, as it always did
+        public int Ask = EstateCatalogue.AskStart;   // the asking rent against the market's for the unit
         public bool ToLet = true;       // applicants are looked for while it stands empty
-        public bool Cover;              // landlord's cover
 
         public int Tenant = -1;         // the description of who is in; -1 for nobody
         public int Record;
@@ -39,6 +32,35 @@ namespace RealLifeOverhaul.Economy
         public int NoticeEnd;           // the day notice runs out; 0 for none
         public int CourtDay;            // the day the possession order comes; 0 for none
         public int VoidDays;            // days empty in a row
+        public readonly List<RentApplicant> Applicants = new List<RentApplicant>(EstateCatalogue.ApplicantsMost);
+
+        public bool Let => Tenant >= 0;
+        public bool Paying => Tenant >= 0 && Arrears == 0;
+
+        /// <summary>Nobody is in: the lease's figures are all nothing.</summary>
+        public void Vacant()
+        {
+            Tenant = -1;
+            Record = Rent = Deposit = Until = Arrears = ArrearsDays = NoticeEnd = CourtDay = 0;
+        }
+    }
+
+    /// <summary>
+    /// One building the player owns, as the property business keeps it. The fields from <see cref="Base"/> down to
+    /// <see cref="Name"/> are read from the game each morning and are not saved. <see cref="Units"/> always has one
+    /// unit at least; the first is the one a version from before units kept as the building's own lease.
+    /// </summary>
+    public sealed class EstateHolding
+    {
+        public string Place;            // the address, written as business pressure writes a place
+        public int Paid, BoughtDay;     // as the game recorded the purchase
+        public int Spent;               // refurbishment and conversion paid for: counted against a gain
+        public int Use;                 // EstateUse: what it is let as
+        public int Cond = EstateCatalogue.ConditionNew;
+        public int Level;               // refurbishment, 0 to 3
+        public bool Managed;            // the player lets it himself; false: the game lets it, as it always did
+        public bool Cover;              // landlord's cover
+        public readonly List<EstateUnit> Units = new List<EstateUnit>(4) { new EstateUnit() };
 
         public int Work;                // EstateWork
         public int WorkEnd, WorkCost, WorkTo;
@@ -50,8 +72,7 @@ namespace RealLifeOverhaul.Economy
         public bool SaleFails;          // ...which was settled when it was agreed, and is found out on the day
 
         public int RentYear, CostYear;  // since the first day of the running year of the game
-        public int NextApplicant = 1;
-        public readonly List<RentApplicant> Applicants = new List<RentApplicant>(EstateCatalogue.ApplicantsMost);
+        public int NextApplicant = 1;   // applicants are numbered across the building's units
 
         // read from the game, not saved
         public int Base;                // the game's own value of it, before anything of the mod's
@@ -62,19 +83,88 @@ namespace RealLifeOverhaul.Economy
         public bool Self;               // the player uses its unit: the game lets the rest, as it always did
         public bool Seen;
 
-        public bool Let => Tenant >= 0;
         public bool Busy => Work != (int)EstateWork.None;
+
+        /// <summary>Whether a tenant is in any of its units.</summary>
+        public bool AnyLet
+        {
+            get
+            {
+                for (int i = 0; i < Units.Count; i++)
+                {
+                    if (Units[i].Let)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        }
+
+        /// <summary>How many of its units are let, and how many of those owe rent.</summary>
+        public int LetUnits(out int behind)
+        {
+            int let = 0;
+            behind = 0;
+            for (int i = 0; i < Units.Count; i++)
+            {
+                let += Units[i].Let ? 1 : 0;
+                behind += Units[i].Let && Units[i].Arrears > 0 ? 1 : 0;
+            }
+            return let;
+        }
+
+        /// <summary>The applications waiting for all of its units.</summary>
+        public int ApplicantCount
+        {
+            get
+            {
+                int count = 0;
+                for (int i = 0; i < Units.Count; i++)
+                {
+                    count += Units[i].Applicants.Count;
+                }
+                return count;
+            }
+        }
+
+        /// <summary>An applicant by number, and the unit applied for (-1 with none).</summary>
+        public RentApplicant ApplicantOf(int id, out int unit)
+        {
+            for (unit = 0; unit < Units.Count; unit++)
+            {
+                List<RentApplicant> list = Units[unit].Applicants;
+                for (int i = 0; i < list.Count; i++)
+                {
+                    if (list[i].Id == id)
+                    {
+                        return list[i];
+                    }
+                }
+            }
+            unit = -1;
+            return null;
+        }
 
         public RentApplicant ApplicantOf(int id)
         {
-            for (int i = 0; i < Applicants.Count; i++)
+            int unit;
+            return ApplicantOf(id, out unit);
+        }
+
+        /// <summary>A unit by its place, or null for one the building does not have.</summary>
+        public EstateUnit Unit(int unit)
+        {
+            return unit >= 0 && unit < Units.Count ? Units[unit] : null;
+        }
+
+        /// <summary>Every unit's applications are turned away.</summary>
+        public void ClearApplicants()
+        {
+            for (int i = 0; i < Units.Count; i++)
             {
-                if (Applicants[i].Id == id)
-                {
-                    return Applicants[i];
-                }
+                Units[i].Applicants.Clear();
             }
-            return null;
         }
     }
 

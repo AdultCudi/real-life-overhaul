@@ -8,7 +8,8 @@ namespace RealLifeOverhaul.Economy.Brands
     /// The Shops tab. The table (BrandsTables.Shops): every shop of the player's and every franchised shop, with who runs it, where,
     /// what it took yesterday (and the royalty on that) and its standards. The box: for a shop of the player's under
     /// no brand, the ways into one (make a brand, join one, take a city chain's franchise); for a member shop, its
-    /// standards and what the brand brings it, part by part; for a shop under a chain, how it stands with the chain;
+    /// standards and what the brand brings it, part by part; for a shop under a chain, how it stands with the chain
+    /// and the switch that keeps its prices inside the chain's range;
     /// for a franchised shop, the same page the Agreements tab shows.
     /// </summary>
     public sealed partial class BrandsApp
@@ -136,7 +137,7 @@ namespace RealLifeOverhaul.Economy.Brands
             {
                 if (!_director.Promoted(shop))
                 {
-                    box.Line(BrandsText.T("reallife_brand_member_no_figure"));
+                    box.Line(BrandsText.T(EmpireMotors.IsDealership(shop.Reg) ? "reallife_brand_member_empire" : "reallife_brand_member_no_figure"));   // (Core/EmpireMotors)
                 }
                 else
                 {
@@ -149,6 +150,16 @@ namespace RealLifeOverhaul.Economy.Brands
                         box.Line(BrandsText.Fill("reallife_brand_member_cannibal", "percent", BrandsText.Percent(-m.Cannibal), "metres", BrandCatalogue.CannibalRadius.ToString()));
                     }
                     box.Line(BrandsText.Fill("reallife_brand_member_all", "percent", BrandsText.Percent(shop.Asked), "cap", BrandCatalogue.FootfallMost.ToString()));
+                }
+                if (_director.Kept(shop))
+                {
+                    box.Line(b.Local
+                        ? BrandsText.Fill("reallife_brand_member_kept_local", "business", _director.ShopName(b.Flagship), "share", BrandsText.Share(_director.KeptFactor(place)))
+                        : BrandsText.T("reallife_brand_member_kept", "business", _director.ShopName(b.Flagship)));
+                    if (_director.ManagerWatches(shop))
+                    {
+                        box.Line(BrandsText.T("reallife_brand_kept_manager", "district", BrandsText.District(shop.District)));
+                    }
                 }
             }
             var buttons = box.ButtonRow();
@@ -175,9 +186,29 @@ namespace RealLifeOverhaul.Economy.Brands
                 : BrandsText.T("reallife_brand_chain_good"));
             int exit = _director.ChainExit(t);
             box.Line(BrandsText.Fill("reallife_brand_chain_money", "average", BrandsText.Money(t.Average), "paid", BrandsText.Money(t.Paid), "exit", BrandsText.Money(exit)));
+            bool kept = t.Keep;
+            box.Line(kept
+                ? BrandsText.Fill("reallife_brand_chain_kept", "district", BrandsText.District(shop.District), "least", BrandsText.Share(KeptPrices.Least(chain)), "most", BrandsText.Share(KeptPrices.Most(chain)))
+                : BrandsText.T("reallife_brand_chain_keep_about"));
+            if (kept && _director.ManagerWatches(shop))
+            {
+                box.Line(BrandsText.T("reallife_brand_kept_manager", "district", BrandsText.District(shop.District)));
+            }
+            bool switched = box.Switch("reallife_brand_chain_keep", kept, on =>
+            {
+                _director.KeepChainPrices(place, on);
+                Refresh();
+            });
             var buttons = box.ButtonRow();
-            InfoBox.Button(buttons, InfoBox.Positive, "reallife_brand_chain_set_prices", () => Confirm("reallife_brand_confirm_chain_prices_title", "reallife_brand_confirm_chain_prices", new { business = name, chain = chainName },
-                () => _director.ChainPrices(place), false));
+            if (!switched)
+            {
+                InfoBox.Button(buttons, InfoBox.Positive, kept ? "reallife_brand_chain_keep_off" : "reallife_brand_chain_keep_on", () => _director.KeepChainPrices(place, !kept));
+            }
+            if (!kept)
+            {
+                InfoBox.Button(buttons, InfoBox.Additional, "reallife_brand_chain_set_prices", () => Confirm("reallife_brand_confirm_chain_prices_title", "reallife_brand_confirm_chain_prices", new { business = name, chain = chainName },
+                    () => _director.ChainPrices(place), false));
+            }
             InfoBox.Button(buttons, InfoBox.Negative, "reallife_brand_chain_leave", () => Confirm("reallife_brand_confirm_chain_leave_title", "reallife_brand_confirm_chain_leave",
                 new { business = name, chain = chainName, amount = BrandsText.Money(exit) }, () => _director.LeaveChain(place), true));
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_brand_back", Back);

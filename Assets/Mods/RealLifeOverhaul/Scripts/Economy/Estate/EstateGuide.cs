@@ -27,6 +27,8 @@ namespace RealLifeOverhaul.Economy
                 .Fact("est_ask_high", () => Share(EstateCatalogue.AskMost))
                 .Fact("est_applicants", () => Whole(EstateCatalogue.ApplicantsMost))
                 .Fact("est_applicant_days", () => Whole(EstateCatalogue.ApplicantDays))
+                .Fact("est_applicants_building", () => Whole(EstateCatalogue.ApplicantsBuildingMost))
+                .Fact("est_units", () => Whole(EstateCatalogue.UnitsMost))
                 .Fact("est_deposit_days", () => Whole(EstateCatalogue.DepositDays))
                 .Fact("est_arrears_days", () => Whole(EstateCatalogue.NoticeArrearsDays))
                 .Fact("est_notice_days", () => Whole(EstateCatalogue.NoticeDays[1]))

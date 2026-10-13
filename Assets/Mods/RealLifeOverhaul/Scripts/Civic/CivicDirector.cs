@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
 using BAModAPI;
 using Helpers;
 using UI;
@@ -31,6 +33,14 @@ namespace RealLifeOverhaul
     /// Nothing else is written: no policy changes a value the game saves. A save made with this
     /// loads without the mod; a save made without it starts with a mayor in office and the
     /// first election two weeks off.
+    ///
+    /// A GOING PUBLIC SESSION. The government and the building sites are the city's, one for every player (Core/SharedCity):
+    /// the host runs their hours as alone and sends them (G the government, W the sites, N what the city's toasts and
+    /// stories said in those hours, so that every player hears of a campaign, a policy or a result as the host's does);
+    /// a guest runs none of the city's hours (CivicGovernment.FollowTick, CivicWorks.Shared), applies the host's state
+    /// here (the policies' effects on that player's own game, the posters, the sites in the street) and sends what its
+    /// player does that changes the city. Its own part of an election (its ballot, what it gave, the favours owed for
+    /// it) is kept by the guest and settled here when the host's count comes.
     ///
     /// FAULTS. An error in the street part clears the street (every closed lane opened, every
     /// person given back), is logged once, and leaves the street part off for the session; the
@@ -86,6 +96,13 @@ namespace RealLifeOverhaul
         private int _testPolicy;
         private int _cityTries;
         private float _nextCity;
+        private readonly StringBuilder _notices = new StringBuilder(256);   // the host: the city's toasts and stories since the last update
+        private Action<NotificationType, string, string[], float> _heard;
+        private Action<string, string> _reported;
+        private const char Gap = '\u001f';   // between the fields of one notice (never in a text)
+        private const string Mod = "reallife";                       // (apart, so that the locale check does not take a prefix for a key)
+        private const string CivicKeys = Mod + "_civic_";             // the only keys a host's notice may name
+        private const string PollsKeys = Mod + "_civic_polls_open";   // the polls opening: each guest says its own
 
         /// <summary>True once the save's civic state is loaded and nothing has switched civic life off.</summary>
         public bool Running => _loaded && !_failed && Settings.Civic;
@@ -107,6 +124,34 @@ namespace RealLifeOverhaul
             Volunteer = new VolunteerShift(Government, this);
             Government.LeversChanged = OnLevers;
             _nextSlow = Time.time + 3f;
+            _heard = Heard;
+            _reported = Reported;
+            SharedCity.Register(new SharedCityPart
+            {
+                Id = 'G', Name = "government",
+                Ready = () => _loaded && !_failed && Elections,
+                Write = () => CivicShare.WriteGov(Government.State),
+                Apply = ApplyGov,
+                Request = (text, who) => HostRequests(text, who, false),
+                Left = () => Logger?.Info("Civic: the host's government is no longer followed; its hours run here again from hour " + Government.State.LastHour + ", the host's last.")
+            });
+            SharedCity.Register(new SharedCityPart
+            {
+                Id = 'W', Name = "building sites",
+                Ready = () => _loaded && !_failed && Settings.Civic && Settings.CivicConstruction,
+                Write = () => CivicShare.WriteWorks(Works.State),
+                Apply = ApplyWorks,
+                Request = (text, who) => HostRequests(text, who, true),
+                Left = () => Works.Shared = false
+            });
+            SharedCity.Register(new SharedCityPart
+            {
+                Id = 'N', Name = "the city's notices",
+                Ready = () => _loaded && !_failed && Elections,
+                Write = () => "-",   // (nothing to start from: the notices are only ever what has just happened)
+                Changes = TakeNotices,
+                Apply = ShowNotices
+            });
         }
 
         private void OnDestroy()
@@ -247,7 +292,28 @@ namespace RealLifeOverhaul
             if (Elections)
             {
                 Government.LateSites = Works.Late;
-                Government.Tick(day, hour);
+                if (SharedCity.Follows('G'))
+                {
+                    Government.FollowTick(day, hour);   // a guest of a Going Public session: the city's hours are the host's
+                }
+                else
+                {
+                    bool leading = SharedCity.Leading;
+                    int ran;
+                    Listen(leading);
+                    try
+                    {
+                        ran = Government.Tick(day, hour);
+                    }
+                    finally
+                    {
+                        Listen(false);
+                    }
+                    if (ran > 0 && leading)
+                    {
+                        SharedCity.Changed('G');
+                    }
+                }
                 if (newDay)
                 {
                     _effects.Daily(Government.State, day);
@@ -261,7 +327,12 @@ namespace RealLifeOverhaul
             if (Settings.CivicConstruction)
             {
                 Works.Permits = Elections ? Government.State.Levers[(int)Lever.Permits] : 0;
+                Works.Shared = SharedCity.Follows('W');   // a guest works only its own refit; the city's sites are the host's
                 Works.Tick(day, hour);
+                if (newHour && !Works.Shared)
+                {
+                    SharedCity.Changed('W');
+                }
                 if (newHour)
                 {
                     bool outside = !BuildingManager.IsInsideBuilding;
@@ -306,6 +377,175 @@ namespace RealLifeOverhaul
                 _effects.Apply(Government.State.Levers);
                 CivicPolicy.Publish(Government.State.Levers);
             }
+        }
+
+        // ---------------------------------------------------------------- a Going Public session
+
+        // The host: the city's toasts and stories are heard while its hours run (and while a guest's request is applied).
+        private void Listen(bool on)
+        {
+            CivicText.Heard = on ? _heard : null;
+            CivicBridges.Reported = on ? _reported : null;
+        }
+
+        private void Heard(NotificationType type, string key, string[] pairs, float seconds)
+        {
+            if (key.StartsWith(PollsKeys, StringComparison.Ordinal) || _notices.Length > 8192)
+            {
+                return;   // each guest says its own polling place
+            }
+            _notices.Append('T').Append(Gap).Append((int)type).Append(Gap).Append(seconds.ToString("0.#", CultureInfo.InvariantCulture)).Append(Gap).Append(key);
+            for (int i = 0; pairs != null && i < pairs.Length; i++)
+            {
+                _notices.Append(Gap).Append(Clean(pairs[i]));
+            }
+            _notices.Append('\n');
+        }
+
+        private void Reported(string headline, string body)
+        {
+            if (_notices.Length <= 8192)
+            {
+                _notices.Append('R').Append(Gap).Append(headline).Append(Gap).Append(body).Append('\n');
+            }
+        }
+
+        private static string Clean(string text)
+        {
+            return string.IsNullOrEmpty(text) ? string.Empty : text.Replace(Gap, ' ').Replace('\n', ' ');
+        }
+
+        private string TakeNotices()
+        {
+            if (_notices.Length == 0)
+            {
+                return null;
+            }
+            string text = _notices.ToString();
+            _notices.Length = 0;
+            return text;
+        }
+
+        // A guest: what the host's player was told of the city, told here too.
+        private bool ShowNotices(string text, bool whole)
+        {
+            if (whole)
+            {
+                return true;
+            }
+            string[] lines = text.Split('\n');
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string[] f = lines[i].Split(Gap);
+                if (f.Length >= 4 && f[0] == "T" && int.TryParse(f[1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int type)
+                    && float.TryParse(f[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float seconds) && f[3].StartsWith(CivicKeys, StringComparison.Ordinal))
+                {
+                    string[] pairs = null;
+                    if (f.Length > 4)
+                    {
+                        pairs = new string[f.Length - 4];
+                        Array.Copy(f, 4, pairs, 0, pairs.Length);
+                    }
+                    CivicText.Show((NotificationType)type, f[3], pairs, Mathf.Clamp(seconds, 4f, 20f));
+                }
+                else if (f.Length >= 3 && f[0] == "R" && f[1].StartsWith(CivicKeys, StringComparison.Ordinal) && f[2].StartsWith(CivicKeys, StringComparison.Ordinal))
+                {
+                    CivicBridges.Report(f[1], f[2]);
+                }
+            }
+            return true;
+        }
+
+        // A guest: the host's government. The policies' effects follow it here; the player's own part of an election that has
+        // been counted is settled as the host's own count would have settled it.
+        private bool ApplyGov(string text, bool whole)
+        {
+            GovState s = Government.State;
+            GovChange change;
+            if (!CivicShare.ApplyGov(s, text, out change))
+            {
+                return false;
+            }
+            if (change.LeversMoved != 0)
+            {
+                OnLevers();
+            }
+            if (change.Counted && s.Winner >= 0 && s.Winner < s.CandidateCount)
+            {
+                int per = Mathf.Max(1, CivicCatalogue.FavourPerNow);
+                if (s.Donated[s.Winner] >= per)
+                {
+                    s.Favours = Mathf.Min(2, s.Favours + s.Donated[s.Winner] / per);
+                }
+                if (s.Voted == s.Winner)
+                {
+                    ModState.AddModifier(ModState.MoodUp);
+                }
+            }
+            if (change.Phase)
+            {
+                Government.CampaignChanged?.Invoke();
+            }
+            return true;
+        }
+
+        // A guest: the host's building sites; its own refit stays its own.
+        private bool ApplyWorks(string text, bool whole)
+        {
+            if (!CivicShare.ApplyWorks(Works.State, text))
+            {
+                return false;
+            }
+            Works.Shared = true;
+            Works.Earshots();
+            Works.SitesChanged?.Invoke();
+            return true;
+        }
+
+        // The host: a guest's requests, one a line; what they say of the city is heard by every guest with the next update.
+        private void HostRequests(string text, string who, bool works)
+        {
+            if (string.IsNullOrEmpty(text))
+            {
+                return;
+            }
+            int day = TimeHelper.CurrentDay, hour = TimeHelper.CurrentHour;
+            string[] lines = text.Split('\n');
+            int done = 0;
+            Listen(true);
+            try
+            {
+                for (int i = 0; i < lines.Length && i < 64; i++)
+                {
+                    if (lines[i].Length > 0 && (works ? Works.HostRequest(lines[i], day) : Government.HostRequest(lines[i], who, day, hour)))
+                    {
+                        done++;
+                    }
+                }
+            }
+            finally
+            {
+                Listen(false);
+            }
+            if (done > 0)
+            {
+                SharedCity.Changed(works ? 'W' : 'G');
+            }
+            if (Meta.Dev.Verbose)
+            {
+                Logger?.Info("Civic check (the host): " + done + " of " + lines.Length + " request line(s) of " + who + " applied to the city's " + (works ? "sites" : "government") + ": PASS");
+            }
+        }
+
+        // A test that would change the city's government or sites: not while they are the host's.
+        private bool HostOwns(string test, char part)
+        {
+            if (!SharedCity.Follows(part))
+            {
+                return false;
+            }
+            TestRefusals.TellKey(Logger, test, "reallife_gp_city_test_host");
+            return true;
         }
 
         // ---------------------------------------------------------------- the street
@@ -636,7 +876,7 @@ namespace RealLifeOverhaul
         /// <summary>Test: an election campaign starts now (election day in a week); posters and boards go up round the player at once.</summary>
         public void TestCampaign()
         {
-            if (!TestReady("Civic campaign", false))
+            if (!TestReady("Civic campaign", false) || HostOwns("Civic campaign", 'G'))
             {
                 return;
             }
@@ -664,7 +904,7 @@ namespace RealLifeOverhaul
         /// <summary>Test: today is election day. The first press opens the polls; a second press (or a press outside polling hours) counts the votes.</summary>
         public void TestElectionDay()
         {
-            if (!TestReady("Civic election day", false))
+            if (!TestReady("Civic election day", false) || HostOwns("Civic election day", 'G'))
             {
                 return;
             }
@@ -686,7 +926,7 @@ namespace RealLifeOverhaul
         /// <summary>Test: the next policy of the catalogue comes into force now (each press, the next one).</summary>
         public void TestPolicy()
         {
-            if (!TestReady("Civic policy", false))
+            if (!TestReady("Civic policy", false) || HostOwns("Civic policy", 'G'))
             {
                 return;
             }
@@ -712,7 +952,7 @@ namespace RealLifeOverhaul
         /// <summary>Test: every policy is taken back at once.</summary>
         public void TestRevert()
         {
-            if (!TestReady("Civic revert", false))
+            if (!TestReady("Civic revert", false) || HostOwns("Civic revert", 'G'))
             {
                 return;
             }
@@ -731,7 +971,7 @@ namespace RealLifeOverhaul
         public void TestSite(SiteKind kind)
         {
             string test = "Civic " + kind;
-            if (!TestReady(test, true))
+            if (!TestReady(test, true) || HostOwns(test, 'W'))
             {
                 return;
             }
@@ -803,7 +1043,7 @@ namespace RealLifeOverhaul
         /// <summary>Test: every site does a full working day now, and what stands in the street follows.</summary>
         public void TestAdvance()
         {
-            if (!TestReady("Civic advance", false))
+            if (!TestReady("Civic advance", false) || HostOwns("Civic advance", 'W'))
             {
                 return;
             }
@@ -834,6 +1074,10 @@ namespace RealLifeOverhaul
             {
                 TestRefusals.Tell(Logger, "Civic rally", TestRefusal.FeatureOff);
                 return;
+            }
+            if (!Government.Campaigning && HostOwns("Civic rally", 'G'))
+            {
+                return;   // (a rally of a campaign that is on is this player's to see; a campaign is the host's to start)
             }
             try
             {
@@ -867,6 +1111,10 @@ namespace RealLifeOverhaul
             if (!_loaded)
             {
                 TestRefusals.Tell(Logger, "Civic clear", TestRefusal.NotLoaded);
+                return;
+            }
+            if (HostOwns("Civic clear", 'W'))
+            {
                 return;
             }
             try

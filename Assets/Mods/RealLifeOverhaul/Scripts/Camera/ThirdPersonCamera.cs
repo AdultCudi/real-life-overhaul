@@ -131,7 +131,9 @@ namespace RealLifeOverhaul
             }
 
             // The camera key (V unless rebound) switches between the third-person cameras and the game's normal camera.
-            if (Keys.Down(KeyAction.CameraToggle) && !IsUiOpen())
+            // In a car V is Empire Motors' view from the driver's seat as well: there the key is left to it, or each press
+            // would switch this mod's camera for the whole game as a side effect (Core/EmpireMotors).
+            if (Keys.Down(KeyAction.CameraToggle) && !IsUiOpen() && !EmpireMotors.TakesCameraKey(gm))
             {
                 if (mine)
                 {

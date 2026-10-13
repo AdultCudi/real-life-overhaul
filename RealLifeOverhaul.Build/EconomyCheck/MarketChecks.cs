@@ -155,6 +155,7 @@ internal static partial class Program
         MarketTradeCosts();
         MarketImpact();
         MarketClosedAndHeld();
+        MarketTicketPath();
         MarketSkippedTime();
         MarketLimitsAndStops();
         MarketDividends();

@@ -453,6 +453,17 @@ namespace RealLifeOverhaul.Markets
         /// </summary>
         public static bool Fill(MarketState state, Stock s, Order order, long qty, int cents, int least, IMarketWallet wallet, int phase)
         {
+            return Fill(state, s, order, qty, cents, least, wallet, phase, true, out _);
+        }
+
+        /// <summary>
+        /// As <see cref="Fill(MarketState, Stock, Order, long, int, int, IMarketWallet, int)"/>; with <paramref name="move"/>
+        /// false the lasting move of the price and the shares traded are not put on the company here but given in
+        /// <paramref name="kept"/> (in a Going Public session the city's market applies every player's, on its tape).
+        /// </summary>
+        public static bool Fill(MarketState state, Stock s, Order order, long qty, int cents, int least, IMarketWallet wallet, int phase, bool move, out double kept)
+        {
+            kept = 0.0;
             bool buying = order.Side == OrderSide.Buy;
             long value = Value(qty, cents, buying);
             long fee = Commission(value, least);
@@ -526,11 +537,14 @@ namespace RealLifeOverhaul.Markets
             // The market moves: a part of the order's impact stays in the price (as the market's mood: it fades), and the
             // player's recent trading in it grows.
             double share = Math.Sqrt(qty / Math.Max(1.0, s.Adv));
-            double kept = (buying ? 1.0 : -1.0) * MarketCatalogue.ImpactPermanent * MarketCatalogue.ImpactTemporary * DayVol(state, s) * share;
-            s.Mis += kept;
-            s.Sent += kept;
-            s.Impact += qty;
-            s.DayVolume += qty;
+            kept = (buying ? 1.0 : -1.0) * MarketCatalogue.ImpactPermanent * MarketCatalogue.ImpactTemporary * DayVol(state, s) * share;
+            if (move)
+            {
+                s.Mis += kept;
+                s.Sent += kept;
+                s.DayVolume += qty;
+            }
+            s.Impact += qty;   // (the player's own recent trading, whatever moves the price)
             AddTrade(state, new Trade { Day = state.Day, Phase = phase, StockId = s.Id, Kind = buying ? TradeKind.Bought : TradeKind.Sold, Qty = qty, PriceCents = cents,
                 Value = buying ? -value : value, Fee = fee, Test = order.Test });
             return true;

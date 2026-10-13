@@ -173,9 +173,38 @@ namespace RealLifeOverhaul.Economy.Brands
             }
             string flagship = _director.ShopName(b.Flagship);
             box.Line(BrandsText.T("reallife_brand_set_shared", "business", flagship));
+            bool keep = b.Keep, local = b.Local;
+            box.Line(keep
+                ? BrandsText.Fill(local ? "reallife_brand_set_kept_local" : "reallife_brand_set_kept", "business", flagship, "band", BrandsText.Share(BrandCatalogue.LocalBand))
+                : BrandsText.T("reallife_brand_set_keep_about", "business", flagship));
+            bool keepSwitch = box.Switch("reallife_brand_set_keep", keep, on =>
+            {
+                _director.KeepBrandPrices(id, on);
+                Refresh();
+            });
+            bool localSwitch = keep && box.Switch("reallife_brand_set_local", local, on =>
+            {
+                _director.KeepBrandLocal(id, on);
+                Refresh();
+            });
+            if (!keepSwitch || (keep && !localSwitch))
+            {
+                var switches = box.ButtonRow();
+                if (!keepSwitch)
+                {
+                    InfoBox.Button(switches, InfoBox.Positive, keep ? "reallife_brand_set_keep_off" : "reallife_brand_set_keep_on", () => _director.KeepBrandPrices(id, !keep));
+                }
+                if (keep && !localSwitch)
+                {
+                    InfoBox.Button(switches, InfoBox.Additional, local ? "reallife_brand_set_local_off" : "reallife_brand_set_local_on", () => _director.KeepBrandLocal(id, !local));
+                }
+            }
             string name = b.Name;
             var shared = box.ButtonRow();
-            InfoBox.Button(shared, InfoBox.Positive, "reallife_brand_set_prices", () => Confirm("reallife_brand_confirm_prices_title", "reallife_brand_confirm_prices", new { brand = name, business = flagship }, () => _director.SharePrices(id), false));
+            if (!keep)
+            {
+                InfoBox.Button(shared, InfoBox.Positive, "reallife_brand_set_prices", () => Confirm("reallife_brand_confirm_prices_title", "reallife_brand_confirm_prices", new { brand = name, business = flagship }, () => _director.SharePrices(id), false));
+            }
             InfoBox.Button(shared, InfoBox.Additional, "reallife_brand_set_hours", () => Confirm("reallife_brand_confirm_hours_title", "reallife_brand_confirm_hours", new { brand = name, business = flagship }, () => _director.ShareHours(id), false));
             InfoBox.Button(shared, InfoBox.Negative, "reallife_brand_set_give_up", () => Confirm("reallife_brand_confirm_give_up_title", "reallife_brand_confirm_give_up", new { brand = name }, () =>
             {

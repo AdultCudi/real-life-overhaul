@@ -62,6 +62,16 @@ namespace RealLifeOverhaul.Markets
 
         public static string Write(MarketState s)
         {
+            return Write(s, false);
+        }
+
+        /// <summary>
+        /// With <paramref name="city"/>, the city's market alone, as a Going Public host sends it to its guests (Markets/
+        /// MarketShare): every company with all its candles, the indices, the news; and nothing of the player's: no
+        /// holding, order, trade, watch list, account, dividend owed or recent trading of theirs.
+        /// </summary>
+        public static string Write(MarketState s, bool city)
+        {
             var t = new StringBuilder(64 * 1024);
             t.Append("v=").Append(Version).Append("~h:");
             t.Append(s.Id.ToString("X16", Inv));
@@ -69,8 +79,8 @@ namespace RealLifeOverhaul.Markets
             D(t, s.Variance);
             D(t, s.LastShock);
             D(t, s.IndexDivisor);
-            Join(t, s.ListingId, s.ListingDay, s.NextOrderId, s.CarriedOver ? 1 : 0, s.RateSeenBp, s.ElectionsSeen, s.BusinessDay, s.IndexOpen, s.IndexHigh,
-                s.IndexLow, s.IndexLast, s.IndexPrevClose, s.HeldDay, s.HeldPhase);
+            Join(t, s.ListingId, s.ListingDay, city ? 1 : s.NextOrderId, !city && s.CarriedOver ? 1 : 0, s.RateSeenBp, s.ElectionsSeen, s.BusinessDay, s.IndexOpen, s.IndexHigh,
+                s.IndexLow, s.IndexLast, s.IndexPrevClose, city ? 0 : s.HeldDay, city ? 0 : s.HeldPhase);
             D(t, s.DayZ);
             D(t, s.DayVar);
             t.Append("~e:");
@@ -82,10 +92,10 @@ namespace RealLifeOverhaul.Markets
                 {
                     t.Append(';');
                 }
-                Stock(t, s, s.Stocks[i]);
+                Stock(t, s, s.Stocks[i], city);
             }
             t.Append("~p:");
-            for (int i = 0, n = 0; i < s.Positions.Count; i++)
+            for (int i = 0, n = 0; i < s.Positions.Count && !city; i++)
             {
                 Position p = s.Positions[i];
                 if (p.Shares == 0)
@@ -97,7 +107,7 @@ namespace RealLifeOverhaul.Markets
                 Join(t, p.Test ? 1 : 0, p.OpenedDay);
             }
             t.Append("~o:");
-            for (int i = 0, n = 0; i < s.Orders.Count; i++)
+            for (int i = 0, n = 0; i < s.Orders.Count && !city; i++)
             {
                 Order o = s.Orders[i];
                 t.Append(n++ > 0 ? ";" : string.Empty).Append(o.Id.ToString(Inv));
@@ -106,7 +116,7 @@ namespace RealLifeOverhaul.Markets
                 Join(t, o.LimitCents, o.StopCents, o.PlacedDay, o.PlacedPhase, o.ExpireDay, (int)o.State, (int)o.Why, o.Triggered ? 1 : 0, o.Test ? 1 : 0, o.Forced ? 1 : 0);
             }
             t.Append("~t:");
-            for (int i = 0; i < s.Trades.Count; i++)
+            for (int i = 0; i < s.Trades.Count && !city; i++)
             {
                 Trade r = s.Trades[i];
                 t.Append(i > 0 ? ";" : string.Empty).Append(r.Day.ToString(Inv));
@@ -117,11 +127,11 @@ namespace RealLifeOverhaul.Markets
                 Join(t, r.Test ? 1 : 0);
             }
             t.Append("~w:");
-            for (int i = 0; i < s.Watch.Count; i++)
+            for (int i = 0; i < s.Watch.Count && !city; i++)
             {
                 t.Append(i > 0 ? "," : string.Empty).Append(s.Watch[i].ToString(Inv));
             }
-            Account a = s.Account;
+            Account a = city ? new Account() : s.Account;
             t.Append("~a:").Append(a.Margin ? 1 : 0);
             L(t, a.Cash);
             Join(t, a.CallDay);
@@ -135,7 +145,7 @@ namespace RealLifeOverhaul.Markets
                 Join(t, (int)n.Kind, n.Stock, n.A, n.B, n.C);
             }
             t.Append("~d:");
-            for (int i = 0; i < s.Dues.Count; i++)
+            for (int i = 0; i < s.Dues.Count && !city; i++)
             {
                 DividendDue d = s.Dues[i];
                 t.Append(i > 0 ? ";" : string.Empty).Append(d.StockId.ToString(Inv));
@@ -188,7 +198,7 @@ namespace RealLifeOverhaul.Markets
             return false;
         }
 
-        private static void Stock(StringBuilder t, MarketState state, Stock k)
+        private static void Stock(StringBuilder t, MarketState state, Stock k, bool city)
         {
             t.Append(k.Id.ToString(Inv));
             Join(t, (int)k.Status, k.ListedDay, k.GoneDay, (int)k.Reason, k.GoneCents);
@@ -198,7 +208,7 @@ namespace RealLifeOverhaul.Markets
             D(t, k.Sent);
             D(t, k.Outlook);
             L(t, k.Shares);
-            D(t, k.Impact);
+            D(t, city ? 0.0 : k.Impact);
             Join(t, k.PrevClose, k.Open, k.High, k.Low, k.Last);
             L(t, k.DayVolume);
             D(t, k.Rev);
@@ -232,7 +242,7 @@ namespace RealLifeOverhaul.Markets
             MarketCodec.Write(t, k.Daily);
             t.Append('|');
             MarketCodec.Write(t, k.Monthly);
-            bool followed = Followed(state, k.Id);
+            bool followed = city || Followed(state, k.Id);
             t.Append('|');
             MarketCodec.Write(t, k.Bars, followed ? k.BarCount : 0);
             t.Append('|');

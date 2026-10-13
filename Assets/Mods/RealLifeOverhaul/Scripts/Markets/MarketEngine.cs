@@ -62,6 +62,16 @@ namespace RealLifeOverhaul.Markets
         private readonly List<Stock> _scratch = new List<Stock>(16);
         private ulong _secret;
         private int _secretDay = -1;
+
+        /// <summary>
+        /// The host of a Going Public session with guests: every player's trades move the one city's prices, so a trade's
+        /// lasting move goes on the tape as an event (<see cref="MarketInputs.EventTrade"/>) and every market plays it at
+        /// the same moment, the next of the grid. Off, it is put on the price at once, as alone.
+        /// </summary>
+        public bool TradesAsEvents;
+
+        /// <summary>A guest that follows the host's market: a trade's lasting move goes to the host (the company, the move in millionths, the shares), which puts it on its tape for everybody.</summary>
+        public Action<int, int, long> TradeSink;
         private double _kappa;
         private int _kappaYear;
 
@@ -87,15 +97,20 @@ namespace RealLifeOverhaul.Markets
         /// <summary>True while the moments being played are ones the tape has seen before (after a load).</summary>
         public bool Replaying => State.Now < _replayUntil;
 
-        /// <summary>True while orders wait after a load: until the market is past the furthest moment ever played (and past the load itself).</summary>
-        public bool Held => State.HeldDay > 0 && State.Now <= MarketState.Time(State.HeldDay, State.HeldPhase);
+        /// <summary>
+        /// True while orders wait after a load: while the moments being played are ones played before it, up to the furthest
+        /// moment ever played. At that moment itself orders are taken: nothing past it has been seen. (A load at the moment
+        /// of the save, the save being the furthest moment, takes orders at once: the game's clock stands still while the
+        /// phone is open, so a hold to the next step would keep the ticket shut for as long as the app is.)
+        /// </summary>
+        public bool Held => State.HeldDay > 0 && State.Now < MarketState.Time(State.HeldDay, State.HeldPhase);
 
         /// <summary>True while the market trades: a market day, from the open to the close.</summary>
         public bool Trading => MarketCatalogue.TradingDay(State.Day) && State.Phase >= MarketCatalogue.PhaseOpen && State.Phase < MarketCatalogue.PhaseClose;
 
         /// <summary>
         /// A save has just been loaded into this engine: the tape is followed up to its frontier, and no order is taken
-        /// until the market is past both the frontier and the moment of the load (no trade at a price from before it).
+        /// until the market has played up to it again (no trade at a price already seen moving on).
         /// </summary>
         public void HoldAfterLoad()
         {
@@ -107,6 +122,18 @@ namespace RealLifeOverhaul.Markets
 
         /// <summary>The time up to which the tape is followed.</summary>
         public long ReplayUntil => _replayUntil;
+
+        /// <summary>
+        /// A guest of a Going Public session follows the host's market: its tape is the host's, and the market plays it up
+        /// to the furthest moment the host has played (and never past it, while following: see MarketDirector).
+        /// </summary>
+        public void Follow(long until)
+        {
+            if (until > _replayUntil)
+            {
+                _replayUntil = until;
+            }
+        }
 
         private int Year => Math.Max(8, State.YearDays);
 
@@ -288,6 +315,25 @@ namespace RealLifeOverhaul.Markets
 
         private void Apply(in MarketEvent e)
         {
+            if (e.Kind == MarketInputs.EventTrade || e.Kind == MarketInputs.EventVolume)
+            {
+                // A player's trade in a Going Public session: its lasting move of the price, or its shares, on one company.
+                Stock traded = State.Stock(e.A);
+                if (traded != null && traded.Listed)
+                {
+                    if (e.Kind == MarketInputs.EventTrade)
+                    {
+                        traded.Mis += e.B / 1000000.0;
+                        traded.Sent += e.B / 1000000.0;
+                        traded.Last = traded.MidCents;
+                    }
+                    else
+                    {
+                        traded.DayVolume += Math.Max(0, e.B);
+                    }
+                }
+                return;
+            }
             int tradeSector = e.Kind == MarketInputs.EventBuzz ? SectorOfTrade(e.A) : -1;
             for (int i = 0; i < State.Stocks.Count; i++)
             {
@@ -1323,15 +1369,45 @@ namespace RealLifeOverhaul.Markets
 
         private bool FillNow(Stock s, Order o, long qty, int cents, int phase)
         {
-            if (!MarketTrading.Fill(State, s, o, qty, cents, _world.CommissionLeast, _world.Wallet, phase))
+            // A trade's lasting move is the city's in a session, and so it is on a day played again that was played in one
+            // (its tape has the move: the fill played again must not add it a second time).
+            bool city = TradesAsEvents || TradeSink != null || (Replaying && Tape != null && Tape.Traded(State.Day));
+            if (!MarketTrading.Fill(State, s, o, qty, cents, _world.CommissionLeast, _world.Wallet, phase, !city, out double kept))
             {
                 o.State = o.Filled > 0 ? OrderState.Cancelled : OrderState.Refused;
                 o.Why = o.Side == OrderSide.Buy ? (State.Account.Margin ? OrderWhy.BelowMargin : OrderWhy.NoMoney) : (State.Account.Margin ? OrderWhy.BelowMargin : OrderWhy.NoShares);
                 _world.Filled(o, s, 0, 0);
                 return false;
             }
+            if (city)
+            {
+                int micros = MarketInputs.TradeMicros(kept);
+                int shares = (int)Math.Min(qty, int.MaxValue);
+                if (TradeSink != null)
+                {
+                    TradeSink(s.Id, micros, qty);
+                }
+                else if (!Replaying)
+                {
+                    Event(MarketInputs.EventTrade, s.Id, micros);
+                    Event(MarketInputs.EventVolume, s.Id, shares);
+                }
+            }
             s.Last = s.MidCents;
             _world.Filled(o, s, qty, cents);
+            return true;
+        }
+
+        /// <summary>The host: a guest's trade, to be played by every market at the next moment of the grid (bounded as a trade can be).</summary>
+        public bool GuestTrade(int stockId, int micros, long shares)
+        {
+            Stock s = State.Stock(stockId);
+            if (s == null || !s.Listed || Replaying || shares <= 0)
+            {
+                return false;
+            }
+            Event(MarketInputs.EventTrade, stockId, Math.Max(-200000, Math.Min(200000, micros)));
+            Event(MarketInputs.EventVolume, stockId, (int)Math.Min(shares, int.MaxValue));
             return true;
         }
 

@@ -68,7 +68,9 @@ namespace RealLifeOverhaul.Economy
         // ---------------------------------------------------------------- how much is kept
 
         public const int HoldingsMost = 40;         // buildings on the books
-        public const int ApplicantsMost = 3;        // applicants waiting at one building
+        public const int ApplicantsMost = 3;        // applicants waiting for one unit (a building of one unit: for the building)
+        public const int ApplicantsBuildingMost = 12;   // ...and for a whole building: one more for each unit after the first, no more than this
+        public const int UnitsMost = 12;            // units a building is let in: the game's count, kept to this so a page and the save stay small
         public const int InstructionsMost = 8;      // instructions the agency has open
         public const int DistrictsMost = 24;        // districts with a reputation
         public const int HotelsMost = 8;            // as many as the city has

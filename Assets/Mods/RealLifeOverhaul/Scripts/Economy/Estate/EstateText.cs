@@ -138,6 +138,12 @@ namespace RealLifeOverhaul.Economy
             return T(kinds[EstateCatalogue.Clamp(kind, 0, kinds.Length - 1)]);
         }
 
+        /// <summary>A unit of a building by its number, counted from one; a building of one unit is just its name.</summary>
+        public static string UnitName(EstateHolding h, int unit)
+        {
+            return h.Units.Count > 1 ? T("reallife_estate_unit_name", "building", h.Name, "unit", (unit + 1).ToString(Inv)) : h.Name;
+        }
+
         /// <summary>A record of 20 to 95 in a word.</summary>
         public static string Record(int record)
         {

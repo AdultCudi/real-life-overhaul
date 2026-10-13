@@ -25,6 +25,12 @@ namespace RealLifeOverhaul.Economy
     ///   the hour   each business's footfall figure is kept (the game writes its own over it when marketing changes)
     ///   the save   the footfall figures are the game's own in the save; the model's state is written
     ///
+    /// IN A GOING PUBLIC SESSION the economy is the city's, one for every player (Core/SharedCity, part E): the host
+    /// counts its days as alone and its state goes to every guest when a day has been counted; a guest counts no day
+    /// of the model (no month, no decision, no shock of its own) but takes the host's (<see cref="CityShare"/>) and
+    /// applies it here as its own: the rate, the wholesale prices, the footfall, and its own day's rent, wages and
+    /// takings at the city's prices. When the guest leaves, it counts its days again from the host's last one.
+    ///
     /// EVERY EFFECT AND HOW IT IS UNDONE
     ///   loan rates        <see cref="LendingTerms.BasePoints"/> and <see cref="AccountRules.BaseBp"/>: two numbers of the
     ///                     mod's own, nothing when this is off; the banks' settings are written and restored by BankTerms
@@ -58,6 +64,8 @@ namespace RealLifeOverhaul.Economy
         private int _level;
         private int _monthDays = MacroCatalogue.MonthDaysLeast;
         private Action _second, _onSave, _onHour, _onDay;
+        private int _followedDay;      // a guest following the host's city: the last day its own part of the day was done
+        private bool _heardHost;       // a guest: the host's state has been applied at least once since it began to follow
 
         public bool Running => _running;
 
@@ -84,6 +92,18 @@ namespace RealLifeOverhaul.Economy
             EconomyDirector.Second += _second;
             EconomyDirector.AfterHour += _onHour;
             EconomyDirector.AfterDay += _onDay;
+            SharedCity.Register(new SharedCityPart
+            {
+                Id = 'E', Name = "economy",
+                Ready = () => _running && !_broken && _state != null,
+                Write = () => CityShare.Write(_state),
+                Apply = ApplyHost,
+                Left = () =>
+                {
+                    _heardHost = false;
+                    Logger?.Info("City economy: the host's city is no longer followed; the model counts its days again from day " + (_state != null ? _state.LastDay : 0) + ", the host's last.");
+                }
+            });
         }
 
         private void OnDestroy()
@@ -334,12 +354,23 @@ namespace RealLifeOverhaul.Economy
             try
             {
                 int day = Save.Day;
-                if (day <= _state.LastDay)
+                bool follow = SharedCity.Follows('E');
+                if (follow ? day <= _followedDay : day <= _state.LastDay)
                 {
                     return;
                 }
                 _holding = false;
                 _monthDays = MacroCatalogue.MonthDays(DaysPerYear());
+                if (follow)
+                {
+                    // A guest of a Going Public session: the city's day is the host's, which comes with its next update. The
+                    // player's own part of the day is done here, at the city's figures as they stand.
+                    _followedDay = day;
+                    ApplyAll(day, true, true, "the day (the host's city)");
+                    Adjust(day - 1);
+                    Rivals(day);
+                    return;
+                }
                 if (_state.Districts.Count == 0)
                 {
                     CityGame.Districts(_state);   // the game's neighbourhoods were not there at the start: looked for again each day until they are
@@ -378,10 +409,51 @@ namespace RealLifeOverhaul.Economy
                 {
                     CityEconomy.RaiseMonthTurned(e => Logger?.Error(e));
                 }
+                SharedCity.Changed('E');   // (a host's guests have the day with the next update)
             }
             catch (Exception e)
             {
                 Fault("the day", e);
+            }
+        }
+
+        // A guest of a Going Public session: the host's state, as its next update brought it. The city's figures are the
+        // host's from now on and applied here; the player hears of what touches them, as the host's player does (but not
+        // of how the host's city differed from theirs when they joined).
+        private bool ApplyHost(string text, bool whole)
+        {
+            if (!_running || _broken || _state == null)
+            {
+                return false;
+            }
+            try
+            {
+                CityTick tick;
+                if (!CityShare.Apply(_state, text, _monthDays, out tick))
+                {
+                    return false;
+                }
+                _beforeTests = null;   // (a test's state from before is this player's no more)
+                ApplyAll(Save.Day, true, false, "the host's city");
+                if (_heardHost)
+                {
+                    Notify(tick);
+                    if (tick.MonthTurned)
+                    {
+                        CityEconomy.RaiseMonthTurned(e => Logger?.Error(e));
+                    }
+                }
+                _heardHost = true;
+                if (Verbose)
+                {
+                    Logger?.Info("Economy check (city, the host's): " + Summary() + (tick.MonthTurned ? " A month turned." : string.Empty) + ": PASS");
+                }
+                return true;
+            }
+            catch (Exception e)
+            {
+                Fault("the host's city", e);
+                return false;
             }
         }
 
@@ -836,6 +908,11 @@ namespace RealLifeOverhaul.Economy
                 TestRefusals.Tell(Logger, test, TestRefusal.FeatureOff);
                 return false;
             }
+            if (SharedCity.Follows('E'))
+            {
+                TestRefusals.TellKey(Logger, test, "reallife_gp_city_test_host");
+                return false;
+            }
             return true;
         }
 
@@ -850,6 +927,7 @@ namespace RealLifeOverhaul.Economy
 
         private void TestDone(string what)
         {
+            SharedCity.Changed('E');
             ApplyAll(Save.Day, true, false, "a test");
             Logger?.Warn("City economy test: " + what + ". " + Summary());   // asked for by a button: written whether or not diagnostics are on
             Notifications.Show(NotificationType.Info, "reallife_macro_test_done", new Dictionary<string, string>

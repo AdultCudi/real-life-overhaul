@@ -7,7 +7,8 @@ using RealLifeOverhaul.Economy;
 // a purchase through the existing mortgage; rent and what the game is told to pay; applicants from a seed; a
 // tenancy's days, arrears, notice and the court; wear, repairs and cover; works in a boom and in a slump; a sale, its
 // fee and the tax on a gain; the agency's pipeline; a hotel's night, monotonic in every input and never above its
-// rooms; car hire; the yearly returns the catalogue promises; the save's line; and that the same seed gives the same
+// rooms; car hire; the yearly returns the catalogue promises; the save's line; a building let unit by unit
+// (EstateUnitChecks.cs); and that the same seed gives the same
 // history, with a month of the whole city inside a millisecond.
 internal static partial class Program
 {
@@ -30,6 +31,7 @@ internal static partial class Program
         EstateHire();
         EstateReturns();
         EstateSaveAndLoad();
+        EstateUnits();
         EstateDeterminismAndTiming();
     }
 
@@ -51,9 +53,16 @@ internal static partial class Program
     private static EstateHolding Let(int rent, int record, int day = 1, int term = 90)
     {
         EstateHolding h = Building();
-        h.Applicants.Add(new RentApplicant { Id = 1, Kind = 2, Offer = rent, Record = record, Term = term, Lapse = day + 4 });
+        h.Units[0].Applicants.Add(new RentApplicant { Id = 1, Kind = 2, Offer = rent, Record = record, Term = term, Lapse = day + 4 });
         EstateRules.Accept(h, 1, day);
         return h;
+    }
+
+    // A morning of a building of one unit, as the director runs it: the building's wear, then the unit's day.
+    private static TenancyDay Morning(EstateHolding h, int seed, int day, EstateClimate c)
+    {
+        EstateRules.Wear(h);
+        return EstateRules.Day(h, 0, seed, day, c);
     }
 
     private static void EstateCatalogueChecks()
@@ -233,7 +242,7 @@ internal static partial class Program
         for (int day = 1; day <= 2000; day++)
         {
             EstateHolding h = Building();
-            RentApplicant a = EstateRules.Apply(h, 4242, day, c);
+            RentApplicant a = EstateRules.Apply(h, 0, 4242, day, c);
             if (a == null)
             {
                 continue;
@@ -241,26 +250,26 @@ internal static partial class Program
             came++;
             int market = EstateRules.MarketRent(h, c);
             sane &= a.Record >= EstateCatalogue.RecordLeast && a.Record <= EstateCatalogue.RecordMost && a.Offer >= market * EstateCatalogue.OfferLeast / 1000 && a.Offer <= market * EstateCatalogue.OfferMost / 1000 + 1
-                    && a.Term >= 60 && a.Term <= 180 && a.Term % 30 == 0 && a.Lapse == day + EstateCatalogue.ApplicantDays && a.Kind >= 0 && a.Kind < EstateCatalogue.TenantKinds && h.Applicants.Count == 1;
+                    && a.Term >= 60 && a.Term <= 180 && a.Term % 30 == 0 && a.Lapse == day + EstateCatalogue.ApplicantDays && a.Kind >= 0 && a.Kind < EstateCatalogue.TenantKinds && h.Units[0].Applicants.Count == 1;
             richer += a.Record < 40 && a.Offer > market ? 1 : 0;
         }
         Check(came > 600 && came < 800, "over 2000 days somebody applies on about 35% of them (" + came + ")");
         Check(sane, "every applicant has a record, an offer, a term and a last day inside their bounds");
         Check(richer > 20, "applicants with a poor record bid over the market (" + richer + " did)");
         EstateHolding full = Building();
-        for (int day = 1; full.Applicants.Count < EstateCatalogue.ApplicantsMost && day < 400; day++)
+        for (int day = 1; full.Units[0].Applicants.Count < EstateCatalogue.ApplicantsMost && day < 400; day++)
         {
-            EstateRules.Apply(full, 9, day, c, true);
+            EstateRules.Apply(full, 0, 9, day, c, true);
         }
-        Check(full.Applicants.Count == EstateCatalogue.ApplicantsMost && EstateRules.Apply(full, 9, 500, c, true) == null, "three applications wait at most");
-        Check(full.Applicants[0].Id != full.Applicants[1].Id && full.Applicants[1].Id != full.Applicants[2].Id, "each has a number of its own");
-        Check(EstateRules.Lapse(full, full.Applicants[0].Lapse) == 0 && EstateRules.Lapse(full, 9999) == 3 && full.Applicants.Count == 0, "an application stands on its last day and is gone the day after");
+        Check(full.Units[0].Applicants.Count == EstateCatalogue.ApplicantsMost && EstateRules.Apply(full, 0, 9, 500, c, true) == null, "three applications wait at most");
+        Check(full.Units[0].Applicants[0].Id != full.Units[0].Applicants[1].Id && full.Units[0].Applicants[1].Id != full.Units[0].Applicants[2].Id, "each has a number of its own");
+        Check(EstateRules.Lapse(full, full.Units[0].Applicants[0].Lapse) == 0 && EstateRules.Lapse(full, 9999) == 3 && full.Units[0].Applicants.Count == 0, "an application stands on its last day and is gone the day after");
         EstateHolding game = Building(1000000, 1, 900, false);
-        Check(EstateRules.Apply(game, 9, 1, c, true) == null, "nobody applies for a building the game lets");
+        Check(EstateRules.Apply(game, 0, 9, 1, c, true) == null, "nobody applies for a building the game lets");
         EstateHolding unfit = Building(1000000, 1, 100);
-        Check(EstateRules.Apply(unfit, 9, 1, c, true) == null, "or for one that is unfit");
+        Check(EstateRules.Apply(unfit, 0, 9, 1, c, true) == null, "or for one that is unfit");
         EstateHolding let = Let(1000, 80);
-        Check(let.Let && let.Rent == 1000 && let.Deposit == 1000 * EstateCatalogue.DepositDays && let.Until == 91 && let.Applicants.Count == 0 && EstateRules.Apply(let, 9, 2, c, true) == null,
+        Check(let.Units[0].Let && let.Units[0].Rent == 1000 && let.Units[0].Deposit == 1000 * EstateCatalogue.DepositDays && let.Units[0].Until == 91 && let.Units[0].Applicants.Count == 0 && EstateRules.Apply(let, 0, 9, 2, c, true) == null,
             "an accepted applicant is the tenant: the rent offered, a deposit held, a lease, and the others turned away");
         Check(!EstateRules.Accept(let, 1, 2) && !EstateRules.Accept(Building(), 7, 2), "nobody can be accepted twice, or who never applied");
     }
@@ -277,7 +286,7 @@ internal static partial class Program
         EstateHolding good = Let(1000, 95, 1, 4000), poor = Let(1000, 20, 1, 4000);
         for (int day = 2; day <= 601; day++)
         {
-            TenancyDay g = EstateRules.Day(good, 31, day, c), p = EstateRules.Day(poor, 31, day, c);
+            TenancyDay g = Morning(good, 31, day, c), p = Morning(poor, 31, day, c);
             goodPaid += g.Pays ? 1 : 0;
             poorPaid += p.Pays ? 1 : 0;
             goodMissed += g.Missed ? 1 : 0;
@@ -289,25 +298,25 @@ internal static partial class Program
 
         // arrears, notice, the court
         EstateHolding h = Let(1000, 20, 1, 4000);
-        h.Arrears = 3000;
-        h.ArrearsDays = 3;
-        Check(EstateRules.MayServeNotice(h, 5) && !EstateRules.MayGoToCourt(h, 5), "three days owed: notice may be served, the court not yet");
+        h.Units[0].Arrears = 3000;
+        h.Units[0].ArrearsDays = 3;
+        Check(EstateRules.MayServeNotice(h, 0, 5) && !EstateRules.MayGoToCourt(h, 0, 5), "three days owed: notice may be served, the court not yet");
         EstateHolding early = Let(1000, 20, 1, 4000);
-        early.Arrears = 2000;
-        early.ArrearsDays = 2;
-        Check(!EstateRules.MayServeNotice(early, 5) && !EstateRules.ServeNotice(early, 5, 0), "two days owed are not enough");
-        Check(EstateRules.ServeNotice(h, 5, 0) && h.NoticeEnd == 15 && !EstateRules.ServeNotice(h, 6, 0), "notice runs ten days and is served once");
-        Check(!EstateRules.MayGoToCourt(h, 15) && EstateRules.MayGoToCourt(h, 16), "the court can be asked the day after notice runs out");
-        Check(EstateRules.GoToCourt(h, 16) && h.CourtDay == 16 + EstateCatalogue.CourtDays && !EstateRules.GoToCourt(h, 17), "the order comes six days after the application, which is made once");
-        h.Arrears = 30000;   // (owed all the while)
+        early.Units[0].Arrears = 2000;
+        early.Units[0].ArrearsDays = 2;
+        Check(!EstateRules.MayServeNotice(early, 0, 5) && !EstateRules.ServeNotice(early, 0, 5, 0), "two days owed are not enough");
+        Check(EstateRules.ServeNotice(h, 0, 5, 0) && h.Units[0].NoticeEnd == 15 && !EstateRules.ServeNotice(h, 0, 6, 0), "notice runs ten days and is served once");
+        Check(!EstateRules.MayGoToCourt(h, 0, 15) && EstateRules.MayGoToCourt(h, 0, 16), "the court can be asked the day after notice runs out");
+        Check(EstateRules.GoToCourt(h, 0, 16) && h.Units[0].CourtDay == 16 + EstateCatalogue.CourtDays && !EstateRules.GoToCourt(h, 0, 17), "the order comes six days after the application, which is made once");
+        h.Units[0].Arrears = 30000;   // (owed all the while)
         h.Cond = 800;
-        TenancyDay order = EstateRules.Day(h, 31, h.CourtDay, c);
-        Check(order.Evicted && !order.Pays && !h.Let && order.Lump == 8000 && order.WrittenOff == 22000, "on the day of the order the tenant is out: the deposit meets what it can of the arrears and the rest is written off");
+        TenancyDay order = Morning(h, 31, h.Units[0].CourtDay, c);
+        Check(order.Evicted && !order.Pays && !h.Units[0].Let && order.Lump == 8000 && order.WrittenOff == 22000, "on the day of the order the tenant is out: the deposit meets what it can of the arrears and the rest is written off");
         Check(order.Damage >= 0 && order.Damage <= EstateCatalogue.EvictionDamageMost && h.Cond == 800 - EstateCatalogue.WearLet - (100 - 20) / EstateCatalogue.WearPerRecord - order.Damage,
             "a tenant with a poor record who is put out may leave damage, never more than the most");
-        Check(h.Rent == 0 && h.Deposit == 0 && h.Arrears == 0 && h.NoticeEnd == 0 && h.CourtDay == 0 && h.Tenant == -1, "an empty building owes and is owed nothing");
-        TenancyDay voidDay = EstateRules.Day(h, 31, 40, c);
-        Check(!voidDay.Pays && voidDay.Lump == 0 && h.VoidDays == 1, "an empty building counts its day and brings nothing");
+        Check(h.Units[0].Rent == 0 && h.Units[0].Deposit == 0 && h.Units[0].Arrears == 0 && h.Units[0].NoticeEnd == 0 && h.Units[0].CourtDay == 0 && h.Units[0].Tenant == -1, "an empty building owes and is owed nothing");
+        TenancyDay voidDay = Morning(h, 31, 40, c);
+        Check(!voidDay.Pays && voidDay.Lump == 0 && h.Units[0].VoidDays == 1, "an empty building counts its day and brings nothing");
 
         // arrears that are paid
         int caught = 0, lump = 0;
@@ -315,18 +324,18 @@ internal static partial class Program
         for (int seed = 1; seed <= 200; seed++)
         {
             EstateHolding late = Let(1000, 80, 1, 4000);
-            late.Arrears = 2000;
-            late.ArrearsDays = 2;
-            TenancyDay d = EstateRules.Day(late, seed, 5, c);
+            late.Units[0].Arrears = 2000;
+            late.Units[0].ArrearsDays = 2;
+            TenancyDay d = Morning(late, seed, 5, c);
             if (d.Lump > 0)
             {
                 caught++;
                 lump = d.Lump;
-                paidOk &= late.Arrears == 0 && late.ArrearsDays == 0 && d.Pays;
+                paidOk &= late.Units[0].Arrears == 0 && late.Units[0].ArrearsDays == 0 && d.Pays;
             }
             else
             {
-                owedOk &= late.Arrears == 3000 && late.ArrearsDays == 3 && !d.Pays && d.Missed;
+                owedOk &= late.Units[0].Arrears == 3000 && late.Units[0].ArrearsDays == 3 && !d.Pays && d.Missed;
             }
         }
         Check(paidOk, "arrears paid in full: nothing is owed and the day's rent is paid again");
@@ -339,19 +348,19 @@ internal static partial class Program
         for (int seed = 1; seed <= 300; seed++)
         {
             EstateHolding ending = Let(1000, 100, 1, 60);
-            TenancyDay d = EstateRules.Day(ending, seed, 62, c);
+            TenancyDay d = Morning(ending, seed, 62, c);
             renewed += d.Renewed ? 1 : 0;
             left += d.Left ? 1 : 0;
-            endOk &= d.Renewed ? ending.Until == 62 + EstateCatalogue.TermLeast && d.Pays : !ending.Let && d.Lump == 0;
+            endOk &= d.Renewed ? ending.Units[0].Until == 62 + EstateCatalogue.TermLeast && d.Pays : !ending.Units[0].Let && d.Lump == 0;
         }
         Check(endOk, "at a lease's end the tenant renews for sixty days or goes with nothing owed");
         Check(renewed + left == 300 && renewed > 180 && renewed < 240, "about seven in ten renew (" + renewed + " of 300)");
         EstateHolding noticed = Let(1000, 100, 1, 60);
-        Check(EstateRules.MayServeNotice(noticed, 62) && EstateRules.ServeNotice(noticed, 62, 0), "notice can be served once a lease has run out, with nothing owed");
-        TenancyDay stays = EstateRules.Day(noticed, 3, 70, c);
-        bool stillIn = noticed.Let;
-        TenancyDay goes = EstateRules.Day(noticed, 3, 73, c);
-        Check(stays.Pays && stillIn && goes.Left && goes.Lump == 0 && !noticed.Let, "a tenant under such notice pays to its last day and then goes");
+        Check(EstateRules.MayServeNotice(noticed, 0, 62) && EstateRules.ServeNotice(noticed, 0, 62, 0), "notice can be served once a lease has run out, with nothing owed");
+        TenancyDay stays = Morning(noticed, 3, 70, c);
+        bool stillIn = noticed.Units[0].Let;
+        TenancyDay goes = Morning(noticed, 3, 73, c);
+        Check(stays.Pays && stillIn && goes.Left && goes.Lump == 0 && !noticed.Units[0].Let, "a tenant under such notice pays to its last day and then goes");
     }
 
     private static void EstateRepairs()
@@ -390,7 +399,7 @@ internal static partial class Program
         EstateHolding floor = Building(1000000, 1, 20);
         for (int day = 1; day <= 400; day++)
         {
-            EstateRules.Day(floor, 3, day, c);
+            Morning(floor, 3, day, c);
             EstateRules.Hazard(floor, 3, day, c);
         }
         Check(floor.Cond == 0, "condition never falls under nothing");
@@ -486,9 +495,9 @@ internal static partial class Program
         Check(EstateRules.SaleOffer(slump, 1, 1, 1000000, 3, true) <= 970000, "in a recession buyers offer less");
         EstateHolding sold = Building();
         sold.List = 1000000;
-        sold.Applicants.Add(new RentApplicant { Id = 1, Offer = 5 });
+        sold.Units[0].Applicants.Add(new RentApplicant { Id = 1, Offer = 5 });
         int taken = EstateRules.SaleOffer(sold, 1, 1, 1000000, 1, true);
-        Check(!EstateRules.AcceptOffer(Building(), 1, 1, 1) && EstateRules.AcceptOffer(sold, 1, 2, 1) && sold.SaleDay == 2 + EstateCatalogue.CompletionDays && sold.SalePrice == taken && sold.Offer == 0 && sold.Applicants.Count == 0,
+        Check(!EstateRules.AcceptOffer(Building(), 1, 1, 1) && EstateRules.AcceptOffer(sold, 1, 2, 1) && sold.SaleDay == 2 + EstateCatalogue.CompletionDays && sold.SalePrice == taken && sold.Offer == 0 && sold.Units[0].Applicants.Count == 0,
             "an accepted offer completes five days later at its price, and applicants are turned away");
         EstateHolding late = Building();
         late.List = 1000000;
@@ -987,17 +996,17 @@ internal static partial class Program
         h.BoughtDay = 5;
         h.Spent = 50000;
         h.Level = 1;
-        h.Ask = 1050;
+        h.Units[0].Ask = 1050;
         h.Cover = true;
-        h.Arrears = 2400;
-        h.ArrearsDays = 2;
-        h.NoticeEnd = 44;
+        h.Units[0].Arrears = 2400;
+        h.Units[0].ArrearsDays = 2;
+        h.Units[0].NoticeEnd = 44;
         h.RentYear = 30000;
         h.CostYear = 4000;
         s.Holdings.Add(h);
         var empty = new EstateHolding { Place = "Low%20Road~9", Managed = true, Use = 3, Cond = 420, Work = (int)EstateWork.Planning, WorkEnd = 46, WorkCost = 3000, WorkTo = 0, List = 800000, Offer = 770000, OfferLapse = 42, NextApplicant = 4 };
-        empty.Applicants.Add(new RentApplicant { Id = 2, Kind = 5, Offer = 800, Record = 33, Term = 90, Lapse = 43 });
-        empty.Applicants.Add(new RentApplicant { Id = 3, Kind = 1, Offer = 760, Record = 88, Term = 150, Lapse = 44 });
+        empty.Units[0].Applicants.Add(new RentApplicant { Id = 2, Kind = 5, Offer = 800, Record = 33, Term = 90, Lapse = 43 });
+        empty.Units[0].Applicants.Add(new RentApplicant { Id = 3, Kind = 1, Offer = 760, Record = 88, Term = 150, Lapse = 44 });
         s.Holdings.Add(empty);
         s.Agency.Office = "Office~1";
         s.Agency.NextId = 9;
@@ -1056,14 +1065,14 @@ internal static partial class Program
         Check(back != null && version == EstateStore.Version, "a written line is read back");
         Check(back != null && EstateStore.Write(back) == line, "what is read back writes the same line again: nothing is lost or changed");
         Check(back != null && back.TaxFrom == 61 && back.TaxTakings == 456000 && back.TaxCosts == 123000, "the hotels' and car hire's tax year so far");
-        Check(back != null && back.Holdings.Count == 2 && back.Holdings[0].Rent == 1200 && back.Holdings[0].Managed && back.Holdings[0].NoticeEnd == 44 && back.Holdings[1].Applicants.Count == 2 && back.Holdings[1].Applicants[1].Record == 88
+        Check(back != null && back.Holdings.Count == 2 && back.Holdings[0].Units[0].Rent == 1200 && back.Holdings[0].Managed && back.Holdings[0].Units[0].NoticeEnd == 44 && back.Holdings[1].Units[0].Applicants.Count == 2 && back.Holdings[1].Units[0].Applicants[1].Record == 88
               && back.Holdings[1].Work == (int)EstateWork.Planning && back.Holdings[1].Offer == 770000, "the buildings, their tenancies, works, listings and applicants");
         Check(back != null && back.Agency.Office == "Office~1" && back.Agency.Open.Count == 2 && back.Agency.Open[0].Fails && back.Agency.Open[0].Price == 2500000 && back.Agency.District("ba:neighborhood_midtown").Rep == 410,
             "the agency, its instructions and its name in each district");
         Check(back != null && back.Hotels.Count == 1 && back.Hotels[0].Leased && back.Hotels[0].Rate[0] == 1100 && back.Hotels[0].AskRooms == 12 && back.Hotels[0].Reviews[1] == 6 && back.Hotels[0].Sold[1] == 9, "the hotel");
         Check(back != null && back.Hire.Cars.Count == 2 && back.Hire.Cars[0].Id == "aB3+/x=" && back.Hire.Cars[0].X == -41250 && back.Hire.Cars[0].State == (int)HireState.Out && back.Hire.Cover && back.Hire.Rating == 655,
             "the hire lot and its cars, a car that is out with where it stood");
-        string later = line.Replace("v=1^", "v=7^") + "^z:9|9|9";
+        string later = line.Replace("v=" + EstateStore.Version + "^", "v=7^") + "^z:9|9|9";
         EstateState newer = EstateStore.Read(later.Replace("^g:Office~1|9|41000|3|1", "^g:Office~1|9|41000|3|1|77|88"), out version);
         Check(newer != null && version == 7 && EstateStore.Write(newer) == line, "a line from a later version, with fields and a part this one does not know, is read for what it knows and written as this version's");
         Check(EstateStore.Read(null, out version) == null && EstateStore.Read(string.Empty, out version) == null && EstateStore.Read("nonsense", out version) == null && EstateStore.Read("v=x^h:1", out version) == null
@@ -1071,8 +1080,8 @@ internal static partial class Program
         EstateState wild = EstateStore.Read("v=1^h:5|-3|-9|99999|-1|-7^p:A~1|-4|-2|-9|17|5000|44|9999|1|1|3|500|-8|-8|-8|-8|-8|-8|-8|-8|99|-1|-1|-1|44|-5|-5|-5|-5|-5|1|-1|-1|-3|1|9^g:|0|-1|-1|-1^d:x|5000;x|4^i:0|x|1|1|1|1|1|1|1|1|1|1;3|x|1|0|-5|5|9|0|-1|-1|-1|0"
                                              + "^t:h|1|-5|-5|-5|10|99999|9|-4|5000|-1|-1|-1|-1|-1|-1|-1|-1|-1|-1|-1|-1|-1|-1|-1|-1|-1|99^c:|5000|1|-1|-1^v:a|t|-5|1|9|1|1|1|1|1|1|1|1|1|1|1;b|t|-5|99999|2|-1|-1|-1|-1|7|1|1|1|1|-1|-1", out version);
         EstateHolding w = wild != null && wild.Holdings.Count == 1 ? wild.Holdings[0] : null;
-        Check(w != null && wild.Real == EstateCatalogue.RealMost && wild.FirstDay == 0 && w.Paid == 0 && w.Use == EstateCatalogue.Uses - 1 && w.Cond == 1000 && w.Level == EstateCatalogue.LevelMost && w.Ask == EstateCatalogue.AskMost
-              && w.Tenant == 3 && w.Record == 100 && w.Rent == 0 && w.Work == 0 && w.PlanUse == EstateCatalogue.Uses - 1 && w.List == 0 && w.NextApplicant == 1 && w.Applicants.Count == 0,
+        Check(w != null && wild.Real == EstateCatalogue.RealMost && wild.FirstDay == 0 && w.Paid == 0 && w.Use == EstateCatalogue.Uses - 1 && w.Cond == 1000 && w.Level == EstateCatalogue.LevelMost && w.Units[0].Ask == EstateCatalogue.AskMost
+              && w.Units[0].Tenant == 3 && w.Units[0].Record == 100 && w.Units[0].Rent == 0 && w.Work == 0 && w.PlanUse == EstateCatalogue.Uses - 1 && w.List == 0 && w.NextApplicant == 1 && w.Units[0].Applicants.Count == 0,
             "a figure out of its bounds is put inside them, and a count of applicants with none behind it is none");
         Check(wild != null && wild.Agency.Districts.Count == 1 && wild.Agency.Districts[0].Rep == 1000 && wild.Agency.Open.Count == 0 && wild.Agency.NextId == 1,
             "a district is kept once, an instruction with no number or a stage there is not is dropped");
@@ -1095,8 +1104,8 @@ internal static partial class Program
         var data = new Dictionary<string, string> { { EstateStore.Key, line } };
         Check(EstateStore.Load(data, EstateStore.Key, out version) != null && EstateStore.Load(data, EstateStore.TestKey, out version) == null && EstateStore.Load(null, EstateStore.Key, out version) == null,
             "a save without the feature's line, or with no data of the mod's at all, has no state: the feature starts afresh");
-        Check(EstateStore.Key == "reallife:economy_estate" && EstateStore.Version == 1, "the save key is the one the brief names, with a version");
-        Check(EstateStore.Write(new EstateState { Seed = 3 }).StartsWith("v=1^h:3|0|0|1000|0|0|0|0|0^p:^g:|1|0|0|0^d:^i:^t:^c:|600|0|0|0^v:", StringComparison.Ordinal), "an empty state writes every part, empty");
+        Check(EstateStore.Key == "reallife:economy_estate" && EstateStore.Version == 2, "the save key is the one the brief names, with a version: 2 since the units");
+        Check(EstateStore.Write(new EstateState { Seed = 3 }).StartsWith("v=2^h:3|0|0|1000|0|0|0|0|0^p:^u:^g:|1|0|0|0^d:^i:^t:^c:|600|0|0|0^v:", StringComparison.Ordinal), "an empty state writes every part, empty");
     }
 
     // A history of the whole business from a seed, as one line of text.
@@ -1136,17 +1145,17 @@ internal static partial class Program
                 bool granted;
                 EstateRules.Finish(h, seed, day, c, out granted);
                 EstateRules.Lapse(h, day);
-                if (h.Applicants.Count > 0)
+                if (h.Units[0].Applicants.Count > 0)
                 {
-                    EstateRules.Accept(h, h.Applicants[0].Id, day);
+                    EstateRules.Accept(h, h.Units[0].Applicants[0].Id, day);
                 }
-                TenancyDay d = EstateRules.Day(h, seed, day, c);
-                money += d.Lump + (d.Pays ? h.Rent : 0);
-                EstateRules.Apply(h, seed, day, c);
+                TenancyDay d = Morning(h, seed, day, c);
+                money += d.Lump + (d.Pays ? h.Units[0].Rent : 0);
+                EstateRules.Apply(h, 0, seed, day, c);
                 money += EstateRules.Hazard(h, seed, day, c).Payout;
-                EstateRules.ServeNotice(h, day, c.RentLever);
-                EstateRules.GoToCourt(h, day);
-                if (!h.Let && h.Cond < 500 && EstateRules.Start(h, EstateWork.Repair, -1, day, c))
+                EstateRules.ServeNotice(h, 0, day, c.RentLever);
+                EstateRules.GoToCourt(h, 0, day);
+                if (!h.AnyLet && h.Cond < 500 && EstateRules.Start(h, EstateWork.Repair, -1, day, c))
                 {
                     money -= h.WorkCost;
                 }
@@ -1220,7 +1229,16 @@ internal static partial class Program
         var owned = new List<EstateHolding>();
         for (int i = 0; i < EstateCatalogue.HoldingsMost; i++)
         {
-            owned.Add(new EstateHolding { Place = "Owned~" + i, Base = 500000 + i * 40000, Use = i % 4, Income = 600 + i * 20, Cond = 400 + i * 15, Managed = true, Rent = 900, Tenant = i % 3 == 0 ? -1 : 2, Record = 60, Until = 99999 });
+            var o = new EstateHolding { Place = "Owned~" + i, Base = 500000 + i * 40000, Use = i % 4, Income = 600 + i * 20, Cond = 400 + i * 15, Managed = true };
+            EstateRules.FitUnits(o, 1 + i % EstateCatalogue.UnitsMost);   // (from one unit to the most: every one is a lease or an empty unit)
+            for (int n = 0; n < o.Units.Count; n++)
+            {
+                o.Units[n].Tenant = (i + n) % 3 == 0 ? -1 : 2;
+                o.Units[n].Rent = o.Units[n].Tenant < 0 ? 0 : 900 / o.Units.Count + 1;
+                o.Units[n].Record = o.Units[n].Tenant < 0 ? 0 : 60;
+                o.Units[n].Until = o.Units[n].Tenant < 0 ? 0 : 99999;
+            }
+            owned.Add(o);
         }
         EstateClimate c = Climate(0, 1100, 4);
         double month = double.MaxValue, day = double.MaxValue;
@@ -1244,15 +1262,24 @@ internal static partial class Program
             for (int i = 0; i < owned.Count; i++)
             {
                 EstateRules.Lapse(owned[i], run + 2);
-                EstateRules.Day(owned[i], 77, run + 2, c);
-                EstateRules.Apply(owned[i], 77, run + 2, c);
+                EstateRules.Wear(owned[i]);
+                for (int n = 0; n < owned[i].Units.Count; n++)
+                {
+                    EstateRules.Day(owned[i], n, 77, run + 2, c);
+                    EstateRules.Apply(owned[i], n, 77, run + 2, c);
+                }
                 EstateRules.Hazard(owned[i], 77, run + 2, c);
             }
             watch.Stop();
             day = Math.Min(day, watch.Elapsed.TotalMilliseconds);
         }
-        Console.WriteLine("  estate timing: a month of the market with 2000 building values " + month.ToString("0.000") + " ms, a day of " + owned.Count + " buildings the player lets " + day.ToString("0.000") + " ms (best of 200)");
+        int units = 0;
+        for (int i = 0; i < owned.Count; i++)
+        {
+            units += owned[i].Units.Count;
+        }
+        Console.WriteLine("  estate timing: a month of the market with 2000 building values " + month.ToString("0.000") + " ms, a day of " + owned.Count + " buildings the player lets (" + units + " units) " + day.ToString("0.000") + " ms (best of 200)");
         Check(month < 1.0 && sum > 0, "a month's step for a city of two thousand buildings takes under a millisecond (" + month.ToString("0.000") + " ms)");
-        Check(day < 1.0, "a day of forty buildings the player lets takes under a millisecond (" + day.ToString("0.000") + " ms)");
+        Check(day < 1.0, "a day of forty buildings the player lets, of one to twelve units, takes under a millisecond (" + day.ToString("0.000") + " ms)");
     }
 }
