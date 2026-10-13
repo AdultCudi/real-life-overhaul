@@ -252,11 +252,9 @@ namespace RealLifeOverhaul
         {
             var gm = InstanceBehavior<GameManager>.Instance;
 
-            // Remember the car being driven, so it can be brought to the hospital afterwards.
-            VehicleInstance leftBehind = gm.selectedVehicle != null && gm.selectedVehicle.vehicleType != null
-                                         && !gm.selectedVehicle.vehicleType.spawnInPlayerObject
-                ? gm.selectedVehicle.vehicleInstance
-                : null;
+            // Remember the car being driven, so it can be brought to the hospital afterwards: the player's own only (in a
+            // Going Public session the car may be another player's, and that one is left where it stopped).
+            VehicleInstance leftBehind = VehicleTow.LeftBehind(gm.selectedVehicle);
 
             // After a crash the screen goes dark straight away: the game's own hospital sequence makes the
             // player climb out and collapse in the road, which looks wrong, so it plays unseen.

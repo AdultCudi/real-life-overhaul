@@ -159,7 +159,7 @@ namespace RealLifeOverhaul.Events
             for (int i = 0; i < 3 && i < Scratch.Count - 2 && car == null; i++)
             {
                 start = i;
-                car = TrafficManager.Instance.LoadVehicle(prefab, Scratch[i]);
+                car = TrafficTools.Load(prefab, Scratch[i]);   // an idle car of that prefab, never one taken by its model
             }
             if (car == null || !unit.Take(car))
             {

@@ -281,7 +281,9 @@ namespace RealLifeOverhaul
                 key = "reallife_lic_stop_none";
                 arrest = LicenceState.CountCaught(day) >= LicenceLaw.ArrestFromCount;
             }
-            bool own = !(vehicle.vehicleInstance is DeliveryVehicleInstance);
+            // A hired van or the game's job van is not the player's to have impounded, nor, in a Going Public session, another
+            // player's car they were driving (GoingPublic.MineVehicle): that one is never towed or billed for here.
+            bool own = !(vehicle.vehicleInstance is DeliveryVehicleInstance) && GoingPublic.MineVehicle(vehicle);
             Licences.Charge(fine, "reallife_transaction_fine");
             Licences.Toast(NotificationType.Error, key, "amount", Licences.Money(fine), "class", Licences.ClassName(kind), 12f);
             ModState.AddModifier(ModState.MoodDown);

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using BAModAPI;
 using GleyTrafficSystem;
+using Helpers;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -384,6 +385,42 @@ namespace RealLifeOverhaul
             {
                 Logger?.Error(e);
             }
+        }
+
+        /// <summary>
+        /// Puts an idle car of the pool, of that very prefab, on the road at a lane point: the game's own
+        /// TrafficManager.LoadVehicle, asked only when it will take an idle car. Given a prefab with no idle car of it, the
+        /// game takes the first car of that name in the pool whatever it is doing (driving in view, held at a scene of the
+        /// mod's, a taxi with a fare, a private driver) and takes it off the road to put it here: a car taken by its model.
+        /// So with none idle nothing is asked (WhoseCar.FreeSlot, checked offline). Null then, or if the lane point is taken.
+        /// One walk over the pool, on a dispatch.
+        /// </summary>
+        public static VehicleComponent Load(GameObject prefab, Waypoint at)
+        {
+            if (prefab == null || at == null || !TrafficManager.HasInstance)
+            {
+                return null;
+            }
+            if (WhoseCar.FreeSlot(Manager.GetVehicleList(), prefab, PrefabOf, Active) < 0)
+            {
+                return null;
+            }
+            return TrafficManager.Instance.LoadVehicle(prefab, at);
+        }
+
+        // (Made once, so that asking allocates nothing.)
+        private static readonly Func<VehicleComponent, object> PrefabOf = car => car != null ? car.prefab : null;
+        private static readonly Func<VehicleComponent, bool> Active = car => car == null || car.gameObject.activeInHierarchy;
+
+        /// <summary>
+        /// True for a car of the traffic that is spoken for, which the mod's scenes leave alone: a taxi, and a private
+        /// driver's car (it carries the game's PrivateDriverVehicle while it works; the game takes that off as the car leaves
+        /// the road). In a Going Public session a host's private driver can carry another player too (its friend ride), and
+        /// Going Public itself never takes such a car (ServiceCars.TryFreeHostSlot and IsClientKept).
+        /// </summary>
+        public static bool SpokenFor(VehicleComponent car)
+        {
+            return car != null && (car.GetComponent<TaxiController>() != null || car.GetComponent<PrivateDriverVehicle>() != null);
         }
 
         // What a car must not keep once nobody of ours holds it.
