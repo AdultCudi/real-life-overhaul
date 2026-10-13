@@ -385,6 +385,12 @@ namespace RealLifeOverhaul.Utilities
                 box.Title(UtilitiesText.T("reallife_util_tab_internet"));
                 box.Line(UtilitiesText.T("reallife_net_box_intro"));
                 box.Line(UtilitiesText.T("reallife_net_box_needs_note"));
+                int left = InternetRules.GraceLeft(state, today);
+                if (left > 0)
+                {
+                    box.Line(UtilitiesText.T("reallife_net_box_grace", "left", left.ToString(), "days", InternetCatalogue.GraceDays.ToString(),
+                        "day", UtilitiesText.Day(state.GraceUntil - 1), "count", state.Grace.Count.ToString()));
+                }
                 return;
             }
             WritePlace(box, picked.Value, state, today, hour);
@@ -400,6 +406,11 @@ namespace RealLifeOverhaul.Utilities
             if (UtilitiesDirector.NeedsNet(place))
             {
                 box.Line(UtilitiesText.T("reallife_net_box_needs"));
+                if (InternetRules.InGrace(state, place.Place, today))
+                {
+                    box.Line(UtilitiesText.T("reallife_net_box_grace_place", "left", InternetRules.GraceLeft(state, today).ToString(), "days", InternetCatalogue.GraceDays.ToString(),
+                        "day", UtilitiesText.Day(state.GraceUntil - 1)));
+                }
             }
             if (live && !_choosing)
             {

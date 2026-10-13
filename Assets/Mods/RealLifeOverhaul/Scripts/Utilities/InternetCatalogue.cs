@@ -79,6 +79,7 @@ namespace RealLifeOverhaul.Utilities
         public const int ExitShare = 500;            // thousandths of each month left that leaving a contract early costs
         public static int InstallFee => Prices.At(60);   // without a contract; free on one
         public const int InstallDays = 2;            // an engineer installs it this many days after it is bought
+        public const int GraceDays = 7;              // a save meeting the rule for the first time: its businesses that need a connection may open without one this many days
 
         // An outage: so many hours, from an hour of the day (a business plan is repaired in half the time).
         public const int OutageLeastHours = 2, OutageMostHours = 8;

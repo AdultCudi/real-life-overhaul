@@ -27,6 +27,9 @@ namespace RealLifeOverhaul.Utilities
     ///              on (the closure is the utilities' own, kept by Business/BusinessDirector); a home without power has
     ///              no screens or cooking, without water no shower or sink (Home/HomeHealth, through
     ///              Wiring/UtilityLinks), and either weighs on the player's mood.
+    ///   internet   web design and software companies and the headquarters cannot open without a connection that works.
+    ///              A save meeting that rule for the first time gives the businesses it already has a grace period of a
+    ///              week on the game's clock (InternetRules.BeginGrace); a business started after that needs one at once.
     ///
     /// The office stands a sign at its door; the desk is the game's own list (DeskList, UtilitiesDesk). The Utilities
     /// app (UtilitiesApp) shows every account, its bills and auto debit. Nothing runs per frame but a few checks: the
@@ -58,6 +61,7 @@ namespace RealLifeOverhaul.Utilities
         private bool _loaded, _failed, _gaveUp;
         private float _nextSecond, _nextHook;
         private int _hour = -1;
+        private int _graceSeen = -1;   // the day the internet's grace last saw (InternetRules.MoveGrace)
         private Action _onSave;
         private Action _onDesk;
         private readonly List<PlaceInfo> _places = new List<PlaceInfo>(16);
@@ -212,6 +216,10 @@ namespace RealLifeOverhaul.Utilities
                     SaveHook.Keep(_onSave);   // the game clears its event hub on every load: the save hook is kept attached
                 }
                 int today = save.Day;
+                if (today != _graceSeen)
+                {
+                    GraceClock(today);
+                }
                 if (today > _state.LastDay + 1)
                 {
                     Day(today);
@@ -239,6 +247,7 @@ namespace RealLifeOverhaul.Utilities
             int today = save.Day;
             _state = UtilitiesStore.Load(save.modData, out int version);
             bool fresh = _state == null;
+            bool firstNet = InternetRules.FirstMeeting(_state);   // (read before the seed below is drawn)
             if (fresh)
             {
                 // The feature has just appeared in this save: today's use is the first added up, from a month that starts today.
@@ -253,6 +262,12 @@ namespace RealLifeOverhaul.Utilities
             _office = new UtilitiesOffice(Logger);
             _desk = new UtilitiesDesk(this);
             Sync(today, fresh);
+            _graceSeen = today;
+            if (firstNet)
+            {
+                BeginGrace(today);
+                OnSaveGame();   // (kept in the save's data at once: switched off and on before a save, it is read back, not begun again)
+            }
             BroadbandRules.Apply(_state.Network, today);   // the company as a provider, as this save has it
             Logger?.Info("Utilities: " + (fresh ? "started in this save" : "read from the save (line v" + version + ")") + ": " + _state.Accounts.Count + " account(s) for "
                          + _places.Count + " place(s); the month began on day " + _state.MonthStart + (_state.Network.Exists ? "; a broadband company (" + _state.Network.State + ")" : string.Empty) + ".");
@@ -277,6 +292,7 @@ namespace RealLifeOverhaul.Utilities
             _loaded = false;
             _save = null;
             _state = null;
+            _graceSeen = -1;
             BroadbandRules.Apply(null, 0);   // (no company of this save's is a provider of the next one)
             _places.Clear();
             Logger?.Info("Utilities: stopped (" + why + ").");
@@ -378,6 +394,17 @@ namespace RealLifeOverhaul.Utilities
                 {
                     _state.Accounts.RemoveAt(i);
                 }
+            }
+            for (int i = _state.Grace.Count - 1; i >= 0; i--)
+            {
+                if (!Holds(_state.Grace[i]))
+                {
+                    _state.Grace.RemoveAt(i);   // (a place given up leaves the grace: taken again, it is a business started now)
+                }
+            }
+            if (_state.Grace.Count == 0)
+            {
+                _state.GraceUntil = 0;   // (none left to cover: nothing to end or tell)
             }
             if (newOwned > 0)
             {
@@ -493,6 +520,12 @@ namespace RealLifeOverhaul.Utilities
             Turns(today);
             Dues(today);
             Outages(today);
+            if (InternetRules.EndGrace(_state, today))
+            {
+                UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_net_toast_grace_over"), 14f);
+                UtilitiesBridges.Record?.Invoke("reallife_net_toast_grace_over", new Dictionary<string, string>(0));
+                Logger?.Info("Utilities: the internet's grace period ended on day " + today + ".");
+            }
             Unconnected();
             Effects();
             _view?.Changed();
@@ -561,20 +594,73 @@ namespace RealLifeOverhaul.Utilities
             }
         }
 
-        // A business that cannot open without a connection, and has none: said once a morning.
+        // A business that cannot open without a connection, and has none: said once a morning. One the grace period covers
+        // is not closed for it yet: those are counted in one line with the days left.
         private void Unconnected()
         {
+            int today = UtilitiesGame.Today, graced = 0;
             for (int p = 0; p < _places.Count; p++)
             {
                 PlaceInfo place = _places[p];
-                if (NeedsNet(place) && !Online(place, UtilitiesGame.Today * 24 + 12))
+                if (NeedsNet(place) && !Online(place, today * 24 + 12))
                 {
                     Account a = _state.Find(place.Place, Service.Internet);
                     if (a == null || a.State == SupplyState.Closed || a.State == SupplyState.Cut)
                     {
+                        if (InternetRules.InGrace(_state, place.Place, today))
+                        {
+                            graced++;
+                            continue;
+                        }
                         UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_net_toast_needed", "place", place.Name), 10f);
                     }
                 }
+            }
+            if (graced > 0 && InternetRules.GraceLeft(_state, today) < InternetCatalogue.GraceDays)   // (on its first day the notice that began it has just said so)
+            {
+                UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_net_toast_grace_left", "left", InternetRules.GraceLeft(_state, today).ToString(),
+                    "days", InternetCatalogue.GraceDays.ToString(), "count", graced.ToString(), "day", UtilitiesText.Day(_state.GraceUntil - 1)), 12f);
+            }
+        }
+
+        // The internet newly in this save: the businesses it has now that need a connection may open without one for a
+        // week on the game's clock. Only the player's own (the places are read through GoingPublic.Mine); told once, and
+        // kept in the save.
+        private void BeginGrace(int today)
+        {
+            var needing = new List<string>(4);
+            for (int p = 0; p < _places.Count; p++)
+            {
+                if (NeedsNet(_places[p]))
+                {
+                    needing.Add(_places[p].Place);
+                }
+            }
+            int count = InternetRules.BeginGrace(_state, needing, today);
+            if (count == 0)
+            {
+                return;
+            }
+            var data = new Dictionary<string, string>(3)
+            {
+                { "count", count.ToString() },
+                { "days", InternetCatalogue.GraceDays.ToString() },
+                { "day", UtilitiesText.Day(_state.GraceUntil - 1) }
+            };
+            UtilitiesText.Toast(NotificationType.Warning, UtilitiesText.T("reallife_net_toast_grace_start", "count", data["count"], "days", data["days"], "day", data["day"]), 20f);
+            UtilitiesBridges.Record?.Invoke("reallife_net_toast_grace_start", data);
+            Logger?.Info("Utilities: the internet is new in this save: a grace period for " + count + " business(es) that need a connection, until day " + _state.GraceUntil + ".");
+        }
+
+        // The clock moved since the grace last looked: a step back, or a guest's clock set to the host's as they join, is
+        // not days played, so the grace moves with it. (With Going Public switched on, any leap of more than a day.)
+        private void GraceClock(int today)
+        {
+            int seen = _graceSeen;
+            _graceSeen = today;
+            if (InternetRules.MoveGrace(_state, seen, today, GoingPublic.Role != GoingPublicRole.Absent))
+            {
+                Logger?.Info("Utilities: the clock went from day " + seen + " to day " + today + " without those days played; the internet's grace period now ends on day " + _state.GraceUntil + ".");
             }
         }
 
@@ -956,7 +1042,7 @@ namespace RealLifeOverhaul.Utilities
                     continue;
                 }
                 bool needsWater = place.Kind == PlaceKind.FoodAndDrink || place.Kind == PlaceKind.Salon || place.Kind == PlaceKind.Gym;
-                bool offline = NeedsNet(place) && !Online(place, hour);
+                bool offline = NeedsNet(place) && !Online(place, hour) && !InternetRules.InGrace(_state, place.Place, today);
                 if (dark || (dry && needsWater) || offline)
                 {
                     Func<BuildingRegistration, int, bool> close = UtilitiesBridges.CloseFor;
