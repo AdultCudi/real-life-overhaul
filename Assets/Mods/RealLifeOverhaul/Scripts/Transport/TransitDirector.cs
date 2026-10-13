@@ -889,7 +889,7 @@ namespace RealLifeOverhaul
             bool placed = inBay ? Mathf.Abs(along) <= 2.5f && toLane >= -0.15f && toKerb >= 0f && angle <= 3f   // (its rear corner a hand's breadth in the lane at the narrowest bay: NavCheck)
                                 : Mathf.Abs(along) <= 2.5f && Mathf.Abs(aside) <= 1.2f && angle <= 12f;
             Logger?.Info("Transit check (arrival): the " + line.Number + " stands at " + StopLabel(_served) + (inBay ? " in its bay" : "") + " with its middle " + Mathf.Abs(along).ToString("F1") + " m "
-                         + (along >= 0f ? "past" : "short of") + " the pole, " + Mathf.Abs(aside).ToString(inBay ? "F2" : "F1") + " m " + (aside >= 0f ? "towards the kerb" : "away from the kerb")
+                         + (along >= 0f ? "past" : "short of") + (Mathf.Abs(_served.Stand) > 0.01f ? " its place " + Mathf.Abs(_served.Stand).ToString("F1") + " m " + (_served.Stand > 0f ? "on from" : "short of") + " the pole" : " the pole") + ", " + Mathf.Abs(aside).ToString(inBay ? "F2" : "F1") + " m " + (aside >= 0f ? "towards the kerb" : "away from the kerb")
                          + " off the lane's line" + (inBay ? " (the bay's line is " + _served.BayOffset.ToString("F2") + ")" : "") + ", " + angle.ToString(inBay ? "F1" : "F0")
                          + " degrees off the lane's direction, door side to the kerb with " + toKerb.ToString(inBay ? "F2" : "F1") + " m of road between"
                          + (inBay ? ", its body " + toLane.ToString("F2") + " m clear of the lane's edge (a lorry on the lane's line passes " + (toLane + BusBay.LaneHalf - BusBay.WidestHalf).ToString("F2")
