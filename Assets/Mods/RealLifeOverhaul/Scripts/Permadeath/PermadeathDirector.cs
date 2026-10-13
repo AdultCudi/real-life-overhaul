@@ -483,10 +483,13 @@ namespace RealLifeOverhaul.Permadeath
                 Sync(false);
                 Logger?.Info("Permadeath: " + (_story.Name.Length > 0 ? _story.Name : "the character") + " has died (" + cause + ") on day " + _story.Day + ", aged " + _story.Age + ".");
             }
-            PermadeathGame.Hold(true, real);
+            // Walking is held at once; the game's own "the player is dead" only once the screen is black, so that a fall
+            // (Ragdoll/PlayerKnockdown) or a crash is seen into the fade rather than cut off at its first frame.
+            PermadeathGame.Hold(true, false);
             yield return Safe(PermadeathGame.Fade(1.6f, "reallife_pd_blackout"));
             if (real)
             {
+                PermadeathGame.Hold(true, true);
                 yield return SaveIt();
             }
             yield return Safe(PermadeathGame.OutOfVehicle());
