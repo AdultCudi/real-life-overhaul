@@ -252,8 +252,9 @@ internal static partial class Program
         string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
         Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(folder, "en.json"));
         Dictionary<string, string> pt = LoadWords(System.IO.Path.Combine(folder, "pt.json"));
-        Check(en != null && pt != null, "districts: en.json and pt.json are where the checks look for them (" + folder + ")");
-        if (en == null || pt == null)
+        Dictionary<string, string> zh = LoadWords(System.IO.Path.Combine(folder, "zh-cn.json"));
+        Check(en != null && pt != null && zh != null, "districts: en.json, pt.json and zh-cn.json are where the checks look for them (" + folder + ")");
+        if (en == null || pt == null || zh == null)
         {
             return;
         }
@@ -273,13 +274,13 @@ internal static partial class Program
         }
         foreach (string key in keys)
         {
-            string a, b;
-            if (!en.TryGetValue(key, out a) || !pt.TryGetValue(key, out b) || string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b))
+            string a, b, c;
+            if (!en.TryGetValue(key, out a) || !pt.TryGetValue(key, out b) || !zh.TryGetValue(key, out c) || string.IsNullOrWhiteSpace(a) || string.IsNullOrWhiteSpace(b) || string.IsNullOrWhiteSpace(c))
             {
                 missing.Add(key);
             }
         }
-        Check(missing.Count == 0, "districts: every layer's row, words, key bands and grey are in en.json and pt.json (" + keys.Count + " keys"
+        Check(missing.Count == 0, "districts: every layer's row, words, key bands and grey are in en.json, pt.json and zh-cn.json (" + keys.Count + " keys"
             + (missing.Count > 0 ? "; missing " + string.Join(", ", missing) : string.Empty) + ")");
         string under, over, between;
         Check(en.TryGetValue("reallife_dv_range_under", out under) && under.Contains("{to}") && en.TryGetValue("reallife_dv_range_over", out over) && over.Contains("{from}")

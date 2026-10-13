@@ -50,7 +50,8 @@ To update, run the new version's setup the same way. To uninstall, see "Uninstal
        │   └── reallife_props
        └── Locales
            ├── en.json
-           └── pt.json
+           ├── pt.json
+           └── zh-cn.json
    ```
 
    The game only loads a folder that has the mod's DLL directly inside it. Check that you do not have `RealLifeOverhaul\RealLifeOverhaul\...`, one folder inside another, which some unzip tools make.
