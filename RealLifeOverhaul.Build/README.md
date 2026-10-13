@@ -7062,6 +7062,97 @@ rivals' names as the game gives them (`SpecialRival.rivalData.rivalName`). The a
 Whether a business opened in a building rented before the promise is found (it is counted by its kind, so it
 should be). Every figure's feel in play: the sums against what businesses really earn, how often an offer comes.
 
+## Economy: your company on the market (`Scripts/Markets/Listing`)
+
+The player's businesses together come to the city's stock market (Scripts/Markets) as a company with shareholders (option
+"Listing your own company", id `markets_listing`, under the stock market's header, on by default). It has no Update and no
+Harmony patch: its price, results, meetings and bids ride the market's own steps (`MarketEngine.Own.cs`), its way to the
+market and its year ride the market director's one-second timer (`MarketDirector.Own.cs`), and the Stocks app and the
+Company app write its pages when they are opened.
+
+### What the game already had, and what was therefore built
+
+| The game's own | Built here |
+| --- | --- |
+| Personal wealth (`PlayerHelper.GetPersonalWealth`: cash, funds, assets, loans) and a goal on it; a business's daily valuation (`CompetitionHelper.UpdateDailyValuation`) and a rival's business valued to buy it over (`CalculateAiOwnedValuation`, BizMan) | The company's worth by the market's own model (MarketValuation) on its real books |
+| Investment funds in EconoView, which follow a yearly rate | Nothing: a fund is not a share |
+| No shares of the player's company, no investors in it | (The mod's Ventures investors take a share of one business's profit; untouched) the company listed, its float, shareholders, meetings, bids |
+| Business sales tax once a year on statements' sales, less what is marked deductible (`TaxHelper`, `TaxCalculationHelper.GetBusinessSales`) | The audit and the exchange's fees marked deductible; the offer's money and the holders' part are no sales; a tax withheld from market dividends |
+
+### Files
+
+| File | What it is |
+| --- | --- |
+| `Listing/ListingCatalogue.cs` | every figure: requirements, fees, the offer and the book, the company on the market, meetings, investors, bids, the dividend tax |
+| `Listing/ListingModel.cs` | `OwnListing` (on `Stock.Own`: the founder, the reserve, pay, board, what the market follows, meetings, deals), `ListingFile` (on `MarketState.Listing`: the way to the market, the books, a hand-over), the enums, `ListingMoney` |
+| `Listing/ListingRules.cs` | the price from the books (`Day`, `Figures`, `Morning`), the reserve (`ToReserve`), quarters and results, dividends, the founder's news, closed times, short swings, the year's limits, the price to take it private |
+| `Listing/ListingBook.cs` | the books by quarter, the requirements, the audit's findings, the fees, the shares, the prospectus, the book's price, the stock on its first day |
+| `Listing/ListingVotes.cs` | what the holders make of the year, the votes, investors' reasons, a bid's chance and acceptance, the dividend tax |
+| `MarketEngine.Own.cs` | the engine's part: the book priced and the first day at the open, the business, results, meetings, investors, bids, the founder's tape events, `Alone` |
+| `MarketDirector.Own.cs`, `.OwnTests.cs` | the game's part: who the player is, the books, the steps of the way, the year's fees, asking, the hand-over, the founder's notifications, the dividend tax, the save tools; the test buttons |
+| `MarketApp.Own.cs`, `Listing/ListingText.cs`, `Listing/ListingGuide.cs` | the Stocks app's page and the founder's ticket; the words; the Guide's figures |
+| `Wiring/ListingLinks.cs` | the bridges: the books from the game's statements (the player's own businesses only), the facts for the audit, the day's city, the hand-over and a business sold (Economy/Services), the Company app's line, the Planner |
+
+The first five are game-free and compiled by EconomyCheck (`ListingChecks.cs`), with the engine.
+
+### The rules in short (every figure is in the catalogue and printed by the Guide)
+
+- **To come to the market**: two years since the first business, four complete quarters of books, takings and profit over
+  them above a least (at today's prices), a profit in three of them, and a clean audit (tax unpaid past its day, late
+  returns, takings kept off the books, a bankruptcy or debt arrangement qualify it; a bribe that came out is disclosed).
+  Advisers' retainer, the audit's fee, the underwriters and the exchange as the catalogue says.
+- **The price** (`ListingBook.Price`): what the books say a share is worth by `MarketValuation` (all the shares, old and
+  new; the last year at most the two years' mean; the last quarter a patch; growth half believed; debt), 12% under it, a
+  range 8% either side, a book drawn from the pricing day's secret and moved by the index's month, Standing, a disclosure
+  and the float, never 15% outside the range. Under the least the founder takes, called off.
+- **On the market**: its business is the player's businesses' real statements a day at a time (`MarketEnv.Own*`, on the
+  tape), followed over a quarter and a year, a day beyond three times the year's usual counted as no more; the council's
+  policies are priced as for any company and fade out of the reckoning as the year's figures show them; growth is read at
+  results. The reserve keeps the other holders' part of each day's profit after tax and pay (forced from the founder's cash,
+  given back out of a loss) and is in the price; dividends are paid from it. No crisis, windfall, failure or penny rule is
+  drawn for it.
+- **The founder** deals at the market under the rules: closed from the last third of a quarter to its results, no sale in
+  the half-year lock-up, at most 90% held, 10% bought and 10% sold a game year, every deal read by the market, and a gain on
+  shares bought and sold within a quarter of a year paid back to the company. Buy-backs (10% a year), new shares (20% a year
+  at 5% under the bid) and taking private (25% over the price and never under the year's highest close, with half the shares)
+  need the board. A business sold while listed puts the other holders' part of its price into the reserve.
+- **Meetings**: the yearly one after the year's last results (pay, a payout when the reserve is held back, the chair), an
+  investor's after their demand; the founder's shares for the board, the others by their year, with a drawn turnout. Half
+  the shares or more carries every vote. A bid comes while the price is well under the worth, wins only under 30% held and
+  if the holders take it; then the businesses pass to the buyer through Economy/Services' own hand-over of a sale
+  (`ServicesDirector.HandOver`), a few an hour as the game lets them go, what is left after seven days paid for.
+
+### The save
+
+The market's own line (`reallife:markets`): a player's company is a record of `k` with its own fields after the rest
+(founder, name, ticker, sector, usual debt, the `OwnListing` figures, the founder's deals, its trade); the way to the
+market and the books are part `l`, a company set aside part `u`. Neither part is in the city's line a host sends. A line
+without them reads as before, and a market with no player's company writes exactly what it did.
+
+### Tests (options page, the stock market's tests)
+
+"Put a test company of mine on the market" (no requirement, nothing paid or raised; a test company's books if the save has
+too few, read again from the statements once it is gone), "My company's results the next market morning", "My company's
+yearly meeting at today's close", "An investor buys in to press my company's board", "A bid for my company" (a test's
+company hands nothing over), "Take my test company off the market".
+
+### Log lines
+
+- `Listing: advisers engaged on day 140 for 25000 (the company looks worth 7454935).`
+- `Listing: the prospectus of Harbour Lights Group (HLG) on day 152: 248333 new shares (2500 bp) beside the founder's 745000, ...`
+- `Listing check (asked): Deal 1000 for Harbour Lights Group at 160/30, quoted 6731 (673 cents a share): put on the tape for the next moment: PASS`
+- `Listing: the year's fees for Harbour Lights Group: the exchange 5000, the audit 10000; findings 0.`
+- `Listing: Harbour Lights Group was taken over at 840 cents a share by a private buyer; its 6 business(es) pass to the buyer by day 212.`
+- `Selling a business: handed over to a private buyer in a takeover: ...`
+
+### Not verified (the game could not be run)
+
+Everything on screen: how many lines the Stocks app's white box holds on the company's page (the listed page is the
+longest: a selector, about eight lines and three rows of buttons); the game's text box for a name and a count; the
+notifications' length. That the statements' addresses compare as the mod's other readers compare them (`Books.Key`). That
+`ServicesGame.Complete` hands a business over cleanly on the day of a takeover, as it does for a sale. How the figures feel
+in play: the requirements against what businesses earn, how often investors and bids come.
+
 ## Economy: running a business
 
 The fifth part of the economy (`Scripts/Economy/Company`; options under "Real Life Overhaul: Running a business",

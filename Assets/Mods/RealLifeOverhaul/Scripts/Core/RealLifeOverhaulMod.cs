@@ -674,10 +674,18 @@ namespace RealLifeOverhaul
                     v => Settings.Markets = v)
                 .AddToggle(Settings.MarketsMarginId, "reallife_mkt_opt_margin", Settings.MarketsMargin,
                     v => Settings.MarketsMargin = v)
+                .AddToggle(Settings.MarketsListingId, "reallife_lst_opt", Settings.MarketsListing,
+                    v => Settings.MarketsListing = v)
                 .AddButton("reallife_mkt_test_open", () => Markets.MarketDirector.Instance?.TestOpen())
                 .AddButton("reallife_mkt_test_crisis", () => Markets.MarketDirector.Instance?.TestNews(true))
                 .AddButton("reallife_mkt_test_windfall", () => Markets.MarketDirector.Instance?.TestNews(false))
                 .AddButton("reallife_mkt_test_bid", () => Markets.MarketDirector.Instance?.TestBid())
+                .AddButton("reallife_lst_test_list", () => Markets.MarketDirector.Instance?.TestListing())
+                .AddButton("reallife_lst_test_results", () => Markets.MarketDirector.Instance?.TestOwnResults())
+                .AddButton("reallife_lst_test_meeting", () => Markets.MarketDirector.Instance?.TestOwnMeeting())
+                .AddButton("reallife_lst_test_activist", () => Markets.MarketDirector.Instance?.TestOwnActivist())
+                .AddButton("reallife_lst_test_bid", () => Markets.MarketDirector.Instance?.TestOwnBid())
+                .AddButton("reallife_lst_test_off", () => Markets.MarketDirector.Instance?.TestOwnOff())
                 .AddHeader("reallife_co_header")
                 .AddToggle(Settings.EconomyCompanyId, "reallife_co_enabled", Settings.EconomyCompany,
                     v => Settings.EconomyCompany = v)

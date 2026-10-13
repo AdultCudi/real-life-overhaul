@@ -107,6 +107,7 @@ internal static partial class Program
         Empire();
         Dealer();
         Markets();
+        Listing();
         Ledger();
         Newsstand();
         Flare();

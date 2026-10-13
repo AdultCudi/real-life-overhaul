@@ -87,6 +87,10 @@ namespace RealLifeOverhaul
                     for (int i = 0; i < state.Stocks.Count; i++)
                     {
                         Stock s = state.Stocks[i];
+                        if (s.Own != null)
+                        {
+                            continue;   // the player's own listed company: the bank's money never props its owner's price
+                        }
                         into.Add(new FundQuote
                         {
                             StockId = s.Id, Ticker = s.Ticker, Name = s.Name, LastCents = s.Last, DpsCents = s.DpsCents, Shares = s.Shares, Size = (int)s.Size,

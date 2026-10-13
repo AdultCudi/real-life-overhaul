@@ -112,9 +112,9 @@ namespace RealLifeOverhaul.Markets
         /// <summary>What a company's price gains a year on average from bids for it: their chance times what the price jumps by when one is made.</summary>
         public static double TakeoverYield(Stock s)
         {
-            if (s.Distress >= 0.6 || MarketCatalogue.IsRival(s.Id))
+            if (s.Distress >= 0.6 || MarketCatalogue.IsRival(s.Id) || s.Own != null)
             {
-                return 0.0;
+                return 0.0;   // (a player's company is bid for only when it is cheap: Markets/Listing, ListingVotes)
             }
             double premium = (MarketCatalogue.TakeoverPremiumLeast + MarketCatalogue.TakeoverPremiumMost) * 0.5;
             return MarketCatalogue.TakeoverChanceYear * MarketCatalogue.TakeoverSizeScale[(int)s.Size] * (1.0 - MarketCatalogue.TakeoverFailChance) * premium;
@@ -133,6 +133,10 @@ namespace RealLifeOverhaul.Markets
         /// </summary>
         public static double OwnNewsLoss(Stock s, in MarketEnv env)
         {
+            if (s.Own != null)
+            {
+                return 0.0;   // (a player's company has no crises or windfalls drawn for it: its news is its own books)
+            }
             double margin = UsualMargin(s, env);
             double interest = s.Rev > 0.0 ? s.Debt * s.DebtRate / s.Rev : 0.0;
             double gearing = margin > interest + 0.005 ? margin / (margin - interest) : 10.0;
@@ -251,7 +255,7 @@ namespace RealLifeOverhaul.Markets
             double inflation = env.InflationBp / 10000.0;
             double city = CityGrowth(s, env);
             double own = s.Growth - s.GrowthTarget;
-            double payoutT = Payout(gT);
+            double payoutT = s.Own != null ? ListingCatalogue.OwnPayout : Payout(gT);   // (a player's company's profit is its holders': ListingRules)
             double rev = s.Rev, discount = 1.0, sum = 0.0, debt = debtNow, rate = rateNow;
             for (int t = 1; t <= Horizon; t++)
             {
@@ -268,7 +272,7 @@ namespace RealLifeOverhaul.Markets
                 discount /= YearRate(k, distress, least);
                 if (profit > 0.0)
                 {
-                    sum += Payout(real + prices * pass) * profit * (1.0 - tax) * discount * Math.Exp(outlook * OutlookShare[t]);
+                    sum += (s.Own != null ? ListingCatalogue.OwnPayout : Payout(real + prices * pass)) * profit * (1.0 - tax) * discount * Math.Exp(outlook * OutlookShare[t]);
                 }
                 // A loss is borrowed (as the business does): more debt for the years after.
                 debt = debtUsual + (debt - debtUsual) * DebtYear + (profit < 0.0 ? -profit / rev : 0.0);

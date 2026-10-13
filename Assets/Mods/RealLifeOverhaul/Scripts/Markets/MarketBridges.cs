@@ -35,13 +35,51 @@ namespace RealLifeOverhaul.Markets
         /// </summary>
         public static Action<Action<int, int, int>> Poll;
 
+        // ---------------------------------------------------------------- the player's own company (Markets/Listing)
+
+        /// <summary>
+        /// The player's own businesses' takings and profit over the statement days from one day up to (not with) another,
+        /// from the game's daily statements: only businesses that are the player's own (Going Public's test). Null: none.
+        /// </summary>
+        public static Func<int, int, OwnBooks> Books;
+
+        /// <summary>What the advisers and the auditors read of the player: years in business, the tax, the credit file, Standing, debt. Null: nothing known.</summary>
+        public static Func<ListingFacts> Facts;
+
+        /// <summary>The places of the player's own businesses now (the ones a takeover would hand over).</summary>
+        public static Action<List<string>> Businesses;
+
+        /// <summary>
+        /// One business of the player's handed over to a buyer as a sale is completed, with no money (a takeover paid for
+        /// the shares): true when it is no longer the player's; false while it cannot be done now (to be tried again).
+        /// </summary>
+        public static Func<string, string, bool> HandOver;
+
+        /// <summary>A name for the player's company to begin with (their largest business's), and the trade its takings are most in (MarketInputs.Trades; -1 none).</summary>
+        public static Func<string> Name;
+
+        public static Func<int> Trade;
+
         public static void Reset()
         {
             City = null;
             Rivals = null;
             Old = null;
             Poll = null;
+            Books = null;
+            Facts = null;
+            Businesses = null;
+            HandOver = null;
+            Name = null;
+            Trade = null;
         }
+    }
+
+    /// <summary>A stretch of the player's own businesses' statements: takings and profit together, in money, and the statement days found.</summary>
+    public struct OwnBooks
+    {
+        public long Revenue, Profit;
+        public int Days;
     }
 
     /// <summary>The old market's file as the wiring hands it over: the file (none: nothing to bring) and what to do once it has been changed.</summary>

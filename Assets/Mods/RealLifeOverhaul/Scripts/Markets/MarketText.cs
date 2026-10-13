@@ -158,6 +158,45 @@ namespace RealLifeOverhaul.Markets
                 case MarketNewsKind.Delisted:
                     data = new[] { "name", name, "price", Price(n.A) };
                     return "reallife_mkt_news_delisted";
+                // A player's own company (Markets/Listing): what the city hears of it. Its founder's refusals and another
+                // city's company leaving this one are no news.
+                case MarketNewsKind.OwnPriced:
+                    data = new[] { "name", s != null && k == null ? s.Listing.Name : name, "price", Price(n.A), "day", n.B.ToString() };
+                    return "reallife_mkt_news_own_priced";
+                case MarketNewsKind.OwnPulled:
+                    data = new[] { "name", s != null ? s.Listing.Name : string.Empty, "price", Price(n.A) };
+                    return "reallife_mkt_news_own_pulled";
+                case MarketNewsKind.OwnDeal:
+                    data = new[] { "name", name, "count", Math.Abs((long)n.A).ToString("N0"), "price", Price(n.B) };
+                    return n.A > 0 ? "reallife_mkt_news_own_deal_buy" : "reallife_mkt_news_own_deal_sell";
+                case MarketNewsKind.OwnBuyBack:
+                    data = new[] { "name", name, "count", n.A.ToString("N0"), "price", Price(n.B) };
+                    return "reallife_mkt_news_own_buyback";
+                case MarketNewsKind.OwnIssue:
+                    data = new[] { "name", name, "count", n.A.ToString("N0"), "price", Price(n.B) };
+                    return "reallife_mkt_news_own_issue";
+                case MarketNewsKind.OwnMeeting:
+                    data = new[] { "name", name, "result", ListingText.Meeting(n.A), "against", Percent(n.B) };
+                    return (n.A & (ListingVotes.PayLost | ListingVotes.PayoutVoted | ListingVotes.BoardLost | ListingVotes.DemandPassed)) != 0
+                        ? "reallife_mkt_news_own_meeting_revolt" : "reallife_mkt_news_own_meeting";
+                case MarketNewsKind.OwnActivist:
+                    data = new[] { "name", name, "stake", Percent(n.A), "demand", ListingText.Demand((ActivistDemand)n.B), "day", n.C.ToString() };
+                    return "reallife_mkt_news_own_activist";
+                case MarketNewsKind.OwnWithdrawn:
+                    data = new[] { "name", name };
+                    return "reallife_mkt_news_own_withdrawn";
+                case MarketNewsKind.OwnPrivate:
+                    data = new[] { "name", name, "price", Price(n.A) };
+                    return "reallife_mkt_news_own_private";
+                case MarketNewsKind.OwnDisgorged:
+                    data = new[] { "name", name, "amount", Money(n.A) };
+                    return "reallife_mkt_news_own_disgorged";
+                case MarketNewsKind.OwnBidBlocked:
+                    data = new[] { "name", name };
+                    return n.A == 1 ? "reallife_mkt_news_own_bid_blocked" : "reallife_mkt_news_own_bid_refused";
+                case MarketNewsKind.OwnAudit:
+                    data = new[] { "name", name, "found", ListingText.Findings(n.A) };
+                    return "reallife_mkt_news_own_audit";
                 default:
                     data = new string[0];
                     return string.Empty;

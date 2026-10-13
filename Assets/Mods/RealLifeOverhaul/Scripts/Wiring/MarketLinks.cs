@@ -135,6 +135,7 @@ namespace RealLifeOverhaul
                 {
                     Fault("MarketLinks.City (the player's businesses)", ex);
                 }
+                ListingLinks.Env(ref e, day);   // the player's own company's day, while they have one on the market or a book open
                 return e;
             }
 
