@@ -419,7 +419,9 @@ namespace RealLifeOverhaul.Economy.Dealership
             VehicleInstance v = Vehicle(vehicleId);
             if (v != null)
             {
-                v.Delete(Controller(vehicleId));
+                VehicleController controller = Controller(vehicleId);
+                OverlayGuard.Release(controller);
+                v.Delete(controller);
             }
         }
 
