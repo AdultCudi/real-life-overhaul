@@ -1,4 +1,5 @@
-0.3.4
+0.3.5
 
-New
-- At an accident, the driver who caused it is now arrested at the scene once the officers have had a look: cuffed, walked to the patrol car and taken away in it. Their car is taken away when the scene clears. A driver lying hurt goes with the ambulance instead, and one who runs for it is chased.
+Fixed
+- The notifications about reckless drivers near you (one who got away, a hit-and-run, a driver pulled over, chased, ticketed or lost) now follow 'Notifications about accidents' as well: switched off, none of them comes.
+- The apps in the top bar of the phone's full screen no longer stand on top of one another in one place, as the bank apps sometimes did with other mods' apps on the phone. Each page shows its apps side by side.
