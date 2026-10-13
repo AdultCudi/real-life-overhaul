@@ -40,6 +40,12 @@ namespace RealLifeOverhaul.Economy
     /// claims another. Its order book's day is given the takings and a customer for each car sold, which is what the
     /// mod's business pressure, brands and company read there. And the game's tax deducts those costs as it deducts a
     /// shop's goods (<see cref="Deduct"/>), so that it counts the dealership's margin rather than its takings.
+    ///
+    /// This mod's own dealerships (Economy/Dealer) are booked the same way, by the address of a business of that type:
+    /// a car sold (ba:transaction_itemsold) and an instalment, a premium or a car taken back and sold are its takings, a
+    /// car bought (ba:transaction_vehiclebought), an inspection, the auction's fee and preparing a car a row among its
+    /// goods, warranty claims another (DealerLines), and its order book's day has the takings and a customer for each car
+    /// sold. Its costs are marked deductible when they are paid, so the game's tax deducts them itself.
     /// </summary>
     public static class GameBooks
     {

@@ -191,8 +191,9 @@ coordinated save runs this mod's save handlers on the guest's machine (Going Pub
 ## Empire Motors (`Core/EmpireMotors`)
 
 Read in its decompiled code (`evidence/othermods/EmpireMotors`, version 1.20, and its car add-ons `EmpireMustangGT` and
-`empirebmwg82` beside it), never run. Item 3 of the roadmap: this mod sits beside it and connects where it can, and builds
-no dealership of its own.
+`empirebmwg82` beside it), never run. This mod sits beside it and connects where it can. Since its own dealership
+(`Economy/Dealer`, the business type `reallife_businesstype_cardealership`) the two kinds live side by side in one city:
+see the last rows of the table below.
 
 What it does:
 
@@ -253,6 +254,7 @@ Where the two meet, and what this mod does:
 | Online shops | | nothing to sell: it has no products |
 | Going Public | | `GoingPublic.Mine` keeps another player's dealership out, as every other business |
 | Saves and removal | its key is its own | nothing of this mod's touches `empiremotors.save` or its cars; this mod's records of a car of the stock are dropped when it is sold (`CarGarage.Prune`) |
+| This mod's own dealership | | Both business types can be founded and run at once. Each keeps its own cars (by its own records and by the address of its own type), customers, money and app; `Core/Dealerships` answers "is this a dealership's stock?" for both, so every rule above holds for this mod's cars as well. Empire Motors' showroom tools act only in a building of its own type (`EmpireMotorsShowroomService.IsActiveShowroom`), and this mod's lot only in one of this mod's. This mod's dealership gets the game's footfall and campaigns (it is promoted as any shop), which Empire Motors' does not |
 
 Left, and why: its own financing and warranties stay its own (they are the dealership's business with its customers, not
 the player's credit); the custom shop has no body fit for the add-on cars (their meshes are in their bundles); a car of the

@@ -7,8 +7,10 @@ namespace RealLifeOverhaul
 {
     /// <summary>
     /// Living with Empire Motors (Steam Workshop 3787690782), the mod that lets the player run a car dealership of its own
-    /// business type. This mod builds no dealership: it lets that one be a business of the player's like any other and
-    /// keeps its own hands off what is the dealership's. See RealLifeOverhaul.Build/docs/other-mods.md, "Empire Motors".
+    /// business type. This mod has a dealership of its own too (Economy/Dealer), of another business type; the two live
+    /// side by side. This class lets Empire Motors' be a business of the player's like any other and keeps this mod's
+    /// hands off what is that dealership's (Core/Dealerships asks both kinds). See RealLifeOverhaul.Build/docs/other-mods.md,
+    /// "Empire Motors".
     ///
     /// What matters here, read in its decompiled code (it makes no Harmony patch: its one patch method is never applied):
     ///  - its dealership is a business type of its own, "empiremotors:businesstype_cardealership", in a retail building,
