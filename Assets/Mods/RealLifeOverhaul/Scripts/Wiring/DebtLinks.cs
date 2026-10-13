@@ -73,7 +73,17 @@ namespace RealLifeOverhaul
                     {
                         return false;
                     }
+                    // With Permadeath on, the first beating is a near miss and a later one may end the life (Permadeath/PermadeathRules).
+                    Permadeath.Verdict fate = Permadeath.Mortality.Judge(Permadeath.DeathCause.Assault);
+                    if (fate == Permadeath.Verdict.Death && Permadeath.Mortality.Die(Permadeath.DeathCause.Assault))
+                    {
+                        return true;
+                    }
                     life.Injure(hours, SaveGameManager.Current.Energy > 35f ? energy : 0f, notificationKey);
+                    if (fate == Permadeath.Verdict.NearMiss)
+                    {
+                        Permadeath.Mortality.NearMiss(Permadeath.DeathCause.Assault);
+                    }
                     return true;
                 }
                 catch (Exception e)

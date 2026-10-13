@@ -15,7 +15,8 @@ namespace RealLifeOverhaul
     ///   under 15 km/h   knocked down and shaken;
     ///   15 to 35 km/h   knocked down and injured;
     ///   over 35 km/h    knocked down, badly injured and taken to hospital.
-    /// The player is never killed. They lie as a ragdoll for two to five seconds with input
+    /// The player is never killed, unless Permadeath is on (Permadeath/PermadeathRules: from 55 km/h, a near miss the
+    /// first time; after that the hit may end the life, and the fall plays into the fade). They lie as a ragdoll for two to five seconds with input
     /// blocked by the game's own navigation blocker and the camera on the body, then stand
     /// where they landed, and only then does the consequence follow (the hospital sequence
     /// needs the player animated and in control of nothing but itself).
@@ -59,6 +60,7 @@ namespace RealLifeOverhaul
         private PlayerController _player;
         private bool _blocked;
         private Harm _harm;
+        private bool _nearMiss;         // Permadeath's first warning goes with this hit's hospital stay
         private float _upAt;
         private float _upLatest;
         private Vector3 _origin;        // where they stood when hit: known good ground
@@ -177,9 +179,17 @@ namespace RealLifeOverhaul
             News.Report(NewsKind.PlayerKnocked, PlayerHelper.GetPosition());
             Logger?.Info($"Player hit by traffic at {speed * 3.6f:F0} km/h: {_harm}.");
 
+            Permadeath.Verdict fate = _harm == Harm.Hospital ? Permadeath.Mortality.Judge(Permadeath.DeathCause.Struck, speed) : Permadeath.Verdict.None;
+            _nearMiss = fate == Permadeath.Verdict.NearMiss;
+
             // A gentler throw than a pedestrian gets: the player should land within a few steps.
             Vector3 launch = direction * Mathf.Clamp(speed * 0.7f, 2f, 7f) + Vector3.up * Mathf.Clamp(1.5f + speed * 0.12f, 1.5f, 3.2f);
-            if (!TryFall(player, launch, now))
+            bool fell = TryFall(player, launch, now);
+            if (fate == Permadeath.Verdict.Death && Permadeath.Mortality.Die(Permadeath.DeathCause.Struck))
+            {
+                return;   // the fall plays into the fade; the game's "the player is dead" then ends it like anything that overtakes it
+            }
+            if (!fell)
             {
                 Consequence();
             }
@@ -348,6 +358,8 @@ namespace RealLifeOverhaul
             try
             {
                 LifeEvents life = LifeEvents.Instance;
+                bool nearMiss = _nearMiss;
+                _nearMiss = false;
                 if (life == null || !LifeEvents.IsSafeForEvent())
                 {
                     return;
@@ -366,6 +378,10 @@ namespace RealLifeOverhaul
                     default:
                         life.Injure(48, 25f, "reallife_player_hit_severe");
                         life.SendToHospital();
+                        if (nearMiss)
+                        {
+                            Permadeath.Mortality.NearMiss(Permadeath.DeathCause.Struck);
+                        }
                         break;
                 }
             }

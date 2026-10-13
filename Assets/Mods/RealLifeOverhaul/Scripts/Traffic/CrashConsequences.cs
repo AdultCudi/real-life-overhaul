@@ -111,10 +111,21 @@ namespace RealLifeOverhaul
             // Between the serious and hospital speeds it comes down to luck, weighted by how hard the hit was.
             bool hospital = speed >= HospitalSpeed
                             || (speed >= SeriousSpeed && Random.value < Mathf.InverseLerp(SeriousSpeed, HospitalSpeed, speed) * 0.7f + 0.15f);
+            // With Permadeath on, an impact at a very high speed is a near miss the first time and may end the life after
+            // that (Permadeath/PermadeathRules); off, or below that speed, nothing changes here.
+            Permadeath.Verdict fate = Permadeath.Mortality.Judge(Permadeath.DeathCause.Crash, speed);
+            if (fate == Permadeath.Verdict.Death && Permadeath.Mortality.Die(Permadeath.DeathCause.Crash))
+            {
+                return;
+            }
             if (hospital)
             {
                 LifeEvents.Instance.Injure(48, 25f, "reallife_crash_severe");
                 LifeEvents.Instance.SendToHospital();
+                if (fate == Permadeath.Verdict.NearMiss)
+                {
+                    Permadeath.Mortality.NearMiss(Permadeath.DeathCause.Crash);
+                }
             }
             else if (speed >= InjurySpeed)
             {
