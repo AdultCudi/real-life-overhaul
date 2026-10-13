@@ -195,9 +195,13 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>Set by the director while the host of a Going Public session runs the city's hours: the city's stories are heard as well, for the guests' papers.</summary>
+        internal static Action<string, string> Reported;
+
         /// <summary>A story for the paper if there is one, else the headline as a notification.</summary>
         internal static void Report(string headlineKey, string bodyKey)
         {
+            Reported?.Invoke(headlineKey, bodyKey);
             try
             {
                 if (News != null)

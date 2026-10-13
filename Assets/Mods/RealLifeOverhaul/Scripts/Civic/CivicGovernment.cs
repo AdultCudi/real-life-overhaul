@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using Helpers;
 using UI.Notification;
 using UnityEngine;
@@ -28,6 +30,13 @@ namespace RealLifeOverhaul
     /// On top: a sitting mayor carries their approval, and the player's own part (donations,
     /// an endorsement that weighs more the more businesses they run, an afternoon's leaflets,
     /// going to a rally). An endorsement from somebody with a criminal record is a scandal.
+    ///
+    /// IN A GOING PUBLIC SESSION the government is the city's, one for every player (Core/SharedCity, part G): the host
+    /// runs the hours as alone and every guest takes its state (Civic/CivicShare). A guest runs no hour of its own
+    /// (<see cref="FollowTick"/> only counts the scenes it sees and says when its own polling place opens); what its player
+    /// does in the campaign, the ballot and the petition is done here at once and asked of the host as well
+    /// (<see cref="HostRequest"/>), which puts it into the city's figures: every player's donations, endorsements,
+    /// leaflets and rallies move the same polls, and every player's ballot is counted in the same election.
     /// </summary>
     public sealed class CivicGovernment
     {
@@ -42,6 +51,9 @@ namespace RealLifeOverhaul
         private readonly int[] _votes = new int[CivicCatalogue.MaxCandidates];
         private bool _crimeWasOn, _crashWasOn;
         private int _crimesToday, _crashesToday;
+        private long _followHour;                       // a guest: the last hour it looked at
+        private readonly HashSet<string> _ballots = new HashSet<string>();   // the host: the players whose ballot is in, in election _ballotsOf
+        private int _ballotsOf = -1;
 
         /// <summary>Set by the construction programme each day: how many sites are running late.</summary>
         public int LateSites;
@@ -90,18 +102,8 @@ namespace RealLifeOverhaul
         /// </summary>
         public int Tick(int day, int hour)
         {
-            bool crime = CrimeDirector.IsActive;
-            if (crime && !_crimeWasOn)
-            {
-                _crimesToday++;
-            }
-            _crimeWasOn = crime;
-            bool crash = TrafficAccidents.IsActive;
-            if (crash && !_crashWasOn)
-            {
-                _crashesToday++;
-            }
-            _crashWasOn = crash;
+            Scenes();
+            _followHour = 0;
 
             long now = (long)day * 24 + hour;
             if (State.LastHour <= 0 || now < State.LastHour || now - State.LastHour > CatchUpHours)
@@ -125,6 +127,151 @@ namespace RealLifeOverhaul
             return ran;
         }
 
+        // The scenes of crime and accidents as they begin (the heat of the city's approval and its issues).
+        private void Scenes()
+        {
+            bool crime = CrimeDirector.IsActive;
+            if (crime && !_crimeWasOn)
+            {
+                _crimesToday++;
+            }
+            _crimeWasOn = crime;
+            bool crash = TrafficAccidents.IsActive;
+            if (crash && !_crashWasOn)
+            {
+                _crashesToday++;
+            }
+            _crashWasOn = crash;
+        }
+
+        /// <summary>
+        /// A guest of a Going Public session, about once a second in place of <see cref="Tick"/>: the hours are the host's.
+        /// What this player sees of crime and accidents is told to the host once a day; the polls opening is said here,
+        /// with this player's own polling place.
+        /// </summary>
+        public void FollowTick(int day, int hour)
+        {
+            Scenes();
+            long now = (long)day * 24 + hour;
+            if (_followHour <= 0 || now < _followHour || now - _followHour > 48)
+            {
+                _followHour = now;
+                return;
+            }
+            while (_followHour < now)
+            {
+                _followHour++;
+                int d = (int)(_followHour / 24), h = (int)(_followHour % 24);
+                if (h == 0 && (_crimesToday > 0 || _crashesToday > 0 || CivicBridges.Crimes > 0 || CivicBridges.Accidents > 0))
+                {
+                    SharedCity.Ask('G', "h|" + (_crimesToday + CivicBridges.Crimes) + "|" + (_crashesToday + CivicBridges.Accidents));
+                    _crimesToday = _crashesToday = 0;
+                    CivicBridges.Crimes = CivicBridges.Accidents = 0;
+                }
+                if (State.Phase == ElectionPhase.Campaign && d == State.ElectionDay && h == CivicCatalogue.PollsOpen)
+                {
+                    PollsOpenToast();
+                }
+            }
+        }
+
+        private void PollsOpenToast()
+        {
+            District near = PlayerDistrict();
+            if (near != null && near.PollingAddress != null)
+            {
+                CivicText.Toast(NotificationType.Info, "reallife_civic_polls_open", "address", near.PollingAddress, "district", CivicCity.Name(near), 14f);
+            }
+            else
+            {
+                CivicText.Toast(NotificationType.Info, "reallife_civic_polls_open_plain", 12f);
+            }
+        }
+
+        /// <summary>
+        /// The host of a Going Public session: what a guest's player did that changes the city, one line each, applied
+        /// to the city's figures within the bounds the guest's own game keeps (an amount out of them is cut to them; a
+        /// line that cannot be read is passed over). The guest has already done its own part.
+        /// </summary>
+        public bool HostRequest(string line, string who, int day, int hour)
+        {
+            string[] f = line.Split('|');
+            if (f.Length < 2)
+            {
+                return false;
+            }
+            int a = Int(f, 1), b = Int(f, 2);
+            float x = f.Length > 2 && float.TryParse(f[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float v) && !float.IsNaN(v) && !float.IsInfinity(v) ? v : 0f;
+            bool valid = a >= 0 && a < State.CandidateCount;
+            switch (f[0])
+            {
+                case "m":   // momentum: a donation, an endorsement (or the scandal of one), leaflets, a rally
+                    if (!Campaigning || !valid)
+                    {
+                        return false;
+                    }
+                    State.Momentum[a] += Mathf.Clamp(x, -0.15f, 0.26f);
+                    return true;
+                case "v":   // a ballot
+                    if (_ballotsOf != State.Number)
+                    {
+                        _ballotsOf = State.Number;
+                        _ballots.Clear();
+                    }
+                    if (!PollsOpen(day, hour) || !valid || !_ballots.Add(who ?? string.Empty))
+                    {
+                        return false;
+                    }
+                    State.OthersVotes[a]++;
+                    return true;
+                case "p":   // a petition started
+                {
+                    PolicyDef policy = CivicCatalogue.At(a);
+                    if (policy == null || State.PetitionPolicy >= 0 || day < State.PetitionRest || State.Phase != ElectionPhase.None || State.Levers[(int)policy.Lever] == policy.Dir)
+                    {
+                        return false;
+                    }
+                    OpenPetition(a, day, false);
+                    CivicText.Toast(NotificationType.Info, "reallife_civic_petition_new", "policy", CivicText.T(policy.Name), "needed", State.PetitionNeeded.ToString("N0"), 12f);
+                    return true;
+                }
+                case "s":   // signatures
+                    if (State.PetitionPolicy < 0)
+                    {
+                        return false;
+                    }
+                    State.PetitionSigned += Mathf.Clamp(a, 1, 51);
+                    return true;
+                case "a":   // approval: a favour that became a story
+                    State.Approval = Mathf.Max(3f, State.Approval + Mathf.Clamp(a, -5, 0));
+                    return true;
+                case "h":   // the crime and accidents a guest saw yesterday
+                    _crimesToday += Mathf.Clamp(a, 0, 20);
+                    _crashesToday += Mathf.Clamp(b, 0, 20);
+                    return true;
+            }
+            return false;
+        }
+
+        private static int Int(string[] f, int at)
+        {
+            return at < f.Length && int.TryParse(f[at], NumberStyles.Integer, CultureInfo.InvariantCulture, out int value) ? value : -1;
+        }
+
+        // A guest's doing that changes the city goes to the host as well (a field read when no session is on).
+        private static void Share(string line)
+        {
+            if (SharedCity.Follows('G'))
+            {
+                SharedCity.Ask('G', line);
+            }
+        }
+
+        private static string F(float value)
+        {
+            return value.ToString("R", CultureInfo.InvariantCulture);
+        }
+
         private void Hour(int day, int hour)
         {
             if (hour == 9)
@@ -144,15 +291,7 @@ namespace RealLifeOverhaul
             }
             if (day == State.ElectionDay && hour == CivicCatalogue.PollsOpen)
             {
-                District near = PlayerDistrict();
-                if (near != null && near.PollingAddress != null)
-                {
-                    CivicText.Toast(NotificationType.Info, "reallife_civic_polls_open", "address", near.PollingAddress, "district", CivicCity.Name(near), 14f);
-                }
-                else
-                {
-                    CivicText.Toast(NotificationType.Info, "reallife_civic_polls_open_plain", 12f);
-                }
+                PollsOpenToast();
             }
             if ((day == State.ElectionDay && hour >= CivicCatalogue.ResultHour) || day > State.ElectionDay)
             {
@@ -470,6 +609,7 @@ namespace RealLifeOverhaul
             State.Scandal = false;
             State.Winner = -1;
             State.Turnout = 0;
+            Array.Clear(State.OthersVotes, 0, State.OthersVotes.Length);
 
             var random = new CivicRandom(CivicRandom.Mix(State.Seed, State.Number, 7));
             State.CandidateCount = random.Value < 0.5f ? 3 : 4;
@@ -765,10 +905,10 @@ namespace RealLifeOverhaul
             return total > 0f ? Mathf.RoundToInt(cast * own / total) : 0;
         }
 
-        /// <summary>A candidate's votes across the city, the player's own included.</summary>
+        /// <summary>A candidate's votes across the city, the player's own included (and in a Going Public session every other player's).</summary>
         public int CityVotes(int candidate)
         {
-            int votes = State.Voted == candidate ? 1 : 0;
+            int votes = (State.Voted == candidate ? 1 : 0) + (candidate >= 0 && candidate < State.OthersVotes.Length ? State.OthersVotes[candidate] : 0);
             if (_city.Districts.Count == 0)
             {
                 // The city could not be read: one district of 50,000 with a turnout of 45 %.
@@ -902,6 +1042,7 @@ namespace RealLifeOverhaul
             }
             State.Donated[candidate] += step;
             State.Momentum[candidate] += 0.04f;
+            Share("m|" + candidate + "|" + F(0.04f));
             return "reallife_civic_donate_thanks";
         }
 
@@ -927,11 +1068,14 @@ namespace RealLifeOverhaul
             {
                 State.Scandal = true;
                 State.Momentum[candidate] -= 0.15f;
+                Share("m|" + candidate + "|" + F(-0.15f));
                 ModState.AddModifier(ModState.MoodDown);
                 CivicBridges.Report("reallife_civic_news_scandal", "reallife_civic_news_scandal_body");
                 return "reallife_civic_endorse_scandal";
             }
-            State.Momentum[candidate] += EndorsementWeight();
+            float weight = EndorsementWeight();
+            State.Momentum[candidate] += weight;
+            Share("m|" + candidate + "|" + F(weight));
             return "reallife_civic_endorse_thanks";
         }
 
@@ -944,6 +1088,7 @@ namespace RealLifeOverhaul
             }
             State.Volunteered = candidate;
             State.Momentum[candidate] += Mathf.Min(30, leaflets) * 0.002f;
+            Share("m|" + candidate + "|" + F(Mathf.Min(30, leaflets) * 0.002f));
         }
 
         /// <summary>The player stood through a rally. False if they had already been to one of this candidate's.</summary>
@@ -955,6 +1100,7 @@ namespace RealLifeOverhaul
             }
             State.Rallies |= 1 << candidate;
             State.Momentum[candidate] += 0.02f;
+            Share("m|" + candidate + "|" + F(0.02f));
             ModState.AddModifier(ModState.MoodUp);
             return true;
         }
@@ -975,6 +1121,7 @@ namespace RealLifeOverhaul
                 return "reallife_civic_vote_closed";
             }
             State.Voted = candidate;
+            Share("v|" + candidate);
             ModState.AddModifier(ModState.CivicVoted);
             return "reallife_civic_vote_cast";
         }
@@ -1000,6 +1147,7 @@ namespace RealLifeOverhaul
                 return "reallife_civic_petition_in_force";
             }
             OpenPetition(policyIndex, day, true);
+            Share("p|" + policyIndex);
             SignPetition();
             return "reallife_civic_petition_started";
         }
@@ -1012,7 +1160,9 @@ namespace RealLifeOverhaul
                 return false;
             }
             State.PetitionISigned = true;
-            State.PetitionSigned += 1 + 5 * Mathf.Min(10, CivicCity.PlayerBusinesses());
+            int names = 1 + 5 * Mathf.Min(10, CivicCity.PlayerBusinesses());
+            State.PetitionSigned += names;
+            Share("s|" + names);
             return true;
         }
 
@@ -1030,6 +1180,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             State.Approval = Mathf.Max(3f, State.Approval - 5f);
+            Share("a|-5");
             ModState.AddModifier(ModState.MoodDown);
             CivicBridges.Report("reallife_civic_news_paytoplay", "reallife_civic_news_paytoplay_body");
             return true;
