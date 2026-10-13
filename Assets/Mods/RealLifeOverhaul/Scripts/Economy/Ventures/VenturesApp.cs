@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Economy.Ventures
     public sealed partial class VenturesApp
     {
         private static readonly string[] TabKeys = { "reallife_ven_tab_investors", "reallife_ven_tab_property" };
+        private const string GuideTitle = "reallife_meta_title_ventures";   // the Guide's page every page of the app points to at its foot
         public static IModLogger Logger;
 
         private readonly VenturesDirector _director;
@@ -57,7 +58,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         public GameObject Build(FullMenu menu, Transform dormant)
         {
             _menu = menu;
-            SessionWatch.Mark("ventures: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
+            using var piece = SessionWatch.Piece("ventures: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
             _shell = AppShell.Make(menu, dormant, VenturesDirector.AppId);
             _table = DataTable.On(_shell, "Ventures");
             if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(VenturesTables.Off))

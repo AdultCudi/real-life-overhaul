@@ -388,8 +388,10 @@ namespace RealLifeOverhaul
             _cable.localScale = new Vector3(CableThick / Mathf.Max(0.01f, lossy.x), CableThick / Mathf.Max(0.01f, lossy.y), length / Mathf.Max(0.01f, lossy.z));
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Traffic: TowTruck.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (Time.time - _posedAt > 0.1f)
             {
                 // Standing (nobody poses it): the springs settle it level, so that its bed is the truck's own at work.

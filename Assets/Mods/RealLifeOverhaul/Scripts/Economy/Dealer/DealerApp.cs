@@ -27,6 +27,7 @@ namespace RealLifeOverhaul.Economy.Dealership
     public sealed partial class DealerApp
     {
         private static readonly string[] TabKeys = { "reallife_dealer_tab_stock", "reallife_dealer_tab_market", "reallife_dealer_tab_offers", "reallife_dealer_tab_finance", "reallife_dealer_tab_lots" };
+        private const string GuideTitle = "reallife_meta_title_economy_dealer";   // the Guide's page every page of the app points to at its foot
 
         public static IModLogger Logger;
 
@@ -51,7 +52,7 @@ namespace RealLifeOverhaul.Economy.Dealership
 
         public GameObject Build(FullMenu menu, Transform dormant)
         {
-            SessionWatch.Mark("dealership: the app being built from the game's MyEmployees");
+            using var piece = SessionWatch.Piece("dealership: the app being built from the game's MyEmployees");
             _shell = AppShell.Make(menu, dormant, DealerDirector.AppId);
             _table = DataTable.On(_shell, "Dealership");
             if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(DealerColumns.Off))

@@ -103,6 +103,10 @@ namespace RealLifeOverhaul.Economy
             int wages, van, own = _director.OwnWeek(), fees = _director.ContractWeekFees();
             int service = _director.ServiceWeek(out wages, out van);
             box.Title(ServicesText.T("reallife_svc_tab_cleaning"));
+            if (state.Crew.Count == 0)
+            {
+                box.Line(ServicesText.T("reallife_svc_service_no_crew"));
+            }
             box.Line(ServicesText.T("reallife_svc_service_who", "crew", state.Crew.Count.ToString(), "businesses", state.Clients.Count.ToString(), "contracts", ContractRules.Running(state).ToString()));
             box.Line(ServicesText.Pair("reallife_svc_service_week", ServicesText.T("reallife_svc_service_week_value", "amount", ServicesText.Money(service), "wages", ServicesText.Money(wages), "van", ServicesText.Money(van))));
             box.Line(ServicesText.Pair("reallife_svc_service_own", ServicesText.Money(own)));
@@ -117,7 +121,11 @@ namespace RealLifeOverhaul.Economy
                 InfoBox.Button(box.ButtonRow(), InfoBox.Additional, van2 ? "reallife_svc_van_off" : "reallife_svc_van_on", () => _director.SetVan(!van2));
             }
             box.Line(ServicesText.T(state.Van ? "reallife_svc_van_says_on" : "reallife_svc_van_says_off", "cost", ServicesText.Money(ServicesCatalogue.AtPrices(ServicesCatalogue.VanCostPerKm, ServicesGame.Index))));
-            box.Line(ServicesText.T(state.Crew.Count == 0 ? "reallife_svc_service_no_crew" : "reallife_svc_service_pick"));
+            if (state.Crew.Count > 0)
+            {
+                box.Line(ServicesText.T("reallife_svc_service_pick"));
+            }
+            Guide(box);
         }
 
         // One business on the round: how it stands, and how it is served.
@@ -126,6 +134,14 @@ namespace RealLifeOverhaul.Economy
             string place = c.Place;
             int need = _director.NeedMinutes(c);
             box.Title(c.Name);
+            if (c.Unserved > 0)
+            {
+                box.Line(ServicesText.Why(c.Unserved));
+            }
+            else if (!c.Outside && !c.Open)
+            {
+                box.Line(ServicesText.T("reallife_svc_client_closed"));
+            }
             box.Line(ServicesText.Pair("reallife_svc_client_clean", ServicesText.Trend(c.Now, c.CleanBefore)));
             box.Line(need > 0
                 ? ServicesText.T("reallife_svc_client_needs", "need", ServicesText.Minutes(need), "today", ServicesText.Minutes(c.MinutesToday), "before", ServicesText.Minutes(c.MinutesBefore))
@@ -134,21 +150,13 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(ServicesText.T(c.LastDay == day ? "reallife_svc_client_last_today" : "reallife_svc_client_last", "name", c.LastCleaner, "time", ServicesText.Clock(c.LastMinute), "day", c.LastDay.ToString()));
             }
-            if (c.Unserved > 0)
-            {
-                box.Line(ServicesText.Why(c.Unserved));
-            }
-            else if (c.NextStart >= 0)
+            if (c.Unserved == 0 && c.NextStart >= 0)
             {
                 box.Line(ServicesText.T("reallife_svc_client_next", "name", c.NextBy, "from", ServicesText.Clock(c.NextStart), "to", ServicesText.Clock(c.NextEnd)));
             }
             if (c.Outside)
             {
                 box.Line(ServicesText.T("reallife_svc_client_contract", "amount", ServicesText.Money(c.Fee), "standard", c.Standard.ToString()));
-            }
-            else if (!c.Open)
-            {
-                box.Line(ServicesText.T("reallife_svc_client_closed"));
             }
             int mode = c.Mode;
             if (!box.HasSelector || !box.Selector(ServicesCatalogue.VisitsMost + 1, mode, ServicesText.Mode, m => _director.SetMode(place, m)))
@@ -183,6 +191,7 @@ namespace RealLifeOverhaul.Economy
                 });
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", Back);
+            Guide(box);
         }
 
         // A shop of the player's that is not on the round.
@@ -193,7 +202,6 @@ namespace RealLifeOverhaul.Economy
             box.Title(ServicesGame.Name(reg));
             box.Line(ServicesText.Pair("reallife_svc_client_clean", ServicesGame.Cleanliness(reg).ToString()));
             box.Line(ServicesText.T(hours > 0 ? "reallife_svc_add_own_hours" : "reallife_svc_add_no_hours", "hours", hours.ToString()));
-            box.Line(ServicesText.T("reallife_svc_add_says"));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_svc_add_do", () =>
             {
@@ -201,6 +209,8 @@ namespace RealLifeOverhaul.Economy
                 _director.AddClient(place);
             });
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", Back);
+            box.Line(ServicesText.T("reallife_svc_add_says"));
+            Guide(box);
         }
 
         // ---------------------------------------------------------------- Crew
@@ -251,6 +261,7 @@ namespace RealLifeOverhaul.Economy
                 box.Line(ServicesText.T("reallife_svc_crew_says_hours"));
                 box.Line(ServicesText.T("reallife_svc_crew_says_pay"));
                 box.Line(ServicesText.T("reallife_svc_crew_says_pick"));
+                Guide(box);
                 _member.Employee = null;
                 _member.Base = null;
                 return;
@@ -259,13 +270,13 @@ namespace RealLifeOverhaul.Economy
             string id = _member.Id;
             bool on = state.InCrew(id);
             box.Title(_member.Name);
-            box.Line(ServicesText.T("reallife_svc_crew_skill", "skill", _member.Skill.ToString(), "mood", _member.Mood.ToString(), "rate", (CleaningRules.Rate(_member.Skill, _member.Mood, 1) / 100).ToString()));
-            box.Line(ServicesText.T("reallife_svc_crew_wage", "wage", CompanyText.Wage(_member.Wage), "hours", _member.WeekHours.ToString()));
-            box.Line(ServicesText.Pair("reallife_svc_crew_base", _member.Base != null ? _member.BaseName : ServicesText.T("reallife_svc_crew_no_base")));
             if (_member.Base == null || _member.WeekHours == 0)
             {
                 box.Line(ServicesText.T("reallife_svc_crew_needs_shift"));
             }
+            box.Line(ServicesText.T("reallife_svc_crew_skill", "skill", _member.Skill.ToString(), "mood", _member.Mood.ToString(), "rate", (CleaningRules.Rate(_member.Skill, _member.Mood, 1) / 100).ToString()));
+            box.Line(ServicesText.T("reallife_svc_crew_wage", "wage", CompanyText.Wage(_member.Wage), "hours", _member.WeekHours.ToString()));
+            box.Line(ServicesText.Pair("reallife_svc_crew_base", _member.Base != null ? _member.BaseName : ServicesText.T("reallife_svc_crew_no_base")));
             IReadOnlyList<DayVisit> visits = _director.Visits;
             int shown = 0;
             for (int i = 0; on && i < visits.Count && shown < 4; i++)
@@ -285,6 +296,7 @@ namespace RealLifeOverhaul.Economy
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, on ? InfoBox.Negative : InfoBox.Positive, on ? "reallife_svc_crew_take_off" : "reallife_svc_crew_put_on", () => _director.SetCrew(id, !on));
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", Back);
+            Guide(box);
             _member.Employee = null;
             _member.Base = null;
         }
@@ -355,19 +367,20 @@ namespace RealLifeOverhaul.Economy
                     _director.RefuseOffer(place);
                 });
                 InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", Back);
+                Guide(box);
                 return;
             }
             if (contract != null)
             {
                 string place = contract.Place;
                 box.Title(contract.Name);
-                box.Line(ServicesText.Pair("reallife_svc_contract_fee", ServicesText.T("reallife_svc_row_a_week", "amount", ServicesText.Money(contract.Fee))));
-                box.Line(ServicesText.Pair("reallife_svc_client_clean", ServicesText.T("reallife_svc_row_standard", "now", ServicesText.Trend(contract.Now, contract.CleanBefore), "standard", contract.Standard.ToString())));
-                box.Line(ServicesText.T("reallife_svc_contract_week", "under", contract.DaysUnder.ToString(), "most", ServicesCatalogue.ContractDaysUnderMost.ToString(), "day", (contract.WeekFrom + ServicesCatalogue.ContractWeekDays).ToString()));
                 if (contract.Missed > 0)
                 {
                     box.Line(ServicesText.T("reallife_svc_contract_missed", "count", contract.Missed.ToString(), "most", ServicesCatalogue.ContractMissesMost.ToString()));
                 }
+                box.Line(ServicesText.Pair("reallife_svc_contract_fee", ServicesText.T("reallife_svc_row_a_week", "amount", ServicesText.Money(contract.Fee))));
+                box.Line(ServicesText.Pair("reallife_svc_client_clean", ServicesText.T("reallife_svc_row_standard", "now", ServicesText.Trend(contract.Now, contract.CleanBefore), "standard", contract.Standard.ToString())));
+                box.Line(ServicesText.T("reallife_svc_contract_week", "under", contract.DaysUnder.ToString(), "most", ServicesCatalogue.ContractDaysUnderMost.ToString(), "day", (contract.WeekFrom + ServicesCatalogue.ContractWeekDays).ToString()));
                 box.Line(ServicesText.Pair("reallife_svc_contract_earned", ServicesText.Money(contract.Earned)));
                 box.Line(ServicesText.T("reallife_svc_contract_pattern", "mode", ServicesText.Mode(contract.Mode)));
                 Transform buttons = box.ButtonRow();
@@ -379,13 +392,15 @@ namespace RealLifeOverhaul.Economy
                 });
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_svc_contract_end", () => _director.EndContract(place));
                 InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", Back);
+                Guide(box);
                 return;
             }
             box.Title(ServicesText.T("reallife_svc_tab_contracts"));
-            box.Line(ServicesText.T("reallife_svc_contracts_says", "days", ServicesCatalogue.OfferEveryDays.ToString(), "most", ServicesCatalogue.OffersMost.ToString()));
-            box.Line(ServicesText.T("reallife_svc_contracts_says_week", "days", ServicesCatalogue.ContractDaysUnderMost.ToString(), "share", ServicesCatalogue.ContractPenaltyPct.ToString(), "weeks", ServicesCatalogue.ContractMissesMost.ToString()));
             box.Line(ServicesText.Pair("reallife_svc_contracts_running", ContractRules.Running(state).ToString()));
             box.Line(ServicesText.Pair("reallife_svc_service_fees", ServicesText.T("reallife_svc_service_fees_value", "amount", ServicesText.Money(_director.ContractWeekFees()), "booked", ServicesText.Signed(ServicesState.Week(state.FeeIncome)))));
+            box.Line(ServicesText.T("reallife_svc_contracts_says", "days", ServicesCatalogue.OfferEveryDays.ToString(), "most", ServicesCatalogue.OffersMost.ToString()));
+            box.Line(ServicesText.T("reallife_svc_contracts_says_week", "days", ServicesCatalogue.ContractDaysUnderMost.ToString(), "share", ServicesCatalogue.ContractPenaltyPct.ToString(), "weeks", ServicesCatalogue.ContractMissesMost.ToString()));
+            Guide(box);
         }
     }
 }

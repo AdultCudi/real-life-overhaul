@@ -233,7 +233,7 @@ namespace RealLifeOverhaul.Ledger
 
         private GameObject Build(FullMenu menu, Transform dormant)
         {
-            SessionWatch.Mark("ledger: the paper's page being built from the game's MyEmployees");   // once per city
+            using var piece = SessionWatch.Piece("ledger: the paper's page being built from the game's MyEmployees");   // once per city
             _shell = AppShell.Make(menu, dormant, AppId);
             if (_shell == null || !_shell.SetTabCount(Pages))
             {

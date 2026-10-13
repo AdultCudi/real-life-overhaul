@@ -479,8 +479,10 @@ namespace RealLifeOverhaul
                 }
             }
 
+            private static readonly int HotUpdate = HotSpots.Slot("Core: KeyCapture.Update");
             private void Update()
             {
+                using var hotSpot = HotSpots.Time(HotUpdate);
                 if (Time.unscaledTime > _until || Input.GetKeyDown(KeyCode.Escape))
                 {
                     End();

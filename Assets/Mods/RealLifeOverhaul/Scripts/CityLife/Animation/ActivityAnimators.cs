@@ -141,8 +141,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("CityLife: ActivityAnimators.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             try
             {
                 StepAll(Time.deltaTime);
@@ -157,8 +159,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("CityLife: ActivityAnimators.LateUpdate");
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             try
             {
                 ReachAll(Time.deltaTime);

@@ -85,6 +85,7 @@ namespace RealLifeOverhaul.Economy
                 box.Line(ServicesText.T("reallife_svc_sale_says_quick", "share", ServicesCatalogue.QuickPct.ToString()));
                 box.Line(ServicesText.T("reallife_svc_sale_says_after"));
                 box.Line(ServicesText.T("reallife_svc_sale_pick"));
+                Guide(box);
             }
         }
 
@@ -130,6 +131,7 @@ namespace RealLifeOverhaul.Economy
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", Back);
             InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_svc_quick_do", () => _director.QuickSale(place));
+            Guide(box);
         }
 
         // One offer: who, how much, and on what terms.
@@ -141,6 +143,7 @@ namespace RealLifeOverhaul.Economy
             SaleBreakdown b = _director.Value(reg);
             SaleMoney m = SaleRules.Settle(o.Price, o.Parts, b, ServicesGame.Cash);
             box.Title(ServicesText.T("reallife_svc_bid_title", "business", l != null ? l.Name : "?"));
+            box.Line(ServicesText.T(o.Countered ? "reallife_svc_bid_until_final" : "reallife_svc_bid_until", "day", o.Deadline.ToString(), "share", ServicesCatalogue.CounterStepPct.ToString()));
             box.Line(ServicesText.T("reallife_svc_bid_from", "buyer", ServicesText.Buyer(o), "kind", ServicesText.Kind(o.Buyer)));
             box.Line(ServicesText.Pair("reallife_svc_bid_price", ServicesText.T("reallife_svc_bid_price_value", "amount", ServicesText.Money(o.Price), "share", ServicesText.Percent(b.Value > 0 ? Mathf.RoundToInt(o.Price * 100f / b.Value) : 0))));
             box.Line(o.Parts > 1
@@ -152,7 +155,6 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(ServicesText.T(m.Short > 0 ? "reallife_svc_bid_owed_short" : "reallife_svc_bid_owed", "investors", ServicesText.Money(m.Investors), "loans", ServicesText.Money(m.Loans), "left", ServicesText.Signed(m.Left)));
             }
-            box.Line(ServicesText.T(o.Countered ? "reallife_svc_bid_until_final" : "reallife_svc_bid_until", "day", o.Deadline.ToString(), "share", ServicesCatalogue.CounterStepPct.ToString()));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_svc_bid_accept", () => _director.Accept(id));
             if (!o.Countered)

@@ -132,8 +132,10 @@ namespace RealLifeOverhaul.Roommates
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Home: RoommateDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_flat.Out)
             {
                 _flat.Frame(Time.deltaTime);
@@ -161,9 +163,11 @@ namespace RealLifeOverhaul.Roommates
             }
         }
 
+        private static readonly int HotOnEnter = HotSpots.Slot("Home: RoommateDirector.OnEnter");
         // The game's own event: the player has come into a building. The next frame looks, so the roommate is there at once.
         private void OnEnter(Address address)
         {
+            using var hotSpot = HotSpots.Time(HotOnEnter);
             _next = 0f;
             _wake = WakeLooks;
         }

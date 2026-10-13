@@ -163,8 +163,10 @@ namespace RealLifeOverhaul.Tech
 
         // ---------------------------------------------------------------- the game's hour, day and save
 
+        private static readonly int HotOnHour = HotSpots.Slot("Tech: TechDirector.OnHour");
         private void OnHour()
         {
+            using var hotSpot = HotSpots.Time(HotOnHour);
             if (_broken || Save == null)
             {
                 return;
@@ -182,8 +184,10 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        private static readonly int HotOnDay = HotSpots.Slot("Tech: TechDirector.OnDay");
         private void OnDay()
         {
+            using var hotSpot = HotSpots.Time(HotOnDay);
             if (_broken || Save == null)
             {
                 return;

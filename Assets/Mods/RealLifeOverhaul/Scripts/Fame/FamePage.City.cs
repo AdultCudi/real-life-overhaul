@@ -66,7 +66,6 @@ namespace RealLifeOverhaul.Fame
                     return;
                 }
                 box.Title(FameText.RequestTitle(q));
-                box.Line(FameText.RequestAbout(q));
                 box.Line(FameText.Pair("reallife_fame_label_state", FameText.RequestState(q.State)));
                 if (q.State == FameRequestState.Open)
                 {
@@ -76,7 +75,7 @@ namespace RealLifeOverhaul.Fame
                     InfoBox.Button(buttons, InfoBox.Positive, "reallife_fame_accept", () => { director.AnswerRequest(id, true); pick(picked); });
                     InfoBox.Button(buttons, InfoBox.Negative, "reallife_fame_refuse", () => { director.AnswerRequest(id, false); pick(picked); });
                 }
-                Buttons(box, close, back);
+                Buttons(box, close, back, FameText.RequestAbout(q));
                 written = true;
                 return;
             }
@@ -93,8 +92,8 @@ namespace RealLifeOverhaul.Fame
                     return;
                 }
                 box.Title(FameText.T("reallife_fame_lobby_row"));
-                box.Line(FameText.Fill("reallife_fame_lobby_line", "day", FameText.N(l.Day), "chance", FameText.N(l.Chance), "rival", FameText.N(l.Rival)));
                 box.Line(FameText.Pair("reallife_fame_label_state", FameText.LobbyState(l.State)));
+                box.Line(FameText.Fill("reallife_fame_lobby_line", "day", FameText.N(l.Day), "chance", FameText.N(l.Chance), "rival", FameText.N(l.Rival)));
                 if (l.State == FameLobbyState.Pending)
                 {
                     box.Line(FameText.Fill("reallife_fame_lobby_decides", "day", FameText.N(l.DecideDay)));

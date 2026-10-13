@@ -52,6 +52,7 @@ namespace RealLifeOverhaul.Fame
                 box.Title(FameText.T("reallife_fame_title"));
                 box.Line(FameText.T("reallife_fame_off"));
                 InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_fame_back", back);
+                Meta.Guide.Point(box, GuideTitle);
                 return;
             }
             int day = FameGame.Day;
@@ -147,44 +148,43 @@ namespace RealLifeOverhaul.Fame
         private static void WriteSummary(FameFile f, InfoBox box, Action back)
         {
             box.Title(FameText.T("reallife_fame_title"));
-            box.Line(FameText.Pair("reallife_fame_label_profile", FameText.Profile(FameRules.Profile(f.Wealth, f.Recognition, f.Overall))));
-            box.Line(FameText.Pair("reallife_fame_label_wealth", FameText.N(f.Wealth)));
-            box.Line(FameText.Fill("reallife_fame_wealth_parts", "worth", FameText.Money(f.NetWorth), "week", FameText.Money(f.Weekly), "count", FameText.N(f.Businesses),
-                "properties", FameText.N(f.Properties)));
-            box.Line(FameText.Pair("reallife_fame_label_recognition", FameText.Fill("reallife_fame_recognition_value", "value", FameText.N(f.Recognition), "tier", FameText.Tier(f.Tier))));
-            box.Line(FameText.Fill("reallife_fame_recognition_parts", "followers", FameText.N(f.Followers), "press", (f.Press / 10f).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)));
-            box.Headline("reallife_fame_head_reputation");
-            box.Line(FameText.Pair("reallife_fame_label_reputation", FameText.Rep(f.Overall)));
-            for (int i = 0; i < 4; i++)
-            {
-                box.Line(FameText.Pair(LabelKeys[i], FameText.Rep(f.Rep[i])));
-            }
             int day = FameGame.Day;
-            box.Line(FameText.Pair("reallife_fame_label_influence", FameText.N(FameCity.Influence(f))));
             if (FameCity.InScandal(f, day))
             {
                 box.Line(FameText.Fill("reallife_fame_scandal_line", "day", FameText.N(f.ScandalUntil)));
             }
+            box.Line(FameText.Pair("reallife_fame_label_profile", FameText.Profile(FameRules.Profile(f.Wealth, f.Recognition, f.Overall))));
+            box.Line(FameText.Pair("reallife_fame_label_reputation", FameText.Rep(f.Overall)));
+            box.Line(FameText.Pair("reallife_fame_label_wealth", FameText.N(f.Wealth)));
+            box.Line(FameText.Pair("reallife_fame_label_recognition", FameText.Fill("reallife_fame_recognition_value", "value", FameText.N(f.Recognition), "tier", FameText.Tier(f.Tier))));
+            box.Line(FameText.Pair("reallife_fame_label_influence", FameText.N(FameCity.Influence(f))));
+            box.Headline("reallife_fame_head_reputation");
+            for (int i = 0; i < 4; i++)
+            {
+                box.Line(FameText.Pair(LabelKeys[i], FameText.Rep(f.Rep[i])));
+            }
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_fame_back", back);
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         private static bool WritePicked(FameFile f, InfoBox box, string picked, Action<string> pick, Action back)
         {
             Action close = () => pick(null);
+            string about;
             if (picked == "wealth")
             {
                 box.Title(FameText.T("reallife_fame_row_wealth"));
                 box.Line(FameText.Pair("reallife_fame_label_wealth", FameText.N(f.Wealth)));
                 box.Line(FameText.Fill("reallife_fame_wealth_parts", "worth", FameText.Money(f.NetWorth), "week", FameText.Money(f.Weekly), "count", FameText.N(f.Businesses),
                     "properties", FameText.N(f.Properties)));
-                box.Line(FameText.T("reallife_fame_wealth_about"));
+                about = FameText.T("reallife_fame_wealth_about");
             }
             else if (picked == "recognition")
             {
                 box.Title(FameText.T("reallife_fame_row_recognition"));
                 box.Line(FameText.Pair("reallife_fame_label_recognition", FameText.Fill("reallife_fame_recognition_value", "value", FameText.N(f.Recognition), "tier", FameText.Tier(f.Tier))));
                 box.Line(FameText.Fill("reallife_fame_recognition_parts", "followers", FameText.N(f.Followers), "press", (f.Press / 10f).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)));
-                box.Line(FameText.T("reallife_fame_recognition_about"));
+                about = FameText.T("reallife_fame_recognition_about");
             }
             else if (picked.StartsWith("part:", StringComparison.Ordinal))
             {
@@ -195,7 +195,7 @@ namespace RealLifeOverhaul.Fame
                 {
                     box.Line(FameText.Fill("reallife_fame_page_heading", "value", FameText.N(f.Target[i])));
                 }
-                box.Line(FameText.T(FameText.PartAboutKeys[i]));
+                about = FameText.T(FameText.PartAboutKeys[i]);
             }
             else if (picked.StartsWith("district:", StringComparison.Ordinal))
             {
@@ -209,21 +209,29 @@ namespace RealLifeOverhaul.Fame
                 box.Line(FameText.Pair("reallife_fame_label_opinion", FameText.Rep(d.Opinion)));
                 box.Line(FameText.Pair("reallife_fame_label_known", FameText.N(d.Known)));
                 box.Line(FameText.Fill("reallife_fame_page_district", "shops", FameText.N(d.Shops), "jobs", FameText.N(d.Jobs), "raised", FameText.N(d.Raised)));
-                box.Line(FameText.T("reallife_fame_district_about"));
+                about = FameText.T("reallife_fame_district_about");
             }
             else
             {
                 return false;
             }
-            Buttons(box, close, back);
+            Buttons(box, close, back, about);
             return true;
         }
 
-        internal static void Buttons(InfoBox box, Action close, Action back)
+        private const string GuideTitle = "reallife_meta_title_standing";   // the Guide's page every page of Standing points to at its foot
+
+        /// <summary>The foot of a picked thing's page: closing it and going back, then what it is (null for nothing more) and the Guide's page.</summary>
+        internal static void Buttons(InfoBox box, Action close, Action back, string about = null)
         {
             UnityEngine.Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", close);
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_fame_back", back);
+            if (!string.IsNullOrEmpty(about))
+            {
+                box.Line(about);
+            }
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         /// <summary>The number after a row id's prefix ("district:3" from 9 is 3); -1 if there is none.</summary>

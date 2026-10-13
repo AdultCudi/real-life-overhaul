@@ -90,8 +90,10 @@ namespace RealLifeOverhaul
             return _powerFactor;
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Garage: GarageTuning.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_claimed || _failed)
             {
                 if (_applied != null)
@@ -132,8 +134,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotFixedUpdate = HotSpots.Slot("Garage: GarageTuning.FixedUpdate");
         private void FixedUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotFixedUpdate);
             if (_dragDelta == 0f || _body == null)
             {
                 return;

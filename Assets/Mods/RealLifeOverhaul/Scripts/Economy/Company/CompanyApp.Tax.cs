@@ -53,19 +53,20 @@ namespace RealLifeOverhaul.Economy
             else if (Picked("lic:") == null || !_director.On(CompanyPart.Licences))
             {
                 box.Title(CompanyText.T("reallife_co_tab_tax"));
-                box.Line(CompanyText.T("reallife_co_tax_game", "percent", CompanyGame.TaxPercent.ToString()));
-                box.Line(CompanyText.T("reallife_co_tax_deduct"));
-                box.Line(FinanceText.Pair("reallife_co_tax_quarter", CompanyText.T("reallife_co_tax_quarter_value", "quarter", t.Quarter.ToString(), "day", (t.QuarterFrom + _director.QuarterDays).ToString())));
-                box.Line(FinanceText.Pair("reallife_co_tax_costs", CompanyText.Money(TaxRules.CostsSum(t))));
-                box.Line(FinanceText.Pair("reallife_co_row_accountant", CompanyText.Accountant(t.Accountant)));
-                if (Settings.EconomyCompanyHide)
-                {
-                    box.Line(FinanceText.Pair("reallife_co_tax_risk", CompanyText.Share(TaxRules.AuditChance(t.Risk, t.Accountant) / 10)));
-                }
                 if (t.Owed > 0)
                 {
                     box.Line(FinanceText.Pair("reallife_co_tax_owed", CompanyText.Money(t.Owed)));
                 }
+                if (Settings.EconomyCompanyHide)
+                {
+                    box.Line(FinanceText.Pair("reallife_co_tax_risk", CompanyText.Share(TaxRules.AuditChance(t.Risk, t.Accountant) / 10)));
+                }
+                box.Line(FinanceText.Pair("reallife_co_tax_quarter", CompanyText.T("reallife_co_tax_quarter_value", "quarter", t.Quarter.ToString(), "day", (t.QuarterFrom + _director.QuarterDays).ToString())));
+                box.Line(FinanceText.Pair("reallife_co_tax_costs", CompanyText.Money(TaxRules.CostsSum(t))));
+                box.Line(FinanceText.Pair("reallife_co_row_accountant", CompanyText.Accountant(t.Accountant)));
+                box.Line(CompanyText.T("reallife_co_tax_game", "percent", CompanyGame.TaxPercent.ToString()));
+                box.Line(CompanyText.T("reallife_co_tax_deduct"));
+                Guide(box);
             }
         }
 
@@ -84,11 +85,11 @@ namespace RealLifeOverhaul.Economy
                 BackButton(box);
                 return;
             }
+            box.Line(CompanyText.T(day > t.ReturnDue ? "reallife_co_return_late" : "reallife_co_return_due", "day", t.ReturnDue.ToString(), "amount", CompanyText.Money(TaxRules.Penalty(t.ReturnTakings)),
+                "count", t.ReturnPenalties.ToString()));
             box.Line(FinanceText.Pair("reallife_co_return_quarter", t.ReturnQuarter.ToString()));
             box.Line(FinanceText.Pair("reallife_co_return_takings", CompanyText.Money(t.ReturnTakings)));
             box.Line(FinanceText.Pair("reallife_co_return_deduct", CompanyText.Money(t.ReturnCosts)));
-            box.Line(CompanyText.T(day > t.ReturnDue ? "reallife_co_return_late" : "reallife_co_return_due", "day", t.ReturnDue.ToString(), "amount", CompanyText.Money(TaxRules.Penalty(t.ReturnTakings)),
-                "count", t.ReturnPenalties.ToString()));
             bool helped = TaxRules.Files(t.Accountant, _director.Hidden() > 0);
             if (helped)
             {
@@ -109,6 +110,7 @@ namespace RealLifeOverhaul.Economy
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_co_return_file", _director.FileReturn);
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", Back);
+            Guide(box);
         }
 
         private void WriteAccountant(InfoBox box, TaxFile t)
@@ -148,6 +150,7 @@ namespace RealLifeOverhaul.Economy
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_co_acc_dismiss", _director.Dismiss);
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_co_back", Back);
+            Guide(box);
         }
 
         private void WriteHidden(InfoBox box, TaxFile t, CompanyShop shop)

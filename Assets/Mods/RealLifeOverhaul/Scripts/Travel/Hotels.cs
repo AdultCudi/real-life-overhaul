@@ -34,7 +34,7 @@ namespace RealLifeOverhaul
     /// residential buildings (which nobody can walk into unless they rent them) and a board for
     /// rented cottages in the Hamptons. Which building is a matter of static data only
     /// (TravelCatalogue.Hotels), so a booking made in one session finds the same hotel in the
-    /// next; a building the player has since rented or bought gives way to the next in line.
+    /// next; a building the player has since rented or bought gives way to the next in line, at the load and while playing (Keep).
     ///
     /// The frontage is dressed the first time the player comes within 150 m: a sign against the
     /// wall beside the door, an awning over it, a luggage cart, each only where a real wall and
@@ -73,6 +73,7 @@ namespace RealLifeOverhaul
         private int _wallMask;
         private int _solidMask;
         private bool _resolved;
+        private int _look;
 
         public Hotels(Transform root, IModLogger logger)
         {
@@ -156,6 +157,60 @@ namespace RealLifeOverhaul
             }
             _logger?.Info(said.ToString());
             return true;
+        }
+
+        /// <summary>Changes each time a hotel moves to another building (for the map).</summary>
+        public int Moves { get; private set; }
+
+        /// <summary>
+        /// Once a second, indoors or out: every five seconds, a hotel whose building has become the player's (a save from
+        /// before the mod's buildings were off the market, another player's in a session) gives way to the next in line,
+        /// as it would have at the city's load. Not the one the player has a room in while they are up in it. Its frontage
+        /// and its doorman go with it. Eight registration reads every five seconds.
+        /// </summary>
+        public void Keep()
+        {
+            if (!_resolved || ++_look < 5)
+            {
+                return;
+            }
+            _look = 0;
+            CityManager city = InstanceBehavior<CityManager>.Instance;
+            for (int i = 0; city != null && i < _sites.Count; i++)
+            {
+                HotelSite site = _sites[i];
+                if (site.Slot.Anchors != null || site.Building == null || !Mine(site.Building.building)
+                    || (TravelState.InRoom && TravelState.HotelId == site.Slot.Id))
+                {
+                    continue;
+                }
+                CityBuildingController next = Pick(city, site.Slot, site.Slot.Sizes) ?? Pick(city, site.Slot, null);
+                if (next == null || !Door(next, out Vector3 door))
+                {
+                    continue;   // (nowhere else in its district: it stays, under the game's own name while it is the player's)
+                }
+                string was = site.Building.building.StreetName + " " + site.Building.building.StreetNumber;
+                if (_doormanAt == site)
+                {
+                    ShelveDoorman();
+                }
+                if (site.Dressing != null)
+                {
+                    UnityEngine.Object.Destroy(site.Dressing.gameObject);
+                    site.Dressing = null;
+                }
+                _taken.Remove(site.Building.building);
+                _taken.Add(next.building);
+                site.Building = next;
+                site.Desk = door;
+                site.Front = door;
+                site.Dressed = false;
+                site.HasDoormanSpot = false;
+                SpecialBuildings.Set("hotel_" + site.Slot.Id, next, SpecialKind.Hotel, site.Slot.NameKey, "reallife_map_card_hotel", () => Settings.Hotels);
+                Moves++;
+                _logger?.Info("Travel: " + site.Slot.Id + " was at " + was + ", which is the player's now; it has moved to "
+                              + next.building.StreetName + " " + next.building.StreetNumber + ".");
+            }
         }
 
         /// <summary>Once a second while the player is on foot or driving out of doors.</summary>
@@ -625,7 +680,7 @@ namespace RealLifeOverhaul
             {
                 _props = new CityProps(_root);
             }
-            SessionWatch.Mark("people: a character being made");
+            using var piece = SessionWatch.Piece("people: a character being made");
             var character = PrefabHelper.CreatePrefab<ThirdPersonCharacter>(CharacterPrefab, near + Vector3.down * 40f, Quaternion.identity, _root);
             character.name = "RealLifeOverhaul Hotel Doorman";
             var fidgets = character.GetComponentInChildren<BoredAnimations>(true);

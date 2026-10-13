@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.LowLevel;
@@ -13,12 +14,14 @@ namespace RealLifeOverhaul
     /// "navigation" is a cut of the mesh; one in "coroutines" while the game's screen is black is the game's own
     /// walk into or out of a building; one in "Update" is a script's, the game's or the mod's.
     ///
-    /// It works as <see cref="PerfLoop"/> does (a timestamp step put into the engine's list of frame steps), but
-    /// only in front of and behind the dozen steps named in <see cref="GroupOf"/>, and it keeps one frame, not a
-    /// window: per frame about thirty timestamp reads and as many additions (under two microseconds), nothing
-    /// allocated. Installed only while "Developer diagnostics" is on and the option "Measurements time every step
-    /// of the frame" allows it; taken out of the loop again when either goes off, and stood aside while a probe or
-    /// a benchmark has its own timestamps in the loop.
+    /// It works as <see cref="PerfLoop"/> does (a timestamp step put into the engine's list of frame steps), and it
+    /// keeps one frame, not a window. The dozen steps named in <see cref="GroupOf"/> are added up into their groups;
+    /// every other step of the frame (the engine's own, and any other mod's) is timed by itself, so that a long frame
+    /// whose time is in "the rest" can name the one step it was in (<see cref="LastOther"/>). Per frame some two
+    /// hundred and fifty timestamp reads and as many additions (a few microseconds), nothing allocated. Installed only
+    /// while "Developer diagnostics" is on and the option "Measurements time every step of the frame" allows it;
+    /// taken out of the loop again when either goes off, and stood aside while a probe or a benchmark has its own
+    /// timestamps in the loop.
     /// </summary>
     public static class FrameSteps
     {
@@ -36,6 +39,9 @@ namespace RealLifeOverhaul
         private static readonly PlayerLoopSystem.UpdateFunction BeginStep = Begin;
         private static readonly PlayerLoopSystem.UpdateFunction RollStep = Roll;
         private static PlayerLoopSystem.UpdateFunction[] _ends;
+        private static long[] _otherNow = new long[0];      // every other step, the frame being run
+        private static long[] _otherLast = new long[0];     // ...and the frame before it
+        private static string[] _otherNames = new string[0];
 
         private static long _began;
         private static int _rolledFrame = -10;
@@ -49,6 +55,31 @@ namespace RealLifeOverhaul
 
         /// <summary>Milliseconds the frame before this one spent in a group of steps.</summary>
         public static float LastMs(int group) => (float)(Last[group] * 1000.0 / Stopwatch.Frequency);
+
+        /// <summary>
+        /// The step outside the named groups that took the most of the frame before this one ("PostLateUpdate.UpdateAllSkinnedMeshes",
+        /// or another mod's step by its type), with its milliseconds. False when none was timed.
+        /// </summary>
+        public static bool LastOther(out string name, out float ms)
+        {
+            name = null;
+            ms = 0f;
+            long best = 0L;
+            for (int i = 0; i < _otherLast.Length; i++)
+            {
+                if (_otherLast[i] > best)
+                {
+                    best = _otherLast[i];
+                    name = _otherNames[i];
+                }
+            }
+            if (name == null)
+            {
+                return false;
+            }
+            ms = (float)(best * 1000.0 / Stopwatch.Frequency);
+            return true;
+        }
 
         /// <summary>Asks for the timestamps to be in the engine's loop, or out of it.</summary>
         public static void Want(bool on)
@@ -119,6 +150,9 @@ namespace RealLifeOverhaul
             }
             var timedPhases = new PlayerLoopSystem[phases.Length];
             bool rolled = false;
+            // Every step outside the named groups gets a slot of its own, with its name, and an end that adds to that slot.
+            var otherNames = new List<string>(160);
+            var otherEnds = new List<PlayerLoopSystem.UpdateFunction>(160);
             for (int p = 0; p < phases.Length; p++)
             {
                 PlayerLoopSystem phase = phases[p];   // a copy: the game's own arrays are never written to
@@ -128,12 +162,7 @@ namespace RealLifeOverhaul
                     timedPhases[p] = phase;
                     continue;
                 }
-                int timed = 0;
-                for (int s = 0; s < steps.Length; s++)
-                {
-                    timed += GroupOf(steps[s].type) >= 0 ? 1 : 0;
-                }
-                var with = new PlayerLoopSystem[steps.Length + timed * 2 + (rolled ? 0 : 1)];
+                var with = new PlayerLoopSystem[steps.Length * 3 + (rolled ? 0 : 1)];
                 int at = 0;
                 if (!rolled)
                 {
@@ -151,7 +180,12 @@ namespace RealLifeOverhaul
                     }
                     else
                     {
+                        int other = otherNames.Count;
+                        otherNames.Add(StepName(phase.type, steps[s].type));
+                        otherEnds.Add(() => _otherNow[other] += Stopwatch.GetTimestamp() - _began);
+                        with[at++] = new PlayerLoopSystem { type = typeof(FrameSteps), updateDelegate = BeginStep };
                         with[at++] = steps[s];
+                        with[at++] = new PlayerLoopSystem { type = typeof(FrameSteps), updateDelegate = otherEnds[other] };
                     }
                 }
                 phase.subSystemList = with;
@@ -159,6 +193,9 @@ namespace RealLifeOverhaul
             }
             Array.Clear(Now, 0, Count);
             Array.Clear(Last, 0, Count);
+            _otherNames = otherNames.ToArray();
+            _otherNow = new long[_otherNames.Length];
+            _otherLast = new long[_otherNames.Length];
             loop.subSystemList = timedPhases;
             PlayerLoop.SetPlayerLoop(loop);
             _installed = true;
@@ -220,7 +257,25 @@ namespace RealLifeOverhaul
                 Last[g] = Now[g];
                 Now[g] = 0;
             }
+            long[] now = _otherNow, last = _otherLast;
+            for (int i = 0; i < now.Length && i < last.Length; i++)
+            {
+                last[i] = now[i];
+                now[i] = 0;
+            }
             _rolledFrame = Time.frameCount;
+        }
+
+        // "PostLateUpdate.UpdateAllSkinnedMeshes" for the engine's steps; another mod's by its own type's full name.
+        private static string StepName(Type phase, Type step)
+        {
+            if (step == null)
+            {
+                return (phase != null ? phase.Name : "a phase") + ".(unnamed)";
+            }
+            return step.Namespace != null && step.Namespace.StartsWith("UnityEngine", StringComparison.Ordinal)
+                ? (phase != null ? phase.Name + "." : string.Empty) + step.Name
+                : step.FullName;
         }
 
         /// <summary>

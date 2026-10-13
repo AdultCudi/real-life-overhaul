@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using BAModAPI;
 using UnityEngine;
@@ -32,6 +33,13 @@ namespace RealLifeOverhaul
     /// them, and used in place of the bundle's own of the same id, with the bundle's atlas. All of them or none: a
     /// remade prop can depend on another (the city bus's body on its roof). build_bundle.ps1 removes the folder once the
     /// bundle has them.
+    ///
+    /// ONLY FOR THE BUNDLE THEY WERE MADE FOR. Their UVs point into the atlas of the bundle beside them when they were
+    /// written: with any other bundle they draw with the wrong parts of its atlas (13 October 2026: a city bus in fuel price boards
+    /// and fire engine lettering, from a folder an install had copied over and left behind). So newer_props.py writes the
+    /// SHA-256 of the bundle file into their catalogue ("bundle"), and they are used only beside a bundle file of that
+    /// hash. A folder without the stamp, or with another's, is left alone and said once in the log; the bundle's own
+    /// props are used. The hash is taken on the background thread that reads the folder, and only when there is one.
     /// </summary>
     public static class PropLibrary
     {
@@ -61,6 +69,7 @@ namespace RealLifeOverhaul
         {
             public int version;
             public ItemFile[] items;
+            public string bundle;   // props_newer only: the SHA-256 of the bundle file they were made for (newer_props.py)
         }
 
         private sealed class ItemFile
@@ -133,7 +142,7 @@ namespace RealLifeOverhaul
                 string newer = Path.Combine(context.ModRootPath, NewerPath);
                 if (Directory.Exists(newer))
                 {
-                    _newer = Task.Run(() => ReadNewer(newer));
+                    _newer = Task.Run(() => ReadNewer(newer, path));
                 }
                 AssetBundleCreateRequest opening = AssetBundle.LoadFromFileAsync(path);
                 opening.completed += _ => Opened(opening);
@@ -388,8 +397,9 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Off the main thread: the newer props' catalogue and mesh files, read and checked, nothing of Unity's touched.
-        private static Newer ReadNewer(string folder)
+        // Off the main thread: the newer props' catalogue and mesh files, read and checked, nothing of Unity's touched. Only
+        // for the bundle file they were made for: its SHA-256 is their catalogue's stamp.
+        private static Newer ReadNewer(string folder, string bundlePath)
         {
             var newer = new Newer();
             try
@@ -399,6 +409,18 @@ namespace RealLifeOverhaul
                 if (catalogue == null || catalogue.version != SupportedVersion || catalogue.items == null || catalogue.items.Length == 0)
                 {
                     newer.Problem = "its catalogue is missing or of another version";
+                    return newer;
+                }
+                if (string.IsNullOrEmpty(catalogue.bundle))
+                {
+                    newer.Problem = "it does not say which build of the asset bundle it was made for (a folder left from an older version of the mod)";
+                    return newer;
+                }
+                string hash = FileHash(bundlePath);
+                if (!string.Equals(hash, catalogue.bundle.Trim(), StringComparison.OrdinalIgnoreCase))
+                {
+                    newer.Problem = "it was made for another build of the asset bundle (" + Short(catalogue.bundle) + ", this one is " + Short(hash)
+                                    + "): a folder left from an older version of the mod";
                     return newer;
                 }
                 foreach (ItemFile item in catalogue.items)
@@ -428,6 +450,28 @@ namespace RealLifeOverhaul
                 newer.Problem = "its files could not be read (" + e.Message + ")";
             }
             return newer;
+        }
+
+        // The SHA-256 of a file, in lower-case hex (as newer_props.py writes it).
+        private static string FileHash(string path)
+        {
+            using (FileStream stream = File.OpenRead(path))
+            using (SHA256 sha = SHA256.Create())
+            {
+                byte[] hash = sha.ComputeHash(stream);
+                var text = new System.Text.StringBuilder(hash.Length * 2);
+                for (int i = 0; i < hash.Length; i++)
+                {
+                    text.Append(hash[i].ToString("x2"));
+                }
+                return text.ToString();
+            }
+        }
+
+        private static string Short(string hash)
+        {
+            hash = hash.Trim();
+            return hash.Length > 12 ? hash.Substring(0, 12) : hash;
         }
 
         // What is wrong with a mesh file, or null: the checks of the bundle's builder (PropBundleBuilder.BuildMesh).

@@ -45,8 +45,10 @@ namespace RealLifeOverhaul
             _volume.weight = 0f;
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("World: VisualEnhancer.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_volume == null)
             {
                 return;

@@ -27,8 +27,9 @@ namespace RealLifeOverhaul
     ///
     /// WHAT IT LOOKS AT. Every 0.15 s, along its own path ahead of its nose (round a bend as well as
     /// down a straight), boxes as wide as the bus over as far as it needs to stop in: one physics
-    /// query each. Told where the kerb is (Kerb: a bus pulling in to its bay), it leaves out what is
-    /// beyond it, on the pavement. Held up close to the end of a route that allows it (nearEnough),
+    /// query each. Told where the kerb is (Kerb: a bus pulling in to its bay, or coming up to or
+    /// leaving a stop on the lane's line), it leaves out what is beyond it, on the pavement: whoever
+    /// waits at the kerb is never in its way. What holds it up is kept (HeldBy), for the log. Held up close to the end of a route that allows it (nearEnough),
     /// it takes where it is as the end after a couple of seconds.
     ///
     /// The bus is moved in the physics step (a kinematic body: it pushes, it is not pushed), and the
@@ -60,6 +61,7 @@ namespace RealLifeOverhaul
         private float _speed;
         private float _pull;
         private float _obstacle = float.MaxValue;
+        private Collider _obstacleHit;   // what that is (the nearest thing in its way when last looked)
         private bool _person;
         private bool _blocked;
         private float _blockedSince;
@@ -89,11 +91,20 @@ namespace RealLifeOverhaul
         /// <summary>Metres of route still to drive.</summary>
         public float RouteLeft => Active ? Mathf.Max(0f, _path.End - _s) : 0f;
 
+        /// <summary>Metres from where it is to the end of the route it was last given, driving or not (pulled up at a light, say).</summary>
+        public float PathLeft => _path.Count >= 2 ? Mathf.Max(0f, _path.End - _s) : 0f;
+
         /// <summary>Where its front axle is: the point its routes are laid for.</summary>
         public Vector3 Front => _front;
 
         /// <summary>Seconds it has stood behind something in its way; 0 when it is not held up.</summary>
         public float HeldFor => Active && _blocked ? Time.time - _blockedSince : 0f;
+
+        /// <summary>What it stands behind while it is held up (the nearest thing in its way when it last looked), else null.</summary>
+        public Collider HeldBy => Active && _blocked ? _obstacleHit : null;
+
+        /// <summary>Metres ahead of its nose of the stretch of its way that what holds it is in (its looks are SenseBox long).</summary>
+        public float HeldAhead => Active && _blocked ? _obstacle : float.MaxValue;
 
         /// <summary>The first point of the route as given that its front axle has not yet reached.</summary>
         public int NextPoint => _path.NextPoint(_s);
@@ -163,6 +174,7 @@ namespace RealLifeOverhaul
             _gateAt = float.MaxValue;
             _blocked = false;
             _obstacle = float.MaxValue;
+            _obstacleHit = null;
             _senseAt = 0f;
             _rx.Clear();
             _ry.Clear();
@@ -231,8 +243,10 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- driving
 
+        private static readonly int HotFixedUpdate = HotSpots.Slot("Transport: BusDriver.FixedUpdate");
         private void FixedUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotFixedUpdate);
             if (!Active)
             {
                 return;
@@ -326,6 +340,7 @@ namespace RealLifeOverhaul
         private void Sense()
         {
             _obstacle = float.MaxValue;
+            _obstacleHit = null;
             _person = false;
             if (_path.Count < 2)
             {
@@ -358,6 +373,7 @@ namespace RealLifeOverhaul
                     if (ahead < _obstacle)
                     {
                         _obstacle = ahead;
+                        _obstacleHit = hit;
                         _person = ((_peopleLayers >> hit.gameObject.layer) & 1) != 0;
                     }
                 }

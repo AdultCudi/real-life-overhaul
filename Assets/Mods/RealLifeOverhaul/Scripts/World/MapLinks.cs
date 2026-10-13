@@ -235,7 +235,7 @@ namespace RealLifeOverhaul
                 Stamp = () =>
                 {
                     TravelDirector travel = TravelDirector.Instance;
-                    return travel != null && travel.Hotels != null ? 1 + travel.Hotels.Sites.Count : 0;
+                    return travel != null && travel.Hotels != null ? 1 + travel.Hotels.Sites.Count + travel.Hotels.Moves * 64L : 0;   // (read again when one moves)
                 },
                 Fill = HotelSites
             });
@@ -247,7 +247,7 @@ namespace RealLifeOverhaul
                 Stamp = () =>
                 {
                     JusticeDirector justice = JusticeDirector.Instance;
-                    return justice != null && justice.Court != null && justice.Court.Usable ? 2 : 0;
+                    return justice != null && justice.Court != null && justice.Court.Usable ? 2 + justice.Court.Moves * 4L : 0;   // (read again when it moves)
                 },
                 Fill = places =>
                 {
@@ -267,7 +267,7 @@ namespace RealLifeOverhaul
                 Stamp = () =>
                 {
                     Utilities.UtilitiesDirector utilities = Utilities.UtilitiesDirector.Instance;
-                    return utilities != null && utilities.Office != null && utilities.Office.Usable ? (SpecialBuildings.Active ? 3 : 2) : 0;
+                    return utilities != null && utilities.Office != null && utilities.Office.Usable ? (SpecialBuildings.Active ? 3 : 2) + utilities.Office.Moves * 4L : 0;   // (read again when it moves)
                 },
                 Fill = places =>
                 {

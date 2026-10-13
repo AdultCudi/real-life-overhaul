@@ -162,8 +162,10 @@ namespace RealLifeOverhaul.Events
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Events: EventDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_failed)
             {
                 return;
@@ -251,7 +253,7 @@ namespace RealLifeOverhaul.Events
 
         private void Begin(IEventScene scene, float markerSeconds)
         {
-            SessionWatch.Mark("events: a fire or street event starting");
+            using var piece = SessionWatch.Piece("events: a fire or street event starting");
             _scene = scene;
             if (ReferenceEquals(scene, _fire))
             {

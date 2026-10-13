@@ -30,6 +30,7 @@ namespace RealLifeOverhaul.Markets
     {
         public const int TabMarket = 0, TabCompanies = 1, TabWatch = 2, TabOrders = 3, TabPortfolio = 4, TabHistory = 5;
         public const int IndexPage = -1;   // the page of the city's index (a company's page is its id)
+        private const string GuideTitle = "reallife_meta_title_markets";   // the Guide's page every page of the app points to at its foot
 
         private static readonly string[] TabKeys =
         {
@@ -69,7 +70,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
         {
-            SessionWatch.Mark("stocks: the app being built from the game's MyEmployees");   // once per city
+            using var piece = SessionWatch.Piece("stocks: the app being built from the game's MyEmployees");   // once per city
             _shell = AppShell.Make(menu, dormant, MarketDirector.AppId);
             _table = DataTable.On(_shell, "Stocks");
             if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(MarketTables.Off))

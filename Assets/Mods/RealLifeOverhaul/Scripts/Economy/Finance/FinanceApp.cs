@@ -37,6 +37,7 @@ namespace RealLifeOverhaul.Economy
         public static readonly string[] AppGlyphs = { "Icon-Money", "Icon-Coin" };
 
         private const int TypedAmountLength = 9;
+        internal const string GuideTitle = "reallife_meta_title_economy";   // the Guide's page the app's pages point to at their foot
 
         private static readonly string[] TabKeys = { "reallife_econ_tab_overview", "reallife_econ_tab_credit", "reallife_econ_tab_borrow", "reallife_econ_tab_cash", "reallife_econ_tab_accounts" };
         private static readonly int[] AmountSteps = { 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000, 250000, 500000, 1000000, 2500000, 5000000 };
@@ -86,7 +87,7 @@ namespace RealLifeOverhaul.Economy
         public GameObject Build(FullMenu menu, Transform dormant)
         {
             _menu = menu;
-            SessionWatch.Mark("finance: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
+            using var piece = SessionWatch.Piece("finance: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
             _shell = AppShell.Make(menu, dormant, EconomyDirector.AppId);
             _table = DataTable.On(_shell, "Finance");
             if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(FinanceTables.Off))
@@ -309,6 +310,7 @@ namespace RealLifeOverhaul.Economy
             box.Line(FinanceText.Pair("reallife_econ_over_rating", FinanceText.T("reallife_econ_rating_value", "score", score.Value.ToString(), "grade", FinanceText.Grade(score.Grade))));
             bool cityOn = CityLines(box);   // the bank rate, prices and the economy, while the city's economy runs
             box.Headline("reallife_econ_over_costs");
+            box.Line(FinanceText.Pair("reallife_econ_over_leaves", FinanceText.Money(due.Total)));
             box.Line(FinanceText.Pair("reallife_econ_over_loan_payments", FinanceText.Money(payments)));
             if (interest > 0f)
             {
@@ -325,7 +327,6 @@ namespace RealLifeOverhaul.Economy
             box.Line(FinanceText.Pair("reallife_econ_over_rent", FinanceText.Money(rent)));
             box.Line(FinanceText.Pair("reallife_econ_over_wages", FinanceText.Money(wages)));
             box.Headline("reallife_econ_over_worth_head");
-            box.Line(FinanceText.Pair("reallife_econ_over_leaves", FinanceText.Money(due.Total)));
             box.Line(FinanceText.Pair("reallife_econ_over_worth", FinanceText.Money(wealth.CurrentWealth - owedOther - owedAccounts)));
             box.Line(FinanceText.T("reallife_econ_over_worth_parts", "investments", FinanceText.Money(wealth.totalInvestments), "assets", FinanceText.Money(wealth.totalAssets)));
             Transform buttons = box.ButtonRow();
@@ -338,6 +339,7 @@ namespace RealLifeOverhaul.Economy
             {
                 InfoBox.Button(buttons, InfoBox.Additional, "reallife_fame_open", ShowStanding);   // the player's standing, its own page (Scripts/Fame through EconomyBridges.Standing)
             }
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         // The Overview's first four cells of a debt: who it is owed to, its kind, what is owed and what it takes tomorrow.
@@ -442,6 +444,7 @@ namespace RealLifeOverhaul.Economy
                 box.Line(FinanceText.T("reallife_econ_row_no_events"));
             }
             WorstLine(box, score);
+            Meta.Guide.Point(box, GuideTitle);
             return null;
         }
 
@@ -456,13 +459,14 @@ namespace RealLifeOverhaul.Economy
             float most = CreditCatalogue.PointsOf(factor);
             int now = Mathf.RoundToInt(score.Factor[(int)factor] * most);
             box.Title(FinanceText.T(CreditCatalogue.FactorKeys[(int)factor]));
-            box.Line(FinanceText.T(FactorAbout[(int)factor]));
-            box.Line(FinanceText.Pair("reallife_tab_factor_weight", CreditCatalogue.Weights[(int)factor] + "%"));
-            box.Line(FinanceText.Pair("reallife_tab_factor_points", FinanceText.T("reallife_tab_points_of", "now", now.ToString(), "most", Mathf.RoundToInt(most).ToString())));
             box.Line(FinanceText.Pair("reallife_tab_factor_stands", FinanceText.Stands(score, factor)));
+            box.Line(FinanceText.Pair("reallife_tab_factor_points", FinanceText.T("reallife_tab_points_of", "now", now.ToString(), "most", Mathf.RoundToInt(most).ToString())));
+            box.Line(FinanceText.Pair("reallife_tab_factor_weight", CreditCatalogue.Weights[(int)factor] + "%"));
             box.Headline("reallife_tab_factor_moves");
             box.Line(FinanceText.Tip(score, factor));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
+            box.Line(FinanceText.T(FactorAbout[(int)factor]));
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         // ---------------------------------------------------------------- Borrow
@@ -486,6 +490,7 @@ namespace RealLifeOverhaul.Economy
                     }
                 }
                 Say("refused", FinanceText.T("reallife_econ_row_no_lender", "threshold", CreditCatalogue.LendingThreshold.ToString()));
+                Meta.Guide.Point(box, GuideTitle);
                 return null;
             }
             IReadOnlyList<Lender> lenders = BankTerms.Lenders;
@@ -538,8 +543,9 @@ namespace RealLifeOverhaul.Economy
                 box.Title(FinanceText.T("reallife_econ_tab_borrow"));
                 box.Line(FinanceText.T("reallife_econ_borrow_pick"));
                 box.Line(FinanceText.T("reallife_econ_borrow_fee_note", "share", FeeShare(), "least", FinanceText.Money(CreditCatalogue.PhoneFeeLeast)));
-                box.Line(FinanceText.T("reallife_econ_borrow_repay_note"));
                 box.Line(FinanceText.T("reallife_tab_borrow_columns_note"));
+                box.Line(FinanceText.T("reallife_econ_borrow_repay_note"));
+                Meta.Guide.Point(box, GuideTitle);
                 return null;
             }
             WriteOffer(box, score);
@@ -592,11 +598,6 @@ namespace RealLifeOverhaul.Economy
             box.Line(FinanceText.Pair("reallife_econ_offer_fee", FinanceText.Money(quote.Fee)));
             box.Line(FinanceText.Pair("reallife_econ_offer_total", FinanceText.Money(quote.Cost)));
             box.Line(FinanceText.Pair("reallife_tab_offer_repay", FinanceText.Money(_amount + quote.Cost)));
-            // What the rating did to the rate: this bank's rate at the best rating there is, against the one offered.
-            float best = PhoneLending.RateOffered(lender, CreditCatalogue.ScoreMax);
-            box.Line(quote.AnnualRate > best + 0.05f
-                ? FinanceText.T("reallife_tab_offer_rating_adds", "points", (quote.AnnualRate - best).ToString("0.#"), "best", best.ToString("0.#"))
-                : FinanceText.T("reallife_tab_offer_rating_best"));
             float owedThem = GameLoans.OwedTo(lender.Address);
             if (owedThem > 0f)
             {
@@ -605,6 +606,12 @@ namespace RealLifeOverhaul.Economy
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_offer_apply", Apply);
             InfoBox.Button(buttons, InfoBox.Additional, "common_cancel", ClosePick);
+            // What the rating did to the rate: this bank's rate at the best rating there is, against the one offered.
+            float best = PhoneLending.RateOffered(lender, CreditCatalogue.ScoreMax);
+            box.Line(quote.AnnualRate > best + 0.05f
+                ? FinanceText.T("reallife_tab_offer_rating_adds", "points", (quote.AnnualRate - best).ToString("0.#"), "best", best.ToString("0.#"))
+                : FinanceText.T("reallife_tab_offer_rating_best"));
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         // The amounts the selector steps through: round figures up to the most on offer, the most itself, and what was typed.
@@ -846,6 +853,7 @@ namespace RealLifeOverhaul.Economy
             {
                 Say("none", FinanceText.T("reallife_econ_row_no_cash"));
             }
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         // The category chosen in the table's filter: what it came to in the period, and its share of all that came in and went out.

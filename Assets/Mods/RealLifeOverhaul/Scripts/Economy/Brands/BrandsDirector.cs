@@ -379,9 +379,11 @@ namespace RealLifeOverhaul.Economy.Brands
 
         // ---------------------------------------------------------------- the hour, the day, the save
 
+        private static readonly int HotOnHour = HotSpots.Slot("Economy: BrandsDirector.OnHour");
         // The game's hour event (every game hour, and first thing in its NewDay, before its daily run), after the credit side's, the city's and the company's work on it.
         private void OnHour()
         {
+            using var hotSpot = HotSpots.Time(HotOnHour);
             if (!_running || _broken || Save == null)
             {
                 return;
@@ -402,9 +404,11 @@ namespace RealLifeOverhaul.Economy.Brands
             }
         }
 
+        private static readonly int HotOnDay = HotSpots.Slot("Economy: BrandsDirector.OnDay");
         // The game's day event (after its daily run), after the credit side has settled its day and the city's economy and the company have applied theirs.
         private void OnDay()
         {
+            using var hotSpot = HotSpots.Time(HotOnDay);
             if (!_running || _broken || Save == null)
             {
                 return;

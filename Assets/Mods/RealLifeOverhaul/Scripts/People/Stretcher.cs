@@ -972,9 +972,11 @@ namespace RealLifeOverhaul
             _arms[first + 8] = human ? animator.GetBoneTransform(HumanBodyBones.RightHand) : null;
         }
 
+        private static readonly int HotLateUpdate = HotSpots.Slot("People: Stretcher.LateUpdate");
         // Runs only while it is being wheeled, while one of its crew is being walked, or while a body is being lifted onto it.
         private void LateUpdate()
         {
+            using var hotSpot = HotSpots.Time(HotLateUpdate);
             try
             {
                 float dt = Time.deltaTime;

@@ -94,8 +94,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Performance: PerfDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (Keys.Down(KeyAction.PerfBench))
             {
                 StartBench();

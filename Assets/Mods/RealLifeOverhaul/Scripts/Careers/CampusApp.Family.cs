@@ -19,6 +19,7 @@ namespace RealLifeOverhaul.Careers
                 _picked = null;
                 box.Title(CareersText.T("reallife_campus_family_title"));
                 box.Line(CareersText.T("reallife_campus_family_off"));
+                Meta.Guide.Point(box, FamilyGuide);
                 return CampusColumns.Family;
             }
             IReadOnlyList<ChildView> kids = _director.Kids();
@@ -51,6 +52,7 @@ namespace RealLifeOverhaul.Careers
             _picked = null;
             box.Title(CareersText.T("reallife_campus_family_title"));
             box.Line(CareersText.T("reallife_campus_family_about"));
+            Meta.Guide.Point(box, FamilyGuide);
             return CampusColumns.Family;
         }
 
@@ -99,6 +101,7 @@ namespace RealLifeOverhaul.Careers
                 }
             }
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
+            Meta.Guide.Point(box, FamilyGuide);
         }
 
         private void TutorButton(InfoBox box)

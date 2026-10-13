@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Utilities
     /// The city's utilities office (City Light and Power and Riverside Water): one of the game's own buildings, the same
     /// one in every game on the same map, chosen as the owner asks for a city office, big and majestic: the largest
     /// office building in the city that no other feature has made its own (the courthouse: UtilitiesBridges.Taken),
-    /// ties broken by address. Its frontage has one sign, a board on two posts lettered with the game's font, stood
+    /// ties broken by address, never one the player rents or owns (it moves off one that becomes theirs). Its frontage has one sign, a board on two posts lettered with the game's font, stood
     /// against the wall a few steps from the door where CitySpots found wall, pavement and room, as the courthouse's is;
     /// the desk is spoken to standing in front of it, or at the door if no place for the sign was found. It lights up
     /// on the city map (World/MapLinks). Looked for once per city load; nothing here runs by itself.
@@ -27,6 +27,7 @@ namespace RealLifeOverhaul.Utilities
         private readonly IModLogger _logger;
         private GameObject _sign;
         private bool _failed;
+        private int _look;
 
         public UtilitiesOffice(IModLogger logger)
         {
@@ -59,11 +60,35 @@ namespace RealLifeOverhaul.Utilities
             return offset.y > -2f && offset.y < 2f && offset.x * offset.x + offset.z * offset.z < reach * reach;
         }
 
-        /// <summary>Once a second until <see cref="Searched"/>: finds the building, then stands the sign.</summary>
+        /// <summary>Changes each time the office is chosen (for the map).</summary>
+        public int Moves { get; private set; }
+
+        /// <summary>
+        /// Once a second: until <see cref="Searched"/>, finds the building, then stands the sign; after that, every five
+        /// seconds, an office whose building has become the player's (a save from before the mod's buildings were off the
+        /// market, another player's in a session) moves off it, and the next largest is chosen.
+        /// </summary>
         public void Tick()
         {
-            if (Searched || _failed)
+            if (_failed)
             {
+                return;
+            }
+            if (Searched)
+            {
+                if (Building != null && ++_look >= 5)
+                {
+                    _look = 0;
+                    if (SpecialBuildings.Players(Building))
+                    {
+                        _logger?.Info("Utilities: the office's building, " + Name + ", is the player's; the office moves to another.");
+                        Dispose();
+                        SpecialBuildings.Remove("utilities_office");
+                        Building = null;
+                        Name = string.Empty;
+                        Searched = false;
+                    }
+                }
                 return;
             }
             try
@@ -82,6 +107,7 @@ namespace RealLifeOverhaul.Utilities
                     return;
                 }
                 Building = picked;
+                Moves++;
                 Name = picked.building.Address.ToFormattedString();
                 bool placed = Place(picked);
                 if (!placed && JobSpots.Front(picked, out Vector3 door))
@@ -131,7 +157,8 @@ namespace RealLifeOverhaul.Utilities
                 if (building == null || building.building == null || building.entranceDoors == null || building.entranceDoors.Length == 0
                     || building.building.locatedInsidePrivateFenceIndex >= 0 || building.building.SpecialService != null
                     || building.building.BuildingType != "ba:buildingtype_office" || (taken != null && taken(building))
-                    || SpecialBuildings.Holds(building))   // (one another feature has made its own: the university, if it was chosen while the utilities were off)
+                    || SpecialBuildings.Holds(building)    // (one another feature has made its own: the university, if it was chosen while the utilities were off)
+                    || SpecialBuildings.Players(building)) // (one the player rents or owns stays theirs)
                 {
                     continue;
                 }

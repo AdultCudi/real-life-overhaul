@@ -8,7 +8,7 @@
     <Nullable>disable</Nullable>
     <DebugType>none</DebugType>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Version>0.9.4</Version>
+    <Version>0.9.8</Version>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <!-- Single source of truth: the mod lives in the Unity SDK project; this project only compiles it from the command line. -->
@@ -55,13 +55,25 @@
 
   <!-- What is installed is the whole package, as the game's Mod Creator uploads it: exactly one DLL in the mod's root
        folder (the game requires that), the locales, the three asset bundles, and the Workshop thumbnail. The uploader
-       takes the first .png/.jpg/.jpeg in the root as the thumbnail, so there must be no other picture there. -->
+       takes the first .png/.jpg/.jpeg in the root as the thumbnail, so there must be no other picture there.
+       The folder is made the package and nothing else: whatever it holds that the package does not ship (an old
+       Bundles\props_newer that the mod would read, a file since dropped) is deleted first, so that installing over an
+       older copy is never copying over it. -->
   <Target Name="InstallMod" AfterTargets="Build">
     <ItemGroup>
       <LocaleFiles Include="$(ModSource)\Locales\**\*.json" />
       <!-- Asset bundles built by CharacterAssets\build_bundle.ps1 (Unity's .meta and .manifest files are not shipped). -->
       <BundleFiles Include="$(ModSource)\Bundles\**\*" Exclude="$(ModSource)\Bundles\**\*.meta;$(ModSource)\Bundles\**\*.manifest" />
+      <InstalledFiles Include="$(ModsLocal)\$(AssemblyName)\**\*" />
+      <ShippedFiles Include="$(ModsLocal)\$(AssemblyName)\$(TargetFileName);$(ModsLocal)\$(AssemblyName)\thumbnail.jpg" />
+      <ShippedFiles Include="@(LocaleFiles->'$(ModsLocal)\$(AssemblyName)\Locales\%(RecursiveDir)%(Filename)%(Extension)')" />
+      <ShippedFiles Include="@(BundleFiles->'$(ModsLocal)\$(AssemblyName)\Bundles\%(RecursiveDir)%(Filename)%(Extension)')" />
+      <StaleFiles Include="@(InstalledFiles)" Exclude="@(ShippedFiles)" />
+      <StaleFolders Include="@(StaleFiles->'%(RootDir)%(Directory)')" Exclude="@(ShippedFiles->'%(RootDir)%(Directory)')" />
     </ItemGroup>
+    <Delete Files="@(StaleFiles)" />
+    <RemoveDir Directories="@(StaleFolders->Distinct())" />
+    <Message Importance="high" Condition="'@(StaleFiles)' != ''" Text="Removed from $(ModsLocal)\$(AssemblyName), not part of the package: @(StaleFiles->'%(RecursiveDir)%(Filename)%(Extension)', ', ')" />
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ModsLocal)\$(AssemblyName)" />
     <Copy SourceFiles="$(ModSource)\thumbnail.jpg" DestinationFolder="$(ModsLocal)\$(AssemblyName)" SkipUnchangedFiles="true" />
     <Copy SourceFiles="@(LocaleFiles)" DestinationFolder="$(ModsLocal)\$(AssemblyName)\Locales\%(RecursiveDir)" />

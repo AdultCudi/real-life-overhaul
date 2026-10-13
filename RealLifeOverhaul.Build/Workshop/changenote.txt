@@ -1,4 +1,4 @@
-0.9.4
+0.9.8
 
-New
-- The mod's notifications now carry their own icon and colour, so you can tell them from the game's at a glance, and their texts are shorter.
+Fixed
+- Stutters every few seconds in the street, and short freezes the first time traffic met a crossing, the first time you went into a building and the first time a bus stop was cleared. The mod searched the whole city for other characters' hair every five seconds, and for the crossings, the building's panel and the street furniture the first time it needed them; it now does this only behind a loading screen or the dark screen at a door.

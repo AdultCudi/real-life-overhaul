@@ -95,13 +95,14 @@ namespace RealLifeOverhaul.Economy
             }
             _picked = null;
             box.Title(OnlineText.T("reallife_online_tab_orders"));
+            box.Line(OnlineText.Pair("reallife_online_que_late", late.ToString()));
             box.Line(OnlineText.Pair("reallife_online_que_waiting", waiting.ToString()));
             box.Line(OnlineText.Pair("reallife_online_que_packed", packed.ToString()));
             box.Line(OnlineText.Pair("reallife_online_que_out", sent.ToString()));
-            box.Line(OnlineText.Pair("reallife_online_que_late", late.ToString()));
             box.Line(OnlineText.Pair("reallife_online_que_pickers", OnlineText.T("reallife_online_que_pickers_value", "count", pickers.ToString(), "each", OnlineCatalogue.PickPerHour.ToString())));
             box.Line(OnlineText.Pair("reallife_online_que_vans", vans.ToString()));
             box.Line(OnlineText.Fill("reallife_online_que_note", "hours", OnlineCatalogue.WaitMost.ToString(), "share", OnlineText.Share(OnlineCatalogue.LateRefund)));
+            Meta.Guide.Point(box, GuideTitle);
             return OnlineColumns.Orders;
         }
 
@@ -128,6 +129,7 @@ namespace RealLifeOverhaul.Economy
                 _picked = null;
                 box.Title(OnlineText.T("reallife_online_tab_catalogue"));
                 box.Line(OnlineText.T("reallife_online_cat_none"));
+                Meta.Guide.Point(box, GuideTitle);
                 return OnlineColumns.Catalogue;
             }
             int at = 0;
@@ -207,6 +209,7 @@ namespace RealLifeOverhaul.Economy
             box.Line(OnlineText.Fill("reallife_online_cat_parts", "need", site.Need.ToString(), "price", OnlineText.Share(site.Price), "stars", OnlineText.Share(OnlineRules.StarsFactor(shop.Stars)),
                 "marketing", OnlineText.Share(OnlineRules.MarketingFactor(site.Ads, site.Campaign))));
             box.Line(OnlineText.T("reallife_online_cat_note"));
+            Meta.Guide.Point(box, GuideTitle);
             return OnlineColumns.Catalogue;
         }
 
@@ -262,6 +265,7 @@ namespace RealLifeOverhaul.Economy
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_online_button_on", () => _director.Offer(key, item, true));
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_online_button_back", ClosePick);
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         // A cell of a price kept in cents: written with its cents, ordered by its amount.
@@ -282,7 +286,6 @@ namespace RealLifeOverhaul.Economy
             box.Title(_director.ItemName(item));
             box.Line(OnlineText.Pair("reallife_online_line_shop", OnlineText.Price(_director.ShopPrice(place, item))));
             box.Line(OnlineText.Pair("reallife_online_line_stock", _director.StockOf(place, item).ToString()));
-            box.Line(OnlineText.T("reallife_online_line_add_note", "most", OnlineCatalogue.LinesMost.ToString()));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_online_button_on", () =>
             {
@@ -290,6 +293,8 @@ namespace RealLifeOverhaul.Economy
                 _director.Offer(key, item, true);
             });
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_online_button_back", ClosePick);
+            box.Line(OnlineText.T("reallife_online_line_add_note", "most", OnlineCatalogue.LinesMost.ToString()));
+            Meta.Guide.Point(box, GuideTitle);
         }
     }
 }

@@ -32,6 +32,7 @@ namespace RealLifeOverhaul.Careers
         private GameObject _sign;
         private bool _failed;
         private int _waited;
+        private int _look;
 
         public CampusBuilding(IModLogger logger)
         {
@@ -73,11 +74,28 @@ namespace RealLifeOverhaul.Careers
             return offset.y > -2f && offset.y < 2f && offset.x * offset.x + offset.z * offset.z < reach * reach;
         }
 
-        /// <summary>Once a second until <see cref="Searched"/>: finds the building, then stands the sign.</summary>
+        /// <summary>
+        /// Once a second: until <see cref="Searched"/>, finds the building, then stands the sign; after that, every five
+        /// seconds, a university whose building has become the player's (a save from before the mod's buildings were off
+        /// the market, another player's in a session) moves off it, to the next that may serve.
+        /// </summary>
         public void Tick()
         {
-            if (Searched || _failed)
+            if (_failed)
             {
+                return;
+            }
+            if (Searched)
+            {
+                if (Building != null && ++_look >= 5)
+                {
+                    _look = 0;
+                    if (SpecialBuildings.Players(Building))
+                    {
+                        _logger?.Info("Careers: the university's building, " + Name + ", is the player's; the university moves to another.");
+                        Dispose();
+                    }
+                }
                 return;
             }
             try
@@ -156,7 +174,8 @@ namespace RealLifeOverhaul.Careers
             {
                 CityBuildingController b = buildings[i];
                 return b != null && b.building != null && b.entranceDoors != null && b.entranceDoors.Length > 0 && b.building.locatedInsidePrivateFenceIndex < 0
-                       && b.building.SpecialService == null && b.building.BuildingType == Office;
+                       && b.building.SpecialService == null && b.building.BuildingType == Office
+                       && !SpecialBuildings.Players(b);   // (one the player rents or owns stays theirs)
             };
             Func<int, int> sqm = i => buildings[i].building.totalSqm;
             Func<int, string> street = i => buildings[i].building.StreetName;

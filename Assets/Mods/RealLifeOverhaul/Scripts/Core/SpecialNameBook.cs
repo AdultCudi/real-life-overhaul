@@ -208,6 +208,42 @@ namespace RealLifeOverhaul
             return entry.Name;
         }
 
+        // ---------------------------------------------------------------- off the market
+
+        /// <summary>
+        /// True if a feature may make a building its own: nobody of the players rents it or owns it (in a Going Public
+        /// session another player's rental is on every machine as rented by the player, so the answer is the same
+        /// everywhere). A building the player already has stays theirs: the feature chooses another.
+        /// </summary>
+        public static bool MaySit(bool rented, bool owned)
+        {
+            return !rented && !owned;
+        }
+
+        /// <summary>
+        /// True if the building at an address is off the market here: a feature holds it, that feature is on, and the
+        /// player neither rents nor owns it (what the player already has stays theirs to keep, run and give up). Its
+        /// offers to rent, to buy and to take over are not shown and it is left out of the listings. Nothing of it is
+        /// written into the save, so without the mod it is on the market again as the game has it.
+        /// </summary>
+        public bool Refuses(string street, int number, bool rented, bool owned)
+        {
+            return !rented && !owned && At(street, number) != null;
+        }
+
+        /// <summary>Every entry whose feature shows it just now, into a list the caller keeps (cleared first).</summary>
+        public void Shown(List<SpecialEntry> into)
+        {
+            into.Clear();
+            foreach (SpecialEntry entry in _byId.Values)
+            {
+                if (entry.Shown == null || entry.Shown())
+                {
+                    into.Add(entry);
+                }
+            }
+        }
+
         /// <summary>Every name is looked up again the next time it is asked for (the language has changed).</summary>
         public void Forget()
         {

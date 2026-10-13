@@ -16,6 +16,7 @@ namespace RealLifeOverhaul.Careers
     {
         partial void JobMore(InfoBox box, WorkFile w, StudyFile f, Job j, int day)
         {
+            box.Headline("reallife_meta_title_careers_life");
             int next = j.ReviewDay + LifeRules.ReviewEvery(GameCalendar.DaysPerYear);
             box.Line(j.Rating > 0
                 ? CareersText.Fill("reallife_life_job_review", "rating", j.Rating.ToString(), "day", CareersText.Day(j.ReviewDay), "next", CareersText.Day(next))
@@ -39,10 +40,6 @@ namespace RealLifeOverhaul.Careers
             if (j.NonCompete || j.Exclusive)
             {
                 box.Line(CareersText.T(j.NonCompete && j.Exclusive ? "reallife_life_job_clauses_both" : j.NonCompete ? "reallife_life_job_clause_restraint" : "reallife_life_job_clause_exclusive"));
-            }
-            if (j.Leaving == (int)LeaveReason.Redundant && j.NoticeEnd > 0)
-            {
-                box.Line(CareersText.T("reallife_life_job_redundant", "day", CareersText.Day(j.NoticeEnd)));
             }
             if (_director.Conflicted(j))
             {

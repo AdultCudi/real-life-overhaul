@@ -52,8 +52,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Life: LifeEvents.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             var gm = InstanceBehavior<GameManager>.Instance;
             if (gm == null || gm.playerController == null || SaveGameManager.Current == null || LoadScene.isLoading)
             {

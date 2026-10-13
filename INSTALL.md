@@ -37,7 +37,8 @@ To update, run the new version's setup the same way. To uninstall, see "Uninstal
    ```
 
    If Windows says it cannot find it, start the game once and close it again: the game makes the folder when it starts. You can also make the `ModsLocal` folder yourself inside `Big Ambitions`.
-4. **Unzip** the download into `ModsLocal`. You should end up with exactly this:
+4. **Delete the old copy first.** If there is a `RealLifeOverhaul` folder in `ModsLocal` already, from an earlier version, delete the whole folder before you unzip. Unzipping over it keeps every file the new version no longer has, and the mod can pick those up: an old file once dressed the city bus in the wrong parts of its textures.
+5. **Unzip** the download into `ModsLocal`. You should end up with exactly this:
 
    ```
    ModsLocal
@@ -55,7 +56,7 @@ To update, run the new version's setup the same way. To uninstall, see "Uninstal
    ```
 
    The game only loads a folder that has the mod's DLL directly inside it. Check that you do not have `RealLifeOverhaul\RealLifeOverhaul\...`, one folder inside another, which some unzip tools make.
-5. **Start the game.** The mod's page is in **Options**, on the **Mods** tab. A notice appears once for each new version: click it to open the Guide.
+6. **Start the game.** The mod's page is in **Options**, on the **Mods** tab. A notice appears once for each new version: click it to open the Guide.
 
 The first time you load a save that has never had mods, the game offers to keep a backup and plays a copy marked "(Modded)". That is the game's own safety step, not the mod's.
 
@@ -66,7 +67,7 @@ Unsubscribe from the Workshop item (or untick it under **Mods** in the game's ma
 ## Update
 
 - **With setup.exe:** run the new version's setup. It clears the old copy first.
-- **By hand:** close the game, delete the `RealLifeOverhaul` folder from `ModsLocal`, and unzip the new version as in "Install by hand". Deleting the old folder first matters: a file left over from an older version can confuse the new one.
+- **By hand:** close the game, delete the `RealLifeOverhaul` folder from `ModsLocal`, and unzip the new version as in "Install by hand". Never unzip over the old folder: a file left over from an older version can confuse the new one.
 
 Your saves and the mod's options are not in that folder, so they are kept.
 
@@ -81,12 +82,12 @@ Your saves and the mod's options are not in that folder, so they are kept.
 Each release lists the SHA-256 of its setup and its zip. To check yours, in PowerShell (with the name of the file you downloaded):
 
 ```
-Get-FileHash "$env:USERPROFILE\Downloads\RealLifeOverhaul-0.9.4-setup.exe" -Algorithm SHA256
+Get-FileHash "$env:USERPROFILE\Downloads\RealLifeOverhaul-0.9.8-setup.exe" -Algorithm SHA256
 ```
 
 The value must match the one on the release page. Only download the mod from the Workshop page or this repository's Releases.
 
 ## If it does not load
 
-- The mod is not on the Mods tab: run the setup again, or, if you installed by hand, check the folder layout in step 4 and that the game was closed while you copied it.
+- The mod is not on the Mods tab: run the setup again, or, if you installed by hand, check the folder layout in step 5 and that the game was closed while you copied it.
 - Something goes wrong in play: report it on the [Discord](https://discord.gg/tzCh2VXs9E) in #bug-reports, or open an issue here. Attach `Player.log` from `%USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions`, taken right after the problem and before the game starts again.

@@ -175,7 +175,7 @@ namespace RealLifeOverhaul.Meta
         /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
         {
-            SessionWatch.Mark("guide: the app being built from the game's MyEmployees");
+            using var piece = SessionWatch.Piece("guide: the app being built from the game's MyEmployees");
             _shell = AppShell.Make(menu, dormant, GuideApp.AppId);
             if (_shell == null || !PrepareRow(_shell.RowPrefab))
             {

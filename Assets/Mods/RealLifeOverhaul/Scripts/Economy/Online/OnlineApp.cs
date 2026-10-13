@@ -29,6 +29,7 @@ namespace RealLifeOverhaul.Economy
     public sealed partial class OnlineApp
     {
         private static readonly string[] TabKeys = { "reallife_online_tab_shops", "reallife_online_tab_orders", "reallife_online_tab_catalogue" };
+        private const string GuideTitle = "reallife_meta_title_economy_online";   // the Guide's page every page of the app points to at its foot
 
         public static IModLogger Logger;
 
@@ -56,7 +57,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
         public GameObject Build(FullMenu menu, Transform dormant)
         {
-            SessionWatch.Mark("online shops: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
+            using var piece = SessionWatch.Piece("online shops: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
             _shell = AppShell.Make(menu, dormant, OnlineDirector.AppId);
             _table = DataTable.On(_shell, "Web shop");
             if (_table == null || !_shell.SetTabCount(TabKeys.Length) || !_shell.SetColumns(OnlineColumns.Off))

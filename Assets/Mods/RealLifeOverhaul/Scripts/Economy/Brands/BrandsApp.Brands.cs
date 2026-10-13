@@ -86,6 +86,17 @@ namespace RealLifeOverhaul.Economy.Brands
         private void WriteBrand(InfoBox box, BrandsState state, Brand b)
         {
             box.Title(b.Name);
+            if (b.Bid > 0)
+            {
+                Franchise bidder = state.Franchise(b.BidBy);
+                box.Line(BrandsText.T("reallife_brand_bid", "name", bidder != null ? bidder.Name : "?", "amount", BrandsText.Money(b.Bid), "day", b.BidUntil.ToString()));
+                var answers = box.ButtonRow();
+                int by = b.BidBy;
+                string name = b.Name;
+                string amount = BrandsText.Money(b.Bid);
+                InfoBox.Button(answers, InfoBox.Positive, "reallife_brand_bid_sell", () => Confirm("reallife_brand_confirm_sell_title", "reallife_brand_confirm_sell", new { brand = name, amount }, () => _director.Agree(by), true));
+                InfoBox.Button(answers, InfoBox.Negative, "reallife_brand_bid_refuse", () => _director.Decline(by));
+            }
             Choose(box, BrandPageKeys.Length, _brandPage, i => BrandsText.T(BrandPageKeys[i]), i => _brandPage = i);
             // (the page's own main button, if it has one, stands beside Back in the last row)
             string mainKey = null;
@@ -101,17 +112,6 @@ namespace RealLifeOverhaul.Economy.Brands
                 default:
                     WriteBrandFigures(box, state, b);
                     break;
-            }
-            if (b.Bid > 0)
-            {
-                Franchise bidder = state.Franchise(b.BidBy);
-                box.Line(BrandsText.T("reallife_brand_bid", "name", bidder != null ? bidder.Name : "?", "amount", BrandsText.Money(b.Bid), "day", b.BidUntil.ToString()));
-                var answers = box.ButtonRow();
-                int by = b.BidBy;
-                string name = b.Name;
-                string amount = BrandsText.Money(b.Bid);
-                InfoBox.Button(answers, InfoBox.Positive, "reallife_brand_bid_sell", () => Confirm("reallife_brand_confirm_sell_title", "reallife_brand_confirm_sell", new { brand = name, amount }, () => _director.Agree(by), true));
-                InfoBox.Button(answers, InfoBox.Negative, "reallife_brand_bid_refuse", () => _director.Decline(by));
             }
             var last = box.ButtonRow();
             if (main != null)

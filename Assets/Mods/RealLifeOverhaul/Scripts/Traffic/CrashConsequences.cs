@@ -29,8 +29,10 @@ namespace RealLifeOverhaul
         private Rigidbody _hookedBody;
         private float _lastCrashTime = -100f;
 
+        private static readonly int HotUpdate = HotSpots.Slot("Traffic: CrashConsequences.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             var gm = InstanceBehavior<GameManager>.Instance;
             var car = gm != null ? gm.selectedVehicle as CarController : null;
             if (car == _hookedCar)

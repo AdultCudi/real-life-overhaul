@@ -55,7 +55,9 @@ namespace RealLifeOverhaul
     /// game's runtime by that count. No physics query, nothing allocated, no search of the scene. At most
     /// three cars are measured for the first time in one look (about 40 microseconds each, once a session
     /// for each pooled car). Its average and worst are measured and logged once a minute with developer
-    /// diagnostics on.
+    /// diagnostics on, with where the time went by phase; the diagnostics' own lines written from inside a look
+    /// are not counted (the clock stops for them). The road and crossing grids are made behind the loading
+    /// screen (Prewarm), not by the first look in play.
     /// </summary>
     public partial class SolidStreets : MonoBehaviour
     {
@@ -144,12 +146,19 @@ namespace RealLifeOverhaul
         private int _ticks;
         private long _tickTotal;
         private long _tickWorst;
+        private const int Phases = 4;   // the cars gathered, the people gathered, the strips and the decisions, the stand-ins and the fades
+        private readonly long[] _split = new long[Phases];        // this look's time by phase
+        private readonly long[] _splitTotal = new long[Phases];   // ...the minute's
+        private readonly long[] _splitWorst = new long[Phases];   // ...the worst look's
+        private long _splitAt;
+        private bool _timing;   // this look is being measured
         private int _carsMost, _peopleMost, _proxiesMost, _brakedMost;
 
         private void Awake()
         {
             Instance = this;
             _brakes = gameObject.AddComponent<SolidBrakes>();
+            ScenePrewarm.Add("streets: the road map and the city's marked crossings being listed for the traffic", Prewarm);
         }
 
         private void OnDestroy()
@@ -162,8 +171,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Traffic: SolidStreets.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             float now = Time.time;
             if (now < _next)
             {
@@ -204,24 +215,95 @@ namespace RealLifeOverhaul
                 _next = now + SolidRules.IdleSeconds;
                 return;
             }
+            if (now >= _nextEnsure)
+            {
+                // Whether the road and crossing grids are still this city's: a flag test, as both are made behind the loading
+                // screen (Prewarm). Not a part of the look, and not timed with it.
+                _nextEnsure = now + EnsureEvery;
+                RoadMap.Ensure();
+                Crossings.Ensure();
+            }
             bool timed = Meta.Dev.Verbose;
+            _timing = timed;
             if (timed)
             {
+                Array.Clear(_split, 0, Phases);
+                _splitAt = 0L;
                 _clock.Restart();
             }
             bool busy = Tick(now);
             _next = now + (busy ? SolidRules.TickSeconds : SolidRules.IdleSeconds);
+            if (timed)
+            {
+                _clock.Stop();
+                _timing = false;
+            }
             if (timed && busy)
             {
                 long took = _clock.ElapsedTicks;
                 _ticks++;
                 _tickTotal += took;
-                _tickWorst = took > _tickWorst ? took : _tickWorst;
+                for (int p = 0; p < Phases; p++)
+                {
+                    _splitTotal[p] += _split[p];
+                }
+                if (took > _tickWorst)
+                {
+                    _tickWorst = took;
+                    Array.Copy(_split, _splitWorst, Phases);
+                }
                 if (now >= _nextReport)
                 {
                     Report(now);
                 }
             }
+        }
+
+        // The developer diagnostics' own lines are written with the look's clock stopped (Quiet, then Loud): what the look
+        // costs is then what it costs a player, who has them off. Before, the writing of each line to the log, the text made
+        // for it and any step of the collector that making the text set off were all counted as the look's work (Player.log
+        // of 13 October: 113 microseconds on average and 3311 at worst over a minute in which sixteen of these lines were
+        // written from inside the looks).
+        private void Quiet()
+        {
+            if (_timing)
+            {
+                _clock.Stop();
+            }
+        }
+
+        private void Loud()
+        {
+            if (_timing)
+            {
+                _clock.Start();
+            }
+        }
+
+        // The look's time so far goes to one of its phases (with developer diagnostics on): the minute's line says where it went.
+        private void Phase(int phase)
+        {
+            if (_timing)
+            {
+                long at = _clock.ElapsedTicks;
+                _split[phase] += at - _splitAt;
+                _splitAt = at;
+            }
+        }
+
+        /// <summary>
+        /// Behind the loading screen (Core/SceneFinds, ScenePrewarm): the road map and the city's marked crossings, which the
+        /// first look of the traffic in play used to make, a frame of some 90 ms (the search for the crossings). False, to be
+        /// tried again behind the next black screen out of doors, while the city has no road data yet.
+        /// </summary>
+        public static bool Prewarm()
+        {
+            if (RoadData.Scene == null)
+            {
+                return false;
+            }
+            RoadMap.Ensure();
+            return Crossings.Prewarm();
         }
 
         // ---------------------------------------------------------------- one look at the street
@@ -242,6 +324,7 @@ namespace RealLifeOverhaul
             }
             Vector3 player = PlayerHelper.GetPosition();
             int cars = GatherCars(player, traffic, pooled);
+            Phase(0);
             if (cars == 0)
             {
                 if (_active)
@@ -251,12 +334,6 @@ namespace RealLifeOverhaul
                 return false;
             }
             _active = true;
-            if (now >= _nextEnsure)
-            {
-                _nextEnsure = now + EnsureEvery;
-                RoadMap.Ensure();     // the grids "in the road or on the pavement" is asked of: built once for a city, a flag test after that
-                Crossings.Ensure();
-            }
             if (_spawner == null)
             {
                 var city = InstanceBehavior<CityManager>.Instance;
@@ -269,6 +346,7 @@ namespace RealLifeOverhaul
                 _game.Read(pooled, walkers);
             }
             GatherPeople(player, walkers);
+            Phase(1);
             _owedAsked = false;
             if ((object)_striker != null && (now > _strikerUntil || _striker == null || !_striker.gameObject.activeInHierarchy))
             {
@@ -282,6 +360,7 @@ namespace RealLifeOverhaul
 
             Look(cars, walkers, now);
             Decide(cars, walkers, now);
+            Phase(2);
             Share(walkers, now);
             _game.TickFade(now);
             if ((object)_putAway != null)
@@ -295,6 +374,7 @@ namespace RealLifeOverhaul
                 }
             }
 
+            Phase(3);
             _carsMost = Mathf.Max(_carsMost, cars);
             _peopleMost = Mathf.Max(_peopleMost, _grid.Count);
             _proxiesMost = Mathf.Max(_proxiesMost, _pool.InUse);
@@ -555,8 +635,10 @@ namespace RealLifeOverhaul
             var car = new Vector3(_cx[c], _cy[c], _cz[c]);
             if (reactions != null && reactions.Wait(walker, car, false, SolidRules.WaitFor(speed, distance)) && Meta.Dev.Verbose)
             {
+                Quiet();
                 Logger?.Info($"Traffic check (person ahead): '{TrafficTools.Name(_car[c])}' at {speed * 3.6f:F0} km/h, somebody about to step out {distance:F0} m ahead, "
                              + $"needs {SolidRules.SafeToStep(speed):F0} m: they wait at the kerb: PASS");
+                Loud();
             }
         }
 
@@ -627,9 +709,11 @@ namespace RealLifeOverhaul
                     {
                         strike = true;
                         _owed = false;   // one at a time: nobody else is owed at this look
+                        Quiet();
                         Logger?.Info($"Traffic check (struck): '{TrafficTools.Name(car)}' at {speed * 3.6f:F0} km/h could not stop: needed "
                                      + $"{SolidRules.StoppingDistance(speed, SolidRules.HardMost) + gap:F0} m, had {distance:F0}"
                                      + $" ({(arranged ? "somebody stepped out too late" : "a pedestrian is owed")}): it brakes with all its tyres give and reaches them at what is left.");
+                        Loud();
                     }
                 }
                 if (strike)
@@ -663,16 +747,24 @@ namespace RealLifeOverhaul
                 if (verbose && before == SolidRules.Driver.Clear && judged != SolidRules.Driver.Clear && !strike)
                 {
                     float needs = SolidRules.StoppingDistance(speed, judged == SolidRules.Driver.Ease ? SolidRules.HardFrom : SolidRules.HardMost) + gap;
+                    Quiet();
                     Logger?.Info($"Traffic check (person ahead): '{TrafficTools.Name(car)}' at {speed * 3.6f:F0} km/h, the person {distance:F0} m ahead, needs {needs:F0} m to stop: "
                                  + (judged == SolidRules.Driver.Late ? "braking with whatever it takes (nothing is owed: it must stop): PASS"
                                      : judged == SolidRules.Driver.Hard ? "braking hard: PASS" : "braking: PASS"));
+                    Loud();
                 }
 
                 // The horn at somebody who stepped out close. One car for one person: the one that reaches them first.
                 if (first && hears && SolidRules.HornDue(judged, before, now - _lastHorn[index]))
                 {
-                    Horn(c, index, car, walker, carAt, facing, reactions, now,
-                        verbose ? $"somebody stepped out {distance:F0} m ahead at {speed * 3.6f:F0} km/h: a hard brake" : null);
+                    string why = null;
+                    if (verbose)
+                    {
+                        Quiet();
+                        why = $"somebody stepped out {distance:F0} m ahead at {speed * 3.6f:F0} km/h: a hard brake";
+                        Loud();
+                    }
+                    Horn(c, index, car, walker, carAt, facing, reactions, now, why);
                 }
 
                 // Standing behind somebody. Not at a red light or a stop line the traffic system holds it at: there the people have the road.
@@ -686,14 +778,23 @@ namespace RealLifeOverhaul
                     float heldFor = now - _heldSince[index];
                     if (first && hears && SolidRules.DawdleHorn(heldFor, now - _lastHorn[index]) && Dawdles(person))
                     {
-                        Horn(c, index, car, walker, carAt, facing, reactions, now, verbose ? $"it has stood behind somebody for {heldFor:F0} s" : null);
+                        string why = null;
+                        if (verbose)
+                        {
+                            Quiet();
+                            why = $"it has stood behind somebody for {heldFor:F0} s";
+                            Loud();
+                        }
+                        Horn(c, index, car, walker, carAt, facing, reactions, now, why);
                     }
                     if (SolidRules.MoveOn(heldFor) && !_movedOn[index] && walker != null && walker.enabled)
                     {
                         _movedOn[index] = true;
                         bool moved = reactions != null && reactions.MoveOn(walker, carAt);
+                        Quiet();
                         Logger?.Info($"Traffic check (held too long): '{TrafficTools.Name(car)}' has stood behind somebody for {heldFor:F0} s (the most is {SolidRules.HoldMost:F0}): "
                                      + (moved ? "moved the person on: PASS" : "they could not be moved on; put elsewhere by the game once nobody can see them"));
+                        Loud();
                     }
                     else if (walker != null && walker.enabled && walker.isActiveAndEnabled
                              && SolidRules.Remove(heldFor, StreetSpots.IsInView(new Vector3(_grid.X(person), _height[person], _grid.Z(person)))))
@@ -704,7 +805,9 @@ namespace RealLifeOverhaul
                         _movedOn[index] = false;
                         _reachedIn[person] = float.MaxValue;
                         _putAway = walker;
+                        Quiet();
                         Logger?.Info($"Traffic check (held too long): '{TrafficTools.Name(car)}' was still held after {heldFor:F0} s by somebody nobody can see: the game puts them elsewhere: PASS");
+                        Loud();
                     }
                 }
                 else
@@ -748,7 +851,9 @@ namespace RealLifeOverhaul
             }
             if (why != null)
             {
+                Quiet();
                 Logger?.Info($"Traffic check (horn): '{TrafficTools.Name(car)}': {why}: " + (sounded ? "its horn sounds, and the people answer it: PASS" : "it has no horn of the game's to sound"));
+                Loud();
             }
         }
 
@@ -792,7 +897,9 @@ namespace RealLifeOverhaul
             {
                 _proxiesSaid = _pool.InUse;
                 _nextProxyLine = now + 1f;
+                Quiet();
                 Logger?.Info($"Traffic check (proxy): {_pool.InUse} of {_pool.Size} in use: {(_pool.InUse <= _pool.Size ? "PASS" : "more than there are")}");
+                Loud();
             }
         }
 
@@ -895,7 +1002,9 @@ namespace RealLifeOverhaul
                 _active = false;
                 if (was && (out_ > 0 || braked > 0 || unfaded > 0))
                 {
+                    Quiet();
                     Logger?.Info($"Traffic sees people: everything given back at once ({why}): {out_} stand-in(s) taken away, {braked} car(s) no longer braked, {unfaded} fade(s) put back.");
+                    Loud();
                 }
             }
             catch (Exception e)
@@ -920,10 +1029,15 @@ namespace RealLifeOverhaul
             Logger?.Info($"Traffic check (cost): {_ticks} looks in the last minute, {average:F0} microseconds on average and {worst:F0} at worst (wanted: under 100 and 300); "
                          + $"at most {_carsMost} cars looked at, {_peopleMost} people in the grid, {_proxiesMost} of {_pool.Size} stand-ins in use, {_brakedMost} cars braked, "
                          + $"{(CarStrikes.Instance != null ? CarStrikes.Instance.WatchedCount : 0)} watched for contact now; mode {_game.How}: "
-                         + (average < 100.0 && worst < 300.0 ? "PASS" : "over budget"));
+                         + (average < 100.0 && worst < 300.0 ? "PASS" : "over budget")
+                         + $"; where it went, on average and in the worst look (microseconds): the cars gathered {_splitTotal[0] * micro / _ticks:F0} and {_splitWorst[0] * micro:F0}, "
+                         + $"the people {_splitTotal[1] * micro / _ticks:F0} and {_splitWorst[1] * micro:F0}, the strips and the decisions {_splitTotal[2] * micro / _ticks:F0} and {_splitWorst[2] * micro:F0}, "
+                         + $"the stand-ins and the fades {_splitTotal[3] * micro / _ticks:F0} and {_splitWorst[3] * micro:F0}; the diagnostics' own lines are not counted.");
             _ticks = 0;
             _tickTotal = 0;
             _tickWorst = 0;
+            Array.Clear(_splitTotal, 0, Phases);
+            Array.Clear(_splitWorst, 0, Phases);
             _carsMost = _peopleMost = _proxiesMost = _brakedMost = 0;
         }
     }

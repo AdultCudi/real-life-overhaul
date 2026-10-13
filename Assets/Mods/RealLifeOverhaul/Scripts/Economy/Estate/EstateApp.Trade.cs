@@ -63,6 +63,7 @@ namespace RealLifeOverhaul.Economy
             box.Line(EstateText.T("reallife_estate_hotel_night_what", "share", EstateText.Share(EstateCatalogue.Occupancy)));
             box.Line(EstateText.T("reallife_estate_hotel_staff_what"));
             box.Line(EstateText.T("reallife_estate_hotel_held_what"));
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         private void WriteHotelOf(InfoBox box, EstateState state, HotelFile f, int day, EstateClimate c)
@@ -70,11 +71,23 @@ namespace RealLifeOverhaul.Economy
             string slot = f.Slot;
             int rooms = HotelRules.Rooms(f.Tier);
             box.Title(f.Name);
+            if (f.AskRooms > 0)
+            {
+                box.Line(EstateText.Fill("reallife_estate_hotel_group", "rooms", f.AskRooms.ToString(), "nights", f.AskNights.ToString(), "rate", EstateText.Money(f.AskRate), "amount", EstateText.Money(f.AskRooms * f.AskNights * f.AskRate),
+                    "day", f.AskLapse.ToString()));
+            }
+            else if (f.GroupNights > 0)
+            {
+                box.Line(EstateText.T("reallife_estate_hotel_group_in", "rooms", f.GroupRooms.ToString(), "nights", f.GroupNights.ToString(), "rate", EstateText.Money(f.GroupRate)));
+            }
+            if (f.OutEnd >= day && f.OutRooms > 0)
+            {
+                box.Line(EstateText.T("reallife_estate_hotel_out", "rooms", f.OutRooms.ToString(), "day", f.OutEnd.ToString()));
+            }
             box.Line(EstateText.T("reallife_estate_hotel_last", "sold", (f.Sold[0] + f.Sold[1]).ToString(), "rooms", rooms.ToString(), "takings", EstateText.Money(f.Takings)) + " "
                      + EstateText.T(f.Leased ? "reallife_estate_hotel_last_leased" : "reallife_estate_hotel_last_owned", "costs", EstateText.Money(f.Costs), "lease", EstateText.Money(f.LeaseDaily)));
             box.Line(EstateText.T("reallife_estate_hotel_year", "takings", EstateText.Money(f.TakingsYear), "costs", EstateText.Money(f.CostsYear)));
-            box.Line(EstateText.T("reallife_estate_hotel_rating", "stars", HotelRules.Stars(f.Rating).ToString(), "clean", EstateText.Level(f.Clean), "target", EstateText.Level(HotelRules.RatingTarget(f.Clean, f.Staff, (f.Rate[0] + f.Rate[1]) / 2)))
-                     + " " + EstateText.T("reallife_estate_hotel_rating_what", "share", EstateText.Share(HotelRules.RatingDemand(f.Rating))));
+            box.Line(EstateText.T("reallife_estate_hotel_rating", "stars", HotelRules.Stars(f.Rating).ToString(), "clean", EstateText.Level(f.Clean), "target", EstateText.Level(HotelRules.RatingTarget(f.Clean, f.Staff, (f.Rate[0] + f.Rate[1]) / 2))));
             for (int type = 0; type < EstateCatalogue.RoomTypes; type++)
             {
                 int t = type;
@@ -89,29 +102,17 @@ namespace RealLifeOverhaul.Economy
             }
             box.Line(EstateText.T("reallife_estate_hotel_staff_cost", "amount", EstateText.Money(HotelRules.Costs(f.Tier, f.Staff, f.Sold[0] + f.Sold[1], c.Index)), "clean", EstateText.Level(EstateCatalogue.CleanTarget[f.Staff]),
                 "day", f.InspectDay.ToString()));
+            box.Line(f.PushEnd >= day
+                ? EstateText.T("reallife_estate_hotel_campaign_on", "day", f.PushEnd.ToString(), "share", EstateText.Share(EstateCatalogue.CampaignDemand))
+                : EstateText.T("reallife_estate_hotel_campaign", "amount", EstateText.Money(HotelRules.CampaignCost(f.Tier, c.Index)), "days", EstateCatalogue.CampaignDays.ToString(), "share", EstateText.Share(EstateCatalogue.CampaignDemand)));
             Transform buttons = box.ButtonRow();
             if (f.AskRooms > 0)
             {
-                box.Line(EstateText.Fill("reallife_estate_hotel_group", "rooms", f.AskRooms.ToString(), "nights", f.AskNights.ToString(), "rate", EstateText.Money(f.AskRate), "amount", EstateText.Money(f.AskRooms * f.AskNights * f.AskRate),
-                    "day", f.AskLapse.ToString()));
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_estate_btn_accept", () => _director.AnswerGroup(slot, true));
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_estate_btn_refuse", () => _director.AnswerGroup(slot, false));
             }
-            else if (f.GroupNights > 0)
+            if (f.PushEnd < day)
             {
-                box.Line(EstateText.T("reallife_estate_hotel_group_in", "rooms", f.GroupRooms.ToString(), "nights", f.GroupNights.ToString(), "rate", EstateText.Money(f.GroupRate)));
-            }
-            if (f.OutEnd >= day && f.OutRooms > 0)
-            {
-                box.Line(EstateText.T("reallife_estate_hotel_out", "rooms", f.OutRooms.ToString(), "day", f.OutEnd.ToString()));
-            }
-            if (f.PushEnd >= day)
-            {
-                box.Line(EstateText.T("reallife_estate_hotel_campaign_on", "day", f.PushEnd.ToString(), "share", EstateText.Share(EstateCatalogue.CampaignDemand)));
-            }
-            else
-            {
-                box.Line(EstateText.T("reallife_estate_hotel_campaign", "amount", EstateText.Money(HotelRules.CampaignCost(f.Tier, c.Index)), "days", EstateCatalogue.CampaignDays.ToString(), "share", EstateText.Share(EstateCatalogue.CampaignDemand)));
                 InfoBox.Button(buttons, InfoBox.Additional, "reallife_estate_btn_campaign", () => _director.HotelCampaign(slot));
             }
             Transform more = box.ButtonRow();
@@ -120,6 +121,8 @@ namespace RealLifeOverhaul.Economy
             {
                 BackButton(more);
             }
+            box.Line(EstateText.T("reallife_estate_hotel_rating_what", "share", EstateText.Share(HotelRules.RatingDemand(f.Rating))));
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         // ---------------------------------------------------------------- Car hire
@@ -188,7 +191,6 @@ namespace RealLifeOverhaul.Economy
                 box.Title(EstateGame.CarName(add.vehicleTypeName));
                 box.Line(EstateText.T("reallife_estate_hire_add_what", "class", EstateText.CarClass(carClass), "amount", EstateText.Money(HireRules.Going(price, c.Index)),
                     "chance", EstateText.Share(HireRules.Demand(carClass, c.Season, c.Event, c.Cycle, EstateCatalogue.Thousand, hire.Rating))));
-                box.Line(EstateText.T("reallife_estate_hire_gone_what"));
                 box.Line(EstateText.T("reallife_estate_hire_spaces", "count", hire.Cars.Count.ToString(), "spaces", hire.Spaces.ToString()));
                 Transform buttons = box.ButtonRow();
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_estate_btn_add_car", () =>
@@ -200,10 +202,11 @@ namespace RealLifeOverhaul.Economy
                     }
                 });
                 BackButton(buttons);
+                box.Line(EstateText.T("reallife_estate_hire_gone_what"));
+                Meta.Guide.Point(box, GuideTitle);
                 return;
             }
             box.Title(EstateText.T("reallife_estate_tab_hire"));
-            box.Line(EstateText.T("reallife_estate_hire_what"));
             if (hire.Running)
             {
                 box.Line(EstateText.Pair("reallife_estate_hire_lot", EstateGame.NameOf(hire.Lot)));
@@ -220,17 +223,21 @@ namespace RealLifeOverhaul.Economy
                     box.Line(EstateText.T(hire.Cover ? "reallife_estate_own_cover_on" : "reallife_estate_own_cover_off"));
                 }
                 box.Line(EstateText.T("reallife_estate_hire_cover_what", "amount", EstateText.Money(premium), "share", EstateText.Share(EstateCatalogue.HireCoverPays), "excess", EstateText.Money(EstateCatalogue.HireCoverExcess)));
-                box.Line(EstateText.T("reallife_estate_hire_how", "metres", EstateCatalogue.HireLotMetres.ToString()));
                 if (hire.Count(HireState.Out) + hire.Count(HireState.Waiting) == 0)
                 {
                     InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_estate_btn_close_lot", () => _director.SetLot(null));
                 }
+                box.Line(EstateText.T("reallife_estate_hire_how", "metres", EstateCatalogue.HireLotMetres.ToString()));
+                box.Line(EstateText.T("reallife_estate_hire_what"));
+                Meta.Guide.Point(box, GuideTitle);
                 return;
             }
             EstateGame.Lots(_places);
             if (_places.Count == 0)
             {
                 box.Line(EstateText.T("reallife_estate_hire_no_building"));
+                box.Line(EstateText.T("reallife_estate_hire_what"));
+                Meta.Guide.Point(box, GuideTitle);
                 return;
             }
             _lot = EstateCatalogue.Clamp(_lot, 0, _places.Count - 1);
@@ -247,6 +254,8 @@ namespace RealLifeOverhaul.Economy
                     _director.SetLot(EstateGame.Place(_places[_lot].StreetName, _places[_lot].StreetNumber));
                 }
             });
+            box.Line(EstateText.T("reallife_estate_hire_what"));
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         private void WriteCar(InfoBox box, HireFile hire, HireCar car, int day, EstateClimate c)
@@ -254,10 +263,6 @@ namespace RealLifeOverhaul.Economy
             string id = car.Id;
             int carClass = HireRules.Class(car.Price);
             box.Title(EstateGame.CarName(car.Type));
-            box.Line(EstateText.T("reallife_estate_car_what", "class", EstateText.CarClass(carClass), "price", EstateText.Money(car.Price), "going", EstateText.Money(HireRules.Going(car.Price, c.Index))));
-            Steps(box, EstateCatalogue.RateLeast, EstateCatalogue.RateMost, EstateCatalogue.RateStep, car.Rate, rate => _director.SetCarRate(id, rate));
-            box.Line(EstateText.T("reallife_estate_car_rate", "amount", EstateText.Money(HireRules.Rate(car.Price, car.Rate, c.Index)),
-                "chance", EstateText.Share(HireRules.Demand(carClass, c.Season, c.Event, c.Cycle, car.Rate, hire.Rating)), "rating", EstateText.Level(hire.Rating)));
             switch ((HireState)car.State)
             {
                 case HireState.Out:
@@ -274,7 +279,10 @@ namespace RealLifeOverhaul.Economy
                     break;
             }
             box.Line(EstateText.T("reallife_estate_car_totals", "hires", car.Hires.ToString(), "amount", EstateText.Money(car.Takings)));
-            box.Line(EstateText.T("reallife_estate_car_risk", "damage", EstateText.Share(EstateCatalogue.HireDamageChance), "late", EstateText.Share(EstateCatalogue.HireLateChance), "cleaning", EstateText.Money(HireRules.Cleaning(c.Index))));
+            box.Line(EstateText.T("reallife_estate_car_what", "class", EstateText.CarClass(carClass), "price", EstateText.Money(car.Price), "going", EstateText.Money(HireRules.Going(car.Price, c.Index))));
+            Steps(box, EstateCatalogue.RateLeast, EstateCatalogue.RateMost, EstateCatalogue.RateStep, car.Rate, rate => _director.SetCarRate(id, rate));
+            box.Line(EstateText.T("reallife_estate_car_rate", "amount", EstateText.Money(HireRules.Rate(car.Price, car.Rate, c.Index)),
+                "chance", EstateText.Share(HireRules.Demand(carClass, c.Season, c.Event, c.Cycle, car.Rate, hire.Rating)), "rating", EstateText.Level(hire.Rating)));
             Transform buttons = box.ButtonRow();
             if (car.State == (int)HireState.Idle || car.State == (int)HireState.Valet)
             {
@@ -285,6 +293,8 @@ namespace RealLifeOverhaul.Economy
                 });
             }
             BackButton(buttons);
+            box.Line(EstateText.T("reallife_estate_car_risk", "damage", EstateText.Share(EstateCatalogue.HireDamageChance), "late", EstateText.Share(EstateCatalogue.HireLateChance), "cleaning", EstateText.Money(HireRules.Cleaning(c.Index))));
+            Meta.Guide.Point(box, GuideTitle);
         }
     }
 }

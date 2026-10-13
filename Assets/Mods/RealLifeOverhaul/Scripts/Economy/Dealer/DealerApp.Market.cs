@@ -63,13 +63,14 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             _picked = null;
             box.Title(DealerText.T("reallife_dealer_market_title"));
-            box.Line(DealerText.T("reallife_dealer_market_about"));
-            box.Line(DealerText.Fill("reallife_dealer_market_sum", "new", news.ToString(), "used", used.ToString(), "lots", lots.ToString()));
-            box.Line(DealerText.Pair("reallife_dealer_cash", DealerText.Money(DealerGame.Cash)));
             if (state.NoBidsUntil >= SaveGameManager.Current.Day)
             {
                 box.Line(DealerText.T("reallife_dealer_market_no_bids", "day", FinanceText.Day(state.NoBidsUntil + 1)));
             }
+            box.Line(DealerText.Pair("reallife_dealer_cash", DealerText.Money(DealerGame.Cash)));
+            box.Line(DealerText.Fill("reallife_dealer_market_sum", "new", news.ToString(), "used", used.ToString(), "lots", lots.ToString()));
+            box.Line(DealerText.T("reallife_dealer_market_about"));
+            Meta.Guide.Point(box, GuideTitle);
             return DealerColumns.Market;
         }
 
@@ -94,6 +95,10 @@ namespace RealLifeOverhaul.Economy.Dealership
             box.Line(DealerText.T("reallife_dealer_new_what", "km", DealerText.Km(l.Km)));
             box.Line(DealerText.Fill("reallife_dealer_new_money", "price", DealerText.Money(l.Asking), "worth", DealerText.Money(worth), "asking", DealerText.Money(DealerRules.Asking(worth))));
             string yard = ChooseYard(box, state);
+            if (yard == null)
+            {
+                box.Line(DealerText.T(state.Yards.Count == 0 ? "reallife_dealer_refuse_off" : "reallife_dealer_no_room"));
+            }
             Transform buttons = box.ButtonRow();
             if (yard != null)
             {
@@ -106,29 +111,30 @@ namespace RealLifeOverhaul.Economy.Dealership
                         }
                     }, false));
             }
-            else
-            {
-                box.Line(DealerText.T(state.Yards.Count == 0 ? "reallife_dealer_refuse_off" : "reallife_dealer_no_room"));
-            }
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         private void WriteUsed(InfoBox box, DealerState state, DealerListing l)
         {
             box.Title(DealerGame.CarName(l.Type) + "  " + DealerGame.ColourName(l.Colour));
+            box.Line(DealerText.Fill("reallife_dealer_used_asking", "price", DealerText.Money(l.Asking), "counter", l.Countered > 0 ? DealerText.Money(l.Countered) : DealerText.T("reallife_dealer_none"),
+                "left", (DealerCatalogue.HagglesMost - l.Haggles).ToString()));
             if (l.Inspected)
             {
                 int worth = _director.Worth(l);
-                box.Line(DealerText.Fill("reallife_dealer_used_inspected", "km", DealerText.Km(l.Km), "condition", DealerText.Condition(l.Condition), "faults", DealerText.Faults(l.Faults)));
                 box.Line(DealerText.Pair("reallife_dealer_used_worth", DealerText.Money(worth)));
+                box.Line(DealerText.Fill("reallife_dealer_used_inspected", "km", DealerText.Km(l.Km), "condition", DealerText.Condition(l.Condition), "faults", DealerText.Faults(l.Faults)));
             }
             else
             {
                 box.Line(DealerText.Fill("reallife_dealer_used_said", "km", DealerText.Km(l.Km), "condition", DealerText.Condition(l.Shown)));
             }
-            box.Line(DealerText.Fill("reallife_dealer_used_asking", "price", DealerText.Money(l.Asking), "counter", l.Countered > 0 ? DealerText.Money(l.Countered) : DealerText.T("reallife_dealer_none"),
-                "left", (DealerCatalogue.HagglesMost - l.Haggles).ToString()));
             string yard = ChooseYard(box, state);
+            if (yard == null)
+            {
+                box.Line(DealerText.T(state.Yards.Count == 0 ? "reallife_dealer_refuse_off" : "reallife_dealer_no_room"));
+            }
             int step = Choice(DealerRules.HaggleSteps - 3);
             int offer = DealerRules.HaggleAt(l.Asking, step);
             Choose(box, DealerRules.HaggleSteps, step, i => DealerText.T("reallife_dealer_used_offer", "price", DealerText.Money(DealerRules.HaggleAt(l.Asking, i))), SetChoice);
@@ -159,10 +165,6 @@ namespace RealLifeOverhaul.Economy.Dealership
                         }
                     }, false));
             }
-            else
-            {
-                box.Line(DealerText.T(state.Yards.Count == 0 ? "reallife_dealer_refuse_off" : "reallife_dealer_no_room"));
-            }
             Transform more = box.ButtonRow();
             if (!l.Inspected)
             {
@@ -171,25 +173,29 @@ namespace RealLifeOverhaul.Economy.Dealership
                     DealerText.T("reallife_dealer_q_inspect", "car", DealerGame.CarName(l.Type), "fee", DealerText.Money(fee)), () => _director.Inspect(l.Id, yard), false));
             }
             InfoBox.Button(more, InfoBox.Additional, "common_close", ClosePick);
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         private void WriteLot(InfoBox box, DealerState state, DealerListing l, int now)
         {
             int worth = _director.Worth(l);
             box.Title(DealerGame.CarName(l.Type) + "  " + DealerGame.ColourName(l.Colour));
-            box.Line(l.Inspected
-                ? DealerText.Fill("reallife_dealer_used_inspected", "km", DealerText.Km(l.Km), "condition", DealerText.Condition(l.Condition), "faults", DealerText.Faults(l.Faults))
-                : DealerText.Fill("reallife_dealer_lot_catalogue", "km", DealerText.Km(l.Km), "condition", DealerText.Condition(l.Shown)));
             box.Line(DealerText.Fill("reallife_dealer_lot_bid", "bid", DealerText.Money(l.Asking), "state", AuctionState(l), "bids", l.Bids.ToString()));
             if (l.Gone)
             {
                 box.Line(DealerText.T("reallife_dealer_lot_over"));
+            }
+            box.Line(l.Inspected
+                ? DealerText.Fill("reallife_dealer_used_inspected", "km", DealerText.Km(l.Km), "condition", DealerText.Condition(l.Condition), "faults", DealerText.Faults(l.Faults))
+                : DealerText.Fill("reallife_dealer_lot_catalogue", "km", DealerText.Km(l.Km), "condition", DealerText.Condition(l.Shown)));
+            if (l.Gone)
+            {
                 InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
+                Meta.Guide.Point(box, GuideTitle);
                 return;
             }
             int next = DealerRules.NextBid(l, worth), fee = DealerRules.BuyersFee(next, Prices.At(DealerCatalogue.BuyersFeeLeast));
             box.Line(DealerText.Fill("reallife_dealer_lot_next", "bid", DealerText.Money(next), "fee", DealerText.Money(fee), "ends", DealerText.When(l.Ends), "left", DealerText.Hours(Mathf.Max(0, l.Ends - now))));
-            box.Line(DealerText.T("reallife_dealer_lot_note"));
             Transform buttons = box.ButtonRow();
             if (l.Leader != 0)
             {
@@ -202,6 +208,8 @@ namespace RealLifeOverhaul.Economy.Dealership
                     DealerText.T("reallife_dealer_q_inspect", "car", DealerGame.CarName(l.Type), "fee", DealerText.Money(inspection)), () => _director.Inspect(l.Id, null), false));
             }
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
+            box.Line(DealerText.T("reallife_dealer_lot_note"));
+            Meta.Guide.Point(box, GuideTitle);
         }
     }
 }

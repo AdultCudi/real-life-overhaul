@@ -133,7 +133,7 @@ namespace RealLifeOverhaul
             }
             _solid = on;
             MeshCuts.Note(on ? "a bus stop made solid" : "a bus stop no longer solid");
-            SessionWatch.Mark(on ? "transit: a bus stop made solid (the navigation mesh is cut round it)" : "transit: a bus stop no longer solid (the navigation mesh closes)");
+            using var piece = SessionWatch.Piece(on ? "transit: a bus stop made solid (the navigation mesh is cut round it)" : "transit: a bus stop no longer solid (the navigation mesh closes)");
             for (int i = 0; i < _blocks.Length; i++)
             {
                 _blocks[i].enabled = on;
@@ -167,7 +167,7 @@ namespace RealLifeOverhaul
         /// <param name="walkerRadius">The radius the navigation mesh was made for (the player's kind of walker).</param>
         public void Put(TransitStop stop, string numbers, string mapText, float walkerRadius)
         {
-            SessionWatch.Mark("transit: a bus stop being put out");
+            using var piece = SessionWatch.Piece("transit: a bus stop being put out");
             _root.SetActive(false);   // moved while off, so the mesh is cut once, in the right place
             Stop = stop;
             _radius = Mathf.Clamp(walkerRadius, 0.15f, 0.6f);

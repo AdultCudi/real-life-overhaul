@@ -123,8 +123,10 @@ namespace RealLifeOverhaul
             }
         }
 
+        private static readonly int HotUpdate = HotSpots.Slot("Travel: TravelDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_failed)
             {
                 return;
@@ -199,6 +201,7 @@ namespace RealLifeOverhaul
             if (now >= _nextSecond)
             {
                 _nextSecond = now + 1f;
+                Hotels.Keep();   // (a hotel whose building has become the player's moves: a counter, and every five seconds eight reads)
                 if (street)
                 {
                     bool onFoot = !PlayerHelper.IsUsingVehicle && gm.selectedVehicle == null;

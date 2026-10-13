@@ -218,6 +218,7 @@ namespace RealLifeOverhaul
             Instance = this;
             TransitMap.Logger = Logger;
             BusZones.Logger = Logger;
+            TransitBus.Logger = Logger;
             RoadPaint.Logger = Logger;
             TransitMap.Reset();
             TransitState.Reset();
@@ -296,8 +297,10 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- the two clocks
 
+        private static readonly int HotUpdate = HotSpots.Slot("Transport: TransitDirector.Update");
         private void Update()
         {
+            using var hotSpot = HotSpots.Time(HotUpdate);
             if (_failed)
             {
                 return;
@@ -1291,7 +1294,7 @@ namespace RealLifeOverhaul
             switch (_bus.Waiting)
             {
                 case TransitBus.Hold.Light: return "standing at a red light for " + _bus.WaitingFor.ToString("F0") + " s";
-                case TransitBus.Hold.Traffic: return "standing behind traffic for " + _bus.WaitingFor.ToString("F0") + " s";
+                case TransitBus.Hold.Traffic: return "standing for " + _bus.WaitingFor.ToString("F0") + " s behind " + _bus.WaitsFor();
                 case TransitBus.Hold.Closure: return "standing before a closed road for " + _bus.WaitingFor.ToString("F0") + " s";
                 default: return _bus.HoldLeft > 0f ? "held at its start for " + _bus.HoldLeft.ToString("F0") + " s more, to keep the timetable" : "driving";
             }
@@ -1330,6 +1333,7 @@ namespace RealLifeOverhaul
             bool inBay = _bus.InBay;
             bool placed = inBay ? Mathf.Abs(along) <= 2.5f && toLane >= -0.15f && toKerb >= 0f && angle <= 3f   // (its rear corner a hand's breadth in the lane at the narrowest bay: NavCheck)
                                 : Mathf.Abs(along) <= 2.5f && Mathf.Abs(aside) <= 1.2f && angle <= 12f;
+            string held = _bus.StoodShort;   // (held up short of its place, it is at the stop where it is: TransitBus.OnTheWay)
             Logger?.Info("Transit check (arrival): the " + line.Number + " stands at " + StopLabel(stop) + (inBay ? " in its bay" : "") + " with its middle " + Mathf.Abs(along).ToString("F1") + " m "
                          + (along >= 0f ? "past" : "short of") + (Mathf.Abs(stop.Stand) > 0.01f ? " its place " + Mathf.Abs(stop.Stand).ToString("F1") + " m " + (stop.Stand > 0f ? "on from" : "short of") + " the pole" : " the pole") + ", " + Mathf.Abs(aside).ToString(inBay ? "F2" : "F1") + " m " + (aside >= 0f ? "towards the kerb" : "away from the kerb")
                          + " off the lane's line" + (inBay ? " (the bay's line is " + stop.BayOffset.ToString("F2") + ")" : "") + ", " + angle.ToString(inBay ? "F1" : "F0")
@@ -1338,8 +1342,10 @@ namespace RealLifeOverhaul
                                     + " m from it): the lane is " + (toLane >= 0f ? "free" : "NOT free")
                              : stop.HasBay ? ", in the lane (" + (_bus.BayNote ?? "the bay was not used") + ")"
                              : ", in the lane (no bay here: " + (stop.NoBay ?? "none laid out") + ", the kerb " + stop.KerbAside.ToString("F2") + " m from the lane's line)")
-                         + "; " + _bus.Took.ToString("F0") + " s after setting out " + _bus.StartedBack.ToString("F0") + " m back: "
-                         + (placed ? "PASS" : inBay ? "FAIL (allowed: 2.5 m along, 3 degrees, nothing of it in the lane or over the kerb)" : "FAIL (allowed: 2.5 m along, 1.2 m aside, 12 degrees)") + ".");
+                         + "; " + _bus.Took.ToString("F0") + " s after setting out " + _bus.StartedBack.ToString("F0") + " m back"
+                         + (held != null ? "; " + held : string.Empty) + ": "
+                         + (placed ? "PASS" : held != null ? "PASS (where it was held up: it counts as standing at the stop)"
+                             : inBay ? "FAIL (allowed: 2.5 m along, 3 degrees, nothing of it in the lane or over the kerb)" : "FAIL (allowed: 2.5 m along, 1.2 m aside, 12 degrees)") + ".");
             OnTime(now, line, stop);
             if (_frontCall >= 0 && _frontCall < MostCalls)
             {

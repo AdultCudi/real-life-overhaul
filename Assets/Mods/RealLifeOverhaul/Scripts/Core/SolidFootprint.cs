@@ -125,7 +125,7 @@ namespace RealLifeOverhaul
                 _block.carving = on;
                 MeshCuts.Note(on ? "a cart or stand made solid" : "a cart or stand no longer solid");
             }
-            SessionWatch.Mark(on ? "a cart made solid (the navigation mesh is cut round it)" : "a cart no longer solid (the navigation mesh closes)");
+            using var piece = SessionWatch.Piece(on ? "a cart made solid (the navigation mesh is cut round it)" : "a cart no longer solid (the navigation mesh closes)");
             _verifyAt = on ? now + 1.6f : -1f;   // the cut is made once the box has stood still for half a second
             return true;
         }
@@ -155,7 +155,7 @@ namespace RealLifeOverhaul
                     _block.carving = false;
                     _block.size = new Vector3(_halfLength * 2f, 2f, _steerHalfDepth * 2f);
                 }
-                SessionWatch.Mark("a cart's cut taken back (a standing place was lost)");
+                using var piece = SessionWatch.Piece("a cart's cut taken back (a standing place was lost)");
             }
             return true;
         }

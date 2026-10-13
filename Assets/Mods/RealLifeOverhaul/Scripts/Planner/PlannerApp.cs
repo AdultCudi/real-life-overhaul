@@ -87,7 +87,7 @@ namespace RealLifeOverhaul.Planner
         public GameObject Build(FullMenu menu, Transform dormant)
         {
             _menu = menu;
-            SessionWatch.Mark("planner: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
+            using var piece = SessionWatch.Piece("planner: the app being built from the game's MyEmployees");   // once per city: a few hundred objects copied in one frame
             _shell = AppShell.Make(menu, dormant, PlannerDirector.AppId);
             if (_shell == null || !PrepareRow(_shell.RowPrefab))
             {
@@ -471,6 +471,8 @@ namespace RealLifeOverhaul.Planner
             return PlannerText.T(labelKey) + " <b>" + value + "</b>";
         }
 
+        private const string GuideTitle = "reallife_meta_title_planner";   // the Guide's page the day and an entry point to at their foot
+
         private void WriteGlance(InfoBox box)
         {
             int today = TimeHelper.CurrentDay;
@@ -497,12 +499,12 @@ namespace RealLifeOverhaul.Planner
                     toDo++;
                 }
             }
-            box.Line(Pair("reallife_planner_glance_todo", toDo.ToString()));
-            box.Line(Pair("reallife_planner_glance_done", done.ToString()));
             if (missed > 0)
             {
                 box.Line(Pair("reallife_planner_glance_missed", missed.ToString()));
             }
+            box.Line(Pair("reallife_planner_glance_todo", toDo.ToString()));
+            box.Line(Pair("reallife_planner_glance_done", done.ToString()));
             box.Line(Pair("reallife_planner_glance_week", week.ToString()));
             box.Headline("reallife_planner_calendar");
             box.Line(Pair("reallife_planner_calendar_week", PlannerText.T("reallife_planner_calendar_week_value", "day", (PlannerTime.Weekday(today) + 1).ToString())));
@@ -515,6 +517,7 @@ namespace RealLifeOverhaul.Planner
                 box.Line(Pair("reallife_planner_calendar_new_year", PlannerText.Date(next)));
             }
             box.Line(PlannerText.T("reallife_planner_glance_hint"));
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         private void WriteEntry(InfoBox box, PlannerEntry e)
@@ -522,11 +525,6 @@ namespace RealLifeOverhaul.Planner
             int today = TimeHelper.CurrentDay;
             EntryId id = e.Id;
             box.Title(e.Title);
-            box.Line(Pair("reallife_planner_detail_when", PlannerText.WhenLong(e, today)));
-            if (!string.IsNullOrEmpty(e.Where))
-            {
-                box.Line(Pair("reallife_planner_detail_where", e.Where));
-            }
             string status = PlannerText.StatusKey(e);
             if (status != null)
             {
@@ -539,6 +537,11 @@ namespace RealLifeOverhaul.Planner
                 {
                     box.Line(PlannerText.T("reallife_planner_detail_clash", "title", other));
                 }
+            }
+            box.Line(Pair("reallife_planner_detail_when", PlannerText.WhenLong(e, today)));
+            if (!string.IsNullOrEmpty(e.Where))
+            {
+                box.Line(Pair("reallife_planner_detail_where", e.Where));
             }
             if (!string.IsNullOrEmpty(e.What))
             {
@@ -590,6 +593,7 @@ namespace RealLifeOverhaul.Planner
             {
                 InfoBox.Button(row, InfoBox.Additional, "common_close", () => Show(Page.Glance));
             }
+            Meta.Guide.Point(box, GuideTitle);
         }
 
         private string ClashWith(PlannerEntry e)

@@ -312,9 +312,11 @@ namespace RealLifeOverhaul.Economy.Ventures
 
         // ---------------------------------------------------------------- the hour and the day
 
+        private static readonly int HotOnHour = HotSpots.Slot("Economy: VenturesDirector.OnHour");
         // GlobalEvents.onNewHour. Only while money is promised for a business not yet open: has one been opened.
         private void OnHour()
         {
+            using var hotSpot = HotSpots.Time(HotOnHour);
             if (!_running || _broken || Save == null || _file.Pledges.Count == 0)
             {
                 return;
@@ -329,9 +331,11 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
+        private static readonly int HotOnDay = HotSpots.Slot("Economy: VenturesDirector.OnDay");
         // GlobalEvents.onNewDay: after the game's daily run, so yesterday's statement of every business is there.
         private void OnDay()
         {
+            using var hotSpot = HotSpots.Time(HotOnDay);
             if (!_running || _broken || Save == null)
             {
                 return;
