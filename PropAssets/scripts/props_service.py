@@ -683,6 +683,11 @@ def bus_body(name, note):
     p.add(box(0.12, 0.10, 0.30, bevel=0.012), flat("steel_dark"), at=(0.42, doors[0][1] - 0.10, 1.25))          # the ticket validator by the driver
     p.add(box(0.004, 0.08, 0.10), flat("svc_lens_clear"), at=(0.482, doors[0][1] - 0.10, 1.31))
     rod(p, (0.42, doors[0][1] - 0.10, BUS_FLOOR), (0.42, doors[0][1] - 0.10, 1.10), 0.02, "paint_yellow", 6, caps=False)
+    # The second validator, inside the middle door on a bracket to its rear pole (x 1.08, y0 + 0.08), its lens facing forward
+    # into the doorway: BusInside.MiddleReaderX/MiddleReaderZ, and its footprint x 0.90..1.07, along -1.05..-0.95.
+    p.add(box(0.12, 0.10, 0.30, bevel=0.012), flat("steel_dark"), at=(0.96, -1.00, 1.25))
+    p.add(box(0.08, 0.004, 0.10), flat("svc_lens_clear"), at=(0.96, -0.948, 1.31))
+    p.add(box(0.045, 0.06, 0.04), flat("steel_dark"), at=(1.0425, -1.02, 1.25))
     bus_inside(p, lintel)
 
     # ---- a rubber lip round each arch, inside the bus's width (the wheel housings inside are bus_inside's).

@@ -54,6 +54,7 @@ namespace RealLifeOverhaul
         private const string ButtonChange = "reallife_transit_button_change";
         private const string ButtonSit = "reallife_transit_button_sit";
         private const string ButtonStand = "reallife_transit_button_stand";
+        private const string ButtonSkipChange = "reallife_transit_button_skip_change";
 
         private readonly GameUi.WorldPanel _panel = new GameUi.WorldPanel { Name = "stop" };
         private readonly List<TransitTrip> _trips = new List<TransitTrip>(64);
@@ -82,6 +83,7 @@ namespace RealLifeOverhaul
         private Action _onStand;
         private Action _onListClosed;
         private Action _onAsked;
+        private Action _onSkipChange;
         private Action<int> _onPick;
         private Action<int> _onMapPick;
         private Action _onMapClosed;
@@ -214,13 +216,14 @@ namespace RealLifeOverhaul
                 }
                 standing = _bus.State == TransitBus.Phase.Standing && _bus.Vehicle != null;
             }
-            if (_booked != null && standing && !_seat.Active && _bus.Standing >= 1f && TransitRide.CanStart())
+            if (_booked != null && standing && !_seat.Active && _bus.Standing >= 1f && TransitRide.CanStart() && (_bookedLine < 0 || (_bus.Stop != null && _bus.Stop.Line == _bookedLine)))
             {
-                // The stop was picked while waiting: the bus stands, so they get on.
-                TransitStop to = _booked;
+                // The stop was picked while waiting (or this is the change of a journey): the bus of its line stands, so they get on.
+                TransitTrip trip = _bookedTrip;
                 _booked = null;
+                _bookedLine = -1;
                 _panelKey = int.MinValue;
-                if (Board(to, "had picked " + StopLabel(to) + " while waiting and gets on as the bus stands"))
+                if (Board(trip, (_changing ? "changes onto the " + LineNumber(_bus.Stop) + " for " : "had picked ") + StopLabel(trip.To) + (_changing ? "" : " while waiting") + " and gets on as the bus stands"))
                 {
                     return;
                 }
@@ -249,16 +252,16 @@ namespace RealLifeOverhaul
             }
         }
 
-        // What the panel and the list say of the bus, measured. True when any of it differs from what was last written.
+        // What the panel and the list say of the buses, measured. True when any of it differs from what was last written.
         private bool Measure(bool standing)
         {
             TransitEta.Mode mode = standing ? TransitEta.Mode.Here : _eta.State;
             bool busOut = _bus.State == TransitBus.Phase.Approaching;
             if (mode == TransitEta.Mode.Here && !standing)
             {
-                mode = TransitEta.Mode.Timetable;   // (the tick between a bus leaving and the timetable being set)
+                mode = TransitEta.Mode.Timetable;   // (the tick between a bus leaving and the next call being set)
             }
-            // The figure, in game minutes: the clock's rate is measured and wobbles, the figure shown does not rise for that.
+            // The front bus's figure, in game minutes: the clock's rate is measured and wobbles, the figure shown does not rise for that.
             int minutes = Mathf.Max(1, Mathf.CeilToInt(_eta.Seconds * _minutesPerSecond));
             if (_eta.Epoch == _shownEpoch && minutes > _shownMinutes)
             {
@@ -266,16 +269,16 @@ namespace RealLifeOverhaul
             }
             _shownEpoch = _eta.Epoch;
             _shownMinutes = minutes;
-            bool figure = mode == TransitEta.Mode.Timetable || mode == TransitEta.Mode.EnRoute;
             int metres = busOut && (mode == TransitEta.Mode.Delayed || mode == TransitEta.Mode.EnRoute) ? Mathf.Clamp(Mathf.RoundToInt(_bus.Remaining / 10f) * 10, 10, 4090) : 0;
             int hold = busOut ? (int)_bus.Waiting : 0;
             int state = standing ? (_busFull ? 5 : 4) : (int)mode;
             int seat = _seat.Active ? (_seat.Seated ? 2 : 1) : 0;
-            int key = (_served.Id << 20) | (state << 16) | ((figure ? Mathf.Min(minutes, 999) : 0) << 6) | (hold << 4) | (seat << 2) | (Raining() ? 2 : 0) | (TransitState.HasPass ? 1 : 0);
-            int more = metres | ((_booked != null ? _booked.Id + 1 : 0) << 12) | (_sitAt != null ? 1 << 21 : 0);
             _mode = mode;
             _minutes = minutes;
             _metres = metres;
+            int rows = Rows(standing);
+            int key = (_served.Id << 20) | (state << 16) | (hold << 4) | (seat << 2) | (Raining() ? 2 : 0) | (TransitState.HasPass ? 1 : 0);
+            int more = (metres | ((_booked != null ? _booked.Id + 1 : 0) << 12) | (_sitAt != null ? 1 << 21 : 0) | (_changing ? 1 << 22 : 0)) ^ (rows * 16777619);
             if (key == _panelKey && more == _panelMore)
             {
                 return false;
@@ -285,13 +288,121 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // The panel's three lines and its buttons, written when Measure says they have changed.
+        private const int MostRows = 4;   // lines shown on the panel, the soonest first
+        private readonly int[] _rowCall = new int[MostCalls];
+        private readonly int[] _rowMinutes = new int[MostCalls];
+        private readonly TransitEta.Mode[] _rowMode = new TransitEta.Mode[MostCalls];
+        private int _rowCount;
+
+        // Each line that calls at the place served, with when it comes: the front bus's and the next one's figures as they
+        // stand, the others' by the timetable. Sorted soonest first into the rows; returns a figure of all of it, to compare.
+        private int Rows(bool standing)
+        {
+            _rowCount = 0;
+            int hash = 17;
+            double now = NowMinutes();
+            for (int k = 0; k < _calls; k++)
+            {
+                TransitEta.Mode mode;
+                int minutes;
+                if (k == _frontCall && (standing || _eta.State != TransitEta.Mode.None || _bus.State != TransitBus.Phase.Idle))
+                {
+                    mode = standing && _bus.Stop == _served.Calls[k] ? TransitEta.Mode.Here : _mode;
+                    minutes = _minutes;
+                }
+                else if (k == _nextCall && _nextEta.State != TransitEta.Mode.None)
+                {
+                    mode = _nextEta.State;
+                    minutes = Mathf.Max(1, Mathf.CeilToInt(_nextEta.Seconds * _minutesPerSecond));
+                    if (_next.State == TransitBus.Phase.Standing)
+                    {
+                        mode = TransitEta.Mode.EnRoute;   // (behind the front one: it pulls up when that one has gone)
+                        minutes = 1;
+                    }
+                }
+                else if (_callAt[k] >= double.MaxValue)
+                {
+                    mode = TransitEta.Mode.None;
+                    minutes = 0;
+                }
+                else
+                {
+                    mode = TransitEta.Mode.Timetable;
+                    minutes = Mathf.Max(1, Mathf.CeilToInt((float)(_callAt[k] - now)));
+                }
+                _rowCall[_rowCount] = k;
+                _rowMode[_rowCount] = mode;
+                _rowMinutes[_rowCount] = minutes;
+                _rowCount++;
+                hash = hash * 31 + ((int)mode * 1000 + Mathf.Min(minutes, 999)) + k * 7;
+            }
+            // Soonest first: the bus at the stop, then by the minutes; a line not running now last.
+            for (int i = 1; i < _rowCount; i++)
+            {
+                for (int j = i; j > 0 && Sooner(j, j - 1); j--)
+                {
+                    int c = _rowCall[j]; _rowCall[j] = _rowCall[j - 1]; _rowCall[j - 1] = c;
+                    int m = _rowMinutes[j]; _rowMinutes[j] = _rowMinutes[j - 1]; _rowMinutes[j - 1] = m;
+                    TransitEta.Mode d = _rowMode[j]; _rowMode[j] = _rowMode[j - 1]; _rowMode[j - 1] = d;
+                }
+            }
+            return hash;
+        }
+
+        private bool Sooner(int a, int b)
+        {
+            return RowRank(a) < RowRank(b);
+        }
+
+        private int RowRank(int row)
+        {
+            TransitEta.Mode mode = _rowMode[row];
+            return mode == TransitEta.Mode.Here ? -1 : mode == TransitEta.Mode.None ? 1000000 : mode == TransitEta.Mode.Delayed && !_eta.Known && _rowCall[row] == _frontCall ? 500000 : _rowMinutes[row];
+        }
+
+        // A row's words: the line, where it goes, and when.
+        private string RowText(int row)
+        {
+            TransitStop call = _served.Calls[_rowCall[row]];
+            TransitLine line = TransitMap.Lines[call.Line];
+            string status = Status(_rowMode[row], _rowMinutes[row], _rowCall[row] == _frontCall ? _eta.Known : _nextEta.Known);
+            return TransitMap.Onward(call) == 0 ? TransitText.T("reallife_transit_panel_row_end", "route", line.Number, "status", status)
+                : TransitText.T("reallife_transit_panel_row", "route", line.Number, "to", line.To, "status", status);
+        }
+
+        private static string Status(TransitEta.Mode mode, int minutes, bool known)
+        {
+            switch (mode)
+            {
+                case TransitEta.Mode.Here: return TransitText.T("reallife_transit_status_here");
+                case TransitEta.Mode.None: return TransitText.T("reallife_transit_status_none");
+                case TransitEta.Mode.Delayed:
+                    return known ? TransitText.T("reallife_transit_status_delayed_minutes", "minutes", minutes.ToString()) : TransitText.T("reallife_transit_status_delayed");
+                default: return TransitText.T("reallife_transit_status_minutes", "minutes", minutes.ToString());
+            }
+        }
+
+        // The panel's three lines and its buttons, written when Measure says they have changed: the place, every line that
+        // calls there with when it comes (the soonest first), and the front bus's state on the right.
         private void WritePanel(bool standing)
         {
-            TransitLine line = TransitMap.Lines[_served.Line];
-            string left = _booked != null ? TransitText.T("reallife_transit_panel_booked", "name", StopName(_booked))
-                : TransitMap.Onward(_served) == 0 ? TransitText.T("reallife_transit_panel_line_end", "route", line.Number)
-                : TransitText.T("reallife_transit_stop_line", "route", line.Number, "to", line.To);
+            _text.Length = 0;
+            if (_booked != null)
+            {
+                _text.Append(_bookedLine >= 0 ? TransitText.T("reallife_transit_panel_booked_line", "name", StopName(_booked), "route", TransitMap.Lines[_bookedLine].Number)
+                    : TransitText.T("reallife_transit_panel_booked", "name", StopName(_booked)));
+            }
+            for (int r = 0; r < _rowCount && r < MostRows; r++)
+            {
+                _text.Append(_text.Length > 0 ? "\n" : string.Empty).Append(RowText(r));
+            }
+            if (_rowCount == 0)
+            {
+                TransitLine only = TransitMap.Lines[_served.Line];
+                _text.Append(TransitMap.Onward(_served) == 0 ? TransitText.T("reallife_transit_panel_line_end", "route", only.Number)
+                    : TransitText.T("reallife_transit_stop_line", "route", only.Number, "to", only.To));
+            }
+            string left = _text.ToString();
             string right;
             Color32 colour;
             if (standing)
@@ -299,14 +410,19 @@ namespace RealLifeOverhaul
                 right = TransitText.T(_busFull ? "reallife_transit_status_full" : "reallife_transit_status_here");
                 colour = _busFull ? GameUi.WorldPanel.Red() : GameUi.WorldPanel.Green();
             }
-            else if (_mode == TransitEta.Mode.Delayed)
+            else if (_rowCount > 0 && _rowMode[0] == TransitEta.Mode.None)
             {
-                right = TransitText.T("reallife_transit_status_delayed");
+                right = TransitText.T("reallife_transit_status_none");
+                colour = GameUi.WorldPanel.Yellow();
+            }
+            else if (_mode == TransitEta.Mode.Delayed && (_rowCount == 0 || _rowCall[0] == _frontCall))
+            {
+                right = Status(TransitEta.Mode.Delayed, _minutes, _eta.Known);
                 colour = GameUi.WorldPanel.Yellow();
             }
             else
             {
-                right = TransitText.T("reallife_transit_status_minutes", "minutes", _minutes.ToString());
+                right = TransitText.T("reallife_transit_status_minutes", "minutes", (_rowCount > 0 ? _rowMinutes[0] : _minutes).ToString());
                 colour = GameUi.WorldPanel.White();
             }
             _panel.Lines(TransitText.T("reallife_transit_stop_title", "name", StopName(_served)), left, right, colour);
@@ -316,34 +432,36 @@ namespace RealLifeOverhaul
             }
             else
             {
-                string first = standing && _booked == null ? ButtonBoard : _booked != null ? ButtonChange : ButtonChoose;
+                bool boardable = standing && (_bookedLine < 0 || (_bus.Stop != null && _bus.Stop.Line == _bookedLine));
+                string first = boardable && _booked == null ? ButtonBoard : _booked != null ? ButtonChange : ButtonChoose;
                 _panel.Buttons(first, _onChoose, true, _sitAt != null && !standing ? ButtonSit : null, _onSit, true);
+            }
+            // On a journey's change: the rest of the journey can be skipped, as the ride panel's skip does.
+            _panel.Button(2, _changing ? ButtonSkipChange : null, _onSkipChange ?? (_onSkipChange = SkipChangeClicked), _changing, false);
+            if (_shownAt < 0f && _eta.Figure && _frontCall >= 0)
+            {
+                _shownAt = Time.time + _eta.Seconds;   // the first figure the player saw for this call: held against the arrival (OnTime)
+                _shownFigure = _eta.Seconds;
             }
         }
 
-        // The two lines under the list's headline: the bus, and what a ride costs.
+        // The two lines under the list's headline: the buses, and what a ride costs.
         private string ListInfo(bool standing)
         {
-            TransitLine line = TransitMap.Lines[_served.Line];
+            TransitLine line = TransitMap.Lines[(_bus.Stop ?? _served).Line];
             string bus;
             if (standing)
             {
                 bus = TransitText.T(_busFull ? "reallife_transit_list_info_full" : "reallife_transit_list_info_here", "route", line.Number);
             }
-            else if (_mode == TransitEta.Mode.EnRoute)
-            {
-                bus = TransitText.T("reallife_transit_list_info_coming", "route", line.Number, "metres", _metres.ToString(), "minutes", _minutes.ToString());
-            }
-            else if (_mode == TransitEta.Mode.Delayed)
-            {
-                bus = _bus.State != TransitBus.Phase.Approaching ? TransitText.T("reallife_transit_list_info_delayed")
-                    : TransitText.T(_bus.Waiting == TransitBus.Hold.Light ? "reallife_transit_stop_delayed_light"
-                        : _bus.Waiting == TransitBus.Hold.Traffic ? "reallife_transit_stop_delayed_traffic"
-                        : _bus.Waiting == TransitBus.Hold.Closure ? "reallife_transit_stop_delayed_closure" : "reallife_transit_stop_delayed_late", "metres", _metres.ToString());
-            }
             else
             {
-                bus = TransitText.T("reallife_transit_list_info_next", "route", line.Number, "minutes", _minutes.ToString());
+                _text.Length = 0;
+                for (int r = 0; r < _rowCount && r < MostRows; r++)
+                {
+                    _text.Append(r > 0 ? ", " : string.Empty).Append(RowText(r));
+                }
+                bus = _rowCount > 0 ? TransitText.T("reallife_transit_list_info_rows", "rows", _text.ToString()) : TransitText.T("reallife_transit_list_info_delayed");
             }
             _text.Length = 0;
             _text.Append(bus).Append('\n');
@@ -352,6 +470,7 @@ namespace RealLifeOverhaul
                 _text.Append(TransitText.T("reallife_transit_stop_rain")).Append(". ");
             }
             _text.Append(TransitState.HasPass ? TransitText.T("reallife_transit_stop_pass")
+                : TransitState.HasTransfer ? TransitText.T("reallife_transit_list_info_transfer")
                 : TransitText.T("reallife_transit_list_info_fare", "fare", TransitText.Money(TransitState.BusFare)));
             return _text.ToString();
         }
@@ -602,6 +721,7 @@ namespace RealLifeOverhaul
         // The list at a dressed stop the player stands at: it becomes the stop that is served, if it was not.
         private void ChooseAt(TransitStop stop)
         {
+            stop = stop.At;
             if (_served != stop)
             {
                 if (!Dressed(stop))
@@ -755,7 +875,7 @@ namespace RealLifeOverhaul
         // Every stop offered from the served one, written into the map's window and onto the map. Returns how many are on this line.
         private int FillMap(bool standing)
         {
-            int direct = TransitTrips.From(_served, _trips);
+            int direct = TransitTrips.From(_served, _trips, NowMinutes(), Calls);
             _picker.Begin(TransitText.T("reallife_transit_list_title", "name", StopName(_served)), MapPlaces.Glyph(MapIcon.Bus), StopColour);
             _picker.Note(ListInfo(standing));
             bool pass = TransitState.HasPass;
@@ -768,9 +888,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < _trips.Count; i++)
             {
                 TransitTrip trip = _trips[i];
-                TransitLine line = TransitMap.Lines[trip.To.Line];
-                _picker.Add(i, StopName(trip.To), TransitText.T(trip.Direct ? "reallife_transit_list_direct" : "reallife_transit_list_change", "route", line.Number, "to", line.To,
-                    "minutes", Mathf.CeilToInt(trip.Minutes).ToString(), "fare", fare), "common_travel", true, true, trip.To.Sign);
+                _picker.Add(i, StopName(trip.To), TripWords(trip, fare), "common_travel", true, true, trip.To.Sign);
             }
             _picker.Here(_served.Sign, StopName(_served));
             return direct;
@@ -828,7 +946,7 @@ namespace RealLifeOverhaul
         // Every stop offered from the served one, written into the list. Returns how many are on this line.
         private int FillList(bool standing)
         {
-            int direct = TransitTrips.From(_served, _trips);
+            int direct = TransitTrips.From(_served, _trips, NowMinutes(), Calls);
             _list.Begin(TransitText.T("reallife_transit_list_title", "name", StopName(_served)), ListInfo(standing));
             bool pass = TransitState.HasPass;
             if (!pass)
@@ -839,12 +957,28 @@ namespace RealLifeOverhaul
             string fare = pass ? TransitText.T("reallife_transit_list_fare_pass") : TransitText.Money(TransitState.BusFare);
             for (int i = 0; i < _trips.Count; i++)
             {
-                TransitTrip trip = _trips[i];
-                TransitLine line = TransitMap.Lines[trip.To.Line];
-                _list.Add(i, StopName(trip.To), TransitText.T(trip.Direct ? "reallife_transit_list_direct" : "reallife_transit_list_change", "route", line.Number, "to", line.To,
-                    "minutes", Mathf.CeilToInt(trip.Minutes).ToString(), "fare", fare), "common_travel", true);
+                _list.Add(i, StopName(_trips[i].To), TripWords(_trips[i], fare), "common_travel", true);
             }
             return direct;
+        }
+
+        // An entry's words: the bus to board and where it goes, the change where there is one, when it comes, the ride and the fare.
+        private static string TripWords(TransitTrip trip, string fare)
+        {
+            string minutes = Mathf.CeilToInt(trip.Minutes).ToString();
+            if (!trip.Planned)
+            {
+                TransitLine any = TransitMap.Lines[trip.To.Line];
+                return TransitText.T("reallife_transit_list_change", "route", any.Number, "to", any.To, "minutes", minutes, "fare", fare);
+            }
+            TransitLine line = TransitMap.Lines[trip.Board.Line];
+            string wait = Mathf.Max(1, Mathf.CeilToInt(trip.Wait)).ToString();
+            if (!trip.Changes)
+            {
+                return TransitText.T("reallife_transit_list_direct_next", "route", line.Number, "to", line.To, "wait", wait, "minutes", minutes, "fare", fare);
+            }
+            return TransitText.T("reallife_transit_list_change_at", "route", line.Number, "change", StopName(trip.ChangeOff), "route2", TransitMap.Lines[trip.ChangeOn.Line].Number,
+                "wait", wait, "minutes", minutes, "fare", fare);
         }
 
         // An entry's button was clicked.
@@ -884,7 +1018,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A stop has been picked: aboard now if the bus stands, else kept for when it does.
+        // A stop has been picked: aboard now if a bus of its line stands, else kept for when one does.
         private void Chosen(TransitTrip trip)
         {
             _panelKey = int.MinValue;
@@ -892,20 +1026,29 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            TransitLine line = TransitMap.Lines[trip.To.Line];
-            string what = "the player picks " + StopLabel(trip.To) + " at " + StopLabel(_served) + " (" + (trip.Direct ? "the same bus" : "with a change of bus") + ", "
-                          + trip.Metres.ToString("F0") + " m, " + trip.Minutes.ToString("F0") + " game minutes)";
-            if (_bus.State == TransitBus.Phase.Standing && TransitRide.CanStart())
+            if (_changing)
             {
-                Logger?.Info("Transit check (choice): " + what + " while the bus stands: they board now: PASS.");
-                Board(trip.To, "picks " + StopLabel(trip.To) + " from the list");
+                DropPlan();   // (a new choice at the change: the journey is this one now)
+            }
+            int boardLine = trip.Planned ? trip.Board.Line : -1;
+            string route = boardLine >= 0 ? TransitMap.Lines[boardLine].Number : LineNumber(_bus.Stop ?? _served);
+            string what = "the player picks " + StopLabel(trip.To) + " at " + StopLabel(_served) + " (" + (trip.Direct ? "one bus, the " + route
+                              : trip.Changes ? "the " + route + ", changing at " + StopLabel(trip.ChangeOff) + (trip.ChangeOn.At != trip.ChangeOff.At ? " and walking to " + StopLabel(trip.ChangeOn) : string.Empty) + " for the " + LineNumber(trip.ChangeOn)
+                              : "with a change of bus that is not planned: the ride passes under the fade") + ", " + trip.Metres.ToString("F0") + " m, " + trip.Minutes.ToString("F0") + " game minutes, the first bus in "
+                          + trip.Wait.ToString("F0") + ")";
+            bool fits = boardLine < 0 || (_bus.Stop != null && _bus.Stop.Line == boardLine);
+            if (_bus.State == TransitBus.Phase.Standing && fits && TransitRide.CanStart())
+            {
+                Logger?.Info("Transit check (choice): " + what + " while its bus stands: they board now: PASS.");
+                Board(trip, "picks " + StopLabel(trip.To) + " from the list");
                 return;
             }
             _booked = trip.To;
-            Notifications.Show(NotificationType.Info, "reallife_transit_booked",
-                new Dictionary<string, string>(2) { { "route", TransitMap.Lines[_served.Line].Number }, { "name", StopName(trip.To) } }, 7f);
-            Logger?.Info("Transit check (choice): " + what + " with no bus to board yet (bus: " + PanelWords() + "): the stop is kept and they board when a bus stands and they are at the stop (line of the stop: "
-                         + line.Number + "): PASS.");
+            _bookedLine = boardLine;
+            _bookedTrip = trip;
+            Notifications.Show(NotificationType.Info, "reallife_transit_booked", new Dictionary<string, string>(2) { { "route", route }, { "name", StopName(trip.To) } }, 7f);
+            Logger?.Info("Transit check (choice): " + what + " with no bus of its line to board yet (bus: " + PanelWords() + "): the stop is kept and they board when the " + route
+                         + " stands and they are at the stop: PASS.");
         }
 
         private void CloseList(string why)
@@ -938,7 +1081,7 @@ namespace RealLifeOverhaul
         // for the one ride that fits most: to the end of this line, or from a line's last stop to the nearest other stop.
         private void AskOne()
         {
-            int direct = TransitTrips.From(_served, _trips);
+            int direct = TransitTrips.From(_served, _trips, NowMinutes(), Calls);
             if (_trips.Count == 0)
             {
                 return;
@@ -967,11 +1110,26 @@ namespace RealLifeOverhaul
 
         // The ride begins. Seen where it can be (BusRider: the walk to the door, where the fare is paid, the step up, the seat);
         // else the fare is paid and the ride is the fade at the stop. False if it cannot begin now, or the fare could not be paid (the game says so).
-        private bool Board(TransitStop to, string how)
+        private bool Board(TransitTrip trip, string how)
         {
-            if (_served == null || to == null || to == _served || !TransitRide.CanStart() || _bus.State != TransitBus.Phase.Standing || _rider.Active)
+            TransitStop to = trip.To;
+            TransitStop from = _bus.Stop ?? _served;
+            if (_served == null || to == null || to.At == _served || !TransitRide.CanStart() || _bus.State != TransitBus.Phase.Standing || _rider.Active)
             {
                 return false;
+            }
+            // The bus's own line: to the change where the journey has one (the second bus is boarded there), else the stop picked.
+            bool planned = trip.Planned && trip.Board.Line == from.Line;
+            TransitStop leg = planned && trip.Changes ? trip.ChangeOff : planned ? trip.To : to;
+            if (planned && trip.Changes)
+            {
+                _plan = trip;
+                _hasPlan = true;
+                _planLeg = 1;
+            }
+            else if (!_changing)
+            {
+                DropPlan();
             }
             string why = !_doorFound ? "there is no place on the road at its front door to step in from" : null;
             if (why == null && !BusRider.Possible(_bus.Vehicle))
@@ -981,10 +1139,11 @@ namespace RealLifeOverhaul
             if (why == null)
             {
                 _seat.Abort();
-                if (_rider.Board(_bus, _served, to, _door, _busFull, out why))
+                if (_rider.Board(_bus, from, leg, _door, _busFull, out why))
                 {
-                    _rideTo = to;
+                    _rideTo = leg;
                     HideHud();
+                    _changing = false;
                     return true;
                 }
                 if (_rider.RefusedFare)
@@ -993,20 +1152,23 @@ namespace RealLifeOverhaul
                 }
             }
             Logger?.Info("Transit check (boarding): the player " + how + " but is not walked onto the bus (" + why + "): the ride is the fade at the stop: FAIL.");
-            bool pass = TransitState.HasPass;
-            if (!TransitState.Pay(TransitState.BusFare, "reallife_transaction_bus_fare"))
+            if (!TransitState.PayBus(out bool pass))
             {
                 Logger?.Info("Transit check (ride): the player " + how + " but cannot pay the fare of " + TransitState.BusFare.ToString("F2") + ": nobody boards: FAIL.");
                 return false;
             }
-            StartRide(_served, to, pass, how + " while the bus stands (" + _bus.Standing.ToString("F0") + " s)");
+            _changing = false;
+            StartRide(from, trip, pass, how + " while the bus stands (" + _bus.Standing.ToString("F0") + " s)");
             return true;
         }
 
-        private void StartRide(TransitStop from, TransitStop to, bool pass, string how)
+        // The ride under the fade at the stop, as it always was: the whole journey, its change included.
+        private void StartRide(TransitStop from, TransitTrip picked, bool pass, string how)
         {
+            TransitStop to = picked.To;
             TransitTrip trip = TransitTrips.Between(from, to);
-            float minutes = trip.Minutes;
+            float minutes = picked.Planned ? TransitTrips.RestMinutes(picked, from) : trip.Minutes;
+            DropPlan();
             TransitLine line = TransitMap.Lines[from.Line];
             _rideTo = to;
             _player = PlayerStep.Riding;
@@ -1036,6 +1198,15 @@ namespace RealLifeOverhaul
             _ride.Begin(minutes, to.Wait, "reallife_transit_ride_fade", RideFaded, RideArrived, arriveAboard: _arriveAboard ?? (_arriveAboard = ArriveAboard));
         }
 
+        // The journey with a change is over, or given up: nothing of it is kept.
+        private void DropPlan()
+        {
+            _hasPlan = false;
+            _planLeg = 0;
+            _changing = false;
+            _plan = default(TransitTrip);
+        }
+
         private Func<bool> _arriveAboard;
         private Action _atBlack;
 
@@ -1046,6 +1217,9 @@ namespace RealLifeOverhaul
         }
 
         // ---------------------------------------------------------------- the ride seen (BusRider calls these)
+
+        /// <summary>True while somebody is stepping down from the bus by its middle door: a rider boarding there waits for them.</summary>
+        internal bool MiddleDoorBusy => _alighter.Step == RiderStep.Exiting;
 
         /// <summary>True while the time of a ride is passing under its fade (TransitRide).</summary>
         internal bool RideRunning => _ride.Riding;
@@ -1062,6 +1236,16 @@ namespace RealLifeOverhaul
         internal void RiderRides(TransitStop from, TransitStop to)
         {
             TransitTrip trip = TransitTrips.Between(from, to);
+            if (_hasPlan && _planLeg == 1 && to == _plan.ChangeOff)
+            {
+                // The first bus of a journey with a change is not driven in real time: the whole journey passes under the fade, as it always did.
+                Logger?.Info("Transit check (journey): the first bus to the change at " + StopLabel(_plan.ChangeOff) + " is not driven, so the whole journey to " + StopLabel(_plan.To)
+                             + " passes under the fade, its change included: PASS.");
+                to = _plan.To;
+                trip.Minutes = TransitTrips.RestMinutes(_plan, from);
+                trip.Direct = false;
+                DropPlan();
+            }
             _rideTo = to;
             TransitState.BusRides++;
             Logger?.Info("Transit check (ride): the player rides from " + StopLabel(from) + " to " + StopLabel(to) + (trip.Direct ? " on the same bus" : " with a change of bus") + ": "
@@ -1077,6 +1261,14 @@ namespace RealLifeOverhaul
             {
                 _offBus = bus;
                 _offAt = Time.time;
+                if (_hasPlan && _planLeg == 1 && bus != null && bus.Stop == _plan.ChangeOff)
+                {
+                    BeginChange();
+                }
+                else if (_hasPlan)
+                {
+                    DropPlan();
+                }
                 return;
             }
             _player = PlayerStep.None;
@@ -1150,6 +1342,7 @@ namespace RealLifeOverhaul
         {
             TransitStop to = _rideTo;
             _rideTo = null;
+            DropPlan();
             if (to == null)
             {
                 return;
@@ -1216,8 +1409,13 @@ namespace RealLifeOverhaul
         // A stop for the log: its line and its name, in plain words whatever the game's language.
         private static string StopLabel(TransitStop stop)
         {
+            if (stop == null)
+            {
+                return "no stop";
+            }
             TransitLine line = stop.Line >= 0 && stop.Line < TransitMap.Lines.Count ? TransitMap.Lines[stop.Line] : null;
-            return "the " + (line != null ? line.Number + " " : "") + "stop at " + (stop.Name ?? "number " + (stop.Order + 1));
+            string lines = stop.IsHost && stop.Calls.Count > 1 ? TransitMap.Numbers(stop, "/") : line != null ? line.Number : null;
+            return "the " + (lines != null ? lines + " " : "") + "stop at " + (stop.Name ?? "number " + (stop.Order + 1));
         }
 
         private void HidePanel()
@@ -1236,6 +1434,7 @@ namespace RealLifeOverhaul
             HidePanel();
             BusPointer(false);
             _booked = null;
+            _bookedLine = -1;
             _hasPicked = false;
         }
 

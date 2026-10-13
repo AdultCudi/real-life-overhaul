@@ -26,6 +26,10 @@ namespace RealLifeOverhaul
         public static int ToldDelay = -1;     // the three-hour window whose delays were last sent to the phone
         public static int ToldClosure = -1;   // the night whose closure was last sent (no station closes now: kept, so that the saved line keeps its shape)
         public static float FareBack;         // read from a save written part of the way through a bus ride (BusRider): given back once the city is up
+        public static double TransferUntil;   // game minutes (the game's total) until which a bus is boarded on the fare already paid: a journey's change of bus
+
+        /// <summary>A change of bus on a journey already paid for: the next bus is boarded on that fare (TransitDirector's change).</summary>
+        public static bool HasTransfer => TransferUntil > 0.0 && TimeHelper.NowInMinutes() < TransferUntil;
 
         public static bool HasPass => PassDay > 0 && PassDay == TimeHelper.CurrentDay;
 
@@ -38,6 +42,7 @@ namespace RealLifeOverhaul
             ToldDelay = -1;
             ToldClosure = -1;
             FareBack = 0f;
+            TransferUntil = 0.0;
         }
 
         public static void Load(Dictionary<string, string> data)
@@ -60,6 +65,10 @@ namespace RealLifeOverhaul
                     {
                         FareBack = back > 0f && back < 1000f ? back : 0f;
                     }
+                    if (parts.Length >= 7 && double.TryParse(parts[6], NumberStyles.Float, CultureInfo.InvariantCulture, out double transfer))
+                    {
+                        TransferUntil = transfer > 0.0 ? transfer : 0.0;
+                    }
                 }
             }
             Loaded = true;
@@ -74,8 +83,21 @@ namespace RealLifeOverhaul
                 data[Key] = PassDay.ToString(CultureInfo.InvariantCulture) + "|" + BusRides.ToString(CultureInfo.InvariantCulture) + "|"
                             + SubwayRides.ToString(CultureInfo.InvariantCulture) + "|" + ToldDelay.ToString(CultureInfo.InvariantCulture) + "|"
                             + ToldClosure.ToString(CultureInfo.InvariantCulture)
-                            + (fareBack > 0f ? "|" + fareBack.ToString("F2", CultureInfo.InvariantCulture) : string.Empty);
+                            + (fareBack > 0f || HasTransfer ? "|" + Math.Max(0f, fareBack).ToString("F2", CultureInfo.InvariantCulture) : string.Empty)
+                            + (HasTransfer ? "|" + TransferUntil.ToString("F1", CultureInfo.InvariantCulture) : string.Empty);   // (a seventh part: older versions read the first six)
             }
+        }
+
+        /// <summary>A bus fare: nothing with a pass or on a journey's change of bus (<paramref name="free"/>), else the fare. False (and a toast) if the player cannot pay.</summary>
+        public static bool PayBus(out bool free)
+        {
+            free = HasPass || HasTransfer;
+            if (HasTransfer)
+            {
+                TransferUntil = 0.0;   // (the change's one boarding)
+                return true;
+            }
+            return Pay(BusFare, "reallife_transaction_bus_fare");
         }
 
         /// <summary>Takes a fare, or nothing with a pass. False (and a toast) if the player cannot pay.</summary>

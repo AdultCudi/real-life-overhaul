@@ -133,5 +133,37 @@ namespace RealLifeOverhaul
             }
             return stops * DriveSeconds(apart) + (stops - 1) * stand;
         }
+
+        // ---------------------------------------------------------------- a Going Public session
+
+        /// <summary>
+        /// Whether a ride is driven in real time: alone, or in a Going Public session on a machine whose street is its own
+        /// (the host's). Riding in real time takes nothing of the shared clock: the bus is this machine's own object, not
+        /// the traffic, and the other players see the rider's figure where Going Public sends it, seated, along the road.
+        /// A guest's street is the host's (its traffic mirrored, its parked cars the host's), so a guest has no buses at all,
+        /// as before: nothing of the host's may be taken, stopped or steered.
+        /// </summary>
+        public static bool RealTime(bool trafficMirrored)
+        {
+            return !trafficMirrored;
+        }
+
+        /// <summary>The panel's fast forward: never in a session (it sets the game's speed, which is everyone's).</summary>
+        public static bool FastForwardOffered(bool running, bool clockShared)
+        {
+            return running && !clockShared;
+        }
+
+        /// <summary>The panel's skip: always while it runs; in a session it is the fade that passes no time (TransitRide).</summary>
+        public static bool SkipOffered(bool running)
+        {
+            return running;
+        }
+
+        /// <summary>Game minutes a skip of the rest passes: what is left alone, none in a session (the clock is everyone's).</summary>
+        public static float SkipMinutes(float minutesLeft, bool clockShared)
+        {
+            return clockShared ? 0f : minutesLeft;
+        }
     }
 }

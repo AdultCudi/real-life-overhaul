@@ -11,7 +11,11 @@ using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>One bus stop: a fixed place at the kerb beside a plain stretch of lane.</summary>
+    /// <summary>
+    /// One line's stop: a fixed place at the kerb beside a plain stretch of lane. Where several lines run along the same
+    /// lane they share the place (<see cref="Host"/>): each has a stop of its own (its own place along its own line), with
+    /// the host's pole, shelter, bay and zone.
+    /// </summary>
     public sealed class TransitStop
     {
         public int Id;            // its index in TransitMap.Stops
@@ -39,7 +43,7 @@ namespace RealLifeOverhaul
         public float BayAhead;    // ...and on from it, to pull out
         public float BayRoom;     // metres back from Bay for which the strip will do: BayBehind at the least, more where a longer-nosed vehicle can come in too
         public string NoBay;      // why it has none, for the log
-        public BusZone Zone;      // where it has one, what its zone needs done to the street (BusZones)
+        public BusZone Zone;      // where it has one, what its zone needs done to the street (BusZones): the host's only
 
         // The boarding strip (BusInside.BoardingStrips): the game's street furniture standing on the kerb by the doors or on the
         // way from the waiting place to them, switched off while the buses run (BusZones), so that nobody walks round it to board.
@@ -49,9 +53,21 @@ namespace RealLifeOverhaul
         public float Stand;       // metres on from the pole that the bus's middle stands (BusInside.StandShift): neither door lines up with what stands on the kerb
         public int KerbThings;    // what stands on the kerb by the doors and stays (a tree, a lamp, the pole), for the log
         public float ZoneLook;    // the director's time at which BusZones next looks at it while something there waits to be out of view
+        // The place, shared by the lines that stop here.
+        public int LanePoint = -1;   // the lane point's index in the road graph
+        public TransitStop Host;     // the stop that laid the place out (the first line to stop here); null or itself for that one
+        public int Place = -1;       // the place's index in TransitMap.Places
+        public readonly List<TransitStop> Calls = new List<TransitStop>(3);   // (a host's) every line's stop here, its own first
+        public readonly List<TransitStop> Near = new List<TransitStop>(3);    // (a host's) other places a short walk away: a change of bus on foot
 
         /// <summary>The length of strip the bay takes up.</summary>
         public float BayLength => BayBehind + BayAhead;
+
+        /// <summary>True for the stop that laid the place out: its pole, shelter, bay and zone are the place's.</summary>
+        public bool IsHost => Host == null || Host == this;
+
+        /// <summary>The place: the host stop.</summary>
+        public TransitStop At => Host ?? this;
     }
 
     /// <summary>One direction of a bus route: a path along the road graph and the stops on it.</summary>
@@ -63,29 +79,43 @@ namespace RealLifeOverhaul
         public int[] Path;        // lane points, in order
         public float[] Metres;    // along the path to each of them
         public readonly List<TransitStop> Stops = new List<TransitStop>(12);
+        public bool Main;         // one of the main lines: runs more often, and through the night
+        public int Seed;          // its place in its timetable (TransitPlan.Offset)
+        public float[] Minutes;   // game minutes of a ride from its first stop to each of its stops (TransitTrips)
 
         public string To => ToKey.GetLocalization();
+
+        /// <summary>The line's offset in its timetable at one of its stops (TransitPlan.NextCall).</summary>
+        public double OffsetAt(int order)
+        {
+            return TransitPlan.Offset(Seed, Minutes != null && order >= 0 && order < Minutes.Length ? Minutes[order] : 0f);
+        }
     }
 
     /// <summary>
     /// The bus network, laid over the city by rule once per city load and kept in memory only
     /// (nothing of it is saved, and the same city always gives the same network).
     ///
-    /// THE RULE. The ends of the routes are the game's own subway stations, taken in the order
-    /// of the game's station list (SubwayStationName). Up to six times over: the first station
-    /// not yet used is one end, and the other is the station furthest from it (not yet used,
-    /// 500 m to 2.8 km away) that can be driven to AND back from. A station's end of a line is
-    /// any plain lane point within 150 m of it, not one chosen point (<see cref="RouteSearch"/>
-    /// says why), and the way is the shortest along the road graph following lanes, with a
-    /// change of lane allowed where the graph offers one at the price of 30 m of road. So each
-    /// route has its two directions, usually on the two sides of the same streets. Only when a
-    /// station has no partner it can be driven both ways with does it get a line one way, and
-    /// the log says so. Along each path a stop is looked for every 260 m, in the 140 m after
-    /// that, at the first lane point that is: on a road proper with no junction within 26 m
-    /// either way, straight, at street level, with pavement within 5.6 m to its right that is
-    /// at least 1.5 m deep and has no door, wall or street furniture where the pole and the
-    /// waiting people stand. Vehicles are not looked at here (they come and go): they are
-    /// tested when a stop is dressed and when a bus pulls up.
+    /// THE ROUTES. The ends of the routes are the game's own subway stations. Every station should be served by
+    /// TransitPlan.StationTarget lines (ending there, or passing within TransitPlan.ServedWithin): the pair asked for
+    /// next is the one that serves the stations furthest short of that, 600 m to 3.2 km apart (best near 1.9 km: across
+    /// town, up an avenue), in a direction neither end has a route in yet (TransitPlan.Pairing), up to 16 routes. A
+    /// station's end of a line is any plain lane point within 150 m of it, not one chosen point (<see cref="RouteSearch"/>
+    /// says why), and the way is the shortest along the road graph following lanes, with a change of lane allowed where
+    /// the graph offers one at the price of 30 m of road. A route is laid only with both its directions, usually on the
+    /// two sides of the same streets, and only if neither doubles back or is much longer than the straight line
+    /// (TransitPlan.Unbelievable). The streets a route runs along count a fifth less to the routes laid after it
+    /// (TransitPlan.CorridorShare): the lines gather on the avenues, as a city's do, and there share their stops. A
+    /// search that never got near a station says that no road leads there from here: that pair is never tried.
+    ///
+    /// THE STOPS. Along each path a stop is looked for every 260 m. A stop another line has already laid on the stretch
+    /// looked along is shared: this line stops there too (TransitPlan.HostAlong), with a stop of its own at the same lane
+    /// point, the same pole and the same bay (where its own way into the bay is plain and straight; else it stops in the
+    /// lane there). Else, in the 140 m after, the first lane point that is: on a road proper with no junction within
+    /// 26 m either way, straight, at street level, with pavement within 5.6 m to its right that is at least 1.5 m deep
+    /// and has no door, wall or street furniture where the pole and the waiting people stand. Vehicles are not looked
+    /// at here (they come and go): they are tested when a stop is dressed and when a bus pulls up. Two places within
+    /// TransferWalk of each other are joined for a change of bus on foot (the other side of the street, the next corner).
     ///
     /// BAYS. A stop has a bay where the kerb is at least 4.20 m from the lane's line (the lane's
     /// half, the bus's side on its edge, the 2.40 m bus, 0.15 m to the kerb: BusBay.KerbNeeded)
@@ -106,14 +136,13 @@ namespace RealLifeOverhaul
     ///
     /// The work is done in slices from the director's timer, a search at a time and then stops
     /// one after another for no more than three milliseconds a slice, in the first seconds out
-    /// of doors: a few dozen searches of the road graph at most and some thousands of rays and
+    /// of doors: some dozens of searches of the road graph at most and some thousands of rays and
     /// samples in all (most of them looking for bays), never again.
     /// </summary>
     public static class TransitMap
     {
-        public const int MaxRoutes = 6;
-        private const float MaxSpan = 2800f;        // metres between the two ends of a route, as the crow flies
-        private const float MinSpan = 500f;
+        public const int MaxRoutes = 16;
+        public const float TransferWalk = 160f;     // metres between two places a change of bus is made between on foot
         private const float TerminalReach = 150f;   // a line may begin and end on any plain lane point this near its station
         private const float LaneChangeCost = 30f;   // metres a change of lane counts for
         private const float FirstStopAt = 90f;      // metres from the start of a path
@@ -130,13 +159,19 @@ namespace RealLifeOverhaul
         private const float KerbLookAhead = 26f;
         private const float BayAheadSlack = 1f;     // metres more of the strip ahead than the body on its van needs to pull out: a vehicle's own middle is seldom quite its origin
         private const int MaxExpansions = 400000;
-        private const int MaxSearches = 48;         // in all: a city where nothing connects is given up on
+        private const int MaxSearches = 100;        // in all: a city where nothing connects is given up on
         private const double StopsSlice = 0.003;    // seconds of looking for stops in one slice
 
         public static IModLogger Logger;
 
         public static readonly List<TransitLine> Lines = new List<TransitLine>(MaxRoutes * 2);
-        public static readonly List<TransitStop> Stops = new List<TransitStop>(160);
+        public static readonly List<TransitStop> Stops = new List<TransitStop>(320);
+
+        /// <summary>The places the buses stop at: one host stop each, with every line's stop there in its <see cref="TransitStop.Calls"/>.</summary>
+        public static readonly List<TransitStop> Places = new List<TransitStop>(200);
+
+        /// <summary>The network as the journey planner reads it (TransitPlan.Net): its places are <see cref="Places"/>, its lines <see cref="Lines"/>.</summary>
+        public static TransitPlan.Net Net { get; private set; }
 
         // The lane points a planned closure may not take (Civic/RoadClosure): each line's own from GuardBefore metres before
         // each of its stops to GuardAfter past it. Shut there, a stop is cut off: no bus can be put on the road before it
@@ -161,28 +196,30 @@ namespace RealLifeOverhaul
         private static Waypoint[] _points;
         private static readonly List<SubwayStation> Stations = new List<SubwayStation>(24);
         private static readonly List<List<int>> Terminals = new List<List<int>>(24);
-        private static readonly List<int> Partners = new List<int>(24);
         private static readonly List<int> PathScratch = new List<int>(2048);
-        private static readonly StringBuilder Notes = new StringBuilder(256);
+        private static readonly List<float> XScratch = new List<float>(2048);
+        private static readonly List<float> ZScratch = new List<float>(2048);
+        private static readonly StringBuilder Notes = new StringBuilder(512);
+        private static readonly Dictionary<int, int> HostIndex = new Dictionary<int, int>(256);   // lane point: the host stop laid there (an index into Hosts)
+        private static readonly List<TransitStop> Hosts = new List<TransitStop>(256);
+        private static Func<int, int> _hostAt;
         private static CityBuildingController[] _buildings;
         private static RouteSearch _graph;
-        private static bool[] _used;
+        private static TransitPlan.Pairing _pairs;
         private static TransitLine _there;      // the way out to the partner being tried, waiting for the way back
-        private static TransitLine _oneWay;     // the first way out that had no way back: used only if nothing better turns up
-        private static int _oneWayTo;
         private static int _phase;              // 0 not begun, 1 pairing, 2 stops
-        private static int _a;
-        private static int _partner;
+        private static int _pa;                 // the pair being tried
+        private static int _pb;
+        private static bool _trying;
         private static int _routes;
         private static int _searches;
+        private static int _refused;
         private static int _laneChanges;
         private static int _lineCursor;
         private static bool _lineBegun;         // the line at the cursor has had some of its stops looked for
         private static float _stopWanted;       // metres along it at which its next stop is wanted
         private static int _stopFrom;           // ...and the point of its path the look goes on from
-        private static int _widest;
-        private static bool _pairing;
-        private static bool _limitHit;
+        private static int _shared;             // stops laid at a place another line laid first
         private static int _staticMask;
         private static int _doorMask;
         private static int _parkingMask;
@@ -197,29 +234,32 @@ namespace RealLifeOverhaul
             BusZones.Restore();   // (before the stops go: it marks their zones as not made)
             Lines.Clear();
             Stops.Clear();
+            Places.Clear();
+            Net = null;
             Guarded.Clear();
             Stations.Clear();
             Terminals.Clear();
-            Partners.Clear();
             PathScratch.Clear();
+            HostIndex.Clear();
+            Hosts.Clear();
+            SharedBy.Clear();
             Notes.Length = 0;
             _points = null;
             _buildings = null;
             _graph = null;
-            _used = null;
+            _pairs = null;
             _there = null;
-            _oneWay = null;
             _phase = 0;
-            _a = 0;
-            _partner = 0;
+            _pa = -1;
+            _pb = -1;
+            _trying = false;
             _routes = 0;
             _searches = 0;
+            _refused = 0;
             _laneChanges = 0;
             _lineCursor = 0;
             _lineBegun = false;
-            _widest = 0;
-            _pairing = false;
-            _limitHit = false;
+            _shared = 0;
             Bays = 0;
             Ready = false;
             Failed = false;
@@ -258,7 +298,7 @@ namespace RealLifeOverhaul
                     {
                         _phase = 2;
                         _graph = null;   // the search's memory is the size of the road graph: let go of now
-                        _used = null;
+                        _pairs = null;
                     }
                     return;
                 }
@@ -283,6 +323,7 @@ namespace RealLifeOverhaul
                 Logger?.Error(e);
                 Lines.Clear();
                 Stops.Clear();
+                Places.Clear();
                 Failed = true;
                 Finish();
             }
@@ -290,15 +331,21 @@ namespace RealLifeOverhaul
 
         private static void Finish()
         {
-            // Lines that got fewer than two stops carry nobody anywhere.
+            // Lines that got fewer than two stops carry nobody anywhere; a place one of them laid out goes to the next line that stops there.
             for (int i = Lines.Count - 1; i >= 0; i--)
             {
                 if (Lines[i].Stops.Count < 2)
                 {
+                    TransitLine gone = Lines[i];
                     Lines.RemoveAt(i);
+                    for (int s = 0; s < gone.Stops.Count; s++)
+                    {
+                        Rehost(gone.Stops[s]);
+                    }
                 }
             }
             Stops.Clear();
+            Places.Clear();
             Bays = 0;
             for (int i = 0; i < Lines.Count; i++)
             {
@@ -309,8 +356,9 @@ namespace RealLifeOverhaul
                     stop.Line = i;
                     stop.Order = s;
                     stop.Id = Stops.Count;
+                    stop.Calls.Clear();
+                    stop.Near.Clear();
                     Stops.Add(stop);
-                    Bays += stop.HasBay ? 1 : 0;
                     for (int k = 0; k < line.Path.Length; k++)
                     {
                         float from = line.Metres[k] - stop.Metres;
@@ -321,26 +369,164 @@ namespace RealLifeOverhaul
                     }
                 }
             }
+            for (int i = 0; i < Stops.Count; i++)
+            {
+                TransitStop stop = Stops[i];
+                if (stop.IsHost)
+                {
+                    stop.Host = stop;
+                    stop.Place = Places.Count;
+                    Places.Add(stop);
+                    Bays += stop.HasBay ? 1 : 0;
+                }
+            }
+            for (int i = 0; i < Stops.Count; i++)
+            {
+                TransitStop stop = Stops[i];
+                TransitStop host = stop.At;
+                stop.Place = host.Place;
+                if (host == stop)
+                {
+                    host.Calls.Insert(0, stop);
+                }
+                else
+                {
+                    host.Calls.Add(stop);
+                }
+            }
+            Timetables();
             Ready = true;
             _graph = null;
-            _used = null;
+            _pairs = null;
             _buildings = null;
             _there = null;
-            _oneWay = null;
-            Partners.Clear();
             PathScratch.Clear();
             PathScratch.TrimExcess();
+            XScratch.Clear();
+            XScratch.TrimExcess();
+            ZScratch.Clear();
+            ZScratch.TrimExcess();
+            HostIndex.Clear();
+            Hosts.Clear();
+            SharedBy.Clear();
             for (int i = 0; i < Terminals.Count; i++)
             {
                 Terminals[i].Clear();
             }
-            Terminals.Clear();
             if (Lines.Count == 0)
             {
                 Logger?.Warn("Transit: no bus line could be laid out in this city (" + Stations.Count + " subway stations, "
                              + (_points != null ? _points.Length : 0) + " lane points, " + _searches + " searches); there are no buses.");
+                Terminals.Clear();
                 return;
             }
+            Report();
+            Terminals.Clear();
+        }
+
+        // A stop of a line that is let go: if it laid out a place other lines stop at, the first of them has the place now.
+        private static void Rehost(TransitStop gone)
+        {
+            if (!gone.IsHost)
+            {
+                return;
+            }
+            TransitStop next = null;
+            for (int i = 0; i < Lines.Count; i++)
+            {
+                List<TransitStop> stops = Lines[i].Stops;
+                for (int s = 0; s < stops.Count; s++)
+                {
+                    if (stops[s].Host != gone)
+                    {
+                        continue;
+                    }
+                    if (next == null)
+                    {
+                        next = stops[s];
+                        next.Host = next;
+                        next.Zone = gone.Zone;
+                        next.Boarding.Clear();
+                        next.Boarding.AddRange(gone.Boarding);
+                        next.BoardingMade = gone.BoardingMade;
+                        next.ZoneLook = gone.ZoneLook;
+                        if (!next.HasBay)
+                        {
+                            next.Zone = null;   // (its own way in is not straight: no zone is made for a bay nobody uses)
+                        }
+                    }
+                    else
+                    {
+                        stops[s].Host = next;
+                    }
+                }
+            }
+        }
+
+        // The main lines (the longest routes), each line's place in its timetable, and the planner's network.
+        private static void Timetables()
+        {
+            var lengths = new List<KeyValuePair<string, float>>(Lines.Count);
+            for (int i = 0; i < Lines.Count; i++)
+            {
+                TransitLine line = Lines[i];
+                float metres = line.Metres[line.Metres.Length - 1];
+                int at = lengths.FindIndex(p => p.Key == line.Number);
+                if (at < 0)
+                {
+                    lengths.Add(new KeyValuePair<string, float>(line.Number, metres));
+                }
+                else if (metres > lengths[at].Value)
+                {
+                    lengths[at] = new KeyValuePair<string, float>(line.Number, metres);
+                }
+            }
+            lengths.Sort((x, y) => y.Value.CompareTo(x.Value));
+            var net = new TransitPlan.Net();
+            for (int i = 0; i < Places.Count; i++)
+            {
+                net.AddPlace(Places[i].Sign.x, Places[i].Sign.z);
+            }
+            for (int i = 0; i < Lines.Count; i++)
+            {
+                TransitLine line = Lines[i];
+                int rank = lengths.FindIndex(p => p.Key == line.Number);
+                line.Main = rank >= 0 && rank < TransitPlan.MainRoutes;
+                line.Seed = i * 7 + 3;
+                line.Minutes = new float[line.Stops.Count];
+                var places = new int[line.Stops.Count];
+                for (int s = 0; s < line.Stops.Count; s++)
+                {
+                    line.Minutes[s] = TransitTrips.RideMinutes(line.Stops[s].Metres - line.Stops[0].Metres, s);
+                    places[s] = line.Stops[s].Place;
+                }
+                net.AddLine(places, line.Minutes);
+            }
+            net.Link(TransferWalk);
+            var sx = new float[Stations.Count];
+            var sz = new float[Stations.Count];
+            for (int s = 0; s < Stations.Count; s++)
+            {
+                sx[s] = Stations[s].transform.position.x;
+                sz[s] = Stations[s].transform.position.z;
+            }
+            net.Interchanges(sx, sz, TransitPlan.InterchangeWithin);
+            // The places' own lists are the planner's: a change on foot is offered where it plans one.
+            for (int i = 0; i < Places.Count; i++)
+            {
+                Places[i].Near.Clear();
+                List<int> near = net.Near[i];
+                for (int k = 0; k < near.Count; k++)
+                {
+                    Places[i].Near.Add(Places[near[k]]);
+                }
+            }
+            Net = net;
+        }
+
+        // The network in the log: every line, how many lines each place and each station has, and the changes of bus.
+        private static void Report()
+        {
             int bothWays = 0;
             for (int i = 0; i < Lines.Count; i++)
             {
@@ -353,23 +539,45 @@ namespace RealLifeOverhaul
                     }
                 }
             }
-            var text = new StringBuilder("Transit check (network): " + Lines.Count + " bus lines, " + Stops.Count + " stops, " + Bays + " of them with a bay (the bus stands out of the lane there; a bay wants the kerb "
-                                         + BusBay.KerbNeeded(TransitBus.BodyHalfWidth).ToString("F2") + " m or more from the lane's line), " + bothWays + " of the lines with their other direction, "
-                                         + _searches + " searches of " + (_points != null ? _points.Length : 0) + " lane points (" + _laneChanges + " lane changes offered): "
-                                         + (bothWays == Lines.Count ? "PASS" : "FAIL (a line runs one way only)") + ".");
+            int[] byLines = new int[6];
+            int transfers = 0;
+            for (int i = 0; i < Places.Count; i++)
+            {
+                byLines[Mathf.Min(5, Places[i].Calls.Count)]++;
+                transfers += Places[i].Calls.Count >= 2 || Places[i].Near.Count > 0 ? 1 : 0;
+            }
+            var station = new StringBuilder(256);
+            int stationsServed = 0;
+            int stationsThree = 0;
+            for (int s = 0; s < Stations.Count; s++)
+            {
+                int serving = StationLines(Stations[s].transform.position);
+                stationsServed += serving > 0 ? 1 : 0;
+                stationsThree += serving >= 3 ? 1 : 0;
+                station.Append(' ').Append(Stations[s].stationName).Append(' ').Append(serving).Append(';');
+            }
+            var text = new StringBuilder("Transit check (network): " + Lines.Count + " bus lines (" + _routes + " routes, " + bothWays + " of the lines with their other direction), "
+                                         + Stops.Count + " stops at " + Places.Count + " places, " + Bays + " of the places with a bay (the bus stands out of the lane there; a bay wants the kerb "
+                                         + BusBay.KerbNeeded(TransitBus.BodyHalfWidth).ToString("F2") + " m or more from the lane's line), " + _shared + " stops shared with a line laid before; places served by 1 line "
+                                         + byLines[1] + ", by 2 " + byLines[2] + ", by 3 " + byLines[3] + ", by 4 or more " + (byLines[4] + byLines[5]) + "; " + transfers + " places where a change of bus can be made (another line there or within "
+                                         + TransferWalk.ToString("F0") + " m); subway stations with a line within " + TransitPlan.ServedWithin.ToString("F0") + " m " + stationsServed + " of " + Stations.Count + ", with 3 or more "
+                                         + stationsThree + " (" + station + "); " + _searches + " searches of " + (_points != null ? _points.Length : 0) + " lane points (" + _laneChanges + " lane changes offered), "
+                                         + _refused + " pairs refused: " + (bothWays == Lines.Count ? "PASS" : "FAIL (a line runs one way only)") + ".");
             for (int i = 0; i < Lines.Count; i++)
             {
                 TransitLine line = Lines[i];
                 int sheltered = 0;
                 int bays = 0;
+                int shared = 0;
                 for (int s = 0; s < line.Stops.Count; s++)
                 {
                     sheltered += line.Stops[s].Shelter ? 1 : 0;
                     bays += line.Stops[s].HasBay ? 1 : 0;
+                    shared += line.Stops[s].At.Calls.Count > 1 ? 1 : 0;
                 }
-                text.Append(" ").Append(line.Number).Append(" to ").Append(line.To).Append(' ')
+                text.Append(" ").Append(line.Number).Append(line.Main ? " (main)" : string.Empty).Append(" to ").Append(line.To).Append(' ')
                     .Append((line.Metres[line.Metres.Length - 1] / 1000f).ToString("F1")).Append(" km ")
-                    .Append(line.Stops.Count).Append(" stops (").Append(sheltered).Append(" with a shelter, ").Append(bays).Append(" with a bay; the kerb at");
+                    .Append(line.Stops.Count).Append(" stops (").Append(shared).Append(" shared with another line, ").Append(sheltered).Append(" with a shelter, ").Append(bays).Append(" with a bay; the kerb at");
                 // Each stop's kerb, and in a word why a stop has no bay: what a look at the street is then held against.
                 for (int s = 0; s < line.Stops.Count; s++)
                 {
@@ -383,7 +591,44 @@ namespace RealLifeOverhaul
                 text.Append(" m);");
             }
             Logger?.Info(text.ToString());
+            if (Notes.Length > 0)
+            {
+                Logger?.Info("Transit: the pairs of stations not joined:" + Notes);
+                Notes.Length = 0;
+            }
             LogPoles();
+        }
+
+        // How many routes have a stop within reach of a station.
+        private static int StationLines(Vector3 at)
+        {
+            int count = 0;
+            for (int i = 0; i < Lines.Count; i++)
+            {
+                bool earlier = false;
+                for (int k = 0; k < i && !earlier; k++)
+                {
+                    earlier = Lines[k].Number == Lines[i].Number;
+                }
+                if (earlier)
+                {
+                    continue;
+                }
+                bool near = false;
+                for (int k = i; k < Lines.Count && !near; k++)
+                {
+                    if (Lines[k].Number != Lines[i].Number)
+                    {
+                        continue;
+                    }
+                    for (int s = 0; s < Lines[k].Stops.Count && !near; s++)
+                    {
+                        near = CitySpots.Flat(Lines[k].Stops[s].Sign - at) < (TransitPlan.ServedWithin + 30f) * (TransitPlan.ServedWithin + 30f);
+                    }
+                }
+                count += near ? 1 : 0;
+            }
+            return count;
         }
 
         // Where the poles stand and the buses stop by them: one line.
@@ -435,10 +680,15 @@ namespace RealLifeOverhaul
             // Where a station's buses may start from and end at: every plain lane point of a road proper near it.
             Terminals.Clear();
             int withEnds = 0;
+            var x = new float[Stations.Count];
+            var z = new float[Stations.Count];
+            var ends = new bool[Stations.Count];
             for (int s = 0; s < Stations.Count; s++)
             {
                 Vector3 at = Stations[s].transform.position;
-                var ends = new List<int>(64);
+                x[s] = at.x;
+                z[s] = at.z;
+                var near = new List<int>(64);
                 for (int i = 0; i < _points.Length; i++)
                 {
                     Waypoint point = _points[i];
@@ -453,20 +703,20 @@ namespace RealLifeOverhaul
                     }
                     if (Drivable(point) && TrafficManager.IsNotIntersection(point))
                     {
-                        ends.Add(i);
+                        near.Add(i);
                     }
                 }
-                Terminals.Add(ends);
-                withEnds += ends.Count > 0 ? 1 : 0;
+                Terminals.Add(near);
+                ends[s] = near.Count > 0;
+                withEnds += near.Count > 0 ? 1 : 0;
             }
             if (withEnds < 2)
             {
                 return false;
             }
             BuildGraph();
-            _used = new bool[Stations.Count];
-            _a = 0;
-            _pairing = false;
+            _pairs = new TransitPlan.Pairing(x, z, ends);
+            _trying = false;
             return true;
         }
 
@@ -483,153 +733,142 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- the pairs, and the way between them
 
-        // One search of the road graph, or the bookkeeping between two. False when there is nothing left to pair.
+        // One search of the road graph, or the choice of the next pair. False when there is nothing left to pair.
         private static bool PairStep()
         {
             if (_routes >= MaxRoutes || _searches >= MaxSearches)
             {
-                EndStation();
                 return false;
             }
-            if (!_pairing)
+            if (!_trying)
             {
-                while (_a < Stations.Count && (_used[_a] || Terminals[_a].Count == 0))
-                {
-                    _a++;
-                }
-                if (_a >= Stations.Count)
+                if (!_pairs.Next(out _pa, out _pb))
                 {
                     return false;
                 }
-                // The stations it could be paired with, furthest first.
-                Partners.Clear();
-                Vector3 from = Stations[_a].transform.position;
-                for (int b = 0; b < Stations.Count; b++)
-                {
-                    if (b == _a || _used[b] || Terminals[b].Count == 0)
-                    {
-                        continue;
-                    }
-                    float sqr = CitySpots.Flat(Stations[b].transform.position - from);
-                    if (sqr > MinSpan * MinSpan && sqr <= MaxSpan * MaxSpan)
-                    {
-                        Partners.Add(b);
-                    }
-                }
-                Partners.Sort((x, y) => CitySpots.Flat(Stations[y].transform.position - from).CompareTo(CitySpots.Flat(Stations[x].transform.position - from)));
-                _partner = 0;
+                _trying = true;
                 _there = null;
-                _oneWay = null;
-                _widest = 0;
-                _limitHit = false;
-                Notes.Length = 0;
-                _pairing = true;
                 return true;
             }
-            if (_partner >= Partners.Count)
-            {
-                EndStation();
-                _a++;
-                return true;
-            }
-            int to = Partners[_partner];
             _searches++;
             if (_there == null)
             {
-                if (Find(_a, to))
+                string why = Find(_pa, _pb);
+                if (why == null)
                 {
-                    _there = MakeLine(_a, to);
+                    _there = MakeLine(_pa, _pb);
                     return true;
                 }
-                Notes.Append(" no way to ").Append(Stations[to].stationName).Append(';');
-                // What that search never got near cannot be driven to from here either: not searched for.
-                if (!_graph.HitLimit)
+                Refuse(why);
+                return true;
+            }
+            string back = Find(_pb, _pa);
+            if (back != null)
+            {
+                Refuse("a way there but " + back + " back");
+                return true;
+            }
+            TransitLine line = MakeLine(_pb, _pa);
+            string number = "M" + (_routes + 1);
+            _there.Number = number;
+            line.Number = number;
+            Lines.Add(_there);
+            Lines.Add(line);
+            _routes++;
+            Corridor(_there.Path);
+            Corridor(line.Path);
+            _pairs.Ends(_pa, _pb);
+            _pairs.Done(_pa, _pb);
+            for (int s = 0; s < Stations.Count; s++)
+            {
+                if (Passes(_there, Stations[s].transform.position) || Passes(line, Stations[s].transform.position))
                 {
-                    for (int k = Partners.Count - 1; k > _partner; k--)
-                    {
-                        List<int> ends = Terminals[Partners[k]];
-                        bool near = false;
-                        for (int e = 0; e < ends.Count && !near; e++)
-                        {
-                            near = _graph.WasReached(ends[e]);
-                        }
-                        if (!near)
-                        {
-                            Notes.Append(" no way to ").Append(Stations[Partners[k]].stationName).Append(';');
-                            Partners.RemoveAt(k);
-                        }
-                    }
+                    _pairs.Serve(s);
                 }
-                _partner++;
-                return true;
-            }
-            if (Find(to, _a))
-            {
-                TransitLine back = MakeLine(to, _a);
-                string number = "M" + (_routes + 1);
-                _there.Number = number;
-                back.Number = number;
-                Lines.Add(_there);
-                Lines.Add(back);
-                _used[_a] = true;
-                _used[to] = true;
-                _routes++;
-                _there = null;
-                _oneWay = null;
-                EndStation();
-                _a++;
-                return true;
-            }
-            Notes.Append(" a way to ").Append(Stations[to].stationName).Append(" but none back;");
-            if (_oneWay == null)
-            {
-                _oneWay = _there;
-                _oneWayTo = to;
             }
             _there = null;
-            _partner++;
+            _trying = false;
             return true;
         }
 
-        // The station being paired is done with: a line one way if that is all it could have, and what was found out, in one line.
-        private static void EndStation()
+        private static void Refuse(string why)
         {
-            if (!_pairing)
-            {
-                return;
-            }
-            _pairing = false;
-            if (_oneWay != null && _routes < MaxRoutes)
-            {
-                _oneWay.Number = "M" + (_routes + 1);
-                Lines.Add(_oneWay);
-                _used[_a] = true;
-                _used[_oneWayTo] = true;
-                _routes++;
-                Notes.Append(" so ").Append(_oneWay.Number).Append(" runs one way only, to ").Append(Stations[_oneWayTo].stationName).Append(';');
-            }
-            _oneWay = null;
+            _refused++;
+            Notes.Append(' ').Append(Stations[_pa].stationName).Append(" and ").Append(Stations[_pb].stationName).Append(" (").Append(why).Append(");");
+            _pairs.Done(_pa, _pb);
             _there = null;
-            if (Notes.Length > 0)
-            {
-                Logger?.Info("Transit: pairing " + Stations[_a].stationName + " (" + Terminals[_a].Count + " lane points to start from):" + Notes
-                             + " the widest search that failed got to " + _widest + " of " + _points.Length + " lane points"
-                             + (_limitHit ? " and stopped at its limit of " + MaxExpansions + " steps." : " and ran out of road: no lane leads from the one end to the other."));
-            }
-            Notes.Length = 0;
-            Partners.Clear();
+            _trying = false;
         }
 
-        private static bool Find(int from, int to)
+        // A line's path passes within reach of a place.
+        private static bool Passes(TransitLine line, Vector3 at)
+        {
+            float within = TransitPlan.ServedWithin * TransitPlan.ServedWithin;
+            for (int i = 0; i < line.Path.Length; i += 2)
+            {
+                if (CitySpots.Flat(_points[line.Path[i]].position - at) < within)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // The streets a line runs along count less to the lines laid after it: the lines gather on them and share their stops.
+        private static void Corridor(int[] path)
+        {
+            int[] starts = _graph.EdgeStart;
+            int[] to = _graph.EdgeTo;
+            float[] extra = _graph.EdgeExtra;
+            for (int i = 0; i + 1 < path.Length; i++)
+            {
+                int a = path[i];
+                int b = path[i + 1];
+                for (int e = starts[a]; e < starts[a + 1]; e++)
+                {
+                    if (to[e] == b && extra[e] == 0f)
+                    {
+                        extra[e] = -TransitPlan.CorridorShare * Vector3.Distance(_points[a].position, _points[b].position);
+                    }
+                }
+            }
+        }
+
+        // The way from one station to another, or why there is none: no road, or one that will not do for a bus line.
+        private static string Find(int from, int to)
         {
             Vector3 goal = Stations[to].transform.position;
             bool found = _graph.Find(Terminals[from], Terminals[to], goal.x, goal.y, goal.z, TerminalReach + 6f, MaxExpansions, PathScratch) && PathScratch.Count > 8;
             if (!found)
             {
-                _widest = Mathf.Max(_widest, _graph.Reached);
-                _limitHit |= _graph.HitLimit;
+                if (!_graph.HitLimit)
+                {
+                    // What the search never got near cannot be driven to from here either: never asked for.
+                    for (int s = 0; s < Stations.Count; s++)
+                    {
+                        List<int> ends = Terminals[s];
+                        bool near = false;
+                        for (int e = 0; e < ends.Count && !near; e++)
+                        {
+                            near = _graph.WasReached(ends[e]);
+                        }
+                        if (!near && s != from)
+                        {
+                            _pairs.NoRoad(from, s);
+                        }
+                    }
+                }
+                return _graph.HitLimit ? "the search stopped at its limit of " + MaxExpansions + " steps" : "no road";
             }
-            return found;
+            XScratch.Clear();
+            ZScratch.Clear();
+            for (int i = 0; i < PathScratch.Count; i++)
+            {
+                Vector3 at = _points[PathScratch[i]].position;
+                XScratch.Add(at.x);
+                ZScratch.Add(at.z);
+            }
+            return TransitPlan.Unbelievable(XScratch, ZScratch, XScratch.Count, _pairs.Span(from, to));
         }
 
         private static TransitLine MakeLine(int from, int to)
@@ -666,12 +905,29 @@ namespace RealLifeOverhaul
             int i = _stopFrom;
             if (i >= line.Path.Length || wanted >= total - 40f)
             {
+                Terminus(line);
                 for (int s = 0; s < line.Stops.Count; s++)
                 {
-                    line.Stops[s].Name = NameOf(line.Stops[s].Wait);
+                    line.Stops[s].Name = line.Stops[s].IsHost ? NameOf(line.Stops[s].Wait) : line.Stops[s].At.Name;
                 }
                 _lineBegun = false;
                 return true;
+            }
+            // A stop another line has already laid on this stretch: this line stops there too.
+            int hostId = TransitPlan.HostAlong(line.Path, line.Metres, Mathf.Max(wanted - BayBack, FirstStopAt), wanted + StopWindow + BayOn, wanted, 3,
+                _hostAt ?? (_hostAt = HostAt), out int hostIndex);
+            if (hostId >= 0)
+            {
+                TransitStop shared = Share(line, hostIndex, Hosts[hostId]);
+                if (shared != null)
+                {
+                    line.Stops.Add(shared);
+                    _shared++;
+                    CallsAt(Hosts[hostId]);
+                    _stopWanted = shared.Metres + StopSpacing;
+                    _stopFrom = shared.PathIndex;
+                    return false;
+                }
             }
             while (i < line.Path.Length && line.Metres[i] < wanted)
             {
@@ -707,6 +963,13 @@ namespace RealLifeOverhaul
             TransitStop placed = bay ?? plain;
             if (placed != null)
             {
+                placed.LanePoint = line.Path[placed.PathIndex];
+                placed.Host = placed;
+                if (!HostIndex.ContainsKey(placed.LanePoint))
+                {
+                    HostIndex[placed.LanePoint] = Hosts.Count;
+                    Hosts.Add(placed);
+                }
                 line.Stops.Add(placed);
                 _stopWanted = placed.Metres + StopSpacing;
                 _stopFrom = placed.PathIndex;
@@ -719,13 +982,117 @@ namespace RealLifeOverhaul
             return false;
         }
 
+        // The line's last stop as near its station as the street allows: a line ends at a station, and the station is where
+        // its riders change onto the other lines and the subway. Looked for from the end of the path back, where the last stop
+        // laid is more than TerminusGap before it: a stop another line has there first, else the first place that will do.
+        private const float TerminusGap = 120f;
+
+        private static void Terminus(TransitLine line)
+        {
+            float total = line.Metres[line.Metres.Length - 1];
+            float last = line.Stops.Count > 0 ? line.Stops[line.Stops.Count - 1].Metres : FirstStopAt - TerminusGap;
+            if (total - last <= TerminusGap)
+            {
+                return;
+            }
+            int hostId = TransitPlan.HostAlong(line.Path, line.Metres, last + TerminusGap, total, total, 3, _hostAt ?? (_hostAt = HostAt), out int hostIndex);
+            if (hostId >= 0)
+            {
+                TransitStop shared = Share(line, hostIndex, Hosts[hostId]);
+                if (shared != null)
+                {
+                    line.Stops.Add(shared);
+                    _shared++;
+                    CallsAt(Hosts[hostId]);
+                    return;
+                }
+            }
+            for (int j = line.Path.Length - 4; j >= 3 && line.Metres[j] >= last + TerminusGap; j--)
+            {
+                TransitStop stop = Try(line, j, false);
+                if (stop == null)
+                {
+                    continue;
+                }
+                stop.LanePoint = line.Path[stop.PathIndex];
+                stop.Host = stop;
+                if (!HostIndex.ContainsKey(stop.LanePoint))
+                {
+                    HostIndex[stop.LanePoint] = Hosts.Count;
+                    Hosts.Add(stop);
+                }
+                line.Stops.Add(stop);
+                return;
+            }
+        }
+
+        // Lines stopping at each place so far, the host's own counted: no more than MostLinesAt share one.
+        public const int MostLinesAt = 8;
+        private static readonly Dictionary<TransitStop, int> SharedBy = new Dictionary<TransitStop, int>(256);
+
+        private static void CallsAt(TransitStop host)
+        {
+            SharedBy[host] = (SharedBy.TryGetValue(host, out int lines) ? lines : 1) + 1;
+        }
+
+        private static int HostAt(int lanePoint)
+        {
+            return HostIndex.TryGetValue(lanePoint, out int index) ? index : -1;
+        }
+
+        // This line's own stop at a place another line laid out: the same pole, shelter and bay, at its own place along its
+        // own line. Null if the lane is not plain either side of it on this line's way (it comes in at a junction just
+        // before). The bay is the place's only if this line's own way into it and out of it is as straight and plain as
+        // the bay needs; else its bus stops in the lane there.
+        private static TransitStop Share(TransitLine line, int index, TransitStop host)
+        {
+            if (SharedBy.TryGetValue(host, out int lines) && lines >= MostLinesAt)
+            {
+                return null;   // as many lines as one place is timetabled for (TransitDirector.MostCalls)
+            }
+            int[] path = line.Path;
+            for (int k = index - 1; k >= 0 && line.Metres[index] - line.Metres[k] < JunctionClear; k--)
+            {
+                if (!Plain(_points[path[k]]))
+                {
+                    return null;
+                }
+            }
+            for (int k = index + 1; k < path.Length && line.Metres[k] - line.Metres[index] < JunctionClear; k++)
+            {
+                if (!Plain(_points[path[k]]))
+                {
+                    return null;
+                }
+            }
+            var stop = new TransitStop
+            {
+                PathIndex = index, Lane = host.Lane, Along = host.Along, Kerb = host.Kerb, Sign = host.Sign, Wait = host.Wait, ShelterAt = host.ShelterAt,
+                Shelter = host.Shelter, Parking = host.Parking, Metres = line.Metres[index], KerbAside = host.KerbAside, HasBay = host.HasBay, Bay = host.Bay,
+                BayAlong = host.BayAlong, BayOffset = host.BayOffset, BayBehind = host.BayBehind, BayAhead = host.BayAhead, BayRoom = host.BayRoom, NoBay = host.NoBay,
+                LanePoint = host.LanePoint, Host = host, Stand = host.Stand, KerbThings = host.KerbThings
+            };
+            if (stop.HasBay && BusBay.Lay(stop.KerbAside, out _, out BusBay.Curve curveIn, out BusBay.Curve curveOut, out _, out _))
+            {
+                float leaves = curveIn.Length + BusBay.Settle + BusBay.BusMiddleAhead + 1f;
+                float rejoins = curveOut.Length - BusBay.BusMiddleAhead + 1f;
+                string bends = LaneBends(stop, line, Vector3.Cross(Vector3.up, stop.Along), leaves, rejoins);
+                if (bends != null)
+                {
+                    stop.HasBay = false;
+                    stop.NoBay = "on the " + line.Number + "'s way into the bay " + bends;
+                }
+            }
+            return stop;
+        }
+
         // A stop at one lane point of a line, or null if that point will not do (or has no bay, when only one with a bay is wanted).
         private static TransitStop Try(TransitLine line, int index, bool bayOnly)
         {
             int[] path = line.Path;
-            if (index < 3 || index >= path.Length - 3)
+            if (index < 3 || index >= path.Length - 3 || HostIndex.ContainsKey(path[index]))
             {
-                return null;
+                return null;   // (a lane point another line has laid a place at is that place's: shared, never laid twice)
             }
             Waypoint point = _points[path[index]];
             if (!Plain(point))
@@ -1347,14 +1714,14 @@ namespace RealLifeOverhaul
 
         // ---------------------------------------------------------------- questions
 
-        /// <summary>The stop nearest a place, within a distance; null if there is none. A pass over the stops: for a timer, not a frame.</summary>
+        /// <summary>The place nearest a place, within a distance; null if there is none. A pass over the places: for a timer, not a frame.</summary>
         public static TransitStop Nearest(Vector3 place, float within, TransitStop not = null)
         {
             TransitStop nearest = null;
             float best = within * within;
-            for (int i = 0; i < Stops.Count; i++)
+            for (int i = 0; i < Places.Count; i++)
             {
-                TransitStop stop = Stops[i];
+                TransitStop stop = Places[i];
                 Vector3 offset = stop.Sign - place;
                 float sqr = offset.x * offset.x + offset.z * offset.z;
                 if (sqr < best && stop != not && Mathf.Abs(offset.y) < 8f)
@@ -1370,6 +1737,49 @@ namespace RealLifeOverhaul
         public static int Onward(TransitStop stop)
         {
             return stop == null ? 0 : Lines[stop.Line].Stops.Count - 1 - stop.Order;
+        }
+
+        /// <summary>The numbers of the lines that stop at a place, in the order they were laid ("M2 M5"); the same number once.</summary>
+        public static string Numbers(TransitStop place, string between = " ")
+        {
+            if (place == null)
+            {
+                return string.Empty;
+            }
+            List<TransitStop> calls = place.At.Calls;
+            if (calls.Count == 0)
+            {
+                return place.Line >= 0 && place.Line < Lines.Count ? Lines[place.Line].Number : string.Empty;
+            }
+            var text = new StringBuilder(16);
+            for (int i = 0; i < calls.Count; i++)
+            {
+                string number = Lines[calls[i].Line].Number;
+                bool again = false;
+                for (int k = 0; k < i && !again; k++)
+                {
+                    again = Lines[calls[k].Line].Number == number;
+                }
+                if (!again)
+                {
+                    text.Append(text.Length > 0 ? between : string.Empty).Append(number);
+                }
+            }
+            return text.ToString();
+        }
+
+        /// <summary>A line's stop at a place, or null if the line does not call there.</summary>
+        public static TransitStop CallOf(TransitStop place, int line)
+        {
+            List<TransitStop> calls = place != null ? place.At.Calls : null;
+            for (int i = 0; calls != null && i < calls.Count; i++)
+            {
+                if (calls[i].Line == line)
+                {
+                    return calls[i];
+                }
+            }
+            return null;
         }
     }
 }

@@ -72,7 +72,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        public enum Place { Aboard, Reader, Seat, WindowSeat, Strap, MiddleAboard }
+        public enum Place { Aboard, Reader, Seat, WindowSeat, Strap, MiddleAboard, MiddleReader }
 
         // ---------------------------------------------------------------- the bus and the clips
 
@@ -96,6 +96,8 @@ namespace RealLifeOverhaul
         public const float ReaderX = 0.482f;                      // the validator's lens by the driver (its face, towards the door)
         public const float ReaderZ = 4.94f;
         public const float ReaderY = 1.31f;                       // ...the middle of the lens over the road
+        public const float MiddleReaderX = 0.96f;                 // the second validator, inside the middle door on its rear pole: its lens (facing forward, into the doorway)
+        public const float MiddleReaderZ = -0.948f;               // (props_service.py: on the bracket to the pole at y0 + 0.08; ReaderY over the road as the first)
         public const float Walk = 1.05f;                          // metres a second inside: the game's walk, unhurried
         public const float StepDown = 0.55f;                      // seconds to walk down from the threshold onto the road
 
@@ -114,6 +116,11 @@ namespace RealLifeOverhaul
         public static readonly Spot Reader = new Spot(0.90f, 4.66f);
 
         public static float ReaderFacing => Reader.Facing(new Spot(ReaderX, ReaderZ));
+
+        /// <summary>Before the middle door's validator, turned back to it: its lens ReaderAhead away, in the doorway behind the step.</summary>
+        public static readonly Spot MiddleReader = new Spot(0.96f, -0.448f);
+
+        public static float MiddleReaderFacing => MiddleReader.Facing(new Spot(MiddleReaderX, MiddleReaderZ));
 
         /// <summary>The two seats a rider sits on, opposite the middle door with open floor ahead of them: their middles.</summary>
         public static readonly Spot[] Seats = { new Spot(-0.45f, -0.52f), new Spot(-0.86f, -0.52f) };
@@ -161,6 +168,7 @@ namespace RealLifeOverhaul
                 case Place.Seat: return SeatFeetAt(0);
                 case Place.WindowSeat: return SeatFeetAt(1);
                 case Place.MiddleAboard: return MiddleAboard;
+                case Place.MiddleReader: return MiddleReader;
                 default: return Strap;
             }
         }
@@ -168,7 +176,7 @@ namespace RealLifeOverhaul
         /// <summary>The way a rider faces at a place once there.</summary>
         public static float FacingAt(Place place)
         {
-            return place == Place.Reader ? ReaderFacing : place == Place.Aboard || place == Place.MiddleAboard ? -90f : 0f;
+            return place == Place.Reader ? ReaderFacing : place == Place.MiddleReader ? MiddleReaderFacing : place == Place.Aboard || place == Place.MiddleAboard ? -90f : 0f;
         }
 
         // ---------------------------------------------------------------- the furniture a path must keep clear of
@@ -200,6 +208,7 @@ namespace RealLifeOverhaul
             list.Add(new Box(-Wall, -0.40f, 3.84f, 5.30f));            // the cab and its partition
             list.Add(new Box(-0.40f, Wall, 5.04f, 5.30f));             // the wall under the windscreen beyond the platform
             list.Add(new Box(0.36f, 0.48f, 4.89f, 4.99f));             // the validator on its post
+            list.Add(new Box(0.90f, 1.07f, -1.05f, -0.95f));           // the middle door's validator, on its bracket to the rear pole
             list.Add(new Box(-Wall, Wall, -5.30f, -4.84f));            // the back seat
             float[,] poles = { { -0.25f, 1.33f }, { 0.66f, 1.18f }, { -0.25f, -1.36f }, { 0.66f, -1.36f }, { 1.08f, 3.94f }, { 1.08f, 4.96f }, { 1.08f, -1.06f }, { 1.08f, -0.04f } };
             for (int i = 0; i < poles.GetLength(0); i++)
@@ -222,6 +231,29 @@ namespace RealLifeOverhaul
             if (from == Place.Aboard && to == Place.Reader)
             {
                 into.Add(Reader);
+                return;
+            }
+            if (from == Place.MiddleAboard && to == Place.MiddleReader)
+            {
+                into.Add(MiddleReader);   // (in by the middle door: its own validator, a step inside)
+                return;
+            }
+            if (from == Place.MiddleReader && (to == Place.Seat || to == Place.WindowSeat || to == Place.Strap))
+            {
+                // From the middle door's validator into the bus: round the pole, to the seats opposite or the strap.
+                into.Add(DoorIn);
+                if (to == Place.Strap)
+                {
+                    into.Add(Strap);
+                    return;
+                }
+                into.Add(BackToAisle);
+                into.Add(SeatTurn);
+                if (to == Place.WindowSeat)
+                {
+                    into.Add(WindowOut);
+                }
+                into.Add(At(to));
                 return;
             }
             if (from == Place.MiddleAboard && to == Place.Reader)
@@ -380,6 +412,25 @@ namespace RealLifeOverhaul
         {
             new Approach(false, 0f), new Approach(false, -0.4f), new Approach(true, 0f), new Approach(true, 0.4f), new Approach(true, -0.4f)
         };
+
+        /// <summary>
+        /// Where a rider is walked to, to get on, when the middle door is the nearer: its own place first, a little along each
+        /// way, then the front door's. Many city buses are boarded by any door: there is a validator by each.
+        /// </summary>
+        public static readonly Approach[] BoardTriesMiddle =
+        {
+            new Approach(true, 0f), new Approach(true, 0.5f), new Approach(true, -0.5f),
+            new Approach(false, 0f), new Approach(false, 0.5f), new Approach(false, -0.5f), new Approach(false, AlongMost), new Approach(false, -AlongMost)
+        };
+
+        /// <summary>
+        /// Which door a rider boards by: the one nearer to where they stand as the bus pulls in (metres to the front door's place
+        /// and to the middle door's on the road), the front one when it is as near as makes no difference.
+        /// </summary>
+        public static bool ByMiddleDoor(float toFront, float toMiddle)
+        {
+            return toMiddle + 0.75f < toFront;
+        }
 
         /// <summary>The first of the tries that will do, by the caller's test (a path on the walkable ground, nothing standing there); -1 if none.</summary>
         public static int First(Approach[] tries, Func<Approach, bool> will)
