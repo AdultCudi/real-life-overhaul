@@ -82,7 +82,8 @@ namespace RealLifeOverhaul.Markets
             int id = f.StockId > 0 ? f.StockId : IdFor(owner);
             Books(f, day, year, out double revY, out double niY, out double revQ, out double niQ, out double growth);
             int debtBp = revY > 0.0 ? (int)Math.Max(0.0, Math.Min(30000.0, debt / (revY * Math.Max(8, year)) * 10000.0)) : 0;
-            CompanyDef d = MarketCatalogue.PlayerDef(id, f.Name, f.Ticker, (MarketSector)MarketValuation.Clamp(f.Sector, 0, (int)MarketSector.Count - 1), debtBp);
+            string trade = f.Trade >= 0 && f.Trade < MarketInputs.Trades.Length ? MarketInputs.Trades[f.Trade] : null;
+            CompanyDef d = MarketCatalogue.PlayerDef(id, f.Name, f.Ticker, (MarketSector)MarketValuation.Clamp(f.Sector, 0, (int)MarketSector.Count - 1), debtBp, trade);
             var s = new Stock
             {
                 Id = id, Def = d, Name = d.Name, Ticker = d.Ticker, Sector = d.Sector, Size = d.Size, Status = StockStatus.Listed, ListedDay = day,

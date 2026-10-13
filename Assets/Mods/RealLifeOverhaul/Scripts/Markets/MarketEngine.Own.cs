@@ -401,6 +401,22 @@ namespace RealLifeOverhaul.Markets
             Say(new MarketNews { Day = day, Kind = MarketNewsKind.Dividend, Stock = s.Id, A = s.DeclaredCents, B = s.RecordDay, C = s.PayDay });
         }
 
+        /// <summary>An investor buys into a player's company to press its board for a demand now (the test tools), as one would after results.</summary>
+        public bool PressBoard(int stockId, ActivistDemand demand)
+        {
+            Stock s = State.Stock(stockId);
+            if (s == null || s.Own == null || !s.Listed || demand == ActivistDemand.None)
+            {
+                return false;
+            }
+            OwnListing o = s.Own;
+            o.ActBp = Math.Min(ListingVotes.Stake(_secret, s.Id, State.Day), (int)(o.Others(s) * 10000L / Math.Max(1L, s.Shares)));
+            o.ActDemand = demand;
+            o.ActDay = MarketTrading.MarketDays(State.Day, 2);
+            Say(new MarketNews { Day = State.Day, Kind = MarketNewsKind.OwnActivist, Stock = s.Id, A = o.ActBp, B = (int)demand, C = o.ActDay });
+            return true;
+        }
+
         // ---------------------------------------------------------------- a bid for it
 
         private void OwnBidChance(Stock s, int day)
@@ -494,6 +510,10 @@ namespace RealLifeOverhaul.Markets
                 return OwnWhy.NotListed;
             }
             OwnListing o = s.Own;
+            if (action == OwnAction.Audit)
+            {
+                return OwnWhy.None;   // (the auditors' findings, not the founder's to ask)
+            }
             bool board = action == OwnAction.Pay || action == OwnAction.Dividend || action == OwnAction.BuyBack || action == OwnAction.Issue || action == OwnAction.Private;
             if (board && !o.Board)
             {
@@ -631,6 +651,16 @@ namespace RealLifeOverhaul.Markets
                     break;
                 case OwnAction.Private:
                     TakePrivate(s);
+                    break;
+                case OwnAction.Audit:
+                    if ((e.B & ListingBook.Qualifying) != 0)
+                    {
+                        s.Outlook += ListingCatalogue.AuditOutlook;
+                        s.Mis += ListingCatalogue.AuditKickBp / 10000.0;
+                        s.Sent += ListingCatalogue.AuditKickBp / 10000.0;
+                        s.Last = s.MidCents;
+                        Say(new MarketNews { Day = State.Day, Kind = MarketNewsKind.OwnAudit, Stock = s.Id, A = e.B });
+                    }
                     break;
             }
         }

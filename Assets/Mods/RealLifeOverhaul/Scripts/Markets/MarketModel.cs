@@ -355,6 +355,7 @@ namespace RealLifeOverhaul.Markets
         OwnRefused = 27,    // something its founder asked for could not be done when its moment came: Stock, A the action (OwnAction), B why (OwnWhy)
         OwnWithdrawn = 28,  // an investor dropped a demand that was met: Stock, A the demand
         OwnAway = 29,       // another player's company left this market (its founder's city is no longer this one): Stock, A cents a share paid out
+        OwnAudit = 30,      // its yearly audit found the books wanting: Stock, A what it found (ListingBook bits)
         Count
     }
 

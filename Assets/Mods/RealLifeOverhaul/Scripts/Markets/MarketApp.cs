@@ -195,6 +195,12 @@ namespace RealLifeOverhaul.Markets
                 _company = 0;
                 _picked = null;
             }
+            else if (_company == OwnPage)
+            {
+                _page.Hide();
+                UiClone.Words(_shell.Header, MarketText.T("reallife_mkt_app"));
+                table = WriteListing(box, s);   // the player's own company (MarketApp.Own.cs)
+            }
             else if (_company != 0 && (_company == IndexPage || s.Stock(_company) != null))
             {
                 UiClone.Words(_shell.Header, MarketText.T("reallife_mkt_app"));
@@ -226,7 +232,7 @@ namespace RealLifeOverhaul.Markets
                 }
             }
             box.Done();
-            if (_company == 0)
+            if (_company == 0 || _company == OwnPage)
             {
                 _table.Show(table, _rows, _picked);
             }

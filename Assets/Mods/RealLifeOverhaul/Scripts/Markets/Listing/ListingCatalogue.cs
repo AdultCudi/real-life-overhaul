@@ -80,6 +80,9 @@ namespace RealLifeOverhaul.Markets
         public const double ScandalOutlook = -0.06;        // a scandal of the founder's: what the market expects of the company, for good
         public const int ScandalKickBp = -250;            // ...and the day's mood
         public const int BoardPayoutBp = 5000;            // a board the founder does not chair pays this share of the reserve at each results
+        public const double AuditOutlook = -0.08;          // a yearly audit that finds the books wanting: what the market expects of the company, for good
+        public const int AuditKickBp = -400;              // ...and the day's mood
+        public const int HandOverDays = 7;                // after a bid wins: days to hand the businesses over before what is left is paid for
         public const double GrowthShrink = 0.5;           // of the company's own growth over the city's, what the market believes from its books
         public const double DaySeenMost = 3.0;            // a day's takings or profit beyond so many times its year's usual is followed as no more (a one-off)
 

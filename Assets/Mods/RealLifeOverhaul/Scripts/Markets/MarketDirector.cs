@@ -179,6 +179,7 @@ namespace RealLifeOverhaul.Markets
             SaveHook.Keep(_onSave);
             MarketBridges.Poll?.Invoke(_say);   // (a guest that follows the host's market hears nothing of its own: the tape's events are the host's)
             _engine.TradesAsEvents = SharedCity.Leading || _engine.Tape.Traded(_engine.State.Day);   // (for the rest of a day that had a shared trade: a replay of it takes every move from the tape)
+            OwnSecond();
             InstallApp();
         }
 
@@ -311,6 +312,7 @@ namespace RealLifeOverhaul.Markets
             MarketTape tape = MarketTapeFile.Read(state.Id);
             _engine = new MarketEngine(state, tape, _world);
             _engine.HoldAfterLoad();
+            OwnStarted(save);   // (the player's own company: who they are, and their company back if a save made as a guest left it aside)
             _frontierWritten = tape.Frontier;
             _save = save;
             _running = true;
@@ -498,6 +500,7 @@ namespace RealLifeOverhaul.Markets
             _engine = new MarketEngine(state, tape, _world);
             _engine.Follow(frontier);
             _engine.TradeSink = _tradeSink;
+            state.Following = true;   // (the player's own company is set aside meanwhile: MarketShare.Adopt)
             _hostFrontier = frontier;
             MarketTapeFile.Rewrite(state.Id, tape.Whole());
             _frontierWritten = tape.Frontier;
@@ -561,7 +564,9 @@ namespace RealLifeOverhaul.Markets
             if (_engine != null)
             {
                 _engine.TradeSink = null;
+                _engine.State.Following = false;
                 Logger?.Info("Stock market: the host's market is no longer followed; it goes on alone from day " + _engine.State.Day + " phase " + _engine.State.Phase + ".");
+                OwnAlone();
             }
         }
 
@@ -731,7 +736,11 @@ namespace RealLifeOverhaul.Markets
         internal void Heard(in MarketNews news)
         {
             MarketState s = _engine != null ? _engine.State : null;
-            if (s == null || news.Stock <= 0 || (s.Held(news.Stock) == 0 && !s.Watching(news.Stock)))
+            if (s == null || OwnHeard(news))
+            {
+                return;   // (news of the player's own company, or of their way to the market: MarketDirector.Own.cs)
+            }
+            if (news.Stock <= 0 || (s.Held(news.Stock) == 0 && !s.Watching(news.Stock)))
             {
                 return;
             }
@@ -790,6 +799,7 @@ namespace RealLifeOverhaul.Markets
             {
                 case TradeKind.Dividend:
                     Queue(NotificationType.Success, "reallife_mkt_note_dividend", "name", name, "amount", MarketText.Money(amount));
+                    DividendTax(stock, amount);
                     break;
                 case TradeKind.DividendPaid:
                     Queue(NotificationType.Info, "reallife_mkt_note_dividend_owed", "name", name, "amount", MarketText.Money(amount));

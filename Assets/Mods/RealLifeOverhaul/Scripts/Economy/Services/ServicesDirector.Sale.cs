@@ -300,6 +300,70 @@ namespace RealLifeOverhaul.Economy
             Changed();
         }
 
+        /// <summary>
+        /// A business handed over to a buyer with no money, as a sale completes (a takeover of the player's listed company
+        /// paid for its shares: Markets/Listing): business loans secured on it are paid off as in any sale, then the staff
+        /// (the buyer keeps them), the business and the lease end as the game ends them, and the mod's own records of it
+        /// close; an investor's deal on it ends as Ventures ends any deal on a business that is gone. True once it is no
+        /// longer the player's (or was not); false while it cannot be done now (the player stands in it, a vehicle or a
+        /// special gift is kept at it, a Going Public session is on, or this feature is not running): asked again later.
+        /// </summary>
+        public bool HandOver(string place, string buyerName)
+        {
+            if (!_running || _broken || _saleBroken || GoingPublic.InSession)
+            {
+                return false;
+            }
+            BuildingRegistration reg = ServicesGame.Find(place);
+            if (reg == null || !ServicesGame.IsSellable(reg))
+            {
+                return true;   // (not the player's business any more)
+            }
+            if (ServicesGame.Blocked(reg) != SaleBlock.None)
+            {
+                return false;
+            }
+            bool done = false;
+            SaleGuard("handing a business over in a takeover", () =>
+            {
+                string name = ServicesStore.Clean(ServicesGame.Name(reg));
+                Address address = reg.Address;
+                if (ServicesBridges.LoansOwed != null && ServicesBridges.LoansOwed(address) > 0 && (ServicesBridges.SettleLoans == null || !ServicesBridges.SettleLoans(address)))
+                {
+                    Logger?.Warn("Selling a business: a business loan secured on '" + name + "' could not be paid off in the takeover; it stays owed, and the credit side will find it unsecured.");
+                }
+                int staffGone, deposit;
+                string log;
+                ServicesGame.Complete(reg, true, out staffGone, out deposit, out log);
+                _state.Unlist(place);
+                CleaningClient client = _state.Client(place);
+                if (client != null && !client.Outside)
+                {
+                    _state.Clients.Remove(client);
+                }
+                try
+                {
+                    ServicesBridges.BusinessGone?.Invoke(place);
+                }
+                catch (Exception e)
+                {
+                    Logger?.Warn("Selling a business: 'running a business' could not be told that '" + name + "' is gone (" + e.Message + "); it finds out by itself in the morning.");
+                }
+                Logger?.Info("Selling a business: handed over to " + buyerName + " in a takeover: " + log + "; the deposit back " + deposit + ".");
+                done = true;
+            });
+            if (done)
+            {
+                if (CleaningOn)
+                {
+                    ReadAll();
+                    Replan("a business was handed over");
+                }
+                Changed();
+            }
+            return done;
+        }
+
         // ---------------------------------------------------------------- the day
 
         private void SaleDay(int day)

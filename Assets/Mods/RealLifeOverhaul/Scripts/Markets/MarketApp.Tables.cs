@@ -81,6 +81,34 @@ namespace RealLifeOverhaul.Markets
             .Filter("reallife_mkt_filter_sectors", MarketCatalogue.SectorKeys)
             .Empty("reallife_mkt_empty_portfolio");
 
+        /// <summary>The player's own company on its way: 0 what it takes, 1 needed, 2 the company's, 3 met.</summary>
+        public static readonly TableSpec ListingNeeds = new TableSpec("Stocks", "Your company: what it takes")
+            .Column("reallife_lst_col_need", 640f, TableSort.None, flexible: true)
+            .Column("reallife_lst_col_needed", 320f, TableSort.None)
+            .Column("reallife_lst_col_yours", 320f, TableSort.None)
+            .Column("reallife_lst_col_met", 320f, TableSort.None, right: true);
+
+        /// <summary>Its books: 0 quarter, 1 takings, 2 profit, 3 days.</summary>
+        public static readonly TableSpec ListingBooks = new TableSpec("Stocks", "Your company: the books")
+            .Column("reallife_lst_col_quarter", 640f, TableSort.None, flexible: true)
+            .Column("reallife_lst_col_takings", 320f, TableSort.None)
+            .Column("reallife_lst_col_profit", 320f, TableSort.None)
+            .Column("reallife_lst_col_days", 320f, TableSort.None, right: true);
+
+        /// <summary>Listed, its register: 0 holder, 1 shares, 2 share, 3 worth.</summary>
+        public static readonly TableSpec ListingRegister = new TableSpec("Stocks", "Your company: the register")
+            .Column("reallife_lst_col_holder", 640f, TableSort.None, flexible: true)
+            .Column("reallife_lst_col_shares", 320f, TableSort.None)
+            .Column("reallife_lst_col_share", 320f, TableSort.None)
+            .Column("reallife_lst_col_worth", 320f, TableSort.None, right: true);
+
+        /// <summary>Listed, its results: 0 quarter, 1 turnover, 2 profit, 3 dividend.</summary>
+        public static readonly TableSpec ListingResults = new TableSpec("Stocks", "Your company: the results")
+            .Column("reallife_lst_col_quarter", 640f, TableSort.None, flexible: true)
+            .Column("reallife_lst_col_turnover", 320f, TableSort.None)
+            .Column("reallife_lst_col_profit", 320f, TableSort.None)
+            .Column("reallife_lst_col_dividend", 320f, TableSort.None, right: true);
+
         /// <summary>History: 0 day, 1 company, 2 what, 3 shares, 4 price, 5 money, 6 commission.</summary>
         public static readonly TableSpec History = new TableSpec("Stocks", "History")
             .Column("reallife_mkt_col_day", 160f, TableSort.Date)

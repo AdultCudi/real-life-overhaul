@@ -1076,6 +1076,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("mkt_borrow_most", () => Guide.Percent(Markets.MarketCatalogue.BorrowFeeMostBp / 10000f))
                 .Cleanup(() => Markets.MarketDirector.Instance?.StopAll())
                 .ResetData(() => Markets.MarketDirector.Instance?.Forget());   // the director opens a new market from the (now empty) save on its next second
+            Markets.ListingGuide.Register();   // the player's own company on the market: its switch, its tests and its Guide figures (Scripts/Markets/Listing; its data is the market's line)
 
             // The bank apps: one for each of the city's three largest banks, each a front on the credit desk. They keep no data:
             // off, no bank app is on the phone and every account and loan stays as it is. They run only while the economy core does.

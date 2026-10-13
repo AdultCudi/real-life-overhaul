@@ -511,9 +511,9 @@ namespace RealLifeOverhaul.Markets
         /// every company's are, but nothing of the cycle, of inflation or of the day's supply of goods made up for it (its
         /// own books carry those), and its usual debt its own. Made when it is listed and again from the save's line.
         /// </summary>
-        public static CompanyDef PlayerDef(int id, string name, string ticker, MarketSector sector, int debtBp)
+        public static CompanyDef PlayerDef(int id, string name, string ticker, MarketSector sector, int debtBp, string trade)
         {
-            var d = new CompanyDef(id, string.IsNullOrEmpty(name) ? ticker : name, ticker, sector, MarketSize.Small, 0, 0, null);
+            var d = new CompanyDef(id, string.IsNullOrEmpty(name) ? ticker : name, ticker, sector, MarketSize.Small, 0, 0, trade);
             Profile(d);
             d.Cyclical = 0;
             d.PassPct = 100;

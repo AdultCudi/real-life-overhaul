@@ -378,7 +378,29 @@ namespace RealLifeOverhaul.Economy
                 box.Line(CompanyText.T("reallife_co_over_more", "count", (alerts.Count - 6).ToString()));
             }
             if (ServicesDirector.CanClean) InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_svc_open_cleaning", ServicesDirector.OpenCleaning);   // (the cleaning service: Economy/Services)
+            WriteListingLine(box);
             return null;
+        }
+
+        // The company and the city's market (Markets/Listing): where it stands, and a button to its page in the Stocks app.
+        private static void WriteListingLine(InfoBox box)
+        {
+            string line = null;
+            try
+            {
+                line = CompanyBridges.ListingLine != null ? CompanyBridges.ListingLine() : null;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+            if (string.IsNullOrEmpty(line) || CompanyBridges.OpenListing == null)
+            {
+                return;
+            }
+            box.Headline("reallife_lst_headline");
+            box.Line(line);
+            InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_lst_open_stocks", () => UiClone.Safe(CompanyBridges.OpenListing));
         }
 
         // What waits for an answer at one business.

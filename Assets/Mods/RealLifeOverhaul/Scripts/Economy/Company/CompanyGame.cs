@@ -71,6 +71,15 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static Func<int> Esteem;
 
+        /// <summary>
+        /// The player's company and the city's market (Markets/Listing, through Wiring/ListingLinks): one line for the
+        /// Overview (where the company stands on its way to the market, or its price and the founder's stake), and the
+        /// Stocks app opened on the company's page. Null: the line and the button are not shown.
+        /// </summary>
+        public static Func<string> ListingLine;
+
+        public static Action OpenListing;
+
         /// <summary>The esteem, inside its bounds; 0 without it.</summary>
         internal static int EsteemNow()
         {
@@ -101,6 +110,8 @@ namespace RealLifeOverhaul.Economy
             Outside = null;
             Booked = null;
             Esteem = null;
+            ListingLine = null;
+            OpenListing = null;
         }
     }
 

@@ -212,7 +212,16 @@ namespace RealLifeOverhaul.Markets
                 t.Append(i > 0 ? ":" : string.Empty).Append(q.Quarter.ToString(Inv)).Append(',').Append(q.Revenue.ToString(Inv)).Append(',').Append(q.Profit.ToString(Inv)).Append(',')
                     .Append(q.Days.ToString(Inv));
             }
-            Join(t, f.SetAsideDay);
+            Join(t, f.SetAsideDay, f.Trade, f.TestBooks ? 1 : 0);
+            t.Append('|').Append(Clean(f.HandOverTo));
+            Join(t, f.HandOverBy);
+            L(t, f.HandOverOwed);
+            Join(t, f.HandOverCount);
+            t.Append('|');
+            for (int i = 0; i < f.HandOver.Count; i++)
+            {
+                t.Append(i > 0 ? ":" : string.Empty).Append((f.HandOver[i] ?? string.Empty).Replace('~', '!'));   // (a place's own '~' kept apart from the line's)
+            }
         }
 
         private static ListingFile ReadListing(string[] c)
@@ -234,6 +243,19 @@ namespace RealLifeOverhaul.Markets
                 }
             }
             f.SetAsideDay = Math.Max(0, I(c, 28));
+            f.Trade = Clamp(I(c, 29, -1), -1, MarketInputs.Trades.Length - 1);
+            f.TestBooks = I(c, 30) != 0;
+            f.HandOverTo = S(c, 31).Length > 0 ? S(c, 31) : null;
+            f.HandOverBy = Math.Max(0, I(c, 32));
+            f.HandOverOwed = Math.Max(0, L(c, 33));
+            f.HandOverCount = Math.Max(0, I(c, 34));
+            foreach (string place in S(c, 35).Length > 0 ? c[35].Split(':') : Array.Empty<string>())
+            {
+                if (place.Length > 0 && f.HandOver.Count < 64)
+                {
+                    f.HandOver.Add(place.Replace('!', '~'));
+                }
+            }
             if (f.StockId != 0 && !ListingRules.IsPlayer(f.StockId))
             {
                 f.StockId = 0;
@@ -355,6 +377,7 @@ namespace RealLifeOverhaul.Markets
                 OwnDeal d = o.Deals[i];
                 t.Append(i > 0 ? ":" : string.Empty).Append(d.Day.ToString(Inv)).Append(',').Append(d.Shares.ToString(Inv)).Append(',').Append(d.Cents.ToString(Inv));
             }
+            t.Append('|').Append(Clean(k.Def.Trade));
         }
 
         private static string R(double value)
@@ -372,7 +395,7 @@ namespace RealLifeOverhaul.Markets
             }
             string ticker = S(c, 61).Length > 0 ? S(c, 61) : "OWN";
             int debtBp = Clamp(I(c, 63), 0, 30000);
-            def = MarketCatalogue.PlayerDef(id, S(c, 60), ticker, (MarketSector)Clamp(I(c, 62), 0, (int)MarketSector.Count - 1), debtBp);
+            def = MarketCatalogue.PlayerDef(id, S(c, 60), ticker, (MarketSector)Clamp(I(c, 62), 0, (int)MarketSector.Count - 1), debtBp, S(c, 66).Length > 0 ? S(c, 66) : null);
             string[] f = S(c, 64).Split(',');
             var o = new OwnListing
             {

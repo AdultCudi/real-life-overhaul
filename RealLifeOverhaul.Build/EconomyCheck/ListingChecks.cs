@@ -180,6 +180,7 @@ internal static partial class Program
         ListingMeetingChecks();
         ListingActivistAndBidChecks();
         ListingTaxChecks();
+        ListingAuditEventChecks();
         ListingStoreChecks();
         ListingTapeChecks();
         ListingSessionChecks();
@@ -920,6 +921,34 @@ internal static partial class Program
             "the audit and the exchange's fees are business costs the game's tax deducts; the holders' part, the underwriters and the dividend tax are not");
     }
 
+    // ---------------------------------------------------------------- the year's audit, heard by the market
+
+    private static void ListingAuditEventChecks()
+    {
+        var world = new OwnWorld(95);
+        MarketEngine m = LListed(95, world, 2500, out Stock own);
+        if (own == null)
+        {
+            Check(false, "the company is listed for the audit's checks");
+            return;
+        }
+        double outlook = own.Outlook;
+        m.Event(MarketInputs.EventOwn + (int)OwnAction.Audit, own.Id, ListingBook.BribesOut);
+        RunTo(m, MarketTrading.NextTradingDay(m.State.Day), MarketCatalogue.PhaseOpen);
+        Check(own.Outlook == outlook || Math.Abs(own.Outlook - outlook) < 0.01, "an audit that only discloses moves nothing");
+        Check(world.Count(MarketNewsKind.OwnAudit) == 0, "...and is no news");
+        double before = own.Outlook;
+        m.Event(MarketInputs.EventOwn + (int)OwnAction.Audit, own.Id, ListingBook.CashOffBooks);
+        RunTo(m, m.State.Day, m.State.Phase + 1);
+        Check(own.Outlook < before + ListingCatalogue.AuditOutlook / 2 && world.Count(MarketNewsKind.OwnAudit) == 1, "an audit that finds the books wanting cuts what is expected of the company, and is news");
+        Check(m.CanAsk(own, OwnAction.Audit, 0) == OwnWhy.None, "the auditors' findings are heard whatever the hour");
+        var press = new OwnWorld(96);
+        MarketEngine n = LListed(96, press, 2500, out Stock k);
+        Check(k != null && n.PressBoard(k.Id, ActivistDemand.Pay) && k.Own.ActDemand == ActivistDemand.Pay && k.Own.ActBp >= ListingCatalogue.ActivistStakeLeastBp
+              && press.Count(MarketNewsKind.OwnActivist) == 1, "an investor pressing the board for a demand, as the test tools make one");
+        Check(!n.PressBoard(k.Id, ActivistDemand.None), "...but never for nothing");
+    }
+
     // ---------------------------------------------------------------- the save
 
     private static void ListingStoreChecks()
@@ -953,6 +982,20 @@ internal static partial class Program
         Check(again.MarginShift == own.MarginShift && again.LogFair == own.LogFair, "its figures beyond the city's companies' bounds are kept as they are");
         Check(back.Listing.Stage == ListingStage.Listed && back.Listing.Books.Count == m.State.Listing.Books.Count && back.Listing.StockId == own.Id && back.Listing.Name == m.State.Listing.Name,
             "the way to the market and the books");
+        m.State.Listing.Trade = 4;
+        m.State.Listing.TestBooks = true;
+        m.State.Listing.HandOverTo = "Grand Bay Holdings";
+        m.State.Listing.HandOverBy = 345;
+        m.State.Listing.HandOverOwed = 123456789;
+        m.State.Listing.HandOverCount = 2;
+        m.State.Listing.HandOver.Add("Elm%20Street~14");
+        m.State.Listing.HandOver.Add("Ash~2");
+        line = MarketStore.Write(m.State);
+        back = MarketStore.Read(line, out _);
+        ListingFile h = back.Listing;
+        Check(h.Trade == 4 && h.TestBooks && h.HandOverTo == "Grand Bay Holdings" && h.HandOverBy == 345 && h.HandOverOwed == 123456789 && h.HandOverCount == 2 && h.HandOver.Count == 2
+              && h.HandOver[0] == "Elm%20Street~14" && h.HandOver[1] == "Ash~2", "a hand-over under way is kept exactly, its places' own marks too");
+        Check(MarketStore.Write(back) == line, "...and written again the same");
         Check(MarketStore.Write(back) == line, "written again, the line is the same");
         string city = MarketStore.Write(m.State, true);
         Check(city.IndexOf("~l:", StringComparison.Ordinal) < 0 && city.IndexOf("~u:", StringComparison.Ordinal) < 0, "the city's line has nothing of the player's way to the market");
