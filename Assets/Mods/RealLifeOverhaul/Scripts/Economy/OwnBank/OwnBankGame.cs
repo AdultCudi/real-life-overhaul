@@ -29,6 +29,9 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Something the bank did moves the player's integrity (Standing): by how much, and whether it was a scandal. Default: nobody hears.</summary>
         public static Action<int, bool> Moved;
 
+        /// <summary>True if the bank has the qualified person the licence asks for (Careers: a finance qualification of the player's, or a senior professional of theirs in finance). Default: yes.</summary>
+        public static Func<bool> Qualified;
+
         public static void Reset()
         {
             Integrity = null;
@@ -36,6 +39,7 @@ namespace RealLifeOverhaul.Economy
             Courts = null;
             Quotes = null;
             Moved = null;
+            Qualified = null;
         }
     }
 

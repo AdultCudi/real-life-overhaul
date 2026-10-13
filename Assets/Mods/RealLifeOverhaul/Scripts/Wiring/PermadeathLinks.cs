@@ -41,6 +41,7 @@ namespace RealLifeOverhaul
             private static void Story(LifeStory s)
             {
                 People(s);
+                CareersLinks.Obituary(s);
                 try
                 {
                     if (FamilyState.Loaded && FamilyState.Together && !string.IsNullOrEmpty(FamilyState.S.PName))

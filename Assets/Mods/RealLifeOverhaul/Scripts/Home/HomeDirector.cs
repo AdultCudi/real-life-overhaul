@@ -136,7 +136,7 @@ namespace RealLifeOverhaul
         private void OnDestroy()
         {
             SaveHook.Drop(_onSave);
-            GameEvent.onGameEventTriggered -= OnGameEvent;
+            GameEvent.onGameEventTriggered -= _onGameEvent;   // (the handler that was put on: Guard.Wrap's, not the method itself)
             TakeBack();
             HomeCookList.Remove();
             HomeNeedsBar.Remove();

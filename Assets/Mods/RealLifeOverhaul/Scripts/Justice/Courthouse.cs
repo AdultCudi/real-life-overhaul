@@ -107,6 +107,12 @@ namespace RealLifeOverhaul
                     Front = door;
                     Usable = true;
                 }
+                if (Usable)
+                {
+                    // Its own name wherever the game names the building (Core/SpecialBuildings).
+                    SpecialBuildings.Set("courthouse", picked, SpecialKind.Court, "reallife_justice_door_courthouse", "reallife_justice_card_type",
+                        () => JusticeSettings.Enabled && JusticeSettings.Courthouse);
+                }
                 _logger?.Info("Justice: the courthouse is " + Name + " (" + Kind(picked) + ", " + picked.building.totalSqm + " sqm); "
                               + (placed ? "sign up (" + (PropLibrary.TryGet(SignProp, out _, out _) ? "modelled" : "plain stand-in") + ")."
                                   : Usable ? "no room for the sign: hearings are attended at the door."

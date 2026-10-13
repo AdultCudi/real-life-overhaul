@@ -55,6 +55,9 @@ namespace RealLifeOverhaul
         private bool _hasPose;
         private PermanentAnimationType _pose;
         private bool _standing;    // frozen in place with pathfinding and collision off
+        private Transform _seat;   // the place they sit on, while seated (Sit / Rise)
+        private Vector3 _stoodAt;
+        private Quaternion _stoodFacing;
         private KneelPose _kneel;  // made the first time this person kneels
         private ActorClips _clips; // made the first time this person plays one of the mod's clips
         private Pace _pace = Pace.Walk;   // the pace last asked for, for when a carriage that held them to its own is dropped
@@ -136,6 +139,7 @@ namespace RealLifeOverhaul
         /// <summary>Walks, jogs or runs to a point. Returns false if no route could be requested.</summary>
         public bool MoveTo(Vector3 destination, Pace pace)
         {
+            Rise();
             Unconvey(walksOn: true);
             MakeMobile();
             NavMeshAgent agent = Character.navmeshAgent;
@@ -258,6 +262,7 @@ namespace RealLifeOverhaul
         /// </summary>
         public void StandAt(Vector3 position, Vector3 lookAt)
         {
+            Rise();
             Unconvey(walksOn: false);
             if (!_standing)
             {
@@ -376,6 +381,63 @@ namespace RealLifeOverhaul
             {
                 skin.enabled = Character.visible;
             }
+        }
+
+        /// <summary>True while they sit on a seat (Sit).</summary>
+        public bool Seated => _seat != null;
+
+        /// <summary>
+        /// Sits them on a place to sit exactly as the game seats its own people and its employees at a desk
+        /// (<c>ThirdPersonCharacter.SitOnChair</c>: the game's sitting pose, the navigation agent off, the body put on the place
+        /// and turned as it is), from where they stand. Any clip or pose is ended first. False, and nothing changed, if they
+        /// cannot (seated already, lying in the road, or these characters have no sitting pose).
+        /// </summary>
+        public bool Sit(Transform seat)
+        {
+            if (seat == null || _seat != null || Limp || Kneeling || !Knows(PermanentAnimationType.Sitting))
+            {
+                return false;
+            }
+            EndClips();
+            ClearPose();
+            if (!_standing)
+            {
+                StandAt(Position, Position);
+            }
+            _stoodAt = Character.transform.position;
+            _stoodFacing = Character.transform.rotation;
+            _seat = seat;
+            Character.SitOnChair(seat);
+            return true;
+        }
+
+        /// <summary>
+        /// On their feet again where they stood before they sat, by the game's own way off a seat (<c>ThirdPersonCharacter.Reset</c>),
+        /// and left standing there. Safe at any time; every way they are moved, placed or put away goes through it first.
+        /// </summary>
+        public void Rise()
+        {
+            if (_seat == null)
+            {
+                return;
+            }
+            _seat = null;
+            if (Character == null || Limp)
+            {
+                return;
+            }
+            // There first, then the game's reset (which switches the agent on: at the seat, off the mesh, the engine warns).
+            Character.transform.SetPositionAndRotation(_stoodAt, _stoodFacing);
+            Character.Reset();
+            NavMeshAgent agent = Character.navmeshAgent;
+            if (agent.enabled)
+            {
+                agent.Warp(_stoodAt);
+                agent.enabled = false;   // standing, as they were before they sat: whoever sends them on switches it on again
+            }
+            Character.transform.rotation = _stoodFacing;
+            Character.LookTarget = Vector3.zero;
+            _standing = true;
         }
 
         /// <summary>True while down on one knee.</summary>
@@ -754,6 +816,7 @@ namespace RealLifeOverhaul
         /// <summary>Puts the actor on the navigation mesh at a point, free to walk. False if the point is not on it.</summary>
         internal bool Place(Vector3 position, bool onRoad)
         {
+            Rise();
             Unconvey(walksOn: false);
             _standing = false;
             NavMeshAgent agent = Character.navmeshAgent;
@@ -775,6 +838,7 @@ namespace RealLifeOverhaul
 
         internal void ResetForReuse()
         {
+            Rise();
             Unconvey(walksOn: false);
             RagdollSystem.Release(Character);   // whoever is let go while lying in the road is whole again first
             EndClips();

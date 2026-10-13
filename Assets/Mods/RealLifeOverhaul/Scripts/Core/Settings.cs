@@ -14,6 +14,7 @@ namespace RealLifeOverhaul
         public const string CameraDistanceId = "camera_distance";
         public const string CameraFollowId = "camera_follow";
         public const string MapPlacesShownId = "map_places_shown";
+        public const string SpecialNamesId = "special_names";
         public const string DistrictViewId = "district_view";
         public const string MouseLookId = "camera_mouselook";
         public const string MouseSensitivityId = "camera_sensitivity";
@@ -209,6 +210,12 @@ namespace RealLifeOverhaul
         public const string HolidaysId = "travel_holidays";
         public const string TravelExtrasId = "travel_extras";
         public const string CareersId = "careers";
+        public const string CareersStudyId = "careers_study";
+        public const string CareersDegreesId = "careers_degrees";
+        public const string CareersJobsId = "careers_jobs";
+        public const string CareersLifeId = "careers_life";
+        public const string CareersOwnId = "careers_own";
+        public const string CareersFamilyId = "careers_family";
         public const string BusinessId = "business_pressure";
         public const string BusinessFrequencyId = "business_frequency";
         public const string BusinessEasyId = "business_easy";
@@ -229,6 +236,7 @@ namespace RealLifeOverhaul
         public static int CameraFollow = 5;      // 0 = never swing behind the player (only without mouse look)
         public static bool DistrictView = true;     // the district view on the city map: its rows in the map's filter list, the tint and the card (Districts/DistrictView)
         public static bool MapPlacesShown = true;   // the mod's places on the city map: their markers and their rows in the map's filter list (Core/MapPlaces; off hides all of them)
+        public static bool SpecialNames = true;     // the mod's special buildings carry their own names wherever the game names a building (Core/SpecialBuildings; off: the game's own names)
         public static bool MouseLook = true;     // GTA-style: mouse steers the camera, cursor locked
         public static int MouseSensitivity = 6;
         public static bool EnterWithKey = true;  // E/F near a door enters the building
@@ -389,7 +397,7 @@ namespace RealLifeOverhaul
         public static bool LawCustody = true;            // an arrest ends in a cell at the nearest precinct (off: the old time skip where caught)
         public static bool LawArrests = true;            // arrested for a death even when stopped, and for 911 calls about nothing; wanted after an escape
         public static bool LawReputation = true;         // the record and reputation have effects: scrutiny, thanks from passers-by
-        public static bool LawStationFurniture = true;   // ...furnished with the game's own furniture: lockers, desks with computers, a water cooler, plants, a clock, lamps, a toilet in the cell (off: the counter, bench, desks and cell only) (Scripts/Law/StationInterior.Furnish.cs)
+        public static bool LawStationFurniture = true;   // ...furnished with the game's own furniture and the walls and floors of its office design for the unit: waiting chairs and a queue, desks with computers, lockers, a briefing row, a break table, a toilet in the cell, and the officers and visitors who use them (off: the counter, bench, desks and cell only, and the people as before) (Scripts/Law/StationInterior.Furnish.cs, .Rooms.cs, .Design.cs, .Cast.cs)
         public static bool LawStation = true;            // a precinct can be walked into: front desk, waiting area, holding cell (off: the front desk answers at its door)
         public static bool LawMapMarkers = true;         // police stations on the city map and its filter list, and their markers in the street
         public static bool Buses = true;                 // bus stops near the player, buses that call at them, riding one
@@ -441,6 +449,12 @@ namespace RealLifeOverhaul
         public static bool Holidays = true;              // trips bought at the game's travel agencies; burnout after weeks without a break
         public static bool TravelExtras = true;          // suitcase, travel insurance, a companion, trade fair invitations
         public static bool Careers = true;               // employers behind the help-wanted boards: rota, reviews, ranks (Jobs/Career*)
+        public static bool CareersStudy = true;          // the city's courses: short courses and diplomas at the school with a timetable, homework and an exam, and the player's own skills, in the Campus app (off: the game's own courses alone; records are kept) (Scripts/Careers)
+        public static bool CareersDegrees = true;        // the university: degrees at Hudson City University and on the wards, professional certificates studied at home, the student loan, grants and graduation day (off: those courses are not offered; results are kept) (Scripts/Careers)
+        public static bool CareersJobs = true;           // professional jobs: the city's businesses, the rivals', its tech companies and the public sector take the player on by their qualifications and skills, with applications, interviews, offers and working days, in the Career app (off: no vacancies; a job held is kept) (Scripts/Careers)
+        public static bool CareersLife = true;           // working life in a profession: reviews, rises, bonuses and promotions, office matters, overtime and burnout, search firms, redundancy and benefit, share options, the pension and the top seats of a rival's company (off: a job is its days and pay alone) (Scripts/Careers)
+        public static bool CareersFamily = true;         // the family's children at university, tutoring from home, and the player's own training academy as a business type (off: none of them; records are kept) (Scripts/Careers)
+        public static bool CareersOwn = true;            // working for oneself: leaving a profession to found a company or open a practice, former colleagues, restraint clauses and claims, freelance contracts and side work (off: no contracts come; a practice is kept) (Scripts/Careers)
         public static bool Business = true;              // rival moves, inspections, staff and supplier trouble, opportunities for the player's businesses
         public static int BusinessFrequency = 4;         // 1 = something every couple of weeks, 10 = most days (never more than two open at once)
         public static bool BusinessEasy = false;         // "easy business": only the opportunities are left
@@ -483,6 +497,7 @@ namespace RealLifeOverhaul
             CameraDistance = Int(modId, CameraDistanceId, CameraDistance);
             CameraFollow = Int(modId, CameraFollowId, CameraFollow);
             MapPlacesShown = Bool(modId, MapPlacesShownId, MapPlacesShown);
+            SpecialNames = Bool(modId, SpecialNamesId, SpecialNames);
             DistrictView = Bool(modId, DistrictViewId, DistrictView);
             MouseLook = Bool(modId, MouseLookId, MouseLook);
             MouseSensitivity = Int(modId, MouseSensitivityId, MouseSensitivity);
@@ -685,6 +700,12 @@ namespace RealLifeOverhaul
             Holidays = Bool(modId, HolidaysId, Holidays);
             TravelExtras = Bool(modId, TravelExtrasId, TravelExtras);
             Careers = Bool(modId, CareersId, Careers);
+            CareersStudy = Bool(modId, CareersStudyId, CareersStudy);
+            CareersDegrees = Bool(modId, CareersDegreesId, CareersDegrees);
+            CareersJobs = Bool(modId, CareersJobsId, CareersJobs);
+            CareersLife = Bool(modId, CareersLifeId, CareersLife);
+            CareersOwn = Bool(modId, CareersOwnId, CareersOwn);
+            CareersFamily = Bool(modId, CareersFamilyId, CareersFamily);
             Business = Bool(modId, BusinessId, Business);
             BusinessFrequency = Int(modId, BusinessFrequencyId, BusinessFrequency);
             BusinessEasy = Bool(modId, BusinessEasyId, BusinessEasy);

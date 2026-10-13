@@ -47,6 +47,8 @@ namespace RealLifeOverhaul
             Guard.Start(context.Logger);   // the game contract resolved once, the game's build read (Core/Guard)
             Tech.TechTypes.Logger = context.Logger;
             Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // the tech sector's business types, before any save that holds one is loaded (Scripts/Tech/Firms/TechTypes)
+            Careers.AcademyType.Logger = context.Logger;
+            Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // the player's own training academy, a business type, before any save that holds one is loaded (Scripts/Careers/AcademyType)
 
             var options = new ModOptions()
                 .AddHeader("reallife_camera_header")
@@ -88,6 +90,8 @@ namespace RealLifeOverhaul
                     v => Settings.CameraFollow = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.MapPlacesShownId, "reallife_map_places_shown", Settings.MapPlacesShown,
                     v => Settings.MapPlacesShown = v)
+                .AddToggle(Settings.SpecialNamesId, "reallife_special_names", Settings.SpecialNames,
+                    v => { Settings.SpecialNames = v; SpecialNames.Changed(); })
                 .AddSplitter()
                 .AddHeader("reallife_visuals_header")
                 .AddToggle(Settings.VisualsEnabledId, "reallife_visuals_enabled", Settings.VisualsEnabled,
@@ -238,6 +242,31 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_career_dispatch", () => JobDirector.Instance?.TestShift(CareerWork.Dispatch, false))
                 .AddButton("reallife_test_career_lead", () => JobDirector.Instance?.TestShift(CareerWork.Lead, false))
                 .AddButton("reallife_test_career_gig", () => JobDirector.Instance?.TestGig())
+                .AddToggle(Settings.CareersStudyId, "reallife_study_enabled", Settings.CareersStudy,
+                    v => Settings.CareersStudy = v)
+                .AddButton("reallife_study_test_class", () => Careers.CareersDirector.Instance?.TestClass())
+                .AddButton("reallife_study_test_exam", () => Careers.CareersDirector.Instance?.TestExam())
+                .AddButton("reallife_study_test_skills", () => Careers.CareersDirector.Instance?.TestSkills())
+                .AddToggle(Settings.CareersDegreesId, "reallife_degrees_enabled", Settings.CareersDegrees,
+                    v => Settings.CareersDegrees = v)
+                .AddButton("reallife_degrees_test_graduate", () => Careers.CareersDirector.Instance?.TestGraduate())
+                .AddToggle(Settings.CareersFamilyId, "reallife_family_study_enabled", Settings.CareersFamily,
+                    v => Settings.CareersFamily = v)
+                .AddButton("reallife_family_test_tutor", () => Careers.CareersDirector.Instance?.TestTutor())
+                .AddToggle(Settings.CareersJobsId, "reallife_work_enabled", Settings.CareersJobs,
+                    v => Settings.CareersJobs = v)
+                .AddButton("reallife_work_test_offer", () => Careers.CareersDirector.Instance?.TestOffer())
+                .AddButton("reallife_work_test_day", () => Careers.CareersDirector.Instance?.TestWorkDay())
+                .AddButton("reallife_work_test_vacancies", () => Careers.CareersDirector.Instance?.TestVacancies())
+                .AddToggle(Settings.CareersLifeId, "reallife_life_enabled", Settings.CareersLife,
+                    v => Settings.CareersLife = v)
+                .AddButton("reallife_life_test_review", () => Careers.CareersDirector.Instance?.TestReview())
+                .AddButton("reallife_life_test_matter", () => Careers.CareersDirector.Instance?.TestMatter())
+                .AddButton("reallife_life_test_approach", () => Careers.CareersDirector.Instance?.TestApproach())
+                .AddToggle(Settings.CareersOwnId, "reallife_own_enabled", Settings.CareersOwn,
+                    v => Settings.CareersOwn = v)
+                .AddButton("reallife_own_test_contract", () => Careers.CareersDirector.Instance?.TestContract())
+                .AddButton("reallife_own_test_found", () => Careers.CareersDirector.Instance?.TestFound())
                 .AddSplitter()
                 .AddHeader("reallife_business_header")
                 .AddToggle(Settings.BusinessId, "reallife_business_enabled", Settings.Business,
@@ -959,6 +988,7 @@ namespace RealLifeOverhaul
             _running = context.ModId;
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on; warnings and errors always
             Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // (furnished as the game's web development agency once its type is known)
+            Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // (furnished as the game's recruitment office once its type is known)
             Guard.Step("other authors' mods", () => OtherMods.Look(context.Logger));   // other authors' mods this one stands aside for: one walk over the loaded assemblies (Core/OtherMods)
             Guard.Step("GoingPublic", () => GoingPublic.Logger = context.Logger);
             Guard.Step("GoingPublicLink", () => GoingPublicLink.Logger = context.Logger);
@@ -986,6 +1016,7 @@ namespace RealLifeOverhaul
             Guard.Step("Shapes", () => Shapes.Logger = context.Logger);
             Guard.Step("PropLibrary", () => PropLibrary.Logger = context.Logger);
             Guard.Step("MapPlaces", () => MapPlaces.Logger = context.Logger);
+            Guard.Step("SpecialBuildings", () => SpecialBuildings.Logger = context.Logger);
             Guard.Step("MapLinks", () => MapLinks.Logger = context.Logger);
             Guard.Step("Districts.DistrictView", () => Districts.DistrictView.Logger = context.Logger);
             Guard.Step("Districts.DistrictPanel", () => Districts.DistrictPanel.Logger = context.Logger);
@@ -1032,6 +1063,8 @@ namespace RealLifeOverhaul
             Guard.Step("Tech.HiringGame", () => Tech.HiringGame.Logger = context.Logger);
             Guard.Step("Tech.FirmsGame", () => Tech.FirmsGame.Logger = context.Logger);
             Guard.Step("Tech.TechApp", () => Tech.TechApp.Logger = context.Logger);
+            Guard.Step("Careers.CareersDirector", () => Careers.CareersDirector.Logger = context.Logger);
+            Guard.Step("Careers.CampusApp", () => Careers.CampusApp.Logger = context.Logger);
 
             _root = new GameObject(RootName);
             Guard.Step("the guard's notices", () => _root.AddComponent<GuardNotices>());   // what Core/Guard has to tell, once the HUD is there
@@ -1046,6 +1079,7 @@ namespace RealLifeOverhaul
             Guard.Step("ClickWatch", () => ClickWatch.Logger = context.Logger);
             Guard.Step("OverlayGuard", () => OverlayGuard.Logger = context.Logger);
             Guard.Step("OverlayGuard", () => _root.AddComponent<OverlayGuard>());   // the game's card over a thing is put away once the thing is gone (removed while the time machine hid it): two null tests a frame
+            Guard.Step("SpecialNames", () => _root.AddComponent<SpecialNames>());   // the special buildings' own names on the game's card, guiders, headline and map search (Core/SpecialBuildings): one reference comparison a frame while some building is named
             Guard.Step("ClickWatch", () => _root.AddComponent<ClickWatch>());     // with "Developer diagnostics" on, what a left click in the city met: one flag test a frame otherwise
             Guard.Step("ThirdPersonCamera", () => _root.AddComponent<ThirdPersonCamera>());
             Guard.Step("VisualEnhancer", () => _root.AddComponent<VisualEnhancer>());
@@ -1125,6 +1159,7 @@ namespace RealLifeOverhaul
             Guard.Step("Economy.ServicesDirector", () => _root.AddComponent<Economy.ServicesDirector>());   // the cleaning service and selling a business, and the Services app (Scripts/Economy/Services)
             Guard.Step("Economy.CompanyDirector", () => _root.AddComponent<Economy.CompanyDirector>());   // running a business: staff, insurance, marketing, tax and licences, and the Company app (Scripts/Economy/Company)
             Guard.Step("Tech.TechDirector", () => _root.AddComponent<Tech.TechDirector>());   // the professions and the tech sector: roles, skills and the Open Roles app (Scripts/Tech); after the company, so that its day follows the company's
+            Guard.Step("Careers.CareersDirector", () => _root.AddComponent<Careers.CareersDirector>());   // education and careers: the city's courses, the player's skills and the Campus app (Scripts/Careers); after the tech sector, whose roles it reads
             Guard.Step("Economy.EstateDirector", () => Economy.EstateDirector.Logger = context.Logger);
             Guard.Step("Economy.EstateApp", () => Economy.EstateApp.Logger = context.Logger);
             Guard.Step("Economy.EstateDirector", () => _root.AddComponent<Economy.EstateDirector>());   // property: the market, letting, works, selling, an agency, a hotel and car hire, and the Property app (Scripts/Economy/Estate)
@@ -1204,16 +1239,16 @@ namespace RealLifeOverhaul
                 return Task.CompletedTask;   // this copy started nothing
             }
             _running = null;
-            Meta.MetaCity.End();
-            Wiring.Disconnect();   // every bridge back to its stand-alone default
+            Guard.Step("the options page in the city", () => Meta.MetaCity.End());
+            Guard.Step("the wiring", () => Wiring.Disconnect());   // every bridge back to its stand-alone default
             if (_root != null)
             {
                 _root.name = RootName + " (closing)";   // it is gone at the end of the frame: a city loaded before then must not take it for a second copy
                 UnityEngine.Object.Destroy(_root);
                 _root = null;
             }
-            MapPlaces.Shutdown();
-            PropLibrary.Dispose();
+            Guard.Step("the map places", () => MapPlaces.Shutdown());
+            Guard.Step("the modelled props", () => PropLibrary.Dispose());
             return Task.CompletedTask;
         }
     }

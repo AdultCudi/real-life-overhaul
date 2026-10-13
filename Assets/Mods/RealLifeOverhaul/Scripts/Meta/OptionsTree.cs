@@ -277,7 +277,7 @@ namespace RealLifeOverhaul.Meta
                 S("transit").For("transport").Opts("transit_buses").Opt("transit_people", "transit_buses").Opts("transit_subway").Also("bus metro train public transport"),
                 S("taxi").For("taxi").Opts("transit_taxi_call").Also("cab cabs ride"),
                 S("nav").For("navigation").Main("nav_minimap").Opts("nav_rotate", "nav_size", "nav_zoom", "nav_base").FreeOpts("nav_gps").Opt("nav_other_route", "nav_gps")
-                    .FreeOpts("map_places_shown").Also("map route satnav directions destination"),
+                    .FreeOpts("map_places_shown", "special_names").Also("map route satnav directions destination names building buildings"),
                 S("districtview").For("districtview").Opts("district_view")
                     .Also("district districts neighbourhood neighbourhoods neighborhood map layer layers stats statistics wealth rent prices footfall crime standing coverage internet competition council"),
                 S("licences").For("licences").Main("driving_licence").Opts("licence_start_with", "driving_school", "licence_points", "roadside_checks")
@@ -287,6 +287,12 @@ namespace RealLifeOverhaul.Meta
             G("work",
                 S("jobs").For("jobs").Main("jobs").Opts("job_pay").Also("gig gigs shift wage employment"),
                 S("careers").For("careers").Opt("careers", "jobs").Also("employer promotion rank review"),
+                S("study").For("careers_study").Main("careers_study").Also("school course courses class classes diploma education study learn skill skills homework exam timetable"),
+                S("degrees").For("careers_degrees").Opt("careers_degrees", "careers_study").Also("university degree degrees bachelor master mba law nursing certificate certificates exam student loan grant scholarship graduation tuition fees"),
+                S("familystudy").For("careers_family").Opt("careers_family", "careers_study").Also("children child university tutoring tutor academy training school own business staff degree sponsored"),
+                S("projobs").For("careers_jobs").Opt("careers_jobs", "careers_study").Also("profession professional job jobs apply application interview offer salary employer developer lawyer accountant nurse teacher architect engineer rival vacancy vacancies"),
+                S("worklife").For("careers_life").Opt("careers_life", "careers_jobs").Also("review reviews promotion promoted rise raise bonus overtime burnout boss office politics headhunter poached redundancy redundant benefit pension retire retirement options shares conflict interest"),
+                S("ownwork").For("careers_own").Opt("careers_own", "careers_jobs").Also("freelance freelancing contract contracts client clients practice self employed startup found founder spin out colleagues restraint clause non compete side work"),
                 S("planner").For("planner").Main("planner").Opts("planner_reminders").Also("diary calendar notes to do")),
 
             G("money",

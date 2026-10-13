@@ -65,6 +65,14 @@ namespace RealLifeOverhaul.Permadeath
 
             // ---- a life in business
             into.Add(new ObitLine(ObitPart.Label, P + "sec_work"));
+            if (s.Career.Length > 0)
+            {
+                into.Add(new ObitLine(ObitPart.Text, P + "career"));
+            }
+            if (s.Degree.Length > 0)
+            {
+                into.Add(new ObitLine(ObitPart.Text, P + "degree"));
+            }
             if (s.Founded <= 0 && s.Owned <= 0)
             {
                 into.Add(new ObitLine(ObitPart.Text, P + "no_business"));

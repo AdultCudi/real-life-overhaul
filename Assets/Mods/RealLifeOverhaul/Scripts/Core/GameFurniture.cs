@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using BAModAPI;
 using Helpers;
 using UnityEngine;
@@ -70,10 +71,84 @@ namespace RealLifeOverhaul
             }
             GameObject copy = UnityEngine.Object.Instantiate(source, _asleep, false);
             copy.name = "Game " + prefab;
+            int seats = ReadSeats(copy);
             Strip(copy.transform);
+            for (int i = 0; i < seats; i++)
+            {
+                var seat = new GameObject(SeatName).transform;
+                seat.SetParent(copy.transform, false);
+                seat.localPosition = SeatPoses[i].Key;
+                seat.localRotation = SeatPoses[i].Value;
+            }
             copy.SetActive(false);
             copy.transform.SetParent(parent, false);
             return copy.transform;
+        }
+
+        /// <summary>The name of the empty children a copy is given where the game's own item has its sitting positions.</summary>
+        public const string SeatName = "RealLife Seat";
+
+        private static readonly List<KeyValuePair<Vector3, Quaternion>> SeatPoses = new List<KeyValuePair<Vector3, Quaternion>>(8);
+        private static FieldInfo _sittingPositions;
+        private static bool _sittingLooked;
+
+        // The sitting positions of the game's item (its own ItemController.sittingPositions, the places the game seats its
+        // people and its employees on), kept as poses in the copy's own space before the item's script is taken off.
+        private static int ReadSeats(GameObject copy)
+        {
+            SeatPoses.Clear();
+            if (!_sittingLooked)
+            {
+                _sittingLooked = true;
+                _sittingPositions = GameContract.SittingPositions.Field;   // (resolved once: Core/GameContract)
+                if (_sittingPositions == null)
+                {
+                    Logger?.Info("Game furniture: the game's items have no list of sitting positions any more; nobody is seated on a copy.");
+                }
+            }
+            ItemController item = copy.GetComponent<ItemController>();
+            if (_sittingPositions == null || item == null)
+            {
+                return 0;
+            }
+            try
+            {
+                if (_sittingPositions.GetValue(item) is Transform[] places)
+                {
+                    Transform root = copy.transform;
+                    for (int i = 0; i < places.Length && SeatPoses.Count < 8; i++)
+                    {
+                        Transform place = places[i];
+                        if (place != null && place.IsChildOf(root))
+                        {
+                            SeatPoses.Add(new KeyValuePair<Vector3, Quaternion>(root.InverseTransformPoint(place.position), Quaternion.Inverse(root.rotation) * place.rotation));
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                SeatPoses.Clear();
+            }
+            return SeatPoses.Count;
+        }
+
+        /// <summary>The places to sit on a copy (where the game's item seats people), in order; none for a piece that is not a seat.</summary>
+        public static void Seats(Transform piece, List<Transform> into)
+        {
+            into.Clear();
+            if (piece == null)
+            {
+                return;
+            }
+            for (int i = 0; i < piece.childCount; i++)
+            {
+                Transform child = piece.GetChild(i);
+                if (child.name == SeatName)
+                {
+                    into.Add(child);
+                }
+            }
         }
 
         private static void Strip(Transform root)

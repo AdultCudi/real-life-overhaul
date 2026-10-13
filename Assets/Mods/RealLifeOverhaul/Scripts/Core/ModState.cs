@@ -208,8 +208,24 @@ namespace RealLifeOverhaul
             if (!ModifiersReady && data.TryGetValue(KeyModifiers, out string waiting) && !string.IsNullOrEmpty(waiting))
             {
                 // The game's register of mood types could not be reached this session (Core/GameContract, "moods"), so the
-                // moods this save had waiting were not put back: they stay waiting for a version that can, not lost.
-                stash = parts.Count > 0 ? waiting + ";" + stash : waiting;
+                // moods this save had waiting were not put back: they stay waiting for a version that can, not lost (each
+                // type once: the line does not grow from save to save).
+                var types = new HashSet<string>(StringComparer.Ordinal);
+                var kept = new List<string>();
+                foreach (string entry in parts)
+                {
+                    types.Add(entry.Substring(0, Math.Max(0, entry.IndexOf('='))));
+                    kept.Add(entry);
+                }
+                foreach (string entry in waiting.Split(';'))
+                {
+                    int eq = entry.IndexOf('=');
+                    if (eq > 0 && types.Add(entry.Substring(0, eq)))
+                    {
+                        kept.Add(entry);
+                    }
+                }
+                stash = string.Join(";", kept);
             }
             data[KeyModifiers] = stash;
             data[KeySeenEvents] = string.Join(",", SeenEvents);

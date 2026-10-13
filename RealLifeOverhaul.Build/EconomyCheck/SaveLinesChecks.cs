@@ -3,8 +3,8 @@ using RealLifeOverhaul;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Utilities;
 
-// A store's line it cannot read, or of a later version, is kept in the save exactly as it was read (Core/SaveLines),
-// whatever the feature writes there afresh; a line it reads is the feature's to write.
+// A store's line it cannot read is kept in the save exactly as it was read (Core/SaveLines), whatever the feature writes
+// there afresh; a line it reads, of a later version too, is the feature's to write.
 internal static partial class Program
 {
     private static void SaveLinesKept()
@@ -28,14 +28,19 @@ internal static partial class Program
         SaveLines.PutBack(save);
         Check(save[CityStore.Key] == "a line damaged beyond reading" && save[UtilitiesStore.Key] == "nonsense", "save lines: a damaged line is never written over or removed");
 
-        // Another save: a line of a later version is read as far as this version can, and kept as it is.
+        // Another save: a line of a later version is read as far as this version can, said, and the feature's to write.
+        string told = null;
+        SaveLines.Later = (key, versions) => told = key;
         var next = new Dictionary<string, string> { { CityStore.Key, later } };
         CityState read = CityStore.Load(next, CityStore.Key, out version);
-        Check(read != null && version == CityStore.Version + 1 && SaveLines.IsKept(next, CityStore.Key), "save lines: a later version's line is read and kept");
+        Check(read != null && version == CityStore.Version + 1 && !SaveLines.IsKept(next, CityStore.Key) && told == CityStore.Key,
+            "save lines: a later version's line is read and said, not kept (the feature's progress is saved)");
         next[CityStore.Key] = CityStore.Write(read);
-        SaveLines.PutBack(next);
-        Check(next[CityStore.Key] == later, "save lines: a later version's line goes back as it was, not with less in it");
-        Check(!SaveLines.IsKept(save, CityStore.Key), "save lines: a save read later has its own kept lines");
+        Check(SaveLines.PutBack(next) == 0 && next[CityStore.Key] == CityStore.Write(read), "save lines: a later version's line is written by the feature");
+        next["reallife:economy_estate"] = "damaged";
+        SaveLines.Unreadable(next, "reallife:economy_estate", "it could not be read");
+        Check(SaveLines.IsKept(next, "reallife:economy_estate") && !SaveLines.IsKept(save, CityStore.Key), "save lines: a save read later has its own kept lines");
+        SaveLines.Later = null;
 
         // A line this version reads is the feature's.
         var plain = new Dictionary<string, string> { { CityStore.Key, good } };

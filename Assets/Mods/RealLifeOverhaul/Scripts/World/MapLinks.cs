@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using BAModAPI;
 using Extensions;
 using Localizor;
+using Streets;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -18,6 +19,7 @@ namespace RealLifeOverhaul
     ///   Bus stops                    every stop of the bus network (TransitMap.Stops)          by count no
     ///   Hotels                       the eight hotels (Hotels.Sites)                           yes      yes
     ///   Courthouse                   the courthouse (Courthouse.Front)                         yes      yes
+    ///   Places to study              the university, the game's school, the hospitals' wards   yes      yes
     ///   Driving schools              the learner-plate boards (LicenceDesks)                   yes      yes
     ///   Bike hire and two-wheelers   docks, bicycle racks, motorbike stands (BikePlaces.All)   yes      no
     ///   Custom shops                 the repair stations whose bays the custom shop works at   yes      no
@@ -263,17 +265,27 @@ namespace RealLifeOverhaul
                 Stamp = () =>
                 {
                     Utilities.UtilitiesDirector utilities = Utilities.UtilitiesDirector.Instance;
-                    return utilities != null && utilities.Office != null && utilities.Office.Usable ? 2 : 0;
+                    return utilities != null && utilities.Office != null && utilities.Office.Usable ? (SpecialBuildings.Active ? 3 : 2) : 0;
                 },
                 Fill = places =>
                 {
                     Utilities.UtilitiesOffice office = Utilities.UtilitiesDirector.Instance.Office;
-                    places.Add(new MapPlace(office.Front, At(T("reallife_map_row_utilities"), office.Name), office.Building)
+                    string what = SpecialBuildings.NameFor(office.Building) ?? T("reallife_map_row_utilities");   // (its own name, while special buildings carry theirs)
+                    places.Add(new MapPlace(office.Front, At(what, office.Name), office.Building)
                     {
                         CardTypeKey = "reallife_util_card_type",
                         CardStateKey = "reallife_util_card_open"
                     });
                 }
+            });
+            // Careers: where to study. Hudson City University (a building the mod has made its own, with its own card), the game's
+            // school (Manhattan Business School, which keeps its own card) and the hospitals and clinics whose wards teach nursing.
+            _links.Add(new Link
+            {
+                Id = "study", TitleKey = "reallife_map_row_study", Colour = new Color(0.55f, 0.16f, 0.22f), Icon = MapIcon.Star, InStreet = true,
+                Enabled = () => Settings.CareersStudy,
+                Stamp = StudyStamp,
+                Fill = StudyPlaces
             });
             // Licences: the learner-plate boards at the school buildings (found a few buildings a second).
             _links.Add(new Link
@@ -477,6 +489,68 @@ namespace RealLifeOverhaul
                 Fill = places => WhatsOn(places)
             });
         }
+
+        private static long StudyStamp()
+        {
+            Careers.CareersDirector careers = Careers.CareersDirector.Instance;
+            CityManager city = InstanceBehavior<CityManager>.Instance;
+            if (careers == null || city == null || city.cityBuildingControllers == null || city.cityBuildingControllers.Length == 0)
+            {
+                return 0;
+            }
+            Careers.CampusBuilding uni = careers.University;
+            long stamp = 1;
+            if (uni != null && uni.Usable)
+            {
+                stamp = stamp * 1000003L + (uni.Street ?? string.Empty).GetHashCode() * 31L + uni.Number + 7;
+            }
+            else if (Careers.CareersDirector.UniversityOpen && (uni == null || !uni.Searched))
+            {
+                stamp = 2;   // (the university is still being chosen: the schools now, the university when it is there)
+            }
+            return stamp;
+        }
+
+        private static void StudyPlaces(List<MapPlace> places)
+        {
+            // The game's school and the hospitals are found by their kind in the city map's search, under the game's own word.
+            SpecialBuildings.Findable(Careers.CareersGame.SchoolType);
+            SpecialBuildings.Findable(HospitalType);
+            SpecialBuildings.Findable(ClinicType);
+            Careers.CampusBuilding uni = Careers.CareersDirector.Instance.University;
+            if (uni != null && uni.Usable && uni.Building != null)
+            {
+                places.Add(new MapPlace(uni.Front, SpecialBuildings.NameFor(uni.Building) ?? T("reallife_study_campus_university"), uni.Building)
+                {
+                    CardTypeKey = "reallife_campus_card_type"
+                });
+            }
+            CityBuildingController[] all = InstanceBehavior<CityManager>.Instance.cityBuildingControllers;
+            string school = T("reallife_study_campus_school");
+            string ward = T("reallife_map_study_ward");
+            for (int i = 0; i < all.Length; i++)
+            {
+                CityBuildingController b = all[i];
+                string type = b != null && b.building != null && b.building.SpecialService != null ? b.building.SpecialService.businessTypeName : null;
+                bool isSchool = type == Careers.CareersGame.SchoolType;
+                if (!isSchool && type != HospitalType && type != ClinicType)
+                {
+                    continue;
+                }
+                if (!JobSpots.Front(b, out Vector3 door))
+                {
+                    if (b.entranceDoors == null || b.entranceDoors.Length == 0 || b.entranceDoors[0] == null || b.entranceDoors[0].doorTransform == null)
+                    {
+                        continue;
+                    }
+                    door = b.entranceDoors[0].doorTransform.position;
+                }
+                places.Add(new MapPlace(door, isSchool ? school : At(ward, b.building.Address.ToFormattedString())) { Lit = b });
+            }
+        }
+
+        private const string HospitalType = "ba:businesstype_hospital";
+        private const string ClinicType = "ba:businesstype_clinic";
 
         private static void BusStops(List<MapPlace> places)
         {

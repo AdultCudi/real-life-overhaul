@@ -286,6 +286,14 @@ namespace RealLifeOverhaul.Flare
                     Made(FlareRules.Draft(_file, FlareSource.Promotion, day, hour, -1, null, employer, key % 100));
                 }
             }
+            if (FlareBridges.Graduated != null)
+            {
+                string degree = FlareBridges.Graduated();
+                if (!string.IsNullOrEmpty(degree))
+                {
+                    Made(FlareRules.Draft(_file, FlareSource.Graduated, day, hour, -1, null, degree, 0));
+                }
+            }
             if (FlareBridges.Civic != null)
             {
                 string voted, endorsed;

@@ -69,6 +69,8 @@ namespace RealLifeOverhaul
             }
             _started = true;
             SaveLines.Told = Kept;
+            SaveLines.Later = (key, versions) => Logger?.Info("Save: the line '" + key + "' was written by a later version of the mod (" + versions
+                                                             + "); it is read as far as this version can, and what this version does not know of it is not kept.");
             try
             {
                 ContractBook.Resolve(ContractBook.FindLoaded);
@@ -260,6 +262,15 @@ namespace RealLifeOverhaul
             {
                 return null;
             }
+            try
+            {
+                // The class's own FrameGuard is a static of it: made now, if it has not been, so that it is the one found.
+                System.Runtime.CompilerServices.RuntimeHelpers.RunClassConstructor(owner.TypeHandle);
+            }
+            catch (Exception)
+            {
+                // (a class that cannot be initialised has no guard of its own: one is made for it)
+            }
             lock (ByOwner)
             {
                 return ByOwner.TryGetValue(owner, out FeatureGuard guard) ? guard : null;
@@ -383,7 +394,7 @@ namespace RealLifeOverhaul
             { "JobDirector", "jobs" }, { "BusinessDirector", "business" }, { "CivicDirector", "civic" }, { "EventDirector", "events" },
             { "GarageDirector", "garage" }, { "JusticeDirector", "justice" }, { "LicenceDirector", "licences" }, { "SocialDirector", "social" },
             { "TravelDirector", "travel" }, { "TransitDirector", "transport" }, { "CarOwnership", "transport" }, { "TaxiDirector", "taxi" },
-            { "LifeEvents", "life" }, { "MarketDirector", "markets" }, { "LedgerDirector", "ledger" },
+            { "LifeEvents", "life" }, { "MarketDirector", "markets" }, { "LedgerDirector", "ledger" }, { "CareersDirector", "careers_study" },
         };
 
         // The rest by namespace: RealLifeOverhaul.X.
@@ -395,7 +406,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Utilities", "utilities" }, { "RealLifeOverhaul.Flare", "flare" }, { "RealLifeOverhaul.Fame", "standing" },
             { "RealLifeOverhaul.Law", "law" }, { "RealLifeOverhaul.Roommates", "home_roommates" }, { "RealLifeOverhaul.Nav", "navigation" },
             { "RealLifeOverhaul.Events", "events" }, { "RealLifeOverhaul.Permadeath", "permadeath" }, { "RealLifeOverhaul.Planner", "planner" },
-            { "RealLifeOverhaul.Districts", "districtview" },
+            { "RealLifeOverhaul.Districts", "districtview" }, { "RealLifeOverhaul.Careers", "careers_study" },
         };
 
         /// <summary>The feature of Meta/FeatureList a class of the mod belongs to, or null for the mod's own machinery.</summary>

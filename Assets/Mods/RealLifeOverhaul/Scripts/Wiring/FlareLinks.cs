@@ -20,7 +20,7 @@ namespace RealLifeOverhaul
         ///                 like (their traits), how close they are, their job and part of town (Social/SocialState)
         ///   PublicStanding the law's public reputation, which the account's own is pulled towards (Standing.Public)
         ///   Civic         the election on now: has the player voted, endorsed, and for whom (CivicDirector's state)
-        ///   Career        the player's employer and rank (Jobs/CareerState): a rank up is a promotion to post about
+        ///   Career        the player's employer and rank (a profession's, Careers/Work, else Jobs/CareerState): a rank up is a promotion to post about
         ///   drafts        a picture saved (PhotoMode.Saved), an outing gone to its end (SocialLinks.OutingDone), a good
         ///                 deed that counted (Reputation.Deed) and an arrest (News.Reported, PlayerArrested) become
         ///                 drafts in Flare (FlareDirector.Happened)
@@ -91,6 +91,7 @@ namespace RealLifeOverhaul
                 FlareBridges.PublicStanding = () => LawState.Loaded ? Standing.Public : FlareRules.ReputationStart;
                 FlareBridges.Civic = Civic;
                 FlareBridges.Career = Career;
+                FlareBridges.Graduated = () => Careers.CareersDirector.Instance != null ? Careers.CareersDirector.Instance.GraduatedToday() : null;
                 PhotoMode.Saved += PictureSaved;
                 SocialLinks.OutingDone = OutingDone;
                 Reputation.Deed += Deed;
@@ -607,6 +608,21 @@ namespace RealLifeOverhaul
             private static int Career(out string employer)
             {
                 employer = null;
+                try
+                {
+                    // A profession's job (Careers/Work) first: its employer, and a rung up the ladder is a promotion to post about.
+                    Careers.CareersDirector careers = Careers.CareersDirector.Instance;
+                    Careers.WorkFile work = careers != null ? careers.Work : null;
+                    if (work != null && work.Job != null)
+                    {
+                        employer = Careers.CareersText.Employer(work.Job.Post.Employer);
+                        return (ProfessionKeys + work.Job.Post.Prof) * 100 + work.Job.Post.Rank;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareLinks.Career (a profession)", e);
+                }
                 if (!CareerState.Loaded || !CareerState.Employed)
                 {
                     return -1;
@@ -614,6 +630,8 @@ namespace RealLifeOverhaul
                 employer = CareerState.Employer.NameKey.GetLocalization();
                 return CareerState.EmployerIndex * 100 + CareerState.Rank;
             }
+
+            private const int ProfessionKeys = 50;   // a profession's employer numbers start here, after the street careers' employers
 
             // A picture saved in photo mode: a draft, with the friend in it and the business it was taken in.
             private static void PictureSaved(string path, bool selfie, int person)

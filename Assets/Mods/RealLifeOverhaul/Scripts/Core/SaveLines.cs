@@ -6,7 +6,7 @@ namespace RealLifeOverhaul
     /// <summary>
     /// The mod's lines in a save that must come out of it exactly as they went in.
     ///
-    /// A line a feature cannot read (damaged, or written by a newer version of the mod that this one does not know)
+    /// A line a feature cannot read (damaged, or of a newer version of the mod whose format this one cannot read at all)
     /// is reported here by the feature's store as it is read. The feature starts afresh for the session, and every
     /// time the game saves, once all the features have written, the line is put back as it was read
     /// (<see cref="PutBack"/>): it is never written over and never removed, so a later version of the mod finds it
@@ -67,11 +67,15 @@ namespace RealLifeOverhaul
             Told?.Invoke(key, why);
         }
 
+        /// <summary>Said once for a line of a later version than its store knows, which is read as far as it can be (key, versions).</summary>
+        public static Action<string, string> Later;
+
         /// <summary>
-        /// What a store read from its line, checked: nothing read from a line that is there (it could not be read), or a
-        /// line of a later version than the store knows (what it holds of that version would be lost), keeps the line as
-        /// it is. Returns what was read, so that a store can say <c>return SaveLines.Checked(data, Key, Read(text, out
-        /// version), version, Version);</c>.
+        /// What a store read from its line, checked: nothing read from a line that is there (it could not be read) keeps
+        /// the line as it is. A line of a later version than the store knows is read as far as it can be and is the
+        /// feature's to write as before (the stores are made to read a later version's line); it is only said. Returns
+        /// what was read, so that a store can say <c>return SaveLines.Checked(data, Key, Read(text, out version),
+        /// version, Version);</c>.
         /// </summary>
         public static T Checked<T>(Dictionary<string, string> data, string key, T read, int version, int known) where T : class
         {
@@ -81,7 +85,7 @@ namespace RealLifeOverhaul
             }
             else if (version > known)
             {
-                Unreadable(data, key, "it was written by a later version of the mod (line version " + version + ", this one knows " + known + ")");
+                Later?.Invoke(key, "line version " + version + ", this one knows " + known);
             }
             return read;
         }

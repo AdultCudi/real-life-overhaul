@@ -413,6 +413,14 @@ namespace RealLifeOverhaul.Tech
             return CourseGain(scorePoints) * TalentCatalogue.CourseFee * (1000 + TalentCatalogue.Clamp(scorePoints, 0, 100) * 10) / 1000;
         }
 
+        /// <summary>A degree sponsored by the business: the slot is the degree's own (2), and it ends after so many days.</summary>
+        public static void StartDegree(Profile p, int day, int days)
+        {
+            p.CourseSkill = 2;
+            p.CourseEnd = day + Math.Max(1, days);
+            p.Exam = -1;
+        }
+
         public static void StartCourse(Profile p, int slot, int day, int exam)
         {
             p.CourseSkill = slot == 0 ? 0 : 1;
@@ -441,6 +449,16 @@ namespace RealLifeOverhaul.Tech
             if (p.CourseSkill < 0 || day < p.CourseEnd)
             {
                 return 0;
+            }
+            if (p.CourseSkill == 2)
+            {
+                // A sponsored degree: both skills up, and the schooling a step (a bachelor's at the least).
+                p.A = Math.Min(100000, p.A + TalentCatalogue.DegreeGain * 1000);
+                p.B = Math.Min(100000, p.B + TalentCatalogue.DegreeGain * 1000);
+                p.School = Math.Min(TalentCatalogue.Doctorate, Math.Max(TalentCatalogue.Bachelor, p.School + 1));
+                p.Morale = Math.Min(1000, p.Morale + TalentCatalogue.ExamMoraleUp);
+                p.CourseSkill = -1;
+                return 4;
             }
             int result;
             if (p.Exam >= 0)

@@ -245,6 +245,8 @@ namespace RealLifeOverhaul.Tech
         public const int ExamDays = 1;
         public const int ExamPassBase = 55;        // per cent a candidate who just meets the score passes; up 2 a point over it
         public const int ExamMoraleUp = 60;        // thousandths of morale for a pass
+        public const int DegreeDays = 120;         // a degree the business sponsors (study leave), for a year of 365 days
+        public const int DegreeGain = 10;          // points it adds to each of the role's two skills
 
         // ---------------------------------------------------------------- learning on the job
         public const int LearnPerHour = 15;        // thousandths of a point of a specialism an hour of work, at 0; less as the score rises

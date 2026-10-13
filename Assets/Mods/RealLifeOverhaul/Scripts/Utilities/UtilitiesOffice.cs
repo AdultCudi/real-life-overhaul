@@ -89,6 +89,11 @@ namespace RealLifeOverhaul.Utilities
                     Front = door;
                     Usable = true;
                 }
+                if (Usable)
+                {
+                    // Its own name wherever the game names the building (Core/SpecialBuildings).
+                    SpecialBuildings.Set("utilities_office", picked, SpecialKind.Civic, "reallife_util_desk_title", "reallife_util_card_type", () => Settings.Utilities);
+                }
                 _logger?.Info("Utilities: the office is " + Name + " (" + picked.building.totalSqm + " sqm); "
                               + (placed ? "sign up." : Usable ? "no room for the sign: the desk is at the door." : "no pavement at its door: accounts are applied for in the app."));
             }
@@ -125,7 +130,8 @@ namespace RealLifeOverhaul.Utilities
                 CityBuildingController building = buildings[i];
                 if (building == null || building.building == null || building.entranceDoors == null || building.entranceDoors.Length == 0
                     || building.building.locatedInsidePrivateFenceIndex >= 0 || building.building.SpecialService != null
-                    || building.building.BuildingType != "ba:buildingtype_office" || (taken != null && taken(building)))
+                    || building.building.BuildingType != "ba:buildingtype_office" || (taken != null && taken(building))
+                    || SpecialBuildings.Holds(building))   // (one another feature has made its own: the university, if it was chosen while the utilities were off)
                 {
                     continue;
                 }

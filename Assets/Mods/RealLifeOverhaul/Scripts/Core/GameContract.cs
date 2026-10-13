@@ -69,6 +69,11 @@ namespace RealLifeOverhaul
         public static readonly GamePart UiProbe = ContractBook.Part("ui_probe", "diagnostics", "the interface part of the performance probe");
         public static readonly GamePart BodyFade = ContractBook.Part("body_fade", "ragdoll", "showing a body the game faded beside a car");
         public static readonly GamePart BusStops = ContractBook.Part("bus_stops", "transport", "bus stops kept clear of parked cars");
+        public static readonly GamePart SchoolDeskPart = ContractBook.Part("school_desk", "careers_study", "attending a class at a desk of the school");
+        public static readonly GamePart FurnitureSeats = ContractBook.Part("furniture_seats", "law", "people seated on the furniture of the mod's rooms");
+        public static readonly GamePart SpecialHeadline = ContractBook.Part("special_headline", null, "a special building's own name over the game's building panel");
+        public static readonly GamePart SpecialSearch = ContractBook.Part("special_search", null, "the special buildings' own names in the city map's search");
+        public static readonly GamePart RideToggle = ContractBook.Part("ride_toggle", "transport", "the fast forward switch of the bus ride");
 
         // ---------------------------------------------------------------- the pieces
 
@@ -240,6 +245,24 @@ namespace RealLifeOverhaul
         // Core/GameFurniture: a light of the game's pipeline is kept on a copy of furniture. Both found by name.
         public static readonly GameMember HoverEffect = Optional(TypeOf(null, Game, "UI.HoverEffect"));
         public static readonly GameMember HdLight = Optional(TypeOf(null, "Unity.RenderPipelines.HighDefinition.Runtime", "UnityEngine.Rendering.HighDefinition.HDAdditionalLightData"));
+
+        // Careers/SchoolDesk: the game's study activity, and the panel's current activity set to the mod's class
+        public static readonly GameMember StudyDoor = Field(SchoolDeskPart, Game, "PlayerActivity.StudyActivity", "_educationDoor", "EntityController");
+        public static readonly GameMember StudyPlace = Field(SchoolDeskPart, Game, "PlayerActivity.StudyActivity", "_studyDiploma", "StudyDiploma");
+        public static readonly GameMember CurrentActivity = NeedsSetter(Prop(SchoolDeskPart, Game, "PlayerActivity.PlayerActivityUI", "GetCurrentActivity", "IPlayerActivity", false));
+
+        // Core/GameFurniture: where the game seats people on an item
+        public static readonly GameMember SittingPositions = Field(FurnitureSeats, Game, "ItemController", "sittingPositions", "Transform[]");
+
+        // Core/SpecialBuildings: the building panel's headline, and the city map's search
+        public static readonly GameMember BuildingHeadline = Field(SpecialHeadline, Game, "UI.CurrentBuilding.CurrentBuildingUI", "headlineLabel", "TextMeshProUGUI");
+        public static readonly GameMember SearchBuildings = Field(SpecialSearch, Game, "CityMapFilters", "_searchableBuildings", "List<CityBuildingController>");
+        public static readonly GameMember SearchDropdown = Field(SpecialSearch, Game, "CityMapFilters", "searchDropdown", "Dropdown");
+        public static readonly GameMember DropdownOptions = Field(SpecialSearch, Game, "UI.Elements.Dropdown", "_options", "List<String>");
+        public static readonly GameMember SearchPopulate = Method(SpecialSearch, Game, "CityMapFilters", "PopulateSearchDropdown", "Void", "Address");
+
+        // Transport/BusRidePanel: the game's fast forward switch on its activity panel
+        public static readonly GameMember FastForward = Field(RideToggle, Game, "PlayerActivity.PlayerActivityUI", "fastForwardToggle", "Toggle");
 
         // ---------------------------------------------------------------- the game's layers, by name
 
