@@ -63,6 +63,8 @@ namespace RealLifeOverhaul.Economy
 
         // Empire Motors' dealerships of the player's, and what each took on the day being booked: takings, then cars sold.
         private static readonly List<Address> Dealers = new List<Address>(4);
+        private static readonly List<Address> OwnDealers = new List<Address>(4);   // this mod's own dealerships (Economy/Dealer)
+        private static readonly List<BuildingRegistration> OwnRegs = new List<BuildingRegistration>(4);
         private static readonly Dictionary<Address, float[]> DealerDay = new Dictionary<Address, float[]>(4);
         private static GameInstance _deductedSave;   // the save and the day whose dealership costs the tax was last given
         private static int _deductedDay = int.MinValue;
@@ -106,6 +108,13 @@ namespace RealLifeOverhaul.Economy
             Func<string, string> costRow = EconomyBridges.CostRow;
             float unassigned = 0f;
             EmpireMotors.Dealerships(Dealers);
+            Dealership.DealerGame.Dealerships(OwnRegs);
+            OwnDealers.Clear();
+            for (int i = 0; i < OwnRegs.Count; i++)
+            {
+                OwnDealers.Add(OwnRegs[i].Address);
+            }
+            OwnRegs.Clear();
             DealerDay.Clear();
             DealerTakings = DealerCosts = 0f;
             foreach (Transaction t in save.Transactions)
@@ -118,6 +127,12 @@ namespace RealLifeOverhaul.Economy
                 if (dealer != DealerLine.None)
                 {
                     Dealer(t, dealer, byAddress, ref goods);   // (it has none of the game's categories: nothing below would count it)
+                    continue;
+                }
+                DealerLine own = OwnDealers.Count > 0 && !ReferenceEquals(t.address, null) && OwnDealers.Contains(t.address) ? Dealership.DealerLines.Of(t.transactionType) : DealerLine.None;
+                if (own != DealerLine.None)
+                {
+                    Dealer(t, own, byAddress, ref goods);   // (a car sold or bought, booked as the game books one, at the dealership's own address)
                     continue;
                 }
                 float amount = t.amount;
@@ -286,7 +301,8 @@ namespace RealLifeOverhaul.Economy
             int count = here ? 1 : Dealers.Count;
             float amount = here ? t.amount : EmpireMotorsLines.Share(t.amount, count);
             float car = t.transactionType == EmpireMotorsLines.SoldType && t.amount > 0f ? 1f / count : 0f;   // a car sold: a customer served
-            string row = EmpireMotorsLines.RowOf(kind);
+            bool ours = here && OwnDealers.Contains(t.address);
+            string row = ours ? Dealership.DealerLines.RowOf(kind) : EmpireMotorsLines.RowOf(kind);
             for (int i = 0; i < count; i++)
             {
                 Address at = here ? t.address : Dealers[i];

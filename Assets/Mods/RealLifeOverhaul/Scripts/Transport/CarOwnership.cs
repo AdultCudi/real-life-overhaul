@@ -269,7 +269,7 @@ namespace RealLifeOverhaul
                 _body != null ? _body.mass : 1400f);
             _kind = CarCatalogue.For(car.vehicleType.vehicleTypeName, traits).Kind;
             bool owned = car.vehicleInstance != null && save.VehicleInstances != null && save.VehicleInstances.Contains(car.vehicleInstance)
-                         && !EmpireMotors.Stock(car.vehicleInstance);   // a car of an Empire Motors dealership's stock is on its trade plates (Core/EmpireMotors)
+                         && !Dealerships.Stock(car.vehicleInstance);   // a car of a dealership's stock is on its trade plates (Core/Dealerships)
             _record = owned ? CarGarage.For(car.vehicleInstance.id, TimeHelper.CurrentDay) : null;   // a hired or borrowed car has no record
             if (_record != null)
             {
@@ -951,9 +951,9 @@ namespace RealLifeOverhaul
                 {
                     continue;   // a car gets its record the first time it is driven or looked up on the Garage page
                 }
-                if (EmpireMotors.Stock(instance))
+                if (Dealerships.Stock(instance))
                 {
-                    continue;   // a car of an Empire Motors dealership's stock that was driven before this mod knew that mod: no premium, no reminder
+                    continue;   // a car of a dealership's stock that was driven before this mod knew it was: no premium, no reminder (Core/Dealerships)
                 }
                 CarRecord record = CarGarage.For(instance.id, today);
                 string name = instance.vehicleTypeName.GetLocalization();

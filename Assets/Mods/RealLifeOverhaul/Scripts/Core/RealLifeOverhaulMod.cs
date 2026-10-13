@@ -39,6 +39,8 @@ namespace RealLifeOverhaul
             _context = context;
             Keys.Logger = context.Logger;
             Settings.Load(context.ModId);
+            Economy.Dealership.DealerType.Logger = log;
+            Economy.Dealership.DealerType.Register();   // the car dealership's business type, before any save is read (Scripts/Economy/Dealer)
             Meta.Dev.Gated(context);   // (the option has been read now)
 
             var options = new ModOptions()
@@ -737,6 +739,13 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_online_test_return", () => Economy.OnlineDirector.Instance?.TestReturn())
                 .AddButton("reallife_online_test_day", () => Economy.OnlineDirector.Instance?.TestDay())
                 .AddButton("reallife_online_test_back", () => Economy.OnlineDirector.Instance?.TestBack())
+                .AddToggle(Settings.EconomyDealerId, "reallife_dealer_enabled", Settings.EconomyDealer,
+                    v => Settings.EconomyDealer = v)
+                .AddButton("reallife_dealer_test_stock", () => Economy.Dealership.DealerDirector.Instance?.TestStock())
+                .AddButton("reallife_dealer_test_customers", () => Economy.Dealership.DealerDirector.Instance?.TestCustomers())
+                .AddButton("reallife_dealer_test_auction", () => Economy.Dealership.DealerDirector.Instance?.TestAuction())
+                .AddButton("reallife_dealer_test_week", () => Economy.Dealership.DealerDirector.Instance?.TestWeek())
+                .AddButton("reallife_dealer_test_back", () => Economy.Dealership.DealerDirector.Instance?.TestBack())
                 .AddButton("reallife_svc_test_round", () => Economy.ServicesDirector.Instance?.TestRound())
                 .AddButton("reallife_svc_test_contract", () => Economy.ServicesDirector.Instance?.TestContractOffer())
                 .AddButton("reallife_svc_test_week", () => Economy.ServicesDirector.Instance?.TestContractWeek())
@@ -862,6 +871,7 @@ namespace RealLifeOverhaul
             OptionsService.RemoveModOptions(_context.ModId);
             Keys.Dispose();
             EmpireView.Release();   // Empire Motors' view from the driver's seat as it was without this mod (Camera/EmpireView)
+            Economy.Dealership.DealerType.Unregister();   // the dealership's business type off the game's list (Scripts/Economy/Dealer)
             return Task.CompletedTask;
         }
     }
@@ -1038,6 +1048,9 @@ namespace RealLifeOverhaul
             _root.AddComponent<Ledger.LedgerDirector>();   // the City Ledger: the morning paper delivered or bought at a kiosk, and read as a newspaper (Scripts/Ledger)
             Economy.OnlineDirector.Logger = context.Logger;
             Economy.OnlineApp.Logger = context.Logger;
+            Economy.Dealership.DealerDirector.Logger = context.Logger;
+            Economy.Dealership.DealerApp.Logger = context.Logger;
+            _root.AddComponent<Economy.Dealership.DealerDirector>();   // the car dealership: its stock, market, customers, finance and warranties, and the Dealership app (Scripts/Economy/Dealer); before the company, so that its day comes first
             _root.AddComponent<Economy.OnlineDirector>();   // online shops: orders from the whole city, picked from real stock and delivered, and the Web shop app (Scripts/Economy/Online); before the company, so that its day comes first
             Economy.CompanyDirector.Logger = context.Logger;
             Economy.CompanyApp.Logger = context.Logger;

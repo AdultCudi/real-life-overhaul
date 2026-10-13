@@ -511,9 +511,9 @@ namespace RealLifeOverhaul.Economy
             {
                 VehicleInstance v = vehicles[i];
                 VehicleType type = v != null && !_owned.Contains(v.id) && !v.zeroSellingPrice ? v.VehicleType : null;
-                if (type == null || !type.IsMotorVehicle || EmpireMotors.Stock(v))
+                if (type == null || !type.IsMotorVehicle || Dealerships.Stock(v))
                 {
-                    continue;   // (a hand truck, a vehicle that is lent and not the player's to sell, or a car an Empire Motors dealership bought for its stock: Core/EmpireMotors)
+                    continue;   // (a hand truck, a vehicle that is lent and not the player's to sell, or a car a dealership bought for its stock: Core/Dealerships)
                 }
                 Transaction bought = Books.Newest(VehicleBought, "vehicleName", v.vehicleTypeName, r.ApprovedDay);
                 int price = bought != null ? Mathf.RoundToInt(-bought.amount) : Mathf.RoundToInt(type.price);
