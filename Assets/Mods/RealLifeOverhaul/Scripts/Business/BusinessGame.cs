@@ -190,12 +190,16 @@ namespace RealLifeOverhaul
             return Promoted(reg) && !reg.temporarilyClosed && BusinessState.EffectAt(Place(reg)) < 0;
         }
 
-        /// <summary>True if the game itself recomputes this business's promotion figure (BusinessHelper.UpdatePromotion's own test).</summary>
+        /// <summary>
+        /// True if the game itself recomputes this business's promotion figure (BusinessHelper.UpdatePromotion's own test)
+        /// and its customers follow it. An Empire Motors dealership's do not: that mod makes up its customers itself
+        /// (Core/EmpireMotors), so a campaign or a change of footfall would cost or say something and change nothing.
+        /// </summary>
         public static bool Promoted(BuildingRegistration reg)
         {
             try
             {
-                if (reg == null || reg.promotion == null || !reg.HasValidAddress)
+                if (reg == null || reg.promotion == null || !reg.HasValidAddress || EmpireMotors.IsDealership(reg))
                 {
                     return false;
                 }

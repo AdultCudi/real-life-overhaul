@@ -87,6 +87,10 @@ namespace RealLifeOverhaul
                 case "mersaididash": return new CarSpec(CarKind.Van, 14.5f, 150f);            // modern panel van
                 case "deliverytruck": return new CarSpec(CarKind.Truck, 18.0f, 135f);         // box truck
                 case "freighttruckt1": return new CarSpec(CarKind.Truck, 20.0f, 130f);        // heavy truck
+                // Two cars of other mods', sold at the game's dealership through Empire Motors' desk (Core/EmpireMotors), by
+                // their whole names. Their own figures are in their asset files, which this mod cannot read beforehand.
+                case "empiremustanggt:vehicletype_mustanggt": return new CarSpec(CarKind.Sports, 4.5f, 250f);   // muscle coupe of today
+                case "empirebmwg82:vehicletype_empirebmwg82": return new CarSpec(CarKind.Sports, 4.0f, 250f);   // sports coupe, limited to 250
                 case "electricscooter":
                 case "handtruck":
                 case "flatbed": return new CarSpec(CarKind.Untouched, 0f, 0f);

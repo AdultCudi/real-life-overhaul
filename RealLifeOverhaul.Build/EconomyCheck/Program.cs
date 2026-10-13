@@ -104,6 +104,7 @@ internal static partial class Program
         Utilities();
         Internet();
         Broadband();
+        Empire();
         Markets();
         Ledger();
         Newsstand();

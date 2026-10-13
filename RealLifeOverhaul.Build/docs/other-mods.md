@@ -42,6 +42,8 @@ name) and which holds the named type. `OtherMods.Look(logger)` does the walk and
 | Going Public: Extras (3794606607) | `BampExtras` | `BampExtras.ModEntry` | Location and property sharing in Going Public's own hub and on the city map (its own markers; its own message type). | Nothing: logged only. |
 | Going Public Expansion-Friend Trade (3798559131) | `ForeignTradeMultiplayer` | `ForeignTradeMultiplayer.InitEntry` | Trades between players through the ForeignTrade mod's money and stock, its own phone button (a copy of the game's), `ftmp:` transactions and save keys. | Nothing: logged only. Its button is one more child of the phone's grid, which the pages take in. |
 | Going Public: Français (3794605892) | `BampFrancais` | `BampFrancais.ModEntry` | Rewrites Going Public's own English strings (a transpiler on its methods only). | Nothing: logged only. |
+| Empire Motors (dealership, Workshop 3787690782) | `EmpireMotors` | `EmpireMotors.Core.EmpireMotorsMod` | A car dealership as a business type of its own: stock bought at wholesale, used and at auction, parked as the player's vehicles at the dealership; sold to customers it makes up, with financing, trade-ins and warranties; its own app in the full menu's top bar; a talking desk at the game's own dealership that sells its car add-ons; V in a car for a view from the driver's seat; F6, F7, F9, F12. No Harmony. | `Core/EmpireMotors`: see "Empire Motors" below. |
+| Empire Motors: Mustang GT, Empire Motors: BMW G82 (its car add-ons) | `EmpireMustangGT`, `empirebmwg82` | `EmpireMustangGTMod`, `EmpireBMWG82Mod` | Each registers one car (`ModdingAPI.RegisterModVehicleType`) with its lights and a dashboard; the BMW puts itself on Empire Motors' desk. No Harmony. | Logged only; car tuning has a row for each car by its type name (`Driving/CarCatalogue`). |
 
 ## How a foreign camera is seen without a name (`Camera/CameraYield`)
 
@@ -184,6 +186,88 @@ messages, every part's snapshot and update and the market's lockstep. Inferred (
 prefix on Going Public's receivers takes this mod's frames on both transports as it does the add-ons', that a guest's
 coordinated save runs this mod's save handlers on the guest's machine (Going Public calls the game's own
 `SaveGameManager.Save` there), and that the host's frontier reaches a guest within the update's ten seconds.
+
+## Empire Motors (`Core/EmpireMotors`)
+
+Read in its decompiled code (`evidence/othermods/EmpireMotors`, version 1.20, and its car add-ons `EmpireMustangGT` and
+`empirebmwg82` beside it), never run. Item 3 of the roadmap: this mod sits beside it and connects where it can, and builds
+no dealership of its own.
+
+What it does:
+
+- **The business.** `ModdingAPI.RegisterModBusinessType` with `empiremotors:businesstype_cardealership`: a retail building,
+  no simulator, no customers of the game's (`spawnCustomers` false, no demand sets, no products), staff of customer service
+  and cleaning, tagged `allowplayercreation` and `generatesrevenue`. So `BusinessGame.IsBusiness` and `Books.IsBusiness`
+  are true for it, and every feature that lists the player's businesses has it (utilities: a retail place; the company:
+  well-off customers, as the game's dealership; investors: industry). The game still gives it an order book's day each
+  night, empty.
+- **The stock.** Bought from wholesale listings, used offers (an inspection fee first) and live auctions against made-up
+  bidders, and from customers' trade-ins. Each car is a `VehicleInstance` added to `GameInstance.VehicleInstances` with
+  `SetStreetData` to the dealership, made in the showroom at a display point, and kept in its own records by the vehicle's
+  id. Reconditioning, inspections, servicing and ageing are its own figures; it prices from `VehicleType.price`.
+- **Selling.** A scheduler of its own makes up customers by the hour, more with customer service staff on shift at the
+  counter (`EmployeeInstance.IsWorking`); offers and counter-offers, an abstract test drive, trade-ins, its own financing
+  (a deposit now, weekly instalments it collects as receivables) and warranty packages (a premium, then claims by day). A
+  car sold is paid as `ba:transaction_itemsold` with the dealership's address (with no address and no data when there is a
+  trade-in) and taken out of the save.
+- **Money.** `GameManager.ChangeMoneySafe` under types of its own, `empiremotors:transaction_...` (purchases, inspections,
+  reconditioning, service, supplies, campaigns, a specialism, finance payments, warranty premiums and claims, and a refund of
+  each), with no address, none of the game's categories and none marked deductible. So the game's statement and tax count
+  nothing it takes or spends.
+- **Saves.** One key of the save's `modData`, `empiremotors.save`: Odin's JSON (version 22) of its records, deals,
+  receivables, warranties, auctions, campaigns, progression, supply orders and settings.
+- **The interface.** A button `EmpireMotors_Btn` copied from the game's template into the full menu's top bar, after
+  Market Insider (`SetSiblingIndex`), and a page under `AppsContainer`; opening it switches every other page there off, as
+  the game and this mod do for theirs. Its own canvas, an auction tracker on the HUD, the game's own notifications. A
+  postfix on `BizManBusiness.SetAddress` is in its code but never applied.
+- **The game's own dealership.** Its office desks get a "talk" call to action (an entry in `CtaManager`'s list and a dialog
+  in `CallDialogFactory`'s), which opens the game's own vehicle contract with the add-on cars in its list. The purchase is
+  the game's (`ContractVehicleForSale`, `ba:transaction_vehiclebought`).
+- **The camera and keys.** In any car the player drives, V switches to `indoorVehicleCamera` through `CameraHelper.SetCamera`
+  and writes the main camera's place in `LateUpdate`, with Q and E to look aside. F6 (parked showroom cars' physics), F7
+  without Shift (the showroom's cars on and off), F9 (alone, with Shift, with Ctrl and Shift: a car added to the stock of
+  the dealership one stands in, one taken out, the stock reset) and F12 (a sale now) act always, whatever else is on the key.
+- **The add-ons.** Each loads a `VehicleType` and its prefab from its own bundle and registers it; the BMW also puts itself
+  on the desk's list (the Mustang is on it by name already). Their lights and the BMW's dashboard read the car's speed. Their
+  figures are in their bundles, not in their code.
+
+Where the two meet, and what this mod does:
+
+| Meeting | Before | Now |
+| --- | --- | --- |
+| A car of the stock and this mod's ownership | taken for the player's own: on the Garage page, a record of wear, registration and insurance when driven, then a reminder a week to register it | `EmpireMotors.Stock` (parked at a dealership, or its id among the saved records): no Garage page, no record, no reminder, as a hire car (`Transport/CarPhone`, `CarOwnership`). Still tuned by its kind |
+| Car finance's approval | stock bought while an approval stood was taken for the financed purchase | stock is skipped (`CreditDesk.Purchases`); the player's own purchase at the game's dealership, Empire Motors' desk included, is the game's own and is financed as ever |
+| Car hire, custom shop, first licences | stock could go on hire (it would leave the showroom and its records) and into the custom shop, and counted as a car owned | refused with a reason of its own (`EstateGame.MayHire`, `GarageShop.Refusal`); not counted (`LicenceDirector.FirstRun`) |
+| Selling a dealership | refused for "a vehicle at the building", which the player cannot move | refused until Empire Motors has sold the stock (`SaleBlock.Stock`); the stock and its records cannot go with the sale |
+| The books | a dealership took nothing and paid wages and rent: business pressure's fees at their floor, the company, brands, a sale's value, business loans, the takings a debt is paid from, Flare and the investors saw a loss every day | `GameBooks.Refresh` counts its takings (car sales, finance payments, premiums, less refunds) and its costs (two rows among the goods); what has no address is shared evenly between the player's dealerships; its order book's day gets the takings and a customer a car |
+| The game's tax | counted nothing of it | counts the takings in the statement, and `GameBooks.Deduct` gives it the day's costs to deduct as a shop's goods are, so the margin is taxed. Needs Money and credit on, as the mod's own lines do |
+| V in a car | this mod's camera key, also V, switched this mod's camera for the whole game on each press | while the key is V with no modifier, it is left to Empire Motors in a car, with a notice once (`EmpireMotors.TakesCameraKey`); the chase camera stands aside for the view by `CameraYield`'s second finding (the camera moved by another hand) and names Empire Motors |
+| F6, F7, F9, F12 | this mod's diagnostic keys F7 and F9 are the same | said beside the key on the options page (`EmpireMotors.KeyUse`); the player moves this mod's key |
+| The add-on cars | placed by `CarCatalogue.Guess` from a max speed this mod cannot see beforehand | a row each: Sports, 4.5 s and 4.0 s, 250 km/h |
+| The full menu's top bar | its button is one more child of the row | the pages take it in (`PhoneGridPager`, hardened in 0.3.5); it pages nothing and adds no component, so the pager does not step aside |
+| Its app page | switches every other page off | the same rule as the game's and this mod's own: the last one opened shows |
+| Utilities, the company, the rota | a retail business; its staff are customer service and cleaning | works as it is: the rota covers every station for the hours kept ("the game sends no customers here"), which suits a dealership whose sales need the counter staffed |
+| Brands and franchises | a brand of the player's dealerships; a franchise of the type | works: a franchised dealership opens in the books only (the game has no business of the type for a rival) |
+| Campaigns and footfall | the Company app sold campaigns for a dealership, and business pressure, the city and brands wrote its promotion figure, which its customers do not follow (Empire Motors makes them up; it reads only the opening hours and a temporary closure) | `BusinessGame.Promoted` is false for a dealership: no campaign can be booked (the app says Empire Motors brings its customers itself), no footfall is written; closures, strikes and opening hours still reach it |
+| Online shops | | nothing to sell: it has no products |
+| Going Public | | `GoingPublic.Mine` keeps another player's dealership out, as every other business |
+| Saves and removal | its key is its own | nothing of this mod's touches `empiremotors.save` or its cars; this mod's records of a car of the stock are dropped when it is sold (`CarGarage.Prune`) |
+
+Left, and why: its own financing and warranties stay its own (they are the dealership's business with its customers, not
+the player's credit); the custom shop has no body fit for the add-on cars (their meshes are in their bundles); a car of the
+stock that was driven off the lot is still the dealership's only while its id is in that mod's records; what it books with
+no address is shared evenly, as nothing says which dealership it was for; the day's costs are deducted the morning after,
+so those of a tax year's last day go to the next year, as the mod's own late lines do.
+
+Diagnostics: `Other mods: 'Empire Motors' is also switched on (assembly EmpireMotors). ...`, with Developer diagnostics
+`Economy check (Empire Motors): day d the dealerships took ... and spent ... in the game's statements; ... given to the
+game's tax to deduct: PASS.` and `Camera: another mod drives the camera (Empire Motors, by moving the game's camera
+itself). ...`. EconomyCheck (`EmpireChecks.cs`) checks which transactions are takings and which costs, the share, a car of
+the stock in the saved records and a day's deduction; NavCheck the three assemblies' names.
+
+Proven (read): everything above about Empire Motors. Inferred (not seen with it installed): that its customers' sales
+reach the statement on the morning after as the mod's own takings do, that a car of the stock driven off the lot keeps its
+street data, and how its button and the pages sit together in the top bar.
 
 ## Adding the next one
 

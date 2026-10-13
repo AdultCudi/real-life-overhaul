@@ -137,7 +137,7 @@ namespace RealLifeOverhaul.Economy.Brands
             {
                 if (!_director.Promoted(shop))
                 {
-                    box.Line(BrandsText.T("reallife_brand_member_no_figure"));
+                    box.Line(BrandsText.T(EmpireMotors.IsDealership(shop.Reg) ? "reallife_brand_member_empire" : "reallife_brand_member_no_figure"));   // (Core/EmpireMotors)
                 }
                 else
                 {

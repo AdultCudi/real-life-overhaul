@@ -97,7 +97,7 @@ namespace RealLifeOverhaul.Economy
             }
             if (!_director.Promoted(shop))
             {
-                box.Line(CompanyText.T("reallife_co_push_no_figure"));
+                box.Line(CompanyText.T(EmpireMotors.IsDealership(shop.Reg) ? "reallife_co_push_empire" : "reallife_co_push_no_figure"));   // (Core/EmpireMotors: its customers are that mod's)
                 BackButton(box);
                 return;
             }

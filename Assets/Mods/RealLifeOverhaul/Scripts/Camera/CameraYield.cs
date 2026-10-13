@@ -144,6 +144,13 @@ namespace RealLifeOverhaul
             return made == null || !made.name.StartsWith(OwnPrefix, StringComparison.Ordinal);
         }
 
+        // The player drives: a camera taken now with no camera mod switched on is Empire Motors' view from the driver's seat.
+        private static bool Driving()
+        {
+            GameManager gm = InstanceBehavior<GameManager>.Instance;
+            return gm != null && gm.selectedVehicle != null && gm.selectedVehicle.controlledByPlayer;
+        }
+
         // The frame in which the camera is given up, or taken back.
         private static void Changed()
         {
@@ -151,7 +158,7 @@ namespace RealLifeOverhaul
             {
                 if (_watch.StoodDown)
                 {
-                    OtherMod known = OtherMods.Of(OtherModKind.Camera);
+                    OtherMod known = OtherMods.Of(OtherModKind.Camera) ?? (EmpireMotors.On && Driving() ? OtherMods.EmpireMotors : null);
                     _holder = _pretend ? TestName.GetLocalization() : known != null ? known.Name : Unnamed.GetLocalization();
                     _confirm = true;
                     Logger?.Warn("Camera: another mod drives the camera (" + _holder + (_judgedForeign && _judged != null ? ", through its own camera '" + _judged.Name + "'" : _pretend ? string.Empty : ", by moving the game's camera itself")
