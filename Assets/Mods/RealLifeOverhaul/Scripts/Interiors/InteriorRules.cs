@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Interiors
 {
@@ -28,6 +29,29 @@ namespace RealLifeOverhaul.Interiors
         Empty = 2,       // nothing to sell: no product on its shelves, no service, no entrance
         NoStaff = 3,     // open, and nobody on shift at a station that needs somebody
         Prices = 4       // every one of its last customers turned its prices down
+    }
+
+    /// <summary>One kind of placed item that counts: its name, its category, how many are placed and the points they make (tenths, before the category's cap).</summary>
+    public struct InteriorItem
+    {
+        public string Name;
+        public DecorCategory Category;
+        public int Copies;
+        public int Points;
+    }
+
+    /// <summary>
+    /// Today's customers of a business by where they came from, as the game counts them (InteriorRules.Split): its own
+    /// street traffic, its marketing, its interior and decor, the rest of this mod, and another author's mod.
+    /// </summary>
+    public struct CustomerSplit
+    {
+        public int Total;       // every customer of today's list, those served and those to come
+        public int Game;        // the street's traffic and the game's own draw
+        public int Marketing;   // the business's marketing
+        public int Interiors;   // its interior and decor (an office's clients booked for it included); less than nothing when it falls short
+        public int Others;      // the rest of this mod: the city's economy, the company, brands, Flare, Standing and events
+        public int OtherMod;    // Meaningful Ambience's, on top of the game's draw
     }
 
     /// <summary>What sort of place the business is, for what its interior can do.</summary>
@@ -76,6 +100,7 @@ namespace RealLifeOverhaul.Interiors
         public bool Fitting;                    // still in its first days: the district does not hold it to its standard yet
         public int StandardFrom;                // ...and the day from which it does
         public SaleStop Stop;                   // why it sells nothing just now (looked at once a game hour), or None
+        public readonly List<InteriorItem> Placed = new List<InteriorItem>(16);   // every kind of placed item that counts
 
         // worked out
         public int Target;                      // the points a place of this size needs for full marks, tenths
@@ -538,6 +563,55 @@ namespace RealLifeOverhaul.Interiors
                 return SaleStop.NoStaff;
             }
             return recent >= RecentOrders && refused >= recent ? SaleStop.Prices : SaleStop.None;
+        }
+
+        // ---------------------------------------------------------------- where today's customers came from
+
+        /// <summary>
+        /// Today's customers by where they came from. The game draws a business's customers by its promotion figure: a
+        /// base, and three quarters of the figure in hundredths (CustomerEntriesCalculator.GetPromotionMultiplier). The
+        /// figure is its street's traffic and its marketing (BusinessHelper.UpdatePromotion: <paramref name="own"/>), and
+        /// this mod writes it again with its parts on top (<paramref name="written"/>): the interior's per cent, and the
+        /// rest's (an issue's change and the ambient sum). <paramref name="drawn"/> customers of the game's own draw are
+        /// shared out by those parts of the multiplier (a part can be less than nothing), what the written figure lost at
+        /// its top of 100 shared by the parts' sizes; <paramref name="booked"/> (an office's clients booked by the
+        /// interior) and <paramref name="otherMod"/> (another mod's, over the game's draw) are added as they are. The
+        /// shares add up to the total exactly.
+        /// </summary>
+        public static CustomerSplit Split(int drawn, int booked, int otherMod, int baseMille, int traffic, int own, int written, int interiorPercent, int otherPercent)
+        {
+            var split = new CustomerSplit { Total = Math.Max(0, drawn) + Math.Max(0, booked) + Math.Max(0, otherMod), OtherMod = Math.Max(0, otherMod) };
+            drawn = Math.Max(0, drawn);
+            own = Clamp(own, 0, 100);
+            written = Clamp(written, 0, 100);
+            long baseTen = 10L * Math.Max(0, baseMille);
+            long game = baseTen + 75L * Clamp(traffic, 0, own);
+            long ownM = baseTen + 75L * own;
+            long all = baseTen + 75L * written;
+            long change = all - ownM;
+            long interiorRaw = ownM * interiorPercent / 100, otherRaw = ownM * otherPercent / 100;
+            long interior = interiorRaw + otherRaw != 0 && Math.Sign(interiorRaw + otherRaw) == Math.Sign(change)
+                ? change * interiorRaw / (interiorRaw + otherRaw) : interiorRaw;
+            long others = change - interior;
+            long marketing = ownM - game;
+            if (all <= 0 || drawn == 0)
+            {
+                split.Game = drawn;
+            }
+            else
+            {
+                split.Marketing = (int)Rounded(drawn * marketing, all);
+                split.Interiors = (int)Rounded(drawn * interior, all);
+                split.Others = (int)Rounded(drawn * others, all);
+                split.Game = drawn - split.Marketing - split.Interiors - split.Others;
+            }
+            split.Interiors += Math.Max(0, booked);
+            return split;
+        }
+
+        private static long Rounded(long value, long by)
+        {
+            return value >= 0 ? (value + by / 2) / by : -((-value + by / 2) / by);
         }
 
         // ---------------------------------------------------------------- an office's clients

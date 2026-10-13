@@ -333,7 +333,9 @@ Assets/Mods/RealLifeOverhaul/      the mod (single source of truth)
       InteriorGame       everything it touches of the game: the interior score, the placed items sorted by the game's own tags and
                          types, the floor area, the district's minimum, the basket, a refresh's charge; InteriorBridges, what it asks of the others
       InteriorDirector   the one component: the morning's round, the hourly basket, footfall written, complaints and news, the test buttons
-      InteriorTab        the Interior tab in BizMan: a copy of the game's own tab button and two of MyEmployees' white boxes
+      InteriorTab        the Interior tab in BizMan: a copy of the game's own tab button and two of BizMan's scroll views with
+                         MyEmployees' lines: the scores, and four pages (what it does, the items that count, today's customers
+                         by where they came from, the game's own rules for the business)
       InteriorText, InteriorGuide   its words, its options block and its three feature entries (Guide figures from the rules)
 CharacterAssets/                   asset pipeline for the new looks (outside Assets, Unity ignores it)
   scripts/                         Blender scripts: make the meshes and textures, write them to build/

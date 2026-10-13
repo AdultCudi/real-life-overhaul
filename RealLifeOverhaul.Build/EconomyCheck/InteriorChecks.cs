@@ -28,6 +28,7 @@ internal static partial class Program
         InteriorStrengths();
         InteriorSelling();
         InteriorOfficeClients();
+        InteriorCustomerSplit();
         InteriorWork();
         InteriorSave();
         InteriorElsewhere();
@@ -329,6 +330,54 @@ internal static partial class Program
             InteriorRules.WearDefault, true, true, true, false, true));
         Check(office.OfficeBoost == InteriorRules.OfficeBoost(office.Overall, 5) && office.OfficeBoost > 0 && shop.OfficeBoost == 0 && idle.OfficeBoost == 0 && ambience.OfficeBoost == 0,
             "interiors: only an office is booked more clients; not while it sells nothing, and not while Meaningful Ambience is on");
+    }
+
+    private static bool SplitAdds(CustomerSplit s)
+    {
+        return s.Game + s.Marketing + s.Interiors + s.Others + s.OtherMod == s.Total;
+    }
+
+    private static void InteriorCustomerSplit()
+    {
+        const int b = 250;   // the game's base multiplier, thousandths
+        CustomerSplit plain = InteriorRules.Split(100, 0, 0, b, 40, 40, 40, 0, 0);
+        Check(plain.Total == 100 && plain.Game == 100 && plain.Marketing == 0 && plain.Interiors == 0 && plain.Others == 0 && plain.OtherMod == 0,
+            "interiors: with no marketing and nothing of the mod's, every customer is the street's");
+        CustomerSplit marketing = InteriorRules.Split(100, 0, 0, b, 40, 60, 60, 0, 0);
+        Check(marketing.Marketing == 21 && marketing.Game == 79 && SplitAdds(marketing), "interiors: marketing's customers are its part of the game's multiplier (" + marketing.Marketing + ")");
+        int written = BusinessCatalogue.Written(40, 0, 0, 10, b / 1000f);
+        CustomerSplit fine = InteriorRules.Split(110, 0, 0, b, 40, 40, written, 10, 0);
+        Check(fine.Interiors == 10 && fine.Game == 100 && SplitAdds(fine), "interiors: 10% more for the interior shows as its tenth of the old customers (" + fine.Interiors + " of " + fine.Total + ")");
+        int shortWritten = BusinessCatalogue.Written(40, 0, 0, -8, b / 1000f);
+        CustomerSplit shabby = InteriorRules.Split(92, 0, 0, b, 40, 40, shortWritten, -8, 0);
+        Check(shabby.Interiors < 0 && shabby.Game > shabby.Total && SplitAdds(shabby), "interiors: a shortfall shows as customers the interior kept away (" + shabby.Interiors + ")");
+        int even = BusinessCatalogue.Written(40, 0, -8, 8, b / 1000f);
+        CustomerSplit cancel = InteriorRules.Split(100, 0, 0, b, 40, 40, even, 8, -8);
+        Check(cancel.Interiors > 0 && cancel.Others < 0 && Math.Abs(cancel.Interiors + cancel.Others) <= 1 && SplitAdds(cancel),
+            "interiors: the interior's gain and the rest of the mod's loss each show, though they cancel (" + cancel.Interiors + ", " + cancel.Others + ")");
+        CustomerSplit capped = InteriorRules.Split(150, 0, 0, b, 60, 95, 100, 24, 15);
+        Check(capped.Interiors > 0 && capped.Others > 0 && capped.Interiors > capped.Others && SplitAdds(capped),
+            "interiors: at the figure's top of 100 what is left is shared by the parts' sizes (" + capped.Interiors + ", " + capped.Others + ")");
+        CustomerSplit booked = InteriorRules.Split(20, 3, 0, b, 40, 40, 40, 0, 0);
+        Check(booked.Total == 23 && booked.Interiors == 3 && booked.Game == 20 && SplitAdds(booked), "interiors: an office's booked clients are the interior's");
+        CustomerSplit ambience = InteriorRules.Split(50, 0, 7, b, 40, 40, 40, 0, 0);
+        Check(ambience.Total == 57 && ambience.OtherMod == 7 && SplitAdds(ambience), "interiors: Meaningful Ambience's customers over the game's draw are its own");
+        CustomerSplit nothing = InteriorRules.Split(12, 0, 0, 0, 0, 0, 0, 0, 0);
+        Check(nothing.Game == 12 && SplitAdds(nothing) && InteriorRules.Split(0, 0, 0, b, 40, 60, 70, 10, 5).Total == 0, "interiors: with no multiplier to share by, or nobody, nothing is divided by nothing");
+        bool always = true;
+        for (int own = 0; own <= 100; own += 10)
+        {
+            for (int interior = -12; interior <= 24; interior += 6)
+            {
+                for (int other = -25; other <= 15; other += 10)
+                {
+                    int w = BusinessCatalogue.Written(own, 0, other, interior, b / 1000f);
+                    CustomerSplit s = InteriorRules.Split(137, 2, 5, b, own / 2, own, w, interior, other);
+                    always &= SplitAdds(s) && s.Total == 144;
+                }
+            }
+        }
+        Check(always, "interiors: the shares always add up to today's customers");
     }
 
     private static InteriorShop InteriorSample(InteriorKind kind)
