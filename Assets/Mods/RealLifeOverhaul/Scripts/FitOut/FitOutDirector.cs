@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using BAModAPI;
+using Streets;
 using RealLifeOverhaul.Tech;
 using UI.Load;
 using UnityEngine;
@@ -17,17 +18,19 @@ namespace RealLifeOverhaul.FitOut
     ///
     /// Only a building the mod names as its own (Core/SpecialBuildings), with its feature on, and standing empty: nobody
     /// rents or owns it, not the player, not another player in a Going Public session, not a rival, and nothing of the
-    /// game's is in it. The other features' own scenes in such a building come first: the room is measured a moment
-    /// after the player is in (on the walkable floor, which what they stand is cut out of, and round anything of the
-    /// game's), and nothing of this is put where they are.
+    /// game's is in it. What the other features stand in such a building is kept: the room is measured once the game
+    /// has put it together, on the walkable floor (which what they stand is cut out of) and round anything of the
+    /// game's, and nothing of this is put where they are.
     ///
     /// The cost: no Update. A one-second timer on the real clock (which building the player is in; the people of a
-    /// floor that stands); the building itself is FitView's, a few milliseconds a frame while it goes up. Nothing is saved.
+    /// floor that stands), and on going into a building a few frames' look at one flag; the room is measured only behind
+    /// the game's black screen at the door; the building itself is FitView's, a few milliseconds a frame while it goes up.
+    /// Nothing is saved.
     /// </summary>
     public sealed class FitOutDirector : MonoBehaviour
     {
-        private const float Settle = 1.5f;          // seconds inside before a named building's floor is measured: its own scenes first
         private const int TriesMost = 3;
+        private static readonly int HotEntered = HotSpots.Slot("FitOut: FitOutDirector.Entered");
 
         public static IModLogger Logger;
 
@@ -36,9 +39,10 @@ namespace RealLifeOverhaul.FitOut
 
         private readonly FitView.Request _request = new FitView.Request();
         private FitView _view;
+        private Action<Address> _onEnter, _enterSeen;
         private string _inside;
-        private float _since;
         private int _tries;
+        private bool _soon;
         private bool _broken;
 
         private void Awake()
@@ -46,11 +50,13 @@ namespace RealLifeOverhaul.FitOut
             Instance = this;
             _view = new FitView(Logger);
             _view.Built += v => Logger?.Info("Fit-out: " + v.Said + ".");
+            _onEnter = _ => Entered();
             StartCoroutine(Tick());
         }
 
         private void OnDestroy()
         {
+            GlobalEvents.onEnterBuilding -= _onEnter;
             try
             {
                 _view?.End();
@@ -72,26 +78,60 @@ namespace RealLifeOverhaul.FitOut
             while (true)
             {
                 yield return second;
-                if (_broken)
+                Safely();
+            }
+        }
+
+        // The player has just gone in: the room is looked at as soon as the game has put it together, under its black
+        // screen, not at the next second. A few frames' look at one flag, then once.
+        private void Entered()
+        {
+            using var hotSpot = HotSpots.Time(HotEntered);
+            if (!_soon && isActiveAndEnabled)
+            {
+                _soon = true;
+                StartCoroutine(SoonAfter());
+            }
+        }
+
+        private IEnumerator SoonAfter()
+        {
+            yield return null;
+            for (int frames = 0; frames < 180; frames++)
+            {
+                BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
+                if (manager == null || !manager.enteringBuilding)
                 {
-                    continue;
+                    break;
                 }
-                try
-                {
-                    Slow();
-                }
-                catch (Exception e)
-                {
-                    _broken = true;
-                    Logger?.Error(e);
-                    Logger?.Warn("Fit-out: the mod's named buildings are left as they are for this session after the error above.");
-                    _view.End();
-                }
+                yield return null;
+            }
+            _soon = false;
+            Safely();
+        }
+
+        private void Safely()
+        {
+            if (_broken)
+            {
+                return;
+            }
+            try
+            {
+                Slow();
+            }
+            catch (Exception e)
+            {
+                _broken = true;
+                Logger?.Error(e);
+                Logger?.Warn("Fit-out: the mod's named buildings are left as they are for this session after the error above.");
+                _view.End();
             }
         }
 
         private void Slow()
         {
+            EventHold.Keep(ref GlobalEvents.onEnterBuilding, _onEnter, ref _enterSeen);
             BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
             bool inside = SaveGameManager.Current != null && !LoadScene.isLoading && ModState.Loaded && !Meta.SaveTools.Dormant
                           && BuildingManager.IsInsideBuilding && manager != null && !manager.enteringBuilding && !manager.exitingBuilding
@@ -103,7 +143,6 @@ namespace RealLifeOverhaul.FitOut
             {
                 _view.End();
                 _inside = key;
-                _since = now;
                 _tries = 0;
             }
             if (key == null)
@@ -119,7 +158,8 @@ namespace RealLifeOverhaul.FitOut
                 }
                 return;
             }
-            if (_tries >= TriesMost || now - _since < Settle || !Wanted(reg, out FitKind kind, out string name))
+            // (measured only behind the black screen at the door: a few thousand samples of the walkable floor are a long frame)
+            if (_tries >= TriesMost || !SceneFinds.Hidden || !Wanted(reg, out FitKind kind, out string name))
             {
                 return;
             }
