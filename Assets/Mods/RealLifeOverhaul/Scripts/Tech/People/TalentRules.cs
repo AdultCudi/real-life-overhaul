@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Tech
         public int Esteem;           // the player's standing as an employer, -10 to 10
         public bool OnCall;          // their business promises uptime and they keep it running
         public bool Wanted;          // the arrangement they would like is the one they have
+        public int Comfort;          // thousandths of morale their workplace's comfort adds, 0 to 100 (Scripts/Interiors)
     }
 
     /// <summary>
@@ -229,6 +230,7 @@ namespace RealLifeOverhaul.Tech
                 target += 80;
             }
             target += d.Wanted ? 40 : -30;
+            target += TalentCatalogue.Clamp(d.Comfort, 0, 100);
             if (p.Rating == 1)
             {
                 target -= 60;

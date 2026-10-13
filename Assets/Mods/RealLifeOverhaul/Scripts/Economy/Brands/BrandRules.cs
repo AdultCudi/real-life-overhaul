@@ -57,6 +57,12 @@ namespace RealLifeOverhaul.Economy.Brands
             return (sum + 50) / 100;
         }
 
+        /// <summary>A shop's standards with what its interior counts (Scripts/Interiors: three points at most either way), 0 to 100.</summary>
+        public static int WithInterior(int standards, int interior)
+        {
+            return BrandCatalogue.Clamp(standards + BrandCatalogue.Clamp(interior, -3, 3), 0, 100);
+        }
+
         /// <summary>The brand's standards: six tenths the mean of its shops, four tenths its worst shop. A franchised shop counts with what it really is, inspected or not. Nothing with no shop.</summary>
         public static int Standards(BrandsState s, Brand b)
         {

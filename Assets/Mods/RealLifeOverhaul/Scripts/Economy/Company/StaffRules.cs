@@ -85,6 +85,13 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static StaffNote Day(StaffFile f, int level, int day)
         {
+            return Day(f, level, day, 0);
+        }
+
+        /// <summary>The same, with the comfort of their workplace (0 to 10): the calm level they climb back to is that much higher.</summary>
+        public static StaffNote Day(StaffFile f, int level, int day, int comfort)
+        {
+            int calm = CompanyCatalogue.StandingCalm + CompanyCatalogue.Clamp(comfort, 0, 10);
             level = CompanyCatalogue.Level(level);
             bool under = Underpaid(f, level);
             f.UnderDays = under ? f.UnderDays + 1 : 0;
@@ -92,7 +99,7 @@ namespace RealLifeOverhaul.Economy
             {
                 f.Standing = Bound(f.Standing + CompanyCatalogue.StandUnderDay);
             }
-            else if (f.Standing < CompanyCatalogue.StandingCalm)
+            else if (f.Standing < calm)
             {
                 f.Standing = Bound(f.Standing + CompanyCatalogue.StandFairDay);
             }

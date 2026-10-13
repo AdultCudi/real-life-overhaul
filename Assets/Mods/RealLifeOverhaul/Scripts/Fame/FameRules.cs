@@ -173,7 +173,7 @@ namespace RealLifeOverhaul.Fame
             {
                 if (shops[i].Figures)
                 {
-                    sum += (Clamp(shops[i].Satisfaction, 0, 100) * SatisfactionShare + Clamp(shops[i].Pricing, 0, 100) * (100 - SatisfactionShare)) / 100;
+                    sum += Clamp((Clamp(shops[i].Satisfaction, 0, 100) * SatisfactionShare + Clamp(shops[i].Pricing, 0, 100) * (100 - SatisfactionShare)) / 100 + Clamp(shops[i].Interior, -2, 2), 0, 100);
                     n++;
                 }
             }

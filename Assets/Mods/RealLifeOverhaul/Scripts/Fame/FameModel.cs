@@ -123,6 +123,7 @@ namespace RealLifeOverhaul.Fame
         public int Standing;                 // ...their standing, an average, 0 to 100 (-1: the company does not know them)
         public int Low;                      // ...how many of them stand low
         public bool Strike;                  // a strike there now or in the last week
+        public int Interior;                 // points its interior moves its figure in the customers' reputation, -2 to 2 (Scripts/Interiors)
     }
 
     /// <summary>One building the player owns and lets, as the daily round reads it.</summary>
