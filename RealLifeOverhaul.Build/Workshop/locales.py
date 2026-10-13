@@ -21,7 +21,7 @@ FILL = '--fill' in sys.argv
 STRICT = ('zh-cn.json',)
 # Texts that stay as the English in zh-cn.json: placeholders alone, version numbers, and invented names kept in Latin letters.
 ENGLISH_OK = {
-    'reallife_lst_test_name', 'reallife_lst_open_way',
+    'reallife_lst_test_name', 'reallife_lst_open_way', 'reallife_study_course_mba',
     'reallife-friend', 'reallife_leisure_drinks_choice', 'reallife_social_people_birthday_in', 'reallife_social_with',
     'reallife_travel_toast', 'reallife_travel_say', 'reallife-travel', 'reallife_travel_hotel_garment_hostel',
     'reallife_travel_hotel_industry_hostel', 'reallife_travel_hotel_kitchen_hotel', 'reallife_travel_hotel_downtown_hotel',
