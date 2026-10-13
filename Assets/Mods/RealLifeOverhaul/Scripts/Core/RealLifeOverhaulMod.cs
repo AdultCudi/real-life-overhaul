@@ -40,6 +40,8 @@ namespace RealLifeOverhaul
             Keys.Logger = context.Logger;
             Settings.Load(context.ModId);
             Meta.Dev.Gated(context);   // (the option has been read now)
+            Tech.TechTypes.Logger = context.Logger;
+            Tech.TechTypes.Register();   // the tech sector's business types, before any save that holds one is loaded (Scripts/Tech/Firms/TechTypes)
 
             var options = new ModOptions()
                 .AddHeader("reallife_camera_header")
@@ -740,6 +742,11 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_hire_test_applicants", () => Tech.TechDirector.Instance?.TestApplicants())
                 .AddButton("reallife_hire_test_market", () => Tech.TechDirector.Instance?.TestMarketDay())
                 .AddButton("reallife_hire_test_search", () => Tech.TechDirector.Instance?.TestSearch())
+                .AddToggle(Settings.TechSectorId, "reallife_tech_enabled", Settings.TechSector,
+                    v => Settings.TechSector = v)
+                .AddButton("reallife_tech_test_offer", () => Tech.TechDirector.Instance?.TestContractOffer())
+                .AddButton("reallife_tech_test_outage", () => Tech.TechDirector.Instance?.TestOutage())
+                .AddButton("reallife_tech_test_breach", () => Tech.TechDirector.Instance?.TestBreach())
                 .AddToggle(Settings.EconomyOnlineId, "reallife_online_enabled", Settings.EconomyOnline,
                     v => Settings.EconomyOnline = v)
                 .AddButton("reallife_online_test_open", () => Economy.OnlineDirector.Instance?.TestOpen())
@@ -904,6 +911,7 @@ namespace RealLifeOverhaul
             }
             _running = context.ModId;
             context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on; warnings and errors always
+            Tech.TechTypes.Register();   // (furnished as the game's web development agency once its type is known)
             OtherMods.Look(context.Logger);   // other authors' mods this one stands aside for: one walk over the loaded assemblies (Core/OtherMods)
             GoingPublic.Logger = context.Logger;
             GoingPublicLink.Logger = context.Logger;
@@ -972,6 +980,8 @@ namespace RealLifeOverhaul
             Tech.TechDirector.Logger = context.Logger;
             Tech.RolesApp.Logger = context.Logger;
             Tech.HiringGame.Logger = context.Logger;
+            Tech.FirmsGame.Logger = context.Logger;
+            Tech.TechApp.Logger = context.Logger;
 
             _root = new GameObject(RootName);
             SessionWatch.Logger = context.Logger;

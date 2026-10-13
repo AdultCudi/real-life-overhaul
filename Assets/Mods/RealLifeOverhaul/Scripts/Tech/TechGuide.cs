@@ -44,6 +44,66 @@ namespace RealLifeOverhaul.Tech
                 .Fact("talent_certs", Certs);
         }
 
+        public static void AddSectorFacts(Feature f)
+        {
+            f.Fact("tech_segments", Segments)
+                .Fact("tech_paying", () => Mille(FirmsCatalogue.ConsumerPaying))
+                .Fact("tech_feature_base", () => Whole(FirmsCatalogue.FeatureBase))
+                .Fact("tech_feature_step", () => Whole(FirmsCatalogue.FeatureStep))
+                .Fact("tech_launch_features", () => Whole(FirmsCatalogue.LaunchFeatures))
+                .Fact("tech_points", () => Whole(FirmsCatalogue.PointsPerDay))
+                .Fact("tech_tiers", () => Mille(FirmsCatalogue.PriceTiers[0]) + ", " + Mille(FirmsCatalogue.PriceTiers[1]) + " " + TechText.T("reallife_guide_tech_or") + " " + Mille(FirmsCatalogue.PriceTiers[2]))
+                .Fact("tech_marketing_most", () => Guide.Money(Prices.At(FirmsCatalogue.MarketingDay[FirmsCatalogue.MarketingDay.Length - 1] / 100)))
+                .Fact("tech_tickets", () => Whole(FirmsCatalogue.TicketsPerPerson))
+                .Fact("tech_seat", () => Guide.Money(Prices.At(FirmsCatalogue.SoftwarePerSeat) / 100f))
+                .Fact("tech_game_sizes", Games)
+                .Fact("tech_store_cut", () => Mille(FirmsCatalogue.AppStoreCut))
+                .Fact("tech_half_life", () => Whole(FirmsCatalogue.GameHalfLife))
+                .Fact("tech_licence", () => Guide.Money(Prices.At(FirmsCatalogue.LicenceDeal / 100)))
+                .Fact("tech_upkeep", () => Mille(FirmsCatalogue.LicenceMaintenance))
+                .Fact("tech_point_rate", () => Guide.Money(Prices.At(FirmsCatalogue.PointRate / 100)))
+                .Fact("tech_security_rate", () => Guide.Money(Prices.At(FirmsCatalogue.SecurityRate / 100)))
+                .Fact("tech_managed", () => Guide.Money(Prices.At(FirmsCatalogue.ManagedMonth / 100)))
+                .Fact("tech_upfront", () => Mille(FirmsCatalogue.UpfrontShare))
+                .Fact("tech_late", () => Mille(FirmsCatalogue.LatePenalty))
+                .Fact("tech_tender_every", () => Whole(FirmsCatalogue.TenderEvery))
+                .Fact("tech_tender_days", () => Whole(FirmsCatalogue.TenderDays))
+                .Fact("tech_council", () => Mille(FirmsCatalogue.CouncilShare - 1000))
+                .Fact("tech_outage_churn", () => Mille(FirmsCatalogue.OutageChurn))
+                .Fact("tech_sla", () => Mille(FirmsCatalogue.SlaCredit))
+                .Fact("tech_fine_customer", () => Guide.Money(Prices.At(FirmsCatalogue.FinePerCustomer) / 100f))
+                .Fact("tech_fine_least", () => Guide.Money(Prices.At(FirmsCatalogue.FineLeast / 100)))
+                .Fact("tech_fine_year", () => Mille(FirmsCatalogue.FineShareOfYear))
+                .Fact("tech_register_fee", () => Guide.Money(Prices.At(FirmsCatalogue.RegisterFee / 100)))
+                .Fact("tech_unregistered", () => Mille(FirmsCatalogue.UnregisteredFine - 1000))
+                .Fact("tech_relief", () => Mille(FirmsCatalogue.ReliefShare))
+                .Fact("tech_scale_monthly", () => Guide.Money(Prices.At((int)(TechPath.ScaleUpMonthly / 100))))
+                .Fact("tech_scale_people", () => Whole(TechPath.ScaleUpPeople));
+        }
+
+        // One line per segment: who buys, how many there are, the price a month and the churn.
+        private static string Segments()
+        {
+            var text = new StringBuilder();
+            for (int s = 0; s < (int)Segment.Count; s++)
+            {
+                text.Append("- ").Append(TechText.Fill("reallife_guide_tech_segment", "segment", TechText.SegmentName((Segment)s), "market", FirmsCatalogue.Market[s].ToString("N0", Inv),
+                    "price", Guide.Money(Prices.At(FirmsCatalogue.Price[s]) / 100f), "churn", Mille(FirmsCatalogue.Churn[s]))).Append('\n');
+            }
+            return text.ToString();
+        }
+
+        private static string Games()
+        {
+            var text = new StringBuilder();
+            for (int s = 0; s < 3; s++)
+            {
+                text.Append("- ").Append(TechText.Fill("reallife_guide_tech_game", "size", TechText.Scope(s), "points", Whole(FirmsCatalogue.GameScope[s]),
+                    "price", Guide.Money(Prices.At(FirmsCatalogue.GamePrice[s]) / 100f))).Append('\n');
+            }
+            return text.ToString();
+        }
+
         public static void AddHiringFacts(Feature f)
         {
             f.Fact("hire_seekers_least", () => Whole(HiringRules.Target(0, false)))

@@ -20,6 +20,21 @@ namespace RealLifeOverhaul.Tech
         /// <summary>True while the company already has a rival's offer or a departure in hand for an employee (by the game's id): no second approach is made. Default: never.</summary>
         public static Func<string, bool> Held;
 
+        /// <summary>The economy's books made again for a day once the tech sector has booked its takings for it (GameBooks.Refresh). Default: nothing.</summary>
+        public static Action<int> Books;
+
+        /// <summary>News of a listed company moves its share price: the stock market's id and the move in basis points. Default: nothing.</summary>
+        public static Action<int, int> Stock;
+
+        /// <summary>Opens a case for a data protection offence against a firm (its name), on a summons; the case's number or 0. Default: none.</summary>
+        public static Func<string, int> Prosecute;
+
+        /// <summary>A loss at a business the company's liability cover may meet: the business and the loss in whole money. Default: nobody is told.</summary>
+        public static Action<BuildingRegistration, int> Claim;
+
+        /// <summary>The player's standing with the public moves: the part (0 customers, 3 integrity) and the points. Default: nobody is told.</summary>
+        public static Action<int, int> Fame;
+
         public static int EsteemNow()
         {
             try
@@ -38,6 +53,11 @@ namespace RealLifeOverhaul.Tech
             Rival = null;
             Standing = null;
             Held = null;
+            Books = null;
+            Stock = null;
+            Prosecute = null;
+            Claim = null;
+            Fame = null;
         }
     }
 }

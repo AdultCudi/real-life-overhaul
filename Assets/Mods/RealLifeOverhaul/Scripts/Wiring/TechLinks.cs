@@ -16,6 +16,12 @@ namespace RealLifeOverhaul
         ///   Rival      a rival of the game's own with businesses to its name, to put a name to an approach (BusinessGame.AnyRival)
         ///   Held       the company's own rival offers and departures (CompanyState.Employee): nobody is approached twice at once
         ///   Standing   a lay-off, a rise refused or a promotion moves the workers' part of Standing by a point (FameDirector.Moved)
+        ///   Books      the economy's books made again for a day once the firms have booked their takings (GameBooks.Refresh)
+        ///   Stock      news of a listed company (a product overtaking its rival's, the rival shipping) moves its price (the
+        ///              stock market's company event)
+        ///   Prosecute  a data protection offence heard by Justice (TaxCases.FileDataProtection)
+        ///   Claim      a breach's cost put to the company's liability cover (CompanyDirector.Loss)
+        ///   Fame       a launch, an outage or a breach moves the customers' or the integrity part of Standing
         ///   the paper  the tech sector's stories, chained on to the City Ledger's other pieces (News.Extra), the same for a
         ///              day however often it is asked
         ///
@@ -32,6 +38,11 @@ namespace RealLifeOverhaul
                 TechBridges.Rival = Rival;
                 TechBridges.Standing = Standing;
                 TechBridges.Held = Held;
+                TechBridges.Books = Books;
+                TechBridges.Stock = Stock;
+                TechBridges.Prosecute = TaxCases.FileDataProtection;
+                TechBridges.Claim = Claim;
+                TechBridges.Fame = Fame;
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
             }
@@ -75,6 +86,57 @@ namespace RealLifeOverhaul
                 {
                     Fault("TechLinks.Held", e);
                     return false;
+                }
+            }
+
+            private static void Books(int day)
+            {
+                try
+                {
+                    Economy.GameBooks.Refresh(day);
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Books", e);
+                }
+            }
+
+            private static void Stock(int stock, int bp)
+            {
+                try
+                {
+                    Markets.MarketDirector.Instance?.Engine?.Event(Markets.MarketInputs.EventCompany, stock, bp * 100);
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Stock", e);
+                }
+            }
+
+            private static void Claim(BuildingRegistration reg, int amount)
+            {
+                try
+                {
+                    Economy.CompanyDirector.Instance?.Loss(reg, Economy.CoverKind.Liability, amount);
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Claim", e);
+                }
+            }
+
+            private static void Fame(int part, int points)
+            {
+                try
+                {
+                    if (points != 0)
+                    {
+                        FameDirector.Instance?.Moved((FamePart)part, points < 0 ? FameCause.Scandal : FameCause.Press, points);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Fame", e);
                 }
             }
 

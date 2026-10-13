@@ -88,6 +88,11 @@ namespace RealLifeOverhaul.Utilities
         public const int PromoLeast = 800, PromoMost = 1100, PromoStep = 40, PromoChancePerMille = 120, PromoCut = 150;
 
         /// <summary>The kinds of business that cannot open without a connection: web design, software, and the headquarters.</summary>
-        public static readonly string[] Needs = { "ba:businesstype_graphicdesigner", "ba:businesstype_webdevelopmentagency", "ba:businesstype_headquarters" };
+        public static readonly string[] Needs =
+        {
+            "ba:businesstype_graphicdesigner", "ba:businesstype_webdevelopmentagency", "ba:businesstype_headquarters",
+            // the tech sector's own types (Tech/Firms/TechTypes): nothing they sell works offline
+            "reallife:businesstype_softwarestudio", "reallife:businesstype_gamestudio", "reallife:businesstype_itconsultancy", "reallife:businesstype_cybersecurity", "reallife:businesstype_ailab"
+        };
     }
 }

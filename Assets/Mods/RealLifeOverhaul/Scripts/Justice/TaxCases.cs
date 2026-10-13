@@ -73,6 +73,26 @@ namespace RealLifeOverhaul
             return opened.Number;
         }
 
+        /// <summary>
+        /// Opens a case for a data protection offence (the tech sector, through Wiring/TechLinks: a breach at a firm that was
+        /// off the register, or breached before), on a summons like a tax case: heard and fined by Justice's own table, on
+        /// top of the regulator's own fine. Its number, or 0 with no court to open it.
+        /// </summary>
+        public static int FileDataProtection(string firm)
+        {
+            if (!Justice.Active)
+            {
+                return 0;
+            }
+            JusticeCase opened = Justice.Summon(new JusticeReport(JusticeLaw.DataProtection) { Complied = true, Evidence = new[] { Evidence } });
+            if (opened == null)
+            {
+                return 0;
+            }
+            JusticeDirector.Logger?.Info("Justice: case " + opened.Number + " opened on a summons for a data protection offence (a breach at " + firm + "), to be heard on day " + opened.CourtDay + ".");
+            return opened.Number;
+        }
+
         /// <summary>True while a case with this number is still before the court.</summary>
         public static bool Open(int number)
         {

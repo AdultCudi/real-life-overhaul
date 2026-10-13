@@ -39,8 +39,9 @@ namespace RealLifeOverhaul
             {
                 Prices.Factor = () => Economy.CityEconomy.CostFactor;   // every price of the mod's follows the city's
                 EconomyBridges.GivenBack = GivenBack;
-                EconomyBridges.Takings = type => type == Utilities.BroadbandCatalogue.TakingsKey;   // the broadband company bills from its headquarters
-                EconomyBridges.CostRow = type => type == Utilities.BroadbandCatalogue.NetworkKey || type == Utilities.BroadbandCatalogue.InstallsKey ? Utilities.BroadbandCatalogue.NetworkRow : null;
+                // the broadband company bills from its headquarters; a tech firm's takings are its products' and contracts' (Tech/Firms)
+                EconomyBridges.Takings = type => type == Utilities.BroadbandCatalogue.TakingsKey || Tech.FirmsGame.IsTakings(type);
+                EconomyBridges.CostRow = type => type == Utilities.BroadbandCatalogue.NetworkKey || type == Utilities.BroadbandCatalogue.InstallsKey ? Utilities.BroadbandCatalogue.NetworkRow : Tech.FirmsGame.RowOf(type);
                 LifeAccounts.Card = HasCard;
                 LifeAccounts.Accountant = () => Economy.CompanyDirector.Instance != null && Economy.CompanyDirector.Instance.HasAccountant;
                 EconomyBridges.Legal = ReadLegal;

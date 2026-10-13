@@ -1140,6 +1140,15 @@ namespace RealLifeOverhaul.Meta
                 .Data(Tech.HiringStore.Key)
                 .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Tech.TechDirector.Instance?.Forget()));
+            // The tech sector: software studios, game studios, IT consultancies, cybersecurity firms and AI labs as business
+            // types of their own, and the game's web agencies and graphic designers in the same economy, with the Tech app.
+            Tech.TechGuide.AddSectorFacts(Features.Add("tech_sector", "reallife_meta_title_tech_sector")
+                .About("reallife_guide_tech_sector_about").Help("reallife_guide_tech_sector")
+                .Owns(Settings.TechSectorId)
+                .Test("reallife_tech_test_offer", "reallife_tech_test_outage", "reallife_tech_test_breach")
+                .Data(Tech.FirmsStore.Key)
+                .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
+                .ResetData(() => Tech.TechDirector.Instance?.Forget()));
             // The cleaning service and selling a business. Their rows stand under the company's header on the options page
             // and their pages are the Services app. They share one line of the save. Off, the cleaning service plans no
             // round, shows no cleaner and charges nothing; selling a business offers, pays and charges nothing.

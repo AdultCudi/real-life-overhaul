@@ -315,6 +315,19 @@ namespace RealLifeOverhaul.Markets
 
         private void Apply(in MarketEvent e)
         {
+            if (e.Kind == MarketInputs.EventCompany)
+            {
+                // News of one company (the tech sector): its mood moves, as a news item moves it, and fades as moods do.
+                Stock news = State.Stock(e.A);
+                if (news != null && news.Listed)
+                {
+                    double move = Math.Max(-MarketInputs.CompanyMicrosMost, Math.Min(MarketInputs.CompanyMicrosMost, e.B)) / 1000000.0;
+                    news.Mis += move;
+                    news.Sent += move;
+                    news.Last = news.MidCents;
+                }
+                return;
+            }
             if (e.Kind == MarketInputs.EventTrade || e.Kind == MarketInputs.EventVolume)
             {
                 // A player's trade in a Going Public session: its lasting move of the price, or its shares, on one company.

@@ -163,10 +163,14 @@ namespace RealLifeOverhaul.Markets
         /// What happened (MarketEvent.Kind). Saved on the tape as a number: never renumber. Trade and Volume are a player's
         /// trade in a Going Public session, where every player's trades move the one city's prices (MarketEngine.FillNow):
         /// the lasting part of its move (A the company, B the move in millionths of the log price) and its shares (B).
-        /// They are 9 and 10 (8 is Flare's buzz, from social media).
+        /// They are 9 and 10 (8 is Flare's buzz, from social media). Company (11) is news of one listed company from the tech
+        /// sector (Tech: a product of the player's overtaking its rival's, the rival shipping): A the company, B the move in
+        /// millionths of the log price, at most a twentieth either way, into its mood as a news item is.
         /// </summary>
         public const int EventFire = 1, EventCrime = 2, EventBreakIn = 3, EventAccident = 4, EventPolicy = 5, EventElection = 6, EventStorm = 7, EventBuzz = 8, EventTrade = 9, EventVolume = 10,
-            EventCount = 11;
+            EventCompany = 11, EventCount = 12;
+
+        public const int CompanyMicrosMost = 50000;   // the most a company's news moves its log price
 
         /// <summary>A trade's lasting move of a price, in the millionths the tape keeps it in.</summary>
         public static int TradeMicros(double move)

@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.Tech
             Instance = this;
             TalentGame.Logger = Logger;
             HiringGame.Logger = Logger;
+            FirmsGame.Logger = Logger;
             _onSave = OnSave;
             _onHour = OnHour;
             _onDay = OnDay;
@@ -55,6 +56,7 @@ namespace RealLifeOverhaul.Tech
             GlobalEvents.onNewDay -= _onDay;
             try
             {
+                StopFirms(false, true);
                 StopHiring(false);
                 StopPeople(false, true);
                 _interview?.Dispose();
@@ -120,6 +122,15 @@ namespace RealLifeOverhaul.Tech
             {
                 StopHiring(true);
             }
+            bool sector = Settings.TechSector && _peopleOn;
+            if (sector && !_firmsOn)
+            {
+                StartFirms();
+            }
+            else if (!sector && _firmsOn)
+            {
+                StopFirms(true, false);
+            }
             _interview?.Watch();
             if (!_peopleOn)
             {
@@ -131,6 +142,10 @@ namespace RealLifeOverhaul.Tech
             if (_rolesApp == null && !_rolesGaveUp)
             {
                 InstallRoles();
+            }
+            if (_firmsOn && _techApp == null && !_techGaveUp)
+            {
+                InstallTech();
             }
         }
 
@@ -172,6 +187,10 @@ namespace RealLifeOverhaul.Tech
                 {
                     PeopleDay(Save.Day);
                 }
+                if (_firmsOn)
+                {
+                    FirmsDay(Save.Day);
+                }
                 Changed();
                 if (Verbose)
                 {
@@ -200,6 +219,10 @@ namespace RealLifeOverhaul.Tech
                 if (_hiringOn)
                 {
                     WriteHiring(Save.modData);
+                }
+                if (_firmsOn)
+                {
+                    WriteFirms(Save.modData);
                 }
                 if (_news != null && ReferenceEquals(_newsOf, Save))
                 {
@@ -247,6 +270,7 @@ namespace RealLifeOverhaul.Tech
             Logger?.Error(e);
             try
             {
+                StopFirms(false, false);
                 StopHiring(false);
                 StopPeople(false, false);
             }
@@ -268,6 +292,7 @@ namespace RealLifeOverhaul.Tech
         {
             _rolesView?.Changed();
             RolesBadge();
+            ChangedTech();
         }
 
         // ---------------------------------------------------------------- for the save tools
@@ -277,6 +302,7 @@ namespace RealLifeOverhaul.Tech
         {
             try
             {
+                StopFirms(true, false);
                 StopHiring(true);
                 StopPeople(true, false);
             }
@@ -291,6 +317,7 @@ namespace RealLifeOverhaul.Tech
         {
             try
             {
+                StopFirms(false, false);
                 StopHiring(false);
                 StopPeople(false, false);
             }
@@ -300,6 +327,7 @@ namespace RealLifeOverhaul.Tech
             }
             _talent = null;
             _hiring = null;
+            _firmsFile = null;
             _news = new TechNews();
         }
     }

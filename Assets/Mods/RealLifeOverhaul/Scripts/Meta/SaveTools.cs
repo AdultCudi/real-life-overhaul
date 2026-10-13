@@ -32,6 +32,9 @@ namespace RealLifeOverhaul.Meta
     ///   Transactions       the bank history; the mod's have a type starting with reallife_transaction_. These are
     ///                      money that really moved and are left alone (without the mod they show their internal name).
     ///   VehicleInstances   the van of a job in progress, which is the game's own job van and is taken back by Jobs.
+    ///   BuildingRegistrations  a business of one of the tech sector's own types (Tech/Firms/TechTypes), which the game
+    ///                      does not know without the mod: made the game's own web development agency again when the
+    ///                      save is prepared for removal.
     /// One field of the game's own is put back to "none" when it names a contact that is removed:
     /// PlayerDefaults.contactsLastName (the contact last opened; the Contacts app lists nothing while it names one
     /// that does not exist). Nothing else of a save is touched, and nothing here runs unless the player presses one of the buttons
@@ -332,6 +335,7 @@ namespace RealLifeOverhaul.Meta
             public int Messages;
             public int Notifications;
             public int Transactions;      // counted, never removed
+            public int BusinessTypes;     // businesses of the tech sector's types made the game's own office business again
 
             public int Total => Modifiers.Count + Contacts.Count + DataKeys.Count + Notifications;
         }
@@ -388,6 +392,7 @@ namespace RealLifeOverhaul.Meta
             }
             RemoveModifiers(save, removed);
             RemoveData(save, removed);
+            removed.BusinessTypes += Tech.TechTypes.Strip(save);   // the tech sector's business types, made the game's own web development agency again
 
             if (save.Contacts != null)
             {
@@ -654,6 +659,10 @@ namespace RealLifeOverhaul.Meta
             report.Add("- " + "reallife_meta_report_data".GetLocalization().Replace("{count}", removed.DataKeys.Count.ToString(CultureInfo.InvariantCulture))
                        + DataNames(removed.DataKeys));
             report.Add("- " + "reallife_meta_report_notifications".GetLocalization().Replace("{count}", removed.Notifications.ToString(CultureInfo.InvariantCulture)));
+            if (removed.BusinessTypes > 0)
+            {
+                report.Add("- " + "reallife_meta_report_business_types".GetLocalization().Replace("{count}", removed.BusinessTypes.ToString(CultureInfo.InvariantCulture)));
+            }
             if (removed.Transactions > 0)
             {
                 report.Add("- " + "reallife_meta_report_transactions".GetLocalization().Replace("{count}", removed.Transactions.ToString(CultureInfo.InvariantCulture)));

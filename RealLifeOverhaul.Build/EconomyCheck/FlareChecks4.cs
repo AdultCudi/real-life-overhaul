@@ -77,7 +77,8 @@ internal static partial class Program
             "Flare: the pull on the mayor's approval is a point a day at most either way");
         Check(FlareRules.IssueWeight(0) == 0 && FlareRules.IssueWeight(FlareRules.EndorseFull) == FlareRules.IssueMost && FlareRules.IssueWeight(int.MaxValue) == FlareRules.IssueMost
               && FlareRules.IssueWeight(500) < FlareRules.IssueWeight(5000), "Flare: an issue post adds more for a bigger account, never past 0.3 of a point");
-        Check(MarketInputs.EventStorm == 7 && MarketInputs.EventBuzz == 8 && MarketInputs.EventTrade == 9 && MarketInputs.EventVolume == 10 && MarketInputs.EventCount == 11, "Market: the buzz keeps 8, after the seven that keep their numbers, and a shared trade 9 and 10");
+        Check(MarketInputs.EventStorm == 7 && MarketInputs.EventBuzz == 8 && MarketInputs.EventTrade == 9 && MarketInputs.EventVolume == 10 && MarketInputs.EventCompany == 11 && MarketInputs.EventCount == 12,
+            "Market: the buzz keeps 8, after the seven that keep their numbers, a shared trade 9 and 10, and the tech sector's news of a company 11");
         var up = new MarketEvent { Kind = MarketInputs.EventBuzz, A = 3, B = 1 };
         var down = new MarketEvent { Kind = MarketInputs.EventBuzz, A = 3, B = -9 };
         Check(MarketInputs.BuzzBp(up, MarketSector.Restaurants, MarketSector.Restaurants) == MarketInputs.BuzzKickBp && MarketInputs.BuzzBp(down, MarketSector.Restaurants, MarketSector.Restaurants) == -MarketInputs.BuzzKickBp

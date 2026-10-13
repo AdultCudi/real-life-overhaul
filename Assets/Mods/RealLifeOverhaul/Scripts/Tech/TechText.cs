@@ -59,6 +59,31 @@ namespace RealLifeOverhaul.Tech
         /// <summary>reallife_talent_family_{name}, the family's name in lower case.</summary>
         public static string FamilyName(Family family) => T(Mod + "_talent_family_" + family.ToString().ToLowerInvariant());
 
+        public static string FirmName(FirmKind kind) => T(Mod + "_tech_firm_" + kind.ToString().ToLowerInvariant());
+
+        public static string ProductName(ProductKind kind) => T(Mod + "_tech_product_" + kind.ToString().ToLowerInvariant());
+
+        public static string SegmentName(Segment segment) => T(Mod + "_tech_segment_" + segment.ToString().ToLowerInvariant());
+
+        public static string FocusName(Focus focus) => T(Mod + "_tech_focus_" + focus.ToString().ToLowerInvariant());
+
+        public static string Work(WorkKind kind) => T(Mod + "_tech_work_" + kind.ToString().ToLowerInvariant());
+
+        public static string StageName(WorkStage stage) => T(Mod + "_tech_stage_" + stage.ToString().ToLowerInvariant());
+
+        /// <summary>A price tier, 0 to 2: "low", "standard", "premium".</summary>
+        public static string Tier(int tier) => T(Mod + "_tech_tier_" + TalentCatalogue.Clamp(tier, 0, 2).ToString(Inv));
+
+        /// <summary>A marketing level, 0 to 4, with its spend a day.</summary>
+        public static string MarketingLevel(int level)
+        {
+            level = TalentCatalogue.Clamp(level, 0, FirmsCatalogue.MarketingDay.Length - 1);
+            return T(Mod + "_tech_marketing_" + level.ToString(Inv), "amount", Money(Prices.At(FirmsCatalogue.MarketingDay[level] / 100)));
+        }
+
+        /// <summary>A game's size, 0 to 2.</summary>
+        public static string Scope(int scope) => T(Mod + "_tech_scope_" + TalentCatalogue.Clamp(scope, 0, 2).ToString(Inv));
+
         public static string Work(int work) => T(work == (int)Arrangement.Remote ? "reallife_talent_work_remote" : work == (int)Arrangement.Hybrid ? "reallife_talent_work_hybrid" : "reallife_talent_work_onsite");
 
         /// <summary>Years and days of a 365-day year as whole years: "7 years", "1 year", "under a year".</summary>

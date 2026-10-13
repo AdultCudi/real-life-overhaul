@@ -112,6 +112,7 @@ internal static partial class Program
         Shared();
         Fame();
         Endings();
+        Firms();
         Hiring();
         Tech();
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");

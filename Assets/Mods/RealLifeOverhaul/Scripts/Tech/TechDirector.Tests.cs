@@ -160,5 +160,87 @@ namespace RealLifeOverhaul.Tech
             }
             Notifications.ShowError("reallife_hire_test_no_search");
         }
+
+        private Product TestLive()
+        {
+            if (!_firmsOn || Save == null)
+            {
+                Notifications.ShowError("reallife_tech_test_off");
+                return null;
+            }
+            for (int i = 0; i < _firmsFile.Products.Count; i++)
+            {
+                if (_firmsFile.Products[i].Live)
+                {
+                    return _firmsFile.Products[i];
+                }
+            }
+            Notifications.ShowError("reallife_tech_test_no_product");
+            return null;
+        }
+
+        /// <summary>A client offers the first firm that takes contracts a piece of work.</summary>
+        public void TestContractOffer()
+        {
+            if (!_firmsOn || Save == null)
+            {
+                Notifications.ShowError("reallife_tech_test_off");
+                return;
+            }
+            ReadFirms(Save.Day);
+            for (int i = 0; i < _firms.Count; i++)
+            {
+                Firm firm = _firms[i].File;
+                int kinds = FirmsCatalogue.TakesWork[firm.Kind];
+                for (int k = 0; k < (int)WorkKind.Count; k++)
+                {
+                    if ((kinds & (1 << k)) == 0)
+                    {
+                        continue;
+                    }
+                    var w = new Contract { Id = _firmsFile.Next(), Kind = k, Stage = (int)WorkStage.Offered, End = Save.Day + FirmsCatalogue.OfferDays, Place = firm.Place,
+                        Client = FirmsCatalogue.Clients[0], Points = k == (int)WorkKind.Managed ? 0 : FirmsCatalogue.WorkLeast[k] };
+                    w.Value = FirmsRules.ValueOf((WorkKind)k, w.Points, false);
+                    _firmsFile.Contracts.Add(w);
+                    Worked(new WorkNote { Contract = w.Id, Kind = FirmsRules.NoteOffered });
+                    ChangedTech();
+                    return;
+                }
+            }
+            Notifications.ShowError("reallife_tech_test_no_taker");
+        }
+
+        /// <summary>The first product on sale has an outage now.</summary>
+        public void TestOutage()
+        {
+            Product p = TestLive();
+            FirmPlace firm = p != null ? FirmOf(p.Place) : null;
+            if (firm == null)
+            {
+                return;
+            }
+            long gone = p.Users * FirmsCatalogue.OutageChurn / 1000;
+            p.Users -= gone;
+            firm.File.Outages++;
+            firm.File.Reputation = System.Math.Max(0, firm.File.Reputation - 30);
+            Tell2(NotificationType.Warning, "reallife_tech_note_outage", Data("product", p.Name, "lost", gone.ToString()), TabProducts, TechApp.ProductRow + p.Id);
+            ChangedTech();
+        }
+
+        /// <summary>The first product on sale is breached now: the fine, the insurer, the paper and, for a firm off the register, the court.</summary>
+        public void TestBreach()
+        {
+            Product p = TestLive();
+            FirmPlace firm = p != null ? FirmOf(p.Place) : null;
+            if (firm == null)
+            {
+                return;
+            }
+            var r = new ProductDay { Breach = true, Affected = p.Users + p.Free };
+            r.Fine = FirmsRules.Fine(r.Affected, firm.File.Revenue30 * 12, Save.Day < firm.File.RegisteredUntil);
+            firm.File.Breaches++;
+            Breach(firm, p, r, Save.Day);
+            ChangedTech();
+        }
     }
 }
