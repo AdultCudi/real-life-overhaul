@@ -513,7 +513,7 @@ namespace RealLifeOverhaul
                 for (int i = 0; i < registrations.Count; i++)
                 {
                     BuildingRegistration registration = registrations[i];
-                    if (registration == null || !registration.RentedByPlayer)
+                    if (registration == null || !GoingPublic.Mine(registration))
                     {
                         continue;
                     }

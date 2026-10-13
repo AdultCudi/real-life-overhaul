@@ -25,7 +25,8 @@ namespace RealLifeOverhaul.Leisure
     /// (<c>wave_hello</c>), a fist up (<c>cheer_once</c>, held at its top) and talking to the
     /// camera (<c>talk_a</c>); with one of those the phone goes to the left hand, since all three
     /// are made with the right. Photo mode keeps the game paused, so the clip player is stepped
-    /// here by the real clock (ActivityAnimator.Advance and Evaluate) rather than by the game's.
+    /// here by the real clock (ActivityAnimator.Advance and Evaluate) rather than by the game's;
+    /// in a Going Public session, where the clock goes on running, the game's own step does it.
     /// The clip poses are offered only when the bundle is loaded and nothing of the mod's was
     /// already playing on the player (an umbrella, say): that is left alone, and only the plain
     /// pose is offered.
@@ -354,8 +355,13 @@ namespace RealLifeOverhaul.Leisure
                     _clips.Play(_clip.Clip, 0.25f, 1f, ClipEnd.Hold);   // the wave again, crossed from where it ended
                     _clipTime = 0f;
                 }
-                _clips.Advance(delta);
-                _clips.Evaluate(delta);
+                if (Time.timeScale <= 0f)
+                {
+                    // Paused, nothing else steps the clip player. In a Going Public session photo mode leaves the clock running
+                    // (Core/GoingPublic), and the engine and the clip service step it as on any other frame: a step here would be a second.
+                    _clips.Advance(delta);
+                    _clips.Evaluate(delta);
+                }
             }
             catch (Exception e)
             {

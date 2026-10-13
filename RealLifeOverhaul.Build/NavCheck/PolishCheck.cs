@@ -320,6 +320,9 @@ internal static partial class Program
             "other mods: a longer word, a shorter one, or the name inside another is not the mod");
         Check(!OtherModName.Is(null, "Immersion") && !OtherModName.Is("", "Immersion") && !OtherModName.Is("Immersion", null) && !OtherModName.Is("Immersion", ""),
             "other mods: no name is no mod");
+        Check(OtherModName.Is("BigAmbitionsMP", "BigAmbitionsMP") && !OtherModName.Is("BigAmbitions", "BigAmbitionsMP") && !OtherModName.Is("BigAmbitionsMP", "BigAmbitions")
+              && !OtherModName.Is("BampExtras", "BigAmbitionsMP") && OtherModName.Is("ForeignTradeMultiplayer", "ForeignTradeMultiplayer") && !OtherModName.Is("ForeignTrade", "ForeignTradeMultiplayer"),
+            "other mods: Going Public is known by its own assembly, never by the game's, and its add-ons by theirs");
     }
 
     private static void PolishTiming()

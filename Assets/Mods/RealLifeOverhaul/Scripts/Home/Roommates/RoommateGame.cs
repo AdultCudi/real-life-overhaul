@@ -49,7 +49,7 @@ namespace RealLifeOverhaul.Roommates
             for (int i = 0; all != null && !string.IsNullOrEmpty(street) && i < all.Count; i++)
             {
                 BuildingRegistration r = all[i];
-                if (r != null && r.RentedByPlayer && r.StreetNumber == number && r.StreetName == street && IsHome(r))
+                if (r != null && GoingPublic.Mine(r) && r.StreetNumber == number && r.StreetName == street && IsHome(r))
                 {
                     return r;
                 }
@@ -61,7 +61,7 @@ namespace RealLifeOverhaul.Roommates
         public static BuildingRegistration AnyHome()
         {
             var manager = InstanceBehavior<BuildingManager>.Instance;
-            if (BuildingManager.IsInsideBuilding && manager != null && manager.buildingRegistration != null && manager.buildingRegistration.RentedByPlayer
+            if (BuildingManager.IsInsideBuilding && manager != null && manager.buildingRegistration != null && GoingPublic.Mine(manager.buildingRegistration)
                 && IsHome(manager.buildingRegistration))
             {
                 return manager.buildingRegistration;
@@ -69,7 +69,7 @@ namespace RealLifeOverhaul.Roommates
             List<BuildingRegistration> all = SaveGameManager.Current != null ? SaveGameManager.Current.BuildingRegistrations : null;
             for (int i = 0; all != null && i < all.Count; i++)
             {
-                if (all[i] != null && all[i].RentedByPlayer && IsHome(all[i]))
+                if (all[i] != null && GoingPublic.Mine(all[i]) && IsHome(all[i]))
                 {
                     return all[i];
                 }
@@ -98,7 +98,7 @@ namespace RealLifeOverhaul.Roommates
             }
             var manager = InstanceBehavior<BuildingManager>.Instance;
             BuildingRegistration r = manager != null ? manager.buildingRegistration : null;
-            return r != null && r.RentedByPlayer && r.StreetNumber == number && r.StreetName == street;
+            return r != null && GoingPublic.Mine(r) && r.StreetNumber == number && r.StreetName == street;
         }
 
         /// <summary>The beds and sofas a home is furnished with: one pass over its items, by what the game calls them.</summary>

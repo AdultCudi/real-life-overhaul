@@ -32,7 +32,9 @@ namespace RealLifeOverhaul.Leisure
     /// One key turns the free camera into a selfie (<see cref="Selfie"/>): the camera is held at
     /// arm's length in front of the player, the mouse and the wheel move it round and nearer, and
     /// every other setting goes on working; the same key brings the free camera back where it was.
-    /// Never in a vehicle or on the bus: the game's own notification says so.
+    /// Never in a vehicle or on the bus: the game's own notification says so. In a Going Public
+    /// session the clock is everyone's and the game cannot be paused for one player: the mode then
+    /// leaves the clock running and the speed controls alone (Core/GoingPublic).
     ///
     /// Idle cost: one key test a frame. While the mode is on it runs every frame, which is the
     /// point of it, and allocates only when a notification is asked for.
@@ -71,6 +73,7 @@ namespace RealLifeOverhaul.Leisure
         private bool _uiWasVisible;
         private bool _zoomWasBlocked;
         private bool _timeWasLocked;
+        private bool _timeShared;    // in a Going Public session the clock is everyone's: the mode leaves it running (Core/GoingPublic)
         private bool _playerHidden;
         private GameSpeedController _speed;
 
@@ -206,12 +209,13 @@ namespace RealLifeOverhaul.Leisure
             _cursorShown = Cursor.visible;
             _zoomWasBlocked = PedestrianCam.blockCameraZoom;
             _timeWasLocked = _speed != null && _speed.isTimeControlDisabled;
+            _timeShared = GoingPublic.ClockShared;
             _startPosition = camera.transform.position;
             _startRotation = camera.transform.rotation;
 
             Active = true;
             _enteredFrame = Time.frameCount;
-            if (_speed != null)
+            if (_speed != null && !_timeShared)
             {
                 _speed.SetPause(true, false);
                 _speed.DisableTimeControl(true);   // the game's pause key must not start time under a free camera
@@ -294,7 +298,7 @@ namespace RealLifeOverhaul.Leisure
             // Anything that takes the screen or starts time ends the mode.
             if (_camera == null || _brain == null || FullMenu.IsOpen || CityMap.IsOpen || MiniMenu.IsOpen || LoadScene.isLoading
                 || !Settings.PhotoMode || !Settings.Leisure
-                || (Time.frameCount > _enteredFrame + 30 && Time.timeScale > 0.01f)
+                || (!_timeShared && Time.frameCount > _enteredFrame + 30 && Time.timeScale > 0.01f)
                 || (Keys.Down(KeyAction.PhotoMode) && Time.frameCount > _enteredFrame))
             {
                 Leave();
@@ -638,7 +642,7 @@ namespace RealLifeOverhaul.Leisure
                 {
                     director.Screen.Suppress(false);
                 }
-                if (_speed != null)
+                if (_speed != null && !_timeShared)
                 {
                     _speed.DisableTimeControl(_timeWasLocked);
                     _speed.Reset();   // back to the speed, or the pause, the player had

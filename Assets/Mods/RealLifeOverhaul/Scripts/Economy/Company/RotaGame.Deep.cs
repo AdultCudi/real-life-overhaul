@@ -117,7 +117,7 @@ namespace RealLifeOverhaul.Economy
             int shops = 0;
             foreach (BuildingRegistration other in Save.BuildingRegistrations)
             {
-                BusinessType kind = other != null && other.RentedByPlayer && other.businessTypeName != Empty ? BusinessTypeHelper.GetData(other) : null;
+                BusinessType kind = other != null && GoingPublic.Mine(other) && other.businessTypeName != Empty ? BusinessTypeHelper.GetData(other) : null;
                 shops += kind != null && kind.HasTag(TagRef.Businesstag.allowtheft) ? 1 : 0;
             }
             float exposure = 1f - security, frequency = Mathf.Lerp(0.5f, 2f, Mathf.InverseLerp(1f, 10f, Settings.CrimeFrequency));

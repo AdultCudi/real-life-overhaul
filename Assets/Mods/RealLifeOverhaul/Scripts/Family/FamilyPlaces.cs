@@ -107,7 +107,7 @@ namespace RealLifeOverhaul.Family
                         continue;
                     }
                     BuildingRegistration registration = building.buildingRegistration;
-                    if (registration != null && registration.RentedByPlayer && building.building.SpecialService == null)
+                    if (registration != null && GoingPublic.Mine(registration) && building.building.SpecialService == null)
                     {
                         continue;   // the player's own shop is not where they go to be served
                     }
@@ -291,7 +291,7 @@ namespace RealLifeOverhaul.Family
                 for (int i = 0; all != null && i < all.Count; i++)
                 {
                     BuildingRegistration r = all[i];
-                    if (r == null || !r.RentedByPlayer || r.GetBuildingType() != Residential)
+                    if (r == null || !GoingPublic.Mine(r) || r.GetBuildingType() != Residential)
                     {
                         continue;
                     }
@@ -356,7 +356,7 @@ namespace RealLifeOverhaul.Family
                 return false;
             }
             var manager = InstanceBehavior<BuildingManager>.Instance;
-            if (manager == null || manager.building == null || !manager.IsPlayerOwnedBusiness || manager.building.BuildingType != Residential)
+            if (manager == null || manager.building == null || !GoingPublic.Mine(manager.buildingRegistration) || manager.building.BuildingType != Residential)
             {
                 return false;
             }

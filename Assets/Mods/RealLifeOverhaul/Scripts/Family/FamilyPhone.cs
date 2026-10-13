@@ -353,7 +353,7 @@ namespace RealLifeOverhaul.Family
         private static bool InOwnHome()
         {
             var manager = InstanceBehavior<BuildingManager>.Instance;
-            return manager != null && manager.building != null && manager.IsPlayerOwnedBusiness && manager.building.BuildingType == FamilyPlaces.Residential;
+            return manager != null && manager.building != null && GoingPublic.Mine(manager.buildingRegistration) && manager.building.BuildingType == FamilyPlaces.Residential;
         }
 
         private static Errand ShoppingErrand()

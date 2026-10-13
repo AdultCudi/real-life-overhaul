@@ -180,7 +180,7 @@ namespace RealLifeOverhaul.Economy
         {
             try
             {
-                if (reg == null || !reg.RentedByPlayer || !reg.HasValidAddress || reg.dirtSpots == null || reg.dirtSpots.Count == 0)
+                if (reg == null || !GoingPublic.Mine(reg) || !reg.HasValidAddress || reg.dirtSpots == null || reg.dirtSpots.Count == 0)
                 {
                     return false;
                 }

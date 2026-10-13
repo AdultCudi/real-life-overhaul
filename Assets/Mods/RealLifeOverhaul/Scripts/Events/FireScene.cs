@@ -283,7 +283,7 @@ namespace RealLifeOverhaul.Events
             if (owner != null && owner.building != null)
             {
                 BuildingRegistration registration = owner.building.GetRegistration();
-                _business = registration != null && registration.RentedByPlayer && registration.HasEstablishedBusiness ? registration : null;
+                _business = registration != null && GoingPublic.Mine(registration) && registration.HasEstablishedBusiness ? registration : null;
             }
         }
 
@@ -1364,7 +1364,7 @@ namespace RealLifeOverhaul.Events
                 {
                     return;
                 }
-                List<BuildingRegistration> own = BuildingHelper.GetPlayerBuildingRegistrations();
+                List<BuildingRegistration> own = BuildingHelper.GetPlayerBuildingRegistrations(GoingPublic.Mine);
                 int businesses = 0;
                 for (int i = 0; own != null && i < own.Count; i++)
                 {
@@ -1415,7 +1415,7 @@ namespace RealLifeOverhaul.Events
             ReopenAt = 0f;
             try
             {
-                List<BuildingRegistration> own = BuildingHelper.GetPlayerBuildingRegistrations();
+                List<BuildingRegistration> own = BuildingHelper.GetPlayerBuildingRegistrations(GoingPublic.Mine);
                 for (int i = 0; own != null && i < own.Count; i++)
                 {
                     BuildingRegistration business = own[i];

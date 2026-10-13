@@ -884,7 +884,7 @@ namespace RealLifeOverhaul
                 {
                     sounds.PlayAudio(BigAmbitions.SoundSystem.SoundType.CarRepair, car.transform.position);
                 }
-                if (uis != null && uis.timeMachine != null && LifeEvents.IsSafeForEvent())
+                if (uis != null && uis.timeMachine != null && LifeEvents.IsSafeForEvent() && !GoingPublic.ClockShared)   // in a Going Public session no time passes (Core/GoingPublic)
                 {
                     Timestamp until = TimeHelper.Now();
                     until.AddMinutes(minutes);
