@@ -283,7 +283,7 @@ namespace RealLifeOverhaul.Events
             if (owner != null && owner.building != null)
             {
                 BuildingRegistration registration = owner.building.GetRegistration();
-                _business = registration != null && registration.RentedByPlayer && registration.HasEstablishedBusiness ? registration : null;
+                _business = registration != null && GoingPublic.Mine(registration) && registration.HasEstablishedBusiness ? registration : null;
             }
         }
 

@@ -1030,7 +1030,7 @@ namespace RealLifeOverhaul.Utilities
                 return null;
             }
             BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
-            return manager != null && manager.IsPlayerOwnedBusiness ? manager.buildingRegistration : null;
+            return manager != null && GoingPublic.Mine(manager.buildingRegistration) ? manager.buildingRegistration : null;
         }
 
         // ---------------------------------------------------------------- the second: the office, its panel, the app

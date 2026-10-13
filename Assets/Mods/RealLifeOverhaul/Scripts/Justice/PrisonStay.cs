@@ -48,7 +48,7 @@ namespace RealLifeOverhaul
         public void Pause()
         {
             UIs uis = InstanceBehavior<UIs>.Instance;
-            if (uis == null || uis.gameSpeed == null)
+            if (uis == null || uis.gameSpeed == null || GoingPublic.ClockShared)   // a Going Public session's clock is never stopped for one player (Core/GoingPublic)
             {
                 return;
             }
@@ -888,6 +888,10 @@ namespace RealLifeOverhaul
             if (uis == null || uis.timeMachine == null || SaveGameManager.Current == null || until.GetTotalMinutes() <= TimeHelper.NowInMinutes() + 1f)
             {
                 yield break;
+            }
+            if (GoingPublic.ClockShared)
+            {
+                yield break;   // in a Going Public session the clock is everyone's: the stretch is served at once (Core/GoingPublic)
             }
             _hold.Rest(true);
             _hold.PauseHandedOver();

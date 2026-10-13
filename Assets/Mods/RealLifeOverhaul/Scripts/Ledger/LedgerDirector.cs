@@ -398,10 +398,10 @@ namespace RealLifeOverhaul.Ledger
         {
             if (Time.unscaledTime < _homeLook)
             {
-                return _homeReg != null && _homeReg.RentedByPlayer ? _homeReg : null;
+                return _homeReg != null && GoingPublic.Mine(_homeReg) ? _homeReg : null;
             }
             _homeLook = Time.unscaledTime + 5f;
-            if (_homeReg != null && _homeReg.RentedByPlayer)
+            if (_homeReg != null && GoingPublic.Mine(_homeReg))
             {
                 return _homeReg;
             }
@@ -411,7 +411,7 @@ namespace RealLifeOverhaul.Ledger
                 List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
                 for (int i = 0; all != null && i < all.Count; i++)
                 {
-                    if (all[i] != null && all[i].RentedByPlayer && all[i].GetBuildingType() == Residential)
+                    if (all[i] != null && GoingPublic.Mine(all[i]) && all[i].GetBuildingType() == Residential)
                     {
                         _homeReg = all[i];
                         break;
@@ -433,7 +433,7 @@ namespace RealLifeOverhaul.Ledger
                 return false;
             }
             var manager = InstanceBehavior<BuildingManager>.Instance;
-            return manager != null && manager.building != null && manager.IsPlayerOwnedBusiness && manager.building.BuildingType == Residential;
+            return manager != null && manager.building != null && GoingPublic.Mine(manager.buildingRegistration) && manager.building.BuildingType == Residential;
         }
 
         /// <summary>The home's address as the game writes it, or null without a home.</summary>

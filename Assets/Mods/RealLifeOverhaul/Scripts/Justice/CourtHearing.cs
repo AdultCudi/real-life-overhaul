@@ -361,7 +361,7 @@ namespace RealLifeOverhaul
             }
             foreach (BuildingRegistration registration in save.BuildingRegistrations)
             {
-                if (registration != null && registration.RentedByPlayer && registration.securityLevelPercentage > 0f)
+                if (registration != null && GoingPublic.Mine(registration) && registration.securityLevelPercentage > 0f)
                 {
                     return true;
                 }

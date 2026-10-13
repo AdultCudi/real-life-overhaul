@@ -102,7 +102,7 @@ namespace RealLifeOverhaul
                 heading = Quaternion.identity;
                 try
                 {
-                    if (!TrafficTools.Ready)
+                    if (!TrafficTools.Street)
                     {
                         return false;
                     }

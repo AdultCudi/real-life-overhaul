@@ -58,7 +58,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             var manager = InstanceBehavior<BuildingManager>.Instance;
-            return manager != null && manager.building != null && manager.IsPlayerOwnedBusiness && manager.building.BuildingType == Residential;
+            return manager != null && manager.building != null && GoingPublic.Mine(manager.buildingRegistration) && manager.building.BuildingType == Residential;
         }
 
         /// <summary>The home whose tidiness counts: the one the player is in, else the first they rent. Looked up at most every few seconds.</summary>
@@ -71,10 +71,10 @@ namespace RealLifeOverhaul
             }
             if (Time.unscaledTime < _nextLook)
             {
-                return _home != null && _home.RentedByPlayer ? _home : null;
+                return _home != null && GoingPublic.Mine(_home) ? _home : null;
             }
             _nextLook = Time.unscaledTime + 5f;
-            if (_home != null && _home.RentedByPlayer)
+            if (_home != null && GoingPublic.Mine(_home))
             {
                 return _home;
             }
@@ -84,7 +84,7 @@ namespace RealLifeOverhaul
                 List<BuildingRegistration> all = SaveGameManager.Current.BuildingRegistrations;
                 for (int i = 0; all != null && i < all.Count; i++)
                 {
-                    if (all[i] != null && all[i].RentedByPlayer && all[i].GetBuildingType() == Residential)
+                    if (all[i] != null && GoingPublic.Mine(all[i]) && all[i].GetBuildingType() == Residential)
                     {
                         _home = all[i];
                         break;

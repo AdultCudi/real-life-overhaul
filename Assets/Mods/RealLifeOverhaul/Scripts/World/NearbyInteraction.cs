@@ -98,7 +98,7 @@ namespace RealLifeOverhaul
             bestSqr = VehicleRange * VehicleRange;
             foreach (VehicleController vehicle in VehicleHelper.AllPlayerVehicles)
             {
-                if (vehicle == null || !vehicle.isActiveAndEnabled || !vehicle.visible || vehicle.vehicleInstance == null)
+                if (vehicle == null || !vehicle.isActiveAndEnabled || !vehicle.visible || !GoingPublic.MineVehicle(vehicle))
                 {
                     continue;
                 }

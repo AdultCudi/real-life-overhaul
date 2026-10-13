@@ -178,7 +178,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; all != null && i < all.Count && into.Count < CompanyCatalogue.ShopsMost; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg == null || !reg.RentedByPlayer || !reg.HasEstablishedBusiness || !reg.HasValidAddress || string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == Empty || reg.scheduleDays == null)
+                if (reg == null || !GoingPublic.Mine(reg) || !reg.HasEstablishedBusiness || !reg.HasValidAddress || string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == Empty || reg.scheduleDays == null)
                 {
                     continue;
                 }

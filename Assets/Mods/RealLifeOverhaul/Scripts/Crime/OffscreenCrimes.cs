@@ -132,7 +132,7 @@ namespace RealLifeOverhaul
             _shops.Clear();
             foreach (BuildingRegistration shop in save.BuildingRegistrations)
             {
-                if (shop == null || !shop.RentedByPlayer || shop == inside || string.IsNullOrEmpty(shop.BusinessName)
+                if (shop == null || !GoingPublic.Mine(shop) || shop == inside || string.IsNullOrEmpty(shop.BusinessName)
                     || shop.businessTypeName == EmptyBusinessType || shop.itemInstances == null)
                 {
                     continue;

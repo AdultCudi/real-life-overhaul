@@ -919,7 +919,10 @@ namespace RealLifeOverhaul
                 release.AddHours(hours);
                 _custodyResting = true;
                 EnergyHelper.SetCurrentEnergyRegen(EnergyRegen.Hospital);   // a bench in a cell: a little rest, as in the game's own waiting rooms
-                uis.timeMachine.StartTimeMachine(release, disableCancel: true, "reallife_crime_custody_info");
+                if (!GoingPublic.ClockShared)
+                {
+                    uis.timeMachine.StartTimeMachine(release, disableCancel: true, "reallife_crime_custody_info");   // in a Going Public session the hours pass at once (Core/GoingPublic)
+                }
 
                 waited = 0f;
                 while (uis != null && uis.timeMachine != null && uis.timeMachine.isRunning && waited < 240f)

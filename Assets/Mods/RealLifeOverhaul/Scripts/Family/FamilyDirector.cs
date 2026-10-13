@@ -561,7 +561,7 @@ namespace RealLifeOverhaul.Family
             yield return UiFader.Fade(0.5f, infoKey);
             during?.Invoke();
             UIs uis = InstanceBehavior<UIs>.Instance;
-            if (hours > 0 && uis != null && uis.timeMachine != null && !uis.timeMachine.isRunning)
+            if (hours > 0 && !GoingPublic.ClockShared && uis != null && uis.timeMachine != null && !uis.timeMachine.isRunning)   // in a Going Public session no time passes (Core/GoingPublic)
             {
                 // A day at a time: longer than that and hunger alone would put somebody in hospital.
                 int left = hours;

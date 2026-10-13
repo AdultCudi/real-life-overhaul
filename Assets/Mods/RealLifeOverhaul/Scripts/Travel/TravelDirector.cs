@@ -276,7 +276,7 @@ namespace RealLifeOverhaul
             {
                 if (TravelState.Away)
                 {
-                    if (Settings.Holidays)
+                    if (Settings.Holidays && !GoingPublic.ClockShared)   // a trip cannot go on in a Going Public session: it is cut short, as with the option off
                     {
                         Holidays.Resume();
                     }
@@ -487,9 +487,9 @@ namespace RealLifeOverhaul
         public IEnumerator Skip(Timestamp goal, string infoKey, bool constant = false)
         {
             var uis = InstanceBehavior<UIs>.Instance;
-            if (uis == null || uis.timeMachine == null || uis.timeMachine.isRunning || goal.GetMinutesFromNow() <= 0f)
+            if (uis == null || uis.timeMachine == null || uis.timeMachine.isRunning || goal.GetMinutesFromNow() <= 0f || GoingPublic.ClockShared)
             {
-                yield break;
+                yield break;   // (in a Going Public session no time passes: Core/GoingPublic; what would need it is not offered there)
             }
             _skipping = true;
             uis.timeMachine.StartTimeMachine(goal, false, infoKey, true, constant);
@@ -783,7 +783,7 @@ namespace RealLifeOverhaul
             List<BuildingRegistration> all = SaveGameManager.Current.BuildingRegistrations;
             for (int i = 0; all != null && i < all.Count; i++)
             {
-                if (all[i] != null && all[i].RentedByPlayer && all[i].GetBuildingType() == "ba:buildingtype_residential")
+                if (all[i] != null && GoingPublic.Mine(all[i]) && all[i].GetBuildingType() == "ba:buildingtype_residential")
                 {
                     return true;
                 }

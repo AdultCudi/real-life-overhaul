@@ -624,7 +624,7 @@ namespace RealLifeOverhaul
             {
                 bool on = Settings.Garage && Settings.TwoWheelers;
                 GameInstance save = SaveGameManager.Current;
-                if (on && !_places.Found && InstanceBehavior<CityManager>.Instance != null && TrafficTools.Ready)
+                if (on && !_places.Found && InstanceBehavior<CityManager>.Instance != null && TrafficTools.Street)
                 {
                     _places.Find();
                 }
@@ -675,7 +675,7 @@ namespace RealLifeOverhaul
                     Settled();
                 }
 
-                if (!_restored && !BuildingManager.IsInsideBuilding && TrafficTools.Ready)
+                if (!_restored && !BuildingManager.IsInsideBuilding && TrafficTools.Street)
                 {
                     _restored = true;
                     RestoreLost(save);
