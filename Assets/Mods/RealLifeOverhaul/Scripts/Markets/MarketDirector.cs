@@ -356,9 +356,9 @@ namespace RealLifeOverhaul.Markets
                 MarketStore.Save(Save.modData, _engine.State);
                 MarketTapeFile.Rewrite(_engine.Tape.Id, _engine.Tape.Whole());
             }
-            else if (_running && _engine.Tape.HasPending)
+            else if (_running)
             {
-                MarketTapeFile.Append(_engine.Tape.Id, _engine.Tape.TakePending());
+                KeepTape();
             }
             _running = false;
             _engine = null;
@@ -371,6 +371,22 @@ namespace RealLifeOverhaul.Markets
             RemoveApp();
         }
 
+        // The tape's lines on their way, with the furthest moment played (written once a second as the market goes, so the
+        // last second's could be missing): a load after this holds orders back exactly as far as the market went.
+        private void KeepTape()
+        {
+            MarketTape tape = _engine.Tape;
+            if (tape.Frontier > _frontierWritten)
+            {
+                tape.WriteFrontier();
+                _frontierWritten = tape.Frontier;
+            }
+            if (tape.HasPending)
+            {
+                MarketTapeFile.Append(tape.Id, tape.TakePending());
+            }
+        }
+
         /// <summary>A fault: one line, and nothing more of the market this session. What the save holds of it is left as it is.</summary>
         private void Fault(string where, Exception e)
         {
@@ -378,9 +394,9 @@ namespace RealLifeOverhaul.Markets
             Logger?.Error(e);
             try
             {
-                if (_running && _engine.Tape.HasPending)
+                if (_running)
                 {
-                    MarketTapeFile.Append(_engine.Tape.Id, _engine.Tape.TakePending());
+                    KeepTape();
                 }
                 _running = false;
                 _engine = null;
