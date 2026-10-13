@@ -167,7 +167,7 @@ namespace RealLifeOverhaul
                     return false;
                 }
                 BuildingRegistration registration = BuildingHelper.GetBuildingRegistration(best.Address);
-                if (registration == null || !registration.RentedByPlayer || string.IsNullOrEmpty(registration.BusinessName))
+                if (registration == null || !GoingPublic.Mine(registration) || string.IsNullOrEmpty(registration.BusinessName))
                 {
                     return false;
                 }

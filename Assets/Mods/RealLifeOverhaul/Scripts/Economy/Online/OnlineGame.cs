@@ -134,7 +134,7 @@ namespace RealLifeOverhaul.Economy
 
         public static bool IsWarehouse(BuildingRegistration reg)
         {
-            return reg is Warehouse && reg.RentedByPlayer && reg.HasValidAddress && reg.businessTypeName == WarehouseType;
+            return reg is Warehouse && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.businessTypeName == WarehouseType;
         }
 
         /// <summary>The businesses that take money and the warehouses the player runs: what a site can be opened for. One pass over the save's buildings.</summary>
@@ -158,7 +158,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg != null && reg.RentedByPlayer && reg.HasValidAddress && string.Equals(Place(reg), place, StringComparison.Ordinal) && (IsWarehouse(reg) || Books.IsBusiness(reg)))
+                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && string.Equals(Place(reg), place, StringComparison.Ordinal) && (IsWarehouse(reg) || Books.IsBusiness(reg)))
                 {
                     return reg;
                 }
@@ -723,7 +723,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; all != null && vehicles != null && i < all.Count; i++)
             {
                 var warehouse = all[i] as Warehouse;
-                if (warehouse == null || !warehouse.RentedByPlayer || warehouse.vehicleSlots == null)
+                if (warehouse == null || !GoingPublic.Mine(warehouse) || warehouse.vehicleSlots == null)
                 {
                     continue;
                 }

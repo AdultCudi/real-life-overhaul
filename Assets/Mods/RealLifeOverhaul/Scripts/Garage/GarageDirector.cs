@@ -144,7 +144,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < all.Count; i++)
             {
                 VehicleController vehicle = all[i];
-                if (!(vehicle is CarController) || vehicle.vehicleInstance == null || (_shop.IsOpen && _shop.Car == vehicle))
+                if (!(vehicle is CarController) || vehicle.vehicleInstance == null || !GoingPublic.MineVehicle(vehicle) || (_shop.IsOpen && _shop.Car == vehicle))
                 {
                     continue;
                 }
@@ -321,7 +321,7 @@ namespace RealLifeOverhaul
                 List<VehicleController> all = VehicleHelper.AllPlayerVehicles;
                 for (int i = 0; i < all.Count; i++)
                 {
-                    if (all[i] is CarController)
+                    if (all[i] is CarController && GoingPublic.MineVehicle(all[i]))
                     {
                         float sqr = (all[i].transform.position - from).sqrMagnitude;
                         if (sqr < bestSqr)

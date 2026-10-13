@@ -70,8 +70,12 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The cleaning service runs: the feature is running, its option is on and no fault has stopped it.</summary>
         public bool CleaningOn => _running && !_broken && !_cleaningBroken && Settings.EconomyCleaning;
 
-        /// <summary>Selling a business runs.</summary>
-        public bool SaleOn => _running && !_broken && !_saleBroken && Settings.EconomySale;
+        /// <summary>
+        /// Selling a business runs. Not in a Going Public session: who rents what is the host's record there, which the
+        /// game's own ways of giving up a business tell and this sale would not (Core/GoingPublic). What is listed and
+        /// offered waits, untouched, until the game is played alone.
+        /// </summary>
+        public bool SaleOn => _running && !_broken && !_saleBroken && Settings.EconomySale && !GoingPublic.InSession;
 
         private static GameInstance Save => SaveGameManager.Current;
         private static bool Verbose => Meta.Dev.Verbose;

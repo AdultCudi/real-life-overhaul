@@ -414,7 +414,7 @@ namespace RealLifeOverhaul
         {
             spot = default;
             heading = Quaternion.identity;
-            if (!TrafficTools.Ready)
+            if (!TrafficTools.Street)
             {
                 return false;
             }

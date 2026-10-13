@@ -367,7 +367,7 @@ namespace RealLifeOverhaul
                     HomeHealth.NewDay(passed);
                 }
                 HomeTidy.Read();
-                HomeHealth.Hourly(atHome, inside && !atHome && !InstanceBehavior<BuildingManager>.Instance.IsPlayerOwnedBusiness);
+                HomeHealth.Hourly(atHome, inside && !atHome && !GoingPublic.Mine(InstanceBehavior<BuildingManager>.Instance.buildingRegistration));
             }
 
             if (HomeCookList.IsOpen && (!atHome || !Settings.HomeRoutines || PlayerHelper.IsUsingVehicle || FullMenu.IsOpen || CityMap.IsOpen || MiniMenu.IsOpen || HudConfirm.isOpen
@@ -841,7 +841,7 @@ namespace RealLifeOverhaul
                     {
                         TestRefusals.Tell(Logger, "Home " + what, TestRefusal.FeatureOff);
                     }
-                    else if (BuildingManager.IsInsideBuilding && !InstanceBehavior<BuildingManager>.Instance.IsPlayerOwnedBusiness)
+                    else if (BuildingManager.IsInsideBuilding && !GoingPublic.Mine(InstanceBehavior<BuildingManager>.Instance.buildingRegistration))
                     {
                         Refuse("reallife_home_refused_not_here", what);
                     }

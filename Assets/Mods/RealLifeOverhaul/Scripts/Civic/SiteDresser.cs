@@ -539,7 +539,7 @@ namespace RealLifeOverhaul
 
         private SiteRefusal ResolveRoad(Dressed dressed, Vector3 pavement)
         {
-            if (!TrafficTools.Ready)
+            if (!TrafficTools.Street)
             {
                 return SiteRefusal.NoLane;
             }

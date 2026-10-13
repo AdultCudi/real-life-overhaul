@@ -25,7 +25,7 @@ namespace RealLifeOverhaul
             get
             {
                 BuildingManager building = Building;
-                return building != null && building.IsPlayerOwnedBusiness && building.businessType != null
+                return building != null && GoingPublic.Mine(building.buildingRegistration) && building.businessType != null
                        && building.businessType.HasTag(TagRef.Businesstag.allowtheft);
             }
         }
@@ -36,7 +36,7 @@ namespace RealLifeOverhaul
             get
             {
                 BuildingManager building = Building;
-                return building != null && !building.IsPlayerOwnedBusiness && building.isOpen && building.businessType != null
+                return building != null && !GoingPublic.Mine(building.buildingRegistration) && building.isOpen && building.businessType != null
                        && building.businessType.spawnCustomers && building.businessType.HasTag(TagRef.Businesstag.allowtheft)
                        && IndoorCustomerSpawner.Customers.Count > 0;
             }

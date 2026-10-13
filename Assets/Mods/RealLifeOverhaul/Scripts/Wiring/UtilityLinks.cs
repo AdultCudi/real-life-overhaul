@@ -210,7 +210,7 @@ namespace RealLifeOverhaul
                 }
                 foreach (BuildingRegistration reg in save.BuildingRegistrations)
                 {
-                    if (reg != null && reg.RentedByPlayer && reg.HasValidAddress)
+                    if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress)
                     {
                         Buildings.Building building = Helpers.BuildingHelper.GetBuilding(reg.Address);
                         if (building != null && building.BuildingType == "ba:buildingtype_residential")

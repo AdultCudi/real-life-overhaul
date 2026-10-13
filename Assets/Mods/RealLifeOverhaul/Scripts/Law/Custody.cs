@@ -641,6 +641,13 @@ namespace RealLifeOverhaul.Law
         private IEnumerator Cell()
         {
             CustodyState state = LawState.Custody;
+            if (GoingPublic.ClockShared)
+            {
+                // In a Going Public session the clock is everyone's and passes no faster for one player (Core/GoingPublic):
+                // the hours are served at once. The record, the fines and the court's order stand as they are.
+                Logger?.Info($"Law: {state.Hours} h of custody served at once: the clock is the Going Public session's.");
+                yield break;
+            }
             Precinct precinct = _precincts.At(state.Precinct);
             if (_panel == null)
             {
@@ -877,6 +884,10 @@ namespace RealLifeOverhaul.Law
             _beat = Time.unscaledTime;
 
             int served = Mathf.Clamp(Mathf.RoundToInt((TimeHelper.NowInMinutes() - state.StartedAt) / 60f), 0, LawBook.MostHours);
+            if (GoingPublic.ClockShared && !_bailed)
+            {
+                served = Mathf.Clamp(state.Hours, 0, LawBook.MostHours);   // served at once in a Going Public session (Cell): the whole term counts
+            }
             bool court = state.Court;
             Settle(court, served);
             if (announce && SaveGameManager.Current != null)
@@ -927,6 +938,10 @@ namespace RealLifeOverhaul.Law
             _beat = Time.unscaledTime;
 
             int served = Mathf.Clamp(Mathf.RoundToInt((TimeHelper.NowInMinutes() - state.StartedAt) / 60f), 0, LawBook.MostHours);
+            if (GoingPublic.ClockShared && !_bailed)
+            {
+                served = Mathf.Clamp(state.Hours, 0, LawBook.MostHours);   // served at once in a Going Public session (Cell): the whole term counts
+            }
             bool court = state.Court;
             Settle(court, served);
             if (announce && SaveGameManager.Current != null)

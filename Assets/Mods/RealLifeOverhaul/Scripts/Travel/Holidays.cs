@@ -187,7 +187,7 @@ namespace RealLifeOverhaul
                 for (int i = 0; all != null && i < all.Count; i++)
                 {
                     BuildingRegistration registration = all[i];
-                    if (registration == null || !registration.RentedByPlayer)
+                    if (registration == null || !GoingPublic.Mine(registration))
                     {
                         continue;
                     }
@@ -314,6 +314,11 @@ namespace RealLifeOverhaul
             if (trip == null || TravelState.Away)
             {
                 why = TravelText.T("reallife_travel_depart_no_ticket");
+                return false;
+            }
+            if (GoingPublic.ClockShared)
+            {
+                why = TravelText.T("reallife_gp_travel_depart");   // days away cannot pass for one player of a Going Public session (Core/GoingPublic)
                 return false;
             }
             HotelSite cottages = _director.Hotels != null ? _director.Hotels.ById(TravelCatalogue.HamptonsSlot) : null;
@@ -1018,7 +1023,7 @@ namespace RealLifeOverhaul
             List<BuildingRegistration> all = SaveGameManager.Current.BuildingRegistrations;
             for (int i = 0; all != null && i < all.Count; i++)
             {
-                if (all[i] != null && all[i].RentedByPlayer && all[i].businessTypeName != EmptyType && !string.IsNullOrEmpty(all[i].BusinessName))
+                if (all[i] != null && GoingPublic.Mine(all[i]) && all[i].businessTypeName != EmptyType && !string.IsNullOrEmpty(all[i].BusinessName))
                 {
                     return true;
                 }
@@ -1045,6 +1050,11 @@ namespace RealLifeOverhaul
             if (Host == null || !Settings.Holidays || TravelState.Away)
             {
                 DialogController.current.ShowEntry(Say(TravelText.T("reallife_travel_agent_off")));
+                return;
+            }
+            if (GoingPublic.ClockShared && !TravelState.HasTicket)
+            {
+                DialogController.current.ShowEntry(Say(TravelText.T("reallife_gp_travel_agent")));   // no trips in a Going Public session (Core/GoingPublic)
                 return;
             }
             if (TravelState.HasTicket)

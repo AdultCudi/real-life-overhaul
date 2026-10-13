@@ -22,10 +22,20 @@ namespace RealLifeOverhaul
         public static IModLogger Logger;
 
         /// <summary>
-        /// True while the traffic system is simulating. It is switched off (and all ordinary
-        /// traffic removed) inside buildings and while time is fast-forwarded.
+        /// True while the traffic system is simulating here and its cars are this machine's to take,
+        /// stop and drive. It is switched off (and all ordinary traffic removed) inside buildings and
+        /// while time is fast-forwarded. A guest in a Going Public session never has it: the cars
+        /// there are the host's, placed from the host's figures, and the traffic system does not run
+        /// (Core/GoingPublic.TrafficMirrored). Whatever takes a car or drives one asks this.
         /// </summary>
-        public static bool Ready =>
+        public static bool Ready => Street && !GoingPublic.TrafficMirrored;
+
+        /// <summary>
+        /// True while the player is out on a street the game is running: what <see cref="Ready"/>
+        /// says without the question of whose the cars are. For whatever only needs the street
+        /// (a job, an outing, a place found along a road), never for taking or driving a car.
+        /// </summary>
+        public static bool Street =>
             TrafficManager.HasInstance && TrafficManager.IsInitialized && !BuildingManager.IsInsideBuilding
             && TrafficManager.Instance.enabled;
 

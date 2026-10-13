@@ -164,7 +164,7 @@ namespace RealLifeOverhaul
         {
             ICrimeScene scene = _scene;
             PlayerController player = PlayerHelper.PlayerController;
-            bool placeGone = scene.Indoors ? !BuildingManager.IsInsideBuilding : !TrafficTools.Ready;
+            bool placeGone = scene.Indoors ? !BuildingManager.IsInsideBuilding : !TrafficTools.Street;
             if (!scene.Active || player == null || placeGone || !Settings.StreetCrime || !ModState.Loaded)
             {
                 EndScene();
@@ -256,7 +256,7 @@ namespace RealLifeOverhaul
             {
                 return ShopFloor.IsOwnShop ? CrimePlace.OwnShop : ShopFloor.IsOtherShop ? CrimePlace.OtherShop : CrimePlace.None;
             }
-            return TrafficTools.Ready && !UndergroundParkingManager.IsInsideParking ? CrimePlace.Street : CrimePlace.None;
+            return TrafficTools.Street && !UndergroundParkingManager.IsInsideParking ? CrimePlace.Street : CrimePlace.None;
         }
 
         // Shops are small and the player is in them briefly: a scene there is rarer than on the street.
