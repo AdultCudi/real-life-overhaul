@@ -377,7 +377,9 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(CompanyText.T("reallife_co_over_more", "count", (alerts.Count - 6).ToString()));
             }
-            if (ServicesDirector.CanClean) InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_svc_open_cleaning", ServicesDirector.OpenCleaning);   // (the cleaning service: Economy/Services)
+            Transform others = ServicesDirector.CanClean || OwnBankDirector.CanOpen ? box.ButtonRow() : null;
+            if (ServicesDirector.CanClean) InfoBox.Button(others, InfoBox.Additional, "reallife_svc_open_cleaning", ServicesDirector.OpenCleaning);   // (the cleaning service: Economy/Services)
+            if (OwnBankDirector.CanOpen) InfoBox.Button(others, InfoBox.Positive, "reallife_ob_open", OwnBankDirector.OpenApp);   // (the player's bank: Economy/OwnBank)
             WriteListingLine(box);
             return null;
         }

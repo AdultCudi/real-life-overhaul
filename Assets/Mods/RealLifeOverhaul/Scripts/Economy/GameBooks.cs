@@ -40,6 +40,12 @@ namespace RealLifeOverhaul.Economy
     /// claims another. Its order book's day is given the takings and a customer for each car sold, which is what the
     /// mod's business pressure, brands and company read there. And the game's tax deducts those costs as it deducts a
     /// shop's goods (<see cref="Deduct"/>), so that it counts the dealership's margin rather than its takings.
+    ///
+    /// This mod's own dealerships (Economy/Dealer) are booked the same way, by the address of a business of that type:
+    /// a car sold (ba:transaction_itemsold) and an instalment, a premium or a car taken back and sold are its takings, a
+    /// car bought (ba:transaction_vehiclebought), an inspection, the auction's fee and preparing a car a row among its
+    /// goods, warranty claims another (DealerLines), and its order book's day has the takings and a customer for each car
+    /// sold. Its costs are marked deductible when they are paid, so the game's tax deducts them itself.
     /// </summary>
     public static class GameBooks
     {
@@ -63,6 +69,8 @@ namespace RealLifeOverhaul.Economy
 
         // Empire Motors' dealerships of the player's, and what each took on the day being booked: takings, then cars sold.
         private static readonly List<Address> Dealers = new List<Address>(4);
+        private static readonly List<Address> OwnDealers = new List<Address>(4);   // this mod's own dealerships (Economy/Dealer)
+        private static readonly List<BuildingRegistration> OwnRegs = new List<BuildingRegistration>(4);
         private static readonly Dictionary<Address, float[]> DealerDay = new Dictionary<Address, float[]>(4);
         private static GameInstance _deductedSave;   // the save and the day whose dealership costs the tax was last given
         private static int _deductedDay = int.MinValue;
@@ -106,6 +114,13 @@ namespace RealLifeOverhaul.Economy
             Func<string, string> costRow = EconomyBridges.CostRow;
             float unassigned = 0f;
             EmpireMotors.Dealerships(Dealers);
+            Dealership.DealerGame.Dealerships(OwnRegs);
+            OwnDealers.Clear();
+            for (int i = 0; i < OwnRegs.Count; i++)
+            {
+                OwnDealers.Add(OwnRegs[i].Address);
+            }
+            OwnRegs.Clear();
             DealerDay.Clear();
             DealerTakings = DealerCosts = 0f;
             foreach (Transaction t in save.Transactions)
@@ -118,6 +133,12 @@ namespace RealLifeOverhaul.Economy
                 if (dealer != DealerLine.None)
                 {
                     Dealer(t, dealer, byAddress, ref goods);   // (it has none of the game's categories: nothing below would count it)
+                    continue;
+                }
+                DealerLine own = OwnDealers.Count > 0 && !ReferenceEquals(t.address, null) && OwnDealers.Contains(t.address) ? Dealership.DealerLines.Of(t.transactionType) : DealerLine.None;
+                if (own != DealerLine.None)
+                {
+                    Dealer(t, own, byAddress, ref goods);   // (a car sold or bought, booked as the game books one, at the dealership's own address)
                     continue;
                 }
                 float amount = t.amount;
@@ -286,7 +307,8 @@ namespace RealLifeOverhaul.Economy
             int count = here ? 1 : Dealers.Count;
             float amount = here ? t.amount : EmpireMotorsLines.Share(t.amount, count);
             float car = t.transactionType == EmpireMotorsLines.SoldType && t.amount > 0f ? 1f / count : 0f;   // a car sold: a customer served
-            string row = EmpireMotorsLines.RowOf(kind);
+            bool ours = here && OwnDealers.Contains(t.address);
+            string row = ours ? Dealership.DealerLines.RowOf(kind) : EmpireMotorsLines.RowOf(kind);
             for (int i = 0; i < count; i++)
             {
                 Address at = here ? t.address : Dealers[i];

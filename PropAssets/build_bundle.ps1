@@ -37,4 +37,8 @@ function Invoke-Unity([string]$method, [string]$log) {
 
 Invoke-Unity 'PropBundleBuilder.Build' (Join-Path $logs 'build.log')
 Invoke-Unity 'PropBundleBuilder.Verify' (Join-Path $logs 'verify.log')
+# Props shipped beside the bundle while it could not be built (scripts/newer_props.py) are in it now: the mod would
+# otherwise go on using those copies in place of the bundle's.
+$newer = Join-Path $OutFolder 'props_newer'
+if (Test-Path $newer) { Remove-Item -Recurse -Force $newer; Write-Host "Removed $($newer), the bundle has those props now." }
 Write-Host "OK: $(Join-Path $OutFolder 'reallife_props')"

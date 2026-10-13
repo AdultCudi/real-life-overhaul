@@ -93,6 +93,14 @@ namespace RealLifeOverhaul
         public static event Action<NewsKind, string, int> Reported;
 
         /// <summary>
+        /// Raised for every report while a save is loaded, whether or not the paper prints it, with the kind and where it
+        /// happened in the street (something reported inside a building is at the building's door; a report with no place
+        /// is at zero). The district view notes crimes by district from it (Wiring/DistrictLinks). A handler must not
+        /// throw; one that does is logged and the report goes on.
+        /// </summary>
+        public static event Action<NewsKind, Vector3> ReportedAt;
+
+        /// <summary>
         /// Something happened that a newspaper would print. Safe to call from anywhere at any
         /// time: it does nothing until a save is loaded, or while the paper is switched off.
         /// </summary>
@@ -105,6 +113,18 @@ namespace RealLifeOverhaul
                 try
                 {
                     heard(kind, detail, amount);
+                }
+                catch (Exception e)
+                {
+                    SocialDirector.Logger?.Error(e);
+                }
+            }
+            Action<NewsKind, Vector3> placed = ReportedAt;
+            if (placed != null && SaveGameManager.Current != null)
+            {
+                try
+                {
+                    placed(kind, BuildingManager.IsInsideBuilding && where != Vector3.zero ? SocialPlaces.OnStreet(where) : where);
                 }
                 catch (Exception e)
                 {

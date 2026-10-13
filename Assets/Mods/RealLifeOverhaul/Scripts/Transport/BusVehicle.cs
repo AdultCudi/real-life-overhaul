@@ -34,6 +34,12 @@ namespace RealLifeOverhaul
     /// the brake lights come on as it slows and while it stands, an indicator blinks as it pulls in
     /// and out, and from dusk the headlights, the tail lights and the sign are lit.
     ///
+    /// IT HAS AN INSIDE. The modelled body is the bus with its inside (the floor, the seats, the poles and straps, the
+    /// validator by the driver: <see cref="BusInside"/>) and without its roof, which is a prop of its own
+    /// (<c>city_bus_roof</c>, the ceiling under it). While the player rides, <see cref="ShowRoof"/> stops drawing the roof
+    /// whenever the camera is over it, as the game takes a building's roof away for a view into it; it still casts its
+    /// shadow, so the inside stays in the bus's shade.
+    ///
     /// One per <see cref="TransitBus"/>, made the first time it is sent out and switched off in between.
     /// </summary>
     public sealed class BusVehicle : MonoBehaviour
@@ -98,9 +104,17 @@ namespace RealLifeOverhaul
         private float _leanSpeed;
         private float _dip;
         private float _dipSpeed;
+        private MeshRenderer _roof;
+        private bool _roofShown = true;
 
         /// <summary>True when the body is the modelled bus (a step at its doors: <c>board_step</c>), false for plain shapes.</summary>
         public bool Modelled { get; private set; }
+
+        /// <summary>True when the modelled body has its inside and its roof apart (city_bus_roof): somebody can be seen riding in it.</summary>
+        public bool HasInside { get; private set; }
+
+        /// <summary>What leans and dips on the springs: the inside is on it, so whoever rides is placed by it.</summary>
+        public Transform Shell => _shell;
 
         /// <summary>True while it is on the street.</summary>
         public bool Out => gameObject.activeSelf;
@@ -148,6 +162,8 @@ namespace RealLifeOverhaul
             _shell = new GameObject("Shell").transform;
             _shell.SetParent(transform, false);
             Modelled = Shapes.Prop("city_bus", _shell);
+            // The body with its inside comes with its roof apart: the two are made together, and one without the other is never used.
+            HasInside = Modelled && PropLibrary.Has("city_bus_roof") && Shapes.Prop("city_bus_roof", _shell);
             if (!Modelled)
             {
                 PlainBody();
@@ -158,9 +174,13 @@ namespace RealLifeOverhaul
             Signs();
             foreach (Renderer renderer in GetComponentsInChildren<Renderer>(true))
             {
-                if (renderer is MeshRenderer && renderer.name == "city_bus")
+                if (renderer is MeshRenderer && (renderer.name == "city_bus" || renderer.name == "city_bus_roof"))
                 {
                     renderer.shadowCastingMode = ShadowCastingMode.On;
+                    if (renderer.name == "city_bus_roof")
+                    {
+                        _roof = (MeshRenderer)renderer;
+                    }
                 }
             }
             for (int i = 0; i < _lit.Length; i++)
@@ -371,6 +391,32 @@ namespace RealLifeOverhaul
             Lamps();
         }
 
+        /// <summary>
+        /// Draws its roof, or not (it still casts its shadow then): the view into the bus from above while the player rides
+        /// in it. Only a change of it touches the renderer.
+        /// </summary>
+        public void ShowRoof(bool shown)
+        {
+            if (_roof == null || shown == _roofShown)
+            {
+                return;
+            }
+            _roofShown = shown;
+            _roof.shadowCastingMode = shown ? ShadowCastingMode.On : ShadowCastingMode.ShadowsOnly;
+        }
+
+        /// <summary>Where a place on its floor is in the world, at a height over the floor, as the body leans and dips now.</summary>
+        public Vector3 OnFloor(BusInside.Spot spot, float up = 0f)
+        {
+            return _shell.TransformPoint(new Vector3(spot.X, BusInside.Floor + up, spot.Z));
+        }
+
+        /// <summary>The world's rotation for a facing on its floor (degrees about the vertical, 0 to its nose, 90 to its doors).</summary>
+        public Quaternion Facing(float facing)
+        {
+            return _shell.rotation * Quaternion.Euler(0f, facing, 0f);
+        }
+
         /// <summary>Takes it off the street, telling the traffic first that it is gone from in front of whoever was waiting for it.</summary>
         public void Hide()
         {
@@ -378,6 +424,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
+            ShowRoof(true);
             if (TrafficManager.HasInstance && TrafficManager.IsInitialized && _solid != null)
             {
                 Manager.TriggerColliderRemovedEvent(_solid);

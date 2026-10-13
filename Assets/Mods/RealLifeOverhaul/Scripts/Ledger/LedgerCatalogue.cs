@@ -115,6 +115,12 @@ namespace RealLifeOverhaul.Ledger
 
             // business: the player's own shops and their staff
             K("_co_news_strike", LedgerSection.Business, 72, "strike"),
+            K("_ob_news_closed", LedgerSection.Business, 90),
+            K("_ob_news_run_over", LedgerSection.Business, 58),
+            K("_ob_news_run", LedgerSection.Business, 86),
+            K("_ob_news_fined", LedgerSection.Business, 78),
+            K("_ob_news_breach", LedgerSection.Business, 74),
+            K("_ob_news", LedgerSection.Business, 56),
             K("_co_news", LedgerSection.Business, 50),
             K("_news_shop_loss", LedgerSection.Business, 30),
             K("_news_shop_good", LedgerSection.Business, 25),

@@ -8,10 +8,13 @@ the hose from the outlet. Kit space: x right, y forward, z up."""
 import json
 import math
 import os
+import re
 
 import numpy as np
 
 BUS = "city_bus"
+ROOF = "city_bus_roof"
+INSIDE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "Assets", "Mods", "RealLifeOverhaul", "Scripts", "Transport", "BusInside.cs")
 DOORS = (4.45, -0.55)          # BusVehicle.FrontDoorAhead, MiddleDoorAhead: two leaves 0.60 wide, 2.30 high, from the floor at 0.33
 SIGNS = (("over the windscreen", (0.0, 5.465, 2.78), (0, 1, 0), (1.62, 0.24)), ("over the front door", (1.212, 3.25, 2.55), (1, 0, 0), (1.10, 0.20)),
          ("at the back", (0.0, -5.465, 2.62), (0, -1, 0), (0.45, 0.20)))          # BusVehicle.Signs: middle, facing, box
@@ -78,7 +81,8 @@ def run(c):
     body = b[b[:, 2] < 2.0]                                # under the mirrors
     c.extent(BUS, "width under the mirrors (BusVehicle.HalfWidth)", np.ptp(body[:, 0]), 2.40, 0.008)
     c.extent(BUS, "middle of its width at the pivot", (body[:, 0].max() + body[:, 0].min()) / 2, 0.0, 0.001)
-    c.extent(BUS, "height over the pod (BusVehicle.Height)", b[:, 2].max(), 3.05, 0.002)
+    roof = Mesh(c, ROOF)
+    c.extent(BUS, "height over the pod, on its roof (BusVehicle.Height)", max(b[:, 2].max(), roof.v[:, 2].max()), 3.05, 0.002)
     c.report(1.25 < np.abs(b[:, 0]).max() <= 1.42, "%-19s the mirrors stand out a little: to %.3f either side" % (BUS, np.abs(b[:, 0]).max()))
     c.report(b[:, 2].min() > 0.08, "%-19s clear of the road: its lowest point %.3f up" % (BUS, b[:, 2].min()))
     tyre = 2 * math.sqrt(0.48 ** 2 - 0.27 ** 2)            # the tyre's length 0.75 m up
@@ -104,6 +108,8 @@ def run(c):
         c.report(len(shut) == 0, "%-19s %s: nothing where its leaves stand shut (%d points)" % (BUS, where, len(shut)))
         sweep = b[(b[:, 0] > 1.27) & (b[:, 0] < 1.335) & (np.abs(b[:, 1] - middle) < 1.17) & (b[:, 2] > 0.30) & (b[:, 2] < 2.66)]
         c.report(len(sweep) == 0, "%-19s %s: nothing in the way of its leaves sliding open, the mirror outside them (%d points)" % (BUS, where, len(sweep)))
+
+    inside(c, bus, roof)
 
     # ---- the lettering: a flat black panel under each, 8 to 20 mm behind it, nothing in front.
     for where, centre, facing, (wide, high) in SIGNS:
@@ -151,10 +157,10 @@ def run(c):
         placed = np.stack([1.02 + w[:, 0] * math.cos(t) - w[:, 1] * math.sin(t), 2.90 + w[:, 0] * math.sin(t) + w[:, 1] * math.cos(t), 0.48 + w[:, 2]], axis=1)
         room = np.sqrt(np.maximum(0.0, 0.58 ** 2 - np.maximum(0.0, placed[:, 2] - 0.48) ** 2))          # the arch's half length at each height
         c.report(placed[:, 0].min() > 0.555 and np.all(np.abs(placed[:, 1] - 2.90) < room - 0.01),
-                 "%-19s steered %+.0f degrees: inside its arch, %.3f clear of the box between the wheels" % ("city_bus_wheel", steer, placed[:, 0].min() - 0.55))
+                 "%-19s steered %+.0f degrees: inside its arch, %.3f clear of the housing over it" % ("city_bus_wheel", steer, placed[:, 0].min() - 0.55))
     t = c.kit("city_bus_wheel_twin")
     c.report(0.92 + t[:, 0].max() <= 1.2005 and 0.92 + t[:, 0].min() > 0.605,
-             "%-19s on its track (0.92): from x %.3f to %.3f, inside the side and clear of the box" % ("city_bus_wheel_twin", 0.92 + t[:, 0].min(), 0.92 + t[:, 0].max()))
+             "%-19s on its track (0.92): from x %.3f to %.3f, inside the side and clear of the housing" % ("city_bus_wheel_twin", 0.92 + t[:, 0].min(), 0.92 + t[:, 0].max()))
     leaf = c.kit("city_bus_door")
     for axis, want in enumerate((0.04, 0.60, 2.30)):
         c.extent("city_bus_door", "xyz"[axis] + " (DoorLeaf, DoorTall)", np.ptp(leaf[:, axis]), want, 0.002)
@@ -187,3 +193,145 @@ def run(c):
     for axis, want in enumerate((1.30, 0.28, 0.17)):
         c.extent("fire_light_bar", "xyz"[axis], np.ptp(b[:, axis]), want, 0.002)
     c.extent("fire_light_bar", "underside at the pivot", b[:, 2].min(), 0.0, 0.0005)
+
+
+class _Numbers:
+    """The constants of props_service.py, read without Blender (it imports bmesh): every plain assignment at the top of
+    the module whose value can be worked out from numbers and the names before it."""
+
+    def __init__(self):
+        import ast
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "props_service.py")
+        with open(path, encoding="utf-8") as f:
+            tree = ast.parse(f.read())
+        names = {"math": math}
+        for node in tree.body:
+            if isinstance(node, ast.Assign) and all(isinstance(t, (ast.Name, ast.Tuple)) for t in node.targets):
+                try:
+                    value = eval(compile(ast.Expression(node.value), path, "eval"), {"__builtins__": {}}, names)
+                except Exception:
+                    continue
+                for target in node.targets:
+                    if isinstance(target, ast.Name):
+                        names[target.id] = value
+                    else:
+                        for element, part in zip(target.elts, value):
+                            names[element.id] = part
+        self.__dict__.update(names)
+
+
+ps = _Numbers()
+
+
+def inside_numbers():
+    """What Transport/BusInside.cs says of the inside: its constants, its named places and its lists of places, (x, z) there
+    and (x, y) here."""
+    with open(INSIDE, encoding="utf-8") as f:
+        text = f.read()
+    number = r"(-?[0-9.]+)f"
+    consts = {m.group(1): float(m.group(2)) for m in re.finditer(r"public const float (\w+) = " + number + ";", text)}
+    spots = {m.group(1): (float(m.group(2)), float(m.group(3))) for m in re.finditer(r"Spot (\w+) = new Spot\(" + number + ", " + number + r"\)", text)}
+    lists = {m.group(1): [(float(a), float(b)) for a, b in re.findall(r"new Spot\(" + number + ", " + number + r"\)", m.group(2))]
+             for m in re.finditer(r"Spot\[\] (\w+) = \{([^}]*)\}", text)}
+    return consts, spots, lists
+
+
+def inside(c, bus, roof):
+    """The inside as BusInside walks it: its numbers are the model's, the floor is under every place of every path with
+    nothing over it, the seats, the validator and the strap are where the clips put a rider's body and hands."""
+    consts, spots, lists = inside_numbers()
+    floor = ps.BUS_FLOOR
+    agree = [("Floor", floor), ("SeatUp", ps.SEAT_UP), ("SeatFeet", ps.SEAT_FEET), ("Wall", ps.IN_WALL), ("FrontDoor", ps.BUS_DOORS[0]),
+             ("MiddleDoor", ps.BUS_DOORS[1]), ("StrapX", ps.STRAP_X), ("RiderStrap", ps.RIDER_STRAP), ("StrapUp", ps.STRAP_LOOP - floor)]
+    wrong = [name for name, want in agree if abs(consts.get(name, 99.0) - want) > 1e-4]
+    c.report(not wrong and lists.get("Seats") == list(ps.RIDER_SEATS),
+             "%-19s BusInside.cs says what the model is: %s" % (BUS, "floor, seats, doors, strap" if not wrong else "NOT " + ", ".join(wrong)))
+    c.report(abs(spots["BoardFrom"][0] - (ps.BUS_HALF + 0.30)) < 1e-4 and abs(spots["BoardFrom"][0] - spots["Aboard"][0] - consts["StepIn"]) < 1e-4
+             and abs(spots["BoardFrom"][1] - ps.BUS_DOORS[0]) < 1e-4 and abs(spots["ExitTo"][0] - (ps.BUS_HALF + 0.30)) < 1e-4 and abs(spots["ExitTo"][1] - ps.BUS_DOORS[1]) < 1e-4,
+             "%-19s board_step from %.2f m out at the front door to %.2f in (BusVehicle.DoorOut, its step %.2f); off at the middle door" % (BUS, spots["BoardFrom"][0], spots["Aboard"][0], consts["StepIn"]))
+
+    def down(points, start=2.05):
+        # What is seen looking down: a face turned away (the underside where it rises over the arches) is not drawn from above.
+        origins = np.array([(x, y, start) for x, y in points], dtype=float)
+        depth = np.zeros(len(origins))
+        faces = np.full(len(origins), -1)
+        todo = np.arange(len(origins))
+        for _ in range(6):
+            if not len(todo):
+                break
+            far, met = bus.hits(origins[todo], (0, 0, -1))
+            hit = met >= 0
+            up = np.zeros(len(todo), dtype=bool)
+            up[hit] = bus.normals(met[hit])[:, 2] < 0.0      # (Unity's winding, read in the kit's axes: a face turned up comes out with z under 0)
+            done = ~hit | up
+            depth[todo[done]] += far[done]
+            faces[todo[done]] = met[done]
+            again = todo[~done]
+            depth[again] += far[~done] + 0.001
+            origins[again, 2] -= far[~done] + 0.001
+            todo = again
+        return start - depth, faces
+
+    # The seats: each cushion's top SEAT_UP over the floor at its middle, the floor where the feet go ahead of it.
+    for x, y in ps.RIDER_SEATS:
+        top, faces = down([(x, y)])
+        feet, _ = down([(x, y + ps.SEAT_FEET), (x - 0.08, y + ps.SEAT_FEET), (x + 0.08, y + ps.SEAT_FEET)])
+        c.report(abs(top[0] - floor - ps.SEAT_UP) < 0.004 and bool(bus.on(faces, ("wool_blue",))[0]) and np.all(np.abs(feet - floor) < 0.003),
+                 "%-19s the rider's seat at (%.2f, %.2f): its top %.3f over the floor (sit_bench %.2f), the floor where the feet go %.2f ahead" % (BUS, x, y, top[0] - floor, ps.SEAT_UP, ps.SEAT_FEET))
+
+    # Every path of BusInside: the floor at 0.33 under it every 5 cm and nothing over it up to the straps' grips; away from
+    # the seats a body's width of it too.
+    named = dict(spots)
+    for i, (x, y) in enumerate(lists["Seats"]):
+        named["Feet%d" % i] = (x, y + consts["SeatFeet"])
+    for i, q in enumerate(lists["Aisle"]):
+        named["Aisle%d" % i] = q
+    paths = [("Aboard", "Reader"), ("Reader", "Aisle0", "Aisle1", "Aisle2", "SeatTurn", "Feet0"), ("SeatTurn", "WindowOut", "Feet1"), ("Aisle2", "Strap"),
+             ("Feet0", "OffSeat", "Exit"), ("Feet1", "WindowOut", "OffSeat", "Exit"), ("Strap", "Exit"), ("Aisle2", "BackToAisle", "Exit"),
+             ("Reader", "FrontExit"), ("Aboard", "FrontExit")]
+    worst, blocked = 0.0, []
+    for path in paths:
+        for a, b in zip(path, path[1:]):
+            p0, p1 = np.array(named[a]), np.array(named[b])
+            leg = np.linalg.norm(p1 - p0)
+            along = (p1 - p0) / max(leg, 1e-6)
+            aside = np.array((-along[1], along[0]))
+            seat_end = a.startswith("Feet") or b.startswith("Feet") or b == "WindowOut"
+            points = []
+            for k in np.linspace(0.0, 1.0, max(2, int(leg / 0.05) + 1)):
+                q = p0 + (p1 - p0) * k
+                points.append(q)
+                if not seat_end:
+                    points += [q + aside * 0.13, q - aside * 0.13]
+            got, _ = down(points)
+            off = np.abs(got - floor)
+            worst = max(worst, off.max())
+            if off.max() > 0.003:
+                blocked.append("%s to %s" % (a, b))
+    c.report(not blocked, "%-19s BusInside's %d paths: the floor under them all, nothing over it below 2.05 m, nor 0.13 m either side away from the seats (worst %.3f)%s"
+             % (BUS, len(paths), worst, "" if not blocked else ": NOT " + ", ".join(blocked)))
+
+    # The validator: pay_tap holds the card to a reader ReaderAhead away and ReaderUp over the feet.
+    lens = np.array((consts["ReaderX"], consts["ReaderZ"]))
+    far, faces = bus.hits([(lens[0] + 0.30, lens[1], consts["ReaderY"])], (-1, 0, 0))
+    met = lens[0] + 0.30 - far[0]
+    reach = np.linalg.norm(np.array(spots["Reader"]) - lens)
+    c.report(abs(met - lens[0]) < 0.003 and bool(bus.on(faces, ("svc_lens_clear",))[0]) and abs(reach - consts["ReaderAhead"]) < 0.02
+             and abs(consts["ReaderY"] - floor - consts["ReaderUp"]) < 0.01,
+             "%-19s the validator's lens at x %.3f, %.3f over the floor; the rider before it %.2f from it (pay_tap %.2f and %.3f)"
+             % (BUS, met, consts["ReaderY"] - floor, reach, consts["ReaderAhead"], consts["ReaderUp"]))
+
+    # The strap: strap_hang holds it StrapUp over the feet, StrapRight to the right and StrapAhead ahead of them.
+    far, faces = bus.hits([(consts["StrapX"], consts["RiderStrap"], 1.60)], (0, 0, 1))
+    grip = 1.60 + far[0] + 0.011
+    stand = (consts["StrapX"] - consts["StrapRight"], consts["RiderStrap"] - consts["StrapAhead"])
+    c.report(abs(grip - floor - consts["StrapUp"]) < 0.006 and np.allclose(stand, spots["Strap"], atol=1e-4) and bool(bus.on(faces, ("rubber_black",))[0]),
+             "%-19s the rider's strap: its grip %.3f over the floor (strap_hang %.2f), the rider under it at (%.2f, %.2f)" % (BUS, grip - floor, consts["StrapUp"], *stand))
+
+    # The roof apart: the ceiling at the doors' upper edge, within the sides, and nothing of the body left over the inside.
+    lintel = floor + ps.BUS_LEAF[1]
+    r = roof.v
+    c.extent(ROOF, "the ceiling under it at the doors' upper edge", r[:, 2].min(), lintel, 0.002)
+    c.report(np.abs(r[:, 0]).max() <= ps.BUS_HALF + 0.016, "%-19s within the bus's sides (to %.3f)" % (ROOF, np.abs(r[:, 0]).max()))
+    up, _ = down([(x, y) for x in (-0.9, 0.0, 0.9) for y in (-4.0, -1.0, 2.0)], start=4.0)
+    c.report(np.all(up < ps.ROOF_FROM), "%-19s nothing of it over the inside: the view from above looks in when the roof is not drawn" % BUS)

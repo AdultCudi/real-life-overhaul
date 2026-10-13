@@ -14,6 +14,7 @@ namespace RealLifeOverhaul
         public const string CameraDistanceId = "camera_distance";
         public const string CameraFollowId = "camera_follow";
         public const string MapPlacesShownId = "map_places_shown";
+        public const string DistrictViewId = "district_view";
         public const string MouseLookId = "camera_mouselook";
         public const string MouseSensitivityId = "camera_sensitivity";
         public const string EnterWithKeyId = "enter_with_key";
@@ -113,8 +114,10 @@ namespace RealLifeOverhaul
         public const string EstateHotelId = "economy_estate_hotel";
         public const string EstateHireId = "economy_estate_hire";
         public const string EconomyOnlineId = "economy_online";
+        public const string EconomyDealerId = "economy_dealer";
         public const string EconomyCleaningId = "economy_cleaning";
         public const string EconomySaleId = "economy_sale";
+        public const string EconomyBankId = "economy_bank";
         public const string EconomyBrandsId = "economy_brands";
         public const string EconomyBanksId = "economy_banks";
         public const string MinimapId = "nav_minimap";
@@ -218,6 +221,7 @@ namespace RealLifeOverhaul
         public static int CameraPitch = 18;      // degrees above the horizon
         public static int CameraDistance = 6;    // metres behind the player
         public static int CameraFollow = 5;      // 0 = never swing behind the player (only without mouse look)
+        public static bool DistrictView = true;     // the district view on the city map: its rows in the map's filter list, the tint and the card (Districts/DistrictView)
         public static bool MapPlacesShown = true;   // the mod's places on the city map: their markers and their rows in the map's filter list (Core/MapPlaces; off hides all of them)
         public static bool MouseLook = true;     // GTA-style: mouse steers the camera, cursor locked
         public static int MouseSensitivity = 6;
@@ -317,8 +321,10 @@ namespace RealLifeOverhaul
         public static bool EstateHotel = true;           // owning a hotel of the city's as a business (off: a hotel that is held stands still and nothing is taken or paid)
         public static bool EstateHire = true;            // car hire: the player's own vehicles go out to customers from a lot (off: no car goes out, and one that is out is called back)
         public static bool EconomyOnline = true;         // online shops: a business or a warehouse sells what it stocks to the whole city, picked by its staff and delivered by van or courier, with the Web shop app (off: no orders come, nothing is charged or paid) (Scripts/Economy/Online)
+        public static bool EconomyDealer = true;         // the car dealership: a business type of the mod's own that buys cars new, used and at auction and sells them to customers, with its own finance and warranties and the Dealership app (off: its dealerships do not trade; their cars stay on the lots) (Scripts/Economy/Dealer)
         public static bool EconomyCleaning = true;       // the cleaning service: cleaners shared between businesses on a daily round, and cleaning contracts with other businesses, in the Services app (off: no round, no contracts, nothing cleaned or charged by it) (Scripts/Economy/Services)
         public static bool EconomySale = true;           // selling a business: its value, the market, offers and a completed sale, in the Services app (off: nothing is offered, paid or charged by it) (Scripts/Economy/Services)
+        public static bool EconomyBank = true;           // the player's own bank: a licence, savers, loans, a fund and a regulator, in its own app (off: it stands still, nothing is run, booked or charged) (Scripts/Economy/OwnBank)
         public static bool EconomyBrands = true;         // brands and franchises: a brand made from a shop, its recognition and standards, franchising it, and a shop under a city chain, with the Brands app (off: none of it runs, nothing is paid and footfall is without it) (Scripts/Economy/Brands)
         public static bool EconomyBanks = true;          // the bank apps: one app on the phone for each of the city's three largest banks, that bank's slice of the accounts, loans, card, offers and rating (off: no bank app; every account and loan stays as it is, and the Finance app still has everything) (Scripts/Economy/Banks)
         public static bool Minimap = true;               // the minimap on the HUD while out in the city (Scripts/Navigation)
@@ -465,6 +471,7 @@ namespace RealLifeOverhaul
             CameraDistance = Int(modId, CameraDistanceId, CameraDistance);
             CameraFollow = Int(modId, CameraFollowId, CameraFollow);
             MapPlacesShown = Bool(modId, MapPlacesShownId, MapPlacesShown);
+            DistrictView = Bool(modId, DistrictViewId, DistrictView);
             MouseLook = Bool(modId, MouseLookId, MouseLook);
             MouseSensitivity = Int(modId, MouseSensitivityId, MouseSensitivity);
             EnterWithKey = Bool(modId, EnterWithKeyId, EnterWithKey);
@@ -571,8 +578,10 @@ namespace RealLifeOverhaul
             EstateHotel = Bool(modId, EstateHotelId, EstateHotel);
             EstateHire = Bool(modId, EstateHireId, EstateHire);
             EconomyOnline = Bool(modId, EconomyOnlineId, EconomyOnline);
+            EconomyDealer = Bool(modId, EconomyDealerId, EconomyDealer);
             EconomyCleaning = Bool(modId, EconomyCleaningId, EconomyCleaning);
             EconomySale = Bool(modId, EconomySaleId, EconomySale);
+            EconomyBank = Bool(modId, EconomyBankId, EconomyBank);
             EconomyBrands = Bool(modId, EconomyBrandsId, EconomyBrands);
             EconomyBanks = Bool(modId, EconomyBanksId, EconomyBanks);
             Minimap = Bool(modId, MinimapId, Minimap);

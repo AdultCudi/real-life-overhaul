@@ -4,7 +4,7 @@
     blender -b -P scenes.py -- precinct bus  only these
 
 Positions are said in Unity's axes (x right, y up, z forward: what the READMEs and the mod's code use) and turned into
-the kit's here. A wall is a plain grey box, a person a figure of boxes 1.78 m tall.
+the kit's here. A wall is a plain grey box, a person a figure of boxes 1.78 m tall ((x, z) on the ground, (x, z, y) standing on a floor y up).
 """
 import math
 import os
@@ -17,12 +17,12 @@ import props  # noqa: E402
 import props_service  # noqa: E402
 
 
-def city_bus(x, z, turn=0.0, open_doors=False):
-    """The city bus put together as Transport/BusVehicle does it (props_service.bus_parts: the body, its wheels and its
-    door leaves), its middle on the road at (x, z), facing `turn`."""
+def city_bus(x, z, turn=0.0, open_doors=False, roof=True):
+    """The city bus put together as Transport/BusVehicle does it (props_service.bus_parts: the body, its roof, its wheels
+    and its door leaves), its middle on the road at (x, z), facing `turn`. Without its roof, as the player riding it sees it from above."""
     a = math.radians(turn)
     things = [("city_bus", (x, 0.0, z), turn)]
-    for name, (px, py, pz), spin in props_service.bus_parts(open_doors):
+    for name, (px, py, pz), spin in props_service.bus_parts(open_doors, roof):
         things.append((name, (x + px * math.cos(a) + py * math.sin(a), pz, z - px * math.sin(a) + py * math.cos(a)), turn - spin))
     return things
 
@@ -100,6 +100,11 @@ SCENES = {
         [((13.0, 3.2, 0.2), (0, 1.6, -1.7))],
         [((0, 0), 0), ((-1.15, 2.3), 180), ((0, 2.3), 180), ((1.15, 2.3), 180)],
         ((0, 1.1, -0.2), 18, 10, 13.5, 38)),
+    "bus_inside": (   # the bus at the stop as the player boarding it sees it from above: its roof not drawn, somebody in the aisle and at the strap
+        [("bus_stop_sign", (0.4, 0, -2.6), 0), ("bus_shelter", (1.45, 0, 1.2), 0)] + city_bus(-2.45, -6.85, open_doors=True, roof=False),
+        [((13.0, 3.2, 0.2), (0, 1.6, -1.7))],
+        [((-2.30, -4.85, props_service.BUS_FLOOR), 180), ((-2.43, -7.56, props_service.BUS_FLOOR), 0), ((-0.95, -2.40), 270)],
+        ((-2.45, 1.0, -6.6), 150, 52, 15.0, 38)),
     "station": (
         [('office_desk', (0, 0, 0), 0), ('office_desk', (2.2, 0, 0), 0), ('evidence_door', (-2.2, 0, -1.0), 0), ('precinct_desk', (5.2, 0, 0.2), 0), ('holding_cell_bars', (-6.0, 0, -0.9), 0), ('precinct_bench', (-6.0, 0, 0.6), 180), ('notice_board', (1.1, 1.0, -1.04), 0)],
         [((14.0, 3.0, 0.2), (-1.0, 1.5, -1.15))],
@@ -141,8 +146,8 @@ def main():
                 kit.place(made[prop], (x, z, y), turn=-turn)
         for (sx, sy, sz), (cx, cy, cz) in walls:
             kit.reference_box((sx, sz, sy), (cx, cz, cy), (0.50, 0.47, 0.44))
-        for (x, z), facing in people:
-            kit.figure((x, z), -facing)
+        for where, facing in people:
+            kit.figure((where[0], where[1]), -facing, where[2] if len(where) > 2 else 0.0)
         kit.aim(camera, (target[0], target[2], target[1]), azimuth, elevation, distance, fov=fov)
         path = os.path.join(kit.PREVIEWS, "scene_%s.png" % name)
         kit.render(scene, path, 1280, 720)

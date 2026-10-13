@@ -277,6 +277,8 @@ namespace RealLifeOverhaul.Meta
                 S("taxi").For("taxi").Opts("transit_taxi_call").Also("cab cabs ride"),
                 S("nav").For("navigation").Main("nav_minimap").Opts("nav_rotate", "nav_size", "nav_zoom", "nav_base").FreeOpts("nav_gps").Opt("nav_other_route", "nav_gps")
                     .FreeOpts("map_places_shown").Also("map route satnav directions destination"),
+                S("districtview").For("districtview").Opts("district_view")
+                    .Also("district districts neighbourhood neighbourhoods neighborhood map layer layers stats statistics wealth rent prices footfall crime standing coverage internet competition council"),
                 S("licences").For("licences").Main("driving_licence").Opts("licence_start_with", "driving_school", "licence_points", "roadside_checks")
                     .Also("driving test theory examiner points"),
                 S("travel").For("travel").Opts("travel_hotels", "travel_holidays", "travel_extras").Also("holiday trip hotel stay")),
@@ -303,8 +305,10 @@ namespace RealLifeOverhaul.Meta
                 S("rota").For("economy_rota").Opt("economy_rota", "economy_company").Also("schedule shifts opening hours staff"),
                 S("cleaning").For("economy_cleaning").Need("economy").Opts("economy_cleaning").Also("cleaners contract"),
                 S("sale").For("economy_sale").Need("economy").Opts("economy_sale").Also("sell buyer offer"),
+                S("ownbank").For("economy_ownbank").Need("economy").Opts("economy_bank").Also("bank licence deposits savers loans regulator capital fund"),
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),
                 S("online").For("economy_online").Need("economy").Opts("economy_online").Also("web shop orders delivery internet"),
+                S("dealer").For("economy_dealer").Need("economy").Opts("economy_dealer").Also("car dealership showroom auction wholesale used cars finance warranty"),
                 S("estate").For("economy_estate").Need("economy").Opts("economy_estate", "economy_estate_hotel", "economy_estate_hire")
                     .Also("buildings landlord tenant letting rent rental").Also("economy_estate", "rent tenant landlord letting"),
                 S("bizevents").For("business").Main("business_pressure").Opts("business_frequency", "business_easy").Also("trouble pressure competition"),
