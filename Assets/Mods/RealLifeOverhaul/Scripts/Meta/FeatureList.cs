@@ -1125,7 +1125,7 @@ namespace RealLifeOverhaul.Meta
             Features.Add("markets", "reallife_meta_title_markets")
                 .Group("reallife_mkt_header")
                 .About("reallife_guide_markets_about").Help("reallife_guide_markets")
-                .Owns(Settings.MarketsId, Settings.MarketsMarginId)
+                .Owns(Settings.MarketsId, Settings.MarketsMarginId, Settings.MarketsDividendNotesId)
                 .Data(Markets.MarketStore.Key)
                 .Fact("mkt_companies", () => Whole(MarketsListed()))
                 .Fact("mkt_sectors", () => Whole((int)Markets.MarketSector.Count))

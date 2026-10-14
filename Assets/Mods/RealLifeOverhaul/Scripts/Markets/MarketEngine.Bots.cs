@@ -13,7 +13,8 @@ namespace RealLifeOverhaul.Markets
         SoldUp = 5,      // sold up as asked, and stopped: A its worth
         Payout = 6,      // a company it held left the market: Stock, A what its shares were paid
         Dividend = 7,    // a dividend on its shares paid to the player: Stock, A the money (taxed as the player's own)
-        Dismissed = 8    // let go: A its fee and share taken, B the holdings handed to the player
+        Dismissed = 8,   // let go: A its fee and share taken, B the holdings handed to the player
+        Paid = 9         // a weekly payout of its profit to the player: A the money, B what it still owes (its money was in shares)
     }
 
     public struct BotNote
@@ -24,10 +25,11 @@ namespace RealLifeOverhaul.Markets
         public long Qty;
         public int Cents;
         public long A, B, C;
+        public long D;               // a statement: what it paid the player in the month
     }
 
     /// <summary>Why something asked of a bot cannot be done. Each has a sentence (reallife_mkt_bot_why_...).</summary>
-    public enum BotWhy { None = 0, Closed, Held, Behind, Hired, Full, TooLittle, NoCash, NotHired, NotStopped, TooLittleLeft, Off, Count }
+    public enum BotWhy { None = 0, Closed, Held, Behind, Hired, Full, TooLittle, NoCash, NotHired, NotStopped, TooLittleLeft, Off, OwnShares, NotListed, Picks, Count }
 
     public sealed partial class MarketEngine
     {
@@ -109,6 +111,72 @@ namespace RealLifeOverhaul.Markets
             return true;
         }
 
+        /// <summary>The shares a bot trades: its strategy's market, the companies picked for it, or those the player holds.</summary>
+        public bool SetScope(int firm, BotScope scope, out BotWhy why)
+        {
+            Bot b = Asked(firm, out why);
+            if (b == null)
+            {
+                return false;
+            }
+            b.Scope = (BotScope)Math.Max(0, Math.Min((int)BotScope.Held, (int)scope));
+            Rethink(b);
+            return true;
+        }
+
+        /// <summary>A company picked for a bot, or taken off its picks. False with the reason when it cannot be (None: nothing changed).</summary>
+        public bool PickFor(int firm, int stockId, bool on, out BotWhy why)
+        {
+            Bot b = Asked(firm, out why);
+            if (b == null)
+            {
+                return false;
+            }
+            Stock s = State.Stock(stockId);
+            if (on && (s == null || !s.Listed || (s.Own != null && !Mine(s))))
+            {
+                why = BotWhy.NotListed;
+                return false;
+            }
+            if (!MarketBots.Pick(b, stockId, on))
+            {
+                why = on && b.Picks.Count >= MarketBots.PicksMost ? BotWhy.Picks : BotWhy.None;
+                return false;
+            }
+            Rethink(b);
+            return true;
+        }
+
+        /// <summary>A bot's payouts: the share of its new profit (held to its choices) and how often.</summary>
+        public bool SetPayout(int firm, int pct, BotPayEvery every, out BotWhy why)
+        {
+            Bot b = Asked(firm, out why);
+            if (b == null)
+            {
+                return false;
+            }
+            b.PayPct = MarketBots.Choice(MarketBots.PayPcts, pct);
+            b.PayEvery = (BotPayEvery)Math.Max(0, Math.Min((int)BotPayEvery.Monthly, (int)every));
+            return true;
+        }
+
+        // A hired bot to change, or null with the reason.
+        private Bot Asked(int firm, out BotWhy why)
+        {
+            Bot b = MarketBots.Hired(State, firm);
+            why = b == null ? BotWhy.NotHired : Held ? BotWhy.Held : BotWhy.None;
+            return why == BotWhy.None ? b : null;
+        }
+
+        // What it trades changed while the market is shut: it decides again on the last close, for the next session.
+        private void Rethink(Bot b)
+        {
+            if (!Trading && b.Status == BotStatus.Running)
+            {
+                MarketBots.Decide(State, b, State.Day, Year, _world.CommissionLeast, _botWork);
+            }
+        }
+
         private static void Set(Bot b, int size, int stop, int loss)
         {
             b.Size = MarketBots.Choice(MarketBots.Sizes, size);
@@ -161,11 +229,14 @@ namespace RealLifeOverhaul.Markets
         /// <summary>
         /// A bot let go: its fee for the days of this month and its share of any profit over its high-water mark are
         /// taken, and what it holds becomes the player's own holding at what it cost (nothing is sold, nothing charged).
+        /// Not while it holds shares of the player's own company: those cannot be a holding of the player's beside their
+        /// founder's shares, and handing them to the founder would change the company on this machine alone, so it sells
+        /// them up first (<see cref="BotWhy.OwnShares"/>).
         /// </summary>
         public bool Dismiss(int firm, out BotWhy why)
         {
             Bot b = MarketBots.Hired(State, firm);
-            why = b == null ? BotWhy.NotHired : Held ? BotWhy.Held : BotWhy.None;
+            why = b == null ? BotWhy.NotHired : Held ? BotWhy.Held : HoldsOwn(b) ? BotWhy.OwnShares : BotWhy.None;
             if (why != BotWhy.None)
             {
                 return false;
@@ -195,6 +266,20 @@ namespace RealLifeOverhaul.Markets
             State.Bots.Remove(b);
             Tell(new BotNote { Kind = BotNoteKind.Dismissed, Firm = firm, A = taken, B = handed });
             return true;
+        }
+
+        /// <summary>True while a bot holds shares of a player's company.</summary>
+        public bool HoldsOwn(Bot b)
+        {
+            for (int i = 0; i < b.Holdings.Count; i++)
+            {
+                Stock s = State.Stock(b.Holdings[i].StockId);
+                if (s != null && s.Own != null && b.Holdings[i].Shares > 0)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>Every bot's month closed now, as at a month's end (the test tools): its statement, its fee and its share.</summary>
@@ -290,7 +375,15 @@ namespace RealLifeOverhaul.Markets
                 }
                 if (MarketCatalogue.MonthOf(MarketTrading.NextTradingDay(day), Year) != MarketCatalogue.MonthOf(day, Year))
                 {
-                    Settle(b, day, true);
+                    Settle(b, day, true);   // (its payout, whichever its time, with the month's statement)
+                }
+                else if (b.PayEvery != BotPayEvery.Monthly && MarketBots.PayDue(b.PayEvery, day, Year))
+                {
+                    long paid = MarketBots.Payout(b);
+                    if (paid > 0 && b.PayEvery == BotPayEvery.Weekly)
+                    {
+                        Tell(new BotNote { Kind = BotNoteKind.Paid, Firm = b.Firm, A = paid, B = b.PayOwed });   // (a daily payout is told in the month's statement)
+                    }
                 }
                 b.LastDay = day;
                 MarketBots.Decide(State, b, day, Year, _world.CommissionLeast, _botWork);
@@ -330,10 +423,12 @@ namespace RealLifeOverhaul.Markets
             b.Fees += fee + share;
             if (statement)
             {
-                long now = worth - fee - share;
+                long paid = MarketBots.Payout(b);   // (after the month's fee and share: what is paid out is what it kept)
+                long now = worth - fee - share - paid;
                 int bp = b.MonthWorth > 0 ? (int)Math.Max(-1000000L, Math.Min(1000000L, (now - b.MonthWorth) * 10000L / b.MonthWorth)) : 0;
-                Tell(new BotNote { Kind = BotNoteKind.Statement, Firm = b.Firm, A = now, B = bp, C = fee + share, Qty = b.MonthTrades });
+                Tell(new BotNote { Kind = BotNoteKind.Statement, Firm = b.Firm, A = now, B = bp, C = fee + share, Qty = b.MonthTrades, D = b.MonthPaid });
                 b.MonthWorth = now;
+                b.MonthPaid = 0;
                 b.MonthTrades = 0;
                 b.MonthDays = 0;
                 b.Month = MarketCatalogue.MonthOf(MarketTrading.NextTradingDay(day), Year);
@@ -366,7 +461,7 @@ namespace RealLifeOverhaul.Markets
             {
                 BotOrder o = b.Pending[i];
                 Stock s = o.Buy ? State.Stock(o.StockId) : null;
-                if (s == null || f == null || !MarketBots.Buyable(State, f, s, day) || b.Holding(s.Id) != null)
+                if (s == null || f == null || !MarketBots.Allowed(State, b, s, day) || b.Holding(s.Id) != null)
                 {
                     continue;
                 }
@@ -416,7 +511,10 @@ namespace RealLifeOverhaul.Markets
             int cents = MarketTrading.MarketPrice(State, s, false, qty, phase);
             if (BotFillNow(b, s, false, qty, cents, phase))
             {
-                Tell(new BotNote { Kind = BotNoteKind.Stop, Firm = b.Firm, Stock = s.Id, Qty = qty, Cents = cents, A = stop });
+                // (the player's own company: no more than its day's limit at a time, at the price of what went)
+                BotHolding left = b.Holding(s.Id);
+                Trade t = State.Trades.Count > 0 ? State.Trades[State.Trades.Count - 1] : null;
+                Tell(new BotNote { Kind = BotNoteKind.Stop, Firm = b.Firm, Stock = s.Id, Qty = qty - (left != null ? left.Shares : 0), Cents = t != null ? t.PriceCents : cents, A = stop });
             }
         }
 
@@ -434,7 +532,7 @@ namespace RealLifeOverhaul.Markets
             }
             SellAll(b, phase);
             b.Pending.Clear();
-            b.Status = BotStatus.Stopped;
+            b.Status = b.Holdings.Count > 0 ? BotStatus.SellingUp : BotStatus.Stopped;   // (shares of the player's own company it may not sell yet: sold as soon as it may)
             Tell(new BotNote { Kind = BotNoteKind.Limit, Firm = b.Firm, A = MarketBots.Worth(State, b, phase), B = floor });
         }
 
@@ -459,10 +557,29 @@ namespace RealLifeOverhaul.Markets
         // A bot's trade, its lasting move of the price shared as the player's own trades' are.
         private bool BotFillNow(Bot b, Stock s, bool buying, long qty, int cents, int phase, out bool shortOfCash)
         {
+            shortOfCash = false;
+            if (s.Own != null)
+            {
+                // The player's own company: within its founder's rules and a share of its day's volume (MarketBots.OwnRoom).
+                long room = MarketBots.OwnRoom(State, s, buying, State.Day, Year);
+                if (room <= 0)
+                {
+                    return false;
+                }
+                if (qty > room)
+                {
+                    qty = room;
+                    cents = MarketTrading.MarketPrice(State, s, buying, qty, phase);
+                }
+            }
             bool city = TradesAsEvents || TradeSink != null || (Replaying && Tape != null && Tape.Traded(State.Day));
             if (!MarketBots.Fill(State, b, s, buying, qty, cents, _world.CommissionLeast, _world.Wallet, phase, !city, out double kept, out shortOfCash))
             {
                 return false;
+            }
+            if (s.Own != null)
+            {
+                MarketBots.OwnCount(b, s, buying, qty, State.Day, Year);
             }
             if (city)
             {
@@ -503,6 +620,8 @@ namespace RealLifeOverhaul.Markets
                 b.Dividends += money;
             }
             MarketTrading.AddTrade(State, new Trade { Day = day, Phase = MarketCatalogue.PhaseClose, StockId = due.StockId, Kind = TradeKind.Dividend, Value = money, Bot = due.Bot });
+            // A line of the market's news for the player alone (never in the city's line), and the director's notification.
+            Say(new MarketNews { Day = day, Kind = MarketNewsKind.Paid, Stock = due.StockId, A = (int)Math.Min(int.MaxValue, money), B = due.Bot });
             Tell(new BotNote { Kind = BotNoteKind.Dividend, Firm = due.Bot, Stock = due.StockId, A = money });
         }
 
@@ -513,6 +632,7 @@ namespace RealLifeOverhaul.Markets
             {
                 Bot b = State.Bots[i];
                 b.Pending.RemoveAll(o => o.StockId == s.Id);
+                b.Picks.Remove(s.Id);
                 BotHolding h = b.Holding(s.Id);
                 if (h == null)
                 {

@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Markets
         /// <summary>True for a player's company whose founder is the player of this machine.</summary>
         public bool Mine(Stock s)
         {
-            return s != null && s.Own != null && State.Me != 0UL && s.Own.Owner == State.Me && !State.Following;
+            return MarketBots.Mine(State, s);
         }
 
         /// <summary>The player of this machine's own listed company, or null.</summary>

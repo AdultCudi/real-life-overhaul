@@ -14,6 +14,17 @@ namespace RealLifeOverhaul.Markets
         SellingUp = 2    // asked to sell everything: it does at the market's next step, then stops
     }
 
+    /// <summary>Which companies a hired bot trades. Saved as a number: never renumber, add at the end.</summary>
+    public enum BotScope
+    {
+        Market = 0,      // its strategy's whole market, as its firm sets it (never a player's own company)
+        Picked = 1,      // only the companies the player picked for it (Bot.Picks), their own listed company among them if they like
+        Held = 2         // only the companies the player holds shares of themselves, their own listed company among them
+    }
+
+    /// <summary>How often a bot pays the player their share of its profit. Saved as a number.</summary>
+    public enum BotPayEvery { Daily = 0, Weekly = 1, Monthly = 2 }
+
     /// <summary>One firm that runs a bot for hire: a proper name (not translated), its strategy and its terms. Never changed in play.</summary>
     public sealed class BotFirm
     {
@@ -88,6 +99,23 @@ namespace RealLifeOverhaul.Markets
         public readonly List<BotHolding> Holdings = new List<BotHolding>(10);
         public readonly List<BotOrder> Pending = new List<BotOrder>(10);
 
+        // The shares it trades (MarketBots.InScope).
+        public BotScope Scope;
+        public readonly List<int> Picks = new List<int>(MarketBots.PicksMost);   // the companies picked for it (BotScope.Picked)
+
+        // Payouts (MarketBots.Payout): a share of its profit taken off what it trades with, the rest kept to trade.
+        public int PayPct;                          // per cent of new profit (MarketBots.PayPcts); 0: it keeps all of it
+        public BotPayEvery PayEvery = BotPayEvery.Monthly;
+        public long PayMark;                        // its profit so far (MarketBots.Profit) when it was last reckoned: only profit above it is new
+        public long PayOwed;                        // reckoned but not yet paid: its money was in shares
+        public long PaidOut, MonthPaid;             // paid to the player in all, and in the month its statement counts
+
+        // The player's own company (MarketBots.OwnRoom): what it traded of it today and this game year, and when it last bought and sold it.
+        public int OwnDay;
+        public long OwnQty;
+        public int OwnYear, OwnBoughtBp, OwnSoldBp;
+        public int OwnBuyDay, OwnSellDay;
+
         public BotFirm Def => MarketBots.Firm(Firm);
 
         public BotHolding Holding(int stockId)
@@ -119,6 +147,12 @@ namespace RealLifeOverhaul.Markets
     ///   but by luck: over a run of bad days it loses, and with large holdings and a wide limit it can lose most of what
     ///   it was given. Its fee and its share of the profit are taken on top. Nothing changes a bot while the market is
     ///   behind the clock or held after a load.
+    ///
+    /// What it trades (<see cref="BotScope"/>): its strategy's whole market, the companies the player picked for it, or
+    /// those they hold. The player's own listed company may be among them, traded by the rules its founder deals by and
+    /// within a share of its day's volume (<see cref="OwnRoom"/>), so that no bot of theirs moves its price on its own;
+    /// another player's company never is. Its payouts (<see cref="Payout"/>): a share of the profit it makes, paid daily,
+    /// weekly or monthly, a loss carried forward until it is made good.
     /// </summary>
     public static class MarketBots
     {
@@ -127,6 +161,10 @@ namespace RealLifeOverhaul.Markets
         public const int FeeLeastAtStart = 5;          // the least monthly fee, at the start's prices
         public const int TradeLeastAtStart = 100;      // a bot makes no purchase worth less than this, at the start's prices
         public const int ListedDaysLeast = 20;         // it buys nothing listed for fewer days than this
+        public const int PicksMost = 12;               // companies picked for one bot at most (the Bots tab's picker stays short)
+        public const int OwnVolumePct = 10;            // the player's own company: every bot of theirs together trades at most this share of its ordinary day's volume in a day
+
+        public static readonly int[] PayPcts = { 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100 };   // per cent of new profit paid out (0: none)
 
         public static readonly int[] Sizes = { 10, 20, 25, 50, 100 };   // per cent of its worth in each holding (so 10, 5, 4, 2 or 1 holdings)
         public static readonly int[] Stops = { 0, 5, 10, 15, 25 };      // per cent under what a holding cost (0: none)
@@ -268,6 +306,218 @@ namespace RealLifeOverhaul.Markets
         {
             return s.Listed && s.Own == null && s.BidCents <= 0 && day - s.ListedDay >= ListedDaysLeast && (f.Small || s.Size != MarketSize.Small)
                    && s.Last * 1000L >= 2L * MarketCatalogue.PennyCents * Math.Max(100, state.Env.PriceLevel);
+        }
+
+        // ---------------------------------------------------------------- the shares a bot trades
+
+        /// <summary>True for a listed company of a player's whose founder is the player of this machine (MarketEngine.Mine).</summary>
+        public static bool Mine(MarketState state, Stock s)
+        {
+            return s != null && s.Own != null && state.Me != 0UL && s.Own.Owner == state.Me && !state.Following;
+        }
+
+        /// <summary>
+        /// Whether a company is among those a bot trades, by its scope: its strategy's market (no player's company), the
+        /// companies picked for it, or those the player holds themselves (as its founder too). A holding outside it is sold
+        /// at the next session.
+        /// </summary>
+        public static bool InScope(MarketState state, Bot b, Stock s)
+        {
+            if (s == null || (s.Own != null && !Mine(state, s)))
+            {
+                return false;   // (another player's company is theirs: never traded by a bot)
+            }
+            switch (b.Scope)
+            {
+                case BotScope.Picked:
+                    return b.Picks.Contains(s.Id);
+                case BotScope.Held:
+                    return s.Own != null ? s.Own.Founder > 0 : state.Held(s.Id) > 0;
+                default:
+                    return s.Own == null;
+            }
+        }
+
+        /// <summary>
+        /// A company a bot may buy now. Its strategy's market is what its firm buys (<see cref="Buyable"/>); a company the
+        /// player chose, by a pick or by holding it, is bought whatever its size, but never one listed too short a time,
+        /// under a bid or a penny share.
+        /// </summary>
+        public static bool Allowed(MarketState state, Bot b, Stock s, int day)
+        {
+            BotFirm f = b.Def;
+            if (f == null || s == null)
+            {
+                return false;
+            }
+            if (b.Scope == BotScope.Market)
+            {
+                return Buyable(state, f, s, day);
+            }
+            return InScope(state, b, s) && s.Listed && s.BidCents <= 0 && day - s.ListedDay >= ListedDaysLeast
+                   && s.Last * 1000L >= 2L * MarketCatalogue.PennyCents * Math.Max(100, state.Env.PriceLevel);
+        }
+
+        /// <summary>A company picked for a bot, or taken off its picks. False when nothing changed (or it already has the most picks).</summary>
+        public static bool Pick(Bot b, int stockId, bool on)
+        {
+            int at = b.Picks.IndexOf(stockId);
+            if (on == (at >= 0) || stockId <= 0)
+            {
+                return false;
+            }
+            if (!on)
+            {
+                b.Picks.RemoveAt(at);
+                return true;
+            }
+            if (b.Picks.Count >= PicksMost)
+            {
+                return false;
+            }
+            b.Picks.Add(stockId);
+            return true;
+        }
+
+        /// <summary>The days within which a bot that bought the player's own company may not sell it, nor buy it back after a sale: the founder's short-swing time.</summary>
+        public static int OwnSwingDays(int year)
+        {
+            return Math.Max(1, Math.Max(8, year) / ListingCatalogue.ShortSwingYearShare);
+        }
+
+        /// <summary>
+        /// The most shares of the player's own company their bots may buy or sell now, so that a bot never pushes its
+        /// price on its own and keeps every rule its founder deals by: nothing in the closed time before its results;
+        /// every bot together no more than <see cref="OwnVolumePct"/> of its ordinary day's volume in a day; never a sale
+        /// within the short-swing time of a purchase, nor a purchase within it of a sale; the founder's own deals and the
+        /// bots' together no more of the company in a game year than the founder may deal in; and the founder's shares
+        /// and the bots' together no more than the most the founder may hold. Any other company: no limit of this kind
+        /// (long.MaxValue). Another player's company: none at all. Reads the company and the player's own bots only, so
+        /// every machine of a Going Public session that plays the company comes to the same price.
+        /// </summary>
+        public static long OwnRoom(MarketState state, Stock s, bool buying, int day, int year)
+        {
+            if (s == null || s.Own == null)
+            {
+                return long.MaxValue;
+            }
+            if (!Mine(state, s) || !s.Listed || ListingRules.Closed(s, day, year))
+            {
+                return 0;
+            }
+            OwnListing o = s.Own;
+            int y = MarketCatalogue.YearOf(day, Math.Max(8, year)), window = OwnSwingDays(year);
+            long today = 0, held = 0;
+            int bp = ListingRules.YearUsedBp(o, day, year, buying ? o.BoughtBp : o.SoldBp);
+            for (int i = 0; i < state.Bots.Count; i++)
+            {
+                Bot b = state.Bots[i];
+                today += b.OwnDay == day ? b.OwnQty : 0;
+                bp += b.OwnYear == y ? (buying ? b.OwnBoughtBp : b.OwnSoldBp) : 0;
+                int against = buying ? b.OwnSellDay : b.OwnBuyDay;
+                if (against > 0 && day - against < window)
+                {
+                    return 0;
+                }
+                BotHolding h = b.Holding(s.Id);
+                held += h != null ? h.Shares : 0;
+            }
+            long room = Math.Max(0L, (long)Math.Floor(Math.Max(0.0, s.Adv) * OwnVolumePct / 100.0) - today);
+            room = Math.Min(room, s.Shares * Math.Max(0, ListingCatalogue.FounderDealMostBpYear - bp) / 10000L);
+            if (buying)
+            {
+                room = Math.Min(room, s.Shares * ListingCatalogue.FounderMostBp / 10000L - o.Founder - held);
+            }
+            return Math.Max(0L, room);
+        }
+
+        /// <summary>A bot's trade in the player's own company counted against the day's, the year's and the short-swing limits (<see cref="OwnRoom"/>).</summary>
+        public static void OwnCount(Bot b, Stock s, bool buying, long qty, int day, int year)
+        {
+            if (b.OwnDay != day)
+            {
+                b.OwnDay = day;
+                b.OwnQty = 0;
+            }
+            b.OwnQty += qty;
+            int y = MarketCatalogue.YearOf(day, Math.Max(8, year));
+            if (b.OwnYear != y)
+            {
+                b.OwnYear = y;
+                b.OwnBoughtBp = b.OwnSoldBp = 0;
+            }
+            int bp = ListingRules.Bp(qty, s.Shares);
+            if (buying)
+            {
+                b.OwnBoughtBp += bp;
+                b.OwnBuyDay = day;
+            }
+            else
+            {
+                b.OwnSoldBp += bp;
+                b.OwnSellDay = day;
+            }
+        }
+
+        // ---------------------------------------------------------------- payouts
+
+        /// <summary>What a bot has made so far and kept: its gains and losses on what it sold, its dividends after tax, less its fees and its share.</summary>
+        public static long Profit(Bot b)
+        {
+            return b.Realised + b.Dividends - b.Fees;
+        }
+
+        /// <summary>The losses a bot must make good before it pays anything again.</summary>
+        public static long LossesToMakeGood(Bot b)
+        {
+            return Math.Max(0L, b.PayMark - Profit(b));
+        }
+
+        /// <summary>True when a payout falls due at this market day's close: every day, at a week's last market day, or at a month's.</summary>
+        public static bool PayDue(BotPayEvery every, int day, int year)
+        {
+            int next = MarketTrading.NextTradingDay(day);
+            switch (every)
+            {
+                case BotPayEvery.Daily:
+                    return true;
+                case BotPayEvery.Weekly:
+                    return MarketCatalogue.WeekOf(next) != MarketCatalogue.WeekOf(day);
+                default:
+                    return MarketCatalogue.MonthOf(next, year) != MarketCatalogue.MonthOf(day, year);
+            }
+        }
+
+        /// <summary>
+        /// A bot's payout at its time. The profit it made since it was last reckoned is new only above the best it had
+        /// reached (<see cref="Bot.PayMark"/>): a loss is carried forward, and nothing is paid until it is made good. Its
+        /// share of the new profit is owed to the player and paid out of the bot's money, as far as its money not in shares
+        /// goes (the rest waits for the next time). The bot trades the player's own cash, so the money is already in their
+        /// account: a payout takes it off what the bot may trade with, and the figures its limits and its share of profit
+        /// are reckoned from come down with it, so a payout is never counted as a loss. What was paid.
+        /// </summary>
+        public static long Payout(Bot b)
+        {
+            long profit = Profit(b);
+            if (profit > b.PayMark)
+            {
+                b.PayOwed += (profit - b.PayMark) * Math.Max(0, Math.Min(100, b.PayPct)) / 100;
+                b.PayMark = profit;
+            }
+            long pay = Math.Min(b.PayOwed, Math.Max(0L, b.Cash));
+            if (pay <= 0)
+            {
+                return 0;
+            }
+            b.Cash -= pay;
+            b.PayOwed -= pay;
+            b.PaidOut += pay;
+            b.MonthPaid += pay;
+            b.Base = Math.Max(0L, b.Base - pay);
+            b.Peak = Math.Max(0L, b.Peak - pay);
+            b.HighWater -= pay;
+            b.MonthWorth -= pay;
+            return pay;
         }
 
         // ---------------------------------------------------------------- booking a trade
@@ -563,7 +813,7 @@ namespace RealLifeOverhaul.Markets
             for (int i = 0; i < state.Stocks.Count; i++)
             {
                 Stock s = state.Stocks[i];
-                if (!Buyable(state, f, s, day))
+                if (!Allowed(state, b, s, day))
                 {
                     continue;
                 }
@@ -580,7 +830,7 @@ namespace RealLifeOverhaul.Markets
                 w.Scores.Insert(at, score);
                 w.Ids.Insert(at, s.Id);
             }
-            // Sales: by the rule, or (at a month's turn) out of the best twice over.
+            // Sales: out of its scope (a pick taken off, a holding of the player's sold), by the rule, or (at a month's turn) out of the best twice over.
             long freed = 0;
             int kept = 0;
             for (int i = 0; i < b.Holdings.Count; i++)
@@ -591,7 +841,7 @@ namespace RealLifeOverhaul.Markets
                 {
                     continue;
                 }
-                bool sell = turn ? rebalance && Rank(w, h.StockId) >= 2 * slots : Exit(f.Strategy, s, h, day, w);
+                bool sell = !InScope(state, b, s) || (turn ? rebalance && Rank(w, h.StockId) >= 2 * slots : Exit(f.Strategy, s, h, day, w));
                 if (sell)
                 {
                     b.Pending.Add(new BotOrder { StockId = h.StockId, Buy = false, Qty = h.Shares });
@@ -620,7 +870,7 @@ namespace RealLifeOverhaul.Markets
                 Quote q = MarketTrading.QuoteOf(state, s, MarketCatalogue.PhaseOpen + 1);
                 long spend = Math.Min(target, money);
                 // (a little held back for the commission and the move of the price)
-                long qty = Math.Min(Room(state, s), (long)(spend * 100.0 / (q.Ask * 1.01) - 0.5));
+                long qty = Math.Min(Math.Min(Room(state, s), OwnRoom(state, s, true, MarketTrading.NextTradingDay(day), year)), (long)(spend * 100.0 / (q.Ask * 1.01) - 0.5));
                 long value = MarketTrading.Value(Math.Max(0, qty), q.Ask, true);
                 if (qty <= 0 || value < tradeLeast)
                 {
@@ -637,6 +887,40 @@ namespace RealLifeOverhaul.Markets
         {
             int at = w.Ids.IndexOf(stockId);
             return at < 0 ? int.MaxValue : at;
+        }
+    }
+
+    /// <summary>
+    /// The dividends paid to the player since they were last told, for one notification: the one dividend with its
+    /// company and (a bot's) its firm, or how many and how much in all when several land at once. Kept by the director,
+    /// filled as each is paid and emptied when it is told, so nothing is allocated.
+    /// </summary>
+    public struct DividendTally
+    {
+        public int Count;
+        public long Total;
+        public int Stock, Firm;      // the first one's company and firm (0: the player's own shares)
+
+        public void Add(int stock, int firm, long money)
+        {
+            if (money <= 0)
+            {
+                return;
+            }
+            if (Count == 0)
+            {
+                Stock = stock;
+                Firm = firm;
+            }
+            Count++;
+            Total += money;
+        }
+
+        public void Clear()
+        {
+            Count = 0;
+            Total = 0;
+            Stock = Firm = 0;
         }
     }
 }

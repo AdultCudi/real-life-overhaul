@@ -14,18 +14,34 @@ namespace RealLifeOverhaul.Markets
     /// </summary>
     public sealed partial class MarketDirector
     {
-        // Once a second: with the option off, every bot is let go (its shares become the player's own).
+        private int _botsSelling = -1;          // with the option off: bots still selling shares of the player's own company (told when it changes)
+        private DividendTally _paid;            // dividends paid since the player was last told (one notification for them all)
+
+        // Once a second: with the option off, every bot is let go (its shares become the player's own); one holding shares
+        // of the player's own company sells them up by its founder's rules first, and is let go once it has.
         private void BotsSecond()
         {
             if (Settings.MarketsBots || _engine.State.Bots.Count == 0 || Behind || _engine.Held)
             {
+                _botsSelling = Settings.MarketsBots ? -1 : _botsSelling;
                 return;
             }
+            int selling = 0;
             for (int i = _engine.State.Bots.Count - 1; i >= 0; i--)
             {
-                _engine.Dismiss(_engine.State.Bots[i].Firm, out _);
+                Bot b = _engine.State.Bots[i];
+                if (!_engine.Dismiss(b.Firm, out BotWhy why) && why == BotWhy.OwnShares && b.Status != BotStatus.SellingUp)
+                {
+                    _engine.SellUp(b.Firm, out _);   // (shares of the player's own company: sold by its rules, then let go here)
+                }
+                selling += why == BotWhy.OwnShares ? 1 : 0;
             }
-            Logger?.Info("Stock market: trading bots switched off; every bot was let go and what it held is the player's own now.");
+            if (selling != _botsSelling)
+            {
+                _botsSelling = selling;
+                Logger?.Info("Stock market: trading bots switched off; every bot was let go and what it held is the player's own now"
+                             + (selling > 0 ? ", but for " + selling + " selling its shares of the player's own company first, by its founder's rules." : "."));
+            }
             Moved();
         }
 
@@ -92,6 +108,33 @@ namespace RealLifeOverhaul.Markets
             return done;
         }
 
+        /// <summary>The shares a bot trades: its strategy's market, the companies picked for it, or those the player holds.</summary>
+        public bool SetBotScope(int firm, BotScope scope, out BotWhy why)
+        {
+            why = BotReady();
+            bool done = why == BotWhy.None && _engine.SetScope(firm, scope, out why);
+            Moved();
+            return done;
+        }
+
+        /// <summary>A company picked for a bot, or taken off its picks.</summary>
+        public bool PickForBot(int firm, int stockId, bool on, out BotWhy why)
+        {
+            why = BotReady();
+            bool done = why == BotWhy.None && _engine.PickFor(firm, stockId, on, out why);
+            Moved();
+            return done;
+        }
+
+        /// <summary>A bot's payouts to the player: the share of its new profit and how often.</summary>
+        public bool SetBotPayout(int firm, int pct, BotPayEvery every, out BotWhy why)
+        {
+            why = BotReady();
+            bool done = why == BotWhy.None && _engine.SetPayout(firm, pct, every, out why);
+            Moved();
+            return done;
+        }
+
         /// <summary>The least a bot may be given now; 0 while the market is not running.</summary>
         public long BotCapitalLeast => Running ? _engine.BotCapitalLeast : 0;
 
@@ -130,8 +173,12 @@ namespace RealLifeOverhaul.Markets
                     Queue(NotificationType.Error, "reallife_mkt_bot_note_limit", "firm", f.Name, "worth", MarketText.Money(n.A));
                     break;
                 case BotNoteKind.Statement:
-                    Queue(NotificationType.Info, "reallife_mkt_bot_note_statement", "firm", f.Name, "worth", MarketText.Money(n.A), "change", MarketText.Change((int)n.B), "count", n.Qty.ToString(),
-                        "fees", MarketText.Money(n.C));
+                    Queue(NotificationType.Info, n.D > 0 ? "reallife_mkt_bot_note_statement_paid" : "reallife_mkt_bot_note_statement", "firm", f.Name, "worth", MarketText.Money(n.A),
+                        "change", MarketText.Change((int)n.B), "count", n.Qty.ToString(), "fees", MarketText.Money(n.C), "paid", MarketText.Money(n.D));
+                    break;
+                case BotNoteKind.Paid:
+                    Queue(NotificationType.Success, n.B > 0 ? "reallife_mkt_bot_note_paid_owed" : "reallife_mkt_bot_note_paid", "firm", f.Name, "amount", MarketText.Money(n.A),
+                        "owed", MarketText.Money(n.B));
                     break;
                 case BotNoteKind.Short:
                     Queue(NotificationType.Warning, "reallife_mkt_bot_note_short", "firm", f.Name, "amount", MarketText.Money(n.A));
@@ -152,11 +199,44 @@ namespace RealLifeOverhaul.Markets
                             b.Cash -= tax;
                             b.Dividends -= tax;
                         }
+                        _paid.Add(n.Stock, n.Firm, n.A);
                     }
                     break;
                 case BotNoteKind.Dismissed:
                     Queue(NotificationType.Info, "reallife_mkt_bot_note_dismissed", "firm", f.Name, "fees", MarketText.Money(n.A), "count", n.B.ToString());
                     break;
+            }
+        }
+
+        // The dividends paid since the last frame, told in one notification: the one with its company (and its bot), or
+        // how many and how much in all. The market news has a line for each (MarketNewsKind.Paid).
+        private void TellPaid()
+        {
+            if (_paid.Count == 0)
+            {
+                return;
+            }
+            DividendTally t = _paid;
+            _paid.Clear();
+            if (!Settings.MarketsDividendNotes)
+            {
+                return;
+            }
+            if (t.Count > 1)
+            {
+                Queue(NotificationType.Success, "reallife_mkt_note_dividends", "count", t.Count.ToString(), "amount", MarketText.Money(t.Total));
+                return;
+            }
+            Stock k = _engine.State.Stock(t.Stock);
+            BotFirm f = MarketBots.Firm(t.Firm);
+            string name = k != null ? k.Name : string.Empty;
+            if (f != null)
+            {
+                Queue(NotificationType.Success, "reallife_mkt_note_dividend_bot", "name", name, "firm", f.Name, "amount", MarketText.Money(t.Total));
+            }
+            else
+            {
+                Queue(NotificationType.Success, "reallife_mkt_note_dividend", "name", name, "amount", MarketText.Money(t.Total));
             }
         }
 

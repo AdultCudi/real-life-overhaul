@@ -1045,6 +1045,10 @@ namespace RealLifeOverhaul.Markets
                         p.Dividends += money;
                     }
                     MarketTrading.AddTrade(State, new Trade { Day = day, Phase = MarketCatalogue.PhaseClose, StockId = due.StockId, Kind = TradeKind.Dividend, Value = money, Test = due.Test });
+                    if (!due.Test)
+                    {
+                        Say(new MarketNews { Day = day, Kind = MarketNewsKind.Paid, Stock = due.StockId, A = (int)Math.Min(int.MaxValue, money) });   // (the player's own news: MarketEngine.Bots.cs)
+                    }
                     _world.Paid(TradeKind.Dividend, s, money);
                 }
                 else if (due.Cents < 0)
