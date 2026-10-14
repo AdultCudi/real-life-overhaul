@@ -284,7 +284,7 @@ namespace RealLifeOverhaul
                         {
                             e.Title = FameText.RequestTitle(r);
                             e.What = PlannerText.T("reallife_fame_plan_request_what");
-                            e.Money = PlannerText.T("reallife_planner_costs", "amount", FameText.Money(r.Amount));
+                            PlannerText.Costs(e, r.Amount, FameText.Money(r.Amount));
                         }
                     }
                     FameLobby lobby = FameCity.Pending(f);

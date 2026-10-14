@@ -13,7 +13,10 @@ namespace RealLifeOverhaul.Planner
         None = 0,
         AtTheTime = 1,
         HourBefore = 2,
-        EveningBefore = 3
+        EveningBefore = 3,
+        QuarterBefore = 4,   // 15 minutes before
+        HalfHourBefore = 5,  // 30 minutes before
+        LeaveBy = 6          // when to leave for its place: its hour less the way there (PlannerReminder.Travel)
     }
 
     /// <summary>One of the player's own entries.</summary>
@@ -21,15 +24,18 @@ namespace RealLifeOverhaul.Planner
     {
         public int Id;
         public string Title = string.Empty;
-        public int Day;
+        public int Day;              // the first day it falls on
         public int Start = -1;       // minutes since midnight; -1: all day
-        public bool Done;
+        public bool Done;            // (once) done
         public bool Sample;          // made by the test button: the other test button removes it
         public string Place;         // what the place is called, or null
         public bool HasPlace;
         public float X, Y, Z;
         public string Street;
         public int Number;
+        public PlannerRepeat Repeat; // once, every day, every week on its first day's weekday
+        public int DoneDay = -1;     // (repeated) the day whose time was marked as done
+        public ReminderLead Lead;    // the reminder each time it comes; for one that is once, its reminder is in Reminders as for any entry
     }
 
     /// <summary>A reminder that has been asked for and has not gone out yet.</summary>
@@ -39,6 +45,7 @@ namespace RealLifeOverhaul.Planner
         public int EntryBegins;      // game minutes: an entry that has moved since is reminded of at its new time
         public int FireAt;           // game minutes
         public ReminderLead Lead;
+        public int Travel;           // game minutes of way, for LeaveBy: worked out when it was set
     }
 
     /// <summary>
@@ -58,6 +65,8 @@ namespace RealLifeOverhaul.Planner
         public const int TitleLength = 60;
         public const int EveningHour = 18;       // "the evening before" is 18:00 on the day before
         public const int AllDayHour = 8;         // an entry with no hour counts as beginning at 08:00 for its reminders
+        public const int LateMinutes = 30;       // game minutes: a reminder that goes out later than this after its moment (a time skip, a loaded save) says it is late
+        public const int ArmDays = 15;           // days looked ahead for the next time a repeated entry comes
 
         public static readonly List<PlannerNote> Notes = new List<PlannerNote>(16);
         public static readonly List<PlannerReminder> Reminders = new List<PlannerReminder>(16);
@@ -68,12 +77,15 @@ namespace RealLifeOverhaul.Planner
         public static ReminderLead DefaultLead = ReminderLead.HourBefore;
         public static bool Welcomed;                              // the first-run notification has been shown on this save
         public static int SeenStamp;                              // PlannerLogic.DueStamp when the app was last opened
+        /// <summary>The soonest moment a reminder is due (game minutes); int.MaxValue with none: the director's one comparison a second.</summary>
+        public static int NextFire { get; private set; } = int.MaxValue;
 
         public static void Reset()
         {
             Loaded = false;
             Notes.Clear();
             Reminders.Clear();
+            NextFire = int.MaxValue;
             NextNoteId = 1;
             HiddenCategories = 0;
             DefaultLead = ReminderLead.HourBefore;
@@ -117,6 +129,7 @@ namespace RealLifeOverhaul.Planner
             return null;
         }
 
+        /// <summary>Takes a note away, with every reminder for it (each time of one that repeats).</summary>
         public static bool RemoveNote(int id)
         {
             for (int i = 0; i < Notes.Count; i++)
@@ -124,10 +137,87 @@ namespace RealLifeOverhaul.Planner
                 if (Notes[i].Id == id)
                 {
                     Notes.RemoveAt(i);
+                    DropReminders(NoteSourceId, id);
                     return true;
                 }
             }
             return false;
+        }
+
+        /// <summary>The id the player's own entries go by (NoteSource): an entry of one is (note, its number, 0), or the day for one that repeats.</summary>
+        public const string NoteSourceId = "note";
+
+        /// <summary>Who one time of a note is: (note, number, 0) for one that is once, (note, number, day) for one that repeats.</summary>
+        public static EntryId NoteEntry(PlannerNote note, int day)
+        {
+            return new EntryId(NoteSourceId, note.Id, note.Repeat == PlannerRepeat.Once ? 0 : day);
+        }
+
+        /// <summary>The first day on or after 'fromDay' a note falls on (its day, for one that is once and not yet past); -1 if none.</summary>
+        public static int NextTime(PlannerNote note, int fromDay)
+        {
+            return PlannerRules.NextOccurrence(note.Repeat, note.Day, fromDay);
+        }
+
+        /// <summary>Whether a note falls on a day, and whether that time of it is done.</summary>
+        public static bool Falls(PlannerNote note, int day, out bool done)
+        {
+            done = note.Repeat == PlannerRepeat.Once ? note.Done : note.DoneDay == day;
+            return PlannerRules.Occurs(note.Repeat, note.Day, day);
+        }
+
+        /// <summary>Marks one time of a note as done or not done; a reminder for that time goes once it is done.</summary>
+        public static void SetDone(PlannerNote note, int day, bool done)
+        {
+            if (note.Repeat == PlannerRepeat.Once)
+            {
+                note.Done = done;
+            }
+            else
+            {
+                note.DoneDay = done ? day : (note.DoneDay == day ? -1 : note.DoneDay);
+            }
+            if (done)
+            {
+                SetReminder(NoteEntry(note, day), 0, 0, ReminderLead.None, 0);
+            }
+        }
+
+        /// <summary>
+        /// Sets the reminder of a note that repeats for the next time it comes whose moment is after 'now' (and
+        /// takes away any other of its reminders). For a note that is once, nothing: its one reminder is set as any entry's.
+        /// </summary>
+        public static void Arm(PlannerNote note, int nowMinutes)
+        {
+            if (note == null || note.Repeat == PlannerRepeat.Once)
+            {
+                return;
+            }
+            DropReminders(NoteSourceId, note.Id, true);
+            if (note.Lead == ReminderLead.None || note.Lead == ReminderLead.LeaveBy)
+            {
+                return;   // (when to leave is worked out from where the player is, so it is set for one time in its box, not every time)
+            }
+            int day = PlannerRules.NextOccurrence(note.Repeat, note.Day, PlannerTime.DayOf(nowMinutes) - 1);
+            for (int i = 0; day >= 0 && i < ArmDays; i++)
+            {
+                bool done;
+                if (Falls(note, day, out done) && !done && FireAt(day, note.Start, note.Lead) > nowMinutes)
+                {
+                    SetReminder(NoteEntry(note, day), day, note.Start, note.Lead, nowMinutes);
+                    return;
+                }
+                day = PlannerRules.NextOccurrence(note.Repeat, note.Day, day + 1);
+            }
+        }
+
+        /// <summary>Every repeated note's next reminder (after a save is read).</summary>
+        public static void ArmAll(int nowMinutes)
+        {
+            for (int i = 0; i < Notes.Count; i++)
+            {
+                Arm(Notes[i], nowMinutes);
+            }
         }
 
         /// <summary>A title as it is kept: one line, no more than sixty characters, never null.</summary>
@@ -152,11 +242,23 @@ namespace RealLifeOverhaul.Planner
         /// <summary>When a reminder for an entry goes out, in game minutes.</summary>
         public static int FireAt(int entryDay, int entryStart, ReminderLead lead)
         {
+            return FireAt(entryDay, entryStart, lead, 0);
+        }
+
+        /// <summary>The same, with the way to its place in game minutes for a reminder of when to leave.</summary>
+        public static int FireAt(int entryDay, int entryStart, ReminderLead lead, int travel)
+        {
             int begins = PlannerTime.At(entryDay, 0) + (entryStart >= 0 ? entryStart : AllDayHour * 60);
             switch (lead)
             {
                 case ReminderLead.HourBefore:
                     return begins - 60;
+                case ReminderLead.HalfHourBefore:
+                    return begins - 30;
+                case ReminderLead.QuarterBefore:
+                    return begins - 15;
+                case ReminderLead.LeaveBy:
+                    return begins - Math.Max(0, travel);
                 case ReminderLead.EveningBefore:
                     return PlannerTime.At(entryDay - 1, EveningHour);
                 default:
@@ -188,36 +290,58 @@ namespace RealLifeOverhaul.Planner
         /// </summary>
         public static bool SetReminder(EntryId entry, int entryDay, int entryStart, ReminderLead lead, int nowMinutes)
         {
+            return SetReminder(entry, entryDay, entryStart, lead, nowMinutes, 0);
+        }
+
+        /// <summary>The same, with the way to the entry's place in game minutes for a reminder of when to leave.</summary>
+        public static bool SetReminder(EntryId entry, int entryDay, int entryStart, ReminderLead lead, int nowMinutes, int travel)
+        {
             int index = ReminderIndex(entry);
             if (index >= 0)
             {
                 Reminders.RemoveAt(index);
+                Soonest();
             }
             if (lead == ReminderLead.None)
             {
                 return true;
             }
-            int fireAt = FireAt(entryDay, entryStart, lead);
+            int fireAt = FireAt(entryDay, entryStart, lead, travel);
             if (fireAt < nowMinutes || Reminders.Count >= MostReminders || string.IsNullOrEmpty(entry.Source))
             {
                 return false;
             }
             int begins = PlannerTime.At(entryDay, 0) + (entryStart >= 0 ? entryStart : 0);
-            Reminders.Add(new PlannerReminder { Entry = entry, EntryBegins = begins, FireAt = fireAt, Lead = lead });
+            Reminders.Add(new PlannerReminder { Entry = entry, EntryBegins = begins, FireAt = fireAt, Lead = lead, Travel = lead == ReminderLead.LeaveBy ? Math.Max(0, travel) : 0 });
+            NextFire = Math.Min(NextFire, fireAt);
             return true;
         }
 
+        /// <summary>Takes away every reminder of one source's entry, whatever its third number (each time of a note that repeats); with 'keepLeaveBy' a reminder of when to leave stays.</summary>
+        public static void DropReminders(string source, int a, bool keepLeaveBy = false)
+        {
+            for (int i = Reminders.Count - 1; i >= 0; i--)
+            {
+                EntryId id = Reminders[i].Entry;
+                if (id.A == a && string.Equals(id.Source, source, StringComparison.Ordinal) && !(keepLeaveBy && Reminders[i].Lead == ReminderLead.LeaveBy))
+                {
+                    Reminders.RemoveAt(i);
+                }
+            }
+            Soonest();
+        }
+
         /// <summary>
-        /// Takes out of the list every reminder that is due and hands it over, each once. The clock is looked at once
-        /// a game hour, so a reminder is due when it falls within the hour that has just begun: it is never more than
-        /// 59 minutes early, and late only if the hour it fell in was jumped over (a time skip, a loaded save).
+        /// Takes out of the list every reminder whose moment has come and hands it over, each once, oldest first. The
+        /// director asks once a second whether NextFire has come, so a reminder goes out at its minute, and late only
+        /// if its moment was jumped over (a time skip, a loaded save).
         /// </summary>
         public static void TakeDue(int nowMinutes, List<PlannerReminder> due)
         {
             due.Clear();
             for (int i = Reminders.Count - 1; i >= 0; i--)
             {
-                if (Reminders[i].FireAt < nowMinutes + 60)
+                if (Reminders[i].FireAt <= nowMinutes)
                 {
                     due.Add(Reminders[i]);
                     Reminders.RemoveAt(i);   // out of the list before anything is shown: it cannot go out twice
@@ -227,14 +351,26 @@ namespace RealLifeOverhaul.Planner
             {
                 due.Sort(ByFireAt);
             }
+            Soonest();
         }
 
-        private static readonly Comparison<PlannerReminder> ByFireAt = (a, b) => a.FireAt.CompareTo(b.FireAt);
+        private static readonly Comparison<PlannerReminder> ByFireAt = (a, b) => a.FireAt != b.FireAt ? a.FireAt.CompareTo(b.FireAt) : a.Entry.A.CompareTo(b.Entry.A);
 
-        /// <summary>Whether a reminder taken by TakeDue missed its moment.</summary>
+        // NextFire again from the list (at most MostReminders): after anything is taken out.
+        private static void Soonest()
+        {
+            int soonest = int.MaxValue;
+            for (int i = 0; i < Reminders.Count; i++)
+            {
+                soonest = Math.Min(soonest, Reminders[i].FireAt);
+            }
+            NextFire = soonest;
+        }
+
+        /// <summary>Whether a reminder taken by TakeDue went out well after its moment.</summary>
         public static bool IsLate(PlannerReminder reminder, int nowMinutes)
         {
-            return reminder.FireAt < nowMinutes;
+            return nowMinutes - reminder.FireAt > LateMinutes;
         }
 
         // ---------------------------------------------------------------- the save
@@ -322,6 +458,7 @@ namespace RealLifeOverhaul.Planner
                     SaveLines.Unreadable(data, RemindersKey, "none of its reminders could be read");
                 }
             }
+            Soonest();
         }
 
         public static void Save(Dictionary<string, string> data)
@@ -344,7 +481,8 @@ namespace RealLifeOverhaul.Planner
                     .Append((n.Done ? 1 : 0) | (n.Sample ? 2 : 0) | (n.HasPlace ? 4 : 0)).Append('|')
                     .Append(Escape(n.Title)).Append('|').Append(Escape(n.Place)).Append('|')
                     .Append(Text(n.X)).Append('|').Append(Text(n.Y)).Append('|').Append(Text(n.Z)).Append('|')
-                    .Append(Escape(n.Street)).Append('|').Append(Text(n.Number));
+                    .Append(Escape(n.Street)).Append('|').Append(Text(n.Number)).Append('|')
+                    .Append(Text((int)n.Repeat)).Append('|').Append(Text(n.Repeat == PlannerRepeat.Once ? -1 : n.DoneDay)).Append('|').Append(Text((int)n.Lead));   // (fields 12 to 14: a save from before repeats has none)
             }
             data[NotesKey] = text.ToString();
             text.Length = 0;
@@ -356,7 +494,7 @@ namespace RealLifeOverhaul.Planner
                     text.Append(';');
                 }
                 text.Append(Escape(r.Entry.Source)).Append('|').Append(Text(r.Entry.A)).Append('|').Append(Text(r.Entry.B)).Append('|')
-                    .Append(Text(r.EntryBegins)).Append('|').Append(Text(r.FireAt)).Append('|').Append(Text((int)r.Lead));
+                    .Append(Text(r.EntryBegins)).Append('|').Append(Text(r.FireAt)).Append('|').Append(Text((int)r.Lead)).Append('|').Append(Text(r.Travel));
             }
             data[RemindersKey] = text.ToString();
         }
@@ -393,6 +531,13 @@ namespace RealLifeOverhaul.Planner
                     note.Number = number;
                 }
             }
+            int repeat, doneDay, lead;
+            if (f.Length >= 14 && Int(f[11], out repeat) && Int(f[12], out doneDay) && Int(f[13], out lead))
+            {
+                note.Repeat = repeat >= (int)PlannerRepeat.Once && repeat <= (int)PlannerRepeat.Weekly ? (PlannerRepeat)repeat : PlannerRepeat.Once;
+                note.DoneDay = note.Repeat == PlannerRepeat.Once ? -1 : doneDay;
+                note.Lead = Lead(lead, ReminderLead.None);
+            }
             return note;
         }
 
@@ -411,13 +556,18 @@ namespace RealLifeOverhaul.Planner
             {
                 return false;
             }
-            reminder = new PlannerReminder { Entry = new EntryId(string.Intern(source), a, b), EntryBegins = begins, FireAt = fireAt, Lead = kind };
+            int travel;
+            reminder = new PlannerReminder
+            {
+                Entry = new EntryId(string.Intern(source), a, b), EntryBegins = begins, FireAt = fireAt, Lead = kind,
+                Travel = kind == ReminderLead.LeaveBy && f.Length >= 7 && Int(f[6], out travel) && travel > 0 ? travel : 0
+            };
             return true;
         }
 
         private static ReminderLead Lead(int value, ReminderLead otherwise)
         {
-            return value >= (int)ReminderLead.AtTheTime && value <= (int)ReminderLead.EveningBefore ? (ReminderLead)value : otherwise;
+            return value >= (int)ReminderLead.AtTheTime && value <= (int)ReminderLead.LeaveBy ? (ReminderLead)value : otherwise;
         }
 
         // '|' parts a record's fields and ';' parts the records, so both (and the escape itself) are written as two characters.

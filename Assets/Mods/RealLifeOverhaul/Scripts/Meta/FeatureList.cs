@@ -801,6 +801,8 @@ namespace RealLifeOverhaul.Meta
                 .Fact("planner_days", () => Planner.PlannerApp.UpcomingDays.ToString(CultureInfo.InvariantCulture))
                 .Fact("planner_notes", () => Planner.PlannerStore.MostNotes.ToString(CultureInfo.InvariantCulture))
                 .Fact("planner_evening", () => Planner.PlannerStore.EveningHour.ToString(CultureInfo.InvariantCulture) + ":00")
+                .Fact("planner_walk", () => (Planner.PlannerRules.WalkPerMinute / 100f).ToString("0.#", CultureInfo.InvariantCulture))
+                .Fact("planner_drive", () => (Planner.PlannerRules.DrivePerMinute / 100f).ToString("0.#", CultureInfo.InvariantCulture))
                 .Cleanup(() => Planner.PlannerDirector.Instance?.StopAll())
                 .ResetData(Planner.PlannerStore.Reset);   // the director reads the (now empty) save again on its next second
 

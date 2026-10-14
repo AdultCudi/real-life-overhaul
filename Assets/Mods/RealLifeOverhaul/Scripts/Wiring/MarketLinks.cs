@@ -418,7 +418,14 @@ namespace RealLifeOverhaul
                         long money = due.Cents >= 0 ? due.Cents / 100 : (-due.Cents + 99) / 100;
                         e.Title = PlannerText.T("reallife_mkt_plan_dividend_title", "name", k != null ? k.Name : string.Empty);
                         e.What = PlannerText.T(due.Cents >= 0 ? "reallife_mkt_plan_dividend_what" : "reallife_mkt_plan_dividend_owed");
-                        e.Money = PlannerText.T(due.Cents >= 0 ? "reallife_planner_pays" : "reallife_planner_costs", "amount", MarketText.Money(money));
+                        if (due.Cents >= 0)
+                        {
+                            e.Money = PlannerText.T("reallife_planner_pays", "amount", MarketText.Money(money));
+                        }
+                        else
+                        {
+                            PlannerText.Costs(e, money, MarketText.Money(money));
+                        }
                     }
                     for (int i = 0; i < s.Bonds.Holdings.Count; i++)
                     {
@@ -448,7 +455,7 @@ namespace RealLifeOverhaul
                             {
                                 e.Title = PlannerText.T("reallife_mkt_plan_call_title");
                                 e.What = PlannerText.T("reallife_mkt_plan_call_what", "amount", MarketText.Money(a.CallAmount));
-                                e.Money = PlannerText.T("reallife_planner_costs", "amount", MarketText.Money(a.CallAmount));
+                                PlannerText.Costs(e, a.CallAmount, MarketText.Money(a.CallAmount));
                                 e.IfMissed = PlannerText.T("reallife_mkt_plan_call_missed");
                             }
                         }

@@ -233,7 +233,7 @@ namespace RealLifeOverhaul.Careers
             UiClone.Safe(() => why = act());
             if (why != null)
             {
-                Notifications.Show(NotificationType.Error, why, null, 8f);
+                Notifications.Show(NotificationType.Error, why, _director.TakeWhyData(), 8f);
             }
             Refresh();
         }
@@ -330,6 +330,11 @@ namespace RealLifeOverhaul.Careers
             {
                 box.Line(CareersText.T("reallife_career_post_unqualified"), CellTone.Red);
             }
+            Application turned = applied ? null : w.TurnedDown(o, day);
+            if (turned != null)
+            {
+                box.Line(CareersDirector.TurnedDownText(turned), CellTone.Red);   // (and no Apply until then: ProRules.ReapplyDays)
+            }
 
             box.Section("reallife_look_sec_pay");
             box.Row("reallife_career_col_pay", CareersText.T("reallife_career_row_rate", "rate", CareersText.Rate(Prices.At(o.Pay))));
@@ -355,7 +360,7 @@ namespace RealLifeOverhaul.Careers
             }
 
             // The chance the app works out for an offer (ProPath.OfferChance), and a friend who puts the player's name forward.
-            bool chanceShown = !applied && qualified && o.Via != (int)Via.Headhunter;
+            bool chanceShown = !applied && turned == null && qualified && o.Via != (int)Via.Headhunter;
             if (chanceShown || o.Via == (int)Via.Referral)
             {
                 box.Section("reallife_look_sec_chance");
@@ -383,7 +388,7 @@ namespace RealLifeOverhaul.Careers
             box.Row("reallife_career_col_closes", CareersText.Day(o.To));
             Transform buttons = box.ButtonRow();
             int id = o.Id;
-            if (!applied)
+            if (!applied && turned == null)
             {
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_career_button_apply", () => Do(() => _director.Apply(id)));
             }
