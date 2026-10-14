@@ -50,6 +50,7 @@ namespace RealLifeOverhaul.Careers
         public const int OpeningDaysLeast = 7, OpeningDaysMost = 14;
         public static readonly int[] RankWeights = { 450, 300, 150, 70, 30 };   // thousandths: the share of vacancies at each rung (the top rungs are found by search firms)
         public const int AgencyDays = 14;         // a registration with the recruitment office lasts this long
+        public const int AgencyNoteHour = 7;      // hour of the game's day: the reminder on a registration's last day comes from then (or at the first hour seen after it)
         public const int BossKinds = 4;           // the manners a boss can have (Careers/Work/LifeRules)
         public const int FriendsForReferral = 3;  // friends it takes for a referral to come now and then
         public const int ReferralShare = 150;     // thousandths of vacancies a friend can put the player forward for
@@ -378,6 +379,16 @@ namespace RealLifeOverhaul.Careers
                 good += w.History[i].Reference == 3 ? 1 : 0;
                 poor += w.History[i].Reference == 1 ? 1 : 0;
             }
+        }
+
+        /// <summary>
+        /// True if the reminder that the registration with the recruitment office ends today is due: on its last day
+        /// (<paramref name="until"/>), from <see cref="AgencyNoteHour"/>, and not yet sent for that registration
+        /// (<paramref name="told"/>: the last day it was sent for, kept in the save, so a reload does not send it again).
+        /// </summary>
+        public static bool AgencyEnds(int until, int told, int day, int hour)
+        {
+            return until > 0 && until == day && told != until && hour >= AgencyNoteHour;
         }
 
         // ---------------------------------------------------------------- the city's vacancies

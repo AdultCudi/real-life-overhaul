@@ -685,7 +685,7 @@ namespace RealLifeOverhaul.Meta
             // with the courses, whose skills it reads. Off, no vacancies; a job held is kept in the save.
             Careers.CareersGuide.AddWorkFacts(Features.Add("careers_jobs", "reallife_meta_title_careers_jobs")
                 .About("reallife_guide_careers_jobs_about").Help("reallife_guide_careers_jobs")
-                .Owns(Settings.CareersJobsId)
+                .Owns(Settings.CareersJobsId, Settings.CareersAgencyNoteId)
                 .Test("reallife_work_test_offer", "reallife_work_test_day", "reallife_work_test_vacancies")
                 .Data(Careers.CareersStore.Key)
                 .Cleanup(() => Careers.CareersDirector.Instance?.StopAll(), -2)

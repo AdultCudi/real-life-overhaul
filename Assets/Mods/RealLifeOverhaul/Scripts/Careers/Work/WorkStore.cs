@@ -6,7 +6,7 @@ namespace RealLifeOverhaul.Careers
     /// <summary>
     /// The working life's parts of the careers line (Careers/CareersStore). Game-free.
     ///
-    ///   w  next id|last day|vacancies day|recruitment office until|earned|days worked|pension|benefit until|benefit a week|retired|search firm day|benefit paid|retired early|first step told
+    ///   w  next id|last day|vacancies day|recruitment office until|earned|days worked|pension|benefit until|benefit a week|retired|search firm day|benefit paid|retired early|first step told|recruitment office end told
     ///   o  each vacancy, a each application, j the job now (one), y each job before
     ///      a vacancy: id|profession|rank|kind|employer|street|number|rival|pay|mode|from|to|via|family|level
     ///      an application: the vacancy, then day|stage|answer|interview day|interview hour|score|offer|asks|lapse|start|turned down on
@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Careers
         public static void Write(TechWriter w, WorkFile f)
         {
             w.Part('w').Record().Add(f.NextId).Add(f.LastDay).Add(f.OpeningsDay).Add(f.AgencyUntil).Add(f.Earned).Add(f.DaysWorked).Add(f.Pension).Add(f.BenefitUntil)
-                .Add(f.BenefitWeek).Add(f.Retired).Add(f.HeadhuntDay).Add(f.BenefitPaid).Add(f.RetiredEarly).Add(f.StartTold);
+                .Add(f.BenefitWeek).Add(f.Retired).Add(f.HeadhuntDay).Add(f.BenefitPaid).Add(f.RetiredEarly).Add(f.StartTold).Add(f.AgencyTold);
             w.Part('o');
             for (int i = 0; i < f.Openings.Count && i < WorkFile.OpeningsMost; i++)
             {
@@ -110,6 +110,7 @@ namespace RealLifeOverhaul.Careers
             f.BenefitPaid = h.Int();
             f.RetiredEarly = h.Bool();
             f.StartTold = h.Bool();
+            f.AgencyTold = h.Int();   // (a save from before it: 0, nothing told)
             foreach (Fields x in r.Records('o'))
             {
                 var o = new Opening();

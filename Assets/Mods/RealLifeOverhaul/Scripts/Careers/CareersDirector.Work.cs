@@ -83,6 +83,7 @@ namespace RealLifeOverhaul.Careers
         {
             WorkFile w = _study.Work;
             int minute = hour * 60;
+            AgencyEnds(w, day, hour);
             Job j = w.Job;
             if (j != null)
             {
@@ -112,6 +113,22 @@ namespace RealLifeOverhaul.Careers
         }
 
         private bool Working => _sitting != null && (_sitting.Kind == SittingKind.Work || _sitting.Kind == SittingKind.Overtime);
+
+        // The last day of a registration with the recruitment office: one reminder, from the morning (ProRules.AgencyEnds).
+        // The day it was sent for is kept in the save, so a reload on that day does not send it again.
+        private void AgencyEnds(WorkFile w, int day, int hour)
+        {
+            if (!Settings.CareersAgencyNote || !ProRules.AgencyEnds(w.AgencyUntil, w.AgencyTold, day, hour))
+            {
+                return;
+            }
+            w.AgencyTold = w.AgencyUntil;
+            Tell2(NotificationType.Info, "reallife_work_note_agency_ends", null, TabJobs, null);
+            if (Verbose)
+            {
+                Logger?.Info("Careers check (recruitment office, day " + day + " at " + hour.ToString("00") + ":00): the registration ends today; the reminder sent once: PASS");
+            }
+        }
 
         private void WorkDayRun(int day)
         {

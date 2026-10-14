@@ -267,6 +267,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_work_test_day", () => Careers.CareersDirector.Instance?.TestWorkDay())
                 .AddButton("reallife_work_test_desk", () => Careers.CareersDirector.Instance?.TestDesk())
                 .AddButton("reallife_work_test_vacancies", () => Careers.CareersDirector.Instance?.TestVacancies())
+                .AddToggle(Settings.CareersAgencyNoteId, "reallife_work_opt_agency_note", Settings.CareersAgencyNote,
+                    v => Settings.CareersAgencyNote = v)
                 .AddToggle(Settings.CareersLifeId, "reallife_life_enabled", Settings.CareersLife,
                     v => Settings.CareersLife = v)
                 .AddButton("reallife_life_test_review", () => Careers.CareersDirector.Instance?.TestReview())
