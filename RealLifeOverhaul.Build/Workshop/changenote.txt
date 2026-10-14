@@ -1,4 +1,4 @@
-0.12.3
+0.12.4
 
 Fixed
-- At a landmark your character now takes a proper selfie: back to the view, the phone held out at arm's length a little above the eyes, looking into it, then lowered. People filming in the street now hold the phone upright at eye level with the elbows down, not up at the chin with the elbows out.
+- Grant share options no longer makes new shares while nobody works at the firm, and options already granted that way go to the firm's staff as soon as it has some.
