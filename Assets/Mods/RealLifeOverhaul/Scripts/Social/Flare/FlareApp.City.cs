@@ -75,7 +75,7 @@ namespace RealLifeOverhaul.Flare
             }
             box.Title(FlareText.T("reallife_flare_tab_city"));
             box.Line(FlareText.Fill("reallife_flare_city_count", "count", file.ActiveInfluencers.ToString(), "most", FlareCast.Most.ToString()));
-            box.Line(FlareText.T("reallife_flare_city_intro"));
+            box.Note(FlareText.T("reallife_flare_city_intro"));
             box.Line(FlareText.T("reallife_flare_city_follow"));
             Meta.Guide.Point(box, GuideTitle);
             return FlareTables.City;
@@ -92,7 +92,7 @@ namespace RealLifeOverhaul.Flare
                 {
                     box.Line(FlareText.T("reallife_flare_profile_scandal"));
                 }
-                box.Line(FlareText.Fill("reallife_flare_profile_what", "niche", FlareText.Niche(inf.Niche), "district", FlareGame.DistrictName(inf.District), "style", FlareText.Style(inf.Style)));
+                box.Note(FlareText.Fill("reallife_flare_profile_what", "niche", FlareText.Niche(inf.Niche), "district", FlareGame.DistrictName(inf.District), "style", FlareText.Style(inf.Style)));
                 box.Line(FlareText.Fill("reallife_flare_profile_figures", "followers", FlareText.N(inf.Followers), "engaged", (inf.Engagement / 100f).ToString("0.0") + "%",
                     "reliable", inf.Reliability.ToString()));
                 box.Row("reallife_flare_profile_price", FlareText.Money(Prices.At(FlareCast.Price(inf))));
@@ -192,7 +192,7 @@ namespace RealLifeOverhaul.Flare
             }
             if (h.OffMessage && day >= h.From)
             {
-                box.Line(FlareText.T("reallife_flare_hire_off"));
+                box.Line(FlareText.T("reallife_flare_hire_off"), CellTone.Yellow);
             }
             if (h.Backfired && day >= h.From)
             {

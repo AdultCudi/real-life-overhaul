@@ -56,7 +56,7 @@ namespace RealLifeOverhaul.Flare
             {
                 box.Title(FlareText.T("reallife_flare_trending"));
                 Trending(box, file, day);
-                box.Line(FlareText.T("reallife_flare_intro_what"));
+                box.Note(FlareText.T("reallife_flare_intro_what"));
                 box.Line(FlareText.T("reallife_flare_intro_post"));
                 Meta.Guide.Point(box, GuideTitle);
             }
@@ -188,7 +188,7 @@ namespace RealLifeOverhaul.Flare
             }
             box.Title(FlareText.T("reallife_flare_tab_post"));
             WaitLine(box, file, day);
-            box.Line(FlareText.T("reallife_flare_post_intro"));
+            box.Note(FlareText.T("reallife_flare_post_intro"));
             box.Line(FlareText.Fill("reallife_flare_post_limits", "posts", FlareRules.PostsPerDay.ToString(), "hours", (FlareRules.PostGapMinutes / 60).ToString(), "days", FlareRules.DraftDays.ToString()));
             Meta.Guide.Point(box, GuideTitle);
             return FlareTables.Drafts;

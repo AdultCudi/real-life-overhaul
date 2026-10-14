@@ -88,8 +88,8 @@ namespace RealLifeOverhaul.Economy.Ventures
             box.Line(Pair("reallife_ven_prop_count", buildings.ToString()));
             box.Line(Pair("reallife_ven_prop_paid", Money((float)paid)));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_ven_prop_bizman", OpenBizMan);
-            box.Line(FinanceText.T("reallife_ven_prop_what"));
-            box.Line(FinanceText.T("reallife_ven_prop_yield_note", "days", year.ToString()));
+            box.Note(FinanceText.T("reallife_ven_prop_what"));
+            box.Note(FinanceText.T("reallife_ven_prop_yield_note", "days", year.ToString()));
             Meta.Guide.Point(box, GuideTitle);
             return VenturesTables.Property;
         }

@@ -553,7 +553,7 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Title(FinanceText.T("reallife_econ_tab_borrow"));
                 box.Chip(FinanceText.Grade(score.Grade), Tone(score.Grade));
-                box.Line(FinanceText.T("reallife_econ_borrow_pick"));
+                box.Note(FinanceText.T("reallife_econ_borrow_pick"));
                 box.Section("reallife_look_sec_how");
                 box.Note(FinanceText.T("reallife_econ_borrow_fee_note", "share", FeeShare(), "least", FinanceText.Money(CreditCatalogue.PhoneFeeLeast)));
                 box.Note(FinanceText.T("reallife_tab_borrow_columns_note"));

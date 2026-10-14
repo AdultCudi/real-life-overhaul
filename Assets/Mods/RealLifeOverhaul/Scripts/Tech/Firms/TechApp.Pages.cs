@@ -154,7 +154,7 @@ namespace RealLifeOverhaul.Tech
             WorkButtons(box, firm, idle, true);
             if (FirmsCatalogue.MakesProducts[m.Kind] != 0)
             {
-                box.Line(TechText.T("reallife_tech_firm_products_how"));
+                box.Note(TechText.T("reallife_tech_firm_products_how"));
             }
             Meta.Guide.Point(box, SectorGuide);
         }
@@ -403,7 +403,7 @@ namespace RealLifeOverhaul.Tech
                     box.Line(TechText.T("reallife_tech_products_no_maker"));
                 }
                 Needs(box, _makers);
-                box.Line(TechText.T("reallife_tech_products_about"));
+                box.Note(TechText.T("reallife_tech_products_about"));
                 Meta.Guide.Point(box, SectorGuide);
             }
             return TechColumns.Products;
@@ -534,7 +534,7 @@ namespace RealLifeOverhaul.Tech
             {
                 _picked = null;
                 box.Title(TechText.T("reallife_tech_contracts_title"));
-                box.Line(TechText.Fill("reallife_tech_contracts_about", "upfront", TechText.Mille(FirmsCatalogue.UpfrontShare), "late", TechText.Mille(FirmsCatalogue.LatePenalty),
+                box.Note(TechText.Fill("reallife_tech_contracts_about", "upfront", TechText.Mille(FirmsCatalogue.UpfrontShare), "late", TechText.Mille(FirmsCatalogue.LatePenalty),
                     "every", FirmsCatalogue.TenderEvery.ToString()));
                 Meta.Guide.Point(box, SectorGuide);
             }

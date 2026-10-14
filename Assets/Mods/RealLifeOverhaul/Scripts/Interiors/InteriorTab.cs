@@ -425,7 +425,7 @@ namespace RealLifeOverhaul.Interiors
                 }
             }
             Sorted.Clear();
-            b.Line(InteriorText.T("reallife_interior_items_note", "repeat", InteriorText.N(InteriorRules.RepeatShare / 10), "most", InteriorText.N(InteriorRules.RepeatMost),
+            b.Note(InteriorText.T("reallife_interior_items_note", "repeat", InteriorText.N(InteriorRules.RepeatShare / 10), "most", InteriorText.N(InteriorRules.RepeatMost),
                 "target", InteriorText.Tenths(s.Target)));
         }
 
@@ -459,7 +459,7 @@ namespace RealLifeOverhaul.Interiors
             {
                 b.Line(InteriorText.T("reallife_interior_line_paused", "reason", InteriorText.Stop(s.Stop)));
             }
-            b.Line(InteriorText.T("reallife_interior_cust_note", "traffic", InteriorText.N(c.Traffic), "marketing", InteriorText.N(c.Marketing), "figure", InteriorText.N(c.Written)));
+            b.Note(InteriorText.T("reallife_interior_cust_note", "traffic", InteriorText.N(c.Traffic), "marketing", InteriorText.N(c.Marketing), "figure", InteriorText.N(c.Written)));
         }
 
         // The game's own rules for the business's type: what its customers want and what it needs to open.

@@ -69,8 +69,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             box.Row("reallife_dealer_sum_waiting", _director.Waiting().ToString());
             box.Row("reallife_dealer_sum_cars", DealerText.T("reallife_dealer_sum_cars_value", "cars", cars.ToString(), "free", free.ToString()));
             box.Row("reallife_dealer_sum_worth", DealerText.Money(worthAll));
-            box.Line(DealerText.T("reallife_dealer_about"));
-            box.Line(DealerText.T("reallife_dealer_sum_note"));
+            box.Note(DealerText.T("reallife_dealer_about"));
+            box.Note(DealerText.T("reallife_dealer_sum_note"));
             Meta.Guide.Point(box, GuideTitle);
             return spec;
         }
@@ -94,7 +94,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             box.Title(DealerGame.CarName(car.Type) + "  " + DealerGame.ColourName(car.Colour));
             ShowroomPhotos.Show(box, car);
             box.Line(DealerText.Fill("reallife_dealer_car_money", "cost", DealerText.Money(car.Cost), "worth", DealerText.Money(worth), "trade", DealerText.Money(DealerRules.TradePrice(worth))));
-            box.Line(DealerText.Fill("reallife_dealer_car_what", "source", DealerText.Source(car.Source), "name", yard.Name, "days", (day - car.Bought).ToString(),
+            box.Note(DealerText.Fill("reallife_dealer_car_what", "source", DealerText.Source(car.Source), "name", yard.Name, "days", (day - car.Bought).ToString(),
                 "km", DealerText.Km(car.Km), "condition", DealerText.Condition(car.Condition)));
             box.Row("reallife_dealer_car_faults", car.Known != 0 ? DealerText.Faults(car.Known) : DealerText.T("reallife_dealer_faults_none_known"));
             int step = Choice(DealerRules.AskStepOf(worth, car.Asking));

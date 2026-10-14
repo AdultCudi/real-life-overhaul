@@ -128,7 +128,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             box.Line(DealerText.T("reallife_dealer_event_campaigns"));
             if (state.Yards.Count == 0)
             {
-                box.Line(DealerText.T("reallife_dealer_refuse_off"));
+                box.Line(DealerText.T("reallife_dealer_refuse_off"), CellTone.Yellow);
                 InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
                 return;
             }
@@ -234,7 +234,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 box.Line(DealerText.Fill(s <= step ? "reallife_dealer_rep_step_had" : "reallife_dealer_rep_step", "step", DealerText.Step(s), "points", DealerCatalogue.RepSteps[s].ToString(),
                     "perk", DealerText.Perk(s)));
             }
-            box.Line(DealerText.T("reallife_dealer_rep_how"));
+            box.Note(DealerText.T("reallife_dealer_rep_how"));
             box.Line(DealerText.T("reallife_dealer_rep_standing"));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, GuideTitle);

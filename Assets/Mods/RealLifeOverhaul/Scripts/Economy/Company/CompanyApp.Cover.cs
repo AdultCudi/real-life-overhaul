@@ -79,7 +79,7 @@ namespace RealLifeOverhaul.Economy
                 box.Line(CompanyText.T("reallife_co_cover_what_fire"));
                 box.Line(CompanyText.T("reallife_co_cover_what_theft"));
                 box.Line(CompanyText.T("reallife_co_cover_what_liability"));
-                box.Line(CompanyText.T("reallife_co_cover_pick"));
+                box.Note(CompanyText.T("reallife_co_cover_pick"));
                 Guide(box);
             }
         }

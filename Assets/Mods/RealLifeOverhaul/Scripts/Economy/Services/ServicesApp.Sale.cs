@@ -84,7 +84,7 @@ namespace RealLifeOverhaul.Economy
                 box.Line(ServicesText.T("reallife_svc_sale_says_market"));
                 box.Line(ServicesText.T("reallife_svc_sale_says_quick", "share", ServicesCatalogue.QuickPct.ToString()));
                 box.Line(ServicesText.T("reallife_svc_sale_says_after"));
-                box.Line(ServicesText.T("reallife_svc_sale_pick"));
+                box.Note(ServicesText.T("reallife_svc_sale_pick"));
                 Guide(box);
             }
         }

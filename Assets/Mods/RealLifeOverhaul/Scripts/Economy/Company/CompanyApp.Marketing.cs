@@ -73,10 +73,10 @@ namespace RealLifeOverhaul.Economy
             else
             {
                 box.Title(CompanyText.T("reallife_co_tab_marketing"));
-                box.Line(CompanyText.T("reallife_co_push_intro"));
+                box.Note(CompanyText.T("reallife_co_push_intro"));
                 box.Line(CompanyText.T("reallife_co_push_measure"));
                 box.Line(CompanyText.T("reallife_co_push_game"));
-                box.Line(CompanyText.T("reallife_co_push_pick"));
+                box.Note(CompanyText.T("reallife_co_push_pick"));
                 Guide(box);
             }
         }

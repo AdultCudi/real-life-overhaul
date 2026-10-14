@@ -97,7 +97,7 @@ namespace RealLifeOverhaul.Economy.Brands
             else
             {
                 box.Title(BrandsText.T("reallife_brand_tab_shops"));
-                box.Line(BrandsText.T("reallife_brand_shops_intro"));
+                box.Note(BrandsText.T("reallife_brand_shops_intro"));
                 box.Line(BrandsText.Fill("reallife_brand_shops_standards", "satisfaction", BrandCatalogue.WeightSatisfaction.ToString(), "clean", BrandCatalogue.WeightClean.ToString(),
                     "stock", BrandCatalogue.WeightStock.ToString(), "skill", BrandCatalogue.WeightSkill.ToString()));
                 box.Line(BrandsText.T("reallife_brand_shops_franchised"));

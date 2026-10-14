@@ -163,7 +163,7 @@ namespace RealLifeOverhaul.Economy
                 at = CompanyCatalogue.HideSteps[i] == shop.File.Hide ? i : at;
             }
             box.Title(CompanyText.T("reallife_co_hide_title", "business", shop.Name));
-            box.Line(CompanyText.T("reallife_co_hide_what", "percent", CompanyGame.TaxPercent.ToString()));
+            box.Note(CompanyText.T("reallife_co_hide_what", "percent", CompanyGame.TaxPercent.ToString()));
             if (!box.HasSelector || !box.Selector(steps, at, i => CompanyCatalogue.HideSteps[i] + "%", i => _director.SetHide(place, CompanyCatalogue.HideSteps[i])))
             {
                 box.Line(shop.File.Hide + "%");

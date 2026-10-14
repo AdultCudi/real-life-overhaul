@@ -65,7 +65,7 @@ namespace RealLifeOverhaul.Economy.Brands
             else
             {
                 box.Title(BrandsText.T("reallife_brand_app"));
-                box.Line(BrandsText.T("reallife_brand_intro_what"));
+                box.Note(BrandsText.T("reallife_brand_intro_what"));
                 box.Line(BrandsText.T("reallife_brand_intro_effect", "most", BrandCatalogue.RecFootfallMost.ToString(), "cap", BrandCatalogue.FootfallMost.ToString()));
                 box.Line(BrandsText.T("reallife_brand_intro_franchise"));
                 box.Line(BrandsText.T("reallife_brand_intro_start"));
@@ -221,7 +221,7 @@ namespace RealLifeOverhaul.Economy.Brands
             int id = b.Id;
             mainKey = null;
             main = null;
-            box.Line(BrandsText.Fill("reallife_brand_push_about", "local", BrandsText.Lost(BrandCatalogue.CampaignLocalGain), "city", BrandsText.Lost(BrandCatalogue.CampaignCityGain)));
+            box.Note(BrandsText.Fill("reallife_brand_push_about", "local", BrandsText.Lost(BrandCatalogue.CampaignLocalGain), "city", BrandsText.Lost(BrandCatalogue.CampaignCityGain)));
             box.Line(BrandsText.T("reallife_brand_push_fund", "fund", BrandsText.Money(b.Fund), "most", BrandsText.Money(CompanyCatalogue.AtPrices(BrandCatalogue.FundIdleMost, BrandsDirector.Index))));
             if (b.Push >= 0)
             {

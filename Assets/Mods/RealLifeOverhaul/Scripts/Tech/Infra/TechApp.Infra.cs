@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Tech
             if (f == null)
             {
                 box.Title(TechText.T("reallife_roles_off_title"));
-                box.Line(TechText.T("reallife_tech_off_body"));
+                box.Note(TechText.T("reallife_tech_off_body"));
                 _picked = null;
                 return TechColumns.Off;
             }
@@ -81,7 +81,7 @@ namespace RealLifeOverhaul.Tech
                     box.Line(TechText.Fill("reallife_infra_cloud_line", "sold", f.Cloud.Sold.ToString(), "own", f.Cloud.Own.ToString(), "gpu", f.Cloud.GpuSold.ToString(), "rival", TechText.Mille(f.Cloud.RivalPrice),
                         "regions", InfraRules.Regions(f.Centres).ToString()));
                 }
-                box.Line(TechText.Fill("reallife_infra_about", "mbps", InfraCatalogue.NetNeeded.ToString(), "per", InfraCatalogue.RacksPerTechnician.ToString()));
+                box.Note(TechText.Fill("reallife_infra_about", "mbps", InfraCatalogue.NetNeeded.ToString(), "per", InfraCatalogue.RacksPerTechnician.ToString()));
                 Meta.Guide.Point(box, SectorGuide);
             }
             return TechColumns.Infra;
@@ -159,7 +159,7 @@ namespace RealLifeOverhaul.Tech
                         uis.textInputUi.Show("reallife_infra_cloud_name_placeholder", "common_confirm", text => UiClone.Safe(() => Do(() => _director.LaunchCloud(text))), null, string.Empty, false, 30));
                 }
                 InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
-                box.Line(TechText.Fill("reallife_infra_cloud_about", "racks", InfraCatalogue.CloudRacksLeast.ToString(), "engineers", InfraCatalogue.CloudEngineersLeast.ToString(),
+                box.Note(TechText.Fill("reallife_infra_cloud_about", "racks", InfraCatalogue.CloudRacksLeast.ToString(), "engineers", InfraCatalogue.CloudEngineersLeast.ToString(),
                     "cash", TechText.Cents(_director.Level(InfraCatalogue.CloudCashLeast)), "licence", TechText.Cents(_director.Level(InfraCatalogue.LicenceFee))));
                 Meta.Guide.Point(box, SectorGuide);
                 return;

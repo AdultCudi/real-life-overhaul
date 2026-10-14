@@ -116,7 +116,7 @@ namespace RealLifeOverhaul.Markets
             string name = BondText.Name(o.Def, o.Issuer);
             box.Title(name);
             StatusLine(box);
-            box.Line(MarketText.Fill("reallife_mkt_bond_offer_what", "rate", BondText.Rate(o.YieldBp), "pays", BondText.Pays(o.Def), "term", BondText.Term(o.Def.TermQuarters),
+            box.Note(MarketText.Fill("reallife_mkt_bond_offer_what", "rate", BondText.Rate(o.YieldBp), "pays", BondText.Pays(o.Def), "term", BondText.Term(o.Def.TermQuarters),
                 "day", (s.Day + BondRules.TermDays(o.Def, year)).ToString()));
             box.Line(MarketText.Fill(o.Def.Kind == BondKind.Deposit ? "reallife_mkt_bond_about_deposit" : o.Def.Kind == BondKind.City ? "reallife_mkt_bond_about_city" : "reallife_mkt_bond_about_treasury",
                 "bank", o.Issuer ?? string.Empty, "months", BondCatalogue.DepositPenaltyMonths.ToString()));
@@ -190,7 +190,7 @@ namespace RealLifeOverhaul.Markets
             string name = BondText.Name(h);
             box.Title(name);
             StatusLine(box);
-            box.Line(MarketText.Fill("reallife_mkt_bond_held_what", "face", BondText.Money(h.Face), "rate", BondText.Rate(h.RateBp), "day", h.EndDay.ToString(), "paid", h.Paid.ToString(),
+            box.Note(MarketText.Fill("reallife_mkt_bond_held_what", "face", BondText.Money(h.Face), "rate", BondText.Rate(h.RateBp), "day", h.EndDay.ToString(), "paid", h.Paid.ToString(),
                 "count", h.Payments.ToString()));
             int day = BondRules.NextPayDay(h);
             if (day > 0 && d != null)

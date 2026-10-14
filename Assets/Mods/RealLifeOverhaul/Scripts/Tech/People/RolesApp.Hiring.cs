@@ -69,7 +69,7 @@ namespace RealLifeOverhaul.Tech
                 box.Row("reallife_hire_sum_ads", TechText.T("reallife_hire_sum_ads_value", "count", open.ToString(), "most", HiringCatalogue.AdsMost.ToString()));
                 box.Line(TechText.Fill("reallife_hire_jobs_office", "week", HiringCatalogue.AdWeekMost.ToString(), "boosted", HiringCatalogue.AdWeekMostBoosted.ToString(),
                     "more", HiringCatalogue.OfficeBonusLeast.ToString()));
-                box.Line(TechText.T("reallife_hire_jobs_about"));
+                box.Note(TechText.T("reallife_hire_jobs_about"));
                 Meta.Guide.Point(box, JobsGuide);
             }
             return RolesColumns.Jobs;
@@ -200,7 +200,7 @@ namespace RealLifeOverhaul.Tech
                 _picked = null;
                 box.Title(TechText.T("reallife_hire_applicants_title"));
                 box.Row("reallife_hire_sum_live", live.ToString());
-                box.Line(TechText.T("reallife_hire_applicants_about"));
+                box.Note(TechText.T("reallife_hire_applicants_about"));
                 Meta.Guide.Point(box, JobsGuide);
             }
             return RolesColumns.Applicants;
@@ -355,7 +355,7 @@ namespace RealLifeOverhaul.Tech
                 box.Row("reallife_hire_sum_seekers", all.ToString());
                 box.Row("reallife_hire_sum_unemployment", TechText.Mille(HiringRules.Unemployment(cycle)));
                 box.Row("reallife_hire_sum_rivals", f.RivalAds.Count.ToString());
-                box.Line(TechText.T("reallife_hire_market_about"));
+                box.Note(TechText.T("reallife_hire_market_about"));
                 Meta.Guide.Point(box, JobsGuide);
             }
             return RolesColumns.Market;
@@ -459,7 +459,7 @@ namespace RealLifeOverhaul.Tech
             {
                 _picked = null;
                 box.Title(TechText.T("reallife_hire_searches_title"));
-                box.Line(TechText.Fill("reallife_hire_searches_about", "share", TechText.Bp(HiringCatalogue.SearchFeeBp), "count", HiringCatalogue.SearchCandidates.ToString(),
+                box.Note(TechText.Fill("reallife_hire_searches_about", "share", TechText.Bp(HiringCatalogue.SearchFeeBp), "count", HiringCatalogue.SearchCandidates.ToString(),
                     "least", HiringCatalogue.SearchDaysLeast.ToString(), "most", HiringCatalogue.SearchDaysMost.ToString()));
                 Meta.Guide.Point(box, JobsGuide);
             }

@@ -36,7 +36,7 @@ namespace RealLifeOverhaul.Economy
             if (!_director.RotaOn)
             {
                 box.Title(CompanyText.T(TabKeys[_tab]));
-                box.Line(CompanyText.T("reallife_rota_off"));
+                box.Line(CompanyText.T("reallife_rota_off"), CellTone.Yellow);
                 Say("off", CompanyText.T("reallife_co_part_off_row"));
                 return;
             }
@@ -97,10 +97,10 @@ namespace RealLifeOverhaul.Economy
                 Say("none", CompanyText.T("reallife_co_row_no_business"));
             }
             box.Title(CompanyText.T("reallife_rota_tab"));
-            box.Line(CompanyText.T("reallife_rota_intro"));
+            box.Note(CompanyText.T("reallife_rota_intro"));
             box.Line(CompanyText.T("reallife_rota_intro_plans"));
             box.Line(CompanyText.T("reallife_rota_intro_fill"));
-            box.Line(CompanyText.T("reallife_rota_intro_pick"));
+            box.Note(CompanyText.T("reallife_rota_intro_pick"));
             return selected;
         }
 
@@ -565,7 +565,7 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Row("reallife_rota_day_fee", RotaMoney(shop.DayFee[d]));
             }
-            box.Line(CompanyText.T("reallife_rota_day_explain"));
+            box.Note(CompanyText.T("reallife_rota_day_explain"));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_rota_day_back", () =>
             {
                 _pick = "rung:" + place + ":" + index;

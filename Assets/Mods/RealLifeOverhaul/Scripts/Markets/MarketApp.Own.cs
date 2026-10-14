@@ -107,7 +107,7 @@ namespace RealLifeOverhaul.Markets
             box.Line(MarketText.Fill("reallife_lst_box_stage", "stage", ListingText.Stage(f.Stage)));
             if (!Settings.MarketsListing && f.Stage == ListingStage.None)
             {
-                box.Line(MarketText.T("reallife_lst_box_off"));
+                box.Line(MarketText.T("reallife_lst_box_off"), CellTone.Yellow);
                 BackRow(box);
                 Meta.Guide.Point(box, ListingGuideTitle);
                 return spec;

@@ -101,7 +101,7 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_online_que_out", sent.ToString());
             box.Row("reallife_online_que_pickers", OnlineText.T("reallife_online_que_pickers_value", "count", pickers.ToString(), "each", OnlineCatalogue.PickPerHour.ToString()));
             box.Row("reallife_online_que_vans", vans.ToString());
-            box.Line(OnlineText.Fill("reallife_online_que_note", "hours", OnlineCatalogue.WaitMost.ToString(), "share", OnlineText.Share(OnlineCatalogue.LateRefund)));
+            box.Note(OnlineText.Fill("reallife_online_que_note", "hours", OnlineCatalogue.WaitMost.ToString(), "share", OnlineText.Share(OnlineCatalogue.LateRefund)));
             Meta.Guide.Point(box, GuideTitle);
             return OnlineColumns.Orders;
         }
@@ -208,7 +208,7 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_online_cat_expected", (site.PerDay / 1000f).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture));
             box.Line(OnlineText.Fill("reallife_online_cat_parts", "need", site.Need.ToString(), "price", OnlineText.Share(site.Price), "stars", OnlineText.Share(OnlineRules.StarsFactor(shop.Stars)),
                 "marketing", OnlineText.Share(OnlineRules.MarketingFactor(site.Ads, site.Campaign))));
-            box.Line(OnlineText.T("reallife_online_cat_note"));
+            box.Note(OnlineText.T("reallife_online_cat_note"));
             Meta.Guide.Point(box, GuideTitle);
             return OnlineColumns.Catalogue;
         }
@@ -293,7 +293,7 @@ namespace RealLifeOverhaul.Economy
                 _director.Offer(key, item, true);
             });
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_online_button_back", ClosePick);
-            box.Line(OnlineText.T("reallife_online_line_add_note", "most", OnlineCatalogue.LinesMost.ToString()));
+            box.Note(OnlineText.T("reallife_online_line_add_note", "most", OnlineCatalogue.LinesMost.ToString()));
             Meta.Guide.Point(box, GuideTitle);
         }
     }

@@ -123,7 +123,7 @@ namespace RealLifeOverhaul.Economy
             box.Line(ServicesText.T(state.Van ? "reallife_svc_van_says_on" : "reallife_svc_van_says_off", "cost", ServicesText.Money(ServicesCatalogue.AtPrices(ServicesCatalogue.VanCostPerKm, ServicesGame.Index))));
             if (state.Crew.Count > 0)
             {
-                box.Line(ServicesText.T("reallife_svc_service_pick"));
+                box.Note(ServicesText.T("reallife_svc_service_pick"));
             }
             Guide(box);
         }
@@ -260,7 +260,7 @@ namespace RealLifeOverhaul.Economy
                 box.Line(ServicesText.T("reallife_svc_crew_says_hire"));
                 box.Line(ServicesText.T("reallife_svc_crew_says_hours"));
                 box.Line(ServicesText.T("reallife_svc_crew_says_pay"));
-                box.Line(ServicesText.T("reallife_svc_crew_says_pick"));
+                box.Note(ServicesText.T("reallife_svc_crew_says_pick"));
                 Guide(box);
                 _member.Employee = null;
                 _member.Base = null;

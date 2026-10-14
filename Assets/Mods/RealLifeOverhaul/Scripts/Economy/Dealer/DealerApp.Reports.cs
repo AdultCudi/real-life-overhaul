@@ -19,7 +19,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             if (_report == null)
             {
                 box.Title(DealerText.T("reallife_dealer_reports_title"));
-                box.Line(DealerText.T("reallife_dealer_reports_off"));
+                box.Line(DealerText.T("reallife_dealer_reports_off"), CellTone.Yellow);
                 return DealerColumns.Reports;
             }
             _report.Show(state, today);
@@ -33,7 +33,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             Sums(box, "reallife_dealer_reports_kept", _reportAll, kept);
             box.Line(DealerText.Fill("reallife_dealer_reports_now", "cars", _reportNow.Cars.ToString(), "age", DealerReport.Value(_reportNow, ReportKind.StockAge).ToString(),
                 "arrears", DealerText.Money(_reportNow.Arrears), "late", _reportNow.Late.ToString()));
-            box.Line(DealerText.T("reallife_dealer_reports_about"));
+            box.Note(DealerText.T("reallife_dealer_reports_about"));
             Meta.Guide.Point(box, GuideTitle);
             _picked = null;
             return DealerColumns.Reports;

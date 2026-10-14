@@ -98,7 +98,7 @@ namespace RealLifeOverhaul.Economy
                 box.Title(FinanceText.T("reallife_bank_tab_loans"));
                 box.Row("reallife_bank_owed_here", FinanceText.Money(slice.Owed));
                 box.Row("reallife_econ_over_leaves", FinanceText.Money(slice.Tomorrow));
-                box.Line(FinanceText.T("reallife_bank_loans_pick"));
+                box.Note(FinanceText.T("reallife_bank_loans_pick"));
                 box.Line(FinanceText.T("reallife_bank_loans_finance"));
                 Meta.Guide.Point(box, GuideTitle);
                 return null;
@@ -313,7 +313,7 @@ namespace RealLifeOverhaul.Economy
                     }
                     else
                     {
-                        box.Line(Why(offer.Answer));
+                        box.Line(Why(offer.Answer), CellTone.Red);
                     }
                 }
                 Say("none", FinanceText.T("reallife_bank_row_no_card", "bank", Bank.Name));

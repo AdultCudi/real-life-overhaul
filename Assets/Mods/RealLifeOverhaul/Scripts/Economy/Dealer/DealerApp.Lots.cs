@@ -49,7 +49,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             _picked = null;
             box.Title(DealerText.T("reallife_dealer_lots_title"));
-            box.Line(DealerText.T("reallife_dealer_lots_about"));
+            box.Note(DealerText.T("reallife_dealer_lots_about"));
             box.Line(DealerText.T("reallife_dealer_lots_staff"));
             Meta.Guide.Point(box, GuideTitle);
             return DealerColumns.Lots;

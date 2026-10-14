@@ -50,7 +50,7 @@ namespace RealLifeOverhaul.Fame
             if (f == null)
             {
                 box.Title(FameText.T("reallife_fame_title"));
-                box.Line(FameText.T("reallife_fame_off"));
+                box.Line(FameText.T("reallife_fame_off"), CellTone.Yellow);
                 InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_fame_back", back);
                 Meta.Guide.Point(box, GuideTitle);
                 return;

@@ -167,7 +167,7 @@ namespace RealLifeOverhaul.Economy
             {
                 UiClone.Words(_shell.Header, Bank != null ? Bank.Name : FinanceText.T("reallife_econ_lender_bank"));
                 box.Title(FinanceText.T("reallife_bank_off_title"));
-                box.Line(FinanceText.T("reallife_bank_off_body"));
+                box.Note(FinanceText.T("reallife_bank_off_body"));
             }
             else
             {
@@ -405,7 +405,7 @@ namespace RealLifeOverhaul.Economy
             ProductOffer offer = Desk.Offer(ProductKind.Overdraft, Bank);
             if (offer.Answer != ProductAnswer.Yes)
             {
-                box.Line(Why(offer.Answer));
+                box.Line(Why(offer.Answer), CellTone.Red);
                 return;
             }
             box.Line(FinanceText.T("reallife_bank_overdraft_offer", "bank", Bank.Name, "limit", FinanceText.Money(offer.Most), "rate", (offer.RateBp / 100f).ToString("0.#")));
@@ -546,7 +546,7 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             box.Line(FinanceText.T(ProfileKeys[Mathf.Clamp(Bank.Rank, 0, ProfileKeys.Length - 1)]));
-            box.Line(FinanceText.T("reallife_bank_rating_note"));
+            box.Note(FinanceText.T("reallife_bank_rating_note"));
             Meta.Guide.Point(box, GuideTitle);
         }
 

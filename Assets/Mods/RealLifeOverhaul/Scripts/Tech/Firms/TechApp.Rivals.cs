@@ -99,7 +99,7 @@ namespace RealLifeOverhaul.Tech
             box.Line(TechText.Fill("reallife_tech_rivals_count", "companies", companies.ToString(), "startups", startups.ToString(), "firms", firms.ToString()));
             box.Row("reallife_tech_rivals_what", OfferWords(CompetitorRules.Makes(m.Kind), CompetitorRules.Takes(m.Kind)));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_roles_button_back", () => Set(() => _picked = FirmRow + m.Place));
-            box.Line(TechText.T("reallife_tech_rivals_how"));
+            box.Note(TechText.T("reallife_tech_rivals_how"));
             Meta.Guide.Point(box, SectorGuide);
         }
 

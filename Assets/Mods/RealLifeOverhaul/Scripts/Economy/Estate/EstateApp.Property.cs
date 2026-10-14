@@ -135,7 +135,7 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_estate_mine_count", state.Holdings.Count.ToString());
             box.Row("reallife_estate_mine_worth", EstateText.Money(worth));
             box.Row("reallife_estate_mine_rent", EstateText.T("reallife_estate_row_a_day", "amount", EstateText.Money(rent)));
-            box.Line(EstateText.T("reallife_estate_mine_what"));
+            box.Note(EstateText.T("reallife_estate_mine_what"));
             box.Line(EstateText.T("reallife_estate_mine_game"));
             Meta.Guide.Point(box, GuideTitle);
         }
@@ -205,7 +205,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     box.Line(EstateText.Share(share));
                 }
-                box.Line(EstateText.T("reallife_estate_own_list_what", "amount", EstateText.Money(asked), "chance", EstateText.Share(EstateRules.SaleChance(asked, value, c.Cycle)),
+                box.Note(EstateText.T("reallife_estate_own_list_what", "amount", EstateText.Money(asked), "chance", EstateText.Share(EstateRules.SaleChance(asked, value, c.Cycle)),
                     "fee", EstateText.Share(EstateCatalogue.AgentFee)));
                 InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_estate_btn_list", () => _director.List(place, share));
             }
@@ -226,7 +226,7 @@ namespace RealLifeOverhaul.Economy
             BackButton(more);
             box.Line(EstateText.T("reallife_estate_own_made_of", "base", EstateText.Money(h.Base), "market", EstateText.Share(state.Real), "prices", EstateText.Share(c.Index))
                      + " " + EstateText.T("reallife_estate_own_made_of_2", "district", EstateText.Share(EstateRules.DistrictValue(h.Income)), "condition", EstateText.Level(h.Cond), "share", EstateText.Share(EstateRules.ConditionValue(h.Cond))));
-            box.Line(EstateText.T("reallife_estate_own_cover_what", "amount", EstateText.Money(EstateRules.Premium(h.Base, c)), "excess", EstateText.Share(EstateCatalogue.CoverExcess)));
+            box.Note(EstateText.T("reallife_estate_own_cover_what", "amount", EstateText.Money(EstateRules.Premium(h.Base, c)), "excess", EstateText.Share(EstateCatalogue.CoverExcess)));
             Meta.Guide.Point(box, GuideTitle);
         }
 
@@ -346,9 +346,9 @@ namespace RealLifeOverhaul.Economy
                 box.Row("reallife_estate_tenants_let", let.ToString());
                 box.Row("reallife_estate_tenants_empty", empty.ToString());
                 box.Row("reallife_estate_tenants_owed", EstateText.Money(owed));
-                box.Line(EstateText.T("reallife_estate_tenants_notice_what", "days", EstateCatalogue.NoticeArrearsDays.ToString(), "notice", EstateRules.NoticeLength(c.RentLever).ToString(), "court", EstateCatalogue.CourtDays.ToString()));
-                box.Line(EstateText.T("reallife_estate_tenants_what"));
-                box.Line(EstateText.T("reallife_estate_tenants_rent_what"));
+                box.Note(EstateText.T("reallife_estate_tenants_notice_what", "days", EstateCatalogue.NoticeArrearsDays.ToString(), "notice", EstateRules.NoticeLength(c.RentLever).ToString(), "court", EstateCatalogue.CourtDays.ToString()));
+                box.Note(EstateText.T("reallife_estate_tenants_what"));
+                box.Note(EstateText.T("reallife_estate_tenants_rent_what"));
                 Meta.Guide.Point(box, GuideTitle);
             }
         }
@@ -377,7 +377,7 @@ namespace RealLifeOverhaul.Economy
             }
             InfoBox.Button(buttons, InfoBox.Negative, "reallife_estate_btn_refuse", () => _director.Refuse(place, id));
             BackButton(buttons);
-            box.Line(EstateText.T("reallife_estate_app_note"));
+            box.Note(EstateText.T("reallife_estate_app_note"));
             Meta.Guide.Point(box, GuideTitle);
         }
 
@@ -421,7 +421,7 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Headline("reallife_estate_ten_asking");
                 Steps(box, EstateCatalogue.AskLeast, EstateCatalogue.AskMost, EstateCatalogue.AskStep, u.Ask, ask => _director.SetAsk(place, unit, ask));
-                box.Line(EstateText.T("reallife_estate_ten_asking_what", "amount", EstateText.Money(EstateCatalogue.Share(market, u.Ask)), "chance", EstateText.Share(EstateRules.ApplicantChance(u.Ask, h.Cond, c.Cycle))));
+                box.Note(EstateText.T("reallife_estate_ten_asking_what", "amount", EstateText.Money(EstateCatalogue.Share(market, u.Ask)), "chance", EstateText.Share(EstateRules.ApplicantChance(u.Ask, h.Cond, c.Cycle))));
                 if (!box.HasSwitch || !box.Switch("reallife_estate_ten_to_let", u.ToLet, on => _director.SetToLet(place, unit, on)))
                 {
                     box.Line(EstateText.T(u.ToLet ? "reallife_estate_ten_to_let_on" : "reallife_estate_ten_to_let_off"));
@@ -476,7 +476,7 @@ namespace RealLifeOverhaul.Economy
                 box.Title(EstateText.T("reallife_estate_tab_works"));
                 box.Line(EstateText.T("reallife_estate_works_wear", "poor", EstateText.Level(EstateCatalogue.ConditionPoor), "unfit", EstateText.Level(EstateCatalogue.ConditionUnfit)));
                 box.Line(EstateText.T("reallife_estate_works_market", "market", EstateText.Share(state.Real)));
-                box.Line(EstateText.T("reallife_estate_works_what"));
+                box.Note(EstateText.T("reallife_estate_works_what"));
                 box.Line(EstateText.T("reallife_estate_works_no_new"));
                 Meta.Guide.Point(box, GuideTitle);
                 return;
@@ -571,7 +571,7 @@ namespace RealLifeOverhaul.Economy
             BackButton(box.ButtonRow());
             if (h.Managed && !h.AnyLet && !h.Self)
             {
-                box.Line(EstateText.T("reallife_estate_works_use_note"));
+                box.Note(EstateText.T("reallife_estate_works_use_note"));
             }
             Meta.Guide.Point(box, GuideTitle);
         }
@@ -628,14 +628,14 @@ namespace RealLifeOverhaul.Economy
                     }
                 }
                 InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_estate_btn_close_agency", _director.CloseAgency);
-                box.Line(EstateText.T("reallife_estate_agency_what"));
+                box.Note(EstateText.T("reallife_estate_agency_what"));
                 Meta.Guide.Point(box, GuideTitle);
                 return;
             }
             if (_places.Count == 0)
             {
                 box.Line(EstateText.T("reallife_estate_agency_no_office"));
-                box.Line(EstateText.T("reallife_estate_agency_what"));
+                box.Note(EstateText.T("reallife_estate_agency_what"));
                 Meta.Guide.Point(box, GuideTitle);
                 return;
             }
@@ -644,7 +644,7 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(_places[_office].Address.ToFormattedString());
             }
-            box.Line(EstateText.T("reallife_estate_agency_open_what"));
+            box.Note(EstateText.T("reallife_estate_agency_open_what"));
             InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_estate_btn_open_agency", () =>
             {
                 EstateGame.Offices(_places);
@@ -653,7 +653,7 @@ namespace RealLifeOverhaul.Economy
                     _director.OpenAgency(EstateGame.Place(_places[_office].StreetName, _places[_office].StreetNumber));
                 }
             });
-            box.Line(EstateText.T("reallife_estate_agency_what"));
+            box.Note(EstateText.T("reallife_estate_agency_what"));
             Meta.Guide.Point(box, GuideTitle);
         }
 
@@ -675,7 +675,7 @@ namespace RealLifeOverhaul.Economy
                     box.Line(EstateText.T("reallife_estate_ins_completing", "amount", EstateText.Money(n.Price), "day", n.Day.ToString()));
                     break;
             }
-            box.Line(EstateText.T("reallife_estate_ins_what", "sqm", n.Sqm.ToString(), "amount", EstateText.Money(n.Value), "ask", EstateText.Share(n.Ask)));
+            box.Note(EstateText.T("reallife_estate_ins_what", "sqm", n.Sqm.ToString(), "amount", EstateText.Money(n.Value), "ask", EstateText.Share(n.Ask)));
             box.Line(EstateText.T("reallife_estate_ins_hours", "hours", (n.Hours / 10).ToString(), "done", (n.Done / 10f).ToString("0.#"), "capacity", (agency.Capacity / 10f).ToString("0.#")));
             box.Line(EstateText.T("reallife_estate_ins_chance", "chance", EstateText.Share(AgencyRules.DealChance(n.Ask, rep, c.Cycle)), "fall", EstateText.Share(EstateCatalogue.FallThrough[EstateCatalogue.Clamp(c.Cycle, 0, 3)]),
                 "reputation", EstateText.Level(rep)));

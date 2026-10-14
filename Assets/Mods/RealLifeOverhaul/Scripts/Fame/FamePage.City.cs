@@ -131,7 +131,7 @@ namespace RealLifeOverhaul.Fame
                 {
                     box.Line(found.Effect);
                 }
-                box.Line(FameText.Fill("reallife_fame_lobby_about", "influence", FameText.N(FameCity.Influence(f)), "chance", FameText.N(chance), "fee", FameText.Money(FameCity.LobbyFee(f.Weekly)),
+                box.Note(FameText.Fill("reallife_fame_lobby_about", "influence", FameText.N(FameCity.Influence(f)), "chance", FameText.N(chance), "fee", FameText.Money(FameCity.LobbyFee(f.Weekly)),
                     "days", FameText.N(FameCity.LobbyDecideDays)));
                 if (FameCity.MayLobby(f, day))
                 {

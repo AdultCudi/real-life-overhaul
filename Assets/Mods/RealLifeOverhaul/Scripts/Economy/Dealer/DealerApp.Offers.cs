@@ -83,7 +83,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 margin += state.Yards[y].Today.Margin;
             }
             box.Line(DealerText.Fill("reallife_dealer_offers_today", "sold", sold.ToString(), "margin", DealerText.Money(margin)));
-            box.Line(DealerText.T("reallife_dealer_offers_about"));
+            box.Note(DealerText.T("reallife_dealer_offers_about"));
             Meta.Guide.Point(box, GuideTitle);
             return DealerColumns.Offers;
         }
@@ -143,7 +143,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 box.Line(DealerText.T("reallife_dealer_deal_wants_drive"));
             }
-            box.Line(DealerText.Fill("reallife_dealer_deal_what", "car", DealerGame.CarName(car.Type), "name", yard.Name, "offer", DealerText.Money(d.Offer), "asking", DealerText.Money(car.Asking),
+            box.Note(DealerText.Fill("reallife_dealer_deal_what", "car", DealerGame.CarName(car.Type), "name", yard.Name, "offer", DealerText.Money(d.Offer), "asking", DealerText.Money(car.Asking),
                 "left", DealerText.Hours(Mathf.Max(0, d.Expires - now))));
             if (d.WantsFinance)
             {
@@ -262,7 +262,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             box.Title(DealerText.T("reallife_dealer_finance_title"));
             box.Line(DealerText.Fill("reallife_dealer_finance_plans", "plans", state.Plans.Count.ToString(), "owed", DealerText.Money(owed), "weekly", DealerText.Money(weekly), "missed", missed.ToString()));
             box.Line(DealerText.Fill("reallife_dealer_finance_covers", "covers", state.Covers.Count.ToString(), "paid", DealerText.Money(paidOut)));
-            box.Line(DealerText.T("reallife_dealer_finance_about"));
+            box.Note(DealerText.T("reallife_dealer_finance_about"));
             Meta.Guide.Point(box, GuideTitle);
             _picked = null;
             return DealerColumns.Finance;

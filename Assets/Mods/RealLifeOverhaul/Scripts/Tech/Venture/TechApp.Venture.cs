@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Tech
             if (v == null)
             {
                 box.Title(TechText.T("reallife_roles_off_title"));
-                box.Line(TechText.T("reallife_vc_off_body"));
+                box.Note(TechText.T("reallife_vc_off_body"));
                 _picked = null;
                 return TechColumns.Off;
             }
@@ -144,7 +144,7 @@ namespace RealLifeOverhaul.Tech
             if (v == null)
             {
                 box.Title(TechText.T("reallife_roles_off_title"));
-                box.Line(TechText.T("reallife_vc_off_body"));
+                box.Note(TechText.T("reallife_vc_off_body"));
                 _picked = null;
                 return TechColumns.Off;
             }
@@ -191,7 +191,7 @@ namespace RealLifeOverhaul.Tech
             {
                 _picked = null;
                 box.Title(TechText.T("reallife_vc_funding_title"));
-                box.Line(TechText.Fill("reallife_vc_funding_about", "days", VentureCatalogue.RaiseDays.ToString(), "growth", TechText.Mille(VentureCatalogue.TargetGrowth), "target", VentureCatalogue.TargetDays.ToString()));
+                box.Note(TechText.Fill("reallife_vc_funding_about", "days", VentureCatalogue.RaiseDays.ToString(), "growth", TechText.Mille(VentureCatalogue.TargetGrowth), "target", VentureCatalogue.TargetDays.ToString()));
                 Meta.Guide.Point(box, StartupsGuide);
             }
             return TechColumns.Funding;

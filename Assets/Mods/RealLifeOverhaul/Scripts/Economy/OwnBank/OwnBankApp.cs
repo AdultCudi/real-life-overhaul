@@ -203,7 +203,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     UiClone.Words(_shell.Header, OwnBankText.T("reallife_ob_app"));
                     box.Title(OwnBankText.T("reallife_ob_off_title"));
-                    box.Line(OwnBankText.T("reallife_ob_off_body"));
+                    box.Note(OwnBankText.T("reallife_ob_off_body"));
                 }
                 else
                 {
@@ -296,7 +296,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 long licence = OwnBankRules.Licence(level), capital = OwnBankRules.CapitalLeast(level, b.Closures);
                 box.Line(hq != null ? OwnBankText.T("reallife_ob_box_hq", "name", OwnBankGame.Name(hq)) : OwnBankText.T("reallife_ob_box_need_hq"));
-                box.Line(OwnBankText.Fill("reallife_ob_box_intro", "licence", OwnBankText.Money(licence), "capital", OwnBankText.Money(capital), "ratio", OwnBankText.Ratio(OwnBankCatalogue.MinRatio)));
+                box.Note(OwnBankText.Fill("reallife_ob_box_intro", "licence", OwnBankText.Money(licence), "capital", OwnBankText.Money(capital), "ratio", OwnBankText.Ratio(OwnBankCatalogue.MinRatio)));
                 box.Line(OwnBankText.Fill("reallife_ob_box_rivals", "savers", OwnBankText.Rate(OwnBankRules.RivalSaverBp(c, b, 0)), "loans", OwnBankText.Rate(OwnBankRules.RivalLoanBp(c, b, OwnBankCatalogue.Good))));
                 if (hq != null)
                 {
@@ -400,9 +400,9 @@ namespace RealLifeOverhaul.Economy
                 box.Row("reallife_ob_box_trust", OwnBankText.Fill("reallife_ob_box_trust_value", "trust", OwnBankText.Ratio(trust), "confidence", OwnBankText.Ratio(conf)));
                 if (!b.Run)
                 {
-                    box.Line(OwnBankText.T("reallife_ob_box_savers_pick"));
+                    box.Note(OwnBankText.T("reallife_ob_box_savers_pick"));
                 }
-                box.Line(OwnBankText.T("reallife_ob_box_savers_intro"));
+                box.Note(OwnBankText.T("reallife_ob_box_savers_intro"));
                 Meta.Guide.Point(box, GuideTitle);
                 return;
             }
@@ -463,7 +463,7 @@ namespace RealLifeOverhaul.Economy
                     "back", OwnBankText.Money(b.RecoveredAll)));
                 if (!stopped)
                 {
-                    box.Line(OwnBankText.T("reallife_ob_box_lending_pick"));
+                    box.Note(OwnBankText.T("reallife_ob_box_lending_pick"));
                 }
                 box.Line(OwnBankText.T(c.Courts ? "reallife_ob_box_courts_on" : "reallife_ob_box_courts_off"));
                 Meta.Guide.Point(box, GuideTitle);

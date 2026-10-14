@@ -69,7 +69,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             box.Row("reallife_dealer_cash", DealerText.Money(DealerGame.Cash));
             box.Line(DealerText.Fill("reallife_dealer_market_sum", "new", news.ToString(), "used", used.ToString(), "lots", lots.ToString()));
-            box.Line(DealerText.T("reallife_dealer_market_about"));
+            box.Note(DealerText.T("reallife_dealer_market_about"));
             Meta.Guide.Point(box, GuideTitle);
             return DealerColumns.Market;
         }
@@ -92,7 +92,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         {
             int worth = _director.Worth(l);
             box.Title(DealerGame.CarName(l.Type) + "  " + DealerGame.ColourName(l.Colour));
-            box.Line(DealerText.T("reallife_dealer_new_what", "km", DealerText.Km(l.Km)));
+            box.Note(DealerText.T("reallife_dealer_new_what", "km", DealerText.Km(l.Km)));
             string yard = ChooseYard(box, state);
             DealerYard to = yard != null ? state.Yard(yard) : null;
             int price = to != null ? DealerRules.WholesalePrice(l.Asking, to.Rep) : l.Asking;   // (a respected showroom's perk, as the director charges it)
@@ -214,7 +214,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                     DealerText.T("reallife_dealer_q_inspect", "car", DealerGame.CarName(l.Type), "fee", DealerText.Money(inspection)), () => _director.Inspect(l.Id, null), false));
             }
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
-            box.Line(DealerText.T("reallife_dealer_lot_note"));
+            box.Note(DealerText.T("reallife_dealer_lot_note"));
             Meta.Guide.Point(box, GuideTitle);
         }
     }

@@ -163,7 +163,7 @@ namespace RealLifeOverhaul.Markets
             box.Line(MarketText.Fill("reallife_mkt_box_range", "low", IndexWords(s.IndexLow), "high", IndexWords(s.IndexHigh)));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Negative, "reallife_mkt_back", () => UiClone.Safe(ClosePage));
-            box.Line(MarketText.T("reallife_mkt_box_index_about"));
+            box.Note(MarketText.T("reallife_mkt_box_index_about"));
             Meta.Guide.Point(box, GuideTitle);
         }
 
@@ -257,7 +257,7 @@ namespace RealLifeOverhaul.Markets
             {
                 box.Line(MarketText.Why(o.Why));
             }
-            box.Line(MarketText.Fill("reallife_mkt_order_what", "side", MarketText.T(SideKeys[(int)o.Side]), "count", Count(o.Qty), "kind", KindWords(o)));
+            box.Note(MarketText.Fill("reallife_mkt_order_what", "side", MarketText.T(SideKeys[(int)o.Side]), "count", Count(o.Qty), "kind", KindWords(o)));
             if (o.Type == OrderType.Limit)
             {
                 box.Line(MarketText.Fill("reallife_mkt_order_limit", "price", MarketText.Price(o.LimitCents)));

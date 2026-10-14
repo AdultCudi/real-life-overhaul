@@ -426,7 +426,7 @@ namespace RealLifeOverhaul.Ledger
                 {
                     UiClone.Words(_shell.Header, LedgerText.T("reallife_ledger_online_app"));
                     box.Title(LedgerText.T("reallife_ledger_online_off_title"));
-                    box.Line(LedgerText.T("reallife_ledger_online_off_body"));
+                    box.Note(LedgerText.T("reallife_ledger_online_off_body"));
                     Sheet(false);
                     Rows();
                     _table.Show(Titles, _rows, null);
@@ -508,7 +508,7 @@ namespace RealLifeOverhaul.Ledger
                 box.Line(LedgerText.T(net == NetState.NoHome ? "reallife_ledger_online_box_need_home" : "reallife_ledger_online_box_need_net"));
             }
             box.Line(Pair("reallife_ledger_online_box_net", LedgerDirector.NetWords(net, home)));
-            box.Line(LedgerText.T("reallife_ledger_online_box_pick"));
+            box.Note(LedgerText.T("reallife_ledger_online_box_pick"));
             Transform buttons = box.ButtonRow();
             int first = FirstReadable(s, today);
             if (first >= 0)
@@ -519,7 +519,7 @@ namespace RealLifeOverhaul.Ledger
             {
                 UtilitiesButton(buttons);
             }
-            box.Line(LedgerText.Fill("reallife_ledger_online_box_intro", "hour", LedgerText.Hour(LedgerCatalogue.DeliveryHour)));
+            box.Note(LedgerText.Fill("reallife_ledger_online_box_intro", "hour", LedgerText.Hour(LedgerCatalogue.DeliveryHour)));
             Meta.Guide.Point(box, GuideTitle);
         }
 
@@ -597,7 +597,7 @@ namespace RealLifeOverhaul.Ledger
                 {
                     sum += _director.OnlinePrice(t);
                 }
-                box.Line(LedgerText.Fill("reallife_ledger_online_box_pass_note", "price", LedgerText.Money(price), "sum", LedgerText.Money(sum)));
+                box.Note(LedgerText.Fill("reallife_ledger_online_box_pass_note", "price", LedgerText.Money(price), "sum", LedgerText.Money(sum)));
             }
             box.Line("<i>" + LedgerPage.Plain(LedgerText.T(title ? NewsstandCatalogue.TaglineKeys[sub] : NewsstandCatalogue.AboutKeys[sub])) + "</i>");
             Meta.Guide.Point(box, GuideTitle);

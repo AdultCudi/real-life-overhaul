@@ -97,8 +97,8 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_online_sum_orders", orders.ToString());
             box.Row("reallife_online_sum_paid", OnlineText.Money(paid));
             box.Row("reallife_online_sum_sites", OnlineText.T("reallife_online_sum_sites_value", "count", state.Shops.Count.ToString(), "most", OnlineCatalogue.ShopsMost.ToString()));
-            box.Line(OnlineText.T("reallife_online_about"));
-            box.Line(OnlineText.T("reallife_online_sum_note"));
+            box.Note(OnlineText.T("reallife_online_about"));
+            box.Note(OnlineText.T("reallife_online_sum_note"));
             Meta.Guide.Point(box, GuideTitle);
             return OnlineColumns.Shops;
         }
@@ -123,7 +123,7 @@ namespace RealLifeOverhaul.Economy
             box.Line(Both("reallife_online_fig_profit", OnlineText.Money(today.Profit), OnlineText.Money(week.Profit)));
             box.Line(OnlineText.Fill("reallife_online_fig_queue", "waiting", shop.Count(OrderStage.Waiting).ToString(), "packed", shop.Count(OrderStage.Picked).ToString(), "out", shop.Count(OrderStage.Out).ToString(),
                 "late", shop.Overdue(now).ToString(), "pickers", place.Pickers.ToString()));
-            box.Line(OnlineText.Fill("reallife_online_fig_what", "business", place.Business, "quality", OnlineText.Quality(shop.Quality), "way", OnlineText.Way(shop.Way), "promise", OnlineText.Promise(shop.Promise)));
+            box.Note(OnlineText.Fill("reallife_online_fig_what", "business", place.Business, "quality", OnlineText.Quality(shop.Quality), "way", OnlineText.Way(shop.Way), "promise", OnlineText.Promise(shop.Promise)));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_online_button_rating", () => Page(PageRating));
             InfoBox.Button(buttons, InfoBox.Additional, "bizman_menu_settings", () => Page(PageSettings));
@@ -167,7 +167,7 @@ namespace RealLifeOverhaul.Economy
             box.Line(OnlineText.Fill("reallife_online_rate_week", "good", _week.OnTime.ToString(), "late", _week.Late.ToString(), "short", _week.Short.ToString(), "lost", (_week.Cancelled + _week.Missing).ToString(),
                 "back", _week.Returned.ToString()));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_online_button_back", () => Page(PageFigures));
-            box.Line(OnlineText.T("reallife_online_days_note"));
+            box.Note(OnlineText.T("reallife_online_days_note"));
             Meta.Guide.Point(box, GuideTitle);
         }
 

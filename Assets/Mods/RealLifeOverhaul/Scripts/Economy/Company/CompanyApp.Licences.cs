@@ -46,8 +46,8 @@ namespace RealLifeOverhaul.Economy
             else if (!_director.On(CompanyPart.Tax))
             {
                 box.Title(CompanyText.T("reallife_co_tab_tax"));
-                box.Line(CompanyText.T("reallife_co_lic_intro"));
-                box.Line(CompanyText.T("reallife_co_lic_pick"));
+                box.Note(CompanyText.T("reallife_co_lic_intro"));
+                box.Note(CompanyText.T("reallife_co_lic_pick"));
                 Guide(box);
             }
         }

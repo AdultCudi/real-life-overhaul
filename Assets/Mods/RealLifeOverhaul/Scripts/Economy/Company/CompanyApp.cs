@@ -176,7 +176,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     UiClone.Words(_shell.Header, CompanyText.T("reallife_co_app"));
                     box.Title(CompanyText.T("reallife_co_off_title"));
-                    box.Line(CompanyText.T("reallife_co_off_body"));
+                    box.Note(CompanyText.T("reallife_co_off_body"));
                 }
                 else
                 {
@@ -252,7 +252,7 @@ namespace RealLifeOverhaul.Economy
             }
             _spec = CompanyTables.Off;
             box.Title(CompanyText.T(TabKeys[_tab]));
-            box.Line(CompanyText.T("reallife_co_part_off"));
+            box.Line(CompanyText.T("reallife_co_part_off"), CellTone.Yellow);
             Guide(box);
             Say("off", CompanyText.T("reallife_co_part_off_row"));
             return false;

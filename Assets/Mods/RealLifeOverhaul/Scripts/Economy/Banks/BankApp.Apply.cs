@@ -66,9 +66,9 @@ namespace RealLifeOverhaul.Economy
                 box.Title(FinanceText.T("reallife_bank_tab_apply"));
                 if (gate != ProductAnswer.Yes)
                 {
-                    box.Line(Why(gate));
+                    box.Line(Why(gate), CellTone.Red);
                 }
-                box.Line(FinanceText.T("reallife_bank_apply_intro", "bank", Bank.Name));
+                box.Note(FinanceText.T("reallife_bank_apply_intro", "bank", Bank.Name));
                 box.Line(FinanceText.T(ProfileKeys[Mathf.Clamp(Bank.Rank, 0, ProfileKeys.Length - 1)]));
                 box.Line(FinanceText.T("reallife_bank_apply_one_desk"));
                 Meta.Guide.Point(box, GuideTitle);
@@ -284,7 +284,7 @@ namespace RealLifeOverhaul.Economy
             }
             if (offer.Answer != ProductAnswer.Yes)
             {
-                box.Line(Why(offer.Answer));
+                box.Line(Why(offer.Answer), CellTone.Red);
                 Close(box);
                 return;
             }
@@ -346,7 +346,7 @@ namespace RealLifeOverhaul.Economy
             box.Line(FinanceText.T("reallife_econ_business_record", "days", days.ToString(), "profit", FinanceText.Money(profit)));
             if (offer.Answer != ProductAnswer.Yes)
             {
-                box.Line(Why(offer.Answer));
+                box.Line(Why(offer.Answer), CellTone.Red);
                 Close(box);
                 return;
             }
@@ -405,7 +405,7 @@ namespace RealLifeOverhaul.Economy
             ProductOffer offer = desk.Offer(kind, Bank);
             if (offer.Answer != ProductAnswer.Yes)
             {
-                box.Line(Why(offer.Answer));
+                box.Line(Why(offer.Answer), CellTone.Red);
                 Close(box);
                 return;
             }
@@ -480,7 +480,7 @@ namespace RealLifeOverhaul.Economy
             }
             if (answer != ProductAnswer.Yes)
             {
-                box.Line(Why(answer));
+                box.Line(Why(answer), CellTone.Red);
                 Close(box);
                 return;
             }

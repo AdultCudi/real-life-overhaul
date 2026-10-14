@@ -156,7 +156,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     UiClone.Words(_shell.Header, CareersText.T("reallife_career_app"));
                     box.Title(CareersText.T("reallife_career_off_title"));
-                    box.Line(CareersText.T("reallife_career_off_body"));
+                    box.Note(CareersText.T("reallife_career_off_body"));
                     _picked = null;
                 }
                 else
