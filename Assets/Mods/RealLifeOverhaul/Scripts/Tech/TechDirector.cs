@@ -112,6 +112,7 @@ namespace RealLifeOverhaul.Tech
                 _news = TechNews.Read(Save.modData != null && Save.modData.TryGetValue(TechNews.Key, out line) ? line : null);
                 _newsOf = Save;
             }
+            StartCards.Keep();   // (BizMan's start screen: the competitors in the city on the mod's own cards; a null test once it stands)
             bool people = Settings.TechPeople;
             if (people && !_peopleOn)
             {

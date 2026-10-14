@@ -1,4 +1,7 @@
-0.12.3
+0.13.0
+
+New
+- BizMan's start screen shows the competitors in the city for the mod's tech firms and the training academy, and each tech firm has a Competitors page in the Tech app: who you are up against, how your products compare and where they are. A council tender names the companies bidding against you.
 
 Fixed
-- At a landmark your character now takes a proper selfie: back to the view, the phone held out at arm's length a little above the eyes, looking into it, then lowered. People filming in the street now hold the phone upright at eye level with the elbows down, not up at the chin with the elbows out.
+- A tech firm that makes products had no Register button on its page in the Tech app, so it could not join the data protection register.

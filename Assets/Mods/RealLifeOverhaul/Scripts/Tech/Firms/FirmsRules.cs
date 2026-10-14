@@ -596,6 +596,15 @@ namespace RealLifeOverhaul.Tech
         public static long BidAt(Contract tender, int thousandths) => tender.Value * Math.Max(500, thousandths) / 1000;
 
         /// <summary>
+        /// A tender's rival bidder r's bid, cents: between 85% and 125% of its fair price (<paramref name="fair"/>). Who bids
+        /// is CompetitorRules.TenderRival; the tender is decided by these very bids (Decide).
+        /// </summary>
+        public static long RivalBid(int seed, Contract t, int r, long fair) => fair * TechRandom.Range(seed, t.Id, 81, r, 850, 1250) / 1000;
+
+        /// <summary>A council tender's fair price, cents: its value, until a bid of the player's wins it and the value is that bid; then the council's price for the work again.</summary>
+        public static long FairOf(Contract t) => t.Council && t.Stage >= (int)WorkStage.Active && t.Stage <= (int)WorkStage.Failed ? ValueOf(t.K, t.Points, true) : t.Value;
+
+        /// <summary>
         /// A tender decided on its last day: the rivals bid between 85% and 125% of the fair price; each bid is weighed by
         /// the bidder's reputation (the player's firm's own, the rivals' an ordinary one), and the lowest weighed bid wins.
         /// True if the player's firm won: the job is then under way at its bid.
@@ -616,7 +625,7 @@ namespace RealLifeOverhaul.Tech
             long mine = t.Bid * (1500 - bidder.Reputation - TalentCatalogue.Clamp(office, 0, 50)) / 1000;
             for (int r = 0; r < t.Rivals; r++)
             {
-                long bid = t.Value * TechRandom.Range(f.Seed, t.Id, 81, r, 850, 1250) / 1000;
+                long bid = RivalBid(f.Seed, t, r, t.Value);
                 if (bid * (1500 - 550) / 1000 < mine)
                 {
                     t.Stage = (int)WorkStage.Lost;

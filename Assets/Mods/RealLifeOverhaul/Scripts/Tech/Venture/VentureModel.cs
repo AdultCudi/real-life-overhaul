@@ -95,6 +95,8 @@ namespace RealLifeOverhaul.Tech
         public int BridgeDay;
         public int OptionsGranted;       // thousandths of the firm granted to staff
         public long LastMrr;             // the recurring revenue a month when the target was set
+        public long Unassigned;          // shares of the staff options that nobody has been given yet, handed to the firm's people when it has some
+        public int OptionsChecked;       // 1 once options granted before 0.12.4 (when a grant with nobody there went to nobody) have been looked over
 
         public long Total
         {
