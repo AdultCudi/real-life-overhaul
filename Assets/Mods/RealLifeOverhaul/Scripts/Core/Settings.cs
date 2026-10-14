@@ -131,6 +131,7 @@ namespace RealLifeOverhaul
         public const string EconomyDealerId = "economy_dealer";
         public const string EconomyCleaningId = "economy_cleaning";
         public const string EconomySaleId = "economy_sale";
+        public const string OfficeConversionId = "office_conversion";
         public const string EconomyBankId = "economy_bank";
         public const string EconomyBrandsId = "economy_brands";
         public const string EconomyBanksId = "economy_banks";
@@ -374,6 +375,7 @@ namespace RealLifeOverhaul
         public static bool EconomyOnline = true;         // online shops: a business or a warehouse sells what it stocks to the whole city, picked by its staff and delivered by van or courier, with the Web shop app (off: no orders come, nothing is charged or paid) (Scripts/Economy/Online)
         public static bool EconomyDealer = true;         // the car dealership: a business type of the mod's own that buys cars new, used and at auction and sells them to customers, with its own finance and warranties and the Dealership app (off: its dealerships do not trade; their cars stay on the lots) (Scripts/Economy/Dealer)
         public static bool EconomyCleaning = true;       // the cleaning service: cleaners shared between businesses on a daily round, and cleaning contracts with other businesses, in the Services app (off: no round, no contracts, nothing cleaned or charged by it) (Scripts/Economy/Services)
+        public static bool OfficeConversion = true;      // some empty shops in the districts with offices are offices to rent while the mod runs: on the map, in BizMan, at an office's rent, for any office business; never written into the save (Scripts/Offices)
         public static bool EconomySale = true;           // selling a business: its value, the market, offers and a completed sale, in the Services app (off: nothing is offered, paid or charged by it) (Scripts/Economy/Services)
         public static bool EconomyBank = true;           // the player's own bank: a licence, savers, loans, a fund and a regulator, in its own app (off: it stands still, nothing is run, booked or charged) (Scripts/Economy/OwnBank)
         public static bool EconomyBrands = true;         // brands and franchises: a brand made from a shop, its recognition and standards, franchising it, and a shop under a city chain, with the Brands app (off: none of it runs, nothing is paid and footfall is without it) (Scripts/Economy/Brands)
@@ -660,6 +662,7 @@ namespace RealLifeOverhaul
             EconomyDealer = Bool(modId, EconomyDealerId, EconomyDealer);
             EconomyCleaning = Bool(modId, EconomyCleaningId, EconomyCleaning);
             EconomySale = Bool(modId, EconomySaleId, EconomySale);
+            OfficeConversion = Bool(modId, OfficeConversionId, OfficeConversion);
             EconomyBank = Bool(modId, EconomyBankId, EconomyBank);
             EconomyBrands = Bool(modId, EconomyBrandsId, EconomyBrands);
             EconomyBanks = Bool(modId, EconomyBanksId, EconomyBanks);

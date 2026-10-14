@@ -179,7 +179,8 @@ namespace RealLifeOverhaul
                 {
                     CityBuildingController building = buildings[i];
                     if (building == null || building.building == null || building.entranceDoors == null || building.entranceDoors.Length == 0
-                        || GameMembers.Fenced(building.building) || SpecialBuildings.Players(building))   // (one the player rents or owns stays theirs)
+                        || GameMembers.Fenced(building.building) || SpecialBuildings.Players(building)   // (one the player rents or owns stays theirs)
+                        || Offices.Conversions.Holds(building.building))   // (a shop made an office is the player's to rent)
                     {
                         continue;
                     }

@@ -210,7 +210,7 @@ namespace RealLifeOverhaul.Careers
         private static bool May(CityBuildingController b)
         {
             return b != null && b.building != null && b.entranceDoors != null && b.entranceDoors.Length > 0 && b.entranceDoors[0] != null && b.entranceDoors[0].doorTransform != null
-                   && !GameMembers.Fenced(b.building) && b.building.SpecialService == null && b.building.BuildingType == Office;
+                   && !GameMembers.Fenced(b.building) && b.building.SpecialService == null && b.building.BuildingType == Office && !Offices.Conversions.Holds(b.building);
         }
 
         /// <summary>True for a building that holds no business of the game's and is nobody's (CampusRules.NoBusinessIn).</summary>

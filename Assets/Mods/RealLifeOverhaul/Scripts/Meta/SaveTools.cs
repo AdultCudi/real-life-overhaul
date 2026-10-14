@@ -35,6 +35,11 @@ namespace RealLifeOverhaul.Meta
     ///   BuildingRegistrations  a business of one of the tech sector's own types (Tech/Firms/TechTypes), which the game
     ///                      does not know without the mod: made the game's own web development agency again when the
     ///                      save is prepared for removal.
+    ///   (not in the save)  an empty shop the mod made an office (Offices/Conversions) is a shop again without the mod,
+    ///                      since a building's type is the game's asset and never the save's. A business of an office type
+    ///                      the player has in one is then an office business in a shop, whose clients the game counts as
+    ///                      a shop's (CustomerEntriesCalculatorFactory picks by the building's type): the question and the
+    ///                      report name each of them and say to move it to an office the game made first.
     /// One field of the game's own is put back to "none" when it names a contact that is removed:
     /// PlayerDefaults.contactsLastName (the contact last opened; the Contacts app lists nothing while it names one
     /// that does not exist). Nothing else of a save is touched, and nothing here runs unless the player presses one of the buttons
@@ -133,7 +138,7 @@ namespace RealLifeOverhaul.Meta
                 MetaUi.Message(title, why);
                 return;
             }
-            MetaUi.Confirm(title, "reallife_meta_remove_explain".GetLocalization().Replace("{save}", SaveGameManager.Current.SaveGameName),
+            MetaUi.Confirm(title, "reallife_meta_remove_explain".GetLocalization().Replace("{save}", SaveGameManager.Current.SaveGameName) + InConvertedShops(),
                 "reallife_meta_remove_yes", () => MetaUi.Instance.Run(Prepare()));
         }
 
@@ -541,6 +546,7 @@ namespace RealLifeOverhaul.Meta
 
             // (b) every feature takes its things off the street and stops.
             string vanId = RentalVanId();
+            string converted = InConvertedShops();   // (asked before: the shops made offices are shops again once the features stop)
             RunCleanups(report);
             yield return null;
             yield return null;
@@ -613,6 +619,10 @@ namespace RealLifeOverhaul.Meta
             }
 
             AppendRemoved(report, removed);
+            if (converted.Length > 0)
+            {
+                report.Add(converted.TrimStart('\n'));
+            }
             string van = VanLeft(vanId);
             if (van != null)
             {
@@ -646,6 +656,28 @@ namespace RealLifeOverhaul.Meta
                          + " transactionsKept=" + removed.Transactions + " leftAtSave=" + _leftAtSave);
             _busy = false;
             MetaUi.Message(title, text);
+        }
+
+        // The player's businesses in an empty shop the mod made an office, which are offices in a shop without the mod: a
+        // paragraph that names each and says what to do, or nothing.
+        private static string InConvertedShops()
+        {
+            try
+            {
+                List<string> names = Offices.Conversions.PlayersBusinesses();
+                if (names.Count == 0)
+                {
+                    return string.Empty;
+                }
+                return "\n\n" + "reallife_meta_remove_converted".GetLocalization()
+                    .Replace("{count}", names.Count.ToString(CultureInfo.InvariantCulture))
+                    .Replace("{list}", string.Join("; ", names));
+            }
+            catch (Exception e)
+            {
+                MetaLog.Error(e);
+                return string.Empty;
+            }
         }
 
         private static void AppendRemoved(List<string> report, Removed removed)

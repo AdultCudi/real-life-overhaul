@@ -53,6 +53,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\FitOut\FitPlanner.Zones.cs" Link="Mod\FitPlanner.Zones.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WhoseCar.cs" Link="Mod\WhoseCar.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameBuild.cs" Link="Mod\GameBuild.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Offices\ConversionRules.cs" Link="Mod\ConversionRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Offices\ConversionStore.cs" Link="Mod\ConversionStore.cs" />
   </ItemGroup>
 
 </Project>
