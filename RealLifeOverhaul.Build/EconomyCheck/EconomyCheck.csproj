@@ -31,6 +31,7 @@
        (OwnBankChecks.cs) the player's own bank: the rival banks' rates, the city's savers and borrowers, defaults, arrears, the regulator's ratio, a run, the fund, a sale and the save's line, and (DealerChecks.cs) the car dealership: a car's worth, the lot, the market,
        haggling and the trade auction, customers and their offers, the dealership's finance and warranties, the books and the save's line, and a month of a reference dealership, and
        (ShowroomFloorChecks.cs) the Car Showroom's floor: the visitors an hour shows, the bays and their save line, the camera's limits and the texts, and
+       (CartQueueChecks.cs) the pavement drinks cart's queue: a customer who cannot get to the cart, or is no longer its own, leaves the queue at once, is no walk-off and is replaced, and
        (OfficeChecks.cs) running for office: who may stand and when, the law on donors, the vote model by district, the campaign's doings, the council's odds, the city's budget, approval, recall and the save's lines
        Compiles the mod's own files, so it checks exactly what ships.
        the lender of last resort and the ways out of debt, and (VenturesChecks.cs) investors, the pitch, deals and the
@@ -223,6 +224,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\ProCatalogue.cs" Link="Mod\ProCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\ProRules.cs" Link="Mod\ProRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\DeskRules.cs" Link="Mod\DeskRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\Kinds\CartQueueRules.cs" Link="Mod\CartQueueRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\ProPath.cs" Link="Mod\ProPath.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\WorkModel.cs" Link="Mod\WorkModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\WorkStore.cs" Link="Mod\WorkStore.cs" />

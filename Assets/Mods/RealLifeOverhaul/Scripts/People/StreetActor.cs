@@ -246,6 +246,26 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// True once the route last asked of <see cref="MoveTo"/> has been worked out by the engine (it is no longer
+        /// pending). A few reads of the agent; nothing is asked of the navigation mesh.
+        /// </summary>
+        public bool RouteKnown
+        {
+            get
+            {
+                NavMeshAgent agent = Character.navmeshAgent;
+                return agent.enabled && agent.isOnNavMesh && !agent.pathPending;
+            }
+        }
+
+        /// <summary>
+        /// False when that route, once worked out, does not reach the place asked for: the engine then walks them to the
+        /// nearest point it can and stops there (a crossing a vehicle stands on, a pavement a cordon has cut). Read with
+        /// <see cref="RouteKnown"/>.
+        /// </summary>
+        public bool RouteWhole => Character.navmeshAgent.pathStatus == NavMeshPathStatus.PathComplete;
+
         public void Halt()
         {
             NavMeshAgent agent = Character.navmeshAgent;

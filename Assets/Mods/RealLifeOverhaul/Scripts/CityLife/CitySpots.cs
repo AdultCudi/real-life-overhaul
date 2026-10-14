@@ -125,6 +125,32 @@ namespace RealLifeOverhaul
             return NavMesh.CalculatePath(from, to, _pavement, _path) && _path.status == NavMeshPathStatus.PathComplete;
         }
 
+        private static readonly Vector3[] Corners = new Vector3[32];   // a route's corners, read into this one buffer
+
+        /// <summary>
+        /// The same, and how many metres the walk is along the route's corners (-1 when there is no whole route). One path
+        /// asked of the navigation mesh, for when somebody is about to be sent somewhere; never per frame. A route of more
+        /// corners than the buffer holds is measured to its last corner read, straight on from there.
+        /// </summary>
+        public static bool Reachable(Vector3 from, Vector3 to, out float length)
+        {
+            length = -1f;
+            if (!Reachable(from, to))
+            {
+                return false;
+            }
+            int count = _path.GetCornersNonAlloc(Corners);
+            float sum = 0f;
+            Vector3 last = from;
+            for (int i = 0; i < count; i++)
+            {
+                sum += Vector3.Distance(last, Corners[i]);
+                last = Corners[i];
+            }
+            length = sum + Vector3.Distance(last, to);
+            return true;
+        }
+
         /// <summary>A point on the pavement at a place, with room round it. The usual question an activity asks for each of its people and props.</summary>
         public static bool Stand(Vector3 place, float room, out Vector3 spot)
         {
