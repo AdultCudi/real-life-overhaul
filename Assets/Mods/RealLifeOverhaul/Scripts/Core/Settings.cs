@@ -93,6 +93,7 @@ namespace RealLifeOverhaul
         public const string LicencePointsId = "licence_points";
         public const string PlannerId = "planner";
         public const string PlannerRemindersId = "planner_reminders";
+        public const string PlannerMorningId = "planner_morning";
         public const string EconomyId = "economy";
         public const string EconomyProductsId = "economy_products";
         public const string EconomySharkId = "economy_shark";
@@ -344,6 +345,7 @@ namespace RealLifeOverhaul
         public static bool LicencePoints = true;         // booked offences put penalty points on the licence; twelve suspend it
         public static bool Planner = true;               // the Planner app on the phone: everything to do in one agenda (Scripts/Planner)
         public static bool PlannerReminders = true;      // ...and its reminders, sent as the game's own notifications
+        public static bool PlannerMorning = true;        // ...and one line of the day on waking: how many entries, the first and when to leave for it (off: none)
         public static bool Economy = true;               // the credit rating, the banks' terms by it, loans from the phone and the Finance app (Scripts/Economy)
         public static bool EconomyProducts = true;       // more kinds of credit: an overdraft, a card, a business loan, car finance, a mortgage, consolidation (off: nothing new is opened or drawn; what is owed stays owed)
         public static bool EconomyShark = true;          // the lender of last resort (off: it lends nothing and does nothing; a debt to it can still be paid)
@@ -636,6 +638,7 @@ namespace RealLifeOverhaul
             LicencePoints = Bool(modId, LicencePointsId, LicencePoints);
             Planner = Bool(modId, PlannerId, Planner);
             PlannerReminders = Bool(modId, PlannerRemindersId, PlannerReminders);
+            PlannerMorning = Bool(modId, PlannerMorningId, PlannerMorning);
             Economy = Bool(modId, EconomyId, Economy);
             EconomyProducts = Bool(modId, EconomyProductsId, EconomyProducts);
             EconomyShark = Bool(modId, EconomySharkId, EconomyShark);

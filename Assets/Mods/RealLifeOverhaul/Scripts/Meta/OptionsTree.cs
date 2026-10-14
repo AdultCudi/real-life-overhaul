@@ -293,7 +293,7 @@ namespace RealLifeOverhaul.Meta
                 S("projobs").For("careers_jobs").Opt("careers_jobs", "careers_study").Opt("careers_agency_note", "careers_jobs").Opt("careers_reject_reason", "careers_jobs").Also("profession professional job jobs apply application interview offer salary employer developer lawyer accountant nurse teacher architect engineer rival vacancy vacancies"),
                 S("worklife").For("careers_life").Opt("careers_life", "careers_jobs").Also("review reviews promotion promoted rise raise bonus overtime burnout boss office politics headhunter poached redundancy redundant benefit pension retire retirement options shares conflict interest"),
                 S("ownwork").For("careers_own").Opt("careers_own", "careers_jobs").Also("freelance freelancing contract contracts client clients practice self employed startup found founder spin out colleagues restraint clause non compete side work"),
-                S("planner").For("planner").Main("planner").Opts("planner_reminders").Also("diary calendar notes to do")),
+                S("planner").For("planner").Main("planner").Opts("planner_reminders", "planner_morning").Also("diary calendar notes to do")),
 
             G("money",
                 S("credit").For("economy").Opts("economy").Also("bank borrow score finance"),

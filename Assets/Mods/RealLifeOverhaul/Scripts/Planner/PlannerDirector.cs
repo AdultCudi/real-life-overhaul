@@ -49,6 +49,7 @@ namespace RealLifeOverhaul.Planner
         private bool _broken;
         private Action _onSave, _onHour, _hourSeen;
         private int _lastHour = -1;
+        private int _morningSeen = -1;   // the game minute the morning line was last looked at: once a game minute at most
 
         /// <summary>The test button's sample entries are showing (this session only; the sample notes are in the save and marked).</summary>
         public static bool Samples;
@@ -196,6 +197,7 @@ namespace RealLifeOverhaul.Planner
             {
                 Install();
             }
+            Morning();
             if (_lastHour < 0 && (_app != null || _gaveUp))
             {
                 // A save loaded in the middle of things: whatever fell due while it was not running goes out now, once, as late.
@@ -492,6 +494,64 @@ namespace RealLifeOverhaul.Planner
             {
                 Logger?.Error(e);
             }
+        }
+
+        // ---------------------------------------------------------------- the morning line
+
+        // On waking (the game's sleep over), or from 05:00 for a player who is up: one line of the day, "Today: 3 entries,
+        // the first at 09:00 (Forklift ticket), leave by 08:35." Nothing for an empty day; once a day, the day kept in the
+        // save. Looked at once a game minute at most, and only a comparison until it is due.
+        private void Morning()
+        {
+            int now = Now();
+            if (now == _morningSeen || !Settings.Planner || !Settings.PlannerMorning)
+            {
+                return;
+            }
+            _morningSeen = now;
+            int today = TimeHelper.CurrentDay;
+            if (!PlannerRules.MorningDue(today, TimeHelper.CurrentHour, false, PlannerStore.MorningDay) || PlannerGame.Asleep())
+            {
+                return;
+            }
+            if (_app != null && _app.Showing)
+            {
+                return;   // (the app shows its own look: the line waits until it is closed)
+            }
+            PlannerStore.MorningDay = today;
+            Look(today, today, true);
+            int count = PlannerRules.MorningCount(List.Items, today);
+            PlannerEntry first = PlannerRules.FirstOf(List.Items, today);
+            int leave = -1;
+            float metres;
+            if (first != null && first.State == PlannerState.Upcoming && PlannerGame.MetresTo(first, out metres) && metres > PlannerRules.HereMetres)
+            {
+                leave = PlannerRules.LeaveBy(first, PlannerRules.TravelMinutes(metres, PlannerGame.ByCar() ? PlannerRules.DrivePerMinute : PlannerRules.WalkPerMinute));
+            }
+            bool leaveBy = leave > now && PlannerTime.DayOf(leave) == today;
+            string key = PlannerRules.MorningKey(count, first != null, leaveBy);
+            if (Meta.Dev.Verbose)
+            {
+                Logger?.Info("Planner check (morning line, day " + today + " at " + PlannerText.Clock(PlannerTime.OfDay(now)) + "): " + count + " entries to do, "
+                             + (first != null ? "the first at " + PlannerText.Clock(PlannerTime.OfDay(first.Begins)) : "none at a set time")
+                             + (leaveBy ? ", leave by " + PlannerText.Clock(PlannerTime.OfDay(leave)) : string.Empty)
+                             + "; " + (key == null ? "an empty day, nothing sent" : "sent once") + ": PASS");
+            }
+            if (key == null)
+            {
+                return;
+            }
+            var data = new Dictionary<string, string> { { "count", count.ToString() } };
+            if (first != null)
+            {
+                data["time"] = PlannerText.Clock(PlannerTime.OfDay(first.Begins));
+                data["title"] = first.Title ?? string.Empty;
+            }
+            if (leaveBy)
+            {
+                data["leave"] = PlannerText.Clock(PlannerTime.OfDay(leave));
+            }
+            Notifications.Show(NotificationType.Info, key, data, 12f, null, Guard.Wrap(Open), true, false);
         }
 
         // ---------------------------------------------------------------- tests

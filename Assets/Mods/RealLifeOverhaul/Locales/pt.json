@@ -18249,5 +18249,13 @@
   "reallife_career_good_chance_points": "Mais {points} pontos de habilidade",
   "reallife_career_good_chance_point": "Mais 1 ponto de habilidade",
   "reallife_career_good_chance_far": "Não só com habilidade",
-  "reallife_planner_tab_count": "{tab} ({count})"
+  "reallife_planner_tab_count": "{tab} ({count})",
+  "reallife_planner_opt_morning": "A linha da manhã",
+  "reallife_opt_tip_planner_morning": "Ao acordar, uma notificação do seu dia: quantas entradas, a primeira e quando sair para ela. Nada num dia vazio.",
+  "reallife_planner_morning": "Hoje: {count} entradas, a primeira às {time} ({title}), saia até {leave}.",
+  "reallife_planner_morning_here": "Hoje: {count} entradas, a primeira às {time} ({title}).",
+  "reallife_planner_morning_one": "Hoje: uma entrada, às {time} ({title}), saia até {leave}.",
+  "reallife_planner_morning_one_here": "Hoje: uma entrada, às {time} ({title}).",
+  "reallife_planner_morning_all_day": "Hoje: {count} entradas, nenhuma com hora marcada.",
+  "reallife_planner_morning_all_day_one": "Hoje: uma entrada, sem hora marcada."
 }

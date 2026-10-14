@@ -18249,5 +18249,13 @@
   "reallife_career_good_chance_points": "{points} more skill points",
   "reallife_career_good_chance_point": "1 more skill point",
   "reallife_career_good_chance_far": "Not by skill alone",
-  "reallife_planner_tab_count": "{tab} ({count})"
+  "reallife_planner_tab_count": "{tab} ({count})",
+  "reallife_planner_opt_morning": "The morning line",
+  "reallife_opt_tip_planner_morning": "On waking, one notification of your day: how many entries, the first and when to leave for it. Nothing on an empty day.",
+  "reallife_planner_morning": "Today: {count} entries, the first at {time} ({title}), leave by {leave}.",
+  "reallife_planner_morning_here": "Today: {count} entries, the first at {time} ({title}).",
+  "reallife_planner_morning_one": "Today: one entry, at {time} ({title}), leave by {leave}.",
+  "reallife_planner_morning_one_here": "Today: one entry, at {time} ({title}).",
+  "reallife_planner_morning_all_day": "Today: {count} entries, none at a set time.",
+  "reallife_planner_morning_all_day_one": "Today: one entry, at no set time."
 }

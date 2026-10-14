@@ -796,7 +796,7 @@ namespace RealLifeOverhaul.Meta
             Features.Add("planner", "reallife_meta_title_planner")
                 .Group("reallife_planner_header")
                 .About("reallife_guide_planner_about").Help("reallife_guide_planner")
-                .Owns(Settings.PlannerId, Settings.PlannerRemindersId)
+                .Owns(Settings.PlannerId, Settings.PlannerRemindersId, Settings.PlannerMorningId)
                 .Data(Planner.PlannerStore.Key, Planner.PlannerStore.NotesKey, Planner.PlannerStore.RemindersKey)
                 .Fact("planner_days", () => Planner.PlannerApp.UpcomingDays.ToString(CultureInfo.InvariantCulture))
                 .Fact("planner_notes", () => Planner.PlannerStore.MostNotes.ToString(CultureInfo.InvariantCulture))

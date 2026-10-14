@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Helpers;
+using PlayerActivity;
 using Streets;
+using UI;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Planner
@@ -46,6 +48,26 @@ namespace RealLifeOverhaul.Planner
             }
             metres = PlannerRules.Metres(x, z, entry.PlaceX, entry.PlaceZ);
             return true;
+        }
+
+        /// <summary>Whether the player is asleep: the game's own sleep is the activity under way (asked at most once a game minute, for the morning line).</summary>
+        public static bool Asleep()
+        {
+            try
+            {
+                UIs uis = InstanceBehavior<UIs>.Instance;
+                IPlayerActivity activity = uis != null && uis.playerActivityUI != null ? uis.playerActivityUI.GetCurrentActivity : null;
+                if (!(activity is SleepActivity))
+                {
+                    return false;
+                }
+                PlayerActivityState state = activity.GetState();
+                return state == PlayerActivityState.Running || state == PlayerActivityState.Started;
+            }
+            catch (Exception)
+            {
+                return false;   // (the game's panel is not there to ask: awake)
+            }
         }
 
         /// <summary>The door of a building by its address, as the game finds it (CityManager.FindCityBuildingController, a table lookup); false if the city has no such building.</summary>

@@ -652,6 +652,8 @@ namespace RealLifeOverhaul
                     v => Settings.Planner = v)
                 .AddToggle(Settings.PlannerRemindersId, "reallife_planner_reminders", Settings.PlannerReminders,
                     v => Settings.PlannerReminders = v)
+                .AddToggle(Settings.PlannerMorningId, "reallife_planner_opt_morning", Settings.PlannerMorning,
+                    v => Settings.PlannerMorning = v)
                 .AddButton("reallife_planner_test_fill", () => Planner.PlannerDirector.Instance?.TestFill())
                 .AddButton("reallife_planner_test_clear", () => Planner.PlannerDirector.Instance?.TestClear())
                 .AddSplitter()
