@@ -7,9 +7,10 @@ namespace RealLifeOverhaul
     /// The shortest way over a directed graph of points from any of several starts to any of
     /// several ends (A*, straight-line distance to the ends' middle less their reach ahead).
     /// Nothing of the game or the engine in it, so it is also run on made-up graphs in a console
-    /// test. Two features use it, each with a search of its own over the road graph
-    /// (<see cref="RoadGraph"/>): <see cref="TransitMap"/> fills one once per city load and lets
-    /// go of it when the bus network is laid out; the GPS (Scripts/Navigation) keeps one for the session.
+    /// test. Several features use it, each with a search of its own over the one road graph of
+    /// the city (<see cref="RoadGraph"/>.Shared, its places and edges shared: <see cref="Over"/>):
+    /// <see cref="TransitMap"/> lays the bus network out with one behind the loading screen and
+    /// lets go of it when that is done; the GPS (Scripts/Navigation) keeps one for the city.
     ///
     /// Why several starts and ends: a bus line's end is "at this subway station", not "on this
     /// one lane point". The single nearest lane point is often on a piece of road that leads
@@ -78,6 +79,30 @@ namespace RealLifeOverhaul
             _from = new int[Count];
             _seen = new int[Count];
             _goal = new int[Count];
+        }
+
+        /// <summary>
+        /// A search of its own over the same roads: the places and the edges of <paramref name="roads"/> shared, not copied,
+        /// and with <paramref name="ownCosts"/> a copy of the edges' extra costs for a caller that changes them (the bus
+        /// network counts the streets its lines run along for less: TransitMap.Corridor), so that the roads' own stay as
+        /// they are for everyone else. What it finds is what a search over a graph built the same way finds.
+        /// </summary>
+        public static RouteSearch Over(RouteSearch roads, bool ownCosts)
+        {
+            var search = new RouteSearch(roads);
+            float[] extra = roads._edgeExtra;
+            search.SetEdges(roads._edgeStart, roads._edgeTo, ownCosts && extra != null ? (float[])extra.Clone() : extra);
+            return search;
+        }
+
+        /// <summary>
+        /// Gives up the search under way as <see cref="Find"/> does at its limit (<see cref="HitLimit"/> true, nothing more
+        /// to advance): for a caller that advances a search a slice at a time and holds it to a number of steps in all.
+        /// </summary>
+        public void GiveUp()
+        {
+            HitLimit = true;
+            _begun = false;
         }
 
         /// <summary>The edges, as three arrays: where each point's edges begin, where each edge leads, and what it costs over its length.</summary>

@@ -246,6 +246,25 @@ namespace RealLifeOverhaul.Nav
         public float Cell;                             // metres a side
         public byte[] Cells = new byte[0];             // see NavBaseWater
 
+        /// <summary>Everything of it a picture is drawn from, into a print (Core/InputPrint): what the minimap's base picture is kept by across loads.</summary>
+        public void AddTo(ref InputPrint print)
+        {
+            print.Add(Build);
+            print.Add(OriginX);
+            print.Add(OriginZ);
+            print.Add(WorldWidth);
+            print.Add(WorldHeight);
+            print.Add(Hulls);
+            print.Add(HullStart);
+            print.Add(HullOf);
+            print.Add(HullX);
+            print.Add(HullZ);
+            print.Add(Columns);
+            print.Add(Rows);
+            print.Add(Cell);
+            print.Add(Cells);
+        }
+
         /// <summary>The whole of it as bytes, with a sum at the end that tells a file cut short.</summary>
         public byte[] Encode()
         {
