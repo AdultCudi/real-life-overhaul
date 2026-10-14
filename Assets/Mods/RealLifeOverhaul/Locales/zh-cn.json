@@ -17346,7 +17346,7 @@
   "reallife_transaction_shares_bot_share": "交易机器人利润抽成：{name}",
   "reallife_transaction_shares_bot_share_label": "交易机器人利润抽成",
   "reallife_changes_010_0_title": "0.10.0",
-  "reallife_changes_010_0": "新增：股票应用的下单面板加入止损单、止盈单和限价单；新的交易机器人标签页提供四家公司的交易机器人（趋势跟踪、均值回归、动量和股息收益），它们用你自己的现金交易，收取月费和一部分利润，每个都可设置持仓大小、止损和最多可亏损多少。止损按市场的下一个价格成交，所以跳空会让成交价低于止损价。",
+  "reallife_changes_010_0": "股票应用的下单面板加入止损单、止盈单和限价单；新的交易机器人标签页提供四家公司的交易机器人（趋势跟踪、均值回归、动量和股息收益），它们用你自己的现金交易，收取月费和一部分利润，每个都可设置持仓大小、止损和最多可亏损多少。止损按市场的下一个价格成交，所以跳空会让成交价低于止损价。",
   "reallife_build_old_title": "请更新 Big Ambitions",
   "reallife_build_old_body": "Real Life Overhaul {version} 适用于 Big Ambitions 构建 {made}，而当前游戏是构建 {build}。在游戏更新之前，本模组的部分应用和功能将无法使用。\n\n在 Steam 中更新游戏：在库中右键点击 Big Ambitions，选择属性。在测试版中，将测试版参与设为无。然后在已安装文件中，选择验证游戏文件的完整性。",
   "reallife_test_build_notice": "显示比本模组旧的游戏会收到的提示",

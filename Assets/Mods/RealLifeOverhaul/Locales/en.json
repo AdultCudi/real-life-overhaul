@@ -17346,7 +17346,7 @@
   "reallife_transaction_shares_bot_share": "Trading bot's share of the profit: {name}",
   "reallife_transaction_shares_bot_share_label": "Trading bot's share of the profit",
   "reallife_changes_010_0_title": "0.10.0",
-  "reallife_changes_010_0": "New: stop losses, take profits and limit orders on the Stocks app's ticket, and a Bots tab with trading bots from four firms (trend following, mean reversion, momentum and dividend income) that trade your own cash for a monthly fee and a share of the profit, each with its holding size, stop and the most it may lose. A stop goes at the market's next price, so a gap takes it under.",
+  "reallife_changes_010_0": "stop losses, take profits and limit orders on the Stocks app's ticket, and a Bots tab with trading bots from four firms (trend following, mean reversion, momentum and dividend income) that trade your own cash for a monthly fee and a share of the profit, each with its holding size, stop and the most it may lose. A stop goes at the market's next price, so a gap takes it under.",
   "reallife_build_old_title": "Update Big Ambitions",
   "reallife_build_old_body": "Real Life Overhaul {version} is made for Build {made} of Big Ambitions, and this game is Build {build}. Until the game is updated, some of the mod's apps and features will not work.\n\nTo update the game in Steam: in the Library, right-click Big Ambitions and choose Properties. Under Betas, set Beta Participation to None. Then, under Installed Files, choose Verify integrity of game files.",
   "reallife_test_build_notice": "Show the notice a game older than the mod gets",

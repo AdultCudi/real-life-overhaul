@@ -17346,7 +17346,7 @@
   "reallife_transaction_shares_bot_share": "Parte do lucro do robô de investimento: {name}",
   "reallife_transaction_shares_bot_share_label": "Parte do lucro do robô de investimento",
   "reallife_changes_010_0_title": "0.10.0",
-  "reallife_changes_010_0": "Novo: stop loss, stop gain e ordens limitadas no boleto do app Ações, e uma aba Robôs com robôs de investimento de quatro gestoras (seguir tendência, reversão à média, momento e renda de dividendos) que operam com seu próprio dinheiro por uma taxa mensal e uma parte do lucro, cada um com o tamanho das posições, um stop e o máximo que pode perder. Um stop sai ao próximo preço do mercado, então um gap o leva para baixo.",
+  "reallife_changes_010_0": "stop loss, stop gain e ordens limitadas no boleto do app Ações, e uma aba Robôs com robôs de investimento de quatro gestoras (seguir tendência, reversão à média, momento e renda de dividendos) que operam com seu próprio dinheiro por uma taxa mensal e uma parte do lucro, cada um com o tamanho das posições, um stop e o máximo que pode perder. Um stop sai ao próximo preço do mercado, então um gap o leva para baixo.",
   "reallife_build_old_title": "Atualize o Big Ambitions",
   "reallife_build_old_body": "O Real Life Overhaul {version} é feito para o Build {made} do Big Ambitions, e este jogo é o Build {build}. Até o jogo ser atualizado, alguns apps e recursos do mod não vão funcionar.\n\nPara atualizar o jogo na Steam: na Biblioteca, clique com o botão direito em Big Ambitions e escolha Propriedades. Em Betas, deixe a Participação em betas como Nenhuma. Depois, em Arquivos instalados, escolha Verificar integridade dos arquivos do jogo.",
   "reallife_test_build_notice": "Mostrar o aviso que um jogo mais antigo que o mod recebe",
