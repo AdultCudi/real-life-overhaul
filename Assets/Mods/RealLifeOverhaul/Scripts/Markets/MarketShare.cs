@@ -142,6 +142,7 @@ namespace RealLifeOverhaul.Markets
             host.Watch.AddRange(mine.Watch);
             host.Dues.AddRange(mine.Dues);
             host.Bots.AddRange(mine.Bots);   // (the player's bots: theirs, trading in the city's market as the player does)
+            host.Bonds.Take(mine.Bonds);     // (the player's bonds: theirs, paid on the city's calendar)
             Account a = host.Account, m = mine.Account;
             a.Margin = m.Margin;
             a.Cash = m.Cash;

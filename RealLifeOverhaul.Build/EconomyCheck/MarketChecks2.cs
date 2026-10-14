@@ -213,6 +213,7 @@ internal static partial class Program
                 kCount++;
             }
             var past = new MarketPast { Year = year };
+            var pending = new Dictionary<int, long>();   // each company's dividend declared and not yet gone: its record day and cents
             double total = 1.0, peak = 1.0, yearStart = 1.0;
             int prevIndex = m.State.IndexLast;
             for (int d = 1; d <= year * years; d++)
@@ -233,8 +234,18 @@ internal static partial class Program
                     }
                     double price = s.Listed ? s.Last / 100.0 : s.GoneCents / 100.0;
                     cap += s.Listed ? s.Shares * price : 0.0;
-                    // (a dividend counts on the day it leaves the price: it is the holders' of the day before)
-                    double dividend = s.Listed && s.ExDone && s.LastExDay == d && s.DeclaredCents > 0 ? s.DeclaredCents / 100.0 : 0.0;
+                    // (a dividend counts on the day it leaves the price: it is the holders' of the day before; a property trust
+                    // declares its next at the same close, so the one declared is kept from day to day)
+                    double dividend = 0.0;
+                    if (s.Listed && pending.TryGetValue(s.Id, out long due) && due > 0 && (int)(due >> 32) < d)
+                    {
+                        dividend = (int)(due & 0xFFFFFFFF) / 100.0;
+                        pending[s.Id] = 0;
+                    }
+                    if (s.Listed && s.DeclaredCents > 0 && !s.ExDone && s.RecordDay >= d)
+                    {
+                        pending[s.Id] = ((long)s.RecordDay << 32) | (uint)s.DeclaredCents;
+                    }
                     paid += dividend * s.Shares;
                     Series(past.Close, s.Id, at).Add(price);
                     Series(past.Dividend, s.Id, at).Add(dividend);

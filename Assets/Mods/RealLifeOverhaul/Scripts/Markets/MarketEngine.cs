@@ -416,7 +416,7 @@ namespace RealLifeOverhaul.Markets
                     {
                         OwnResults(s, day);
                     }
-                    if (s.DeclaredCents > 0)
+                    if (s.DeclaredCents > 0 && !TrustRules.Is(s))   // (a property trust's distributions come every few days: TrustRules)
                     {
                         Say(new MarketNews { Day = day, Kind = MarketNewsKind.Dividend, Stock = s.Id, A = s.DeclaredCents, B = s.RecordDay, C = s.PayDay });
                     }
@@ -505,6 +505,10 @@ namespace RealLifeOverhaul.Markets
                 if (s.SplitDay > 0 && s.SplitDay <= day)
                 {
                     MarketLife.Split(State, s, s.SplitRatio);
+                }
+                if (TrustRules.Is(s))
+                {
+                    TrustRules.Declare(s, day, Year);   // a property trust's next distribution, as its last leaves the price (Markets/TrustRules)
                 }
                 double beta = s.Def.Beta / 100.0;
                 int sector = (int)s.Sector;
@@ -917,6 +921,7 @@ namespace RealLifeOverhaul.Markets
             }
             Settle(day);
             Dividends(day);
+            Income(day);   // the player's bonds (MarketEngine.Bonds.cs)
             Corporate(day);
             Variance();
             Interest(day);

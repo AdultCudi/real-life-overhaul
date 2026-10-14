@@ -21,7 +21,8 @@ namespace RealLifeOverhaul.Markets
     ///   l the player's own way to the market and their company's books, u their listed company while it is set aside
     ///      (its founder is a guest in another player's city): Markets/Listing. Never in the city's line.
     ///   b the player's trading bots (MarketBots): each its firm, money, settings, record, holdings and what it waits to
-    ///      trade. Never in the city's line. A bot's shares are written into the player's holding of part p as well
+    ///      trade. Never in the city's line.
+    ///   f the player's bonds (Markets/Bonds/BondStore). Never in the city's line. A bot's shares are written into the player's holding of part p as well
     ///      (each holding of b says so), and taken out of it again here: a version that does not know bots reads them as
     ///      the player's own shares, bought with the player's money, and nothing is lost.
     /// A player's listed company is a record of k like every company's, with its own fields after the rest (its
@@ -235,6 +236,11 @@ namespace RealLifeOverhaul.Markets
             {
                 t.Append("~b:");
                 Bots(t, s);
+            }
+            if (!city && s.Bonds.Holdings.Count > 0)
+            {
+                t.Append("~f:");
+                BondStore.Write(t, s.Bonds);   // the player's bonds (Markets/Bonds/BondStore)
             }
             if (!city && s.Listing != null && !s.Listing.Empty)
             {
@@ -782,6 +788,9 @@ namespace RealLifeOverhaul.Markets
                         break;
                     case 'b':
                         bots = body;
+                        break;
+                    case 'f':
+                        BondStore.Read(body, s.Bonds);
                         break;
                     case 'y':
                         {

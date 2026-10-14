@@ -332,8 +332,11 @@ namespace RealLifeOverhaul.Markets
                 int pct = paid != 0 ? (int)(gain * 10000L / Math.Abs(paid)) : 0;
                 row.Set(6, MarketText.Change(pct), pct, Tone(pct));
                 row.Set(7, MarketText.Money(p.Dividends), p.Dividends);
+                string next = NextPayment(s, k, p, out double nextDay);
+                row.Set(8, next, nextDay);
             }
             WriteAccount(box, s, worth, cost, dividends);
+            BondsLine(box, s);   // (the bonds held: MarketApp.Bonds.cs)
             OwnButton(box);
             Meta.Guide.Point(box, GuideTitle);
             return MarketTables.Portfolio;
@@ -474,6 +477,7 @@ namespace RealLifeOverhaul.Markets
             {
                 box.Line(MarketText.Fill("reallife_mkt_ticket_status", "status", Status(s, k)));
             }
+            TrustLine(box, k);   // a property trust: what it pays and when (MarketApp.Bonds.cs)
             bool closing = _kind >= KindStopLoss;
             if (closing)
             {

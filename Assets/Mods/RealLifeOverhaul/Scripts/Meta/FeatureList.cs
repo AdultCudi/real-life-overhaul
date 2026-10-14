@@ -1125,7 +1125,8 @@ namespace RealLifeOverhaul.Meta
             Features.Add("markets", "reallife_meta_title_markets")
                 .Group("reallife_mkt_header")
                 .About("reallife_guide_markets_about").Help("reallife_guide_markets")
-                .Owns(Settings.MarketsId, Settings.MarketsMarginId)
+                .Owns(Settings.MarketsId, Settings.MarketsMarginId, Settings.MarketsBondsId)
+                .Test("reallife_mkt_bond_test_open", "reallife_mkt_bond_test_pay")
                 .Data(Markets.MarketStore.Key)
                 .Fact("mkt_companies", () => Whole(MarketsListed()))
                 .Fact("mkt_sectors", () => Whole((int)Markets.MarketSector.Count))
@@ -1154,6 +1155,21 @@ namespace RealLifeOverhaul.Meta
                 .Fact("mkt_margin_rate", () => Guide.Percent(Markets.MarketCatalogue.MarginRateOverBp / 10000f))
                 .Fact("mkt_borrow_least", () => Guide.Percent(Markets.MarketCatalogue.BorrowFeeLeastBp / 10000f))
                 .Fact("mkt_borrow_most", () => Guide.Percent(Markets.MarketCatalogue.BorrowFeeMostBp / 10000f))
+                .Fact("mkt_trusts", () => Whole(MarketsTrusts()))
+                .Fact("mkt_trust_payout", () => Guide.Percent((float)Markets.MarketCatalogue.TrustPayout))
+                .Fact("mkt_trust_property", () => Guide.Percent((float)Markets.MarketCatalogue.TrustPropertyShare))
+                .Fact("bond_least", () => Guide.Money(Prices.At(Markets.BondCatalogue.LeastAtStart)))
+                .Fact("bond_most", () => Guide.Money(Prices.At(Markets.BondCatalogue.MostAtStart)))
+                .Fact("bond_holdings", () => Whole(Markets.BondCatalogue.HoldingsMost))
+                .Fact("bond_term_premium", () => Guide.Percent(Markets.BondCatalogue.TermPremiumBpYear / 10000f))
+                .Fact("bond_term_premium_most", () => Guide.Percent(Markets.BondCatalogue.TermPremiumMostBp / 10000f))
+                .Fact("bond_city_spread", () => Guide.Percent(Markets.BondCatalogue.CitySpreadBp / 10000f))
+                .Fact("bond_deposit_under", () => Guide.Percent(Markets.BondCatalogue.DepositUnderBp / 10000f))
+                .Fact("bond_deposit_point", () => Guide.Percent(Markets.BondCatalogue.DepositPerPointBp / 10000f))
+                .Fact("bond_sell_treasury", () => Guide.Percent(Markets.BondCatalogue.SellSpreadTreasuryBp / 10000f))
+                .Fact("bond_sell_city", () => Guide.Percent(Markets.BondCatalogue.SellSpreadCityBp / 10000f))
+                .Fact("bond_penalty_months", () => Whole(Markets.BondCatalogue.DepositPenaltyMonths))
+                .Fact("bond_short_years", () => Whole((int)Markets.BondCatalogue.ShortYears))
                 .Cleanup(() => Markets.MarketDirector.Instance?.StopAll())
                 .ResetData(() => Markets.MarketDirector.Instance?.Forget());   // the director opens a new market from the (now empty) save on its next second
             Markets.ListingGuide.Register();   // the player's own company on the market: its switch, its tests and its Guide figures (Scripts/Markets/Listing; its data is the market's line)
@@ -1329,6 +1345,17 @@ namespace RealLifeOverhaul.Meta
                 listed += Markets.MarketCatalogue.All[i].Pipeline ? 0 : 1;
             }
             return listed;
+        }
+
+        // The property trusts of the catalogue (Markets/TrustRules).
+        private static int MarketsTrusts()
+        {
+            int trusts = 0;
+            for (int i = 0; i < Markets.MarketCatalogue.All.Length; i++)
+            {
+                trusts += Markets.MarketCatalogue.All[i].PayDays > 0 ? 1 : 0;
+            }
+            return trusts;
         }
 
         private static string MarketsTime(int minute)

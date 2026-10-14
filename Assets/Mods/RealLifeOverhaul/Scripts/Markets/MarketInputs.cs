@@ -84,12 +84,12 @@ namespace RealLifeOverhaul.Markets
             new Cell[0],
             new[] { G(MarketSector.Stores, -25), G(MarketSector.Specialists, -25), G(MarketSector.Logistics, -10), G(MarketSector.Groceries, -15) },
             new[] { G(MarketSector.Services, 10), G(MarketSector.Construction, 10), G(MarketSector.Software, 5) },
-            new[] { G(MarketSector.Property, -60), G(MarketSector.Stores, 10), G(MarketSector.Restaurants, 10) },
+            new[] { G(MarketSector.Property, -60), G(MarketSector.Trusts, -80), G(MarketSector.Stores, 10), G(MarketSector.Restaurants, 10) },
             new[] { G(MarketSector.Stores, -15), G(MarketSector.Specialists, -15), G(MarketSector.Restaurants, -10), G(MarketSector.Transport, 15) },
             new[] { G(MarketSector.Transport, 40), G(MarketSector.Stores, 5) },
             new[] { G(MarketSector.Services, 25) },
             new[] { G(MarketSector.Leisure, -50), G(MarketSector.Restaurants, -20), G(MarketSector.Goods, -10) },
-            new[] { G(MarketSector.Construction, -40), G(MarketSector.Property, -15) },
+            new[] { G(MarketSector.Construction, -40), G(MarketSector.Property, -15), G(MarketSector.Trusts, -10) },
             new[] { G(MarketSector.Leisure, 20), G(MarketSector.Media, 15), G(MarketSector.Restaurants, 10) },
             new[] { G(MarketSector.Restaurants, -40), G(MarketSector.Groceries, -25), G(MarketSector.Stores, -25), G(MarketSector.Leisure, -25), G(MarketSector.Services, -30),
                 G(MarketSector.Healthcare, -15) });
@@ -224,7 +224,8 @@ namespace RealLifeOverhaul.Markets
 
         /// <summary>How much a sector's turnover follows what the city's households earn (the districts' income), in per cent.</summary>
         public static readonly int[] IncomeShare = Row(G(MarketSector.Stores, 60), G(MarketSector.Specialists, 80), G(MarketSector.Restaurants, 70), G(MarketSector.Leisure, 90),
-            G(MarketSector.Goods, 30), G(MarketSector.Groceries, 20), G(MarketSector.Property, 40), G(MarketSector.Banks, 30), G(MarketSector.Media, 40), G(MarketSector.Transport, 30));
+            G(MarketSector.Goods, 30), G(MarketSector.Groceries, 20), G(MarketSector.Property, 40), G(MarketSector.Banks, 30), G(MarketSector.Media, 40), G(MarketSector.Transport, 30),
+            G(MarketSector.Trusts, 40));
 
         // ---------------------------------------------------------------- building the tables
 

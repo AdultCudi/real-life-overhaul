@@ -60,6 +60,9 @@ namespace RealLifeOverhaul.Markets
 
         public static Func<int> Trade;
 
+        /// <summary>The names of the city's three largest banks, the largest first (Economy/Lending's BankTerms.Banks): each offers a certificate of deposit (Markets/Bonds). Null: none.</summary>
+        public static Action<List<string>> Banks;
+
         public static void Reset()
         {
             City = null;
@@ -72,6 +75,7 @@ namespace RealLifeOverhaul.Markets
             HandOver = null;
             Name = null;
             Trade = null;
+            Banks = null;
         }
     }
 

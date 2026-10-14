@@ -164,6 +164,13 @@ namespace RealLifeOverhaul.Markets
             return Clamp(1.0 - growth / MarketCatalogue.RoeLong, 0.0, 0.95);
         }
 
+        /// <summary>A company's share of its profit paid out at a growth: a property trust's is nine tenths at least (MarketCatalogue.TrustPayout).</summary>
+        public static double PayoutOf(Stock s, double growth)
+        {
+            double payout = Payout(growth);
+            return TrustRules.Is(s) ? Math.Max(MarketCatalogue.TrustPayout, payout) : payout;
+        }
+
         /// <summary>A company's growth a year as things stand, prices included (what its payout follows).</summary>
         public static double GrowthNow(Stock s, in MarketEnv env)
         {
@@ -255,7 +262,7 @@ namespace RealLifeOverhaul.Markets
             double inflation = env.InflationBp / 10000.0;
             double city = CityGrowth(s, env);
             double own = s.Growth - s.GrowthTarget;
-            double payoutT = s.Own != null ? ListingCatalogue.OwnPayout : Payout(gT);   // (a player's company's profit is its holders': ListingRules)
+            double payoutT = s.Own != null ? ListingCatalogue.OwnPayout : PayoutOf(s, gT);   // (a player's company's profit is its holders': ListingRules)
             double rev = s.Rev, discount = 1.0, sum = 0.0, debt = debtNow, rate = rateNow;
             for (int t = 1; t <= Horizon; t++)
             {
@@ -272,7 +279,7 @@ namespace RealLifeOverhaul.Markets
                 discount /= YearRate(k, distress, least);
                 if (profit > 0.0)
                 {
-                    sum += (s.Own != null ? ListingCatalogue.OwnPayout : Payout(real + prices * pass)) * profit * (1.0 - tax) * discount * Math.Exp(outlook * OutlookShare[t]);
+                    sum += (s.Own != null ? ListingCatalogue.OwnPayout : PayoutOf(s, real + prices * pass)) * profit * (1.0 - tax) * discount * Math.Exp(outlook * OutlookShare[t]);
                 }
                 // A loss is borrowed (as the business does): more debt for the years after.
                 debt = debtUsual + (debt - debtUsual) * DebtYear + (profit < 0.0 ? -profit / rev : 0.0);
@@ -286,6 +293,11 @@ namespace RealLifeOverhaul.Markets
             if (last > 0.0)
             {
                 sum += payoutT * last * (1.0 - tax) * (1.0 + gT) / (kT - gT) * discount * expected;
+            }
+            // A property trust's buildings at where the property market is heading (TrustRules.PropertyFactor).
+            if (TrustRules.Is(s))
+            {
+                sum *= TrustRules.PropertyFactor(env);
             }
             // Worth never quite nothing: a smooth floor of a few per cent of its turnover a share (what it may yet be worth).
             double value = sum / s.Shares;

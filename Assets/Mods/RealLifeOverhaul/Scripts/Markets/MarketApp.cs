@@ -21,6 +21,7 @@ namespace RealLifeOverhaul.Markets
     ///   Portfolio   what you hold, what it cost and what it is worth; the box has the account (and a margin account)
     ///   History     the account's history: trades, dividends, payouts, interest and fees
     ///   Bots        the trading bots for hire and those hired: their record, their settings (MarketApp.Bots.cs)
+    ///   Bonds       the bonds and bank deposits on offer and those held, with their next payment (MarketApp.Bonds.cs)
     ///
     /// Picking a company opens its page in place of the table (MarketApp.Page.cs): its candle chart with the analysis
     /// tools, or its figures and results; the box then has its quote and the order ticket (MarketApp.Box.cs). Nothing
@@ -36,7 +37,7 @@ namespace RealLifeOverhaul.Markets
         private static readonly string[] TabKeys =
         {
             "reallife_mkt_tab_market", "reallife_mkt_tab_companies", "reallife_mkt_tab_watch", "reallife_mkt_tab_orders", "reallife_mkt_tab_portfolio", "reallife_mkt_tab_history",
-            "reallife_mkt_tab_bots"
+            "reallife_mkt_tab_bots", "reallife_mkt_tab_bonds"
         };
 
         public static IModLogger Logger;
@@ -232,6 +233,7 @@ namespace RealLifeOverhaul.Markets
                     case TabPortfolio: table = WritePortfolio(box, s); break;
                     case TabHistory: table = WriteHistory(box, s); break;
                     case TabBots: table = WriteBots(box, s); break;
+                    case TabBonds: table = WriteBonds(box, s); break;
                     default: table = WriteMarket(box, s); break;
                 }
             }

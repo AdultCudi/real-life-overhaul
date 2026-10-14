@@ -49,13 +49,17 @@ namespace RealLifeOverhaul.Markets
             s.Adv = s.Shares * d.TurnoverBp / 10000.0;
             // The quarterly dividend the company pays: what it can pay out of its earnings (MarketValuation.Payout).
             double eps = MarketValuation.Earnings(s, env);
-            s.DpsCents = eps > 0.0 ? Math.Max(0, (int)Math.Round(eps * MarketValuation.Payout(MarketValuation.GrowthNow(s, env)) / 4.0 * 100.0)) : 0;
+            s.DpsCents = eps > 0.0 ? Math.Max(0, (int)Math.Round(eps * MarketValuation.PayoutOf(s, MarketValuation.GrowthNow(s, env)) / 4.0 * 100.0)) : 0;
             s.Quarter = MarketCatalogue.QuarterOf(day, year);
             // The quarter so far, as if the company had been trading at today's rate since it began.
             int elapsed = Math.Max(0, day - MarketCatalogue.QuarterStart(s.Quarter, year));
             s.QRev = s.Rev / year * elapsed;
             s.QNi = profit / year * elapsed;
             s.LastExDay = day - Math.Max(1, (day - MarketCatalogue.QuarterStart(s.Quarter, year)) % Math.Max(1, year / 4));
+            if (TrustRules.Is(s))
+            {
+                TrustRules.Begin(s, day, year);   // a property trust pays every few days: its first distribution (Markets/TrustRules)
+            }
             s.LogFair = Math.Log(MarketValuation.Fair(s, env) + Accrued(s, day, year));
             // The market's mood about it to begin with (a price brought over keeps its price exactly).
             s.Mis = startCents > 0 ? Math.Log(startCents / 100.0) - s.LogFair : StartSpread * MarketRandom.Normal(seed, MarketRandom.Start, d.Id, 3);
@@ -211,7 +215,7 @@ namespace RealLifeOverhaul.Markets
             {
                 lastYear += s.Results[i].Eps;
             }
-            double target = lastYear > 0 ? lastYear / 10000.0 * MarketValuation.Payout(MarketValuation.GrowthNow(s, env)) / 4.0 * 100.0 : 0.0;
+            double target = lastYear > 0 ? lastYear / 10000.0 * MarketValuation.PayoutOf(s, MarketValuation.GrowthNow(s, env)) / 4.0 * 100.0 : 0.0;
             double dps = s.DpsCents + MarketCatalogue.DividendSmooth * (target - s.DpsCents);
             if (target < s.DpsCents && target >= s.DpsCents * 0.8)
             {
@@ -223,10 +227,14 @@ namespace RealLifeOverhaul.Markets
             }
             int declared = Math.Max(0, (int)Math.Round(dps));
             s.DpsCents = declared;
-            s.DeclaredCents = declared;
-            s.RecordDay = declared > 0 ? MarketTrading.MarketDays(day, MarketCatalogue.DividendRecordDays) : 0;
-            s.PayDay = declared > 0 ? MarketTrading.MarketDays(s.RecordDay, MarketCatalogue.DividendPayDays) : 0;
-            s.ExDone = declared <= 0;
+            if (!TrustRules.Is(s))
+            {
+                s.DeclaredCents = declared;
+                s.RecordDay = declared > 0 ? MarketTrading.MarketDays(day, MarketCatalogue.DividendRecordDays) : 0;
+                s.PayDay = declared > 0 ? MarketTrading.MarketDays(s.RecordDay, MarketCatalogue.DividendPayDays) : 0;
+                s.ExDone = declared <= 0;
+            }
+            // (a property trust's board sets its rate: its distributions every few days follow it, TrustRules.Declare)
             s.Results.Add(new QuarterResult
             {
                 Quarter = s.PendingQuarter, Day = day, RevenueK = (long)(revenue / 1000.0), ProfitK = (long)(reported / 1000.0), Eps = eps, Consensus = consensus, DpsCents = declared
@@ -255,6 +263,10 @@ namespace RealLifeOverhaul.Markets
                 return s.Own.Rps;   // a player's company: its reserve a share is in the price, and a dividend leaves it on its record day (ListingRules)
             }
             bool declared = s.DeclaredCents > 0 && !s.ExDone && s.RecordDay > 0;
+            if (!declared && TrustRules.Is(s))
+            {
+                return 0.0;   // a property trust with nothing declared (nothing to pay this period: TrustRules.Declare)
+            }
             int cents = declared ? s.DeclaredCents : s.DpsCents;
             if (cents <= 0)
             {

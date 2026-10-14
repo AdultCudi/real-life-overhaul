@@ -451,7 +451,7 @@ internal static partial class Program
             for (int d = 1; d < 80 && s == null; d++)
             {
                 RunTo(m, d, MarketCatalogue.PhaseOpen);
-                s = m.State.Stocks.FirstOrDefault(k => k.Listed && k.DeclaredCents > 0 && !k.ExDone && k.RecordDay > d + 1 && k.Size != MarketSize.Small && k.BidCents <= 0 && k.SplitDay <= 0);
+                s = m.State.Stocks.FirstOrDefault(k => k.Listed && k.DeclaredCents > 0 && !k.ExDone && k.RecordDay > d + 1 && k.Size != MarketSize.Small && k.BidCents <= 0 && k.SplitDay <= 0 && !TrustRules.Is(k));   // (a property trust's: MarketChecks7.cs)
             }
             if (s == null)
             {

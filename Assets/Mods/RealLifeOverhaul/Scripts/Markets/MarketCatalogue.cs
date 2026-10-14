@@ -6,7 +6,7 @@ namespace RealLifeOverhaul.Markets
     public enum MarketSector
     {
         Banks = 0, Insurance, Finance, Property, Construction, Power, Water, Telecoms, Energy, Transport, Logistics, Stores, Specialists,
-        Groceries, Restaurants, Leisure, Media, Hardware, Software, Healthcare, Industry, Goods, Services, Count
+        Groceries, Restaurants, Leisure, Media, Hardware, Software, Healthcare, Industry, Goods, Services, Trusts, Count
     }
 
     /// <summary>How big a company is. Saved as a number.</summary>
@@ -28,11 +28,12 @@ namespace RealLifeOverhaul.Markets
         public readonly int PriceCents;         // where it starts (the shares in issue are worked out from it)
         public readonly string Trade;           // the game's business type it competes with (a part of the id), or null
         public readonly bool Pipeline;          // not listed at the start: a company that may come to the market later
+        public readonly int PayDays;            // a property trust: it pays a distribution every so many days of the calendar (TrustRules); 0 a dividend each quarter
 
         // The profile, worked out from the sector and the id (MarketCatalogue.Profile).
         public int MarginBp, GrowthBp, Beta, Cyclical, DebtPct, IdioBp, PassPct, RateBp, TurnoverBp, SpreadBp;
 
-        public CompanyDef(int id, string name, string ticker, MarketSector sector, MarketSize size, int revenueM, int priceCents, string trade, bool pipeline = false)
+        public CompanyDef(int id, string name, string ticker, MarketSector sector, MarketSize size, int revenueM, int priceCents, string trade, bool pipeline = false, int payDays = 0)
         {
             Id = id;
             Name = name;
@@ -43,6 +44,7 @@ namespace RealLifeOverhaul.Markets
             PriceCents = priceCents;
             Trade = trade;
             Pipeline = pipeline;
+            PayDays = payDays;
         }
     }
 
@@ -179,6 +181,14 @@ namespace RealLifeOverhaul.Markets
         public const double ResultsDayVolScale = 1.5;    // a company's own moves on the day of its results (besides its answer to them)
         public const double ResultsReaction = 0.5;       // of a quarter's surprise in profit, the move of the price at the open: news of the years to come
 
+        // A property trust (MarketSector.Trusts, Markets/TrustRules): it owns buildings and lets them, pays out most of what
+        // it earns, and pays it in small sums often, every week or every third day of the calendar (its PayDays), each the
+        // year's dividend shared by the days. Its price follows where the city's property market is heading (Economy/Estate's
+        // own rule: the cycle and the bank rate) as well as its rents.
+        public const int TrustWeekly = 7, TrustThreeDays = 3;   // days of the calendar between two distributions
+        public const double TrustPayout = 0.9;           // of its profit, at least: a trust pays out nearly all it earns
+        public const double TrustPropertyShare = 0.5;    // of its worth, the buildings as the property market values them (the rest: its rents)
+
         // ---------------------------------------------------------------- the life of the market
 
         public const int SplitAboveCents = 30000;        // a board splits its shares when they trade over this...
@@ -262,14 +272,15 @@ namespace RealLifeOverhaul.Markets
             new SectorProfile(1500, 500, 70, 30, 40, 140, 55, 95, 0),        // health care
             new SectorProfile(900, 300, 120, 150, 50, 150, 75, 85, 0),       // industry
             new SectorProfile(1400, 300, 65, 40, 40, 110, 45, 90, 0),        // consumer goods
-            new SectorProfile(1000, 400, 95, 100, 30, 140, 65, 85, 0)        // business services
+            new SectorProfile(1000, 400, 95, 100, 30, 140, 65, 85, 0),       // business services
+            new SectorProfile(4500, 100, 75, 70, 300, 90, 55, 60, 0)         // property trusts
         };
 
         private const string P = "reallife";   // (apart, so that a key made from parts is not taken for a whole one)
 
         public static readonly string[] SectorKeys = Keys(P + "_mkt_sector_", "banks", "insurance", "finance", "property", "construction", "power", "water", "telecoms",
             "energy", "transport", "logistics", "stores", "specialists", "groceries", "restaurants", "leisure", "media", "hardware", "software", "healthcare", "industry",
-            "goods", "services");
+            "goods", "services", "trusts");
 
         public static readonly string[] SizeKeys = Keys(P + "_mkt_size_", "large", "mid", "small");
 
@@ -289,8 +300,9 @@ namespace RealLifeOverhaul.Markets
             Cn = MarketSector.Construction, Pw = MarketSector.Power, Wa = MarketSector.Water, Tc = MarketSector.Telecoms, En = MarketSector.Energy,
             Tr = MarketSector.Transport, Lg = MarketSector.Logistics, St = MarketSector.Stores, Sp = MarketSector.Specialists, Gr = MarketSector.Groceries,
             Rs = MarketSector.Restaurants, Le = MarketSector.Leisure, Md = MarketSector.Media, Hw = MarketSector.Hardware, Sw = MarketSector.Software,
-            Hc = MarketSector.Healthcare, Id = MarketSector.Industry, Gd = MarketSector.Goods, Sv = MarketSector.Services;
+            Hc = MarketSector.Healthcare, Id = MarketSector.Industry, Gd = MarketSector.Goods, Sv = MarketSector.Services, Pt = MarketSector.Trusts;
         private const MarketSize L = MarketSize.Large, M = MarketSize.Mid, S = MarketSize.Small;
+        private const int Week = TrustWeekly, Third = TrustThreeDays;
 
         /// <summary>
         /// Every company there is. Names are invented. The first block is listed when the market opens; the pipeline
@@ -435,6 +447,13 @@ namespace RealLifeOverhaul.Markets
             new CompanyDef(134, "Hiring Hall Recruitment", "HHR", Sv, M, 2300, 2600, "recruitment"),
             new CompanyDef(135, "Counsel Row Consulting", "CRC", Sv, M, 1400, 5300, "lawfirm"),
             new CompanyDef(136, "Paperclip Office Supplies", "POS", Sv, S, 800, 1500, "officesupply"),
+            // ---- the property trusts: they pay a distribution every week or every third day (TrustRules)
+            new CompanyDef(137, "Cobblegate Property Trust", "CPT", Pt, L, 1600, 3400, null, false, Week),
+            new CompanyDef(138, "Hearthstone Homes Trust", "HHT", Pt, M, 700, 2600, null, false, Week),
+            new CompanyDef(139, "Wharfside Warehouse Trust", "WWT", Pt, M, 550, 2200, null, false, Third),
+            new CompanyDef(140, "Brambleway Retail Trust", "BRT", Pt, M, 600, 1900, null, false, Week),
+            new CompanyDef(141, "Mossbank Residential Trust", "MRT", Pt, S, 280, 1500, null, false, Third),
+            new CompanyDef(142, "Gullpoint Hotel Trust", "GHT", Pt, S, 320, 1700, null, false, Third),
             // ---- the pipeline: companies that may come to the market later
             new CompanyDef(201, "Seedling Biotech", "SEED", Hc, S, 120, 1800, null, true),
             new CompanyDef(202, "Rooftop Solar Works", "RSW", Pw, S, 200, 1400, null, true),

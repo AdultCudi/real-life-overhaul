@@ -119,6 +119,100 @@ namespace RealLifeOverhaul.Markets
             state.Stocks.Add(s);
         }
 
+        /// <summary>
+        /// Companies of the catalogue's first block that a save's market has never had (added to the catalogue after it was
+        /// opened, as the property trusts were), made now at the city's price level with their past, as a new market makes
+        /// them: listed years ago, from the save's own id, so the same save loaded twice has the same companies. The city's
+        /// index takes them in without a jump; a sector that had none starts at 1,000 with its history from theirs. How
+        /// many joined. Once a load, for the save's own market (a Going Public guest's is the host's).
+        /// </summary>
+        public static int Join(MarketState state)
+        {
+            int year = Math.Max(8, state.YearDays);
+            var joined = new List<Stock>(8);
+            for (int i = 0; i < MarketCatalogue.All.Length && state.Stocks.Count < MarketCatalogue.CompaniesMost; i++)
+            {
+                CompanyDef d = MarketCatalogue.All[i];
+                if (d.Pipeline || state.Stock(d.Id) != null)
+                {
+                    continue;
+                }
+                Stock s = MarketLife.Make(d, null, state.Day, state.Env, year, state.Id, 0);
+                Add(state, s, default(CarriedPrice), state.Day, year, state.Id);
+                joined.Add(s);
+            }
+            if (joined.Count == 0)
+            {
+                return 0;
+            }
+            // What the companies there were and those joining are worth, as the market's index counts them (MarketEngine.Index).
+            var had = new double[(int)MarketSector.Count];
+            var added = new double[(int)MarketSector.Count];
+            double before = 0.0, all = 0.0;
+            for (int i = 0; i < state.Stocks.Count; i++)
+            {
+                Stock s = state.Stocks[i];
+                if (!s.Listed)
+                {
+                    continue;
+                }
+                double value = s.Shares * s.Mid;
+                if (joined.Contains(s))
+                {
+                    added[(int)s.Sector] += value;
+                    all += value;
+                }
+                else
+                {
+                    had[(int)s.Sector] += value;
+                    before += value;
+                }
+            }
+            if (state.IndexDivisor > 0.0 && before > 0.0)
+            {
+                state.IndexDivisor *= (before + all) / before;   // (the index stays where it was)
+            }
+            for (int sec = 0; sec < added.Length; sec++)
+            {
+                if (added[sec] <= 0.0)
+                {
+                    continue;
+                }
+                if (state.SectorDivisor[sec] > 0.0 && had[sec] > 0.0)
+                {
+                    state.SectorDivisor[sec] *= (had[sec] + added[sec]) / had[sec];
+                    continue;
+                }
+                // A new sector: 1,000 today, its past from its companies' closes.
+                state.SectorDivisor[sec] = added[sec] / 1000.0;
+                state.SectorLast[sec] = state.SectorPrevClose[sec] = 100000;
+                state.SectorVar[sec] = 1.0;
+                var days = new SortedDictionary<int, double[]>();
+                for (int i = 0; i < joined.Count; i++)
+                {
+                    if ((int)joined[i].Sector == sec)
+                    {
+                        AddUp(days, joined[i].Daily, joined[i].Shares, sec);
+                    }
+                }
+                List<int> closes = state.SectorDaily[sec];
+                closes.Clear();
+                foreach (KeyValuePair<int, double[]> day in days)
+                {
+                    closes.Add((int)Math.Round(day.Value[5 + sec] / state.SectorDivisor[sec]));
+                }
+                while (closes.Count > MarketCatalogue.DailyKept)
+                {
+                    closes.RemoveAt(0);
+                }
+                if (closes.Count > 0)
+                {
+                    state.SectorPrevClose[sec] = closes[closes.Count - 1];
+                }
+            }
+            return joined.Count;
+        }
+
         /// <summary>The day a company of a new market counts as listed on: years before (it is no new listing).</summary>
         public static int ListedLongAgo(int day, int year)
         {
