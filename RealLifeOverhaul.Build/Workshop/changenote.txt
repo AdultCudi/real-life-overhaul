@@ -1,4 +1,4 @@
-0.15.2
+0.15.3
 
 Fixed
-- The Stocks app's Companies tab showed 0% for every company's day move, while the Market tab showed the market moving.
+- The street cart vendor could be left waiting for a customer who never came, for example when an accident nearby cut off their way to the cart. Such a customer now leaves the queue at once, is not counted as a walk-off, and another comes instead.
