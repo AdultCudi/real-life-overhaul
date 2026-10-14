@@ -80,10 +80,10 @@ namespace RealLifeOverhaul.Economy
             else
             {
                 box.Title(ServicesText.T("reallife_svc_tab_sale"));
-                box.Line(ServicesText.T("reallife_svc_sale_says_value", "days", VenturesCatalogue.OfferValueDays.ToString()));
-                box.Line(ServicesText.T("reallife_svc_sale_says_market"));
-                box.Line(ServicesText.T("reallife_svc_sale_says_quick", "share", ServicesCatalogue.QuickPct.ToString()));
-                box.Line(ServicesText.T("reallife_svc_sale_says_after"));
+                box.Note(ServicesText.T("reallife_svc_sale_says_value", "days", VenturesCatalogue.OfferValueDays.ToString()));
+                box.Note(ServicesText.T("reallife_svc_sale_says_market"));
+                box.Note(ServicesText.T("reallife_svc_sale_says_quick", "share", ServicesCatalogue.QuickPct.ToString()));
+                box.Note(ServicesText.T("reallife_svc_sale_says_after"));
                 box.Note(ServicesText.T("reallife_svc_sale_pick"));
                 Guide(box);
             }
@@ -100,7 +100,7 @@ namespace RealLifeOverhaul.Economy
             box.Title(ServicesGame.Name(reg));
             box.Section("reallife_look_sec_now");
             box.Row("reallife_svc_value_base", ServicesText.T("reallife_svc_value_base_value", "amount", ServicesText.Money(b.Base), "days", VenturesCatalogue.OfferValueDays.ToString()));
-            box.Line(ServicesText.Fill("reallife_svc_value_goodwill", "type", ServicesText.Percent(b.TypePct), "district", ServicesText.Percent(b.DistrictPct), "economy", ServicesText.Percent(b.ClimatePct),
+            box.Note(ServicesText.Fill("reallife_svc_value_goodwill", "type", ServicesText.Percent(b.TypePct), "district", ServicesText.Percent(b.DistrictPct), "economy", ServicesText.Percent(b.ClimatePct),
                 "books", ServicesText.Percent(b.HistoryPct), "amount", ServicesText.Money(b.Goodwill)));
             box.Row("reallife_svc_value_fixtures", ServicesText.Money(b.Fixtures));
             box.Row("reallife_svc_value_worth", ServicesText.Money(b.Value));
@@ -119,7 +119,7 @@ namespace RealLifeOverhaul.Economy
                 box.Line(ServicesText.Fill("reallife_svc_asking", "share", ServicesText.Percent(ServicesCatalogue.AskingPct[step]), "amount", ServicesText.Money(SaleRules.Asking(value, step)),
                     "days", ServicesCatalogue.AskingGapDays[step].ToString(), "most", ServicesCatalogue.AskingOffersMost[step].ToString()));
             }
-            box.Line(ServicesText.T("reallife_svc_asking_says", "days", ServicesCatalogue.AskingGapDays[step].ToString(), "most", ServicesCatalogue.AskingOffersMost[step].ToString()));
+            box.Note(ServicesText.T("reallife_svc_asking_says", "days", ServicesCatalogue.AskingGapDays[step].ToString(), "most", ServicesCatalogue.AskingOffersMost[step].ToString()));
             if (l != null)
             {
                 box.Line(ServicesText.T("reallife_svc_listed_since", "day", l.ListedDay.ToString(), "amount", ServicesText.Money(l.Asking), "count", state.OffersFor(place).ToString()));
@@ -144,17 +144,24 @@ namespace RealLifeOverhaul.Economy
             SaleBreakdown b = _director.Value(reg);
             SaleMoney m = SaleRules.Settle(o.Price, o.Parts, b, ServicesGame.Cash);
             box.Title(ServicesText.T("reallife_svc_bid_title", "business", l != null ? l.Name : "?"));
-            box.Line(ServicesText.T(o.Countered ? "reallife_svc_bid_until_final" : "reallife_svc_bid_until", "day", o.Deadline.ToString(), "share", ServicesCatalogue.CounterStepPct.ToString()));
-            box.Line(ServicesText.T("reallife_svc_bid_from", "buyer", ServicesText.Buyer(o), "kind", ServicesText.Kind(o.Buyer)));
+            box.Subtitle(ServicesText.T("reallife_svc_bid_from", "buyer", ServicesText.Buyer(o), "kind", ServicesText.Kind(o.Buyer)));
+            if (o.Countered)
+            {
+                box.Chip(ServicesText.T("reallife_look_chip_final"), CellTone.Yellow);
+            }
+            box.Line(ServicesText.T(o.Countered ? "reallife_svc_bid_until_final" : "reallife_svc_bid_until", "day", o.Deadline.ToString(), "share", ServicesCatalogue.CounterStepPct.ToString()), CellTone.Yellow);
+            box.Section("reallife_look_sec_offer");
             box.Row("reallife_svc_bid_price", ServicesText.T("reallife_svc_bid_price_value", "amount", ServicesText.Money(o.Price), "share", ServicesText.Percent(b.Value > 0 ? Mathf.RoundToInt(o.Price * 100f / b.Value) : 0)));
             box.Line(o.Parts > 1
                 ? ServicesText.T("reallife_svc_bid_parts", "now", ServicesText.Money(m.Now), "part", ServicesText.Money(m.Part), "count", m.PartsLeft.ToString())
                 : ServicesText.T("reallife_svc_bid_once"));
-            box.Line(ServicesText.T(o.KeepsStaff ? "reallife_svc_bid_staff_keep" : "reallife_svc_bid_staff_not"));
+            box.Section("reallife_look_sec_terms");
+            box.Line(ServicesText.T(o.KeepsStaff ? "reallife_svc_bid_staff_keep" : "reallife_svc_bid_staff_not"), o.KeepsStaff ? CellTone.Green : CellTone.Yellow);
             box.Line(o.ClauseDays > 0 ? ServicesText.T("reallife_svc_bid_clause", "days", o.ClauseDays.ToString(), "share", ServicesCatalogue.ClausePenaltyPct.ToString()) : ServicesText.T("reallife_svc_bid_no_clause"));
             if (m.Investors + m.Loans > 0)
             {
-                box.Line(ServicesText.T(m.Short > 0 ? "reallife_svc_bid_owed_short" : "reallife_svc_bid_owed", "investors", ServicesText.Money(m.Investors), "loans", ServicesText.Money(m.Loans), "left", ServicesText.Signed(m.Left)));
+                box.Line(ServicesText.T(m.Short > 0 ? "reallife_svc_bid_owed_short" : "reallife_svc_bid_owed", "investors", ServicesText.Money(m.Investors), "loans", ServicesText.Money(m.Loans), "left", ServicesText.Signed(m.Left)),
+                    m.Short > 0 ? CellTone.Red : CellTone.Plain);
             }
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_svc_bid_accept", () => _director.Accept(id));
