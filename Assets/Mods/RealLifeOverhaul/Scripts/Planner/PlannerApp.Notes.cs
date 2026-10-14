@@ -151,7 +151,7 @@ namespace RealLifeOverhaul.Planner
         // The title: one of the ready ones, or the player's own words typed into the game's text box.
         private void NoteTitle(InfoBox box)
         {
-            box.Line(Pair("reallife_planner_note_title", _draftTitle));
+            box.Row("reallife_planner_note_title", _draftTitle);
             int own = _draftOwn != null ? 1 : 0;
             int at = _draftOwn != null && _draftTitle == _draftOwn ? 0 : Mathf.Max(0, PresetIndex(_draftTitle)) + own;
             box.Selector(Presets.Length + own, at, i => own == 1 && i == 0 ? _draftOwn : PlannerText.T(Presets[i - own]), i =>
