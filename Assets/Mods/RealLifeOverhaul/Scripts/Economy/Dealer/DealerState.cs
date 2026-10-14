@@ -13,8 +13,9 @@ namespace RealLifeOverhaul.Economy.Dealership
 
     /// <summary>
     /// The car dealership in the save: the player's dealerships with their lots and stock, the day's market, the
-    /// customers' offers, and the finance plans and warranties sold. Game-free: the game's objects are read and
-    /// written by DealerGame, and what is here is only what a save must keep that the game does not.
+    /// customers' offers, the finance plans and warranties sold, the cars won at auction on their way, and each
+    /// showroom's event, reputation, missions and daily figures. Game-free: the game's objects are read and written by
+    /// DealerGame, and what is here is only what a save must keep that the game does not.
     /// </summary>
     public sealed class DealerState
     {
@@ -30,6 +31,24 @@ namespace RealLifeOverhaul.Economy.Dealership
         public readonly List<DealerPlan> Plans = new List<DealerPlan>(16);
         public readonly List<DealerCover> Covers = new List<DealerCover>(16);
         public readonly List<DealerSale> Sales = new List<DealerSale>(DealerCatalogue.SalesKept);
+        public readonly List<DealerDelivery> Deliveries = new List<DealerDelivery>(4);
+
+        /// <summary>The cars on their way to a showroom: each holds a place of its lot until it arrives.</summary>
+        public int Inbound(string place)
+        {
+            int n = 0;
+            for (int i = 0; i < Deliveries.Count; i++)
+            {
+                n += Deliveries[i].Place == place ? 1 : 0;
+            }
+            return n;
+        }
+
+        /// <summary>The places of a showroom's lot free for a car bought now: free places less those its deliveries hold.</summary>
+        public int Room(DealerYard y)
+        {
+            return y.Laid ? System.Math.Max(0, y.FreeSpots() - Inbound(y.Place)) : 0;
+        }
 
         public DealerYard Yard(string place)
         {
@@ -107,13 +126,35 @@ namespace RealLifeOverhaul.Economy.Dealership
         public bool Finance = true;         // the dealership offers its own finance
         public bool Warranty = true;        // ...and warranties
         public int VisitorCarry;            // thousandths of a visitor carried from hour to hour
+        public bool Extras = true;          // ...and extras with a car
+        public int Rep;                     // its reputation with buyers (0 to DealerCatalogue.RepMost)
+        public int Done;                    // a bit for each of its missions done
+        public int Event = -1;              // the event it runs (DealerCatalogue's kinds); -1 none
+        public int Feature;                 // ...the kind of car a featured event is of (the car catalogue's kinds)
+        public int EventFrom, EventUntil;   // ...its first day and its last
+        public readonly int[] EventLast = NewDays(DealerCatalogue.EventKinds);   // the last day of the last event of each kind; -1 none
+        public readonly int[] Tally = new int[DealerCatalogue.Tallies];          // what it has done, for its missions
         public readonly List<LotSpot> Spots = new List<LotSpot>(DealerCatalogue.SpotsMost);
         public readonly List<StockCar> Cars = new List<StockCar>(DealerCatalogue.CarsMost);
         public readonly List<DealerOffer> Deals = new List<DealerOffer>(DealerCatalogue.DealsMost);
         public DealerBook Today = new DealerBook();
-        public readonly DealerBook[] Week = NewWeek();
+        public readonly DealerBook[] Past = NewPast();   // the days closed, the last first; a day not kept yet has Day -1
 
         public bool Laid => Spots.Count > 0;
+
+        /// <summary>True while its event runs on this day.</summary>
+        public bool EventOn(int day) => Event >= 0 && day >= EventFrom && day <= EventUntil;
+
+        /// <summary>Cars of the lot in the workshop at this hour.</summary>
+        public int InWorkshop(int now)
+        {
+            int n = 0;
+            for (int i = 0; i < Cars.Count; i++)
+            {
+                n += Cars[i].ShopUntil > now ? 1 : 0;
+            }
+            return n;
+        }
 
         public StockCar Car(int id)
         {
@@ -172,14 +213,24 @@ namespace RealLifeOverhaul.Economy.Dealership
             return free;
         }
 
-        private static DealerBook[] NewWeek()
+        private static DealerBook[] NewPast()
         {
-            var week = new DealerBook[DealerCatalogue.WeekBooks];
-            for (int i = 0; i < week.Length; i++)
+            var past = new DealerBook[DealerCatalogue.ReportDays];
+            for (int i = 0; i < past.Length; i++)
             {
-                week[i] = new DealerBook { Day = -1 };
+                past[i] = new DealerBook { Day = -1 };
             }
-            return week;
+            return past;
+        }
+
+        private static int[] NewDays(int count)
+        {
+            var days = new int[count];
+            for (int i = 0; i < days.Length; i++)
+            {
+                days[i] = -1;
+            }
+            return days;
         }
     }
 
@@ -206,6 +257,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         public CarSource Source;
         public int Spot = -1;               // its place on the lot
         public int OutUntil = -1;           // out on a test drive until this hour
+        public int ShopUntil = -1;          // in the workshop until this hour
     }
 
     /// <summary>A car of the day's market: a new one from the wholesaler, one a private owner sells, or a lot of the trade auction.</summary>
@@ -254,6 +306,8 @@ namespace RealLifeOverhaul.Economy.Dealership
         public string TradeType;            // their own car offered in part exchange; null for none
         public string TradeColour;
         public int TradeKm, TradeCondition, TradeAllowance;
+        public int Extras;                  // a bit for each extra they would take (DealerCatalogue.ExtraKinds)
+        public int Lift;                    // added to the chance a counter is taken: an event that ran when they came
     }
 
     /// <summary>A car sold on the dealership's own finance: what is still owed, and how it is being paid.</summary>
@@ -300,22 +354,70 @@ namespace RealLifeOverhaul.Economy.Dealership
         public bool Financed;
         public int Tier = -1;
         public bool Trade;                  // sold to the trade, not to a customer
+        public int Extras;                  // a bit for each extra taken with it
     }
 
-    /// <summary>A dealership's figures of a day.</summary>
+    /// <summary>A car won at the trade auction, paid for and on its way to a showroom; it holds a place of the lot until it comes.</summary>
+    public sealed class DealerDelivery
+    {
+        public int Id;
+        public string Place;                // the showroom it goes to
+        public string Type;
+        public string Colour;
+        public int Km;
+        public int Condition;
+        public int Faults;
+        public int Known;
+        public int Cost;                    // the hammer price and the fee
+        public int Due;                     // the hour it arrives (day x 24 + hour)
+        public bool Told;                   // the player has been told it waits for a free place
+    }
+
+    /// <summary>A dealership's figures of a day. The last five are read off the showroom as the day closes.</summary>
     public sealed class DealerBook
     {
         public int Day;
         public int Visitors, Served, Lost, Offers, Sold;
-        public int Takings;                 // cars sold, finance paid in, premiums
-        public int Bought;                  // cars bought, inspections, fees, preparation
+        public int Takings;                 // cars sold, finance paid in, premiums, extras
+        public int Bought;                  // cars bought, inspections, fees, preparation, the workshop, extras bought in
         public int Claims;                  // warranty claims paid out
-        public int Margin;                  // sale prices less what the cars sold had cost
+        public int Margin;                  // sale prices less what the cars sold had cost, and the extras' margin
+        public int Revenue;                 // the prices of the cars sold
+        public int Extras;                  // the extras sold
+        public int Spent;                   // events and the workshop
+        public int Cars;                    // cars on the lot
+        public int Age;                     // their days on the lot, together
+        public int Arrears;                 // owed on its finance plans that are behind
+        public int Late;                    // ...how many plans that is
+        public int Rep;                     // its reputation
 
         public void Clear(int day)
         {
             Day = day;
             Visitors = Served = Lost = Offers = Sold = Takings = Bought = Claims = Margin = 0;
+            Revenue = Extras = Spent = Cars = Age = Arrears = Late = Rep = 0;
+        }
+
+        /// <summary>Another day's figures added to these (the read-offs too, so that a sum over showrooms is all of them).</summary>
+        public void Add(DealerBook b)
+        {
+            Visitors += b.Visitors;
+            Served += b.Served;
+            Lost += b.Lost;
+            Offers += b.Offers;
+            Sold += b.Sold;
+            Takings += b.Takings;
+            Bought += b.Bought;
+            Claims += b.Claims;
+            Margin += b.Margin;
+            Revenue += b.Revenue;
+            Extras += b.Extras;
+            Spent += b.Spent;
+            Cars += b.Cars;
+            Age += b.Age;
+            Arrears += b.Arrears;
+            Late += b.Late;
+            Rep += b.Rep;
         }
 
         public void CopyFrom(DealerBook b)
@@ -330,6 +432,14 @@ namespace RealLifeOverhaul.Economy.Dealership
             Bought = b.Bought;
             Claims = b.Claims;
             Margin = b.Margin;
+            Revenue = b.Revenue;
+            Extras = b.Extras;
+            Spent = b.Spent;
+            Cars = b.Cars;
+            Age = b.Age;
+            Arrears = b.Arrears;
+            Late = b.Late;
+            Rep = b.Rep;
         }
     }
 }

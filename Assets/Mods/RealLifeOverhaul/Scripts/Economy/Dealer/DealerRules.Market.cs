@@ -3,16 +3,18 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>A vehicle type the market can offer, as DealerGame reads it from the game: its name and its list price.</summary>
+    /// <summary>A vehicle type the market can offer, as DealerGame reads it from the game: its name, its list price and its kind of car (the mod's car catalogue's, Driving/CarCatalogue).</summary>
     public struct MarketModel
     {
         public string Type;
         public float Price;
+        public int Kind;
 
-        public MarketModel(string type, float price)
+        public MarketModel(string type, float price, int kind = 0)
         {
             Type = type;
             Price = price;
+            Kind = kind;
         }
     }
 

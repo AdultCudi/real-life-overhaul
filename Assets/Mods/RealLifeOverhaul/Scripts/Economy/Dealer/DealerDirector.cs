@@ -43,7 +43,7 @@ namespace RealLifeOverhaul.Economy.Dealership
     public sealed partial class DealerDirector : MonoBehaviour
     {
         public const string AppId = "RealLifeDealer";
-        public const int TabStock = 0, TabMarket = 1, TabOffers = 2, TabFinance = 3, TabLots = 4;
+        public const int TabStock = 0, TabMarket = 1, TabOffers = 2, TabFinance = 3, TabLots = 4, TabGrowth = 5, TabReports = 6;
 
         private const int CatchUp = 3;      // hours missed that are still worked through one by one
         private static readonly string[] AppGlyphs = { "Icon-Car", "Icon-Vehicle", "Icon-Shop" };
@@ -240,7 +240,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             RebuildIds();
             Logger?.Info("Dealership: " + (fresh ? "opened for this save" : "state loaded (version " + version + ")") + " on day " + save.Day + ". " + _state.Yards.Count + " dealership(s), "
-                         + CarCount() + " car(s) in stock, " + _models.Count + " kind(s) of car on the market, " + _state.Plans.Count + " finance plan(s), " + _state.Covers.Count + " warranty(ies)"
+                         + CarCount() + " car(s) in stock, " + _state.Deliveries.Count + " on their way, " + _models.Count + " kind(s) of car on the market, " + _state.Plans.Count + " finance plan(s), "
+                         + _state.Covers.Count + " warranty(ies)"
                          + (gone > 0 ? "; " + gone + " dealership(s) no longer the player's, whose cars stay where they stand" : string.Empty)
                          + (lost > 0 ? "; " + lost + " car(s) the save no longer has taken off the stock" : string.Empty) + ".");
             if (_models.Count == 0)
@@ -562,10 +563,11 @@ namespace RealLifeOverhaul.Economy.Dealership
                 DealerRules.Morning(_state, day, _models, _colours, level);
                 for (int y = 0; y < _state.Yards.Count; y++)
                 {
-                    DealerRules.CloseDay(_state.Yards[y], day);
+                    DealerRules.CloseDay(_state, _state.Yards[y], day);
                 }
             }
             Auction(now, level);
+            Arrivals(now);
             int financeLeast = Prices.At(DealerCatalogue.FinanceLeast);
             for (int i = 0; i < _state.Yards.Count; i++)
             {
@@ -575,6 +577,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 {
                     continue;
                 }
+                WorkshopHour(y, now);
                 YardHour h = DealerGame.Hour(reg);
                 Worths(y, level);
                 DealerHour got = DealerRules.Hour(_state, y, h, now, day, _worths, financeLeast, _models, _colours, level);
@@ -669,6 +672,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                             Book(y, back, 0, 0, 0);
                             Tell(NotificationType.Warning, "reallife_dealer_note_default", new Dictionary<string, string>(3)
                                 { { "customer", p.Customer }, { "car", DealerGame.CarName(p.Type) }, { "amount", DealerText.Money(back) } }, TabFinance, null);
+                            Repute(y, -DealerCatalogue.RepTakenBack);
                             Logger?.Info("Dealership: " + p.Customer + " stopped paying for a " + p.Type + " with " + p.Owed + " still owed; the car was taken back and sold at the trade auction for " + back + ".");
                             _state.Plans.RemoveAt(i);
                         }
@@ -697,9 +701,11 @@ namespace RealLifeOverhaul.Economy.Dealership
                     BuildingRegistration reg = y != null ? RegOf(y) : null;
                     DealerGame.Take(cost, DealerLines.ClaimKey, DealerGame.Named(reg), reg, true);
                     Book(y, 0, 0, cost, 0);
+                    Repute(y, DealerCatalogue.RepClaim);   // (a promise kept)
                     claims++;
                     claimed += cost;
                 }
+                EndEvents(day);
                 Changed();
                 if (Verbose)
                 {
@@ -729,7 +735,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             if (y.Today.Day != Save.Day)
             {
-                DealerRules.CloseDay(y, Save.Day);
+                DealerRules.CloseDay(_state, y, Save.Day);
             }
             y.Today.Takings += takings;
             y.Today.Bought += bought;
@@ -857,6 +863,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         {
             try
             {
+                Settle();   // (the workshop's cars finished, the cars on their way delivered or sold: nothing paid for stays in the line)
                 StandDown("the save tools asked", true, true, false);
             }
             catch (Exception e)

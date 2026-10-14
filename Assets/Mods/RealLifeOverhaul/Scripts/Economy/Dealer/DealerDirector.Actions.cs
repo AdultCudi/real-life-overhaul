@@ -7,7 +7,7 @@ namespace RealLifeOverhaul.Economy.Dealership
     /// <summary>Why something the player asked of the dealership could not be done; the text key says so.</summary>
     public enum DealerRefusal
     {
-        None, Off, NoLot, LotFull, Cash, Gone, Busy, NoBids, Leading, NotInside, Staff
+        None, Off, NoLot, LotFull, Cash, Gone, Busy, NoBids, Leading, NotInside, Staff, InWorkshop, Bays, Nothing, EventOn, Rested
     }
 
     /// <summary>
@@ -20,7 +20,8 @@ namespace RealLifeOverhaul.Economy.Dealership
         private static readonly string[] RefusalKeys =
         {
             null, "reallife_dealer_refuse_off", "reallife_dealer_refuse_no_lot", "reallife_dealer_refuse_full", "reallife_dealer_refuse_cash", "reallife_dealer_refuse_gone",
-            "reallife_dealer_refuse_busy", "reallife_dealer_refuse_no_bids", "reallife_dealer_refuse_leading", "reallife_dealer_refuse_inside", "reallife_dealer_refuse_staff"
+            "reallife_dealer_refuse_busy", "reallife_dealer_refuse_no_bids", "reallife_dealer_refuse_leading", "reallife_dealer_refuse_inside", "reallife_dealer_refuse_staff",
+            "reallife_dealer_refuse_workshop", "reallife_dealer_refuse_bays", "reallife_dealer_refuse_nothing", "reallife_dealer_refuse_event_on", "reallife_dealer_refuse_rested"
         };
 
         private bool Refuse(DealerRefusal why)
@@ -32,7 +33,10 @@ namespace RealLifeOverhaul.Economy.Dealership
             return why == DealerRefusal.None;
         }
 
-        /// <summary>The first dealership with a free place on its lot, the given one first; null if none has (with the reason).</summary>
+        /// <summary>
+        /// The first dealership with a free place on its lot, the given one first; null if none has (with the reason). A
+        /// place held for a car on its way from the auction is not free.
+        /// </summary>
         internal DealerYard Room(string want, out DealerRefusal why)
         {
             why = DealerRefusal.None;
@@ -42,7 +46,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 return null;
             }
             DealerYard first = want != null ? _state.Yard(want) : null;
-            if (first != null && first.Laid && first.FreeSpot() >= 0)
+            if (first != null && _state.Room(first) > 0)
             {
                 return first;
             }
@@ -51,7 +55,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 DealerYard y = _state.Yards[i];
                 anyLaid |= y.Laid;
-                if (y.Laid && y.FreeSpot() >= 0 && RegOf(y) != null)
+                if (_state.Room(y) > 0 && RegOf(y) != null)
                 {
                     return y;
                 }
@@ -60,12 +64,13 @@ namespace RealLifeOverhaul.Economy.Dealership
             return null;
         }
 
-        // A car onto a lot: the game's vehicle made on a free place and the car added to the stock. Null if it could not be made.
-        private StockCar Arrive(DealerYard y, string type, string colour, int km, int condition, int faults, int known, int cost, CarSource source)
+        // A car onto a lot: the game's vehicle made on a free place and the car added to the stock. Null if it could not be
+        // made. Unless the car is one a place was held for (a delivery), a place held for another is not taken.
+        private StockCar Arrive(DealerYard y, string type, string colour, int km, int condition, int faults, int known, int cost, CarSource source, bool held = false)
         {
             BuildingRegistration reg = RegOf(y);
             int spot = y.FreeSpot();
-            if (reg == null || spot < 0)
+            if (reg == null || spot < 0 || (!held && _state.Room(y) <= 0))
             {
                 return null;
             }
@@ -82,6 +87,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             car.Asking = DealerRules.Asking(Worth(car, Prices.Level));
             y.Cars.Add(car);
             _ids.Add(id);
+            DealerRules.Most(y, DealerCatalogue.TallyLot, y.Cars.Count);
+            Advance(y);
             return car;
         }
 
@@ -101,6 +108,10 @@ namespace RealLifeOverhaul.Economy.Dealership
                 return Refuse(why);
             }
             BuildingRegistration reg = RegOf(y);
+            if (l.Kind == ListingKind.Wholesale)
+            {
+                price = DealerRules.WholesalePrice(l.Asking, y.Rep);   // (a respected showroom's perk: the app asks the same)
+            }
             if (!DealerGame.Take(price, DealerLines.BoughtType, DealerGame.Bought(l.Type), reg, false))
             {
                 return Refuse(DealerRefusal.Cash);
@@ -236,16 +247,13 @@ namespace RealLifeOverhaul.Economy.Dealership
                 int fee = DealerRules.BuyersFee(l.Asking, Prices.At(DealerCatalogue.BuyersFeeLeast));
                 DealerYard y = Room(null, out DealerRefusal why);
                 BuildingRegistration reg = y != null ? RegOf(y) : null;
-                bool paid = reg != null && DealerGame.Cash >= l.Asking + fee && DealerGame.Take(l.Asking, DealerLines.BoughtType, DealerGame.Bought(l.Type), reg, false);
-                StockCar car = null;
+                bool paid = reg != null && _state.Deliveries.Count < DealerCatalogue.DeliveriesMost && DealerGame.Cash >= l.Asking + fee
+                            && DealerGame.Take(l.Asking, DealerLines.BoughtType, DealerGame.Bought(l.Type), reg, false);
+                DealerDelivery car = null;
                 if (paid)
                 {
                     DealerGame.Take(fee, DealerLines.FeeKey, DealerGame.Named(reg), reg, true);
-                    car = Arrive(y, l.Type, l.Colour, l.Km, l.Condition, l.Faults, l.Inspected ? l.Faults : 0, l.Asking + fee, CarSource.Auction);
-                    if (car == null)
-                    {
-                        DealerGame.Give(l.Asking + fee, DealerLines.BoughtType, DealerGame.Bought(l.Type), reg);
-                    }
+                    car = Ship(l, y, l.Asking + fee, now);   // (on its way: its place on the lot is held until it comes)
                 }
                 if (car == null)
                 {
@@ -256,8 +264,9 @@ namespace RealLifeOverhaul.Economy.Dealership
                     continue;
                 }
                 Book(y, 0, l.Asking + fee, 0, 0);
-                Tell(NotificationType.Info, "reallife_dealer_note_won", new Dictionary<string, string>(3) { { "car", DealerGame.CarName(l.Type) }, { "price", DealerText.Money(l.Asking) }, { "name", y.Name } },
-                    TabStock, CarRow(car));
+                Logger?.Info("Dealership: a " + l.Type + " won at the trade auction for " + l.Asking + " and a fee of " + fee + "; it arrives at '" + y.Name + "' at hour " + car.Due + ".");
+                Tell(NotificationType.Info, "reallife_dealer_note_won", new Dictionary<string, string>(4)
+                    { { "car", DealerGame.CarName(l.Type) }, { "price", DealerText.Money(l.Asking) }, { "name", y.Name }, { "when", DealerText.When(car.Due) } }, TabStock, DeliveryRow(car));
             }
             if (DealerRules.SaleDue(_state, now % 24))
             {
@@ -329,6 +338,22 @@ namespace RealLifeOverhaul.Economy.Dealership
                 DealerGame.Give(m.Financed, DealerLines.FinanceKey, DealerGame.Named(reg), reg);   // (no room for one more plan: the finance is sold on to a bank at once)
             }
 
+            // The extras the buyer takes on top of the car, each on its own line, bought in by the showroom as it sells them.
+            int extras = y.Extras ? d.Extras : 0, extrasIn = 0, extrasCost = 0;
+            for (int e = 0; e < DealerCatalogue.ExtraKinds; e++)
+            {
+                if ((extras & (1 << e)) == 0)
+                {
+                    continue;
+                }
+                int sell = DealerRules.ExtraPrice(price, e, Prices.At(DealerCatalogue.ExtraLeast[e]));
+                int buy = DealerRules.ExtraCost(sell, e);
+                DealerGame.Give(sell, DealerLines.ExtraKeys[e], DealerGame.Named(reg), reg);
+                DealerGame.Take(buy, DealerLines.ExtrasCostKey, DealerGame.Named(reg), reg, true);
+                extrasIn += sell;
+                extrasCost += buy;
+            }
+
             int spot = car.Spot;
             DealerGame.RemoveCar(car.VehicleId);
             _ids.Remove(car.VehicleId);
@@ -350,12 +375,29 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 _state.Sales.RemoveAt(_state.Sales.Count - 1);
             }
-            _state.Sales.Insert(0, new DealerSale { Day = Save.Day, Place = y.Place, Customer = d.Customer, Type = car.Type, Price = price, Cost = car.Cost, Financed = m.OnFinance, Tier = m.Premium > 0 ? tier : -1 });
+            _state.Sales.Insert(0, new DealerSale
+            {
+                Day = Save.Day, Place = y.Place, Customer = d.Customer, Type = car.Type, Price = price, Cost = car.Cost, Financed = m.OnFinance, Tier = m.Premium > 0 ? tier : -1, Extras = extras
+            });
+            Book(y, m.Deposit + m.Allowance + m.Premium + extrasIn, m.Allowance + extrasCost, 0, price - car.Cost + extrasIn - extrasCost);
             y.Today.Sold++;
-            Book(y, m.Deposit + m.Allowance + m.Premium, m.Allowance, 0, price - car.Cost);
+            y.Today.Revenue += price;
+            y.Today.Extras += extrasIn;
+
+            // What the sale does to the showroom's name, and what it counts for its missions.
+            int margin = price - car.Cost;
+            DealerRules.Count(y, DealerCatalogue.TallySold, 1);
+            DealerRules.Count(y, DealerCatalogue.TallyMargin, margin >= DealerCatalogue.Share(price, DealerCatalogue.GoodMargin) ? 1 : 0);
+            DealerRules.Count(y, DealerCatalogue.TallyTradeIn, m.Allowance > 0 ? 1 : 0);
+            DealerRules.Count(y, DealerCatalogue.TallyFinance, m.OnFinance ? 1 : 0);
+            DealerRules.Count(y, DealerCatalogue.TallyExtras, DealerRules.ExtraCount(extras));
+            DealerRules.Count(y, DealerCatalogue.TallyQuick, Save.Day - car.Bought <= DealerCatalogue.QuickDays ? 1 : 0);
+            Repute(y, DealerRules.SaleRep(car.Condition, car.Faults));
+            Advance(y);
             Logger?.Info("Dealership: " + d.Customer + " bought a " + car.Type + " at '" + y.Name + "' for " + price + (byStaff ? " (closed by the staff)" : string.Empty) + ": " + m.Deposit + " today"
                          + (m.Allowance > 0 ? ", a part exchange at " + m.Allowance : string.Empty) + (m.OnFinance ? ", " + m.Financed + " on finance at " + m.Weekly + " a week for " + m.Weeks + " weeks" : string.Empty)
-                         + (m.Premium > 0 ? ", a warranty for " + m.Premium : string.Empty) + "; the car had cost " + car.Cost + ".");
+                         + (m.Premium > 0 ? ", a warranty for " + m.Premium : string.Empty) + (extrasIn > 0 ? ", extras for " + extrasIn + " bought in at " + extrasCost : string.Empty)
+                         + "; the car had cost " + car.Cost + "; reputation now " + y.Rep + ".");
             Tell(NotificationType.Info, byStaff ? "reallife_dealer_note_sold_staff" : "reallife_dealer_note_sold", new Dictionary<string, string>(4)
                 { { "customer", d.Customer }, { "car", DealerGame.CarName(car.Type) }, { "price", DealerText.Money(price) }, { "margin", DealerText.Money(price - car.Cost) } },
                 swapped != null ? TabStock : TabOffers, swapped != null ? CarRow(swapped) : null);
@@ -414,6 +456,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             if (gone)
             {
                 y.Deals.Remove(d);
+                Repute(y, -DealerCatalogue.RepWalked);
                 Tell(NotificationType.Info, "reallife_dealer_note_walked", new Dictionary<string, string>(1) { { "customer", d.Customer } }, TabOffers, null);
             }
             Changed();
@@ -474,6 +517,10 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 return Refuse(_running ? DealerRefusal.Gone : DealerRefusal.Off);
             }
+            if (c.ShopUntil > Now)
+            {
+                return Refuse(DealerRefusal.InWorkshop);
+            }
             BuildingRegistration reg = RegOf(yard);
             int cost = PrepareCost(c);
             if (!DealerGame.Take(cost, DealerLines.PrepareKey, DealerGame.Named(reg), reg, false))
@@ -504,6 +551,10 @@ namespace RealLifeOverhaul.Economy.Dealership
             if (c == null)
             {
                 return Refuse(_running ? DealerRefusal.Gone : DealerRefusal.Off);
+            }
+            if (c.ShopUntil > Now)
+            {
+                return Refuse(DealerRefusal.InWorkshop);
             }
             BuildingRegistration reg = RegOf(yard);
             if (reg == null)

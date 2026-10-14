@@ -1261,7 +1261,8 @@ namespace RealLifeOverhaul.Meta
                 .Fact("showroom_shown", () => Guide.Number(Economy.Dealership.FloorCatalogue.ShownMost))
                 .Fact("showroom_at_once", () => Guide.Number(Economy.Dealership.FloorCatalogue.AtOnce))
                 .Owns(Settings.EconomyDealerId, Settings.EconomyDealerFloorId)
-                .Test("reallife_dealer_test_stock", "reallife_dealer_test_customers", "reallife_dealer_test_auction", "reallife_dealer_test_week", "reallife_dealer_test_back", "reallife_showroom_test_floor")
+                .Test("reallife_dealer_test_stock", "reallife_dealer_test_customers", "reallife_dealer_test_auction", "reallife_dealer_test_week", "reallife_dealer_test_event", "reallife_dealer_test_arrive",
+                    "reallife_dealer_test_mission", "reallife_dealer_test_back", "reallife_showroom_test_floor")
                 .Data(Economy.Dealership.DealerStore.Key, Economy.Dealership.DealerStore.TestKey, Economy.Dealership.ShowroomBayStore.Key)
                 .Cleanup(() => Economy.Dealership.DealerDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Economy.Dealership.DealerDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second

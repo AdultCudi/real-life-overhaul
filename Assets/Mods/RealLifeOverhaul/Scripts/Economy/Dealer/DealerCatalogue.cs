@@ -188,9 +188,102 @@ namespace RealLifeOverhaul.Economy.Dealership
         public const int PrepareRestore = 650;      // of the condition a car is missing, put back...
         public const int PrepareLeast = 50;         // ...and at least this much
 
+        // How a car's condition draws buyers (thousandths of what it would draw): one that looks tired is passed by. From
+        // 950 up it draws in full, so a new car and one the workshop has been over are alike.
+        public static readonly int[] ConditionDrawAt = { 400, 600, 800, 950 };
+        public static readonly int[] ConditionDraw = { 650, 800, 920, 1000 };
+
+        // ---------------------------------------------------------------- advertising events
+
+        // An event a showroom runs for a few days, booked from the app and paid when booked. Each moves what the rules
+        // already use: its visitors (as points on the building's promotion, in the showroom's own count only and never
+        // past the game's own top of 100, so a campaign of the Company app that has the promotion high already leaves an
+        // event little to add), the share of those looked after who make an offer, a counter's chance, the part exchange,
+        // or a kind of car's draw. One at a time at a showroom.
+        public const int EventKinds = 4;            // an open weekend, test drive days, a part exchange week, a featured kind of car
+        public const int OpenWeekend = 0, TestDriveDays = 1, PartExchangeWeek = 2, FeaturedKind = 3;
+        public static readonly int[] EventCost = { 2400, 1600, 1800, 2000 };   // at the start's prices, paid when booked
+        public static readonly int[] EventDays = { 3, 3, 5, 4 };               // days it runs, the day it is booked the first
+        public static readonly int[] EventPromotion = { 15, 6, 5, 4 };         // points on the building's promotion for the showroom's visitors
+        public static readonly int[] EventOffer = { 1080, 1000, 1060, 1000 };  // the chance a visitor looked after makes an offer, thousandths of itself
+        public static readonly int[] EventAccept = { 0, 120, 0, 0 };           // added to the chance a counter is taken, on an offer made while it runs
+        public static readonly int[] EventDrive = { 0, 250, 0, 0 };            // added to the buyers who ask for a test drive
+        public static readonly int[] EventTradeIn = { 0, 0, 200, 0 };          // added to the buyers who bring a car in part exchange
+        public static readonly int[] EventAllowance = { 0, 0, 40, 0 };         // added to what is allowed for it, of its worth
+        public const int FeaturedDraw = 1500;       // a car of the featured kind draws this much of what it would (thousandths)...
+        public const int FeaturedOffer = 1150;      // ...and its offer chance is this much of itself
+        public const int EventRest = 5;             // days after an event ends before the same kind may be booked again at that showroom
+        public const int PromotionMost = 100;       // the game's own top of a promotion
+
+        // ---------------------------------------------------------------- the showroom's reputation
+
+        // What buyers think of a showroom, 0 to RepMost, built by good sales and lost by bad ones, and by missions. It opens
+        // perks step by step. It never touches the visitors: those are the promotion's, which Standing's customers already move.
+        public const int RepMost = 1000;
+        public static readonly int[] RepSteps = { 0, 100, 250, 450, 700 };   // where each step starts: new, known locally, trusted, respected, renowned
+        public const int RepSale = 8;               // a car sold to a customer
+        public const int RepGoodCar = 2;            // ...and this more for one in condition of at least RepGoodAt
+        public const int RepGoodAt = 900;
+        public const int RepFault = 6;              // taken for each fault the buyer finds that the showroom did not put right...
+        public const int RepFaultsMost = 18;        // ...at most this for one car
+        public const int RepWalked = 2;             // a buyer who walks away after the counters
+        public const int RepLapsed = 1;             // an offer left to lapse with no answer
+        public const int RepClaim = 2;              // a warranty claim paid: a promise kept
+        public const int RepTakenBack = 4;          // a car on the showroom's finance taken back
+        // The perks, each from its step on.
+        public const int PerkOfferStep = 1, PerkOffer = 10;          // buyers' first offers higher by this share of the asking price
+        public const int PerkExtrasStep = 2, PerkExtras = 40;        // added to the take-up of each extra and warranty
+        public const int PerkWholesaleStep = 3, PerkWholesale = 10;  // the wholesaler's price lower by this share
+        public const int PerkConvertStep = 4, PerkConvert = 1080;    // the offer chance, thousandths of itself
+
+        // ---------------------------------------------------------------- missions
+
+        // What a showroom has done, counted for its missions (its tallies), and the missions: what each counts, how many
+        // it needs and the reputation it gives once done. Each is done once, at its showroom.
+        public const int Tallies = 10;
+        public const int TallySold = 0, TallyMargin = 1, TallyTradeIn = 2, TallyFinance = 3, TallyExtras = 4, TallyWorkshop = 5, TallyEvents = 6, TallyDelivered = 7, TallyQuick = 8, TallyLot = 9;
+        public const int QuickDays = 3;             // a car sold within this many days of coming onto the lot is a quick sale
+        public const int GoodMargin = 100;          // a sale whose margin is at least this share of its price counts as a good one
+        public static readonly int[] MissionTally = { TallySold, TallyLot, TallyEvents, TallyTradeIn, TallyFinance, TallyExtras, TallyWorkshop, TallyDelivered, TallyQuick, TallySold, TallyMargin, TallySold };
+        public static readonly int[] MissionTarget = { 1, 6, 1, 2, 3, 5, 3, 2, 3, 10, 5, 50 };
+        public static readonly int[] MissionReward = { 20, 20, 15, 25, 25, 30, 25, 25, 30, 40, 40, 80 };
+        public static int Missions => MissionTally.Length;
+
+        // ---------------------------------------------------------------- extras sold with a car
+
+        // Beyond the warranty: what a buyer may take on top of the car, each at its own share of the price, bought in by
+        // the showroom at a share of what it sells it for, and taken by some of the buyers it is offered to.
+        public const int ExtraKinds = 4;            // paint and interior protection, a service plan, an accessories pack, tyre and wheel cover
+        public static readonly int[] ExtraPrice = { 15, 25, 10, 20 };         // of the car's price
+        public static readonly int[] ExtraLeast = { 150, 250, 100, 200 };     // at the start's prices
+        public static readonly int[] ExtraCost = { 350, 550, 500, 700 };      // what the showroom pays for it, of what it sells it for
+        public static readonly int[] ExtraTakeUp = { 220, 160, 250, 120 };    // buyers offered it who take it
+        public const int ExtraKeen = 50;            // a keen buyer takes each this much more often
+
+        // ---------------------------------------------------------------- the workshop
+
+        // Deeper than preparing: the car goes into the showroom's workshop for a day or more, off show, and comes back with
+        // every fault found and put right (the hidden ones too) and most of its missing condition back. The same condition
+        // and faults as the inspection and preparing use.
+        public const int WorkshopBays = 2;          // cars one showroom's workshop works on at once
+        public const int WorkshopBase = 250;        // at the start's prices: the bay and a day's labour
+        public const int WorkshopShare = 350;       // and this share of what the missing condition takes off its worth new...
+        public const int WorkshopRestore = 900;     // ...for this share of the condition still missing once the faults are put right
+        public const int WorkshopLeast = 100;       // ...and at least this much of it
+        public const int WorkshopHoursLeast = 24, WorkshopHoursMost = 72;   // how long the work takes: a day, and an hour more for each WorkshopPerHour missing
+        public const int WorkshopPerHour = 10;
+
+        // ---------------------------------------------------------------- deliveries
+
+        public const int DeliveryDaysLeast = 2, DeliveryDaysMost = 3;   // a lot won at the trade auction arrives this many days later...
+        public const int DeliveryHour = 8;          // ...at this hour
+        public const int DeliveriesMost = 16;       // cars on their way at once
+
         // ---------------------------------------------------------------- what is kept
 
-        public const int WeekBooks = 7;             // days of figures kept for each dealership
+        public const int WeekBooks = 7;             // days of figures a week's sums are of
+        public const int ReportDays = 60;           // days of figures kept for each showroom, for its reports
+        public const int AverageDays = 7;           // the line over a report's bars: the average of this many days
         public const int SalesKept = 40;            // recent sales kept for the app
         public const int NameMost = 32;
 

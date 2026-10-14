@@ -55,38 +55,37 @@ namespace RealLifeOverhaul.Economy.Dealership
             return DealerColumns.Lots;
         }
 
-        private readonly DealerBook _weekSum = new DealerBook();
+        private readonly DealerBook _weekSum = new DealerBook(), _weekDay = new DealerBook();
 
+        // The six days before today of a showroom's kept days (today's book is added by whoever shows the week).
         private DealerBook Week(DealerYard y)
         {
-            _weekSum.Clear(-1);
-            for (int i = 0; i < y.Week.Length; i++)
+            DealerState state = _director.State;
+            int today = SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0;
+            if (state == null)
             {
-                DealerBook b = y.Week[i];
-                if (b.Day < 0)
-                {
-                    continue;
-                }
-                _weekSum.Visitors += b.Visitors;
-                _weekSum.Served += b.Served;
-                _weekSum.Lost += b.Lost;
-                _weekSum.Offers += b.Offers;
-                _weekSum.Sold += b.Sold;
-                _weekSum.Takings += b.Takings;
-                _weekSum.Bought += b.Bought;
-                _weekSum.Claims += b.Claims;
-                _weekSum.Margin += b.Margin;
+                _weekSum.Clear(-1);
+                return _weekSum;
             }
+            DealerReport.Sum(state, y.Place, today - DealerCatalogue.WeekBooks + 1, today - 1, today, _weekSum, _weekDay);
             return _weekSum;
         }
 
         private void WriteYard(InfoBox box, DealerYard y, BuildingRegistration reg)
         {
             DealerBook w = Week(y);
+            int day = SaveGameManager.Current.Day;
             box.Title(y.Name);
             if (reg != null && DealerGame.Salespeople(reg) == 0)
             {
                 box.Line(DealerText.T("reallife_dealer_yard_no_staff"));
+            }
+            int step = DealerRules.Step(y.Rep);
+            box.Line(DealerText.Fill("reallife_dealer_yard_rep", "rep", y.Rep.ToString(), "step", DealerText.Step(step),
+                "next", step + 1 < DealerCatalogue.RepSteps.Length ? DealerText.T("reallife_dealer_rep_next", "points", DealerCatalogue.RepSteps[step + 1].ToString()) : DealerText.T("reallife_dealer_rep_top")));
+            if (y.EventOn(day))
+            {
+                box.Line(DealerText.Fill("reallife_dealer_yard_event", "event", DealerText.Event(y.Event, y.Feature), "day", FinanceText.Day(y.EventUntil)));
             }
             box.Line(y.Laid ? DealerText.T("reallife_dealer_yard_lot", "cars", y.Cars.Count.ToString(), "places", y.Spots.Count.ToString()) : DealerText.T("reallife_dealer_yard_unlaid"));
             box.Line(DealerText.Fill("reallife_dealer_yard_today", "visitors", y.Today.Visitors.ToString(), "served", y.Today.Served.ToString(), "lost", y.Today.Lost.ToString(),
@@ -100,6 +99,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, y.Finance ? "reallife_dealer_button_finance_off" : "reallife_dealer_button_finance_on", () => _director.OfferFinance(y.Place, !y.Finance));
             InfoBox.Button(buttons, InfoBox.Negative, y.Warranty ? "reallife_dealer_button_warranty_off" : "reallife_dealer_button_warranty_on", () => _director.OfferWarranty(y.Place, !y.Warranty));
+            InfoBox.Button(buttons, InfoBox.Additional, y.Extras ? "reallife_dealer_button_extras_off" : "reallife_dealer_button_extras_on", () => _director.OfferExtras(y.Place, !y.Extras));
             Transform more = box.ButtonRow();
             if (reg != null && DealerGame.Inside(reg))
             {

@@ -93,8 +93,14 @@ namespace RealLifeOverhaul.Economy.Dealership
             int worth = _director.Worth(l);
             box.Title(DealerGame.CarName(l.Type) + "  " + DealerGame.ColourName(l.Colour));
             box.Line(DealerText.T("reallife_dealer_new_what", "km", DealerText.Km(l.Km)));
-            box.Line(DealerText.Fill("reallife_dealer_new_money", "price", DealerText.Money(l.Asking), "worth", DealerText.Money(worth), "asking", DealerText.Money(DealerRules.Asking(worth))));
             string yard = ChooseYard(box, state);
+            DealerYard to = yard != null ? state.Yard(yard) : null;
+            int price = to != null ? DealerRules.WholesalePrice(l.Asking, to.Rep) : l.Asking;   // (a respected showroom's perk, as the director charges it)
+            box.Line(DealerText.Fill("reallife_dealer_new_money", "price", DealerText.Money(price), "worth", DealerText.Money(worth), "asking", DealerText.Money(DealerRules.Asking(worth))));
+            if (price < l.Asking)
+            {
+                box.Line(DealerText.T("reallife_dealer_new_perk", "price", DealerText.Money(l.Asking)));
+            }
             if (yard == null)
             {
                 box.Line(DealerText.T(state.Yards.Count == 0 ? "reallife_dealer_refuse_off" : "reallife_dealer_no_room"));
@@ -103,9 +109,9 @@ namespace RealLifeOverhaul.Economy.Dealership
             if (yard != null)
             {
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_dealer_button_buy", () => Confirm("reallife_dealer_q_buy_title",
-                    DealerText.T("reallife_dealer_q_buy", "car", DealerGame.CarName(l.Type), "price", DealerText.Money(l.Asking)), () =>
+                    DealerText.T("reallife_dealer_q_buy", "car", DealerGame.CarName(l.Type), "price", DealerText.Money(price)), () =>
                     {
-                        if (_director.Buy(l.Id, yard, l.Asking))
+                        if (_director.Buy(l.Id, yard, price))
                         {
                             Pick(null);
                         }

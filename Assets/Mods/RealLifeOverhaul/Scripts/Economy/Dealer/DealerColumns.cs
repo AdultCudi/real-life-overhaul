@@ -17,6 +17,8 @@ namespace RealLifeOverhaul.Economy.Dealership
         public static readonly string[] OfferKinds = { "reallife_dealer_kind_waiting", "reallife_dealer_kind_sold" };
         public const int Plans = 0, Covers = 1;
         public static readonly string[] FinanceKinds = { "reallife_dealer_kind_plans", "reallife_dealer_kind_covers" };
+        public const int GrowthEvents = 0, GrowthMissions = 1, GrowthRep = 2;
+        public static readonly string[] GrowthKinds = { "reallife_dealer_kind_events", "reallife_dealer_kind_missions", "reallife_dealer_kind_rep" };
 
         public static readonly TableSpec Off = new TableSpec(App, "Off").Column("reallife_dealer_col_car", 600f, TableSort.None, flexible: true);
 
@@ -84,5 +86,19 @@ namespace RealLifeOverhaul.Economy.Dealership
             .Column("reallife_dealer_col_margin", 230f, TableSort.Money, sums: true)
             .Column("reallife_dealer_col_waiting", 200f, TableSort.Number, right: true)
             .Empty("reallife_dealer_empty_lots");
+
+        /// <summary>Growth: 0 event, mission or step, 1 showroom, 2 days, progress or reputation, 3 cost, reward or next step, 4 what it does, 5 state.</summary>
+        public static readonly TableSpec Growth = new TableSpec(App, "Growth")
+            .Column("reallife_dealer_col_what", 340f, TableSort.Text)
+            .Column("reallife_dealer_col_dealership", 280f, TableSort.Text)
+            .Column("reallife_dealer_col_figure", 200f, TableSort.Number)
+            .Column("reallife_dealer_col_gives", 200f, TableSort.Number)
+            .Column("reallife_dealer_col_does", 520f, TableSort.Text, flexible: true)
+            .Column("reallife_dealer_col_state", 280f, TableSort.Text, right: true)
+            .Filter("reallife_dealer_all_growth", GrowthKinds)
+            .Empty("reallife_dealer_empty_growth");
+
+        /// <summary>Reports: the table is hidden behind the report's page; one column for whoever asks for it.</summary>
+        public static readonly TableSpec Reports = new TableSpec(App, "Reports").Column("reallife_dealer_col_what", 600f, TableSort.None, flexible: true);
     }
 }

@@ -28,7 +28,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 DealerYard yard = state.Yards[y];
                 byYard.Names.Add(yard.Name);
-                free += yard.FreeSpots();
+                free += state.Room(yard);
                 for (int c = 0; c < yard.Cars.Count; c++)
                 {
                     StockCar car = yard.Cars[c];
@@ -43,7 +43,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                     Money(row, 5, car.Asking, car.Asking < car.Cost ? TableRow.Red : TableRow.Plain);
                     Money(row, 6, worth);
                     Count(row, 7, day - car.Bought, day - car.Bought >= 30 ? TableRow.Yellow : TableRow.Plain);
-                    row.Set(8, State(yard, car, now), car.OutUntil > now ? TableRow.Yellow : TableRow.Plain);
+                    row.Set(8, State(yard, car, now), car.OutUntil > now || car.ShopUntil > now ? TableRow.Yellow : TableRow.Plain);
                     cars++;
                     worthAll += worth;
                     if (car.Id == pickedId)
@@ -53,12 +53,14 @@ namespace RealLifeOverhaul.Economy.Dealership
                     }
                 }
             }
+            WriteWays(state, level);
             if (state.Yards.Count == 0)
             {
                 Say(DealerText.T("reallife_dealer_row_no_dealership"));
             }
             if (picked != null)
             {
+                _now = now;
                 WriteCar(box, pickedYard, picked, level, day);
                 return spec;
             }
@@ -75,6 +77,10 @@ namespace RealLifeOverhaul.Economy.Dealership
 
         private string State(DealerYard yard, StockCar car, int now)
         {
+            if (car.ShopUntil > now)
+            {
+                return DealerText.T("reallife_dealer_state_workshop", "when", DealerText.When(car.ShopUntil));
+            }
             if (car.OutUntil > now)
             {
                 return DealerText.T("reallife_dealer_state_driving");
@@ -125,6 +131,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                         Pick(null);
                     }
                 }, true));
+            WriteWorkshop(box, buttons, yard, car);
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, GuideTitle);
         }
