@@ -27,7 +27,9 @@ namespace RealLifeOverhaul.Ledger
     /// Everything is placed when the page is written (opened or turned, in the language of the moment), never per frame:
     /// the type is sized to the sheet, the columns are laid out as shallow as holds their words (balanced), and what a
     /// short paper leaves goes to a larger type, the index's chart and the headline. The edition itself is put together
-    /// once a morning (LedgerDirector).
+    /// once a morning (LedgerDirector). A page is laid out once for each paper, language, sheet size and face
+    /// (LedgerPageStamp): turned to again, or the paper opened again, for the same, it is the page as it was laid out, and
+    /// costs nothing but the tab. The page itself is built the first time the paper is opened (GameUi.PhoneApp.Ready).
     /// </summary>
     public sealed partial class LedgerPage
     {
@@ -54,6 +56,7 @@ namespace RealLifeOverhaul.Ledger
         private readonly List<LedgerQuote> _quotes = new List<LedgerQuote>(160);
         private readonly RectTransform[] _pages = new RectTransform[Pages];
         private readonly Rules[] _rules = new Rules[Pages];
+        private readonly LedgerPageStamp[] _laid = new LedgerPageStamp[Pages];   // what each page was last laid out for (Turn)
 
         private PhoneApp _app;
         private bool _gaveUp;
@@ -208,6 +211,12 @@ namespace RealLifeOverhaul.Ledger
             {
                 return;
             }
+            LedgerPageStamp now = Stamp();
+            if (now.Same(_laid[_page]))
+            {
+                return;   // laid out for this paper, language, sheet and face already: its texts, rules and chart are as they were written
+            }
+            _laid[_page] = default(LedgerPageStamp);   // (until this one is written whole)
             MeasureFace(_page == Front ? _fBox : _page == Markets ? _mIndex : _pLegend);
             Rules rules = _rules[_page];
             rules.Begin();
@@ -227,6 +236,24 @@ namespace RealLifeOverhaul.Ledger
                 default: WritePrices(_edition, rules); break;
             }
             rules.End();
+            _laid[_page] = now;
+        }
+
+        // What the page that shows would be laid out for now (LedgerPageStamp).
+        private LedgerPageStamp Stamp()
+        {
+            return new LedgerPageStamp
+            {
+                Paper = _special != null ? (object)_special : _edition,
+                Language = Localizor.LocalizorManager.LoadedLocale,
+                Width = _sheet.sizeDelta.x,
+                Height = _height,
+                Pixel = _px,
+                Face = _face,
+                Copy = _director.CopyPrice,
+                Week = _director.WeekPrice,
+                Laid = true
+            };
         }
 
         // ---------------------------------------------------------------- building it from the game's parts
@@ -281,6 +308,7 @@ namespace RealLifeOverhaul.Ledger
 
             _face = LedgerType.Find();
             _measured = false;
+            System.Array.Clear(_laid, 0, _laid.Length);   // new pages: none is laid out yet
             for (int i = 0; i < Pages; i++)
             {
                 var go = new GameObject("Page" + i, typeof(RectTransform));
