@@ -457,9 +457,14 @@ namespace RealLifeOverhaul.Leisure
     }
 
     /// <summary>
-    /// Taking in the view at one of the city's landmarks: the player stops, lifts the phone and
-    /// takes a picture (the mod's take_photo, with its phone), and the place is ticked off this
-    /// save's list. The first sight of a place lifts the mood; the last one on the list more so.
+    /// Taking in the view at one of the city's landmarks: the player stops, turns their back to it
+    /// and takes a selfie with it behind them (the mod's selfie clip, with its phone: held out at
+    /// arm's length a little above the eyes, the screen to the face, then lowered), and the place
+    /// is ticked off this save's list. The first sight of a place lifts the mood; the last one on
+    /// the list more so. The turn is LeisureBody's (a third of a second, over the clip's first
+    /// moments while the phone is still at the chest), and which way is SightseeingRules'. A
+    /// bundle without the selfie plays take_photo where they stand. Only the local player's body
+    /// is moved; nothing is sent to anybody in a Going Public session.
     /// </summary>
     public sealed class Sightseeing : LeisureActivity
     {
@@ -487,8 +492,14 @@ namespace RealLifeOverhaul.Leisure
             Anchor = Ctx.Position;
             Leash = 3f;
             Ctx.Body.Hold();
-            bool photo = Ctx.Body.Play("take_photo", null, 0.3f);
-            _doneAt = now + (photo ? 5.2f : 2.5f);
+            bool selfie = Ctx.Body.Play(SightseeingRules.SelfieClip, null, 0.3f);
+            bool photo = selfie || Ctx.Body.Play(SightseeingRules.PhotoClip, null, 0.3f);
+            Vector3 at = Ctx.Position;
+            if (selfie && SightseeingRules.BackTo(at.x, at.z, _mark.Position.x, _mark.Position.z, out float x, out float z))
+            {
+                Ctx.Body.Face(at + new Vector3(x, 0f, z));   // the landmark behind them in the picture
+            }
+            _doneAt = now + SightseeingRules.Lasts(photo);
             Show(T("reallife_leisure_sights_looking", "place", T(_mark.NameKey)));
             return true;
         }
