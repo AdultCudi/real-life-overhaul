@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Tech
     {
         private const int PageCap = 0, PageRaise = 1;
         private static readonly long[] FundSteps = { 1000000, 5000000, 25000000, 100000000 };   // cents at the start's prices
-        private int _fundStep = 1, _chief;
+        private int _fundStep = 1;
         private readonly List<Person> _chiefs = new List<Person>(16);
 
         // ---------------------------------------------------------------- startups

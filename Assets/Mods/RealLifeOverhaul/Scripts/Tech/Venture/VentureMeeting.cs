@@ -56,7 +56,7 @@ namespace RealLifeOverhaul.Tech
         private PlayerController _held;
         private int _round, _asked, _score;
         private string _heard = string.Empty;
-        private bool _over, _caught, _leaving;
+        private bool _over, _leaving;
         private float _shownAt;
 
         public VentureMeeting(TechDirector director)
@@ -101,7 +101,6 @@ namespace RealLifeOverhaul.Tech
             _round = 0;
             _asked = 0;
             _over = false;
-            _caught = false;
             Active = true;
             UIs uis = InstanceBehavior<UIs>.Instance;
             if (uis != null && uis.fullMenu != null && FullMenu.IsOpen)
@@ -279,7 +278,6 @@ namespace RealLifeOverhaul.Tech
                 int catchChance = vc.Diligence * (option == 1 ? 45 : 90) / 100;
                 if (UnityEngine.Random.Range(0, 1000) < catchChance)
                 {
-                    _caught = true;
                     _director.VcCaught(_place, _vc);
                     Caught();
                     return true;
