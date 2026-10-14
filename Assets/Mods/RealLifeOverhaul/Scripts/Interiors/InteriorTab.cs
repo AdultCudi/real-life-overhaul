@@ -383,6 +383,7 @@ namespace RealLifeOverhaul.Interiors
                 case 3: WriteRules(reg); break;
                 default: WriteEffects(s, reg); break;
             }
+            Meta.SettingsApp.Link(_right, "interiors");   // the interiors' sliders, in the Settings app
             Meta.Guide.Point(_right, GuideTitle);
             _right.Done();
             if (_rightScroll != null)

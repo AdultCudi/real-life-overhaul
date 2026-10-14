@@ -1,4 +1,7 @@
-0.10.4
+0.11.0
+
+New
+- The mod's options are in an app on your phone, Mod settings: a tab for each group, every option with its value now, a switch, a choice or a number to change it in the box beside the list, what an option needs with a button that switches that on, a search across every group, and the preset in use or the options that differ from it. It changes the same choices as the Mods tab, which has a button that opens it.
 
 Fixed
-- Professional jobs are worked at your own desk, as the game's own job at El Gato Food Market is. Go to work, click your desk and press Start working on the game's work panel, with its fast forward and skip. Where a building has no desk for the job, one is set up, and days from home are worked at your home computer. The Career app's My job page says where your desk is.
+- Persona's education box grows to hold every course, and the left column scrolls to the last one. Group headings have no status mark.

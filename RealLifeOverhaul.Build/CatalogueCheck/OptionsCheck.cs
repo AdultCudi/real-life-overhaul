@@ -392,6 +392,8 @@ namespace RealLifeOverhaul
             Check(blockMs < 2.0, "looking at every row's needs takes " + blockMs.ToString("0.00") + " ms");
             Console.WriteLine($"  {checks} checks of the options page");
             if (checks < 60) fail("options: only " + checks + " checks ran");
+
+            SettingsAppCheck.Run(fail, locale, src, built, tests, labelOf);
         }
     }
 }

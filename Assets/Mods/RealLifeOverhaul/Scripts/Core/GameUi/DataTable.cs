@@ -227,6 +227,12 @@ namespace RealLifeOverhaul.GameUi
             SelectRow(null, null);
         }
 
+        /// <summary>The next Show brings the selected row into view: a row picked from elsewhere (a search, another tab) is scrolled to.</summary>
+        public void RevealNext()
+        {
+            _jump = true;
+        }
+
         // The rows in the model's order, then the sentence for a filter that left nothing, or the totals.
         private void Fill()
         {

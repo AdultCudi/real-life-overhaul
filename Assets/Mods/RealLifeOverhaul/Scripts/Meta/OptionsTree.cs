@@ -208,7 +208,7 @@ namespace RealLifeOverhaul.Meta
         public static readonly TreeGroup[] Groups =
         {
             G(StartId,
-                S("guide").Buttons("reallife_meta_guide_button"),
+                S("guide").Buttons("reallife_meta_settings_button", "reallife_meta_guide_button"),
                 S("presets").Buttons("reallife_meta_preset_button_relaxed", "reallife_meta_preset_button_standard", "reallife_meta_preset_button_realistic",
                     "reallife_meta_preset_button_hardcore").Also("difficulty easy hard realism"),
                 S("choices").Buttons("reallife_meta_reset_button", "reallife_meta_export_button", "reallife_meta_import_button").Also("settings file share defaults")).Flat(),

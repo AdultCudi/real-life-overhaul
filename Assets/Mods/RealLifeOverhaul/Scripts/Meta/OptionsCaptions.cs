@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Meta
         // Buttons whose word is not "Run": the row's label key, then the word's key.
         private static readonly Dictionary<string, string> CaptionByLabel = new Dictionary<string, string>(StringComparer.Ordinal)
         {
+            { SettingsButtonKey, CaptionOpen },
             { "reallife_meta_guide_button", CaptionOpen },
             { AboutKey, CaptionOpen },
             { "reallife_meta_welcome_button", CaptionOpen },

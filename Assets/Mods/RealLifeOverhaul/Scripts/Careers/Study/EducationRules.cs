@@ -66,6 +66,57 @@ namespace RealLifeOverhaul.Careers
             EducationGroup.Degree, EducationGroup.Postgrad, EducationGroup.Nursing, EducationGroup.Short, EducationGroup.Diploma, EducationGroup.Online, EducationGroup.Certificate
         };
 
+        /// <summary>The least white kept under the last row when the game's own rows leave less (or none).</summary>
+        public const float LeastMargin = 30f;
+
+        /// <summary>The room a heading's row keeps at its right for the count of its courses.</summary>
+        public const float CountRoom = 220f;
+
+        /// <summary>
+        /// The education box's height for its rows. The game's box is a fixed height (a LayoutElement and the size it was
+        /// drawn at) made for the game's own rows, and Persona's left column lays it out by that size, so rows added to it
+        /// are drawn past its white and past the end of the column's scroll. The box is given the height its rows need:
+        /// from its top to the rows' top, the rows, and under them the white the game's own rows leave in the game's box
+        /// (at least <see cref="LeastMargin"/>). Never less than the game's own height.
+        /// </summary>
+        public static float BoxHeight(float baseHeight, float rowsTop, float gameRows, float allRows)
+        {
+            float margin = baseHeight - rowsTop - gameRows;
+            if (margin < LeastMargin)
+            {
+                margin = LeastMargin;
+            }
+            return Math.Max(baseHeight, rowsTop + allRows + margin);
+        }
+
+        /// <summary>
+        /// A heading's name width in a row <paramref name="rowWidth"/> wide: from where the name starts to the room kept
+        /// for the count, which stands at the row's right where a course's status mark would be (a heading has none).
+        /// </summary>
+        public static float HeadingNameWidth(float rowWidth, float nameLeft, float rightMargin)
+        {
+            return Math.Max(0f, rowWidth - nameLeft - rightMargin - CountRoom);
+        }
+
+        /// <summary>
+        /// Whether a heading's words stay on one line in a name <paramref name="width"/> wide, at the row's 28 points in
+        /// bold: about 17 for a letter of the Latin alphabet and 30 for a Chinese character (a generous measure, so a
+        /// heading that passes has room to spare).
+        /// </summary>
+        public static bool HeadingFits(string words, float width)
+        {
+            if (string.IsNullOrEmpty(words))
+            {
+                return true;
+            }
+            float wide = 0f;
+            for (int i = 0; i < words.Length; i++)
+            {
+                wide += words[i] >= 0x2E80 ? 30f : 17f;
+            }
+            return wide <= width;
+        }
+
         /// <summary>reallife_persona_edu_group_{key} for each group, in the enum's order.</summary>
         public static readonly string[] GroupKeys = { "degree", "postgrad", "nursing", "short", "diploma", "online", "certificate" };
 
