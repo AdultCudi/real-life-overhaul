@@ -21,6 +21,11 @@ namespace RealLifeOverhaul.Markets
     ///     sold before its end    every payment still to come and what it repays, discounted at the yield for what is left
     ///                            of its term: so its price falls when rates rise and rises when they fall; less a small
     ///                            spread. A deposit is closed instead, for what it repays less a few months' interest.
+    ///     one purchase           from the least to the larger of a flat sum and a share of what the player is worth, up
+    ///                            to a cap (<see cref="Most(int, long)"/>); a ladder spreads one sum evenly over the
+    ///                            Treasury's terms, each piece a purchase and a holding of its own (<see cref="Ladder"/>)
+    ///     a rollover             at its end a bond set to roll over is bought again, the same kind, term and bank at the
+    ///                            day's yield, with what it repays (<see cref="Rolled"/>)
     /// Over a year a bond pays its yield, near the bank rate: less than shares are expected to return, and with no fall
     /// of more than its price can move when rates move.
     /// </summary>
@@ -87,8 +92,37 @@ namespace RealLifeOverhaul.Markets
             return Math.Max(1L, (long)BondCatalogue.MostAtStart * Math.Max(100, priceLevel) / 1000L);
         }
 
+        /// <summary>
+        /// The most one purchase may be for a player worth so much (money: what the game counts them worth, with what they hold
+        /// on the market; nothing or less, the flat sum): the larger of the flat sum and <see cref="BondCatalogue.MostWorthPct"/>
+        /// of their worth, never over the cap; both at the city's price level. Grows with the player's wealth, so a large
+        /// investor is not held to the flat sum a beginner is, and no purchase is larger than a city's issue believably sells.
+        /// </summary>
+        public static long Most(int priceLevel, long worth)
+        {
+            long flat = Most(priceLevel);
+            long cap = Math.Max(flat, (long)BondCatalogue.MostCapAtStart * Math.Max(100, priceLevel) / 1000L);
+            long share = worth > 0 ? worth / 100L * BondCatalogue.MostWorthPct : 0L;   // (divided first: no sum a save can hold overflows)
+            return Math.Max(flat, Math.Min(cap, share));
+        }
+
+        /// <summary>The cap of one purchase, at the city's price level (what <see cref="Most(int, long)"/> never passes).</summary>
+        public static long Cap(int priceLevel)
+        {
+            return Math.Max(Most(priceLevel), (long)BondCatalogue.MostCapAtStart * Math.Max(100, priceLevel) / 1000L);
+        }
+
         /// <summary>Whether a bond can be bought now for so much money (nothing is changed).</summary>
         public static BondWhy CanBuy(BondBook book, BondOffer offer, long money, long cash, int priceLevel, bool open, bool held, bool on)
+        {
+            return CanBuy(book, offer, money, cash, open, held, on, Least(priceLevel), Most(priceLevel), 1);
+        }
+
+        /// <summary>
+        /// The same with the least and the most one purchase may be given, and how many holdings it makes (a ladder: one for
+        /// each of its terms, all of them room in the book).
+        /// </summary>
+        public static BondWhy CanBuy(BondBook book, BondOffer offer, long money, long cash, bool open, bool held, bool on, long least, long most, int holdings)
         {
             if (!on)
             {
@@ -106,19 +140,62 @@ namespace RealLifeOverhaul.Markets
             {
                 return BondWhy.NoBank;
             }
-            if (book.Holdings.Count >= BondCatalogue.HoldingsMost)
+            if (book.Holdings.Count + Math.Max(1, holdings) > BondCatalogue.HoldingsMost)
             {
                 return BondWhy.Full;
             }
-            if (money < Least(priceLevel))
+            if (money < least)
             {
                 return BondWhy.TooLittle;
             }
-            if (money > Most(priceLevel))
+            if (money > most)
             {
                 return BondWhy.TooMuch;
             }
             return money > cash ? BondWhy.NoCash : BondWhy.None;
+        }
+
+        // ---------------------------------------------------------------- a ladder and a rollover
+
+        /// <summary>The Treasury's terms a ladder spreads a sum over, shortest first, into a list of the catalogue's bonds; how many.</summary>
+        public static int LadderTerms(List<BondDef> into)
+        {
+            into.Clear();
+            for (int i = 0; i < BondCatalogue.All.Length; i++)
+            {
+                if (BondCatalogue.All[i].Kind == BondKind.Treasury)
+                {
+                    into.Add(BondCatalogue.All[i]);
+                }
+            }
+            into.Sort((a, b) => a.TermQuarters.CompareTo(b.TermQuarters));
+            return into.Count;
+        }
+
+        /// <summary>A sum spread evenly over so many pieces: each the same whole money, the units left over one each to the first pieces.</summary>
+        public static void Ladder(long money, int pieces, long[] into)
+        {
+            int n = Math.Max(1, Math.Min(pieces, into.Length));
+            long each = Math.Max(0L, money) / n, rest = Math.Max(0L, money) % n;
+            for (int i = 0; i < into.Length; i++)
+            {
+                into[i] = i < n ? each + (i < rest ? 1L : 0L) : 0L;
+            }
+        }
+
+        /// <summary>
+        /// A bond come to its end bought again: the same kind, term and bank, with the same share of its interest put back
+        /// and still set to roll over, at the yield of the day, for the face given (cents: what it repays, the cents carried
+        /// and the last payment's share put back); its payments from that day. Nothing changes hands: no purchase limit, no
+        /// commission. The number it takes is the book's next.
+        /// </summary>
+        public static BondHolding Rolled(BondHolding h, BondDef d, int id, int yieldBp, long face, int day, int year)
+        {
+            return new BondHolding
+            {
+                Id = id, Def = d.Id, Bank = h.Bank, Issuer = h.Issuer ?? string.Empty, Face = Math.Max(0L, face), Cost = Math.Max(0L, face), RateBp = yieldBp, BoughtDay = day,
+                EndDay = day + TermDays(d, year), Payments = d.Payments, Reinvest = ReinvestOf(h.Reinvest), Test = h.Test, Rollover = true
+            };
         }
 
         /// <summary>A bond bought today for so much money, at its offer's yield; its payments from today.</summary>

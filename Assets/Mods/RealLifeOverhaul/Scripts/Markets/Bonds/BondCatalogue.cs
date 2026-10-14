@@ -36,7 +36,10 @@ namespace RealLifeOverhaul.Markets
     ///                          a quarter point more at a bank whose loans are a point dearer (Economy/BankRules); never sold,
     ///                          only closed early for a few months' interest
     /// Terms and rates are a year of the game's (60 to 365 days, as the save was started). Rates in basis points (bp),
-    /// hundredths of a per cent; prices for each 100 of what is repaid.
+    /// hundredths of a per cent; prices for each 100 of what is repaid. One purchase is at most the larger of a flat sum and a
+    /// share of what the player is worth, up to a cap (BondRules.Most); a ladder spreads one sum evenly over the Treasury's
+    /// terms, a holding each (BondRules.Ladder); a bond set to roll over is bought again at its end, the same kind and term at
+    /// that day's yield (BondRules.Rolled).
     /// </summary>
     public static class BondCatalogue
     {
@@ -54,8 +57,10 @@ namespace RealLifeOverhaul.Markets
         // ---------------------------------------------------------------- buying and selling
 
         public const int LeastAtStart = 500;             // the least that can be put into a bond, at the start's prices (Prices.At)
-        public const int MostAtStart = 2000000;          // the most, in one purchase
-        public const int HoldingsMost = 24;              // bonds held at once
+        public const int MostAtStart = 2000000;          // the most in one purchase, at the start's prices: for a player worth more, a share of it (BondRules.Most)...
+        public const int MostWorthPct = 25;              // ...this share of what they are worth (the game's own figure with what they hold on the market), with "Worked orders and larger bond purchases" on...
+        public const int MostCapAtStart = 250000000;     // ...and never more than this, at the start's prices: a hundredth of a large company's turnover, about the most a city's issue sells to one buyer
+        public const int HoldingsMost = 48;              // bonds held at once: room for ladders of four (an older version reads up to twice its own 24, so none is lost going back)
         public const int SellSpreadTreasuryBp = 10;      // a Treasury bond sold before its end goes for its price less this...
         public const int SellSpreadCityBp = 30;          // ...a city bond for this less
         public const int DepositPenaltyMonths = 3;       // a deposit closed early is repaid less this many months' interest on it
