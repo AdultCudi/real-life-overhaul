@@ -159,7 +159,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     UiClone.Words(_shell.Header, OnlineText.T("reallife_online_app"));
                     box.Title(OnlineText.T("reallife_online_off_title"));
-                    box.Line(OnlineText.T("reallife_online_off_body"));
+                    box.Note(OnlineText.T("reallife_online_off_body"));
                     _picked = null;
                 }
                 else

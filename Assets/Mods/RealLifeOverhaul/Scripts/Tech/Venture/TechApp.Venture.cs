@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Tech
             if (v == null)
             {
                 box.Title(TechText.T("reallife_roles_off_title"));
-                box.Line(TechText.T("reallife_vc_off_body"));
+                box.Note(TechText.T("reallife_vc_off_body"));
                 _picked = null;
                 return TechColumns.Off;
             }
@@ -92,7 +92,8 @@ namespace RealLifeOverhaul.Tech
             long put;
             long mine = VentureRules.PlayerValue(s, out share, out put);
             bool known = s.Diligence || (s.Revealed & 1) != 0;
-            box.Title(TechText.T("reallife_vc_startup_title", "name", s.Name, "sector", TechText.VentureName((Venture)s.Sector)));
+            box.Title(s.Name);
+            box.Subtitle(TechText.VentureName((Venture)s.Sector));
             if (s.Ask != null)
             {
                 box.Line(TechText.Fill("reallife_vc_startup_ask", "amount", TechText.Cents(_director.Level(s.Ask.Amount)), "pre", TechText.Cents(_director.Level(s.Ask.Pre)), "share", TechText.Mille(s.Ask.EquityMille),
@@ -144,7 +145,7 @@ namespace RealLifeOverhaul.Tech
             if (v == null)
             {
                 box.Title(TechText.T("reallife_roles_off_title"));
-                box.Line(TechText.T("reallife_vc_off_body"));
+                box.Note(TechText.T("reallife_vc_off_body"));
                 _picked = null;
                 return TechColumns.Off;
             }
@@ -191,7 +192,7 @@ namespace RealLifeOverhaul.Tech
             {
                 _picked = null;
                 box.Title(TechText.T("reallife_vc_funding_title"));
-                box.Line(TechText.Fill("reallife_vc_funding_about", "days", VentureCatalogue.RaiseDays.ToString(), "growth", TechText.Mille(VentureCatalogue.TargetGrowth), "target", VentureCatalogue.TargetDays.ToString()));
+                box.Note(TechText.Fill("reallife_vc_funding_about", "days", VentureCatalogue.RaiseDays.ToString(), "growth", TechText.Mille(VentureCatalogue.TargetGrowth), "target", VentureCatalogue.TargetDays.ToString()));
                 Meta.Guide.Point(box, StartupsGuide);
             }
             return TechColumns.Funding;
@@ -219,7 +220,7 @@ namespace RealLifeOverhaul.Tech
                     words.Append(h.Kind == (int)HolderKind.Player ? TechText.T("reallife_vc_holder_you") : h.Kind == (int)HolderKind.Pool ? TechText.T("reallife_vc_holder_pool")
                         : VentureCatalogue.Firms[TalentCatalogue.Clamp(h.Who, 0, VentureCatalogue.FirmCount - 1)].Name).Append(' ').Append(TechText.Mille(VentureRules.ShareOf(h, total)));
                 }
-                box.Line(TechText.Pair("reallife_vc_cap_holders", words.ToString()));
+                box.Row("reallife_vc_cap_holders", words.ToString());
                 box.Line(TechText.Fill("reallife_vc_cap_board", "seats", c.BoardSeats.ToString(), "theirs", c.VcSeats.ToString(), "target", TechText.Cents(_director.Level(c.TargetMrr)), "day", c.TargetDay.ToString(),
                     "now", TechText.Cents(_director.FirmMrr(place)), "misses", c.Misses.ToString()));
             }

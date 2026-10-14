@@ -197,7 +197,7 @@ namespace RealLifeOverhaul.Flare
                 {
                     UiClone.Words(_shell.Header, FlareText.T("reallife_flare_app"));
                     box.Title(FlareText.T("reallife_flare_off_title"));
-                    box.Line(FlareText.T("reallife_flare_off_body"));
+                    box.Note(FlareText.T("reallife_flare_off_body"));
                 }
                 else
                 {

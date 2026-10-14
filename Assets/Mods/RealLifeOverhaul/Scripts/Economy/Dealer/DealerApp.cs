@@ -168,7 +168,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 {
                     UiClone.Words(_shell.Header, DealerText.T("reallife_dealer_app"));
                     box.Title(DealerText.T("reallife_dealer_off_title"));
-                    box.Line(DealerText.T("reallife_dealer_off_body"));
+                    box.Note(DealerText.T("reallife_dealer_off_body"));
                     _picked = null;
                 }
                 else

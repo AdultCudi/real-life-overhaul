@@ -214,7 +214,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 {
                     UiClone.Words(_shell.Header, BrandsText.T("reallife_brand_app"));
                     box.Title(BrandsText.T("reallife_brand_off_title"));
-                    box.Line(BrandsText.T("reallife_brand_off_body"));
+                    box.Note(BrandsText.T("reallife_brand_off_body"));
                 }
                 else
                 {

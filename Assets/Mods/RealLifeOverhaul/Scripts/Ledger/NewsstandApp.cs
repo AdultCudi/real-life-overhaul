@@ -426,7 +426,7 @@ namespace RealLifeOverhaul.Ledger
                 {
                     UiClone.Words(_shell.Header, LedgerText.T("reallife_ledger_online_app"));
                     box.Title(LedgerText.T("reallife_ledger_online_off_title"));
-                    box.Line(LedgerText.T("reallife_ledger_online_off_body"));
+                    box.Note(LedgerText.T("reallife_ledger_online_off_body"));
                     Sheet(false);
                     Rows();
                     _table.Show(Titles, _rows, null);
@@ -505,10 +505,10 @@ namespace RealLifeOverhaul.Ledger
             box.Title(LedgerText.T("reallife_ledger_online_app"));
             if (!NewsstandRules.Works(net))
             {
-                box.Line(LedgerText.T(net == NetState.NoHome ? "reallife_ledger_online_box_need_home" : "reallife_ledger_online_box_need_net"));
+                box.Line(LedgerText.T(net == NetState.NoHome ? "reallife_ledger_online_box_need_home" : "reallife_ledger_online_box_need_net"), CellTone.Yellow);
             }
-            box.Line(Pair("reallife_ledger_online_box_net", LedgerDirector.NetWords(net, home)));
-            box.Line(LedgerText.T("reallife_ledger_online_box_pick"));
+            box.Row("reallife_ledger_online_box_net", LedgerPage.Plain(LedgerDirector.NetWords(net, home)));
+            box.Note(LedgerText.T("reallife_ledger_online_box_pick"));
             Transform buttons = box.ButtonRow();
             int first = FirstReadable(s, today);
             if (first >= 0)
@@ -519,7 +519,7 @@ namespace RealLifeOverhaul.Ledger
             {
                 UtilitiesButton(buttons);
             }
-            box.Line(LedgerText.Fill("reallife_ledger_online_box_intro", "hour", LedgerText.Hour(LedgerCatalogue.DeliveryHour)));
+            box.Note(LedgerText.Fill("reallife_ledger_online_box_intro", "hour", LedgerText.Hour(LedgerCatalogue.DeliveryHour)));
             Meta.Guide.Point(box, GuideTitle);
         }
 
@@ -535,17 +535,17 @@ namespace RealLifeOverhaul.Ledger
                 ? (x.Cancelled ? LedgerText.Fill("reallife_ledger_online_box_cancelled", "day", x.PaidUntil.ToString())
                     : LedgerText.Fill("reallife_ledger_online_box_running", "paid", x.PaidUntil.ToString(), "next", (x.PaidUntil + 1).ToString(), "price", LedgerText.Money(price)))
                 : title && pass.Subscribed ? LedgerText.T("reallife_ledger_online_box_by_pass") : LedgerText.T("reallife_ledger_online_box_none");
-            box.Line(Pair("reallife_ledger_online_box_sub", state));
+            box.Row("reallife_ledger_online_box_sub", LedgerPage.Plain(state));
             if (title)
             {
                 string edition = NewsstandRules.Has(s, sub, today) ? LedgerText.T("reallife_ledger_online_today_in")
                     : !NewsstandRules.Covered(s, sub) ? "-"
                     : outNow ? LedgerText.T("reallife_ledger_online_today_waiting") : LedgerText.Fill("reallife_ledger_online_today_at", "hour", LedgerText.Hour(LedgerCatalogue.DeliveryHour));
-                box.Line(Pair("reallife_ledger_online_box_today", edition));
+                box.Row("reallife_ledger_online_box_today", LedgerPage.Plain(edition));
                 Readable(s, sub, today);
                 if (_days.Count > 0)
                 {
-                    box.Line(Pair("reallife_ledger_online_box_editions", _days.Count.ToString()));
+                    box.Row("reallife_ledger_online_box_editions", LedgerPage.Plain(_days.Count.ToString()));
                 }
             }
             NetState net = NetState.Online;
@@ -556,11 +556,11 @@ namespace RealLifeOverhaul.Ledger
                 if (!NewsstandRules.Works(net))
                 {
                     box.Line(LedgerDirector.NetWords(net, home));
-                    box.Line(LedgerText.T(net == NetState.NoHome ? "reallife_ledger_online_box_need_home" : "reallife_ledger_online_box_need_net"));
+                    box.Line(LedgerText.T(net == NetState.NoHome ? "reallife_ledger_online_box_need_home" : "reallife_ledger_online_box_need_net"), CellTone.Yellow);
                 }
             }
-            box.Line(Pair("reallife_ledger_online_box_price", LedgerText.Money(price)));
-            box.Line(Pair("reallife_ledger_online_box_covers", LedgerText.T(NewsstandCatalogue.AboutKeys[sub])));
+            box.Row("reallife_ledger_online_box_price", LedgerPage.Plain(LedgerText.Money(price)));
+            box.Row("reallife_ledger_online_box_covers", LedgerPage.Plain(LedgerText.T(NewsstandCatalogue.AboutKeys[sub])));
             Transform buttons = box.ButtonRow();
             if (title && _days.Count > 0)
             {
@@ -597,7 +597,7 @@ namespace RealLifeOverhaul.Ledger
                 {
                     sum += _director.OnlinePrice(t);
                 }
-                box.Line(LedgerText.Fill("reallife_ledger_online_box_pass_note", "price", LedgerText.Money(price), "sum", LedgerText.Money(sum)));
+                box.Note(LedgerText.Fill("reallife_ledger_online_box_pass_note", "price", LedgerText.Money(price), "sum", LedgerText.Money(sum)));
             }
             box.Line("<i>" + LedgerPage.Plain(LedgerText.T(title ? NewsstandCatalogue.TaglineKeys[sub] : NewsstandCatalogue.AboutKeys[sub])) + "</i>");
             Meta.Guide.Point(box, GuideTitle);
@@ -680,9 +680,9 @@ namespace RealLifeOverhaul.Ledger
             box.Title(name);
             if (!NewsstandRules.Covered(s, title))
             {
-                box.Line(LedgerText.T("reallife_ledger_online_box_kept"));
+                box.Note(LedgerText.T("reallife_ledger_online_box_kept"));
             }
-            box.Line(Pair("reallife_ledger_online_box_edition", DayWords(_day, today)));
+            box.Row("reallife_ledger_online_box_edition", LedgerPage.Plain(DayWords(_day, today)));
             if (_days.Count > 1)
             {
                 int at = _days.IndexOf(_day);

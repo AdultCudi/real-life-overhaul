@@ -63,9 +63,10 @@ namespace RealLifeOverhaul.Economy.Brands
                 return BrandsTables.Applicants;
             }
             box.Title(BrandsText.T("reallife_brand_tab_applicants"));
-            box.Line(BrandsText.Fill("reallife_brand_app_intro", "days", BrandCatalogue.ApplicantDays.ToString(), "most", BrandCatalogue.ApplicantsMost.ToString()));
-            box.Line(BrandsText.Fill("reallife_brand_app_chance", "base", (BrandCatalogue.ArriveBase / 10).ToString(), "per", (BrandCatalogue.ArrivePerPoint / 10f).ToString("0.#")));
-            box.Line(BrandsText.T("reallife_brand_app_tempers"));
+            box.Note(BrandsText.Fill("reallife_brand_app_intro", "days", BrandCatalogue.ApplicantDays.ToString(), "most", BrandCatalogue.ApplicantsMost.ToString()));
+            box.Section("reallife_ibox_sec_how");
+            box.Note(BrandsText.Fill("reallife_brand_app_chance", "base", (BrandCatalogue.ArriveBase / 10).ToString(), "per", (BrandCatalogue.ArrivePerPoint / 10f).ToString("0.#")));
+            box.Note(BrandsText.T("reallife_brand_app_tempers"));
             return BrandsTables.Applicants;
         }
 
@@ -73,16 +74,24 @@ namespace RealLifeOverhaul.Economy.Brands
         {
             int id = a.Id, index = BrandsDirector.Index;
             box.Title(a.Name);
+            box.Subtitle(BrandsText.T("reallife_brand_dist_title", "brand", b.Name, "district", BrandsText.District(a.District)));
+            box.Chip(BrandsText.Temper(a.Temper), (int)a.Temper == 0 ? CellTone.Green : (int)a.Temper == 2 ? CellTone.Yellow : CellTone.Plain);
             if (_dealPage <= 0)
             {
                 box.Line(BrandsText.Fill(a.From != 0 ? "reallife_brand_app_second" : "reallife_brand_app_wants", "brand", b.Name, "district", BrandsText.District(a.District), "day", a.Until.ToString()));
-                box.Line(BrandsText.Fill("reallife_brand_app_capital", "capital", BrandsText.Money(a.Capital), "fitout", BrandsText.Money(FranchiseRules.FitOut(index))));
+                box.Section("reallife_ibox_sec_applicant");
+                box.Row("reallife_brand_col_capital", BrandsText.Money(a.Capital));
+                box.Note(BrandsText.Fill("reallife_brand_app_capital", "capital", BrandsText.Money(a.Capital), "fitout", BrandsText.Money(FranchiseRules.FitOut(index))));
                 if (a.From == 0)
                 {
-                    box.Line(BrandsText.Fill(a.ShopsRun > 0 ? "reallife_brand_app_record" : "reallife_brand_app_record_none", "years", a.Experience.ToString(), "run", a.ShopsRun.ToString(), "closed", a.ShopsClosed.ToString()));
+                    box.Row("reallife_brand_col_years", a.Experience.ToString());
+                    if (a.ShopsRun > 0)
+                    {
+                        box.RowPair("reallife_ibox_shops_run", a.ShopsRun.ToString(), "reallife_ibox_shops_closed", a.ShopsClosed.ToString());
+                    }
                 }
-                box.Line(FinanceText.Pair("reallife_brand_app_temper", BrandsText.Temper(a.Temper)));
-                box.Line(BrandsText.TemperAbout(a.Temper));
+                box.Row("reallife_brand_app_temper", BrandsText.Temper(a.Temper));
+                box.Note(BrandsText.TemperAbout(a.Temper));
                 box.Line(BrandsText.Fill("reallife_brand_app_known", "points", BrandsText.Points(BrandRules.Effective(b, a.District)), "bears", FranchiseRules.Bears(a.Temper, BrandRules.Effective(b, a.District)).ToString()));
                 var first = box.ButtonRow();
                 InfoBox.Button(first, InfoBox.Positive, "reallife_brand_app_terms", () =>
@@ -103,17 +112,19 @@ namespace RealLifeOverhaul.Economy.Brands
             int site = sites.Count > 0 ? BrandCatalogue.Clamp(_site, 0, sites.Count - 1) : -1;
             if (_dealPage == 1)
             {
+                box.Section("reallife_ibox_sec_where");
                 box.Line(BrandsText.T("reallife_brand_deal_where", "district", BrandsText.District(a.District), "count", sites.Count.ToString()));
                 if (sites.Count > 0)
                 {
                     Choose(box, sites.Count, site, i => BrandsText.T("reallife_brand_deal_site", "address", sites[i].Label, "traffic", sites[i].Traffic.ToString()), i => _site = i);
-                    box.Line(BrandsText.T("reallife_brand_deal_site_about"));
+                    box.Note(BrandsText.T("reallife_brand_deal_site_about"));
                 }
                 else
                 {
-                    box.Line(BrandsText.T("reallife_brand_deal_no_site"));
+                    box.Line(BrandsText.T("reallife_brand_deal_no_site"), CellTone.Yellow);
                 }
-                box.Line(BrandsText.T("reallife_brand_deal_length"));
+                box.Section("reallife_ibox_sec_terms");
+                box.Note(BrandsText.T("reallife_brand_deal_length"));
                 Choose(box, BrandCatalogue.Tiers, _length, i => BrandsText.T("reallife_brand_deal_length_value", "years", BrandCatalogue.LengthYears[i].ToString(), "days", (BrandCatalogue.LengthYears[i] * BrandsGame.DaysPerYear).ToString()),
                     i => _length = i);
                 bool exclusive = _exclusive;
@@ -125,7 +136,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 {
                     box.Line(BrandsText.T(exclusive ? "reallife_brand_deal_exclusive_on" : "reallife_brand_deal_exclusive_off"));
                 }
-                box.Line(BrandsText.T("reallife_brand_deal_exclusive_about", "relief", BrandCatalogue.ExclusiveRelief.ToString()));
+                box.Note(BrandsText.T("reallife_brand_deal_exclusive_about", "relief", BrandCatalogue.ExclusiveRelief.ToString()));
                 var second = box.ButtonRow();
                 InfoBox.Button(second, InfoBox.Positive, "reallife_brand_deal_next", () =>
                 {
@@ -141,13 +152,14 @@ namespace RealLifeOverhaul.Economy.Brands
             }
 
             int fee = FranchiseRules.Tier(_fee), royalty = FranchiseRules.Tier(_royalty), levy = FranchiseRules.Tier(_levy), length = FranchiseRules.Tier(_length);
+            box.Section("reallife_ibox_sec_money");
             Choose(box, BrandCatalogue.Tiers, fee, i => BrandsText.T("reallife_brand_deal_fee", "amount", BrandsText.Money(FranchiseRules.EntryFee(a, i, index))), i => _fee = i);
             Choose(box, BrandCatalogue.Tiers, royalty, i => BrandsText.T("reallife_brand_deal_royalty", "share", BrandsText.Bp(BrandCatalogue.RoyaltyBp[i])), i => _royalty = i);
             Choose(box, BrandCatalogue.Tiers, levy, i => BrandsText.T("reallife_brand_deal_levy", "share", BrandsText.Bp(BrandCatalogue.LevyBp[i])), i => _levy = i);
             Refusal answer = FranchiseRules.Answer(state, b, a, fee, royalty, levy, _exclusive, index);
             box.Line(BrandsText.Fill("reallife_brand_deal_burden", "burden", FranchiseRules.Burden(fee, royalty, levy, _exclusive).ToString(), "bears", FranchiseRules.Bears(a.Temper, BrandRules.Effective(b, a.District)).ToString()));
-            box.Line("<b>" + BrandsText.Answer(answer) + "</b>");
-            box.Line(BrandsText.Fill("reallife_brand_deal_support", "base", BrandsText.Money(CompanyCatalogue.AtPrices(BrandCatalogue.SupportBase, index)), "share", BrandsText.Bp(BrandCatalogue.SupportBp)));
+            box.Line("<b>" + BrandsText.Answer(answer) + "</b>", answer == Refusal.None ? CellTone.Green : CellTone.Red);
+            box.Note(BrandsText.Fill("reallife_brand_deal_support", "base", BrandsText.Money(CompanyCatalogue.AtPrices(BrandCatalogue.SupportBase, index)), "share", BrandsText.Bp(BrandCatalogue.SupportBp)));
             var last = box.ButtonRow();
             if (answer == Refusal.None)
             {
@@ -228,9 +240,10 @@ namespace RealLifeOverhaul.Economy.Brands
             else
             {
                 box.Title(BrandsText.T("reallife_brand_tab_agreements"));
-                box.Line(BrandsText.T("reallife_brand_agree_intro"));
-                box.Line(BrandsText.Fill("reallife_brand_agree_cause", "warnings", BrandCatalogue.CauseWarnings.ToString(), "days", BrandCatalogue.FreshDays.ToString()));
-                box.Line(BrandsText.Fill("reallife_brand_agree_unfair", "share", BrandsText.Share(BrandCatalogue.CompensationLeastShare), "points", BrandsText.Lost(BrandCatalogue.UnfairLoss)));
+                box.Note(BrandsText.T("reallife_brand_agree_intro"));
+                box.Section("reallife_ibox_sec_how");
+                box.Note(BrandsText.Fill("reallife_brand_agree_cause", "warnings", BrandCatalogue.CauseWarnings.ToString(), "days", BrandCatalogue.FreshDays.ToString()));
+                box.Note(BrandsText.Fill("reallife_brand_agree_unfair", "share", BrandsText.Share(BrandCatalogue.CompensationLeastShare), "points", BrandsText.Lost(BrandCatalogue.UnfairLoss)));
             }
             return BrandsTables.Agreements;
         }
@@ -249,6 +262,15 @@ namespace RealLifeOverhaul.Economy.Brands
                 _franchisePage = f.Ask != Ask.None || _tab == BrandsDirector.TabAgreements ? 1 : 0;
             }
             box.Title(f.Name);
+            box.Subtitle(BrandsText.T("reallife_brand_dist_title", "brand", b.Name, "district", BrandsText.District(f.District)));
+            if (f.Ask != Ask.None)
+            {
+                box.Chip(BrandsText.T("reallife_brand_fr_asks"), CellTone.Yellow);
+            }
+            if (f.Trouble)
+            {
+                box.Chip(BrandsText.T("reallife_ibox_chip_trouble"), CellTone.Red);
+            }
             Choose(box, FranchisePageKeys.Length, _franchisePage, i => BrandsText.T(FranchisePageKeys[i]), i => _franchisePage = i);
             if (_franchisePage == 0)
             {
@@ -264,21 +286,29 @@ namespace RealLifeOverhaul.Economy.Brands
         private void WriteFranchiseShop(InfoBox box, BrandsState state, Brand b, Franchise f, int day)
         {
             int id = f.Id, index = BrandsDirector.Index;
+            box.Section("reallife_ibox_sec_where");
             box.Line(BrandsText.Fill("reallife_brand_fr_where", "brand", b.Name, "address", BrandsGame.AddressWords(f.Place), "district", BrandsText.District(f.District)));
-            box.Line(f.Hold == Hold.Books ? BrandsText.T("reallife_brand_fr_hold_books", "metres", BrandCatalogue.CannibalRadius.ToString(), "percent", BrandCatalogue.CannibalEach.ToString())
+            box.Note(f.Hold == Hold.Books ? BrandsText.T("reallife_brand_fr_hold_books", "metres", BrandCatalogue.CannibalRadius.ToString(), "percent", BrandCatalogue.CannibalEach.ToString())
                 : BrandsText.T(f.Hold == Hold.Opened ? "reallife_brand_fr_hold_opened" : "reallife_brand_fr_hold_converted", "name", f.GameName));
+            box.Section("reallife_brand_col_takings");
+            box.RowPair("reallife_ibox_yesterday", BrandsText.Money(f.Takings), "reallife_brand_col_royalty", BrandsText.Money(f.Royalty));
             box.Line(BrandsText.Fill("reallife_brand_fr_takings", "takings", BrandsText.Money(f.Takings), "royalty", BrandsText.Money(f.Royalty), "ordinary", BrandsText.Money(FranchiseRules.Ordinary(f.Base, b.Ticket)),
                 "customers", f.Base.ToString(), "ticket", BrandsText.Money(b.Ticket / 100f)));
-            box.Line(BrandsText.T("reallife_brand_fr_takings_about"));
+            box.Note(BrandsText.T("reallife_brand_fr_takings_about"));
+            box.Section("reallife_brand_col_standards");
+            if (f.Seen >= 0)
+            {
+                box.Meter("reallife_brand_col_standards", f.Seen / 100f, Standards(f.Seen), f.Seen < b.Minimum ? CellTone.Red : CellTone.Green);
+            }
             box.Line(f.Seen < 0
                 ? BrandsText.T("reallife_brand_fr_never_seen", "minimum", BrandsText.Minimum(b.Minimum))
                 : BrandsText.Fill("reallife_brand_fr_seen", "standards", Standards(f.Seen), "day", f.SeenDay.ToString(), "minimum", BrandsText.Minimum(b.Minimum), "warnings", f.Warnings.ToString()));
             if (f.Trouble)
             {
-                box.Line(BrandsText.T("reallife_brand_fr_trouble", "drop", BrandCatalogue.TroubleDrop.ToString()));
+                box.Line(BrandsText.T("reallife_brand_fr_trouble", "drop", BrandCatalogue.TroubleDrop.ToString()), CellTone.Red);
             }
             bool inside = BrandsGame.PlayerInside(f);
-            box.Line(inside ? BrandsText.T("reallife_brand_fr_inspect_self")
+            box.Note(inside ? BrandsText.T("reallife_brand_fr_inspect_self")
                 : BrandsText.Fill("reallife_brand_fr_inspect_paid", "fee", BrandsText.Money(FranchiseRules.InspectorFee(index)), "retrain", BrandsText.Money(FranchiseRules.RetrainFee(index))));
             var buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, inside ? "reallife_brand_fr_inspect_now" : "reallife_brand_fr_inspect_send", () => _director.Inspect(id));
@@ -294,11 +324,12 @@ namespace RealLifeOverhaul.Economy.Brands
         private void WriteFranchiseAgreement(InfoBox box, Brand b, Franchise f, int day)
         {
             int id = f.Id;
+            box.Section("reallife_ibox_sec_terms");
             box.Line(BrandsText.Fill("reallife_brand_fr_terms", "fee", BrandsText.Money(f.EntryFee), "royalty", BrandsText.Bp(f.RoyaltyBp), "levy", BrandsText.Bp(f.LevyBp), "from", f.Signed.ToString(), "until", f.Until.ToString()));
             box.Line(BrandsText.Fill(f.Exclusive ? "reallife_brand_fr_alone" : "reallife_brand_fr_shared", "district", BrandsText.District(f.District), "paid", BrandsText.Money(f.Paid)));
             if (day < f.WaivedUntil)
             {
-                box.Line(BrandsText.T("reallife_brand_fr_waived", "day", f.WaivedUntil.ToString()));
+                box.Line(BrandsText.T("reallife_brand_fr_waived", "day", f.WaivedUntil.ToString()), CellTone.Yellow);
             }
             bool cause = FranchiseRules.HasCause(b, f, day);
             int cost = _director.EndCost(f);
@@ -308,7 +339,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 box.Line(BrandsText.Fill(AskAboutKeys[(int)f.Ask], "amount", BrandsText.Money(f.AskAmount), "day", f.AskUntil.ToString(), "days", BrandCatalogue.WaiveDays.ToString(), "district", BrandsText.District(f.District)));
                 if (f.Ask == Ask.Dispute && f.Suit != 0)
                 {
-                    box.Line(BrandsText.T("reallife_brand_fr_court", "number", f.Suit.ToString()));
+                    box.Line(BrandsText.T("reallife_brand_fr_court", "number", f.Suit.ToString()), CellTone.Red);
                 }
                 var answers = box.ButtonRow();
                 if (f.Ask != Ask.BuyBrand)
@@ -324,7 +355,8 @@ namespace RealLifeOverhaul.Economy.Brands
                     InfoBox.Button(answers, InfoBox.Negative, "reallife_brand_fr_decline", () => _director.Decline(id));
                 }
             }
-            box.Line(cause ? BrandsText.T("reallife_brand_fr_cause", "warnings", f.Warnings.ToString())
+            box.Section("reallife_ibox_sec_ending");
+            box.Note(cause ? BrandsText.T("reallife_brand_fr_cause", "warnings", f.Warnings.ToString())
                 : BrandsText.Fill("reallife_brand_fr_no_cause", "amount", BrandsText.Money(cost), "points", BrandsText.Lost(BrandCatalogue.UnfairLoss), "warnings", BrandCatalogue.CauseWarnings.ToString()));
             var last = box.ButtonRow();
             string name = f.Name;

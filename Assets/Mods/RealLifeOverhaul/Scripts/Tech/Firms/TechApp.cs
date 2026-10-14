@@ -145,7 +145,7 @@ namespace RealLifeOverhaul.Tech
                 {
                     UiClone.Words(_shell.Header, TechText.T("reallife_tech_app"));
                     box.Title(TechText.T("reallife_roles_off_title"));
-                    box.Line(TechText.T("reallife_tech_off_body"));
+                    box.Note(TechText.T("reallife_tech_off_body"));
                     _picked = null;
                 }
                 else

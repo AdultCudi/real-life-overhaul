@@ -103,6 +103,7 @@ namespace RealLifeOverhaul.GameUi
                     return null;
                 }
 
+                shell.Box.SetAccent(LookRules.Accent(name));   // the colour of the app's icon, over each page's title
                 shell.TakeFilter(filter, root.transform.Find("Templates"));
 
                 // The headline over the left column: wide enough for a sentence, cut with dots if it is longer still.

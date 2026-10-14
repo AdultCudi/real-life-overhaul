@@ -194,7 +194,7 @@ namespace RealLifeOverhaul.Economy
             {
                 UiClone.Words(_shell.Header, FinanceText.T("reallife_econ_app"));
                 box.Title(FinanceText.T("reallife_econ_off_title"));
-                box.Line(FinanceText.T("reallife_econ_off_body"));
+                box.Note(FinanceText.T("reallife_econ_off_body"));
             }
             else
             {
@@ -301,34 +301,36 @@ namespace RealLifeOverhaul.Economy
             var wealth = PlayerHelper.GetPersonalWealth();   // the game's own figure for what the player is worth (Persona shows it)
 
             box.Title(FinanceText.T("reallife_econ_tab_overview"));
-            box.Line(FinanceText.Pair("reallife_econ_over_cash", FinanceText.Money(save.Money)));
-            box.Line(FinanceText.Pair("reallife_econ_over_owed", FinanceText.Money(owedLoans + owedAccounts + owedOther)));
+            box.Chip(FinanceText.Grade(score.Grade), Tone(score.Grade));
+            box.Section("reallife_ibox_sec_now");
+            box.Row("reallife_econ_over_cash", FinanceText.Money(save.Money), save.Money < 0f ? CellTone.Red : CellTone.Plain);
+            box.Row("reallife_econ_over_owed", FinanceText.Money(owedLoans + owedAccounts + owedOther));
             if (owedOther > 0f || owedAccounts > 0f)
             {
-                box.Line(FinanceText.T("reallife_econ_over_owed_three", "loans", FinanceText.Money(owedLoans), "accounts", FinanceText.Money(owedAccounts), "other", FinanceText.Money(owedOther)));
+                box.Note(FinanceText.T("reallife_econ_over_owed_three", "loans", FinanceText.Money(owedLoans), "accounts", FinanceText.Money(owedAccounts), "other", FinanceText.Money(owedOther)));
             }
-            box.Line(FinanceText.Pair("reallife_econ_over_rating", FinanceText.T("reallife_econ_rating_value", "score", score.Value.ToString(), "grade", FinanceText.Grade(score.Grade))));
+            box.Row("reallife_econ_over_rating", FinanceText.T("reallife_econ_rating_value", "score", score.Value.ToString(), "grade", FinanceText.Grade(score.Grade)), Tone(score.Grade));
             bool cityOn = CityLines(box);   // the bank rate, prices and the economy, while the city's economy runs
             box.Headline("reallife_econ_over_costs");
-            box.Line(FinanceText.Pair("reallife_econ_over_leaves", FinanceText.Money(due.Total)));
-            box.Line(FinanceText.Pair("reallife_econ_over_loan_payments", FinanceText.Money(payments)));
+            box.Row("reallife_econ_over_leaves", FinanceText.Money(due.Total));
+            box.Row("reallife_econ_over_loan_payments", FinanceText.Money(payments));
             if (interest > 0f)
             {
-                box.Line(FinanceText.T("reallife_econ_over_interest", "amount", FinanceText.Money(interest)));
+                box.Note(FinanceText.T("reallife_econ_over_interest", "amount", FinanceText.Money(interest)));
             }
             if (due.Accounts > 0f)
             {
-                box.Line(FinanceText.Pair("reallife_econ_over_accounts", FinanceText.Money(due.Accounts)));
+                box.Row("reallife_econ_over_accounts", FinanceText.Money(due.Accounts));
             }
             if (otherDaily > 0f)
             {
-                box.Line(FinanceText.Pair("reallife_econ_over_fines", FinanceText.Money(otherDaily)));
+                box.Row("reallife_econ_over_fines", FinanceText.Money(otherDaily));
             }
-            box.Line(FinanceText.Pair("reallife_econ_over_rent", FinanceText.Money(rent)));
-            box.Line(FinanceText.Pair("reallife_econ_over_wages", FinanceText.Money(wages)));
+            box.Row("reallife_econ_over_rent", FinanceText.Money(rent));
+            box.Row("reallife_econ_over_wages", FinanceText.Money(wages));
             box.Headline("reallife_econ_over_worth_head");
-            box.Line(FinanceText.Pair("reallife_econ_over_worth", FinanceText.Money(wealth.CurrentWealth - owedOther - owedAccounts)));
-            box.Line(FinanceText.T("reallife_econ_over_worth_parts", "investments", FinanceText.Money(wealth.totalInvestments), "assets", FinanceText.Money(wealth.totalAssets)));
+            box.Row("reallife_econ_over_worth", FinanceText.Money(wealth.CurrentWealth - owedOther - owedAccounts));
+            box.Note(FinanceText.T("reallife_econ_over_worth_parts", "investments", FinanceText.Money(wealth.totalInvestments), "assets", FinanceText.Money(wealth.totalAssets)));
             Transform buttons = box.ButtonRow();
             if (cityOn)
             {
@@ -424,7 +426,9 @@ namespace RealLifeOverhaul.Economy
                 return "factor:" + _factor;
             }
             box.Title(FinanceText.T("reallife_econ_rating_value", "score", score.Value.ToString(), "grade", FinanceText.Grade(score.Grade)));
-            box.Line(FinanceText.T(score.Lends ? "reallife_econ_credit_threshold_ok" : "reallife_econ_credit_threshold_no", "threshold", CreditCatalogue.LendingThreshold.ToString()));
+            box.Chip(FinanceText.Grade(score.Grade), Tone(score.Grade));
+            box.Line(FinanceText.T(score.Lends ? "reallife_econ_credit_threshold_ok" : "reallife_econ_credit_threshold_no", "threshold", CreditCatalogue.LendingThreshold.ToString()),
+                score.Lends ? CellTone.Green : CellTone.Red);
             int tips = CreditScoring.Tips(score, _tips);
             if (tips > 0)
             {
@@ -437,11 +441,13 @@ namespace RealLifeOverhaul.Economy
             box.Headline("reallife_econ_credit_factors");
             for (int f = 0; f < (int)CreditFactor.Count; f++)
             {
-                box.Line(FinanceText.FactorName((CreditFactor)f) + ": <b>" + FinanceText.Stands(score, (CreditFactor)f) + "</b>");
+                float part = score.Factor[f];
+                box.RowWords(FinanceText.FactorName((CreditFactor)f), FinanceText.Stands(score, (CreditFactor)f),
+                    part >= 0.85f ? CellTone.Green : part >= 0.4f ? CellTone.Plain : CellTone.Yellow);
             }
             if (shown == 0)
             {
-                box.Line(FinanceText.T("reallife_econ_row_no_events"));
+                box.Note(FinanceText.T("reallife_econ_row_no_events"));
             }
             WorstLine(box, score);
             Meta.Guide.Point(box, GuideTitle);
@@ -458,14 +464,18 @@ namespace RealLifeOverhaul.Economy
         {
             float most = CreditCatalogue.PointsOf(factor);
             int now = Mathf.RoundToInt(score.Factor[(int)factor] * most);
+            float part = score.Factor[(int)factor];
+            CellTone tone = part >= 0.85f ? CellTone.Green : part >= 0.4f ? CellTone.Plain : CellTone.Yellow;
             box.Title(FinanceText.T(CreditCatalogue.FactorKeys[(int)factor]));
-            box.Line(FinanceText.Pair("reallife_tab_factor_stands", FinanceText.Stands(score, factor)));
-            box.Line(FinanceText.Pair("reallife_tab_factor_points", FinanceText.T("reallife_tab_points_of", "now", now.ToString(), "most", Mathf.RoundToInt(most).ToString())));
-            box.Line(FinanceText.Pair("reallife_tab_factor_weight", CreditCatalogue.Weights[(int)factor] + "%"));
+            box.Chip(FinanceText.Word(part), tone);
+            box.Note(FinanceText.T(FactorAbout[(int)factor]));
+            box.Section("reallife_ibox_sec_now");
+            box.Row("reallife_tab_factor_stands", FinanceText.Stands(score, factor), tone);
+            box.Meter("reallife_tab_factor_points", part, FinanceText.T("reallife_tab_points_of", "now", now.ToString(), "most", Mathf.RoundToInt(most).ToString()), tone);
+            box.Row("reallife_tab_factor_weight", CreditCatalogue.Weights[(int)factor] + "%");
             box.Headline("reallife_tab_factor_moves");
             box.Line(FinanceText.Tip(score, factor));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
-            box.Line(FinanceText.T(FactorAbout[(int)factor]));
             Meta.Guide.Point(box, GuideTitle);
         }
 
@@ -479,7 +489,8 @@ namespace RealLifeOverhaul.Economy
                 // Under the threshold: the reason, what would raise the rating, and no way to apply.
                 _lender = null;
                 box.Title(FinanceText.T("reallife_econ_borrow_refused_title"));
-                box.Line(FinanceText.T("reallife_econ_borrow_refused", "score", score.Value.ToString(), "grade", FinanceText.Grade(score.Grade), "threshold", CreditCatalogue.LendingThreshold.ToString()));
+                box.Chip(FinanceText.Grade(score.Grade), Tone(score.Grade));
+                box.Line(FinanceText.T("reallife_econ_borrow_refused", "score", score.Value.ToString(), "grade", FinanceText.Grade(score.Grade), "threshold", CreditCatalogue.LendingThreshold.ToString()), CellTone.Red);
                 int tips = CreditScoring.Tips(score, _tips);
                 if (tips > 0)
                 {
@@ -541,10 +552,12 @@ namespace RealLifeOverhaul.Economy
             if (_lender == null)
             {
                 box.Title(FinanceText.T("reallife_econ_tab_borrow"));
-                box.Line(FinanceText.T("reallife_econ_borrow_pick"));
-                box.Line(FinanceText.T("reallife_econ_borrow_fee_note", "share", FeeShare(), "least", FinanceText.Money(CreditCatalogue.PhoneFeeLeast)));
-                box.Line(FinanceText.T("reallife_tab_borrow_columns_note"));
-                box.Line(FinanceText.T("reallife_econ_borrow_repay_note"));
+                box.Chip(FinanceText.Grade(score.Grade), Tone(score.Grade));
+                box.Note(FinanceText.T("reallife_econ_borrow_pick"));
+                box.Section("reallife_ibox_sec_how");
+                box.Note(FinanceText.T("reallife_econ_borrow_fee_note", "share", FeeShare(), "least", FinanceText.Money(CreditCatalogue.PhoneFeeLeast)));
+                box.Note(FinanceText.T("reallife_tab_borrow_columns_note"));
+                box.Note(FinanceText.T("reallife_econ_borrow_repay_note"));
                 Meta.Guide.Point(box, GuideTitle);
                 return null;
             }
@@ -562,17 +575,19 @@ namespace RealLifeOverhaul.Economy
             Lender lender = _lender;
             int most = Mathf.FloorToInt(PhoneLending.MostNow(lender, score.Value));
             box.Title(lender.Name);
-            box.Line(FinanceText.Pair("reallife_econ_offer_most", FinanceText.Money(most)));
+            box.Subtitle(FinanceText.T(FinanceTables.OfferKinds[0]));
+            box.Section("reallife_ibox_sec_terms");
+            box.Row("reallife_econ_offer_most", FinanceText.Money(most));
             if (most < CreditCatalogue.LoanLeast)
             {
-                box.Line(FinanceText.T("reallife_econ_offer_nothing", "least", FinanceText.Money(CreditCatalogue.LoanLeast)));
+                box.Line(FinanceText.T("reallife_econ_offer_nothing", "least", FinanceText.Money(CreditCatalogue.LoanLeast)), CellTone.Red);
                 InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
                 return;
             }
             _amount = Mathf.Clamp(_amount, CreditCatalogue.LoanLeast, most);
             Amounts(most);
             LoanQuote quote = PhoneLending.Quote(lender, _amount, score.Value);
-            box.Line(FinanceText.Pair("reallife_econ_offer_rate", FinanceText.T("reallife_econ_row_rate", "rate", quote.AnnualRate.ToString("0.#"))));
+            box.Row("reallife_econ_offer_rate", FinanceText.T("reallife_econ_row_rate", "rate", quote.AnnualRate.ToString("0.#")));
             box.Headline("reallife_econ_offer_amount");
             if (!box.HasSelector || !box.Selector(_amounts.Count, _amounts.IndexOf(_amount), i => FinanceText.Money(_amounts[i]), i =>
                 {
@@ -592,23 +607,23 @@ namespace RealLifeOverhaul.Economy
                     uis.textInputUi.Show("reallife_econ_offer_placeholder", "common_confirm", text => UiClone.Safe(() => Typed(text)), null, _amount.ToString(), false, TypedAmountLength));
             }
             box.Headline("reallife_econ_offer_cost");
-            box.Line(FinanceText.Pair("reallife_econ_offer_payment", FinanceText.Money(quote.DailyPayment)));
-            box.Line(FinanceText.Pair("reallife_econ_offer_interest", FinanceText.Money(quote.DailyInterest)));
-            box.Line(FinanceText.Pair("reallife_econ_offer_days", quote.Days.ToString()));
-            box.Line(FinanceText.Pair("reallife_econ_offer_fee", FinanceText.Money(quote.Fee)));
-            box.Line(FinanceText.Pair("reallife_econ_offer_total", FinanceText.Money(quote.Cost)));
-            box.Line(FinanceText.Pair("reallife_tab_offer_repay", FinanceText.Money(_amount + quote.Cost)));
+            box.Row("reallife_econ_offer_payment", FinanceText.Money(quote.DailyPayment));
+            box.Row("reallife_econ_offer_interest", FinanceText.Money(quote.DailyInterest));
+            box.Row("reallife_econ_offer_days", quote.Days.ToString());
+            box.Row("reallife_econ_offer_fee", FinanceText.Money(quote.Fee));
+            box.Row("reallife_econ_offer_total", FinanceText.Money(quote.Cost));
+            box.Row("reallife_tab_offer_repay", FinanceText.Money(_amount + quote.Cost));
             float owedThem = GameLoans.OwedTo(lender.Address);
             if (owedThem > 0f)
             {
-                box.Line(FinanceText.Pair("reallife_tab_offer_owed_them", FinanceText.Money(owedThem)));
+                box.Row("reallife_tab_offer_owed_them", FinanceText.Money(owedThem), CellTone.Yellow);
             }
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_offer_apply", Apply);
             InfoBox.Button(buttons, InfoBox.Additional, "common_cancel", ClosePick);
             // What the rating did to the rate: this bank's rate at the best rating there is, against the one offered.
             float best = PhoneLending.RateOffered(lender, CreditCatalogue.ScoreMax);
-            box.Line(quote.AnnualRate > best + 0.05f
+            box.Note(quote.AnnualRate > best + 0.05f
                 ? FinanceText.T("reallife_tab_offer_rating_adds", "points", (quote.AnnualRate - best).ToString("0.#"), "best", best.ToString("0.#"))
                 : FinanceText.T("reallife_tab_offer_rating_best"));
             Meta.Guide.Point(box, GuideTitle);
@@ -814,12 +829,14 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(CashFlow.PeriodName(_period));
             }
-            box.Line(FinanceText.Pair("reallife_econ_cash_in", FinanceText.Money(_flow.In)));
-            box.Line(FinanceText.Pair("reallife_econ_cash_out", FinanceText.Money(-_flow.Out)));
-            box.Line(FinanceText.Pair("reallife_econ_cash_net", FinanceText.Money(_flow.In + _flow.Out)));
+            box.Section("reallife_ibox_sec_totals");
+            box.Row("reallife_econ_cash_in", FinanceText.Money(_flow.In), CellTone.Green);
+            box.Row("reallife_econ_cash_out", FinanceText.Money(-_flow.Out), CellTone.Red);
+            float net = _flow.In + _flow.Out;
+            box.Row("reallife_econ_cash_net", FinanceText.Money(net), net >= 0f ? CellTone.Green : CellTone.Red);
             if (_flow.OldestDay > _flow.FromDay && _flow.FromDay >= 1)
             {
-                box.Line(FinanceText.T("reallife_econ_cash_reach", "day", _flow.OldestDay.ToString()));
+                box.Note(FinanceText.T("reallife_econ_cash_reach", "day", _flow.OldestDay.ToString()));
             }
             CategoryLines(box);
             if (_flow.TopCount > 0)
@@ -828,7 +845,7 @@ namespace RealLifeOverhaul.Economy
                 for (int i = 0; i < _flow.TopCount; i++)
                 {
                     CashFlow.Item item = _flow.Top[i];
-                    box.Line(CashFlow.ItemName(item) + ": <b>" + FinanceText.Money(item.Amount) + "</b>");
+                    box.RowWords(CashFlow.ItemName(item), FinanceText.Money(item.Amount), item.Amount >= 0f ? CellTone.Green : CellTone.Red);
                 }
             }
             // Every movement of money, newest first; the game's own words for it, and what it was for.
@@ -878,7 +895,13 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Line(FinanceText.T("reallife_tab_cash_share_out", "amount", FinanceText.Money(went), "share", Share(went, -_flow.Out)));
             }
-            box.Line(FinanceText.Pair("reallife_econ_cash_net", FinanceText.Money(came - went)));
+            box.Row("reallife_econ_cash_net", FinanceText.Money(came - went), came >= went ? CellTone.Green : CellTone.Red);
+        }
+
+        /// <summary>A credit grade's tone: green from good up, plain for fair, orange for poor, red for very poor.</summary>
+        internal static CellTone Tone(CreditGrade grade)
+        {
+            return grade >= CreditGrade.Good ? CellTone.Green : grade == CreditGrade.Fair ? CellTone.Plain : grade == CreditGrade.Poor ? CellTone.Yellow : CellTone.Red;
         }
 
         private static string Share(float part, float whole)

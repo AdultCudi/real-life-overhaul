@@ -91,19 +91,20 @@ namespace RealLifeOverhaul.Economy.Ventures
                 _picked = null;
                 _page = PageList;
                 box.Title(FinanceText.T("reallife_ven_tab_investors"));
-                box.Line(Pair("reallife_ven_inv_name", FinanceText.T("reallife_ven_of_hundred", "value", file.Reputation.ToString())));
-                box.Line(Pair("reallife_ven_inv_in", Money(file.InvestedTotal)));
-                box.Line(Pair("reallife_ven_inv_out", Money(file.PaidOutTotal)));
+                box.Section("reallife_ibox_sec_now");
+                box.Row("reallife_ven_inv_name", FinanceText.T("reallife_ven_of_hundred", "value", file.Reputation.ToString()));
+                box.Row("reallife_ven_inv_in", Money(file.InvestedTotal));
+                box.Row("reallife_ven_inv_out", Money(file.PaidOutTotal));
                 if (Settings.VenturesInvestors)
                 {
                     InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_ven_raise", () => GoTo(PageBusiness));
-                    box.Line(FinanceText.T("reallife_ven_inv_raise_note"));
+                    box.Note(FinanceText.T("reallife_ven_inv_raise_note"));
                 }
                 else
                 {
-                    box.Line(FinanceText.T("reallife_ven_inv_off"));
+                    box.Line(FinanceText.T("reallife_ven_inv_off"), CellTone.Yellow);
                 }
-                box.Line(FinanceText.T("reallife_ven_inv_how", "days", VenturesCatalogue.ProfitDaysNeeded.ToString(), "of", VenturesCatalogue.ProfitWindowDays.ToString(),
+                box.Note(FinanceText.T("reallife_ven_inv_how", "days", VenturesCatalogue.ProfitDaysNeeded.ToString(), "of", VenturesCatalogue.ProfitWindowDays.ToString(),
                     "profit", Money(VenturesCatalogue.OfferProfitFloor)));
                 Meta.Guide.Point(box, GuideTitle);
             }
@@ -198,15 +199,16 @@ namespace RealLifeOverhaul.Economy.Ventures
         {
             Investor investor = file.Investor(offer.InvestorId);
             box.Title(investor.Name);
-            box.Line(Pair("reallife_ven_offer_by", FinanceText.Day(offer.LapseDay)));
+            box.Section("reallife_ibox_sec_now");
+            box.Row("reallife_ven_offer_by", FinanceText.Day(offer.LapseDay));
             if (offer.Countered)
             {
                 box.Line(FinanceText.T("reallife_ven_offer_countered"));
             }
-            box.Line(offer.ForNew ? Pair("reallife_ven_offer_for", FinanceText.T("reallife_ven_row_new", "type", VenturesGame.TypeName(offer.TypeName)))
-                : Pair("reallife_ven_offer_for", VenturesText.Business(offer.Place, offer.Business)));
-            box.Line(Pair("reallife_ven_offer_amount", Money(offer.Amount)));
-            box.Line(Pair("reallife_ven_offer_share", FinanceText.T("reallife_ven_share_of_profit", "share", VenturesText.Share(offer.ShareBp))));
+            box.Row("reallife_ven_offer_for", offer.ForNew ? FinanceText.T("reallife_ven_row_new", "type", VenturesGame.TypeName(offer.TypeName))
+                : VenturesText.Business(offer.Place, offer.Business));
+            box.Row("reallife_ven_offer_amount", Money(offer.Amount));
+            box.Row("reallife_ven_offer_share", FinanceText.T("reallife_ven_share_of_profit", "share", VenturesText.Share(offer.ShareBp)));
             box.Line(FinanceText.Fill(offer.ForNew ? "reallife_ven_offer_expect_new" : "reallife_ven_offer_expect", "growth", offer.TargetPct.ToString(), "days", offer.TargetDays.ToString(),
                 "open", VenturesCatalogue.PledgeDays.ToString(), "target", Money(OfferRules.YoungTarget)));
             box.Line(FinanceText.T("reallife_ven_who_line", "kind", VenturesText.Kind(investor), "temper", VenturesText.Temper(investor)));
@@ -271,7 +273,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             Investor investor = file.Investor(offer.InvestorId);
             box.Title(FinanceText.T("reallife_ven_counter_title", "name", investor.Name));
             box.Line(FinanceText.T("reallife_ven_counter_now", "amount", Money(offer.Amount), "share", VenturesText.Share(offer.ShareBp)));
-            box.Line(FinanceText.T("reallife_ven_counter_how", "money", VenturesCatalogue.CounterMoneyPct.ToString(), "share", VenturesCatalogue.CounterSharePct.ToString()));
+            box.Note(FinanceText.T("reallife_ven_counter_how", "money", VenturesCatalogue.CounterMoneyPct.ToString(), "share", VenturesCatalogue.CounterSharePct.ToString()));
             box.Line(FinanceText.T("reallife_ven_counter_once"));
             int id = offer.Id;
             Transform buttons = box.ButtonRow();
@@ -291,10 +293,11 @@ namespace RealLifeOverhaul.Economy.Ventures
         private void WritePledge(InfoBox box, Pledge pledge)
         {
             box.Title(_director.NameOf(pledge.InvestorId));
-            box.Line(Pair("reallife_ven_pledge_for", VenturesGame.TypeName(pledge.TypeName)));
-            box.Line(Pair("reallife_ven_offer_amount", Money(pledge.Amount)));
-            box.Line(Pair("reallife_ven_offer_share", FinanceText.T("reallife_ven_share_of_profit", "share", VenturesText.Share(pledge.ShareBp))));
-            box.Line(FinanceText.T("reallife_ven_pledge_how", "day", pledge.OpenBy.ToString()));
+            box.Section("reallife_ibox_sec_now");
+            box.Row("reallife_ven_pledge_for", VenturesGame.TypeName(pledge.TypeName));
+            box.Row("reallife_ven_offer_amount", Money(pledge.Amount));
+            box.Row("reallife_ven_offer_share", FinanceText.T("reallife_ven_share_of_profit", "share", VenturesText.Share(pledge.ShareBp)));
+            box.Note(FinanceText.T("reallife_ven_pledge_how", "day", pledge.OpenBy.ToString()));
             int id = pledge.Id;
             InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_ven_pledge_drop", () =>
             {
@@ -319,11 +322,12 @@ namespace RealLifeOverhaul.Economy.Ventures
                 {
                     box.Line(FinanceText.T("reallife_ven_deal_call_missed", "count", deal.CallMisses.ToString(), "most", VenturesCatalogue.CallMissesMost.ToString()));
                 }
-                box.Line(Pair("reallife_ven_deal_settle", Money(price)));
+                box.Row("reallife_ven_deal_settle", Money(price));
             }
-            box.Line(Pair("reallife_ven_offer_for", VenturesText.Business(deal.Place, deal.Business)));
-            box.Line(Pair("reallife_ven_deal_in", Money(deal.Amount)) + " " + FinanceText.T("reallife_tab_ven_deal_since", "day", deal.StartDay.ToString()));
-            box.Line(Pair("reallife_ven_deal_out", Money(deal.PaidOut)));
+            box.Row("reallife_ven_offer_for", VenturesText.Business(deal.Place, deal.Business));
+            box.Row("reallife_ven_deal_in", Money(deal.Amount));
+            box.Note(FinanceText.T("reallife_tab_ven_deal_since", "day", deal.StartDay.ToString()));
+            box.Row("reallife_ven_deal_out", Money(deal.PaidOut));
             if (deal.Stage == DealStage.Called)
             {
                 InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_ven_pay_off", () => BuyOut(id));
@@ -331,12 +335,12 @@ namespace RealLifeOverhaul.Economy.Ventures
                 Meta.Guide.Point(box, GuideTitle);
                 return;
             }
-            box.Line(Pair("reallife_ven_offer_share", deal.BoardUntil > day
+            box.Row("reallife_ven_offer_share", deal.BoardUntil > day
                 ? FinanceText.T("reallife_ven_deal_share_seat", "share", VenturesText.Share(deal.ShareNow(day)), "day", deal.BoardUntil.ToString())
-                : FinanceText.T("reallife_ven_share_of_profit", "share", VenturesText.Share(deal.ShareBp))));
+                : FinanceText.T("reallife_ven_share_of_profit", "share", VenturesText.Share(deal.ShareBp)));
             if (deal.Arrears > 0)
             {
-                box.Line(Pair("reallife_ven_deal_arrears", Money(deal.Arrears)));
+                box.Row("reallife_ven_deal_arrears", Money(deal.Arrears));
             }
             if (deal.TargetDay > 0)
             {
@@ -346,8 +350,8 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 box.Line(FinanceText.T("reallife_ven_deal_promise", "target", Money(deal.CostTarget), "day", deal.CostDay.ToString(), "now", Money(b.AvgCost14)));
             }
-            box.Line(Pair("reallife_ven_deal_mood", DealState(deal) == VenturesText.Mood(deal) ? VenturesText.Mood(deal)
-                : FinanceText.T("reallife_ven_deal_mood_state", "mood", VenturesText.Mood(deal), "state", DealState(deal))));
+            box.Row("reallife_ven_deal_mood", DealState(deal) == VenturesText.Mood(deal) ? VenturesText.Mood(deal)
+                : FinanceText.T("reallife_ven_deal_mood_state", "mood", VenturesText.Mood(deal), "state", DealState(deal)));
             if (deal.Stage == DealStage.Demand)
             {
                 box.Line(FinanceText.Fill(investor.Kind == InvestorKind.Firm ? "reallife_ven_deal_demand_firm" : "reallife_ven_deal_demand", "day", deal.DemandDay.ToString(), "extra", VenturesText.Share(VenturesCatalogue.BoardExtraBp),
@@ -359,7 +363,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                 }
                 InfoBox.Button(answers, InfoBox.Additional, "reallife_ven_demand_costs", () => Answer(id, false));
             }
-            box.Line(Pair("reallife_ven_deal_buy_out", Money(price)));
+            box.Row("reallife_ven_deal_buy_out", Money(price));
             InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_ven_buy_out", () => BuyOut(id));
             box.Line(FinanceText.T("reallife_ven_who_line", "kind", VenturesText.Kind(investor), "temper", VenturesText.Temper(investor)));
             Meta.Guide.Point(box, GuideTitle);
@@ -420,9 +424,9 @@ namespace RealLifeOverhaul.Economy.Ventures
             fresh.A = FinanceText.T("reallife_ven_row_new_business");
             fresh.B = FinanceText.T("reallife_ven_row_new_business_note");
             box.Title(FinanceText.T("reallife_ven_raise"));
-            box.Line(FinanceText.T("reallife_ven_raise_pick"));
+            box.Note(FinanceText.T("reallife_ven_raise_pick"));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_ven_back", () => GoTo(PageList));
-            box.Line(FinanceText.T("reallife_ven_raise_how", "least", VenturesCatalogue.Questions[0].ToString(), "most", VenturesCatalogue.Questions[2].ToString()));
+            box.Note(FinanceText.T("reallife_ven_raise_how", "least", VenturesCatalogue.Questions[0].ToString(), "most", VenturesCatalogue.Questions[2].ToString()));
             box.Line(FinanceText.T("reallife_ven_raise_truth", "days", VenturesCatalogue.CaughtCloseDays.ToString()));
             box.Line(FinanceText.T("reallife_ven_raise_again", "days", VenturesCatalogue.PitchCooldownDays.ToString()));
             Meta.Guide.Point(box, GuideTitle);
@@ -457,7 +461,14 @@ namespace RealLifeOverhaul.Economy.Ventures
                 Say(FinanceText.T("reallife_ven_row_no_types"));
             }
             box.Title(FinanceText.T("reallife_ven_row_new_business"));
-            box.Line(_raiseType != null ? Pair("reallife_ven_new_kind", VenturesGame.TypeName(_raiseType)) : FinanceText.T("reallife_ven_new_pick"));
+            if (_raiseType != null)
+            {
+                box.Row("reallife_ven_new_kind", VenturesGame.TypeName(_raiseType));
+            }
+            else
+            {
+                box.Note(FinanceText.T("reallife_ven_new_pick"));
+            }
             box.Headline("reallife_ven_new_budget");
             int[] steps = VenturesCatalogue.BudgetSteps;
             _budget = Mathf.Clamp(_budget, 0, steps.Length - 1);
@@ -469,7 +480,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 box.Line(Money(steps[_budget]));
             }
-            box.Line(FinanceText.T("reallife_ven_new_how", "least", VenturesCatalogue.BudgetShareLeastPct.ToString(), "most", VenturesCatalogue.BudgetShareMostPct.ToString(),
+            box.Note(FinanceText.T("reallife_ven_new_how", "least", VenturesCatalogue.BudgetShareLeastPct.ToString(), "most", VenturesCatalogue.BudgetShareMostPct.ToString(),
                 "days", VenturesCatalogue.PledgeDays.ToString()));
             Transform buttons = box.ButtonRow();
             if (_raiseType != null)
@@ -521,8 +532,9 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 _picked = null;
                 box.Title(FinanceText.T("reallife_ven_who_title"));
-                box.Line(Pair("reallife_ven_offer_for", about));
-                box.Line(FinanceText.T("reallife_ven_who_pick", "sector", VenturesText.SectorName(sector)));
+                box.Section("reallife_ibox_sec_now");
+                box.Row("reallife_ven_offer_for", about);
+                box.Note(FinanceText.T("reallife_ven_who_pick", "sector", VenturesText.SectorName(sector)));
                 InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_ven_back", () => GoTo(r != null ? PageBusiness : PageType));
                 box.Line(FinanceText.T("reallife_ven_who_kinds"));
                 Meta.Guide.Point(box, GuideTitle);
@@ -538,13 +550,13 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 box.Line(VenturesText.Never(picked, day) ? FinanceText.T("reallife_ven_who_never") : FinanceText.T("reallife_ven_who_closed", "day", picked.OpenDay.ToString()));
             }
-            box.Line(Pair("reallife_ven_who_temper", VenturesText.Temper(picked)));
-            box.Line(Pair("reallife_ven_who_likes", VenturesText.Likes(picked)));
-            box.Line(Pair("reallife_ven_who_sums", FinanceText.T("reallife_ven_row_range", "least", Money(picked.ChequeLeast), "most", Money(picked.ChequeMost))));
-            box.Line(Pair("reallife_ven_who_share", FinanceText.T("reallife_ven_row_range", "least", VenturesText.Share(VenturesCatalogue.ShareLeastBp[k]), "most", VenturesText.Share(VenturesCatalogue.ShareMostBp[k]))));
-            box.Line(Pair("reallife_ven_who_checks", FinanceText.T(picked.Diligence < 50 ? "reallife_ven_checks_lightly" : picked.Diligence < 78 ? "reallife_ven_checks_carefully" : "reallife_ven_checks_closely")));
-            box.Line(Pair("reallife_ven_who_questions", VenturesCatalogue.Questions[k].ToString()));
-            box.Line(Pair("reallife_ven_offer_for", about));
+            box.Row("reallife_ven_who_temper", VenturesText.Temper(picked));
+            box.Row("reallife_ven_who_likes", VenturesText.Likes(picked));
+            box.Row("reallife_ven_who_sums", FinanceText.T("reallife_ven_row_range", "least", Money(picked.ChequeLeast), "most", Money(picked.ChequeMost)));
+            box.Row("reallife_ven_who_share", FinanceText.T("reallife_ven_row_range", "least", VenturesText.Share(VenturesCatalogue.ShareLeastBp[k]), "most", VenturesText.Share(VenturesCatalogue.ShareMostBp[k])));
+            box.Row("reallife_ven_who_checks", FinanceText.T(picked.Diligence < 50 ? "reallife_ven_checks_lightly" : picked.Diligence < 78 ? "reallife_ven_checks_carefully" : "reallife_ven_checks_closely"));
+            box.Row("reallife_ven_who_questions", VenturesCatalogue.Questions[k].ToString());
+            box.Row("reallife_ven_offer_for", about);
             bool meets = picked.Open(day) && (r != null || picked.Kind != InvestorKind.Tycoon);
             Transform buttons = box.ButtonRow();
             if (meets)

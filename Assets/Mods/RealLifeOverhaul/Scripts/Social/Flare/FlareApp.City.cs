@@ -74,8 +74,9 @@ namespace RealLifeOverhaul.Flare
                 return FlareTables.City;
             }
             box.Title(FlareText.T("reallife_flare_tab_city"));
+            box.Section("reallife_ibox_sec_now");
             box.Line(FlareText.Fill("reallife_flare_city_count", "count", file.ActiveInfluencers.ToString(), "most", FlareCast.Most.ToString()));
-            box.Line(FlareText.T("reallife_flare_city_intro"));
+            box.Note(FlareText.T("reallife_flare_city_intro"));
             box.Line(FlareText.T("reallife_flare_city_follow"));
             Meta.Guide.Point(box, GuideTitle);
             return FlareTables.City;
@@ -90,12 +91,12 @@ namespace RealLifeOverhaul.Flare
                 box.Title(inf.Handle);
                 if (day - inf.ScandalDay <= FlareCast.MonthDays)
                 {
-                    box.Line(FlareText.T("reallife_flare_profile_scandal"));
+                    box.Line(FlareText.T("reallife_flare_profile_scandal"), CellTone.Red);
                 }
-                box.Line(FlareText.Fill("reallife_flare_profile_what", "niche", FlareText.Niche(inf.Niche), "district", FlareGame.DistrictName(inf.District), "style", FlareText.Style(inf.Style)));
+                box.Note(FlareText.Fill("reallife_flare_profile_what", "niche", FlareText.Niche(inf.Niche), "district", FlareGame.DistrictName(inf.District), "style", FlareText.Style(inf.Style)));
                 box.Line(FlareText.Fill("reallife_flare_profile_figures", "followers", FlareText.N(inf.Followers), "engaged", (inf.Engagement / 100f).ToString("0.0") + "%",
                     "reliable", inf.Reliability.ToString()));
-                box.Line(FlareText.Pair("reallife_flare_profile_price", FlareText.Money(Prices.At(FlareCast.Price(inf)))));
+                box.Row("reallife_flare_profile_price", FlareText.Money(Prices.At(FlareCast.Price(inf))));
                 if (inf.Person >= 0 && _director.PersonName(inf.Person) != null)
                 {
                     box.Line(FlareText.Fill(inf.Star ? "reallife_flare_profile_star_person" : "reallife_flare_profile_friend", "name", _director.PersonName(inf.Person)));
@@ -108,7 +109,7 @@ namespace RealLifeOverhaul.Flare
             else
             {
                 box.Title(key.Substring(2));
-                box.Line(FlareText.T(key.StartsWith("b:", System.StringComparison.Ordinal) ? "reallife_flare_account_brand_about" : "reallife_flare_account_candidate_about"));
+                box.Note(FlareText.T(key.StartsWith("b:", System.StringComparison.Ordinal) ? "reallife_flare_account_brand_about" : "reallife_flare_account_candidate_about"));
             }
             bool following = FlareCast.Followed(file, key);
             box.Line(FlareText.T(following ? "reallife_flare_profile_followed" : "reallife_flare_profile_not_followed"));
@@ -171,7 +172,8 @@ namespace RealLifeOverhaul.Flare
         private void WriteCampaignRow(InfoBox box, FlareCampaign c, int day)
         {
             box.Title(FlareText.Fill("reallife_flare_row_campaign", "business", c.Name, "campaign", c.Campaign));
-            box.Line(FlareText.Busy(c, day));
+            box.Chip(FlareText.Busy(c, day));
+            box.Section("reallife_ibox_sec_campaign");
             box.Line(FlareText.Fill("reallife_flare_hire_days", "from", c.From.ToString(), "to", c.To.ToString(), "percent", c.Percent.ToString()));
             box.Line(FlareText.T("reallife_flare_campaign_where"));
             Transform buttons = box.ButtonRow();
@@ -184,7 +186,8 @@ namespace RealLifeOverhaul.Flare
             box.Title(FlareText.Fill("reallife_flare_row_hire", "business", h.Name, "who", _director.WhoLine(h)));
             if (h.Ended)
             {
-                box.Line(FlareText.T("reallife_flare_hire_ended"));
+                box.Chip(FlareText.T("reallife_ibox_chip_ended"));
+                box.Note(FlareText.T("reallife_flare_hire_ended"));
             }
             if (h.Late)
             {
@@ -192,7 +195,7 @@ namespace RealLifeOverhaul.Flare
             }
             if (h.OffMessage && day >= h.From)
             {
-                box.Line(FlareText.T("reallife_flare_hire_off"));
+                box.Line(FlareText.T("reallife_flare_hire_off"), CellTone.Yellow);
             }
             if (h.Backfired && day >= h.From)
             {
@@ -208,7 +211,7 @@ namespace RealLifeOverhaul.Flare
             {
                 box.Line(FlareText.T("reallife_flare_hire_scandal"));
             }
-            box.Line(FlareText.Pair("reallife_flare_hire_deal", FlareText.Deal(h.Kind - FlareCast.FirstDealKind)));
+            box.Row("reallife_flare_hire_deal", FlareText.Deal(h.Kind - FlareCast.FirstDealKind));
             box.Line(FlareText.Fill("reallife_flare_hire_days", "from", h.From.ToString(), "to", h.To.ToString(), "percent", h.Percent.ToString()));
             Transform buttons = box.ButtonRow();
             if (!h.Ended)

@@ -33,9 +33,9 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            box.Line(FinanceText.Pair("reallife_macro_over_rate", CityText.Rate(state.Base)));
-            box.Line(FinanceText.Pair("reallife_macro_over_prices", CityText.Prices(state)));
-            box.Line(FinanceText.Pair("reallife_macro_over_economy", CityText.Economy(state)));
+            box.Row("reallife_macro_over_rate", CityText.Rate(state.Base));
+            box.Row("reallife_macro_over_prices", CityText.Prices(state));
+            box.Row("reallife_macro_over_economy", CityText.Economy(state));
             return true;
         }
 
@@ -59,25 +59,26 @@ namespace RealLifeOverhaul.Economy
             GameInstance save = SaveGameManager.Current;
 
             box.Title(FinanceText.T("reallife_macro_title"));
-            box.Line(FinanceText.Pair("reallife_macro_over_rate", CityText.Rate(state.Base)));
+            box.Section("reallife_ibox_sec_now");
+            box.Row("reallife_macro_over_rate", CityText.Rate(state.Base));
             int toTurn = CityModel.DaysToTurn(state, director.MonthDays);
-            box.Line(state.Pending && toTurn == 1
+            box.Note(state.Pending && toTurn == 1
                 ? CityText.Decision(state.PendingMove, state.PendingReason, MacroCatalogue.Clamp(state.Base + state.PendingMove, MacroCatalogue.BaseLeast, MacroCatalogue.BaseMost))
                 : FinanceText.T("reallife_macro_page_decision", "days", toTurn.ToString()));
-            box.Line(FinanceText.Pair("reallife_macro_over_prices", CityText.Prices(state)));
-            box.Line(FinanceText.Pair("reallife_macro_page_inflation", FinanceText.T("reallife_macro_page_inflation_value", "rate", (state.Inflation / 100f).ToString("0.0"))));
-            box.Line(FinanceText.Pair("reallife_macro_over_economy", CityText.Economy(state)));
+            box.Row("reallife_macro_over_prices", CityText.Prices(state));
+            box.Row("reallife_macro_page_inflation", FinanceText.T("reallife_macro_page_inflation_value", "rate", (state.Inflation / 100f).ToString("0.0")));
+            box.Row("reallife_macro_over_economy", CityText.Economy(state));
             box.Headline("reallife_macro_page_money");
             int costs = CityModel.Costs(state), takings = CityModel.Takings(state, level);
-            box.Line(FinanceText.Pair("reallife_macro_page_costs", Adjusted(costs)));
-            box.Line(FinanceText.Pair("reallife_macro_page_takings", Adjusted(takings)));
+            box.Row("reallife_macro_page_costs", Adjusted(costs));
+            box.Row("reallife_macro_page_takings", Adjusted(takings));
             int carried = state.CarryRent + state.CarryWages + state.CarryTakings + state.CarryLiving;
             if (carried > 0)
             {
-                box.Line(FinanceText.Pair("reallife_macro_page_carried", FinanceText.Money(carried)));
+                box.Row("reallife_macro_page_carried", FinanceText.Money(carried));
             }
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_macro_back", HideCity);
-            box.Line(FinanceText.T("reallife_macro_page_note"));
+            box.Note(FinanceText.T("reallife_macro_page_note"));
             Meta.Guide.Point(box, "reallife_meta_title_economy_city");
 
             // One table of four kinds of row, which the filter over it tells apart: each row's third and fourth cells

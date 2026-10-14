@@ -1099,3 +1099,24 @@ app: the tab labels are one short word, `SettingsRules.TabChars`):
 
 Proven: the game's members named, from the decompiled game. Not seen running: the ten tabs side by side, the box's
 height for an option's page.
+
+## 36. The box's own look (`InfoBox.Look.cs`, `InfoBox.Parts.cs`, `LookRules`)
+
+The white box writes every app's page in one look of the mod's own, made from the game's box itself when it is taken:
+its line of text, its title, its headline's font and grey, its rule's grey, the round sprite and green of its
+satisfaction bar, the tick of its switch, and the game's red, orange and green (`GlobalReferences.colors`).
+
+- **A header:** the title with the app's colour in a short bar over it (`LookRules.Accent`, the deeper colour of the
+  app's icon), a muted line under it (`Subtitle`) and status chips at its right (`Chip`, in a `CellTone`).
+- **Sections:** a heading in small capitals over a hairline (`Section`); what follows stands in from it until the next
+  section, a row of buttons or the foot. `Headline` is a section.
+- **Rows:** a muted label at the left and the value at the right (`Row`, `RowWords`, `RowPair`), in one text: the
+  value is set on the label's line by a line height of nought and aligned right. A row whose two parts do not fit
+  one line has its value under its label (`LookRules.Stack`). An old "Label <b>value</b>" line is read as a row.
+- **Meters and needs:** a row with a short bar of the game's round sprite under its figure (`Meter`); a line with the
+  game's tick, or a red dot (`Check`).
+- **Notes and the foot:** smaller muted sentences (`Note`); the Guide's page under a hairline (`GuideLink`).
+
+Each part is one copy of a template, and as many texts as the game's box would use for the same page: a heading is two
+objects where the game's headline is seven. With Developer diagnostics on, each page writes its parts and time to
+Player.log ("Info box check"). ContractCheck fails the gate on a label and value written as one bare line.

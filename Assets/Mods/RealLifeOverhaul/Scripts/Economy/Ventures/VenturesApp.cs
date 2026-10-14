@@ -146,7 +146,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 UiClone.Words(_shell.Header, FinanceText.T("reallife_ven_app"));
                 box.Title(FinanceText.T("reallife_ven_off_title"));
-                box.Line(FinanceText.T("reallife_ven_off_body"));
+                box.Note(FinanceText.T("reallife_ven_off_body"));
                 _picked = null;
             }
             else

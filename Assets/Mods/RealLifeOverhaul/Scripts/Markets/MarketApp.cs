@@ -195,7 +195,7 @@ namespace RealLifeOverhaul.Markets
             {
                 UiClone.Words(_shell.Header, MarketText.T("reallife_mkt_app"));
                 box.Title(MarketText.T("reallife_mkt_off_title"));
-                box.Line(MarketText.T(Settings.Markets ? "reallife_mkt_off_body" : "reallife_mkt_off_option"));
+                box.Note(MarketText.T(Settings.Markets ? "reallife_mkt_off_body" : "reallife_mkt_off_option"));
                 _company = 0;
                 _picked = null;
             }
