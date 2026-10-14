@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Tech
     ///
     ///   p  each professional: id|role|level|A|B|main|years|school|certs|morale|burnout|joined|level day|review day|rating|
     ///      low runs|arrangement|restraint|notice end|leaving|course slot|course end|exam|rise asked|recognised|offer lapses|
-    ///      offer bp|rival|place|options|record|name|wage|female|age|sick|rise answered by
+    ///      offer bp|rival|place|options|record|name|wage|female|age|sick|rise answered by|day counted|its hours|the day before|its hours
     ///
     /// Capped at <see cref="PeopleMost"/> professionals. A file of an employee who is no longer the player's is dropped
     /// when the day is worked through, so the line holds the player's own people only.
@@ -52,7 +52,8 @@ namespace RealLifeOverhaul.Tech
                 w.Record().Add(p.Id).Add(p.Role).Add(p.Level).Add(p.A).Add(p.B).Add(p.Main).Add(p.YearsDays).Add(p.School).Add(p.Certs).Add(p.Morale).Add(p.Burnout)
                     .Add(p.Joined).Add(p.LevelDay).Add(p.ReviewDay).Add(p.Rating).Add(p.LowRuns).Add(p.Work).Add(p.NonCompete).Add(p.NoticeEnd).Add(p.Leaving)
                     .Add(p.CourseSkill).Add(p.CourseEnd).Add(p.Exam).Add(p.RaiseAsk).Add(p.RecognisedDay).Add(p.PoachDay).Add(p.PoachBp).Add(p.PoachBy).Place(p.Place)
-                    .Add(p.Options).Add(p.Record).Add(p.Name).Add(p.Wage).Add(p.Female).Add(p.Age).Add(p.Sick).Add(p.AskEnd);
+                    .Add(p.Options).Add(p.Record).Add(p.Name).Add(p.Wage).Add(p.Female).Add(p.Age).Add(p.Sick).Add(p.AskEnd)
+                    .Add(p.WorkDay).Add(p.WorkHours).Add(p.PrevDay).Add(p.PrevHours);
             }
             return w.ToString();
         }
@@ -107,7 +108,11 @@ namespace RealLifeOverhaul.Tech
                     Female = x.Bool(),
                     Age = x.Int(30),
                     Sick = x.Bool(),
-                    AskEnd = x.Int()
+                    AskEnd = x.Int(),
+                    WorkDay = x.Int(-1),
+                    WorkHours = Math.Max(0, x.Int()),
+                    PrevDay = x.Int(-1),
+                    PrevHours = Math.Max(0, x.Int())
                 };
                 if (p.Id.Length > 0 && f.Of(p.Id) == null && f.People.Count < PeopleMost)
                 {

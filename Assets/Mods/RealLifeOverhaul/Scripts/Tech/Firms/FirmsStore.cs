@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.Tech
     ///
     ///   f  each firm: place|kind|founded|focus|debt|reputation|registered until|breaches|outages|research costs|relief day|last 30 days|the 30 days' takings divided by commas
     ///   p  each product: id|place|name|kind|segment|stage|features|progress|bugs|users|free|tier|marketing|share|launched|hype|scope|revenue|rival features|rival tier|last release|carry|training|training level
-    ///   c  each contract: id|place|kind|client|own place|council|points|done|value|paid|start|due|end|satisfaction|stage|bid|rivals|last billed
+    ///   c  each contract: id|place|kind|client|own place|council|points|done|value|paid|start|due|end|satisfaction|stage|bid|rivals|last billed|told
     /// </summary>
     public static class FirmsStore
     {
@@ -68,7 +68,7 @@ namespace RealLifeOverhaul.Tech
             foreach (Contract c in f.Contracts)
             {
                 w.Record().Add(c.Id).Place(c.Place).Add(c.Kind).Add(c.Client).Place(c.OwnPlace).Add(c.Council).Add(c.Points).Add(c.Done).Add(c.Value).Add(c.Paid).Add(c.Start).Add(c.Due).Add(c.End)
-                    .Add(c.Satisfaction).Add(c.Stage).Add(c.Bid).Add(c.Rivals).Add(c.LastBilled);
+                    .Add(c.Satisfaction).Add(c.Stage).Add(c.Bid).Add(c.Rivals).Add(c.LastBilled).Add(c.Told);
             }
             return w.ToString();
         }
@@ -122,7 +122,7 @@ namespace RealLifeOverhaul.Tech
                 {
                     Id = x.Int(), Place = x.Place(), Kind = TalentCatalogue.Clamp(x.Int(), 0, (int)WorkKind.Count - 1), Client = x.Text(), OwnPlace = x.Place(), Council = x.Bool(), Points = x.Int(),
                     Done = x.Int(), Value = x.Long(), Paid = x.Long(), Start = x.Int(), Due = x.Int(), End = x.Int(), Satisfaction = x.Int(700), Stage = x.Int(), Bid = x.Long(), Rivals = x.Int(),
-                    LastBilled = x.Int()
+                    LastBilled = x.Int(), Told = x.Int()
                 };
                 if (f.Contracts.Count < FirmsCatalogue.ContractsMost + FirmsCatalogue.OffersMost)
                 {

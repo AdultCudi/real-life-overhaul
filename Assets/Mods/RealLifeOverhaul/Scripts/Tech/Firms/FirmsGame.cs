@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using BAModAPI;
+using BigAmbitions.Characters.Skills;
+using BigAmbitions.DayNightCycle;
 using BigAmbitions.Items;
 using Helpers;
 using Localizor;
@@ -118,6 +120,134 @@ namespace RealLifeOverhaul.Tech
             catch (Exception)
             {
                 return 0;
+            }
+        }
+
+        // ---------------------------------------------------------------- whether its people can work
+
+        private static readonly List<ItemInstance> Stations = new List<ItemInstance>(32);
+        private static readonly HashSet<string> WorkerIds = new HashSet<string>();
+        private static readonly HashSet<string> WorkerSkills = new HashSet<string>();
+
+        /// <summary>
+        /// What decides whether a firm's people can work on a kind of contract (-1: any of the firm's work), read from the
+        /// game as its own schedule screen reads it: who is at the firm and whose role does that work (and how long they
+        /// worked yesterday), the game's switch and the utilities behind it (the internet the firm needs, the power), the
+        /// days of the week it opens (ScheduleDay.isOpen with opening hours), the workstations they can use
+        /// (GetAssignableItems whose suitable skills hold one of theirs, as ScheduleHelper.HasSkillForWorkstation asks) and
+        /// their shifts on the days it opens (as EmployeeInstance.IsWorking counts them). A professional on the mod's own
+        /// payroll works a plain week with no shift. Read only: nothing of the game's is changed.
+        /// </summary>
+        public static FirmFacts Facts(BuildingRegistration reg, FirmKind firm, int kind, IReadOnlyList<Person> people, string place, int day)
+        {
+            var f = new FirmFacts();
+            WorkerIds.Clear();
+            WorkerSkills.Clear();
+            for (int i = 0; people != null && i < people.Count; i++)
+            {
+                Person person = people[i];
+                if (person.File.Place != place)
+                {
+                    continue;
+                }
+                f.Staff++;
+                RoleDef r = person.File.Def;
+                if (kind >= 0 ? !FirmsRules.CanDo(r, (WorkKind)kind) : !FirmsRules.WorksFor(r, firm))
+                {
+                    continue;
+                }
+                f.Workers++;
+                f.Worked += person.HoursYesterday;
+                if (person.Game == null)
+                {
+                    f.Stations++;
+                    f.ShiftHours += TalentCatalogue.WeekHours;
+                    f.ShiftsYesterday += person.HoursYesterday;
+                    continue;
+                }
+                WorkerIds.Add(person.Game.id);
+                List<Skill> skills = person.Game.characterData != null ? person.Game.characterData.skills : null;
+                for (int s = 0; skills != null && s < skills.Count; s++)
+                {
+                    WorkerSkills.Add(skills[s].name);
+                }
+            }
+            if (reg == null)
+            {
+                return f;
+            }
+            try
+            {
+                f.Closed = reg.temporarilyClosed;
+                if (f.Closed)
+                {
+                    f.Net = TechBridges.NetOf(reg, out f.NetWhen);
+                    f.Dark = TechBridges.Supplied != null && !TechBridges.Supplied(reg, 0);
+                }
+                DayOfWeekOrdered yesterday = TimeHelper.GetDayOfWeek(day - 1);
+                List<ScheduleDay> week = reg.scheduleDays;
+                for (int d = 0; week != null && d < week.Count; d++)
+                {
+                    ScheduleDay sd = week[d];
+                    if (sd == null || !sd.isOpen || sd.openingHourSlots == null || sd.openingHourSlots.Count == 0)
+                    {
+                        continue;
+                    }
+                    f.OpenDays++;
+                    for (int s = 0; sd.workShifts != null && s < sd.workShifts.Count; s++)
+                    {
+                        WorkShift shift = sd.workShifts[s];
+                        if (shift == null || string.IsNullOrEmpty(shift.employeeId) || !WorkerIds.Contains(shift.employeeId))
+                        {
+                            continue;
+                        }
+                        int hours = Mathf.Max(0, shift.endingHour - shift.startingHour);
+                        f.ShiftHours += hours;
+                        f.ShiftsYesterday += sd.day == yesterday ? hours : 0;
+                    }
+                }
+                if (WorkerSkills.Count > 0)
+                {
+                    reg.GetAssignableItems(Stations);
+                    for (int i = 0; i < Stations.Count; i++)
+                    {
+                        string[] suits = Stations[i] != null && Stations[i].ItemCached != null ? Stations[i].ItemCached.suitableSkills : null;
+                        for (int s = 0; suits != null && s < suits.Length; s++)
+                        {
+                            if (WorkerSkills.Contains(suits[s]))
+                            {
+                                f.Stations++;
+                                break;
+                            }
+                        }
+                    }
+                    Stations.Clear();
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+            return f;
+        }
+
+        /// <summary>The game's BizMan opened on a business's schedule, where shifts are given (and its own auto fill is). False if it cannot be.</summary>
+        public static bool OpenSchedule(BuildingRegistration reg)
+        {
+            try
+            {
+                global::UI.UIs ui = InstanceBehavior<global::UI.UIs>.Instance;
+                if (reg == null || reg.Address == null || ui == null || ui.fullMenu == null || ui.fullMenu.bizMan == null || !GoingPublic.Mine(reg))
+                {
+                    return false;
+                }
+                ui.fullMenu.bizMan.Open(reg.Address, "Schedule");
+                return true;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return false;
             }
         }
 

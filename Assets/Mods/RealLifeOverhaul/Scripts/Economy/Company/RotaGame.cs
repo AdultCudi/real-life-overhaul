@@ -230,6 +230,13 @@ namespace RealLifeOverhaul.Economy
             {
                 return RotaType.Headquarters;
             }
+            if (Tech.TechTypes.Is(reg.businessTypeName))
+            {
+                // A tech firm takes money but the game sends it no customers (Tech/Firms/TechTypes): its people work the
+                // tech sector's contracts and products in the hours it keeps, so every workstation is wanted every open hour.
+                // Planned for customers, no hour would be worth a shift and the rota would leave them all idle.
+                return RotaType.Work;
+            }
             BusinessType type = BusinessTypeHelper.GetData(reg);
             return type != null && type.HasTag(TagRef.Businesstag.generatesrevenue) ? RotaType.Customers : RotaType.Work;
         }
