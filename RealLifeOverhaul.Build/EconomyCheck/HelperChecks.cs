@@ -25,6 +25,7 @@ internal static partial class Program
         HelperDayChange();
         HelperBondSoFar();
         HelperRateEve();
+        HelperCourseChip();
     }
 
     // ---------------------------------------------------------------- 1. the recruitment office's last day
@@ -333,6 +334,22 @@ internal static partial class Program
         HelperNote("reallife_macro_note_eve_hold", "rate", "rate");
         HelperText("reallife_macro_opt_eve", "rate");
         HelperText("reallife_opt_tip_economy_rate_ahead", "rate");
+    }
+
+    // ---------------------------------------------------------------- 10. the course's progress chip
+
+    private static void HelperCourseChip()
+    {
+        CourseDef cs = StudyCatalogue.Find(StudyCatalogue.ComputerScience);   // the university, Mon Wed Fri at 10:00
+        int start = StudyRules.Hour(cs, StudyMode.FullTime) * 60;
+        var e = new Enrolment { Course = cs.Id, Mode = (int)StudyMode.FullTime, Start = 1, Seen = 3, Done = 2, SettledDay = 5, Stage = (int)EnrolStage.Studying };
+        string Chip(int day, int minute, int sitting) => HelperFill("reallife_ibox_chip_classes", "held", StudyRules.Held(e, day, minute, sitting).ToString(), "of", cs.Sessions.ToString());
+        Check(Chip(8, start - 60, -1) == "3 of " + cs.Sessions + " classes", "helpers, chip: before Monday's class, the three held so far (" + Chip(8, start - 60, -1) + ")");
+        Check(Chip(8, start + 30, cs.Id) == "4 of " + cs.Sessions + " classes" && Chip(8, start + StudyCatalogue.LateMinutes + 1, -1) == "4 of " + cs.Sessions + " classes",
+            "helpers, chip: the class being sat counts, and so does one whose door has shut");
+        var last = new Enrolment { Course = cs.Id, Mode = (int)StudyMode.FullTime, Start = 1, Seen = cs.Sessions - 1, Done = cs.Sessions - 1, SettledDay = 5, Stage = (int)EnrolStage.Studying };
+        Check(StudyRules.Held(last, 30, 23 * 60, -1) == cs.Sessions, "helpers, chip: never more than the course's classes");
+        HelperText("reallife_ibox_chip_classes", "chip", "held", "of");
     }
 
     // ---------------------------------------------------------------- the texts

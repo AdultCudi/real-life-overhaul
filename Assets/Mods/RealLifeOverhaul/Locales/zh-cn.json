@@ -18268,5 +18268,6 @@
   "reallife_opt_tip_economy_rate_ahead": "央行决议生效的前一晚，发出一条通知，说明市场的预期。关闭时决议照常生效，不再预告。",
   "reallife_macro_note_eve_up": "银行利率决议在明天。市场预计上调{points}，至{rate}。",
   "reallife_macro_note_eve_down": "银行利率决议在明天。市场预计下调{points}，至{rate}。",
-  "reallife_macro_note_eve_hold": "银行利率决议在明天。市场预计维持在{rate}。"
+  "reallife_macro_note_eve_hold": "银行利率决议在明天。市场预计维持在{rate}。",
+  "reallife_ibox_chip_classes": "已上{held}/{of}节课"
 }

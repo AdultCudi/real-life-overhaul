@@ -18268,5 +18268,6 @@
   "reallife_opt_tip_economy_rate_ahead": "The evening before a decision of the central bank takes effect, one notification of what the market expects. Off: the decision comes without it.",
   "reallife_macro_note_eve_up": "The bank rate decision is tomorrow. The market expects a rise of {points}, to {rate}.",
   "reallife_macro_note_eve_down": "The bank rate decision is tomorrow. The market expects a cut of {points}, to {rate}.",
-  "reallife_macro_note_eve_hold": "The bank rate decision is tomorrow. The market expects it to hold at {rate}."
+  "reallife_macro_note_eve_hold": "The bank rate decision is tomorrow. The market expects it to hold at {rate}.",
+  "reallife_ibox_chip_classes": "{held} of {of} classes"
 }

@@ -18268,5 +18268,6 @@
   "reallife_opt_tip_economy_rate_ahead": "Na noite anterior à entrada em vigor de uma decisão do banco central, uma notificação do que o mercado espera. Desligado: a decisão vem sem ela.",
   "reallife_macro_note_eve_up": "A decisão da taxa de juros é amanhã. O mercado espera uma alta de {points}, para {rate}.",
   "reallife_macro_note_eve_down": "A decisão da taxa de juros é amanhã. O mercado espera um corte de {points}, para {rate}.",
-  "reallife_macro_note_eve_hold": "A decisão da taxa de juros é amanhã. O mercado espera que ela fique em {rate}."
+  "reallife_macro_note_eve_hold": "A decisão da taxa de juros é amanhã. O mercado espera que ela fique em {rate}.",
+  "reallife_ibox_chip_classes": "{held} de {of} aulas"
 }
