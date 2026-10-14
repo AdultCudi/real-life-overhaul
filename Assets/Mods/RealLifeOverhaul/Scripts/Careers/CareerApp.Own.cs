@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Careers
             {
                 _picked = null;
                 box.Title(CareersText.T("reallife_own_title"));
-                box.Line(CareersText.T("reallife_own_off"));
+                box.Line(CareersText.T("reallife_own_off"), CellTone.Yellow);
                 Meta.Guide.Point(box, OwnGuide);
                 return CareerColumns.Own;
             }
@@ -50,21 +50,25 @@ namespace RealLifeOverhaul.Careers
             }
             _picked = null;
             box.Title(CareersText.T("reallife_own_title"));
+            box.Note(CareersText.T("reallife_own_about"));
             Job j = w.Job;
             if (w.RestraintUntil >= day)
             {
                 box.Line(CareersText.T(w.ClaimNumber > 0 ? "reallife_own_restraint_claimed" : "reallife_own_restraint_line", "employer", CareersText.Employer(w.RestraintEmployer),
-                    "day", CareersText.Day(w.RestraintUntil)));
+                    "day", CareersText.Day(w.RestraintUntil)), w.ClaimNumber > 0 ? CellTone.Red : CellTone.Yellow);
             }
             if (j != null && j.NoticeEnd <= 0 && j.Exclusive)
             {
-                box.Line(CareersText.T("reallife_own_exclusive"));
+                box.Line(CareersText.T("reallife_own_exclusive"), CellTone.Yellow);
             }
             // The practice.
+            box.Section("reallife_look_sec_practice");
             if (w.Practice.Open)
             {
-                box.Line(CareersText.Fill("reallife_own_practice_line", "profession", CareersText.ProName(w.Practice.Prof), "since", CareersText.Day(w.Practice.Opened),
-                    "name", w.Practice.Reputation.ToString(), "served", w.Practice.Served.ToString(), "late", w.Practice.Late.ToString()));
+                box.Row("reallife_career_col_profession", CareersText.ProName(w.Practice.Prof));
+                box.Row("reallife_look_since", CareersText.Day(w.Practice.Opened));
+                box.Meter("reallife_look_name", w.Practice.Reputation / 100f, CareersText.T("reallife_look_of", "value", w.Practice.Reputation.ToString(), "most", "100"), CellTone.Plain);
+                box.RowPair("reallife_look_delivered", w.Practice.Served.ToString(), "reallife_look_late", w.Practice.Late.ToString());
                 InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_own_button_close_practice", () => Do(_director.ClosePractice));
             }
             else
@@ -79,7 +83,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 if (_practices.Count == 0)
                 {
-                    box.Line(CareersText.T("reallife_own_practice_none"));
+                    box.Note(CareersText.T("reallife_own_practice_none"));
                 }
                 else
                 {
@@ -98,6 +102,10 @@ namespace RealLifeOverhaul.Careers
                 }
             }
             // A founder's record, colleagues waiting, a restraint clause.
+            if (w.FounderDay > 0 || (w.ColleaguesCount > 0 && w.ColleaguesUntil >= day))
+            {
+                box.Section("reallife_look_sec_founding");
+            }
             if (w.FounderDay > 0)
             {
                 box.Line(CareersText.Fill("reallife_own_founder_line", "employer", CareersText.Employer(w.FounderFrom), "day", CareersText.Day(w.FounderDay),
@@ -112,7 +120,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 else
                 {
-                    box.Line(CareersText.T("reallife_own_colleagues_no_firm"));
+                    box.Note(CareersText.T("reallife_own_colleagues_no_firm"));
                 }
             }
             // The way out of a job.
@@ -129,7 +137,6 @@ namespace RealLifeOverhaul.Careers
                     InfoBox.Button(leave, InfoBox.Additional, "reallife_own_button_practice_leave", () => Confirm("reallife_own_confirm_practice_body", _director.PracticeLeave));
                 }
             }
-            box.Line(CareersText.T("reallife_own_about"));
             Meta.Guide.Point(box, OwnGuide);
             return CareerColumns.Own;
         }
@@ -146,13 +153,19 @@ namespace RealLifeOverhaul.Careers
         {
             int id = c.Id;
             box.Title(c.Client);
-            box.Line(CareersText.Fill("reallife_own_contract_line", "profession", CareersText.ProName(c.Prof), "hours", c.Hours.ToString(), "fee", CareersText.Money(Prices.At((int)c.Fee)),
-                "due", CareersText.Day(c.Due)));
+            box.Subtitle(CareersText.ProName(c.Prof));
+            bool late = c.Stage == (int)ContractStep.Taken && day > c.Due;
+            box.Chip(CareersText.ContractState(c.At),
+                c.Stage == (int)ContractStep.Offered ? CellTone.Green : c.Stage == (int)ContractStep.Taken ? (late ? CellTone.Red : CellTone.Plain) : CellTone.Yellow);
+            box.Section("reallife_look_sec_terms");
+            box.Row("reallife_own_col_hours", c.Hours.ToString());
+            box.Row("reallife_own_col_fee", CareersText.Money(Prices.At((int)c.Fee)));
+            box.Row("reallife_own_col_due", CareersText.Day(c.Due), late ? CellTone.Red : CellTone.Plain);
             switch (c.At)
             {
                 case ContractStep.Offered:
                     {
-                        box.Line(CareersText.T("reallife_own_contract_offer", "day", CareersText.Day(c.Lapse)));
+                        box.Row("reallife_look_offer_stands", CareersText.Day(c.Lapse));
                         Transform buttons = box.ButtonRow();
                         InfoBox.Button(buttons, InfoBox.Positive, "reallife_own_button_take", () => Do(() => _director.TakeContract(id)));
                         InfoBox.Button(buttons, InfoBox.Negative, "reallife_career_button_decline", () => Do(() => _director.DropContract(id)));
@@ -160,11 +173,11 @@ namespace RealLifeOverhaul.Careers
                     }
                 case ContractStep.Taken:
                     {
-                        box.Line(CareersText.T("reallife_own_contract_left", "time", CareersText.Minutes(OwnRules.Left(c))));
+                        box.Meter("reallife_look_work_done", c.Hours > 0 ? c.Minutes / (c.Hours * 60f) : 1f, CareersText.T("reallife_own_contract_left", "time", CareersText.Minutes(OwnRules.Left(c))), late ? CellTone.Red : CellTone.Plain);
                         string why = _director.CanWorkContract(c);
                         if (why != null)
                         {
-                            box.Line(CareersText.T(why));
+                            box.Line(CareersText.T(why), CellTone.Yellow);
                         }
                         Transform buttons = box.ButtonRow();
                         InfoBox.Button(buttons, InfoBox.Positive, "reallife_own_button_work", () => Do(() => _director.WorkContract(id)));
@@ -172,7 +185,7 @@ namespace RealLifeOverhaul.Careers
                         break;
                     }
                 default:
-                    box.Line(CareersText.T("reallife_own_contract_over"));
+                    box.Note(CareersText.T("reallife_own_contract_over"));
                     break;
             }
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);

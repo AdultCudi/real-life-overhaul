@@ -16,34 +16,39 @@ namespace RealLifeOverhaul.Careers
     {
         partial void JobMore(InfoBox box, WorkFile w, StudyFile f, Job j, int day)
         {
-            box.Headline("reallife_meta_title_careers_life");
+            box.Section("reallife_meta_title_careers_life");
             int next = j.ReviewDay + LifeRules.ReviewEvery(GameCalendar.DaysPerYear);
-            box.Line(j.Rating > 0
-                ? CareersText.Fill("reallife_life_job_review", "rating", j.Rating.ToString(), "day", CareersText.Day(j.ReviewDay), "next", CareersText.Day(next))
-                : CareersText.T("reallife_life_job_review_none", "next", CareersText.Day(next)));
-            box.Line(CareersText.Fill("reallife_life_job_feel", "boss", CareersText.Boss((BossKind)j.Boss),
-                "favour", j.Favour.ToString(), "burnout", CareersText.Mille(j.Burnout), "overtime", CareersText.Minutes(j.Overtime)));
+            if (j.Rating > 0)
+            {
+                box.Row("reallife_look_review", CareersText.Fill("reallife_look_review_value", "rating", j.Rating.ToString(), "day", CareersText.Day(j.ReviewDay)),
+                    j.Rating >= 4 ? CellTone.Green : j.Rating <= 2 ? CellTone.Yellow : CellTone.Plain);
+            }
+            box.Row("reallife_look_next_review", CareersText.Day(next));
+            box.Row("reallife_look_boss", CareersText.Boss((BossKind)j.Boss));
+            box.Row("reallife_look_colleagues", j.Favour.ToString(), j.Favour > 0 ? CellTone.Green : j.Favour < 0 ? CellTone.Yellow : CellTone.Plain);
+            box.Meter("reallife_look_burnout", j.Burnout / 1000f, CareersText.Mille(j.Burnout), j.Burnout >= 700 ? CellTone.Red : j.Burnout >= 400 ? CellTone.Yellow : CellTone.Green);
+            box.Row("reallife_look_overtime", CareersText.Minutes(j.Overtime));
             if (j.Politics >= 0)
             {
                 Matter m = LifeRules.Matters[TalentCatalogue.Clamp(j.Politics, 0, LifeRules.Matters.Length - 1)];
-                box.Line(CareersText.T(CareersText.MatterKey(m), "employer", CareersText.Employer(j.Post.Employer)));
+                box.Line(CareersText.T(CareersText.MatterKey(m), "employer", CareersText.Employer(j.Post.Employer)), CellTone.Yellow);
             }
             if (j.Options > 0)
             {
-                box.Line(CareersText.T("reallife_life_job_options", "count", j.Options.ToString(), "day", CareersText.Day(j.VestDay)));
+                box.Line(CareersText.T("reallife_life_job_options", "count", j.Options.ToString(), "day", CareersText.Day(j.VestDay)), CellTone.Green);
             }
             int share = LifeRules.ProfitShareBp(j);
             if (share > 0)
             {
-                box.Line(CareersText.T("reallife_life_job_share", "share", (share / 100f).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + "%"));
+                box.Line(CareersText.T("reallife_life_job_share", "share", (share / 100f).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture) + "%"), CellTone.Green);
             }
             if (j.NonCompete || j.Exclusive)
             {
-                box.Line(CareersText.T(j.NonCompete && j.Exclusive ? "reallife_life_job_clauses_both" : j.NonCompete ? "reallife_life_job_clause_restraint" : "reallife_life_job_clause_exclusive"));
+                box.Note(CareersText.T(j.NonCompete && j.Exclusive ? "reallife_life_job_clauses_both" : j.NonCompete ? "reallife_life_job_clause_restraint" : "reallife_life_job_clause_exclusive"));
             }
             if (_director.Conflicted(j))
             {
-                box.Line(CareersText.T(j.Declared ? "reallife_life_job_declared" : "reallife_life_job_conflict"));
+                box.Line(CareersText.T(j.Declared ? "reallife_life_job_declared" : "reallife_life_job_conflict"), j.Declared ? CellTone.Plain : CellTone.Red);
             }
             box.Row("reallife_life_sum_pension", CareersText.Cents(w.Pension));
         }
@@ -75,9 +80,10 @@ namespace RealLifeOverhaul.Careers
 
         partial void NoJobMore(InfoBox box, WorkFile w, int day)
         {
+            box.Section("reallife_look_sec_money");
             if (w.BenefitUntil >= day && w.BenefitWeek > 0)
             {
-                box.Line(CareersText.T("reallife_life_benefit_line", "amount", CareersText.Money(Prices.At(w.BenefitWeek)), "day", CareersText.Day(w.BenefitUntil)));
+                box.Line(CareersText.T("reallife_life_benefit_line", "amount", CareersText.Money(Prices.At(w.BenefitWeek)), "day", CareersText.Day(w.BenefitUntil)), CellTone.Green);
             }
             box.Row("reallife_life_sum_pension", CareersText.Cents(w.Pension));
             if (w.Retired <= 0)
@@ -91,7 +97,7 @@ namespace RealLifeOverhaul.Careers
             box.Row("reallife_life_sum_pension", CareersText.Cents(w.Pension));
             if (w.Retired > 0)
             {
-                box.Line(CareersText.T("reallife_life_retired_on", "day", CareersText.Day(w.Retired)));
+                box.Note(CareersText.T("reallife_life_retired_on", "day", CareersText.Day(w.Retired)));
             }
             else if (w.Job != null)
             {
@@ -103,7 +109,7 @@ namespace RealLifeOverhaul.Careers
         {
             if (_director.CanRetire() != null)
             {
-                box.Line(CareersText.Fill("reallife_life_retire_from", "early", LifeRules.RetireEarlyAge.ToString(), "age", LifeRules.RetireAge.ToString(),
+                box.Note(CareersText.Fill("reallife_life_retire_from", "early", LifeRules.RetireEarlyAge.ToString(), "age", LifeRules.RetireAge.ToString(),
                     "cut", (LifeRules.EarlyCutBp / 100).ToString() + "%"));
                 return;
             }
