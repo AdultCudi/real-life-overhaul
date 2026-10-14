@@ -715,10 +715,13 @@ namespace RealLifeOverhaul
                     v => Settings.MarketsMargin = v)
                 .AddToggle(Settings.MarketsListingId, "reallife_lst_opt", Settings.MarketsListing,
                     v => Settings.MarketsListing = v)
+                .AddToggle(Settings.MarketsBotsId, "reallife_mkt_bot_opt", Settings.MarketsBots,
+                    v => Settings.MarketsBots = v)
                 .AddButton("reallife_mkt_test_open", () => Markets.MarketDirector.Instance?.TestOpen())
                 .AddButton("reallife_mkt_test_crisis", () => Markets.MarketDirector.Instance?.TestNews(true))
                 .AddButton("reallife_mkt_test_windfall", () => Markets.MarketDirector.Instance?.TestNews(false))
                 .AddButton("reallife_mkt_test_bid", () => Markets.MarketDirector.Instance?.TestBid())
+                .AddButton("reallife_mkt_bot_test_month", () => Markets.MarketDirector.Instance?.TestBotMonth())
                 .AddButton("reallife_lst_test_list", () => Markets.MarketDirector.Instance?.TestListing())
                 .AddButton("reallife_lst_test_results", () => Markets.MarketDirector.Instance?.TestOwnResults())
                 .AddButton("reallife_lst_test_meeting", () => Markets.MarketDirector.Instance?.TestOwnMeeting())

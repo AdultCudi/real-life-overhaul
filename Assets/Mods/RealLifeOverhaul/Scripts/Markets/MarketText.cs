@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.Markets
         private const string P = "reallife";   // (apart, so that a key made from parts is not taken for a whole one)
 
         private static readonly string[] WhyKeys = Keys(P + "_mkt_why_", "none", "closed", "held", "behind", "no_shares", "no_money", "too_large", "holding_limit", "not_listed",
-            "no_borrow", "no_margin", "below_margin", "bad_price", "too_many", "halted", "expired", "cancelled", "company_gone", "forced");
+            "no_borrow", "no_margin", "below_margin", "bad_price", "too_many", "halted", "expired", "cancelled", "company_gone", "forced", "nothing_held", "stop_side", "profit_side");
 
         private static string[] Keys(string prefix, params string[] names)
         {

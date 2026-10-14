@@ -370,6 +370,7 @@ namespace RealLifeOverhaul.Markets
                     o.StopCents = buying ? (o.StopCents + ratio - 1) / ratio : Math.Max(1, o.StopCents / ratio);
                 }
             }
+            MarketBots.Split(state, s, ratio);   // the player's bots' shares and stops
             s.SplitDay = 0;
             s.SplitRatio = 0;
         }

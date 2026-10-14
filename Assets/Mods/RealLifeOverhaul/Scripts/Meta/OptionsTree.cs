@@ -302,8 +302,9 @@ namespace RealLifeOverhaul.Meta
                 S("banks").For("economy_banks").Need("economy").Opts("economy_banks").Also("bank app current account statement card loan apply"),
                 S("cityeco").For("economy_city").Need("economy").Main("economy_city").Opts("economy_city_level").Also("prices rates boom recession inflation"),
                 S("ventures").For("ventures").Opts("ventures_investors", "ventures_level").Also("invest investor pitch deal"),
-                S("markets").For("markets", "markets_listing").Main("ventures_market").Opts("markets_margin", "markets_listing")
-                    .Also("shares stocks invest dividend broker trading candles chart margin short").Also("markets_listing", "listing flotation offer prospectus shareholders takeover")),
+                S("markets").For("markets", "markets_listing", "markets_bots").Main("ventures_market").Opts("markets_margin", "markets_listing", "markets_bots")
+                    .Also("shares stocks invest dividend broker trading candles chart margin short").Also("markets_listing", "listing flotation offer prospectus shareholders takeover")
+                    .Also("markets_bots", "bot bots robot automated algorithm strategy stop loss take profit limit order trend momentum")),
 
             G("business",
                 S("company").For("economy_company").Need("economy").Main("economy_company").Opts("economy_company_staff", "economy_company_cover",

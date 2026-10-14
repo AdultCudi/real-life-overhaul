@@ -78,7 +78,7 @@ namespace RealLifeOverhaul.Markets
 
         /// <summary>
         /// The host's market for a guest: a new state, the host's city with the guest's own holdings, orders, trades,
-        /// watch list, account and dividends owed, and the host's tape from that day, put on <paramref name="into"/> if it
+        /// watch list, account, dividends owed and trading bots, and the host's tape from that day, put on <paramref name="into"/> if it
         /// is a tape of the host's market (a guest's own copy of it from an earlier session: its past is kept, what it
         /// played alone since is forgotten) or on a new one. <paramref name="frontier"/> is the furthest moment the host has
         /// played. Null (and nothing changed) for a text that cannot be read. A holding in a company the host's market does
@@ -141,6 +141,7 @@ namespace RealLifeOverhaul.Markets
             host.Trades.AddRange(mine.Trades);
             host.Watch.AddRange(mine.Watch);
             host.Dues.AddRange(mine.Dues);
+            host.Bots.AddRange(mine.Bots);   // (the player's bots: theirs, trading in the city's market as the player does)
             Account a = host.Account, m = mine.Account;
             a.Margin = m.Margin;
             a.Cash = m.Cash;
@@ -167,7 +168,7 @@ namespace RealLifeOverhaul.Markets
                     city.Impact = own.Impact;   // the player's own recent trading
                     continue;
                 }
-                if (mine.Held(own.Id) != 0)
+                if (mine.Held(own.Id) != 0 || MarketBots.Held(mine, own.Id) > 0)
                 {
                     own.Status = StockStatus.Gone;
                     own.Reason = GoneReason.Delisted;

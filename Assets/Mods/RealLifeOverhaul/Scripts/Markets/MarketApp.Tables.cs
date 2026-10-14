@@ -81,6 +81,17 @@ namespace RealLifeOverhaul.Markets
             .Filter("reallife_mkt_filter_sectors", MarketCatalogue.SectorKeys)
             .Empty("reallife_mkt_empty_portfolio");
 
+        /// <summary>Bots: 0 firm, 1 strategy, 2 capital, 3 worth, 4 profit, 5 the deepest fall, 6 trades, 7 state.</summary>
+        public static readonly TableSpec Bots = new TableSpec("Stocks", "Bots")
+            .Column("reallife_mkt_bot_col_firm", 460f, TableSort.Text, flexible: true)
+            .Column("reallife_mkt_bot_col_strategy", 280f, TableSort.Text)
+            .Column("reallife_mkt_bot_col_capital", 200f, TableSort.Money)
+            .Column("reallife_mkt_col_worth", 200f, TableSort.Money, sums: true)
+            .Column("reallife_mkt_bot_col_profit", 200f, TableSort.Money, sums: true)
+            .Column("reallife_mkt_bot_col_fall", 170f, TableSort.Number)
+            .Column("reallife_mkt_bot_col_trades", 150f, TableSort.Number)
+            .Column("reallife_mkt_col_state", 220f, TableSort.Text, right: true);
+
         /// <summary>The player's own company on its way: 0 what it takes, 1 needed, 2 the company's, 3 met.</summary>
         public static readonly TableSpec ListingNeeds = new TableSpec("Stocks", "Your company: what it takes")
             .Column("reallife_lst_col_need", 640f, TableSort.None, flexible: true)
