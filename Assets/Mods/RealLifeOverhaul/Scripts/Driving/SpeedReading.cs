@@ -13,7 +13,8 @@ namespace RealLifeOverhaul
     /// <c>VehicleInfoPanel</c> keeps): a copy of its condition reading, put after it, with the speed and its unit in the same
     /// lettering. The game's panel shows no speed of its own. Made the first time it is wanted (the way <see cref="CarDash"/> adds
     /// its reading), then only switched on and off and written when the whole number changes. If the game's panel is not built as
-    /// expected there is no reading, with one line in the log.
+    /// expected there is no reading, with one line in the log. Each reading's text is made once and kept (<see cref="Text"/>), so a
+    /// car speeding up or slowing down allocates nothing.
     /// </summary>
     public static class SpeedReading
     {
@@ -25,6 +26,9 @@ namespace RealLifeOverhaul
         private static string _shownUnit;
         private static bool _on;
         private static bool _failed;
+        private const int Kept = 400;                   // readings 0 to 399 keep their text once made: the fastest car is well under that in km/h or mph
+        private static readonly string[][] Texts = new string[2][];   // each unit's texts by reading, for the two units in use (km/h and mph)
+        private static readonly string[] Units = new string[2];       // ...and which unit each holds
 
         public static void Show(int value, string unit)
         {
@@ -48,7 +52,7 @@ namespace RealLifeOverhaul
                 {
                     _shownValue = value;
                     _shownUnit = unit;
-                    _value.text = value + " " + unit;
+                    _value.text = Text(value, unit);
                 }
                 if (!_on)
                 {
@@ -67,6 +71,24 @@ namespace RealLifeOverhaul
                 Logger?.Warn("Driving: the speed reading in the game's vehicle panel is off for this session after the error above.");
                 Remove();
             }
+        }
+
+        // "57 km/h": made the first time that reading is shown, then kept, for the two units last asked for.
+        private static string Text(int value, string unit)
+        {
+            if (value < 0 || value >= Kept || unit == null)
+            {
+                return value + " " + unit;
+            }
+            int slot = ReferenceEquals(Units[0], unit) || Units[0] == unit ? 0 : ReferenceEquals(Units[1], unit) || Units[1] == unit ? 1 : -1;
+            if (slot < 0)
+            {
+                slot = Units[0] == null ? 0 : 1;
+                Units[slot] = unit;
+                Texts[slot] = new string[Kept];
+            }
+            string[] texts = Texts[slot];
+            return texts[value] ?? (texts[value] = value + " " + unit);
         }
 
         public static void Hide()
