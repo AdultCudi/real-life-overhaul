@@ -17837,7 +17837,7 @@
   "reallife_changes_015_2_title": "0.15.2",
   "reallife_changes_015_2": "已修复：股票应用的公司标签页中，每家公司的今日涨跌都显示为 0%，而市场标签页却显示市场在变动。",
   "reallife_mkt_opt_dividend_notes": "收到股息时发出通知",
-  "reallife_opt_tip_markets_dividend_notes": "你或你的交易机器人收到股息时发出一条通知，写明金额；同时到账多笔时合并为一条。关闭时股息照常支付，市场新闻中仍会逐笔列出。",
+  "reallife_opt_tip_markets_dividend_notes": "你或你的机器人收到股息时发出通知并写明金额，同时到账多笔时合并为一条。关闭时股息照常支付，并列在市场新闻中。",
   "reallife_mkt_note_dividend_bot": "{firm} 为你持有的 {name} 股份收到股息 {amount}，已存入你的现金。",
   "reallife_mkt_note_dividends": "你收到了 {count} 笔股息，共 {amount}。股票应用的市场新闻中逐笔列出。",
   "reallife_mkt_news_paid": "你收到了来自 {name} 的股息 {amount}。",

@@ -17837,7 +17837,7 @@
   "reallife_changes_015_2_title": "0.15.2",
   "reallife_changes_015_2": "Corrigido: a aba Empresas do app Ações mostrava 0% na variação do dia de todas as empresas, enquanto a aba Mercado mostrava o mercado se movendo.",
   "reallife_mkt_opt_dividend_notes": "Uma notificação quando um dividendo é pago a você",
-  "reallife_opt_tip_markets_dividend_notes": "Uma notificação quando um dividendo é pago a você ou a um dos seus robôs de investimento, com o valor, e uma só para todos quando vários chegam juntos. Desligado: eles são pagos do mesmo jeito, e as notícias do mercado ainda listam cada um.",
+  "reallife_opt_tip_markets_dividend_notes": "Uma notificação com o valor quando um dividendo é pago a você ou aos seus robôs, uma só para vários juntos. Desligado: eles ainda são pagos e aparecem nas notícias do mercado.",
   "reallife_mkt_note_dividend_bot": "Um dividendo de {amount} da {name} sobre as ações que {firm} tem para você, pago no seu dinheiro.",
   "reallife_mkt_note_dividends": "{count} dividendos foram pagos a você, {amount} no total. As notícias do mercado no app Ações listam cada um.",
   "reallife_mkt_news_paid": "Você recebeu um dividendo de {amount} da {name}.",

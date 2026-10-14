@@ -17837,7 +17837,7 @@
   "reallife_changes_015_2_title": "0.15.2",
   "reallife_changes_015_2": "Fixed: the Stocks app's Companies tab showed 0% for every company's day move, while the Market tab showed the market moving.",
   "reallife_mkt_opt_dividend_notes": "A notification when a dividend is paid to you",
-  "reallife_opt_tip_markets_dividend_notes": "One notification when a dividend is paid to you or one of your trading bots, with the amount, and one for them all when several come at once. Off: they are paid all the same, and the market news still lists each.",
+  "reallife_opt_tip_markets_dividend_notes": "A notification with the amount when a dividend is paid to you or your bots, one for several at once. Off: they are still paid and listed in the market news.",
   "reallife_mkt_note_dividend_bot": "A dividend of {amount} from {name} on the shares {firm} holds for you, paid into your cash.",
   "reallife_mkt_note_dividends": "{count} dividends were paid to you, {amount} in all. The market news in the Stocks app lists each.",
   "reallife_mkt_news_paid": "You were paid a dividend of {amount} from {name}.",
