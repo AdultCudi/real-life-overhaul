@@ -37,6 +37,8 @@ namespace RealLifeOverhaul
         ///   the obituary  the best qualification and the career, for Permadeath's page (PermadeathLinks)
         ///   the paper     education's and careers' stories, chained on to the City Ledger's other pieces (News.Extra)
         ///   the Planner   a source of its own: the classes of the courses under way, and their exams
+        ///   the desk      a fitted floor (FitOut: a headquarters, a preset desk) keeps one of its desks for a job of the
+        ///                 player's worked there: the floor asks which (FitDesks.Wanted) and says when it stands or goes
         ///
         /// Everything is read from what those features already keep in public; nothing of theirs is changed but the
         /// licence's record.
@@ -92,6 +94,9 @@ namespace RealLifeOverhaul
                 TechBridges.Founder = () => CareersDirector.Instance != null ? CareersDirector.Instance.FounderBonus() : 0;
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
+                FitOut.FitDesks.Wanted = CareersDirector.DeskWanted;
+                FitOut.FitDesks.Made = CareersDirector.DeskMade;
+                FitOut.FitDesks.Gone = CareersDirector.DeskGone;
                 PlannerDirector.Instance?.AddSource(Classes);
                 PlannerDirector.Instance?.AddSource(Jobs);
                 PlannerDirector.Instance?.AddSource(Contracts);
@@ -100,6 +105,9 @@ namespace RealLifeOverhaul
             internal static void Disconnect()
             {
                 CareersBridges.Reset();
+                FitOut.FitDesks.Wanted = null;
+                FitOut.FitDesks.Made = null;
+                FitOut.FitDesks.Gone = null;
                 TechBridges.Founder = null;
                 Economy.CreditLedger.Unregister(Loan);
                 Economy.OwnBankBridges.Qualified = null;

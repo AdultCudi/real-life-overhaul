@@ -9,8 +9,8 @@ namespace RealLifeOverhaul.Careers
     /// <summary>
     /// The working life on the My job tab: the last review and the next, the boss's manner and the player's standing with
     /// colleagues, burnout, an office matter to answer, share options, the pension, the clauses of the contract and a
-    /// conflict of interest; the buttons for overtime, asking for a rise, answering a matter, declaring a conflict and
-    /// retiring.
+    /// conflict of interest; the buttons for asking for a rise, answering a matter, declaring a conflict and retiring
+    /// (overtime is worked at the desk, here only where no desk could be had).
     /// </summary>
     public sealed partial class CareerApp
     {
@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Careers
         partial void JobButtons(Transform buttons, Job j, int day)
         {
             string late = _director.CanWorkLate();
-            if (late == null)
+            if (late == null && _director.DeskFallback(j))   // (overtime is worked at the desk, as the day is)
             {
                 InfoBox.Button(buttons, InfoBox.Additional, "reallife_life_button_late", () => Do(_director.WorkLate));
             }
