@@ -591,6 +591,12 @@ internal static partial class Program
                     return Goes.Guard;
                 }
                 Named n = names.Of(steps[j].Operand);
+                if (n.Assembly == null && n.Owner == "RealLifeOverhaul.EventHold" && n.Name == "Keep")
+                {
+                    to = n;
+                    to.Owner = "event field, kept by EventHold";   // (Core/EventHold puts the handler on the game's own field; its type is generic)
+                    return Goes.Game;
+                }
                 if (!n.TakesDelegate || (n.Owner == "System.Delegate" && (n.Name == "Combine" || n.Name == "Remove")))
                 {
                     continue;   // (a call for another argument; or the delegate joined to an event's, which is stored next)

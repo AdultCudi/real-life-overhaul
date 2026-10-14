@@ -323,6 +323,7 @@ namespace RealLifeOverhaul.Meta
                 S("techsites").For("tech_sites").Opt("tech_site_rooms", "tech_sector").Opts("tech_site_hq").Opt("tech_site_cloud", "tech_sector").Opt("tech_site_offices", "tech_sector")
                     .Also("data centre data center server servers rack racks cooling headquarters hq lobby reception office cloud hyperscaler sign buildings"),
                 S("dealer").For("economy_dealer").Need("economy").Opts("economy_dealer").Also("car dealership showroom auction wholesale used cars finance warranty"),
+                S("offices").For("office_space").Opts("office_conversion").Also("office offices shop shops empty space building buildings convert vacant"),
                 S("estate").For("economy_estate").Need("economy").Opts("economy_estate", "economy_estate_hotel", "economy_estate_hire", "economy_estate_rent")
                     .Also("buildings landlord tenant letting rent rental income").Also("economy_estate", "rent tenant landlord letting"),
                 S("bizevents").For("business").Main("business_pressure").Opts("business_frequency", "business_easy").Also("trouble pressure competition"),

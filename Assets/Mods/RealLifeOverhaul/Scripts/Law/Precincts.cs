@@ -382,7 +382,7 @@ namespace RealLifeOverhaul.Law
             for (int i = 0; i < buildings.Length; i++)
             {
                 CityBuildingController building = buildings[i];
-                if (ReferenceEquals(building, not) || !Usable(building, out Vector3 door) || building.building.Neighbourhood != district)
+                if (ReferenceEquals(building, not) || !Usable(building, out Vector3 door) || building.building.Neighbourhood != district || Offices.Conversions.Holds(building.building))
                 {
                     continue;
                 }

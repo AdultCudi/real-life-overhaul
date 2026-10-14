@@ -35,6 +35,7 @@ namespace RealLifeOverhaul.Careers
         private readonly List<int> _reach = new List<int>(ProCatalogue.Count);
         private readonly List<BoardAd> _ads = new List<BoardAd>(40);
         private int _employersDay = -1;
+        private long _hqSeen;   // the tech companies' headquarters as the posts were last moved to them
         private int _workReminded = -1, _interviewReminded = -1;
 
         public bool WorkRunning => _workOn;
@@ -215,17 +216,34 @@ namespace RealLifeOverhaul.Careers
             {
                 AtHeadquarters(w.Applications[i].Post);
             }
-            if (w.Job != null)
+            if (w.Job != null && AtHeadquarters(w.Job.Post))
             {
-                AtHeadquarters(w.Job.Post);
+                // The player's employer has moved (its tower chose another building, or a save from before the towers): the
+                // job is kept, on the company's floor of its tower now.
+                Logger?.Info("Careers: the player's employer " + w.Job.Post.Employer + " is now at " + w.Job.Post.Street + " " + w.Job.Post.Number + "; the job and its desk follow it.");
+                Tell(NotificationType.Info, "reallife_career_note_employer_moved", Data("employer", CareersText.Employer(w.Job.Post.Employer), "address", WorkGame.Address(w.Job.Post.Street, w.Job.Post.Number)), TabJob, null);
             }
         }
 
-        private static void AtHeadquarters(Opening o)
+        // Once a second: the tech companies' headquarters have changed since they were last read (chosen after the load, or a
+        // tower moved): the vacancies, applications and the job at them follow at once, not the next morning.
+        private void HeadquartersMoved()
         {
-            if (o == null || o.Kind != (int)EmployerKind.TechFirm || Array.IndexOf(HiringCatalogue.RivalFirms, o.Employer) < 0)
+            long stamp = CareersBridges.HeadquartersStampNow();
+            if (stamp == _hqSeen || stamp == 0 || _study == null)
             {
                 return;
+            }
+            _hqSeen = stamp;
+            AtHeadquarters();
+        }
+
+        // True if the post was moved to its company's headquarters as they stand now.
+        private static bool AtHeadquarters(Opening o)
+        {
+            if (o == null || o.Kind != (int)EmployerKind.TechFirm || Array.IndexOf(HiringCatalogue.RivalFirms, o.Employer) < 0 || CareersBridges.Headquarters == null)
+            {
+                return false;
             }
             try
             {
@@ -233,6 +251,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     o.Street = street;
                     o.Number = number;
+                    return true;
                 }
             }
             catch (Exception e)
@@ -240,6 +259,7 @@ namespace RealLifeOverhaul.Careers
                 Logger?.Error(e);
                 CareersBridges.Headquarters = null;   // (asked no more this session)
             }
+            return false;
         }
 
         /// <summary>The vacancies renewed: the lapsed ones go, the rivals' ads on the jobs board are added, and the city's own fill up to their number.</summary>

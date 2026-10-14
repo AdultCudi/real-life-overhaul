@@ -1248,6 +1248,8 @@ namespace RealLifeOverhaul.Meta
                 .About("reallife_guide_tech_sites_about").Help("reallife_guide_tech_sites")
                 .Fact("sites_most", () => Guide.Number(Tech.ServerRoomPlan.MostShown))
                 .Fact("sites_companies", () => Guide.Number(Tech.HiringCatalogue.RivalFirms.Length))
+                .Fact("sites_towers", () => Guide.Number(Tech.HqTowers.Towers(Tech.HiringCatalogue.RivalFirms.Length)))
+                .Fact("sites_floors", () => Guide.Number(Tech.HqTowers.PerTower))
                 .Owns(Settings.TechSiteRoomsId, Settings.TechSiteHqId, Settings.TechSiteCloudId, Settings.TechSiteOfficesId)
                 .Test("reallife_sites_test_room", "reallife_sites_test_hq", "reallife_sites_test_floor")
                 .Cleanup(() => Tech.TechSites.Instance?.StopAll(), -1);
@@ -1276,6 +1278,17 @@ namespace RealLifeOverhaul.Meta
                 .Owns(Settings.EconomySaleId)
                 .StandsAside(GoingPublic.OwnershipSentence, Settings.EconomySaleId)   // who rents what is the host's record in a session (Core/GoingPublic)
                 .Test("reallife_svc_test_offer", "reallife_svc_test_sale_paper", "reallife_svc_test_part"));
+            // Empty shops as offices: some empty shops in the districts with offices are offices to rent while the mod runs. Only
+            // what the game is told: nothing of a building is saved, and everything is put back before the other features stop.
+            Features.Add("office_space", "reallife_meta_title_office_space")
+                .About("reallife_guide_office_space_about").Help("reallife_guide_office_space")
+                .Fact("offices_district", () => Guide.Number(Offices.ConversionRules.DistrictFloor))
+                .Fact("offices_city", () => Guide.Number(Offices.ConversionRules.CityFloor))
+                .Owns(Settings.OfficeConversionId)
+                .Test("reallife_offices_test_list")
+                .Data(Offices.ConversionStore.Key)
+                .Cleanup(() => Offices.Conversions.Instance?.StopAll(), -1)
+                .ResetData(() => Offices.Conversions.Instance?.Forget());
             // Brands and franchises. Off, none of it runs, nothing is paid and every shop's footfall is without it. It runs only while the
             // economy core does. (Cleaned up before the company, the city's economy and the core: order -3.)
             Economy.Brands.BrandsGuide.AddFacts(Features.Add("economy_brands", "reallife_meta_title_economy_brands")

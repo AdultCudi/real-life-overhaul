@@ -72,6 +72,39 @@ namespace RealLifeOverhaul.Careers
         /// </summary>
         public static PlaceOf Headquarters;
 
+        /// <summary>Changes whenever the tech companies' headquarters do (a tower chosen, moved, or its floors shared out again). Default: never.</summary>
+        public static Func<long> HeadquartersStamp;
+
+        /// <summary>
+        /// The tech company whose floor of a tower the player is on now (Tech/Sites: several companies share a building, a
+        /// floor each), or null when the player is not on such a floor. Default: none.
+        /// </summary>
+        public static Func<string> FloorHere;
+
+        public static long HeadquartersStampNow()
+        {
+            try
+            {
+                return HeadquartersStamp != null ? HeadquartersStamp() : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        public static string FloorHereNow()
+        {
+            try
+            {
+                return FloorHere != null ? FloorHere() : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         public static bool HomeOnline()
         {
             try
@@ -160,6 +193,8 @@ namespace RealLifeOverhaul.Careers
         {
             OthersPicked = null;
             Headquarters = null;
+            HeadquartersStamp = null;
+            FloorHere = null;
             Board = null;
             Claim = null;
             Credit = null;

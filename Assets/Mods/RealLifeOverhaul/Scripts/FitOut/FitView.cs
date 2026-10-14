@@ -61,6 +61,7 @@ namespace RealLifeOverhaul.FitOut
             public FitKind Kind;
             public int Seed;
             public BuildingManager Building;
+            public string Place;                                              // the floor's place key for the player's desk (a tower's floor: the company's); null: the building's
             public RoomGrid Grid;
             public float Floor;
             public Vector3 Door, Inward;
@@ -75,6 +76,7 @@ namespace RealLifeOverhaul.FitOut
             {
                 Name = null;
                 Building = null;
+                Place = null;
                 Grid = null;
                 DesignKinds.Clear();
                 LookKinds.Clear();
@@ -151,7 +153,7 @@ namespace RealLifeOverhaul.FitOut
             _request = request;
             _host = host;
             BuildingRegistration reg = request.Building.buildingRegistration;
-            _deskPlace = reg != null ? TalentGame.Place(reg) : null;
+            _deskPlace = !string.IsNullOrEmpty(request.Place) ? request.Place : reg != null ? TalentGame.Place(reg) : null;
             _deskSeed = FitDesks.Ask(_deskPlace);
             if (_deskSeed >= 0)
             {

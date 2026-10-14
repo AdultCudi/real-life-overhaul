@@ -70,6 +70,18 @@ namespace RealLifeOverhaul
             return refused && !players && !business && (toLet || forSale);
         }
 
+        public const string TowerPrefix = "techhq_tower_";   // Tech/Sites/Headquarters: a tower the tech companies share, a floor each, "techhq_tower_" and its number
+
+        /// <summary>The tower's number for a tower's id ("techhq_tower_1": 1), or -1. A tower is no one company's: it is not a headquarters' id.</summary>
+        public static int TowerIndex(string id)
+        {
+            if (id == null || id.Length <= TowerPrefix.Length || !id.StartsWith(TowerPrefix, StringComparison.Ordinal))
+            {
+                return -1;
+            }
+            return int.TryParse(id.Substring(TowerPrefix.Length), NumberStyles.None, CultureInfo.InvariantCulture, out int t) && t >= 0 ? t : -1;
+        }
+
         /// <summary>The company's place in the tech sector's list for a headquarters' id ("techhq_3": 3), or -1.</summary>
         public static int HqIndex(string id)
         {
@@ -108,6 +120,17 @@ namespace RealLifeOverhaul
         public static FrontStyle Style(SpecialKind kind, string id)
         {
             var s = new FrontStyle { LampR = 1f, LampG = 0.93f, LampB = 0.80f };   // a warm white for the bulbs
+            int tower = TowerIndex(id);
+            if (tower >= 0)
+            {
+                // A tower of the tech companies: its own name, in slate and brass, the same for every tower (its companies
+                // are named on the game's card, at its door and in the map's search; each floor's lobby has its company's colours).
+                Set(ref s, "headquarter1", 4, 0.14f, 0.16f, 0.20f, 0.96f, 0.97f, 0.98f, 0.86f, 0.74f, 0.42f, tower);
+                s.NeonR = s.MarkR;
+                s.NeonG = s.MarkG;
+                s.NeonB = s.MarkB;
+                return s;
+            }
             int hq = HqIndex(id);
             if (hq >= 0)
             {

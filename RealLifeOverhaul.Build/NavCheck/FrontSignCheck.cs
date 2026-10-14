@@ -85,6 +85,13 @@ internal static partial class Program
               && FrontSignRules.HqIndex("techhq_-1") == -1 && FrontSignRules.HqIndex("techhqx") == -1 && FrontSignRules.HqIndex("police_1") == -1 && FrontSignRules.HqIndex(null) == -1,
             "fronts: a headquarters is known by its id, nothing else is");
         Check(FrontSignRules.HqShapeCount == HqColours.Count, "fronts: every tech company has a logo shape of its own");
+        Check(FrontSignRules.TowerIndex("techhq_tower_0") == 0 && FrontSignRules.TowerIndex("techhq_tower_2") == 2 && FrontSignRules.HqIndex("techhq_tower_1") == -1
+              && FrontSignRules.TowerIndex("techhq_3") == -1 && FrontSignRules.TowerIndex("techhq_tower_") == -1 && FrontSignRules.TowerIndex(null) == -1,
+            "fronts: a tower of the tech companies is known by its id, and is no one company's headquarters");
+        FrontStyle tower0 = FrontSignRules.Style(SpecialKind.Other, "techhq_tower_0"), tower1 = FrontSignRules.Style(SpecialKind.Other, "techhq_tower_1");
+        Check(tower0.Shape == "headquarter1" && Near(tower0.BackR, 0.14f) && Near(tower0.MarkR, 0.86f) && tower0.Shape == tower1.Shape && tower0.Preferred == 0 && tower1.Preferred == 1
+              && FrontSignRules.Look(SpecialKind.Other, true, true, false, true) == FrontLook.Named,
+            "fronts: a tower's sign carries its own name in slate and brass, every tower alike but for its sign type in turn");
         var shapes = new HashSet<string>(StringComparer.Ordinal);
         bool colours = true, distinct = true;
         for (int k = 0; k < HqColours.Count; k++)

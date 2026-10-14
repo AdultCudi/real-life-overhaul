@@ -108,6 +108,7 @@ namespace RealLifeOverhaul
             Step("interiors and decor", InteriorLinks.Connect);   // after Flare's: its part of footfall goes on top of the others'
             Step("permadeath", PermadeathLinks.Connect);
             Step("the district view", DistrictLinks.Connect);
+            Step("empty shops as offices", OfficeLinks.Connect);
             Step("the player's bank", OwnBankLinks.Connect);   // after running a business: its pieces of the paper follow the company's
             Step("standing", StandingLinks.Connect);   // last: what it wraps of the others' is theirs already
             Logger?.Info("Wiring: the features are connected.");
@@ -123,6 +124,7 @@ namespace RealLifeOverhaul
             Step("standing", StandingLinks.Disconnect);   // first: what it wrapped is put back before the others take theirs off
             Step("the player's bank", OwnBankLinks.Disconnect);   // before running a business: what it wrapped of the paper is put back first
             Step("the district view", DistrictLinks.Disconnect);
+            Step("empty shops as offices", OfficeLinks.Disconnect);
             Step("permadeath", PermadeathLinks.Disconnect);
             Step("interiors and decor", InteriorLinks.Disconnect);   // before the social media app's: what it wrapped is put back first
             Step("the social media app", FlareLinks.Disconnect);   // ...and then the social media app's

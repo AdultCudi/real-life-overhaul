@@ -752,6 +752,9 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyCleaning = v)
                 .AddToggle(Settings.EconomySaleId, "reallife_svc_sale_enabled", Settings.EconomySale,
                     v => Settings.EconomySale = v)
+                .AddToggle(Settings.OfficeConversionId, "reallife_offices_enabled", Settings.OfficeConversion,
+                    v => Settings.OfficeConversion = v)
+                .AddButton("reallife_offices_test_list", () => Offices.Conversions.Instance?.TestList())
                 .AddToggle(Settings.EconomyBankId, "reallife_ob_enabled", Settings.EconomyBank,
                     v => Settings.EconomyBank = v)
                 .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
@@ -1191,6 +1194,8 @@ namespace RealLifeOverhaul
             Guard.Step("FitOut.FitOutDirector", () => FitOut.FitOutDirector.Logger = context.Logger);
             Guard.Step("FitOut.FitOutDirector", () => Guard.Add<FitOut.FitOutDirector>(_root));   // the mod's buildings fitted out across their whole floor while the player is in one, a little a frame (Scripts/FitOut): before the features whose floors it builds
             Guard.Step("Tech.TechSites", () => Tech.TechSites.Logger = context.Logger);
+            Guard.Step("Offices.Conversions", () => Offices.Conversions.Logger = context.Logger);
+            Guard.Step("Offices.Conversions", () => Guard.Add<Offices.Conversions>(_root));   // more offices to rent: some empty shops in the office districts are offices while the mod runs (Scripts/Offices): a look once a second, the choice on a change
             Guard.Step("Tech.TechSites", () => Guard.Add<Tech.TechSites>(_root));   // the tech sector's buildings: server rooms, the tech companies' headquarters, data centre frontages, tech offices (Scripts/Tech/Sites): a look once a second, nothing per frame
             Guard.Step("Economy.EstateDirector", () => Economy.EstateDirector.Logger = context.Logger);
             Guard.Step("Economy.EstateApp", () => Economy.EstateApp.Logger = context.Logger);
