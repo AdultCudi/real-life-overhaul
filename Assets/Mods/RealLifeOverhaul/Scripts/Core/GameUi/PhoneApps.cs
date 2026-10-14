@@ -47,6 +47,19 @@ namespace RealLifeOverhaul.GameUi
     /// name into the top bar, moves the dot under the buttons, and opens the menu if it was closed. Open() below does
     /// the same for a panel the game does not know by name; when the game opens one of its own, its loop switches
     /// this one off like any other.
+    ///
+    /// THE PANEL IS BUILT WHEN IT IS FIRST OPENED. Install puts the two buttons on the phones; the panel (a copy of the
+    /// game's MyEmployees app, a few hundred objects, PhoneAppDef.Build) is made the first time the app is opened
+    /// (<see cref="Ready"/>), with the game standing still under the menu, instead of in a frame of play in the first
+    /// seconds after a load, where some twenty apps once built theirs one a frame. Nothing about the app changes but that
+    /// moment: until it is built its panel is not among the game's, which only ever looks for its own by name, and every
+    /// app's page waits for its panel before it writes anything (an app's Opened, Want and Changed do nothing while it has
+    /// none). An app whose panel cannot be built after all is taken off the phone at that click, with the builder's own
+    /// line in Player.log, as an install that failed always was.
+    ///
+    /// Timing: opening (Open, Shown, Hidden) and the build are timed under names of their own ("Apps: (id) opened",
+    /// "Apps: (id) built", Core/HotSpots); every click of a button the kit rewires is timed by UiClone.Safe. Per frame:
+    /// nothing.
     /// </summary>
     public sealed class PhoneApp
     {
@@ -61,15 +74,21 @@ namespace RealLifeOverhaul.GameUi
         private PhoneGridPager _strip;
         private Transform _dormant;
         private int _badge;
+        private bool _pending;     // on the phone, its panel not built yet (Ready builds it)
+        private readonly int _hotOpened, _hotBuilt;
 
+        /// <summary>The app's panel among the game's; null until the app is first opened (<see cref="Ready"/>).</summary>
         public GameObject Root { get; private set; }
-        public bool Installed => Root != null && (_def.NoButtons || (_hudButton != null && _menuButton != null));
+        /// <summary>On the phone: its buttons are there, and its panel is, or is still to be built when it is first opened.</summary>
+        public bool Installed => (_pending ? _menu != null : Root != null) && (_def.NoButtons || (_hudButton != null && _menuButton != null));
         public bool Showing => Root != null && Root.activeInHierarchy;
         public PhoneGridPager Pager => _pager;
 
         private PhoneApp(PhoneAppDef def)
         {
             _def = def;
+            _hotOpened = HotSpots.Slot("Apps: " + def.Id + " opened");   // (once an install: a name keeps its number for the session)
+            _hotBuilt = HotSpots.Slot("Apps: " + def.Id + " built");
         }
 
         /// <summary>
@@ -95,7 +114,7 @@ namespace RealLifeOverhaul.GameUi
             var app = new PhoneApp(def) { _phone = phone, _menu = menu };
             try
             {
-                if (menu.appsContainer.Find(def.Id) != null || Enum.TryParse(def.Id, out AppName _))
+                if (menu.appsContainer.Find(def.Id) != null || Enum.TryParse(def.Id, out AppName _) || Named(phone.transform, menu.transform, def.Id))
                 {
                     UiClone.Fallback("an app called '" + def.Id + "' is already on the phone, a second one is not added");
                     return null;
@@ -110,27 +129,18 @@ namespace RealLifeOverhaul.GameUi
                     return null;
                 }
 
+                if (def.Build == null)
+                {
+                    UiClone.Fallback("'" + def.Id + "' has nothing to build its panel with, so it is not added");
+                    return null;
+                }
                 app._dormant = UiClone.Dormant(menu.canvasGroup != null ? menu.canvasGroup.transform : menu.transform, "RealLife Dormant " + def.Id);
-                GameObject root = def.Build != null ? def.Build(menu, app._dormant) : null;
-                if (root == null)
-                {
-                    app.Remove();
-                    return null;   // the builder has said what was missing
-                }
-                root.SetActive(false);
-                root.name = def.Id;
-                root.transform.SetParent(menu.appsContainer, false);
-                if (root.GetComponent<CanvasGroup>() == null)
-                {
-                    root.AddComponent<CanvasGroup>();
-                }
-                root.AddComponent<PhoneAppRoot>().App = app;
-                app.Root = root;
+                app._pending = true;   // the panel is built when the app is first opened (Ready)
                 if (def.NoButtons)
                 {
                     if (Meta.Dev.Verbose)
                     {
-                        Logger?.Info("Game UI: app '" + def.Id + "' is among the phone's apps without a button: the mod opens it itself.");
+                        Logger?.Info("Game UI: app '" + def.Id + "' is among the phone's apps without a button: the mod opens it itself; its panel is built when it is first opened.");
                     }
                     return app;
                 }
@@ -184,7 +194,7 @@ namespace RealLifeOverhaul.GameUi
                                  + " (full menu); place " + place + " of " + (app._pager != null ? app._pager.Count : 0) + " apps, "
                                  + (app._pager == null ? "no pages" : app._pager.SteppedAside ? "pages left to another mod" : app._pager.Pages + " page(s)")
                                  + "; full menu row " + (app._strip == null ? "not paged" : app._strip.SteppedAside ? "paged by another mod" : app._strip.Pages + " page(s)")
-                                 + "; icon " + (icon == null ? "the template's" : icon.name) + ".");
+                                 + "; icon " + (icon == null ? "the template's" : icon.name) + "; its panel is built when it is first opened.");
                 }
                 return app;
             }
@@ -195,6 +205,73 @@ namespace RealLifeOverhaul.GameUi
                 app.Remove();
                 return null;
             }
+        }
+
+        // Whether either phone has a button of that name already: an app of that name is on it, its panel perhaps not built yet.
+        private static bool Named(Transform phone, Transform menu, string id)
+        {
+            SmartphoneAppButton[] hud = phone.GetComponentsInChildren<SmartphoneAppButton>(true);
+            for (int i = 0; i < hud.Length; i++)
+            {
+                if (hud[i].name == id)
+                {
+                    return true;
+                }
+            }
+            FullMenuAppButton[] inMenu = menu.GetComponentsInChildren<FullMenuAppButton>(true);
+            for (int i = 0; i < inMenu.Length; i++)
+            {
+                if (inMenu[i].name == id)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// The app's panel is there: built now if this is the first time it is asked for (the app is being opened). False if
+        /// it is not and cannot be: the game's parts were not as expected (the builder has said what was missing in
+        /// Player.log), and the app is taken off the phone, as an install that failed always was; or it was taken off already.
+        /// </summary>
+        public bool Ready()
+        {
+            if (!_pending)
+            {
+                return Root != null;
+            }
+            _pending = false;
+            if (_menu == null || _menu.appsContainer == null || _dormant == null)
+            {
+                return false;
+            }
+            using var hotSpot = HotSpots.Time(_hotBuilt);
+            GameObject root = null;
+            try
+            {
+                root = _def.Build(_menu, _dormant);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                root = null;
+            }
+            if (root == null)
+            {
+                UiClone.Fallback("'" + _def.Id + "' could not be built from the game's own app when it was first opened, so it is taken off the phone");
+                Remove();
+                return false;
+            }
+            root.SetActive(false);
+            root.name = _def.Id;
+            root.transform.SetParent(_menu.appsContainer, false);
+            if (root.GetComponent<CanvasGroup>() == null)
+            {
+                root.AddComponent<CanvasGroup>();
+            }
+            root.AddComponent<PhoneAppRoot>().App = this;
+            Root = root;
+            return true;
         }
 
         // The button each phone copies for its apps: its private "appButtonTemplate"; failing that the object of that
@@ -285,10 +362,16 @@ namespace RealLifeOverhaul.GameUi
         /// </summary>
         public void Open()
         {
+            using var hotSpot = HotSpots.Time(_hotOpened);
             string gone = Gone();
             if (gone != null)
             {
                 Unopened(gone);
+                return;
+            }
+            if (!Ready())
+            {
+                Unopened("its panel could not be built from the game's own app");
                 return;
             }
             try
@@ -329,7 +412,7 @@ namespace RealLifeOverhaul.GameUi
             {
                 return "the full menu it was put in is gone";
             }
-            if (Root == null)
+            if (!_pending && Root == null)
             {
                 return "its panel is gone";
             }
@@ -450,6 +533,7 @@ namespace RealLifeOverhaul.GameUi
         // The app opened on the answer to BizMan's question, from within the game's question box.
         private void SelectAnswered()
         {
+            using var hotSpot = HotSpots.Time(_hotOpened);
             try
             {
                 Select();
@@ -491,6 +575,7 @@ namespace RealLifeOverhaul.GameUi
         // The panel has come on: by Open(), or with the menu when it was the app last looked at.
         internal void Shown()
         {
+            using var hotSpot = HotSpots.Time(_hotOpened);
             try
             {
                 if (_menu != null && _menu.appNameLabel != null)
@@ -532,6 +617,7 @@ namespace RealLifeOverhaul.GameUi
         // The panel has gone off: the menu closed, or the game opened one of its own apps.
         internal void Hidden()
         {
+            using var hotSpot = HotSpots.Time(_hotOpened);
             try
             {
                 if (_menuButton != null)
@@ -565,6 +651,7 @@ namespace RealLifeOverhaul.GameUi
             _pager = null;
             _strip = null;
             _dormant = null;
+            _pending = false;
             Root = null;
         }
 

@@ -20,6 +20,183 @@ namespace RealLifeOverhaul.GameUi
         Custom
     }
 
+    /// <summary>
+    /// The tone of a cell: plain, the game's yellow, its red, its green (as EconoView colours a gain and a loss). A type
+    /// of its own so that a cell's figure is never taken for a tone: TableRow.Set(column, words, figure) orders and sums
+    /// the column by the figure whatever its type.
+    /// </summary>
+    public enum CellTone : byte
+    {
+        Plain = 0,
+        Yellow = 1,
+        Red = 2,
+        Green = 3
+    }
+
+    /// <summary>
+    /// A table whose rows are written only when they are shown: a long list (every movement of money of a month, some
+    /// 30,000) where a row's words cost more than its figures. The table asks it for each row's figures and kinds when it
+    /// is shown (they order, filter and sum it), for a column's words only when the table is ordered by them, and for the
+    /// whole row (<see cref="Write"/>) only when the row comes into view. What it gives must be what writing the row gives:
+    /// Key(row, c) the row's figure in column c, Text(row, c) its words there, Kind(row, f) its kind for filter f. Its rows
+    /// are plain rows: no line of words, none pinned, every one in the totals.
+    /// </summary>
+    public interface ITableSource
+    {
+        /// <summary>How many rows, in the order they are written (row 0 first).</summary>
+        int Count { get; }
+        /// <summary>What a row gives a column to be ordered and summed by; NaN for nothing.</summary>
+        double Key(int row, int column);
+        /// <summary>The kind a row is of for one of the table's filters; -1 for of none.</summary>
+        int Kind(int row, int filter);
+        /// <summary>A row's words in a column (null for none): asked only when the table is ordered by that column.</summary>
+        string Text(int row, int column);
+        /// <summary>The whole row, written into a row of the table's: asked when it comes into view.</summary>
+        void Write(int row, TableRow into);
+    }
+
+    /// <summary>
+    /// One row of an app's table: the words of each cell, what each cell is ordered by, the kind the row is of, or
+    /// one line that only says something. An app keeps its rows and uses them again (Reset). A row of a table that is
+    /// written when shown (<see cref="ITableSource"/>) stands for its source's row until it is first asked for its cells
+    /// (<see cref="Ready"/>); its cells' arrays are made only when it is written, so a list of 30,000 such rows costs some
+    /// 70 bytes a row, once, and nothing after.
+    /// </summary>
+    public sealed class TableRow
+    {
+        /// <summary>The tones of a cell (GameUi.CellTone), by their old names.</summary>
+        public const GameUi.CellTone Plain = GameUi.CellTone.Plain, Yellow = GameUi.CellTone.Yellow, Red = GameUi.CellTone.Red, Green = GameUi.CellTone.Green;
+
+        public string Id;
+        private string[] _text;
+        private double[] _key;
+        private byte[] _tones;
+        public int Kind, Kind2;     // for the table's first and second filter; -1 for of no kind
+        public bool Info;           // a line of words: no background, not to be selected, always shown first
+        public bool Pick;           // a click on it means something
+        public bool Pinned;         // shown first whatever the order and the filter, and not counted or summed
+        public bool NoTotal;        // ordered and filtered like any other row, but in no total
+        public int Index;           // what it stands for in its tab's list
+
+        private ITableSource _source;   // the table it is written from when shown; null for a row an app wrote itself
+        private int _sourceRow;
+        private bool _written;
+
+        /// <summary>The words of each cell (made when first written to).</summary>
+        public string[] Text => _text ?? (_text = new string[TableSpec.MaxColumns]);
+
+        /// <summary>What each column is ordered and summed by; NaN for nothing.</summary>
+        public double[] Key
+        {
+            get
+            {
+                if (_key == null)
+                {
+                    _key = new double[TableSpec.MaxColumns];
+                    for (int i = 0; i < _key.Length; i++)
+                    {
+                        _key[i] = double.NaN;
+                    }
+                }
+                return _key;
+            }
+        }
+
+        /// <summary>The tone of each cell (GameUi.CellTone).</summary>
+        public byte[] Tones => _tones ?? (_tones = new byte[TableSpec.MaxColumns]);
+
+        /// <summary>A cell's words, its figure and its tone, read without making the row's arrays.</summary>
+        public string TextAt(int column) => _text != null ? _text[column] : null;
+        public double KeyAt(int column) => _key != null ? _key[column] : double.NaN;
+        public byte ToneAt(int column) => _tones != null ? _tones[column] : (byte)Plain;
+
+        // The four cells the apps' first tables had, by their old names.
+        public string A { get { return Text[0]; } set { Text[0] = value; } }
+        public string B { get { return Text[1]; } set { Text[1] = value; } }
+        public string C { get { return Text[2]; } set { Text[2] = value; } }
+        public string D { get { return Text[3]; } set { Text[3] = value; } }
+        /// <summary>The tone of the fourth cell (the last one of a table of four).</summary>
+        public GameUi.CellTone Tone { get { return (GameUi.CellTone)ToneAt(3); } set { Tones[3] = (byte)value; } }
+
+        public TableRow Reset(string id)
+        {
+            _source = null;
+            _written = false;
+            Clean();
+            Id = id;
+            return this;
+        }
+
+        private void Clean()
+        {
+            Id = null;
+            for (int i = 0; i < TableSpec.MaxColumns; i++)
+            {
+                if (_text != null)
+                {
+                    _text[i] = null;
+                }
+                if (_key != null)
+                {
+                    _key[i] = double.NaN;
+                }
+                if (_tones != null)
+                {
+                    _tones[i] = (byte)Plain;
+                }
+            }
+            Kind = Kind2 = -1;
+            Info = Pick = Pinned = NoTotal = false;
+            Index = 0;
+        }
+
+        /// <summary>The row stands for a source's row, written when it is first shown (<see cref="Ready"/>).</summary>
+        public TableRow Stand(ITableSource source, int row)
+        {
+            _source = source;
+            _sourceRow = row;
+            _written = false;
+            Clean();
+            return this;
+        }
+
+        /// <summary>Written from its source if it stands for one and has not been: what it shows, its id, its tones. Then nothing.</summary>
+        public void Ready()
+        {
+            if (_source != null && !_written)
+            {
+                _written = true;
+                Clean();
+                _source.Write(_sourceRow, this);
+            }
+        }
+
+        /// <summary>A cell of words, ordered by them where its column sorts.</summary>
+        public void Set(int column, string words, GameUi.CellTone tone = Plain)
+        {
+            Text[column] = words;
+            if (_key != null)
+            {
+                _key[column] = double.NaN;
+            }
+            if (_tones != null || tone != Plain)
+            {
+                Tones[column] = (byte)tone;
+            }
+        }
+
+        /// <summary>A cell with the figure it is ordered (and summed) by: an amount, a rate, a count, a day.</summary>
+        public void Set(int column, string words, double key, GameUi.CellTone tone = Plain)
+        {
+            Text[column] = words;
+            Key[column] = key;
+            if (_tones != null || tone != Plain)
+            {
+                Tones[column] = (byte)tone;
+            }
+        }
+    }
+
     /// <summary>One column of a table, as data: its title, its width, how it sorts and whether it is summed.</summary>
     public sealed class TableColumn
     {
@@ -81,6 +258,7 @@ namespace RealLifeOverhaul.GameUi
         public bool Ascending = true;
         public bool Touched;                // a header has been clicked: the first order no longer applies
         public bool Reported;               // the self-check's line for this table has been written this session
+        public int Slot = -1;               // the HotSpots slot its sorts and filters are timed under (GameUi.TableView); -1 until the first
 
         public TableSpec(string app, string tab)
         {
@@ -187,12 +365,19 @@ namespace RealLifeOverhaul.GameUi
     /// been ordered, ordering it again allocates nothing. The sort is a merge sort on the array of row numbers, so
     /// rows that compare equal stay in the order they were written (stable), in both directions. It runs when the
     /// rows are written and when the player clicks a header or picks a kind, never otherwise.
+    ///
+    /// A table written from a source (<see cref="ITableSource"/>) is given its rows' figures and kinds only; a column's
+    /// words are read from the source the first time the table is ordered by that column, for the rows whose order the
+    /// words decide (every row of a column ordered by its words, the rows without a figure in any other), and kept until
+    /// the table is written again. The order, the filter and the totals are those the written rows would give.
     /// </summary>
     public sealed class TableModel
     {
         private const int Small = 12;       // runs this short are ordered by insertion before they are merged
 
         private TableSpec _spec;
+        private ITableSource _source;       // the rows' words are read from here when an order needs them
+        private readonly bool[] _wordsRead = new bool[TableSpec.MaxColumns];
         private int _rows;
         private double[][] _keys = new double[TableSpec.MaxColumns][];
         private string[][] _texts = new string[TableSpec.MaxColumns][];
@@ -225,6 +410,8 @@ namespace RealLifeOverhaul.GameUi
         public void Begin(TableSpec spec, int rows)
         {
             _spec = spec;
+            _source = null;
+            Array.Clear(_wordsRead, 0, _wordsRead.Length);
             _rows = Math.Max(0, rows);
             for (int c = 0; c < spec.Count; c++)
             {
@@ -261,6 +448,88 @@ namespace RealLifeOverhaul.GameUi
             _order = Room(_order, _rows);
             _scratch = Room(_scratch, _rows);
             _shown = _pinnedShown = 0;
+        }
+
+        /// <summary>
+        /// A table of rows an app has written: what each gives each column that sorts or sums, and its kinds. In a table
+        /// that neither sorts nor filters (a page laid out by hand, headings between its rows) every row stays where it was
+        /// written; in any other a line of words and a pinned row come first.
+        /// </summary>
+        public void Begin(TableSpec spec, List<TableRow> rows)
+        {
+            Begin(spec, rows.Count);
+            bool ordered = spec.Sortable > 0 || spec.FilterCount > 0;
+            for (int r = 0; r < rows.Count; r++)
+            {
+                TableRow row = rows[r];
+                if (ordered && (row.Info || row.Pinned))
+                {
+                    Pin(r);
+                    continue;
+                }
+                for (int c = 0; c < spec.Count; c++)
+                {
+                    if (spec.Columns[c].Sort != TableSort.None || spec.Columns[c].Sums)
+                    {
+                        Set(r, c, row.KeyAt(c), row.TextAt(c));
+                    }
+                }
+                Kind(r, 0, row.Kind);
+                Kind(r, 1, row.Kind2);
+                if (row.NoTotal)
+                {
+                    Leave(r);
+                }
+            }
+        }
+
+        /// <summary>A table written from a source: each row's figures and kinds now; its words when an order needs them.</summary>
+        public void Begin(TableSpec spec, ITableSource source)
+        {
+            int rows = source != null ? source.Count : 0;
+            Begin(spec, rows);
+            _source = source;
+            for (int c = 0; c < spec.Count; c++)
+            {
+                if (spec.Columns[c].Sort == TableSort.None && !spec.Columns[c].Sums)
+                {
+                    continue;
+                }
+                double[] keys = _keys[c];
+                for (int r = 0; r < rows; r++)
+                {
+                    keys[r] = source.Key(r, c);
+                }
+            }
+            for (int g = 0; g < spec.FilterCount; g++)
+            {
+                int[] kinds = _kinds[g];
+                for (int r = 0; r < rows; r++)
+                {
+                    kinds[r] = source.Kind(r, g);
+                }
+            }
+        }
+
+        // The words of a column the table is to be ordered by, from the source, where they decide the order: every row of
+        // a column ordered by its words, the rows without a figure in any other (Compare). Once a column, until the table
+        // is written again.
+        private void Words(int column, bool byText)
+        {
+            if (_source == null || _wordsRead[column])
+            {
+                return;
+            }
+            _wordsRead[column] = true;
+            double[] keys = _keys[column];
+            string[] texts = _texts[column];
+            for (int r = 0; r < _rows; r++)
+            {
+                if (byText || double.IsNaN(keys[r]))
+                {
+                    texts[r] = _source.Text(r, column);
+                }
+            }
         }
 
         private static T[] Room<T>(T[] array, int rows)
@@ -407,9 +676,10 @@ namespace RealLifeOverhaul.GameUi
             int column = spec.OrderColumn;
             if (column >= 0 && column < spec.Count && spec.Columns[column].Sort != TableSort.None && _shown - _pinnedShown > 1)
             {
+                _byText = spec.Columns[column].Sort == TableSort.Text;
+                Words(column, _byText);
                 _k = _keys[column];
                 _t = _texts[column];
-                _byText = spec.Columns[column].Sort == TableSort.Text;
                 _direction = spec.OrderAscending ? 1 : -1;
                 Sort(_pinnedShown, _shown);
                 _k = null;

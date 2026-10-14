@@ -17,6 +17,10 @@ namespace RealLifeOverhaul.Economy
     /// HOW FAR BACK. The game drops a transaction once more than 1,000 are kept and it is over six days old
     /// (GameManager.ReduceTransactionQueue), so seven days are always there and thirty only in a quiet month:
     /// <see cref="OldestDay"/> says how far the history reaches, and the app says so when the period asks for more.
+    ///
+    /// A bank's statement and a card's movements read only their own (<see cref="Read(int, int, Func{Dictionary{string, string}, bool})"/>):
+    /// the pass over the history is the same, but only what they keep is listed, counted and ranked. The list is shown as a
+    /// table written as it scrolls (CashTable), so a month of 30,000 movements makes some fifteen rows of words, not 30,000.
     /// </summary>
     public sealed class CashFlow
     {
@@ -36,16 +40,6 @@ namespace RealLifeOverhaul.Economy
             public int Day;
         }
 
-        /// <summary>One movement of money in the period, for the table: what it was, when, how much and what for (CashCategory).</summary>
-        public struct Entry
-        {
-            public string Type;
-            public Dictionary<string, string> Data;
-            public float Amount;
-            public int Day;
-            public int Category;
-        }
-
         /// <summary>The names of the categories, for the table's filter.</summary>
         public static string[] CategoryKeys => CashCategory.Keys;
 
@@ -59,8 +53,8 @@ namespace RealLifeOverhaul.Economy
 
         public readonly List<Kind> Kinds = new List<Kind>(48);
         public readonly Item[] Top = new Item[TopMost];
-        /// <summary>Every movement of money in the period, oldest first as the game keeps them.</summary>
-        public readonly List<Entry> Entries = new List<Entry>(256);
+        /// <summary>Every movement of money in the period (that the read kept), oldest first as the game keeps them.</summary>
+        public readonly List<CashEntry> Entries = new List<CashEntry>(256);
         /// <summary>Money in and out by category over the period (out is negative).</summary>
         public readonly float[] CategoryIn = new float[CashCategory.Count], CategoryOut = new float[CashCategory.Count];
         public int TopCount { get; private set; }
@@ -74,6 +68,15 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>Reads the period: yesterday alone, or the last 7 or 30 days with today as the last of them.</summary>
         public void Read(int period, int today)
+        {
+            Read(period, today, null);
+        }
+
+        /// <summary>
+        /// The same, keeping only the movements whose data 'keep' says are wanted (a bank's own, a card's): every figure
+        /// (the kinds, the totals, the largest, the count) is of those kept; <see cref="OldestDay"/> is of the whole history.
+        /// </summary>
+        public void Read(int period, int today, Func<Dictionary<string, string>, bool> keep)
         {
             Kinds.Clear();
             _index.Clear();
@@ -103,7 +106,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     OldestDay = day;
                 }
-                if (day < FromDay || day > ToDay || t.amount == 0f)
+                if (day < FromDay || day > ToDay || t.amount == 0f || (keep != null && !keep(t.transactionData)))
                 {
                     continue;
                 }
@@ -118,7 +121,7 @@ namespace RealLifeOverhaul.Economy
                 Kind kind = Kinds[at];
                 kind.Count++;
                 int category = CashCategory.For(type);
-                Entries.Add(new Entry { Type = type, Data = t.transactionData, Amount = t.amount, Day = day, Category = category });
+                Entries.Add(new CashEntry { Type = type, Data = t.transactionData, Amount = t.amount, Day = day, Category = category });
                 if (t.amount > 0f)
                 {
                     kind.In += t.amount;
@@ -192,5 +195,16 @@ namespace RealLifeOverhaul.Economy
             }
             return data != null && data.Count > 0 ? type.Localize(data).ToString() : type.GetLocalization();
         }
+    }
+
+    /// <summary>The words the apps' tables of money are written in (CashTable): the game's own, as the tabs always wrote them.</summary>
+    public sealed class CashWords : ICashWords
+    {
+        public static readonly CashWords Game = new CashWords();
+
+        public string Day(int day) => FinanceText.Day(day);
+        public string Item(string type, Dictionary<string, string> data) => CashFlow.ItemName(type, data);
+        public string Category(int category) => FinanceText.T(CashCategory.Keys[category]);
+        public string Money(float amount) => FinanceText.Money(amount);
     }
 }

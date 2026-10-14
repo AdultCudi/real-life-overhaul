@@ -51,6 +51,8 @@ namespace RealLifeOverhaul.Economy
         private readonly List<int> _amounts = new List<int>(16);
         private readonly CreditFactor[] _tips = new CreditFactor[2];
         private readonly CashFlow _flow = new CashFlow();
+        private readonly CashTable _cash;   // the Cash flow tab's table, written as it scrolls (over _flow.Entries)
+        private bool _cashRows;             // the table that shows is the Cash flow's, written from _cash
 
         private AppShell _shell;
         private DataTable _table;
@@ -66,6 +68,7 @@ namespace RealLifeOverhaul.Economy
         public FinanceApp(EconomyDirector director)
         {
             _director = director;
+            _cash = new CashTable(_flow.Entries, CashWords.Game);
         }
 
         public static Sprite Glyph()
@@ -100,7 +103,7 @@ namespace RealLifeOverhaul.Economy
             {
                 if (_tab == Finance.CashFlow)
                 {
-                    Refresh();   // the box says what the category chosen comes to
+                    Refresh(false);   // the box says what the category chosen comes to; the table has filtered what it holds
                 }
             };
             _table.onRowSelected.AddListener(row => UiClone.Safe(() => RowClicked(row)));
@@ -173,16 +176,27 @@ namespace RealLifeOverhaul.Economy
         // Everything the open tab shows, made again: asked for when the app opens, a tab is picked or a figure has changed.
         private void Refresh()
         {
+            Refresh(true);
+        }
+
+        // With 'table' false only the box is written again, from what was read for the table that shows (the Cash flow's
+        // filter was changed: the table has filtered the rows it holds, and the box says what the category comes to).
+        private void Refresh(bool table)
+        {
             if (_shell == null || _table == null)
             {
                 return;
             }
             float started = Time.realtimeSinceStartup;
-            for (int i = 0; i < _rows.Count; i++)
+            if (table)
             {
-                _pool.Add(_rows[i]);
+                for (int i = 0; i < _rows.Count; i++)
+                {
+                    _pool.Add(_rows[i]);
+                }
+                _rows.Clear();
+                _cashRows = false;
             }
-            _rows.Clear();
             bool city = _city && _tab == Finance.Overview && CityState() != null;
             StandingPage standing = _standing && _tab == Finance.Overview ? StandingOn() : null;
             _shell.ShowTab(city || standing != null ? -1 : _tab);   // (on the city's page and the Standing page no tab is the one showing: Overview's can be clicked to go back)
@@ -204,7 +218,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     case Finance.Credit: selected = WriteCredit(box, score); break;
                     case Finance.Borrow: selected = WriteBorrow(box, score); break;
-                    case Finance.CashFlow: WriteCashFlow(box); break;
+                    case Finance.CashFlow: WriteCashFlow(box, table); break;
                     case Finance.Accounts: selected = WriteAccounts(box); break;
                     default:
                         if (standing != null)
@@ -224,10 +238,18 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             box.Done();
-            _table.Show(_spec, _rows, selected);
+            if (table && _cashRows)
+            {
+                _table.Show(_spec, _cash, selected);   // (written as it scrolls: some fifteen rows of words, not one for every movement)
+            }
+            else if (table)
+            {
+                _table.Show(_spec, _rows, selected);
+            }
             if (Meta.Dev.Verbose)
             {
-                Logger?.Info("Finance: tab " + _tab + " written, " + _rows.Count + " row(s); " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms.");
+                Logger?.Info("Finance: tab " + _tab + (table ? " written, " + (_cashRows ? _cash.Count + " row(s) as they scroll" : _rows.Count + " row(s)") : ": its box written again")
+                             + "; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms.");
             }
         }
 
@@ -815,10 +837,14 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- Cash flow
 
-        private void WriteCashFlow(InfoBox box)
+        // The period's figures in the box; with 'table' the period is read again and its movements go in the table (written
+        // as it scrolls: CashTable), without it the box alone is written again from what was read.
+        private void WriteCashFlow(InfoBox box, bool table)
         {
-            int today = SaveGameManager.Current.Day;
-            _flow.Read(_period, today);
+            if (table)
+            {
+                _flow.Read(_period, SaveGameManager.Current.Day);
+            }
             _spec = FinanceTables.Cash;
             box.Title(FinanceText.T("reallife_econ_tab_cash"));
             if (!box.HasSelector || !box.Selector(CashFlow.PeriodDays.Length, _period, CashFlow.PeriodName, i =>
@@ -848,27 +874,14 @@ namespace RealLifeOverhaul.Economy
                     box.RowWords(CashFlow.ItemName(item), FinanceText.Money(item.Amount), item.Amount >= 0f ? CellTone.Green : CellTone.Red);
                 }
             }
-            // Every movement of money, newest first; the game's own words for it, and what it was for.
-            for (int i = _flow.Entries.Count - 1; i >= 0; i--)
+            // Every movement of money, newest first; the game's own words for it, and what it was for (CashTable).
+            if (table)
             {
-                CashFlow.Entry entry = _flow.Entries[i];
-                TableRow row = Row("cash:" + i);
-                row.Kind = entry.Category;
-                row.Set(0, FinanceText.Day(entry.Day), entry.Day);
-                row.Set(1, CashFlow.ItemName(entry.Type, entry.Data));
-                row.Set(2, FinanceText.T(CashCategory.Keys[entry.Category]));
-                if (entry.Amount > 0f)
+                _cashRows = _flow.Entries.Count > 0;
+                if (!_cashRows)
                 {
-                    row.Set(3, FinanceText.Money(entry.Amount), entry.Amount, TableRow.Green);
+                    Say("none", FinanceText.T("reallife_econ_row_no_cash"));
                 }
-                else
-                {
-                    row.Set(4, FinanceText.Money(-entry.Amount), -entry.Amount, TableRow.Red);
-                }
-            }
-            if (_rows.Count == 0)
-            {
-                Say("none", FinanceText.T("reallife_econ_row_no_cash"));
             }
             Meta.Guide.Point(box, GuideTitle);
         }
