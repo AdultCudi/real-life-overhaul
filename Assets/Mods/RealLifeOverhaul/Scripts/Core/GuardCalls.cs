@@ -218,10 +218,32 @@ namespace RealLifeOverhaul
             return new Calls.Caught(way, OfHandler(way), leaves).Run;
         }
 
-        // A delegate of the mod's own (the game's own, such as its dialog's FinishDialog, is left as it is).
+        // A delegate of the mod's own: one whose method is not of an assembly the mod is built against (the game's, the
+        // engine's, the framework's: the game's own, such as its dialog's FinishDialog, is left as it is).
         private static bool Ours(Delegate handler)
         {
-            return handler != null && handler.Method.DeclaringType != null && handler.Method.DeclaringType.Assembly == typeof(Guard).Assembly;
+            System.Reflection.Assembly home = handler?.Method.DeclaringType?.Assembly;
+            if (home == null)
+            {
+                return false;
+            }
+            lock (Calls.Theirs)
+            {
+                if (!Calls.Theirs.TryGetValue(home, out bool theirs))
+                {
+                    if (Calls.Referenced == null)
+                    {
+                        Calls.Referenced = new System.Collections.Generic.HashSet<string>(StringComparer.Ordinal);
+                        foreach (System.Reflection.AssemblyName name in typeof(Guard).Assembly.GetReferencedAssemblies())
+                        {
+                            Calls.Referenced.Add(name.Name);
+                        }
+                    }
+                    theirs = home != typeof(Guard).Assembly && Calls.Referenced.Contains(home.GetName().Name);
+                    Calls.Theirs[home] = theirs;
+                }
+                return !theirs;
+            }
         }
 
         // The game's own closing, as the mod's dialogs close (Phone/PhoneContacts.Closing), or nothing if even that fails.
@@ -365,6 +387,8 @@ namespace RealLifeOverhaul
             public static readonly object Mark = new object();
             public static readonly ConditionalWeakTable<DialogEntry, object> Pages = new ConditionalWeakTable<DialogEntry, object>();
             public static readonly ConditionalWeakTable<IPlayerActivity, object> Ended = new ConditionalWeakTable<IPlayerActivity, object>();
+            public static readonly System.Collections.Generic.Dictionary<System.Reflection.Assembly, bool> Theirs = new System.Collections.Generic.Dictionary<System.Reflection.Assembly, bool>();
+            public static System.Collections.Generic.HashSet<string> Referenced;   // (the names of the assemblies the mod is built against)
             private static int _rowFaults;
 
             // A way out: caught and said, never skipped; a cancel that failed still ends the dialog.
