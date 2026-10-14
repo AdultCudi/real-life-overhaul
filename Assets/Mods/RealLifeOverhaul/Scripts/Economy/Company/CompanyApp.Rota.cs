@@ -54,7 +54,7 @@ namespace RealLifeOverhaul.Economy
             if (sheet == null)
             {
                 box.Title(at.Name);
-                box.Line(CompanyText.T(_director.RotaUnread(at.Place) ? "reallife_rota_cannot" : _director.RotaWorking(at.Place) ? "reallife_rota_working" : "reallife_rota_off"));
+                box.Line(CompanyText.T(_director.RotaUnread(at.Place) ? "reallife_rota_cannot" : _director.RotaWorking(at.Place) ? "reallife_rota_working" : "reallife_rota_off"), CellTone.Yellow);
                 BackButton(box);
                 return;
             }
@@ -98,6 +98,7 @@ namespace RealLifeOverhaul.Economy
             }
             box.Title(CompanyText.T("reallife_rota_tab"));
             box.Note(CompanyText.T("reallife_rota_intro"));
+            box.Section("reallife_look_sec_how");
             box.Line(CompanyText.T("reallife_rota_intro_plans"));
             box.Line(CompanyText.T("reallife_rota_intro_fill"));
             box.Note(CompanyText.T("reallife_rota_intro_pick"));
@@ -115,11 +116,12 @@ namespace RealLifeOverhaul.Economy
             string place = at.Place;
             string refusal = CompanyDirector.RotaRefusal(sheet);
             box.Title(at.Name);
+            box.Subtitle(RotaGame.TypeName(at.Reg));
             if (at.Type == RotaType.Warehouse || sheet.Stations.Count == 0)
             {
                 _spec = CompanyTables.RotaWeek;
                 Say("refused", RotaRefused(refusal));
-                box.Line(RotaRefused(refusal));
+                box.Line(RotaRefused(refusal), CellTone.Yellow);
                 BackButton(box);
                 return;
             }
@@ -144,8 +146,12 @@ namespace RealLifeOverhaul.Economy
             RotaStations(sheet);
             RotaGoods(sheet, l.Rungs[l.Recommended], "goods", true);
 
+            bool gaps = at.Type != RotaType.Warehouse && !at.Shut && at.Staff > 0 && at.GapHours > 0;
+            box.Chip(at.Staff == 0 ? CompanyText.T("reallife_rota_row_no_staff") : gaps ? CompanyText.T("reallife_rota_row_gaps", "hours", at.GapHours.ToString()) : CompanyText.T("reallife_rota_row_covered"),
+                at.Staff == 0 ? CellTone.Red : gaps ? CellTone.Yellow : CellTone.Green);
             if (shop.HasCustomers)
             {
+                box.Section("reallife_look_sec_customers");
                 box.Line(CompanyText.T(sheet.FromBooks ? "reallife_rota_box_worth_books" : "reallife_rota_box_worth_prices", "takings", CompanyText.Wage(shop.Takings), "margin", CompanyText.Wage(shop.Margin)));
                 int peak = 0, cap = RotaServes(shop);
                 for (int cell = 0; cell < RotaCatalogue.Cells; cell++)
@@ -156,43 +162,54 @@ namespace RealLifeOverhaul.Economy
                 RotaWeekSum now = l.Rungs[0].Sum;
                 if (now.Hours > now.Manned)
                 {
-                    box.Line(CompanyText.T("reallife_rota_box_unmanned", "hours", (now.Hours - now.Manned).ToString(), "customers", now.LostUnmanned.ToString()));
+                    box.Line(CompanyText.T("reallife_rota_box_unmanned", "hours", (now.Hours - now.Manned).ToString(), "customers", now.LostUnmanned.ToString()), CellTone.Yellow);
                 }
                 RotaGoodsLine(box, sheet);
+                box.Section("reallife_look_sec_advice");
                 string note = !sheet.RequirementsMet ? CompanyText.T("reallife_rota_note_requirements")
                     : at.Shut ? CompanyText.T("reallife_rota_note_shut")
                     : !o.Advised ? CompanyText.T("reallife_rota_note_no_worth")
                     : null;
                 if (note != null)
                 {
-                    box.Line(note);
+                    box.Line(note, CellTone.Yellow);
                 }
                 RotaAdvice(box, sheet);
                 // The late opening permit, whenever it matters: the business opens late without one, or hours that would pay are kept out of the plans for want of one.
                 string fee = CompanyText.Money(LicenceRules.Fee((int)LicenceKind.Late, _director.Index)), term = CompanyCatalogue.LicenceTerm[(int)LicenceKind.Late].ToString();
                 if (sheet.Late)
                 {
-                    box.Line(CompanyText.T("reallife_rota_note_late", "fee", fee, "days", term));
+                    box.Line(CompanyText.T("reallife_rota_note_late", "fee", fee, "days", term), CellTone.Yellow);
                 }
                 if (o.Barred)
                 {
-                    box.Line(CompanyText.Fill("reallife_rota_note_permit", "fee", fee, "days", term, "hours", (o.HoursFree - o.HoursBest).ToString(), "amount", RotaMoney(o.ProfitFree - o.ProfitBest)));
+                    box.Note(CompanyText.Fill("reallife_rota_note_permit", "fee", fee, "days", term, "hours", (o.HoursFree - o.HoursBest).ToString(), "amount", RotaMoney(o.ProfitFree - o.ProfitBest)));
                     if (l.Count > 0 && l.Rungs[l.Recommended].Sum.StockShort > 0)
                     {
-                        box.Line(CompanyText.T("reallife_rota_note_permit_stock"));   // (that figure counts no stock: the goods already run out in the hours there are)
+                        box.Note(CompanyText.T("reallife_rota_note_permit_stock"));   // (that figure counts no stock: the goods already run out in the hours there are)
                     }
                 }
             }
             else
             {
-                box.Line(CompanyText.T(at.Type == RotaType.Headquarters ? "reallife_rota_hq" : at.Type == RotaType.Work ? "reallife_rota_work" : "reallife_rota_no_customers"));
+                box.Note(CompanyText.T(at.Type == RotaType.Headquarters ? "reallife_rota_hq" : at.Type == RotaType.Work ? "reallife_rota_work" : "reallife_rota_no_customers"));
             }
             if (shop.Cleaned)
             {
-                box.Line(CompanyText.T("reallife_rota_cleaned"));
+                box.Note(CompanyText.T("reallife_rota_cleaned"));
             }
-            box.Line(refusal != null ? RotaRefused(refusal)
-                : CompanyText.T("reallife_rota_box_rota", "covered", sheet.Now.CoveredHours.ToString(), "wanted", sheet.Now.WantedHours.ToString(), "unmet", sheet.Now.UnmetCount.ToString()));
+            box.Section("reallife_look_sec_rota");
+            if (refusal != null)
+            {
+                box.Line(RotaRefused(refusal), CellTone.Yellow);
+            }
+            else
+            {
+                box.Meter("reallife_look_covered", LookRules.Fill(sheet.Now.CoveredHours, sheet.Now.WantedHours),
+                    CompanyText.T("reallife_look_of", "value", sheet.Now.CoveredHours.ToString(), "most", sheet.Now.WantedHours.ToString()),
+                    sheet.Now.CoveredHours >= sheet.Now.WantedHours ? CellTone.Green : CellTone.Yellow);
+                box.Note(CompanyText.T("reallife_rota_box_rota", "covered", sheet.Now.CoveredHours.ToString(), "wanted", sheet.Now.WantedHours.ToString(), "unmet", sheet.Now.UnmetCount.ToString()));
+            }
             RotaChoice(box, sheet);
             var buttons = box.ButtonRow();
             if (refusal == null)
@@ -218,7 +235,7 @@ namespace RealLifeOverhaul.Economy
             long more = advised.Sum.Net - l.Rungs[0].Sum.Net;
             box.Line(l.Recommended == 0 ? CompanyText.T("reallife_rota_advice_none")
                 : advised.Hires > 0 ? CompanyText.T("reallife_rota_advice_hire", "plan", RotaPlanName(sheet, advised), "amount", RotaMoney(more))
-                : CompanyText.T("reallife_rota_advice_best", "amount", RotaMoney(more)));
+                : CompanyText.T("reallife_rota_advice_best", "amount", RotaMoney(more)), l.Recommended == 0 ? CellTone.Plain : CellTone.Green);
             if (l.Stop == RotaEnd.TooLittle)
             {
                 box.Line(CompanyText.T("reallife_rota_stop_little", "skill", RotaGame.GroupSkill(sheet, l.StopGroup), "amount", RotaMoney(l.StopGain), "need", RotaMoney(l.StopNeed)));
@@ -248,16 +265,16 @@ namespace RealLifeOverhaul.Economy
             }
             int chosen = _director.RotaModeOf(place);
             string made = CompanyText.T(l.Mode == RotaMode.StaffFirst ? "reallife_rota_mode_staff" : "reallife_rota_mode_lean");
-            box.Line(CompanyText.T("reallife_rota_mode_label"));
+            box.Section("reallife_rota_mode_label");
             if (!box.Selector(RotaModeKeys.Length, chosen, i => i == RotaMode.Auto ? CompanyText.T(RotaModeKeys[0], "mode", made) : CompanyText.T(RotaModeKeys[i]), i => _director.RotaChoose(place, i)))
             {
                 InfoBox.Button(box.ButtonRow(), InfoBox.Additional, chosen == RotaMode.StaffFirst ? "reallife_rota_mode_to_lean" : "reallife_rota_mode_to_staff",
                     () => _director.RotaChoose(place, chosen == RotaMode.StaffFirst ? RotaMode.Lean : RotaMode.StaffFirst));
             }
-            box.Line(CompanyText.T(l.Mode == RotaMode.StaffFirst ? "reallife_rota_mode_explain_staff" : "reallife_rota_mode_explain_lean"));
+            box.Note(CompanyText.T(l.Mode == RotaMode.StaffFirst ? "reallife_rota_mode_explain_staff" : "reallife_rota_mode_explain_lean"));
             if (l.ModeAuto)
             {
-                box.Line(CompanyText.T("reallife_rota_mode_figures", "staff", RotaMoney(l.StaffNet), "lean", RotaMoney(l.LeanNet)));
+                box.Note(CompanyText.T("reallife_rota_mode_figures", "staff", RotaMoney(l.StaffNet), "lean", RotaMoney(l.LeanNet)));
             }
         }
 
@@ -377,7 +394,12 @@ namespace RealLifeOverhaul.Economy
             RotaGoods(sheet, r, "pgoods", false);
 
             box.Title(CompanyText.T("reallife_rota_rung_title", "plan", RotaPlanName(sheet, r), "business", sheet.Place.Name));
-            box.Line(RotaWhyPlan(sheet, r, index));
+            if (index == l.Recommended && l.Count > 1)
+            {
+                box.Chip(CompanyText.T("reallife_look_chip_advised"), CellTone.Green);
+            }
+            box.Note(RotaWhyPlan(sheet, r, index));
+            box.Section("reallife_look_sec_week");
             if (shop.HasCustomers)
             {
                 RotaWeekSum s = r.Sum;
@@ -388,10 +410,10 @@ namespace RealLifeOverhaul.Economy
                 RotaSumLine(box, "reallife_rota_sum_theft", s.Theft);
                 RotaSumLine(box, "reallife_rota_sum_night", s.Night);
                 RotaSumLine(box, "reallife_rota_sum_demands", s.Demands);
-                box.Row("reallife_rota_sum_net", RotaMoney(s.Net));
+                box.Row("reallife_rota_sum_net", RotaMoney(s.Net), s.Net >= 0 ? CellTone.Green : CellTone.Red);
                 if (s.StockShort > 0)
                 {
-                    box.Line(CompanyText.T("reallife_rota_sum_stock", "count", s.StockShort.ToString(), "amount", RotaMoney(s.StockLost)));
+                    box.Line(CompanyText.T("reallife_rota_sum_stock", "count", s.StockShort.ToString(), "amount", RotaMoney(s.StockLost)), CellTone.Yellow);
                 }
                 if (s.Clean > 0)
                 {
@@ -399,7 +421,8 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (index > 0)
                 {
-                    box.Line(r.Gain > 0 ? CompanyText.T("reallife_rota_sum_gain", "amount", RotaMoney(r.Gain), "plan", RotaPlanName(sheet, l.Rungs[index - 1])) : CompanyText.T("reallife_rota_plan_gain_none"));
+                    box.Line(r.Gain > 0 ? CompanyText.T("reallife_rota_sum_gain", "amount", RotaMoney(r.Gain), "plan", RotaPlanName(sheet, l.Rungs[index - 1])) : CompanyText.T("reallife_rota_plan_gain_none"),
+                        r.Gain > 0 ? CellTone.Green : CellTone.Plain);
                 }
             }
             else
@@ -557,7 +580,8 @@ namespace RealLifeOverhaul.Economy
                 row.Tone = open != now ? (open ? TableRow.Green : TableRow.Yellow) : open && r.Served[cell] < r.Come[cell] ? TableRow.Red : TableRow.Plain;
             }
             box.Title(CompanyText.T("reallife_rota_day_title", "day", RotaDayName(d), "business", sheet.Place.Name));
-            box.Line(RotaPlanName(sheet, r));
+            box.Subtitle(RotaPlanName(sheet, r));
+            box.Section("reallife_look_sec_day");
             box.Row("reallife_rota_day_now", RotaHours(shop.Open, d));
             box.Row("reallife_rota_day_plan", RotaHours(r.Open, d));
             box.Line(CompanyText.Fill("reallife_rota_day_sum", "served", served.ToString(), "come", come.ToString(), "earn", RotaMoney(earns), "cost", RotaMoney(costs)));
@@ -784,12 +808,12 @@ namespace RealLifeOverhaul.Economy
             RotaWeekSum advised = l.Rungs[l.Recommended].Sum;
             box.Line(!stock.Any ? CompanyText.T("reallife_rota_box_stock_hand")
                 : advised.StockShort > 0 ? CompanyText.T("reallife_rota_box_stock_short", "count", advised.StockShort.ToString(), "amount", RotaMoney(advised.StockLost))
-                : CompanyText.T("reallife_rota_box_stock_ok"));
+                : CompanyText.T("reallife_rota_box_stock_ok"), stock.Any && advised.StockShort > 0 ? CellTone.Yellow : CellTone.Plain);
             for (int p = 0; p < stock.Products && p < sheet.Products.Count; p++)
             {
                 if (stock.Backorder[p] || stock.Shortage[p])
                 {
-                    box.Line(CompanyText.T(stock.Backorder[p] ? "reallife_rota_stock_backorder" : "reallife_rota_stock_shortage", "product", RotaGame.Text(sheet.Products[p])));
+                    box.Line(CompanyText.T(stock.Backorder[p] ? "reallife_rota_stock_backorder" : "reallife_rota_stock_shortage", "product", RotaGame.Text(sheet.Products[p])), CellTone.Yellow);
                 }
             }
         }

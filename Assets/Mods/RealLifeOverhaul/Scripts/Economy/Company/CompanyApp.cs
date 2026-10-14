@@ -370,18 +370,22 @@ namespace RealLifeOverhaul.Economy
             }
             box.Title(CompanyText.T("reallife_co_app"));
             IReadOnlyList<CompanyAlert> alerts = _director.Alerts;
+            if (alerts.Count > 0)
+            {
+                box.Chip(CompanyText.T("reallife_look_chip_waiting", "count", alerts.Count.ToString()), CellTone.Yellow);
+            }
             box.Headline("reallife_co_over_alerts");
             for (int i = 0; i < alerts.Count && i < AlertsShown; i++)
             {
-                box.Line("<b>" + alerts[i].Title + "</b> " + alerts[i].What);
+                box.Line("<b>" + alerts[i].Title + "</b> " + alerts[i].What, CellTone.Yellow);
             }
             if (alerts.Count == 0)
             {
-                box.Line(CompanyText.T("reallife_co_over_no_alerts"));
+                box.Note(CompanyText.T("reallife_co_over_no_alerts"));
             }
             else if (alerts.Count > AlertsShown)
             {
-                box.Line(CompanyText.T("reallife_co_over_more", "count", (alerts.Count - AlertsShown).ToString()));
+                box.Note(CompanyText.T("reallife_co_over_more", "count", (alerts.Count - AlertsShown).ToString()));
             }
             box.Headline("reallife_co_tab_overview");
             box.Row("reallife_co_over_businesses", shops.Count.ToString());
@@ -445,19 +449,29 @@ namespace RealLifeOverhaul.Economy
         {
             ShopFile file = shop.File;
             box.Title(shop.Name);
+            box.Subtitle(CompanyText.District(shop.District));
+            int waiting = ShopWaiting(state, shop, day);
+            box.Chip(waiting > 0 ? CompanyText.T("reallife_co_state_waiting", "count", waiting.ToString()) : CompanyText.T("reallife_co_state_in_order"), waiting > 0 ? CellTone.Yellow : CellTone.Green);
             if (_director.On(CompanyPart.Staff) && file.StrikeFrom > 0)
             {
-                box.Line(CompanyText.T(file.Striking(day) ? "reallife_co_shop_strike_on" : "reallife_co_shop_strike_called", "day", (file.Striking(day) ? file.StrikeEnd : file.StrikeFrom).ToString()));
+                box.Line(CompanyText.T(file.Striking(day) ? "reallife_co_shop_strike_on" : "reallife_co_shop_strike_called", "day", (file.Striking(day) ? file.StrikeEnd : file.StrikeFrom).ToString()), CellTone.Red);
             }
-            box.Line(shop.HasBooks
-                ? CompanyText.T("reallife_co_shop_yesterday", "takings", CompanyText.Money(shop.Takings), "profit", CompanyText.Money(shop.Profit))
-                : CompanyText.T("reallife_co_shop_no_books"));
+            box.Section("reallife_look_yesterday");
+            if (shop.HasBooks)
+            {
+                box.RowPair("reallife_look_takings", CompanyText.Money(shop.Takings), "reallife_look_profit", CompanyText.Money(shop.Profit));
+            }
+            else
+            {
+                box.Note(CompanyText.T("reallife_co_shop_no_books"));
+            }
+            box.Section("reallife_look_sec_business");
             box.Row("reallife_co_shop_district", CompanyText.T("reallife_co_shop_district_value", "district", CompanyText.District(shop.District), "income", shop.Income.ToString()));
             if (_director.On(CompanyPart.Staff))
             {
                 box.Line(shop.Staff > 0
                     ? CompanyText.T("reallife_co_shop_staff", "count", shop.Staff.ToString(), "standing", (shop.Standing / shop.Staff).ToString(), "low", shop.Low.ToString())
-                    : CompanyText.T("reallife_co_shop_no_staff"));
+                    : CompanyText.T("reallife_co_shop_no_staff"), shop.Staff > 0 && shop.Low > 0 ? CellTone.Yellow : CellTone.Plain);
             }
             if (_director.On(CompanyPart.Cover))
             {
@@ -481,11 +495,12 @@ namespace RealLifeOverhaul.Economy
             if (_director.On(CompanyPart.Licences))
             {
                 int missing = LicenceRules.Missing(file, shop.Needs, day);
-                box.Row("reallife_co_shop_licences", missing == 0 ? CompanyText.T("reallife_co_shop_licences_ok") : CompanyText.T("reallife_co_shop_licences_missing", "list", CompanyText.Licences(missing)));
+                box.Row("reallife_co_shop_licences", missing == 0 ? CompanyText.T("reallife_co_shop_licences_ok") : CompanyText.T("reallife_co_shop_licences_missing", "list", CompanyText.Licences(missing)),
+                    missing == 0 ? CellTone.Green : CellTone.Red);
             }
             if (_director.On(CompanyPart.Tax) && file.Hide > 0)
             {
-                box.Row("reallife_co_shop_hidden", file.Hide + "%");
+                box.Row("reallife_co_shop_hidden", file.Hide + "%", CellTone.Yellow);
             }
             if (ServicesDirector.CanSell) InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_svc_open_sale", () => ServicesDirector.OpenSale(file.Place));   // (selling a business: Economy/Services)
             BackButton(box);
