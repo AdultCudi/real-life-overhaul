@@ -6,6 +6,9 @@ using BigAmbitions.DayNightCycle;
 using BigAmbitions.Items;
 using Helpers;
 using Localizor;
+using Streets;
+using UI.Guiders;
+using UI.Notification;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Tech
@@ -16,13 +19,15 @@ namespace RealLifeOverhaul.Tech
     /// READ: the player's businesses of the tech sector's types, and their web development agencies and graphic designers
     /// (the game's own office businesses, which join the same economy); what a game office sold yesterday and its hour's
     /// price (from the game's statement and ItemHelper.GetPrice), so that only the hours its staff had spare go to the
-    /// tech sector's work; the player's other businesses, as clients.
+    /// tech sector's work; the player's other businesses, as clients; for the competitors' rule, every tech firm and
+    /// academy the player or another player runs, with its address and district.
     ///
     /// DONE: money as dated transactions of the mod's own at the firm's address (takings counted among the business's
     /// takings in the game's statement through the economy's books; hosting and software as a row of its costs; marketing
     /// in the game's marketing line), the costs marked deductible as the game marks its own; the research and development
     /// relief given to the game's tax as an extra deductible expense with no money moving (TaxHelper.TrackTransaction, as
     /// the economy's books give Empire Motors' costs). A fine is charged at once and is not deductible.
+    /// A competitor's tower or business set as the destination, as the game's own Set destination does it.
     /// </summary>
     internal static class FirmsGame
     {
@@ -242,6 +247,122 @@ namespace RealLifeOverhaul.Tech
                     return false;
                 }
                 ui.fullMenu.bizMan.Open(reg.Address, "Schedule");
+                return true;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return false;
+            }
+        }
+
+        // ---------------------------------------------------------------- competitors
+
+        /// <summary>
+        /// Every business the player runs, or another player in a Going Public session (which Going Public puts on this
+        /// machine as rented by the player), that is a tech firm or a training academy (its type: null while the academy is
+        /// off), for the competitors' rule (CompetitorRules.Gather). One pass over the buildings. Read only.
+        /// </summary>
+        public static void Seen(List<FirmSeen> into, string academy)
+        {
+            into.Clear();
+            List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
+            for (int i = 0; all != null && i < all.Count; i++)
+            {
+                BuildingRegistration reg = all[i];
+                if (reg == null || !reg.RentedByPlayer || !reg.HasValidAddress || !reg.HasEstablishedBusiness)
+                {
+                    continue;
+                }
+                int kind = KindOf(reg.businessTypeName);
+                if (kind < 0 && academy != null && reg.businessTypeName == academy)
+                {
+                    kind = CompetitorRules.Academy;
+                }
+                if (kind >= 0)
+                {
+                    into.Add(new FirmSeen { Kind = kind, Place = TalentGame.Place(reg), Name = TalentGame.NameOf(reg), Theirs = GoingPublic.Foreign(reg) });
+                }
+            }
+        }
+
+        /// <summary>Where a business of the player's or another player's is, for its competitors' page: its address and its district in words. False if it is not in the city's list.</summary>
+        public static bool Where(string place, out string street, out int number, out string district)
+        {
+            street = null;
+            number = 0;
+            district = null;
+            List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
+            for (int i = 0; all != null && i < all.Count; i++)
+            {
+                BuildingRegistration reg = all[i];
+                if (reg == null || !reg.RentedByPlayer || !reg.HasValidAddress || TalentGame.Place(reg) != place)
+                {
+                    continue;
+                }
+                street = reg.StreetName;
+                number = reg.StreetNumber;
+                try
+                {
+                    string id = reg.Neighborhood;
+                    district = string.IsNullOrEmpty(id) ? null : id.GetLocalization();
+                }
+                catch (Exception)
+                {
+                    district = null;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>An address as the game writes it.</summary>
+        public static string AddressWords(string street, int number)
+        {
+            try
+            {
+                return string.IsNullOrEmpty(street) ? string.Empty : new Address(street, number).ToFormattedString();
+            }
+            catch (Exception)
+            {
+                return street + " " + number.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            }
+        }
+
+        /// <summary>
+        /// The destination set at a building, as the game's own Set destination does it (BizManBusiness.SetDestination): the
+        /// address kept in the save, the game's destination marker on it (a special building's own name on the marker, as
+        /// the city map's double click puts it: Navigation), the game's notification naming it, and the phone closed. Only
+        /// the player's own destination is changed. False if it cannot be.
+        /// </summary>
+        public static bool Destination(string street, int number)
+        {
+            try
+            {
+                GuidersManager guiders = InstanceBehavior<GuidersManager>.Instance;
+                if (string.IsNullOrEmpty(street) || Save == null || guiders == null)
+                {
+                    return false;
+                }
+                var address = new Address(street, number);
+                Save.customDestination = address;
+                GuidersManager.SetGuiderTarget(address, DirectionGuiderType.Destination);
+                string name = address.ToFormattedString();
+                string special = SpecialBuildings.NameFor(address);
+                if (special != null)
+                {
+                    if (guiders.destinationGuider != null && guiders.destinationGuider.poi != null)
+                    {
+                        guiders.destinationGuider.poi.SetText(special);
+                    }
+                    name = TechText.T("reallife_map_name_at").Replace("{what}", special).Replace("{place}", name);
+                }
+                Notifications.Show(NotificationType.Success, "notification_destination_set", new Dictionary<string, string>(1) { { "address", name } });
+                global::UI.UIs ui = InstanceBehavior<global::UI.UIs>.Instance;
+                if (ui != null && ui.fullMenu != null)
+                {
+                    ui.fullMenu.Toggle(false);
+                }
                 return true;
             }
             catch (Exception e)

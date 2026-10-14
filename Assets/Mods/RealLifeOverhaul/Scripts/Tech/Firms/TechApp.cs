@@ -10,8 +10,10 @@ namespace RealLifeOverhaul.Tech
     /// The Tech app, in the game's frame (GameUi.AppShell) as Open Roles is:
     ///
     ///   Firms       every tech firm of the player's with its people, its engineering time, products, contracts and
-    ///               takings; pick one for its crew, its risks, the data protection register, its value and its focus, or to
-    ///               start a product; with nothing picked, the way from a studio to a hyperscaler and where the player is on it
+    ///               takings; pick one for its crew, its risks, the data protection register, its value and its focus, to
+    ///               start a product, or for its Competitors page (TechApp.Rivals: who it is up against, how its products
+    ///               compare, the tenders both bid for, where each is); with nothing picked, the way from a studio to a
+    ///               hyperscaler and where the player is on it
     ///   Products    every product with its features against its rival's, customers, recurring revenue and quality; pick one
     ///               to price it, market it, give it engineering time, launch it or withdraw it
     ///   Contracts   offers, the council's tenders and work under way; pick one to take it, bid for it or give it up
@@ -215,7 +217,7 @@ namespace RealLifeOverhaul.Tech
 
         private void ClosePick()
         {
-            _picked = null;
+            _picked = RivalsBack(_picked);   // (a competitor's page goes back to its firm's competitors; anything else closes)
             _page = 0;
             _table.ClearSelection();
             Refresh();

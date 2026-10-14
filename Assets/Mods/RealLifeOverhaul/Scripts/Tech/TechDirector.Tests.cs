@@ -210,6 +210,41 @@ namespace RealLifeOverhaul.Tech
             Notifications.ShowError("reallife_tech_test_no_taker");
         }
 
+        /// <summary>
+        /// The council puts a job out to tender now, as it does every so many days, for a firm of the player's that takes on
+        /// its work: its rival bidders are named on its page and on the firms' Competitors pages.
+        /// </summary>
+        public void TestTender()
+        {
+            if (!_firmsOn || Save == null)
+            {
+                Notifications.ShowError("reallife_tech_test_off");
+                return;
+            }
+            ReadFirms(Save.Day);
+            bool integration = false, managed = false;
+            for (int i = 0; i < _firms.Count; i++)
+            {
+                integration |= FirmsRules.Takes(_firms[i].File.K, WorkKind.Integration);
+                managed |= FirmsRules.Takes(_firms[i].File.K, WorkKind.Managed);
+            }
+            if (!integration && !managed)
+            {
+                Notifications.ShowError("reallife_tech_test_no_taker");
+                return;
+            }
+            WorkKind kind = integration ? WorkKind.Integration : WorkKind.Managed;
+            var t = new Contract
+            {
+                Id = _firmsFile.Next(), Kind = (int)kind, Client = FirmsCatalogue.Council, Council = true, Stage = (int)WorkStage.Tender, End = Save.Day + FirmsCatalogue.TenderDays,
+                Points = kind == WorkKind.Managed ? 0 : FirmsCatalogue.WorkLeast[(int)kind], Rivals = 3
+            };
+            t.Value = FirmsRules.ValueOf(kind, t.Points, true);
+            _firmsFile.Contracts.Add(t);
+            Worked(new WorkNote { Contract = t.Id, Kind = FirmsRules.NoteTender });
+            ChangedTech();
+        }
+
         /// <summary>The first product on sale has an outage now.</summary>
         public void TestOutage()
         {

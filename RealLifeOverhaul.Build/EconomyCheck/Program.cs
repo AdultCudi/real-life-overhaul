@@ -121,6 +121,7 @@ internal static partial class Program
         Infra2();
         Ventures2();
         Firms();
+        Competitors();
         Hiring();
         Tech();
         Careers();

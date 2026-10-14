@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Tech
 {
@@ -149,6 +150,41 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        /// <summary>
+        /// The training academy's business type (Careers/AcademyType), while the academy runs (Careers: studying and the
+        /// family's part on), for BizMan's start screen to say its competitors in the city. Default: none, and its card keeps
+        /// the game's count.
+        /// </summary>
+        public static Func<string> AcademyType;
+
+        /// <summary>The places that teach courses, by name, as an academy's competitors: the game's school, and the university while it is open (Careers). Default: none.</summary>
+        public static Action<List<string>> Schools;
+
+        public static string AcademyNow()
+        {
+            try
+            {
+                return AcademyType != null ? AcademyType() : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        public static void SchoolsNow(List<string> into)
+        {
+            into.Clear();
+            try
+            {
+                Schools?.Invoke(into);
+            }
+            catch (Exception)
+            {
+                into.Clear();
+            }
+        }
+
         public static int CourseShare()
         {
             try
@@ -260,6 +296,8 @@ namespace RealLifeOverhaul.Tech
             DegreeFee = null;
             OthersPicked = null;
             Employer = null;
+            AcademyType = null;
+            Schools = null;
         }
     }
 }

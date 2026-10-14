@@ -68,6 +68,9 @@ namespace RealLifeOverhaul.Tech
         /// <summary>Thousandths as a per cent: "65%".</summary>
         public static string Mille(int thousandths) => (thousandths / 10f).ToString("0", Inv) + "%";
 
+        /// <summary>A share in parts per million as a percentage, with the decimals a small share needs ("0.04%", "12.5%").</summary>
+        public static string Share(int ppm) => (ppm / 10000f).ToString(ppm < 10000 ? "0.##" : "0.#", Inv) + "%";
+
         public static string Whole(long n) => n.ToString("N0", Inv);
 
         public static string Role(int role) => T(Mod + "_talent_role_" + TalentCatalogue.Role(role).Key);

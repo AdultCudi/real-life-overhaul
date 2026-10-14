@@ -33,6 +33,8 @@ namespace RealLifeOverhaul
         ///   Children      the family's children: a grown one is offered a place at the university
         ///   CourseShareBp the player's own academy halves what their professional staff pay for a course (Tech/People)
         ///   DegreeFee     a professional can be sent on a degree, paid by the business (Tech/People)
+        ///   AcademyType, Schools  BizMan's start screen counts an academy's competitors in the city: the game's school, the
+        ///                 university while it is open, other academies (Tech/Firms/StartCards)
         ///   Qualified     the banking licence asks for a qualified person: a finance qualification of the player's, or a senior professional in finance
         ///   the obituary  the best qualification and the career, for Permadeath's page (PermadeathLinks)
         ///   the paper     education's and careers' stories, chained on to the City Ledger's other pieces (News.Extra)
@@ -87,6 +89,8 @@ namespace RealLifeOverhaul
                 CareersBridges.Children = Children;
                 TechBridges.CourseShareBp = () => CareersDirector.Instance != null && CareersDirector.Instance.HasAcademy() ? StudyCatalogue.AcademyStaffCourseBp : 10000;
                 TechBridges.DegreeFee = DegreeFee;
+                TechBridges.AcademyType = () => CareersDirector.FamilyOn ? AcademyType.Type : null;
+                TechBridges.Schools = Schools;
                 Economy.OwnBankBridges.Qualified = Qualified;
                 CareersBridges.Council = () => CivicPolicy.Position(Lever.Grants);
                 Economy.CreditLedger.Register(Loan);
@@ -111,10 +115,33 @@ namespace RealLifeOverhaul
                 FitOut.FitDesks.Made = null;
                 FitOut.FitDesks.Gone = null;
                 TechBridges.Founder = null;
+                TechBridges.AcademyType = null;
+                TechBridges.Schools = null;
                 Economy.CreditLedger.Unregister(Loan);
                 Economy.OwnBankBridges.Qualified = null;
                 News.Extra = _paperBefore;
                 _paperBefore = null;
+            }
+
+            // The places that teach courses, as an academy's competitors: the game's school, and the university while it is open.
+            private static void Schools(List<string> into)
+            {
+                try
+                {
+                    if (CareersGame.SchoolAddress(out string street, out int number))
+                    {
+                        into.Add(CareersText.T("reallife_study_campus_school"));
+                    }
+                    CareersDirector careers = CareersDirector.Instance;
+                    if (careers != null && careers.University != null && careers.University.Usable)
+                    {
+                        into.Add(CareersText.T("reallife_study_campus_university"));
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("CareersLinks.Schools", e);
+                }
             }
 
             private static bool HomeInternet()
