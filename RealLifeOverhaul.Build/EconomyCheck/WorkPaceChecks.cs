@@ -21,6 +21,7 @@ internal static partial class Program
         int before = _run, failedBefore = _failed;
         PacePlaceKeys();
         PaceFindByNumber();
+        PaceTalentIndex();
         PaceEmploysKept();
         PaceTechWriterSame();
         PaceTechWriterCost();
@@ -104,6 +105,30 @@ internal static partial class Program
             same += whole == quick ? 1 : 0;
         }
         Check(same == places.Count, "work pace: a building looked for by its key, passing others over on their number, is the one the whole compare finds (" + same + " of " + places.Count + ")");
+    }
+
+    // ---------------------------------------------------------------- the professionals' files by id
+
+    // The people's read finds each employee's file from TalentFile.Index: at the cap of 600, with an id twice and files
+    // with no id, every id gives the file TalentFile.Of gives.
+    private static void PaceTalentIndex()
+    {
+        TalentFile file = PaceTalent(TalentStore.PeopleMost);
+        file.People[17].Id = file.People[400].Id;   // (an id twice: the first is the one)
+        file.People[30].Id = string.Empty;
+        file.People[31].Id = string.Empty;
+        file.People[32].Id = null;
+        var index = new Dictionary<string, Profile>();
+        file.Index(index);
+        int asked = 0, same = 0;
+        var ids = file.People.Select(p => p.Id).Where(id => id != null).ToList();
+        ids.AddRange(new[] { "absent", "pro:99999", "emp_" });
+        foreach (string id in ids)
+        {
+            asked++;
+            same += ReferenceEquals(index.TryGetValue(id, out Profile found) ? found : null, file.Of(id)) ? 1 : 0;
+        }
+        Check(same == asked && index.Count < file.People.Count, "work pace: every professional's file by id from the index is TalentFile.Of's, an id twice and no id included (" + same + " of " + asked + ")");
     }
 
     // ---------------------------------------------------------------- which professions a type employs

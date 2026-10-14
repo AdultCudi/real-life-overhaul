@@ -128,16 +128,11 @@ namespace RealLifeOverhaul.Tech
         {
             _people.Clear();
             _ids.Clear();
-            _fileOf.Clear();
             for (int i = 0; i < _talent.People.Count; i++)
             {
-                Profile file = _talent.People[i];
-                file.Seen = file.Payroll;
-                if (file.Id != null && !_fileOf.ContainsKey(file.Id))
-                {
-                    _fileOf.Add(file.Id, file);   // (the first of an id, as TalentFile.Of finds it)
-                }
+                _talent.People[i].Seen = _talent.People[i].Payroll;
             }
+            _talent.Index(_fileOf);   // (the first of an id, as TalentFile.Of finds it)
             TalentGame.Employees(_employees);
             int made = 0;
             for (int i = 0; i < _employees.Count; i++)
