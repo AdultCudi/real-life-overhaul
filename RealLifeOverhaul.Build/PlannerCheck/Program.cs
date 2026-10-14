@@ -5,7 +5,7 @@ using RealLifeOverhaul.Planner;
 
 // Checks for the Planner's game-free parts. A check that fails prints one line; the last line is
 // ALL CHECKS PASSED or the count that failed.
-internal static class Program
+internal static partial class Program
 {
     private static int _failed, _run;
 
@@ -42,6 +42,18 @@ internal static class Program
         SaveAndLoad();
         Damaged();
         Limits();
+        Reach();
+        Travel();
+        Leads();
+        Repeats();
+        Deleting();
+        Groups();
+        NewFields();
+        OldSaves();
+        Week();
+        Free();
+        Owed();
+        Texts();
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }
@@ -218,12 +230,17 @@ internal static class Program
         PlannerStore.TakeDue(PlannerTime.At(11, 9), due);
         Check(due.Count == 1 && !PlannerStore.IsLate(due[0], PlannerTime.At(11, 9)) && PlannerStore.Reminders.Count == 0, "09:00: out, on time");
 
-        // a reminder at half past goes out at the hour before it, never after
+        // a reminder goes out at its minute (the director asks once a second), never before it
         PlannerStore.SetReminder(note, 12, 570, ReminderLead.AtTheTime, PlannerTime.At(11, 10));
-        PlannerStore.TakeDue(PlannerTime.At(12, 8), due);
-        Check(due.Count == 0, "08:00 is too early for 09:30");
+        Check(PlannerStore.NextFire == PlannerTime.At(12, 9, 30), "the soonest reminder is known: one comparison a second");
         PlannerStore.TakeDue(PlannerTime.At(12, 9), due);
-        Check(due.Count == 1 && !PlannerStore.IsLate(due[0], PlannerTime.At(12, 9)), "09:00 covers 09:30");
+        Check(due.Count == 0, "09:00 is too early for 09:30");
+        PlannerStore.TakeDue(PlannerTime.At(12, 9, 29), due);
+        Check(due.Count == 0, "09:29 is too early for 09:30");
+        PlannerStore.TakeDue(PlannerTime.At(12, 9, 30), due);
+        Check(due.Count == 1 && !PlannerStore.IsLate(due[0], PlannerTime.At(12, 9, 30)) && PlannerStore.NextFire == int.MaxValue, "09:30: out, on time; nothing left to wait for");
+        Check(!PlannerStore.IsLate(due[0], PlannerTime.At(12, 9, 30) + PlannerStore.LateMinutes) && PlannerStore.IsLate(due[0], PlannerTime.At(12, 9, 31) + PlannerStore.LateMinutes),
+            "a reminder is late only when it goes out more than half an hour after its moment");
 
         // a time skip: three reminders fall inside it, each goes out once when it ends, marked late, in their order
         PlannerStore.SetReminder(new EntryId("a", 1), 14, 600, ReminderLead.AtTheTime, PlannerTime.At(13, 0));

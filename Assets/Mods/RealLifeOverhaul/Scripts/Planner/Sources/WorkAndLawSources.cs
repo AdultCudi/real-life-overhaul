@@ -32,6 +32,9 @@ namespace RealLifeOverhaul.Planner
                 e.Start = CareerState.RotaHour * 60;
                 e.End = ((CareerState.RotaHour + CareerCatalogue.ShiftHours) % 24) * 60;
                 e.Attend = true;
+                // Clocking on is refused from this many hours after the rota's hour (CareerDirector.ClockOnRefusal): then it is missed.
+                // A shift clocked on to is dealt with (CareerState.ClockOn) and no longer listed.
+                e.JoinBy = (CareerState.RotaHour + CareerCatalogue.LateHours) * 60 - 1;
                 if (into.WantText)
                 {
                     string place = employer.NameKey.GetLocalization();

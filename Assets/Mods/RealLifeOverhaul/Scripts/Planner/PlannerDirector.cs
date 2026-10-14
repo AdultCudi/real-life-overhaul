@@ -15,8 +15,9 @@ namespace RealLifeOverhaul.Planner
     ///
     /// This class keeps it going and nothing more: it puts the app on the phone once the game's phone is there, reads
     /// and writes the save's three lines, asks the sources when someone looks, and sends reminders. Its Update is a
-    /// timer comparison; the work is done once a second until the app is on the phone, and after that on the game's
-    /// own hour event, on the save event and when the app is opened.
+    /// timer comparison; once a second the clock is compared with the soonest reminder (PlannerStore.NextFire) and,
+    /// until the app is on the phone, it is put there; the rest is done on the game's own hour event, on the save
+    /// event, when a reminder's minute comes and when the app is opened.
     /// </summary>
     public sealed class PlannerDirector : MonoBehaviour
     {
@@ -171,8 +172,13 @@ namespace RealLifeOverhaul.Planner
             if (!PlannerStore.Loaded)
             {
                 PlannerStore.Load(SaveGameManager.Current.modData);
+                PlannerStore.ArmAll(Now());   // each repeated entry's next reminder, from today's clock
                 SaveHook.Keep(_onSave);
                 Logger?.Info("Planner: ready. " + PlannerStore.Notes.Count + " note(s), " + PlannerStore.Reminders.Count + " reminder(s) waiting.");
+            }
+            if (Now() >= PlannerStore.NextFire)
+            {
+                Due();   // a reminder's minute has come: one comparison a second until then
             }
             SaveHook.Keep(_onSave);
             EventHold.Keep(ref GlobalEvents.onNewHour, _onHour, ref _hourSeen);
@@ -281,7 +287,33 @@ namespace RealLifeOverhaul.Planner
                     }
                 }
             }
-            PlannerLogic.Arrange(List, Now());
+            // With the texts (the app, a reminder) each entry's place is found, so that a way too long between two is a clash
+            // as well: by car or taxi, the quickest way the city offers everybody. The hourly look for the badge needs neither.
+            if (wantText)
+            {
+                Places();
+            }
+            PlannerLogic.Arrange(List, Now(), wantText ? PlannerRules.DrivePerMinute : 0);
+        }
+
+        // An entry's place in the city: the point it was given, or its address's door (a lookup in the game's table each).
+        private void Places()
+        {
+            List<PlannerEntry> items = List.Items;
+            for (int i = 0; i < items.Count; i++)
+            {
+                PlannerEntry e = items[i];
+                if (e.HasPlace)
+                {
+                    e.Placed = true;
+                    e.PlaceX = e.X;
+                    e.PlaceZ = e.Z;
+                }
+                else if (!string.IsNullOrEmpty(e.Street))
+                {
+                    e.Placed = PlannerGame.Door(e.Street, e.Number, out e.PlaceX, out e.PlaceZ);
+                }
+            }
         }
 
         /// <summary>For the diagnostics line: how many entries each source gave at the last look.</summary>
@@ -324,11 +356,7 @@ namespace RealLifeOverhaul.Planner
                 int now = Now();
                 int today = TimeHelper.CurrentDay;
                 _lastHour = TimeHelper.CurrentHour;
-                PlannerStore.TakeDue(now, _due);
-                if (_due.Count > 0)
-                {
-                    Remind(now, today);
-                }
+                Due();
                 if (_app != null && Settings.Planner && !_app.Showing)
                 {
                     Look(today, today + 1, false);
@@ -344,11 +372,23 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
+        // The reminders whose minute has come go out (on the second it is seen, and on the hour as well).
+        private void Due()
+        {
+            int now = Now();
+            PlannerStore.TakeDue(now, _due);
+            if (_due.Count > 0)
+            {
+                Remind(now, TimeHelper.CurrentDay);
+            }
+        }
+
         // Each reminder that is due is checked against its source now: only what is still there and still to do is said.
         private void Remind(int now, int today)
         {
             if (!Settings.Planner || !Settings.PlannerReminders)
             {
+                Rearm(now);
                 _due.Clear();   // reminders are switched off: what fell due is let go
                 return;
             }
@@ -378,8 +418,8 @@ namespace RealLifeOverhaul.Planner
                 {
                     // The entry has moved since the reminder was set (a hearing put back): the reminder moves with it.
                     int start = entry.Deadline && entry.End >= 0 ? entry.End : entry.Start;
-                    int fireAt = PlannerStore.FireAt(entry.Day, start, reminder.Lead);
-                    if (fireAt >= now + 60 && PlannerStore.SetReminder(entry.Id, entry.Day, start, reminder.Lead, now))
+                    int fireAt = PlannerStore.FireAt(entry.Day, start, reminder.Lead, reminder.Travel);
+                    if (fireAt > now && PlannerStore.SetReminder(entry.Id, entry.Day, start, reminder.Lead, now, reminder.Travel))
                     {
                         why = "its entry has moved, the reminder with it";
                     }
@@ -397,16 +437,36 @@ namespace RealLifeOverhaul.Planner
                     { "title", entry.Title ?? string.Empty },
                     { "when", PlannerText.WhenLong(entry, today) }
                 };
+                string key = late ? "reallife_planner_reminder_late" : "reallife_planner_reminder";
+                float metres;
+                if (reminder.Lead == ReminderLead.LeaveBy && PlannerGame.MetresTo(entry, out metres))
+                {
+                    // When to leave: the way is told again from where the player is now.
+                    key = late ? "reallife_planner_reminder_leave_late" : "reallife_planner_reminder_leave";
+                    data["way"] = PlannerText.Span(PlannerRules.TravelMinutes(metres, PlannerGame.ByCar() ? PlannerRules.DrivePerMinute : PlannerRules.WalkPerMinute));
+                }
                 EntryId id = entry.Id;
-                Notifications.Show(late ? NotificationType.Warning : NotificationType.Info, late ? "reallife_planner_reminder_late" : "reallife_planner_reminder",
-                    data, 12f, null, Guard.Wrap(() => OpenAt(id)), true, false);
+                Notifications.Show(late ? NotificationType.Warning : NotificationType.Info, key, data, 12f, null, Guard.Wrap(() => OpenAt(id)), true, false);
                 if (Meta.Dev.Verbose)
                 {
                     Logger?.Info("Planner: reminder sent for " + id.Source + " " + id.A + " ('" + entry.Title + "', " + data["when"] + ")"
                                  + (late ? ", late by " + (now - reminder.FireAt) + " min." : "."));
                 }
             }
+            Rearm(now);
             _due.Clear();
+        }
+
+        // A reminder of one of the player's entries that repeats is followed by the one for its next time.
+        private void Rearm(int now)
+        {
+            for (int i = 0; i < _due.Count; i++)
+            {
+                if (string.Equals(_due[i].Entry.Source, NoteSource.SourceId, StringComparison.Ordinal))
+                {
+                    PlannerStore.Arm(PlannerStore.Note(_due[i].Entry.A), now);
+                }
+            }
         }
 
         private void OpenAt(EntryId id)
@@ -458,6 +518,7 @@ namespace RealLifeOverhaul.Planner
             if (soon != null)
             {
                 soon.Sample = true;
+                soon.Repeat = PlannerRepeat.Daily;   // one that comes back each day: the Week tab shows it in every column
             }
             if (later != null)
             {
@@ -481,8 +542,7 @@ namespace RealLifeOverhaul.Planner
             {
                 if (PlannerStore.Notes[i].Sample)
                 {
-                    PlannerStore.SetReminder(new EntryId(NoteSource.SourceId, PlannerStore.Notes[i].Id), 0, 0, ReminderLead.None, 0);
-                    PlannerStore.Notes.RemoveAt(i);
+                    PlannerStore.RemoveNote(PlannerStore.Notes[i].Id);   // with every reminder for it
                 }
             }
             if (tell && PlannerStore.Loaded)

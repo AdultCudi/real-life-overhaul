@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Planner
         public string Id;
         public RowKind Kind;
         public PlannerEntry Entry;
+        public int Day;     // the day of its entry, or of a heading: a click on a heading shows that day
         public string When, What, Where, Status;
         public Sprite Icon;
         public int Tone;    // of the status: 0 plain, 1 the game's yellow (now, next), 2 the game's red (missed, a clash)
