@@ -5,13 +5,23 @@ using System.Runtime.CompilerServices;
 using RealLifeOverhaul;
 
 // The frame a game day starts in, and the economy's hour (14 Oct 2026, "start the optimization work of this mod.
-// Completely."): the economy's look-ups of a morning made by dictionaries and one walk of the day's transactions
-// (Core/LookupRules). Each index gives exactly what the walk it replaces gave, on late-game figures: 300 businesses,
-// 3,000 employees, 30,000 transactions.
+// Completely."): the customers of the player's businesses drawn again once a business, spread over the frames that follow
+// within the hour they were asked in (Core/RedrawRules), and the economy's look-ups of a morning made by dictionaries and one
+// walk of the day's transactions (Core/LookupRules). Each index gives exactly what the walk it replaces gave, on late-game
+// figures: 300 businesses, 3,000 employees, 30,000 transactions.
 internal static partial class Program
 {
     private static void Morning()
     {
+        MoRedrawOnce();
+        MoRedrawUnchanged();
+        MoRedrawAlways();
+        MoRedrawReplaced();
+        MoRedrawAdded();
+        MoRedrawSame();
+        MoRedrawCost();
+        MoRedrawRules();
+        MoRedrawMornings();
         MoIndexSame();
         MoIndexCost();
         MoSumsSame();
@@ -23,6 +33,11 @@ internal static partial class Program
     }
 
     // ---------------------------------------------------------------- stand-ins for the game's things
+
+    private sealed class MoShop
+    {
+        public string Name;
+    }
 
     // As the game's Address: equal by street and number.
     private sealed class MoAddr
@@ -87,6 +102,291 @@ internal static partial class Program
     {
         public MoAddr Address;
         public float Profit;
+    }
+
+    private static List<MoShop> MoShops(int count)
+    {
+        var shops = new List<MoShop>(count);
+        for (int i = 0; i < count; i++)
+        {
+            shops.Add(new MoShop { Name = "shop " + i });
+        }
+        return shops;
+    }
+
+    // ---------------------------------------------------------------- the redraws: one a business, the last figure
+
+    private static void MoRedrawOnce()
+    {
+        var q = new RedrawQueue<MoShop>();
+        List<MoShop> shops = MoShops(300);
+        var lists = new object[300];
+        for (int i = 0; i < 300; i++)
+        {
+            lists[i] = new object();
+        }
+        // The morning: the city, the company, the brands and the interiors each write every business's figure.
+        for (int f = 0; f < 4; f++)
+        {
+            for (int i = 0; i < 300; i++)
+            {
+                q.Ask(shops[i], 40 + f + i % 7, false, 240, DrawPrint.Of(lists[i], 10, null));
+            }
+        }
+        Check(q.Waiting == 300, "redraws: four features asking for 300 businesses leave 300 waiting, one each (" + q.Waiting + ")");
+        int n = 0;
+        bool order = true, figures = true, hours = true;
+        while (q.Next(out MoShop shop, out int figure, out int hour))
+        {
+            order &= ReferenceEquals(shop, shops[n]);
+            figures &= figure == 43 + n % 7;
+            hours &= hour == 240;
+            n++;
+        }
+        Check(n == 300 && order, "redraws: each business is drawn once, in the order it was first asked for");
+        Check(figures, "redraws: each is drawn with the figure of its last asking, as the last of the redraws made at once had it");
+        Check(hours, "redraws: each keeps the game hour it was first asked in");
+        Check(q.Waiting == 0 && !q.Next(out _, out _, out _), "redraws: nothing waits once all are drawn");
+        Check(!q.Ask(null, 1, true, 0, default(DrawPrint)) && q.Waiting == 0, "redraws: no business, nothing asked");
+    }
+
+    private static void MoRedrawUnchanged()
+    {
+        var q = new RedrawQueue<MoShop>();
+        var shop = new MoShop { Name = "a" };
+        object list = new object(), last = new object();
+        DrawPrint drawn = DrawPrint.Of(list, 12, last);
+        q.Drew(shop, 50, drawn);
+        Check(!q.Ask(shop, 50, false, 0, drawn) && q.Waiting == 0, "redraws: a business whose list stands drawn with the figure it has now is not drawn again");
+        Check(q.Stands(shop, 50, drawn) && !q.Stands(shop, 51, drawn), "redraws: the list stands drawn with that figure, and no other");
+        Check(q.Ask(shop, 51, false, 0, drawn) && q.Waiting == 1, "redraws: another figure is drawn");
+        Check(!q.Ask(shop, 50, false, 0, drawn) && q.Waiting == 0, "redraws: written back to the figure it was drawn with before its turn, its wish is dropped (that redraw would have been undone)");
+        Check(q.Ask(shop, 50, false, 0, DrawPrint.Of(list, 13, last)) && q.Take(shop, out _, out _), "redraws: a list somebody else has added to or drawn (another length) is drawn");
+        Check(q.Ask(shop, 50, false, 0, DrawPrint.Of(list, 12, new object())) && q.Take(shop, out _, out _), "redraws: a list with another last customer (the game drew it again) is drawn");
+        Check(q.Ask(shop, 50, false, 0, DrawPrint.Of(new object(), 12, last)) && q.Take(shop, out _, out _), "redraws: another list (the game's new day) is drawn");
+        Check(q.Ask(shop, 50, false, 0, default(DrawPrint)) && q.Take(shop, out _, out _), "redraws: a business with no list is drawn whenever asked");
+        q.Forget(shop);
+        Check(q.Ask(shop, 50, false, 0, drawn) && q.Take(shop, out _, out _), "redraws: a business whose draw is forgotten is drawn");
+        q.Drew(shop, 50, drawn);
+        q.Clear();
+        Check(!q.Stands(shop, 50, drawn) && q.Waiting == 0, "redraws: cleared, nothing waits and nothing is known");
+    }
+
+    private static void MoRedrawAlways()
+    {
+        var q = new RedrawQueue<MoShop>();
+        var shop = new MoShop { Name = "a" };
+        DrawPrint drawn = DrawPrint.Of(new object(), 5, new object());
+        q.Drew(shop, 50, drawn);
+        Check(q.Ask(shop, 50, true, 0, drawn) && q.Waiting == 1, "redraws: opening hours changed (always) are drawn even with the same figure");
+        Check(q.Ask(shop, 50, false, 0, drawn) && q.Waiting == 1, "redraws: a footfall asking with the drawn figure leaves that wish waiting");
+        q.Ask(shop, 47, false, 0, drawn);
+        Check(q.Next(out _, out int figure, out _) && figure == 47, "redraws: ...and it is drawn with the latest figure");
+    }
+
+    private static void MoRedrawReplaced()
+    {
+        var q = new RedrawQueue<MoShop>();
+        var shop = new MoShop { Name = "a" };
+        object before = new object(), after = new object();
+        q.Ask(shop, 50, false, 0, DrawPrint.Of(before, 3, null));
+        Check(!q.Replaced(shop, before) && q.Waiting == 1, "redraws: a wish asked against the list there now waits on");
+        Check(q.Replaced(shop, after) && q.Waiting == 0, "redraws: a wish asked against a list the game has since made anew (its day's draw) is dropped, as the game's own draw wiped the redraw made then");
+        Check(!q.Replaced(shop, after), "redraws: nothing waits, nothing is dropped");
+    }
+
+    private static void MoRedrawAdded()
+    {
+        var q = new RedrawQueue<MoShop>();
+        var shop = new MoShop { Name = "a" };
+        object list = new object();
+        DrawPrint drawn = DrawPrint.Of(list, 10, new object()), grown = DrawPrint.Of(list, 12, new object());
+        q.Drew(shop, 50, drawn);
+        q.Added(shop, drawn, grown);
+        Check(q.Stands(shop, 50, grown) && !q.Stands(shop, 50, drawn), "redraws: the mod's own clients added to a list as last drawn: it stands drawn with that figure still");
+        DrawPrint other = DrawPrint.Of(list, 14, new object());
+        q.Added(shop, DrawPrint.Of(list, 11, new object()), other);
+        Check(!q.Stands(shop, 50, other), "redraws: added to a list that did not stand as last drawn: nothing is known of it");
+    }
+
+    private static void MoRedrawSame()
+    {
+        var a = new RedrawQueue<MoShop>();
+        var b = new RedrawQueue<MoShop>();
+        List<MoShop> shops = MoShops(120);
+        var lists = new object[120];
+        for (int i = 0; i < lists.Length; i++)
+        {
+            lists[i] = new object();
+        }
+        var ra = new Random(77);
+        var rb = new Random(77);
+        var outA = new List<int>(512);
+        var outB = new List<int>(512);
+        for (int step = 0; step < 4000; step++)
+        {
+            MoRedrawStep(a, shops, lists, ra, outA);
+            MoRedrawStep(b, shops, lists, rb, outB);
+        }
+        bool same = outA.Count == outB.Count;
+        for (int i = 0; same && i < outA.Count; i++)
+        {
+            same = outA[i] == outB[i];
+        }
+        Check(same && outA.Count > 100, "redraws: the same askings give the same draws in the same order, every time (" + outA.Count + " draws): nothing of the machine or the frame");
+    }
+
+    private static void MoRedrawStep(RedrawQueue<MoShop> q, List<MoShop> shops, object[] lists, Random r, List<int> drawn)
+    {
+        int i = r.Next(shops.Count), what = r.Next(10);
+        if (what < 6)
+        {
+            q.Ask(shops[i], 40 + r.Next(4), what == 0, 0, DrawPrint.Of(lists[i], 1, null));
+        }
+        else if (what < 8 && q.Next(out MoShop shop, out int figure, out _))
+        {
+            int at = shops.IndexOf(shop);
+            q.Drew(shop, figure, DrawPrint.Of(lists[at], 1, null));
+            drawn.Add(at * 100 + figure);
+        }
+        else if (what == 8 && q.Take(shops[i], out int taken, out _))
+        {
+            drawn.Add(-(i * 100 + taken));
+        }
+    }
+
+    private static void MoRedrawCost()
+    {
+        var q = new RedrawQueue<MoShop>();
+        List<MoShop> shops = MoShops(300);
+        var lists = new object[300];
+        for (int i = 0; i < 300; i++)
+        {
+            lists[i] = new object();
+        }
+        MoRedrawRounds(q, shops, lists, 3, out _);   // (the pool and the lists grow to a morning's size first)
+        long bytes = MoRedrawRounds(q, shops, lists, 50, out double ms);
+        Check(bytes == 0, "redraws: fifty mornings of 300 businesses asked for four times and drawn allocate nothing once grown (" + bytes + " bytes)");
+        Check(ms / 50 < 2.0, "redraws: a morning's 1,200 askings and 300 draws of the rules take well under a millisecond or two (" + (ms / 50).ToString("0.000") + " ms)");
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
+    private static long MoRedrawRounds(RedrawQueue<MoShop> q, List<MoShop> shops, object[] lists, int rounds, out double ms)
+    {
+        var watch = new Stopwatch();
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        watch.Start();
+        for (int r = 0; r < rounds; r++)
+        {
+            for (int f = 0; f < 4; f++)
+            {
+                for (int i = 0; i < shops.Count; i++)
+                {
+                    q.Ask(shops[i], 40 + f, false, r, DrawPrint.Of(lists[i], r, null));
+                }
+            }
+            while (q.Next(out MoShop shop, out int figure, out _))
+            {
+                q.Drew(shop, figure, DrawPrint.Of(shop, r, null));
+            }
+        }
+        watch.Stop();
+        ms = watch.Elapsed.TotalMilliseconds;
+        return GC.GetAllocatedBytesForCurrentThread() - before;
+    }
+
+    // ---------------------------------------------------------------- when they are made
+
+    private static void MoRedrawRules()
+    {
+        float step = RedrawRules.StepMost(1f / 3f, 1f, 1f);
+        Check(Math.Abs(step - 1f / 3f) < 1e-5f, "redraws: at the game's own speed one frame moves the clock a third of a game minute at most (the engine's largest step)");
+        Check(Math.Abs(RedrawRules.StepMost(1f / 3f, 0f, 1f) - 1f / 3f) < 1e-5f, "redraws: paused, the step is counted as at the normal speed (never less)");
+        Check(RedrawRules.StepMost(1f / 3f, 6f, 1f) > 1.9f, "redraws: fast forward moves the clock six times as far a frame");
+        Check(RedrawRules.Spread(true, false, 1f, step, 0f), "redraws: alone, at the normal speed, early in the hour: spread over frames");
+        Check(RedrawRules.Spread(true, false, 0f, step, 30f), "redraws: paused: spread (the clock does not move)");
+        Check(!RedrawRules.Spread(false, false, 1f, step, 0f), "redraws: in a Going Public session: at once (its clock can move on by an hour in a frame)");
+        Check(!RedrawRules.Spread(true, true, 1f, step, 0f), "redraws: in the game's time skip (sleep, the time machine): at once");
+        Check(!RedrawRules.Spread(true, false, 6f, RedrawRules.StepMost(1f / 3f, 6f, 1f), 0f), "redraws: at fast forward: at once");
+        Check(!RedrawRules.Spread(true, false, 1f, step, 50f) && RedrawRules.Spread(true, false, 1f, step, 49.9f), "redraws: from the hour's last " + RedrawRules.SettleMinutes + " game minutes: at once");
+        Check(!RedrawRules.Spread(true, false, 1f, RedrawRules.StepMost(1f / 3f, 1f, 12f), 0f), "redraws: a clock set to run twelve times as fast: at once (a frame could cross the margin)");
+        Check(RedrawRules.SettleMinutes > RedrawRules.StepsKept * step * 3f, "redraws: the margin holds many of the game's largest steps of a frame");
+        Check(RedrawRules.More(0, 50.0) && RedrawRules.More(1, 0.5) && !RedrawRules.More(1, RedrawRules.BudgetMs) && !RedrawRules.More(7, 3.0), "redraws: a frame takes one at least, then more while under " + RedrawRules.BudgetMs + " ms");
+        Check(!RedrawRules.Late(100, 100) && RedrawRules.Late(100, 101), "redraws: one made in a later game hour than asked is late");
+        Check(Math.Abs(RedrawRules.Seen(100.0, 100.5, 0.5f, 0.5f) - 1f) < 1e-4f && RedrawRules.Seen(100.0, 99.0, 0.5f, 0.5f) == 0f && RedrawRules.Seen(100.0, 170.0, 0.5f, 0.5f) == 0f,
+            "redraws: the clock's speed as seen between frames (a jump of an hour or a clock set back is no speed)");
+        Check(Math.Abs(RedrawRules.Seen(0.0, 0.05, 0.05f, 0.005f) - 1f) < 1e-3f, "redraws: a long frame before a short one is not read as a fast clock");
+    }
+
+    private struct MoDay
+    {
+        public int Frames, AtOnce, Late;
+        public float Ended, SettledAt;
+        public double Worst;
+    }
+
+    // A morning (or any hour) of redraws: so many asked for at a minute, each costing so many milliseconds, at so many
+    // frames a second and a clock of so many game minutes a second. Each frame the pace's rules decide; the game's own
+    // step of the clock comes after the pace's frame (the later of the two orders a frame can have).
+    private static MoDay MoPace(int count, double cost, float fps, float minutesASecond, float timeScale, float askedAt, bool alone)
+    {
+        var day = new MoDay { SettledAt = -1f };
+        float minute = askedAt, dt = 1f / fps;
+        int waiting = count;
+        float step = RedrawRules.StepMost(1f / 3f, timeScale, minutesASecond);
+        while (waiting > 0 && day.Frames < 1000000)
+        {
+            day.Frames++;
+            if (!RedrawRules.Spread(alone, false, timeScale, step, minute))
+            {
+                day.AtOnce = waiting;
+                day.SettledAt = minute;
+                waiting = 0;
+                break;
+            }
+            double used = 0.0;
+            int done = 0;
+            while (waiting > 0 && RedrawRules.More(done, used))
+            {
+                used += cost;
+                done++;
+                waiting--;
+            }
+            day.Worst = Math.Max(day.Worst, used);
+            minute += dt * Math.Max(1f, timeScale) * minutesASecond;
+            if (minute >= RedrawRules.MinutesInHour)
+            {
+                day.Late = waiting;
+                break;
+            }
+        }
+        day.Ended = minute;
+        return day;
+    }
+
+    private static void MoRedrawMornings()
+    {
+        MoDay d = MoPace(300, 0.3, 60f, 1f, 1f, 0f, true);
+        Check(d.Late == 0 && d.AtOnce == 0 && d.Ended < 5f, "redraws: a late save's morning, 300 redraws of 0.3 ms at 60 frames a second, is spread and done in "
+                                                         + d.Frames + " frames, by game minute " + d.Ended.ToString("0.0"));
+        Check(d.Worst <= RedrawRules.BudgetMs + 0.3 + 1e-9, "redraws: no frame takes more than the budget and one redraw (" + d.Worst.ToString("0.00") + " ms)");
+        d = MoPace(300, 1.5, 20f, 1f, 1f, 0f, true);
+        Check(d.Late == 0 && d.AtOnce == 0 && d.Worst <= 1.5 + 1e-9 && d.Ended < RedrawRules.MinutesInHour - RedrawRules.SettleMinutes,
+            "redraws: a slow machine (20 frames a second, 1.5 ms a redraw) draws one a frame and still ends by minute " + d.Ended.ToString("0.0"));
+        d = MoPace(300, 2.0, 30f, 1f, 1f, 48f, true);
+        Check(d.Late == 0 && d.AtOnce > 0 && d.SettledAt >= RedrawRules.MinutesInHour - RedrawRules.SettleMinutes && d.SettledAt < RedrawRules.MinutesInHour,
+            "redraws: asked near the hour's end, those left are drawn at once at minute " + d.SettledAt.ToString("0.0") + ", before the hour turns (" + d.AtOnce + " of 300)");
+        d = MoPace(300, 0.3, 60f, 1f, 6f, 0f, true);
+        Check(d.Late == 0 && d.AtOnce == 300 && d.Frames == 1, "redraws: at fast forward every redraw is made at once, as it was asked");
+        d = MoPace(300, 0.3, 60f, 1f, 1f, 0f, false);
+        Check(d.Late == 0 && d.AtOnce == 300, "redraws: in a Going Public session every redraw is made at once");
+        bool everyMinute = true;
+        for (float at = 0f; at < 60f; at += 0.25f)
+        {
+            MoDay any = MoPace(300, 0.8, 30f, 1f, 1f, at, true);
+            everyMinute &= any.Late == 0;
+        }
+        Check(everyMinute, "redraws: asked at any minute of an hour, none is ever made after the hour turns");
     }
 
     // ---------------------------------------------------------------- the first item by key
@@ -559,7 +859,9 @@ internal static partial class Program
 
     // ---------------------------------------------------------------- the mod's sources as they ship
 
-    // What the rules above stand on in the game-touching files: the morning's readers of the transactions share the one walk.
+    // What the rules above stand on in the game-touching files: every redraw of a business's customers goes through
+    // Core/CustomerDraw, every batch of writes is closed whatever happens, the morning's readers of the transactions share
+    // the one walk, the footfall writer builds no line on every write, and the game's draw is noted before any write.
     private static void MoSources()
     {
         string scripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
@@ -568,6 +870,29 @@ internal static partial class Program
             Check(false, "sources: the mod's sources are at " + scripts);
             return;
         }
+        int files = 0, holds = 0;
+        var drawsElsewhere = new List<string>();
+        var unclosed = new List<string>();
+        foreach (string path in System.IO.Directory.GetFiles(scripts, "*.cs", System.IO.SearchOption.AllDirectories))
+        {
+            string code = MoCode(System.IO.File.ReadAllText(path));
+            string name = path.Substring(scripts.Length + 1);
+            files++;
+            if (code.Contains("CustomerEntriesHelper.UpdateCustomerEntriesForPlayerBusiness") && !name.EndsWith(@"Core\CustomerDraw.cs", StringComparison.Ordinal))
+            {
+                drawsElsewhere.Add(name);
+            }
+            int hold = MoCount(code, "CustomerDraw.Hold(");
+            int closed = System.Text.RegularExpressions.Regex.Matches(code, @"finally\s*\{\s*CustomerDraw\.Release\(\);\s*\}").Count;
+            holds += hold;
+            if (hold != closed || MoCount(code, "CustomerDraw.Release()") != closed)
+            {
+                unclosed.Add(name + " (" + hold + " held, " + closed + " released in a finally)");
+            }
+        }
+        Check(files > 500 && drawsElsewhere.Count == 0, "sources: the game's redraw of a business's customers is called in Core/CustomerDraw alone" + (drawsElsewhere.Count > 0 ? " (also in " + string.Join(", ", drawsElsewhere) + ")" : string.Empty));
+        Check(holds >= 11 && unclosed.Count == 0, "sources: every batch of footfall writes (" + holds + ") is released in a finally" + (unclosed.Count > 0 ? " (not in " + string.Join(", ", unclosed) + ")" : string.Empty));
+
         string books = MoSource(scripts, @"Economy\GameBooks.cs");
         string city = MoSource(scripts, @"Economy\City\CityGame.cs");
         string ledger = MoSource(scripts, @"Economy\Finance\Books.cs");
@@ -576,6 +901,31 @@ internal static partial class Program
                       && MoBody(city, "public static DayBooks DayFigures(").Contains("GameBooks.Day(day)") && !MoBody(city, "public static DayBooks DayFigures(").Contains("in save.Transactions")
                       && MoBody(ledger, "public static Obligations Tomorrow(CreditFile file, int today)").Contains("GameBooks.Day(") && !MoBody(ledger, "public static Obligations Tomorrow(CreditFile file, int today)").Contains("in save.Transactions");
         Check(shared, "sources: the city's day figures, each statement brought up to date, the dealerships' deduction and what leaves tomorrow read the day's transactions from the morning's one walk (GameBooks.Day)");
+
+        string business = MoSource(scripts, @"Business\BusinessGame.cs");
+        string footfall = MoBody(business, "public static bool Footfall(BuildingRegistration reg, int percent, bool regenerate)");
+        Check(footfall.Length > 0 && !footfall.Contains("Logger?.Info") && footfall.Contains("CustomerDraw.Rewritten(reg)") && footfall.Contains("CustomerDraw.Writing(reg)"),
+            "sources: the footfall writer builds no line on a write, asks for the customers through Core/CustomerDraw and says when it writes");
+
+        string economy = MoSource(scripts, @"Economy\EconomyDirector.cs");
+        string day = MoBody(economy, "private void OnDay()");
+        int morning = day.IndexOf("CustomerDraw.Morning()", StringComparison.Ordinal), after = day.IndexOf("Guard.Each(AfterDay)", StringComparison.Ordinal);
+        Check(morning >= 0 && after > morning, "sources: the economy's day notes the game's own draw before any feature writes a figure");
+
+        string draw = MoSource(scripts, @"Core\CustomerDraw.cs");
+        Check(MoBody(draw, "public static List<CustomerEntry> Entries(").Contains("DrawNow(reg)") && MoBody(draw, "internal static bool Pace()").Contains("BusinessSimulatorHelper.Work.HasPendingWork")
+              && MoBody(draw, "public static void Keep()").Contains("onTimeMachineStarted") && MoBody(draw, "public static void Keep()").Contains("SaveHook.Keep("),
+            "sources: a list read is drawn first, the pace waits for the game's own simulation of the hour, and the game's save and time skip draw what waits");
+    }
+
+    private static int MoCount(string code, string what)
+    {
+        int count = 0;
+        for (int at = code.IndexOf(what, StringComparison.Ordinal); at >= 0; at = code.IndexOf(what, at + what.Length, StringComparison.Ordinal))
+        {
+            count++;
+        }
+        return count;
     }
 
     private static string MoSource(string scripts, string file)

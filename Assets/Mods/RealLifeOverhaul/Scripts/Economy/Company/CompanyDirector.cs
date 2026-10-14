@@ -390,13 +390,21 @@ namespace RealLifeOverhaul.Economy
             _running = false;
             _holding = false;
             int put = 0;
-            for (int i = 0; !unloading && i < _shops.Count; i++)
+            CustomerDraw.Hold("the company stood down");
+            try
             {
-                if (_shops[i].Applied)
+                for (int i = 0; !unloading && i < _shops.Count; i++)
                 {
-                    WriteFootfall(_shops[i], 0, true, false);   // (nothing is running, so nothing is added: the figure is the game's own, with whatever else the mod has there)
-                    put++;
+                    if (_shops[i].Applied)
+                    {
+                        WriteFootfall(_shops[i], 0, true, false);   // (nothing is running, so nothing is added: the figure is the game's own, with whatever else the mod has there)
+                        put++;
+                    }
                 }
+            }
+            finally
+            {
+                CustomerDraw.Release();
             }
             for (int i = 0; i < _shops.Count; i++)
             {
@@ -709,18 +717,27 @@ namespace RealLifeOverhaul.Economy
             shop.Applied = applied;
         }
 
-        // Every business where the company adds something, or did: its figure is written. Returns how many.
+        // Every business where the company adds something, or did: its figure is written. Returns how many. One batch of
+        // footfall writes: a business asked to be drawn again is drawn once, spread over the frames that follow (Core/CustomerDraw).
         private int WriteAll(int day, bool redraw, bool newDay)
         {
             int written = 0;
-            for (int i = 0; i < _shops.Count; i++)
+            CustomerDraw.Hold("the company's figures");
+            try
             {
-                int asked = Footfall(_shops[i], day);
-                if (asked != 0 || _shops[i].Applied)
+                for (int i = 0; i < _shops.Count; i++)
                 {
-                    WriteFootfall(_shops[i], asked, redraw, newDay);
-                    written++;
+                    int asked = Footfall(_shops[i], day);
+                    if (asked != 0 || _shops[i].Applied)
+                    {
+                        WriteFootfall(_shops[i], asked, redraw, newDay);
+                        written++;
+                    }
                 }
+            }
+            finally
+            {
+                CustomerDraw.Release();
             }
             return written;
         }

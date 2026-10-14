@@ -264,13 +264,21 @@ namespace RealLifeOverhaul.Economy
                 {
                     EconomyDirector.Instance.TermsChanged("the bank rate is the banks' own again");
                 }
-                for (int i = 0; i < _shops.Count; i++)
+                CustomerDraw.Hold("the city's economy stood down");
+                try
                 {
-                    if (_shops[i].Applied)
+                    for (int i = 0; i < _shops.Count; i++)
                     {
-                        WriteFootfall(_shops[i], true, false);   // (nothing is live, so nothing is added: the figure is the game's own, and the business feature's)
-                        shops++;
+                        if (_shops[i].Applied)
+                        {
+                            WriteFootfall(_shops[i], true, false);   // (nothing is live, so nothing is added: the figure is the game's own, and the business feature's)
+                            shops++;
+                        }
                     }
+                }
+                finally
+                {
+                    CustomerDraw.Release();
                 }
             }
             for (int i = 0; i < _shops.Count; i++)
@@ -522,7 +530,8 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- applying the model
 
-        // Everything the model says is put in place: the rate, the wholesale prices, each business's footfall.
+        // Everything the model says is put in place: the rate, the wholesale prices, each business's footfall. The writes are
+        // one batch: each business asked to be drawn again once, spread over the frames that follow (Core/CustomerDraw).
         private void ApplyAll(int day, bool redraw, bool newDay, string when)
         {
             float started = Time.realtimeSinceStartup;
@@ -547,23 +556,31 @@ namespace RealLifeOverhaul.Economy
             }
             int written = 0, redrawn = 0;
             StringBuilder log = Verbose ? new StringBuilder(160) : null;
-            for (int i = 0; i < _shops.Count; i++)
+            CustomerDraw.Hold("the city's economy: " + when);
+            try
             {
-                CityShop shop = _shops[i];
-                // A figure is written where something is to be added, or where something was and no longer is. (On a
-                // new day the game has just written every figure afresh, so nothing is left from before.)
-                if (shop.Wanted != 0 || _was.Contains(shop.Reg))
+                for (int i = 0; i < _shops.Count; i++)
                 {
-                    WriteFootfall(shop, redraw, newDay);
-                    written++;
-                    redrawn += redraw && shop.HasFigure ? 1 : 0;
+                    CityShop shop = _shops[i];
+                    // A figure is written where something is to be added, or where something was and no longer is. (On a
+                    // new day the game has just written every figure afresh, so nothing is left from before.)
+                    if (shop.Wanted != 0 || _was.Contains(shop.Reg))
+                    {
+                        WriteFootfall(shop, redraw, newDay);
+                        written++;
+                        redrawn += redraw && shop.HasFigure ? 1 : 0;
+                    }
+                    if (log != null && i < 6)
+                    {
+                        log.Append(i > 0 ? "; " : string.Empty).Append(shop.Reg.BusinessName).Append(' ').Append(CityText.Percent(shop.Wanted)).Append(" (cycle ").Append(shop.Cycle).Append(", district ")
+                            .Append(shop.Area).Append(", prices ").Append(shop.Price).Append(shop.Against > 0 ? " at " + (shop.Against / 10f).ToString("0.#") + "% of what the district bears" : ", none to judge by")
+                            .Append(shop.HasFigure ? ", promotion " + shop.Own + " to " + shop.Written : ", no promotion figure").Append(')');
+                    }
                 }
-                if (log != null && i < 6)
-                {
-                    log.Append(i > 0 ? "; " : string.Empty).Append(shop.Reg.BusinessName).Append(' ').Append(CityText.Percent(shop.Wanted)).Append(" (cycle ").Append(shop.Cycle).Append(", district ")
-                        .Append(shop.Area).Append(", prices ").Append(shop.Price).Append(shop.Against > 0 ? " at " + (shop.Against / 10f).ToString("0.#") + "% of what the district bears" : ", none to judge by")
-                        .Append(shop.HasFigure ? ", promotion " + shop.Own + " to " + shop.Written : ", no promotion figure").Append(')');
-                }
+            }
+            finally
+            {
+                CustomerDraw.Release();
             }
             _was.Clear();
             if (log != null)
@@ -576,7 +593,7 @@ namespace RealLifeOverhaul.Economy
                     factors.Append(k > 0 ? ", " : string.Empty).Append(CityText.KindKeys[k].Substring(CityText.KindKeys[k].LastIndexOf('_') + 1)).Append(' ').Append((CityModel.Wholesale(_state, k) / 1000f).ToString("0.000"));
                 }
                 Logger?.Info("Economy check (city, applied, " + when + ", day " + day + "): the rate " + Quarters(_state.Base) + (rate ? " (changed)" : string.Empty) + ", " + prices
-                             + " wholesale price(s) written (" + factors + "), " + written + " footfall figure(s) written, " + redrawn + " with the day's customers drawn again"
+                             + " wholesale price(s) written (" + factors + "), " + written + " footfall figure(s) written, " + redrawn + " with the day's customers asked to be drawn again (the customers' line says how many were)"
                              + (log.Length > 0 ? ": " + log : string.Empty) + (_shops.Count > 6 ? "; and " + (_shops.Count - 6) + " more" : string.Empty) + ". " + detail + "; "
                              + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0") + " ms: " + (ok ? "PASS" : "FAIL"));
             }

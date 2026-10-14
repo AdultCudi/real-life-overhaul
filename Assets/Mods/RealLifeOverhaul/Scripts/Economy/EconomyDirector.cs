@@ -512,7 +512,15 @@ namespace RealLifeOverhaul.Economy
             {
                 Fault("the hour", e);
             }
-            Guard.Each(AfterHour);
+            CustomerDraw.Hold("the economy's hour");   // (the features' footfall writes of the hour: one batch, Core/CustomerDraw)
+            try
+            {
+                Guard.Each(AfterHour);
+            }
+            finally
+            {
+                CustomerDraw.Release();
+            }
         }
 
         private static readonly int HotOnDay = HotSpots.Slot("Economy: EconomyDirector.OnDay");
@@ -524,6 +532,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
+            CustomerDraw.Morning();   // the game has just drawn every business's customers: noted before any feature writes a figure (Core/CustomerDraw)
             try
             {
                 Settle(Save.Day);
@@ -532,7 +541,15 @@ namespace RealLifeOverhaul.Economy
             {
                 Fault("the day", e);
             }
-            Guard.Each(AfterDay);
+            CustomerDraw.Hold("the economy's day");   // (every feature's footfall writes of the morning: one batch, each business drawn again once)
+            try
+            {
+                Guard.Each(AfterDay);
+            }
+            finally
+            {
+                CustomerDraw.Release();
+            }
             try
             {
                 // The game built yesterday's statement before the mod's day: the costs booked for it since are put into it.

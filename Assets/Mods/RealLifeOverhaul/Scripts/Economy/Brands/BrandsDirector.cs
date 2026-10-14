@@ -284,13 +284,21 @@ namespace RealLifeOverhaul.Economy.Brands
             _running = false;
             _holding = false;
             int put = 0;
-            for (int i = 0; !unloading && i < _shops.Count; i++)
+            CustomerDraw.Hold("the brands stood down");
+            try
             {
-                if (_shops[i].Applied)
+                for (int i = 0; !unloading && i < _shops.Count; i++)
                 {
-                    WriteFootfall(_shops[i], true, false);   // (nothing is running, so nothing is added: the figure is the game's own, with whatever else the mod has there)
-                    put++;
+                    if (_shops[i].Applied)
+                    {
+                        WriteFootfall(_shops[i], true, false);   // (nothing is running, so nothing is added: the figure is the game's own, with whatever else the mod has there)
+                        put++;
+                    }
                 }
+            }
+            finally
+            {
+                CustomerDraw.Release();
             }
             for (int i = 0; i < _shops.Count; i++)
             {
@@ -793,17 +801,26 @@ namespace RealLifeOverhaul.Economy.Brands
             shop.Applied = applied;
         }
 
-        // Every shop where a brand adds something, or did: its figure is written. Returns how many.
+        // Every shop where a brand adds something, or did: its figure is written. Returns how many. One batch of footfall
+        // writes: a shop asked to be drawn again is drawn once, spread over the frames that follow (Core/CustomerDraw).
         private int WriteAll(bool redraw, bool newDay)
         {
             int written = 0;
-            for (int i = 0; i < _shops.Count; i++)
+            CustomerDraw.Hold("the brands' figures");
+            try
             {
-                if (_shops[i].Asked != 0 || _shops[i].Applied)
+                for (int i = 0; i < _shops.Count; i++)
                 {
-                    WriteFootfall(_shops[i], redraw, newDay);
-                    written++;
+                    if (_shops[i].Asked != 0 || _shops[i].Applied)
+                    {
+                        WriteFootfall(_shops[i], redraw, newDay);
+                        written++;
+                    }
                 }
+            }
+            finally
+            {
+                CustomerDraw.Release();
             }
             return written;
         }
@@ -811,12 +828,20 @@ namespace RealLifeOverhaul.Economy.Brands
         // The shops where what is asked for is not what was last written: their figures, now.
         private void Sync()
         {
-            for (int i = 0; i < _shops.Count; i++)
+            CustomerDraw.Hold("the brands' figures");
+            try
             {
-                if (_shops[i].Asked != _shops[i].Last)
+                for (int i = 0; i < _shops.Count; i++)
                 {
-                    WriteFootfall(_shops[i], true, false);
+                    if (_shops[i].Asked != _shops[i].Last)
+                    {
+                        WriteFootfall(_shops[i], true, false);
+                    }
                 }
+            }
+            finally
+            {
+                CustomerDraw.Release();
             }
         }
 
