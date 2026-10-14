@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Careers;
+using RealLifeOverhaul.Markets;
 
 // Ten small helpers of 14 Oct 2026, each built on a rule that was already there: the recruitment office's last day
 // (Careers/Work/ProRules.AgencyEnds), and the others added below as they come. For each: that it comes once, when it
@@ -20,6 +21,7 @@ internal static partial class Program
         HelperClassStart();
         HelperRejectReason();
         HelperGoodChance();
+        HelperDayChange();
     }
 
     // ---------------------------------------------------------------- 1. the recruitment office's last day
@@ -199,6 +201,35 @@ internal static partial class Program
         HelperText("reallife_career_good_chance_points", "good chance", "points");
         HelperText("reallife_career_good_chance_point", "good chance");
         HelperText("reallife_career_good_chance_far", "good chance");
+    }
+
+    // ---------------------------------------------------------------- 7. the Portfolio's change today
+
+    private static void HelperDayChange()
+    {
+        var m = new MarketState();
+        m.Stocks.Add(new Stock { Id = 1, PrevClose = 10000, Last = 10500 });   // up 5%
+        m.Stocks.Add(new Stock { Id = 2, PrevClose = 4000, Last = 3800 });     // down 5%
+        m.Stocks.Add(new Stock { Id = 3, PrevClose = 2500, Last = 2500 });
+        long before;
+        Check(MarketTrading.DayChange(m, out before) == 0 && before == 0 && MarketTrading.DayChangeBp(0, before) == 0, "helpers, day change: nothing held, no change and no row");
+        m.Positions.Add(new Position { StockId = 1, Shares = 10 });
+        long one = MarketTrading.DayChange(m, out before);
+        Check(one == 10 * 500 && before == 10 * 10000 && MarketTrading.DayChangeBp(one, before) == 500, "helpers, day change: ten shares up 5.00 each are 50 up, +5.00%");
+        m.Positions.Add(new Position { StockId = 2, Shares = -20 });
+        long two = MarketTrading.DayChange(m, out before);
+        Check(two == 5000 + 4000 && before == 100000 + 80000, "helpers, day change: a short holding gains as its price falls, and counts at its size in the per cent");
+        m.Positions.Add(new Position { StockId = 2, Shares = 50 });
+        m.Positions.Add(new Position { StockId = 3, Shares = 7 });
+        m.Positions.Add(new Position { StockId = 99, Shares = 7 });
+        long all = MarketTrading.DayChange(m, out before);
+        Check(all == 9000 - 50 * 200 && all < 0 && before == 180000 + 50 * 4000 + 7 * 2500, "helpers, day change: a fall shows as a loss (red), an unchanged one adds nothing, an unknown company is left out");
+        Check(MarketTrading.DayChangeBp(all, before) == (int)(all * 10000L / before) && MarketTrading.DayChangeBp(-1, 3) < 0, "helpers, day change: the per cent against the previous close, with its sign");
+        m.Stocks[0].PrevClose = 0;
+        MarketTrading.DayChange(m, out long withoutBase);
+        Check(withoutBase == before - 10 * 10000, "helpers, day change: a company with no previous close yet is left out");
+        HelperText("reallife_mkt_day_change", "day change");
+        HelperText("reallife_mkt_day_change_value", "day change", "money", "percent");
     }
 
     // ---------------------------------------------------------------- the texts

@@ -18257,5 +18257,7 @@
   "reallife_planner_morning_one": "Hoje: uma entrada, às {time} ({title}), saia até {leave}.",
   "reallife_planner_morning_one_here": "Hoje: uma entrada, às {time} ({title}).",
   "reallife_planner_morning_all_day": "Hoje: {count} entradas, nenhuma com hora marcada.",
-  "reallife_planner_morning_all_day_one": "Hoje: uma entrada, sem hora marcada."
+  "reallife_planner_morning_all_day_one": "Hoje: uma entrada, sem hora marcada.",
+  "reallife_mkt_day_change": "Variação de hoje",
+  "reallife_mkt_day_change_value": "{money} ({percent})"
 }

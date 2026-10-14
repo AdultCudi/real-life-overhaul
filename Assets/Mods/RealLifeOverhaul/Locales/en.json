@@ -18257,5 +18257,7 @@
   "reallife_planner_morning_one": "Today: one entry, at {time} ({title}), leave by {leave}.",
   "reallife_planner_morning_one_here": "Today: one entry, at {time} ({title}).",
   "reallife_planner_morning_all_day": "Today: {count} entries, none at a set time.",
-  "reallife_planner_morning_all_day_one": "Today: one entry, at no set time."
+  "reallife_planner_morning_all_day_one": "Today: one entry, at no set time.",
+  "reallife_mkt_day_change": "Today's change",
+  "reallife_mkt_day_change_value": "{money} ({percent})"
 }

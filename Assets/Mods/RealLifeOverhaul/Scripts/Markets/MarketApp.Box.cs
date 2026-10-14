@@ -361,6 +361,12 @@ namespace RealLifeOverhaul.Markets
             box.Section("reallife_ibox_sec_now");
             box.Row("reallife_ibox_worth", MarketText.Money(worth));
             box.Row("reallife_ibox_gain", MarketText.Money(worth - cost), worth > cost ? CellTone.Green : worth < cost ? CellTone.Red : CellTone.Plain);
+            long day = MarketTrading.DayChange(s, out long dayBefore);   // (today against the previous close, in cents)
+            if (dayBefore > 0)
+            {
+                box.Row("reallife_mkt_day_change", MarketText.Fill("reallife_mkt_day_change_value", "money", MarketText.Money(day / 100), "percent", MarketText.Change(MarketTrading.DayChangeBp(day, dayBefore))),
+                    day > 0 ? CellTone.Green : day < 0 ? CellTone.Red : CellTone.Plain);
+            }
             box.Note(MarketText.Fill("reallife_mkt_account_worth", "worth", MarketText.Money(worth), "cost", MarketText.Money(cost), "gain", MarketText.Money(worth - cost)));
             box.Line(MarketText.Fill("reallife_mkt_account_dividends", "dividends", MarketText.Money(a.Dividends), "commission", MarketText.Money(a.Commission)));
             Transform buttons = null;

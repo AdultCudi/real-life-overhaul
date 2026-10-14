@@ -18257,5 +18257,7 @@
   "reallife_planner_morning_one": "今天：1项安排，在{time}（{title}），请在{leave}前出发。",
   "reallife_planner_morning_one_here": "今天：1项安排，在{time}（{title}）。",
   "reallife_planner_morning_all_day": "今天：{count}项安排，都没有固定时间。",
-  "reallife_planner_morning_all_day_one": "今天：1项安排，没有固定时间。"
+  "reallife_planner_morning_all_day_one": "今天：1项安排，没有固定时间。",
+  "reallife_mkt_day_change": "今日涨跌",
+  "reallife_mkt_day_change_value": "{money}（{percent}）"
 }
