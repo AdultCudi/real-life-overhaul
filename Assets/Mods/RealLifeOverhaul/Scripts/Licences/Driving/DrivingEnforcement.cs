@@ -297,7 +297,7 @@ namespace RealLifeOverhaul
             if ((impound || arrest) && _host != null && _host.isActiveAndEnabled && !_settling)
             {
                 _settling = true;
-                _host.StartCoroutine(Settle(vehicle, impound, own, arrest && !custodyFollows, custodyFollows ? 1.5f : 7f));
+                _host.StartCoroutine(Guard.Routine(Settle(vehicle, impound, own, arrest && !custodyFollows, custodyFollows ? 1.5f : 7f)));
             }
             return false;
         }

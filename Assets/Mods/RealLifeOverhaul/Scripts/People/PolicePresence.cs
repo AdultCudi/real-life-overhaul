@@ -147,7 +147,7 @@ namespace RealLifeOverhaul
                 // after the first on a game that lacks something it names (that one would come back at every look).
                 Logger?.Error(e);
                 Clear();
-                if (GameMembers.StandsDown(e, "police presence on the street"))
+                if (Guard.StandsDown(e, "police presence on the street"))
                 {
                     enabled = false;
                 }

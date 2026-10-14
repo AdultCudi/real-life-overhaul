@@ -81,7 +81,7 @@ namespace RealLifeOverhaul
             {
                 if (vehicle != null)
                 {
-                    StartCoroutine(EnterVehicle(vehicle));
+                    StartCoroutine(Guard.Routine(EnterVehicle(vehicle)));
                 }
                 else if (Time.unscaledTime >= _nextHint)
                 {
@@ -96,7 +96,7 @@ namespace RealLifeOverhaul
             }
             else if (vehicle != null)
             {
-                StartCoroutine(EnterVehicle(vehicle));
+                StartCoroutine(Guard.Routine(EnterVehicle(vehicle)));
             }
         }
 

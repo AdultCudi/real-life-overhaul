@@ -60,7 +60,7 @@ namespace RealLifeOverhaul.Flare
             _openFeed = () => Open(TabMe);
             _openFeedTab = () => Open(TabFeed);
             _openBusinessTab = () => Open(TabBusiness);
-            StartCoroutine(Tick());
+            StartCoroutine(Guard.Routine(Tick()));
         }
 
         private void OnDestroy()

@@ -184,7 +184,7 @@ namespace RealLifeOverhaul
                 return;
             }
             Riding = true;
-            _host.StartCoroutine(Run(minutes, arrive, fadeKey, onFaded, onArrived, tap, atBlack, arriveAboard));
+            _host.StartCoroutine(Guard.Routine(Run(minutes, arrive, fadeKey, onFaded, onArrived, tap, atBlack, arriveAboard)));
         }
 
         private IEnumerator Run(float minutes, Vector3 arrive, string fadeKey, Action onFaded, Action onArrived, bool tap, Action atBlack, Func<bool> arriveAboard)

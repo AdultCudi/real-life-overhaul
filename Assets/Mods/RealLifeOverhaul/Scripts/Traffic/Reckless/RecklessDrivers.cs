@@ -245,7 +245,7 @@ namespace RealLifeOverhaul
         {
             Logger?.Error(e);
             EndNow("an error");
-            if (_working && GameMembers.StandsDown(e, "reckless drivers"))
+            if (_working && Guard.StandsDown(e, "reckless drivers"))
             {
                 _working = false;   // (a game that lacks something they name would fail at every look)
             }

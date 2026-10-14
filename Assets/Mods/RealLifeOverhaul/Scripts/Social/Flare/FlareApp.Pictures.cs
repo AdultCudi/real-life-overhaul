@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Flare
             }
             if (_asked.Add(p.Id) && _director != null)
             {
-                _director.StartCoroutine(Make(p.Id, Path.Combine(Folder, Path.GetFileName(p.Name ?? string.Empty)), _opening));
+                _director.StartCoroutine(Guard.Routine(Make(p.Id, Path.Combine(Folder, Path.GetFileName(p.Name ?? string.Empty)), _opening)));
             }
             return null;
         }

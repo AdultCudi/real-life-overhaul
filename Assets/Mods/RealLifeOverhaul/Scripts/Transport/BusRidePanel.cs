@@ -76,7 +76,7 @@ namespace RealLifeOverhaul
                 return null;
             }
             panel._state = PlayerActivityState.MovingTowardsActivity;
-            host.StartCoroutine(panel.Begin());
+            host.StartCoroutine(Guard.Routine(panel.Begin()));
             return panel;
         }
 

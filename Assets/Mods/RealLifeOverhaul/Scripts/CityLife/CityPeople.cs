@@ -470,7 +470,7 @@ namespace RealLifeOverhaul
         {
             if (_tending == null && gameObject.activeInHierarchy)
             {
-                _tending = StartCoroutine(Tending());
+                _tending = StartCoroutine(Guard.Routine(Tending()));
             }
         }
 

@@ -1188,7 +1188,7 @@ namespace RealLifeOverhaul
 
             private void Start()
             {
-                StartCoroutine(Look());
+                StartCoroutine(Guard.Routine(Look()));
             }
 
             private void OnDestroy()
@@ -1211,7 +1211,7 @@ namespace RealLifeOverhaul
                     catch (Exception e)
                     {
                         // A game that lacks something the look names would fail at every one: said once, and the look stops.
-                        lacking = GameMembers.StandsDown(e, "the mod's places on the city map");
+                        lacking = Guard.StandsDown(e, "the mod's places on the city map");
                         if (!lacking)
                         {
                             Logger?.Error(e);
@@ -1303,7 +1303,7 @@ namespace RealLifeOverhaul
 
             public void LabelSoon()
             {
-                StartCoroutine(Soon());
+                StartCoroutine(Guard.Routine(Soon()));
             }
 
             private static IEnumerator Soon()
@@ -1371,7 +1371,7 @@ namespace RealLifeOverhaul
                     {
                         Card(_card, target);
                     }
-                    catch (Exception e) when (GameMembers.StandsDown(e, "the mod's lines on the game's building card"))
+                    catch (Exception e) when (Guard.StandsDown(e, "the mod's lines on the game's building card"))
                     {
                         _cardOff = true;
                     }

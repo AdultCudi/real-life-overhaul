@@ -75,7 +75,7 @@ namespace RealLifeOverhaul.Economy.Ventures
             _onDay = Guard.Wrap(OnDay);
             _openInvestors = () => Open(VenturesPhone.Investors);
             _fileClaim = amount => EconomyBridges.FileClaim != null ? EconomyBridges.FileClaim(amount) : 0;
-            StartCoroutine(Tick());
+            StartCoroutine(Guard.Routine(Tick()));
         }
 
         private void OnDestroy()

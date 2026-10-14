@@ -153,16 +153,29 @@ namespace RealLifeOverhaul.GameUi
             return button;
         }
 
-        /// <summary>Runs something the player clicked. Nothing thrown here reaches the game's interface.</summary>
+        /// <summary>
+        /// Runs something the player clicked, inside the guard of the class the click's code is written in (Core/Guard):
+        /// nothing thrown here reaches the game's interface, a fault counts for that class as its other entry points' do,
+        /// and a click of a class or feature that is switched off does nothing.
+        /// </summary>
         public static void Safe(Action action)
         {
+            if (action == null)
+            {
+                return;
+            }
+            FeatureGuard guard = Guard.OfHandler(action);
+            if (guard != null && guard.Off)
+            {
+                return;
+            }
             try
             {
                 action();
             }
             catch (Exception e)
             {
-                Logger?.Error(e);
+                Guard.Fail(guard, e);
             }
         }
 

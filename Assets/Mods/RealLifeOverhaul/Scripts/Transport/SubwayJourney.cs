@@ -401,7 +401,7 @@ namespace RealLifeOverhaul
                 return;
             }
             city.cityMap.ToggleSubwayMode(true);
-            _host.StartCoroutine(PickOnMap(to));
+            _host.StartCoroutine(Guard.Routine(PickOnMap(to)));
         }
 
         // The game's map pauses the game's clock: this waits on the interface's.

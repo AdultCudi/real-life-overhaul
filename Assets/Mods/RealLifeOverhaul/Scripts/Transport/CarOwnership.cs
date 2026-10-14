@@ -812,7 +812,7 @@ namespace RealLifeOverhaul
                 Notifications.ShowInsufficientMoney();
                 return false;
             }
-            StartCoroutine(Service(_car, _record, _kind, _serviceTotal, ServiceMinutes(_serviceItems)));
+            StartCoroutine(Guard.Routine(Service(_car, _record, _kind, _serviceTotal, ServiceMinutes(_serviceItems))));
             return true;
         }
 

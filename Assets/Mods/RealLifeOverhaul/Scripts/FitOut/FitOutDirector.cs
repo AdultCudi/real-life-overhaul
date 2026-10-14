@@ -51,8 +51,8 @@ namespace RealLifeOverhaul.FitOut
             Instance = this;
             _view = new FitView(Logger);
             _view.Built += v => Logger?.Info("Fit-out: " + v.Said + ".");
-            _onEnter = _ => Entered();
-            StartCoroutine(Tick());
+            _onEnter = Guard.Wrap<Address>(_ => Entered());   // (a fault here never reaches the game's own handlers: Core/Guard)
+            StartCoroutine(Guard.Routine(Tick()));
         }
 
         private void OnDestroy()
@@ -91,7 +91,7 @@ namespace RealLifeOverhaul.FitOut
             if (!_soon && isActiveAndEnabled)
             {
                 _soon = true;
-                StartCoroutine(SoonAfter());
+                StartCoroutine(Guard.Routine(SoonAfter()));
             }
         }
 

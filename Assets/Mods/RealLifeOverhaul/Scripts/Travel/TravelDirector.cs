@@ -281,7 +281,7 @@ namespace RealLifeOverhaul
                          + " agencies=" + Holidays.AgencyCount + " hotels=" + Hotels.Sites.Count + ".");
             if (TravelState.Away || TravelState.InRoom)
             {
-                StartCoroutine(ResumeSoon());
+                StartCoroutine(Guard.Routine(ResumeSoon()));
             }
         }
 
@@ -474,7 +474,7 @@ namespace RealLifeOverhaul
 
         public Coroutine Run(IEnumerator routine)
         {
-            return StartCoroutine(Guarded(routine));
+            return StartCoroutine(Guard.Routine(Guarded(routine)));
         }
 
         // A routine of the stay or the trip: a fault in it ends in the street, never in a frozen panel.

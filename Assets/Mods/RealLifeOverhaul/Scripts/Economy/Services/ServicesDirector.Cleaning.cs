@@ -434,7 +434,7 @@ namespace RealLifeOverhaul.Economy
             if (BuildingManager.IsInsideBuilding && !_resuming && !CleaningPresence.Broken && isActiveAndEnabled)
             {
                 _resuming = true;
-                StartCoroutine(PresenceAfterTick());
+                StartCoroutine(RealLifeOverhaul.Guard.Routine(PresenceAfterTick()));   // (the class's own Guard is a method: Core/Guard by its full name)
             }
             if (Verbose && (on > 0 || skipped > 0 || held > 0))
             {

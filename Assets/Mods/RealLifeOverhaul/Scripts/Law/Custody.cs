@@ -168,7 +168,7 @@ namespace RealLifeOverhaul.Law
             Record.Add(charges, state.Hours, state.Paid, Outcome.Held);
             Logger?.Info($"Law: arrested for {ChargeIds(charges)}: {state.Hours} h at {(precinct != null ? precinct.Name : "no precinct")}, bail {state.Bail}, "
                          + $"{state.Paid} paid at the arrest, held {priors} time(s) in the last {LawBook.RepeatDays} days.");
-            StartCoroutine(Routine(patrol));
+            StartCoroutine(Guard.Routine(Routine(patrol)));
         }
 
         private IEnumerator Routine(VehicleComponent patrol)
@@ -1040,7 +1040,7 @@ namespace RealLifeOverhaul.Law
                 Record.Add(charges, state.Hours, 0, Outcome.Held);
                 Reputation.AtTheDesk(6);   // for coming in
                 Logger?.Info($"Law: handed themselves in at {precinct.Name} for {ChargeIds(charges)}: {state.Hours} h, bail {state.Bail}.");
-                custody.StartCoroutine(custody.TurnInRoutine(precinct));
+                custody.StartCoroutine(Guard.Routine(custody.TurnInRoutine(precinct)));
                 return true;
             }
             catch (Exception e)
@@ -1129,7 +1129,7 @@ namespace RealLifeOverhaul.Law
                 };
                 Notifications.Show(NotificationType.Warning, "reallife_law_court_notice", data, 12f);
                 Logger?.Info($"Law: held by order of a court ({reasonKey}): {state.Hours} h at {(precinct != null ? precinct.Name : "no precinct")}, bail {state.Bail}.");
-                custody.StartCoroutine(custody.HoldRoutine(precinct));
+                custody.StartCoroutine(Guard.Routine(custody.HoldRoutine(precinct)));
                 return true;
             }
             catch (Exception e)
@@ -1246,7 +1246,7 @@ namespace RealLifeOverhaul.Law
             _phase = Phase.Held;
             _bailed = false;
             _beat = Time.unscaledTime;
-            StartCoroutine(ResumeRoutine());
+            StartCoroutine(Guard.Routine(ResumeRoutine()));
         }
 
         private IEnumerator ResumeRoutine()

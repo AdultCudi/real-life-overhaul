@@ -81,13 +81,17 @@ namespace RealLifeOverhaul
 
         public static IReadOnlyList<FeatureGuard> Guards => All;
 
-        /// <summary>A guard for an entry point, made once (a static of the class it guards).</summary>
+        /// <summary>A guard for an entry point, made once (a static of the class it guards); off from the start when its feature is off already.</summary>
         public static FeatureGuard For(string feature, string where)
         {
             var guard = new FeatureGuard(feature, where);
             lock (All)
             {
                 All.Add(guard);
+                if (feature != null && OffFeatures.Contains(feature))
+                {
+                    guard.SwitchOff();   // (a class first used after its feature was switched off, as the mod started or after its faults)
+                }
             }
             return guard;
         }
@@ -109,12 +113,12 @@ namespace RealLifeOverhaul
         /// </summary>
         public static bool SwitchOff(string feature)
         {
-            if (feature == null || !OffFeatures.Add(feature))
-            {
-                return false;
-            }
             lock (All)
             {
+                if (feature == null || !OffFeatures.Add(feature))
+                {
+                    return false;
+                }
                 foreach (FeatureGuard guard in All)
                 {
                     if (guard.Feature == feature)

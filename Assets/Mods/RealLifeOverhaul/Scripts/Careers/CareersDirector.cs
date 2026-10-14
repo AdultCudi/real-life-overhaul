@@ -46,7 +46,7 @@ namespace RealLifeOverhaul.Careers
             _onSave = OnSave;
             _onHour = Guard.Wrap(OnHour);
             _onDay = Guard.Wrap(OnDay);
-            StartCoroutine(Tick());
+            StartCoroutine(Guard.Routine(Tick()));
         }
 
         private void OnDestroy()

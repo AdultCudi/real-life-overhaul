@@ -71,7 +71,7 @@ namespace RealLifeOverhaul.Ledger
             Instance = this;
             _onSave = OnSave;
             _payWeek = PayWeek;
-            StartCoroutine(Tick());
+            StartCoroutine(Guard.Routine(Tick()));
         }
 
         private void OnDestroy()

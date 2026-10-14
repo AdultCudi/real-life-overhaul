@@ -292,7 +292,7 @@ namespace RealLifeOverhaul.Leisure
                 TestRefusals.Tell(Logger, "Ambient sound", TestRefusal.NotLoaded, 0, "the loops are still being made");
                 return;
             }
-            sound.StartCoroutine(sound.Audition());
+            sound.StartCoroutine(Guard.Routine(sound.Audition()));
         }
 
         private System.Collections.IEnumerator Audition()

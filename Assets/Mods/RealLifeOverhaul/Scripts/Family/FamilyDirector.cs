@@ -518,7 +518,7 @@ namespace RealLifeOverhaul.Family
             {
                 return false;
             }
-            StartCoroutine(Wrap(routine));
+            StartCoroutine(Guard.Routine(Wrap(routine)));
             return true;
         }
 
@@ -622,7 +622,7 @@ namespace RealLifeOverhaul.Family
         {
             if (isActiveAndEnabled)
             {
-                StartCoroutine(Free(action));
+                StartCoroutine(Guard.Routine(Free(action)));
             }
         }
 

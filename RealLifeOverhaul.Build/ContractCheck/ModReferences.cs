@@ -71,6 +71,50 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>The game on disk asked about one type reference of the mod's, as Core/ModScan asks the running game: null when it is there.</summary>
+        public string TypeProblem(int token)
+        {
+            var h = (TypeReferenceHandle)System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(token);
+            GameFiles.Named(_mod.Md, h, out string assembly, out string full);
+            if (!_files.Has(assembly))
+            {
+                return null;   // (an assembly not in the game's folder is not the game's to answer for)
+            }
+            return _files.Find(assembly, full).Exists ? null : "the type " + full + " is not in " + assembly;
+        }
+
+        /// <summary>The game on disk asked about one member reference of the mod's: null when it is there with the signature the mod was built against.</summary>
+        public string MemberProblem(int token)
+        {
+            var h = (MemberReferenceHandle)System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(token);
+            MemberReference r = _mod.Md.GetMemberReference(h);
+            if (!Owner(r.Parent, out FoundType owner, out string ownerName))
+            {
+                return null;
+            }
+            if (!owner.Exists)
+            {
+                return "its type " + ownerName + " is not in the game";
+            }
+            string name = _mod.Md.GetString(r.Name);
+            return r.GetKind() == MemberReferenceKind.Field ? FieldProblem(owner, name, r) : MethodProblem(owner, name, r);
+        }
+
+        /// <summary>The parameters' types of a member reference of the mod's that is a method, by their full names; null for a field.</summary>
+        public string[] Parameters(int token)
+        {
+            var h = (MemberReferenceHandle)System.Reflection.Metadata.Ecma335.MetadataTokens.EntityHandle(token);
+            MemberReference r = _mod.Md.GetMemberReference(h);
+            if (r.GetKind() != MemberReferenceKind.Method)
+            {
+                return null;
+            }
+            MethodSignature<string> s = r.DecodeMethodSignature(Full, new FullCtx(_mod.Md));
+            var types = new string[s.ParameterTypes.Length];
+            s.ParameterTypes.CopyTo(types);
+            return types;
+        }
+
         private static int MetadataTokens(EntityHandle h)
         {
             return System.Reflection.Metadata.Ecma335.MetadataTokens.GetToken(h);

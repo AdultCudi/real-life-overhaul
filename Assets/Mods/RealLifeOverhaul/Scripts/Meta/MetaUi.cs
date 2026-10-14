@@ -308,7 +308,7 @@ namespace RealLifeOverhaul.Meta
         /// <summary>Runs something on the next frame: for what must not happen inside a button's own click.</summary>
         public void NextFrame(Action action)
         {
-            StartCoroutine(After(action));
+            StartCoroutine(Guard.Routine(After(action)));
         }
 
         private static IEnumerator After(Action action)
@@ -326,7 +326,7 @@ namespace RealLifeOverhaul.Meta
 
         public Coroutine Run(IEnumerator routine)
         {
-            return StartCoroutine(routine);
+            return StartCoroutine(Guard.Routine(routine));
         }
 
         /// <summary>A message with an OK button, or with the buttons given (label key, what it does; the panel closes first).</summary>

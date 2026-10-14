@@ -251,7 +251,7 @@ namespace RealLifeOverhaul
                             Licences.Toast(NotificationType.Warning, "reallife_lic_car_not_yours", 8f);
                         }
                         _seeingOut = true;
-                        _host.StartCoroutine(SeeOut(_car));
+                        _host.StartCoroutine(Guard.Routine(SeeOut(_car)));
                     }
                     return;
                 }
@@ -616,7 +616,7 @@ namespace RealLifeOverhaul
             List<VehicleInstance> all = SaveGameManager.Current.VehicleInstances;
             if (all != null && all.Remove(_instance) && _host != null && _host.isActiveAndEnabled)
             {
-                _host.StartCoroutine(PutBack(_instance));
+                _host.StartCoroutine(Guard.Routine(PutBack(_instance)));
             }
         }
 

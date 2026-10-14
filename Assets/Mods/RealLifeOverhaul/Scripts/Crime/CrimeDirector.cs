@@ -183,7 +183,7 @@ namespace RealLifeOverhaul
         {
             Logger?.Error(e);
             EndScene();
-            if (GameMembers.StandsDown(e, "crime in the street"))
+            if (Guard.StandsDown(e, "crime in the street"))
             {
                 enabled = false;   // (a game that lacks something it names would fail at every look)
             }

@@ -197,7 +197,7 @@ namespace RealLifeOverhaul.Law
                 {
                     Logger?.Error(inner);
                 }
-                bool lacking = GameMembers.StandsDown(e, "the police precincts, custody and the record");   // (that fault would come back at every tick)
+                bool lacking = Guard.StandsDown(e, "the police precincts, custody and the record");   // (that fault would come back at every tick)
                 if (lacking || ++_faults >= 3)
                 {
                     if (!lacking)

@@ -10,7 +10,7 @@ namespace RealLifeOverhaul
     ///
     /// Before a release (and at once after a game update) the owner runs RealLifeOverhaul.Build/ContractCheck, which
     /// reads this file as it ships and checks every line against the game's assemblies on disk: what is missing or
-    /// changed, and which parts that hits. Then <see cref="ContractBook.CheckedBuild"/> is set to the game's build.
+    /// changed, and which parts that hits. Then <see cref="GameBuild.MadeFor"/> is set to the game's build.
     ///
     /// TO ADD A PIECE: a part (P) if it serves something new, then one line: Field, StaticField, Prop, Method,
     /// StaticMethod or TypeOf, with the assembly's simple name, the type's full name (a nested type after '+'), the
@@ -79,6 +79,13 @@ namespace RealLifeOverhaul
         public static readonly GamePart InteriorTabPart = ContractBook.Part("interior_tab", "interiors", "the Interior tab in BizMan");
         public static readonly GamePart BusYield = ContractBook.Part("bus_yield", "transport", "a bus held behind a traffic car that waits for it");
         public static readonly GamePart HairLampTest = ContractBook.Part("hair_lamp_test", "character", "the hair test's street lamp as bright as the game's");
+        public static readonly GamePart PlayerDeath = ContractBook.Part("player_death", null, "waiting while the player is dead or at a funeral");
+        public static readonly GamePart PrivateFences = ContractBook.Part("private_fences", null, "leaving out the buildings behind the game's private fences");
+        public static readonly GamePart CardTarget = ContractBook.Part("card_target", null, "the mod's lines on the game's building card");
+        public static readonly GamePart StationNames = ContractBook.Part("station_names", "transport", "the subway stations' names in the mod's journeys");
+        public static readonly GamePart QuestionBox = ContractBook.Part("question_box", null, "the mod's questions in the game's question box");
+        public static readonly GamePart BuildRead = ContractBook.Part("build_read", null, "reading which build of the game this is");
+        public static readonly GamePart AppOpening = ContractBook.Part("app_opening", "phone", "the game's own first steps when an app of the mod's opens");
 
         // ---------------------------------------------------------------- the pieces
 
@@ -285,6 +292,44 @@ namespace RealLifeOverhaul
 
         // Character/HairTests: a lit street lamp's brightness (else the test lamp keeps its own)
         public static readonly GameMember LampMaxValue = Optional(Field(HairLampTest, Game, "StreetLamp", "maxValue", "Single"));
+
+        // ---------------------------------------------------------------- the game's members the mod names in its code where an older game lacks them
+
+        // The mod's code names these directly, not by name, but only in a small method of its own that is never inlined,
+        // whose caller does without the member when the game lacks it (Core/GameMembers, Core/GameConfirm, Core/GameBuild,
+        // an app's first steps in Core/GameUi/PhoneApps): Build 3675 lacked the first five, and on it every method that
+        // named one failed at every call. Each is resolved here with the rest as the mod starts, so that on such a game the
+        // answer without it is taken before anything asks; ContractCheck holds every method that names one to being such
+        // a method, called inside a try.
+        public static readonly GameMember PlayerDead = Optional(NeedsSetter(Prop(PlayerDeath, Game, "Helpers.FuneralHelper", "PlayerDead", "Boolean", true)));
+        public static readonly GameMember FuneralActive = Optional(Prop(PlayerDeath, Game, "Helpers.FuneralHelper", "IsFuneralActive", "Boolean", true));
+        public static readonly GameMember FenceIndex = Optional(Field(PrivateFences, Game, "Buildings.Building", "locatedInsidePrivateFenceIndex", "Int32"));
+        public static readonly GameMember ResumeTarget = Prop(CardTarget, Game, "UI.InGameUI.BuildingResume", "TargetController", "EntityController", false);
+        public static readonly GameMember StationNameKey = Optional(Method(StationNames, Game, "SubwayStation", "GetNameKey", "String"));
+        public static readonly GameMember StationName = Optional(Field(StationNames, Game, "SubwayStation", "stationName", "SubwayStationName"));
+        public static readonly GameMember ConfirmByKey = Optional(StaticMethod(QuestionBox, Game, "HudConfirm", "Show", "Void",
+            "String", "String", "Action", "Action", "String", "String", "Boolean", "Boolean"));
+        public static readonly GameMember ConfirmByData = Optional(StaticMethod(QuestionBox, Game, "HudConfirm", "Show", "Void",
+            "LanguageChangeEventDataHolder", "LanguageChangeEventDataHolder", "Action", "Action", "String", "String", "Boolean", "Boolean"));
+        public static readonly GameMember ConfirmOpen = Optional(StaticField(QuestionBox, Game, "HudConfirm", "isOpen", "Boolean"));
+        public static readonly GameMember ConfirmListening = Optional(StaticField(QuestionBox, Game, "HudConfirm", "onShow",
+            "Action<LanguageChangeEventDataHolder,LanguageChangeEventDataHolder,String,String,Action,Action,Boolean>"));
+        public static readonly GameMember VersionCurrent = Optional(StaticMethod(BuildRead, Game, "GameVersion", "GetCurrent", "GameVersion"));
+        public static readonly GameMember VersionBuild = Optional(Field(BuildRead, Game, "GameVersion", "buildNumber", "Int32"));
+        public static readonly GameMember MenuStartView = Optional(Field(BuildRead, Game, "MainMenuController", "startView", "GameObject"));
+        public static readonly GameMember PhoneOutlineOff = Optional(Method(AppOpening, Game, "SmartphoneUI", "StopOutliningCurrentApp", "Void"));
+        public static readonly GameMember UisResume = Optional(Field(AppOpening, Game, "UI.UIs", "buildingResume", "BuildingResume"));
+        public static readonly GameMember ResumeClose = Optional(Method(AppOpening, Game, "UI.InGameUI.BuildingResume", "Close", "Void"));
+        public static readonly GameMember MenuBizMan = Optional(Field(AppOpening, Game, "UI.Smartphone.FullMenu", "bizMan", "BizMan"));
+        public static readonly GameMember BizManBusinessPage = Optional(Field(AppOpening, Game, "UI.Smartphone.Apps.BizMan.BizMan", "business", "BizManBusiness"));
+        public static readonly GameMember BizManSettingsPage = Optional(Field(AppOpening, Game, "BizManBusiness", "bizManSettings", "BizManSettings"));
+        public static readonly GameMember BizManRegistration = Optional(Field(AppOpening, Game, "BizManBusiness", "buildingRegistration", "BuildingRegistration"));
+        public static readonly GameMember SettingsUnsaved = Optional(Prop(AppOpening, Game, "BizManSettings", "HasUnsavedChanges", "Boolean", false));
+        public static readonly GameMember RegistrationName = Optional(Field(AppOpening, Game, "BuildingRegistration", "BusinessName", "String"));
+        public static readonly GameMember NoticeError = Optional(StaticMethod(AppOpening, Game, "UI.Notification.Notifications", "ShowError", "Void", "String", "String", "Boolean"));
+
+        /// <summary>The five pieces a player's Build 3675 lacked (its Player.log, 14 Oct 2026; the funeral helper's two properties are one piece, its type): ContractCheck holds them to the contract, isolated.</summary>
+        public static readonly GameMember[] LackedBy3675 = { PlayerDead, FuneralActive, FenceIndex, ResumeTarget, StationNameKey, ConfirmByKey };
 
         // ---------------------------------------------------------------- the game's layers, by name
 

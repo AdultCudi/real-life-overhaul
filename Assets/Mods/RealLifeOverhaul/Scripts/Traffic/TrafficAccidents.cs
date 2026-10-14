@@ -347,7 +347,7 @@ namespace RealLifeOverhaul
                 // the accidents name would come back at every look: they stop for the session, the watch on the traffic goes on.
                 Logger?.Error(e);
                 Clear(resumeTraffic: true, announce: false, why: "error");
-                _lacking = GameMembers.StandsDown(e, "traffic accidents");
+                _lacking = Guard.StandsDown(e, "traffic accidents");
             }
         }
 

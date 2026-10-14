@@ -1,35 +1,44 @@
 using System;
-using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using BAModAPI;
 using Buildings;
 using UI.InGameUI;
 
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The members of the game that a build before the one the mod is made for can lack (Core/GameBuild: Build 3675 lacked
-    /// all of these), read here and nowhere else. Mono compiles a method when it is first called, and it cannot compile
-    /// one that names a member the running game does not have: it throws at every call instead (TypeLoadException,
-    /// MissingFieldException, MissingMethodException), and the whole method is lost, whatever else it does. So each
-    /// member is named in a small method of its own, never inlined, called inside a try: on such a game only that
-    /// method fails, its first failure is said once in Player.log with the member it names, and the answer is the one
-    /// that fits a game without it. Nobody is dead without the game's own funeral, no building stands behind a private
-    /// fence without the game's fences, the building card has no target, and a station is named by its older field.
-    /// The question box (HudConfirm.Show) is Core/GameConfirm's.
+    /// The members of the game that a build before the one the mod is made for can lack (Build 3675 lacked all of these),
+    /// read here and nowhere else. Mono compiles a method when it is first called, and it cannot compile one that names a
+    /// member the running game does not have: it throws at every call instead (TypeLoadException, MissingFieldException,
+    /// MissingMethodException), and the whole method is lost, whatever else it does. So each member is named in a small
+    /// method of its own, never inlined, and the answer without it is the one that fits a game without it: nobody is dead
+    /// without the game's own funeral, no building stands behind a private fence without the game's fences, the building
+    /// card has no target, and a station is named by its older field. The question box (HudConfirm.Show) is
+    /// Core/GameConfirm's.
     ///
-    /// The entry points the engine calls use <see cref="StandsDown"/> in their catch, so that any member a game lacks
-    /// is said once and that part stops for the session, instead of failing every frame or every tick.
+    /// Each is a line of the game contract (Core/GameContract: PlayerDead, FuneralActive, FenceIndex, ResumeTarget,
+    /// StationNameKey, StationName), resolved as the mod starts: on a game that lacks one, <see cref="Known"/> takes its
+    /// answer before anything asks, and the method that names it is never called. Should one be found missing only when
+    /// it is first used, its catch takes the same answer and says it once (Core/Guard.DoesWithout).
     ///
-    /// Cost while the game has them all: a call and a flag test for each read. NavCheck holds the mod's sources to
-    /// naming these members nowhere else, and finds each in the game's assemblies (GameBuild.Isolated).
+    /// Cost while the game has them all: a call and a flag test for each read. ContractCheck holds every method of the
+    /// mod that names one of these to being such a method, never inlined and called inside a try.
     /// </summary>
     public static class GameMembers
     {
-        public static IModLogger Logger;
-
-        private static readonly HashSet<string> Told = new HashSet<string>(StringComparer.Ordinal);
         private static bool _noFuneral, _noFence, _noTarget, _noNameKey, _noStationName;
+
+        /// <summary>
+        /// From Core/Guard as the mod starts, once the contract is resolved: each member this game lacks is known from
+        /// then on, so that nothing here is ever compiled against it.
+        /// </summary>
+        public static void Known()
+        {
+            _noFuneral = GameContract.PlayerDead.Missing || GameContract.FuneralActive.Missing;
+            _noFence = GameContract.FenceIndex.Missing;
+            _noTarget = GameContract.ResumeTarget.Missing;
+            _noNameKey = GameContract.StationNameKey.Missing;
+            _noStationName = GameContract.StationName.Missing;
+        }
 
         // ---------------------------------------------------------------- Helpers.FuneralHelper
 
@@ -46,7 +55,7 @@ namespace RealLifeOverhaul
                 {
                     return Dead();
                 }
-                catch (Exception e) when (Missing(e))
+                catch (Exception e) when (Guard.Missing(e))
                 {
                     NoFuneral(e);
                     return false;
@@ -62,7 +71,7 @@ namespace RealLifeOverhaul
                 {
                     SetDead(value);
                 }
-                catch (Exception e) when (Missing(e))
+                catch (Exception e) when (Guard.Missing(e))
                 {
                     NoFuneral(e);
                 }
@@ -82,7 +91,7 @@ namespace RealLifeOverhaul
                 {
                     return Funeral();
                 }
-                catch (Exception e) when (Missing(e))
+                catch (Exception e) when (Guard.Missing(e))
                 {
                     NoFuneral(e);
                     return false;
@@ -111,7 +120,7 @@ namespace RealLifeOverhaul
         private static void NoFuneral(Exception e)
         {
             _noFuneral = true;
-            Without(e, "the game's own death and funeral", "the player is taken to be alive and no funeral to be on");
+            Guard.DoesWithout(e, "the game's own death and funeral", "the player is taken to be alive and no funeral to be on");
         }
 
         // ---------------------------------------------------------------- Building.locatedInsidePrivateFenceIndex
@@ -127,10 +136,10 @@ namespace RealLifeOverhaul
             {
                 return FenceIndex(building) >= 0;
             }
-            catch (Exception e) when (Missing(e))
+            catch (Exception e) when (Guard.Missing(e))
             {
                 _noFence = true;
-                Without(e, "a building's private fence", "no building is taken to be behind one");
+                Guard.DoesWithout(e, "a building's private fence", "no building is taken to be behind one");
                 return false;
             }
         }
@@ -154,10 +163,10 @@ namespace RealLifeOverhaul
             {
                 return Target(card);
             }
-            catch (Exception e) when (Missing(e))
+            catch (Exception e) when (Guard.Missing(e))
             {
                 _noTarget = true;
-                Without(e, "what the game's building card is about", "the mod's lines on the card are left out");
+                Guard.DoesWithout(e, "what the game's building card is about", "the mod's lines on the card are left out");
                 return null;
             }
         }
@@ -186,10 +195,10 @@ namespace RealLifeOverhaul
                 {
                     return StationKey(station);
                 }
-                catch (Exception e) when (Missing(e))
+                catch (Exception e) when (Guard.Missing(e))
                 {
                     _noNameKey = true;
-                    Without(e, "a subway station's name", "it is put together from the station's name field");
+                    Guard.DoesWithout(e, "a subway station's name", "it is put together from the station's name field");
                 }
             }
             if (!_noStationName)
@@ -198,10 +207,10 @@ namespace RealLifeOverhaul
                 {
                     return StationField(station);
                 }
-                catch (Exception e) when (Missing(e))
+                catch (Exception e) when (Guard.Missing(e))
                 {
                     _noStationName = true;
-                    Without(e, "a subway station's name field", "the station's own object name stands in");
+                    Guard.DoesWithout(e, "a subway station's name field", "the station's own object name stands in");
                 }
             }
             return station.name;
@@ -217,78 +226,6 @@ namespace RealLifeOverhaul
         private static string StationField(SubwayStation station)
         {
             return "subwaystation_" + station.stationName;
-        }
-
-        // ---------------------------------------------------------------- the exceptions
-
-        /// <summary>True when the exception says the running game lacks a type, field or method the mod was compiled against (or has made it inaccessible).</summary>
-        public static bool Missing(Exception e)
-        {
-            return e is TypeLoadException || e is MemberAccessException
-                   || (e is TypeInitializationException && e.InnerException != null && Missing(e.InnerException));
-        }
-
-        /// <summary>
-        /// For the catch at an entry point the engine calls: true when the running game lacks a member, said once for
-        /// that part, which the caller then stands down for the session. False for any other fault, which the caller
-        /// handles as it always has.
-        /// </summary>
-        public static bool StandsDown(Exception e, string part)
-        {
-            if (!Missing(e))
-            {
-                return false;
-            }
-            Say(part, "Game build: " + part + " is off for the rest of this session: this game lacks " + GameBuild.MemberOf(e.Message) + ". "
-                      + GameBuild.Builds(GameBuild.Running, Meta.Changelog.Version));
-            return true;
-        }
-
-        /// <summary>
-        /// For a step that is done without on a game that lacks what it needs: true (and said once for <paramref name="what"/>)
-        /// when the exception says so.
-        /// </summary>
-        public static bool DoesWithout(Exception e, string what)
-        {
-            return DoesWithout(e, what, "the mod does without it");
-        }
-
-        /// <summary>As <see cref="DoesWithout(Exception, string)"/>, with what is done instead.</summary>
-        public static bool DoesWithout(Exception e, string what, string answer)
-        {
-            if (!Missing(e))
-            {
-                return false;
-            }
-            Without(e, what, answer);
-            return true;
-        }
-
-        // "Game build: this game lacks X. What it was for: what is done instead. This game is Build N; ... Build M."
-        private static void Without(Exception e, string what, string answer)
-        {
-            Say(what, "Game build: this game lacks " + GameBuild.MemberOf(e != null ? e.Message : null) + ". " + char.ToUpperInvariant(what[0]) + what.Substring(1)
-                      + ": " + answer + ". " + GameBuild.Builds(GameBuild.Running, Meta.Changelog.Version));
-        }
-
-        // Once a session for each part or member: a game that lacks something lacks it for good.
-        private static void Say(string key, string line)
-        {
-            lock (Told)
-            {
-                if (!Told.Add(key))
-                {
-                    return;
-                }
-            }
-            if (Logger != null)
-            {
-                Logger.Warn(line);
-            }
-            else
-            {
-                UnityEngine.Debug.LogWarning("[Mod:Real Life Overhaul] " + line);
-            }
         }
     }
 }

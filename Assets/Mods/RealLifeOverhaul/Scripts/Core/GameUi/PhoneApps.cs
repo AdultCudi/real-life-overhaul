@@ -309,7 +309,7 @@ namespace RealLifeOverhaul.GameUi
         // An open that failed: said once for the app, with the member a game lacks or the error (whose whole text follows).
         private void Failed(Exception e)
         {
-            if (GameMembers.Missing(e))
+            if (Guard.Missing(e))
             {
                 Unopened("this game lacks " + GameBuild.MemberOf(e.Message) + " (the game is Build " + GameBuild.Running + ", the mod is made for Build " + GameBuild.MadeFor + ")");
                 return;
@@ -362,17 +362,17 @@ namespace RealLifeOverhaul.GameUi
             {
                 OutlineOff();
             }
-            catch (Exception e) when (GameMembers.Missing(e))
+            catch (Exception e) when (Guard.Missing(e))
             {
-                GameMembers.DoesWithout(e, "the HUD phone's outline when an app of the mod's is opened");
+                Guard.DoesWithout(e, "the HUD phone's outline when an app of the mod's is opened");
             }
             try
             {
                 CardClosed();
             }
-            catch (Exception e) when (GameMembers.Missing(e))
+            catch (Exception e) when (Guard.Missing(e))
             {
-                GameMembers.DoesWithout(e, "closing the building card when an app of the mod's is opened");
+                Guard.DoesWithout(e, "closing the building card when an app of the mod's is opened");
             }
         }
 
@@ -405,9 +405,9 @@ namespace RealLifeOverhaul.GameUi
             {
                 BizManChanges(out unsaved, out nameless);
             }
-            catch (Exception e) when (GameMembers.Missing(e))
+            catch (Exception e) when (Guard.Missing(e))
             {
-                GameMembers.DoesWithout(e, "BizMan's settings not saved when an app of the mod's is opened");
+                Guard.DoesWithout(e, "BizMan's settings not saved when an app of the mod's is opened");
                 return false;   // a game without them has none to keep
             }
             if (!unsaved)
@@ -420,9 +420,9 @@ namespace RealLifeOverhaul.GameUi
                 {
                     NameFirst();
                 }
-                catch (Exception e) when (GameMembers.Missing(e))
+                catch (Exception e) when (Guard.Missing(e))
                 {
-                    GameMembers.DoesWithout(e, "the game's word that a business needs a name before BizMan's settings are left");
+                    Guard.DoesWithout(e, "the game's word that a business needs a name before BizMan's settings are left");
                 }
                 return true;
             }

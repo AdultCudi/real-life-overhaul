@@ -66,7 +66,7 @@ namespace RealLifeOverhaul.Permadeath
             _onClosed = PageClosed;
             _onChanged = Resync;
             Settings.Changed += _onChanged;
-            StartCoroutine(Tick());
+            StartCoroutine(Guard.Routine(Tick()));
         }
 
         private void OnDestroy()
@@ -81,7 +81,7 @@ namespace RealLifeOverhaul.Permadeath
             {
                 // What follows must be done whatever this did: on a game lacking something Hold names it failed, and the
                 // switch below was left on for the next game begun (Core/GameMembers).
-                if (!GameMembers.DoesWithout(e, "letting the player walk again as the city closes"))
+                if (!Guard.DoesWithout(e, "letting the player walk again as the city closes"))
                 {
                     Logger?.Error(e);
                 }
@@ -167,7 +167,7 @@ namespace RealLifeOverhaul.Permadeath
             }
             if (PermadeathRules.Ended(PermadeathState.Dead, PermadeathState.Armed, _elsewhere))
             {
-                StartCoroutine(Ended());
+                StartCoroutine(Guard.Routine(Ended()));
                 return;
             }
             if (save.Day != _day)
@@ -496,7 +496,7 @@ namespace RealLifeOverhaul.Permadeath
             {
                 return false;
             }
-            StartCoroutine(Dying(cause, true));
+            StartCoroutine(Guard.Routine(Dying(cause, true)));
             return true;
         }
 

@@ -323,7 +323,7 @@ namespace RealLifeOverhaul
         {
             if (_refresh == null && gameObject.activeInHierarchy && (_uniformsDue || AnyStale()))
             {
-                _refresh = StartCoroutine(Tending());
+                _refresh = StartCoroutine(Guard.Routine(Tending()));
             }
         }
 

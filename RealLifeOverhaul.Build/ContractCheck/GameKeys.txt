@@ -154,6 +154,7 @@ ba:vehicletype_mersaididash
 ba:vehicletype_umcdesert
 ba:vehicletype_umcdesertdeliveryjob
 bizman_menu_settings
+bizman_settings_notification_name_empty
 bizman_status
 buildingmanager_notification_business_closed
 buildingmanager_notification_private_property

@@ -153,7 +153,7 @@ namespace RealLifeOverhaul
             {
                 OnUpdate();
             }
-            catch (System.Exception e) when (GameMembers.StandsDown(e, "the third-person camera"))
+            catch (System.Exception e) when (Guard.StandsDown(e, "the third-person camera"))
             {
                 enabled = false;
                 try

@@ -362,7 +362,7 @@ namespace RealLifeOverhaul
         {
             _instance = this;
             // The game's events get these through Core/Guard: a fault here never reaches the game's own handlers.
-            _onEnter = Guard.Wrap<Address>(_ => StartCoroutine(Soon()));
+            _onEnter = Guard.Wrap<Address>(_ => StartCoroutine(Guard.Routine(Soon())));
             _onMap = Guard.Wrap<bool>(open =>
             {
                 if (open)
@@ -388,7 +388,7 @@ namespace RealLifeOverhaul
 
         private void Start()
         {
-            StartCoroutine(Look());
+            StartCoroutine(Guard.Routine(Look()));
         }
 
         private void OnDestroy()
@@ -529,7 +529,7 @@ namespace RealLifeOverhaul
                 {
                     Card(target as CityBuildingController);
                 }
-                catch (Exception e) when (GameMembers.StandsDown(e, "the special buildings' names on the game's building card"))
+                catch (Exception e) when (Guard.StandsDown(e, "the special buildings' names on the game's building card"))
                 {
                     _cardFailed = true;   // (a game that lacks something the card names would fail at every building looked at)
                 }

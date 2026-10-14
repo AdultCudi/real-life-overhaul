@@ -113,6 +113,7 @@ namespace RealLifeOverhaul
         private MethodInfo _method;
         private MethodInfo _setter;
         private bool _ok;
+        private bool _missing;
         private string _problem;
 
         // Each is resolved before it is first read: a class that reads its piece in a static initialiser before the
@@ -173,6 +174,19 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// True when it was looked for and the game does not have it as the mod expects; false while it is there, and
+        /// when it could not be looked for at all (then the code that names it finds out as it is used).
+        /// </summary>
+        public bool Missing
+        {
+            get
+            {
+                ContractBook.EnsureResolved();
+                return _missing;
+            }
+        }
+
         /// <summary>Missing, or not what the mod expects, in English; null when <see cref="Ok"/>.</summary>
         public string Problem
         {
@@ -194,10 +208,11 @@ namespace RealLifeOverhaul
             }
         }
 
-        internal void Set(Type type, MemberInfo info, string problem)
+        internal void Set(Type type, MemberInfo info, string problem, bool lookedFor = true)
         {
             _problem = problem;
             _ok = problem == null;
+            _missing = problem != null && lookedFor;
             _type = _ok || Kind != GameMemberKind.Type ? type : null;   // (for a missing member the type may still be there)
             _field = _ok ? info as FieldInfo : null;
             _property = _ok ? info as PropertyInfo : null;
@@ -214,13 +229,11 @@ namespace RealLifeOverhaul
     ///
     /// No Unity or game types: the owner's checker (RealLifeOverhaul.Build/ContractCheck) compiles this file and the
     /// table, checks every member against the game's assemblies on disk, and tests the switching off with types of
-    /// its own. Cost: one pass over about seventy members at start; nothing after that.
+    /// its own. The build the mod is checked against is Core/GameBuild's MadeFor, the mod's one build number. Cost: one
+    /// pass over about 140 members at start; nothing after that.
     /// </summary>
     public static class ContractBook
     {
-        /// <summary>The game's build this version of the mod was checked against with ContractCheck (GameVersion.buildNumber).</summary>
-        public const int CheckedBuild = 3682;
-
         private static List<GameMember> _members;
         private static List<GamePart> _parts;
         private static bool _resolved;
@@ -292,6 +305,7 @@ namespace RealLifeOverhaul
                 Type type = null;
                 MemberInfo info = null;
                 string problem;
+                bool lookedFor = true;
                 try
                 {
                     type = findType(member.Assembly, member.TypeName);
@@ -300,8 +314,9 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     problem = "it could not be read (" + e.GetType().Name + ": " + e.Message + ")";
+                    lookedFor = false;
                 }
-                member.Set(type, info, problem);
+                member.Set(type, info, problem, lookedFor);
                 return problem;
             });
         }

@@ -335,7 +335,7 @@ namespace RealLifeOverhaul.Economy
             {
                 _rotaWorking = true;
                 RotaBegin();
-                StartCoroutine(RotaWork());
+                StartCoroutine(Guard.Routine(RotaWork()));
             }
         }
 

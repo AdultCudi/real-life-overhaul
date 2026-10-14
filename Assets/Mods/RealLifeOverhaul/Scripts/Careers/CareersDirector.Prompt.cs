@@ -229,7 +229,7 @@ namespace RealLifeOverhaul.Careers
             {
                 OnLateUpdate();
             }
-            catch (Exception e) when (GameMembers.StandsDown(e, "the university's building card and the watch on its desks"))
+            catch (Exception e) when (Guard.StandsDown(e, "the university's building card and the watch on its desks"))
             {
                 _watchOff = true;
             }

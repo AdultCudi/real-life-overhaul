@@ -211,7 +211,7 @@ namespace RealLifeOverhaul
                 return;
             }
             _state = PlayerActivityState.MovingTowardsActivity;
-            _host.StartCoroutine(Begin());
+            _host.StartCoroutine(Guard.Routine(Begin()));
         }
 
         // One frame "on its way" (the game's panel hides itself and lets the clock run), then started, with no walk order.

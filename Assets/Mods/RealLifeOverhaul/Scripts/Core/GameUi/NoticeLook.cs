@@ -420,7 +420,7 @@ namespace RealLifeOverhaul.GameUi
             {
                 look.StopCoroutine(look._test);
             }
-            look._test = look.StartCoroutine(look.ShowEach());
+            look._test = look.StartCoroutine(Guard.Routine(look.ShowEach()));
         }
 
         private IEnumerator ShowEach()

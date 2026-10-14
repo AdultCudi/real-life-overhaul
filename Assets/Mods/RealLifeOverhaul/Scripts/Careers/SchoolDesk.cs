@@ -155,7 +155,7 @@ namespace RealLifeOverhaul.Careers
             _length = Math.Max(1, sitting.SkipMinutes);
             _done = 0;
             _state = PlayerActivityState.MovingTowardsActivity;
-            _director.StartCoroutine(Walk());
+            _director.StartCoroutine(Guard.Routine(Walk()));
         }
 
         // As the game's studying: a frame later, the walk to the desk; there, the chair, the screen and the energy.

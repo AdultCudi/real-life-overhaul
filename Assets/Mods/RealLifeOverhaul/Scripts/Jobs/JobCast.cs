@@ -194,7 +194,7 @@ namespace RealLifeOverhaul
                 Shelve(person);
                 if (_refresh == null && _host != null && _host.isActiveAndEnabled)
                 {
-                    _refresh = _host.StartCoroutine(Refresh());
+                    _refresh = _host.StartCoroutine(Guard.Routine(Refresh()));
                 }
             }
         }

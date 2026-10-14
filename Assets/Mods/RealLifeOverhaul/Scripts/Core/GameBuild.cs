@@ -11,42 +11,6 @@ namespace RealLifeOverhaul
         Newer      // a later build: the game may have changed since
     }
 
-    /// <summary>What a member of the game is, for <see cref="GameNeed"/>.</summary>
-    public enum GameNeedKind
-    {
-        Field,
-        Property,
-        Method
-    }
-
-    /// <summary>
-    /// One member of the game the mod reaches only through Core/GameMembers, Core/GameConfirm or the build check, with
-    /// the assembly and the type it is in. For a method, its parameter types as NavCheck writes them ("string,bool");
-    /// "" for none.
-    /// </summary>
-    public sealed class GameNeed
-    {
-        public readonly string Assembly;
-        public readonly string Type;
-        public readonly GameNeedKind Kind;
-        public readonly string Name;
-        public readonly string Parameters;
-
-        public GameNeed(string assembly, string type, GameNeedKind kind, string name, string parameters = null)
-        {
-            Assembly = assembly;
-            Type = type;
-            Kind = kind;
-            Name = name;
-            Parameters = parameters;
-        }
-
-        public override string ToString()
-        {
-            return Type + "." + Name + (Kind == GameNeedKind.Method ? "(" + Parameters + ")" : string.Empty);
-        }
-    }
-
     /// <summary>
     /// The build of Big Ambitions this version of the mod is made for, and what follows from the build the running game
     /// says it is: GameVersion.buildNumber (the game's resource Versioning/Current), the number its main menu shows and
@@ -55,18 +19,20 @@ namespace RealLifeOverhaul
     /// A game older than that can lack members the mod was compiled against, and Mono cannot compile a method that names
     /// one: it throws at every call instead. Build 3675 lacked five (Helpers.FuneralHelper, Building.locatedInsidePrivateFenceIndex,
     /// BuildingResume.TargetController, SubwayStation.GetNameKey and HudConfirm.Show with isNegative), and on it the mod's
-    /// apps did not open while the camera, careers and more failed every frame. Core/GameMembers and Core/GameConfirm now
-    /// name those five in small methods of their own; Meta/BuildNotice tells the player what to do.
+    /// apps did not open while the camera, careers and more failed every frame. Core/GameMembers and Core/GameConfirm
+    /// name those five in small methods of their own; they and every other piece of the game the mod relies on are lines
+    /// of the game contract (Core/GameContract), and Core/Guard says what this game lacks and switches off only what
+    /// stands on it; the notice in GameBuild.Notice.cs tells the player what to do.
     ///
-    /// Game-free, checked offline (NavCheck), which also holds <see cref="MadeFor"/> to the build of the game installed
-    /// for building the mod, and every member of <see cref="Isolated"/> to that game's assemblies.
+    /// Game-free, checked offline (ContractCheck), which also holds <see cref="MadeFor"/> to the build of the game
+    /// installed for building the mod.
     /// </summary>
     public static partial class GameBuild
     {
         /// <summary>
-        /// The build the mod is compiled against and checked in. NavCheck reads the build of the installed game the mod
-        /// is built against and fails while it is another one: after a game update, build and check the mod against it,
-        /// then change this number.
+        /// The build the mod is compiled against and checked in, the one build number of the mod. ContractCheck reads the
+        /// build of the installed game the mod is built against and fails while it is another one: after a game update,
+        /// build and check the mod against it (README, "After a game update"), then change this number.
         /// </summary>
         public const int MadeFor = 3682;
 
@@ -172,44 +138,5 @@ namespace RealLifeOverhaul
             int from = text.IndexOf(start, StringComparison.Ordinal);
             return from < 0 ? null : text.Substring(from + start.Length);
         }
-
-        private const string Ba = "BigAmbitions";
-        private const string Holder = "Localizor.LanguageChangeEvent.LanguageChangeEventDataHolder";
-
-        /// <summary>
-        /// Every member of the game that the mod reads only in a method of its own (Core/GameMembers, Core/GameConfirm,
-        /// the build check, an app's first steps of opening in Core/GameUi/PhoneApps), so that a game without it fails
-        /// only there. NavCheck finds each in the installed game's assemblies; one it cannot find is a typing error here or
-        /// a game that has changed.
-        /// </summary>
-        public static readonly GameNeed[] Isolated =
-        {
-            // The five Build 3675 lacked.
-            new GameNeed(Ba, "Helpers.FuneralHelper", GameNeedKind.Property, "PlayerDead"),
-            new GameNeed(Ba, "Helpers.FuneralHelper", GameNeedKind.Property, "IsFuneralActive"),
-            new GameNeed(Ba, "Buildings.Building", GameNeedKind.Field, "locatedInsidePrivateFenceIndex"),
-            new GameNeed(Ba, "UI.InGameUI.BuildingResume", GameNeedKind.Property, "TargetController"),
-            new GameNeed(Ba, "SubwayStation", GameNeedKind.Method, "GetNameKey", ""),
-            new GameNeed(Ba, "HudConfirm", GameNeedKind.Method, "Show", "string,string,System.Action,System.Action,string,string,bool,bool"),
-            new GameNeed(Ba, "HudConfirm", GameNeedKind.Method, "Show", Holder + "," + Holder + ",System.Action,System.Action,string,string,bool,bool"),
-            // What stands in for one of them, and what the question box and the build check read.
-            new GameNeed(Ba, "SubwayStation", GameNeedKind.Field, "stationName"),
-            new GameNeed(Ba, "HudConfirm", GameNeedKind.Field, "isOpen"),
-            new GameNeed(Ba, "HudConfirm", GameNeedKind.Field, "onShow"),
-            new GameNeed(Ba, "GameVersion", GameNeedKind.Method, "GetCurrent", ""),
-            new GameNeed(Ba, "GameVersion", GameNeedKind.Field, "buildNumber"),
-            new GameNeed(Ba, "MainMenuController", GameNeedKind.Field, "startView"),
-            // An app's first steps of opening, as the game's own FullMenu.ShowApp takes them.
-            new GameNeed(Ba, "SmartphoneUI", GameNeedKind.Method, "StopOutliningCurrentApp", ""),
-            new GameNeed(Ba, "UI.UIs", GameNeedKind.Field, "buildingResume"),
-            new GameNeed(Ba, "UI.InGameUI.BuildingResume", GameNeedKind.Method, "Close", ""),
-            new GameNeed(Ba, "UI.Smartphone.FullMenu", GameNeedKind.Field, "bizMan"),
-            new GameNeed(Ba, "UI.Smartphone.Apps.BizMan.BizMan", GameNeedKind.Field, "business"),
-            new GameNeed(Ba, "BizManBusiness", GameNeedKind.Field, "bizManSettings"),
-            new GameNeed(Ba, "BizManBusiness", GameNeedKind.Field, "buildingRegistration"),
-            new GameNeed(Ba, "BizManSettings", GameNeedKind.Property, "HasUnsavedChanges"),
-            new GameNeed(Ba, "BuildingRegistration", GameNeedKind.Field, "BusinessName"),
-            new GameNeed(Ba, "UI.Notification.Notifications", GameNeedKind.Method, "ShowError", "string,string,bool")
-        };
     }
 }

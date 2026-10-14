@@ -90,7 +90,7 @@ namespace RealLifeOverhaul
                 Logger?.Warn("Map links: could not be set up after the error above; the mod's places (other than police stations) are left off the city map.");
                 return;
             }
-            StartCoroutine(Run());
+            StartCoroutine(Guard.Routine(Run()));
         }
 
         private IEnumerator Run()

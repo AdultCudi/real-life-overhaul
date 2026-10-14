@@ -114,7 +114,7 @@ namespace RealLifeOverhaul.Districts
                 Fail(e);
                 return;
             }
-            StartCoroutine(Look());
+            StartCoroutine(Guard.Routine(Look()));
         }
 
         private void OnDestroy()

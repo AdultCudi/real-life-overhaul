@@ -99,7 +99,7 @@ namespace RealLifeOverhaul.Economy
             _onDay = Guard.Wrap(Ticks, OnDay);
             _onGrade = OnGrade;
             _onPosted = OnPosted;
-            StartCoroutine(Tick());
+            StartCoroutine(Guard.Routine(Tick()));
         }
 
         private void OnDestroy()

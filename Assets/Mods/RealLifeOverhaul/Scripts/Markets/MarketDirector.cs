@@ -95,7 +95,7 @@ namespace RealLifeOverhaul.Markets
             _world = new MarketGameWorld(this);
             _tradeSink = (stock, micros, shares) => SharedCity.Ask('M', "i|" + stock + "|" + micros + "|" + shares);
             _botTold = BotHeard;
-            StartCoroutine(Tick());
+            StartCoroutine(Guard.Routine(Tick()));
             SharedCity.Register(new SharedCityPart
             {
                 Id = 'M', Name = "stock market",

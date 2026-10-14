@@ -6,16 +6,18 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using RealLifeOverhaul;
 
-// The owner's check of the mod against a version of the game (see ContractCheck.csproj). A check that fails prints one
-// line; the last line is ALL CHECKS PASSED or the count that failed.
+// The owner's check of the mod against a version of the game (see ContractCheck.csproj), run by the gate. A check that
+// fails prints one line; the last line is ALL CHECKS PASSED or the count that failed.
 //
 //   dotnet ContractCheck.dll [Managed folder] [--mod path\RealLifeOverhaul.dll] [--locale path\en.json]
 //
-// After a game update: run it against the new game. Every line under "the game contract" names a piece that is
-// missing or changed and the parts it switches off; every line under "the mod's compiled references" a type or member
-// the mod's code names that the game no longer has, and who uses it; every line under "the game's keys" a text or data
-// key of the game's that is gone. Fix those, run it again until it passes, then set ContractBook.CheckedBuild.
-internal static class Program
+// After a game update: run it against the new game (README, "After a game update"). The game's build fails until
+// GameBuild.MadeFor is the new build; every line under "the game contract" names a piece that is missing or changed and
+// the parts it switches off; every line under "the mod's code against this game" a type or member the mod's code names
+// that the game no longer has, who uses it and the features the running mod switches off for it; every line under "the
+// game's keys" a text or data key of the game's that is gone. Fix those, run it again until only the build fails, then
+// set GameBuild.MadeFor.
+internal static partial class Program
 {
     private const string DefaultManaged = @"G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\Managed";
 
@@ -63,6 +65,7 @@ internal static class Program
         Logic();
         Faults();
         Saves();
+        BuildRules();
         PartNames(Path.Combine(root, @"Assets\Mods\RealLifeOverhaul\Locales\en.json"));
 
         if (!Directory.Exists(managed))
@@ -72,8 +75,10 @@ internal static class Program
         else
         {
             var files = new GameFiles(managed);
+            InstalledBuild(managed);
             Contract(files);
             References(files, mod);
+            ScanChecks(files, mod);
             Keys(locale, scripts);
         }
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
@@ -100,7 +105,7 @@ internal static class Program
         Console.WriteLine("   " + problems.Count(p => p.Value == null) + " of " + problems.Count + " pieces as expected; parts that would be off: "
                           + (off.Count == 0 ? "none" : string.Join(", ", off.Select(p => p.Id))) + "; features hit: "
                           + (off.Count == 0 ? "none" : string.Join(", ", ContractBook.FeaturesHit())) + ".");
-        Console.WriteLine("   (checked against build " + ContractBook.CheckedBuild + " last: set ContractBook.CheckedBuild to the game's build when this passes for a new one)");
+        Console.WriteLine("   (the mod is made for Build " + GameBuild.MadeFor + ": set GameBuild.MadeFor to the game's build when this passes for a new one)");
 
         // Every part stands on something, and every piece names a part except the one optional type that serves the mod's own copy of a drop-down.
         foreach (GamePart part in ContractBook.Parts)

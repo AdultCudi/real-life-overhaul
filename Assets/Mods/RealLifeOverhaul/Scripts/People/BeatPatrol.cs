@@ -102,7 +102,7 @@ namespace RealLifeOverhaul
                 {
                     Logger?.Error(e);
                     End();
-                    if (GameMembers.StandsDown(e, "officers walking a beat"))
+                    if (Guard.StandsDown(e, "officers walking a beat"))
                     {
                         enabled = false;   // (a game that lacks what a patrol names would fail at every look)
                     }
@@ -124,7 +124,7 @@ namespace RealLifeOverhaul
                 // End leaves no patrol behind, so a fault cannot repeat.
                 Logger?.Error(e);
                 End();
-                if (GameMembers.StandsDown(e, "officers walking a beat"))
+                if (Guard.StandsDown(e, "officers walking a beat"))
                 {
                     enabled = false;
                 }

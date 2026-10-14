@@ -440,7 +440,7 @@ namespace RealLifeOverhaul
 
             if (JusticeState.InPrison)
             {
-                StartCoroutine(Routine(_prison.Serve()));
+                StartCoroutine(Guard.Routine(Routine(_prison.Serve())));
             }
             else if (JusticeState.JailHoursPending > 0)
             {
@@ -517,7 +517,7 @@ namespace RealLifeOverhaul
             if (!taken)
             {
                 _lawHolds = false;
-                StartCoroutine(Routine(_prison.Custody(hours, toCourt, null)));
+                StartCoroutine(Guard.Routine(Routine(_prison.Custody(hours, toCourt, null))));
             }
             if (Meta.Dev.Verbose)
             {

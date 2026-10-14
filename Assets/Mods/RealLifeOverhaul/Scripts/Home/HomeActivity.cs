@@ -175,7 +175,7 @@ namespace RealLifeOverhaul
                 SetOff();
                 return;
             }
-            Host.StartCoroutine(SetOffAtFrameEnd());
+            Host.StartCoroutine(Guard.Routine(SetOffAtFrameEnd()));
         }
 
         private static readonly WaitForEndOfFrame FrameEnd = new WaitForEndOfFrame();

@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Fame
             _onHour = Guard.Wrap(OnHour);
             _onDay = Guard.Wrap(OnDay);
             _openPage = () => FameBridges.Open?.Invoke();
-            StartCoroutine(Tick());
+            StartCoroutine(Guard.Routine(Tick()));
         }
 
         private void OnDestroy()
