@@ -16,6 +16,7 @@ internal static partial class Program
         WorkLeaving();
         WorkVacancies();
         WorkSave();
+        WorkPath();
     }
 
     private static void WorkLadders()
@@ -231,6 +232,7 @@ internal static partial class Program
         w.AgencyUntil = 33;
         w.Earned = 987654;
         w.DaysWorked = 12;
+        w.StartTold = true;
         w.Openings.Add(new Opening { Id = 3, Prof = ProCatalogue.Lawyer, Rank = 2, Kind = (int)EmployerKind.Rival, Employer = "Firm; with|odd~chars", Street = "Elm St", Number = 12, Rival = "r1", Pay = 6000,
             Work = 1, From = 10, To = 20, Via = (int)Via.JobsBoard, Family = 8, Level = 1 });
         var a = new Application { Day = 11, Stage = (int)ApplyStep.Offered, Answer = 12, InterviewDay = 14, InterviewHour = 11, Score = 71, Offer = 6100, Asks = 1, Lapse = 17 };
@@ -250,7 +252,122 @@ internal static partial class Program
         Check(b.Applications.Count == 1 && b.Applications[0].Offer == 6100 && b.Applications[0].At == ApplyStep.Offered && b.Applications[0].Post.Rank == 2, "work: an application comes back");
         Check(b.Job != null && b.Job.Post.Employer == "Skyvault Systems" && b.Job.Pay == 4000 && b.Job.Warnings == 1 && b.Job.NoticeEnd == 25 && b.Job.Earned == 123400, "work: the job comes back");
         Check(b.History.Count == 1 && b.History[0].Reference == 3, "work: the CV comes back");
+        Check(b.StartTold, "work: the first step told comes back, so it is said once a save");
         var none = CareersStore.Read("v=1~h:1", out version);
-        Check(none.Work.Job == null && none.Work.Openings.Count == 0, "work: a line of the study's first version has no working life");
+        Check(none.Work.Job == null && none.Work.Openings.Count == 0 && !none.Work.StartTold, "work: a line of the study's first version has no working life, and the first step is still to tell");
+    }
+
+    // The way to an offer (Careers/Work/ProPath): the chance of one, the points short, each profession's next step and the
+    // first step of all from a new game, and that a course's effect on a rung is foreseen as passing it then makes it.
+    private static void WorkPath()
+    {
+        bool chance = true, monotone = true;
+        int last = -1;
+        for (int score = 0; score <= 100; score++)
+        {
+            bool any = false;
+            for (int s = -ProRules.ScreenLuck; s <= ProRules.ScreenLuck; s++)
+            {
+                for (int o = -ProRules.InterviewLuck; o <= ProRules.InterviewLuck; o++)
+                {
+                    any |= ProRules.Screened(score, s) && ProRules.Offered(score, o);
+                }
+            }
+            int c = ProPath.OfferChance(score);
+            chance &= any == ProPath.CanBeOffered(score) && c >= 0 && c <= 100;
+            monotone &= c >= last;
+            last = c;
+        }
+        Check(chance && monotone, "path: an offer can come exactly where some luck of both steps passes, and the chance only grows with the score");
+        Check(ProPath.OfferChance(0) == 0 && ProPath.OfferChance(44) == 0 && ProPath.OfferChance(45) == 1 && ProPath.OfferChance(75) == 100,
+            "path: under 45 no luck brings an offer; 45 is a sliver; 75 is sure (" + ProPath.OfferChance(45) + ", " + ProPath.OfferChance(75) + ")");
+
+        var probe = new Candidate { Points = 0, Need = 10, Qualified = true, Cycle = 1 };
+        int shortBy = ProPath.PointsShort(probe);
+        Candidate at = probe, below = probe;
+        at.Points = shortBy;
+        below.Points = shortBy - 1;
+        Check(shortBy > 0 && shortBy <= 100 && ProPath.CanBeOffered(ProRules.HireScore(at)) && !ProPath.CanBeOffered(ProRules.HireScore(below)),
+            "path: the points short are the fewest that make an offer possible (" + shortBy + ")");
+        probe.Qualified = false;
+        Check(ProPath.PointsShort(probe) > 100, "path: no points make up for a missing qualification");
+
+        // A new player: some posts let them apply, none can bring an offer. That is what stopped every offer.
+        var fresh = new StudyFile();
+        var t = new Candidate { Cycle = 1 };
+        int eligible = 0, ready = 0;
+        bool same = true;
+        foreach (Profession p in ProCatalogue.All)
+        {
+            eligible += ProRules.Eligible(fresh, p, 0) ? 1 : 0;
+            ready += ProPath.Ready(fresh, p, 0, null, t) ? 1 : 0;
+            for (int r = 0; r < p.Ranks.Length; r++)
+            {
+                Candidate x = ProPath.With(fresh, p, r, null, t);
+                same &= x.Points == ProRules.Points(fresh, p, r) && x.Need == ProRules.Need(fresh, p, r) && x.Qualified == ProRules.Qualified(fresh, p, r) && x.Rank == r;
+            }
+        }
+        Check(eligible > 0 && ready == 0, "path: a new player may apply for " + eligible + " first posts but no employer could offer one: a course comes first");
+        Check(same, "path: with no course added, what an employer reads is what the rules read");
+        int prof, course;
+        bool first = ProPath.FirstStep(fresh, t, true, out prof, out course);
+        CourseDef c1 = StudyCatalogue.Find(course);
+        Check(first && prof >= 0 && c1 != null && c1.Kind == CourseKind.Short && c1.Campus == Campus.School,
+            "path: a new player's first step is a short course at the school (" + (c1 != null ? c1.Key : "none") + " for " + (prof >= 0 ? ProCatalogue.All[prof].Key : "none") + ")");
+        int prof2, course2;
+        Check(ProPath.FirstStep(fresh, t, false, out prof2, out course2) && prof2 == prof && course2 == course, "path: the first step needs no university");
+
+        // The course passed: the post is then within reach, as foreseen.
+        var done = new StudyFile();
+        if (c1 != null)
+        {
+            done.Results.Add(new Enrolment { Course = c1.Id, Stage = (int)EnrolStage.Passed, Grade = 2 });
+            StudyRules.Learn(done, c1.SkillA, c1.GainA * 1000, 1);
+            StudyRules.Learn(done, c1.SkillB, c1.GainB * 1000, 1);
+        }
+        Profession pp = ProCatalogue.Find(prof);
+        Check(pp != null && ProPath.Ready(done, pp, 0, null, t) && ProPath.For(done, pp, 0, t, true).Step == PathStep.Ready && ProPath.For(done, pp, 0, t, true).Chance > 0,
+            "path: with that course passed an offer can come, as foreseen");
+        Console.WriteLine("  path: a new player's first step is " + (c1 != null ? c1.Key : "none") + " for " + (pp != null ? pp.Key : "none") + ", then about "
+                          + (pp != null ? ProPath.For(done, pp, 0, t, true).Chance : 0) + "% an application");
+        bool foreseen = true;
+        foreach (CourseDef c in StudyCatalogue.All)
+        {
+            var g = new StudyFile();
+            g.Results.Add(new Enrolment { Course = c.Id, Stage = (int)EnrolStage.Passed, Grade = 2 });
+            StudyRules.Learn(g, c.SkillA, c.GainA * 1000, 1);
+            StudyRules.Learn(g, c.SkillB, c.GainB * 1000, 1);
+            foreach (Profession p in ProCatalogue.All)
+            {
+                for (int r = 0; r < p.Ranks.Length; r++)
+                {
+                    Candidate x = ProPath.With(fresh, p, r, c, t);
+                    foreseen &= x.Points == ProRules.Points(g, p, r) && x.Need == ProRules.Need(g, p, r) && x.Qualified == ProRules.Qualified(g, p, r);
+                }
+            }
+        }
+        Check(foreseen, "path: a course's effect on every rung is foreseen as passing it makes it");
+
+        // Each profession's next step.
+        Profession law = ProCatalogue.Find(ProCatalogue.Lawyer), sales = ProCatalogue.Find(ProCatalogue.Sales), nurse = ProCatalogue.Find(ProCatalogue.Nurse);
+        PathView lv = ProPath.For(fresh, law, 0, t, true);
+        Check(lv.Step == PathStep.Course && lv.Course == StudyCatalogue.Law, "path: law needs its degree first");
+        Check(ProPath.For(fresh, law, 0, t, false).Step == PathStep.Closed, "path: with the university off, law is closed");
+        PathView sv = ProPath.For(fresh, sales, 0, t, true);
+        Check(sv.Step == PathStep.Skills && sv.Short > 0 && sv.Course >= 0 && ProPath.Ready(fresh, sales, 0, StudyCatalogue.Find(sv.Course), t),
+            "path: sales needs no course but more skill, and names a course that gives enough (" + sv.Short + " points, " + (sv.Course >= 0 ? StudyCatalogue.Find(sv.Course).Key : "none") + ")");
+        PathView nv = ProPath.For(fresh, nurse, 0, t, true);
+        Check(nv.Step == PathStep.Course && Array.IndexOf(nurse.Ranks[0].Quals, nv.Course) >= 0, "path: nursing's first post needs one of its courses");
+        var studying = new StudyFile();
+        studying.Courses.Add(new Enrolment { Course = StudyCatalogue.Law, Stage = (int)EnrolStage.Studying });
+        PathView lv2 = ProPath.For(studying, law, 0, t, true);
+        Check(lv2.Step == PathStep.Studying && lv2.Course == StudyCatalogue.Law, "path: a course under way is the step");
+        var lawyer = new StudyFile();
+        lawyer.Results.Add(new Enrolment { Course = StudyCatalogue.Law, Stage = (int)EnrolStage.Passed, Grade = 3 });
+        StudyRules.Learn(lawyer, TalentCatalogue.Law, 40000, 1);
+        StudyRules.Learn(lawyer, TalentCatalogue.Writing, 20000, 1);
+        Check(ProPath.For(lawyer, law, 0, t, true).Step == PathStep.Ready, "path: with the degree passed a paralegal's post can be offered");
+        PathView cert = ProPath.For(lawyer, law, 2, t, true);
+        Check(cert.Step == PathStep.Course && cert.Course == StudyCatalogue.LegalPractice, "path: an associate's rung asks the practice course before the bar");
     }
 }

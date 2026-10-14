@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Tech
         public Crew Crew;
         public int Spare = 1000;      // thousandths of its staff hours free for the tech sector's work (all, but at a game office)
         public int People;
+        public int Hours;             // the hours its people worked yesterday
         public long Today;            // takings booked today, cents
     }
 
@@ -36,6 +37,7 @@ namespace RealLifeOverhaul.Tech
         private readonly List<KeyValuePair<string, string>> _clients = new List<KeyValuePair<string, string>>(16);
         private readonly List<Crew> _crews = new List<Crew>(8);
         private readonly List<WorkNote> _work = new List<WorkNote>(8);
+        private readonly List<int> _taken = new List<int>(2), _behind = new List<int>(4);   // contracts to tell of after the day's notes
         private FirmsFile _firmsFile;
         private bool _firmsOn;
         private PhoneApp _techApp;
@@ -207,6 +209,7 @@ namespace RealLifeOverhaul.Tech
                             break;
                         case Family.Design:
                             c.Design += points;
+                            c.Web += r.Id == TalentCatalogue.WebDesigner ? points : 0;
                             c.Wages += (long)p.GameWage * h;
                             break;
                         case Family.Product:
@@ -234,11 +237,13 @@ namespace RealLifeOverhaul.Tech
                 c.Reliability = Math.Min(950, reliability);
                 c.SeniorShare = c.Engineering > 0 ? seniors * 1000 / c.Engineering : 0;
                 c.Faults = c.Engineering > 0 ? (int)(faultWeighted / Math.Max(1, c.Engineering)) : 150;
+                firm.Hours = hours;
                 firm.Spare = FirmsGame.Spare(firm.Reg, hours);
                 if (firm.Spare < 1000)
                 {
                     c.Engineering = c.Engineering * firm.Spare / 1000;
                     c.Design = c.Design * firm.Spare / 1000;
+                    c.Web = c.Web * firm.Spare / 1000;
                     c.Testing = c.Testing * firm.Spare / 1000;
                 }
                 firm.Crew = c;
@@ -256,6 +261,8 @@ namespace RealLifeOverhaul.Tech
             float started = Time.realtimeSinceStartup;
             ReadFirms(day);
             Crews();
+            _taken.Clear();
+            _behind.Clear();
             int cycle = HiringGame.Cycle;
             _crews.Clear();
             for (int i = 0; i < _firmsFile.Firms.Count; i++)
@@ -280,6 +287,7 @@ namespace RealLifeOverhaul.Tech
                         bidder.Today += upfront * Prices.Level / 1000;
                         _work.Add(new WorkNote { Contract = t.Id, Kind = FirmsRules.NoteWon });
                         Story("reallife_tech_news_tender", "firm", bidder.File.Name);
+                        _taken.Add(t.Id);   // (told after the day's notes whether anybody can work on it)
                     }
                     else
                     {
@@ -294,7 +302,7 @@ namespace RealLifeOverhaul.Tech
                 FirmPlace firm = _firms[f];
                 Firm file = firm.File;
                 Crew c = firm.Crew;
-                int engineering = c.Engineering, design = c.Design;
+                int engineering = c.Engineering, design = c.Design, web = c.Web;
                 // contracts under way come first
                 for (int i = 0; i < _firmsFile.Contracts.Count; i++)
                 {
@@ -303,15 +311,14 @@ namespace RealLifeOverhaul.Tech
                     {
                         continue;
                     }
-                    bool designWork = w.Kind == (int)WorkKind.Branding;
-                    int need = FirmsRules.Need(w, day), give = Math.Min(need, designWork ? design : engineering);
-                    if (designWork)
+                    int need = FirmsRules.Need(w, day), give = FirmsRules.Give(w.K, need, ref engineering, ref design, ref web);
+                    if (give > 0)
                     {
-                        design -= give;
+                        w.Told &= ~Contract.ToldBehind;
                     }
-                    else
+                    else if (need > 0 && day > w.Start + 1 && (w.Told & Contract.ToldBehind) == 0)
                     {
-                        engineering -= give;
+                        _behind.Add(w.Id);   // (a whole day under way with nothing done: told after the day's notes if nobody worked)
                     }
                     long paid = FirmsRules.Work(w, file, give, day, _work);
                     if (paid > 0)
@@ -424,6 +431,16 @@ namespace RealLifeOverhaul.Tech
             {
                 Worked(_work[i]);
             }
+            for (int i = 0; i < _taken.Count; i++)
+            {
+                TellIfNobody(_firmsFile.ContractOf(_taken[i]));
+            }
+            for (int i = 0; i < _behind.Count; i++)
+            {
+                TellBehind(_firmsFile.ContractOf(_behind[i]));
+            }
+            _taken.Clear();
+            _behind.Clear();
             _firmsFile.LastDay = day;
             TechBridges.Books?.Invoke(day - 1);
             if (Verbose)
@@ -627,9 +644,62 @@ namespace RealLifeOverhaul.Tech
                     }
                 }
             }
+            TellIfNobody(w);
             ChangedTech();
             return true;
         }
+
+        // ---------------------------------------------------------------- whether anybody works
+
+        /// <summary>What decides whether a firm's people can work on a kind of contract (-1: any of its work), read now.</summary>
+        internal FirmFacts FactsOf(FirmPlace firm, int kind)
+        {
+            return firm == null || Save == null ? default(FirmFacts) : FirmsGame.Facts(firm.Reg, firm.File.K, kind, _people, firm.File.Place, Save.Day);
+        }
+
+        // A contract just taken on (or a tender just won) that nobody at the firm can work on: told once, with why and what to do.
+        private void TellIfNobody(Contract w)
+        {
+            FirmPlace firm = w != null ? FirmOf(w.Place) : null;
+            if (firm == null || w.Stage != (int)WorkStage.Active || (w.Told & Contract.ToldNobody) != 0)
+            {
+                return;
+            }
+            FirmFacts facts = FactsOf(firm, w.Kind);
+            Idle why = FirmsRules.Why(facts, false);
+            if (why == Idle.None)
+            {
+                return;
+            }
+            w.Told |= Contract.ToldNobody;
+            Tell2(NotificationType.Warning, "reallife_tech_note_nobody", Data("client", w.Client, "why", TechText.IdleLine(why, facts, false)), TabContracts, TechApp.ContractRow + w.Id);
+        }
+
+        // A contract under way that nobody who does its work worked on yesterday: told once (again only after somebody has
+        // worked on it since), with why and what to do.
+        private void TellBehind(Contract w)
+        {
+            FirmPlace firm = w != null ? FirmOf(w.Place) : null;
+            if (firm == null || w.Stage != (int)WorkStage.Active)
+            {
+                return;
+            }
+            FirmFacts facts = FactsOf(firm, w.Kind);
+            Idle why = FirmsRules.Why(facts, true);
+            if (why == Idle.None)
+            {
+                return;   // (somebody worked: the points went to other work of the firm's first)
+            }
+            w.Told |= Contract.ToldBehind;
+            Tell2(NotificationType.Warning, "reallife_tech_note_behind", Data("client", w.Client, "why", TechText.IdleLine(why, facts, true)), TabContracts, TechApp.ContractRow + w.Id);
+        }
+
+        /// <summary>The Utilities app on its internet page, the game's schedule of a firm, or the Company app's rota for it.</summary>
+        internal bool OpenInternet() => TechBridges.Try(TechBridges.OpenInternet);
+
+        internal bool OpenSchedule(FirmPlace firm) => firm != null && FirmsGame.OpenSchedule(firm.Reg);
+
+        internal bool OpenRota(FirmPlace firm) => firm != null && TechBridges.RotaFor(firm.File.Place);
 
         internal void DeclineContract(int id)
         {

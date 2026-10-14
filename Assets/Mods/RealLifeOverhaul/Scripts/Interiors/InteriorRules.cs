@@ -64,15 +64,14 @@ namespace RealLifeOverhaul.Interiors
 
     /// <summary>
     /// The parts of the feature that apply today and how strong each is, from the options and the two other authors'
-    /// mods (<see cref="InteriorRules.Parts"/>). A strength is thousandths (1000: the figures as the rules give them) or,
-    /// for the decor, the per cent of customers it brings at a decor score of 100; nothing is off.
+    /// mods (<see cref="InteriorRules.Parts"/>). A strength is thousandths (1000: the figures as the rules give them, the
+    /// slider at 100%) or, for the decor, the per mille of customers it brings at a decor score of 100; nothing is off.
     /// </summary>
     public struct InteriorParts
     {
-        public int StandardScale;   // falling short of the district's standard: its customers lost and its complaints
-        public int RewardScale;     // being over it: its customers gained and the basket's share
-        public int DecorPercent;    // customers decor brings at a decor score of 100, per cent
-        public int PriceScale;      // the price the district bears, either way
+        public int StandardScale;   // the district's standard: its customers either way, and its complaints
+        public int DecorMille;      // customers decor brings at a decor score of 100, per mille (100: 10%)
+        public int PriceScale;      // what a nicer place lets a shop charge: the price the district bears over the standard, and the basket's share
         public int WearScale;       // how fast the finishes wear
         public bool Basket;         // the basket's own switch
         public bool Standing;       // brands, Standing and the news
@@ -110,6 +109,13 @@ namespace RealLifeOverhaul.Interiors
         public int StandardFootfall, DecorFootfall, Footfall, Bears, Basket, BrandPoints, StandingPoints, Comfort, OfficeEsteem, OfficeBid;
         public int OfficeBoost;                 // thousandths more clients an office is booked, an hour ahead
         public int ComplaintChance;             // per mille today
+
+        // phasing in and the bound (set by the director before Work; these defaults are the rules in full)
+        public int Ramp = 1000;                 // thousandths of every effect on customers and takings that apply today (InteriorRules.Ramp)
+        public int PhaseFrom;                   // the day it began to come in
+        public int IssueDip;                    // business pressure's own change of the shop's customers now, per cent (a complaint's -6)
+        public int StandardFull, DecorFull;     // the two parts of footfall in full, before phasing in and giving way
+        public int Bound;                       // the most the shortfall may cost today, per cent (6 at the default strength)
     }
 
     /// <summary>What the feature keeps for one business between days: its finishes' wear and when it last made news. Saved.</summary>
@@ -149,27 +155,42 @@ namespace RealLifeOverhaul.Interiors
     ///
     /// THE DISTRICT'S STANDARD: 15 in the poorest district (income 60) up to 70 in the richest (140), rising with its
     /// income level, and never under the game's own minimum for it (Midtown's). A business gets its first 14 days to fit
-    /// out: falling short of the standard costs it nothing then (customers, prices, complaints), being over it counts.
+    /// out: falling short of the standard costs it nothing then (customers, complaints), being over it counts.
     ///
-    /// THE EFFECTS, each inside its cap, at the strengths' defaults (the options make them stronger or weaker: the
-    /// standard Off, Gentle half, Standard, Strict half as much again; the reward over it and the prices Off, Low
-    /// half, Conservative three quarters, Standard, Generous a quarter more; the decor Off, 5%, 10%, 15%, 20%; wear Off,
-    /// Slow half, Standard, Fast half as fast again):
-    ///   standard     short of it: 1% fewer customers for each 4 points, 8% at most, and a complaint more likely
-    ///                (4 per mille a day for each point short from 10 short, 120 at most); over it: 1% more for each
-    ///                8 points, 3% at most. Never no customers.
-    ///   decor        10% more customers at a decor score of 100 (20% at the strongest).
+    /// THE STRENGTHS: four sliders of the options, each from 0% (off) to 200% (double) of the figures below, 100% by
+    /// default: the district standard (its customers either way and its complaints), the decor's customers (and an
+    /// office's clients), what a nicer interior lets a shop charge (the price the district bears and the basket), and
+    /// wear.
+    ///
+    /// THE BOUND, so that nothing of the feature's can cut an established business's takings sharply: at the defaults
+    /// the interior can cost it at most 6% of its customers, and nothing of its prices or its baskets, which only ever
+    /// gain. A complaint it brings (business pressure's own, 6% for 3 days) counts inside the same 6%: while any dip of
+    /// business pressure's costs the shop customers, the shortfall gives way so that the two together never take more
+    /// than the bound (<see cref="GiveWay"/>); and under the default strength, where the bound is smaller than a
+    /// complaint, the interior brings no complaints at all. 6% because it is what one complaint already costs, under a
+    /// normal day's swing in the game's own hourly figures, and well under what good decor brings back (10%). At double
+    /// strength the bound is 12%.
+    ///
+    /// PHASED IN: every effect on customers and takings comes in over <see cref="RampDays"/> days (a seventh more each
+    /// day) from the day these rules first read a business: for a save that meets them, from that day; for a business
+    /// opened afterwards, from its own first day (<see cref="Ramp"/>). Nothing changes a business's takings overnight.
+    ///
+    /// THE EFFECTS, each inside its cap, at the default strengths:
+    ///   standard     short of it: 1% fewer customers for each 4 points short (rounded down), 6% at most, and a
+    ///                complaint more likely (4 per mille a day for each point short from 10 short, 120 at most); over
+    ///                it: 1% more for each 8 points, 3% at most. Never no customers.
+    ///   decor        10% more customers at a decor score of 100 (20% at double).
     ///   footfall     the two together, -12% to +24% at the strongest: a part of business pressure's footfall of its
     ///                own (BusinessCatalogue.ClampInterior), beside what the rest of the mod adds. While the business
     ///                sells nothing (closed, nothing on its shelves, nobody on shift, its last 8 customers all turning
     ///                its prices down) it brings nobody extra and adds nothing to a basket; a shortfall still costs.
     ///   prices       over the standard the district bears 1 thousandth more of the price for each point, 3% at
-    ///                most; under it 1 thousandth less for each point, 2% at most.
+    ///                most; under it nothing less.
     ///   basket       over the standard, each customer takes more of what the shop sells and has in stock: their
     ///                order's products (never the door's entrance fee) times a share that rises from nothing at the
     ///                standard to the district's most at an overall figure of 85: 10% where the standard is lowest,
     ///                6% where it is highest. The whole part for certain, the rest as a chance; an office's client
-    ///                one at most. As Meaningful Interiors does, whose strengths the reward's are.
+    ///                one at most. As Meaningful Interiors does; the prices' strength sizes it.
     ///   brand        a shop of a brand counts up to 3 points more or less in its brand's standards.
     ///   standing     a shop's figure in the customers' reputation moves up to 2 points either way.
     ///   staff        comfort 0 to 5: plants (1, or 2 with three or more), good light (1), a rest corner (2):
@@ -177,8 +198,8 @@ namespace RealLifeOverhaul.Interiors
     ///                heads 8 thousandths higher for each point.
     ///   offices      the best office of the player's at 60 or over adds 1 to the esteem candidates on the jobs
     ///                board feel, 2 at 80; a firm's office over 50 weighs its bids up to 2% better. An office that takes
-    ///                clients is booked more of them an hour ahead: the decor's choice at its overall score (10% at 100
-    ///                by default, 20% at the strongest), never more than its staffed workstations left free.
+    ///                clients is booked more of them an hour ahead: the decor's strength at its overall score (10% at
+    ///                100 by default, 20% at double), never more than its staffed workstations left free.
     /// </summary>
     public static class InteriorRules
     {
@@ -216,12 +237,15 @@ namespace RealLifeOverhaul.Interiors
         public const int IncomeLeast = 60, IncomeMiddle = 100, IncomeMost = 140;
         public const int StandardLeast = 15, StandardMost = 70;
 
-        // ---- effects
-        public const int ShortPointsPerPercent = 4, ShortFootfallMost = 8;
+        // ---- effects (at the default strength)
+        public const int ShortPointsPerPercent = 4, ShortFootfallMost = 6;   // the shortfall's most is the bound: see the class summary
         public const int OverPointsPerPercent = 8, OverFootfallMost = 3;
-        public const int FootfallLeast = -12, FootfallMost = 24;      // the strongest standard short of it; the strongest decor and reward over it
-        public const int BearsOverMost = 30, BearsUnderMost = 20;      // thousandths of the price
+        public const int FootfallLeast = -12, FootfallMost = 24;      // the standard short of it at double; the decor and the standard over it at double, kept to 24
+        public const int BearsOverMost = 30;                           // thousandths of the price over the standard; under it, nothing less
+        public const int DecorMille = 100;                             // per mille more customers at a decor score of 100 (10%)
         public const int ComplaintFrom = 10, ComplaintPerPoint = 4, ComplaintMost = 120;   // per mille a day
+        public const int ComplaintFromStrength = 1000;                 // the standard's strength under which the interior brings no complaint (its bound is then under a complaint's 6%)
+        public const int RampDays = 7;                                 // days over which every effect on customers and takings comes in
         public const int BasketFullAt = 85;                            // the overall figure at which the basket is at its district's most...
         public const int BasketMostPoor = 100, BasketMostRich = 60;    // ...per mille of an order's products: where the standard is lowest, where it is highest
         public const int BasketOfficeMost = 1;                         // products more an office's client takes at most
@@ -240,23 +264,32 @@ namespace RealLifeOverhaul.Interiors
         public const int RecentOrders = 8;            // the last completed orders looked at for prices turned down, and no fewer
         public const int OfficeBoostMost = 200;       // thousandths more clients at an overall score of 100 and the decor's strongest choice
 
-        // ---- the strengths: each option's choices, in the order of its drop-down, and the default's place in it
-        public static readonly int[] StandardScales = { 0, 500, 1000, 1500 };        // Off, Gentle, Standard, Strict
-        public static readonly int[] RewardScales = { 0, 500, 750, 1000, 1250 };     // Off, Low, Conservative, Standard, Generous
-        public static readonly int[] DecorPercents = { 0, 5, 10, 15, 20 };           // Off, 5%, 10%, 15%, 20%
-        public static readonly int[] PriceScales = { 0, 500, 750, 1000, 1250 };      // Off, Low, Conservative, Standard, Generous
-        public static readonly int[] WearScales = { 0, 500, 1000, 1500 };            // Off, Slow, Standard, Fast
-        public const int StandardDefault = 2, RewardDefault = 3, DecorDefault = 2, PriceDefault = 3, WearDefault = 2;
+        // ---- the strengths: the options' four sliders, per cent of the figures above
+        public const int StrengthLeast = 0, StrengthMost = 200, StrengthDefault = 100;
+
+        // The drop-downs the sliders replaced (0.8.2 to 0.9.10): each choice's slider figure, in the order of its
+        // drop-down, so that a saved choice is kept (Core/Settings). The reward over the standard had a drop-down of its
+        // own; it is now the standard's strength (its customers) and the prices' (the basket).
+        public static readonly int[] StandardWas = { 0, 50, 100, 150 };          // Off, Gentle, Standard, Strict
+        public static readonly int[] DecorWas = { 0, 50, 100, 150, 200 };        // Off, 5%, 10%, 15%, 20%
+        public static readonly int[] PricesWas = { 0, 50, 75, 100, 125 };        // Off, Low, Conservative, Standard, Generous
+        public static readonly int[] WearWas = { 0, 50, 100, 150 };              // Off, Slow, Standard, Fast
 
         public static int Clamp(int v, int least, int most)
         {
             return v < least ? least : v > most ? most : v;
         }
 
-        /// <summary>A choice of an option's drop-down, kept inside its choices.</summary>
-        public static int Level(int[] levels, int index)
+        /// <summary>A slider's per cent as a strength in thousandths, kept inside 0% to 200%.</summary>
+        public static int Strength(int percent)
         {
-            return levels[Clamp(index, 0, levels.Length - 1)];
+            return Clamp(percent, StrengthLeast, StrengthMost) * 10;
+        }
+
+        /// <summary>A drop-down's saved choice as the slider's per cent that replaced it, kept inside its choices.</summary>
+        public static int Was(int[] choices, int index)
+        {
+            return choices[Clamp(index, 0, choices.Length - 1)];
         }
 
         /// <summary>A figure at a strength, thousandths, rounded half away from nothing.</summary>
@@ -267,23 +300,22 @@ namespace RealLifeOverhaul.Interiors
         }
 
         /// <summary>
-        /// The parts that apply, from the options' choices and the two other authors' mods: with Meaningful Interiors on,
-        /// the district standard's shortfall, the reward over it and the basket are left to it; with Meaningful Ambience
-        /// on, the customers decor brings. The rest keeps its strength.
+        /// The parts that apply, from the options' four sliders (per cent, 0 to 200) and the two other authors' mods: with
+        /// Meaningful Interiors on, the district standard (both ways) and the basket are left to it; with Meaningful
+        /// Ambience on, the customers decor brings. The rest keeps its strength.
         /// </summary>
-        public static InteriorParts Parts(int standard, int reward, int decor, int prices, int wear, bool basket, bool standing, bool staff, bool interiorsMod, bool ambienceMod)
+        public static InteriorParts Parts(int standard, int decor, int prices, int wear, bool basket, bool standing, bool staff, bool interiorsMod, bool ambienceMod)
         {
             var p = new InteriorParts
             {
-                StandardScale = interiorsMod ? 0 : Level(StandardScales, standard),
-                RewardScale = interiorsMod ? 0 : Level(RewardScales, reward),
-                DecorPercent = ambienceMod ? 0 : Level(DecorPercents, decor),
-                PriceScale = Level(PriceScales, prices),
-                WearScale = Level(WearScales, wear),
+                StandardScale = interiorsMod ? 0 : Strength(standard),
+                DecorMille = ambienceMod ? 0 : Strength(decor) * DecorMille / 1000,
+                PriceScale = Strength(prices),
+                WearScale = Strength(wear),
                 Standing = standing,
                 Staff = staff
             };
-            p.Basket = basket && p.RewardScale > 0;
+            p.Basket = basket && !interiorsMod && p.PriceScale > 0;
             return p;
         }
 
@@ -408,27 +440,33 @@ namespace RealLifeOverhaul.Interiors
 
         // ---------------------------------------------------------------- effects
 
-        /// <summary>The standard's part of footfall, per cent: short of it 1% for each 4 points (8 at most), over it 1% for each 8 (3 at most).</summary>
+        /// <summary>The standard's part of footfall, per cent: short of it 1% for each 4 points (rounded down, 6 at most), over it 1% for each 8 (3 at most).</summary>
         public static int StandardFootfall(int overall, int standard)
         {
-            return StandardFootfall(overall, standard, 1000, 1000);
+            return StandardFootfall(overall, standard, 1000);
         }
 
-        /// <summary>The same at the strengths of the standard (short of it) and of the reward (over it), thousandths.</summary>
-        public static int StandardFootfall(int overall, int standard, int shortScale, int rewardScale)
+        /// <summary>The same at the standard's strength, thousandths (both ways: 12% at most short of it at double).</summary>
+        public static int StandardFootfall(int overall, int standard, int scale)
         {
             int gap = overall - standard;
             if (gap < 0)
             {
-                return -Scale(Math.Min(ShortFootfallMost, (-gap + ShortPointsPerPercent - 1) / ShortPointsPerPercent), shortScale);
+                return -Scale(Math.Min(ShortFootfallMost, -gap / ShortPointsPerPercent), scale);
             }
-            return Scale(Math.Min(OverFootfallMost, gap / OverPointsPerPercent), rewardScale);
+            return Scale(Math.Min(OverFootfallMost, gap / OverPointsPerPercent), scale);
         }
 
-        /// <summary>The decor's part of footfall, per cent: so many per cent at a decor score of 100 (10 by default, 20 at the strongest).</summary>
-        public static int DecorFootfall(int decor, int percent)
+        /// <summary>The most falling short of the standard may cost at a strength, per cent: 6 at the default, 12 at double, nothing off.</summary>
+        public static int Bound(int scale)
         {
-            return Clamp(decor, 0, 100) * Clamp(percent, 0, DecorPercents[DecorPercents.Length - 1]) / 100;
+            return Scale(ShortFootfallMost, scale);
+        }
+
+        /// <summary>The decor's part of footfall, per cent: so many per mille at a decor score of 100 (100, 10%, by default; 200 at double), rounded down.</summary>
+        public static int DecorFootfall(int decor, int mille)
+        {
+            return Clamp(decor, 0, 100) * Clamp(mille, 0, Strength(StrengthMost) * DecorMille / 1000) / 1000;
         }
 
         /// <summary>The interior's footfall, per cent: the parts that are on, together, inside -12 to +24.</summary>
@@ -437,7 +475,42 @@ namespace RealLifeOverhaul.Interiors
             return Clamp(standardPart + decorPart, FootfallLeast, FootfallMost);
         }
 
-        /// <summary>Thousandths more (or less) of the price the district bears at this business: 1 a point over the standard (30 at most), 1 a point under (20 at most).</summary>
+        /// <summary>
+        /// The shortfall's part beside a dip of business pressure's own at the shop (a complaint's -6% and the like, per
+        /// cent): the two together never take more than the bound, unless the dip alone does (then the shortfall takes
+        /// nothing). A part that gains, or no dip, is left as it is.
+        /// </summary>
+        public static int GiveWay(int standardPart, int issuePercent, int bound)
+        {
+            if (standardPart >= 0)
+            {
+                return standardPart;
+            }
+            int room = Math.Min(0, -Math.Max(0, bound) - Math.Min(0, issuePercent));
+            return Math.Max(standardPart, room);
+        }
+
+        /// <summary>
+        /// Thousandths of the effects on customers and takings that apply on a day, for a business they began to come in
+        /// for on <paramref name="from"/>: a seventh on that day, a seventh more each day, in full on the seventh.
+        /// In full for a business with no such day.
+        /// </summary>
+        public static int Ramp(int from, int day)
+        {
+            if (from == InteriorFile.Unset || from == InteriorFile.LongAgo)
+            {
+                return 1000;
+            }
+            return Clamp((int)(((long)day - from + 1) * 1000 / RampDays), 0, 1000);
+        }
+
+        /// <summary>The first day an effect applies in full, for a business it began to come in for on <paramref name="from"/>.</summary>
+        public static int FullFrom(int from)
+        {
+            return from + RampDays - 1;
+        }
+
+        /// <summary>Thousandths more of the price the district bears at this business: 1 a point over the standard, 30 at most; under it nothing less.</summary>
         public static int Bears(int overall, int standard)
         {
             return Bears(overall, standard, 1000);
@@ -447,7 +520,7 @@ namespace RealLifeOverhaul.Interiors
         public static int Bears(int overall, int standard, int scale)
         {
             int gap = overall - standard;
-            return Scale(gap >= 0 ? Math.Min(BearsOverMost, gap) : -Math.Min(BearsUnderMost, -gap), scale);
+            return gap > 0 ? Scale(Math.Min(BearsOverMost, gap), scale) : 0;
         }
 
         /// <summary>The chance a complaint about the place starts today, per mille: nothing until 10 short of the standard, then 4 a point, 120 at most.</summary>
@@ -456,11 +529,11 @@ namespace RealLifeOverhaul.Interiors
             return ComplaintChance(overall, standard, 1000);
         }
 
-        /// <summary>The same at the strength of the standard, thousandths.</summary>
+        /// <summary>The same at the strength of the standard, thousandths; none at all under the default strength, whose bound is smaller than a complaint.</summary>
         public static int ComplaintChance(int overall, int standard, int scale)
         {
             int under = standard - overall;
-            return under < ComplaintFrom ? 0 : Scale(Math.Min(ComplaintMost, under * ComplaintPerPoint), scale);
+            return under < ComplaintFrom || scale < ComplaintFromStrength ? 0 : Scale(Math.Min(ComplaintMost, under * ComplaintPerPoint), scale);
         }
 
         /// <summary>The most the basket adds in a district, per mille of an order's products: 100 where the standard is lowest (15), 60 where it is highest (70).</summary>
@@ -479,7 +552,7 @@ namespace RealLifeOverhaul.Interiors
             return BasketShare(overall, standard, 1000);
         }
 
-        /// <summary>The same at the strength of the reward, thousandths.</summary>
+        /// <summary>The same at the strength of the prices option, thousandths.</summary>
         public static int BasketShare(int overall, int standard, int scale)
         {
             int gap = Clamp(overall, 0, 100) - standard;
@@ -653,10 +726,10 @@ namespace RealLifeOverhaul.Interiors
 
         // ---------------------------------------------------------------- an office's clients
 
-        /// <summary>Thousandths more clients an office gets: the decor's choice (10% by default, 20% at the strongest) at its overall score.</summary>
-        public static int OfficeBoost(int overall, int decorPercent)
+        /// <summary>Thousandths more clients an office gets: the decor's per mille (100, 10%, by default; 200 at double) at its overall score.</summary>
+        public static int OfficeBoost(int overall, int decorMille)
         {
-            return Clamp(Clamp(overall, 0, 100) * Clamp(decorPercent, 0, DecorPercents[DecorPercents.Length - 1]) * 10 / 100, 0, OfficeBoostMost);
+            return Clamp(Clamp(overall, 0, 100) * Clamp(decorMille, 0, OfficeBoostMost) / 100, 0, OfficeBoostMost);
         }
 
         /// <summary>
@@ -681,7 +754,9 @@ namespace RealLifeOverhaul.Interiors
 
         /// <summary>
         /// Every figure of a business from what was read and its wear, with the parts that are on. The kind decides what
-        /// applies: an office gets no customers' parts, a place of neither kind nothing at all.
+        /// applies: an office gets no customers' parts, a place of neither kind nothing at all. Its effects on customers
+        /// and takings are those of its day of phasing in (<see cref="InteriorShop.Ramp"/>), and its shortfall gives way
+        /// to a dip of business pressure's at it (<see cref="InteriorShop.IssueDip"/>).
         /// </summary>
         public static void Work(InteriorShop s, int wear, InteriorParts p)
         {
@@ -697,32 +772,49 @@ namespace RealLifeOverhaul.Interiors
             s.Overall = Overall(s.InteriorNow, s.Decor);
             s.Standard = Standard(s.Income, s.GameMinimum);
             bool shop = s.Kind == InteriorKind.Shop;
-            s.StandardFootfall = shop ? StandardFootfall(s.Overall, s.Standard, p.StandardScale, p.RewardScale) : 0;
+            s.Ramp = Clamp(s.Ramp, 0, 1000);
+            s.Bound = shop ? Bound(p.StandardScale) : 0;
+            s.StandardFull = shop ? StandardFootfall(s.Overall, s.Standard, p.StandardScale) : 0;
             if (s.Fitting)
             {
-                s.StandardFootfall = Math.Max(0, s.StandardFootfall);   // fitting out: over the standard counts, short of it not yet
+                s.StandardFull = Math.Max(0, s.StandardFull);   // fitting out: over the standard counts, short of it not yet
             }
-            s.DecorFootfall = shop ? DecorFootfall(s.Decor, p.DecorPercent) : 0;
+            s.DecorFull = shop ? DecorFootfall(s.Decor, p.DecorMille) : 0;
             if (s.Stop != SaleStop.None)
             {
-                s.StandardFootfall = Math.Min(0, s.StandardFootfall);   // selling nothing: nobody extra, the shortfall's cost stays
-                s.DecorFootfall = 0;
+                s.StandardFull = Math.Min(0, s.StandardFull);   // selling nothing: nobody extra, the shortfall's cost stays
+                s.DecorFull = 0;
             }
-            s.Footfall = Footfall(s.StandardFootfall, s.DecorFootfall);
-            s.Bears = shop ? Bears(s.Overall, s.Standard, p.PriceScale) : 0;
-            if (s.Fitting)
-            {
-                s.Bears = Math.Max(0, s.Bears);
-            }
-            s.ComplaintChance = shop && !s.Fitting ? ComplaintChance(s.Overall, s.Standard, p.StandardScale) : 0;
-            s.Basket = shop && p.Basket && s.Stop == SaleStop.None ? BasketShare(s.Overall, s.Standard, p.RewardScale) : 0;
+            Combine(s);
+            s.Bears = shop ? Scale(Bears(s.Overall, s.Standard, p.PriceScale), s.Ramp) : 0;
+            s.ComplaintChance = shop && !s.Fitting && s.Ramp >= 1000 ? ComplaintChance(s.Overall, s.Standard, p.StandardScale) : 0;
+            s.Basket = shop && p.Basket && s.Stop == SaleStop.None ? Scale(BasketShare(s.Overall, s.Standard, p.PriceScale), s.Ramp) : 0;
             s.BrandPoints = shop && p.Standing ? BrandPoints(s.Overall) : 0;
             s.StandingPoints = shop && p.Standing ? StandingPoints(s.Overall) : 0;
             s.Comfort = s.Kind != InteriorKind.None && p.Staff
                 ? Comfort(s.Items[(int)DecorCategory.Greenery], s.Capped[(int)DecorCategory.Lighting], s.Target, s.RestCorner) : 0;
             s.OfficeEsteem = s.Kind == InteriorKind.Office && p.Staff ? OfficeEsteem(s.Overall) : 0;
-            s.OfficeBoost = s.Kind == InteriorKind.Office && s.Stop == SaleStop.None ? OfficeBoost(s.Overall, p.DecorPercent) : 0;
+            s.OfficeBoost = s.Kind == InteriorKind.Office && s.Stop == SaleStop.None ? Scale(OfficeBoost(s.Overall, p.DecorMille), s.Ramp) : 0;
             s.OfficeBid = s.Kind != InteriorKind.None && p.Staff ? OfficeBid(s.Overall) : 0;
+        }
+
+        /// <summary>
+        /// The footfall of a worked business from its two parts in full, its day of phasing in and business pressure's
+        /// dip at it now: what the director asks again when that dip changes (a complaint starts or ends), without
+        /// reading the business again.
+        /// </summary>
+        public static void Combine(InteriorShop s)
+        {
+            s.StandardFootfall = GiveWay(Scale(s.StandardFull, s.Ramp), s.IssueDip, s.Bound);
+            s.DecorFootfall = Scale(s.DecorFull, s.Ramp);
+            s.Footfall = Footfall(s.StandardFootfall, s.DecorFootfall);
+        }
+
+        /// <summary>What the interior does to a shop's takings today, thousandths either way: its customers and its customers' baskets together (prices are not changed, only what the district bears).</summary>
+        public static int Takings(int footfall, int basket)
+        {
+            long t = (100L + Clamp(footfall, FootfallLeast, FootfallMost)) * (1000L + Clamp(basket, 0, 1000)) / 100 - 1000;
+            return (int)t;
         }
 
         /// <summary>The category to add to next: the one furthest under its cap, decor before furniture and equipment; -1 when every one is full.</summary>

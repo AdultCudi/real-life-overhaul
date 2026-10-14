@@ -159,13 +159,16 @@ version: the guest is told once and keeps its own city), Resync (a part came out
 | W building sites | every site, none anybody's own | whole, each hour | the guest's own refit (ids from 1,000,000), when its shopfront was refitted, what is next door |
 | N notices | (nothing) | the city's toasts and stories of the hours just run | the polls opening (each guest's own polling place) |
 | S street events' calendar | the salt the calendar and the weather's spells are drawn from | (never changes) | |
-| M stock market (`Markets/MarketShare`) | `MarketStore`'s city line (every company with all its candles, the indices, the news) and the tape from that day | the tape's new lines (day's secret, city of the day, events, the frontier) and a check of the prices | holdings, orders, trades, watch list, account, dividends owed, recent trading |
+| M stock market (`Markets/MarketShare`) | `MarketStore`'s city line (every company with all its candles, the indices, the news) and the tape from that day | the tape's new lines (day's secret, city of the day, events, the frontier) and a check of the prices | holdings, orders, trades, watch list, account, dividends owed, recent trading, trading bots |
 
 The market is exact (the same state, secret, city and events give the same moments to the cent), so a guest's market plays
 the host's tape and never passes the host's furthest moment: no price is ever sent. Every player's trades move the one
 market: in a session a trade's lasting move is an event on the host's tape (`EventTrade`, `EventVolume`) that every market
 plays at the next moment; a day played in a session and replayed after a load takes those moves from the tape, once. Each
 update carries the host's prices at its moment (a checksum); a guest that comes out different asks for the market again.
+A player's trading bots (`Markets/MarketBots`) are theirs, as their holdings are: in their own save's line, carried into
+the host's market by `MarketShare.Adopt`, never in the city's line; their trades go to the tape as the player's own do
+(the host's as events, a guest's as its `i|stock|micros|shares` request), so nothing new is sent.
 
 **A player's own listed company** (`Markets/Listing`) is a company of the market like any other, with its founder's hash
 (`OwnListing.Owner`; `MarketState.Me` is this machine's player). The host's company is in the city's line and every guest
@@ -308,17 +311,19 @@ mods do, and would count customers or baskets twice:
 
 | Part of this mod's | Off while | Why |
 | --- | --- | --- |
-| The district standard's shortfall: its customers lost (8% at most at Standard, 12% at Strict) and its complaints | Meaningful Interiors is on | that mod sets each district's minimum and acts on it itself |
-| The reward over the standard: its customers (3% at most at Standard, 4% at Generous) | Meaningful Interiors is on | the same |
-| Bigger baskets: over the standard, each customer's order times a share of the way to 85 (10% at most where the standard is lowest, 6% where it is highest, at Standard), as that mod's own | Meaningful Interiors is on | that mod adds to baskets itself |
-| The decor's customers (10% by default, as Meaningful Ambience's; 20% at the strongest) | Meaningful Ambience is on | that mod adds customers for decor itself |
+| The district standard's shortfall: its customers lost (6% at most at the default strength, 12% at double) and its complaints | Meaningful Interiors is on | that mod sets each district's minimum and acts on it itself |
+| The standard's reward over it: its customers (3% at most at the default strength, 6% at double) | Meaningful Interiors is on | the same |
+| Bigger baskets: over the standard, each customer's order times a share of the way to 85 (10% at most where the standard is lowest, 6% where it is highest, at the default strength), as that mod's own | Meaningful Interiors is on | that mod adds to baskets itself |
+| The decor's customers (10% by default, as Meaningful Ambience's; 20% at double) | Meaningful Ambience is on | that mod adds customers for decor itself |
 | An office's extra clients, booked an hour ahead | Meaningful Ambience is on | that mod books offices' clients itself |
 
 The rest keeps running (the scores, the price tolerance, wear and its refresh, brands, Standing, staff, offices' hiring and
 bids, the news, the Interior tab with its pages of the items that count, today's customers by where they came from and the
-game's own rules). Each part has a strength of its own, chosen to cover the other mods' ranges (the reward Off, 0.5, 0.75,
-1 or 1.25 times as Meaningful Interiors' strength; the decor Off, 5%, 10%, 15% or 20% as Meaningful Ambience's), so a
-player can leave both mods out and set the same. The options page draws the rows that do nothing as the game draws a control that cannot be used, with
+game's own rules). Four sliders, each from off to double, cover the other mods' ranges (the prices' slider sizes the
+basket as Meaningful Interiors' strength does, Off to 1.25 times and beyond; the decor's 0% to 20% as Meaningful
+Ambience's), so a player can leave both mods out and set the same. Whichever of the two is on, the interior never costs
+an established business more than 6% of its customers at the defaults, nothing of its prices, and every effect comes in
+over 7 days from the day a save first meets these rules (EconomyCheck's InteriorBound and InteriorPhaseIn). The options page draws the rows that do nothing as the game draws a control that cannot be used, with
 "off while ... is switched on" (`Feature.StandsAside`), and the Interior tab says which mod has which part. The rule is
 game-free and checked offline (`InteriorRules.StandardOn`, `BasketOn`, `DecorFootfallOn`; EconomyCheck's InteriorChecks).
 

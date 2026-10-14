@@ -251,6 +251,16 @@ namespace RealLifeOverhaul.Flare
             return T(Of(DealKeys, deal));
         }
 
+        /// <summary>
+        /// What keeps a business from a new hire, in a sentence: the campaign, how it was booked and its days.
+        /// "Midtown Electronics has a campaign booked for day 34: Discount day, booked from the Company app. You can hire once it ends."
+        /// </summary>
+        public static string Busy(FlareCampaign c, int day)
+        {
+            string when = Fill(FlareRules.BusyWhenKey(day, c.From, c.To), "day", c.From.ToString(Inv), "from", c.From.ToString(Inv), "to", c.To.ToString(Inv));
+            return Fill(FlareRules.BusyKey(c.OnFlare), "business", c.Name, "when", when, "campaign", c.Campaign);
+        }
+
         // An influencer's, a brand's or a candidate's post: a template by what it is, a variant by its seed.
         private static string Other(FlarePost p, string district, int niche)
         {

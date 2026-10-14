@@ -1,4 +1,4 @@
-0.9.10
+0.10.0
 
 New
-- The mod's buildings are fitted out across their whole floor. The tech companies' headquarters have open-plan desks with computers behind their lobbies, meeting rooms, a kitchen, a lounge, printers and a server closet, mostly from the game's own office designs for the building, with staff at the desks and a few walking about. The floor a large police station still left bare gets back offices. Your data centres' floor round the server hall gets stores, deliveries waiting to be racked, a workbench and a staff corner. Every way from the door stays clear, and a building goes up a little at a time as you walk in, so going in causes no stutter.
+- New: stop losses, take profits and limit orders on the Stocks app's ticket, and a Bots tab with trading bots from four firms (trend following, mean reversion, momentum and dividend income) that trade your own cash for a monthly fee and a share of the profit, each with its holding size, stop and the most it may lose. A stop goes at the market's next price, so a gap takes it under.

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
@@ -11,7 +12,7 @@ namespace RealLifeOverhaul.Tech
         private static readonly int[] Bids = { 800, 900, 1000, 1100, 1200 };
 
         private int _newKind = -1, _newSegment = 1, _newScope, _bid = 2, _bidFirm;
-        private readonly List<FirmPlace> _takers = new List<FirmPlace>(8);
+        private readonly List<FirmPlace> _takers = new List<FirmPlace>(8), _makers = new List<FirmPlace>(8);
 
         private static long Level(long cents) => cents * Prices.Level / 1000;
 
@@ -107,6 +108,7 @@ namespace RealLifeOverhaul.Tech
             Crew c = firm.Crew;
             string place = m.Place;
             box.Title(TechText.T("reallife_tech_firm_title", "name", m.Name, "kind", TechText.FirmName(m.K)));
+            Idle idle = WorkLines(box, firm, -1, false);
             box.Line(day < m.RegisteredUntil ? TechText.T("reallife_tech_firm_registered", "day", m.RegisteredUntil.ToString())
                 : TechText.T("reallife_tech_firm_unregistered", "fee", TechText.Money(Prices.At(FirmsCatalogue.RegisterFee / 100))));
             long arr = Level(FirmsRules.Arr(f, place));
@@ -128,7 +130,7 @@ namespace RealLifeOverhaul.Tech
             }
             if (FirmsCatalogue.MakesProducts[m.Kind] != 0)
             {
-                InfoBox.Button(buttons, InfoBox.Additional, "reallife_tech_button_new_product", () =>
+                InfoBox.Button(buttons, InfoBox.Positive, "reallife_tech_button_new_product", () =>
                 {
                     _picked = NewProductRow + place;
                     _newKind = -1;
@@ -136,7 +138,134 @@ namespace RealLifeOverhaul.Tech
                 });
             }
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
+            WorkButtons(box, firm, idle, true);
+            if (FirmsCatalogue.MakesProducts[m.Kind] != 0)
+            {
+                box.Line(TechText.T("reallife_tech_firm_products_how"));
+            }
             Meta.Guide.Point(box, SectorGuide);
+        }
+
+        // Who worked yesterday at a firm (of those whose role does the work: -1 any of the firm's, else a kind of contract)
+        // and for how long; if nobody did, why and what to do, in one line. A line more when something is in the way from
+        // now on. Returns what is in the way now, else what was yesterday, else none.
+        private Idle WorkLines(InfoBox box, FirmPlace firm, int kind, bool contract)
+        {
+            FirmFacts facts = _director.FactsOf(firm, kind);
+            IReadOnlyList<Person> people = _director.People;
+            var who = new StringBuilder(96);
+            int shown = 0, more = 0, hours = 0;
+            for (int i = 0; i < people.Count; i++)
+            {
+                Person person = people[i];
+                int h = person.HoursYesterday;
+                if (h <= 0 || person.File.Place != firm.File.Place || (kind >= 0 ? !FirmsRules.CanDo(person.File.Def, (WorkKind)kind) : !FirmsRules.WorksFor(person.File.Def, firm.File.K)))
+                {
+                    continue;
+                }
+                hours += h;
+                if (shown < 4)
+                {
+                    who.Append(shown > 0 ? ", " : string.Empty).Append(TechText.T("reallife_tech_work_person", "name", person.Name, "hours", h.ToString()));
+                    shown++;
+                }
+                else
+                {
+                    more++;
+                }
+            }
+            Idle now = FirmsRules.Why(facts, false);
+            if (hours > 0)
+            {
+                if (more > 0)
+                {
+                    who.Append(' ').Append(TechText.T("reallife_tech_work_more", "count", more.ToString()));
+                }
+                box.Line(TechText.T(contract ? "reallife_tech_contract_worked" : "reallife_tech_work_yesterday", "who", who.ToString(), "hours", hours.ToString()));
+                if (now != Idle.None)
+                {
+                    box.Line(TechText.T("reallife_tech_work_now", "why", TechText.IdleLine(now, facts, false)));
+                }
+                return now;
+            }
+            Idle why = FirmsRules.Why(facts, true);
+            box.Line(TechText.T(contract ? "reallife_tech_contract_nobody" : "reallife_tech_work_nobody", "why", TechText.IdleLine(why == Idle.None ? Idle.Away : why, facts, true)));
+            if (now != Idle.None && now != why)
+            {
+                box.Line(TechText.T("reallife_tech_work_now", "why", TechText.IdleLine(now, facts, false)));
+            }
+            return now != Idle.None ? now : why;
+        }
+
+        // The buttons that put right what keeps a firm's people from work: the Utilities app for the internet, the game's
+        // schedule for opening hours, shifts and its switch, the Company app's rota to plan the week. On the firm's page the
+        // schedule and the rota are always there; on a contract's only when they are what is in the way.
+        private void WorkButtons(InfoBox box, FirmPlace firm, Idle idle, bool always)
+        {
+            bool net = idle == Idle.NetNone || idle == Idle.NetInstalling;
+            bool schedule = always || idle == Idle.Shut || idle == Idle.NoHours || idle == Idle.NoShifts || idle == Idle.NoStations || idle == Idle.DayOff;
+            bool rota = TechBridges.OpenRota != null && (always || idle == Idle.NoShifts || idle == Idle.DayOff);
+            if (!net && !schedule && !rota)
+            {
+                return;
+            }
+            Transform row = box.ButtonRow();
+            if (net)
+            {
+                InfoBox.Button(row, InfoBox.Positive, "reallife_tech_button_internet", () => Do(() => _director.OpenInternet()));
+            }
+            if (schedule)
+            {
+                InfoBox.Button(row, InfoBox.Additional, "reallife_tech_button_schedule", () => Do(() => _director.OpenSchedule(firm)));
+            }
+            if (rota)
+            {
+                InfoBox.Button(row, InfoBox.Additional, "reallife_tech_button_rota", () => Do(() => _director.OpenRota(firm)));
+            }
+        }
+
+        // The firms of the player's that make products, in the Firms tab's order.
+        private void Makers(List<FirmPlace> into)
+        {
+            into.Clear();
+            IReadOnlyList<FirmPlace> firms = _director.FirmPlaces;
+            for (int i = 0; i < firms.Count; i++)
+            {
+                if (FirmsCatalogue.MakesProducts[firms[i].File.Kind] != 0)
+                {
+                    into.Add(firms[i]);
+                }
+            }
+        }
+
+        // What each kind of product needs, one line a kind: those the player's firms make, or every kind with none.
+        private void Needs(InfoBox box, List<FirmPlace> makers)
+        {
+            for (int k = 0; k < (int)ProductKind.Count; k++)
+            {
+                bool made = makers.Count == 0;
+                for (int i = 0; i < makers.Count && !made; i++)
+                {
+                    made = FirmsRules.Makes(makers[i].File.K, (ProductKind)k);
+                }
+                if (made)
+                {
+                    box.Line(Need((ProductKind)k));
+                }
+            }
+        }
+
+        private static string Need(ProductKind kind)
+        {
+            string features = FirmsCatalogue.LaunchFeatures.ToString();
+            switch (kind)
+            {
+                case ProductKind.Saas: return TechText.T("reallife_tech_needs_saas", "features", features);
+                case ProductKind.App: return TechText.T("reallife_tech_needs_app", "features", features);
+                case ProductKind.Licence: return TechText.T("reallife_tech_needs_licence", "features", features, "price", TechText.Money(Prices.At(FirmsCatalogue.LicenceDeal / 100)));
+                case ProductKind.Game: return TechText.T("reallife_tech_needs_game", "points", FirmsCatalogue.GameScope[0].ToString());
+                default: return TechText.T("reallife_tech_needs_model");
+            }
         }
 
         private void WriteNewProduct(InfoBox box, FirmPlace firm)
@@ -152,6 +281,16 @@ namespace RealLifeOverhaul.Tech
                 }
             }
             box.Title(TechText.T("reallife_tech_new_title", "firm", m.Name));
+            Makers(_makers);
+            int maker = _makers.IndexOf(firm);
+            if (_makers.Count > 1 && maker >= 0 && box.HasSelector)
+            {
+                box.Selector(_makers.Count, maker, i => _makers[i].File.Name, i => Set(() =>
+                {
+                    _picked = NewProductRow + _makers[i].File.Place;
+                    _newKind = -1;
+                }));
+            }
             if (kinds.Count == 0)
             {
                 box.Line(TechText.T("reallife_tech_new_none"));
@@ -188,6 +327,7 @@ namespace RealLifeOverhaul.Tech
                 }
             }));
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
+            box.Line(Need(kind));
             box.Line(TechText.T(Mod + "_tech_new_about_" + kind.ToString().ToLowerInvariant()));
             Meta.Guide.Point(box, SectorGuide);
         }
@@ -199,7 +339,7 @@ namespace RealLifeOverhaul.Tech
         private TableSpec WriteProducts(InfoBox box, FirmsFile f, int day)
         {
             Product picked = null;
-            string id = Picked(_picked, ProductRow);
+            string id = Picked(_picked, ProductRow), newFor = Picked(_picked, NewProductRow);
             for (int i = 0; i < f.Products.Count; i++)
             {
                 Product p = f.Products[i];
@@ -219,7 +359,12 @@ namespace RealLifeOverhaul.Tech
                 row.Kind = p.Stage == 0 ? TechColumns.Building : p.Stage == 1 ? TechColumns.OnSale : TechColumns.Withdrawn;
                 picked = id == p.Id.ToString() ? p : picked;
             }
-            if (picked != null)
+            FirmPlace starting = newFor != null ? _director.FirmOf(newFor) : null;
+            if (starting != null)
+            {
+                WriteNewProduct(box, starting);
+            }
+            else if (picked != null)
             {
                 WriteProduct(box, f, picked, day);
             }
@@ -227,6 +372,23 @@ namespace RealLifeOverhaul.Tech
             {
                 _picked = null;
                 box.Title(TechText.T("reallife_tech_products_title"));
+                Makers(_makers);
+                if (_makers.Count > 0)
+                {
+                    FirmPlace first = _makers[0];
+                    InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_tech_button_new_product", () =>
+                    {
+                        _picked = NewProductRow + first.File.Place;
+                        _newKind = -1;
+                        Refresh();
+                    });
+                    box.Line(TechText.T(f.Products.Count == 0 ? "reallife_tech_products_none" : "reallife_tech_products_start"));
+                }
+                else
+                {
+                    box.Line(TechText.T("reallife_tech_products_no_maker"));
+                }
+                Needs(box, _makers);
                 box.Line(TechText.T("reallife_tech_products_about"));
                 Meta.Guide.Point(box, SectorGuide);
             }
@@ -351,6 +513,7 @@ namespace RealLifeOverhaul.Tech
         {
             FirmPlace firm = _director.FirmOf(w.Place);
             int id = w.Id;
+            Idle idle = Idle.None;
             box.Title(TechText.T("reallife_tech_contract_title", "client", w.Client, "work", TechText.Work(w.K)));
             switch (w.At)
             {
@@ -367,6 +530,10 @@ namespace RealLifeOverhaul.Tech
                     box.Line(w.Monthly
                         ? TechText.Fill("reallife_tech_contract_running", "satisfaction", TechText.Mille(w.Satisfaction), "paid", TechText.Cents(Level(w.Paid)), "day", w.End.ToString())
                         : TechText.Fill("reallife_tech_contract_progress", "done", w.Done.ToString(), "points", w.Points.ToString(), "due", w.Due.ToString(), "paid", TechText.Cents(Level(w.Paid))));
+                    if (firm != null)
+                    {
+                        idle = WorkLines(box, firm, w.Kind, true);
+                    }
                     break;
                 default:
                     box.Line(TechText.StageName(w.At) + ". " + TechText.T("reallife_tech_contract_paid", "paid", TechText.Cents(Level(w.Paid))));
@@ -432,6 +599,10 @@ namespace RealLifeOverhaul.Tech
                     break;
             }
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
+            if (firm != null && idle != Idle.None)
+            {
+                WorkButtons(box, firm, idle, false);
+            }
             box.Line(TechText.T(Mod + "_tech_work_about_" + w.K.ToString().ToLowerInvariant()));
             Meta.Guide.Point(box, SectorGuide);
         }

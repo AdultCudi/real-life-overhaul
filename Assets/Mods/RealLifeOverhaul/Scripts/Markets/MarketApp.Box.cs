@@ -17,6 +17,9 @@ namespace RealLifeOverhaul.Markets
 
         private static readonly string[] SideKeys = { "reallife_mkt_side_buy", "reallife_mkt_side_sell" };
         private static readonly string[] TypeKeys = { "reallife_mkt_type_market", "reallife_mkt_type_limit", "reallife_mkt_type_stop" };
+        // The ticket's kinds: at the market, a limit (to buy or to sell), and on what is held a stop loss and a take profit.
+        private const int KindMarket = 0, KindLimit = 1, KindStopLoss = 2, KindTakeProfit = 3;
+        private static readonly string[] TicketKeys = { "reallife_mkt_type_market", "reallife_mkt_type_limit", "reallife_mkt_type_stop_loss", "reallife_mkt_type_take_profit" };
         private static readonly string[] LifeKeys = { "reallife_mkt_life_day", "reallife_mkt_life_until" };
         private static readonly string[] StateKeys =
         {
@@ -31,6 +34,7 @@ namespace RealLifeOverhaul.Markets
         // The order being written on a company's page.
         private OrderSide _side;
         private OrderType _type;
+        private int _kind;           // KindMarket...: _type and whether it only closes follow from it
         private OrderLife _life;
         private long _qty = QtyDefault;
         private int _priceCents;     // a limit's or a stop's price; 0 until one is typed (the quote is then taken)
@@ -39,6 +43,7 @@ namespace RealLifeOverhaul.Markets
         {
             _side = OrderSide.Buy;
             _type = OrderType.Market;
+            _kind = KindMarket;
             _life = OrderLife.Day;
             _qty = QtyDefault;
             _priceCents = 0;
@@ -218,7 +223,7 @@ namespace RealLifeOverhaul.Markets
                 open += o.IsOpen ? 1 : 0;
                 row.Set(0, k != null ? k.Name : string.Empty);
                 row.Set(1, MarketText.T(SideKeys[(int)o.Side]));
-                row.Set(2, MarketText.T(TypeKeys[(int)o.Type]) + (o.Forced ? " *" : string.Empty));
+                row.Set(2, KindWords(o) + (o.Forced ? " *" : string.Empty));
                 row.Set(3, o.Filled > 0 && o.Filled < o.Qty ? Count(o.Filled) + " / " + Count(o.Qty) : Count(o.Qty), o.Qty);
                 int cents = o.Type == OrderType.Limit ? o.LimitCents : o.Type == OrderType.Stop ? o.StopCents : o.Filled > 0 ? (int)(o.FilledValue * 100 / o.Filled) : 0;
                 row.Set(4, cents > 0 ? MarketText.Price(cents) : "-", cents / 100.0);
@@ -253,7 +258,7 @@ namespace RealLifeOverhaul.Markets
             {
                 box.Line(MarketText.Why(o.Why));
             }
-            box.Line(MarketText.Fill("reallife_mkt_order_what", "side", MarketText.T(SideKeys[(int)o.Side]), "count", Count(o.Qty), "kind", MarketText.T(TypeKeys[(int)o.Type])));
+            box.Line(MarketText.Fill("reallife_mkt_order_what", "side", MarketText.T(SideKeys[(int)o.Side]), "count", Count(o.Qty), "kind", KindWords(o)));
             if (o.Type == OrderType.Limit)
             {
                 box.Line(MarketText.Fill("reallife_mkt_order_limit", "price", MarketText.Price(o.LimitCents)));
@@ -265,6 +270,10 @@ namespace RealLifeOverhaul.Markets
             if (o.Filled > 0)
             {
                 box.Line(MarketText.Fill("reallife_mkt_order_filled", "count", Count(o.Filled), "price", MarketText.Price((int)(o.FilledValue * 100 / o.Filled))));
+            }
+            if (o.Closing && o.IsOpen)
+            {
+                box.Line(MarketText.T(o.Type == OrderType.Stop ? "reallife_mkt_order_stop_loss_help" : "reallife_mkt_order_take_profit_help"));
             }
             Transform buttons = box.ButtonRow();
             if (o.IsOpen && !o.Forced)
@@ -295,6 +304,7 @@ namespace RealLifeOverhaul.Markets
         {
             long worth = 0, cost = 0, dividends = 0;
             FounderRow(s);
+            WriteBotHoldings(s);   // (the bots' holdings, marked with their firm: MarketApp.Bots.cs)
             for (int i = 0; i < s.Positions.Count; i++)
             {
                 Position p = s.Positions[i];
@@ -421,7 +431,7 @@ namespace RealLifeOverhaul.Markets
                 row.Set(0, MarketText.Fill("reallife_mkt_day", "day", t.Day.ToString()), t.Day * 100.0 + t.Phase);
                 row.Set(1, k != null ? k.Name : string.Empty);
                 int kind = Mathf.Clamp((int)t.Kind, 0, KindKeys.Length - 1);
-                row.Set(2, MarketText.T(KindKeys[kind]) + (t.Test ? "  <size=80%>" + MarketText.T("reallife_mkt_test_mark") + "</size>" : string.Empty));
+                row.Set(2, MarketText.T(KindKeys[kind]) + (t.Test ? "  <size=80%>" + MarketText.T("reallife_mkt_test_mark") + "</size>" : string.Empty) + BotMark(t.Bot));
                 row.Set(3, t.Qty != 0 ? Count(t.Qty) : string.Empty, t.Qty);
                 row.Set(4, t.PriceCents > 0 ? MarketText.Price(t.PriceCents) : string.Empty, t.PriceCents / 100.0);
                 row.Set(5, MarketText.Money(t.Value), t.Value, Tone(Math.Sign(t.Value)));
@@ -465,15 +475,31 @@ namespace RealLifeOverhaul.Markets
             {
                 box.Line(MarketText.Fill("reallife_mkt_ticket_status", "status", Status(s, k)));
             }
-            box.Selector(SideKeys.Length, (int)_side, i => MarketText.T(SideKeys[i]), i => UiClone.Safe(() =>
+            bool closing = _kind >= KindStopLoss;
+            if (closing)
             {
-                _side = (OrderSide)i;
-                Refresh();
-            }));
-            box.Selector(TypeKeys.Length, (int)_type, i => MarketText.T(TypeKeys[i]), i => UiClone.Safe(() =>
+                // A stop loss or a take profit is on what is held: it sells a holding, or buys back shares sold short.
+                _side = held < 0 ? OrderSide.Buy : OrderSide.Sell;
+            }
+            else
             {
-                _type = (OrderType)i;
+                box.Selector(SideKeys.Length, (int)_side, i => MarketText.T(SideKeys[i]), i => UiClone.Safe(() =>
+                {
+                    _side = (OrderSide)i;
+                    _priceCents = 0;
+                    Refresh();
+                }));
+            }
+            box.Selector(TicketKeys.Length, _kind, i => MarketText.T(TicketKeys[i]), i => UiClone.Safe(() =>
+            {
+                _kind = i;
+                _type = i == KindMarket ? OrderType.Market : i == KindStopLoss ? OrderType.Stop : OrderType.Limit;
                 _priceCents = 0;
+                long holding = Math.Abs(s.Held(k.Id));
+                if (i >= KindStopLoss && holding > 0)
+                {
+                    _qty = holding;   // (all of it, to begin with)
+                }
                 Refresh();
             }));
             box.Selector(LifeKeys.Length, (int)_life, i => MarketText.T(LifeKeys[i]), i => UiClone.Safe(() =>
@@ -489,13 +515,14 @@ namespace RealLifeOverhaul.Markets
             });
             if (_type != OrderType.Market)
             {
-                AskNumber(typed, InfoBox.Positive, MarketText.Fill(_type == OrderType.Limit ? "reallife_mkt_ticket_limit" : "reallife_mkt_ticket_stop", "price", MarketText.Price(price)),
+                AskNumber(typed, InfoBox.Positive, MarketText.Fill(_kind == KindTakeProfit ? "reallife_mkt_ticket_take_profit" : _type == OrderType.Limit ? "reallife_mkt_ticket_limit" : "reallife_mkt_ticket_stop",
+                        "price", MarketText.Price(price)),
                     "reallife_mkt_price_placeholder", true, value =>
                     {
                         _priceCents = (int)Math.Max(1, Math.Min(int.MaxValue, value));
                     });
             }
-            Estimate e = _director.Estimate(k.Id, _side, _type, _qty, _type == OrderType.Limit ? price : 0, _type == OrderType.Stop ? price : 0);
+            Estimate e = _director.Estimate(k.Id, _side, _type, _qty, _type == OrderType.Limit ? price : 0, _type == OrderType.Stop ? price : 0, closing);
             if (e.Why == OrderWhy.None)
             {
                 box.Line(MarketText.Fill(_side == OrderSide.Buy ? "reallife_mkt_ticket_cost" : "reallife_mkt_ticket_brings", "price", MarketText.Price(e.PriceCents), "value", MarketText.Money(e.Value),
@@ -526,7 +553,8 @@ namespace RealLifeOverhaul.Markets
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // A limit's or a stop's price as typed, or the quote's to begin with (a limit to buy at the offer, to sell at the bid).
+        // A limit's or a stop's price as typed, or one to begin with: a limit to buy at the offer and to sell at the bid, a
+        // stop loss a twentieth beyond the price, a take profit a tenth.
         private int TicketPrice(in Quote q)
         {
             if (_priceCents > 0)
@@ -537,7 +565,21 @@ namespace RealLifeOverhaul.Markets
             {
                 return _side == OrderSide.Sell ? Math.Max(1, q.Bid * 95 / 100) : q.Ask * 105 / 100;
             }
+            if (_kind == KindTakeProfit)
+            {
+                return _side == OrderSide.Sell ? q.Bid * 110 / 100 : Math.Max(1, q.Ask * 90 / 100);
+            }
             return _side == OrderSide.Buy ? q.Ask : q.Bid;
+        }
+
+        // An order's kind in words: a stop loss and a take profit by their own names.
+        private static string KindWords(Order o)
+        {
+            if (o.Closing && o.Type != OrderType.Market)
+            {
+                return MarketText.T(o.Type == OrderType.Stop ? TicketKeys[KindStopLoss] : TicketKeys[KindTakeProfit]);
+            }
+            return MarketText.T(TypeKeys[Mathf.Clamp((int)o.Type, 0, TypeKeys.Length - 1)]);
         }
 
         // A company's state in a few words: a bid for it, a split coming, its results' day, or its sector and size.
@@ -605,7 +647,8 @@ namespace RealLifeOverhaul.Markets
         // The order, as it will be placed, put to the player before it is.
         private void Confirm(Stock k, int price)
         {
-            Estimate e = _director.Estimate(k.Id, _side, _type, _qty, _type == OrderType.Limit ? price : 0, _type == OrderType.Stop ? price : 0);   // (as it is now, not as it was drawn)
+            bool closing = _kind >= KindStopLoss;
+            Estimate e = _director.Estimate(k.Id, _side, _type, _qty, _type == OrderType.Limit ? price : 0, _type == OrderType.Stop ? price : 0, closing);   // (as it is now, not as it was drawn)
             if (e.Why != OrderWhy.None)
             {
                 Error(e.Why, k);
@@ -619,16 +662,17 @@ namespace RealLifeOverhaul.Markets
                 (side == OrderSide.Buy ? "reallife_mkt_confirm_buy" : "reallife_mkt_confirm_sell").Localize(new { name = k.Name }),
                 "reallife_mkt_confirm_body".Localize(new
                 {
-                    count = Count(qty), name = k.Name, kind = MarketText.T(TypeKeys[(int)type]), price = MarketText.Price(e.PriceCents), value = MarketText.Money(e.Value),
+                    count = Count(qty), name = k.Name, kind = MarketText.T(TicketKeys[_kind]), price = MarketText.Price(e.PriceCents), value = MarketText.Money(e.Value),
                     fee = MarketText.Money(e.Fee), total = MarketText.Money(e.Total), lasts = MarketText.T(LifeKeys[(int)life])
                 }),
-                () => UiClone.Safe(() => Place(k, side, type, life, qty, price)), null, side == OrderSide.Buy ? "reallife_mkt_buy" : "reallife_mkt_sell", "common_cancel", false, side == OrderSide.Sell);
+                () => UiClone.Safe(() => Place(k, side, type, life, qty, price, closing)), null, side == OrderSide.Buy ? "reallife_mkt_buy" : "reallife_mkt_sell", "common_cancel", false,
+                side == OrderSide.Sell);
         }
 
-        private void Place(Stock k, OrderSide side, OrderType type, OrderLife life, long qty, int price)
+        private void Place(Stock k, OrderSide side, OrderType type, OrderLife life, long qty, int price, bool closing)
         {
             OrderWhy why;
-            Order order = _director.Place(k.Id, side, type, life, qty, type == OrderType.Limit ? price : 0, type == OrderType.Stop ? price : 0, false, out why);
+            Order order = _director.Place(k.Id, side, type, life, qty, type == OrderType.Limit ? price : 0, type == OrderType.Stop ? price : 0, false, out why, closing);
             if (order == null)
             {
                 Error(why, k);

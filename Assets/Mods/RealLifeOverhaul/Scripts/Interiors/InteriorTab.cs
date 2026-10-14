@@ -561,6 +561,56 @@ namespace RealLifeOverhaul.Interiors
             Meta.Guide.Point(b, GuideTitle);
         }
 
+        // What the interior does to a shop's customers and takings today, in plain figures, each with its reason: the
+        // district's standard against the shop's figure, a dip of business pressure's the shortfall gives way to, the
+        // decor, the days it is still coming in, the prices, and the two together.
+        private static void WriteNow(InfoBox b, InteriorShop s)
+        {
+            InteriorParts parts = InteriorDirector.Parts;
+            string district = Districts.DistrictGame.Name(s.District);
+            if (InteriorDirector.StandardOn)
+            {
+                string standard = InteriorText.N(s.Standard), overall = InteriorText.N(s.Overall);
+                if (s.Fitting && s.Overall < s.Standard)
+                {
+                    b.Line(InteriorText.T("reallife_interior_now_fitting", "district", district, "standard", standard, "overall", overall, "day", InteriorText.N(s.StandardFrom)));
+                }
+                else if (s.StandardFootfall < 0)
+                {
+                    b.Line(InteriorText.T("reallife_interior_now_short", "district", district, "standard", standard, "overall", overall, "percent", InteriorText.N(-s.StandardFootfall)));
+                }
+                else if (s.StandardFootfall > 0)
+                {
+                    b.Line(InteriorText.T("reallife_interior_now_over", "district", district, "standard", standard, "overall", overall, "percent", InteriorText.N(s.StandardFootfall)));
+                }
+                else
+                {
+                    b.Line(InteriorText.T("reallife_interior_now_level", "district", district, "standard", standard, "overall", overall));
+                }
+                if (s.StandardFull < 0 && s.StandardFootfall > InteriorRules.Scale(s.StandardFull, s.Ramp))
+                {
+                    b.Line(InteriorText.T("reallife_interior_now_giveway", "dip", InteriorText.N(-Math.Min(0, s.IssueDip)), "bound", InteriorText.N(s.Bound)));
+                }
+            }
+            if (InteriorDirector.DecorOn)
+            {
+                b.Line(InteriorText.T("reallife_interior_now_decor", "decor", InteriorText.N(s.Decor), "percent", InteriorText.N(s.DecorFootfall)));
+            }
+            if (s.Ramp < 1000 && (s.StandardFull != 0 || s.DecorFull != 0 || s.Bears != 0 || s.Basket != 0))
+            {
+                b.Line(InteriorText.T("reallife_interior_now_phase", "share", InteriorText.N(s.Ramp / 10), "day", InteriorText.N(InteriorRules.FullFrom(s.PhaseFrom))));
+            }
+            if (parts.PriceScale <= 0)
+            {
+                b.Line("reallife_interior_line_prices_off".GetLocalization());
+            }
+            else
+            {
+                b.Line(s.Bears > 0 ? InteriorText.T("reallife_interior_now_prices", "bears", InteriorText.Mille(s.Bears)) : "reallife_interior_now_prices_none".GetLocalization());
+            }
+            b.Line(InteriorText.T("reallife_interior_now_total", "customers", InteriorText.Signed(s.Footfall), "takings", InteriorText.SignedMille(InteriorRules.Takings(s.Footfall, s.Basket))));
+        }
+
         private static void WriteEffects(InteriorShop s, BuildingRegistration reg)
         {
             InfoBox b = _right;
@@ -571,11 +621,9 @@ namespace RealLifeOverhaul.Interiors
             }
             if (s.Kind == InteriorKind.Shop)
             {
-                b.Line(InteriorText.T("reallife_interior_line_customers", "footfall", InteriorText.Signed(s.Footfall), "standard", InteriorText.Signed(s.StandardFootfall),
-                    "decor", InteriorText.Signed(s.DecorFootfall)));
-                b.Line(InteriorDirector.Parts.PriceScale > 0 ? InteriorText.T("reallife_interior_line_prices", "bears", InteriorText.SignedMille(s.Bears)) : "reallife_interior_line_prices_off".GetLocalization());
+                WriteNow(b, s);
                 b.Line(InteriorDirector.BasketOn ? InteriorText.T("reallife_interior_line_basket", "share", InteriorText.Mille(s.Basket),
-                        "most", InteriorText.Mille(InteriorRules.BasketShare(InteriorRules.BasketFullAt, s.Standard, InteriorDirector.Parts.RewardScale)), "full", InteriorText.N(InteriorRules.BasketFullAt))
+                        "most", InteriorText.Mille(InteriorRules.BasketShare(InteriorRules.BasketFullAt, s.Standard, InteriorDirector.Parts.PriceScale)), "full", InteriorText.N(InteriorRules.BasketFullAt))
                     : OtherMods.MeaningfulInteriors.Loaded && Settings.InteriorsBasket ? InteriorText.T("reallife_interior_line_basket_other", "mod", OtherMods.MeaningfulInteriors.Name)
                     : "reallife_interior_line_basket_off".GetLocalization());
                 if (InteriorDirector.StandardOn)

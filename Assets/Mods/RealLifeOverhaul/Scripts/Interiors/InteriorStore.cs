@@ -7,19 +7,61 @@ namespace RealLifeOverhaul.Interiors
 {
     /// <summary>
     /// What the feature keeps in the save: one file per business of the player's it has seen, at most
-    /// <see cref="Most"/>. Its only line ("reallife:interiors"): "2|place,wear,interior,day,story,refresh,first|...". A
+    /// <see cref="Most"/>. Its line ("reallife:interiors"): "2|place,wear,interior,day,story,refresh,first|...". A
     /// line of the first version (without the first day) is read as businesses that were trading already. A place is
     /// business pressure's own key (the street escaped, so it holds no '|' and no ','). A line that cannot be read gives
     /// an empty store; a file that cannot be read is left out. Game-free, checked by EconomyCheck.
+    ///
+    /// Beside it, a line of its own ("reallife:interiors_rules": "1,day"): the day these rules (the bound and the phasing
+    /// in) first read the save, from which an established business's effects come in. A line of its own so that a save
+    /// read again by an older version of the mod keeps every business's file; a save without it meets the rules on the
+    /// day it is first read.
     /// </summary>
     public sealed class InteriorStore
     {
         public const string Key = "reallife:interiors";
+        public const string RulesKey = "reallife:interiors_rules";
         public const int Most = 200;
         private const string Version = "2";
         private const string VersionOne = "1";   // no first day: read as businesses that were trading already
+        private const string RulesVersion = "1";
 
         public readonly List<InteriorFile> Files = new List<InteriorFile>(16);
+
+        /// <summary>The day these rules first read the save (<see cref="InteriorFile.Unset"/> until they have).</summary>
+        public int RulesFrom = InteriorFile.Unset;
+
+        /// <summary>The day a business's effects began to come in: its own first day, or the day the rules first read the save if it was trading before that.</summary>
+        public int PhaseFrom(InteriorFile f)
+        {
+            if (RulesFrom == InteriorFile.Unset)
+            {
+                return InteriorFile.Unset;
+            }
+            return f == null || f.FirstDay == InteriorFile.Unset || f.FirstDay == InteriorFile.LongAgo ? RulesFrom : Math.Max(RulesFrom, f.FirstDay);
+        }
+
+        /// <summary>The rules' line ("1,day"), or null while they have not read the save.</summary>
+        public string WriteRules()
+        {
+            return RulesFrom == InteriorFile.Unset ? null : RulesVersion + "," + RulesFrom.ToString(CultureInfo.InvariantCulture);
+        }
+
+        /// <summary>The rules' line read back; one that cannot be read leaves the day unset (the rules meet the save again that day).</summary>
+        public void ReadRules(string line)
+        {
+            RulesFrom = InteriorFile.Unset;
+            if (string.IsNullOrEmpty(line))
+            {
+                return;
+            }
+            string[] f = line.Split(',');
+            int day;
+            if (f.Length == 2 && f[0] == RulesVersion && Int(f[1], out day) && day != InteriorFile.Unset && day != InteriorFile.LongAgo)
+            {
+                RulesFrom = day;
+            }
+        }
 
         /// <summary>The file of a place; made (if there is room) when asked to.</summary>
         public InteriorFile File(string place, bool make)

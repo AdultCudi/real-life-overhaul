@@ -46,6 +46,9 @@ namespace RealLifeOverhaul.Tech
         public bool Female;
         public int Age;
         public bool Sick;
+        // ---- the hours worked, counted on the game's hour (the game's own employees): on a shift, at a business that is open
+        public int WorkDay = -1, WorkHours;   // the day being counted and its hours so far
+        public int PrevDay = -1, PrevHours;   // the day counted before it and its hours
         // ---- read from the game each day, never saved
         public int GameWage;             // cents an hour the game pays (or the mod's wage)
         public int Going;                // the going rate for the role and skill, cents an hour

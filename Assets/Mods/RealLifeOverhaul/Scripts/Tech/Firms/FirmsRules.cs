@@ -28,6 +28,152 @@ namespace RealLifeOverhaul.Tech
 
         public static bool Takes(FirmKind firm, WorkKind kind) => (FirmsCatalogue.TakesWork[(int)firm] & (1 << (int)kind)) != 0;
 
+        // ---------------------------------------------------------------- who does the work, and why nobody does
+
+        /// <summary>True for a role whose points build products and contracts' work: engineering, data, security and infrastructure, but the testers.</summary>
+        public static bool Builds(RoleDef r)
+        {
+            return r != null && r.Id != TalentCatalogue.QaTester
+                   && (r.Family == Family.Engineering || r.Family == Family.Data || r.Family == Family.Security || r.Family == Family.Infrastructure);
+        }
+
+        /// <summary>True for a role that can work on a kind of contract: designers on branding, the builders and web designers on a website, the builders on the rest.</summary>
+        public static bool CanDo(RoleDef r, WorkKind kind)
+        {
+            if (r == null)
+            {
+                return false;
+            }
+            if (kind == WorkKind.Branding)
+            {
+                return r.Family == Family.Design;
+            }
+            return Builds(r) || (kind == WorkKind.Website && r.Id == TalentCatalogue.WebDesigner);
+        }
+
+        /// <summary>True for a role that does any of a firm's work: its products, or a kind of contract it takes.</summary>
+        public static bool WorksFor(RoleDef r, FirmKind firm)
+        {
+            if (FirmsCatalogue.MakesProducts[(int)firm] != 0 && Builds(r))
+            {
+                return true;
+            }
+            for (int k = 0; k < (int)WorkKind.Count; k++)
+            {
+                if (Takes(firm, (WorkKind)k) && CanDo(r, (WorkKind)k))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// The roles a business of the tech sector's own types wants first (the first of the game's skill is what a newcomer
+        /// with that skill becomes): a software or game studio its software engineers, an IT consultancy its back end
+        /// engineers, a cybersecurity firm its security analysts, an AI lab its machine learning engineers, each with the
+        /// designers and the support people it uses. Any other kind (-1 among them) wants nothing in particular. Game-free: the
+        /// people part asks it for the business a newcomer is assigned to (TechDirector.WantedRoles).
+        /// </summary>
+        public static int Wanted(int kind, int[] into)
+        {
+            int n = 0;
+            switch (kind)
+            {
+                case (int)FirmKind.Software:
+                    into[n++] = TalentCatalogue.SoftwareEngineer;
+                    into[n++] = TalentCatalogue.UxDesigner;
+                    into[n++] = TalentCatalogue.CustomerSuccess;
+                    break;
+                case (int)FirmKind.Games:
+                    into[n++] = TalentCatalogue.SoftwareEngineer;
+                    into[n++] = TalentCatalogue.GraphicDesignerRole;
+                    into[n++] = TalentCatalogue.CustomerSuccess;
+                    break;
+                case (int)FirmKind.Consultancy:
+                    into[n++] = 2;   // back end
+                    into[n++] = TalentCatalogue.ItSupport;
+                    into[n++] = TalentCatalogue.UxDesigner;
+                    break;
+                case (int)FirmKind.Security:
+                    into[n++] = TalentCatalogue.SecurityAnalyst;
+                    into[n++] = TalentCatalogue.ItSupport;
+                    break;
+                case (int)FirmKind.AiLab:
+                    into[n++] = TalentCatalogue.MlEngineer;
+                    into[n++] = TalentCatalogue.CustomerSuccess;
+                    break;
+            }
+            return n;
+        }
+
+        /// <summary>
+        /// Why nobody at a firm can work (<paramref name="yesterday"/> false: from now on), or worked yesterday (true): the
+        /// first thing in the way, in the order it has to be put right. Nobody there; nobody whose role does the work; the
+        /// business closed (no internet plan, the connection being installed or down, no power, else the game's switch);
+        /// no opening hours; no workstation; no shifts. Of yesterday also: a day it did not open or they had no shift,
+        /// else they were away. None when somebody can work, or worked.
+        /// </summary>
+        public static Idle Why(in FirmFacts f, bool yesterday)
+        {
+            if (yesterday && f.Worked > 0)
+            {
+                return Idle.None;
+            }
+            if (f.Staff <= 0)
+            {
+                return Idle.NoStaff;
+            }
+            if (f.Workers <= 0)
+            {
+                return Idle.NoWorkers;
+            }
+            if (f.Closed)
+            {
+                return f.Net == 1 ? Idle.NetNone : f.Net == 2 ? Idle.NetInstalling : f.Net == 3 ? Idle.NetOutage : f.Dark ? Idle.NoPower : Idle.Shut;
+            }
+            if (f.OpenDays <= 0)
+            {
+                return Idle.NoHours;
+            }
+            if (f.ShiftHours <= 0)
+            {
+                return f.Stations <= 0 ? Idle.NoStations : Idle.NoShifts;
+            }
+            if (!yesterday)
+            {
+                return Idle.None;
+            }
+            return f.ShiftsYesterday <= 0 ? Idle.DayOff : Idle.Away;
+        }
+
+        /// <summary>
+        /// The points a contract gets today out of what the firm's people have left: branding from the designers, a website
+        /// from the builders and then the web designers (who are designers too), the rest from the builders. Returns what
+        /// was given; what is left is written back.
+        /// </summary>
+        public static int Give(WorkKind kind, int need, ref int engineering, ref int design, ref int web)
+        {
+            need = Math.Max(0, need);
+            if (kind == WorkKind.Branding)
+            {
+                int d = Math.Min(need, Math.Max(0, design));
+                design -= d;
+                web = Math.Min(web, design);
+                return d;
+            }
+            int e = Math.Min(need, Math.Max(0, engineering));
+            engineering -= e;
+            int w = 0;
+            if (kind == WorkKind.Website)
+            {
+                w = Math.Min(need - e, Math.Max(0, Math.Min(web, design)));
+                web -= w;
+                design -= w;
+            }
+            return e + w;
+        }
+
         // ---------------------------------------------------------------- building
 
         /// <summary>Work points a feature costs when so many are built.</summary>

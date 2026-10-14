@@ -22,9 +22,9 @@ namespace RealLifeOverhaul.Interiors
             Features.Add("interiors", "reallife_meta_title_interiors")
                 .Group("reallife_interior_header")
                 .About("reallife_guide_interiors_about").Help("reallife_guide_interiors")
-                .Owns(Settings.InteriorsId, Settings.InteriorsPricesLevelId, Settings.InteriorsWearLevelId, Settings.InteriorsStandingId, Settings.InteriorsStaffId)
-                .Preset(Settings.InteriorsPricesLevelId, 4, 3, 2)   // Relaxed Generous, Realistic Standard, Hardcore Conservative
-                .Preset(Settings.InteriorsWearLevelId, 1, 2, 3)     // Relaxed Slow, Realistic Standard, Hardcore Fast
+                .Owns(Settings.InteriorsId, Settings.InteriorsPricesStrengthId, Settings.InteriorsWearStrengthId, Settings.InteriorsStandingId, Settings.InteriorsStaffId)
+                .Preset(Settings.InteriorsPricesStrengthId, 125, 100, 75)   // per cent: Relaxed a quarter more, Realistic the default, Hardcore three quarters
+                .Preset(Settings.InteriorsWearStrengthId, 50, 100, 150)     // Relaxed half as fast, Realistic the default, Hardcore half as fast again
                 .Data(InteriorStore.Key)
                 .Test("reallife_interior_test_report_button", "reallife_interior_test_wear_button", "reallife_interior_test_news_button")
                 .Fact("in_repeat", () => Share(InteriorRules.RepeatShare))
@@ -55,7 +55,10 @@ namespace RealLifeOverhaul.Interiors
                 .Fact("in_worn", () => Share(InteriorRules.WornFrom))
                 .Fact("in_worn_points", () => N(InteriorRules.WornInspection))
                 .Fact("in_bears_over", () => Share(InteriorRules.BearsOverMost))
-                .Fact("in_bears_under", () => Share(InteriorRules.BearsUnderMost))
+                .Fact("in_bound", () => N(InteriorRules.ShortFootfallMost))
+                .Fact("in_bound_top", () => N(InteriorRules.Bound(InteriorRules.Strength(InteriorRules.StrengthMost))))
+                .Fact("in_ramp", () => N(InteriorRules.RampDays))
+                .Fact("in_strength_top", () => N(InteriorRules.StrengthMost))
                 .Fact("in_brand_per", () => N(InteriorRules.BrandPointsPer))
                 .Fact("in_brand_most", () => N(InteriorRules.BrandMost))
                 .Fact("in_standing_per", () => N(InteriorRules.StandingPointsPer))
@@ -75,11 +78,10 @@ namespace RealLifeOverhaul.Interiors
 
             Features.Add("interiors_standard", "reallife_meta_title_interiors_standard")
                 .About("reallife_guide_interiors_standard_about").Help("reallife_guide_interiors_standard")
-                .Owns(Settings.InteriorsStandardLevelId, Settings.InteriorsRewardLevelId, Settings.InteriorsBasketId)
-                .Preset(Settings.InteriorsStandardLevelId, 1, 2, 3)   // Relaxed Gentle, Realistic Standard, Hardcore Strict
-                .Preset(Settings.InteriorsRewardLevelId, 4, 2, 1)     // Relaxed Generous, Realistic Conservative, Hardcore Low
-                .Preset(Settings.InteriorsBasketId, 1, 1, 1)          // the basket on in every preset, as by default (its size follows the reward)
-                .StandsAside(InteriorsSentence, Settings.InteriorsStandardLevelId, Settings.InteriorsRewardLevelId, Settings.InteriorsBasketId)
+                .Owns(Settings.InteriorsStandardStrengthId, Settings.InteriorsBasketId)
+                .Preset(Settings.InteriorsStandardStrengthId, 50, 100, 150)   // per cent: Relaxed half, Realistic the default, Hardcore half as much again
+                .Preset(Settings.InteriorsBasketId, 1, 1, 1)                  // the basket on in every preset, as by default (its size follows the prices' strength)
+                .StandsAside(InteriorsSentence, Settings.InteriorsStandardStrengthId, Settings.InteriorsBasketId)
                 .Fact("in_grace", () => N(InteriorRules.GraceDays))
                 .Fact("in_standard_least", () => N(InteriorRules.StandardLeast))
                 .Fact("in_standard_most", () => N(InteriorRules.StandardMost))
@@ -96,16 +98,16 @@ namespace RealLifeOverhaul.Interiors
                 .Fact("in_basket_full", () => N(InteriorRules.BasketFullAt))
                 .Fact("in_basket_poor", () => Share(InteriorRules.BasketMostPoor))
                 .Fact("in_basket_rich", () => Share(InteriorRules.BasketMostRich))
-                .Fact("in_basket_middle", () => Share(InteriorRules.BasketShare(InteriorRules.BasketFullAt, InteriorRules.Standard(InteriorRules.IncomeMiddle, 0))));
+                .Fact("in_basket_middle", () => Share(InteriorRules.BasketShare(InteriorRules.BasketFullAt, InteriorRules.Standard(InteriorRules.IncomeMiddle, 0))))
+                .Fact("in_complaint_dip", () => N(-BusinessCatalogue.ComplaintDip));   // (in_bound, in_bound_top and in_ramp are the main feature's)
 
             Features.Add("interiors_decor", "reallife_meta_title_interiors_decor")
                 .About("reallife_guide_interiors_decor_about").Help("reallife_guide_interiors_decor")
-                .Owns(Settings.InteriorsDecorLevelId)
-                .Preset(Settings.InteriorsDecorLevelId, 3, 2, 2)      // Relaxed 15%, Realistic and Hardcore 10% (the default, as Meaningful Ambience's)
-                .StandsAside(AmbienceSentence, Settings.InteriorsDecorLevelId)
-                .Fact("in_decor_most", () => N(InteriorRules.DecorPercents[InteriorRules.DecorDefault]))
-                .Fact("in_decor_least", () => N(InteriorRules.DecorPercents[1]))
-                .Fact("in_decor_top", () => N(InteriorRules.DecorPercents[InteriorRules.DecorPercents.Length - 1]))
+                .Owns(Settings.InteriorsDecorStrengthId)
+                .Preset(Settings.InteriorsDecorStrengthId, 150, 100, 100)     // per cent: Relaxed 15% of customers at most, Realistic and Hardcore 10% (the default, as Meaningful Ambience's)
+                .StandsAside(AmbienceSentence, Settings.InteriorsDecorStrengthId)
+                .Fact("in_decor_most", () => N(InteriorRules.DecorFootfall(100, InteriorRules.DecorMille)))
+                .Fact("in_decor_top", () => N(InteriorRules.DecorFootfall(100, InteriorRules.Strength(InteriorRules.StrengthMost) * InteriorRules.DecorMille / 1000)))
                 .Fact("in_recent", () => N(InteriorRules.RecentOrders));
         }
 
@@ -130,12 +132,15 @@ namespace RealLifeOverhaul.Interiors
             return options
                 .AddHeader("reallife_interior_header")
                 .AddToggle(Settings.InteriorsId, "reallife_interior_enabled", Settings.Interiors, v => Settings.Interiors = v)
-                .AddDropdown(Settings.InteriorsStandardLevelId, "reallife_interior_standard_option", InteriorText.StandardChoices, Settings.InteriorsStandardLevel, v => Settings.InteriorsStandardLevel = v)
-                .AddDropdown(Settings.InteriorsRewardLevelId, "reallife_interior_reward_option", InteriorText.StrengthChoices, Settings.InteriorsRewardLevel, v => Settings.InteriorsRewardLevel = v)
-                .AddDropdown(Settings.InteriorsDecorLevelId, "reallife_interior_decor_option", InteriorText.DecorChoices, Settings.InteriorsDecorLevel, v => Settings.InteriorsDecorLevel = v)
-                .AddDropdown(Settings.InteriorsPricesLevelId, "reallife_interior_prices_option", InteriorText.StrengthChoices, Settings.InteriorsPricesLevel, v => Settings.InteriorsPricesLevel = v)
+                .AddSlider(Settings.InteriorsStandardStrengthId, "reallife_interior_standard_option", InteriorRules.StrengthLeast, InteriorRules.StrengthMost, Settings.InteriorsStandardStrength,
+                    v => Settings.InteriorsStandardStrength = v, Meta.SettingsTable.SliderPercent)
+                .AddSlider(Settings.InteriorsDecorStrengthId, "reallife_interior_decor_option", InteriorRules.StrengthLeast, InteriorRules.StrengthMost, Settings.InteriorsDecorStrength,
+                    v => Settings.InteriorsDecorStrength = v, Meta.SettingsTable.SliderPercent)
+                .AddSlider(Settings.InteriorsPricesStrengthId, "reallife_interior_prices_option", InteriorRules.StrengthLeast, InteriorRules.StrengthMost, Settings.InteriorsPricesStrength,
+                    v => Settings.InteriorsPricesStrength = v, Meta.SettingsTable.SliderPercent)
                 .AddToggle(Settings.InteriorsBasketId, "reallife_interior_basket_option", Settings.InteriorsBasket, v => Settings.InteriorsBasket = v)
-                .AddDropdown(Settings.InteriorsWearLevelId, "reallife_interior_wear_option", InteriorText.WearChoices, Settings.InteriorsWearLevel, v => Settings.InteriorsWearLevel = v)
+                .AddSlider(Settings.InteriorsWearStrengthId, "reallife_interior_wear_option", InteriorRules.StrengthLeast, InteriorRules.StrengthMost, Settings.InteriorsWearStrength,
+                    v => Settings.InteriorsWearStrength = v, Meta.SettingsTable.SliderPercent)
                 .AddToggle(Settings.InteriorsStandingId, "reallife_interior_standing_option", Settings.InteriorsStanding, v => Settings.InteriorsStanding = v)
                 .AddToggle(Settings.InteriorsStaffId, "reallife_interior_staff_option", Settings.InteriorsStaff, v => Settings.InteriorsStaff = v)
                 .AddButton("reallife_interior_test_report_button", () => InteriorDirector.Instance?.TestReport())

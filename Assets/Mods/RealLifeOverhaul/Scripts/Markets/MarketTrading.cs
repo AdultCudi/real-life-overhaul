@@ -28,6 +28,8 @@ namespace RealLifeOverhaul.Markets
         public const string Deposit = "reallife_transaction_shares_deposit";
         public const string Withdrawal = "reallife_transaction_shares_withdrawal";
         public const string Shortfall = "reallife_transaction_shares_shortfall";
+        public const string BotFee = "reallife_transaction_shares_bot_fee";       // a trading bot's monthly fee (MarketBots)
+        public const string BotShare = "reallife_transaction_shares_bot_share";   // its share of the profit
     }
 
     /// <summary>A price to buy or sell at: the bid, the offer and the middle, in cents.</summary>
@@ -59,8 +61,9 @@ namespace RealLifeOverhaul.Markets
     ///   nothing); a part of that move stays in the price; one order is at most a fifth of a day's volume and a holding
     ///   at most a tenth of a company; nothing is traded while the market is shut, behind or held after a load; a
     ///   resting order fills only at a price the market reached in that step, at its limit or the step's first price if
-    ///   that was better, a stop at its price or worse, and never more than a quarter of the step's volume; cash is in
-    ///   whole units, rounded against the player.
+    ///   that was better, a stop at the market's price of the step that reached it (the next price: after a gap or a fast
+    ///   fall, under the stop), and a limit never more than a quarter of the step's volume; a stop loss or a take profit
+    ///   only ever closes what is still held; cash is in whole units, rounded against the player.
     /// </summary>
     public static class MarketTrading
     {
@@ -226,14 +229,17 @@ namespace RealLifeOverhaul.Markets
 
         // ---------------------------------------------------------------- placing an order
 
-        /// <summary>Shares the player has asked to sell that are not sold yet (so the same shares are never sold twice).</summary>
+        /// <summary>
+        /// Shares the player has asked to sell that are not sold yet (so the same shares are never sold twice). A stop loss
+        /// or a take profit holds nothing back: it only ever sells what is still held when it fills.
+        /// </summary>
         public static long Reserved(MarketState state, int stockId, OrderSide side)
         {
             long reserved = 0;
             for (int i = 0; i < state.Orders.Count; i++)
             {
                 Order o = state.Orders[i];
-                if (o.IsOpen && o.StockId == stockId && o.Side == side)
+                if (o.IsOpen && !o.Closing && o.StockId == stockId && o.Side == side)
                 {
                     reserved += o.Left;
                 }
@@ -245,7 +251,8 @@ namespace RealLifeOverhaul.Markets
         /// What an order would come to now, and whether it can be placed. Nothing is changed. 'open' is whether the
         /// market trades now; 'held' whether orders wait after a load; 'least' the least commission at today's prices.
         /// </summary>
-        public static Estimate Check(MarketState state, Stock s, OrderSide side, OrderType type, long qty, int limitCents, int stopCents, long cash, int least, bool open, bool held, int phase)
+        public static Estimate Check(MarketState state, Stock s, OrderSide side, OrderType type, long qty, int limitCents, int stopCents, long cash, int least, bool open, bool held, int phase,
+            bool closing = false)
         {
             var e = new Estimate { Qty = qty };
             bool buying = side == OrderSide.Buy;
@@ -275,7 +282,24 @@ namespace RealLifeOverhaul.Markets
                 return e;
             }
             long held2 = state.Held(s.Id);
+            if (closing)
+            {
+                // A stop loss or a take profit: on what is held (a short is bought back), never more, at a price beyond the market's.
+                long holding = buying ? -held2 : held2;
+                Quote now = QuoteOf(state, s, open ? phase : MarketCatalogue.PhaseOpen);
+                e.Why = type == OrderType.Market ? OrderWhy.BadPrice : holding <= 0 ? OrderWhy.NothingHeld : qty > holding ? OrderWhy.NoShares
+                    : type == OrderType.Stop && (buying ? stopCents <= now.Ask : stopCents >= now.Bid) ? OrderWhy.StopSide
+                    : type == OrderType.Limit && (buying ? limitCents >= now.Ask : limitCents <= now.Bid) ? OrderWhy.ProfitSide : OrderWhy.None;
+                if (e.Why != OrderWhy.None)
+                {
+                    return e;
+                }
+            }
             long after = held2 + (buying ? qty + Reserved(state, s.Id, OrderSide.Buy) : -qty - Reserved(state, s.Id, OrderSide.Sell));
+            if (closing)
+            {
+                after = buying ? Math.Min(0L, held2 + qty) : Math.Max(0L, held2 - qty);   // (it only closes: no limit it could break)
+            }
             if (buying && after > MostHeld(s))
             {
                 e.Why = OrderWhy.HoldingLimit;
@@ -392,9 +416,9 @@ namespace RealLifeOverhaul.Markets
         /// at once by <see cref="MarketEngine"/> (the caller does that); one placed while it is shut waits for the open.
         /// </summary>
         public static Order Place(MarketState state, Stock s, OrderSide side, OrderType type, OrderLife life, long qty, int limitCents, int stopCents, long cash, int least,
-            bool open, bool held, int phase, bool test, out OrderWhy why)
+            bool open, bool held, int phase, bool test, out OrderWhy why, bool closing = false)
         {
-            Estimate e = Check(state, s, side, type, qty, limitCents, stopCents, cash, least, open, held, phase);
+            Estimate e = Check(state, s, side, type, qty, limitCents, stopCents, cash, least, open, held, phase, closing);
             why = e.Why;
             if (why != OrderWhy.None)
             {
@@ -403,7 +427,7 @@ namespace RealLifeOverhaul.Markets
             var order = new Order
             {
                 Id = state.NextOrderId++, StockId = s.Id, Side = side, Type = type, Life = life, Qty = qty, LimitCents = type == OrderType.Limit ? limitCents : 0,
-                StopCents = type == OrderType.Stop ? stopCents : 0, PlacedDay = state.Day, PlacedPhase = phase, State = OrderState.Open, Test = test,
+                StopCents = type == OrderType.Stop ? stopCents : 0, PlacedDay = state.Day, PlacedPhase = phase, State = OrderState.Open, Test = test, Closing = closing,
                 ExpireDay = life == OrderLife.Day ? (open || phase < MarketCatalogue.PhaseOpen ? state.Day : NextTradingDay(state.Day)) : MarketDays(state.Day, MarketCatalogue.GoodTillDays)
             };
             state.Orders.Add(order);

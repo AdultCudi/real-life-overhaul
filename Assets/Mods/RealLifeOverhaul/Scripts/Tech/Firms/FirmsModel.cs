@@ -73,6 +73,10 @@ namespace RealLifeOverhaul.Tech
         public long Bid;                      // the player's bid on a tender, cents
         public int Rivals;                    // firms bidding against the player
         public int LastBilled;
+        public int Told;                      // what the player has been told of it: ToldNobody, ToldBehind
+
+        public const int ToldNobody = 1;      // taken on with nobody able to work on it
+        public const int ToldBehind = 2;      // a day went by with nobody working on it (cleared once somebody does again)
 
         public WorkKind K => (WorkKind)Kind;
         public WorkStage At => (WorkStage)Stage;
@@ -93,6 +97,7 @@ namespace RealLifeOverhaul.Tech
         public int Engineering;      // work points a day of the engineering, data, security and infrastructure people
         public int Testing;          // ...of those who are testers
         public int Design;           // ...of the designers
+        public int Web;              // ...of the web designers among them (who build websites too)
         public int Product;          // ...of the product people (each makes a feature's points go further)
         public int Selling;          // points of the sales and account people
         public int Support;          // how many answer customers
@@ -102,6 +107,44 @@ namespace RealLifeOverhaul.Tech
         public int Seats;            // professionals at the firm (the software they use is paid by the seat)
         public int Faults;           // thousandths: how often their work needs doing again, on average (TalentRules.Faults)
         public long Wages;           // their day's pay, cents (for the research and development relief)
+    }
+
+    /// <summary>
+    /// Why nobody at a firm can work, or worked yesterday: the first thing in the way, in the order it has to be put right
+    /// (FirmsRules.Why). The last two say only why nobody worked yesterday.
+    /// </summary>
+    public enum Idle
+    {
+        None = 0,           // somebody can work (or worked)
+        NoStaff = 1,        // nobody works at the firm
+        NoWorkers = 2,      // nobody there whose role does this work
+        NetNone = 3,        // closed: no internet plan
+        NetInstalling = 4,  // closed: the connection is still being installed
+        NetOutage = 5,      // closed: the connection is down for a while
+        NoPower = 6,        // closed: no power
+        Shut = 7,           // closed by the game's switch on the business's page
+        NoHours = 8,        // no day of the week with opening hours
+        NoStations = 9,     // no workstation the workers can use
+        NoShifts = 10,      // no shift for the workers anywhere in the week
+        DayOff = 11,        // yesterday the business did not open, or the workers had no shift that day
+        Away = 12,          // on a shift yesterday but not at work: off sick, hired since, or before the hours were counted
+        Count = 13
+    }
+
+    /// <summary>What decides whether a firm's people can work, as the game layer read it (FirmsGame.Facts). Game-free.</summary>
+    public struct FirmFacts
+    {
+        public int Staff;            // professionals at the firm
+        public int Workers;          // of them, those whose role does the work asked
+        public bool Closed;          // temporarily closed (the game's switch, which the mod's utilities use too)
+        public int Net;              // the internet, where the firm needs it: 0 working or not needed, 1 no plan, 2 being installed, 3 down
+        public int NetWhen;          // the day it connects (2), or the hour it is back (3)
+        public bool Dark;            // no power
+        public int OpenDays;         // days of the week it opens, with opening hours
+        public int Stations;         // workstations the workers can use
+        public int ShiftHours;       // the workers' hours on shifts in the week, on the days it opens
+        public int ShiftsYesterday;  // the workers' hours on shifts on yesterday's weekday, if it opened that day
+        public int Worked;           // the hours the workers worked yesterday
     }
 
     /// <summary>Everything the firms part keeps in a save. Game-free.</summary>
