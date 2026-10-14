@@ -1,4 +1,4 @@
-0.14.0
+0.15.0
 
 New
-- The Car Showroom grows: advertising events, a reputation with missions and perks, extras to sell with a car, a workshop that improves a car's condition, auction cars delivered a few days later, and reports with charts in the app.
+- The Car Showroom's floor comes alive: customers walk round looking at the cars, you choose which bay each car stands in, the showroom has a camera for looking at a car up close, and the app shows a photo of each car.
