@@ -140,6 +140,7 @@ namespace RealLifeOverhaul
                     // Its own name wherever the game names the building (Core/SpecialBuildings).
                     SpecialBuildings.Set("courthouse", picked, SpecialKind.Court, "reallife_justice_door_courthouse", "reallife_justice_card_type",
                         () => JusticeSettings.Enabled && JusticeSettings.Courthouse);
+                    SpecialBuildings.Boarded("courthouse", placed);   // its board is its one sign; without one the game's sign carries the name (Core/FrontSigns)
                 }
                 _logger?.Info("Justice: the courthouse is " + Name + " (" + Kind(picked) + ", " + picked.building.totalSqm + " sqm); "
                               + (placed ? "sign up (" + (PropLibrary.TryGet(SignProp, out _, out _) ? "modelled" : "plain stand-in") + ")."
