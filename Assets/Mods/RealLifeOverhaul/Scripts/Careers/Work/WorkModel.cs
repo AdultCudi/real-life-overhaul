@@ -87,10 +87,21 @@ namespace RealLifeOverhaul.Careers
         public int Asks;              // times the player asked for more
         public int Lapse;             // the day an invitation or offer lapses
         public int StartDay;
+        public int Refused = -1;      // the day the employer turned the player down; -1 not turned down, or not known (ProRules.RefusedDay)
 
         public ApplyStep At => (ApplyStep)Stage;
 
         public bool Live => Stage <= (int)ApplyStep.Accepted;
+
+        /// <summary>The employer turns the player down today: the day is kept, so the same post there waits <see cref="ProRules.ReapplyDays"/>.</summary>
+        public void Reject(int day)
+        {
+            Stage = (int)ApplyStep.Rejected;
+            Refused = day;
+        }
+
+        /// <summary>True while this turned-down application keeps the player from applying to the same post at the same employer again.</summary>
+        public bool Bars(int day) => Stage == (int)ApplyStep.Rejected && Refused >= 0 && day < ProRules.ReapplyFrom(Refused);
     }
 
     /// <summary>The player's job now. Game-free.</summary>
@@ -212,6 +223,25 @@ namespace RealLifeOverhaul.Careers
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// The application the employer turned down that still bars the same post there (matched on the post, not the vacancy,
+        /// so a new vacancy for it is barred too), the latest if several; null if the player may apply. One pass over at most
+        /// <see cref="ApplicationsMost"/> applications, run when the player applies or the vacancy is shown, never per frame.
+        /// </summary>
+        public Application TurnedDown(Opening o, int day)
+        {
+            Application last = null;
+            for (int i = 0; i < Applications.Count; i++)
+            {
+                Application a = Applications[i];
+                if (a.Bars(day) && a.Post.Same(o) && (last == null || a.Refused > last.Refused))
+                {
+                    last = a;
+                }
+            }
+            return last;
         }
 
         public void Remember(Spell s)

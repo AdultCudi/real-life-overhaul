@@ -263,6 +263,7 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.CareersJobsId, "reallife_work_enabled", Settings.CareersJobs,
                     v => Settings.CareersJobs = v)
                 .AddButton("reallife_work_test_offer", () => Careers.CareersDirector.Instance?.TestOffer())
+                .AddButton("reallife_work_test_reject", () => Careers.CareersDirector.Instance?.TestReject())
                 .AddButton("reallife_work_test_day", () => Careers.CareersDirector.Instance?.TestWorkDay())
                 .AddButton("reallife_work_test_desk", () => Careers.CareersDirector.Instance?.TestDesk())
                 .AddButton("reallife_work_test_vacancies", () => Careers.CareersDirector.Instance?.TestVacancies())
