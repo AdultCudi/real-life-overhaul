@@ -1,4 +1,4 @@
-0.12.1
+0.12.2
 
 Fixed
-- A short freeze just as the loading screen goes, when the parts of the mod that read the save all started at the same moment; they now start one after another. Developer diagnostics: a frame while the loading screen is still fading out is no longer counted as a pause you see.
+- The mod's car dealership is now the Car Showroom, so it is no longer named like the game's own car dealer, and its row in the map's filters has its icon. With Empire Motors switched on, its dealership's row in the map's filters has a readable name instead of its raw key.
