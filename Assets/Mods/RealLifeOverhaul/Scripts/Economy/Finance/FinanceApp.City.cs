@@ -59,9 +59,10 @@ namespace RealLifeOverhaul.Economy
             GameInstance save = SaveGameManager.Current;
 
             box.Title(FinanceText.T("reallife_macro_title"));
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_macro_over_rate", CityText.Rate(state.Base));
             int toTurn = CityModel.DaysToTurn(state, director.MonthDays);
-            box.Line(state.Pending && toTurn == 1
+            box.Note(state.Pending && toTurn == 1
                 ? CityText.Decision(state.PendingMove, state.PendingReason, MacroCatalogue.Clamp(state.Base + state.PendingMove, MacroCatalogue.BaseLeast, MacroCatalogue.BaseMost))
                 : FinanceText.T("reallife_macro_page_decision", "days", toTurn.ToString()));
             box.Row("reallife_macro_over_prices", CityText.Prices(state));
@@ -77,7 +78,7 @@ namespace RealLifeOverhaul.Economy
                 box.Row("reallife_macro_page_carried", FinanceText.Money(carried));
             }
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_macro_back", HideCity);
-            box.Line(FinanceText.T("reallife_macro_page_note"));
+            box.Note(FinanceText.T("reallife_macro_page_note"));
             Meta.Guide.Point(box, "reallife_meta_title_economy_city");
 
             // One table of four kinds of row, which the filter over it tells apart: each row's third and fourth cells
