@@ -44,6 +44,7 @@ namespace RealLifeOverhaul.Careers
         public const int CountedShare = 750;      // thousandths of the day worked for it to count
         public const int OpeningsBase = 14;       // vacancies the city has open at once
         public const int OpeningsAgency = 5;      // ...more with the recruitment office
+        public const int OpeningsWithinReach = 3; // first posts kept open, while the player has no job, in professions they could be offered one in now
         public static readonly int[] OpeningsByCycle = { 4, 0, -3, -6 };
         public const int OpeningDaysLeast = 7, OpeningDaysMost = 14;
         public static readonly int[] RankWeights = { 450, 300, 150, 70, 30 };   // thousandths: the share of vacancies at each rung (the top rungs are found by search firms)

@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Careers
     /// </summary>
     public sealed partial class CareersDirector
     {
-        public const int TabJobs = 0, TabApplications = 1, TabJob = 2, TabCv = 3;
+        public const int TabStart = 0, TabJobs = 1, TabApplications = 2, TabJob = 3, TabCv = 4;
         public const string CareerAppId = "RealLifeCareer";
         private const string SalaryKey = "reallife_transaction_work_salary";
         private const string LoanKey = "reallife_transaction_study_loan";
@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Careers
         private readonly List<EmployerRef> _employers = new List<EmployerRef>(256);
         private readonly List<EmployerRef> _offices = new List<EmployerRef>(64);
         private readonly List<EmployerRef> _fit = new List<EmployerRef>(32);
+        private readonly List<int> _reach = new List<int>(ProCatalogue.Count);
         private readonly List<BoardAd> _ads = new List<BoardAd>(40);
         private int _employersDay = -1;
         private int _workReminded = -1, _interviewReminded = -1;
@@ -272,7 +273,55 @@ namespace RealLifeOverhaul.Careers
                     own++;
                 }
             }
+            ReachVacancies(w, day, referrals);
         }
+
+        /// <summary>
+        /// While the player has no job, the city keeps a few first posts open in the professions the player could be
+        /// offered one in now (ProRules.OpeningsWithinReach): drawn blind, a first post of one profession would come
+        /// about once a month, so a player who has just passed the course for it would wait weeks for a vacancy.
+        /// </summary>
+        private void ReachVacancies(WorkFile w, int day, bool referrals)
+        {
+            if (w.Job != null)
+            {
+                return;
+            }
+            _reach.Clear();
+            Candidate t = Template();
+            for (int i = 0; i < ProCatalogue.All.Length; i++)
+            {
+                Profession p = ProCatalogue.All[i];
+                Candidate c = t;
+                c.Experience = ProRules.Experience(w, p.Id, day, GameCalendar.DaysPerYear);
+                if (ProPath.Ready(_study, p, 0, null, c))
+                {
+                    _reach.Add(p.Id);
+                }
+            }
+            if (_reach.Count == 0)
+            {
+                return;
+            }
+            int within = 0;
+            for (int i = 0; i < w.Openings.Count; i++)
+            {
+                Opening o = w.Openings[i];
+                within += o.Open(day) && o.Rank == 0 && o.Via != (int)Via.JobsBoard && _reach.Contains(o.Prof) ? 1 : 0;
+            }
+            for (int n = 0; within < ProRules.OpeningsWithinReach && n < ProRules.OpeningsWithinReach * 4 && w.Openings.Count < WorkFile.OpeningsMost; n++)
+            {
+                int prof = _reach[TechRandom.Range(StudySeed, 8310, day, n, 0, _reach.Count - 1)];
+                Opening o = NewVacancy(day, ReachDraws + n, false, referrals, prof, 0);
+                if (o != null)
+                {
+                    w.Openings.Add(o);
+                    within++;
+                }
+            }
+        }
+
+        private const int ReachDraws = 500;   // the draws of the vacancies within reach, apart from the day's others (under a hundred)
 
         private void BoardVacancies(WorkFile w, int day)
         {
@@ -352,9 +401,9 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>One new vacancy of the city's: a profession that has employers, one of them, a rung, the pay and how the days are worked.</summary>
-        private Opening NewVacancy(int day, int n, bool agency, bool referrals)
+        private Opening NewVacancy(int day, int n, bool agency, bool referrals, int forProf = -1, int forRank = -1)
         {
-            int prof = TechRandom.Range(StudySeed, 8301, day, n, 0, ProCatalogue.Count - 1);
+            int prof = forProf >= 0 ? forProf : TechRandom.Range(StudySeed, 8301, day, n, 0, ProCatalogue.Count - 1);
             Profession p = ProCatalogue.Find(prof);
             EmployerRef at = null;
             EmployerKind kind = EmployerKind.City;
@@ -397,7 +446,7 @@ namespace RealLifeOverhaul.Careers
             {
                 return null;
             }
-            int rank = ProRules.RankRoll(p, TechRandom.Mille(StudySeed, 8306, day, n));
+            int rank = forRank >= 0 ? Math.Min(forRank, p.Ranks.Length - 1) : ProRules.RankRoll(p, TechRandom.Mille(StudySeed, 8306, day, n));
             var o = new Opening
             {
                 Id = _study.Work.Next(), Prof = prof, Rank = rank, Kind = (int)kind, Employer = name, Street = at.Street, Number = at.Number, Rival = at.Rival,
@@ -445,6 +494,47 @@ namespace RealLifeOverhaul.Careers
                 Honours = AnyHonours(f), Master = StudyRules.School(f) >= TalentCatalogue.Master, Cycle = CareersBridges.CycleNow(),
                 Summer = GameCalendar.SeasonOf(day) == Events.Season.Summer, Rank = o.Rank
             };
+        }
+
+        /// <summary>
+        /// What every employer reads of the player alike (references, name, record, honours, the economy), read from the
+        /// game once for a page of the Career app; the post's own part is added by <see cref="CandidateFor(Opening, Candidate)"/>.
+        /// </summary>
+        internal Candidate Template()
+        {
+            Candidate t = CandidateFor(new Opening { Prof = 0, Rank = 0, Via = (int)Via.Board });
+            t.Experience = 0;
+            return t;
+        }
+
+        /// <summary>What an employer reads of the player for a post, from the template: the same as <see cref="CandidateFor(Opening)"/>.</summary>
+        internal Candidate CandidateFor(Opening o, Candidate t)
+        {
+            WorkFile w = _study.Work;
+            int day = Save != null ? Save.Day : 0;
+            Candidate c = ProPath.With(_study, o.Def, o.Rank, null, t);
+            c.Experience = ProRules.Experience(w, o.Prof, day, GameCalendar.DaysPerYear);
+            c.Referral = o.Via == (int)Via.Referral;
+            c.Agency = o.Via == (int)Via.Agency || w.AgencyUntil >= day;
+            return c;
+        }
+
+        /// <summary>The quickest way to a first offer from here (Careers/Work/ProPath): a profession, and the course to take first or -1.</summary>
+        internal bool FirstStep(Candidate t, out int prof, out int course)
+        {
+            prof = course = -1;
+            return _study != null && ProPath.FirstStep(_study, t, UniversityOpen, out prof, out course);
+        }
+
+        /// <summary>True if a vacancy is open to the player now: qualified, near enough what it asks, and an offer can come of it.</summary>
+        internal bool OpenToMe(Opening o, Candidate t)
+        {
+            Profession p = o.Def;
+            if (p == null || !ProRules.Qualified(_study, p, o.Rank) || !ProRules.Eligible(_study, p, o.Rank))
+            {
+                return false;
+            }
+            return o.Via == (int)Via.Headhunter || ProPath.CanBeOffered(ProRules.HireScore(CandidateFor(o, t)));
         }
 
         private static bool AnyHonours(StudyFile f)
@@ -495,6 +585,10 @@ namespace RealLifeOverhaul.Careers
             if (!ProRules.Eligible(_study, p, o.Rank))
             {
                 return "reallife_work_why_skills";
+            }
+            if (o.Via != (int)Via.Headhunter && !ProPath.CanBeOffered(ProRules.HireScore(CandidateFor(o))))
+            {
+                return "reallife_work_why_no_chance";   // (the employer could not score the player high enough even with the best luck of both steps)
             }
             var a = new Application { Day = day, Stage = (int)ApplyStep.Sent };
             o.CopyTo(a.Post);
@@ -975,6 +1069,79 @@ namespace RealLifeOverhaul.Careers
             Tell2(NotificationType.Success, "reallife_work_note_registered", Data("day", CareersText.Day(w.AgencyUntil)), TabJobs, null);
             Changed();
             return null;
+        }
+
+        /// <summary>
+        /// The city's vacancies of today when the Career app opens: made now if the day has not made them yet (a new game,
+        /// or the first day with professional jobs on, would otherwise show none until midnight), the same ones the day
+        /// would make by the save's seed and the day; and the first posts within reach topped up, for a course passed
+        /// since the morning.
+        /// </summary>
+        internal void VacanciesNow()
+        {
+            if (!_workOn || _study == null || Save == null)
+            {
+                return;
+            }
+            int day = Save.Day;
+            if (_study.Work.OpeningsDay != day)
+            {
+                Vacancies(day);
+                return;
+            }
+            ReadEmployers(day);
+            ReachVacancies(_study.Work, day, CareersBridges.FriendsNow() >= ProRules.FriendsForReferral);
+        }
+
+        /// <summary>
+        /// The first time the Career app is opened with nothing the player can apply for (no job, no application under way,
+        /// no vacancy open to them), one notification says what the first step is. Told once a save.
+        /// </summary>
+        internal void FirstStepNotice()
+        {
+            WorkFile w = Work;
+            if (w == null || w.StartTold || w.Job != null || Save == null)
+            {
+                return;
+            }
+            int day = Save.Day;
+            for (int i = 0; i < w.Applications.Count; i++)
+            {
+                if (w.Applications[i].Live)
+                {
+                    return;
+                }
+            }
+            Candidate t = Template();
+            for (int i = 0; i < w.Openings.Count; i++)
+            {
+                Opening o = w.Openings[i];
+                if (o.Open(day) && w.Applied(o) == null && OpenToMe(o, t))
+                {
+                    return;
+                }
+            }
+            w.StartTold = true;
+            int prof, course;
+            string step = FirstStep(t, out prof, out course) ? FirstStepLine(prof, course) : CareersText.T("reallife_career_step_none");
+            Tell2(NotificationType.Info, "reallife_career_note_start", Data("step", step), TabStart, prof >= 0 ? CareerApp.ProfessionRow + prof : null);
+            Logger?.Info("Careers: the first step to an offer was told on day " + day + ": " + (prof >= 0 ? ProCatalogue.All[prof].Key : "none") + (course >= 0 ? ", course " + course : string.Empty) + ".");
+        }
+
+        /// <summary>The first step in words: the course to take and where, or the profession to look for a vacancy of.</summary>
+        internal string FirstStepLine(int prof, int course)
+        {
+            CourseDef c = StudyCatalogue.Find(course);
+            string title = CareersText.Title(prof, 0);
+            if (c == null)
+            {
+                return CareersText.T("reallife_career_step_vacancy", "title", title);
+            }
+            if (_study != null && _study.Live(c.Id) != null)
+            {
+                return CareersText.T("reallife_career_step_finish", "course", CareersText.Course(c.Id), "title", title);
+            }
+            return CareersText.Fill("reallife_career_step_course", "course", CareersText.Course(c.Id), "place", PlaceOf(c, StudyMode.FullTime), "title", title);
         }
 
         // ---------------------------------------------------------------- the phone
