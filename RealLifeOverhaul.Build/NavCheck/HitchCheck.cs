@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using RealLifeOverhaul;
 
 // Checks for the game-free parts of the work against long frames, compiled as they ship: the keeper of handlers on the
@@ -248,19 +249,9 @@ internal static partial class Program
                 EventHold.Keep(ref field, handlers[h], ref seen[h]);
             }
         }
-        Stopwatch watch = Stopwatch.StartNew();
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int second = 0; second < 100000; second++)
-        {
-            for (int h = 0; h < Holders; h++)
-            {
-                EventHold.Keep(ref field, handlers[h], ref seen[h]);
-            }
-        }
-        watch.Stop();
-        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        long allocated = Asks(ref field, handlers, seen, out long ms);
         Check(allocated == 0, "hold: eight holders asking 100,000 times on a settled event allocate nothing (" + allocated + " bytes)");
-        Check(watch.ElapsedMilliseconds < 500, "hold: and take no time to speak of (" + watch.ElapsedMilliseconds + " ms for 800,000 askings)");
+        Check(ms < 500, "hold: and take no time to speak of (" + ms + " ms for 800,000 askings)");
 
         // The old way, for the record of what was removed: each holder takes itself off and puts itself back when the field is not the one it saw.
         Action old = null;
@@ -269,7 +260,7 @@ internal static partial class Program
             old += Handler(others, 0);
         }
         var oldSeen = new Action[3];
-        before = GC.GetAllocatedBytesForCurrentThread();
+        long before = GC.GetAllocatedBytesForCurrentThread();
         int putBack = 0;
         for (int second = 0; second < 60; second++)
         {
@@ -285,6 +276,28 @@ internal static partial class Program
         }
         long oldBytes = GC.GetAllocatedBytesForCurrentThread() - before;
         Check(putBack == 180 && oldBytes > 100000, "hold: the old way put three holders back 180 times in a minute (" + putBack + ") and allocated for each (" + oldBytes + " bytes a minute on an event of 200)");
+    }
+
+    // The measured loop is compiled in full before it runs, as HotSpotCheck's are. Left to the .NET runtime's tiers, a loop
+    // of 800,000 askings is swapped for compiled code part way through (on-stack replacement), and the swap is counted as
+    // about 6 KB allocated on this thread: the runtime's, not the holders' (seen on 0.11.2's checks; with tiering switched
+    // off the count is 0). The game runs the mod on Unity's own runtime, which does no such swap.
+    [MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.NoInlining)]
+    private static long Asks(ref Action field, Action[] handlers, Action[] seen, out long ms)
+    {
+        Stopwatch watch = Stopwatch.StartNew();
+        long before = GC.GetAllocatedBytesForCurrentThread();
+        for (int second = 0; second < 100000; second++)
+        {
+            for (int h = 0; h < handlers.Length; h++)
+            {
+                EventHold.Keep(ref field, handlers[h], ref seen[h]);
+            }
+        }
+        watch.Stop();
+        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        ms = watch.ElapsedMilliseconds;
+        return allocated;
     }
 
     private static void Marks()
