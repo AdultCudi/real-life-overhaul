@@ -18248,5 +18248,6 @@
   "reallife_career_good_chance_have": "你已经达到",
   "reallife_career_good_chance_points": "还需{points}个技能点",
   "reallife_career_good_chance_point": "还需1个技能点",
-  "reallife_career_good_chance_far": "光靠技能不够"
+  "reallife_career_good_chance_far": "光靠技能不够",
+  "reallife_planner_tab_count": "{tab}（{count}）"
 }

@@ -45,6 +45,43 @@ namespace RealLifeOverhaul.Planner
         public const int FreeLeast = 30;         // game minutes: a shorter gap between two entries is no free time
         public const int MostGaps = 3;           // the day's box names this many stretches of free time
 
+        public const int TabToday = 0, TabUpcoming = 1, TabWeek = 2;   // the app's tabs, in their order
+
+        /// <summary>Whether an entry is listed on a tab: Today the day's, Upcoming the days after, Week seven days from today.</summary>
+        public static bool OnTab(PlannerEntry e, int tab, int today)
+        {
+            switch (tab)
+            {
+                case TabToday: return e.Day == today;
+                case TabWeek: return e.Day >= today && e.Day < today + WeekGrid.Days;
+                default: return e.Day > today;
+            }
+        }
+
+        /// <summary>
+        /// How many entries a tab lists under its filter (<paramref name="group"/>, a PlannerGroup, -1 for all), as the
+        /// table shows them: a group with nothing on the tab, or a tab with entries of one group only, lists everything
+        /// (GameUi.TableModel lets the filter go then). One pass over the looked-at entries, when the tables are filled.
+        /// </summary>
+        public static int TabCount(List<PlannerEntry> items, int tab, int today, int group)
+        {
+            int all = 0, ofGroup = 0, held = 0;
+            for (int i = 0; i < items.Count; i++)
+            {
+                PlannerEntry e = items[i];
+                if (!OnTab(e, tab, today))
+                {
+                    continue;
+                }
+                int g = (int)GroupOf(e.Category);
+                all++;
+                ofGroup += g == group ? 1 : 0;
+                held |= 1 << g;
+            }
+            bool kinds = (held & (held - 1)) != 0;   // (two groups or more)
+            return group >= 0 && ofGroup > 0 && kinds ? ofGroup : all;
+        }
+
         public static PlannerGroup GroupOf(PlannerCategory category)
         {
             switch (category)

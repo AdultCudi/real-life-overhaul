@@ -49,6 +49,9 @@ namespace RealLifeOverhaul.Planner
         private Page _page;
         private EntryId _selected;
         private int _glanceDay;   // the day the box shows at a glance
+        private int _tabs;        // the tabs the panel has (two if the Week tab could not be made)
+        private readonly int[] _tabCounted = { -1, -1, -1 };   // the count each tab's name says
+        private string _tabLanguage;
 
         public PlannerApp(PlannerDirector director)
         {
@@ -88,6 +91,7 @@ namespace RealLifeOverhaul.Planner
             _view.Changed = filter => UiClone.Safe(() => Reordered(filter));
 
             int tabs = _week != null && _shell.SetTabCount(TabKeys.Length) ? TabKeys.Length : 2;
+            _tabs = tabs;
             for (int i = 0; i < tabs; i++)
             {
                 int tab = i;
@@ -226,6 +230,7 @@ namespace RealLifeOverhaul.Planner
             Rows(today);
             Frame();
             ShowRows(today, _page == Page.Entry && selected != null ? RowId(selected.Id) : null);
+            TabCounts(today);
             Headline(today);
             Write();
             if (Meta.Dev.Verbose)
@@ -278,15 +283,26 @@ namespace RealLifeOverhaul.Planner
             return id.Source + ":" + id.A + ":" + id.B;
         }
 
-        private bool OnTab(PlannerEntry e, int today)
+        private bool OnTab(PlannerEntry e, int today) => PlannerRules.OnTab(e, _tab, today);
+
+        // Each tab's name with how many entries it lists under its own filter: "Today (3)". Written when the tables are
+        // filled (opening, a change, a filter picked), and only a name whose count has changed.
+        private void TabCounts(int today)
         {
-            switch (_tab)
+            for (int i = 0; i < _tabs && i < _tabCounted.Length; i++)
             {
-                case TodayTab: return e.Day == today;
-                case WeekTab: return e.Day >= today && e.Day < today + WeekGrid.Days;
-                default: return e.Day > today;
+                int count = PlannerRules.TabCount(_director.List.Items, i, today, Chosen[i]);
+                if (count == _tabCounted[i] && _tabLanguage == LanguageNow)
+                {
+                    continue;
+                }
+                _tabCounted[i] = count;
+                UiClone.Words(_shell.TabLabels[i], PlannerText.T("reallife_planner_tab_count", "tab", PlannerText.T(TabKeys[i]), "count", count.ToString()));
             }
+            _tabLanguage = LanguageNow;
         }
+
+        private static string LanguageNow => PlannerText.T("common_today");   // (a language change gives the tabs' names again)
 
         // The entries of the tab, in the order the director keeps them (by time). The headings over the days are
         // put in when the rows are shown (Fill): they belong to the order, not to the entries.
@@ -417,6 +433,10 @@ namespace RealLifeOverhaul.Planner
                 Chosen[_tab] = Tables[_tab].Filters[0].Chosen;
             }
             int today = TimeHelper.CurrentDay;
+            if (filter)
+            {
+                TabCounts(today);
+            }
             if (_tab == WeekTab && _week != null)
             {
                 PlannerEntry open = _page == Page.Entry ? Selected : null;

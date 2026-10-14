@@ -18248,5 +18248,6 @@
   "reallife_career_good_chance_have": "Você já tem",
   "reallife_career_good_chance_points": "Mais {points} pontos de habilidade",
   "reallife_career_good_chance_point": "Mais 1 ponto de habilidade",
-  "reallife_career_good_chance_far": "Não só com habilidade"
+  "reallife_career_good_chance_far": "Não só com habilidade",
+  "reallife_planner_tab_count": "{tab} ({count})"
 }

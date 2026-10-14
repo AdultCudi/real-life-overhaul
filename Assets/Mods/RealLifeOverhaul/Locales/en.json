@@ -18248,5 +18248,6 @@
   "reallife_career_good_chance_have": "You have it",
   "reallife_career_good_chance_points": "{points} more skill points",
   "reallife_career_good_chance_point": "1 more skill point",
-  "reallife_career_good_chance_far": "Not by skill alone"
+  "reallife_career_good_chance_far": "Not by skill alone",
+  "reallife_planner_tab_count": "{tab} ({count})"
 }
