@@ -50,7 +50,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             _picked = null;
             box.Title(DealerText.T("reallife_dealer_lots_title"));
             box.Note(DealerText.T("reallife_dealer_lots_about"));
-            box.Line(DealerText.T("reallife_dealer_lots_staff"));
+            box.Note(DealerText.T("reallife_dealer_lots_staff"));
             Meta.Guide.Point(box, GuideTitle);
             return DealerColumns.Lots;
         }
@@ -76,20 +76,35 @@ namespace RealLifeOverhaul.Economy.Dealership
             DealerBook w = Week(y);
             int day = SaveGameManager.Current.Day;
             box.Title(y.Name);
+            int step = DealerRules.Step(y.Rep);
+            box.Chip(DealerText.Step(step));
+            if (y.EventOn(day))
+            {
+                box.Chip(DealerText.Event(y.Event, y.Feature), CellTone.Green);
+            }
             if (reg != null && DealerGame.Salespeople(reg) == 0)
             {
-                box.Line(DealerText.T("reallife_dealer_yard_no_staff"));
+                box.Line(DealerText.T("reallife_dealer_yard_no_staff"), CellTone.Red);
             }
-            int step = DealerRules.Step(y.Rep);
+            box.Section("reallife_look_sec_now");
             box.Line(DealerText.Fill("reallife_dealer_yard_rep", "rep", y.Rep.ToString(), "step", DealerText.Step(step),
                 "next", step + 1 < DealerCatalogue.RepSteps.Length ? DealerText.T("reallife_dealer_rep_next", "points", DealerCatalogue.RepSteps[step + 1].ToString()) : DealerText.T("reallife_dealer_rep_top")));
             if (y.EventOn(day))
             {
                 box.Line(DealerText.Fill("reallife_dealer_yard_event", "event", DealerText.Event(y.Event, y.Feature), "day", FinanceText.Day(y.EventUntil)));
             }
-            box.Line(y.Laid ? DealerText.T("reallife_dealer_yard_lot", "cars", y.Cars.Count.ToString(), "places", y.Spots.Count.ToString()) : DealerText.T("reallife_dealer_yard_unlaid"));
+            if (y.Laid)
+            {
+                box.Meter("reallife_look_lot", LookRules.Fill(y.Cars.Count, y.Spots.Count), DealerText.T("reallife_look_of", "value", y.Cars.Count.ToString(), "most", y.Spots.Count.ToString()), CellTone.Plain);
+            }
+            else
+            {
+                box.Line(DealerText.T("reallife_dealer_yard_unlaid"), CellTone.Yellow);
+            }
+            box.Section("reallife_look_today");
             box.Line(DealerText.Fill("reallife_dealer_yard_today", "visitors", y.Today.Visitors.ToString(), "served", y.Today.Served.ToString(), "lost", y.Today.Lost.ToString(),
                 "offers", y.Today.Offers.ToString(), "sold", y.Today.Sold.ToString()));
+            box.Section("reallife_look_sec_this_week");
             box.Line(DealerText.Fill("reallife_dealer_yard_week", "sold", (w.Sold + y.Today.Sold).ToString(), "takings", DealerText.Money(w.Takings + y.Today.Takings),
                 "bought", DealerText.Money(w.Bought + y.Today.Bought), "margin", DealerText.Money(w.Margin + y.Today.Margin), "claims", DealerText.Money(w.Claims + y.Today.Claims)));
             int steps = (DealerCatalogue.StaffFloorMost - DealerCatalogue.StaffFloorLeast) / DealerCatalogue.StaffFloorStep + 1;
