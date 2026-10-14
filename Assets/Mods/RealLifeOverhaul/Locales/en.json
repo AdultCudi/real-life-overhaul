@@ -11776,7 +11776,7 @@
   "reallife_law_station_furniture": "Furnished police stations",
   "reallife_opt_tip_law_station_furniture": "Desks, lockers, a briefing room, a break room and the game's walls and floors, officers at work, and back offices on a large station's bare floor. Off, it is bare as before.",
   "reallife_changes_next_title": "Next version",
-  "reallife_changes_next": "Nothing yet.",
+  "reallife_changes_next": "Fixed: Grant share options no longer makes new shares while nobody works at the firm, and options already granted that way go to the firm's staff as soon as it has some.",
   "reallife_changes_002_4_title": "0.2.4",
   "reallife_changes_002_4": "Each of the city's banks has its own app on the phone, under the game's name for it: your current account and statement, the loans you owe that bank with paying part or all of one, your card, what it offers you today and how it sees your rating. The banks' terms differ a little, so choosing one matters, and under a rating of 580 none of them lends. The mod's contacts have real pictures from the game: people show their faces, and services show a logo. Contacts has a search box at the top. Police stations are furnished with the game's own furniture: desks with computers, lockers, a water cooler, plants, a clock, lamps, and a toilet in the cell. Fixed: with all of the mod's apps on, the row of apps at the top of the full screen menu ran under the money and the date and off the screen; it now has pages, centred between the app's name and the money, turned with the wheel or the dots. Fixed: on the city map, a row of the mod's (Courthouse, Custom shops and the rest) could be unticked while its places stayed on the map; the places now follow the tick you see.",
   "reallife_rota_box_stock_ok": "Its goods keep up with the advised plan.",
@@ -17601,5 +17601,6 @@
   "reallife_changes_012_2_title": "0.12.2",
   "reallife_changes_012_2": "Fixed: the mod's car dealership is now the Car Showroom, so it is no longer named like the game's own car dealer, and its row in the map's filters has its icon. With Empire Motors switched on, its dealership's row in the map's filters has a readable name instead of its raw key.",
   "reallife_changes_012_3_title": "0.12.3",
-  "reallife_changes_012_3": "Fixed: at a landmark your character now takes a proper selfie: back to the view, the phone held out at arm's length a little above the eyes, looking into it, then lowered. People filming in the street now hold the phone upright at eye level with the elbows down, not up at the chin with the elbows out."
+  "reallife_changes_012_3": "Fixed: at a landmark your character now takes a proper selfie: back to the view, the phone held out at arm's length a little above the eyes, looking into it, then lowered. People filming in the street now hold the phone upright at eye level with the elbows down, not up at the chin with the elbows out.",
+  "reallife_vc_options_nobody": "Nobody works at {firm} yet. Share options go to the people who work there, so hire someone first."
 }

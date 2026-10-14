@@ -17,6 +17,24 @@ internal static partial class Program
         VentureOwnFirm();
         VentureSave();
         VentureListing();
+        VentureOptions();
+    }
+
+    // Share options granted with nobody at the firm (0.12.4): the even split and what waits, and what nobody holds.
+    private static void VentureOptions()
+    {
+        long each = VentureRules.Split(10, 3, out long left);
+        Check(each == 3 && left == 1, "options: ten shares among three people are three each, one left to wait (" + each + ", " + left + ")");
+        each = VentureRules.Split(500, 0, out left);
+        Check(each == 0 && left == 500, "options: with nobody there nothing is given and all of it waits (" + each + ", " + left + ")");
+        each = VentureRules.Split(-5, 2, out left);
+        Check(each == 0 && left == 0, "options: nothing to split gives nothing and leaves nothing (" + each + ", " + left + ")");
+        Cap c = VentureRules.NewCap("Main%20St~9");
+        Check(VentureRules.Unheld(c, 0) == 0, "options: a firm with no grant has nothing waiting");
+        long shares = VentureRules.Grant(c, VentureCatalogue.OptionGrant);
+        Check(shares > 0 && VentureRules.Unheld(c, 0) == shares, "options: a grant that nobody received is all waiting (" + VentureRules.Unheld(c, 0) + " of " + shares + ")");
+        Check(VentureRules.Unheld(c, shares / 2) == shares - shares / 2, "options: what the people hold is taken off what waits");
+        Check(VentureRules.Unheld(c, shares * 2) == 0 && VentureRules.Unheld(null, 0) == 0, "options: what waits is never below nothing");
     }
 
     private static void VentureListing()
@@ -245,6 +263,8 @@ internal static partial class Program
         VentureRules.Accept(c, VentureRules.Sheet(1, 400000000, 100000000, 700, 1000, 10), 500000, 10);
         c.Sheets.Add(VentureRules.Sheet(2, 400000000, 80000000, 500, 1000, 12));
         c.Ceo = "pro:3";
+        c.Unassigned = 1234;
+        c.OptionsChecked = 1;
         f.Caps.Add(c);
         int version;
         VentureFile back = VentureStore.Read(VentureStore.Write(f), out version);
@@ -254,5 +274,6 @@ internal static partial class Program
         Cap bc = back.CapOf("Main%20St~9");
         Check(bc != null && bc.Holders.Count == c.Holders.Count && bc.Sheets.Count == 1 && bc.Ceo == "pro:3" && bc.TargetMrr == c.TargetMrr && VentureRules.PlayerShare(bc) == VentureRules.PlayerShare(c),
             "ventures: a firm's cap table, board and term sheets come back");
+        Check(bc != null && bc.Unassigned == 1234 && bc.OptionsChecked == 1, "ventures: a firm's options waiting for somebody, and the look over them, come back");
     }
 }
