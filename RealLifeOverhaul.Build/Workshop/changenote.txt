@@ -1,4 +1,4 @@
-0.12.2
+0.12.3
 
 Fixed
-- The mod's car dealership is now the Car Showroom, so it is no longer named like the game's own car dealer, and its row in the map's filters has its icon. With Empire Motors switched on, its dealership's row in the map's filters has a readable name instead of its raw key.
+- At a landmark your character now takes a proper selfie: back to the view, the phone held out at arm's length a little above the eyes, looking into it, then lowered. People filming in the street now hold the phone upright at eye level with the elbows down, not up at the chin with the elbows out.
