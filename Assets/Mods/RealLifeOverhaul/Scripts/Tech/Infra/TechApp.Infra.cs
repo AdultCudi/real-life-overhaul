@@ -113,7 +113,8 @@ namespace RealLifeOverhaul.Tech
         private void WriteCentre(InfoBox box, DataCentre d, int day)
         {
             string place = d.Place;
-            box.Title(TechText.T("reallife_infra_centre_title", "name", d.Name, "tier", TechText.InfraTier(d.Tier)));
+            box.Title(d.Name);
+            box.Subtitle(TechText.InfraTier(d.Tier));
             long power = InfraRules.Power(d), water = InfraRules.Water(d);
             box.Line(TechText.Fill("reallife_infra_centre_power", "kwh", (power / 1000).ToString("N0", System.Globalization.CultureInfo.InvariantCulture),
                 "water", (water / 1000f).ToString("0.0", System.Globalization.CultureInfo.InvariantCulture), "supplied", TechText.T(d.Power ? "reallife_infra_yes" : "reallife_infra_no"),

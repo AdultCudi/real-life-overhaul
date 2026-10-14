@@ -108,7 +108,8 @@ namespace RealLifeOverhaul.Tech
         {
             Firm m = firm.File;
             string back = RivalsRow + m.Place;
-            box.Title(TechText.T("reallife_tech_rival_title", "name", c.Name, "kind", RivalKindWords(c)));
+            box.Title(c.Name);
+            box.Subtitle(RivalKindWords(c));
             box.Section("reallife_look_sec_now");
             box.Row("reallife_tech_col_meet", MeetWords(m.Kind, c));
             Transform buttons;

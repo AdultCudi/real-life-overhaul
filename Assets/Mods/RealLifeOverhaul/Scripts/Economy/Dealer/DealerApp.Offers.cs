@@ -135,7 +135,8 @@ namespace RealLifeOverhaul.Economy.Dealership
         private void WriteDeal(InfoBox box, DealerYard yard, DealerOffer d, int now)
         {
             StockCar car = yard.Car(d.Car);
-            box.Title(DealerText.T("reallife_dealer_deal_title", "customer", d.Customer, "kind", DealerText.Profile(d.Profile)));
+            box.Title(d.Customer);
+            box.Subtitle(DealerText.Profile(d.Profile));
             box.Subtitle(DealerGame.CarName(car.Type) + ", " + yard.Name);
             if (d.Stage == OfferStage.Driving)
             {

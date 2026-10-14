@@ -393,7 +393,8 @@ namespace RealLifeOverhaul.Economy
             RotaGaps(sheet, r.Plan);
             RotaGoods(sheet, r, "pgoods", false);
 
-            box.Title(CompanyText.T("reallife_rota_rung_title", "plan", RotaPlanName(sheet, r), "business", sheet.Place.Name));
+            box.Title(RotaPlanName(sheet, r));
+            box.Subtitle(sheet.Place.Name);
             if (index == l.Recommended && l.Count > 1)
             {
                 box.Chip(CompanyText.T("reallife_look_chip_advised"), CellTone.Green);

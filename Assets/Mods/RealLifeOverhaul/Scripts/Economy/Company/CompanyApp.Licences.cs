@@ -57,7 +57,8 @@ namespace RealLifeOverhaul.Economy
             Licence l = shop.File.Permits[kind];
             string place = shop.File.Place;
             bool valid = LicenceRules.Valid(l, day);
-            box.Title(CompanyText.T("reallife_co_lic_title", "licence", CompanyText.Capital(CompanyText.Licence(kind)), "business", shop.Name));
+            box.Title(CompanyText.Capital(CompanyText.Licence(kind)));
+            box.Subtitle(shop.Name);
             box.Chip(CompanyText.T(valid ? "reallife_look_chip_valid" : "reallife_look_chip_missing"), valid ? CellTone.Green : CellTone.Red);
             box.Line(valid ? CompanyText.T("reallife_co_lic_valid", "day", l.Until.ToString()) : CompanyText.T("reallife_co_lic_missing"), valid ? CellTone.Plain : CellTone.Red);
             box.Section("reallife_look_sec_terms");

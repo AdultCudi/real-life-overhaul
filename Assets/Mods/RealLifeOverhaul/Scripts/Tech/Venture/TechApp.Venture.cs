@@ -92,7 +92,8 @@ namespace RealLifeOverhaul.Tech
             long put;
             long mine = VentureRules.PlayerValue(s, out share, out put);
             bool known = s.Diligence || (s.Revealed & 1) != 0;
-            box.Title(TechText.T("reallife_vc_startup_title", "name", s.Name, "sector", TechText.VentureName((Venture)s.Sector)));
+            box.Title(s.Name);
+            box.Subtitle(TechText.VentureName((Venture)s.Sector));
             if (s.Ask != null)
             {
                 box.Line(TechText.Fill("reallife_vc_startup_ask", "amount", TechText.Cents(_director.Level(s.Ask.Amount)), "pre", TechText.Cents(_director.Level(s.Ask.Pre)), "share", TechText.Mille(s.Ask.EquityMille),

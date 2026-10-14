@@ -134,7 +134,8 @@ namespace RealLifeOverhaul.Economy
 
         private void WriteReport(InfoBox box, CampaignReport r)
         {
-            box.Title(CompanyText.T("reallife_co_report_title", "campaign", CompanyText.Campaign(r.Kind), "business", r.Name));
+            box.Title(CompanyText.Campaign(r.Kind));
+            box.Subtitle(r.Name);
             box.Subtitle(CompanyText.T("reallife_co_report_days", "from", r.From.ToString(), "to", (r.From + r.Days - 1).ToString(), "days", r.Days.ToString()));
             if (r.Cost > 0)
             {
