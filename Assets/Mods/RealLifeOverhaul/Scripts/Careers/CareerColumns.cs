@@ -13,6 +13,20 @@ namespace RealLifeOverhaul.Careers
 
         public static readonly TableSpec Off = new TableSpec("Career", "Off").Column("reallife_career_col_post", 600f, TableSort.None, flexible: true);
 
+        public const int PathApply = 0, PathWait = 1, PathCourse = 2, PathSkills = 3;
+        private static readonly string[] Paths = { "reallife_career_kind_apply", "reallife_career_kind_wait", "reallife_career_kind_course", "reallife_career_kind_skills" };
+
+        /// <summary>Professions: 0 profession, 1 first post, 2 pay from, 3 fit, 4 vacancies (open to you of all), 5 next step.</summary>
+        public static readonly TableSpec Professions = new TableSpec("Career", "Professions")
+            .Column("reallife_career_col_profession", 300f, TableSort.Text, flexible: true)
+            .Column("reallife_career_col_first", 300f, TableSort.Text)
+            .Column("reallife_career_col_pay_from", 170f, TableSort.Number)
+            .Column("reallife_career_col_fit", 170f, TableSort.Number)
+            .Column("reallife_career_col_vacancies", 170f, TableSort.Number)
+            .Column("reallife_career_col_next", 420f, TableSort.Text, right: true)
+            .Filter("reallife_career_all_paths", Paths)
+            .Empty("reallife_career_empty_paths");
+
         /// <summary>Jobs: 0 post, 1 profession, 2 employer, 3 how it came, 4 pay, 5 days worked, 6 closes, 7 fit, 8 state.</summary>
         public static readonly TableSpec Jobs = new TableSpec("Career", "Jobs")
             .Column("reallife_career_col_post", 330f, TableSort.Text, flexible: true)

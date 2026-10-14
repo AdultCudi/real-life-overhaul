@@ -14,6 +14,8 @@ namespace RealLifeOverhaul.Careers
     /// The Career app, in the game's frame (GameUi.AppShell, copied from MyEmployees). Its tabs over the table on the right,
     /// and on the left the white box with the one thing picked:
     ///
+    ///   Professions    how offers come, and for each profession what the player still needs (a course and where it is
+    ///                  taught, more skill, a vacancy) and its ladder; the first step (CareerApp.Start.cs)
     ///   Jobs           the city's vacancies: its businesses (the rivals' among them), its tech companies, the public sector,
     ///                  the rivals' ads on the jobs board; what each pays and asks and how well the player fits; apply
     ///   Applications   every application: invited to an interview, an offer to take, ask more for or turn down
@@ -27,12 +29,12 @@ namespace RealLifeOverhaul.Careers
     /// </summary>
     public sealed partial class CareerApp
     {
-        public const string OpeningRow = "post:", ApplicationRow = "app:";
+        public const string OpeningRow = "post:", ApplicationRow = "app:", ProfessionRow = "prof:";
         private const string DayRow = "day:", SpellRow = "spell:", QualRow = "qual:";
         // The Guide's pages the tabs point to at their foot: finding a job, the working life, working for yourself.
         private const string JobsGuide = "reallife_meta_title_careers_jobs", LifeGuide = "reallife_meta_title_careers_life", OwnGuide = "reallife_meta_title_careers_own";
 
-        private static readonly string[] TabKeys = { "reallife_career_tab_jobs", "reallife_career_tab_applications", "reallife_career_tab_job", "reallife_career_tab_cv", "reallife_career_tab_own" };
+        private static readonly string[] TabKeys = { "reallife_career_tab_start", "reallife_career_tab_jobs", "reallife_career_tab_applications", "reallife_career_tab_job", "reallife_career_tab_cv", "reallife_career_tab_own" };
 
         private readonly CareersDirector _director;
         private readonly List<TableRow> _rows = new List<TableRow>(64);
@@ -96,7 +98,15 @@ namespace RealLifeOverhaul.Careers
                 _wantPick = null;
             }
             _ready = _director.WorkRunning;
+            if (_ready)
+            {
+                UiClone.Safe(_director.VacanciesNow);
+            }
             Refresh();
+            if (_ready)
+            {
+                UiClone.Safe(_director.FirstStepNotice);
+            }
         }
 
         public void Closed()
@@ -157,6 +167,7 @@ namespace RealLifeOverhaul.Careers
                     int day = SaveGameManager.Current.Day;
                     switch (_tab)
                     {
+                        case CareersDirector.TabStart: table = WriteStart(box, w, f, day); break;
                         case CareersDirector.TabApplications: table = WriteApplications(box, w, day); break;
                         case CareersDirector.TabJob: table = WriteJob(box, w, f, day); break;
                         case CareersDirector.TabCv: table = WriteCv(box, w, f, day); break;
@@ -246,6 +257,7 @@ namespace RealLifeOverhaul.Careers
             professions.Names.Clear();
             Opening picked = null;
             int id = PickedId(_picked, OpeningRow), open = 0;
+            Candidate template = _director.Template();
             for (int i = 0; i < w.Openings.Count; i++)
             {
                 Opening o = w.Openings[i];
@@ -256,7 +268,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 TableRow row = Row(OpeningRow + o.Id);
                 int points = ProRules.Points(f, p, o.Rank), need = ProRules.Need(f, p, o.Rank);
-                bool qualified = ProRules.Qualified(f, p, o.Rank), eligible = qualified && ProRules.Eligible(f, p, o.Rank);
+                bool qualified = ProRules.Qualified(f, p, o.Rank), eligible = qualified && _director.OpenToMe(o, template);
                 bool applied = w.Applied(o) != null;
                 row.Set(0, CareersText.Title(o.Prof, o.Rank));
                 row.Set(1, CareersText.ProName(o.Prof));
@@ -277,7 +289,7 @@ namespace RealLifeOverhaul.Careers
             }
             if (picked != null)
             {
-                WriteOpening(box, w, f, picked, day);
+                WriteOpening(box, w, f, picked, day, template);
                 return CareerColumns.Jobs;
             }
             _picked = null;
@@ -291,11 +303,15 @@ namespace RealLifeOverhaul.Careers
                 InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_career_button_register", () => Do(_director.Register));
             }
             box.Line(CareersText.T("reallife_career_jobs_about"));
+            if (open == 0)
+            {
+                box.Line(CareersText.T("reallife_career_jobs_none_open"));
+            }
             Meta.Guide.Point(box, JobsGuide);
             return CareerColumns.Jobs;
         }
 
-        private void WriteOpening(InfoBox box, WorkFile w, StudyFile f, Opening o, int day)
+        private void WriteOpening(InfoBox box, WorkFile w, StudyFile f, Opening o, int day, Candidate template)
         {
             Profession p = o.Def;
             ProRank r = p.Rank(o.Rank);
@@ -329,6 +345,14 @@ namespace RealLifeOverhaul.Careers
             if (o.Via == (int)Via.Referral)
             {
                 box.Line(CareersText.T("reallife_career_post_referral"));
+            }
+            if (!applied && ProRules.Qualified(f, p, o.Rank) && o.Via != (int)Via.Headhunter)
+            {
+                Candidate c = _director.CandidateFor(o, template);
+                int chance = ProPath.OfferChance(ProRules.HireScore(c));
+                box.Line(chance > 0
+                    ? CareersText.T("reallife_career_post_chance", "chance", CareersText.Percent(chance))
+                    : CareersText.T("reallife_career_post_no_chance", "points", ProPath.PointsShort(c).ToString()));
             }
             Transform buttons = box.ButtonRow();
             int id = o.Id;
