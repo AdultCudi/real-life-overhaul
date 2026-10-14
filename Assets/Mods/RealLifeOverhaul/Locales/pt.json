@@ -17495,6 +17495,8 @@
   "reallife_meta_settings_button": "Abrir as configurações do mod no celular",
   "reallife_changes_011_0_title": "0.11.0",
   "reallife_changes_011_0": "As opções do mod estão num app do celular, Config. do mod: uma aba para cada grupo, cada opção com o seu valor atual, uma chave, uma escolha ou um número para mudá-la no quadro ao lado da lista, o que uma opção requer com um botão que o liga, uma busca em todos os grupos, e o preset em uso ou as opções que diferem dele. Ele muda as mesmas escolhas da aba Mods, que tem um botão que o abre. Corrigido: a caixa de educação do Persona cresce para caber todos os cursos, e a coluna da esquerda rola até o último. Os títulos dos grupos não têm marca de situação.",
+  "reallife_changes_011_1_title": "0.11.1",
+  "reallife_changes_011_1": "Corrigido: as empresas e instituições do mod não têm mais a placa de aluguel do jogo do lado de fora. A sede de cada empresa de tecnologia tem sua própria placa e logotipo nas cores da empresa, acesos à noite como as placas do jogo. Serviços Públicos, o tribunal e a universidade mantêm suas placas como sua única placa, e as delegacias e os hotéis mantêm as suas. Corrigido: as linhas Prédios para alugar do mapa da cidade, como Escritório, e Prédios à venda não listam mais os prédios do mod, então mostram só os lugares que você pode alugar ou comprar.",
   "reallife_meta_title_office_space": "Lojas vazias como escritórios",
   "reallife_opt_sec_offices": "Espaço de escritórios",
   "reallife_offices_enabled": "Lojas vazias como escritórios",

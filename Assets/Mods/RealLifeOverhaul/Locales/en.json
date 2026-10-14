@@ -17495,6 +17495,8 @@
   "reallife_meta_settings_button": "Open the mod's settings on your phone",
   "reallife_changes_011_0_title": "0.11.0",
   "reallife_changes_011_0": "The mod's options are in an app on your phone, Mod settings: a tab for each group, every option with its value now, a switch, a choice or a number to change it in the box beside the list, what an option needs with a button that switches that on, a search across every group, and the preset in use or the options that differ from it. It changes the same choices as the Mods tab, which has a button that opens it. Fixed: Persona's education box grows to hold every course, and the left column scrolls to the last one. Group headings have no status mark.",
+  "reallife_changes_011_1_title": "0.11.1",
+  "reallife_changes_011_1": "Fixed: the mod's companies and institutions no longer have the game's For rent sign outside. Each tech company's headquarters has its own sign and logo in the company's colours, lit after dark like the game's signs. City Utilities, the courthouse and the university keep their boards as their one sign, and police stations and hotels keep their own. Fixed: the city map's Buildings for rent rows, such as Office, and Buildings for sale no longer list the mod's buildings, so they show only places you can rent or buy.",
   "reallife_meta_title_office_space": "Empty shops as offices",
   "reallife_opt_sec_offices": "Office space",
   "reallife_offices_enabled": "Empty shops as offices",

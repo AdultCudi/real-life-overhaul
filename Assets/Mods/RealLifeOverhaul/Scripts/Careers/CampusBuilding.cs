@@ -156,6 +156,7 @@ namespace RealLifeOverhaul.Careers
                 {
                     // Its own name wherever the game names the building (Core/SpecialBuildings).
                     SpecialBuildings.Set("campus", picked, SpecialKind.Campus, "reallife_study_campus_university", "reallife_campus_card_type", () => CareersDirector.UniversityOpen);
+                    SpecialBuildings.Boarded("campus", placed);   // its board is its one sign; without one the game's sign carries the name (Core/FrontSigns)
                 }
                 _logger?.Info("Careers: the university is " + Name + " (" + picked.building.totalSqm + " sqm, " + picked.building.BuildingType + ", size " + picked.building.BuildingSize
                               + " version " + picked.building.BuildingVersion + "), a building with no business in it; " + (placed ? "sign up." : Usable ? "no room for the sign: at the door." : "no pavement at its door: online only."));

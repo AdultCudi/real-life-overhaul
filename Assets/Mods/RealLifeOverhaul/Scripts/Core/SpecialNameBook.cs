@@ -29,6 +29,7 @@ namespace RealLifeOverhaul
         public string TypeKey;     // the locale key of what it is, for the line under the name on the game's card; may be null
         public Func<bool> Shown;   // the feature's own option; null for always
         public bool Literal;       // NameKey is the name itself (a company's proper name), never looked up
+        public bool Board;         // its feature stood a board of its own at the door: that is its one sign (Core/FrontSigns)
 
         internal string Name;      // NameKey in the language of the moment, made the first time it is asked for
     }
@@ -229,6 +230,38 @@ namespace RealLifeOverhaul
         public bool Refuses(string street, int number, bool rented, bool owned)
         {
             return !rented && !owned && At(street, number) != null;
+        }
+
+        /// <summary>
+        /// The same for an entry already in hand (the fronts, looked at once a second, and the city map's look at every
+        /// building): no address to file, nothing made.
+        /// </summary>
+        public static bool RefusesEntry(SpecialEntry entry, bool rented, bool owned)
+        {
+            return entry != null && !rented && !owned && (entry.Shown == null || entry.Shown());
+        }
+
+        /// <summary>Marks whether the id's feature stood a board of its own at its building's door. False if the id holds none.</summary>
+        public bool Boarded(string id, bool board)
+        {
+            SpecialEntry entry = Of(id);
+            if (entry == null || entry.Board == board)
+            {
+                return entry != null;
+            }
+            entry.Board = board;
+            Stamp++;
+            return true;
+        }
+
+        /// <summary>Every entry, shown or not, into a list the caller keeps (cleared first).</summary>
+        public void All(List<SpecialEntry> into)
+        {
+            into.Clear();
+            foreach (SpecialEntry entry in _byId.Values)
+            {
+                into.Add(entry);
+            }
         }
 
         /// <summary>Every entry whose feature shows it just now, into a list the caller keeps (cleared first).</summary>

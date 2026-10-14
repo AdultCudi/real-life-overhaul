@@ -23,8 +23,9 @@ namespace RealLifeOverhaul
     ///                     are kept out of sight; NotForSaleBox stands instead, with the game's "not for sale" and one
     ///                     line more, "Taken by" and the feature's name (<see cref="ClaimedPresentation"/>);
     ///   real estate       the Market Insider's list of a district leaves the building out (<see cref="ClaimedRealEstate"/>);
-    ///   the city map      the game's rows of units to let and buildings for sale do not light it (SpecialBuildings.Unlist,
-    ///                     when MapPlaces sees the game's look at the buildings end).
+    ///   the city map      the game's rows of units to let and buildings for sale do not light it (ClaimedMap, building by
+    ///                     building as the game looks at each; SpecialBuildings.Unlist when the look ends, behind it);
+    ///   the front         no "For rent" on the building's own signs, and its own sign where it has none (FrontSigns).
     /// What the player already rents or owns is never refused (SpecialNameBook.Refuses): the feature has moved off it.
     /// Nothing is written into the save and nothing is sent in a Going Public session: every machine has the same
     /// claims, so each refuses the same buildings for its own player.
