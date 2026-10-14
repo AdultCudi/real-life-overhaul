@@ -151,6 +151,9 @@ namespace RealLifeOverhaul.Careers
 
         private bool InClass(int course) => _sitting != null && _sitting.Kind == SittingKind.Class && _sitting.Of == course;
 
+        /// <summary>The course whose class the player is sitting now, -1 for none: what <see cref="StudyRules.Held"/> and <see cref="StudyRules.NextClass(Enrolment, int, int, int)"/> take.</summary>
+        internal int SittingClass => _sitting != null && _sitting.Kind == SittingKind.Class ? _sitting.Of : -1;
+
         private void StudyDay(int day)
         {
             int last = _study.LastDay;
@@ -307,7 +310,7 @@ namespace RealLifeOverhaul.Careers
             {
                 StudyRules.Advance(e, day);   // (a certificate with nothing to study: never)
             }
-            int next = StudyRules.Next(c, mode, e.SettledDay >= day ? day + 1 : day);
+            int next = StudyRules.NextClass(e, day, CareersGame.MinuteOfDay, -1) / (24 * 60);
             Tell(NotificationType.Success, c.Timetabled ? "reallife_study_note_enrolled" : "reallife_study_note_enrolled_home",
                 Data("course", name, "day", next > 0 ? CareersText.Day(next) : "-", "hour", CareersText.Hour(StudyRules.Hour(c, mode))), TabStudying, CampusApp.CourseRow + c.Id);
             Logger?.Info("Careers: enrolled on " + c.Key + " (" + mode + ") on day " + day + ", grant " + e.Grant + " thousandths, " + (e.OnLoan ? "on the loan" : "paid") + " " + due + ".");

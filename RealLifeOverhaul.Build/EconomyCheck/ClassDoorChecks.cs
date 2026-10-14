@@ -132,7 +132,7 @@ internal static partial class Program
         // ---------------------------------------------------------------- rows, nothing begun
         var rows = new List<EducationRow>(64);
         var fresh = new StudyFile();
-        int listed = EducationRules.Rows(fresh, c => true, false, 10, rows);
+        int listed = EducationRules.Rows(fresh, c => true, false, 10, 0, -1, rows);
         bool everyOnce = listed == StudyCatalogue.All.Length && rows.Count == StudyCatalogue.All.Length + 7;
         var count = new int[StudyCatalogue.IdsMost];
         int lastGroup = -1;
@@ -163,12 +163,12 @@ internal static partial class Program
         Check(headed && ordered, "education box: the groups come in their order, each heading counting the courses under it");
         Check(!rows[1].Heading && rows[1].Course == StudyCatalogue.ComputerScience && rows[0].Group == EducationGroup.Degree,
             "education box: nothing begun, a group keeps the catalogue's order (computer science first)");
-        listed = EducationRules.Rows(fresh, c => c.Kind == CourseKind.Short || c.Kind == CourseKind.Vocational, false, 10, rows);
+        listed = EducationRules.Rows(fresh, c => c.Kind == CourseKind.Short || c.Kind == CourseKind.Vocational, false, 10, 0, -1, rows);
         Check(listed == 18 && rows.Count == 18 + 3 && rows[0].Group == EducationGroup.Short,
             "education box: the university switched off, only the school's courses and the two online ones are listed, with no empty group");
-        listed = EducationRules.Rows(fresh, c => true, true, 10, rows);
+        listed = EducationRules.Rows(fresh, c => true, true, 10, 0, -1, rows);
         Check(listed == 0 && rows.Count == 0, "education box: a box that cannot scroll, nothing begun: nothing more than the game's own");
-        listed = EducationRules.Rows(null, c => true, false, 10, rows);
+        listed = EducationRules.Rows(null, c => true, false, 10, 0, -1, rows);
         Check(listed == StudyCatalogue.All.Length, "education box: no study file yet: every course not started");
 
         // ---------------------------------------------------------------- standings
@@ -176,25 +176,25 @@ internal static partial class Program
         CourseDef cyber = StudyCatalogue.Find(StudyCatalogue.Cybersecurity);
         var studying = new Enrolment { Course = cyber.Id, Mode = (int)StudyMode.FullTime, Start = 1, Seen = 6, Done = 5, SettledDay = 10, Stage = (int)EnrolStage.Studying };
         f.Courses.Add(studying);
-        EducationStatus s = EducationRules.Status(f, cyber, 10);
+        EducationStatus s = EducationRules.Status(f, cyber, 10, 0, -1);
         Check(s.State == EducationState.Studying && s.Done == 5 && s.Of == cyber.Sessions && s.NextDay == StudyRules.Next(cyber, StudyMode.FullTime, 11)
               && s.NextHour == cyber.Hour && EducationRules.StatusKey(s) == "reallife_persona_edu_classes_next",
             "education box: under way, the classes attended of the timetable's and the next one, as the Campus app gives it");
         studying.FeeLate = true;
-        s = EducationRules.Status(f, cyber, 10);
+        s = EducationRules.Status(f, cyber, 10, 0, -1);
         Check(s.State == EducationState.FeeOwed && EducationRules.StatusKey(s) == "reallife_persona_edu_fee", "education box: an instalment owed is said");
         studying.FeeLate = false;
         studying.Stage = (int)EnrolStage.Exam;
         studying.ExamTo = 30;
-        s = EducationRules.Status(f, cyber, 25);
+        s = EducationRules.Status(f, cyber, 25, 0, -1);
         Check(s.State == EducationState.Exam && s.Day == 30 && EducationRules.StatusKey(s) == "reallife_persona_edu_exam", "education box: the exam to sit, by the window's last day");
         studying.Stage = (int)EnrolStage.Retake;
         studying.ExamTo = 44;
-        s = EducationRules.Status(f, cyber, 40);
+        s = EducationRules.Status(f, cyber, 40, 0, -1);
         Check(s.State == EducationState.Retake && s.Day == 44 && EducationRules.StatusKey(s) == "reallife_persona_edu_retake", "education box: a retake to sit");
         CourseDef cloud = StudyCatalogue.Find(StudyCatalogue.CloudAssociate);
         f.Courses.Add(new Enrolment { Course = cloud.Id, Start = 1, Homework = 2, Stage = (int)EnrolStage.Studying });
-        s = EducationRules.Status(f, cloud, 10);
+        s = EducationRules.Status(f, cloud, 10, 0, -1);
         Check(s.State == EducationState.Studying && s.Homework && s.Done == 2 && s.Of == cloud.Homework && s.NextDay == 0 && EducationRules.StatusKey(s) == "reallife_persona_edu_homework",
             "education box: a certificate under way counts its homework, with no class");
         CourseDef law = StudyCatalogue.Find(StudyCatalogue.Law);
@@ -202,41 +202,41 @@ internal static partial class Program
         f.Results.Add(new Enrolment { Course = law.Id, Stage = (int)EnrolStage.Passed, Grade = 2 });
         f.Results.Add(new Enrolment { Course = law.Id, Stage = (int)EnrolStage.Passed, Grade = 3 });
         f.Results.Add(new Enrolment { Course = law.Id, Stage = (int)EnrolStage.Withdrawn });
-        s = EducationRules.Status(f, law, 50);
+        s = EducationRules.Status(f, law, 50, 0, -1);
         Check(s.State == EducationState.Passed && s.Grade == 3 && EducationRules.StatusKey(s) == "reallife_persona_edu_passed", "education box: passed, with its best grade, whatever came after");
         CourseDef aid = StudyCatalogue.Find(StudyCatalogue.FirstAid);
         f.Results.Add(new Enrolment { Course = aid.Id, Stage = (int)EnrolStage.Withdrawn });
         f.Results.Add(new Enrolment { Course = aid.Id, Stage = (int)EnrolStage.Failed, Score = 42 });
-        s = EducationRules.Status(f, aid, 50);
+        s = EducationRules.Status(f, aid, 50, 0, -1);
         Check(s.State == EducationState.Failed && s.Score == 42 && EducationRules.StatusKey(s) == "reallife_persona_edu_failed", "education box: never passed, the latest result: failed with its mark");
         CourseDef bar = StudyCatalogue.Find(StudyCatalogue.Bartending);
         f.Results.Add(new Enrolment { Course = bar.Id, Stage = (int)EnrolStage.Barred });
         CourseDef fork = StudyCatalogue.Find(StudyCatalogue.Forklift);
         f.Results.Add(new Enrolment { Course = fork.Id, Stage = (int)EnrolStage.Withdrawn });
-        Check(EducationRules.StatusKey(EducationRules.Status(f, bar, 50)) == "reallife_study_stage_barred" && EducationRules.StatusKey(EducationRules.Status(f, fork, 50)) == "reallife_study_stage_withdrawn",
+        Check(EducationRules.StatusKey(EducationRules.Status(f, bar, 50, 0, -1)) == "reallife_study_stage_barred" && EducationRules.StatusKey(EducationRules.Status(f, fork, 50, 0, -1)) == "reallife_study_stage_withdrawn",
             "education box: barred from the exam and withdrawn are said in the Campus app's words");
         CourseDef barista = StudyCatalogue.Find(StudyCatalogue.Barista);
-        Check(EducationRules.StatusKey(EducationRules.Status(f, barista, 50)) == "persona_education_not_started", "education box: not started, in the game's own words");
+        Check(EducationRules.StatusKey(EducationRules.Status(f, barista, 50, 0, -1)) == "persona_education_not_started", "education box: not started, in the game's own words");
         f.Courses.Add(new Enrolment { Course = StudyCatalogue.Business, Start = 1, Stage = (int)EnrolStage.Studying, SettledDay = 50 });
-        s = EducationRules.Status(f, StudyCatalogue.Find(StudyCatalogue.Business), 50);
+        s = EducationRules.Status(f, StudyCatalogue.Find(StudyCatalogue.Business), 50, 0, -1);
         Check(s.NextDay > 50, "education box: today's class settled, the next is on a later day");
 
         // ---------------------------------------------------------------- order within a group: begun first
-        listed = EducationRules.Rows(f, c => true, false, 50, rows);
+        listed = EducationRules.Rows(f, c => true, false, 50, 0, -1, rows);
         int lawAt = IndexOf(rows, law.Id), cyberAt = IndexOf(rows, cyber.Id), businessAt = IndexOf(rows, StudyCatalogue.Business), csAt = IndexOf(rows, StudyCatalogue.ComputerScience);
         Check(cyberAt == 1 && businessAt == 2 && lawAt == 3 && csAt > lawAt, "education box: in a group the courses under way first (catalogue order), then those passed, then the rest");
         int aidAt = IndexOf(rows, aid.Id), barAt = IndexOf(rows, bar.Id), forkAt = IndexOf(rows, fork.Id), baristaAt = IndexOf(rows, barista.Id);
         Check(aidAt < barAt && barAt < forkAt && forkAt < baristaAt && rows[aidAt - 1].Heading, "education box: failed, barred and withdrawn before those not started, in the catalogue's order");
         Check(listed == StudyCatalogue.All.Length, "education box: begun or not, every course once");
         var again = new List<EducationRow>(64);
-        EducationRules.Rows(f, c => true, false, 50, again);
+        EducationRules.Rows(f, c => true, false, 50, 0, -1, again);
         bool sameRows = again.Count == rows.Count;
         for (int i = 0; sameRows && i < rows.Count; i++)
         {
             sameRows = again[i].Heading == rows[i].Heading && again[i].Course == rows[i].Course && again[i].Status.State == rows[i].Status.State;
         }
         Check(sameRows, "education box: the same rows every time for the same studies");
-        listed = EducationRules.Rows(f, c => false, true, 50, rows);
+        listed = EducationRules.Rows(f, c => false, true, 50, 0, -1, rows);
         bool begunOnly = listed == 7;
         for (int i = 0; i < rows.Count; i++)
         {

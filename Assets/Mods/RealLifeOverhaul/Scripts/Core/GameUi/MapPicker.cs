@@ -566,9 +566,9 @@ namespace RealLifeOverhaul.GameUi
             _rows.Clear();
             for (int i = 0; i < _marks.Count; i++)
             {
-                if (_marks[i].Poi != null && !GameManager.isCitySceneBeingUnloaded)
+                if (!ReferenceEquals(_marks[i].Poi, null) && !GameManager.isCitySceneBeingUnloaded)
                 {
-                    UnityEngine.Object.Destroy(_marks[i].Poi.gameObject);   // (the game takes it out of its list of markers)
+                    MapPlaces.Drop(_marks[i].Poi);   // out of the game's list of markers first, then destroyed (Core/MapPlaces)
                 }
             }
             _marks.Clear();

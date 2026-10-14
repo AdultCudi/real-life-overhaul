@@ -349,8 +349,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 if (AtTheSchool(e, false) && e.Stage == (int)EnrolStage.Studying && c.Timetabled)
                 {
-                    StudyMode mode = (StudyMode)e.Mode;
-                    int at = StudyRules.NextClass(c, mode, Save.Day, CareersGame.MinuteOfDay, Math.Max(e.Start, e.SettledDay + 1));
+                    int at = StudyRules.NextClass(e, Save.Day, CareersGame.MinuteOfDay, SittingClass);
                     if (at >= 0 && at < nextAt)
                     {
                         nextAt = at;

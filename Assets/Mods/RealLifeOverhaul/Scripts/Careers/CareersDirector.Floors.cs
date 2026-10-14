@@ -187,7 +187,6 @@ namespace RealLifeOverhaul.Careers
                 return offer;
             }
             CourseDef c = e.Def;
-            StudyMode mode = (StudyMode)e.Mode;
             string classWhy = CanAttend(e, out int minutes);
             if (classWhy == null)
             {
@@ -209,7 +208,7 @@ namespace RealLifeOverhaul.Careers
                 return offer;
             }
             offer.Can = false;
-            int at = e.Stage == (int)EnrolStage.Studying && c.Timetabled ? StudyRules.NextClass(c, mode, Save.Day, CareersGame.MinuteOfDay, Math.Max(e.Start, e.SettledDay + 1)) : -1;
+            int at = StudyRules.NextClass(e, Save.Day, CareersGame.MinuteOfDay, SittingClass);
             if (at >= 0)
             {
                 offer.Key = "reallife_study_desk_next";
@@ -245,7 +244,7 @@ namespace RealLifeOverhaul.Careers
                 if (!can && e.Stage == (int)EnrolStage.Studying && c.Timetabled && !e.FeeLate)
                 {
                     int now = Save.Day * 24 * 60 + CareersGame.MinuteOfDay;
-                    int at = StudyRules.NextClass(c, (StudyMode)e.Mode, Save.Day, CareersGame.MinuteOfDay, Math.Max(e.Start, e.SettledDay + 1));
+                    int at = StudyRules.NextClass(e, Save.Day, CareersGame.MinuteOfDay, SittingClass);
                     soon = at >= 0 ? at - now : -1;
                 }
             }

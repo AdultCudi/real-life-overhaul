@@ -409,7 +409,7 @@ namespace RealLifeOverhaul.Careers
         {
             Enrolment picked = null;
             int id = PickedId(_picked, CourseRow);
-            int minute = CareersGame.MinuteOfDay;
+            int minute = CareersGame.MinuteOfDay, sitting = _director.SittingClass;
             for (int i = 0; i < f.Courses.Count; i++)
             {
                 Enrolment e = f.Courses[i];
@@ -422,8 +422,8 @@ namespace RealLifeOverhaul.Careers
                 TableRow row = Row(CourseRow + c.Id);
                 row.Set(0, CareersText.Course(c.Id));
                 row.Set(1, CareersText.Mode(mode));
-                int next = e.Stage == (int)EnrolStage.Studying && c.Timetabled ? StudyRules.Next(c, mode, e.SettledDay >= day ? day + 1 : day) : -1;
-                row.Set(2, next > 0 ? CareersText.T("reallife_campus_row_next", "day", CareersText.Day(next), "hour", CareersText.Hour(StudyRules.Hour(c, mode))) : "-", next);
+                int next = StudyRules.NextClass(e, day, minute, sitting);
+                row.Set(2, next >= 0 ? CareersText.T("reallife_campus_row_next", "day", CareersText.Day(next / (24 * 60)), "hour", CareersText.Hour(next % (24 * 60) / 60)) : "-", next);
                 row.Set(3, c.Timetabled ? CareersText.T("reallife_campus_row_of", "done", e.Done.ToString(), "of", c.Sessions.ToString()) : "-", StudyRules.Attendance(e),
                     StudyRules.Attendance(e) < StudyCatalogue.Barred + 150 && e.Seen > 2 ? TableRow.Yellow : TableRow.Plain);
                 row.Set(4, CareersText.T("reallife_campus_row_of", "done", e.Homework.ToString(), "of", c.Homework.ToString()), e.Homework);
@@ -495,9 +495,15 @@ namespace RealLifeOverhaul.Careers
             {
                 box.Line(room);
             }
+            int minute = CareersGame.MinuteOfDay, sitting = _director.SittingClass;
+            int next = StudyRules.NextClass(e, day, minute, sitting);
+            if (next >= 0 && attend != null)
+            {
+                box.Line(CareersText.Fill("reallife_campus_on_next", "day", CareersText.Day(next / (24 * 60)), "hour", CareersText.Hour(next % (24 * 60) / 60)));
+            }
             if (c.Timetabled)
             {
-                box.Line(CareersText.Fill("reallife_campus_on_classes", "done", e.Done.ToString(), "seen", e.Seen.ToString(), "of", c.Sessions.ToString(), "share", CareersText.Mille(StudyRules.Attendance(e)),
+                box.Line(CareersText.Fill("reallife_campus_on_classes", "done", e.Done.ToString(), "seen", StudyRules.Held(e, day, minute, sitting).ToString(), "of", c.Sessions.ToString(), "share", CareersText.Mille(StudyRules.Attendance(e)),
                     "timetable", CareersText.Timetable(StudyRules.Days(c, mode), StudyRules.Hour(c, mode))));
             }
             box.Line(CareersText.Fill("reallife_campus_on_homework", "done", e.Homework.ToString(), "set", StudyRules.HomeworkSet(e).ToString(), "of", c.Homework.ToString()));
