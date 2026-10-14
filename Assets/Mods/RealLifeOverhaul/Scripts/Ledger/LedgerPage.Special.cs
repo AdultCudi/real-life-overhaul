@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Ledger
         /// </summary>
         public bool ShowSpecial(LedgerSpecial special, Action closed)
         {
-            if (_app == null || !_app.Installed || special == null || _shell == null)
+            if (_app == null || !_app.Installed || special == null || !_app.Ready() || _shell == null)   // (Ready: the page is built when it is first opened)
             {
                 return false;
             }
