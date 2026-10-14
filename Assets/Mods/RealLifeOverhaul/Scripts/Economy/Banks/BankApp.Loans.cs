@@ -376,15 +376,11 @@ namespace RealLifeOverhaul.Economy
         // The card's own movements over the last month: what was paid into it from cash and what was drawn on it.
         private void CardMovements(string name, int today)
         {
-            _flow.Read(CashFlow.Month, today);
+            _cardName = name;
+            _flow.Read(CashFlow.Month, today, _ofCard);   // (only the card's own are listed: the pass over the history is the same)
             for (int i = _flow.Entries.Count - 1; i >= 0; i--)
             {
-                CashFlow.Entry entry = _flow.Entries[i];
-                string value;
-                if (entry.Data == null || !entry.Data.TryGetValue("name", out value) || !string.Equals(value, name, System.StringComparison.Ordinal))
-                {
-                    continue;
-                }
+                CashEntry entry = _flow.Entries[i];
                 TableRow row = Row("card:" + i);
                 row.Set(0, FinanceText.Day(entry.Day), entry.Day);
                 row.Set(1, CashFlow.ItemName(entry.Type, entry.Data));
