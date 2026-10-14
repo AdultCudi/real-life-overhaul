@@ -72,6 +72,9 @@ namespace RealLifeOverhaul.Economy.Brands
 
         private readonly List<BrandShop> _shops = new List<BrandShop>(16);
         private readonly List<BrandShop> _pool = new List<BrandShop>(16);
+        private readonly ListIndex<BrandShop, string> _places = new ListIndex<BrandShop, string>(PlaceOf, StringComparer.Ordinal);   // a shop of _shops by its place
+        private readonly ListIndex<BrandShop, BuildingRegistration> _regs = new ListIndex<BrandShop, BuildingRegistration>(RegOf, ReferenceComparer<BuildingRegistration>.Instance);
+        private int _read;   // the reads of _shops so far: an index made before the last one is made again
         private readonly List<BrandAlert> _alerts = new List<BrandAlert>(16);
         private readonly List<string> _districts = new List<string>(16);
         private readonly List<BrandSite> _sites = new List<BrandSite>(12);
@@ -234,6 +237,7 @@ namespace RealLifeOverhaul.Economy.Brands
         private void Read(int day, out int left)
         {
             BrandsGame.ReadShops(_state, _shops, _pool, day, out left);
+            _read++;
             for (int i = 0; i < _shops.Count; i++)
             {
                 // (a place the player has made another kind of business of is no shop of its brand any more)
@@ -280,13 +284,21 @@ namespace RealLifeOverhaul.Economy.Brands
             _running = false;
             _holding = false;
             int put = 0;
-            for (int i = 0; !unloading && i < _shops.Count; i++)
+            CustomerDraw.Hold("the brands stood down");
+            try
             {
-                if (_shops[i].Applied)
+                for (int i = 0; !unloading && i < _shops.Count; i++)
                 {
-                    WriteFootfall(_shops[i], true, false);   // (nothing is running, so nothing is added: the figure is the game's own, with whatever else the mod has there)
-                    put++;
+                    if (_shops[i].Applied)
+                    {
+                        WriteFootfall(_shops[i], true, false);   // (nothing is running, so nothing is added: the figure is the game's own, with whatever else the mod has there)
+                        put++;
+                    }
                 }
+            }
+            finally
+            {
+                CustomerDraw.Release();
             }
             for (int i = 0; i < _shops.Count; i++)
             {
@@ -296,6 +308,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 _pool.Add(_shops[i]);
             }
             _shops.Clear();
+            _read++;
             _alerts.Clear();
             _sites.Clear();
             _sitesFor = 0;
@@ -696,7 +709,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 int before = BrandRules.Effective(b, m.District);
                 int scale = BrandsBridges.ScandalScale != null ? BrandsBridges.ScandalScale(place) : 1000;
                 int lost = BrandRules.Hit(b, m.District, kind, scale);
-                BrandShop shop = BrandsGame.ShopAt(_shops, place);
+                BrandShop shop = ShopAt(place);
                 if (scale != 1000)
                 {
                     Logger?.Info("Brands: the scandal at " + (shop != null ? shop.Name : place) + " spread at " + scale + " thousandths of its loss (Flare).");
@@ -747,24 +760,28 @@ namespace RealLifeOverhaul.Economy.Brands
         /// <summary>
         /// What a brand or a city chain adds to a business's footfall now, in per cent of customers: asked each time
         /// business pressure writes a business's figure (Wiring/BrandLinks). Nothing while this is not running, and
-        /// nothing while the figures are held at the game's own for a save. A walk over the player's businesses.
+        /// nothing while the figures are held at the game's own for a save. A look-up among the player's businesses as read
+        /// (Core/LookupRules ListIndex: asked on every figure of every business written).
         /// </summary>
         public static int FootfallOf(BuildingRegistration reg)
         {
             BrandsDirector d = Instance;
-            if (d == null || !d._running || d._holding || d._broken)
+            if (d == null || !d._running || d._holding || d._broken || reg == null)
             {
                 return 0;
             }
-            List<BrandShop> shops = d._shops;
-            for (int i = 0; i < shops.Count; i++)
-            {
-                if (ReferenceEquals(shops[i].Reg, reg))
-                {
-                    return shops[i].Asked;
-                }
-            }
-            return 0;
+            BrandShop shop = d._regs.First(d._shops, reg, d._read);
+            return shop != null ? shop.Asked : 0;
+        }
+
+        private static string PlaceOf(BrandShop shop)
+        {
+            return shop.Place;
+        }
+
+        private static BuildingRegistration RegOf(BrandShop shop)
+        {
+            return shop.Reg;
         }
 
         private void WriteFootfall(BrandShop shop, bool redraw, bool newDay)
@@ -784,17 +801,26 @@ namespace RealLifeOverhaul.Economy.Brands
             shop.Applied = applied;
         }
 
-        // Every shop where a brand adds something, or did: its figure is written. Returns how many.
+        // Every shop where a brand adds something, or did: its figure is written. Returns how many. One batch of footfall
+        // writes: a shop asked to be drawn again is drawn once, spread over the frames that follow (Core/CustomerDraw).
         private int WriteAll(bool redraw, bool newDay)
         {
             int written = 0;
-            for (int i = 0; i < _shops.Count; i++)
+            CustomerDraw.Hold("the brands' figures");
+            try
             {
-                if (_shops[i].Asked != 0 || _shops[i].Applied)
+                for (int i = 0; i < _shops.Count; i++)
                 {
-                    WriteFootfall(_shops[i], redraw, newDay);
-                    written++;
+                    if (_shops[i].Asked != 0 || _shops[i].Applied)
+                    {
+                        WriteFootfall(_shops[i], redraw, newDay);
+                        written++;
+                    }
                 }
+            }
+            finally
+            {
+                CustomerDraw.Release();
             }
             return written;
         }
@@ -802,12 +828,20 @@ namespace RealLifeOverhaul.Economy.Brands
         // The shops where what is asked for is not what was last written: their figures, now.
         private void Sync()
         {
-            for (int i = 0; i < _shops.Count; i++)
+            CustomerDraw.Hold("the brands' figures");
+            try
             {
-                if (_shops[i].Asked != _shops[i].Last)
+                for (int i = 0; i < _shops.Count; i++)
                 {
-                    WriteFootfall(_shops[i], true, false);
+                    if (_shops[i].Asked != _shops[i].Last)
+                    {
+                        WriteFootfall(_shops[i], true, false);
+                    }
                 }
+            }
+            finally
+            {
+                CustomerDraw.Release();
             }
         }
 
@@ -973,7 +1007,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 Taken t = _state.Taken[i];
                 if (t.Breach > 0)
                 {
-                    BrandShop shop = BrandsGame.ShopAt(_shops, t.Place);
+                    BrandShop shop = ShopAt(t.Place);
                     Alert(5, CompanyDirector.PlaceNumber(t.Place), day, BrandsText.T("reallife_brand_plan_chain_title", "chain", BrandsText.Chain(t.Chain), "business", shop != null ? shop.Name : "?"),
                         BrandsText.T("reallife_brand_plan_chain_what", "days", t.Breach.ToString(), "most", BrandCatalogue.ChainEndDays.ToString()), null, null);
                 }
@@ -995,9 +1029,10 @@ namespace RealLifeOverhaul.Economy.Brands
 
         // ---------------------------------------------------------------- for the app
 
+        /// <summary>The shop at a place, as a walk of today's shops finds it: a look-up (Core/LookupRules ListIndex), made again with each read of them (the hourly kept prices ask it of every kept shop's flagship).</summary>
         internal BrandShop ShopAt(string place)
         {
-            return BrandsGame.ShopAt(_shops, place);
+            return _places.First(_shops, place, _read);
         }
 
         internal string ShopName(string place)

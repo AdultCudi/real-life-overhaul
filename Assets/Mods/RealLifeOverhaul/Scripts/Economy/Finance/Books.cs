@@ -22,8 +22,13 @@ namespace RealLifeOverhaul.Economy
 
     /// <summary>
     /// The game's own figures that the economy reads: what leaves tomorrow, which businesses the player runs and what
-    /// each has made, what a building the player owns brings in. Nothing here is kept: every figure is read from the
-    /// save when it is asked for (when the app opens, once an hour before the day's run, once a day), never per frame.
+    /// each has made, what a building the player owns brings in. Every figure is read from the save when it is asked for
+    /// (when the app opens, once an hour before the day's run, once a day), never per frame. What is kept is only where to
+    /// find things (Core/LookupRules ListIndex): a business and a building by the key an account keeps, made again when
+    /// the save's lists change or the day turns; a business's statement in a day's statements, made again when that day's
+    /// list changes. The same answers as a walk of the save's lists (a business found by its key is the player's still,
+    /// or the walk is made), a look-up each: Flare and Standing ask for every business's yesterday and week, the credit
+    /// desk for every secured loan each hour.
     /// </summary>
     public static class Books
     {
@@ -31,8 +36,13 @@ namespace RealLifeOverhaul.Economy
         private const string Residential = "ba:buildingtype_residential";
         private const string RentFreeUntil = "tutorial_quest_get_some_sleep_objective_4";
         private const string Salaries = "ba:transactioncategory_salaryexpenses";
+        private const int StatementDaysKept = 64;   // days of statements whose look-ups are kept at once (more than any reader asks for; then they start afresh)
 
         private static readonly List<DebtLine> Debts = new List<DebtLine>(6);
+        private static readonly ListIndex<BuildingRegistration, string> BusinessKeys = new ListIndex<BuildingRegistration, string>(BusinessKey, StringComparer.Ordinal);
+        private static readonly ListIndex<RealEstate, string> EstateKeys = new ListIndex<RealEstate, string>(EstateKey, StringComparer.Ordinal);
+        private static readonly Dictionary<FinancialSummary, ListIndex<FinancialSummary.BusinessIncomeStatement, Address>> StatementsOf
+            = new Dictionary<FinancialSummary, ListIndex<FinancialSummary.BusinessIncomeStatement, Address>>(16, ReferenceComparer<FinancialSummary>.Instance);
 
         /// <summary>
         /// What leaves at the next day's end: the loans as the game's run takes them (LoanHelper.RunDaily), the mod's
@@ -86,10 +96,11 @@ namespace RealLifeOverhaul.Economy
                     o.Rent += r.RentPerDay;
                 }
             }
-            int yesterday = today - 1;
-            foreach (Transaction t in save.Transactions)
+            List<Transaction> paid = GameBooks.Day(today - 1);   // (the day's transactions, as the morning's readers share them)
+            for (int i = 0; i < paid.Count; i++)
             {
-                if (t != null && t.timestamp.Day == yesterday && t.transactionCategories != null && t.transactionCategories.Contains(Salaries))
+                Transaction t = paid[i];
+                if (t.transactionCategories != null && t.transactionCategories.Contains(Salaries))
                 {
                     o.Wages -= t.amount;
                 }
@@ -151,15 +162,11 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                for (int b = 0; b < day.businessIncomeStatements.Count; b++)
+                FinancialSummary.BusinessIncomeStatement statement = StatementOf(day, address);
+                if (statement != null)
                 {
-                    FinancialSummary.BusinessIncomeStatement statement = day.businessIncomeStatements[b];
-                    if (statement != null && statement.Address == address)
-                    {
-                        sum += statement.TotalProfit;
-                        onRecord++;
-                        break;
-                    }
+                    sum += statement.TotalProfit;
+                    onRecord++;
                 }
             }
             return onRecord > 0 ? sum / days : 0f;
@@ -181,15 +188,53 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                for (int b = 0; b < day.businessIncomeStatements.Count; b++)
+                FinancialSummary.BusinessIncomeStatement statement = StatementOf(day, address);
+                if (statement != null)
                 {
-                    if (day.businessIncomeStatements[b] != null && day.businessIncomeStatements[b].Address == address)
-                    {
-                        return Mathf.Max(0f, day.businessIncomeStatements[b].TotalSales);
-                    }
+                    return Mathf.Max(0f, statement.TotalSales);
                 }
             }
             return 0f;
+        }
+
+        /// <summary>
+        /// A business's statement in one day's statements: the first whose address is the business's (the game's own
+        /// test, Address ==), as a walk along them finds it; null if it has none. A look-up in that day's index; an address
+        /// that is the game's "no address" (which a statement with none matches) is walked for.
+        /// </summary>
+        public static FinancialSummary.BusinessIncomeStatement StatementOf(FinancialSummary day, Address address)
+        {
+            List<FinancialSummary.BusinessIncomeStatement> statements = day != null ? day.businessIncomeStatements : null;
+            if (statements == null || address == null)
+            {
+                return null;
+            }
+            if (string.IsNullOrEmpty(address.streetName) && address.streetNumber == 0)
+            {
+                for (int b = 0; b < statements.Count; b++)
+                {
+                    if (statements[b] != null && statements[b].Address == address)
+                    {
+                        return statements[b];
+                    }
+                }
+                return null;
+            }
+            if (!StatementsOf.TryGetValue(day, out ListIndex<FinancialSummary.BusinessIncomeStatement, Address> index))
+            {
+                if (StatementsOf.Count >= StatementDaysKept)
+                {
+                    StatementsOf.Clear();
+                }
+                index = new ListIndex<FinancialSummary.BusinessIncomeStatement, Address>(StatementKey);
+                StatementsOf.Add(day, index);
+            }
+            return index.First(statements, address, 0);
+        }
+
+        private static Address StatementKey(FinancialSummary.BusinessIncomeStatement statement)
+        {
+            return statement.Address;
         }
 
         /// <summary>A building the player owns, by the key a mortgage keeps; null if it is not owned (any more).</summary>
@@ -197,21 +242,28 @@ namespace RealLifeOverhaul.Economy
         {
             GameInstance save = SaveGameManager.Current;
             List<RealEstate> owned = save != null ? save.realEstate : null;
-            for (int i = 0; owned != null && i < owned.Count; i++)
-            {
-                if (owned[i] != null && owned[i].address != null && Key(owned[i].address) == key)
-                {
-                    return owned[i];
-                }
-            }
-            return null;
+            return owned != null && key != null ? EstateKeys.First(owned, key, save.Day) : null;
         }
 
-        /// <summary>A business of the player's by its key; null if they do not run it (any more).</summary>
+        private static string EstateKey(RealEstate owned)
+        {
+            return owned.address != null ? Key(owned.address) : null;
+        }
+
+        /// <summary>
+        /// A business of the player's by its key; null if they do not run it (any more). The first business rented by the
+        /// player under the key, if it is the player's own; otherwise (none listed, another player's, rented since the list
+        /// was made) the walk of the save's buildings, as it always was.
+        /// </summary>
         public static BuildingRegistration Business(string key)
         {
             GameInstance save = SaveGameManager.Current;
             List<BuildingRegistration> all = save != null ? save.BuildingRegistrations : null;
+            BuildingRegistration first = all != null && key != null ? BusinessKeys.First(all, key, save.Day) : null;
+            if (first != null && GoingPublic.Mine(first) && first.HasValidAddress)
+            {
+                return first;
+            }
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 if (all[i] != null && GoingPublic.Mine(all[i]) && all[i].HasValidAddress && Key(all[i].Address) == key)
@@ -220,6 +272,11 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             return null;
+        }
+
+        private static string BusinessKey(BuildingRegistration reg)
+        {
+            return reg.RentedByPlayer && reg.HasValidAddress ? Key(reg.Address) : null;
         }
 
         /// <summary>A vehicle of the player's by its id; null if they do not have it (any more).</summary>

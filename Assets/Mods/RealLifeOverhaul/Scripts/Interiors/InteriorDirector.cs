@@ -27,7 +27,11 @@ namespace RealLifeOverhaul.Interiors
     /// Saved: one line, each business's wear and when it was last in the news (<see cref="InteriorStore"/>).
     /// Cost: Update is one comparison a frame; once a second of real time it looks at the clock and the switches.
     /// The daily round is one walk over the player's businesses and their placed items (each kind of item sorted
-    /// once a session); the hourly basket one walk over the coming hour's customers of the shops it applies to.
+    /// once a session); its footfall writes are one batch (Core/CustomerDraw: a business drawn again once, spread over
+    /// the frames that follow, and not where its figure did not change). The hourly basket is one walk over the coming
+    /// hour's customers of the shops it applies to; a shop whose customers wait to be drawn again gets its basket (and an
+    /// office its clients) as they are drawn, within the hour. Every business is found again by its registration as read
+    /// that day, or by a dictionary of places: no search of the save's buildings.
     /// A fault is logged once, every footfall change of the feature's is put back, and it stays off for the session.
     /// </summary>
     public sealed class InteriorDirector : MonoBehaviour
@@ -41,6 +45,10 @@ namespace RealLifeOverhaul.Interiors
         private readonly List<InteriorShop> _shops = new List<InteriorShop>(16);
         private readonly List<InteriorShop> _pool = new List<InteriorShop>(16);
         private readonly Dictionary<BuildingRegistration, InteriorShop> _byReg = new Dictionary<BuildingRegistration, InteriorShop>(16);
+        private readonly Dictionary<string, InteriorShop> _byPlace = new Dictionary<string, InteriorShop>(16, StringComparer.Ordinal);   // the first shop at each place
+        private readonly Dictionary<BuildingRegistration, BasketDue> _baskets = new Dictionary<BuildingRegistration, BasketDue>(8);       // shops whose basket of the hour waits for their customers to be drawn again
+        private readonly Dictionary<BuildingRegistration, int> _officesDue = new Dictionary<BuildingRegistration, int>(4);               // offices whose clients of the coming hour wait so, by the hour they fell due in
+        private readonly List<BuildingRegistration> _dueScratch = new List<BuildingRegistration>(8);
         private InteriorStore _store;
         private float _nextSlow;
         private int _lastDay = -1, _lastHour = -1;
@@ -180,6 +188,52 @@ namespace RealLifeOverhaul.Interiors
                 _lastHour = hour;
                 Hourly();
             }
+            if (_baskets.Count > 0 || _officesDue.Count > 0)
+            {
+                Due(hour);
+            }
+        }
+
+        // What waited for a business's customers to be drawn again whose redraw was then not made (its figure written back
+        // to the one it was drawn with): given now, within the hour it fell due in, as it would have been.
+        private void Due(int hour)
+        {
+            _dueScratch.Clear();
+            foreach (KeyValuePair<BuildingRegistration, BasketDue> due in _baskets)
+            {
+                if (!CustomerDraw.Waits(due.Key))
+                {
+                    _dueScratch.Add(due.Key);
+                }
+            }
+            for (int i = 0; i < _dueScratch.Count; i++)
+            {
+                BasketDue due = _baskets[_dueScratch[i]];
+                _baskets.Remove(_dueScratch[i]);
+                if (due.Hour == hour && BasketOn)
+                {
+                    _basketToday += InteriorGame.Basket(_dueScratch[i], due.Share, due.Office, due.Hour, due.Soonest);
+                }
+            }
+            _dueScratch.Clear();
+            foreach (KeyValuePair<BuildingRegistration, int> due in _officesDue)
+            {
+                if (!CustomerDraw.Waits(due.Key))
+                {
+                    _dueScratch.Add(due.Key);
+                }
+            }
+            for (int i = 0; i < _dueScratch.Count; i++)
+            {
+                int dueHour = _officesDue[_dueScratch[i]];
+                _officesDue.Remove(_dueScratch[i]);
+                InteriorShop s = At(_dueScratch[i]);
+                if (dueHour == hour && s != null && s.OfficeBoost > 0)
+                {
+                    Book(_dueScratch[i], s);
+                }
+            }
+            _dueScratch.Clear();
         }
 
         // The options and the two other mods, as one number: a change of any is a change of what applies (each slider
@@ -249,7 +303,8 @@ namespace RealLifeOverhaul.Interiors
             _pool.AddRange(_shops);
             _shops.Clear();
             _byReg.Clear();
-            InteriorGame.Places(_regs);
+            _byPlace.Clear();
+            InteriorGame.Places(_regs);   // (kept after the round, in the order of the shops: _regs[i] is the business of _shops[i])
             InteriorParts parts = Parts;
             if (_store.RulesFrom == InteriorFile.Unset)
             {
@@ -302,26 +357,53 @@ namespace RealLifeOverhaul.Interiors
                 }
                 _shops.Add(s);
                 _byReg[reg] = s;
+                if (s.Place != null && !_byPlace.ContainsKey(s.Place))
+                {
+                    _byPlace.Add(s.Place, s);
+                }
             }
             _bestOffice = bestOffice;
             int written = 0;
-            for (int i = 0; i < _regs.Count; i++)
+            CustomerDraw.Hold(_firstRound ? "the interiors' first round" : age ? "the interiors' day" : "the interiors' figures again");
+            try
             {
-                InteriorShop s = _byReg[_regs[i]];
-                int was;
-                before.TryGetValue(s.Place, out was);
-                // (the session's first round writes every shop: a figure an older version wrote into the save is put right at once)
-                if (s.Kind == InteriorKind.Shop && (_firstRound || s.Footfall != 0 || was != 0) && (age || s.Footfall != was) && Write(_regs[i], age))
+                for (int i = 0; i < _regs.Count; i++)
                 {
-                    written++;
+                    InteriorShop s = _byReg[_regs[i]];
+                    int was;
+                    before.TryGetValue(s.Place, out was);
+                    // (the session's first round writes every shop: a figure an older version wrote into the save is put right at once)
+                    if (s.Kind == InteriorKind.Shop && (_firstRound || s.Footfall != 0 || was != 0) && (age || s.Footfall != was) && Write(_regs[i], age))
+                    {
+                        written++;
+                    }
                 }
             }
-            _regs.Clear();
+            finally
+            {
+                CustomerDraw.Release();
+            }
             Logger?.Info("Interiors: day " + day + ", " + _shops.Count + " business(es) read, " + written + " footfall figure(s) written; the best office scores " + Math.Max(0, bestOffice) + ".");
         }
 
         private int _bestOffice = -1;
         private bool _firstRound;   // the session's first round: a business without a file was trading before the save was read
+
+        // A shop's basket of an hour that waits for its customers to be drawn again: what it was due with then.
+        private struct BasketDue
+        {
+            public int Share, Hour;
+            public float Soonest;
+            public bool Office;
+        }
+
+        // The business of a shop in today's list (as it was read: _regs[i] is _shops[i]'s), if it is still one of the
+        // player's that takes money: what BusinessGame.Find gives for the shop's place, without a search of the buildings.
+        private BuildingRegistration Business(int i)
+        {
+            BuildingRegistration reg = i >= 0 && i < _regs.Count ? _regs[i] : null;
+            return reg != null && BusinessGame.IsBusiness(reg) ? reg : null;
+        }
 
         private InteriorShop Take()
         {
@@ -382,7 +464,7 @@ namespace RealLifeOverhaul.Interiors
                 {
                     continue;
                 }
-                BuildingRegistration reg = BusinessGame.Find(s.Place);
+                BuildingRegistration reg = Business(i);
                 if (reg != null && Ask(() => InteriorBridges.Complain(reg)))
                 {
                     Logger?.Info("Interiors: a complaint about " + s.Name + ": " + s.Overall + " against the district's standard of " + s.Standard + ".");
@@ -429,33 +511,56 @@ namespace RealLifeOverhaul.Interiors
 
         private void Hourly()
         {
-            Selling();
-            Offices();
-            if (!BasketOn)
+            _baskets.Clear();   // (an hour's basket is of that hour: one that waited was given as its customers were drawn)
+            _officesDue.Clear();
+            CustomerDraw.Hold("the interiors' hour");
+            try
             {
-                return;
-            }
-            for (int i = 0; i < _shops.Count; i++)
-            {
-                InteriorShop s = _shops[i];
-                if (s.Basket <= 0)
+                Selling();
+                Offices();
+                if (!BasketOn)
                 {
-                    continue;
+                    return;
                 }
-                BuildingRegistration reg = BusinessGame.Find(s.Place);
-                _basketToday += reg != null ? InteriorGame.Basket(reg, s.Basket, s.Kind == InteriorKind.Office) : 0;
+                int hour = TimeHelper.CurrentHour;
+                float soonest = TimeHelper.CurrentMinute + InteriorGame.BasketLead;
+                for (int i = 0; i < _shops.Count; i++)
+                {
+                    InteriorShop s = _shops[i];
+                    if (s.Basket <= 0)
+                    {
+                        continue;
+                    }
+                    BuildingRegistration reg = Business(i);
+                    if (reg != null && CustomerDraw.Waits(reg))
+                    {
+                        // Its customers are about to be drawn again: the basket goes on the new ones as they are drawn (Redrawn).
+                        _baskets[reg] = new BasketDue { Share = s.Basket, Office = s.Kind == InteriorKind.Office, Hour = hour, Soonest = soonest };
+                        continue;
+                    }
+                    _basketToday += reg != null ? InteriorGame.Basket(reg, s.Basket, s.Kind == InteriorKind.Office, hour, soonest) : 0;
+                }
+            }
+            finally
+            {
+                CustomerDraw.Release();
             }
         }
 
-        // Each office that takes clients is booked its extra ones for the coming hour.
+        // Each office that takes clients is booked its extra ones for the coming hour (one whose customers wait to be drawn
+        // again is booked as they are drawn: Redrawn; or, if that redraw is not made after all, a second later: Due).
         private void Offices()
         {
             for (int i = 0; i < _shops.Count; i++)
             {
                 if (_shops[i].OfficeBoost > 0)
                 {
-                    BuildingRegistration reg = BusinessGame.Find(_shops[i].Place);
-                    if (reg != null)
+                    BuildingRegistration reg = Business(i);
+                    if (reg != null && CustomerDraw.Waits(reg))
+                    {
+                        _officesDue[reg] = TimeHelper.CurrentHour;
+                    }
+                    else if (reg != null)
                     {
                         Book(reg, _shops[i]);
                     }
@@ -478,13 +583,27 @@ namespace RealLifeOverhaul.Interiors
             }
         }
 
-        // A business's customers to come were drawn again: an office's extra clients for the coming hour went with them, and are booked again.
+        // A business's customers to come were drawn again: an office's extra clients for the coming hour went with them, and
+        // are booked again; and a shop's basket of the hour that waited for the draw goes on the customers just drawn.
         private void Redrawn(BuildingRegistration reg)
         {
             InteriorShop s = At(reg);
-            if (s != null && s.OfficeBoost > 0 && !_broken)
+            if (s == null || _broken)
+            {
+                return;
+            }
+            _officesDue.Remove(reg);   // (booked now, as its customers are drawn)
+            if (s.OfficeBoost > 0)
             {
                 Book(reg, s);
+            }
+            if (_baskets.Count > 0 && _baskets.TryGetValue(reg, out BasketDue due))
+            {
+                _baskets.Remove(reg);
+                if (due.Hour == TimeHelper.CurrentHour && BasketOn)
+                {
+                    _basketToday += InteriorGame.Basket(reg, due.Share, due.Office, due.Hour, due.Soonest);
+                }
             }
         }
 
@@ -548,7 +667,7 @@ namespace RealLifeOverhaul.Interiors
             {
                 if (_shops[i].Footfall != 0)
                 {
-                    BuildingRegistration reg = BusinessGame.Find(_shops[i].Place);
+                    BuildingRegistration reg = Business(i);
                     if (reg != null)
                     {
                         had.Add(reg);
@@ -558,10 +677,22 @@ namespace RealLifeOverhaul.Interiors
             _pool.AddRange(_shops);
             _shops.Clear();
             _byReg.Clear();
+            _byPlace.Clear();
+            _regs.Clear();
+            _baskets.Clear();
+            _officesDue.Clear();
             _bestOffice = -1;
-            for (int i = 0; i < had.Count; i++)
+            CustomerDraw.Hold("the interiors stood down");
+            try
             {
-                Write(had[i], false);   // (FootfallOf answers nothing now)
+                for (int i = 0; i < had.Count; i++)
+                {
+                    Write(had[i], false);   // (FootfallOf answers nothing now)
+                }
+            }
+            finally
+            {
+                CustomerDraw.Release();
             }
             Logger?.Info("Interiors: stood down; " + had.Count + " footfall figure(s) written back without the feature's part.");
         }
@@ -609,22 +740,12 @@ namespace RealLifeOverhaul.Interiors
             return d != null && d.Running && reg != null && d._byReg.TryGetValue(reg, out s) ? s : null;
         }
 
-        /// <summary>A business's figures today by its place, or null.</summary>
+        /// <summary>A business's figures today by its place, or null. A dictionary look-up (Flare and Standing ask it of every business each day).</summary>
         public static InteriorShop At(string place)
         {
             InteriorDirector d = Instance;
-            if (d == null || !d.Running || string.IsNullOrEmpty(place))
-            {
-                return null;
-            }
-            for (int i = 0; i < d._shops.Count; i++)
-            {
-                if (string.Equals(d._shops[i].Place, place, StringComparison.Ordinal))
-                {
-                    return d._shops[i];
-                }
-            }
-            return null;
+            InteriorShop s;
+            return d != null && d.Running && !string.IsNullOrEmpty(place) && d._byPlace.TryGetValue(place, out s) ? s : null;
         }
 
         /// <summary>

@@ -113,6 +113,7 @@ namespace RealLifeOverhaul.Economy
 
         private static readonly List<CityBuilding> City = new List<CityBuilding>(512);
         private static readonly Dictionary<string, CityBuilding> ByPlace = new Dictionary<string, CityBuilding>(512);
+        private static readonly Dictionary<(string, int), CityBuilding> ByAddress = new Dictionary<(string, int), CityBuilding>(512);   // the same, by street and number: no place made to look one up
         private static readonly Dictionary<string, long> SqmSum = new Dictionary<string, long>(24);
         private static readonly Dictionary<string, int> SqmCount = new Dictionary<string, int>(24);
 
@@ -208,6 +209,7 @@ namespace RealLifeOverhaul.Economy
                 };
                 City.Add(c);
                 ByPlace[place] = c;
+                ByAddress[(b.StreetName, b.StreetNumber)] = c;   // (the same building by its street and number: a place is one street and number, and back)
                 long sum;
                 int count;
                 SqmSum.TryGetValue(c.District, out sum);
@@ -240,6 +242,13 @@ namespace RealLifeOverhaul.Economy
             return place != null && ByPlace.TryGetValue(place, out c) ? c : null;
         }
 
+        /// <summary>A building by its street and number: what <see cref="Find"/> gives for their place.</summary>
+        internal static CityBuilding FindAt(string street, int number)
+        {
+            CityBuilding c;
+            return ByAddress.TryGetValue((street ?? string.Empty, number), out c) ? c : null;
+        }
+
         private static int Income(string district)
         {
             return Mathf.RoundToInt(CityEconomy.DistrictIncome(district) * 10f);
@@ -257,8 +266,9 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// Every building's value is written where the game reads it (Building.customMarketPrice), and the game's
-        /// listings that are not the player's are priced by it. One pass over the city's buildings and one over
-        /// the listings. Returns how many buildings were written.
+        /// listings that are not the player's are priced by it. One pass over the city's buildings, writing only a value
+        /// that has changed, and one over the listings, each found by its street and number (no text made for it).
+        /// Returns how many buildings were looked at.
         /// </summary>
         public static int WriteValues(EstateState s, int index)
         {
@@ -267,7 +277,11 @@ namespace RealLifeOverhaul.Economy
                 CityBuilding c = City[i];
                 if (c.B != null)
                 {
-                    c.B.customMarketPrice = Mathf.Max(1, Value(c, s, index));
+                    float value = Mathf.Max(1, Value(c, s, index));
+                    if (c.B.customMarketPrice != value)
+                    {
+                        c.B.customMarketPrice = value;
+                    }
                 }
             }
             Reprice();
@@ -291,7 +305,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; listed != null && i < listed.Count; i++)
             {
                 BuildingForSale f = listed[i];
-                CityBuilding c = f != null && f.address != null ? Find(Place(f.address.streetName, f.address.streetNumber)) : null;
+                CityBuilding c = f != null && f.address != null ? FindAt(f.address.streetName, f.address.streetNumber) : null;
                 if (c != null && c.Holding == null && c.B != null)
                 {
                     f.buildingPrice = c.B.GetMarketValue();
@@ -312,6 +326,7 @@ namespace RealLifeOverhaul.Economy
             }
             City.Clear();
             ByPlace.Clear();
+            ByAddress.Clear();
             SqmSum.Clear();
             SqmCount.Clear();
             return put;

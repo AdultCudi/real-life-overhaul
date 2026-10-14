@@ -298,8 +298,15 @@ namespace RealLifeOverhaul.Economy
 
         // ---------------------------------------------------------------- starting and stopping
 
+        // The first second after a load runs the start and the Finance app's install in one call of the timer: each under a
+        // name of its own as well (counted once in the mod's total), so that the session record says which of them that
+        // second's frame went to.
+        private static readonly int HotStartUp = HotSpots.Slot("Economy: EconomyDirector.StartUp");
+        private static readonly int HotInstall = HotSpots.Slot("Economy: EconomyDirector.Install");
+
         private void StartUp()
         {
+            using var hotSpot = HotSpots.Time(HotStartUp);
             int today = Save.Day;
             CreditLedger.Clock = Today;
             CreditLedger.Income = Income;
@@ -448,6 +455,7 @@ namespace RealLifeOverhaul.Economy
 
         private void Install()
         {
+            using var hotSpot = HotSpots.Time(HotInstall);
             var view = new FinanceApp(this);
             GameSprites.Want(FinanceApp.AppGlyphs);
             bool tryAgain;
@@ -512,7 +520,15 @@ namespace RealLifeOverhaul.Economy
             {
                 Fault("the hour", e);
             }
-            Guard.Each(AfterHour);
+            CustomerDraw.Hold("the economy's hour");   // (the features' footfall writes of the hour: one batch, Core/CustomerDraw)
+            try
+            {
+                Guard.Each(AfterHour);
+            }
+            finally
+            {
+                CustomerDraw.Release();
+            }
         }
 
         private static readonly int HotOnDay = HotSpots.Slot("Economy: EconomyDirector.OnDay");
@@ -524,6 +540,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
+            CustomerDraw.Morning();   // the game has just drawn every business's customers: noted before any feature writes a figure (Core/CustomerDraw)
             try
             {
                 Settle(Save.Day);
@@ -532,7 +549,15 @@ namespace RealLifeOverhaul.Economy
             {
                 Fault("the day", e);
             }
-            Guard.Each(AfterDay);
+            CustomerDraw.Hold("the economy's day");   // (every feature's footfall writes of the morning: one batch, each business drawn again once)
+            try
+            {
+                Guard.Each(AfterDay);
+            }
+            finally
+            {
+                CustomerDraw.Release();
+            }
             try
             {
                 // The game built yesterday's statement before the mod's day: the costs booked for it since are put into it.

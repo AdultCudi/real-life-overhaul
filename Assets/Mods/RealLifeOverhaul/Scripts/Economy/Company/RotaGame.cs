@@ -201,6 +201,16 @@ namespace RealLifeOverhaul.Economy
                 Week(reg, out place.OpenHours, out place.GapHours);
                 into.Add(place);
             }
+            // Each employee is counted at the first place with their street and number: a look-up each, not a walk of the places.
+            PlaceAt.Clear();
+            for (int k = 0; k < into.Count; k++)
+            {
+                (string, int) key = (into[k].Reg.StreetName, into[k].Reg.StreetNumber);
+                if (!PlaceAt.ContainsKey(key))
+                {
+                    PlaceAt.Add(key, into[k]);
+                }
+            }
             List<EmployeeInstance> staff = save != null ? save.EmployeeInstances : null;
             for (int i = 0; staff != null && i < staff.Count; i++)
             {
@@ -209,16 +219,15 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                for (int k = 0; k < into.Count; k++)
+                if (PlaceAt.TryGetValue((e.assignedAddress.streetName, e.assignedAddress.streetNumber), out RotaPlace place))
                 {
-                    if (into[k].Reg.StreetNumber == e.assignedAddress.streetNumber && into[k].Reg.StreetName == e.assignedAddress.streetName)
-                    {
-                        into[k].Staff++;
-                        break;
-                    }
+                    place.Staff++;
                 }
             }
+            PlaceAt.Clear();
         }
+
+        private static readonly Dictionary<(string, int), RotaPlace> PlaceAt = new Dictionary<(string, int), RotaPlace>(32);
 
         private static RotaType TypeOf(BuildingRegistration reg)
         {

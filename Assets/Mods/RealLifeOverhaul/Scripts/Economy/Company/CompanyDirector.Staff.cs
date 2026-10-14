@@ -257,18 +257,6 @@ namespace RealLifeOverhaul.Economy
             Cost(amount, key, shop, shop.Name, CostKind.Wages, day, how, true);
         }
 
-        private int ShopIndex(string place)
-        {
-            for (int i = 0; i < _shops.Count; i++)
-            {
-                if (_shops[i].File.Place == place)
-                {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
         // They go, by the game's own resignation, and their file with them. With nothing to have them leave by, they stay.
         private void Leave(StaffFile f)
         {
