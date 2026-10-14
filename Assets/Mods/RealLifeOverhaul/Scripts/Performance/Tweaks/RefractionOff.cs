@@ -16,10 +16,14 @@ namespace RealLifeOverhaul
     /// a second check it looks through the loaded materials when it comes on: if one has refraction or
     /// distortion switched on after all, it does nothing and says which.
     ///
-    /// That look is over every material in memory (tens of thousands, and more the longer the game has run), so
-    /// it is never done in one frame: the list is taken once and gone through a few hundred at a time on a fast
-    /// timer, and refraction stays as the game has it until the look is finished. A scene that is loaded later
-    /// asks for one more look, a few seconds after the last scene has arrived; a scene that is unloaded for none.
+    /// That look is over every material in memory (6,628 to 6,976 in the owner's sessions of 14 Oct 2026), so it is
+    /// never done in one frame: the list is taken behind the loading screen (Prewarm; it was taken in play, the frame
+    /// the tweak came on, and logged FAIL) and gone through on a fast timer, about a third of a millisecond a tick
+    /// (<see cref="WorkSlice"/>), and refraction stays as the game has it until the look is finished. A scene that is
+    /// loaded later asks for one more look, taken behind the next black screen, pause or loading screen at least a few
+    /// seconds after the last scene has arrived (never a search of memory in play); a scene that is unloaded for none.
+    ///
+    /// Per frame: nothing (the timer is the director's). A tick while looking: about 0.3 ms; otherwise a building test.
     /// </summary>
     public sealed class RefractionOff : PerfTweak
     {
@@ -29,9 +33,12 @@ namespace RealLifeOverhaul
         private static readonly int DistortionEnable = Shader.PropertyToID("_DistortionEnable");
         private static readonly int SurfaceType = Shader.PropertyToID("_SurfaceType");
 
-        private const int Slice = 300;          // materials looked at per tick while a look is under way: well under a millisecond
+        private const double SliceMs = 0.3;     // milliseconds of a tick a look under way may take (some 300 materials)
+        private const int LookEvery = 16;       // materials between two looks at the clock
         private const float SliceEvery = 0.05f;
         private const float LookAfter = 4f;     // seconds after the last scene arrived before the materials are looked through again
+        private const float HiddenEvery = 0.25f; // seconds between two looks at whether the screen is black, while a look waits for it
+        private const string Listing = "performance: listing the loaded materials (refraction check)";
 
         private readonly List<string> _found = new List<string>(6);
         private Material[] _looking;            // the list being gone through; null when no look is under way
@@ -43,10 +50,16 @@ namespace RealLifeOverhaul
         private int _materials;
         private string _users = string.Empty;
 
+        // The list taken behind the loading screen (Prewarm), for the look when the tweak comes on: good for the city it was
+        // taken in (its PerfDirector) while no scene has arrived since.
+        private Material[] _kept;
+        private PerfDirector _keptFor;
+        private int _keptArrivals;
+
         public override string Id => "refraction";
         public override string LabelKey => "reallife_perf_refraction";
         public override bool DefaultOn => true;
-        public override float Interval => _looking != null ? SliceEvery : 2f;
+        public override float Interval => _looking != null ? SliceEvery : _again && _users.Length == 0 ? HiddenEvery : 2f;
         public override bool Busy => _looking != null || !_looked;
 
         protected override void Apply()
@@ -54,7 +67,15 @@ namespace RealLifeOverhaul
             _looked = false;
             _again = false;
             _users = string.Empty;
-            Begin();
+            if (Kept || SceneFinds.Hidden)
+            {
+                Begin();
+            }
+            else
+            {
+                _again = true;   // switched on in play with no list taken behind the loading screen: taken behind the next black screen
+                _againAt = Time.unscaledTime;
+            }
             _onBuilding = _onBuilding ?? Guard.Wrap<Address>(OnBuilding);   // (a fault here never reaches the game's own handlers: Core/Guard)
             GlobalEvents.onEnterBuilding += _onBuilding;
             GlobalEvents.onExitBuilding += _onBuilding;
@@ -71,10 +92,23 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Every material in memory, used or not. Taking the list is one engine call; going through it is done in slices.
+        // The list taken behind the loading screen is this city's, and no scene has arrived since.
+        private bool Kept => _kept != null && _keptFor != null && ReferenceEquals(_keptFor, PerfDirector.Instance) && _keptArrivals == PerfTweaks.Arrivals;
+
+        protected override void Prewarm()
+        {
+            _kept = SceneFinds.InMemory<Material>(Listing);
+            _keptFor = PerfDirector.Instance;
+            _keptArrivals = PerfTweaks.Arrivals;
+        }
+
+        // Every material in memory, used or not. Taking the list is one engine call (made behind the loading screen where it
+        // can be); going through it is done in slices.
         private void Begin()
         {
-            _looking = SceneFinds.InMemory<Material>("performance: listing the loaded materials (refraction check)");
+            _looking = Kept ? _kept : SceneFinds.InMemory<Material>(Listing);
+            _kept = null;   // once: a scene that arrives later is looked at again behind a black screen
+            _keptFor = null;
             _materials = _looking.Length;
             _cursor = 0;
             _found.Clear();
@@ -83,8 +117,8 @@ namespace RealLifeOverhaul
 
         private void Look()
         {
-            int end = Mathf.Min(_cursor + Slice, _looking.Length);
-            for (; _cursor < end; _cursor++)
+            WorkSlice slice = WorkSlice.Of(SliceMs, LookEvery);
+            for (; _cursor < _looking.Length && slice.More(); _cursor++)
             {
                 Material material = _looking[_cursor];
                 if (material == null || material.shader == null)
@@ -128,8 +162,11 @@ namespace RealLifeOverhaul
             }
             else if (_again && now >= _againAt && _users.Length == 0)
             {
-                Begin();
-                return;
+                if (SceneFinds.Hidden)
+                {
+                    Begin();   // the list of everything in memory only where a long frame is not seen
+                    return;
+                }
             }
             Reconcile();
             if (_off)

@@ -36,7 +36,7 @@ namespace RealLifeOverhaul.Nav
             {
                 if (!_base.Idle)
                 {
-                    _base.Drop();
+                    _base.Drop(true);   // switched off: its memory on the graphics card goes too
                     BaseOff();
                 }
                 return;
@@ -288,7 +288,7 @@ namespace RealLifeOverhaul.Nav
                     TestRefusals.TellKey(Logger, test, "reallife_nav_test_base_wait");
                     return;
                 }
-                _base.Drop();
+                _base.Drop(true);
                 BaseOff();
                 _baseAgain = true;
                 _next = 0f;

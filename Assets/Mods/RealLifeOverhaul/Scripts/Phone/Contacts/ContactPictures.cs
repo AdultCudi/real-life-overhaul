@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using BAModAPI;
 using UI.Smartphone.Apps.Contacts;
+using Unity.Collections;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -20,7 +21,9 @@ namespace RealLifeOverhaul
     /// the list for a Contacts app that has not looked yet, the dictionary (one field, read once) for one that has. The
     /// picture is then painted into that same sprite's texture when it is ready, so the app shows it without being told.
     ///
-    /// COST. Adding a contact: a look through the list (a few dozen sprites) and one texture of 256 x 256. The painting is
+    /// COST. Adding a contact: a look through the list (a few dozen sprites) and one texture of 256 x 256, filled with its
+    /// colour in the texture's own memory (it used to be a new array of 256 KB for each: eight contacts set up in one frame
+    /// made exactly 2 MB of garbage on a heap of 800 MB, the owner's log of 14 Oct 2026). The painting is
     /// done by <see cref="ContactPainter"/>, one picture at a time, spread over seconds; nothing runs while there is
     /// nothing to paint. A face is drawn once per look ever: it is kept as a JPEG in the portrait cache and read from there
     /// on every later load.
@@ -181,14 +184,14 @@ namespace RealLifeOverhaul
             return _predefined != null ? _predefined.GetValue(null) as Dictionary<string, Sprite> : null;
         }
 
+        // The square in one colour, written into the texture's own memory (no array of our own), then sent to the graphics card.
         internal static void Fill(Texture2D texture, Color32 colour)
         {
-            var pixels = new Color32[Size * Size];
+            NativeArray<Color32> pixels = texture.GetPixelData<Color32>(0);
             for (int i = 0; i < pixels.Length; i++)
             {
                 pixels[i] = colour;
             }
-            texture.SetPixels32(pixels);
             texture.Apply(false, false);
         }
 

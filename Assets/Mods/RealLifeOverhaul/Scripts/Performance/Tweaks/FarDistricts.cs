@@ -43,6 +43,19 @@ namespace RealLifeOverhaul
     /// sound and every script keep running. Level-of-detail groups are not affected (they choose among their
     /// renderers by a mask of their own and never write either flag), nor is static batching. Shadows: the sun's
     /// reach 100 m (150 m when driving), a held square is at least 1100 m away.
+    ///
+    /// THE CITY MAP draws the city with the player's camera set to the map's own layers (CityMap.cityMapMask, or its
+    /// low-detail mask: CityMap.Toggle). So when it opens only the renderers of those layers are given back; the rest
+    /// stay out (the map's camera does not draw them), and all of them come back the moment the camera draws other
+    /// layers while the map is open (CityMap.TemporarilyChangeState). That was every held renderer, some 10 to 30 ms.
+    ///
+    /// THE COST, all on the director's timer and budgeted by the clock (<see cref="WorkSlice"/>): sorting the gathered
+    /// renderers into squares, and taking a square's renderers out, about a millisecond a tick (it was 6,000 renderers a
+    /// tick whatever they cost: ticks of 3 to 9 ms); whether a renderer stands on something that moves is asked once per
+    /// parent object, not once per renderer up its whole line of parents. Gathering a scene's renderers (every object of
+    /// it: a frame of 127 ms for the city) is done behind the loading screen (Prewarm), and for a scene that arrives or
+    /// goes in play behind the next black screen, pause or loading screen; until then the squares are held as they were.
+    /// Per frame: one comparison a camera (OnCameraRendering), and one more while the map is open.
     /// </summary>
     public sealed class FarDistricts : PerfTweak
     {
@@ -68,12 +81,21 @@ namespace RealLifeOverhaul
             public bool Held;
             public int Cursor;       // how far through Scenery the holding has got
             public readonly List<MeshRenderer> Scenery = new List<MeshRenderer>(256);
-            public readonly List<MeshRenderer> Taken = new List<MeshRenderer>(256);   // of those, the ones this has taken out
+            public readonly List<bool> OnMap = new List<bool>(256);                  // for each of those: drawn on the city map (its layer is one of the map's)
+            public readonly List<MeshRenderer> Taken = new List<MeshRenderer>(256);   // the ones this has taken out that the city map draws
+            public readonly List<MeshRenderer> TakenOff = new List<MeshRenderer>(64); // ...and that it does not: kept out while the map is open
         }
+
+        private const double SliceMs = 1.0;            // milliseconds of a tick the sorting or the holding may take
+        private const int LookEvery = 64;              // renderers between two looks at the clock
+        private const float HiddenEvery = 0.25f;       // seconds between two looks at whether the screen is black, while a scene waits for it
 
         private readonly bool _byEnabled;
         private readonly string _id;
-        private readonly int _slice;   // renderers looked at or switched per tick: about a millisecond
+        private readonly Dictionary<int, bool> _moves = new Dictionary<int, bool>(4096);   // while sorting: a parent object (its id) on or under something that moves
+        private int _mapMask = ~0;     // the layers the city map draws (both its masks); all of them where the map is not known
+        private int _offMapHeld;       // renderers held that the city map does not draw
+        private bool _waitHidden;      // a scene came or went in play: gathered behind the next black screen
 
         private readonly Dictionary<long, Cell> _byKey = new Dictionary<long, Cell>(512);
         private readonly List<Cell> _cells = new List<Cell>(512);
@@ -100,14 +122,13 @@ namespace RealLifeOverhaul
         {
             _byEnabled = byEnabled;
             _id = byEnabled ? "trial_far_by_enabled" : "far_districts";
-            _slice = byEnabled ? 2000 : 6000;
         }
 
         public override string Id => _id;
         public override string LabelKey => _byEnabled ? null : "reallife_perf_far_districts2";
         public override bool DefaultOn => false;   // the safe way has not been measured yet
         public override bool Trial => _byEnabled;
-        public override float Interval => Busy ? 0.05f : 0.5f;
+        public override float Interval => _waitHidden && _surveyCursor >= _survey.Count && _working == null ? HiddenEvery : Busy ? 0.05f : 0.5f;
         public override bool Busy => _stale || _surveyCursor < _survey.Count || _working != null || !_settled;
 
         protected override void Apply()
@@ -129,7 +150,18 @@ namespace RealLifeOverhaul
             _hooked = true;
             _settled = false;
             _main = GameManager.GetMainCamera();
+            _mapMask = MapLayers();
             _stale = true;   // the first tick looks for scenes not looked through yet
+            _waitHidden = false;
+        }
+
+        // The layers the city map draws: both its masks (the player may switch between them). All layers where it is not there,
+        // so that a map open gives everything back, as it always did.
+        private static int MapLayers()
+        {
+            CityManager city = InstanceBehavior<CityManager>.Instance;
+            CityMap map = city != null ? city.cityMap : null;
+            return map != null ? map.cityMapMask.value | map.cityMapMaskLowDetail.value : ~0;
         }
 
         private static Type[] FindSwitcherTypes()
@@ -145,7 +177,11 @@ namespace RealLifeOverhaul
             return found.ToArray();
         }
 
-        internal override void WorldChanged(bool loaded) => _stale = true;   // (an unloaded scene matters here: its squares are forgotten)
+        internal override void WorldChanged(bool loaded)
+        {
+            _stale = true;   // (an unloaded scene matters here: its squares are forgotten)
+            _waitHidden = false;
+        }
 
         // The city's scenes gathered behind the loading screen (Refresh: every mesh renderer under every root object, some
         // 357,000, which was a frame of 127 ms in play on the first tick after the tweak came on). Sorting them into
@@ -171,8 +207,20 @@ namespace RealLifeOverhaul
                 Survey();
                 return;
             }
-            if (_stale)
+            if (_stale && !_waitHidden)
             {
+                if (!Changed())
+                {
+                    _stale = false;   // nothing come or gone that has scenery: nothing to gather
+                }
+                else
+                {
+                    _waitHidden = true;
+                }
+            }
+            if (_stale && SceneFinds.Hidden)
+            {
+                _waitHidden = false;
                 Refresh();
                 _settled = false;
                 return;
@@ -190,12 +238,12 @@ namespace RealLifeOverhaul
                 _settled = _working == null;
                 return;
             }
-            int budget = _slice;
+            WorkSlice slice = WorkSlice.Of(SliceMs, LookEvery);
             if (_working != null)
             {
-                budget -= Hold(_working, budget);
+                Hold(_working, ref slice);
             }
-            for (int i = 0; i < _cells.Count && budget > 0 && _working == null; i++)
+            for (int i = 0; i < _cells.Count && !slice.Over && _working == null; i++)
             {
                 Cell cell = _cells[i];
                 if (!cell.Held && cell.Scenery.Count > 0 && cell.Bounds.SqrDistance(eye) > HoldBeyond * HoldBeyond)
@@ -203,10 +251,32 @@ namespace RealLifeOverhaul
                     cell.Held = true;
                     cell.Cursor = 0;
                     _heldCells++;
-                    budget -= Hold(cell, budget);
+                    Hold(cell, ref slice);
                 }
             }
-            _settled = _working == null && budget > 0;
+            _settled = _working == null && !slice.Over;
+        }
+
+        // True if a scene with scenery has gone, or a scene not looked through has come: what Refresh would gather or forget.
+        // A look at the scenes' handles and names (a few scenes; a name each), no object of them.
+        private bool Changed()
+        {
+            foreach (Scene known in _sceneryScenes)
+            {
+                if (!known.IsValid() || !known.isLoaded)
+                {
+                    return true;
+                }
+            }
+            for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
+                Scene scene = SceneManager.GetSceneAt(i);
+                if (scene.isLoaded && !_seenScenes.Contains(scene.handle) && Array.IndexOf(NotScenery, scene.name) < 0)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         // Scenes were loaded or unloaded. A scene not seen before is queued to be looked through once; small scenes
@@ -266,11 +336,11 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Sorts the gathered renderers into squares, a slice per tick.
+        // Sorts the gathered renderers into squares, a slice per tick (about a millisecond).
         private void Survey()
         {
-            int end = Mathf.Min(_surveyCursor + _slice, _survey.Count);
-            for (; _surveyCursor < end; _surveyCursor++)
+            WorkSlice slice = WorkSlice.Of(SliceMs, LookEvery);
+            for (; _surveyCursor < _survey.Count && slice.More(); _surveyCursor++)
             {
                 MeshRenderer renderer = _survey[_surveyCursor];
                 if (renderer == null)
@@ -296,6 +366,7 @@ namespace RealLifeOverhaul
                     cell.Bounds.Encapsulate(new Bounds(at, Vector3.one * (Margin * 2f)));
                 }
                 cell.Scenery.Add(renderer);
+                cell.OnMap.Add(((_mapMask >> renderer.gameObject.layer) & 1) != 0);
                 _scenery++;
             }
             if (_surveyCursor >= _survey.Count)
@@ -303,6 +374,7 @@ namespace RealLifeOverhaul
                 _survey.Clear();
                 _survey.TrimExcess();
                 _gathered.TrimExcess();
+                _moves.Clear();
                 _surveyCursor = 0;
                 _settled = false;
                 PerfDirector.Logger?.Info("Performance: " + _id + " looked through the scenery: " + _scenery + " mesh renderers in " + _cells.Count + " squares of " + CellSize + " m"
@@ -310,12 +382,10 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Takes out up to 'budget' of the square's renderers; returns how many it looked at.
-        private int Hold(Cell cell, int budget)
+        // Takes out as many of the square's renderers as the slice has time for.
+        private void Hold(Cell cell, ref WorkSlice slice)
         {
-            int end = Mathf.Min(cell.Cursor + Mathf.Max(budget, 1), cell.Scenery.Count);
-            int looked = end - cell.Cursor;
-            for (; cell.Cursor < end; cell.Cursor++)
+            for (; cell.Cursor < cell.Scenery.Count && slice.More(); cell.Cursor++)
             {
                 MeshRenderer renderer = cell.Scenery[cell.Cursor];
                 if (renderer == null || !cell.Bounds.Contains(renderer.transform.position))
@@ -334,35 +404,51 @@ namespace RealLifeOverhaul
                 {
                     if (renderer.forceRenderingOff)
                     {
-                        continue;   // somebody else's: not ours to give back
+                        continue;   // somebody else's (or ours already, kept out while the map was open): not taken twice
                     }
                     renderer.forceRenderingOff = true;
                 }
-                cell.Taken.Add(renderer);
+                if (cell.OnMap[cell.Cursor])
+                {
+                    cell.Taken.Add(renderer);
+                }
+                else
+                {
+                    cell.TakenOff.Add(renderer);
+                    _offMapHeld++;
+                }
                 _heldRenderers++;
             }
             _working = cell.Cursor < cell.Scenery.Count ? cell : null;
-            return looked;
         }
 
-        // True if the game's own code may enable or disable this renderer: it sits on or under one of the switchers.
-        // True if the renderer is on or under an object of a layer of things that move.
+        // True if the renderer is on or under an object of a layer of things that move. Asked once per parent object while
+        // the renderers are sorted (the answer for a parent is kept until the sorting is done): siblings share their parents.
         private bool Moves(Transform transform)
         {
             if (_movingMask == 0)
             {
                 _movingMask = LayerMask.GetMask(MovingLayers);
             }
-            for (Transform t = transform; t != null; t = t.parent)
+            if (((_movingMask >> transform.gameObject.layer) & 1) != 0)
             {
-                if (((_movingMask >> t.gameObject.layer) & 1) != 0)
-                {
-                    return true;
-                }
+                return true;
             }
-            return false;
+            Transform parent = transform.parent;
+            if (parent == null)
+            {
+                return false;
+            }
+            int id = parent.GetInstanceID();
+            if (!_moves.TryGetValue(id, out bool moves))
+            {
+                moves = Moves(parent);
+                _moves[id] = moves;
+            }
+            return moves;
         }
 
+        // True if the game's own code may enable or disable this renderer: it sits on or under one of the switchers.
         private bool GameSwitches(Transform transform)
         {
             for (Transform t = transform; t != null; t = t.parent)
@@ -375,14 +461,29 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // Whole and at once: a square is never half back.
+        // Whole and at once: a square is never half back (but for the map: GiveBackForMap).
         private void GiveBack(Cell cell)
         {
             if (_working == cell)
             {
                 _working = null;
             }
-            foreach (MeshRenderer renderer in cell.Taken)
+            Show(cell.Taken);
+            Show(cell.TakenOff);
+            _heldRenderers -= cell.Taken.Count + cell.TakenOff.Count;
+            _offMapHeld -= cell.TakenOff.Count;
+            cell.Taken.Clear();
+            cell.TakenOff.Clear();
+            if (cell.Held)
+            {
+                cell.Held = false;
+                _heldCells--;
+            }
+        }
+
+        private void Show(List<MeshRenderer> taken)
+        {
+            foreach (MeshRenderer renderer in taken)
             {
                 if (renderer == null)
                 {
@@ -400,25 +501,39 @@ namespace RealLifeOverhaul
                     renderer.forceRenderingOff = false;
                 }
             }
-            _heldRenderers -= cell.Taken.Count;
-            cell.Taken.Clear();
-            if (cell.Held)
+        }
+
+        // The city map opens: what it draws comes back, every square; what it does not draw stays out (the square counts as
+        // given back, and the timer takes the rest of it out again after the map, as it does a square that came back whole).
+        private void GiveBackForMap()
+        {
+            foreach (Cell cell in _cells)
             {
-                cell.Held = false;
-                _heldCells--;
+                if (_working == cell)
+                {
+                    _working = null;
+                }
+                Show(cell.Taken);
+                _heldRenderers -= cell.Taken.Count;
+                cell.Taken.Clear();
+                if (cell.Held)
+                {
+                    cell.Held = false;
+                    _heldCells--;
+                }
             }
         }
 
         private void GiveBackNear(Vector3 eye, float reach, bool playersCamera)
         {
-            if (_heldCells == 0)
+            if (_heldRenderers == 0 && _heldCells == 0)
             {
                 return;
             }
             for (int i = 0; i < _cells.Count; i++)
             {
                 Cell cell = _cells[i];
-                if (!cell.Held)
+                if (!cell.Held && cell.TakenOff.Count == 0)
                 {
                     continue;
                 }
@@ -441,7 +556,7 @@ namespace RealLifeOverhaul
         {
             foreach (Cell cell in _cells)
             {
-                if (cell.Held || cell.Taken.Count > 0)
+                if (cell.Held || cell.Taken.Count > 0 || cell.TakenOff.Count > 0)
                 {
                     GiveBack(cell);
                 }
@@ -459,18 +574,19 @@ namespace RealLifeOverhaul
             _survey.Clear();
             _surveyCursor = 0;
             _switcherObjects.Clear();
-            _heldRenderers = _heldCells = _scenery = _leftAlone = 0;
+            _moves.Clear();
+            _heldRenderers = _heldCells = _scenery = _leftAlone = _offMapHeld = 0;
         }
 
         private Action<bool> _onMap;
         private Action<ScriptableRenderContext, Camera> _onCamera;
 
-        // Runs before the game's own handlers (see Apply): the map shows the whole city.
+        // Runs before the game's own handlers (see Apply): the map shows the whole city, of its own layers.
         private void OnMapToggled(bool open)
         {
             if (open && _heldRenderers > 0)
             {
-                GiveBackAll();
+                GiveBackForMap();
             }
             _quietUntil = Time.unscaledTime + Cooldown;
             _settled = false;
@@ -483,7 +599,7 @@ namespace RealLifeOverhaul
         // every held square within its far plane plus 100 m.
         private void OnCameraRendering(ScriptableRenderContext context, Camera camera)
         {
-            if (_heldCells == 0 || camera.cameraType != CameraType.Game)
+            if (_heldRenderers == 0 || camera.cameraType != CameraType.Game)
             {
                 return;
             }
@@ -492,6 +608,11 @@ namespace RealLifeOverhaul
                 Vector3 eye = camera.transform.position;
                 if (camera == _main)
                 {
+                    if (_offMapHeld > 0 && CityMap.IsOpen && (camera.cullingMask & ~_mapMask) != 0)
+                    {
+                        GiveBackAll();   // the map's camera draws more than the map's layers now: everything, at once, before it draws
+                        return;
+                    }
                     if ((eye - _lastChecked).sqrMagnitude < 25f)
                     {
                         return;
@@ -539,7 +660,7 @@ namespace RealLifeOverhaul
 
         public override string Describe() => _cells.Count == 0
             ? "scenery not looked through yet"
-            : "renderers out of the picture (" + (_byEnabled ? "disabled" : "forceRenderingOff") + "): " + _heldRenderers + " in " + _heldCells + " of " + _cells.Count + " squares; scenery " + _scenery
-              + ", left alone " + _leftAlone;
+            : "renderers out of the picture (" + (_byEnabled ? "disabled" : "forceRenderingOff") + "): " + _heldRenderers + " in " + _heldCells + " of " + _cells.Count + " squares ("
+              + _offMapHeld + " of them of layers the city map does not draw); scenery " + _scenery + ", left alone " + _leftAlone;
     }
 }

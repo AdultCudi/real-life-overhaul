@@ -44,6 +44,10 @@ namespace RealLifeOverhaul.Nav
     ///   while the city under the roads is being made (NavDirector.Base.cs, NavBase): one step of it a frame, 0.8 ms
     ///                    at most; once it is made, one test a frame
     ///
+    /// The road graph, the walking graph, the index and both pictures of the minimap are made behind the loading screen, in
+    /// the game's late "game loaded" call (<see cref="PrewarmRoads"/>, a late piece of Core/SceneFinds' ScenePrewarm), where
+    /// they used to be made in the frames the loading screen went; the timer makes them only where that could not be done.
+    ///
     /// A fault anywhere switches the feature off for the session with one line, and takes its objects off the HUD.
     /// </summary>
     public sealed partial class NavDirector : MonoBehaviour
@@ -130,6 +134,8 @@ namespace RealLifeOverhaul.Nav
         private Action<bool> _onMap, _mapSeen;
         private bool _mapOpen;
 
+        private const int PictureWaitMost = 1500;   // milliseconds the late prewarm waits for a picture's thread (some 100 to 130 ms on the owner's machine)
+
         private void Awake()
         {
             Instance = this;
@@ -137,6 +143,34 @@ namespace RealLifeOverhaul.Nav
             _onMap = Guard.Wrap<bool>(OnMap);
             OtherMods.Look(Logger);   // (done once for the city already; this costs a loop over the table)
             _voogle = OtherMods.VoogleRoute.Loaded;
+            ScenePrewarm.AddLate("navigation: the road graph, the walking graph and the minimap's two pictures being made", PrewarmRoads);
+        }
+
+        // Behind the loading screen, once the game has started its traffic system (the junctions marked): the graph (the city's
+        // one, Core/RoadGraph), the walking graph and the index, the road picture and the buildings and water, each picture
+        // drawn on a thread while the other is, waited for and sent to the graphics card here; or the pictures of an earlier
+        // load of the same city taken as they are. With both options off nothing is made, as on the timer.
+        private bool PrewarmRoads()
+        {
+            bool wantMap = Settings.Minimap;
+            if (!wantMap && !(Settings.Gps && !RouteLeft))
+            {
+                return true;   // (switched on later: made on the timer, as before)
+            }
+            if (!_graph.StepsNow())
+            {
+                return false;
+            }
+            if (wantMap && Settings.MinimapBase && _base.Idle)
+            {
+                _base.Begin(_graph, false);   // (still idle if the game's palette is not there yet: the timer begins it)
+            }
+            _graph.WaitForPicture(PictureWaitMost);
+            if (_base.Drawing && _base.WaitForDrawing(PictureWaitMost))
+            {
+                _base.Step(false);   // sent to the graphics card now
+            }
+            return true;
         }
 
         // True while the route is left to the other mod altogether: it is switched on and the player chose its line.
@@ -146,8 +180,9 @@ namespace RealLifeOverhaul.Nav
         {
             GlobalEvents.onCityMapToggle -= _onMap;
             Remove();
-            _base.Drop();
+            _base.Drop(false);   // the picture is kept for the next load of the same city
             _graph.Dispose();
+            RoadGraph.Forget();   // the city's one road graph goes with it
             NavMarks.Reset();
             if (Instance == this)
             {

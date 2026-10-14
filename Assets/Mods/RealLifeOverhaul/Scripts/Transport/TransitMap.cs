@@ -134,10 +134,18 @@ namespace RealLifeOverhaul
     /// then never nearer than 210 m along the line), and only then the first place without one.
     /// Parked cars are not looked at here either: the zone takes them in when it is made.
     ///
-    /// The work is done in slices from the director's timer, a search at a time and then stops
-    /// one after another for no more than three milliseconds a slice, in the first seconds out
-    /// of doors: some dozens of searches of the road graph at most and some thousands of rays and
-    /// samples in all (most of them looking for bays), never again.
+    /// WHEN. The routes (the ends at the stations and some dozens of searches of the road graph, 150 to
+    /// 250 ms in all) are laid behind the loading screen, in the game's late "game loaded" call once its
+    /// traffic system has marked the junctions (<see cref="Prewarm"/>, a late piece of Core/SceneFinds'
+    /// ScenePrewarm), over the city's one road graph (Core/RoadGraph.Shared, the GPS's too, with costs of
+    /// its own for the corridors). They used to be laid in play: the ends and a graph of its own in one
+    /// frame (1188 KB and 20 to 50 ms, the owner's log of 14 Oct 2026), then a search a frame of 3 to 6 ms
+    /// for some 40 frames. The stops need the street (rays and samples against what stands on it, some
+    /// thousands, most of them looking for bays), so they are placed on the director's timer in the first
+    /// seconds out of doors, a slice a frame of about a millisecond (<see cref="WorkSlice"/>), never again.
+    /// Where the routes could not be laid behind the loading screen (buses switched on later, a city whose
+    /// traffic had not started), they are laid on the timer as before, each search a slice a frame of about
+    /// a millisecond (<see cref="RouteSearch.Advance"/>), with exactly the outcome of a search made whole.
     /// </summary>
     public static class TransitMap
     {
@@ -160,7 +168,9 @@ namespace RealLifeOverhaul
         private const float BayAheadSlack = 1f;     // metres more of the strip ahead than the body on its van needs to pull out: a vehicle's own middle is seldom quite its origin
         private const int MaxExpansions = 400000;
         private const int MaxSearches = 100;        // in all: a city where nothing connects is given up on
-        private const double StopsSlice = 0.003;    // seconds of looking for stops in one slice
+        private const double StopsSliceMs = 1.0;    // milliseconds of looking for stops in one slice (a frame): the slice ends after the first stop past it
+        private const double SeekSliceMs = 1.0;     // milliseconds of a search of the road graph in one slice, where it is made in play
+        private const int SeekSteps = 64;           // steps of a search between two looks at the clock
 
         public static IModLogger Logger;
 
@@ -190,7 +200,7 @@ namespace RealLifeOverhaul
         public static bool Ready { get; private set; }
 
         /// <summary>True while the stops are being placed, a slice at a time: the director then comes back every frame, so that the stops are there in seconds and not in minutes.</summary>
-        public static bool PlacingStops => !Ready;   // (the pairing too: one search a frame, a few milliseconds each)
+        public static bool PlacingStops => !Ready;   // (the pairing too where it was not done behind the loading screen: a slice of a search a frame, about a millisecond)
         public static bool Failed { get; private set; }
 
         private static Waypoint[] _points;
@@ -213,6 +223,7 @@ namespace RealLifeOverhaul
         private static bool _trying;
         private static int _routes;
         private static int _searches;
+        private static bool _seeking;           // a search of the road graph is under way, a slice at a time
         private static int _refused;
         private static int _laneChanges;
         private static int _lineCursor;
@@ -253,6 +264,7 @@ namespace RealLifeOverhaul
             _pa = -1;
             _pb = -1;
             _trying = false;
+            _seeking = false;
             _routes = 0;
             _searches = 0;
             _refused = 0;
@@ -271,10 +283,53 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
+        /// Behind the loading screen, once the game has started its traffic system (a late piece of ScenePrewarm): the routes
+        /// laid, every search made whole. The stops are left to the timer (they need the street). True when that is done, or
+        /// there is nothing to do (buses off: laid on the timer if they are switched on); false while the city's roads, its
+        /// stations or its traffic system are not there yet (the timer then lays them, as before).
+        /// </summary>
+        public static bool Prewarm()
+        {
+            if (!Settings.Buses || Ready || _phase >= 2)
+            {
+                return true;
+            }
+            CurrentSceneData data = RoadData.Scene;
+            CityManager city = InstanceBehavior<CityManager>.Instance;
+            if (data == null || data.allWaypoints == null || city == null || city.subwayStations == null || !TrafficManager.IsInitialized)
+            {
+                return false;
+            }
+            using (SessionWatch.Piece("transit: the bus routes laid between the subway stations (behind the loading screen)"))
+            {
+                for (int guard = 0; guard < MaxSearches * 4 + 64 && !Ready && _phase < 2; guard++)
+                {
+                    Next(false);
+                }
+            }
+            return true;
+        }
+
+        /// <summary>For a test pressed before the layout has finished: all of what is left of it now, in one frame.</summary>
+        public static void Complete()
+        {
+            for (int guard = 0; guard < MaxSearches * 4 + 64 + 4096 && !Ready; guard++)
+            {
+                Next(false);
+            }
+        }
+
+        /// <summary>
         /// Does the next slice of the layout. Call from a timer while the traffic system is running
         /// until <see cref="Ready"/>; a fault ends it with an empty network and one line in the log.
         /// </summary>
         public static void Step()
+        {
+            Next(true);
+        }
+
+        // One step of the layout; in play (sliced) each search and the stops a slice of about a millisecond, behind the loading screen whole.
+        private static void Next(bool sliced)
         {
             if (Ready)
             {
@@ -294,7 +349,7 @@ namespace RealLifeOverhaul
                 }
                 if (_phase == 1)
                 {
-                    if (!PairStep())
+                    if (!PairStep(sliced ? WorkSlice.Of(SeekSliceMs, 1) : WorkSlice.Whole))
                     {
                         _phase = 2;
                         _graph = null;   // the search's memory is the size of the road graph: let go of now
@@ -305,15 +360,14 @@ namespace RealLifeOverhaul
                 if (_lineCursor < Lines.Count)
                 {
                     // Stop after stop, line after line, until the slice's time is up: at least one each slice.
-                    long until = System.Diagnostics.Stopwatch.GetTimestamp() + (long)(StopsSlice * System.Diagnostics.Stopwatch.Frequency);
-                    do
+                    WorkSlice slice = sliced ? WorkSlice.Of(StopsSliceMs, 1) : WorkSlice.Whole;
+                    while (_lineCursor < Lines.Count && slice.More())
                     {
                         if (PlaceStop(Lines[_lineCursor]))
                         {
                             _lineCursor++;
                         }
                     }
-                    while (_lineCursor < Lines.Count && System.Diagnostics.Stopwatch.GetTimestamp() < until);
                     return;
                 }
                 Finish();
@@ -325,6 +379,7 @@ namespace RealLifeOverhaul
                 Stops.Clear();
                 Places.Clear();
                 Failed = true;
+                _seeking = false;
                 Finish();
             }
         }
@@ -725,18 +780,29 @@ namespace RealLifeOverhaul
             return RoadGraph.Drivable(point);
         }
 
-        // The road graph as the search wants it (Core/RoadGraph, which the GPS builds its own from as well).
+        // The city's one road graph (Core/RoadGraph.Shared, the GPS's too, built with the same price for a change of lane),
+        // searched with a search of its own whose edge costs are its own: the corridors are counted for less on them alone
+        // (Corridor). The graph is the one a build of its own gave, so every route is the one it always was.
         private static void BuildGraph()
         {
-            _graph = RoadGraph.Build(_points, LaneChangeCost, out _laneChanges);
+            RouteSearch roads = RoadGraph.Shared(_points);
+            if (roads != null)
+            {
+                _graph = RouteSearch.Over(roads, true);
+                _laneChanges = RoadGraph.SharedLaneChanges;
+            }
+            else
+            {
+                _graph = RoadGraph.Build(_points, LaneChangeCost, out _laneChanges);   // (the traffic system not started: never so where the street is ready)
+            }
         }
 
         // ---------------------------------------------------------------- the pairs, and the way between them
 
-        // One search of the road graph, or the choice of the next pair. False when there is nothing left to pair.
-        private static bool PairStep()
+        // One search of the road graph (or a slice of it), or the choice of the next pair. False when there is nothing left to pair.
+        private static bool PairStep(WorkSlice slice)
         {
-            if (_routes >= MaxRoutes || _searches >= MaxSearches)
+            if (!_seeking && (_routes >= MaxRoutes || _searches >= MaxSearches))
             {
                 return false;
             }
@@ -750,10 +816,16 @@ namespace RealLifeOverhaul
                 _there = null;
                 return true;
             }
-            _searches++;
+            if (!_seeking)
+            {
+                _searches++;
+            }
             if (_there == null)
             {
-                string why = Find(_pa, _pb);
+                if (!Seek(_pa, _pb, ref slice, out string why))
+                {
+                    return true;   // more of the search on the next slice
+                }
                 if (why == null)
                 {
                     _there = MakeLine(_pa, _pb);
@@ -762,7 +834,10 @@ namespace RealLifeOverhaul
                 Refuse(why);
                 return true;
             }
-            string back = Find(_pb, _pa);
+            if (!Seek(_pb, _pa, ref slice, out string back))
+            {
+                return true;
+            }
             if (back != null)
             {
                 Refuse("a way there but " + back + " back");
@@ -834,11 +909,46 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The way from one station to another, or why there is none: no road, or one that will not do for a bus line.
-        private static string Find(int from, int to)
+        // The search for the way from one station to another, begun or gone on with, for as long as the slice allows: true once it
+        // is decided, with why there is none (no road, or one that will not do for a bus line), or null for a way found into
+        // PathScratch. Step for step what RouteSearch.Find does in one call, held to MaxExpansions steps in all.
+        private static bool Seek(int from, int to, ref WorkSlice slice, out string why)
         {
-            Vector3 goal = Stations[to].transform.position;
-            bool found = _graph.Find(Terminals[from], Terminals[to], goal.x, goal.y, goal.z, TerminalReach + 6f, MaxExpansions, PathScratch) && PathScratch.Count > 8;
+            why = null;
+            RouteSearch.Outcome outcome = RouteSearch.Outcome.NoWay;
+            if (!_seeking)
+            {
+                Vector3 goal = Stations[to].transform.position;
+                PathScratch.Clear();
+                if (!_graph.Begin(Terminals[from], Terminals[to], goal.x, goal.y, goal.z, TerminalReach + 6f))
+                {
+                    why = Judge(from, to, false);
+                    return true;
+                }
+                _seeking = true;
+            }
+            do
+            {
+                outcome = _graph.Advance(Math.Min(_graph.Expanded + SeekSteps, MaxExpansions), PathScratch);
+            }
+            while (outcome == RouteSearch.Outcome.Searching && _graph.Expanded < MaxExpansions && slice.More());
+            if (outcome == RouteSearch.Outcome.Searching)
+            {
+                if (_graph.Expanded < MaxExpansions)
+                {
+                    return false;
+                }
+                _graph.GiveUp();   // at its limit, as a search made whole stops there
+            }
+            _seeking = false;
+            why = Judge(from, to, outcome == RouteSearch.Outcome.Found);
+            return true;
+        }
+
+        // A search decided: the way found, or why there is none (no road, or one that will not do for a bus line).
+        private static string Judge(int from, int to, bool found)
+        {
+            found = found && PathScratch.Count > 8;
             if (!found)
             {
                 if (!_graph.HitLimit)

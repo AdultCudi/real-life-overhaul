@@ -16,6 +16,13 @@ namespace RealLifeOverhaul
     /// immediate update at the moments the sky really jumps: entering and leaving a building, the city map, a new
     /// hour. The sky you see is drawn fresh every frame as before; only its reflection and its light on things
     /// follow up to two seconds behind a change far too slow to see.
+    ///
+    /// The skies are searched for behind the loading screen (Prewarm). A scene that arrives later is searched for
+    /// behind the next black screen, pause or loading screen (two searches of the whole scene, some 75 ms each: never in
+    /// play; until then a sky that scene brought keeps the game's own way of updating).
+    ///
+    /// Per frame: nothing (the timer is the director's: every five seconds, and four times a second while a scene that
+    /// arrived waits for the black screen, one test each).
     /// </summary>
     public sealed class SkyThrottle : PerfTweak
     {
@@ -44,7 +51,9 @@ namespace RealLifeOverhaul
         public override string Id => "sky_updates";
         public override string LabelKey => "reallife_perf_sky_updates";
         public override bool DefaultOn => true;   // third benchmark: +0.13 ms, all three pairs agreed, all of it in the pipeline's share
-        public override float Interval => 5f;
+        public override float Interval => _stale ? HiddenEvery : 5f;
+
+        private const float HiddenEvery = 0.25f;   // seconds between two looks at whether the screen is black, while a new scene's skies wait for it
 
         protected override void Apply()
         {
@@ -55,16 +64,26 @@ namespace RealLifeOverhaul
             GlobalEvents.onCityMapToggle += _onMap;
             GlobalEvents.onNewHour += Hourly;
             _hooked = true;
-            Sweep();
+            if (Kept || SceneFinds.Hidden)
+            {
+                Sweep();
+            }
+            else
+            {
+                _stale = true;   // switched on in play with nothing found behind the loading screen: searched for behind the next black screen
+            }
         }
+
+        // What the look behind the loading screen found is this city's, and no scene has arrived since.
+        private bool Kept => _keptVolumes != null && _keptFor != null && ReferenceEquals(_keptFor, PerfDirector.Instance) && _keptArrivals == PerfTweaks.Arrivals;
 
         internal override void WorldChanged(bool loaded) => _stale |= loaded;   // a scene that has gone brought no sky: nothing to look for
 
         protected override void Tick(float now)
         {
-            if (_stale)
+            if (_stale && SceneFinds.Hidden)
             {
-                Sweep();
+                Sweep();   // two searches of the whole scene: only where a long frame is not seen
             }
         }
 
@@ -85,7 +104,7 @@ namespace RealLifeOverhaul
         private void Sweep()
         {
             _stale = false;
-            bool kept = _keptVolumes != null && _keptFor != null && ReferenceEquals(_keptFor, PerfDirector.Instance) && _keptArrivals == PerfTweaks.Arrivals;
+            bool kept = Kept;
             Volume[] volumes = kept ? _keptVolumes : SceneFinds.All<Volume>(SkySearch, FindObjectsInactive.Include);
             StaticLightingSky[] skies = kept ? _keptSkies : SceneFinds.All<StaticLightingSky>(SkySearch, FindObjectsInactive.Include);
             _keptVolumes = null;   // once: a scene that arrives later is looked for on the timer

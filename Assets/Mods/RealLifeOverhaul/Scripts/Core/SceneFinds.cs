@@ -23,8 +23,11 @@ namespace RealLifeOverhaul
         public static int Made { get; private set; }
         public static int InPlay { get; private set; }
 
-        /// <summary>True while a long frame is not seen as one: the loading screen, a pause, or the game's own black screen at a door.</summary>
-        public static bool Hidden => Looks.Hidden || UI.UiFader.isFading;
+        /// <summary>
+        /// True while a long frame is not seen as one: the loading screen (also in the frame the game ends its own start of the
+        /// city in, while the late prewarm runs: <see cref="ScenePrewarm.InLate"/>), a pause, or the game's own black screen at a door.
+        /// </summary>
+        public static bool Hidden => Looks.Hidden || UI.UiFader.isFading || ScenePrewarm.InLate;
 
         /// <summary>
         /// True while the screen is dark: the loading screen, or the game's own black screen (a door, sleep, fast travel).
@@ -87,6 +90,14 @@ namespace RealLifeOverhaul
     /// yet (it needs the city shown, and the save was made inside a building) says so by returning false and is tried
     /// again, once, each time the player is outdoors with the game's black screen up, which is the walk out of a door.
     ///
+    /// LATE PIECES (<see cref="AddLate"/>). Some work needs what the game itself makes of the city only after the mods are
+    /// loaded: its traffic system started, which marks the lane points at junctions (the road graph's changes of lane depend
+    /// on those marks), its list of subway stations and of buildings (CityManager.OnScenesLoaded). The game makes them in its
+    /// "game loaded" call, in the frame after which its loading screen begins to fade (LoadingScreen.LoadAsyncScenes:
+    /// GlobalEvents.InvokeOnGameLoaded, then the fade). Late pieces run in that same frame, in the game's own late call
+    /// (GlobalEvents.RegisterOnGameLoadedLateCallback, after its own calls), with the loading screen still fully up; a piece
+    /// that cannot be done there joins the others that wait for the black screen out of doors.
+    ///
     /// Per frame: nothing (the component is disabled) unless a piece is waiting; then two of the game's flags read.
     /// </summary>
     public sealed class ScenePrewarm : MonoBehaviour
@@ -95,8 +106,14 @@ namespace RealLifeOverhaul
 
         private static readonly List<Func<bool>> Work = new List<Func<bool>>(8);
         private static readonly List<string> Names = new List<string>(8);
+        private static readonly List<Func<bool>> Late = new List<Func<bool>>(4);
+        private static readonly List<string> LateNames = new List<string>(4);
+        private static Action _lateCall;   // made once: the game's late "game loaded" call, through the guard (Core/Guard)
         private static ScenePrewarm _instance;
         private bool _tried;
+
+        /// <summary>True while the late pieces run: the loading screen is up, though the game has said its load is done.</summary>
+        public static bool InLate { get; private set; }
 
         /// <summary>Hands over a piece of one-off work. It returns true when done (or never to be done), false to be tried again later. A constant text.</summary>
         public static void Add(string what, Func<bool> work)
@@ -105,6 +122,20 @@ namespace RealLifeOverhaul
             {
                 Work.Add(work);
                 Names.Add(what);
+            }
+        }
+
+        /// <summary>
+        /// Hands over a piece of one-off work that needs the game's own start of the city done (its traffic system, its stations):
+        /// done in the game's late "game loaded" call, the loading screen still up; false there, and it waits with the others for
+        /// the black screen out of doors. Pieces run in the order they were handed over. A constant text.
+        /// </summary>
+        public static void AddLate(string what, Func<bool> work)
+        {
+            if (work != null)
+            {
+                Late.Add(work);
+                LateNames.Add(what);
             }
         }
 
@@ -119,6 +150,65 @@ namespace RealLifeOverhaul
                 SessionWatch.Logger?.Info("Prewarm check: " + (before - Work.Count) + " of " + before + " piece(s) of one-off work done behind the loading screen in "
                                           + ((Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency).ToString("F0") + " ms"
                                           + (Work.Count > 0 ? "; " + Work.Count + " wait for the player to be outdoors (the first: " + Names[0] + ")." : ": PASS."));
+            }
+            if (_instance != null)
+            {
+                _instance.enabled = Work.Count > 0;
+            }
+            if (Late.Count > 0)
+            {
+                // At once if the game has already made its call (a mod loaded after it): the pieces then find what they need or wait.
+                GlobalEvents.RegisterOnGameLoadedLateCallback(_lateCall ??= Guard.Wrap(RunLate));
+            }
+        }
+
+        // The game's late "game loaded" call: its traffic system and stations are there, its loading screen still fully up.
+        private static void RunLate()
+        {
+            int before = Late.Count;
+            int done = 0;
+            long began = Stopwatch.GetTimestamp();
+            InLate = true;
+            try
+            {
+                for (int i = 0; i < Late.Count; i++)
+                {
+                    bool finished = true;
+                    int mark = SessionWatch.Mark(LateNames[i]);
+                    try
+                    {
+                        finished = Late[i]();
+                    }
+                    catch (Exception e)
+                    {
+                        if (!Guard.DoesWithout(e, "the work behind the loading screen: " + LateNames[i], "the feature does it when it first needs it"))
+                        {
+                            SessionWatch.Logger?.Error(e);   // the feature does it on first need instead, as it did before
+                        }
+                    }
+                    SessionWatch.Done(mark);
+                    if (finished)
+                    {
+                        done++;
+                    }
+                    else
+                    {
+                        Work.Insert(0, Late[i]);   // with the others, at the end of the round they are run in (last first)
+                        Names.Insert(0, LateNames[i]);
+                    }
+                }
+            }
+            finally
+            {
+                InLate = false;
+                Late.Clear();
+                LateNames.Clear();
+            }
+            if (Meta.Dev.Verbose)
+            {
+                SessionWatch.Logger?.Info("Prewarm check (after the game's own start of the city): " + done + " of " + before + " piece(s) done behind the loading screen in "
+                                          + ((Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency).ToString("F0") + " ms"
+                                          + (done < before ? "; " + (before - done) + " wait for the player to be outdoors (the first: " + Names[0] + ")." : ": PASS."));
             }
             if (_instance != null)
             {
@@ -203,6 +293,8 @@ namespace RealLifeOverhaul
                 _instance = null;
                 Work.Clear();   // the pieces belonged to the city that is going
                 Names.Clear();
+                Late.Clear();
+                LateNames.Clear();
             }
         }
     }

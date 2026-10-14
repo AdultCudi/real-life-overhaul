@@ -54,7 +54,7 @@ internal static partial class Program
         Check(Body(venues, "public static bool PrewarmLandmarks()").Contains("SceneLandmarks()"), "prewarm: behind the loading screen the landmarks' six searches are made");
 
         string lamps = Source(scripts, @"Performance\Tweaks\StaleLampLights.cs");
-        Check(lamps.Length > 0 && !lamps.Contains("SceneFinds.") && lamps.Contains("PerfGame.Lamps("), "prewarm: the street lamps come from the game's own culling list, never a search of the scene");
+        Check(lamps.Length > 0 && !lamps.Contains("SceneFinds.All") && !lamps.Contains("SceneFinds.Any") && !lamps.Contains("SceneFinds.InMemory") && lamps.Contains("PerfGame.Lamps("), "prewarm: the street lamps come from the game's own culling list, never a search of the scene");
         Check(Source(scripts, @"Performance\PerfGame.cs").Contains("GameContract.CullList.Field")
               && Source(scripts, @"Core\GameContract.cs").Contains("\"Culling.CullingGroupController\", \"_cullables\""),
             "prewarm: the game's culling list is read through its field, looked up once (a line of the game contract: Core/GameContract)");
@@ -71,11 +71,98 @@ internal static partial class Program
         string bikes = Source(scripts, @"Garage\BikePlaces.cs");
         Check(Body(bikes, "public void Find()").Contains("_stands ??"), "prewarm: the bike-share docks are placed from the stands found behind the loading screen");
 
+        LoadPrewarms(scripts);
+
         string empire = Source(scripts, @"Camera\EmpireView.cs");
         string look = Body(empire, "private static Behaviour Find()");
         int listened = look.IndexOf("Listening()", StringComparison.Ordinal);
         int searched = look.IndexOf("SceneFinds.Any(", StringComparison.Ordinal);
         Check(!empire.Contains("FindObjectOfType") && listened >= 0 && searched > listened, "prewarm: Empire Motors' view is found in the game's own list of listeners first, and searched for only through SceneFinds after that");
+    }
+
+    // The work of the first minute after a load (the owner's logs of 14 Oct 2026: a frame of 394 ms as the loading screen went,
+    // with 1284 KB of the GPS's graph and 1188 KB of the bus network's in it, 2 MB of contact pictures, the performance tweaks
+    // all switched in one frame of up to 19.7 ms, the materials listed in play and logged FAIL, the road data searched twice
+    // per load): each held behind the loading screen, or spread, or kept, here.
+    private static void LoadPrewarms(string scripts)
+    {
+        // The late pieces: run in the game's late "game loaded" call, its traffic system started, the loading screen still up.
+        string finds = Source(scripts, @"Core\SceneFinds.cs");
+        Check(Body(finds, "public static void Begin()").Contains("GlobalEvents.RegisterOnGameLoadedLateCallback(") && finds.Contains("Guard.Wrap(RunLate)"),
+            "prewarm: the late pieces run in the game's own late call after its load, through the guard");
+        Check(finds.Contains("ScenePrewarm.InLate") && Body(finds, "private static void RunLate()").Contains("InLate = true"),
+            "prewarm: while the late pieces run, the screen counts as hidden (the loading screen is still up)");
+        HandedLate(scripts, @"Navigation\NavDirector.cs", "PrewarmRoads", "the GPS's road graph, walking graph and both minimap pictures");
+        HandedLate(scripts, @"Transport\TransitDirector.cs", "TransitMap.Prewarm", "the bus routes between the subway stations");
+        Handed(scripts, @"Transport\TransitDirector.cs", "RoadPaint.Prewarm", "the game's road paint for the bus bays");
+
+        // One road graph a city, built once the traffic system has marked its junctions, searched by the GPS and the buses.
+        string graph = Source(scripts, @"Core\RoadGraph.cs");
+        string shared = Body(graph, "public static RouteSearch Shared(");
+        Check(shared.Contains("TrafficManager.IsInitialized") && shared.Contains("ReferenceEquals(points, _sharedFor)"), "roads: the city's one graph is built once, and only once the traffic system has started");
+        Check(Body(Source(scripts, @"Navigation\NavGraph.cs"), "private bool Begin()").Contains("RoadGraph.Shared(") && !Source(scripts, @"Navigation\NavGraph.cs").Contains("RoadGraph.Build("),
+            "roads: the GPS searches the city's one graph and builds none of its own");
+        string transit = Source(scripts, @"Transport\TransitMap.cs");
+        Check(Body(transit, "private static void BuildGraph()").Contains("RouteSearch.Over(roads, true)"), "roads: the buses search the city's one graph with edge costs of their own (the corridors)");
+        Check(!transit.Contains("_graph.Find(") && Body(transit, "private static bool Seek(").Contains("_graph.GiveUp()"),
+            "transit: every search of the routes is made a slice at a time, held to its steps as a search made whole");
+        Check(Body(transit, "private static void Next(").Contains("WorkSlice.Of(StopsSliceMs"), "transit: the stops are placed a slice of about a millisecond a frame");
+        Check(Body(Source(scripts, @"Transport\TransitDirector.cs"), "private bool DressNear(").Contains("WorkSlice.Of(PutsSliceMs"), "transit: the stops are put up as many a tick as fit in about a millisecond");
+
+        // The road data: one search a city, never in play.
+        string roadData = Source(scripts, @"Core\RoadData.cs");
+        Check(Body(roadData, "public static bool Prewarm()").Contains("if (_scene == null)"), "roads: the city's piece searches for the road data only if no piece before it has found it (one search a load, not two)");
+        Check(Body(roadData, "public static CurrentSceneData Scene").Contains("SceneFinds.Hidden"), "roads: the road data is never searched for in play");
+
+        // The game's road paint: found behind the loading screen through SceneFinds, never in play.
+        string paint = Source(scripts, @"Transport\RoadPaint.cs");
+        Check(!paint.Contains("Resources.FindObjectsOfTypeAll") && Body(paint, "private static Material FindTemplate()").Contains("SceneFinds.InMemory<Material>(")
+              && Body(paint, "private static Material FindTemplate()").Contains("SceneFinds.Hidden"), "transit: the road paint is looked for through SceneFinds and only behind a screen");
+
+        // The minimap's pictures: kept across loads by a print of what they are drawn from, drawn and sent behind the loading screen.
+        string nav = Source(scripts, @"Navigation\NavGraph.cs");
+        Check(Body(nav, "private void StartPicture()").Contains("_keptPrint == _job.Print") && Body(nav, "public void Dispose()").Length > 0 && !Body(nav, "public void Dispose()").Contains("Destroy("),
+            "minimap: the road picture is kept across loads and used again for the same roads");
+        string navBase = Source(scripts, @"Navigation\NavBase.cs");
+        Check(Body(navBase, "public void Begin(").Contains("_keptPrint == PrintOf("), "minimap: the buildings and water are kept across loads and used again for the same city");
+        string director = Body(Source(scripts, @"Navigation\NavDirector.cs"), "private bool PrewarmRoads()");
+        Check(director.Contains("_graph.StepsNow()") && director.Contains("_graph.WaitForPicture(") && director.Contains("_base.WaitForDrawing("),
+            "minimap: both pictures are drawn and sent to the graphics card behind the loading screen");
+
+        // The contacts' pictures: no array per picture, logos kept as files, painted by a time budget.
+        Check(!Body(Source(scripts, @"Phone\Contacts\ContactPictures.cs"), "internal static void Fill(").Contains("new Color32["), "contacts: a picture's colour is written into its own texture, no 256 KB array each");
+        string painter = Source(scripts, @"Phone\Contacts\ContactPainter.cs");
+        Check(!painter.Contains("new Color32[") && painter.Contains("KeepLogo(p, ") && Body(painter, "private void OnUpdate()").Contains("slice.More(heavy)"),
+            "contacts: no picture array, logos kept as files, painting held to a slice of a frame");
+
+        // The performance tweaks: one switched a frame, what they look at taken behind the loading screen, never searched in play.
+        string sync = Body(Source(scripts, @"Performance\PerfDirector.cs"), "private void Sync(");
+        int switched = sync.IndexOf("tweak.SetActive(", StringComparison.Ordinal);
+        Check(switched >= 0 && sync.IndexOf("return;", switched, StringComparison.Ordinal) > switched, "performance: one tweak is switched a frame");
+        string refraction = Source(scripts, @"Performance\Tweaks\RefractionOff.cs");
+        Check(Body(refraction, "protected override void Prewarm()").Contains("SceneFinds.InMemory<Material>") && Body(refraction, "protected override void Tick(").Contains("SceneFinds.Hidden"),
+            "performance: the materials are listed behind the loading screen, and again only behind a black screen");
+        string lamps = Source(scripts, @"Performance\Tweaks\StaleLampLights.cs");
+        Check(Body(lamps, "protected override void Prewarm()").Contains("PerfGame.Lamps(") && !Body(lamps, "protected override void Tick(").Contains("PerfGame.IsOn(")
+              && !Body(lamps, "protected override void Restore()").Contains("PerfGame.IsOn("), "performance: the lamps are listed behind the loading screen, and held lamps are told lit by their lights, with no reflection");
+        Check(Body(Source(scripts, @"Performance\Tweaks\SkyThrottle.cs"), "protected override void Tick(").Contains("SceneFinds.Hidden"), "performance: the skies of a scene that arrives in play are searched for only behind a black screen");
+        string far = Source(scripts, @"Performance\Tweaks\FarDistricts.cs");
+        Check(Body(far, "protected override void Tick(").Contains("_stale && SceneFinds.Hidden") && Body(far, "private void Survey()").Contains("WorkSlice.Of(")
+              && Body(far, "private void OnMapToggled(").Contains("GiveBackForMap()"), "performance: the far districts gather only behind a screen, sort by the clock, and give back only the map's layers when it opens");
+
+        // The police's road map is built behind the loading screen (the streets' piece builds it), never on the first drive.
+        Check(Body(Source(scripts, @"Traffic\Solid\SolidStreets.cs"), "public static bool Prewarm()").Contains("RoadMap.Ensure()"), "prewarm: the police's road map is built behind the loading screen");
+    }
+
+    // The feature's file hands the named piece of work to ScenePrewarm as a late piece.
+    private static void HandedLate(string scripts, string file, string work, string what)
+    {
+        bool handed = false;
+        foreach (string line in Source(scripts, file).Split('\n'))
+        {
+            handed |= line.Contains("ScenePrewarm.AddLate(") && line.Contains(", " + work + ")");
+        }
+        Check(handed, "prewarm: " + what + " handed to ScenePrewarm as a late piece (" + file + ")");
     }
 
     // The feature's file hands the named piece of work to ScenePrewarm.

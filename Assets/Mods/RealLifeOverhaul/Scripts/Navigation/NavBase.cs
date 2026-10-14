@@ -31,9 +31,16 @@ namespace RealLifeOverhaul.Nav
     /// its edge is soft, by under a metre, where the roads above it are sharp (their picture has 4096). More would
     /// buy a sharper edge on a flat shape and cost four times the memory.
     ///
+    /// KEPT ACROSS LOADS. The picture on the graphics card is kept for the session with a print of everything it was drawn
+    /// from (the measured city, the roads' rectangle, its size and the two colours: Core/InputPrint). A city loaded again
+    /// (another save, the same save again) whose print is the same is given the same picture: no thread job, no 11 MB of
+    /// arrays (the coverage and the colours, which grew the managed heap on every load), no upload. A print that differs
+    /// draws a new one and lets the old one go.
+    ///
     /// Cost. Nothing per frame once the picture is made (<see cref="Busy"/> is false: the director's one test). While
-    /// a city is measured: 0.8 ms a frame. Per city load: one read of the file, one thread job of some tens of
-    /// milliseconds off the main thread, one upload.
+    /// a city is measured: 0.8 ms a frame. Per city load: one read of the file and its print, behind the loading screen
+    /// (the director's late prewarm, Core/SceneFinds); the first load of a session also draws it there (a thread job of
+    /// some 130 ms, waited for while the loading screen is up) and sends it to the graphics card.
     /// </summary>
     public sealed class NavBase
     {
@@ -65,6 +72,11 @@ namespace RealLifeOverhaul.Nav
         private readonly float[] _cornerX = new float[8], _cornerZ = new float[8];
         private readonly float[] _outX = new float[17], _outZ = new float[17];
 
+        // The picture of the session, with the print of what it was drawn from (see the summary). Survives the city: a texture
+        // made by the mod is no scene's, and it is marked to stay through the engine's sweep of unused assets.
+        private static Texture2D _kept;
+        private static ulong _keptPrint;
+
         /// <summary>The picture, once it is on the graphics card; null before, and if it could not be made.</summary>
         public Texture2D Picture { get; private set; }
         public int Width { get; private set; }
@@ -84,6 +96,7 @@ namespace RealLifeOverhaul.Nav
         public bool Busy => _stage == Stage.Buildings || _stage == Stage.Water || _stage == Stage.Drawing;
 
         public bool Idle => _stage == Stage.Idle;
+        public bool Drawing => _stage == Stage.Drawing;
         public bool Failed => _stage == Stage.Failed;
 
         /// <summary>True if the last picture came from the mod's folder and not from measuring the city.</summary>
@@ -93,6 +106,7 @@ namespace RealLifeOverhaul.Nav
         private sealed class Job
         {
             public NavBaseData Data;
+            public ulong Print;     // of what was drawn, made on the thread once the water is settled
             public bool Settle;
             public string SaveTo;
             public byte[] Rgba;
@@ -127,6 +141,7 @@ namespace RealLifeOverhaul.Nav
                     {
                         WaterCells += Data.Cells[i] == NavBaseWater.Water ? 1 : 0;
                     }
+                    Print = PrintOf(Data, Width, Height, OriginX, OriginZ, PerMetre, Building, Water);
                     var cover = new byte[Width * Height];
                     Drawn = NavBaseRaster.Buildings(cover, Width, Height, OriginX, OriginZ, PerMetre, Data);
                     Rgba = new byte[Width * Height * 4];
@@ -149,7 +164,7 @@ namespace RealLifeOverhaul.Nav
         /// </summary>
         public void Begin(NavGraph graph, bool measureAgain)
         {
-            if (_stage != Stage.Idle || graph == null || !graph.Finished)
+            if (_stage != Stage.Idle || graph == null || !graph.Sized)
             {
                 return;
             }
@@ -185,6 +200,14 @@ namespace RealLifeOverhaul.Nav
                 {
                     _data = kept;
                     _fromFile = true;
+                    if (_kept != null && _keptPrint == PrintOf(kept, Width, Height, OriginX, OriginZ, PerMetre, _building, _water))
+                    {
+                        Picture = _kept;   // the same city drawn the same way: the picture of an earlier load is this one
+                        _stage = Stage.Done;
+                        Logger?.Info("Navigation: the minimap's buildings and water are the picture made at an earlier load (the same city, size and colours): "
+                                     + Width + " x " + Height + " pixels, nothing drawn and nothing sent to the graphics card.");
+                        return;
+                    }
                     Draw(false);
                     return;
                 }
@@ -354,6 +377,41 @@ namespace RealLifeOverhaul.Nav
             }
         }
 
+        /// <summary>
+        /// Behind the loading screen (the director's late prewarm): waits up to <paramref name="milliseconds"/> for the thread
+        /// drawing the picture, so that it goes to the graphics card there and not in play. False if it is not done by then
+        /// (it is then sent on the director's timer, as before).
+        /// </summary>
+        public bool WaitForDrawing(int milliseconds)
+        {
+            Job job = _job;
+            if (_stage != Stage.Drawing || job == null)
+            {
+                return true;
+            }
+            Stopwatch watch = Stopwatch.StartNew();
+            while (!job.Done && watch.ElapsedMilliseconds < milliseconds)
+            {
+                Thread.Sleep(1);
+            }
+            return job.Done;
+        }
+
+        /// <summary>The print of everything a picture is drawn from (Core/InputPrint): the same print, the same picture.</summary>
+        internal static ulong PrintOf(NavBaseData data, int width, int height, float originX, float originZ, float perMetre, Color32 building, Color32 water)
+        {
+            var print = new InputPrint();
+            print.Add(width);
+            print.Add(height);
+            print.Add(originX);
+            print.Add(originZ);
+            print.Add(perMetre);
+            print.Add(building.r | building.g << 8 | building.b << 16 | building.a << 24);
+            print.Add(water.r | water.g << 8 | water.b << 16 | water.a << 24);
+            data.AddTo(ref print);
+            return print.Value;
+        }
+
         private void Count(long began)
         {
             double took = (Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency;
@@ -401,6 +459,13 @@ namespace RealLifeOverhaul.Nav
             };
             picture.SetPixelData(job.Rgba, 0);
             picture.Apply(false, true);   // sent to the graphics card; the copy in main memory is let go
+            picture.hideFlags = HideFlags.DontUnloadUnusedAsset;
+            if (_kept != null && _kept != picture)
+            {
+                UnityEngine.Object.Destroy(_kept);   // another city's, or drawn from other figures: this one takes its place
+            }
+            _kept = picture;
+            _keptPrint = job.Print;
             Picture = picture;
             _stage = Stage.Done;
             Logger?.Info("Navigation: the minimap's buildings and water made: " + job.Width + " x " + job.Height + " pixels (" + (1f / job.PerMetre).ToString("F2") + " m a pixel, "
@@ -419,14 +484,20 @@ namespace RealLifeOverhaul.Nav
             Logger?.Warn("Navigation: the minimap shows roads only, as before: " + why);
         }
 
-        /// <summary>Lets the picture go and forgets everything, so that <see cref="Begin"/> starts afresh. A thread still drawing finishes into an array nobody reads.</summary>
-        public void Drop()
+        /// <summary>
+        /// Forgets everything, so that <see cref="Begin"/> starts afresh. A thread still drawing finishes into an array nobody
+        /// reads. The picture itself is kept for the next load unless <paramref name="letGo"/> (the option switched off, the
+        /// city to be measured again): it is then destroyed.
+        /// </summary>
+        public void Drop(bool letGo)
         {
-            if (Picture != null)
+            if (letGo && _kept != null)
             {
-                UnityEngine.Object.Destroy(Picture);
-                Picture = null;
+                UnityEngine.Object.Destroy(_kept);
+                _kept = null;
+                _keptPrint = 0;
             }
+            Picture = null;
             _job = null;
             _data = null;
             _graph = null;

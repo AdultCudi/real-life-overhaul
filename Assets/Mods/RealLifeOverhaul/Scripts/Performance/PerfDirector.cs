@@ -8,7 +8,10 @@ namespace RealLifeOverhaul
     /// <summary>
     /// Runs the performance work in the city: switches the tweaks on and off as the options (or the benchmark)
     /// ask, gives each its timer tick, and starts the probe and the benchmark on their keys (Core/Keys: F7 and Shift+F7 unless rebound).
-    /// Its own cost per frame while nothing is being measured: one key test, four flags and one time compare.
+    /// Its own cost per frame while nothing is being measured: one key test, four flags and one time compare. Tweaks are
+    /// switched one a frame (<see cref="Sync"/>): after a load, or when the options change, each switch has a frame of its
+    /// own, where every tweak used to be switched in the same frame (a frame of 9 to 20 ms of this director in play, the
+    /// owner's logs of 14 Oct 2026). What each looks at in the scene is taken behind the loading screen (PerfTweaks.Prewarm).
     /// </summary>
     public sealed class PerfDirector : MonoBehaviour
     {
@@ -170,10 +173,10 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Brings every tweak to the state its option (or the benchmark) asks for.
+        // Brings the tweaks to the state their options (or the benchmark) ask for, one a frame: the first that is not as asked is
+        // switched, and the next frame looks again. Done once every tweak is as asked.
         private void Sync(float now)
         {
-            PerfTweaks.Dirty = false;
             foreach (PerfTweak tweak in PerfTweaks.All)
             {
                 bool want = tweak.ShouldBeActive;
@@ -182,8 +185,11 @@ namespace RealLifeOverhaul
                     tweak.SetActive(want, Logger);
                     tweak.NextTick = now + tweak.Interval;
                     Logger?.Info("Performance: '" + tweak.Id + "' " + (tweak.Active ? "on. " + tweak.Describe() : "off, the game's own state is back."));
+                    Schedule();
+                    return;   // one a frame (a tweak that faulted is off and no longer asked for: it is not switched again)
                 }
             }
+            PerfTweaks.Dirty = false;
             Schedule();
         }
 
