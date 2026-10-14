@@ -27,7 +27,8 @@ namespace RealLifeOverhaul.Economy
                 // Under the threshold: the refusal, what would raise the rating, and nothing to press.
                 _product = -1;
                 box.Title(FinanceText.T("reallife_bank_refused_title", "bank", Bank.Name));
-                box.Line(FinanceText.T("reallife_bank_refused", "bank", Bank.Name, "score", score.Value.ToString(), "threshold", CreditCatalogue.LendingThreshold.ToString()));
+                box.Chip(FinanceText.Grade(score.Grade), FinanceApp.Tone(score.Grade));
+                box.Line(FinanceText.T("reallife_bank_refused", "bank", Bank.Name, "score", score.Value.ToString(), "threshold", CreditCatalogue.LendingThreshold.ToString()), CellTone.Red);
                 int tips = CreditScoring.Tips(score, _tips);
                 if (tips > 0)
                 {
@@ -69,12 +70,13 @@ namespace RealLifeOverhaul.Economy
                     box.Line(Why(gate), CellTone.Red);
                 }
                 box.Note(FinanceText.T("reallife_bank_apply_intro", "bank", Bank.Name));
-                box.Line(FinanceText.T(ProfileKeys[Mathf.Clamp(Bank.Rank, 0, ProfileKeys.Length - 1)]));
-                box.Line(FinanceText.T("reallife_bank_apply_one_desk"));
+                box.Note(FinanceText.T(ProfileKeys[Mathf.Clamp(Bank.Rank, 0, ProfileKeys.Length - 1)]));
+                box.Note(FinanceText.T("reallife_bank_apply_one_desk"));
                 Meta.Guide.Point(box, GuideTitle);
                 return null;
             }
             box.Title(FinanceText.T(BankTables.OfferKinds[_product]));
+            box.Subtitle(Bank.Name);
             switch (_product)
             {
                 case BankTables.Loan: WriteLoanOffer(box, score); break;
@@ -87,9 +89,9 @@ namespace RealLifeOverhaul.Economy
             }
             switch (_product)
             {
-                case BankTables.Overdraft: box.Line(FinanceApp.AboutKind(ProductKind.Overdraft)); break;
-                case BankTables.Card: box.Line(FinanceApp.AboutKind(ProductKind.CreditCard)); break;
-                case BankTables.Consolidate: box.Line(FinanceText.T("reallife_bank_consolidate_about", "bank", Bank.Name)); break;
+                case BankTables.Overdraft: box.Note(FinanceApp.AboutKind(ProductKind.Overdraft)); break;
+                case BankTables.Card: box.Note(FinanceApp.AboutKind(ProductKind.CreditCard)); break;
+                case BankTables.Consolidate: box.Note(FinanceText.T("reallife_bank_consolidate_about", "bank", Bank.Name)); break;
             }
             Meta.Guide.Point(box, GuideTitle);
             return selected;
@@ -170,7 +172,7 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_econ_offer_most", FinanceText.Money(most));
             if (most < CreditCatalogue.LoanLeast)
             {
-                box.Line(FinanceText.T("reallife_econ_offer_nothing", "least", FinanceText.Money(CreditCatalogue.LoanLeast)));
+                box.Line(FinanceText.T("reallife_econ_offer_nothing", "least", FinanceText.Money(CreditCatalogue.LoanLeast)), CellTone.Red);
                 Close(box);
                 return;
             }
@@ -321,7 +323,7 @@ namespace RealLifeOverhaul.Economy
             Books.Businesses(_shops);
             if (_shops.Count == 0)
             {
-                box.Line(FinanceText.T("reallife_econ_business_none"));
+                box.Line(FinanceText.T("reallife_econ_business_none"), CellTone.Yellow);
                 Close(box);
                 return;
             }
@@ -343,7 +345,7 @@ namespace RealLifeOverhaul.Economy
             float profit;
             int days;
             ProductOffer offer = desk.Business(shop, Bank, out profit, out days);
-            box.Line(FinanceText.T("reallife_econ_business_record", "days", days.ToString(), "profit", FinanceText.Money(profit)));
+            box.Note(FinanceText.T("reallife_econ_business_record", "days", days.ToString(), "profit", FinanceText.Money(profit)));
             if (offer.Answer != ProductAnswer.Yes)
             {
                 box.Line(Why(offer.Answer), CellTone.Red);
@@ -432,7 +434,7 @@ namespace RealLifeOverhaul.Economy
             }
             int own = ProductTerms.DepositFor(_amount, deposit), price = _amount + own, amount = _amount;
             FinanceQuote quote = ProductTerms.Quote(price, deposit, amount, term, offer.RateBp, AccountRules.DaysPerYear);
-            box.Line(FinanceText.T("reallife_econ_finance_example", "price", FinanceText.Money(price), "own", FinanceText.Money(own)));
+            box.Note(FinanceText.T("reallife_econ_finance_example", "price", FinanceText.Money(price), "own", FinanceText.Money(own)));
             box.RowPair("reallife_econ_finance_first", FinanceText.Money(quote.Instalment + quote.FirstInterest), "reallife_econ_finance_interest", FinanceText.Money(quote.Interest));
             Lender bank = Bank;
             string kindName = FinanceText.T(ProductCatalogue.KindKeys[(int)kind]);
@@ -476,7 +478,7 @@ namespace RealLifeOverhaul.Economy
                 box.Headline("reallife_econ_consolidate_then");
                 box.Line(FinanceText.T("reallife_econ_consolidate_line", "owed", FinanceText.Money(after.Owed), "daily", FinanceText.Money(after.Daily), "days", after.Days.ToString())
                          + " " + FinanceText.Pair("reallife_econ_consolidate_cost", FinanceText.Money(after.Cost)));
-                box.Line(FinanceText.T("reallife_econ_consolidate_rate", "rate", quote.AnnualRate.ToString("0.#"), "fee", FinanceText.Money(quote.Fee)));
+                box.Note(FinanceText.T("reallife_econ_consolidate_rate", "rate", quote.AnnualRate.ToString("0.#"), "fee", FinanceText.Money(quote.Fee)));
             }
             if (answer != ProductAnswer.Yes)
             {

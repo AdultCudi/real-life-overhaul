@@ -96,8 +96,11 @@ namespace RealLifeOverhaul.Economy
                 _picked = null;
                 BankSlice slice = desk.Slice(Bank, _work);
                 box.Title(FinanceText.T("reallife_bank_tab_loans"));
+                box.Subtitle(Bank.Name);
+                box.Section("reallife_look_sec_now");
                 box.Row("reallife_bank_owed_here", FinanceText.Money(slice.Owed));
                 box.Row("reallife_econ_over_leaves", FinanceText.Money(slice.Tomorrow));
+                box.EndSection();
                 box.Note(FinanceText.T("reallife_bank_loans_pick"));
                 box.Line(FinanceText.T("reallife_bank_loans_finance"));
                 Meta.Guide.Point(box, GuideTitle);
@@ -149,7 +152,7 @@ namespace RealLifeOverhaul.Economy
             if (m.Purpose == LoanPurpose.Business)
             {
                 BuildingRegistration shop = Books.Business(m.Security);
-                box.Line(shop != null ? FinanceText.T("reallife_econ_account_secured", "thing", shop.BusinessName) : FinanceText.T("reallife_econ_loan_unsecured"));
+                box.Note(shop != null ? FinanceText.T("reallife_econ_account_secured", "thing", shop.BusinessName) : FinanceText.T("reallife_econ_loan_unsecured"));
             }
             if (!frozen)   // (in a debt arrangement the arrangement pays it)
             {
@@ -216,7 +219,7 @@ namespace RealLifeOverhaul.Economy
                 ? FinanceText.T("reallife_econ_row_owed_of", "owed", FinanceText.Money(a.Owed), "total", FinanceText.Money(a.Agreed)) : FinanceText.Money(a.Owed));
             if (a.Kind == ProductKind.Arrears)
             {
-                box.Line(FinanceText.T("reallife_econ_account_arrears"));
+                box.Line(FinanceText.T("reallife_econ_account_arrears"), CellTone.Yellow);
             }
             else
             {
@@ -226,7 +229,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     box.Row("reallife_tab_account_paid_off_day", FinanceText.Day(today + left));
                 }
-                box.Line(FinanceText.T(a.Secured ? "reallife_econ_account_secured" : "reallife_econ_account_unsecured", "thing", CreditDesk.Thing(a)));
+                box.Note(FinanceText.T(a.Secured ? "reallife_econ_account_secured" : "reallife_econ_account_unsecured", "thing", CreditDesk.Thing(a)));
             }
             if (a.RateBp > 0)
             {
@@ -234,7 +237,7 @@ namespace RealLifeOverhaul.Economy
             }
             if (a.Ladder.PlanLeft > 0)
             {
-                box.Line(FinanceText.T("reallife_econ_account_plan", "left", FinanceText.Money(a.Ladder.PlanLeft), "payment", FinanceText.Money(a.Ladder.PlanPerDay)));
+                box.Line(FinanceText.T("reallife_econ_account_plan", "left", FinanceText.Money(a.Ladder.PlanLeft), "payment", FinanceText.Money(a.Ladder.PlanPerDay)), CellTone.Yellow);
             }
             if (!a.Frozen)
             {
@@ -301,7 +304,7 @@ namespace RealLifeOverhaul.Economy
                 string other = HeldWith(ProductKind.CreditCard);
                 if (other != null)
                 {
-                    box.Line(FinanceText.T("reallife_bank_card_elsewhere", "other", other, "bank", Bank.Name));
+                    box.Note(FinanceText.T("reallife_bank_card_elsewhere", "other", other, "bank", Bank.Name));
                 }
                 else
                 {
@@ -328,7 +331,9 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_econ_offer_limit", FinanceText.Money(card.Agreed));
             if (card.Agreed > 0)
             {
-                box.Line(FinanceText.T("reallife_tab_account_used", "share", Mathf.RoundToInt(card.Owed * 100f / card.Agreed) + "%", "free", FinanceText.Money(card.Free)));
+                float used = card.Owed / (float)card.Agreed;
+                box.Meter("reallife_look_used", used, FinanceText.T("reallife_tab_account_used", "share", Mathf.RoundToInt(used * 100f) + "%", "free", FinanceText.Money(card.Free)),
+                    used >= 0.9f ? CellTone.Red : used >= 0.5f ? CellTone.Yellow : CellTone.Green);
             }
             FinanceApp.RateLines(box, FinanceApp.Rate(card.RateNow), card.Ladder.Penalty);
             box.Headline("reallife_bank_card_statement");
