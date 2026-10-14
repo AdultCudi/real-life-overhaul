@@ -726,6 +726,7 @@ namespace RealLifeOverhaul.Interiors
                 return 0;
             }
             List<CustomerEntry> made = calculator.GetCustomersEntriesForHour(next, n, NeighborhoodHelper.GetData(reg.Neighborhood).customerDemandsWeight);
+            DrawPrint before = CustomerDraw.Print(entries);
             int added = 0;
             for (int i = 0; made != null && i < made.Count && added < n; i++)   // (the calculator's own list: taken from at once)
             {
@@ -735,6 +736,10 @@ namespace RealLifeOverhaul.Interiors
                     ours.Add(made[i]);
                     added++;
                 }
+            }
+            if (added > 0)
+            {
+                CustomerDraw.Added(reg, before);   // (the list is still the one last drawn, with the feature's clients on it)
             }
             return added;
         }
@@ -772,14 +777,18 @@ namespace RealLifeOverhaul.Interiors
 
         // ---------------------------------------------------------------- the basket
 
+        public const float BasketLead = 2f;   // game minutes: a customer of the basket's hour due within them of its turn is left as drawn
+
         /// <summary>
-        /// The customers still to come at a shop this hour (not those due in the next two minutes) and the next hour,
-        /// each looked at once: the products in its order (never the door's entrance fee) times the share (per mille,
-        /// InteriorRules.BasketExtra) more of what the shop sells and has on its shelves, each a different one while there
-        /// are enough. Returns how many were added. Only a shop the game draws retail customers for (not a casino, a cinema
-        /// or a theatre, whose customers come for tickets). Asked once a game hour, as the hour turns.
+        /// The customers still to come at a shop in the basket's hour (not those due before <paramref name="soonest"/>: the
+        /// minute it fell due, plus <see cref="BasketLead"/>) and the hour after, each looked at once: the products in its
+        /// order (never the door's entrance fee) times the share (per mille, InteriorRules.BasketExtra) more of what the shop
+        /// sells and has on its shelves, each a different one while there are enough. Returns how many were added. Only a shop
+        /// the game draws retail customers for (not a casino, a cinema or a theatre, whose customers come for tickets). Asked
+        /// once a game hour, as the hour turns; for a shop whose customers wait to be drawn again, as they are drawn, within
+        /// that hour and with what it fell due with (InteriorDirector.Redrawn).
         /// </summary>
-        public static int Basket(BuildingRegistration reg, int share, bool office)
+        public static int Basket(BuildingRegistration reg, int share, bool office, int hour, float soonest)
         {
             if (share <= 0 || reg == null || reg.temporarilyClosed || !Retail(reg))
             {
@@ -791,8 +800,7 @@ namespace RealLifeOverhaul.Interiors
             {
                 return 0;
             }
-            int today = TimeHelper.CurrentDay, hour = TimeHelper.CurrentHour, added = 0;
-            float soonest = TimeHelper.CurrentMinute + 2f;
+            int today = TimeHelper.CurrentDay, added = 0;
             for (int i = 0; i < entries.Count; i++)
             {
                 CustomerEntry e = entries[i];
