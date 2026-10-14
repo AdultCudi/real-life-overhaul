@@ -16,6 +16,7 @@ internal static partial class Program
         WorkLeaving();
         WorkVacancies();
         WorkSave();
+        WorkReapply();
         WorkPath();
     }
 
@@ -255,6 +256,75 @@ internal static partial class Program
         Check(b.StartTold, "work: the first step told comes back, so it is said once a save");
         var none = CareersStore.Read("v=1~h:1", out version);
         Check(none.Work.Job == null && none.Work.Openings.Count == 0 && !none.Work.StartTold, "work: a line of the study's first version has no working life, and the first step is still to tell");
+    }
+
+    // Applying again after a no (WorkFile.TurnedDown, ProRules.ReapplyDays): the same post at the same employer waits 14 days,
+    // whichever vacancy it comes in; another employer or another post is open at once; the day is saved, and an old save's
+    // noes count from the day they can be told from, or bar nothing.
+    private static void WorkReapply()
+    {
+        Opening Post(int id, string employer, int prof, int rank) => new Opening
+        {
+            Id = id, Prof = prof, Rank = rank, Kind = (int)EmployerKind.Rival, Employer = employer, Street = "Elm St", Number = 12, Pay = 5000, From = 1, To = 400
+        };
+        var f = new StudyFile { Seed = 9 };
+        WorkFile w = f.Work;
+        Opening first = Post(5, "Harbour Law", ProCatalogue.Lawyer, 1);
+        var a = new Application { Day = 18, Stage = (int)ApplyStep.Sent, Answer = 20, Score = 40 };
+        first.CopyTo(a.Post);
+        w.Applications.Add(a);
+        Check(w.TurnedDown(first, 20) == null && a.Refused == -1, "work: an application waiting for its answer bars nothing");
+        a.Reject(20);
+        Check(a.Refused == 20 && a.At == ApplyStep.Rejected, "work: a no keeps its day");
+        Check(ProRules.ReapplyDays == 14 && ProRules.ReapplyFrom(20) == 34, "work: the same post can be applied for again 14 days after a no");
+        Check(w.TurnedDown(first, 20) == a && w.TurnedDown(first, 21) == a, "work: the same post at the same employer is refused on the day of the no and the next day");
+        Check(w.TurnedDown(first, 33) == a, "work: ...and on the 13th day after it");
+        Check(w.TurnedDown(first, 34) == null && w.TurnedDown(first, 60) == null, "work: ...and taken again from the 14th day");
+        Check(w.TurnedDown(Post(6, "Quay Partners", ProCatalogue.Lawyer, 1), 21) == null, "work: the same profession and rank at another employer is open at once");
+        Check(w.TurnedDown(Post(7, "Harbour Law", ProCatalogue.Lawyer, 2), 21) == null && w.TurnedDown(Post(8, "Harbour Law", ProCatalogue.Developer, 1), 21) == null,
+            "work: another post at the same employer is open at once");
+        Opening again = Post(41, "Harbour Law", ProCatalogue.Lawyer, 1);
+        again.From = 25;
+        Check(w.TurnedDown(again, 26) == a && w.TurnedDown(again, 34) == null, "work: a new vacancy the employer posts later for the same post is refused until the 14 days are over");
+        var later = new Application { Day = 30, Stage = (int)ApplyStep.Sent };
+        first.CopyTo(later.Post);
+        later.Reject(36);
+        w.Applications.Add(later);
+        Check(w.TurnedDown(first, 40) == later && w.TurnedDown(first, 49) == later && w.TurnedDown(first, 50) == null, "work: the latest of two noes for the same post sets the day");
+        var offered = new Application { Day = 10, Stage = (int)ApplyStep.Offered, Offer = 5000, Lapse = 15 };
+        first.CopyTo(offered.Post);
+        offered.Stage = (int)ApplyStep.Declined;
+        Check(!offered.Bars(11), "work: an offer the player turned down bars nothing");
+
+        // the save's round trip, and an old save without the day
+        var g = new StudyFile { Seed = 9 };
+        var screened = new Application { Day = 18, Stage = (int)ApplyStep.Rejected, Answer = 20, Refused = 98765 };
+        first.CopyTo(screened.Post);
+        var interviewed = new Application { Day = 18, Stage = (int)ApplyStep.Rejected, Answer = 19, InterviewDay = 23, InterviewHour = 11, Refused = 98765 };
+        Post(9, "Quay Partners", ProCatalogue.Lawyer, 1).CopyTo(interviewed.Post);
+        var withdrawn = new Application { Day = 18, Stage = (int)ApplyStep.Rejected, Answer = 19, InterviewDay = 23, Offer = 5200, Asks = 1, Lapse = 26, Refused = 98765 };
+        Post(10, "Harbour Law", ProCatalogue.Developer, 1).CopyTo(withdrawn.Post);
+        g.Work.Applications.Add(screened);
+        g.Work.Applications.Add(interviewed);
+        g.Work.Applications.Add(withdrawn);
+        int version;
+        screened.Refused = 20;
+        string line = CareersStore.Write(g);
+        StudyFile back = CareersStore.Read(line, out version);
+        Check(CareersStore.Write(back) == line && back.Work.Applications.Count == 3 && back.Work.Applications[0].Refused == 20 && back.Work.Applications[1].Refused == 98765,
+            "work: a no's day comes back from the save");
+        Check(back.Work.TurnedDown(first, 33) != null && back.Work.TurnedDown(first, 34) == null, "work: a no read back from the save still bars its post for the rest of the 14 days");
+        screened.Refused = interviewed.Refused = withdrawn.Refused = 98765;
+        string old = CareersStore.Write(g).Replace("|98765", string.Empty);
+        Check(old.IndexOf("98765", StringComparison.Ordinal) < 0, "work: the old save's line has no day of a no");
+        StudyFile was = CareersStore.Read(old, out version);
+        WorkFile ow = was.Work;
+        Check(ow.Applications.Count == 3 && ow.Applications[0].Refused == 20 && ow.Applications[1].Refused == 23 && ow.Applications[2].Refused == -1,
+            "work: an old save's noes count from the answer's day or the interview's, and a withdrawn offer's day is not known");
+        Check(ow.TurnedDown(first, 33) != null && ow.TurnedDown(first, 34) == null && ow.TurnedDown(Post(10, "Harbour Law", ProCatalogue.Developer, 1), 27) == null,
+            "work: an old save loads with its noes barring from the day they were made, and one with no day bars nothing");
+        var fresh = CareersStore.Read("v=1~h:1", out version);
+        Check(fresh.Work.TurnedDown(first, 1) == null, "work: a save with no applications bars nothing");
     }
 
     // The way to an offer (Careers/Work/ProPath): the chance of one, the points short, each profession's next step and the

@@ -575,9 +575,29 @@ namespace RealLifeOverhaul.Careers
             return false;
         }
 
-        /// <summary>Applies for a vacancy. Null if done, else a reason key.</summary>
+        /// <summary>The fields of a refusal's notice (<see cref="TakeWhyData"/>); null for a reason with none.</summary>
+        private Dictionary<string, string> _whyData;
+
+        /// <summary>The fields the last reason <see cref="Apply"/> gave needs filled in, once; null if it needs none.</summary>
+        internal Dictionary<string, string> TakeWhyData()
+        {
+            Dictionary<string, string> d = _whyData;
+            _whyData = null;
+            return d;
+        }
+
+        /// <summary>Why the player cannot apply for a post at an employer that turned them down: who, when, and from which day they can.</summary>
+        internal static string TurnedDownText(Application a)
+        {
+            return CareersText.Fill(TurnedDownKey, "employer", CareersText.Employer(a.Post.Employer), "day", CareersText.Day(a.Refused), "day2", CareersText.Day(ProRules.ReapplyFrom(a.Refused)));
+        }
+
+        private const string TurnedDownKey = "reallife_work_why_turned_down";
+
+        /// <summary>Applies for a vacancy. Null if done, else a reason key (its fields, if any, from <see cref="TakeWhyData"/>).</summary>
         public string Apply(int opening)
         {
+            _whyData = null;
             WorkFile w = Work;
             Opening o = w != null ? w.OpeningOf(opening) : null;
             int day = Save != null ? Save.Day : 0;
@@ -592,6 +612,12 @@ namespace RealLifeOverhaul.Careers
             if (w.Job != null && w.Job.Post.Same(o))
             {
                 return "reallife_work_why_yours";
+            }
+            Application turned = w.TurnedDown(o, day);
+            if (turned != null)
+            {
+                _whyData = Data("employer", CareersText.Employer(turned.Post.Employer), "day", CareersText.Day(turned.Refused), "day2", CareersText.Day(ProRules.ReapplyFrom(turned.Refused)));
+                return TurnedDownKey;   // (the same post there waits ProRules.ReapplyDays after a no, so applying daily cannot beat the odds; other posts and employers stay open)
             }
             int live = 0;
             for (int i = 0; i < w.Applications.Count; i++)
@@ -629,7 +655,7 @@ namespace RealLifeOverhaul.Careers
                 int drop = -1;
                 for (int i = 0; i < w.Applications.Count && drop < 0; i++)
                 {
-                    drop = w.Applications[i].Live ? -1 : i;
+                    drop = w.Applications[i].Live || w.Applications[i].Bars(day) ? -1 : i;   // (a no still barring its post is kept while anything older can go)
                 }
                 w.Applications.RemoveAt(drop < 0 ? 0 : drop);
             }
@@ -666,7 +692,7 @@ namespace RealLifeOverhaul.Careers
                         }
                         else
                         {
-                            a.Stage = (int)ApplyStep.Rejected;
+                            a.Reject(day);
                             Tell2(NotificationType.Info, "reallife_work_note_rejected", Data("employer", employer, "title", title), TabApplications, CareerApp.ApplicationRow + a.Post.Id);
                         }
                         break;
@@ -777,7 +803,7 @@ namespace RealLifeOverhaul.Careers
             }
             else
             {
-                a.Stage = (int)ApplyStep.Rejected;
+                a.Reject(day);
                 Tell2(NotificationType.Info, "reallife_work_note_not_after_interview", Data("employer", CareersText.Employer(a.Post.Employer)), TabApplications, CareerApp.ApplicationRow + a.Post.Id);
             }
         }
@@ -805,7 +831,7 @@ namespace RealLifeOverhaul.Careers
             }
             else if (ProRules.Withdraws(bp, a.Asks - 1, TechRandom.Mille(StudySeed, 8404, a.Post.Id, a.Asks)))
             {
-                a.Stage = (int)ApplyStep.Rejected;
+                a.Reject(Save.Day);
                 Tell2(NotificationType.Warning, "reallife_work_note_ask_withdrawn", Data("employer", employer), TabApplications, CareerApp.ApplicationRow + id);
             }
             else

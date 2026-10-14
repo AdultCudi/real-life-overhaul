@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Careers
     ///   w  next id|last day|vacancies day|recruitment office until|earned|days worked|pension|benefit until|benefit a week|retired|search firm day|benefit paid|retired early|first step told
     ///   o  each vacancy, a each application, j the job now (one), y each job before
     ///      a vacancy: id|profession|rank|kind|employer|street|number|rival|pay|mode|from|to|via|family|level
-    ///      an application: the vacancy, then day|stage|answer|interview day|interview hour|score|offer|asks|lapse|start
+    ///      an application: the vacancy, then day|stage|answer|interview day|interview hour|score|offer|asks|lapse|start|turned down on
     ///      the job: the vacancy, then hired|rank day|pay|mode|boss|settled|today|today's minutes|clocked in|due|worked|late|absent|week|week's
     ///      minutes|overtime|burnout|rating|review day|low runs|warnings|raises|politics|politics day|favour|options|vest day|restraint|exclusive|
     ///      notice end|leaving|declared|conflict seen|earned|bonus|rise asked|signed off until
@@ -33,7 +33,7 @@ namespace RealLifeOverhaul.Careers
             for (int i = 0; i < f.Applications.Count && i < WorkFile.ApplicationsMost; i++)
             {
                 Application a = f.Applications[i];
-                Post(w.Record(), a.Post).Add(a.Day).Add(a.Stage).Add(a.Answer).Add(a.InterviewDay).Add(a.InterviewHour).Add(a.Score).Add(a.Offer).Add(a.Asks).Add(a.Lapse).Add(a.StartDay);
+                Post(w.Record(), a.Post).Add(a.Day).Add(a.Stage).Add(a.Answer).Add(a.InterviewDay).Add(a.InterviewHour).Add(a.Score).Add(a.Offer).Add(a.Asks).Add(a.Lapse).Add(a.StartDay).Add(a.Refused);
             }
             w.Part('j');
             Job j = f.Job;
@@ -135,6 +135,8 @@ namespace RealLifeOverhaul.Careers
                 a.Asks = Math.Max(0, x.Int());
                 a.Lapse = x.Int();
                 a.StartDay = x.Int();
+                int refused = x.Int(int.MinValue);
+                a.Refused = refused != int.MinValue ? Math.Max(-1, refused) : ProRules.RefusedDay(a);   // (a save from before the day was kept: told from what it holds, else no bar)
                 if (f.Applications.Count < WorkFile.ApplicationsMost)
                 {
                     f.Applications.Add(a);

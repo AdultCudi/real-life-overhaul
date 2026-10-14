@@ -233,7 +233,7 @@ namespace RealLifeOverhaul.Careers
             UiClone.Safe(() => why = act());
             if (why != null)
             {
-                Notifications.Show(NotificationType.Error, why, null, 8f);
+                Notifications.Show(NotificationType.Error, why, _director.TakeWhyData(), 8f);
             }
             Refresh();
         }
@@ -321,6 +321,11 @@ namespace RealLifeOverhaul.Careers
             {
                 box.Line(CareersText.T("reallife_career_post_applied"));
             }
+            Application turned = applied ? null : w.TurnedDown(o, day);
+            if (turned != null)
+            {
+                box.Line(CareersDirector.TurnedDownText(turned));   // (and no Apply until then: ProRules.ReapplyDays)
+            }
             if (!ProRules.Qualified(f, p, o.Rank))
             {
                 box.Line(CareersText.T("reallife_career_post_unqualified"));
@@ -346,7 +351,7 @@ namespace RealLifeOverhaul.Careers
             {
                 box.Line(CareersText.T("reallife_career_post_referral"));
             }
-            if (!applied && ProRules.Qualified(f, p, o.Rank) && o.Via != (int)Via.Headhunter)
+            if (!applied && turned == null && ProRules.Qualified(f, p, o.Rank) && o.Via != (int)Via.Headhunter)
             {
                 Candidate c = _director.CandidateFor(o, template);
                 int chance = ProPath.OfferChance(ProRules.HireScore(c));
@@ -356,7 +361,7 @@ namespace RealLifeOverhaul.Careers
             }
             Transform buttons = box.ButtonRow();
             int id = o.Id;
-            if (!applied)
+            if (!applied && turned == null)
             {
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_career_button_apply", () => Do(() => _director.Apply(id)));
             }
