@@ -17,21 +17,32 @@ namespace RealLifeOverhaul
     /// It works as <see cref="PerfLoop"/> does (a timestamp step put into the engine's list of frame steps), and it
     /// keeps one frame, not a window. The dozen steps named in <see cref="GroupOf"/> are added up into their groups;
     /// every other step of the frame (the engine's own, and any other mod's) is timed by itself, so that a long frame
-    /// whose time is in "the rest" can name the one step it was in (<see cref="LastOther"/>). Per frame some two
-    /// hundred and fifty timestamp reads and as many additions (a few microseconds), nothing allocated. Installed only
-    /// while "Developer diagnostics" is on and the option "Measurements time every step of the frame" allows it;
-    /// taken out of the loop again when either goes off, and stood aside while a probe or a benchmark has its own
-    /// timestamps in the loop.
+    /// whose time is in "the rest" can name the one step it was in (<see cref="LastOther"/>).
+    ///
+    /// The frame is the one Time.unscaledDeltaTime measures: from one time update to the next. Since Unity 2022.2 the
+    /// time is updated in the loop's first step, TimeUpdate.WaitForLastPresentationAndUpdateTime, after the wait for the
+    /// frame before to be shown; so the sums roll over just after that step, and the wait (the graphics card, the render
+    /// thread or the display) closes the frame it was part of. Until October 2026 they rolled over just before it, and a long
+    /// wait was counted in the next frame's sums while the delta already held it: it showed as "the rest" with no step
+    /// named. The span between two roll-overs is kept too (<see cref="LastSpanMs"/>), with the time in all the timed
+    /// steps, so that what lay outside every step (between two passes of the loop, or in a phase without steps) is known
+    /// as well; and the operating system's figures for the same frame are read at the roll-over (<see cref="MachineClock"/>).
+    ///
+    /// Per frame some two hundred and fifty timestamp reads and as many additions, and four calls into kernel32 (a few
+    /// microseconds in all), nothing allocated. Installed only while "Developer diagnostics" is on and the option
+    /// "Measurements time every step of the frame" allows it; taken out of the loop again when either goes off, and
+    /// stood aside while a probe or a benchmark has its own timestamps in the loop.
     /// </summary>
     public static class FrameSteps
     {
-        public const int Update = 0, Coroutines = 1, LateUpdate = 2, Fixed = 3, Physics = 4, Navigation = 5, Animation = 6, Ui = 7, Render = 8, Loading = 9;
-        public const int Count = 10;
+        public const int Update = 0, Coroutines = 1, LateUpdate = 2, Fixed = 3, Physics = 4, Navigation = 5, Animation = 6, Ui = 7, Render = 8, Loading = 9, Wait = 10;
+        public const int Count = 11;
 
         /// <summary>The groups' names as the long-frame line gives them, in the order of the constants.</summary>
         public static readonly string[] Names =
         {
             "scripts' Update", "coroutines and timers", "scripts' LateUpdate", "scripts' FixedUpdate", "physics", "navigation", "animation", "interface", "rendering", "loading",
+            "waiting for the last frame to be shown",
         };
 
         private static readonly long[] Now = new long[Count];    // the frame being run
@@ -44,17 +55,35 @@ namespace RealLifeOverhaul
         private static string[] _otherNames = new string[0];
 
         private static long _began;
+        private static long _rolledAt;          // the clock at the last roll-over
+        private static long _spanLast;          // the frame before this one, roll-over to roll-over
+        private static long _stepsLast;         // ...and the time in all its timed steps, the groups and every other step
+        private static long _restLast;          // ...of which in the steps outside the groups ("the rest")
+        private static int _rolls;
         private static int _rolledFrame = -10;
         private static bool _wanted, _paused, _installed;
+        private static string _shape = "not read";
 
         /// <summary>True while the timestamps are in the engine's loop.</summary>
         public static bool Installed => _installed;
 
-        /// <summary>True when <see cref="LastMs"/> speaks of the frame before this one (the timestamps are in the loop and ran).</summary>
-        public static bool Valid => _installed && Time.frameCount - _rolledFrame <= 1;
+        /// <summary>True when <see cref="LastMs"/> speaks of the frame before this one (the timestamps are in the loop and ran over a whole frame).</summary>
+        public static bool Valid => _installed && _rolls >= 2 && Time.frameCount - _rolledFrame <= 1;
 
         /// <summary>Milliseconds the frame before this one spent in a group of steps.</summary>
         public static float LastMs(int group) => (float)(Last[group] * 1000.0 / Stopwatch.Frequency);
+
+        /// <summary>Milliseconds from the roll-over before the frame to the one after it: the frame's length by the same clock as its steps.</summary>
+        public static double LastSpanMs => _spanLast * 1000.0 / Stopwatch.Frequency;
+
+        /// <summary>Milliseconds the frame before this one spent in all its timed steps.</summary>
+        public static double LastStepsMs => _stepsLast * 1000.0 / Stopwatch.Frequency;
+
+        /// <summary>Milliseconds it spent in the steps outside the named groups ("the rest" of the steps).</summary>
+        public static double LastRestMs => _restLast * 1000.0 / Stopwatch.Frequency;
+
+        /// <summary>For the recording line: where the sums roll over, and the engine's loop as it was found (its phases and their steps).</summary>
+        public static string Shape => _shape;
 
         /// <summary>
         /// The step outside the named groups that took the most of the frame before this one ("PostLateUpdate.UpdateAllSkinnedMeshes",
@@ -149,7 +178,25 @@ namespace RealLifeOverhaul
                 }
             }
             var timedPhases = new PlayerLoopSystem[phases.Length];
+            // Where the sums roll over: just after the step that updates the time (TimeUpdate.WaitForLastPresentationAndUpdateTime
+            // since 2022.2, Initialization.PlayerUpdateTime before it), so that a frame's sums and Time.unscaledDeltaTime cover
+            // the same stretch. Failing both, before the loop's very first step, as before.
+            int rollPhase = -1, rollStep = -1;
+            for (int p = 0; p < phases.Length && rollPhase < 0; p++)
+            {
+                PlayerLoopSystem[] steps = phases[p].subSystemList;
+                for (int s = 0; steps != null && s < steps.Length; s++)
+                {
+                    if (UpdatesTime(steps[s].type))
+                    {
+                        rollPhase = p;
+                        rollStep = s;
+                        break;
+                    }
+                }
+            }
             bool rolled = false;
+            var shape = new System.Text.StringBuilder(256);
             // Every step outside the named groups gets a slot of its own, with its name, and an end that adds to that slot.
             var otherNames = new List<string>(160);
             var otherEnds = new List<PlayerLoopSystem.UpdateFunction>(160);
@@ -157,6 +204,7 @@ namespace RealLifeOverhaul
             {
                 PlayerLoopSystem phase = phases[p];   // a copy: the game's own arrays are never written to
                 PlayerLoopSystem[] steps = phase.subSystemList;
+                shape.Append(p > 0 ? ", " : string.Empty).Append(phase.type != null ? phase.type.Name : "(unnamed)").Append(' ').Append(steps != null ? steps.Length : 0);
                 if (steps == null || steps.Length == 0)
                 {
                     timedPhases[p] = phase;
@@ -164,7 +212,7 @@ namespace RealLifeOverhaul
                 }
                 var with = new PlayerLoopSystem[steps.Length * 3 + (rolled ? 0 : 1)];
                 int at = 0;
-                if (!rolled)
+                if (!rolled && rollPhase < 0)
                 {
                     rolled = true;
                     with[at++] = new PlayerLoopSystem { type = typeof(FrameSteps), updateDelegate = RollStep };   // the frame's very first step
@@ -187,12 +235,27 @@ namespace RealLifeOverhaul
                         with[at++] = steps[s];
                         with[at++] = new PlayerLoopSystem { type = typeof(FrameSteps), updateDelegate = otherEnds[other] };
                     }
+                    if (p == rollPhase && s == rollStep)
+                    {
+                        rolled = true;
+                        with[at++] = new PlayerLoopSystem { type = typeof(FrameSteps), updateDelegate = RollStep };   // just after the time update: the frame's end
+                    }
+                }
+                if (at < with.Length)
+                {
+                    Array.Resize(ref with, at);   // no roll-over in this phase: the slot kept for one is not left empty
                 }
                 phase.subSystemList = with;
                 timedPhases[p] = phase;
             }
             Array.Clear(Now, 0, Count);
             Array.Clear(Last, 0, Count);
+            _rolls = 0;
+            _shape = (rollPhase >= 0
+                         ? "rolled over just after " + StepName(phases[rollPhase].type, phases[rollPhase].subSystemList[rollStep].type) + ", where the engine updates the time"
+                         : "rolled over before the loop's first step (no step that updates the time was found)")
+                     + "; the engine's loop: " + shape + " steps; a phase without steps, and the time between two passes of the loop, count as outside the engine's steps";
+            MachineClock.Start();
             _otherNames = otherNames.ToArray();
             _otherNow = new long[_otherNames.Length];
             _otherLast = new long[_otherNames.Length];
@@ -252,18 +315,38 @@ namespace RealLifeOverhaul
 
         private static void Roll()
         {
+            long at = Stopwatch.GetTimestamp();
+            long steps = 0L, rest = 0L;
             for (int g = 0; g < Count; g++)
             {
+                steps += Now[g];
                 Last[g] = Now[g];
                 Now[g] = 0;
             }
             long[] now = _otherNow, last = _otherLast;
             for (int i = 0; i < now.Length && i < last.Length; i++)
             {
+                rest += now[i];
                 last[i] = now[i];
                 now[i] = 0;
             }
+            _stepsLast = steps + rest;
+            _restLast = rest;
+            _spanLast = at - _rolledAt;
+            _rolledAt = at;
+            if (_rolls < 2)
+            {
+                _rolls++;   // the first roll-over after the timestamps go in closes a part of a frame only
+            }
             _rolledFrame = Time.frameCount;
+            MachineClock.Sample();
+        }
+
+        // The step in which the engine updates the frame's time (and so where Time.unscaledDeltaTime ends).
+        private static bool UpdatesTime(Type step)
+        {
+            return step != null && step.Namespace == "UnityEngine.PlayerLoop"
+                   && (step.Name == "WaitForLastPresentationAndUpdateTime" || step.Name == "PlayerUpdateTime");
         }
 
         // "PostLateUpdate.UpdateAllSkinnedMeshes" for the engine's steps; another mod's by its own type's full name.
@@ -309,6 +392,8 @@ namespace RealLifeOverhaul
                 case "UpdateCanvasRectTransform": return Ui;
                 case "FinishFrameRendering": return Render;
                 case "UpdatePreloading": return Loading;
+                case "WaitForLastPresentationAndUpdateTime":
+                case "PresentAfterDraw": return Wait;
                 default: return -1;
             }
         }

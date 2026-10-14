@@ -61,6 +61,7 @@ internal static partial class Program
         Fits();
         FitPresets();
         Cars();
+        Frames();
         if (Array.IndexOf(args, "--sites") >= 0)
         {
             DrawSites();
