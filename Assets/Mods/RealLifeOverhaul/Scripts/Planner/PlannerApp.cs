@@ -659,7 +659,7 @@ namespace RealLifeOverhaul.Planner
         private void DeleteNote(int noteId)
         {
             // The game's own question box, with its red "negative" look.
-            HudConfirm.Show("reallife_planner_delete_title", "reallife_planner_delete_body", () => UiClone.Safe(() =>
+            GameConfirm.Show("reallife_planner_delete_title", "reallife_planner_delete_body", () => UiClone.Safe(() =>
             {
                 PlannerStore.RemoveNote(noteId);
                 PlannerStore.SetReminder(new EntryId(NoteSource.SourceId, noteId), 0, 0, ReminderLead.None, 0);

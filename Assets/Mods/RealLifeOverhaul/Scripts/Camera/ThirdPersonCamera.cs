@@ -138,9 +138,34 @@ namespace RealLifeOverhaul
         }
 
         private static readonly int HotUpdate = HotSpots.Slot("Camera: ThirdPersonCamera.Update");
+        // The frame's work is a method of its own, so that a game lacking something it names fails there, inside the try
+        // (Core/GameMembers): said once, the game's cameras given back, and the mod's camera off for the session.
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
+            try
+            {
+                Frame();
+            }
+            catch (System.Exception e) when (GameMembers.StandsDown(e, "the third-person camera"))
+            {
+                enabled = false;
+                try
+                {
+                    SetLooking(false);
+                    Apply(_outdoor, false, null);
+                    Apply(_indoor, false, null);
+                    Steering = false;
+                }
+                catch (System.Exception second)
+                {
+                    Logger?.Error(second);
+                }
+            }
+        }
+
+        private void Frame()
+        {
             var gm = InstanceBehavior<GameManager>.Instance;
             if (gm == null || gm.playerController == null)
             {

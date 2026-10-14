@@ -49,7 +49,7 @@ namespace RealLifeOverhaul
             {
                 CityBuildingController building = buildings[Random.Range(0, buildings.Length)];
                 if (building == null || building == not || building.building == null || building.entranceDoors == null
-                    || building.entranceDoors.Length == 0 || building.building.locatedInsidePrivateFenceIndex >= 0)
+                    || building.entranceDoors.Length == 0 || GameMembers.Fenced(building.building))
                 {
                     continue;
                 }

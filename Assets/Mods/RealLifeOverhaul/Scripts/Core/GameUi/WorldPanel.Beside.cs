@@ -202,7 +202,7 @@ namespace RealLifeOverhaul.GameUi
             if (side == PanelSide.Wait)
             {
                 // No side has room: the panel leaves the game's box until the building box has gone or moved (see Held).
-                _heldFor = _resume != null ? _resume.TargetController : null;
+                _heldFor = _resume != null ? GameMembers.TargetOf(_resume) : null;
                 _heldAt = resumeAt;
                 _current = null;
                 Watch(false);
@@ -259,7 +259,7 @@ namespace RealLifeOverhaul.GameUi
             {
                 return false;
             }
-            if (_besideOff || _resume == null || _resumeBox == null || _resume.TargetController != _heldFor || !_resumeBox.gameObject.activeInHierarchy
+            if (_besideOff || _resume == null || _resumeBox == null || GameMembers.TargetOf(_resume) != _heldFor || !_resumeBox.gameObject.activeInHierarchy
                 || (_resumeBox.position - _heldAt).sqrMagnitude > PanelPlacement.MovedSqr)
             {
                 _heldFor = null;   // gone, another building's, or moved: the panel is tried again

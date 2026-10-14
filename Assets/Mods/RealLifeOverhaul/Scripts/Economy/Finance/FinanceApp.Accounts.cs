@@ -384,7 +384,7 @@ namespace RealLifeOverhaul.Economy
             box.Line(FinanceText.Pair("reallife_econ_offer_with", offer.Bank.Name));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_offer_open", () =>
-                HudConfirm.Show("reallife_econ_confirm_open_title".Localize(new { kind = FinanceText.T(ProductKeys[_product]) }),
+                GameConfirm.Show("reallife_econ_confirm_open_title".Localize(new { kind = FinanceText.T(ProductKeys[_product]) }),
                     "reallife_econ_confirm_open_body".Localize(new
                     {
                         kind = FinanceText.T(ProductKeys[_product]), limit = FinanceText.Money(offer.Most), rate = (offer.RateBp / 100f).ToString("0.#"), lender = offer.Bank.Name, detail = Detail(kind)
@@ -463,7 +463,7 @@ namespace RealLifeOverhaul.Economy
             int amount = _amount;
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_offer_apply", () =>
-                HudConfirm.Show("reallife_econ_confirm_title".Localize(new { lender = offer.Bank.Name }),
+                GameConfirm.Show("reallife_econ_confirm_title".Localize(new { lender = offer.Bank.Name }),
                     "reallife_econ_confirm_business".Localize(new
                     {
                         amount = FinanceText.Money(amount), lender = offer.Bank.Name, business = shop.BusinessName, rate = quote.AnnualRate.ToString("0.#"),
@@ -538,7 +538,7 @@ namespace RealLifeOverhaul.Economy
             box.Line(FinanceText.Pair("reallife_econ_finance_interest", FinanceText.Money(quote.Interest)));
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_finance_approve", () =>
-                HudConfirm.Show("reallife_econ_confirm_finance_title".Localize(new { kind = FinanceText.T(ProductKeys[_product]) }),
+                GameConfirm.Show("reallife_econ_confirm_finance_title".Localize(new { kind = FinanceText.T(ProductKeys[_product]) }),
                     (kind == ProductKind.Mortgage ? "reallife_econ_confirm_home" : "reallife_econ_confirm_car").Localize(new
                     {
                         amount = FinanceText.Money(amount), lender = offer.Bank.Name, deposit = deposit + "%", own = FinanceText.Money(own), days = term.ToString(),
@@ -605,7 +605,7 @@ namespace RealLifeOverhaul.Economy
             }
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_econ_consolidate_do", () =>
-                HudConfirm.Show("reallife_econ_confirm_title".Localize(new { lender = bank.Name }),
+                GameConfirm.Show("reallife_econ_confirm_title".Localize(new { lender = bank.Name }),
                     "reallife_econ_confirm_consolidate".Localize(new
                     {
                         count = count.ToString(), owed = FinanceText.Money(before.Owed), amount = FinanceText.Money(after.Owed), lender = bank.Name, rate = quote.AnnualRate.ToString("0.#"),
@@ -1139,7 +1139,7 @@ namespace RealLifeOverhaul.Economy
             if (arrange == ProductAnswer.Yes && !file.Relief.Arranged)
             {
                 InfoBox.Button(buttons, InfoBox.Additional, "reallife_econ_ways_arrange_do", () =>
-                    HudConfirm.Show("reallife_econ_ways_arrange".Localize(),
+                    GameConfirm.Show("reallife_econ_ways_arrange".Localize(),
                         "reallife_advice_arrange_page".Localize(new
                         {
                             amount = FinanceText.Money(plan.Total), payment = FinanceText.Money(plan.PerDay), days = plan.Days.ToString(), cap = ProductCatalogue.ArrangementScoreCap.ToString(),
@@ -1158,7 +1158,7 @@ namespace RealLifeOverhaul.Economy
             if (bankrupt == ProductAnswer.Yes)
             {
                 InfoBox.Button(buttons, InfoBox.Negative, "reallife_econ_ways_bankrupt_do", () =>
-                    HudConfirm.Show("reallife_econ_ways_bankrupt".Localize(),
+                    GameConfirm.Show("reallife_econ_ways_bankrupt".Localize(),
                         "reallife_advice_bankrupt_page".Localize(new
                         {
                             amount = FinanceText.Money(ruin.WrittenOff), kept = FinanceText.Money(ruin.Kept), cash = FinanceText.Money(ruin.CashTaken), left = FinanceText.Money(ruin.CashLeft),

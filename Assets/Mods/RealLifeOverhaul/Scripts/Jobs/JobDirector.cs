@@ -455,7 +455,7 @@ namespace RealLifeOverhaul
             reasonKey = null;
             var uis = InstanceBehavior<UIs>.Instance;
             GameInstance save = SaveGameManager.Current;
-            if (uis == null || save == null || LoadScene.isLoading || FuneralHelper.PlayerDead || EnergyHelper.goingToHospital
+            if (uis == null || save == null || LoadScene.isLoading || GameMembers.PlayerDead || EnergyHelper.goingToHospital
                 || uis.timeMachine.isRunning || PlayerActivityUI.IsPanelOpen || CasinoBoatManager.IsOnCasinoBoat || SubwaySystem.IsRiding)
             {
                 reasonKey = "reallife_job_no_now";
@@ -658,7 +658,7 @@ namespace RealLifeOverhaul
             {
                 _lastInside = now;   // the game's clock is working the shift: the street stops for its time skip and takes a moment to start again
             }
-            if (FuneralHelper.PlayerDead || EnergyHelper.goingToHospital)
+            if (GameMembers.PlayerDead || EnergyHelper.goingToHospital)
             {
                 reasonKey = "reallife_job_end_hospital";
             }

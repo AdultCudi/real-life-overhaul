@@ -615,7 +615,7 @@ namespace RealLifeOverhaul.Economy
                     RotaRung can = RotaRungOf(sheet, 1);
                     can = can != null && can.Left.Count == 0 ? can : null;
                     string who = left.Worker < sheet.Workers.Count ? RotaGame.WorkerName(sheet.Workers[left.Worker]) : "?";
-                    HudConfirm.Show("reallife_rota_tab".Localize(), (can != null ? "reallife_rota_confirm_short_plan" : "reallife_rota_confirm_short").Localize(new
+                    GameConfirm.Show("reallife_rota_tab".Localize(), (can != null ? "reallife_rota_confirm_short_plan" : "reallife_rota_confirm_short").Localize(new
                     {
                         name = who, least = left.Least, room = left.Why == RotaClash.Shared ? left.Held : left.Room, count = sheet.Ladder.FillLeft.Count,
                         now = sheet.Ladder.Rungs[0].Sum.Hours, after = can != null ? can.Sum.Hours : sheet.Ladder.Rungs[0].Sum.Hours
@@ -624,11 +624,11 @@ namespace RealLifeOverhaul.Economy
                 }
                 if (plan == null)
                 {
-                    HudConfirm.Show(null, "reallife_rota_confirm", () => RotaConfirmed(place, kind, -1), null, null, null, true, false);
+                    GameConfirm.Show(null, "reallife_rota_confirm", () => RotaConfirmed(place, kind, -1), null, null, null, true, false);
                     return;
                 }
                 // A plan that changes the opening hours is always asked about, with the hours now and after and what it brings.
-                HudConfirm.Show("reallife_rota_tab".Localize(), "reallife_rota_confirm_plan".Localize(new
+                GameConfirm.Show("reallife_rota_tab".Localize(), "reallife_rota_confirm_plan".Localize(new
                 {
                     now = sheet.Ladder.Rungs[0].Sum.Hours, after = plan.Sum.Hours, gain = CompanyText.Money((plan.Sum.Net - sheet.Ladder.Rungs[0].Sum.Net) / 100f)
                 }), () => RotaConfirmed(place, kind, rung), null, null, null, false, false);

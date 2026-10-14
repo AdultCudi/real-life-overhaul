@@ -162,7 +162,7 @@ namespace RealLifeOverhaul
             {
                 CityBuildingController building = buildings[_next];
                 if (building == null || building.building == null || building.building.SpecialService == null
-                    || building.building.locatedInsidePrivateFenceIndex >= 0)
+                    || GameMembers.Fenced(building.building))
                 {
                     continue;
                 }

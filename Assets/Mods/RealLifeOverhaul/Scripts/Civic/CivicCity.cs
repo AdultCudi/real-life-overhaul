@@ -87,7 +87,7 @@ namespace RealLifeOverhaul
             for (int b = 0; b < buildings.Count; b++)
             {
                 Building building = buildings[b];
-                if (building == null || building.locatedInsidePrivateFenceIndex >= 0)
+                if (building == null || GameMembers.Fenced(building))
                 {
                     continue;
                 }
@@ -174,7 +174,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < all.Length; i++)
             {
                 CityBuildingController controller = all[i];
-                if (!HasDoor(controller) || controller.building.locatedInsidePrivateFenceIndex >= 0)
+                if (!HasDoor(controller) || GameMembers.Fenced(controller.building))
                 {
                     continue;
                 }

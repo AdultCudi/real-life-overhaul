@@ -107,7 +107,7 @@ namespace RealLifeOverhaul.Careers
                     "cut", (LifeRules.EarlyCutBp / 100).ToString() + "%"));
                 return;
             }
-            InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_life_button_retire", () => HudConfirm.Show(
+            InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_life_button_retire", () => GameConfirm.Show(
                 "reallife_life_confirm_retire_title".Localize(), "reallife_life_confirm_retire_body".Localize(new { age = LifeRules.RetireAge.ToString(), cut = (LifeRules.EarlyCutBp / 100).ToString() + "%" }),
                 () => UiClone.Safe(() => Do(_director.Retire)), null, null, null, true, true));
         }

@@ -303,7 +303,7 @@ namespace RealLifeOverhaul.Law
         {
             door = default;
             if (building == null || building.building == null || building.entranceDoors == null || building.building.SpecialService != null
-                || building.building.locatedInsidePrivateFenceIndex >= 0 || string.IsNullOrEmpty(building.building.Neighbourhood)
+                || GameMembers.Fenced(building.building) || string.IsNullOrEmpty(building.building.Neighbourhood)
                 || building.building.Neighbourhood == Hamptons || building.building.IsHamptonsHouse())
             {
                 return false;

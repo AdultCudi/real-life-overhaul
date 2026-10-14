@@ -653,6 +653,30 @@ rings, `Core/WorkRings.cs`; in `HotSpotCheck.cs` the timing of the mod's own scr
 whole scene may be searched, `Core/SearchPace.cs`, with the before and after of the hair finish's search on a made-up
 session) and `EconomyCheck` (see "Economy"). Each ends with `ALL CHECKS PASSED`.
 
+### The game's build, and a game that lacks members (`Core/GameBuild`, `Core/GameMembers`, `Core/GameConfirm`)
+
+The mod is compiled against one build of the game, `GameBuild.MadeFor` (3682). Under Mono a method that names a member
+the running game does not have cannot be compiled: it throws at every call, and everything else that method does is
+lost. A player on Build 3675 had no mod app open (`PhoneApp.Open` named the newer eight-parameter `HudConfirm.Show`)
+while the camera and careers threw every frame. What follows from that:
+
+- **The build check** (`Core/GameBuild.cs`, game-free, and `Core/GameBuild.Notice.cs`). At game start the running build
+  (`GameVersion.GetCurrent().buildNumber`, the number the main menu shows) is compared with `MadeFor`: one warning in
+  Player.log for an older or a newer game; for an older one, the game's own question box in the main menu and once more
+  when a save is loaded, saying the mod needs the current game and how to update it in Steam (`reallife_build_old_*`).
+  Options > Tests > Diagnostics shows that notice, and asks a question the way the mod asks on an older game.
+- **The guard** (`Core/GameMembers.cs`). The members Build 3675 lacked (`Helpers.FuneralHelper`,
+  `Building.locatedInsidePrivateFenceIndex`, `BuildingResume.TargetController`, `SubwayStation.GetNameKey`) are named
+  only there, each in a small method of its own with an answer that fits a game without it, and the question box only
+  in `Core/GameConfirm.cs`, which finds the running game's own `Show` once when the mod's is missing. The entry points
+  that met them call `GameMembers.StandsDown(e, part)` in their catch: a missing member is said once and that part stops
+  for the session, instead of failing every frame. A failed click on an app says why, once per app (`Game UI: the app`).
+- **NavCheck** (`BuildCheck.cs`) holds all of it: the rules, the build of the game the mod is built against (read from its
+  resources as the main menu reads it) against `MadeFor`, every member in `GameBuild.Isolated` found in the game's
+  assemblies with its exact parameters, the five named nowhere else in the sources, and every guarded entry point still
+  guarded. After a game update it fails until `MadeFor` is set to the new build: build and check the mod against the
+  new game first.
+
 ## Adding a crime
 
 1. **Catalogue entry** in `Scripts/Crime/CrimeCatalogue.cs`: an id, its family, where it can happen
@@ -4667,6 +4691,10 @@ Performance is a requirement, not a nice-to-have.
 - Anything changed on a game object (materials, renderer flags, lights, textures) is recorded and put
   back when the option is switched off and when the scene ends. A feature that meets something
   unexpected logs once, restores the game's own state and stays off; it never throws per frame.
+- A question goes through `GameConfirm.Show` (the same parameters as the game's `HudConfirm.Show`), and the members an
+  older build of the game lacked through `Core/GameMembers`; nothing else names them (NavCheck fails if it does). A new
+  member of the game that may not be in every build is read the same way: in a small method of its own, inside a try
+  whose catch asks `GameMembers.Missing` (see "The game's build, and a game that lacks members").
 - The stretcher and its crew never go anywhere by a navigation agent. It is wheeled along a line worked out
   beforehand (`People/CrewPath`), and it is the stretcher that moves its crew (`Stretcher.Wheel`): every frame
   it puts whoever pushes on the line, itself an arm's length ahead pointing from them to its own place on the

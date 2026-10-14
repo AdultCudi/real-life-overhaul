@@ -1090,7 +1090,7 @@ namespace RealLifeOverhaul.Careers
             {
                 return;
             }
-            EntityController target = card.TargetController;
+            EntityController target = GameMembers.TargetOf(card);
             if (!force && ReferenceEquals(target, _carded))
             {
                 return;

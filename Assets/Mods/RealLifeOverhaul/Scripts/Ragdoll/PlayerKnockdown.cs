@@ -242,7 +242,7 @@ namespace RealLifeOverhaul
             bool mine = _ragdoll != null && _ragdoll.Active && _ragdoll.Serial == _serial;
             // The game has moved on without us: restore where the player stood and say no more about it.
             bool overtaken = !mine || _player == null || !_player.isActiveAndEnabled || LoadScene.isLoading
-                             || EnergyHelper.goingToHospital || FuneralHelper.PlayerDead || BuildingManager.IsInsideBuilding
+                             || EnergyHelper.goingToHospital || GameMembers.PlayerDead || BuildingManager.IsInsideBuilding
                              || PlayerHelper.IsUsingVehicle || !TrafficTools.Ready;
             if (overtaken)
             {

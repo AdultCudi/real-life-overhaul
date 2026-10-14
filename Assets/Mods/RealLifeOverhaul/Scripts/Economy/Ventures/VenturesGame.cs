@@ -68,7 +68,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         {
             UIs uis = InstanceBehavior<UIs>.Instance;
             GameManager game = InstanceBehavior<GameManager>.Instance;
-            return uis == null || LoadScene.isLoading || FuneralHelper.PlayerDead || EnergyHelper.goingToHospital || (uis.timeMachine != null && uis.timeMachine.isRunning)
+            return uis == null || LoadScene.isLoading || GameMembers.PlayerDead || EnergyHelper.goingToHospital || (uis.timeMachine != null && uis.timeMachine.isRunning)
                    || PlayerActivityUI.IsPanelOpen || DialogController.current != null || CasinoBoatManager.IsOnCasinoBoat || SubwaySystem.IsRiding
                    || (game != null && game.selectedVehicle != null);
         }

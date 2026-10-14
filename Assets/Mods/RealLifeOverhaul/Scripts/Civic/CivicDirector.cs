@@ -834,7 +834,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < count; i++)
             {
                 CityBuildingController controller = Nearby[i] != null ? Nearby[i].GetComponentInParent<CityBuildingController>() : null;
-                if (!CivicCity.HasDoor(controller) || controller.building.locatedInsidePrivateFenceIndex >= 0)
+                if (!CivicCity.HasDoor(controller) || GameMembers.Fenced(controller.building))
                 {
                     continue;
                 }
@@ -945,7 +945,7 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 CityBuildingController controller = CivicCity.Find(registration.Address.streetName, registration.Address.streetNumber);
-                if (CivicCity.HasDoor(controller) && controller.building.locatedInsidePrivateFenceIndex < 0)
+                if (CivicCity.HasDoor(controller) && !GameMembers.Fenced(controller.building))
                 {
                     return registration;
                 }

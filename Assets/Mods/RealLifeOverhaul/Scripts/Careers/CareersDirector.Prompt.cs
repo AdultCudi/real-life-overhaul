@@ -207,9 +207,29 @@ namespace RealLifeOverhaul.Careers
         }
 
         private static readonly int HotLateUpdate = HotSpots.Slot("Careers: CareersDirector.LateUpdate");
+        private bool _watchOff;   // the card and the desk watch below stood down: this game lacks something they name (Core/GameMembers)
+
+        // The frame's work is a method of its own, so that a game lacking something it names fails inside the try:
+        // said once, and only the card over the university and the watch on the school's desks stop. The director runs on.
         private void LateUpdate()
         {
             using var hotSpot = HotSpots.Time(HotLateUpdate);
+            if (_watchOff)
+            {
+                return;
+            }
+            try
+            {
+                Watch();
+            }
+            catch (Exception e) when (GameMembers.StandsDown(e, "the university's building card and the watch on its desks"))
+            {
+                _watchOff = true;
+            }
+        }
+
+        private void Watch()
+        {
             _interior?.Card(false);   // (one reference comparison: the game's card over the university)
             bool rooms = _interior != null && _interior.Floor > 0;   // (from the frame the player is on a floor: no course of the game's opens there)
             if (!_deskWatch && !rooms)

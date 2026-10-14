@@ -745,7 +745,7 @@ namespace RealLifeOverhaul.Economy
             }
             int amount = _amount;
             LoanQuote quote = PhoneLending.Quote(lender, amount, CreditLedger.Score.Value);
-            HudConfirm.Show("reallife_econ_confirm_title".Localize(new { lender = lender.Name }),
+            GameConfirm.Show("reallife_econ_confirm_title".Localize(new { lender = lender.Name }),
                 "reallife_econ_confirm_body".Localize(new
                 {
                     amount = FinanceText.Money(amount),

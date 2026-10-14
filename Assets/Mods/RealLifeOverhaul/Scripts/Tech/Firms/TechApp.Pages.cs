@@ -299,7 +299,7 @@ namespace RealLifeOverhaul.Tech
             }
             if (p.Stage < 2)
             {
-                InfoBox.Button(buttons, InfoBox.Negative, "reallife_tech_button_withdraw", () => HudConfirm.Show("reallife_tech_confirm_withdraw_title", "reallife_tech_confirm_withdraw_body",
+                InfoBox.Button(buttons, InfoBox.Negative, "reallife_tech_button_withdraw", () => GameConfirm.Show("reallife_tech_confirm_withdraw_title", "reallife_tech_confirm_withdraw_body",
                     () => UiClone.Safe(() => Do(() => _director.Withdraw(id))), null, null, null, true, true));
             }
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
@@ -427,7 +427,7 @@ namespace RealLifeOverhaul.Tech
                     InfoBox.Button(buttons, InfoBox.Negative, "reallife_tech_button_decline", () => Do(() => _director.DeclineContract(id)));
                     break;
                 case WorkStage.Active:
-                    InfoBox.Button(buttons, InfoBox.Negative, "reallife_tech_button_drop", () => HudConfirm.Show("reallife_tech_confirm_drop_title", "reallife_tech_confirm_drop_body",
+                    InfoBox.Button(buttons, InfoBox.Negative, "reallife_tech_button_drop", () => GameConfirm.Show("reallife_tech_confirm_drop_title", "reallife_tech_confirm_drop_body",
                         () => UiClone.Safe(() => Do(() => _director.DropContract(id))), null, null, null, true, true));
                     break;
             }

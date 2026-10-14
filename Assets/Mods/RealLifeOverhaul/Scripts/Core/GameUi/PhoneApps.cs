@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using BAModAPI;
 using Localizor.LanguageChangeEvent;
 using UI;
@@ -274,36 +276,187 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>Opens the app as the game opens its own (SmartphoneUI.OpenApp, FullMenu.ShowApp, FullMenu.SelectApp).</summary>
+        /// <summary>
+        /// Opens the app as the game opens its own (SmartphoneUI.OpenApp, FullMenu.ShowApp, FullMenu.SelectApp). Each of
+        /// the game's steps before the panel comes on is a method of its own, so that a game lacking what one of them
+        /// needs only goes without that step (Core/GameMembers): on Build 3675 the one question of BizMan's that named the
+        /// game's newer HudConfirm.Show kept the whole of this from being compiled, and no app of the mod's opened.
+        /// A click that opens nothing says why in Player.log, once for each app in a session.
+        /// </summary>
         public void Open()
         {
-            if (!Installed || _menu == null)
+            string gone = Gone();
+            if (gone != null)
             {
+                Unopened(gone);
                 return;
             }
             try
             {
-                if (_phone != null)
+                BeforeOpening();
+                if (HeldByBizMan())
                 {
-                    _phone.StopOutliningCurrentApp();
-                }
-                UIs uis = InstanceBehavior<UIs>.Instance;
-                if (uis != null && uis.buildingResume != null)
-                {
-                    uis.buildingResume.Close();
-                }
-                // Leaving BizMan's settings with changes not saved asks first, whichever app is opened next.
-                if (_menu.bizMan != null && _menu.bizMan.business != null && _menu.bizMan.business.bizManSettings != null
-                    && _menu.bizMan.business.bizManSettings.HasUnsavedChanges)
-                {
-                    HudConfirm.Show(null, "change_character_clothes_unsaved_changes_warning", Select, null, null, null, true, true);
                     return;
                 }
                 Select();
             }
             catch (Exception e)
             {
-                Logger?.Error(e);
+                Failed(e);
+            }
+        }
+
+        // An open that failed: said once for the app, with the member a game lacks or the error (whose whole text follows).
+        private void Failed(Exception e)
+        {
+            if (GameMembers.Missing(e))
+            {
+                Unopened("this game lacks " + GameBuild.MemberOf(e.Message) + " (the game is Build " + GameBuild.Running + ", the mod is made for Build " + GameBuild.MadeFor + ")");
+                return;
+            }
+            Unopened("an error, " + e.GetType().Name + ": " + e.Message);
+            Logger?.Error(e);
+        }
+
+        // Why the app cannot be opened at all, or null.
+        private string Gone()
+        {
+            if (ReferenceEquals(_menu, null))
+            {
+                return "it was never put in the full menu";
+            }
+            if (_menu == null)
+            {
+                return "the full menu it was put in is gone";
+            }
+            if (Root == null)
+            {
+                return "its panel is gone";
+            }
+            if (!_def.NoButtons && _hudButton == null)
+            {
+                return "its button on the HUD phone is gone";
+            }
+            if (!_def.NoButtons && _menuButton == null)
+            {
+                return "its button in the full menu is gone";
+            }
+            return null;
+        }
+
+        // The ids of the apps whose failure to open has been said this session.
+        private static readonly HashSet<string> UnopenedSaid = new HashSet<string>(StringComparer.Ordinal);
+
+        private void Unopened(string why)
+        {
+            if (UnopenedSaid.Add(_def.Id))
+            {
+                Logger?.Warn("Game UI: the app '" + _def.Id + "' did not open when it was clicked: " + why + ". (Said once for each app in a session.)");
+            }
+        }
+
+        // The game's first steps: the HUD phone's outline off and the building card closed. A game without either goes on without it.
+        private void BeforeOpening()
+        {
+            try
+            {
+                OutlineOff();
+            }
+            catch (Exception e) when (GameMembers.Missing(e))
+            {
+                GameMembers.DoesWithout(e, "the HUD phone's outline when an app of the mod's is opened");
+            }
+            try
+            {
+                CardClosed();
+            }
+            catch (Exception e) when (GameMembers.Missing(e))
+            {
+                GameMembers.DoesWithout(e, "closing the building card when an app of the mod's is opened");
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void OutlineOff()
+        {
+            if (_phone != null)
+            {
+                _phone.StopOutliningCurrentApp();
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void CardClosed()
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            if (uis != null && uis.buildingResume != null)
+            {
+                uis.buildingResume.Close();
+            }
+        }
+
+        // Leaving BizMan's settings with changes not saved asks first, whichever app is opened next, and is refused
+        // while the business has no name, as the game's own FullMenu.ShowApp does. True when that has taken the click:
+        // the question is up (the app opens on its answer), or the game's own word on the name is shown.
+        private bool HeldByBizMan()
+        {
+            bool unsaved, nameless;
+            try
+            {
+                BizManChanges(out unsaved, out nameless);
+            }
+            catch (Exception e) when (GameMembers.Missing(e))
+            {
+                GameMembers.DoesWithout(e, "BizMan's settings not saved when an app of the mod's is opened");
+                return false;   // a game without them has none to keep
+            }
+            if (!unsaved)
+            {
+                return false;
+            }
+            if (nameless)
+            {
+                try
+                {
+                    NameFirst();
+                }
+                catch (Exception e) when (GameMembers.Missing(e))
+                {
+                    GameMembers.DoesWithout(e, "the game's word that a business needs a name before BizMan's settings are left");
+                }
+                return true;
+            }
+            if (!GameConfirm.TryShow(null, "change_character_clothes_unsaved_changes_warning", SelectAnswered, null, null, null, true, true))
+            {
+                Unopened("BizMan's settings have changes not saved, and this game's question whether to leave them could not be shown");
+            }
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void BizManChanges(out bool unsaved, out bool nameless)
+        {
+            BizManBusiness business = _menu.bizMan != null ? _menu.bizMan.business : null;
+            unsaved = business != null && business.bizManSettings != null && business.bizManSettings.HasUnsavedChanges;
+            nameless = unsaved && business.buildingRegistration != null && string.IsNullOrEmpty(business.buildingRegistration.BusinessName);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void NameFirst()
+        {
+            global::UI.Notification.Notifications.ShowError("bizman_settings_notification_name_empty");
+        }
+
+        // The app opened on the answer to BizMan's question, from within the game's question box.
+        private void SelectAnswered()
+        {
+            try
+            {
+                Select();
+            }
+            catch (Exception e)
+            {
+                Failed(e);
             }
         }
 

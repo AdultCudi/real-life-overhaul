@@ -105,7 +105,7 @@ namespace RealLifeOverhaul
 
         private static string Name(SubwayStation station)
         {
-            return station.GetNameKey().GetLocalization();
+            return GameMembers.NameKey(station).GetLocalization();
         }
 
         private static int StopsBetween(SubwayStation from, SubwayStation to)
