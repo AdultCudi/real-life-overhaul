@@ -1,4 +1,4 @@
-0.9.14
+0.10.0
 
-Fixed
-- Staff at a tech firm never got any work done, because the hours they worked were lost before the day's work was shared out. Every hour on a shift at an open business now counts, and is kept in the save. The Company app's rota now plans shifts for tech firms; a firm's page and a contract's page in the Tech app say who worked yesterday and, if nobody did, why and how to put it right; a notification says so when a contract is taken on that nobody can work on, or falls behind; and Start a product is on the Products tab, with what each kind needs. Programmers at a web development agency now work on its websites too, new staff at a tech firm get roles that do its work, and the Guide's tech sector page sets up a firm step by step.
+New
+- New: stop losses, take profits and limit orders on the Stocks app's ticket, and a Bots tab with trading bots from four firms (trend following, mean reversion, momentum and dividend income) that trade your own cash for a monthly fee and a share of the profit, each with its holding size, stop and the most it may lose. A stop goes at the market's next price, so a gap takes it under.
