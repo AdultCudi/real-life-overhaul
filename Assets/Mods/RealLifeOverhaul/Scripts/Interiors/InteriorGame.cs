@@ -446,6 +446,29 @@ namespace RealLifeOverhaul.Interiors
             }
         }
 
+        /// <summary>
+        /// Business pressure's own change of a business's customers now, per cent (a complaint's -6% and the like; its
+        /// state, BusinessState.Effects, as the tab's page of customers reads it), or 0: what the interior's shortfall gives
+        /// way to so that the two together stay inside the bound. A look along a list of a few; asked on each footfall
+        /// write and each morning, never per frame.
+        /// </summary>
+        public static int IssueDip(BuildingRegistration reg)
+        {
+            try
+            {
+                if (reg == null || !BusinessState.Loaded)
+                {
+                    return 0;
+                }
+                int at = BusinessState.EffectAt(BusinessGame.Place(reg));
+                return at >= 0 && BusinessState.Effects[at].UntilDay > TimeHelper.CurrentDay ? BusinessCatalogue.ClampFootfall(BusinessState.Effects[at].Percent) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
         // ---------------------------------------------------------------- the tab's pages: the game's own rules
 
         /// <summary>

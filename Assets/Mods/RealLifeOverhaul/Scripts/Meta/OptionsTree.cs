@@ -327,11 +327,11 @@ namespace RealLifeOverhaul.Meta
                 S("bizevents").For("business").Main("business_pressure").Opts("business_frequency", "business_easy").Also("trouble pressure competition"),
                 S("bizkinds").Guide("business").Need("business_pressure").Opts("business_rivals", "business_racket", "business_inspections", "business_staff",
                     "business_suppliers", "business_customers", "business_audit", "business_opportunities").Also("trouble competition"),
-                S("interiors").For("interiors").Main("interiors").Opts("interiors_prices_level", "interiors_wear_level", "interiors_standing", "interiors_staff")
-                    .Also("interior design decor decoration plants paintings lighting wear refresh shabby furniture bizman tab"),
-                S("interiorstd").For("interiors_standard").Need("interiors").Opts("interiors_standard_level", "interiors_reward_level", "interiors_basket")
-                    .Also("district standard minimum complaints basket products reward strength strict gentle generous"),
-                S("interiordecor").For("interiors_decor").Need("interiors").Opts("interiors_decor_level").Also("decor ambience customers footfall clients office strength")),
+                S("interiors").For("interiors").Main("interiors").Opts("interiors_prices_strength", "interiors_wear_strength", "interiors_standing", "interiors_staff")
+                    .Also("interior design decor decoration plants paintings lighting wear refresh shabby furniture bizman tab income takings prices slider"),
+                S("interiorstd").For("interiors_standard").Need("interiors").Opts("interiors_standard_strength", "interiors_basket")
+                    .Also("district standard minimum complaints basket products reward strength slider income customers"),
+                S("interiordecor").For("interiors_decor").Need("interiors").Opts("interiors_decor_strength").Also("decor ambience customers footfall clients office strength slider")),
 
             G("controls",
                 S("keys").For("keys").Buttons("reallife_keys_reset", "reallife_keys_camera_toggle", "reallife_keys_interact", "reallife_keys_interact_alt",
