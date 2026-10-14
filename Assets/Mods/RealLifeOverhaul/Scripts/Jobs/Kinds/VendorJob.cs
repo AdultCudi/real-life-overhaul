@@ -25,7 +25,9 @@ namespace RealLifeOverhaul
     /// their turn behind the first) and ask for one of three drinks. The game's panel over a place
     /// (<see cref="WorldPanel"/>) stands over the cart with the order, the customer's patience and a button for
     /// each drink on the game's own keys. The right drink, quickly, earns a tip; the wrong one costs the
-    /// customer's patience; a customer kept waiting too long walks off, and three of those end the shift.
+    /// customer's patience; a customer kept waiting too long walks off, and three of those end the shift. A customer
+    /// who cannot get to the cart (a route cut or ending short, no nearer for seconds) or is no longer the cart's leaves
+    /// the queue at once and is no walk-off, and somebody else comes instead (<see cref="CartQueueRules"/>).
     ///
     /// CALLING OUT. A button of the same panel: the vendor calls to the game's pedestrians near the cart, and
     /// each reacts by chance (see <see cref="Hawk"/>): tempted (a green face, some stop to look, and a
@@ -102,6 +104,9 @@ namespace RealLifeOverhaul
         private readonly Guest[] _state = new Guest[JobCast.Size];
         private readonly float[] _until = new float[JobCast.Size];
         private readonly float[] _walkAt = new float[JobCast.Size];
+        private readonly int[] _lease = new int[JobCast.Size];      // the cast's lease on each customer when they set off: another lease is not the cart's
+        private readonly float[] _best = new float[JobCast.Size];   // the nearest a walking customer has been to their place, metres
+        private readonly float[] _bestAt = new float[JobCast.Size]; // ...and when (CartQueueRules.Walking)
         private readonly HeldProp _cupHeld = new HeldProp();
         private readonly WorldPanel _panel = new WorldPanel();
         private readonly SolidFootprint _solid = new SolidFootprint();
@@ -140,6 +145,8 @@ namespace RealLifeOverhaul
         private int _hand;            // ...of which by hand
         private int _lost;            // came and went unserved, with or without blame
         private int _misses;          // ...of which walked off kept waiting
+        private int _cantReach;       // customers in a row who could not get to the cart (CartQueueRules.Shorter)
+        private int _routesRefused;   // ring points nobody was sent from, the way there being cut or a detour
         private int _tips;
         private int _clockPay;        // what the clock's customers have been paid, for the takings line
         private int _front = -1;      // who is at the counter
@@ -437,21 +444,36 @@ namespace RealLifeOverhaul
             {
                 return;
             }
+            // To the counter if nobody is there or on their way to it, else to the place behind. Only from where the walk
+            // there is whole and no detour round the block (an accident's scene, a vehicle on the crossing): one path asked.
+            bool counterFree = _front < 0;
+            Vector3 place = counterFree ? _counter : _queue;
+            float straight = JobSpots.Flat(from, place);
+            if (!CitySpots.Reachable(from, place, out float route) || !CartQueueRules.RouteFits(straight, route))
+            {
+                if (++_routesRefused == 1 && Meta.Dev.Verbose)
+                {
+                    Ctx.Logger?.Info("Jobs: vendor: nobody sent from " + straight.ToString("F0") + " m away: " + (route < 0f ? "no way on foot reaches the cart from there"
+                                     : "the way there is " + route.ToString("F0") + " m") + "; another place is tried for the next (said once a shift).");
+                }
+                return;
+            }
             StreetActor person = Ctx.Cast.Put(from, false);
             if (person == null)
             {
                 return;
             }
-            // To the counter if nobody is there or on their way to it, else to the place behind.
-            bool counterFree = _front < 0;
-            if (!person.MoveTo(counterFree ? _counter : _queue, Pace.Walk))
+            if (!person.MoveTo(place, Pace.Walk))
             {
                 Ctx.Cast.Release(person);
                 return;
             }
             _who[slot] = person;
+            _lease[slot] = person.Lease;
             _state[slot] = counterFree ? Guest.Stepping : Guest.Coming;
-            _until[slot] = now + 40f;
+            _until[slot] = now + CartQueueRules.WalkMost;
+            _best[slot] = straight;
+            _bestAt[slot] = now;
             if (counterFree)
             {
                 _front = slot;
@@ -467,35 +489,46 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            if (person == null || !person.IsValid)
+            bool held = Held(i);
+            if (!held && (_state[i] == Guest.Served || _state[i] == Guest.Leaving))
             {
-                Gone(i, true);
+                Gone(i, false);   // served already, or on their way: the cart has nothing more to count
                 return;
             }
+            CartGuest fate;
             switch (_state[i])
             {
                 case Guest.Coming:
-                    if (Reached(person, _queue, now, i))
+                    fate = Walking(i, person, _queue, now);
+                    if (fate == CartGuest.There)
                     {
                         person.StandAt(_queue, _cartAt);
                         _state[i] = Guest.Queued;
-                        _until[i] = now + 75f;
+                        _until[i] = now + CartQueueRules.WaitMost;
+                    }
+                    else if (fate != CartGuest.Keep)
+                    {
+                        Withdraw(i, fate, now);
                     }
                     break;
                 case Guest.Queued:
-                    if (_front < 0 && person.MoveTo(_counter, Pace.Walk))
+                    fate = CartQueueRules.Waiting(held, now, _until[i]);
+                    if (fate != CartGuest.Keep)
+                    {
+                        Withdraw(i, fate, now);   // taken off the street, or never got to the front and gives up
+                    }
+                    else if (_front < 0 && person.MoveTo(_counter, Pace.Walk))
                     {
                         _front = i;
                         _state[i] = Guest.Stepping;
                         _until[i] = now + 15f;
-                    }
-                    else if (now >= _until[i])
-                    {
-                        Gone(i, true);   // never got to the front: gives up
+                        _best[i] = JobSpots.Flat(person.Position, _counter);
+                        _bestAt[i] = now;
                     }
                     break;
                 case Guest.Stepping:
-                    if (Reached(person, _counter, now, i))
+                    fate = Walking(i, person, _counter, now);
+                    if (fate == CartGuest.There)
                     {
                         person.StandAt(_counter, _cartAt);
                         _state[i] = Guest.Ordering;
@@ -503,9 +536,17 @@ namespace RealLifeOverhaul
                         _orderedAt = now;
                         _orderEnds = now + Patience;
                     }
+                    else if (fate != CartGuest.Keep)
+                    {
+                        Withdraw(i, fate, now);
+                    }
                     break;
                 case Guest.Ordering:
-                    if (now >= _orderEnds)
+                    if (!held)
+                    {
+                        Withdraw(i, CartGuest.NotHeld, now);   // the mod's doing, never a walk-off
+                    }
+                    else if (now >= _orderEnds)
                     {
                         // Kept waiting: they go, and say so.
                         _misses++;
@@ -545,23 +586,60 @@ namespace RealLifeOverhaul
                     }
                     if (person.HasArrived || now >= _until[i] || JobSpots.Flat(person.Position, _cartAt) > 26f)
                     {
-                        Gone(i, false);
+                        Gone(i, true);
                     }
                     break;
             }
         }
 
-        private bool Reached(StreetActor person, Vector3 place, float now, int i)
+        // Still the cart's to direct: on the street, in use, and the same lease of the cast as when they set off.
+        private bool Held(int i)
         {
-            if (person.HasArrived && JobSpots.Flat(person.Position, place) < 0.9f)
+            StreetActor person = _who[i];
+            return person != null && person.IsValid && person.InUse && person.Lease == _lease[i] && person.Character.gameObject.activeInHierarchy;
+        }
+
+        // A customer on their way to a place: there, still coming, or unable to get there (CartQueueRules.Walking).
+        private CartGuest Walking(int i, StreetActor person, Vector3 place, float now)
+        {
+            if (!Held(i))
             {
-                return true;
+                return CartGuest.NotHeld;
             }
-            if (now >= _until[i])
+            bool known = person.RouteKnown;
+            CartGuest fate = CartQueueRules.Walking(true, known, known && person.RouteWhole, person.HasArrived, JobSpots.Flat(person.Position, place), now, _until[i],
+                ref _best[i], ref _bestAt[i]);
+            if (fate == CartGuest.There)
             {
-                Gone(i, true);   // never got here (something in the way): no blame, the shift is one customer shorter
+                _cantReach = 0;
             }
-            return false;
+            return fate;
+        }
+
+        // Out of the queue at once, for something that was not their own doing or because they gave up waiting their
+        // turn; never a walk-off. Back among those still to come, or the shift one shorter (CartQueueRules.Account).
+        // Somebody in view walks away; anybody else is taken off the street now.
+        private void Withdraw(int i, CartGuest why, float now)
+        {
+            StreetActor person = _who[i];
+            bool held = Held(i);
+            bool shorter = CartQueueRules.Account(why, ref _came, ref _lost, ref _cantReach);
+            if (!shorter)
+            {
+                _nextArrival = Mathf.Min(_nextArrival, now + CartQueueRules.NextSoon);
+            }
+            if (Meta.Dev.Verbose)
+            {
+                Ctx.Logger?.Info("Jobs: vendor: a customer left the queue (" + _state[i] + "): " + CartQueueRules.Words(why) + "; not a walk-off, "
+                                 + (shorter ? "the shift is one shorter (" + LeftToServe + " still to come)" : "back among the " + LeftToServe + " still to come, the next sets off soon")
+                                 + "; walk-offs " + _misses + " of " + MissesAllowed + ".");
+            }
+            if (held && person.Visible)
+            {
+                Leave(i, now, 0f);
+                return;
+            }
+            Gone(i, held);
         }
 
         // Away along the pavement; taken off the street once well away.
@@ -612,13 +690,9 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <param name="unserved">They never had their drink and are not coming back: the shift is one customer shorter.</param>
-        private void Gone(int i, bool unserved)
+        /// <param name="release">Still the cart's (<see cref="Held"/>): handed back to the cast. One the cast has given to anybody else is only forgotten.</param>
+        private void Gone(int i, bool release)
         {
-            if (unserved)
-            {
-                _lost++;
-            }
             if (_front == i)
             {
                 _front = -1;
@@ -631,7 +705,10 @@ namespace RealLifeOverhaul
                     _cup = null;
                 }
             }
-            Ctx.Cast.Release(_who[i]);
+            if (release)
+            {
+                Ctx.Cast.Release(_who[i]);
+            }
             _who[i] = null;
             _state[i] = Guest.None;
         }
@@ -1158,7 +1235,7 @@ namespace RealLifeOverhaul
             {
                 Ctx.Logger?.Info("Jobs: vendor: called out. Chances: tempted " + tempt.ToString("F2") + " (base " + HawkTempt.ToString("F2") + " x hour " + hourFactor.ToString("F1")
                                  + " at " + hour + "h x busy " + busyFactor.ToString("F2") + " with " + about + " about x skill " + skillFactor.ToString("F2") + " x queue "
-                                 + queueFactor.ToString("F1") + " with " + waiting + " at the cart, recent calls " + heatBefore.ToString("F1") + "), annoyed " + annoy.ToString("F2")
+                                 + queueFactor.ToString("F1") + " with " + waiting + " at the cart or on the way, recent calls " + heatBefore.ToString("F1") + "), annoyed " + annoy.ToString("F2")
                                  + ". Within " + HawkWithin.ToString("F0") + " m: " + near + (near > 0 ? " (" + _text + ")" : string.Empty) + ". Customers gained: " + gained
                                  + " (the shift is now " + _customers + ")" + (warned ? "; an officer's warning " + _hawkWarnings + " of 2" + (_hawkBanned ? ": no more calling out this shift" : string.Empty) : string.Empty)
                                  + "; next call in " + HawkCooldown.ToString("F0") + " s.");

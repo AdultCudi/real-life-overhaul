@@ -197,6 +197,13 @@ namespace RealLifeOverhaul.Markets
                 case MarketNewsKind.OwnAudit:
                     data = new[] { "name", name, "found", ListingText.Findings(n.A) };
                     return "reallife_mkt_news_own_audit";
+                case MarketNewsKind.Paid:
+                {
+                    // A dividend paid to the player of this machine, on their shares or a bot's (never in the city's line nor the Ledger).
+                    BotFirm f = n.B > 0 ? MarketBots.Firm(n.B) : null;
+                    data = new[] { "name", name, "amount", Money(n.A), "firm", f != null ? f.Name : string.Empty };
+                    return f != null ? "reallife_mkt_news_paid_bot" : "reallife_mkt_news_paid";
+                }
                 default:
                     data = new string[0];
                     return string.Empty;

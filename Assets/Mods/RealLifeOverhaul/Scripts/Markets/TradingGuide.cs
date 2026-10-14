@@ -52,7 +52,12 @@ namespace RealLifeOverhaul.Markets
                 .Fact("bot_reversion_share", () => Bp(MarketBots.All[1].ShareBp))
                 .Fact("bot_momentum_share", () => Bp(MarketBots.All[2].ShareBp))
                 .Fact("bot_income_share", () => Bp(MarketBots.All[3].ShareBp))
-                .Fact("bot_participation", () => Whole(MarketCatalogue.ParticipationPct) + "%");
+                .Fact("bot_participation", () => Whole(MarketCatalogue.ParticipationPct) + "%")
+                .Fact("bot_picks_most", () => Whole(MarketBots.PicksMost))
+                .Fact("bot_own_volume", () => Whole(MarketBots.OwnVolumePct) + "%")
+                .Fact("bot_own_swing", () => Whole(MarketBots.OwnSwingDays(System.Math.Max(8, GameCalendar.DaysPerYear))))
+                .Fact("bot_deal_year", () => Bp(ListingCatalogue.FounderDealMostBpYear))
+                .Fact("bot_founder_most", () => Bp(ListingCatalogue.FounderMostBp));
         }
 
         private static string Whole(int value)

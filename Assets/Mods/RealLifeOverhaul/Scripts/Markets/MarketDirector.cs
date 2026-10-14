@@ -281,6 +281,7 @@ namespace RealLifeOverhaul.Markets
                     _shared.Append(lines);   // the host's guests play the same moments
                 }
             }
+            TellPaid();   // (MarketDirector.Bots.cs)
             for (int i = 0; i < _notes.Count && i < 3; i++)
             {
                 Note n = _notes[i];
@@ -772,7 +773,7 @@ namespace RealLifeOverhaul.Markets
         internal void Heard(in MarketNews news)
         {
             MarketState s = _engine != null ? _engine.State : null;
-            if (s == null || OwnHeard(news))
+            if (s == null || news.Kind == MarketNewsKind.Paid || OwnHeard(news))
             {
                 return;   // (news of the player's own company, or of their way to the market: MarketDirector.Own.cs)
             }
@@ -842,7 +843,7 @@ namespace RealLifeOverhaul.Markets
             switch (kind)
             {
                 case TradeKind.Dividend:
-                    Queue(NotificationType.Success, "reallife_mkt_note_dividend", "name", name, "amount", MarketText.Money(amount));
+                    _paid.Add(stock != null ? stock.Id : 0, 0, amount);   // (told with any others paid at the same moment: TellPaid)
                     DividendTax(stock, amount);
                     break;
                 case TradeKind.DividendPaid:

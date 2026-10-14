@@ -1,4 +1,4 @@
-0.15.2
+0.16.0
 
-Fixed
-- The Stocks app's Companies tab showed 0% for every company's day move, while the Market tab showed the market moving.
+New
+- Trading bots: choose the shares each bot trades, your own company's among them, have part of its profit paid to you daily, weekly or monthly, and see each dividend you receive in the market news.

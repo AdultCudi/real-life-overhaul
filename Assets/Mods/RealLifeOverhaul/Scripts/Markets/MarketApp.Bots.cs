@@ -12,9 +12,12 @@ namespace RealLifeOverhaul.Markets
     /// <summary>
     /// The Bots tab of the Stocks app (MarketBots): a row for each firm, hired or not, with what its bot is worth, its
     /// profit, its deepest fall and its trades; picking one puts its terms, its record and its settings in the box, with
-    /// the buttons to hire it, sell it up, start it again or let it go. A bot's holdings are rows of the Portfolio tab and
-    /// its trades lines of the History tab, marked with its firm. Written when the app opens and when the player does
-    /// something in it, never per frame.
+    /// the buttons to hire it, sell it up, start it again or let it go. Its settings are on three pages, chosen by the
+    /// first selector so that the box keeps its foot: its trades (size, stop, limit), the shares it trades (its whole
+    /// market, the companies picked for it, or the player's own holdings; with a picker over the player's own company and
+    /// the companies they hold or watch) and its payouts (a share of new profit, daily, weekly or monthly). A bot's
+    /// holdings are rows of the Portfolio tab and its trades lines of the History tab, marked with its firm. Written when
+    /// the app opens and when the player does something in it, never per frame.
     /// </summary>
     public sealed partial class MarketApp
     {
@@ -24,10 +27,19 @@ namespace RealLifeOverhaul.Markets
 
         private static readonly string[] StatusKeys = { "reallife_mkt_bot_status_running", "reallife_mkt_bot_status_stopped", "reallife_mkt_bot_status_selling" };
         private static readonly string[] StrategyKeys = { "reallife_mkt_bot_strategy_trend", "reallife_mkt_bot_strategy_reversion", "reallife_mkt_bot_strategy_momentum", "reallife_mkt_bot_strategy_income" };
+        private static readonly string[] PageKeys = { "reallife_mkt_bot_page_trading", "reallife_mkt_bot_page_shares", "reallife_mkt_bot_page_payouts" };
+        private static readonly string[] ScopeKeys = { "reallife_mkt_bot_scope_market", "reallife_mkt_bot_scope_picked", "reallife_mkt_bot_scope_held" };
+        private static readonly string[] EveryKeys = { "reallife_mkt_bot_every_day", "reallife_mkt_bot_every_week", "reallife_mkt_bot_every_month" };
+        private const int PageTrading = 0, PageShares = 1, PagePayouts = 2;
 
         // The settings being written for the firm picked (its bot's own once it is hired).
         private int _botFirm, _botSize, _botStop, _botLoss;
         private long _botCapital;
+        private int _botPage, _botPickAt, _botPay;
+        private BotScope _botScope;
+        private BotPayEvery _botEvery = BotPayEvery.Monthly;
+        private readonly List<int> _botPicks = new List<int>(MarketBots.PicksMost);       // a bot being written: its picks, for the hire
+        private readonly List<int> _botCandidates = new List<int>(32);                   // the picker's companies, made when the box is written
 
         private TableSpec WriteBots(InfoBox box, MarketState s)
         {
@@ -53,7 +65,7 @@ namespace RealLifeOverhaul.Markets
                 hired++;
                 long now = MarketBots.Worth(s, b, s.Phase);
                 worth += now;
-                long gain = now - b.Capital;
+                long gain = now + b.PaidOut - b.Capital;   // (what it paid out is profit too)
                 row.Set(2, MarketText.Money(b.Capital), b.Capital);
                 row.Set(3, MarketText.Money(now), now);
                 row.Set(4, MarketText.Money(gain), gain, Tone(Math.Sign(gain)));
@@ -91,6 +103,12 @@ namespace RealLifeOverhaul.Markets
                 _botStop = b != null ? b.Stop : f.Stop;
                 _botLoss = b != null ? b.Loss : f.Loss;
                 _botCapital = Math.Max(_director.BotCapitalLeast, 0);
+                _botPage = PageTrading;
+                _botScope = BotScope.Market;
+                _botPay = 0;
+                _botEvery = BotPayEvery.Monthly;
+                _botPickAt = 0;
+                _botPicks.Clear();
             }
             box.Title(f.Name + "  <size=70%>" + MarketText.T(StrategyKeys[(int)f.Strategy]) + "</size>");
             if (b == null)
@@ -102,21 +120,51 @@ namespace RealLifeOverhaul.Markets
             else
             {
                 long now = MarketBots.Worth(s, b, s.Phase);
-                int pct = b.Capital > 0 ? (int)Math.Max(-1000000L, Math.Min(1000000L, (now - b.Capital) * 10000L / b.Capital)) : 0;
+                int pct = b.Capital > 0 ? (int)Math.Max(-1000000L, Math.Min(1000000L, (now + b.PaidOut - b.Capital) * 10000L / b.Capital)) : 0;
                 box.Line(MarketText.Fill("reallife_mkt_bot_box_worth", "status", MarketText.T(StatusKeys[(int)b.Status]), "worth", MarketText.Money(now), "capital", MarketText.Money(b.Capital),
                     "change", MarketText.Change(pct)));
                 box.Line(MarketText.Fill("reallife_mkt_bot_box_record", "fall", MarketText.Percent(b.DrawdownBp), "trades", Count(b.Trades), "wins", b.Wins.ToString(), "closed", b.Closed.ToString()));
                 box.Line(MarketText.Fill("reallife_mkt_bot_box_costs", "fees", MarketText.Money(b.Fees), "commission", MarketText.Money(b.Commission), "dividends", MarketText.Money(b.Dividends)));
                 box.Line(MarketText.Fill("reallife_mkt_bot_box_floor", "floor", MarketText.Money(MarketBots.Floor(b)), "holdings", b.Holdings.Count.ToString()));
+                if (b.PayPct > 0 || b.PaidOut > 0 || b.PayOwed > 0)
+                {
+                    box.Line(MarketText.Fill("reallife_mkt_bot_box_paid", "paid", MarketText.Money(b.PaidOut), "owed", MarketText.Money(b.PayOwed),
+                        "losses", MarketText.Money(MarketBots.LossesToMakeGood(b))));
+                }
             }
-            int size = b != null ? b.Size : _botSize, stop = b != null ? b.Stop : _botStop, loss = b != null ? b.Loss : _botLoss;
-            box.Selector(MarketBots.Sizes.Length, MarketBots.IndexOf(MarketBots.Sizes, size), i => MarketText.Fill("reallife_mkt_bot_set_size", "pct", MarketBots.Sizes[i].ToString()),
-                i => UiClone.Safe(() => Settle(f, b, MarketBots.Sizes[i], stop, loss)));
-            box.Selector(MarketBots.Stops.Length, MarketBots.IndexOf(MarketBots.Stops, stop),
-                i => MarketBots.Stops[i] == 0 ? MarketText.T("reallife_mkt_bot_set_stop_none") : MarketText.Fill("reallife_mkt_bot_set_stop", "pct", MarketBots.Stops[i].ToString()),
-                i => UiClone.Safe(() => Settle(f, b, size, MarketBots.Stops[i], loss)));
-            box.Selector(MarketBots.Losses.Length, MarketBots.IndexOf(MarketBots.Losses, loss), i => MarketText.Fill("reallife_mkt_bot_set_loss", "pct", MarketBots.Losses[i].ToString()),
-                i => UiClone.Safe(() => Settle(f, b, size, stop, MarketBots.Losses[i])));
+            BotScope scope = b != null ? b.Scope : _botScope;
+            int pay = b != null ? b.PayPct : _botPay;
+            BotPayEvery every = b != null ? b.PayEvery : _botEvery;
+            List<int> picks = b != null ? b.Picks : _botPicks;
+            box.Line(MarketText.Fill("reallife_mkt_bot_box_plan", "scope", ScopeWords(scope, picks.Count), "pay", PayWords(pay, every)));
+            box.Selector(PageKeys.Length, _botPage, i => MarketText.T(PageKeys[i]), i => UiClone.Safe(() =>
+            {
+                _botPage = i;
+                Refresh();
+            }));
+            if (_botPage == PageShares)
+            {
+                WriteBotShares(box, s, f, b, scope, picks);
+            }
+            else if (_botPage == PagePayouts)
+            {
+                box.Selector(MarketBots.PayPcts.Length, MarketBots.IndexOf(MarketBots.PayPcts, pay),
+                    i => MarketBots.PayPcts[i] == 0 ? MarketText.T("reallife_mkt_bot_set_pay_none") : MarketText.Fill("reallife_mkt_bot_set_pay", "pct", MarketBots.PayPcts[i].ToString()),
+                    i => UiClone.Safe(() => SettlePayout(f, b, MarketBots.PayPcts[i], every)));
+                box.Selector(EveryKeys.Length, (int)every, i => MarketText.Fill("reallife_mkt_bot_set_every", "every", MarketText.T(EveryKeys[i])),
+                    i => UiClone.Safe(() => SettlePayout(f, b, pay, (BotPayEvery)i)));
+            }
+            else
+            {
+                int size = b != null ? b.Size : _botSize, stop = b != null ? b.Stop : _botStop, loss = b != null ? b.Loss : _botLoss;
+                box.Selector(MarketBots.Sizes.Length, MarketBots.IndexOf(MarketBots.Sizes, size), i => MarketText.Fill("reallife_mkt_bot_set_size", "pct", MarketBots.Sizes[i].ToString()),
+                    i => UiClone.Safe(() => Settle(f, b, MarketBots.Sizes[i], stop, loss)));
+                box.Selector(MarketBots.Stops.Length, MarketBots.IndexOf(MarketBots.Stops, stop),
+                    i => MarketBots.Stops[i] == 0 ? MarketText.T("reallife_mkt_bot_set_stop_none") : MarketText.Fill("reallife_mkt_bot_set_stop", "pct", MarketBots.Stops[i].ToString()),
+                    i => UiClone.Safe(() => Settle(f, b, size, MarketBots.Stops[i], loss)));
+                box.Selector(MarketBots.Losses.Length, MarketBots.IndexOf(MarketBots.Losses, loss), i => MarketText.Fill("reallife_mkt_bot_set_loss", "pct", MarketBots.Losses[i].ToString()),
+                    i => UiClone.Safe(() => Settle(f, b, size, stop, MarketBots.Losses[i])));
+            }
             Transform buttons = box.ButtonRow();
             if (b == null)
             {
@@ -147,6 +195,138 @@ namespace RealLifeOverhaul.Markets
                 "momentum", MarketBots.MomentumDays.ToString(), "quarters", MarketBots.IncomeQuarters.ToString());
         }
 
+        // The shares page: what it trades, and with its picks, a picker over the player's own company, their picks, what
+        // they and their bots hold and what they watch, with a button to pick the one shown or take it off.
+        private void WriteBotShares(InfoBox box, MarketState s, BotFirm f, Bot b, BotScope scope, List<int> picks)
+        {
+            box.Selector(ScopeKeys.Length, (int)scope, i => MarketText.T(ScopeKeys[i]), i => UiClone.Safe(() =>
+            {
+                if (b != null)
+                {
+                    Done(_director.SetBotScope(f.Id, (BotScope)i, out BotWhy why), why);
+                    return;
+                }
+                _botScope = (BotScope)i;
+                Refresh();
+            }));
+            if (scope != BotScope.Picked)
+            {
+                return;
+            }
+            Candidates(s, picks);
+            if (_botCandidates.Count == 0)
+            {
+                box.Line(MarketText.T("reallife_mkt_bot_pick_none"));
+                return;
+            }
+            _botPickAt = Mathf.Clamp(_botPickAt, 0, _botCandidates.Count - 1);
+            box.Selector(_botCandidates.Count, _botPickAt, i => PickWords(s, _botCandidates[i], picks), i => UiClone.Safe(() =>
+            {
+                _botPickAt = i;
+                Refresh();
+            }));
+            int id = _botCandidates[_botPickAt];
+            bool picked = picks.Contains(id);
+            Transform row = box.ButtonRow();
+            InfoBox.Button(row, picked ? InfoBox.Negative : InfoBox.Positive, picked ? "reallife_mkt_bot_unpick" : "reallife_mkt_bot_pick", () => UiClone.Safe(() =>
+            {
+                if (b != null)
+                {
+                    bool done = _director.PickForBot(f.Id, id, !picked, out BotWhy why);
+                    if (!done && why != BotWhy.None)
+                    {
+                        BotError(why);
+                    }
+                    Refresh();
+                    return;
+                }
+                if (picked)
+                {
+                    _botPicks.Remove(id);
+                }
+                else if (_botPicks.Count < MarketBots.PicksMost)
+                {
+                    _botPicks.Add(id);
+                }
+                else
+                {
+                    BotError(BotWhy.Picks);
+                }
+                Refresh();
+            }));
+        }
+
+        // The picker's companies, in this order: the player's own listed company, the picks, what the player and their
+        // bots hold, what they watch. Listed companies only, never another player's, each once.
+        private void Candidates(MarketState s, List<int> picks)
+        {
+            _botCandidates.Clear();
+            MarketEngine engine = _director.Engine;
+            Stock own = engine != null ? engine.MineListed() : null;
+            AddCandidate(s, own != null ? own.Id : 0);
+            for (int i = 0; i < picks.Count; i++)
+            {
+                AddCandidate(s, picks[i]);
+            }
+            for (int i = 0; i < s.Positions.Count; i++)
+            {
+                if (s.Positions[i].Shares > 0)
+                {
+                    AddCandidate(s, s.Positions[i].StockId);
+                }
+            }
+            for (int i = 0; i < s.Bots.Count; i++)
+            {
+                for (int j = 0; j < s.Bots[i].Holdings.Count; j++)
+                {
+                    AddCandidate(s, s.Bots[i].Holdings[j].StockId);
+                }
+            }
+            for (int i = 0; i < s.Watch.Count; i++)
+            {
+                AddCandidate(s, s.Watch[i]);
+            }
+        }
+
+        private void AddCandidate(MarketState s, int id)
+        {
+            Stock k = id > 0 ? s.Stock(id) : null;
+            if (k != null && k.Listed && (k.Own == null || MarketBots.Mine(s, k)) && !_botCandidates.Contains(id))
+            {
+                _botCandidates.Add(id);
+            }
+        }
+
+        private static string PickWords(MarketState s, int id, List<int> picks)
+        {
+            Stock k = s.Stock(id);
+            string name = k == null ? string.Empty : MarketBots.Mine(s, k) ? MarketText.Fill("reallife_mkt_bot_pick_yours", "name", k.Name) : k.Name;
+            return MarketText.Fill(picks.Contains(id) ? "reallife_mkt_bot_pick_on" : "reallife_mkt_bot_pick_off", "name", name);
+        }
+
+        private static string ScopeWords(BotScope scope, int picks)
+        {
+            return scope == BotScope.Picked ? MarketText.Fill("reallife_mkt_bot_plan_picked", "count", picks.ToString()) : MarketText.T(ScopeKeys[(int)scope]);
+        }
+
+        private static string PayWords(int pct, BotPayEvery every)
+        {
+            return pct <= 0 ? MarketText.T("reallife_mkt_bot_set_pay_none") : MarketText.Fill("reallife_mkt_bot_plan_pays", "pct", pct.ToString(), "every", MarketText.T(EveryKeys[(int)every]));
+        }
+
+        // A payout setting changed: for a bot hired, at once; for one being written, kept for the hire.
+        private void SettlePayout(BotFirm f, Bot b, int pct, BotPayEvery every)
+        {
+            if (b != null)
+            {
+                Done(_director.SetBotPayout(f.Id, pct, every, out BotWhy why), why);
+                return;
+            }
+            _botPay = pct;
+            _botEvery = every;
+            Refresh();
+        }
+
         // A setting changed: for a bot hired, at once (the market's next step on); for one being written, kept for the hire.
         private void Settle(BotFirm f, Bot b, int size, int stop, int loss)
         {
@@ -163,8 +343,11 @@ namespace RealLifeOverhaul.Markets
 
         private void ConfirmHire(BotFirm f)
         {
-            int size = _botSize, stop = _botStop, loss = _botLoss;
+            int size = _botSize, stop = _botStop, loss = _botLoss, pay = _botPay;
             long capital = _botCapital;
+            BotScope scope = _botScope;
+            BotPayEvery every = _botEvery;
+            int[] picks = _botPicks.ToArray();
             GameConfirm.Show(
                 "reallife_mkt_bot_confirm_hire".Localize(new { firm = f.Name }),
                 "reallife_mkt_bot_confirm_hire_body".Localize(new
@@ -180,6 +363,13 @@ namespace RealLifeOverhaul.Markets
                     }
                     else
                     {
+                        // The shares it trades and its payouts, as they were written for it.
+                        for (int i = 0; i < picks.Length; i++)
+                        {
+                            _director.PickForBot(f.Id, picks[i], true, out _);
+                        }
+                        _director.SetBotScope(f.Id, scope, out _);
+                        _director.SetBotPayout(f.Id, pay, every, out _);
                         Notifications.Show(NotificationType.Success, "reallife_mkt_bot_note_hired", new Dictionary<string, string> { { "firm", f.Name } }, 6f, null, null, true, false);
                     }
                     Refresh();
@@ -210,7 +400,8 @@ namespace RealLifeOverhaul.Markets
         private static readonly string[] BotWhyKeys =
         {
             "reallife_mkt_bot_why_none", "reallife_mkt_bot_why_closed", "reallife_mkt_bot_why_held", "reallife_mkt_bot_why_behind", "reallife_mkt_bot_why_hired", "reallife_mkt_bot_why_full",
-            "reallife_mkt_bot_why_too_little", "reallife_mkt_bot_why_no_cash", "reallife_mkt_bot_why_not_hired", "reallife_mkt_bot_why_not_stopped", "reallife_mkt_bot_why_too_little_left", "reallife_mkt_bot_why_off"
+            "reallife_mkt_bot_why_too_little", "reallife_mkt_bot_why_no_cash", "reallife_mkt_bot_why_not_hired", "reallife_mkt_bot_why_not_stopped", "reallife_mkt_bot_why_too_little_left", "reallife_mkt_bot_why_off",
+            "reallife_mkt_bot_why_own_shares", "reallife_mkt_bot_why_not_listed", "reallife_mkt_bot_why_picks"
         };
 
         private static void BotError(BotWhy why)

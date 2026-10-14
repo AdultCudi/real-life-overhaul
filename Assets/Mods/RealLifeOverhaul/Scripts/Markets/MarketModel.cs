@@ -363,6 +363,8 @@ namespace RealLifeOverhaul.Markets
         OwnWithdrawn = 28,  // an investor dropped a demand that was met: Stock, A the demand
         OwnAway = 29,       // another player's company left this market (its founder's city is no longer this one): Stock, A cents a share paid out
         OwnAudit = 30,      // its yearly audit found the books wanting: Stock, A what it found (ListingBook bits)
+        // The player of this machine's own money, never in the city's line nor in the City Ledger:
+        Paid = 31,          // a dividend paid to them, on their shares or a bot's: Stock, A the money before tax, B the bot's firm (0 their own shares)
         Count
     }
 

@@ -1,682 +1,558 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
+using System.Text.RegularExpressions;
 using RealLifeOverhaul.Markets;
 
-// Conservative investments (Scripts/Markets/Bonds, Scripts/Markets/TrustRules): the property trusts, which pay every
-// week or every third day (their schedule, how much, how often, a yield that is a fair one, no money from buying for a
-// payment, prices that follow the property market), and the bonds (their yields and price, their payments with the
-// share put back, their end, a sale before it, a deposit closed early, every refusal, the same on every machine, the
-// save's line and a save from before them). Every expected figure is worked out from the catalogue or by hand.
+// The shares a trading bot trades, its payouts and the dividend news (Scripts/Markets: MarketBots, MarketEngine.Bots.cs,
+// MarketStore): its whole market, the companies picked for it or the player's own holdings, a holding outside them sold;
+// the player's own company traded only by its founder's rules and within a share of its day's volume, never another
+// player's; a share of new profit paid daily, weekly or monthly with losses carried forward and no money made or lost by
+// it; a line of the market news for each dividend paid to the player or a bot of theirs, one notification for several;
+// the save's line with all of it, a line from before it, and the city's line without the player's own news.
 internal static partial class Program
 {
-    private static void MarketIncome()
+    private static void MarketBotsPlus()
     {
-        TrustCatalogueChecks();
-        TrustScheduleChecks();
-        TrustPayoutChecks();
-        TrustFairChecks();
-        TrustPropertyChecks();
-        TrustJoinChecks();
-        BondYieldChecks();
-        BondPaymentChecks();
-        BondSaleChecks();
-        BondRefusalChecks();
-        BondSameEverywhere();
-        BondStoreChecks();
-        BondCost();
-        IncomeWords();
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        int before = _run, failedBefore = _failed;
+        BotScopeRules();
+        BotScopeRuns();
+        BotOwnCompany();
+        BotPayoutRules();
+        BotPayoutRuns();
+        BotDividendNews();
+        BotPlusStore();
+        BotPlusSameEverywhere();
+        BotPlusWords();
+        BotPlusCost();
+        Console.WriteLine("  trading bots' shares, payouts and dividend news: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
-    private static List<Stock> Trusts(MarketEngine m)
-    {
-        return m.State.Stocks.Where(s => s.Listed && TrustRules.Is(s)).ToList();
-    }
+    // ---------------------------------------------------------------- the shares a bot trades
 
-    // ---------------------------------------------------------------- the property trusts
-
-    private static void TrustCatalogueChecks()
+    private static void BotScopeRules()
     {
-        CompanyDef[] trusts = MarketCatalogue.All.Where(d => d.PayDays > 0).ToArray();
-        Check(trusts.Length >= 4 && trusts.All(d => d.Sector == MarketSector.Trusts && !d.Pipeline && d.Trade == null),
-            "trusts: four property trusts at least, every one in its own sector, listed from the start and in no trade of the player's (" + trusts.Length + ")");
-        Check(trusts.All(d => d.PayDays == MarketCatalogue.TrustWeekly || d.PayDays == MarketCatalogue.TrustThreeDays)
-              && trusts.Any(d => d.PayDays == MarketCatalogue.TrustWeekly) && trusts.Any(d => d.PayDays == MarketCatalogue.TrustThreeDays),
-            "trusts: each pays every week or every third day, and both kinds are listed");
-        Check(MarketCatalogue.All.Where(d => d.Sector == MarketSector.Trusts).All(d => d.PayDays > 0) && MarketCatalogue.All.Where(d => d.PayDays > 0).All(d => d.Id > 136 && d.Id < 200),
-            "trusts: every company of the sector pays often, and each has an id of its own after the first block's");
-        Check(MarketCatalogue.SectorKeys[(int)MarketSector.Trusts] == "reallife_mkt_sector_trusts" && (int)MarketSector.Trusts == 23,
-            "trusts: the sector is added at the end (saves keep every other sector's number) and has its name");
-        var made = MarketLife.Make(MarketCatalogue.Find(137), null, 10, MarketEnv.Quiet(), 60, 5, 0);
-        Check(TrustRules.Is(made) && !TrustRules.Is(MarketLife.Make(MarketCatalogue.Find(1), null, 10, MarketEnv.Quiet(), 60, 5, 0)),
-            "trusts: a trust is told from a company that pays each quarter");
-    }
-
-    // A trust's calendar: periods, record days on market days, the year's rate shared by the days with nothing lost.
-    private static void TrustScheduleChecks()
-    {
-        bool records = true;
-        foreach (int every in new[] { MarketCatalogue.TrustThreeDays, MarketCatalogue.TrustWeekly })
+        MarketEngine m = BotMarket(601, 5000000, out BotWorld w);
+        SessionDay(m, 3, 10);
+        Bot b = m.Hire(1, 500000, 20, 10, 35, out _);
+        Check(b.Scope == BotScope.Market && b.Picks.Count == 0 && b.PayPct == 0 && b.PayEvery == BotPayEvery.Monthly, "bots plus: a bot is hired on its whole market, with nothing picked and no payout");
+        Stock big = Liquid(m, MarketSize.Large), small = m.State.Stocks.First(s => s.Listed && s.Size == MarketSize.Small && s.BidCents <= 0 && m.State.Day - s.ListedDay > 30 && s.Last > 1000);
+        Check(MarketBots.Allowed(m.State, b, big, m.State.Day) == MarketBots.Buyable(m.State, b.Def, big, m.State.Day)
+              && !MarketBots.Allowed(m.State, b, small, m.State.Day), "bots plus: on its whole market a bot buys what its firm buys (no small company for the trend firm)");
+        Check(m.SetScope(1, BotScope.Picked, out BotWhy why) && m.PickFor(1, small.Id, true, out why) && MarketBots.Allowed(m.State, b, small, m.State.Day)
+              && !MarketBots.Allowed(m.State, b, big, m.State.Day), "bots plus: with picks it buys only what was picked, a small company too");
+        Check(!m.PickFor(1, small.Id, true, out why) && why == BotWhy.None, "bots plus: a company is picked once");
+        foreach (Stock s in m.State.Stocks.Where(s => s.Listed && s.Id != small.Id).Take(MarketBots.PicksMost - 1))
         {
-            for (int p = 0; p < 300; p++)
-            {
-                int r = TrustRules.RecordDay(p, every);
-                records &= MarketCatalogue.TradingDay(r) && TrustRules.Period(r, every) == p && r > TrustRules.RecordDay(p - 1, every);
-            }
+            m.PickFor(1, s.Id, true, out _);
         }
-        Check(records, "trusts: every period's record day is a market day inside it, and they follow one another");
-        Check(TrustRules.RecordDay(0, 7) == 5 && TrustRules.RecordDay(1, 7) == 12 && TrustRules.RecordDay(0, 3) == 3 && TrustRules.RecordDay(1, 3) == 5 && TrustRules.RecordDay(4, 3) == 15,
-            "trusts: a week's record day is its Friday, three days' their last market day (Wednesday, then Friday for Thursday to Saturday, Monday for Saturday to Monday)");
-        bool sums = true, fair = true;
-        foreach (int year in new[] { 60, 61, 100, 365 })
+        Stock more = m.State.Stocks.First(s => s.Listed && !b.Picks.Contains(s.Id));
+        Check(b.Picks.Count == MarketBots.PicksMost && !m.PickFor(1, more.Id, true, out why) && why == BotWhy.Picks, "bots plus: no more than " + MarketBots.PicksMost + " companies are picked for a bot");
+        Check(m.PickFor(1, small.Id, false, out _) && !b.Picks.Contains(small.Id) && !MarketBots.Allowed(m.State, b, small, m.State.Day), "bots plus: a company taken off its picks is not bought");
+        b.Picks.Clear();
+        small.BidCents = small.Last * 2;
+        b.Picks.Add(small.Id);
+        Check(!MarketBots.Allowed(m.State, b, small, m.State.Day), "bots plus: a picked company under a bid is not bought");
+        small.BidCents = 0;
+        int listed = small.ListedDay;
+        small.ListedDay = m.State.Day - MarketBots.ListedDaysLeast + 1;
+        Check(!MarketBots.Allowed(m.State, b, small, m.State.Day), "bots plus: nor one listed fewer than " + MarketBots.ListedDaysLeast + " days");
+        small.ListedDay = listed;
+        // Another player's company is never a bot's: not picked, not in its scope.
+        Stock other = m.State.Stocks.First(s => s.Listed && s.Id != small.Id && s.Size == MarketSize.Large);
+        m.State.Me = 0x77UL;
+        other.Own = new OwnListing { Owner = 0x78UL, Founder = other.Shares / 2 };
+        Check(!m.PickFor(1, other.Id, true, out why) && why == BotWhy.NotListed && !MarketBots.InScope(m.State, b, other), "bots plus: another player's company cannot be picked");
+        b.Picks.Add(other.Id);
+        Check(!MarketBots.InScope(m.State, b, other) && !MarketBots.Allowed(m.State, b, other, m.State.Day) && MarketBots.OwnRoom(m.State, other, true, m.State.Day, 60) == 0,
+            "bots plus: and is never traded, even if it were among the picks");
+        other.Own = null;
+        b.Picks.Clear();
+        // The player's holdings.
+        m.SetScope(1, BotScope.Held, out _);
+        Check(!MarketBots.InScope(m.State, b, big), "bots plus: on the player's holdings, a company they hold none of is not in its scope");
+        Trade(m, big, OrderSide.Buy, 50);
+        Check(MarketBots.InScope(m.State, b, big) && MarketBots.Allowed(m.State, b, big, m.State.Day), "bots plus: and one they hold is");
+        Check(!m.SetScope(9, BotScope.Picked, out why) && why == BotWhy.NotHired, "bots plus: a bot not hired has no settings to change");
+        m.HoldAfterLoad();
+        m.Tape.Reach(m.State.Day + 3, MarketCatalogue.PhaseOpen, true);
+        m.HoldAfterLoad();
+        Check(m.Held && !m.SetScope(1, BotScope.Market, out why) && why == BotWhy.Held && !m.PickFor(1, big.Id, true, out _) && !m.SetPayout(1, 50, BotPayEvery.Daily, out _),
+            "bots plus: nothing about what it trades or pays changes while the market replays after a load");
+    }
+
+    // Over runs: a bot on its picks trades only them, one on the player's holdings only those, and a holding outside its scope is sold.
+    private static void BotScopeRuns()
+    {
+        int trades = 0, outside = 0, heldTrades = 0, heldOutside = 0;
+        for (ulong seed = 611; seed <= 614; seed++)
         {
-            foreach (int every in new[] { 3, 7 })
+            MarketEngine m = BotMarket(seed, 20000000, out _);
+            SessionDay(m, 3, 10);
+            List<int> picks = m.State.Stocks.Where(s => s.Listed && s.Own == null && s.BidCents <= 0).OrderByDescending(s => s.Adv).Take(MarketBots.PicksMost).Select(s => s.Id).ToList();
+            m.Hire(3, 2000000, 25, 10, 50, out _);
+            foreach (int id in picks)
             {
-                foreach (int quarterly in new[] { 1, 7, 30, 123, 999 })
+                m.PickFor(3, id, true, out _);
+            }
+            m.SetScope(3, BotScope.Picked, out _);
+            List<int> mine = m.State.Stocks.Where(s => s.Listed && s.Own == null && s.BidCents <= 0 && s.Size != MarketSize.Small && !picks.Contains(s.Id)).OrderByDescending(s => s.Adv).Take(5).Select(s => s.Id).ToList();
+            foreach (int id in mine)
+            {
+                Trade(m, m.State.Stock(id), OrderSide.Buy, 20);
+            }
+            m.Hire(1, 2000000, 20, 0, 50, out _);
+            m.SetScope(1, BotScope.Held, out _);
+            m.Hire(4, 2000000, 20, 0, 50, out _);
+            m.SetScope(4, BotScope.Held, out _);
+            RunTo(m, 70);
+            foreach (Trade t in m.State.Trades.Where(t => t.Kind == TradeKind.Bought && t.Bot > 0))
+            {
+                if (t.Bot == 3)
                 {
-                    int periods = 400, total = 0, least = int.MaxValue, most = 0;
-                    for (int p = 0; p < periods; p++)
-                    {
-                        int c = TrustRules.Cents(quarterly, p, every, year);
-                        total += c;
-                        least = Math.Min(least, c);
-                        most = Math.Max(most, c);
-                    }
-                    double want = quarterly * 4.0 * every / year * periods;
-                    sums &= Math.Abs(total - want) <= 1.0;
-                    fair &= most - least <= 1;
+                    trades++;
+                    outside += picks.Contains(t.StockId) ? 0 : 1;
+                }
+                else
+                {
+                    heldTrades++;
+                    heldOutside += mine.Contains(t.StockId) ? 0 : 1;
                 }
             }
         }
-        Check(sums, "trusts: over any run of periods the distributions add up to the quarterly dividend's year, to the cent");
-        Check(fair, "trusts: no period's share differs from another's by more than a cent");
-        Check(TrustRules.Cents(0, 5, 7, 60) == 0 && TrustRules.Cents(-3, 5, 7, 60) == 0, "trusts: no dividend, no distribution");
-        // A declaration at an open: the period whose record day is today or later, built up from the last record day.
-        var s = MarketLife.Make(MarketCatalogue.Find(139), null, 1, MarketEnv.Quiet(), 60, 9, 0);
-        s.DpsCents = 30;
-        s.RecordDay = TrustRules.RecordDay(3, 3);   // day 12, a Friday: paid, gone out of the price on the Monday
-        s.DeclaredCents = 4;
-        s.ExDone = true;
-        TrustRules.Declare(s, 15, 60);   // the Monday's open: period 4 (13 to 15) has its record day today
-        Check(s.RecordDay == 15 && s.DeclaredCents == TrustRules.Cents(30, 4, 3, 60) && !s.ExDone && s.PayDay == 16 && s.LastExDay == 12
-              && Math.Abs(MarketLife.Accrued(s, 15, 60) - s.DeclaredCents / 100.0) < 1e-12,
-            "trusts: a record day on the very morning the last payment leaves the price is declared then, and the price holds all of it that day");
-        int was = s.DeclaredCents;
-        TrustRules.Declare(s, 15, 60);
-        Check(s.DeclaredCents == was && s.RecordDay == 15, "trusts: nothing more is declared while one waits for its record day");
-        s.RecordDay = 3;
-        s.ExDone = true;
-        TrustRules.Declare(s, 15, 60);   // a long gap: periods 1 to 4 had no declaration
-        Check(s.RecordDay == 15 && s.DeclaredCents == TrustRules.Cents(30, 1, 3, 60) + TrustRules.Cents(30, 2, 3, 60) + TrustRules.Cents(30, 3, 3, 60) + TrustRules.Cents(30, 4, 3, 60)
-              && s.LastExDay == 3, "trusts: periods whose record day went by with nothing declared are paid with the next (" + s.DeclaredCents + " cents)");
-        var first = MarketLife.Make(MarketCatalogue.Find(139), null, 15, MarketEnv.Quiet(), 60, 9, 0);
-        Check(first.RecordDay == 18 && first.DeclaredCents > 0 && first.LastExDay == 15, "trusts: a trust made today first pays for a record day after today");
+        Check(trades > 0 && outside == 0, "bots plus: a bot on its picks buys only the companies picked (" + trades + " purchases, " + outside + " outside)");
+        Check(heldOutside == 0, "bots plus: a bot on the player's holdings buys only what they hold (" + heldTrades + " purchases, " + heldOutside + " outside)");
+        Console.WriteLine("  bots plus: " + trades + " purchases on picks and " + heldTrades + " on the player's holdings over four seeds");
+        // A holding outside its scope is sold at the next session.
+        MarketEngine e = BotMarket(615, 5000000, out _);
+        int day = SessionDay(e, 3, 10);
+        Bot b = e.Hire(1, 600000, 20, 10, 35, out _);
+        Stock x = Liquid(e, MarketSize.Large);
+        b.Holdings.Add(new BotHolding { StockId = x.Id, Shares = 100, Cost = 100L * x.Last / 100, OpenedDay = day });
+        e.SetScope(1, BotScope.Picked, out _);
+        RunTo(e, day);
+        Check(b.Pending.Any(o => o.StockId == x.Id && !o.Buy), "bots plus: at the close a holding outside its picks is to be sold");
+        RunTo(e, MarketTrading.NextTradingDay(day), MarketCatalogue.PhaseOpen + 2);
+        Check(b.Holding(x.Id) == null, "bots plus: and is sold at the next session's first step");
     }
 
-    // In a market: how often a trust pays its holders, how much over the days held, and that the price drops by it.
-    private static void TrustPayoutChecks()
+    // ---------------------------------------------------------------- the player's own company
+
+    private static void BotOwnCompany()
     {
-        int weeklyGaps = 0, weeklyOff = 0, thirdGaps = 0, thirdOff = 0, cases = 0, wholeOnRecord = 0, goneAfter = 0, recordCases = 0, afterCases = 0, shortGaps = 0;
-        double thirdMean = 0.0, share = 0.0, shortMean = 0.0;
-        int shareCases = 0;
-        foreach (int year in new[] { 60, 365 })
+        var world = new OwnWorld(621);
+        MarketEngine m = LListed(621, world, 2500, out Stock own);
+        Check(own != null, "bots plus: the player's company is listed for the checks");
+        if (own == null)
         {
-            for (ulong seed = 1; seed <= 3; seed++)
+            return;
+        }
+        var notes = new List<BotNote>();
+        m.BotTold = n => notes.Add(n);
+        int day = MarketTrading.MarketDays(m.State.Day, MarketBots.ListedDaysLeast + 2);
+        RunTo(m, day, MarketCatalogue.PhaseOpen);
+        for (int tries = 0; tries < 40 && ListingRules.Closed(own, m.State.Day, LYear); tries++)
+        {
+            day = MarketTrading.NextTradingDay(m.State.Day);
+            RunTo(m, day, MarketCatalogue.PhaseOpen);
+        }
+        day = m.State.Day;
+        Check(!ListingRules.Closed(own, day, LYear) && own.Listed, "bots plus: a day the founder may deal on, for the checks (day " + day + ")");
+        Bot b = m.Hire(1, 5000000, 100, 0, 90, out BotWhy why);
+        Check(b != null, "bots plus: a bot is hired beside the player's company (" + why + ")");
+        if (b == null)
+        {
+            return;
+        }
+        Check(!MarketBots.InScope(m.State, b, own) && !MarketBots.Allowed(m.State, b, own, day), "bots plus: on its whole market a bot never trades the player's own company");
+        m.SetScope(1, BotScope.Held, out _);
+        Check(own.Own.Founder > 0 && MarketBots.InScope(m.State, b, own), "bots plus: on the player's holdings it may trade their own company, whose founder they are");
+        Check(m.SetScope(1, BotScope.Picked, out _) && m.PickFor(1, own.Id, true, out why) && MarketBots.Allowed(m.State, b, own, day), "bots plus: and the player's own company can be picked (" + why + ")");
+        Stock plain = Liquid(m, MarketSize.Large);
+        Check(MarketBots.OwnRoom(m.State, plain, true, day, LYear) == long.MaxValue, "bots plus: a company not a player's has no limit of the founder's");
+        long cap = (long)Math.Floor(own.Adv * MarketBots.OwnVolumePct / 100.0);
+        long room = MarketBots.OwnRoom(m.State, own, true, day, LYear);
+        Check(cap > 0 && room <= cap, "bots plus: a day's trading in the player's company is at most " + MarketBots.OwnVolumePct + "% of its ordinary day's volume (" + room + " of " + cap + ")");
+        // The closed time, another machine's view and the founder's limits.
+        int pending = own.PendingQuarter;
+        own.PendingQuarter = own.Quarter;
+        Check(MarketBots.OwnRoom(m.State, own, true, day, LYear) == 0 && MarketBots.OwnRoom(m.State, own, false, day, LYear) == 0, "bots plus: nothing in the closed time before its results");
+        own.PendingQuarter = pending;
+        m.State.Following = true;
+        Check(MarketBots.OwnRoom(m.State, own, true, day, LYear) == 0 && !MarketBots.InScope(m.State, b, own), "bots plus: nothing while the market follows another player's city");
+        m.State.Following = false;
+        OwnListing o = own.Own;
+        int dealYear = o.DealYear, bought = o.BoughtBp;
+        o.DealYear = MarketCatalogue.YearOf(day, LYear);
+        o.BoughtBp = ListingCatalogue.FounderDealMostBpYear;
+        Check(MarketBots.OwnRoom(m.State, own, true, day, LYear) == 0, "bots plus: nothing once the founder's own deals have used the year's limit");
+        o.DealYear = dealYear;
+        o.BoughtBp = bought;
+        long founder = o.Founder;
+        o.Founder = own.Shares * ListingCatalogue.FounderMostBp / 10000L;
+        Check(MarketBots.OwnRoom(m.State, own, true, day, LYear) == 0 && MarketBots.OwnRoom(m.State, own, false, day, LYear) >= 0, "bots plus: no purchase past the most the founder may hold");
+        o.Founder = founder;
+        // A purchase through the market: within the day's share, counted, and no sale back within the short-swing time.
+        b.Pending.Clear();
+        b.Pending.Add(new BotOrder { StockId = own.Id, Buy = true, Qty = 10000000 });
+        double before = own.Last;
+        RunTo(m, day, MarketCatalogue.PhaseOpen + 2);
+        BotHolding h = b.Holding(own.Id);
+        long got = h != null ? h.Shares : 0;
+        Check(got > 0 && got <= cap && b.OwnQty == got && b.OwnBuyDay == day && b.OwnBoughtBp == ListingRules.Bp(got, own.Shares),
+            "bots plus: a bot's purchase of the player's company is held to the day's share and counted (" + got + " of at most " + cap + ")");
+        Check(MarketBots.OwnRoom(m.State, own, true, day, LYear) <= cap - got, "bots plus: and what it bought counts against the rest of the day");
+        Check(m.State.Trades.Where(t => t.Bot == 1 && t.StockId == own.Id && t.Kind == TradeKind.Bought).Sum(t => t.Qty) == got
+              && m.State.Trades.Where(t => t.Bot == 1 && t.StockId == own.Id && t.Kind == TradeKind.Bought).All(t => t.Value < 0 && t.Fee > 0), "bots plus: bought as the player's own trade, with their cash and the commission");
+        Console.WriteLine("  bots plus: a bot bought " + got + " shares of the player's company (a day's share " + cap + "); its price " + (own.Last / before * 100.0 - 100.0).ToString("0.00") + "% after the step");
+        int window = MarketBots.OwnSwingDays(LYear);
+        Check(MarketBots.OwnRoom(m.State, own, false, day, LYear) == 0, "bots plus: no sale of the player's company within " + window + " days of a purchase (the founder's short-swing time)");
+        b.OwnBuyDay = day - window + 1;
+        Check(MarketBots.OwnRoom(m.State, own, false, day, LYear) == 0, "bots plus: not on the last day of it either");
+        b.OwnBuyDay = day - window;
+        b.OwnDay = 0;
+        Check(MarketBots.OwnRoom(m.State, own, false, day, LYear) > 0, "bots plus: after it, a sale may be made");
+        b.OwnBuyDay = day;
+        b.OwnDay = day;
+        // Letting go: refused while it holds them; sold up by the rules, then let go.
+        Check(!m.Dismiss(1, out why) && why == BotWhy.OwnShares && MarketBots.Hired(m.State, 1) != null, "bots plus: a bot holding the player's company's shares is not let go");
+        m.SellUp(1, out _);
+        RunTo(m, day, MarketCatalogue.PhaseOpen + 4);
+        Check(b.Status == BotStatus.SellingUp && b.Holding(own.Id) != null && b.Holding(own.Id).Shares == got, "bots plus: sold up within the short-swing time, it keeps them and sells nothing yet");
+        b.OwnBuyDay = day - window;
+        b.OwnDay = 0;
+        RunTo(m, day, MarketCatalogue.PhaseOpen + 5);
+        Check(b.Holding(own.Id) == null && b.Status == BotStatus.Stopped && b.OwnSellDay == day, "bots plus: once it may, it sells them and stops");
+        Check(m.Dismiss(1, out why) && MarketBots.Hired(m.State, 1) == null && o.Founder == founder, "bots plus: then it is let go, and the founder's shares are as they were");
+        _ = notes;
+    }
+
+    // ---------------------------------------------------------------- payouts
+
+    private static void BotPayoutRules()
+    {
+        // Their times: every day, a week's last market day, a month's last market day.
+        bool daily = true, weekly = true, monthly = true;
+        int weeks = 0, months = 0;
+        for (int d = 1; d < 240; d++)
+        {
+            if (!MarketCatalogue.TradingDay(d))
             {
-                var world = new MarketWorld(seed * 13 + (ulong)year);
-                world.Purse.Money = 2000000000;
-                MarketEngine m = NewMarket(seed * 13 + (ulong)year, year, 1, 0, world);
-                int bought = SessionDay(m, 2, 5);
-                foreach (Stock t in Trusts(m))
-                {
-                    Trade(m, t, OrderSide.Buy, 1000);
-                }
-                int days = year == 60 ? 120 : 150;
-                var records = new Dictionary<int, List<int>>();
-                var rate = new Dictionary<int, List<double>>();   // its rate on each day held, in cents a share a day
-                for (int d = bought + 1; d <= days; d++)
-                {
-                    RunTo(m, d, MarketCatalogue.PhaseOpen + 70);
-                    foreach (Stock t in Trusts(m))
-                    {
-                        if (!rate.TryGetValue(t.Id, out List<double> rates))
-                        {
-                            rate[t.Id] = rates = new List<double>();
-                        }
-                        rates.Add(t.DpsCents * 4.0 / year);
-                        if (MarketCatalogue.TradingDay(d) && t.RecordDay == d && t.DeclaredCents > 0 && !t.ExDone)
-                        {
-                            if (!records.TryGetValue(t.Id, out List<int> list))
-                            {
-                                records[t.Id] = list = new List<int>();
-                            }
-                            list.Add(d);
-                            wholeOnRecord += Math.Abs(MarketLife.Accrued(t, d, year) - t.DeclaredCents / 100.0) < 1e-9 ? 1 : 0;
-                            recordCases++;
-                        }
-                    }
-                    RunTo(m, d);
-                    if (MarketCatalogue.TradingDay(d) && MarketCatalogue.TradingDay(d + 1))
-                    {
-                        RunTo(m, d + 1, MarketCatalogue.PhaseOpen);
-                        foreach (Stock t in Trusts(m))
-                        {
-                            if (records.TryGetValue(t.Id, out List<int> list) && list.Count > 0 && list[list.Count - 1] == d)
-                            {
-                                double next = t.DeclaredCents > 0 && !t.ExDone && t.RecordDay > d ? t.DeclaredCents / 100.0 * (d + 1 - d) / (t.RecordDay - d) : 0.0;
-                                goneAfter += t.LastExDay == d && Math.Abs(MarketLife.Accrued(t, d + 1, year) - next) < 1e-9 ? 1 : 0;
-                                afterCases++;
-                            }
-                        }
-                    }
-                }
-                foreach (Stock t in Trusts(m))
-                {
-                    if (!records.TryGetValue(t.Id, out List<int> list) || list.Count < 3)
-                    {
-                        continue;
-                    }
-                    cases++;
-                    for (int i = 1; i < list.Count; i++)
-                    {
-                        int gap = list[i] - list[i - 1];
-                        if (t.Def.PayDays == MarketCatalogue.TrustWeekly)
-                        {
-                            weeklyGaps++;
-                            weeklyOff += gap == 7 ? 0 : 1;
-                        }
-                        else
-                        {
-                            thirdGaps++;
-                            thirdOff += gap >= 1 && gap <= (year == 60 ? 6 : 12) ? 0 : 1;   // (a long year's period of nothing is paid with the next)
-                            thirdMean += gap;
-                            if (year == 60)
-                            {
-                                shortGaps++;
-                                shortMean += gap;   // (in a long year a period's share is a cent or two, and one with nothing waits for the next)
-                            }
-                        }
-                    }
-                    // Paid for the record days up to the last one whose pay day has come, against the rate over the days to it.
-                    Position p = m.State.Position(t.Id);
-                    int last = list.Last(r => MarketTrading.NextTradingDay(r) <= days);
-                    double expected = rate[t.Id].Take(last - bought).Sum() * 1000.0 / 100.0;
-                    if (p != null && expected > 50.0)
-                    {
-                        share += p.Dividends / expected;
-                        shareCases++;
-                    }
-                }
+                continue;
             }
+            int next = MarketTrading.NextTradingDay(d);
+            daily &= MarketBots.PayDue(BotPayEvery.Daily, d, 60);
+            bool w = MarketBots.PayDue(BotPayEvery.Weekly, d, 60), mo = MarketBots.PayDue(BotPayEvery.Monthly, d, 60);
+            weekly &= w == (MarketCatalogue.WeekOf(next) != MarketCatalogue.WeekOf(d)) && (!w || MarketCatalogue.Weekday(d) == 4);
+            monthly &= mo == (MarketCatalogue.MonthOf(next, 60) != MarketCatalogue.MonthOf(d, 60));
+            weeks += w ? 1 : 0;
+            months += mo ? 1 : 0;
         }
-        thirdMean /= Math.Max(1, thirdGaps);
-        shortMean /= Math.Max(1, shortGaps);
-        Console.WriteLine("  trusts: " + cases + " held, weekly record days a week apart " + (weeklyGaps - weeklyOff) + " of " + weeklyGaps + ", the others on average every " + thirdMean.ToString("0.00")
-                          + " days (" + shortMean.ToString("0.00") + " in a 60-day year); paid " + (share / Math.Max(1, shareCases) * 100).ToString("0.0") + "% of their rate over the days held");
-        Check(cases >= 20 && weeklyGaps > 50 && weeklyOff == 0, "trusts: a weekly trust's record days are a week apart, every week (" + weeklyOff + " of " + weeklyGaps + " not)");
-        Check(thirdGaps > 80 && thirdOff == 0 && shortMean > 2.7 && shortMean < 3.3 && thirdMean < 4.5,
-            "trusts: one that pays every third day pays every three days or so, never more than six apart in a 60-day year (on average " + shortMean.ToString("0.00") + " in a 60-day year, " + thirdMean.ToString("0.00") + " in all)");
-        Check(shareCases >= 20 && Math.Abs(share / shareCases - 1.0) < 0.15, "trusts: what a holding is paid comes to the trust's rate over the days held (" + (share / Math.Max(1, shareCases)).ToString("0.000") + ")");
-        Check(recordCases > 100 && wholeOnRecord == recordCases && afterCases > 100 && goneAfter == afterCases,
-            "trusts: the price holds the whole distribution on its record day, and the morning after only the next one's share of the day since (" + wholeOnRecord + " of " + recordCases + ", " + goneAfter + " of "
-            + afterCases + ")");
+        Check(daily && weekly && monthly && weeks >= 30 && months >= 40 && months < weeks + 20, "bots plus: a payout falls due each market day, at a week's last market day, or at a month's (" + weeks + " weeks, " + months + " months)");
+        // The arithmetic: a share of new profit only, losses carried forward, what its money in shares cannot pay waits.
+        var b = new Bot { Firm = 1, Cash = 10000, Capital = 10000, Base = 10000, Peak = 10000, HighWater = 10000, MonthWorth = 10000, PayPct = 50 };
+        b.Realised = 2000;
+        long paid = MarketBots.Payout(b);
+        Check(paid == 1000 && b.Cash == 9000 && b.PaidOut == 1000 && b.MonthPaid == 1000 && b.PayMark == 2000 && b.PayOwed == 0, "bots plus: half of a profit of 2,000 is 1,000 paid out, the rest kept");
+        Check(b.Base == 9000 && b.Peak == 9000 && b.HighWater == 9000 && b.MonthWorth == 9000, "bots plus: and what its limits, its high-water mark and its month are reckoned from come down with it: a payout is never a loss");
+        b.Realised = 1200;   // a loss of 800
+        Check(MarketBots.Payout(b) == 0 && b.PayMark == 2000 && MarketBots.LossesToMakeGood(b) == 800, "bots plus: after a loss nothing is paid, and the loss is carried forward");
+        b.Realised = 1900;
+        Check(MarketBots.Payout(b) == 0 && MarketBots.LossesToMakeGood(b) == 100, "bots plus: nor while part of it is still to be made good");
+        b.Realised = 2600;
+        Check(MarketBots.Payout(b) == 300 && b.PayMark == 2600 && MarketBots.LossesToMakeGood(b) == 0, "bots plus: once it is made good, half of the profit past it is paid (300)");
+        b.Fees += 400;
+        b.Dividends += 1000;
+        Check(MarketBots.Payout(b) == 300 && b.PayMark == 3200, "bots plus: its profit counts its dividends and takes off its fees");
+        b.Cash = 100;
+        b.Realised += 1000;
+        Check(MarketBots.Payout(b) == 100 && b.PayOwed == 400 && b.Cash == 0, "bots plus: what its money not in shares cannot pay waits");
+        b.Cash = 1000;
+        Check(MarketBots.Payout(b) == 400 && b.PayOwed == 0 && b.Cash == 600, "bots plus: and is paid at the next time");
+        b.Cash = -50;
+        b.Realised += 1000;
+        Check(MarketBots.Payout(b) == 0 && b.PayOwed == 500 && b.Cash == -50, "bots plus: nothing is paid from money under nothing");
+        var keep = new Bot { Firm = 1, Cash = 5000, PayPct = 0, Realised = 3000 };
+        Check(MarketBots.Payout(keep) == 0 && keep.PayMark == 3000 && keep.Cash == 5000, "bots plus: a bot that pays nothing keeps its profit, and it is never paid later");
+        keep.PayPct = 100;
+        keep.Realised = 3500;
+        Check(MarketBots.Payout(keep) == 500, "bots plus: all of it, set later, pays only what is new since");
+        Check(MarketBots.Choice(MarketBots.PayPcts, 55) == 50 && MarketBots.Choice(MarketBots.PayPcts, 150) == 100 && MarketBots.Choice(MarketBots.PayPcts, -1) == 0
+              && MarketBots.PayPcts.First() == 0 && MarketBots.PayPcts.Last() == 100, "bots plus: a payout's share is held to its steps, none to all of it");
     }
 
-    // A trust's yield is a fair one, and buying for a payment earns nothing but the costs.
-    private static void TrustFairChecks()
+    // Over runs: what is paid is the share of new profit, no money is made or lost by paying, statements say what was paid.
+    private static void BotPayoutRuns()
     {
-        var yields = new List<double>();
-        double gross = 0.0, net = 0.0, sq = 0.0;
-        int trips = 0;
-        foreach (int year in new[] { 60, 365 })
+        bool conserved = true, share = true, told = true, statements = true;
+        long paidAll = 0;
+        int weeklyNotes = 0, dailyNotes = 0;
+        for (ulong seed = 631; seed <= 636; seed++)
         {
-            for (ulong seed = 1; seed <= 4; seed++)
+            MarketEngine m = BotMarket(seed, 20000000, out BotWorld w);
+            SessionDay(m, 3, 10);
+            long money0 = w.Purse.Money;
+            BotPayEvery[] every = { BotPayEvery.Weekly, BotPayEvery.Daily, BotPayEvery.Monthly, BotPayEvery.Weekly };
+            int[] pct = { 50, 100, 30, 70 };
+            for (int i = 0; i < MarketBots.All.Length; i++)
             {
-                MarketEngine m = NewMarket(seed * 31 + 7, year);
-                foreach (Stock t in Trusts(m))
-                {
-                    yields.Add(t.DpsCents * 4.0 / Math.Max(1, t.Last));
-                }
-                int days = year == 60 ? 360 : 420;
-                var lastClose = new Dictionary<int, int>();
-                var lastRecord = new Dictionary<int, int>();
-                var cents = new Dictionary<int, int>();
-                for (int d = 2; d <= days; d++)
-                {
-                    if (!MarketCatalogue.TradingDay(d))
-                    {
-                        continue;
-                    }
-                    RunTo(m, d, MarketCatalogue.PhaseOpen + 1);
-                    foreach (Stock t in Trusts(m))
-                    {
-                        // Bought at the offer at the record day's close, sold at the bid at the next open, the distribution paid.
-                        if (lastRecord.TryGetValue(t.Id, out int r) && r > 0 && r < d && lastClose.TryGetValue(t.Id, out int close) && close > 0)
-                        {
-                            double half = MarketTrading.HalfSpread(m.State, t, m.State.Phase);
-                            double back = (t.Open + cents[t.Id]) / (double)close - 1.0 - MarketValuation.CostOfEquity(t, m.State.Env) * (d - r) / year;
-                            gross += back;
-                            sq += back * back;
-                            net += back - 2.0 * half - 2.0 * MarketCatalogue.CommissionBp / 10000.0;
-                            trips++;
-                            lastRecord[t.Id] = 0;
-                        }
-                    }
-                    RunTo(m, d);
-                    foreach (Stock t in Trusts(m))
-                    {
-                        if (t.RecordDay == d && t.DeclaredCents > 0 && !t.ExDone)
-                        {
-                            lastRecord[t.Id] = d;
-                            lastClose[t.Id] = t.Last;
-                            cents[t.Id] = t.DeclaredCents;
-                        }
-                    }
-                }
-                foreach (Stock t in Trusts(m))
-                {
-                    yields.Add(t.DpsCents * 4.0 / Math.Max(1, t.Last));
-                }
+                BotFirm f = MarketBots.All[i];
+                m.Hire(f.Id, 1500000, f.Size, f.Stop, f.Loss, out _);
+                m.SetPayout(f.Id, pct[i], every[i], out _);
             }
-        }
-        yields.Sort();
-        double median = yields[yields.Count / 2], mean = gross / Math.Max(1, trips), sd = Math.Sqrt(Math.Max(0.0, sq / Math.Max(1, trips) - mean * mean));
-        Console.WriteLine("  trusts: yields " + (yields[0] * 100).ToString("0.0") + "% to " + (yields[yields.Count - 1] * 100).ToString("0.0") + "%, median " + (median * 100).ToString("0.0")
-                          + "%; bought for a payment " + trips + " times, " + (mean * 100).ToString("0.000") + "% a time over what holding is expected to return (spread " + (sd * 100).ToString("0.00") + "%), "
-                          + (net / Math.Max(1, trips) * 100).ToString("0.000") + "% after");
-        Check(median > 0.03 && median < 0.065 && yields[0] > 0.01 && yields[yields.Count - 1] < 0.11,
-            "trusts: a trust yields what a property trust does, about 3% to 6.5% a year (median " + (median * 100).ToString("0.0") + "%)");
-        Check(trips > 500 && Math.Abs(mean) < 3.0 * sd / Math.Sqrt(trips) + 0.0005,
-            "trusts: buying at a record day's close and selling at the next open earns, with the payment counted, no more than holding is expected to over those days ("
-            + (mean * 100).ToString("0.000") + "%)");
-        Check(net / Math.Max(1, trips) < 0.0, "trusts: and after the spread and the commission it loses: no money is made from the frequent payments");
-    }
-
-    // A trust's price follows where the property market is heading.
-    private static void TrustPropertyChecks()
-    {
-        MarketEnv steady = MarketEnv.Quiet(), boom = MarketEnv.Quiet(), slump = MarketEnv.Quiet(), dear = MarketEnv.Quiet();
-        boom.Cycle = 0;
-        slump.Cycle = 3;
-        dear.RateBp = 500;
-        Check(TrustRules.PropertyFactor(boom) > TrustRules.PropertyFactor(steady) && TrustRules.PropertyFactor(steady) > TrustRules.PropertyFactor(slump)
-              && TrustRules.PropertyFactor(dear) < TrustRules.PropertyFactor(steady),
-            "trusts: their buildings are worth more in a boom and less in a recession or when the bank rate is up, as Estate's market heads");
-        Stock t = MarketLife.Make(MarketCatalogue.Find(137), null, 10, steady, 60, 5, 0);
-        Stock other = MarketLife.Make(MarketCatalogue.Find(20), null, 10, steady, 60, 5, 0);
-        double ratio = MarketValuation.Fair(t, boom) / MarketValuation.Fair(t, steady), otherRatio = MarketValuation.Fair(other, boom) / MarketValuation.Fair(other, steady);
-        Check(ratio > otherRatio && ratio > 1.0, "trusts: a boom lifts a trust's worth more than an ordinary property company's (" + ratio.ToString("0.000") + " against " + otherRatio.ToString("0.000") + ")");
-        MarketEnv control = MarketEnv.Quiet();
-        var levers = new int[MarketEnv.LeverCount];
-        levers[5] = 1;   // rents controlled
-        control.Levers = MarketEnv.Packed(levers);
-        Check(MarketValuation.Fair(t, control) < MarketValuation.Fair(t, steady), "trusts: the council's rent control takes from a trust's rents and its worth");
-        double y = Math.Max(8, 60);
-        Check(Math.Abs(MarketValuation.PayoutOf(t, 0.03) - Math.Max(MarketCatalogue.TrustPayout, MarketValuation.Payout(0.03))) < 1e-12 && MarketValuation.PayoutOf(other, 0.03) == MarketValuation.Payout(0.03) && y > 0,
-            "trusts: a trust pays out nine tenths of its profit at least, every other company as it did");
-    }
-
-    // A save from before the trusts: they join its market at its load, the index does not jump, and a sector starts.
-    private static void TrustJoinChecks()
-    {
-        MarketEngine m = NewMarket(141, 60);
-        RunTo(m, 40);
-        string line = MarketStore.Write(m.State);
-        string old = line;
-        foreach (CompanyDef d in MarketCatalogue.All.Where(d => d.PayDays > 0))
-        {
-            old = RemoveCompany(old, d.Id);
-        }
-        // (a line written before the sector was there has one sector fewer)
-        int y = old.IndexOf("~y:", StringComparison.Ordinal);
-        int yEnd = old.IndexOf('~', y + 3);
-        string[] sectors = old.Substring(y + 3, (yEnd < 0 ? old.Length : yEnd) - y - 3).Split(';');
-        old = old.Substring(0, y + 3) + string.Join(";", sectors.Take(sectors.Length - 1)) + (yEnd < 0 ? string.Empty : old.Substring(yEnd));
-        MarketState before = MarketStore.Read(old, out _);
-        Check(before != null && Trusts(new MarketEngine(before, new MarketTape(before.Id), new MarketWorld(1))).Count == 0 && before.SectorDivisor[(int)MarketSector.Trusts] == 0.0,
-            "trusts: a save's line from before them reads with none, and no trusts' sector");
-        var levels = typeof(MarketEngine).GetMethod("Index", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        object[] args = { 0 };
-        levels.Invoke(new MarketEngine(before, new MarketTape(before.Id), new MarketWorld(1)), args);
-        int index = (int)args[0];
-        int joined = MarketSetup.Join(before);
-        var engine = new MarketEngine(before, new MarketTape(before.Id), new MarketWorld(1));
-        List<Stock> trusts = Trusts(engine);
-        Check(joined == trusts.Count && joined == MarketCatalogue.All.Count(d => d.PayDays > 0) && trusts.All(t => t.Daily.Count == MarketCatalogue.DailyKept && t.ListedDay < before.Day - 60),
-            "trusts: every trust joins a save's market from before them, with its past, listed years ago (" + joined + ")");
-        levels.Invoke(engine, args);
-        int now = (int)args[0];
-        int sector = before.SectorLast[(int)MarketSector.Trusts];
-        Check(Math.Abs(now - index) <= Math.Max(2, index / 10000), "trusts: the city's index takes them in without a jump (" + index + " to " + now + ")");
-        Check(Math.Abs(sector - 100000) <= 10 && before.SectorDaily[(int)MarketSector.Trusts].Count > 50, "trusts: their sector starts at 1,000 with a past from theirs (" + sector + ")");
-        Check(MarketSetup.Join(before) == 0, "trusts: a market that has them takes nothing more");
-        MarketState twice = MarketStore.Read(old, out _);
-        MarketSetup.Join(twice);
-        Check(twice.Stocks.Where(TrustRules.Is).Select(t => t.Last).SequenceEqual(before.Stocks.Where(TrustRules.Is).Select(t => t.Last)),
-            "trusts: the same save loaded twice has the same trusts at the same prices");
-        RunTo(engine, before.Day + 30);
-        Check(Trusts(engine).All(t => t.Listed && t.Last > 0) && engine.State.IndexLast > 0, "trusts: and the market goes on with them");
-    }
-
-    // ---------------------------------------------------------------- the bonds
-
-    private static void BondYieldChecks()
-    {
-        MarketEnv env = MarketEnv.Quiet();
-        int t1 = BondRules.YieldBp(BondKind.Treasury, -1, 1.0, env), t5 = BondRules.YieldBp(BondKind.Treasury, -1, 5.0, env), t0 = BondRules.YieldBp(BondKind.Treasury, -1, 0.25, env);
-        Check(t0 == 306 && t1 == 325 && t5 == 400, "bonds: at a bank rate of 3% the Treasury yields 3.06% for a quarter, 3.25% for a year and 4.00% for five (" + t0 + ", " + t1 + ", " + t5 + ")");
-        MarketEnv high = env, low = env, cut = env;
-        high.RateBp = 600;
-        low.RateBp = 100;
-        cut.RateNextBp = -100;
-        Check(BondRules.YieldBp(BondKind.Treasury, -1, 0.25, high) > t0 + 250 && BondRules.YieldBp(BondKind.Treasury, -1, 5.0, high) - t5 < BondRules.YieldBp(BondKind.Treasury, -1, 0.25, high) - t0,
-            "bonds: a higher bank rate lifts every yield, a short term's most");
-        Check(BondRules.YieldBp(BondKind.Treasury, -1, 1.0, cut) < t1, "bonds: a cut the market expects is in the yields already");
-        Check(BondRules.YieldBp(BondKind.Treasury, -1, 0.25, low) >= BondCatalogue.YieldLeastBp && BondRules.YieldBp(BondKind.Treasury, -1, 0.0, new MarketEnv { RateBp = -400, InflationBp = -300 }) == BondCatalogue.YieldLeastBp,
-            "bonds: no yield goes under its least");
-        Check(BondRules.YieldBp(BondKind.City, -1, 1.0, env) == t1 + BondCatalogue.CitySpreadBp, "bonds: a city bond pays its spread over the Treasury's");
-        int d0 = BondRules.YieldBp(BondKind.Deposit, 0, 1.0, env), d1 = BondRules.YieldBp(BondKind.Deposit, 1, 1.0, env), d2 = BondRules.YieldBp(BondKind.Deposit, 2, 1.0, env);
-        Check(d0 == t1 - BondCatalogue.DepositUnderBp && d1 == d0 + BondCatalogue.DepositPerPointBp && d2 == d0 - BondCatalogue.DepositPerPointBp,
-            "bonds: a deposit pays less than the Treasury, more at the bank whose loans are dearer, less at the cheaper one (" + d0 + ", " + d1 + ", " + d2 + ")");
-        var offers = new List<BondOffer>();
-        BondRules.Offers(env, 60, new[] { "First", "Second", "Third", "Fourth" }, offers);
-        int deposits = BondCatalogue.All.Count(d => d.Kind == BondKind.Deposit), others = BondCatalogue.All.Length - deposits;
-        Check(offers.Count == others + deposits * BondCatalogue.BanksMost && offers.Where(o => o.Def.Kind == BondKind.Deposit).All(o => o.Bank >= 0 && o.Bank < 3 && o.Issuer.Length > 0),
-            "bonds: every Treasury and city bond is on offer, and a deposit at each of the three largest banks only");
-        BondRules.Offers(env, 60, null, offers);
-        Check(offers.Count == others, "bonds: with no banks named there are no deposits");
-        // Bought at its yield, on the day it is bought a bond is worth 100 for each 100: every bond, years short and long.
-        bool par = true;
-        foreach (int year in new[] { 60, 61, 100, 365 })
-        {
-            foreach (BondDef d in BondCatalogue.All)
+            RunTo(m, 3 + 120);
+            long botMoney = 0;
+            foreach (Bot b in m.State.Bots)
             {
-                var offer = new BondOffer { Def = d, Bank = d.Kind == BondKind.Deposit ? 1 : -1, Issuer = "Bank", YieldBp = BondRules.YieldBp(d.Kind, d.Kind == BondKind.Deposit ? 1 : -1, BondRules.TermDays(d, year) / (double)year, env) };
-                BondHolding h = BondRules.Make(1, offer, 10000, 10, year, 0, false);
-                double price = BondRules.Price(h, d, env, 10, year);
-                par &= Math.Abs(price - 100.0) < 0.05 && h.Payments == d.Payments && BondRules.PayDay(h, h.Payments) == h.EndDay && h.EndDay - h.BoughtDay == BondRules.TermDays(d, year);
+                botMoney += b.Cash + b.PaidOut - b.Capital;
+                long due = b.PayMark * b.PayPct / 100;
+                share &= b.PaidOut + b.PayOwed <= due && b.PaidOut + b.PayOwed >= due - 130 && b.PayMark >= 0;
+                long fromNotes = w.Notes.Where(n => n.Kind == BotNoteKind.Statement && n.Firm == b.Firm).Sum(n => n.D) + b.MonthPaid;
+                statements &= fromNotes == b.PaidOut;
+                long weekly = w.Notes.Where(n => n.Kind == BotNoteKind.Paid && n.Firm == b.Firm).Sum(n => n.A);
+                told &= b.PayEvery == BotPayEvery.Weekly ? weekly <= b.PaidOut : weekly == 0;   // (a weekly bot's month-end payout is in its statement)
+                paidAll += b.PaidOut;
+                weeklyNotes += b.PayEvery == BotPayEvery.Weekly ? w.Notes.Count(n => n.Kind == BotNoteKind.Paid && n.Firm == b.Firm) : 0;
+                dailyNotes += b.PayEvery == BotPayEvery.Daily ? w.Notes.Count(n => n.Kind == BotNoteKind.Paid && n.Firm == b.Firm) : 0;
             }
+            conserved &= w.Purse.Money - money0 == botMoney;
         }
-        Check(par, "bonds: each is worth 100 for each 100 on the day it is bought, its last payment on its last day");
-        Check(BondCatalogue.All.Select(d => d.Id).Distinct().Count() == BondCatalogue.All.Length && BondCatalogue.All.All(d => d.Payments >= 1 && d.TermQuarters >= 1)
-              && BondCatalogue.Find(4) != null && BondCatalogue.Find(99) == null, "bonds: each bond has its own id, a term and a payment at least");
+        Check(paidAll > 0 && share, "bots plus: what a bot pays and owes is its share of its new profit, to the unit and its rounding (" + paidAll + " paid in all)");
+        Check(conserved, "bots plus: a payout moves no money: the player's cash is what the bots' money and what they paid out did");
+        Check(statements, "bots plus: the months' statements say, together, every unit a bot paid out");
+        Check(told && weeklyNotes > 0 && dailyNotes == 0, "bots plus: a weekly payout is told as it is paid (" + weeklyNotes + " notes), a daily one in the month's statement");
     }
 
-    private static MarketEngine BondMarket(ulong seed, int year, long money, out MarketWorld world)
-    {
-        world = new MarketWorld(seed);
-        world.Purse.Money = money;
-        MarketEngine m = NewMarket(seed, year, 1, 0, world);
-        SessionDay(m, 2, 10);
-        return m;
-    }
+    // ---------------------------------------------------------------- dividend news
 
-    private static BondOffer OfferOf(MarketEngine m, int def, int bank = -1)
+    private static void BotDividendNews()
     {
-        return m.Offer(def, bank, bank >= 0 ? "Granite Bank" : null);
-    }
-
-    private static void BondPaymentChecks()
-    {
-        // A year's Treasury bond paying every quarter, all its interest to the player.
-        MarketEngine m = BondMarket(201, 60, 1000000, out MarketWorld world);
-        var told = new List<BondNote>();
-        m.BondTold = n => told.Add(n);
-        BondOffer offer = OfferOf(m, 2);
-        BondHolding h = m.BuyBond(offer, 100000, 0, m.Trading, true, out BondWhy why);
-        Check(h != null && why == BondWhy.None && world.Purse.Money == 900000 && h.Face == 10000000 && h.RateBp == offer.YieldBp && h.Payments == 4,
-            "bonds: a bond bought takes its price from the cash, at 100 for each 100, with no commission (" + why + ")");
-        long start = world.Purse.Money;
-        int end = h.EndDay;
-        var days = new List<int>();
-        for (int d = m.State.Day; d <= end + 8; d++)
+        // The tally: the one dividend, or how many and how much in all.
+        var t = new DividendTally();
+        t.Add(5, 0, 0);
+        Check(t.Count == 0, "bots plus: a dividend of nothing is not told");
+        t.Add(7, 2, 120);
+        Check(t.Count == 1 && t.Stock == 7 && t.Firm == 2 && t.Total == 120, "bots plus: one dividend is told with its company and its bot");
+        t.Add(9, 0, 30);
+        t.Add(11, 3, 50);
+        Check(t.Count == 3 && t.Total == 200 && t.Stock == 7, "bots plus: several that land at once are told as one, with how many and how much in all");
+        t.Clear();
+        Check(t.Count == 0 && t.Total == 0 && t.Stock == 0, "bots plus: and once told, nothing is left");
+        int cases = 0, right = 0, botRight = 0, extra = 0;
+        bool kept = true, notCity = true;
+        for (ulong seed = 641; seed <= 650; seed++)
         {
-            int paidBefore = told.Count(n => n.Kind == BondNoteKind.Interest);
-            RunTo(m, d);
-            if (told.Count(n => n.Kind == BondNoteKind.Interest) > paidBefore)
+            MarketEngine m = BotMarket(seed, 1000000000, out BotWorld w);
+            Stock s = null;
+            for (int d = 1; d < 80 && s == null; d++)
             {
-                days.Add(d);
+                RunTo(m, d, MarketCatalogue.PhaseOpen);
+                s = m.State.Stocks.FirstOrDefault(k => k.Listed && k.DeclaredCents > 0 && !k.ExDone && k.RecordDay > d + 1 && k.Size != MarketSize.Small && k.BidCents <= 0 && k.SplitDay <= 0);
             }
-        }
-        long interest = h.Face * offer.YieldBp / 40000L;   // cents, each payment
-        long tax = ListingVotes.DividendTax(interest, 0);
-        Check(told.Count(n => n.Kind == BondNoteKind.Interest) == 4 && told.Count(n => n.Kind == BondNoteKind.Repaid) == 1 && m.State.Bonds.Holdings.Count == 0,
-            "bonds: four payments over its year and its repayment at the end, then it is gone");
-        bool onTime = days.Count == 4;
-        for (int k = 0; onTime && k < 4; k++)
-        {
-            int due = BondRules.PayDay(h, k + 1);
-            onTime &= days[k] == TradingOnOrAfter(due);
-        }
-        Check(onTime, "bonds: each payment is made at the close of its day, or of the next market day (" + string.Join(",", days) + ")");
-        long got = world.Purse.Money - start;
-        long want = 100000 + 4 * (interest - tax) / 100;
-        Check(got == want, "bonds: what it paid is what it repays and its interest less the tax withheld, to a unit (" + got + " against " + want + ")");
-        Check(told.Where(n => n.Kind == BondNoteKind.Interest).All(n => n.B == 0 && n.C >= 0), "bonds: with nothing put back, all its interest after tax is paid out");
-
-        // All of it put back: its face grows with each payment, nothing is paid until its end.
-        m = BondMarket(202, 60, 1000000, out world);
-        told.Clear();
-        m.BondTold = n => told.Add(n);
-        h = m.BuyBond(OfferOf(m, 11), 100000, 100, m.Trading, true, out why);
-        long cash = world.Purse.Money, face = h.Face;
-        int checkDay = BondRules.PayDay(h, 6);
-        RunTo(m, TradingOnOrAfter(checkDay) + 1);
-        BondHolding grown = m.State.Bonds.Holding(h.Id);
-        Check(grown != null && grown.Paid >= 6 && grown.Face > face && world.Purse.Money == cash && grown.Reinvested > 0 && grown.Cost == face + grown.Reinvested,
-            "bonds: with all of its interest put back its face grows at each payment and nothing is paid out (" + (grown != null ? grown.Face - face : 0) + " cents more)");
-        long faceAfter = grown != null ? grown.Face : 0;
-        RunTo(m, grown.EndDay + 5);
-        long finalCash = world.Purse.Money - cash;
-        Check(m.State.Bonds.Holdings.Count == 0 && finalCash > 100000 && finalCash >= faceAfter / 100, "bonds: at its end it repays the grown face and its last interest (" + finalCash + ")");
-        // Half of it put back: half the interest after tax paid out at each payment.
-        m = BondMarket(203, 60, 1000000, out world);
-        told.Clear();
-        m.BondTold = n => told.Add(n);
-        h = m.BuyBond(OfferOf(m, 12), 200000, 50, m.Trading, true, out why);
-        RunTo(m, TradingOnOrAfter(BondRules.PayDay(h, 3)) + 1);
-        BondNote first = told.FirstOrDefault(n => n.Kind == BondNoteKind.Interest);
-        Check(told.Count(n => n.Kind == BondNoteKind.Interest) >= 3 && Math.Abs(first.A - first.B) <= 1 && first.A > 0, "bonds: with half put back, half of each payment is paid out (" + first.A + " and " + first.B + ")");
-        Check(m.SetBondReinvest(h.Id, 75, out why) && m.State.Bonds.Holding(h.Id).Reinvest == 75 && m.SetBondReinvest(h.Id, 60, out why) && m.State.Bonds.Holding(h.Id).Reinvest == 50,
-            "bonds: the share put back can be changed, held to the choices (a 60 is a 50)");
-        // The test tools' payment now.
-        int paidNow = m.PayBondsNow();
-        Check(paidNow == 1 && m.State.Bonds.Holding(h.Id).Paid >= 4, "bonds: the test pays each bond's next payment at once");
-        // Share: tax, then the share put back, then the rest, never under nothing.
-        BondRules.Share(10000, 0, 25, out long t, out long back, out long paid);
-        Check(t == 1500 && back == 2125 && paid == 6375 && t + back + paid == 10000, "bonds: a payment of 100.00 is 15.00 tax, 21.25 put back at a quarter and 63.75 paid out");
-        BondRules.Share(-5, 0, 50, out t, out back, out paid);
-        Check(t == 0 && back == 0 && paid == 0, "bonds: a payment of nothing shares out nothing");
-        long carry = 0;
-        long m1 = BondRules.Money(150, ref carry), m2 = BondRules.Money(150, ref carry);
-        Check(m1 == 1 && m2 == 2 && carry == 0, "bonds: cents under a unit are carried to the next payment, never lost");
-    }
-
-    private static void BondSaleChecks()
-    {
-        MarketEngine m = BondMarket(211, 60, 10000000, out MarketWorld world);
-        BondHolding longBond = m.BuyBond(OfferOf(m, 4), 100000, 0, m.Trading, true, out _);
-        BondHolding shortBond = m.BuyBond(OfferOf(m, 2), 100000, 0, m.Trading, true, out _);
-        BondHolding city = m.BuyBond(OfferOf(m, 12), 100000, 0, m.Trading, true, out _);
-        BondHolding deposit = m.BuyBond(OfferOf(m, 22, 0), 100000, 0, m.Trading, true, out _);
-        long now = m.BondSale(longBond);
-        Check(now < longBond.Cost && now > longBond.Cost * 99 / 100 && m.BondSale(city) < m.BondSale(shortBond),
-            "bonds: sold at once a bond brings a little less than it cost (its spread), a city bond less than a Treasury's (" + now + " of " + longBond.Cost + ")");
-        Check(m.BondSale(deposit) == deposit.Face - deposit.Face * deposit.RateBp * BondCatalogue.DepositPenaltyMonths / 120000L, "bonds: a deposit closed early repays what is in it less three months' interest");
-        // Rates up: every bond is worth less, the longer the more; a deposit is not moved.
-        MarketEnv was = m.State.Env;
-        MarketEnv up = was;
-        up.RateBp += 200;
-        MarketEnv down = was;
-        down.RateBp = Math.Max(50, was.RateBp - 150);
-        double longNow = m.BondPrice(longBond), shortNow = m.BondPrice(shortBond);
-        long depositNow = m.BondSale(deposit);
-        m.State.Env = up;
-        double longUp = m.BondPrice(longBond), shortUp = m.BondPrice(shortBond);
-        int year = m.State.YearDays;
-        double longYears = (longBond.EndDay - m.State.Day) / (double)year, shortYears = (shortBond.EndDay - m.State.Day) / (double)year;
-        double longMove = BondRules.YieldBp(BondKind.Treasury, -1, longYears, up) - BondRules.YieldBp(BondKind.Treasury, -1, longYears, was);
-        double shortMove = BondRules.YieldBp(BondKind.Treasury, -1, shortYears, up) - BondRules.YieldBp(BondKind.Treasury, -1, shortYears, was);
-        Check(longUp < longNow && shortUp < shortNow && (longNow - longUp) / longMove > (shortNow - shortUp) / shortMove && shortMove > longMove && m.BondSale(deposit) == depositNow,
-            "bonds: when rates rise every bond's price falls (a short term's yield moves most, a long bond most for each point of its own), and a deposit's sum does not move ("
-            + longNow.ToString("0.00") + " to " + longUp.ToString("0.00") + ", " + shortNow.ToString("0.00") + " to " + shortUp.ToString("0.00") + ")");
-        m.State.Env = down;
-        Check(m.BondPrice(longBond) > longNow && m.BondPrice(shortBond) > shortNow, "bonds: when they fall its price rises");
-        m.State.Env = was;
-        // A sale: what it brings into the cash, and the bond is gone.
-        long before = world.Purse.Money, value = m.BondSale(shortBond) / 100;
-        Check(m.SellBond(shortBond.Id, m.Trading, out long money, out BondWhy why) && money == value && world.Purse.Money == before + money && m.State.Bonds.Holding(shortBond.Id) == null,
-            "bonds: sold, it brings its price into the cash and is gone");
-        Check(!m.SellBond(shortBond.Id, m.Trading, out _, out why) && why == BondWhy.NotHeld, "bonds: a bond sold is not sold twice");
-        // Over its life a bond pays about its yield: bought and held, less than shares are expected to return.
-        double k = MarketValuation.CostOfEquity(m.State.Stocks[0], m.State.Env);
-        Check(longBond.RateBp / 10000.0 < k, "bonds: a bond's rate is under what shares are expected to return (" + longBond.RateBp + " bp against " + (k * 10000).ToString("0") + ")");
-    }
-
-    private static void BondRefusalChecks()
-    {
-        MarketEngine m = BondMarket(221, 60, 50000, out MarketWorld world);
-        BondOffer o = OfferOf(m, 2);
-        long least = BondRules.Least(m.State.Env.PriceLevel), most = BondRules.Most(m.State.Env.PriceLevel);
-        Check(m.CanBuyBond(o, least - 1, true, true) == BondWhy.TooLittle && m.CanBuyBond(o, most + 1, true, true) == BondWhy.TooMuch, "bonds: under the least or over the most is refused");
-        Check(m.CanBuyBond(o, 60000, true, true) == BondWhy.NoCash && m.CanBuyBond(o, least, true, false) == BondWhy.Off && m.CanBuyBond(o, least, false, true) == BondWhy.Closed,
-            "bonds: more than the cash, with bonds off, or while the market is shut is refused");
-        Check(m.CanBuyBond(OfferOf(m, 22, -1), least, true, true) == BondWhy.NoBank && m.CanBuyBond(default(BondOffer), least, true, true) == BondWhy.NoBank, "bonds: a deposit with no bank is refused");
-        world.Purse.Money = 100000000;
-        int bought = 0;
-        while (m.BuyBond(o, least, 0, true, true, out _) != null)
-        {
-            bought++;
-        }
-        Check(bought == BondCatalogue.HoldingsMost && m.CanBuyBond(o, least, true, true) == BondWhy.Full, "bonds: no more than the most held at once (" + bought + ")");
-        long cash = world.Purse.Money;
-        Check(m.BuyBond(o, least, 0, false, true, out BondWhy why) == null && why == BondWhy.Closed && world.Purse.Money == cash, "bonds: a refused purchase takes nothing");
-        Check(!m.SellBond(m.State.Bonds.Holdings[0].Id, false, out _, out why) && why == BondWhy.Closed, "bonds: nothing is sold while the market is shut");
-        m.State.HeldDay = m.State.Day + 5;
-        m.State.HeldPhase = 1;
-        Check(m.CanBuyBond(o, least, true, true) == BondWhy.Held && !m.SetBondReinvest(m.State.Bonds.Holdings[0].Id, 50, out why) && why == BondWhy.Held,
-            "bonds: after a load nothing is bought, sold or changed until the market is back where it was");
-    }
-
-    // The same bonds bought in two markets of the same city pay the same on the same days: nothing is left to the machine.
-    private static void BondSameEverywhere()
-    {
-        string[] lines = new string[2];
-        long[] cash = new long[2];
-        for (int run = 0; run < 2; run++)
-        {
-            MarketEngine m = BondMarket(231, 60, 10000000, out MarketWorld world);
-            m.BuyBond(OfferOf(m, 4), 200000, 50, m.Trading, true, out _);
-            m.BuyBond(OfferOf(m, 11), 100000, 100, m.Trading, true, out _);
-            m.BuyBond(OfferOf(m, 21, 2), 50000, 25, m.Trading, true, out _);
-            foreach (Stock t in Trusts(m).Take(2))
+            if (s == null)
             {
-                Trade(m, t, OrderSide.Buy, 500);
+                continue;
             }
-            RunTo(m, 200);
-            lines[run] = MarketStore.Write(m.State);
-            cash[run] = world.Purse.Money;
+            cases++;
+            int cents = s.DeclaredCents, pay = s.PayDay;
+            RunTo(m, m.State.Day, MarketCatalogue.PhaseOpen + 3);
+            Trade(m, s, OrderSide.Buy, 1000);
+            Bot b = m.Hire(2, 500000, 20, 0, 90, out _);
+            b.Holdings.Add(new BotHolding { StockId = s.Id, Shares = 400, Cost = 400L * s.Last / 100, OpenedDay = m.State.Day });
+            b.Status = BotStatus.Stopped;   // (it keeps the holding to the record day: a stopped bot trades nothing, and is paid its dividends)
+            int heard = w.Inner.Heard.Count;
+            RunTo(m, pay);
+            List<MarketNews> paid = w.Inner.Heard.Skip(heard).Where(n => n.Kind == MarketNewsKind.Paid).ToList();
+            right += paid.Any(n => n.Stock == s.Id && n.B == 0 && n.A == 1000L * cents / 100) ? 1 : 0;
+            botRight += paid.Any(n => n.Stock == s.Id && n.B == 2 && n.A == 400L * cents / 100) && b.Holding(s.Id) != null ? 1 : 0;
+            int dividends = m.State.Trades.Count(x => x.Kind == TradeKind.Dividend && !x.Test && x.Day >= m.State.Day - 6);   // (the news keeps the last week's)
+            int lines = m.State.News.Count(n => n.Kind == MarketNewsKind.Paid);
+            extra += lines == dividends ? 0 : 1;
+            kept &= m.State.News.Any(n => n.Kind == MarketNewsKind.Paid);
+            string line = MarketStore.Write(m.State), city = MarketStore.Write(m.State, true);
+            MarketState back = MarketStore.Read(line, out _), shared = MarketStore.Read(city, out _);
+            kept &= back != null && back.News.Count(n => n.Kind == MarketNewsKind.Paid) == lines;
+            notCity &= shared != null && shared.News.All(n => n.Kind != MarketNewsKind.Paid) && shared.News.Count == m.State.News.Count - lines;
         }
-        Check(lines[0] == lines[1] && cash[0] == cash[1], "bonds: the same bonds and trusts in two markets of the same city pay the same on the same days");
+        Check(cases >= 6 && right == cases, "bots plus: a dividend paid on the player's shares is a line of the market news with its money (" + right + " of " + cases + ")");
+        Check(botRight == cases, "bots plus: and one on a bot's shares, with its firm (" + botRight + " of " + cases + ")");
+        Check(extra == 0, "bots plus: one line for each dividend paid to the player, no more");
+        Check(kept, "bots plus: the lines are kept in the save's line");
+        Check(notCity, "bots plus: and never in the city's line a Going Public host sends: a dividend paid to the host is theirs alone");
     }
 
-    private static void BondStoreChecks()
+    // ---------------------------------------------------------------- the save's line
+
+    private static void BotPlusStore()
     {
-        MarketEngine m = BondMarket(241, 60, 10000000, out _);
-        BondHolding a = m.BuyBond(OfferOf(m, 3), 120000, 75, m.Trading, true, out _);
-        m.BuyBond(OfferOf(m, 22, 1), 80000, 0, m.Trading, true, out _);
-        RunTo(m, 40, MarketCatalogue.PhaseOpen + 20);
+        MarketEngine m = BotMarket(661, 5000000, out _);
+        int day = SessionDay(m, 3, 10);
+        Bot b = m.Hire(3, 900000, 25, 15, 50, out _);
+        List<int> ids = m.State.Stocks.Where(s => s.Listed).Take(3).Select(s => s.Id).ToList();
+        foreach (int id in ids)
+        {
+            m.PickFor(3, id, true, out _);
+        }
+        m.SetScope(3, BotScope.Picked, out _);
+        m.SetPayout(3, 70, BotPayEvery.Weekly, out _);
+        b.PayMark = 4321;
+        b.PayOwed = 55;
+        b.PaidOut = 1234;
+        b.MonthPaid = 99;
+        b.OwnDay = day;
+        b.OwnQty = 77;
+        b.OwnYear = 2;
+        b.OwnBoughtBp = 12;
+        b.OwnSoldBp = 3;
+        b.OwnBuyDay = day - 1;
+        b.OwnSellDay = day - 4;
+        Bot c = m.Hire(1, 600000, 20, 10, 35, out _);
+        c.Realised = 5000;
+        c.Dividends = 300;
+        c.Fees = 800;
         string line = MarketStore.Write(m.State);
         MarketState back = MarketStore.Read(line, out _);
-        Check(back != null && MarketStore.Write(back) == line, "bonds: the save's line with bonds reads back and writes again exactly the same");
-        bool same = back != null && back.Bonds.Holdings.Count == 2 && back.Bonds.NextId == m.State.Bonds.NextId;
-        for (int i = 0; same && i < 2; i++)
-        {
-            BondHolding x = m.State.Bonds.Holdings[i], y = back.Bonds.Holdings[i];
-            same = x.Id == y.Id && x.Def == y.Def && x.Bank == y.Bank && x.Issuer == y.Issuer && x.Face == y.Face && x.Cost == y.Cost && x.RateBp == y.RateBp && x.BoughtDay == y.BoughtDay
-                   && x.EndDay == y.EndDay && x.Payments == y.Payments && x.Paid == y.Paid && x.Reinvest == y.Reinvest && x.Carry == y.Carry && x.Received == y.Received
-                   && x.Reinvested == y.Reinvested && x.Taxed == y.Taxed;
-        }
-        Check(same, "bonds: every bond comes back with its face, rate, days, payments and record");
-        Check(!MarketStore.Write(m.State, true).Contains("~f:"), "bonds: the city's line a Going Public host sends has nobody's bonds");
-        int f = line.IndexOf("~f:", StringComparison.Ordinal), after = line.IndexOf('~', f + 3);
-        string none = line.Substring(0, f) + (after < 0 ? string.Empty : line.Substring(after));
-        MarketState old = MarketStore.Read(none, out _);
-        Check(old != null && old.Bonds.Holdings.Count == 0 && old.Stocks.Count == back.Stocks.Count, "bonds: a line from before bonds loads, with none");
-        string unknown = line.Replace("~f:" + m.State.Bonds.NextId + ";" + a.Id + "|" + a.Def + "|", "~f:" + m.State.Bonds.NextId + ";" + a.Id + "|77|");
-        MarketState dropped = MarketStore.Read(unknown, out _);
-        Check(unknown != line && dropped != null && dropped.Bonds.Holdings.Count == 1, "bonds: a bond this version does not know is dropped, the others kept");
-        var guest = new BondBook();
-        guest.Take(back.Bonds);
-        Check(guest.Holdings.Count == 2 && guest.NextId == back.Bonds.NextId, "bonds: a guest's bonds come with them into the host's market");
+        Bot y = back != null ? MarketBots.Hired(back, 3) : null;
+        Check(back != null && MarketStore.Write(back) == line, "bots plus: the line with the new settings reads back and writes again the same" + FirstDifference(line, back != null ? MarketStore.Write(back) : null));
+        Check(y != null && y.Scope == BotScope.Picked && y.Picks.SequenceEqual(ids) && y.PayPct == 70 && y.PayEvery == BotPayEvery.Weekly && y.PayMark == 4321 && y.PayOwed == 55
+              && y.PaidOut == 1234 && y.MonthPaid == 99 && y.OwnDay == day && y.OwnQty == 77 && y.OwnYear == 2 && y.OwnBoughtBp == 12 && y.OwnSoldBp == 3 && y.OwnBuyDay == day - 1
+              && y.OwnSellDay == day - 4, "bots plus: a bot comes back with the shares it trades, its payouts and its trading in the player's company");
+        // A line from before them: each bot's record ends after what it waits to trade.
+        string old = Regex.Replace(line, @"~b:[^~]*", match => "~b:" + string.Join(";", match.Value.Substring(3).Split(';').Select(r => string.Join("|", r.Split('|').Take(27)))));
+        MarketState older = MarketStore.Read(old, out _);
+        Bot oy = older != null ? MarketBots.Hired(older, 3) : null, oc = older != null ? MarketBots.Hired(older, 1) : null;
+        Check(old != line && oy != null && oc != null && oy.Scope == BotScope.Market && oy.Picks.Count == 0 && oy.PayPct == 0 && oy.PayEvery == BotPayEvery.Monthly && oy.PaidOut == 0
+              && oy.PayOwed == 0 && oy.OwnBuyDay == 0, "bots plus: a save from before them loads: its whole market, nothing picked and no payout");
+        Check(oc != null && oc.PayMark == MarketBots.Profit(oc) && oc.PayMark == 4500, "bots plus: and what a bot made before is reckoned already: only profit from then on is ever paid out");
+        Check(older != null && older.Bots.Count == 2 && older.Positions.Count == back.Positions.Count, "bots plus: and everything else of it is as it was");
+        // Picks of a company the line no longer has are dropped, as its holdings are.
+        string gone = line.Replace("|" + string.Join(":", ids) + "|", "|" + string.Join(":", ids) + ":987654|");
+        MarketState lost = MarketStore.Read(gone, out _);
+        Check(gone != line && lost != null && MarketBots.Hired(lost, 3).Picks.SequenceEqual(ids), "bots plus: a pick of a company that is not in the line is dropped");
+        string city = MarketStore.Write(m.State, true);
+        Check(!city.Contains("~b:"), "bots plus: a city's line has no bot in it, nor their settings");
     }
 
-    // A close with the most bonds held and every trust: what it costs.
-    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveOptimization | System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
-    private static void BondCost()
+    // Two machines with the same market and the same bot on picks with payouts come to the same prices, worth and payouts.
+    private static void BotPlusSameEverywhere()
     {
-        MarketEngine m = BondMarket(251, 60, 1000000000, out _);
-        for (int i = 0; i < BondCatalogue.HoldingsMost; i++)
+        MarketEngine a = BotMarket(671, 9000000, out _), b = BotMarket(671, 9000000, out _);
+        foreach (MarketEngine m in new[] { a, b })
         {
-            m.BuyBond(OfferOf(m, BondCatalogue.All[i % 6].Id), 10000, i % 2 == 0 ? 100 : 0, m.Trading, true, out _);
+            SessionDay(m, 3, 10);
+            m.Hire(3, 1500000, 25, 10, 50, out _);
+            foreach (Stock s in m.State.Stocks.Where(s => s.Listed && s.Own == null).OrderByDescending(s => s.Adv).ThenBy(s => s.Id).Take(10))
+            {
+                m.PickFor(3, s.Id, true, out _);
+            }
+            m.SetScope(3, BotScope.Picked, out _);
+            m.SetPayout(3, 60, BotPayEvery.Daily, out _);
+            RunTo(m, 60);
         }
-        var income = typeof(MarketEngine).GetMethod("Income", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var watch = Stopwatch.StartNew();
-        int rounds = 200;
-        for (int r = 0; r < rounds; r++)
-        {
-            income.Invoke(m, new object[] { m.State.Day });
-        }
-        double ms = watch.Elapsed.TotalMilliseconds / rounds;
-        Console.WriteLine("  bonds' cost: a close with " + m.State.Bonds.Holdings.Count + " bonds and every trust, " + ms.ToString("0.000") + " ms");
-        Check(ms < 0.5, "bonds: a close with the most bonds held costs under half a millisecond (" + ms.ToString("0.000") + " ms)");
+        Bot x = a.State.Bots[0], y = b.State.Bots[0];
+        Check(a.State.Stocks.All(s => b.State.Stock(s.Id).Last == s.Last) && MarketBots.Worth(a.State, x, a.State.Phase) == MarketBots.Worth(b.State, y, b.State.Phase) && x.PaidOut == y.PaidOut
+              && x.Trades == y.Trades, "bots plus: the same market and the same bot on its picks with payouts come to the same prices, worth and payouts (" + x.Trades + " trades, " + x.PaidOut + " paid)");
     }
 
-    // ---------------------------------------------------------------- the words
+    // ---------------------------------------------------------------- the texts
 
-    private static readonly string[] IncomeKeys =
+    private static readonly string[] BotPlusKeys =
     {
-        "reallife_mkt_sector_trusts", "reallife_mkt_tab_bonds", "reallife_mkt_col_next_pay", "reallife_mkt_next_pay", "reallife_mkt_bond_name_treasury", "reallife_mkt_bond_name_city",
-        "reallife_mkt_bond_name_deposit", "reallife_mkt_bond_why_closed", "reallife_mkt_bond_why_no_bank", "reallife_mkt_bond_note_paid", "reallife_mkt_bond_note_paid_back",
-        "reallife_mkt_bond_note_repaid", "reallife_mkt_bond_note_bought", "reallife_mkt_bond_note_sold", "reallife_mkt_ticket_trust", "reallife_mkt_bond_opt", "reallife_opt_tip_markets_bonds",
-        "reallife_mkt_bond_test_open", "reallife_mkt_bond_test_pay", "reallife_mkt_bond_test_none", "reallife_transaction_shares_bond_bought", "reallife_transaction_shares_bond_bought_label",
-        "reallife_transaction_shares_bond_sold", "reallife_transaction_shares_bond_sold_label", "reallife_transaction_shares_bond_paid", "reallife_transaction_shares_bond_paid_label",
-        "reallife_transaction_shares_bond_repaid", "reallife_transaction_shares_bond_repaid_label", "reallife_mkt_plan_bond_title", "reallife_mkt_plan_bond_end_title"
+        "reallife_mkt_opt_dividend_notes", "reallife_opt_tip_markets_dividend_notes", "reallife_mkt_note_dividend", "reallife_mkt_note_dividend_bot", "reallife_mkt_note_dividends",
+        "reallife_mkt_news_paid", "reallife_mkt_news_paid_bot", "reallife_mkt_bot_page_trading", "reallife_mkt_bot_page_shares", "reallife_mkt_bot_page_payouts",
+        "reallife_mkt_bot_scope_market", "reallife_mkt_bot_scope_picked", "reallife_mkt_bot_scope_held", "reallife_mkt_bot_plan_picked", "reallife_mkt_bot_plan_pays",
+        "reallife_mkt_bot_every_day", "reallife_mkt_bot_every_week", "reallife_mkt_bot_every_month", "reallife_mkt_bot_set_pay", "reallife_mkt_bot_set_pay_none", "reallife_mkt_bot_set_every",
+        "reallife_mkt_bot_box_plan", "reallife_mkt_bot_box_paid", "reallife_mkt_bot_pick_none", "reallife_mkt_bot_pick_yours", "reallife_mkt_bot_pick_on", "reallife_mkt_bot_pick_off",
+        "reallife_mkt_bot_pick", "reallife_mkt_bot_unpick", "reallife_mkt_bot_note_statement_paid", "reallife_mkt_bot_note_paid", "reallife_mkt_bot_note_paid_owed",
+        "reallife_mkt_bot_why_own_shares", "reallife_mkt_bot_why_not_listed", "reallife_mkt_bot_why_picks"
     };
 
-    private static void IncomeWords()
+    private static void BotPlusWords()
     {
         string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales"));
         Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(folder, "en.json"));
         Dictionary<string, string> pt = LoadWords(System.IO.Path.Combine(folder, "pt.json"));
         Dictionary<string, string> zh = LoadWords(System.IO.Path.Combine(folder, "zh-cn.json"));
-        Check(en != null && pt != null && zh != null, "bonds: the three locales are where the checks look for them");
+        Check(en != null && pt != null && zh != null, "bots plus: the three locales are where the checks look for them (" + folder + ")");
         if (en == null || pt == null || zh == null)
         {
             return;
         }
-        string missing = string.Join(", ", IncomeKeys.Where(k => !en.ContainsKey(k) || !pt.ContainsKey(k) || !zh.ContainsKey(k)));
-        Check(missing.Length == 0, "bonds: every text of the bonds and the trusts is in the three languages (" + missing + ")");
-        Check(new[] { "reallife_mkt_bond_note_paid", "reallife_mkt_bond_note_paid_back", "reallife_mkt_bond_note_repaid", "reallife_mkt_bond_note_bought", "reallife_mkt_bond_note_sold" }
-                  .All(k => en.ContainsKey(k) && en[k].Length <= 200), "bonds: every notification is short (240 characters with its names at most)");
-        Check(new[] { BondMoney.Bought, BondMoney.Sold, BondMoney.Paid, BondMoney.Repaid }.All(k => k.Contains("shares_") && en.ContainsKey(k) && en.ContainsKey(k + "_label"))
-              && RealLifeOverhaul.Economy.CashCategory.For(BondMoney.Paid) == RealLifeOverhaul.Economy.CashCategory.Investments
-              && RealLifeOverhaul.Economy.CashCategory.For(BondMoney.Repaid) == RealLifeOverhaul.Economy.CashCategory.Investments,
-            "bonds: each payment is a transaction of its own, with its text and label, under investments in the Finance app");
-        string guide = en.TryGetValue("reallife_guide_markets", out string g) ? g : string.Empty;
-        Check(guide.Contains("{mkt_trusts}") && guide.Contains("{bond_least}") && guide.Contains("# Bonds") && pt["reallife_guide_markets"].Contains("{bond_penalty_months}")
-              && zh["reallife_guide_markets"].Contains("{mkt_trust_payout}"), "bonds: the Stocks page of the Guide tells of the bonds and the trusts, with their figures, in each language");
+        var holes = new Regex(@"\{[a-z_]+\}");
+        var missing = new List<string>();
+        foreach (string key in BotPlusKeys)
+        {
+            if (!en.TryGetValue(key, out string e) || !pt.TryGetValue(key, out string p) || !zh.TryGetValue(key, out string z))
+            {
+                missing.Add(key);
+                continue;
+            }
+            string want = Holes(holes, e);
+            if (Holes(holes, p) != want || Holes(holes, z) != want)
+            {
+                missing.Add(key + " (its {names} differ)");
+            }
+        }
+        Check(missing.Count == 0, "bots plus: every text is in en.json, pt.json and zh-cn.json with the same {names} (" + BotPlusKeys.Length + " keys" + (missing.Count > 0 ? "; " + string.Join(", ", missing) : string.Empty) + ")");
+        string[] notes = { "reallife_mkt_note_dividend_bot", "reallife_mkt_note_dividends", "reallife_mkt_bot_note_statement_paid", "reallife_mkt_bot_note_paid", "reallife_mkt_bot_note_paid_owed" };
+        Check(notes.All(k => en.ContainsKey(k) && en[k].Length + 40 <= 240), "bots plus: each new notification fits the game's toast with its names filled (240 characters)");
+        // Every figure the Guide's bots page gives is filled from the code, in each language.
+        string[] facts = { "{bot_picks_most}", "{bot_own_swing}", "{bot_deal_year}", "{bot_founder_most}", "{bot_own_volume}" };
+        bool guide = true;
+        foreach (Dictionary<string, string> words in new[] { en, pt, zh })
+        {
+            guide &= words.TryGetValue("reallife_guide_markets_bots", out string g) && facts.All(g.Contains);
+        }
+        Check(guide, "bots plus: the Guide's bots page says what the shares, the player's own company and the payouts do, its figures from the code, in each language");
+        bool news = en.TryGetValue("reallife_guide_markets", out string mg) && mg.Contains("line of the market news");
+        Check(news, "bots plus: the Guide's Stocks page says each dividend paid is a line of the market news");
         // In the next row until its version is made, and in that version's own row after (the release empties the next row).
         bool line = false;
         foreach (KeyValuePair<string, string> row in en)
         {
-            if (row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && row.Value.Contains("new Bonds tab"))
+            if (row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && row.Value.Contains("have part of its profit paid to you daily, weekly or monthly"))
             {
-                line = !row.Value.StartsWith("New: ", StringComparison.Ordinal) && !row.Value.StartsWith("Fixed: ", StringComparison.Ordinal);
+                line = !row.Value.StartsWith("New: ", StringComparison.Ordinal);
                 break;
             }
         }
-        Check(line, "bonds: What's new has the feature's line, with no prefix (in the next row, or its version's row once it is made)");
+        Check(line, "bots plus: What's new has the feature's line, with no prefix (in the next row, or its version's row once it is made)");
+    }
+
+    // Four bots on picks and on the player's holdings with daily payouts: a market day stays cheap.
+    private static void BotPlusCost()
+    {
+        MarketEngine m = BotMarket(681, 10000000, out _);
+        SessionDay(m, 3, 10);
+        List<int> picks = m.State.Stocks.Where(s => s.Listed && s.Own == null).OrderByDescending(s => s.Adv).Take(MarketBots.PicksMost).Select(s => s.Id).ToList();
+        foreach (int id in picks.Take(4))
+        {
+            Trade(m, m.State.Stock(id), OrderSide.Buy, 10);
+        }
+        foreach (BotFirm f in MarketBots.All)
+        {
+            m.Hire(f.Id, 1000000, 10, 10, 50, out _);
+            foreach (int id in picks)
+            {
+                m.PickFor(f.Id, id, true, out _);
+            }
+            m.SetScope(f.Id, f.Id % 2 == 0 ? BotScope.Picked : BotScope.Held, out _);
+            m.SetPayout(f.Id, 50, BotPayEvery.Daily, out _);
+        }
+        RunTo(m, 12);
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+        long allocated = GC.GetAllocatedBytesForCurrentThread();
+        int day = 12;
+        for (int i = 0; i < 20; i++)
+        {
+            day = TradingOnOrAfter(day + 1);
+            RunTo(m, day);
+        }
+        double perDay = watch.Elapsed.TotalMilliseconds / 20.0;
+        long bytes = (GC.GetAllocatedBytesForCurrentThread() - allocated) / 20;
+        Console.WriteLine("  bots plus' cost: a market day with four bots on picks and holdings, paying out daily, " + perDay.ToString("0.00") + " ms; " + bytes + " bytes allocated a day");
+        Check(perDay < 16.0, "bots plus: a market day with four bots on their picks costs a few milliseconds (" + perDay.ToString("0.00") + " ms)");
+        Check(bytes < 96 * 1024, "bots plus: and allocates little (" + bytes + " bytes a day)");
     }
 }
