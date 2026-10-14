@@ -578,6 +578,38 @@ namespace RealLifeOverhaul.Flare
             return (int)((long)reach * (1100 - 2 * Clamp(reputation, 0, 100)) / 1000);
         }
 
+        // ---------------------------------------------------------------- the company's campaigns on the Business tab
+
+        /// <summary>
+        /// Whether a campaign of the company's is one of Flare's own deals still on (the same business, kind and first
+        /// day): that one already has its row as a deal. Any other campaign gets a row of its own, so the Business tab
+        /// shows everything that keeps a business from a new hire.
+        /// </summary>
+        public static bool IsDeal(FlareFile f, string place, int kind, int from)
+        {
+            for (int i = 0; f != null && i < f.Hires.Count; i++)
+            {
+                FlareHire h = f.Hires[i];
+                if (!h.Ended && h.Kind == kind && h.From == from && string.Equals(h.Place, place, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>The key that says how a campaign was booked: from the Company app, or hired on Flare.</summary>
+        public static string BusyKey(bool onFlare)
+        {
+            return onFlare ? "reallife_flare_busy_flare" : "reallife_flare_busy_company";
+        }
+
+        /// <summary>The key that says when: running until its last day, or booked for its day or days.</summary>
+        public static string BusyWhenKey(int day, int from, int to)
+        {
+            return day >= from ? "reallife_flare_busy_running" : from >= to ? "reallife_flare_busy_booked_day" : "reallife_flare_busy_booked_days";
+        }
+
         // ---------------------------------------------------------------- the rest of the city
 
         /// <summary>Whether, on a day after a post, somebody the player has still to meet answers it and becomes a contact: a few a month, more for a bigger account.</summary>

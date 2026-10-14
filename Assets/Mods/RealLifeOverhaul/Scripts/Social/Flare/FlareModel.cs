@@ -397,6 +397,21 @@ namespace RealLifeOverhaul.Flare
         public bool On(int day) => !Ended && day >= From && day <= To;
     }
 
+    /// <summary>
+    /// A campaign of the company's at one of the player's businesses, running or booked, as Flare is told of it
+    /// (Wiring/FlareLinks): read when the Business tab is written, never kept.
+    /// </summary>
+    public struct FlareCampaign
+    {
+        public string Place;
+        public string Name;          // the business
+        public string Campaign;      // the campaign, in words
+        public int Kind;             // the company's CampaignKind
+        public int From, To;         // the first and the last day
+        public int Percent;          // the customers it adds
+        public bool OnFlare;         // hired on Flare; otherwise booked from the Company app
+    }
+
     /// <summary>What the daily round did, for the one log line.</summary>
     public struct FlareDayReport
     {

@@ -141,6 +141,44 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
+        // The company's campaigns at the businesses that are not one of the deals above (booked from the Company app,
+        // or a deal Flare no longer has on), as rows beside the deals: everything that keeps a business from a new hire.
+        private bool CampaignRows(FlareFile file, ref string selected, ref FlareCampaign picked)
+        {
+            bool found = false;
+            List<FlareCampaign> all = _director.Campaigns();
+            for (int i = 0; i < all.Count; i++)
+            {
+                FlareCampaign c = all[i];
+                if (FlareRules.IsDeal(file, c.Place, c.Kind, c.From))
+                {
+                    continue;
+                }
+                TableRow row = Row("camp:" + c.Place);
+                row.Set(0, FlareText.Fill("reallife_flare_row_campaign", "business", c.Name, "campaign", c.Campaign));
+                row.Set(1, FlareText.T(c.OnFlare ? "reallife_flare_campaign_on_flare" : "reallife_flare_campaign_company"));
+                row.Set(2, FlareText.Fill("reallife_flare_hire_percent", "percent", c.Percent.ToString()), c.Percent);
+                row.Set(4, FlareText.Fill("reallife_flare_day", "day", c.To.ToString()), c.To);
+                if (Is(row, ref selected))
+                {
+                    picked = c;
+                    found = true;
+                }
+            }
+            return found;
+        }
+
+        private void WriteCampaignRow(InfoBox box, FlareCampaign c, int day)
+        {
+            box.Title(FlareText.Fill("reallife_flare_row_campaign", "business", c.Name, "campaign", c.Campaign));
+            box.Line(FlareText.Busy(c, day));
+            box.Line(FlareText.Fill("reallife_flare_hire_days", "from", c.From.ToString(), "to", c.To.ToString(), "percent", c.Percent.ToString()));
+            box.Line(FlareText.T("reallife_flare_campaign_where"));
+            Transform buttons = box.ButtonRow();
+            InfoBox.Button(buttons, InfoBox.Additional, "reallife_flare_back", Back);
+            Meta.Guide.Point(box, GuideTitle);
+        }
+
         private void WriteHireRow(InfoBox box, FlareFile file, FlareHire h, int day)
         {
             box.Title(FlareText.Fill("reallife_flare_row_hire", "business", h.Name, "who", _director.WhoLine(h)));
@@ -206,7 +244,10 @@ namespace RealLifeOverhaul.Flare
             int cost, percent;
             string why;
             bool can = _director.HireQuote(place, (FlareDeal)deal, who, out cost, out percent, out why);
-            box.Line(can ? FlareText.Fill("reallife_flare_hire_quote", "cost", FlareText.Money(cost), "percent", percent.ToString()) : FlareText.T(why ?? "reallife_flare_hire_no_one"));
+            FlareCampaign busy;
+            box.Line(can ? FlareText.Fill("reallife_flare_hire_quote", "cost", FlareText.Money(cost), "percent", percent.ToString())
+                : why == FlareDirector.BusyWhy && _director.CampaignAt(place, out busy) ? FlareText.Busy(busy, day)
+                : FlareText.T(why ?? "reallife_flare_hire_no_one"));
             Transform buttons = box.ButtonRow();
             Button hire = InfoBox.Button(buttons, InfoBox.Positive, "reallife_flare_hire_button", () =>
             {

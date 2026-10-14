@@ -61,6 +61,57 @@ namespace RealLifeOverhaul.Economy
             return s.Push < 0;
         }
 
+        /// <summary>
+        /// What stands in the way of booking at a business: false with nothing booked there; otherwise the kind, its
+        /// first and last day, and whether it has started by the day given. One campaign at a time at a business, of
+        /// any kind, booked from the Company app or hired on Flare.
+        /// </summary>
+        public static bool Busy(ShopFile s, int day, out int kind, out int from, out int to, out bool started)
+        {
+            kind = s != null ? s.Push : -1;
+            from = to = 0;
+            started = false;
+            if (kind < 0)
+            {
+                kind = -1;
+                return false;
+            }
+            from = s.PushFrom;
+            to = Math.Max(s.PushFrom, s.PushEnd - 1);
+            started = day >= s.PushFrom;
+            return true;
+        }
+
+        /// <summary>
+        /// Whether a kind of campaign is hired on Flare (an influencer's deal) rather than booked from the Company app.
+        /// A sponsored post is priced by Flare but booked from the Company app's Marketing tab.
+        /// </summary>
+        public static bool HiredOnFlare(int kind)
+        {
+            return kind >= (int)CampaignKind.InfluencerPost && kind < CompanyCatalogue.CampaignKinds;
+        }
+
+        /// <summary>
+        /// A campaign cut short (an influencer's deal the player ended on Flare). One that has not started is taken
+        /// off at once, with no report and nothing counted as a repeat, and true is returned; one that has started
+        /// runs to the end of today and is reported as usual once it is over. With nothing booked, nothing happens.
+        /// </summary>
+        public static bool EndEarly(ShopFile s, int day)
+        {
+            if (s.Push < 0)
+            {
+                return false;
+            }
+            if (day < s.PushFrom)
+            {
+                s.Push = -1;
+                s.PushFrom = s.PushEnd = s.PushCost = s.PushPercent = 0;
+                return true;
+            }
+            s.PushEnd = Math.Min(s.PushEnd, day + 1);
+            return false;
+        }
+
         /// <summary>Booked today, it runs from tomorrow for its days.</summary>
         public static void Book(ShopFile s, int kind, int cost, int percent, int day)
         {

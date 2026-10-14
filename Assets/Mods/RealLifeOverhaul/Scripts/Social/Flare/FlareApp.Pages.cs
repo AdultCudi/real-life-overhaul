@@ -346,6 +346,8 @@ namespace RealLifeOverhaul.Flare
             }
             FlareHire hire = null;
             HireRows(file, day, ref selected, ref hire);
+            FlareCampaign campaign = default(FlareCampaign);
+            bool campaignPicked = CampaignRows(file, ref selected, ref campaign);
             if (pickedPlace != null)
             {
                 if (_hireOpen)
@@ -361,6 +363,11 @@ namespace RealLifeOverhaul.Flare
             if (hire != null)
             {
                 WriteHireRow(box, file, hire, day);
+                return FlareTables.Business;
+            }
+            if (campaignPicked)
+            {
+                WriteCampaignRow(box, campaign, day);
                 return FlareTables.Business;
             }
             box.Title(FlareText.T("reallife_flare_tab_business"));
@@ -392,6 +399,11 @@ namespace RealLifeOverhaul.Flare
             int talk = file.BuzzAt(place, day);
             box.Line(talk != 0 ? FlareText.Fill("reallife_flare_shop_talk", "percent", FlareText.Signed(talk)) : FlareText.T("reallife_flare_shop_quiet"));
             box.Line(FlareText.Pair("reallife_flare_shop_posts", posts.ToString()));
+            FlareCampaign campaign;
+            if (_director.CampaignAt(place, out campaign))
+            {
+                box.Line(FlareText.Busy(campaign, day));
+            }
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Positive, "reallife_flare_shop_hire", () =>
             {
