@@ -101,6 +101,7 @@ namespace RealLifeOverhaul
         public const string EconomyLevelId = "economy_level";
         public const string EconomyCityId = "economy_city";
         public const string EconomyCityLevelId = "economy_city_level";
+        public const string EconomyRateAheadId = "economy_rate_ahead";
         public const string VenturesInvestorsId = "ventures_investors";
         public const string MarketsId = "ventures_market";        // (the old market's option: kept, so that a player's choice carries over to the city's stock market)
         public const string MarketsMarginId = "markets_margin";
@@ -353,6 +354,7 @@ namespace RealLifeOverhaul
         public static bool EconomyConsequences = true;   // what lenders do when payments are missed (off: only the rating is affected)
         public static int EconomyLevel = 1;              // how hard not paying hits: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Products/ProductCatalogue)
         public static bool EconomyCity = true;           // the city's economy: a central bank, prices, a cycle, districts and supply (off: every figure is the game's own and the model stands still) (Scripts/Economy/City)
+        public static bool EconomyRateAhead = true;      // the evening before a rate decision takes effect, one notice of what the market expects (off: none; the decision comes all the same)
         public static int EconomyCityLevel = 1;          // how far it swings: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/City/MacroCatalogue)
         public static bool VenturesInvestors = true;     // investors: offers for a business that does well, the pitch, deals (off: no new offers or meetings; deals that exist carry on) (Scripts/Economy/Ventures)
         public static bool Markets = true;               // the city's stock market and the Stocks app (off: the market stands still and nothing is traded; shares held are kept) (Scripts/Markets)
@@ -648,6 +650,7 @@ namespace RealLifeOverhaul
             EconomyLevel = Int(modId, EconomyLevelId, EconomyLevel);
             EconomyCity = Bool(modId, EconomyCityId, EconomyCity);
             EconomyCityLevel = Int(modId, EconomyCityLevelId, EconomyCityLevel);
+            EconomyRateAhead = Bool(modId, EconomyRateAheadId, EconomyRateAhead);
             VenturesInvestors = Bool(modId, VenturesInvestorsId, VenturesInvestors);
             Markets = Bool(modId, MarketsId, Markets);
             MarketsMargin = Bool(modId, MarketsMarginId, MarketsMargin);

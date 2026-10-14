@@ -28,6 +28,7 @@ namespace RealLifeOverhaul.Economy
     {
         public const string Key = "reallife:economy_city";
         public const string TestKey = "reallife:economy_city_before_tests";
+        public const string EveKey = "reallife:economy_city_eve";   // the day the evening notice of a rate decision was last sent: the player's own, never in the line a host sends
         public const int Version = 1;
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;

@@ -695,6 +695,8 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.EconomyCityLevelId, "reallife_macro_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCityLevel,
                     v => Settings.EconomyCityLevel = v)
+                .AddToggle(Settings.EconomyRateAheadId, "reallife_macro_opt_eve", Settings.EconomyRateAhead,
+                    v => Settings.EconomyRateAhead = v)
                 .AddButton("reallife_macro_test_show", () => Economy.CityEconomyDirector.Instance?.TestShow())
                 .AddButton("reallife_macro_test_month", () => Economy.CityEconomyDirector.Instance?.TestMonth())
                 .AddButton("reallife_macro_test_boom", () => Economy.CityEconomyDirector.Instance?.TestCycle(Economy.CycleState.Boom))

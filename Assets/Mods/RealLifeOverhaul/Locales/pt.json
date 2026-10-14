@@ -18263,5 +18263,10 @@
   "reallife_mkt_bond_opt_so_far": "Os juros de um título até agora",
   "reallife_opt_tip_markets_bond_so_far": "Cada aviso de juros de um título acrescenta quanto esse título já pagou a você até agora, após o imposto. Desligado: só o pagamento.",
   "reallife_mkt_bond_note_paid_total": "Juros de {amount} de {name}, pagos no seu caixa. {total} pagos por este título até agora.",
-  "reallife_mkt_bond_note_paid_back_total": "Juros de {name}: {amount} pagos no seu caixa e {back} reinvestidos no título. {total} pagos por este título até agora."
+  "reallife_mkt_bond_note_paid_back_total": "Juros de {name}: {amount} pagos no seu caixa e {back} reinvestidos no título. {total} pagos por este título até agora.",
+  "reallife_macro_opt_eve": "A decisão de juros à frente",
+  "reallife_opt_tip_economy_rate_ahead": "Na noite anterior à entrada em vigor de uma decisão do banco central, uma notificação do que o mercado espera. Desligado: a decisão vem sem ela.",
+  "reallife_macro_note_eve_up": "A decisão da taxa de juros é amanhã. O mercado espera uma alta de {points}, para {rate}.",
+  "reallife_macro_note_eve_down": "A decisão da taxa de juros é amanhã. O mercado espera um corte de {points}, para {rate}.",
+  "reallife_macro_note_eve_hold": "A decisão da taxa de juros é amanhã. O mercado espera que ela fique em {rate}."
 }

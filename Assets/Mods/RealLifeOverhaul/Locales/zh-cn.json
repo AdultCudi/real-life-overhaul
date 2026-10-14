@@ -18263,5 +18263,10 @@
   "reallife_mkt_bond_opt_so_far": "债券累计利息",
   "reallife_opt_tip_markets_bond_so_far": "每条债券利息通知都会附上这只债券到目前为止已支付给你的税后利息。关闭时只显示本次付款。",
   "reallife_mkt_bond_note_paid_total": "{name}支付利息{amount}，已存入你的现金。这只债券至今已付{total}。",
-  "reallife_mkt_bond_note_paid_back_total": "{name}的利息：{amount}存入你的现金，{back}再投入该债券。这只债券至今已付{total}。"
+  "reallife_mkt_bond_note_paid_back_total": "{name}的利息：{amount}存入你的现金，{back}再投入该债券。这只债券至今已付{total}。",
+  "reallife_macro_opt_eve": "利率决议预告",
+  "reallife_opt_tip_economy_rate_ahead": "央行决议生效的前一晚，发出一条通知，说明市场的预期。关闭时决议照常生效，不再预告。",
+  "reallife_macro_note_eve_up": "银行利率决议在明天。市场预计上调{points}，至{rate}。",
+  "reallife_macro_note_eve_down": "银行利率决议在明天。市场预计下调{points}，至{rate}。",
+  "reallife_macro_note_eve_hold": "银行利率决议在明天。市场预计维持在{rate}。"
 }

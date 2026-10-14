@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Careers;
+using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Markets;
 
 // Ten small helpers of 14 Oct 2026, each built on a rule that was already there: the recruitment office's last day
@@ -23,6 +24,7 @@ internal static partial class Program
         HelperGoodChance();
         HelperDayChange();
         HelperBondSoFar();
+        HelperRateEve();
     }
 
     // ---------------------------------------------------------------- 1. the recruitment office's last day
@@ -284,6 +286,53 @@ internal static partial class Program
         Check(filled.Length <= 240, "helpers, bond: the notice with a long name and large sums is " + filled.Length + " characters, over 240");
         HelperText("reallife_mkt_bond_opt_so_far", "bond");
         HelperText("reallife_opt_tip_markets_bond_so_far", "bond");
+    }
+
+    // ---------------------------------------------------------------- 9. the rate decision ahead
+
+    private static void HelperRateEve()
+    {
+        const int month = 10;
+        int eve = CityModel.DecisionEveHour;
+        var s = new CityState { Age = month - 1, Pending = true, PendingMove = 1 };   // the decision takes effect tomorrow
+        Check(CityModel.DaysToTurn(s, month) == 1, "helpers, rate: the state used is the day before a decision takes effect");
+        Check(!CityModel.DecisionEve(s, month, 40, eve - 1, 0) && CityModel.DecisionEve(s, month, 40, eve, 0) && CityModel.DecisionEve(s, month, 40, 23, 0),
+            "helpers, rate: in the evening (from " + eve + ":00), not before");
+        Check(!CityModel.DecisionEve(s, month, 40, 21, 40) && CityModel.DecisionEve(s, month, 41, 21, 40), "helpers, rate: once a day it is due");
+        s.Pending = false;
+        Check(!CityModel.DecisionEve(s, month, 40, 21, 0), "helpers, rate: nothing while no decision is announced");
+        s.Pending = true;
+        s.Age = month - 3;
+        Check(!CityModel.DecisionEve(s, month, 40, 21, 0) && !CityModel.DecisionEve(null, month, 40, 21, 0), "helpers, rate: nothing two days before it takes effect, nothing without a city");
+        s.Age = month - 1;
+
+        // the evening's hours with a reload in the middle: one notice
+        int told = 0, sent = 0;
+        for (int hour = 0; hour < 24; hour++)
+        {
+            if (hour == 20)
+            {
+                told = int.Parse(told.ToString());   // (the day kept in the save's line and read back)
+            }
+            if (CityModel.DecisionEve(s, month, 40, hour, told))
+            {
+                told = 40;
+                sent++;
+            }
+        }
+        Check(sent == 1, "helpers, rate: one notice on the evening, a reload after it included (" + sent + ")");
+        Check(CityModel.DecisionEveKey(1) == "reallife_macro_note_eve_up" && CityModel.DecisionEveKey(-2) == "reallife_macro_note_eve_down" && CityModel.DecisionEveKey(0) == "reallife_macro_note_eve_hold",
+            "helpers, rate: a rise, a cut and a hold each have their words");
+        Check(CityStore.EveKey.StartsWith("reallife:", StringComparison.Ordinal) && CityStore.EveKey != CityStore.Key && CityStore.EveKey != CityStore.TestKey,
+            "helpers, rate: the day told is a line of the player's own, apart from the city's line a Going Public host sends");
+        string line = CityStore.Write(new CityState { Seed = 3, Age = 4 });
+        Check(line.IndexOf("economy_city_eve", StringComparison.Ordinal) < 0, "helpers, rate: the city's line has nothing of it");
+
+        HelperNote("reallife_macro_note_eve_up", "rate", "points", "rate");
+        HelperNote("reallife_macro_note_eve_down", "rate", "points", "rate");
+        HelperNote("reallife_macro_note_eve_hold", "rate", "rate");
+        HelperText("reallife_macro_opt_eve", "rate");
+        HelperText("reallife_opt_tip_economy_rate_ahead", "rate");
     }
 
     // ---------------------------------------------------------------- the texts

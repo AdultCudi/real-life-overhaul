@@ -18263,5 +18263,10 @@
   "reallife_mkt_bond_opt_so_far": "A bond's interest so far",
   "reallife_opt_tip_markets_bond_so_far": "Each notice of a bond's interest adds what that bond has paid you so far, after tax. Off: the payment alone.",
   "reallife_mkt_bond_note_paid_total": "Interest of {amount} from {name}, paid into your cash. {total} paid on this bond so far.",
-  "reallife_mkt_bond_note_paid_back_total": "Interest from {name}: {amount} paid into your cash and {back} put back into the bond. {total} paid on this bond so far."
+  "reallife_mkt_bond_note_paid_back_total": "Interest from {name}: {amount} paid into your cash and {back} put back into the bond. {total} paid on this bond so far.",
+  "reallife_macro_opt_eve": "The rate decision ahead",
+  "reallife_opt_tip_economy_rate_ahead": "The evening before a decision of the central bank takes effect, one notification of what the market expects. Off: the decision comes without it.",
+  "reallife_macro_note_eve_up": "The bank rate decision is tomorrow. The market expects a rise of {points}, to {rate}.",
+  "reallife_macro_note_eve_down": "The bank rate decision is tomorrow. The market expects a cut of {points}, to {rate}.",
+  "reallife_macro_note_eve_hold": "The bank rate decision is tomorrow. The market expects it to hold at {rate}."
 }

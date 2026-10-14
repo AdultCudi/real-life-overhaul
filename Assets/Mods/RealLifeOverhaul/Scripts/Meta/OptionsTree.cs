@@ -300,7 +300,7 @@ namespace RealLifeOverhaul.Meta
                 S("debt").Guide("economy").Need("economy").Opts("economy_products", "economy_shark", "economy_consequences", "economy_level")
                     .Also("borrow overdraft card collections repossession").Also("economy_products", "mortgage rent overdraft card finance"),
                 S("banks").For("economy_banks").Need("economy").Opts("economy_banks").Also("bank app current account statement card loan apply"),
-                S("cityeco").For("economy_city").Need("economy").Main("economy_city").Opts("economy_city_level").Also("prices rates boom recession inflation"),
+                S("cityeco").For("economy_city").Need("economy").Main("economy_city").Opts("economy_city_level", "economy_rate_ahead").Also("prices rates boom recession inflation"),
                 S("ventures").For("ventures").Opts("ventures_investors", "ventures_level").Also("invest investor pitch deal"),
                 S("markets").For("markets", "markets_listing", "markets_bots").Main("ventures_market").Opts("markets_margin", "markets_listing", "markets_bots", "markets_dividend_notes", "markets_bonds", "markets_bond_so_far")
                     .Also("shares stocks invest dividend broker trading candles chart margin short property trust reit").Also("markets_listing", "listing flotation offer prospectus shareholders takeover")
