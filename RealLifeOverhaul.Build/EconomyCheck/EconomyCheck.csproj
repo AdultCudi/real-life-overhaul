@@ -119,6 +119,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandStore.cs" Link="Mod\BrandStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\KeptPrices.cs" Link="Mod\KeptPrices.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\SpecialNameBook.cs" Link="Mod\SpecialNameBook.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\OfficeSupply.cs" Link="Mod\OfficeSupply.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareModel.cs" Link="Mod\FlareModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareRules.cs" Link="Mod\FlareRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareStore.cs" Link="Mod\FlareStore.cs" />

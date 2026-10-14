@@ -289,7 +289,7 @@ namespace RealLifeOverhaul
                 Stamp = StudyStamp,
                 Fill = StudyPlaces
             });
-            // Tech: the city's tech companies, each in a building of its own (Tech/Sites/Headquarters), where their jobs are.
+            // Tech: the city's tech companies' towers, a floor each (Tech/Sites/Headquarters), where their jobs are.
             _links.Add(new Link
             {
                 Id = "tech_hq", TitleKey = "reallife_map_row_tech_hq", Colour = new Color(0.18f, 0.42f, 0.82f), Icon = MapIcon.Tower, InStreet = true,

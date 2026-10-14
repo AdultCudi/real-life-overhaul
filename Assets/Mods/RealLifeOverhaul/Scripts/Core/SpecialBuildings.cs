@@ -80,11 +80,13 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// The same with a proper name that is never translated (a company's), by address. The name is shown as it is
-        /// given; the line under it is still a locale key.
+        /// given; the line under it is still a locale key. A building that houses several (the tech companies' towers)
+        /// gives their proper names by floor as <paramref name="tenants"/>: the map's search finds the building by each,
+        /// and a sign can name them (<see cref="TenantsOf(string, int)"/>).
         /// </summary>
-        public static bool SetNamed(string id, string street, int number, SpecialKind kind, string name, string typeKey = null, Func<bool> shown = null)
+        public static bool SetNamed(string id, string street, int number, SpecialKind kind, string name, string typeKey = null, Func<bool> shown = null, string[] tenants = null)
         {
-            bool done = Book.Set(id, street, number, kind, name, typeKey, shown, literal: true);
+            bool done = Book.Set(id, street, number, kind, name, typeKey, shown, literal: true, tenants: tenants);
             if (!done)
             {
                 SpecialEntry there = Book.At(street, number);
@@ -100,6 +102,32 @@ namespace RealLifeOverhaul
         {
             Address address = building != null && building.building != null ? building.building.Address : null;
             return address != null ? Book.HolderOf(address.streetName, address.streetNumber) : null;
+        }
+
+        /// <summary>
+        /// Who is in the building at an address, by floor (the tech companies of a tower: floor 1 first), while its feature
+        /// shows it and the player neither rents nor owns it; null for every other building. The array is the book's own: read it, never change it.
+        /// </summary>
+        public static string[] TenantsOf(string street, int number)
+        {
+            SpecialEntry entry = Book.Count > 0 ? Book.At(street, number) : null;
+            return entry != null ? entry.Tenants : null;
+        }
+
+        /// <summary>The same for a building in the street (null for one the player rents or owns).</summary>
+        public static string[] TenantsOf(CityBuildingController building)
+        {
+            Address address = building != null && building.building != null ? building.building.Address : null;
+            return address == null || Players(building) ? null : TenantsOf(address.streetName, address.streetNumber);
+        }
+
+        /// <summary>Once a second (SpecialNames): an option switched on or off changes what is shown and refused; everything made from the book is made again.</summary>
+        internal static void LookShown()
+        {
+            if (Book.Count > 0 && Book.LookShown())
+            {
+                SpecialNames.Changed();
+            }
         }
 
         /// <summary>Takes the id's building out of the book: it has the game's own name again.</summary>
@@ -454,6 +482,7 @@ namespace RealLifeOverhaul
             EventHold.Keep(ref GlobalEvents.onEnterBuilding, _onEnter, ref _enterSeen);
             EventHold.Keep(ref GlobalEvents.onCityMapToggle, _onMap, ref _mapSeen);
             ClaimedOffers.Keep();   // the mod's buildings off the market (Core/ClaimedOffers): two null tests once its pages are watched
+            SpecialBuildings.LookShown();   // (an option switched: the book's stamp moves, and the refusals and names follow it)
             UIs uis = InstanceBehavior<UIs>.Instance;
             BuildingResume card = uis != null ? uis.buildingResume : null;
             if (!ReferenceEquals(card, _card))
@@ -709,6 +738,14 @@ namespace RealLifeOverhaul
                     options.Add("<b><noparse>" + name + "</noparse></b><br><noparse>" + building.building.Address.ToFormattedString() + "</noparse>");
                     words.Add(name);
                     listed.Add(building);
+                    string[] tenants = SpecialBuildings.TenantsOf(building);
+                    for (int t = 0; tenants != null && t < tenants.Length; t++)
+                    {
+                        // Each company of a tower found by its own name too, with the tower's under it.
+                        options.Add("<b><noparse>" + tenants[t] + "</noparse></b><br><noparse>" + name + ", " + building.building.Address.ToFormattedString() + "</noparse>");
+                        words.Add(tenants[t]);
+                        listed.Add(building);
+                    }
                 }
                 drop.SetOptions(options, false, -1, words);
                 _searchOptions = options;

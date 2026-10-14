@@ -71,6 +71,8 @@ namespace RealLifeOverhaul
                     number = 0;
                     return Tech.TechSites.Instance != null && Tech.TechSites.Instance.HeadquartersOf(name, out street, out number);
                 };
+                CareersBridges.HeadquartersStamp = () => Tech.TechSites.Instance != null ? Tech.TechSites.Instance.HeadquartersStamp : 0;
+                CareersBridges.FloorHere = () => Tech.TechSites.Instance != null ? Tech.TechSites.Instance.FloorCompany() : null;
                 CareersBridges.Refresher = Refresher;
                 CareersBridges.Standing = Moved;
                 CareersBridges.Reputation = Reputation;

@@ -53,6 +53,7 @@ namespace RealLifeOverhaul
                 TechBridges.OpenInternet = () => Utilities.UtilitiesDirector.Instance != null && Utilities.UtilitiesDirector.Instance.OpenInternet();
                 TechBridges.OpenRota = OpenRota;
                 TechBridges.OthersPicked = OthersPicked;
+                TechBridges.Employer = Employer;
                 TechBridges.UtilityCents = (service, use) => Utilities.UtilitiesRules.DayCents(service == 0 ? Utilities.Service.Power : Utilities.Service.Water, use, Prices.Level, false);
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
@@ -118,6 +119,14 @@ namespace RealLifeOverhaul
                     Fault("TechLinks.Ipo", e);
                     return false;
                 }
+            }
+
+            // The tech company of the player's job, by its name (its floor of a tower is offered as theirs, and the door takes them there).
+            private static string Employer()
+            {
+                Careers.WorkFile work = Careers.CareersDirector.Instance != null ? Careers.CareersDirector.Instance.Work : null;
+                Careers.Job job = work != null ? work.Job : null;
+                return job != null && job.Post != null && job.Post.Kind == (int)Careers.EmployerKind.TechFirm ? job.Post.Employer : null;
             }
 
             private static bool OthersPicked()

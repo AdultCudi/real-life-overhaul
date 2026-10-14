@@ -134,6 +134,20 @@ namespace RealLifeOverhaul.Tech
         /// </summary>
         public static Func<bool> OthersPicked;
 
+        /// <summary>The tech company the player works for, by its name (a job of the careers at one of the city's tech companies), or null. Default: none.</summary>
+        public static Func<string> Employer;
+
+        public static string EmployerNow()
+        {
+            try
+            {
+                return Employer != null ? Employer() : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
 
         public static int CourseShare()
         {
@@ -245,6 +259,7 @@ namespace RealLifeOverhaul.Tech
             CourseShareBp = null;
             DegreeFee = null;
             OthersPicked = null;
+            Employer = null;
         }
     }
 }

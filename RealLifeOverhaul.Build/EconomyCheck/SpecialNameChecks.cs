@@ -132,6 +132,7 @@ internal static partial class Program
             "special names: a building a tech company holds is refused to another feature");
         book.Clear();
         OffTheMarket();
+        OfficeSupply();
     }
 
     // The mod's buildings off the market (Core/ClaimedOffers): which are refused, and that no feature's building is ever

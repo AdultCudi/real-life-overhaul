@@ -29,6 +29,7 @@ namespace RealLifeOverhaul
         public string TypeKey;     // the locale key of what it is, for the line under the name on the game's card; may be null
         public Func<bool> Shown;   // the feature's own option; null for always
         public bool Literal;       // NameKey is the name itself (a company's proper name), never looked up
+        public string[] Tenants;   // the proper names of who is in it, by floor (the tech companies of a tower); null for one feature alone
 
         internal string Name;      // NameKey in the language of the moment, made the first time it is asked for
     }
@@ -75,7 +76,7 @@ namespace RealLifeOverhaul
         /// under the id, for a kind that keeps its own name, a missing street or name, or an address another id holds (a
         /// missing id: false, and the book as it was).
         /// </summary>
-        public bool Set(string id, string street, int number, SpecialKind kind, string nameKey, string typeKey = null, Func<bool> shown = null, bool literal = false)
+        public bool Set(string id, string street, int number, SpecialKind kind, string nameKey, string typeKey = null, Func<bool> shown = null, bool literal = false, string[] tenants = null)
         {
             if (string.IsNullOrEmpty(id))
             {
@@ -90,7 +91,8 @@ namespace RealLifeOverhaul
             var entry = new SpecialEntry
             {
                 Id = id, Street = street, Number = number, Kind = kind, NameKey = nameKey,
-                TypeKey = string.IsNullOrEmpty(typeKey) ? null : typeKey, Shown = shown, Literal = literal, Name = literal ? nameKey : null
+                TypeKey = string.IsNullOrEmpty(typeKey) ? null : typeKey, Shown = shown, Literal = literal, Name = literal ? nameKey : null,
+                Tenants = tenants != null && tenants.Length > 0 ? (string[])tenants.Clone() : null
             };
             _byId[id] = entry;
             _byAddress[key] = entry;
@@ -242,6 +244,39 @@ namespace RealLifeOverhaul
                     into.Add(entry);
                 }
             }
+        }
+
+        private int _shownSign = int.MinValue;
+
+        /// <summary>
+        /// Looks at which entries their features show now. An option switched on or off changes no entry, so the book's
+        /// <see cref="Stamp"/> moves here when the set shown has changed: everything made from the book (the refusals on an
+        /// open page, the map's search) is made again. True if it moved. One call of each feature's option, once a second.
+        /// </summary>
+        public bool LookShown()
+        {
+            int sign = 17;
+            unchecked
+            {
+                foreach (SpecialEntry entry in _byId.Values)
+                {
+                    if (entry.Shown == null || entry.Shown())
+                    {
+                        sign += entry.Id.GetHashCode() * 31 + 7;   // (a sum: the order of the dictionary does not matter)
+                    }
+                }
+            }
+            if (sign == _shownSign)
+            {
+                return false;
+            }
+            bool first = _shownSign == int.MinValue;
+            _shownSign = sign;
+            if (!first)
+            {
+                Stamp++;
+            }
+            return !first;
         }
 
         /// <summary>Every name is looked up again the next time it is asked for (the language has changed).</summary>

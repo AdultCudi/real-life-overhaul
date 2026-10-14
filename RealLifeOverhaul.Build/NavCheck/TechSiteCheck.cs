@@ -4,8 +4,8 @@ using RealLifeOverhaul.Tech;
 
 // The game-free parts of the tech sector's buildings (Tech/Sites/SitePlan.cs, RoomPlans.cs): the floor grid; a data
 // centre's server room by tier and by racks bought (rows, density, hot and cold aisles, redundancy, the walkways, the
-// player's own furniture left usable); a headquarters' lobby; a tech office's fittings; and which office building is
-// which tech company's headquarters (the same on every machine, never one taken, never one twice).
+// player's own furniture left usable); a headquarters' lobby; a tech office's fittings; and the tech companies' towers
+// (TowerCheck.cs).
 internal static partial class Program
 {
     private static RoomGrid Floor(float wide, float deep)
@@ -268,109 +268,7 @@ internal static partial class Program
             Check(none.Pieces.Count == 0 && none.Why != null, "sites: a small office is left as it is (" + none.Why + ")");
         }
 
-        // ---------------------------------------------------------------- headquarters
-        {
-            var companies = new List<string> { "Codeharbour Software", "Skyvault Systems", "Abacus Lane Software", "Shopfront Online", "Pixel Harbour Games", "Tallyrow Analytics",
-                "Signpost Search", "Circuitry Works", "Quartzline Semiconductors", "Ledgerline Payments", "Signalhill Telecom", "Fibreway Networks" };
-            var all = new List<HqCandidate>();
-            for (int i = 0; i < 50; i++)
-            {
-                all.Add(new HqCandidate { Street = "Street " + (i % 7), Number = 10 + i, Sqm = 300 + (i * 37) % 900 });
-            }
-            int[] pick = new int[companies.Count], again = new int[companies.Count];
-            HqPick.Pick(all, companies, null, pick);
-            HqPick.Pick(all, companies, null, again);
-            Check(Same(pick, again), "sites: the same city gives the same headquarters every time");
-            Check(Distinct(pick) && Array.IndexOf(pick, -1) < 0, "sites: every company has a building and no two share one");
-            var shuffled = new List<HqCandidate>(all);
-            shuffled.Reverse();
-            int[] fromShuffled = new int[companies.Count];
-            HqPick.Pick(shuffled, companies, null, fromShuffled);
-            bool sameBuildings = true;
-            for (int k = 0; k < pick.Length; k++)
-            {
-                sameBuildings &= HqPick.Key(all[pick[k]].Street, all[pick[k]].Number) == HqPick.Key(shuffled[fromShuffled[k]].Street, shuffled[fromShuffled[k]].Number);
-            }
-            Check(sameBuildings, "sites: the order the game lists its buildings in does not change the pick");
-            var sizes = new List<int>();
-            foreach (HqCandidate c in all)
-            {
-                sizes.Add(c.Sqm);
-            }
-            sizes.Sort();
-            int poolLeast = sizes[sizes.Count - companies.Count * HqPick.PoolPer];
-            bool large = true;
-            foreach (int i in pick)
-            {
-                large &= all[i].Sqm >= poolLeast;
-            }
-            Check(large, "sites: the headquarters are among the city's largest office buildings");
-            // The player rents one of them: that company moves, the others mostly stay.
-            int rented = pick[3];
-            int[] after = new int[companies.Count];
-            HqPick.Pick(all, companies, i => i == rented, after);
-            int moved = 0;
-            for (int k = 0; k < pick.Length; k++)
-            {
-                moved += pick[k] != after[k] ? 1 : 0;
-            }
-            Check(Array.IndexOf(after, rented) < 0 && after[3] != rented && Distinct(after), "sites: a building the player rents is never a headquarters");
-            Check(moved <= 3, "sites: the company whose building is let moves, and few others (" + moved + " moved)");
-            // Any number of buildings the players rent or own (an old save, every player of a session): never a headquarters,
-            // and a rental of a building that is no headquarters moves nobody.
-            var rnd = new Random(20261013);
-            bool neverLet = true, nobodyMoves = true;
-            for (int round = 0; round < 200; round++)
-            {
-                var let = new bool[all.Count];
-                for (int i = 0; i < let.Length; i++)
-                {
-                    let[i] = rnd.Next(3) == 0;
-                }
-                int[] chosen = new int[companies.Count];
-                HqPick.Pick(all, companies, i => let[i], chosen);
-                foreach (int i in chosen)
-                {
-                    neverLet &= i < 0 || !let[i];
-                }
-                int spare = -1;
-                for (int i = 0; i < let.Length && spare < 0; i++)
-                {
-                    spare = !let[i] && Array.IndexOf(chosen, i) < 0 ? i : -1;
-                }
-                if (spare >= 0)
-                {
-                    let[spare] = true;
-                    int[] later = new int[companies.Count];
-                    HqPick.Pick(all, companies, i => let[i], later);
-                    nobodyMoves &= Same(chosen, later);
-                }
-            }
-            Check(neverLet, "sites: in 200 cities a building a player rents or owns is never a headquarters");
-            Check(nobodyMoves, "sites: a building let that is no headquarters moves no company");
-            // Another of the mod's buildings and the player's own: passed over too.
-            int[] withHeld = new int[companies.Count];
-            HqPick.Pick(all, companies, i => i % 2 == 0, withHeld);
-            bool odd = true;
-            foreach (int i in withHeld)
-            {
-                odd &= i >= 0 && i % 2 == 1;
-            }
-            Check(odd && Distinct(withHeld), "sites: buildings held by other features are never taken");
-            // Too few buildings: the rest have none.
-            var few = all.GetRange(0, 5);
-            int[] short_ = new int[companies.Count];
-            HqPick.Pick(few, companies, null, short_);
-            int none = 0;
-            foreach (int i in short_)
-            {
-                none += i < 0 ? 1 : 0;
-            }
-            Check(none == companies.Count - 5 && Distinct(short_), "sites: with five buildings, five companies have one and seven none (" + none + ")");
-            float r, gr, b;
-            HqColours.Of(1, false, out r, out gr, out b);
-            Check(HqColours.Count == companies.Count && b > r && b > gr, "sites: a colour for each company (Skyvault Systems is blue)");
-        }
+        Towers();
     }
 
     // --sites: each plan drawn in letters, a cell to a character (R racks, A accelerators, N network, C cooling, U battery
