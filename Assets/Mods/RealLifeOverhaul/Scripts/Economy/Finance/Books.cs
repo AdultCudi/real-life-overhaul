@@ -22,7 +22,8 @@ namespace RealLifeOverhaul.Economy
 
     /// <summary>
     /// The game's own figures that the economy reads: what leaves tomorrow, which businesses the player runs and what
-    /// each has made, what a building the player owns brings in. Every figure is read from the save when it is asked for
+    /// each has made, what a building the player owns brings in, what the player is worth as the Overview shows it (the
+    /// market asks for it through the wiring). Every figure is read from the save when it is asked for
     /// (when the app opens, once an hour before the day's run, once a day), never per frame. What is kept is only where to
     /// find things (Core/LookupRules ListIndex): a business and a building by the key an account keeps, made again when
     /// the save's lists change or the day turns; a business's statement in a day's statements, made again when that day's
@@ -106,6 +107,57 @@ namespace RealLifeOverhaul.Economy
                 }
             }
             return o;
+        }
+
+        /// <summary>
+        /// What the player is worth as the Overview of the Finance app shows it: the game's own figure (PlayerHelper: cash,
+        /// its investment funds, vehicles, boats and property, less its loans; the cash alone if it cannot be read) less what
+        /// is owed on the mod's own accounts the Overview counts (<see cref="Owing"/>) and to a private lender, and less the
+        /// other debts the rest of the mod keeps (fines and court debts: EconomyBridges.OtherDebts). Nothing on the stock
+        /// market is in it: the market adds its own where it asks (Wiring/MarketLinks). Read on a click, never per frame.
+        /// </summary>
+        public static long NetWorth()
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (save == null)
+            {
+                return 0L;
+            }
+            float worth;
+            try
+            {
+                worth = PlayerHelper.GetPersonalWealth().CurrentWealth;
+            }
+            catch (Exception)
+            {
+                worth = save.Money;
+            }
+            CreditFile file = CreditLedger.File;
+            float owed = 0f;
+            for (int i = 0; file != null && i < file.Accounts.Count; i++)
+            {
+                owed += Owing(file.Accounts[i]) ? file.Accounts[i].Owed : 0f;
+            }
+            if (file != null && file.Shark.Active)
+            {
+                owed += file.Shark.Owed;
+            }
+            Debts.Clear();
+            EconomyBridges.OtherDebts?.Invoke(Debts);
+            for (int i = 0; i < Debts.Count; i++)
+            {
+                owed += Debts[i].Owed;
+            }
+            return (long)Math.Floor(worth - owed);
+        }
+
+        /// <summary>
+        /// Whether one of the mod's own accounts is a debt on the Overview: open, not the test tools', and owing something (a
+        /// card or an overdraft with nothing on it is none). The Overview's table and <see cref="NetWorth"/> both ask this.
+        /// </summary>
+        public static bool Owing(CreditAccount a)
+        {
+            return a != null && !a.Closed && !a.Test && (a.Owed > 0 || !ProductCatalogue.Revolving(a.Kind));
         }
 
         /// <summary>The businesses the player runs that take money: rented, named, of a type the game says generates revenue.</summary>

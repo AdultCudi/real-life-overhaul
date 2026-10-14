@@ -30,10 +30,10 @@ namespace RealLifeOverhaul.Markets
             FollowOptions();
         }
 
-        // The options the engine follows: worked orders working, dividends put back, bonds rolling over.
+        // The options the engine follows: worked orders and larger bond purchases, dividends put back, bonds rolling over.
         private void FollowOptions()
         {
-            _engine.WorkedOn = Settings.MarketsLarge;
+            _engine.LargeOn = Settings.MarketsLarge;
             _engine.ReinvestOn = Settings.MarketsReinvest;
             _engine.BondsOn = Settings.MarketsBonds;
         }
@@ -117,12 +117,20 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// What the player is worth, in money: the game's own figure (cash, its investment funds, vehicles, boats and property,
-        /// less loans) and what they hold on the market (InvestRules.MarketWorth). Read on a click, never per frame.
+        /// What the player is worth, in money: the net worth the Finance app shows (MarketBridges.NetWorth: the game's own
+        /// figure of cash, its investment funds, vehicles, boats and property less its loans, less what the player owes on
+        /// the mod's own accounts and other debts; the game's figure alone without it), which counts nothing on the market,
+        /// and what they hold on the market with the money with the broker for worked orders (InvestRules.MarketWorth).
+        /// Read on a click, never per frame.
         /// </summary>
         public long PlayerWorth()
         {
-            return Running ? MarketWallet.Wealth() + InvestRules.MarketWorth(_engine.State, _engine.State.Phase) : 0L;
+            if (!Running)
+            {
+                return 0L;
+            }
+            Func<long> net = MarketBridges.NetWorth;
+            return (net != null ? net() : MarketWallet.Wealth()) + InvestRules.MarketWorth(_engine.State, _engine.State.Phase);
         }
 
         /// <summary>The player's cash in hand, as the market reads it (the Portfolio tab's box).</summary>
@@ -194,7 +202,11 @@ namespace RealLifeOverhaul.Markets
             Moved();
         }
 
-        /// <summary>Test button: the next dividend owed on the player's own shares paid now, as on its day, and its share put back (at once while the market trades).</summary>
+        /// <summary>
+        /// Test button: the next dividend owed on a holding of the player's that puts a share of it back, paid now as on its
+        /// day, and that share bought (at once while the market trades). Refused, with nothing paid, when none is owed or none
+        /// owed is on a holding that puts any back.
+        /// </summary>
         public void TestPutBack()
         {
             FinishMoment();
@@ -209,11 +221,15 @@ namespace RealLifeOverhaul.Markets
                 TestRefusals.TellKey(Logger, Test, "reallife_mkt_inv_test_no_due");
                 return;
             }
+            if (stock < 0)
+            {
+                TestRefusals.TellKey(Logger, Test, "reallife_mkt_inv_test_no_share");   // (a dividend is owed, but on no holding that puts any back: none is paid early)
+                return;
+            }
             Stock k = State.Stock(stock);
             Position p = State.Position(stock);
-            Logger?.Info(Test + " test: the dividend owed on " + (k != null ? k.Name : stock.ToString()) + " paid now; "
-                         + (p != null && p.Reinvest > 0 && Settings.MarketsReinvest ? p.Reinvest + "% of it put back " + (Trading ? "at once" : "at the next open") : "nothing put back (the holding puts back none)")
-                         + ".");
+            Logger?.Info(Test + " test: the dividend owed on " + (k != null ? k.Name : stock.ToString()) + " paid now; " + (p != null ? p.Reinvest : 0) + "% of it put back "
+                         + (Trading ? "at once" : "at the next open") + ".");
             Moved();
         }
     }

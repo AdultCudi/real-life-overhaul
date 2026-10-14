@@ -229,8 +229,9 @@ internal static partial class Program
         Check(flat, "bonds: with nothing worth counting the most of one purchase is the flat sum, and under four times it as well");
         Check(edges, "bonds: from four times the flat sum the most is a quarter of what the player is worth, up to the cap, and no worth overflows it");
         Check(monotone && capped, "bonds: the most never falls as what the player is worth grows, and stays between the flat sum and the cap");
-        Check(BondCatalogue.MostWorthPct == 25 && BondCatalogue.HoldingsMost == 48 && BondCatalogue.HoldingsMost <= 2 * 24,
-            "bonds: a quarter of the player's worth, and 48 held at once, which a version from before reads whole (it reads twice its own 24)");
+        Check(BondCatalogue.MostWorthPct == 25 && BondCatalogue.HoldingsMost == 24 && BondCatalogue.HoldingsMostLarge == 48 && BondCatalogue.HoldingsMostLarge <= 2 * 24
+              && BondRules.HoldingsMost(false) == 24 && BondRules.HoldingsMost(true) == 48,
+            "bonds: a quarter of the player's worth, and 24 held at once or 48 with the option on, which a version from before reads whole (it reads twice its own 24)");
         MarketEngine m = BondMarket(321, 60, 2000000000L, out MarketWorld world);
         BondOffer o = OfferOf(m, 2);
         long flatNow = BondRules.Most(m.State.Env.PriceLevel), rich = flatNow * 20;
@@ -240,11 +241,11 @@ internal static partial class Program
         BondHolding h = m.BuyBond(o, flatNow * 4, 0, true, true, out BondWhy why, rich, true);
         Check(h != null && why == BondWhy.None && h.Face == flatNow * 400 && h.Rollover, "bonds: a large purchase is bought, set to roll over as asked (" + why + ")");
         var book = new BondBook();
-        for (int i = 0; i < BondCatalogue.HoldingsMost - 3; i++)
+        for (int i = 0; i < BondCatalogue.HoldingsMostLarge - 3; i++)
         {
             book.Holdings.Add(new BondHolding { Id = i + 1 });
         }
-        Check(BondRules.CanBuy(book, o, 1000, 1000000, true, false, true, 500, 10000, 3) == BondWhy.None && BondRules.CanBuy(book, o, 1000, 1000000, true, false, true, 500, 10000, 4) == BondWhy.Full,
+        Check(BondRules.CanBuy(book, o, 1000, 1000000, true, false, true, 500, 10000, 3, 48) == BondWhy.None && BondRules.CanBuy(book, o, 1000, 1000000, true, false, true, 500, 10000, 4, 48) == BondWhy.Full,
             "bonds: a purchase of several holdings needs room for every one of them");
     }
 
@@ -408,7 +409,7 @@ internal static partial class Program
         m = InvestMarket(335, 50000000000L, out world, 3, 5);
         s = Liquid(m, MarketSize.Large);
         o = Worked(m, s, OrderSide.Buy, MarketTrading.MostPerOrder(s) * 2, out why);
-        m.WorkedOn = false;
+        m.LargeOn = false;
         RunTo(m, m.State.Day);
         bool idle = o.Filled == 0 && o.IsOpen;
         int stopped = m.StopAllOf(false, OrderWhy.Switched);
@@ -448,7 +449,9 @@ internal static partial class Program
         int day = m.State.Day;
         RunTo(m, day, MarketCatalogue.PhaseOpen + 40);
         long filled = o.Filled;
-        Check(filled > 0 && MarketTrading.Cancel(m.State, o.Id) && o.State == OrderState.Cancelled && o.Why == OrderWhy.Cancelled && o.Filled == filled, "worked: cancelled, what it bought is kept");
+        long heldBefore = o.Held, cashBefore = world.Purse.Money;
+        Check(filled > 0 && heldBefore > 0 && m.Cancel(o.Id) && o.State == OrderState.Cancelled && o.Why == OrderWhy.Cancelled && o.Filled == filled, "worked: cancelled, what it bought is kept");
+        Check(o.Held == 0 && world.Purse.Money == cashBefore + heldBefore, "worked: and the day's money held for it comes back at once, in one transaction");
         RunTo(m, TradingOnOrAfter(day + 1));
         Check(o.Filled == filled && m.State.Held(s.Id) == filled && o.EndDay == day, "worked: and nothing more is bought; it ended the day it was cancelled");
         RunTo(m, day + 10);
@@ -728,7 +731,7 @@ internal static partial class Program
         world.Purse.Money = least * 4 - 1 + least;
         Check(m.LadderWhy(least * 8, true, true) == BondWhy.NoCash, "ladder: the cash for the whole of it");
         world.Purse.Money = 100000000;
-        while (m.State.Bonds.Holdings.Count < BondCatalogue.HoldingsMost - 3)
+        while (m.State.Bonds.Holdings.Count < BondCatalogue.HoldingsMostLarge - 3)   // (the option is on: 48)
         {
             m.BuyBond(OfferOf(m, 2), least, 0, true, true, out _);
         }
@@ -963,7 +966,7 @@ internal static partial class Program
         {
             Trade(m, s, OrderSide.Buy, 10);
         }
-        while (m.State.Bonds.Holdings.Count < BondCatalogue.HoldingsMost)
+        while (m.State.Bonds.Holdings.Count < BondCatalogue.HoldingsMostLarge)
         {
             m.BuyBond(m.Offer(4, -1, null), 1000, 0, m.Trading, true, out _);
         }

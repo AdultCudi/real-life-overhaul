@@ -28,9 +28,12 @@ namespace RealLifeOverhaul.Markets
     ///      the player's own shares, bought with the player's money, and nothing is lost.
     ///   f the player's bonds (Markets/Bonds/BondStore). Never in the city's line.
     ///   g the player's worked orders and dividends waiting to be put back (MarketEngine.Invest.cs): an order's fields as in
-    ///      part o, then whether it is worked or a payout put back, its money, the day it stopped and its last day's slices.
-    ///      Apart from part o, so that a version before them never fills a worked order whole at the open; read back, every
-    ///      order takes its place by its number again. Never in the city's line.
+    ///      part o, then whether it is worked or a payout put back, its money, the day it stopped and its last day's slices,
+    ///      then the day's money held for it, the day's takings due to the player and the day it was held (a record without
+    ///      them reads nothing held: one written before the day's money was held once a day). Apart from part o, so that a
+    ///      version before them never fills a worked order whole at the open; read back, every order takes its place by its
+    ///      number again. Never in the city's line. (A version before part g, read in the middle of a market day, loses that
+    ///      day's held money: it knows nothing of it.)
     ///   A holding of part p may end with the share of each dividend it puts back, a line of part t with the worked order it
     ///   is the day's slices of and whether it was bought with a dividend put back (each written only when there is one).
     /// A player's listed company is a record of k like every company's, with its own fields after the rest (its
@@ -301,7 +304,8 @@ namespace RealLifeOverhaul.Markets
         }
 
         // Part g: worked orders and dividends to put back, each an order's fields, then what it is, its money, the day it
-        // stopped and its last day's slices.
+        // stopped and its last day's slices, then the day's money with the broker (held for it, due from it) and the day
+        // it was held.
         private static void WorkedOrders(StringBuilder t, MarketState s)
         {
             int n = 0;
@@ -318,6 +322,8 @@ namespace RealLifeOverhaul.Markets
                 L(t, o.Budget);
                 Join(t, o.EndDay, o.DayOf);
                 L(t, o.DayQty, o.DayValue);
+                L(t, o.Held, o.Due);
+                Join(t, o.HeldDay);
             }
         }
 
@@ -366,6 +372,9 @@ namespace RealLifeOverhaul.Markets
                 o.DayOf = Math.Max(0, I(c, 23));
                 o.DayQty = Math.Max(0, L(c, 24));
                 o.DayValue = Math.Max(0, L(c, 25));
+                o.Held = worked ? Math.Max(0, L(c, 26)) : 0;     // (a record without them: nothing held, nothing due)
+                o.Due = worked ? Math.Max(0, L(c, 27)) : 0;
+                o.HeldDay = worked ? Math.Max(0, I(c, 28)) : 0;
                 s.Orders.Add(o);
             }
             // (every order in its place again: the market fills them in the order they were placed, by their numbers)

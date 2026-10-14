@@ -25,6 +25,7 @@ namespace RealLifeOverhaul.Markets
                 .Test("reallife_mkt_inv_test_back", "reallife_mkt_inv_test_roll")
                 .Fact("bond_most_share", () => Whole(BondCatalogue.MostWorthPct) + "%")
                 .Fact("bond_most_cap", () => Guide.Money(Prices.At((float)BondCatalogue.MostCapAtStart)))
+                .Fact("bond_holdings_large", () => Whole(BondCatalogue.HoldingsMostLarge))
                 .Fact("bond_ladder_terms", () => Whole(BondRules.LadderTerms(new System.Collections.Generic.List<BondDef>(8))));
             Features.Add("markets_bots", "reallife_meta_title_markets_bots")
                 .Group("reallife_mkt_header")

@@ -30,6 +30,9 @@ namespace RealLifeOverhaul.Markets
         public const string Shortfall = "reallife_transaction_shares_shortfall";
         public const string BotFee = "reallife_transaction_shares_bot_fee";       // a trading bot's monthly fee (MarketBots)
         public const string BotShare = "reallife_transaction_shares_bot_share";   // its share of the profit
+        public const string WorkedHeld = "reallife_transaction_shares_worked_held";   // a worked purchase's day of money, held at its first slice (MarketEngine.Invest.cs)...
+        public const string WorkedBack = "reallife_transaction_shares_worked_back";   // ...and what is left of it, given back at the close or its end
+        public const string WorkedSold = "reallife_transaction_shares_worked_sold";   // a worked sale's takings of the day after the commission, paid at the close or its end
     }
 
     /// <summary>A price to buy or sell at: the bid, the offer and the middle, in cents.</summary>
@@ -59,8 +62,9 @@ namespace RealLifeOverhaul.Markets
     ///   the spread and two commissions; an order moves the price against itself by the square root of its size against
     ///   a day's volume, counting what the player traded in the company just before (so splitting an order saves
     ///   nothing); a part of that move stays in the price; one order is at most a fifth of a day's volume (a larger one
-    ///   is worked, a fifth of each step's trading at a time, its slices moving the price as one order of their size:
-    ///   MarketEngine.Invest.cs) and a holding at most a tenth of a company; nothing is traded while the market is shut,
+    ///   is worked, a fifth of each step's trading at a time, its slices moving the price as one order of their size and,
+    ///   on a cash account, settling its money once a day: MarketEngine.Invest.cs) and a holding at most a tenth of a
+    ///   company, which no purchase but the broker's own ever passes; nothing is traded while the market is shut,
     ///   behind or held after a load; a resting order fills only at a price the market reached in that step, at its limit
     ///   or the step's first price if that was better, a stop at the market's price of the step that reached it (the next
     ///   price: after a gap or a fast fall, under the stop), and a limit never more than a quarter of the step's volume; a
@@ -530,7 +534,17 @@ namespace RealLifeOverhaul.Markets
             long held = p != null ? p.Shares : 0;
             if (buying)
             {
-                if (!a.Margin)
+                if (!a.Margin && order.Worked)
+                {
+                    // A worked order's slice on a cash account: paid from the day's money held for it, with no transaction of
+                    // its own (MarketEngine.Invest.cs: Hold and Settle). Short of it, nothing is bought.
+                    if (order.Held < value + fee)
+                    {
+                        return false;
+                    }
+                    order.Held -= value + fee;
+                }
+                else if (!a.Margin)
                 {
                     if (wallet.Cash < value + fee)
                     {
@@ -559,8 +573,15 @@ namespace RealLifeOverhaul.Markets
                     {
                         return false;
                     }
-                    wallet.Give(value, MarketMoney.Sold, s.Name);
-                    wallet.Take(fee, MarketMoney.Commission, s.Name);
+                    if (order.Worked)
+                    {
+                        order.Due += value - fee;   // (a worked sale's takings wait on it, paid in one transaction at the close or its end)
+                    }
+                    else
+                    {
+                        wallet.Give(value, MarketMoney.Sold, s.Name);
+                        wallet.Take(fee, MarketMoney.Commission, s.Name);
+                    }
                 }
                 else
                 {

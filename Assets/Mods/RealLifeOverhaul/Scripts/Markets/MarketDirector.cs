@@ -734,7 +734,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return false;
             }
-            bool done = MarketTrading.Cancel(_engine.State, orderId);
+            bool done = _engine.Cancel(orderId);   // (a worked order's money with the broker settled at once: MarketEngine.Invest.cs)
             Moved();
             return done;
         }
@@ -902,10 +902,16 @@ namespace RealLifeOverhaul.Markets
             }
             if (order.Back)
             {
-                // A dividend put back: what it bought, or why it could not (its money stays in the cash).
+                // A dividend put back: what it bought (only a part of it, with the reason: one order's most or the holding
+                // limit), or why it could not; what it does not buy stays in the cash.
                 if (qty <= 0)
                 {
                     Queue(NotificationType.Warning, "reallife_mkt_inv_note_back_refused", "name", stock.Name, "why", MarketText.Why(order.Why));
+                }
+                else if (order.Why != OrderWhy.None)
+                {
+                    Queue(NotificationType.Info, "reallife_mkt_inv_note_back_part", "name", stock.Name, "count", qty.ToString("N0"), "price", MarketText.Price(cents), "why",
+                        MarketText.Why(order.Why));
                 }
                 else
                 {

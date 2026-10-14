@@ -33,6 +33,10 @@ namespace RealLifeOverhaul.Markets
             }
             long most = MarketTrading.MostPerOrder(k);
             box.Line(MarketText.Fill("reallife_mkt_inv_ticket_worked", "most", Count(most), "days", InvestRules.MarketDays(_qty, k.Adv).ToString()), CellTone.Yellow);
+            if (!s.Account.Margin)
+            {
+                box.Line(MarketText.T(MoneyKey(_side)));   // (its money, settled once a day: MarketEngine.Invest.cs)
+            }
             OrderWhy why = _director.WorkedWhy(k.Id, _side, _qty);
             if (why != OrderWhy.None)
             {
@@ -61,7 +65,8 @@ namespace RealLifeOverhaul.Markets
             GameConfirm.Show(
                 MarketText.Fill(buying ? "reallife_mkt_inv_confirm_buy" : "reallife_mkt_inv_confirm_sell", "name", k.Name),
                 MarketText.Fill("reallife_mkt_inv_confirm_body", "count", Count(qty), "name", k.Name, "most", Count(MarketTrading.MostPerOrder(k)),
-                    "days", InvestRules.MarketDays(qty, k.Adv).ToString(), "total", MarketText.Money(MarketTrading.Value(qty, buying ? q.Ask : q.Bid, buying))),
+                    "days", InvestRules.MarketDays(qty, k.Adv).ToString(), "total", MarketText.Money(MarketTrading.Value(qty, buying ? q.Ask : q.Bid, buying)))
+                + (s.Account.Margin ? string.Empty : "\n" + MarketText.T(MoneyKey(side))),
                 () => UiClone.Safe(() => PlaceWorkedOrder(k, side, qty)), null, "reallife_mkt_inv_work", "common_cancel", false, !buying);
         }
 
@@ -97,6 +102,13 @@ namespace RealLifeOverhaul.Markets
                 }
                 Refresh();
             }));
+        }
+
+        // How a worked order's money goes on a cash account: a purchase's day of money held and what is left given back at
+        // the close; a sale's takings paid at each close.
+        private static string MoneyKey(OrderSide side)
+        {
+            return side == OrderSide.Buy ? "reallife_mkt_inv_ticket_hold" : "reallife_mkt_inv_ticket_due";
         }
 
         // ---------------------------------------------------------------- the Orders tab
@@ -135,7 +147,7 @@ namespace RealLifeOverhaul.Markets
             return o.Worked && !o.IsOpen && o.State != OrderState.Filled && o.Why != OrderWhy.Cancelled;
         }
 
-        // A worked order's progress (done, today, left) or a dividend put back's money, in the order's box.
+        // A worked order's progress (done, today, its day's money with the broker, left) or a dividend put back's money, in the order's box.
         private void WriteInvestOrder(InfoBox box, MarketState s, Stock k, Order o)
         {
             box.Note(MarketText.Fill("reallife_mkt_order_what", "side", MarketText.T(SideKeys[(int)o.Side]), "count", o.Back && o.Qty <= 0 ? "-" : Count(o.Qty), "kind", KindWords(o)));
@@ -157,6 +169,14 @@ namespace RealLifeOverhaul.Markets
             {
                 box.Row("reallife_ibox_today", MarketText.Fill("reallife_mkt_inv_today_value", "count", Count(o.DayQty), "price",
                     MarketText.Price((int)System.Math.Min(int.MaxValue, o.DayValue * 100 / o.DayQty))));
+            }
+            if (o.Held > 0)
+            {
+                box.Row("reallife_mkt_inv_row_held", MarketText.Money(o.Held));   // (today's money not spent yet: back at the close)
+            }
+            if (o.Due > 0)
+            {
+                box.Row("reallife_mkt_inv_row_due", MarketText.Money(o.Due));     // (today's takings: paid at the close)
             }
             if (o.IsOpen)
             {

@@ -112,17 +112,26 @@ namespace RealLifeOverhaul.Markets
             return Math.Max(Most(priceLevel), (long)BondCatalogue.MostCapAtStart * Math.Max(100, priceLevel) / 1000L);
         }
 
+        /// <summary>
+        /// The bonds and deposits that may be held at once: the larger number with "Worked orders and larger bond purchases"
+        /// on (room for ladders). One who holds more, with it switched off since, keeps them and buys none until under it.
+        /// </summary>
+        public static int HoldingsMost(bool large)
+        {
+            return large ? BondCatalogue.HoldingsMostLarge : BondCatalogue.HoldingsMost;
+        }
+
         /// <summary>Whether a bond can be bought now for so much money (nothing is changed).</summary>
         public static BondWhy CanBuy(BondBook book, BondOffer offer, long money, long cash, int priceLevel, bool open, bool held, bool on)
         {
-            return CanBuy(book, offer, money, cash, open, held, on, Least(priceLevel), Most(priceLevel), 1);
+            return CanBuy(book, offer, money, cash, open, held, on, Least(priceLevel), Most(priceLevel), 1, BondCatalogue.HoldingsMost);
         }
 
         /// <summary>
-        /// The same with the least and the most one purchase may be given, and how many holdings it makes (a ladder: one for
-        /// each of its terms, all of them room in the book).
+        /// The same with the least and the most one purchase may be given, how many holdings it makes (a ladder: one for
+        /// each of its terms, all of them room in the book) and how many may be held at once (<see cref="HoldingsMost(bool)"/>).
         /// </summary>
-        public static BondWhy CanBuy(BondBook book, BondOffer offer, long money, long cash, bool open, bool held, bool on, long least, long most, int holdings)
+        public static BondWhy CanBuy(BondBook book, BondOffer offer, long money, long cash, bool open, bool held, bool on, long least, long most, int holdings, int holdingsMost)
         {
             if (!on)
             {
@@ -140,7 +149,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return BondWhy.NoBank;
             }
-            if (book.Holdings.Count + Math.Max(1, holdings) > BondCatalogue.HoldingsMost)
+            if (book.Holdings.Count + Math.Max(1, holdings) > holdingsMost)
             {
                 return BondWhy.Full;
             }

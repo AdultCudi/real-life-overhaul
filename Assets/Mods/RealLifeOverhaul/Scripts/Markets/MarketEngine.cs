@@ -1539,6 +1539,11 @@ namespace RealLifeOverhaul.Markets
                 {
                     o.State = OrderState.Cancelled;
                     o.Why = OrderWhy.CompanyGone;
+                    if (o.Worked)
+                    {
+                        o.EndDay = day;
+                        Settle(o, s.Name);   // (its day's money back, its takings paid: MarketEngine.Invest.cs)
+                    }
                 }
             }
             // Its history goes but for its last day (the save keeps no charts of companies that are gone).
@@ -1653,6 +1658,15 @@ namespace RealLifeOverhaul.Markets
         // ('least' the least commission when it is not the day's: a worked order's slices after its first pay none, MarketEngine.Invest.cs)
         private bool FillNow(Stock s, Order o, long qty, int cents, int phase, int least = -1)
         {
+            if (o.Side == OrderSide.Buy && !o.Forced && State.Held(s.Id) + qty > MarketTrading.MostHeld(s))
+            {
+                // No purchase of the player's own ever takes a holding past the most they may hold: an order's checks keep it
+                // under when it is placed, and this holds it against whatever changed since (fewer shares in issue, say).
+                o.State = o.Filled > 0 ? OrderState.Cancelled : OrderState.Refused;
+                o.Why = OrderWhy.HoldingLimit;
+                _world.Filled(o, s, 0, 0);
+                return false;
+            }
             // A trade's lasting move is the city's in a session, and so it is on a day played again that was played in one
             // (its tape has the move: the fill played again must not add it a second time).
             bool city = TradesAsEvents || TradeSink != null || (Replaying && Tape != null && Tape.Traded(State.Day));
@@ -1762,7 +1776,7 @@ namespace RealLifeOverhaul.Markets
                     case OrderType.Market:
                         if (o.Back)
                         {
-                            BackNow(o, s, MarketCatalogue.PhaseOpen);   // a dividend put back: as many shares as its money buys (MarketEngine.Invest.cs)
+                            BackNow(o, s, MarketCatalogue.PhaseOpen);   // a dividend put back: what its money buys, if the option is still on (MarketEngine.Invest.cs)
                         }
                         else if (!o.Worked)   // (a worked order's slices are the steps': WorkedOrders)
                         {

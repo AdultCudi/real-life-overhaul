@@ -63,6 +63,13 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The names of the city's three largest banks, the largest first (Economy/Lending's BankTerms.Banks): each offers a certificate of deposit (Markets/Bonds). Null: none.</summary>
         public static Action<List<string>> Banks;
 
+        /// <summary>
+        /// What the player is worth as the Finance app's Overview says it (Economy/Finance, Books.NetWorth: the game's own
+        /// figure less what the player owes on the mod's own accounts and other debts). It counts nothing on the market: the
+        /// market adds its own (the most of one bond purchase). Null: the game's own figure alone.
+        /// </summary>
+        public static Func<long> NetWorth;
+
         public static void Reset()
         {
             City = null;
@@ -76,6 +83,7 @@ namespace RealLifeOverhaul.Markets
             Name = null;
             Trade = null;
             Banks = null;
+            NetWorth = null;
         }
     }
 

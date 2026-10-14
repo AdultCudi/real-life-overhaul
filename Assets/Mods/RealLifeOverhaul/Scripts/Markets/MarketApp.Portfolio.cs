@@ -12,8 +12,9 @@ namespace RealLifeOverhaul.Markets
     /// such, its shares and price, what it cost and is worth, its gain, the income it has paid and its next payment; the
     /// table is filtered by sector and by kind and ordered by any column (by its kind, the kinds stand together). The box,
     /// on three pages chosen by its first selector so that it keeps its foot: what is held (worth, cost and gain, the spread
-    /// across kinds as bars with each one's worth and share, the cash), what it pays (the income over the next year by kind,
-    /// its yield on the worth, the next payments) and the account (with the margin account and its buttons). A bond's row
+    /// across kinds as bars with each one's worth and share, the cash, worked orders' money of the day), what it pays (the
+    /// income over the next year by kind, its yield on the worth, the next payments, a bond that rolls over without what it
+    /// repays) and the account (with the margin account and its buttons). A bond's row
     /// leads to it on the Bonds tab, the Bonds tab being where bonds are bought and managed; a company's to its page.
     /// Figures from InvestRules. Written when the app opens and when the player does something in it, never per frame.
     /// </summary>
@@ -31,7 +32,7 @@ namespace RealLifeOverhaul.Markets
 
         private TableSpec WritePortfolio(InfoBox box, MarketState s)
         {
-            InvestRules.Holdings(s, s.Phase, _holdings);
+            InvestRules.Holdings(s, s.Phase, _holdings, Settings.MarketsBonds);
             for (int i = 0; i < _holdings.Count; i++)
             {
                 WriteHolding(s, _holdings[i]);
@@ -99,14 +100,14 @@ namespace RealLifeOverhaul.Markets
             return name + test + (h.Reinvest > 0 ? InvestText.Mark(MarketText.Fill("reallife_mkt_inv_mark_back", "pct", h.Reinvest.ToString())) : string.Empty);
         }
 
-        // A payment to come in words: "120, day 34" (owed on shares sold short: "-120, day 34"; a bond's last: with its end).
+        // A payment to come in words: "120, day 34" (owed on shares sold short: "-120, day 34"; a bond's last: with its end, or that it rolls over).
         private static string PaymentWords(in ComingPayment p)
         {
             if (p.Day <= 0 || p.Cents == 0)
             {
                 return string.Empty;
             }
-            return MarketText.Fill(p.Ends ? "reallife_mkt_inv_next_end" : "reallife_mkt_next_pay", "amount", (p.Cents < 0 ? "-" : string.Empty) + BondText.Money(Math.Abs(p.Cents)),
+            return MarketText.Fill(p.Ends ? "reallife_mkt_inv_next_end" : p.Rolls ? "reallife_mkt_inv_next_roll" : "reallife_mkt_next_pay", "amount", (p.Cents < 0 ? "-" : string.Empty) + BondText.Money(Math.Abs(p.Cents)),
                 "day", p.Day.ToString());
         }
 
@@ -160,7 +161,7 @@ namespace RealLifeOverhaul.Markets
             Meta.Guide.Point(box, GuideTitle);
         }
 
-        // What is held: the worth, cost and gain of it all, the spread across kinds, the cash.
+        // What is held: the worth, cost and gain of it all, the spread across kinds, the cash and worked orders' money of the day.
         private void WriteHeldPage(InfoBox box, MarketState s)
         {
             box.Section("reallife_ibox_sec_now");
@@ -199,6 +200,15 @@ namespace RealLifeOverhaul.Markets
                 box.Row("reallife_mkt_inv_founder", MarketText.Money(_sums.Founder));
             }
             box.Row("reallife_mkt_inv_cash", MarketText.Money(_director.Cash));
+            InvestRules.WithBroker(s, out long held, out long due);   // (worked orders' money of the day: out of the cash until the close)
+            if (held > 0)
+            {
+                box.Row("reallife_mkt_inv_held_money", MarketText.Money(held));
+            }
+            if (due > 0)
+            {
+                box.Row("reallife_mkt_inv_due_money", MarketText.Money(due));
+            }
             if (s.Account.Margin)
             {
                 box.Row("reallife_mkt_inv_margin_cash", MarketText.Money(s.Account.Cash), s.Account.Cash < 0 ? CellTone.Red : CellTone.Plain);

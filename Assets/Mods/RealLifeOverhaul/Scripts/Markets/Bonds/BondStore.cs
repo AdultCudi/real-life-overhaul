@@ -50,7 +50,7 @@ namespace RealLifeOverhaul.Markets
                 }
                 int id = Int(c[0]);
                 BondDef d = BondCatalogue.Find(Int(c[1]));
-                if (id <= 0 || d == null || into.Holding(id) != null || into.Holdings.Count >= BondCatalogue.HoldingsMost * 2)
+                if (id <= 0 || d == null || into.Holding(id) != null || into.Holdings.Count >= BondCatalogue.HoldingsMostLarge * 2)
                 {
                     continue;
                 }

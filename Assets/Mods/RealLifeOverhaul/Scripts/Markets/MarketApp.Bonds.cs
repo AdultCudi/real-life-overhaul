@@ -75,7 +75,7 @@ namespace RealLifeOverhaul.Markets
                 row.Set(5, d.Kind == BondKind.Deposit ? "-" : BondText.Price(price), price, Tone(move));
                 row.Set(6, BondText.Money(h.Face), h.Face / 100.0);
                 row.Set(7, BondText.Money(sale), sale / 100.0, Tone(Math.Sign(sale - h.Cost)));
-                row.Set(8, day > 0 ? NextWords(BondRules.InterestCents(h, d) + (h.Paid + 1 >= h.Payments ? h.Face : 0), day) : string.Empty, day);
+                row.Set(8, day > 0 ? NextWords(h, d, day) : string.Empty, day);
             }
             int offer = Picked(_picked, BondOfferRow);
             int held = Picked(_picked, BondHeldRow);
@@ -112,10 +112,13 @@ namespace RealLifeOverhaul.Markets
             return MarketTables.Bonds;
         }
 
-        // A payment to come in words: "120, day 34".
-        private static string NextWords(long cents, int day)
+        // A bond's next payment in words: "120, day 34"; its last with what it repays, or, rolling over, its interest alone
+        // and that it rolls over (what it repays goes into a new one, not into the cash).
+        private static string NextWords(BondHolding h, BondDef d, int day)
         {
-            return MarketText.Fill("reallife_mkt_next_pay", "amount", BondText.Money(cents), "day", day.ToString());
+            bool last = h.Paid + 1 >= h.Payments, rolls = last && InvestRules.Rolls(h, Settings.MarketsBonds);
+            long cents = BondRules.InterestCents(h, d) + (last && !rolls ? h.Face : 0);
+            return MarketText.Fill(rolls ? "reallife_mkt_inv_next_roll" : "reallife_mkt_next_pay", "amount", BondText.Money(cents), "day", day.ToString());
         }
 
         // A bond on offer: what it pays, the amount to put in, the share of its interest to put back, and the button to buy it.
@@ -227,7 +230,8 @@ namespace RealLifeOverhaul.Markets
             box.Section("reallife_ibox_sec_payments");
             if (day > 0 && d != null)
             {
-                box.Line(MarketText.Fill(h.Paid + 1 >= h.Payments ? "reallife_mkt_bond_held_last" : "reallife_mkt_bond_held_next", "day", day.ToString(),
+                bool last = h.Paid + 1 >= h.Payments, rolls = last && InvestRules.Rolls(h, Settings.MarketsBonds);   // (rolling over: what it repays goes into a new one)
+                box.Line(MarketText.Fill(rolls ? "reallife_mkt_bond_held_last_roll" : last ? "reallife_mkt_bond_held_last" : "reallife_mkt_bond_held_next", "day", day.ToString(),
                     "amount", BondText.Money(BondRules.InterestCents(h, d)), "face", BondText.Money(h.Face)));
             }
             box.Line(MarketText.Fill("reallife_mkt_bond_held_record", "received", BondText.Money(h.Received), "back", BondText.Money(h.Reinvested), "tax", BondText.Money(h.Taxed)));

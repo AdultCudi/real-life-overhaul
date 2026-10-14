@@ -156,12 +156,13 @@ namespace RealLifeOverhaul.Markets
 
         /// <summary>
         /// Whether a bond can be bought now for so much money; 'open' while the market trades, 'on' while bonds are switched
-        /// on, 'worth' what the player is worth for the most of one purchase (nothing: the flat sum, BondRules.Most).
+        /// on, 'worth' what the player is worth for the most of one purchase (nothing: the flat sum, BondRules.Most); room
+        /// for it among the bonds held at once, more of them with "Worked orders and larger bond purchases" on (LargeOn).
         /// </summary>
         public BondWhy CanBuyBond(BondOffer offer, long money, bool open, bool on, long worth = 0)
         {
             int level = State.Env.PriceLevel;
-            return BondRules.CanBuy(State.Bonds, offer, money, _world.Wallet.Cash, open, Held, on, BondRules.Least(level), BondRules.Most(level, worth), 1);
+            return BondRules.CanBuy(State.Bonds, offer, money, _world.Wallet.Cash, open, Held, on, BondRules.Least(level), BondRules.Most(level, worth), 1, BondRules.HoldingsMost(LargeOn));
         }
 
         /// <summary>A bond bought now for so much of the player's cash, at its yield of today, set to roll over at its end or not. Null with the reason when it cannot be.</summary>
@@ -200,7 +201,7 @@ namespace RealLifeOverhaul.Markets
             int level = State.Env.PriceLevel;
             long most = BondRules.Most(level, worth);
             BondOffer first = Offer(_ladder[0].Id, -1, null);
-            BondWhy why = BondRules.CanBuy(State.Bonds, first, _pieces[n - 1], long.MaxValue, open, Held, on, BondRules.Least(level), most, n);   // (the smallest piece, room for all)
+            BondWhy why = BondRules.CanBuy(State.Bonds, first, _pieces[n - 1], long.MaxValue, open, Held, on, BondRules.Least(level), most, n, BondRules.HoldingsMost(LargeOn));   // (the smallest piece, room for all)
             if (why != BondWhy.None)
             {
                 return why;

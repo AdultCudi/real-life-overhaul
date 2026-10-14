@@ -16,6 +16,7 @@ namespace RealLifeOverhaul.Markets
         public int Bond;             // the bond's own number (BondHolding.Id); 0 for shares
         public int Firm;             // shares a trading bot holds (its firm); 0 the player's own
         public bool Ends;            // a bond's last payment, with what it repays
+        public bool Rolls;           // a bond's last payment, after which what it repays rolls over into a new one (none of it in the sum)
     }
 
     /// <summary>
@@ -98,9 +99,11 @@ namespace RealLifeOverhaul.Markets
     ///     a worked order         larger than one order may be: a slice at each step of the market of at most the share of
     ///                            the step's trading one order may take of a day's (<see cref="Slice"/>), so about one
     ///                            order's most a day; its slices together move the price as one order of their size would
-    ///                            (MarketTrading.SliceShare)
+    ///                            (MarketTrading.SliceShare); on a cash account its day's money held at once and settled
+    ///                            at the close (<see cref="DayHold"/>, <see cref="WithBroker"/>)
     ///     a dividend put back    the share chosen of what it pays after tax, bought into the same company at the next open
-    ///                            as an order at the market for as many shares as it pays for (<see cref="SharesFor"/>)
+    ///                            as an order at the market for as many shares as it pays for (<see cref="SharesFor"/>),
+    ///                            one order's most at the most and never past the holding limit
     ///
     /// The cost: a look at each holding when the Portfolio tab is written (on a click); nothing per frame.
     /// </summary>
@@ -174,9 +177,11 @@ namespace RealLifeOverhaul.Markets
 
         /// <summary>
         /// Every holding of the player's, in the order the Portfolio tab lists them: the founder's stake, then their own
-        /// shares, then each bot's, then the bonds and deposits. The list is filled again (it is kept by the caller).
+        /// shares, then each bot's, then the bonds and deposits. The list is filled again (it is kept by the caller). With
+        /// 'bondsOn' (bonds and deposits switched on), a bond set to roll over repays nothing into the cash at its end: its
+        /// last payment is its interest alone, marked as rolling over.
         /// </summary>
-        public static void Holdings(MarketState s, int phase, List<PortfolioRow> into)
+        public static void Holdings(MarketState s, int phase, List<PortfolioRow> into, bool bondsOn = true)
         {
             into.Clear();
             Stock founder = Founder(s);
@@ -243,11 +248,23 @@ namespace RealLifeOverhaul.Markets
                 int day = BondRules.NextPayDay(h);
                 if (day > 0)
                 {
-                    bool last = h.Paid + 1 >= h.Payments;
-                    row.Next = new ComingPayment { Day = day, Cents = BondRules.InterestCents(h, d) + (last ? h.Face : 0L), Kind = row.Kind, Bond = h.Id, Ends = last };
+                    bool last = h.Paid + 1 >= h.Payments, rolls = last && Rolls(h, bondsOn);
+                    row.Next = new ComingPayment
+                    {
+                        Day = day, Cents = BondRules.InterestCents(h, d) + (last && !rolls ? h.Face : 0L), Kind = row.Kind, Bond = h.Id, Ends = last && !rolls, Rolls = rolls
+                    };
                 }
                 into.Add(row);
             }
+        }
+
+        /// <summary>
+        /// Whether a bond rolls over at its end (set to, with bonds and deposits on: MarketEngine.Bonds' End): what it repays
+        /// then goes into a new one, not into the cash, so nothing that shows what is coming counts it.
+        /// </summary>
+        public static bool Rolls(BondHolding h, bool bondsOn)
+        {
+            return h != null && h.Rollover && bondsOn;
         }
 
         // A holding of shares' next payment: what is owed after its record day (every due of it, the earliest day), else the
@@ -360,12 +377,13 @@ namespace RealLifeOverhaul.Markets
         /// <summary>
         /// What the player holds on the market is worth, in money: their own shares at the bid less what shares sold short
         /// would cost at the offer, their bots' shares, their bonds at what they would bring sold now, their stake in their
-        /// own listed company, and the margin account's own money (under nothing: borrowed). A bot's money is the player's
-        /// cash already, so it is not counted here.
+        /// own listed company, the margin account's own money (under nothing: borrowed), and the money with the broker for
+        /// worked orders (<see cref="WithBroker"/>: out of the cash for the day). A bot's money is the player's cash already,
+        /// so it is not counted here.
         /// </summary>
         public static long MarketWorth(MarketState s, int phase)
         {
-            long worth = s.Account.Margin ? s.Account.Cash : 0L;
+            long worth = (s.Account.Margin ? s.Account.Cash : 0L) + WithBroker(s, out _, out _);
             for (int i = 0; i < s.Positions.Count; i++)
             {
                 Position p = s.Positions[i];
@@ -396,7 +414,51 @@ namespace RealLifeOverhaul.Markets
             return worth;
         }
 
+        /// <summary>
+        /// The player's money with the broker for worked orders on a cash account, in money: the day's money held for
+        /// purchases (not spent yet: back at the close) and the day's takings of sales after the commission (paid at the
+        /// close). Out of the cash and in no holding meanwhile, so whatever counts what the player has counts it here.
+        /// </summary>
+        public static long WithBroker(MarketState s, out long held, out long due)
+        {
+            held = due = 0L;
+            for (int i = 0; i < s.Orders.Count; i++)
+            {
+                Order o = s.Orders[i];
+                held += Math.Max(0L, o.Held);
+                due += Math.Max(0L, o.Due);
+            }
+            return held + due;
+        }
+
         // ---------------------------------------------------------------- worked orders
+
+        /// <summary>
+        /// A worked purchase's money for a market day, held at its first slice: what so many shares cost at a price with the
+        /// commission, and a tenth more for the price moving through the day. Its slices draw on it; what is left comes back
+        /// at the close.
+        /// </summary>
+        public static long DayHold(long qty, int cents, int least)
+        {
+            if (qty <= 0 || cents <= 0)
+            {
+                return 0L;
+            }
+            long value = MarketTrading.Value(qty, cents, true);
+            long cost = value + MarketTrading.Commission(value, least);
+            return cost + (cost + 9L) / 10L;
+        }
+
+        /// <summary>
+        /// The next piece of a sum the game's money takes in one transaction (it takes no more than int.MaxValue at a time),
+        /// taken off what is left: a larger sum is paid or taken in pieces, none of it lost. Nothing when nothing is left.
+        /// </summary>
+        public static long Piece(ref long left)
+        {
+            long piece = Math.Max(0L, Math.Min(left, int.MaxValue));
+            left -= piece;
+            return piece;
+        }
 
         /// <summary>
         /// A worked order's slice at a step of the market: what is left of it, never more than the share of the step's own
