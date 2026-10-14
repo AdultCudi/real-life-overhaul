@@ -97,6 +97,27 @@ namespace RealLifeOverhaul
             return done;
         }
 
+        /// <summary>
+        /// The feature that holds an id stood a board of its own at the building's door (true) or found no room for one
+        /// (false): with a board the game's signs are only switched off, without one they carry the name (Core/FrontSigns).
+        /// </summary>
+        public static void Boarded(string id, bool board)
+        {
+            Book.Boarded(id, board);
+        }
+
+        /// <summary>Every building in the book, shown or not, into a list the caller keeps (Core/FrontSigns, when <see cref="Stamp"/> changes).</summary>
+        internal static void Entries(List<SpecialEntry> into)
+        {
+            Book.All(into);
+        }
+
+        /// <summary>The name of an entry in the language of the moment while its feature shows it (looked up once, then kept until the language changes).</summary>
+        internal static string NameOf(SpecialEntry entry)
+        {
+            return entry != null ? Book.NameAt(entry.Street, entry.Number, false, Localise) : null;
+        }
+
         /// <summary>The id of the feature that holds a building, shown or not; null for none (a feature choosing a building passes over the others').</summary>
         public static string HolderOf(CityBuildingController building)
         {
@@ -294,7 +315,7 @@ namespace RealLifeOverhaul
         private const string NoBusiness = "ba:businesstype_empty";
 
         /// <summary>
-        /// When the game's look at the buildings on the open map is over (MapPlaces): a building taken by a feature that
+        /// When the game's look at the buildings on the open map is over (MapPlaces), behind Core/ClaimedMap: a building taken by a feature that
         /// the game lit because it is to let or for sale (its rows of units to let by kind, and "for sale") is put out, as
         /// the game puts out a building it does not list. One that a row of the mod's lights is lit again by MapPlaces in
         /// the same frame. A business in a taken building stays as the game's rows of businesses show it. Thirty-odd
@@ -381,7 +402,7 @@ namespace RealLifeOverhaul
             {
                 _instance._carded = null;
                 _instance._stamp = -1;
-                _instance.enabled = SpecialBuildings.Active;
+                _instance.enabled = SpecialBuildings.Active || SpecialBuildings.Count > 0;   // (the card's "not to let" stands with the names off too)
             }
         }
 
@@ -433,6 +454,7 @@ namespace RealLifeOverhaul
             }
             SpecialBuildings.Clear();
             ClaimedOffers.Forget();
+            FrontSigns.Forget();
             if (_instance == this)
             {
                 _instance = null;
@@ -482,6 +504,8 @@ namespace RealLifeOverhaul
             EventHold.Keep(ref GlobalEvents.onEnterBuilding, _onEnter, ref _enterSeen);
             EventHold.Keep(ref GlobalEvents.onCityMapToggle, _onMap, ref _mapSeen);
             ClaimedOffers.Keep();   // the mod's buildings off the market (Core/ClaimedOffers): two null tests once its pages are watched
+            ClaimedMap.Keep();      // ...and out of the city map's rows of units to let and for sale (Core/ClaimedMap): set up once
+            FrontSigns.Keep();      // their fronts: no "For rent", their own sign the game's way (Core/FrontSigns): a few flag reads a building
             SpecialBuildings.LookShown();   // (an option switched: the book's stamp moves, and the refusals and names follow it)
             UIs uis = InstanceBehavior<UIs>.Instance;
             BuildingResume card = uis != null ? uis.buildingResume : null;
@@ -503,7 +527,7 @@ namespace RealLifeOverhaul
             bool searching = SpecialBuildings.Searching;
             _on = on;
             _stamp = SpecialBuildings.Stamp;
-            enabled = on;
+            enabled = on || SpecialBuildings.Count > 0;   // (the card's "not to let" stands with the names off too)
             _carded = null;   // the card written again: the game rewrites it on the hour
             Guiders();
             Inside();
@@ -549,9 +573,9 @@ namespace RealLifeOverhaul
         private void Card(CityBuildingController building)
         {
             string name = SpecialBuildings.NameFor(building);
-            if (name == null)
+            if (name == null && (building == null || SpecialBuildings.TakenBy(building.buildingRegistration) == null))
             {
-                return;
+                return;   // (a building of the mod's off the market is not said to be to let even with the names off)
             }
             try
             {
@@ -561,6 +585,10 @@ namespace RealLifeOverhaul
                 {
                     _card.openStateLabel.Key = NotToLet;
                     _card.openStateLabel.Prefix = string.Empty;
+                }
+                if (name == null)
+                {
+                    return;
                 }
                 if (_card.businessNameLabel != null)
                 {

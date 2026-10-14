@@ -30,6 +30,7 @@ namespace RealLifeOverhaul
         public Func<bool> Shown;   // the feature's own option; null for always
         public bool Literal;       // NameKey is the name itself (a company's proper name), never looked up
         public string[] Tenants;   // the proper names of who is in it, by floor (the tech companies of a tower); null for one feature alone
+        public bool Board;         // its feature stood a board of its own at the door: that is its one sign (Core/FrontSigns)
 
         internal string Name;      // NameKey in the language of the moment, made the first time it is asked for
     }
@@ -127,13 +128,18 @@ namespace RealLifeOverhaul
         /// <summary>The entry at an address while its feature shows it, or null.</summary>
         public SpecialEntry At(string street, int number)
         {
-            if (_byAddress.Count == 0 || string.IsNullOrEmpty(street) || !_byAddress.TryGetValue(Key(street, number), out SpecialEntry entry))
-            {
-                return null;
-            }
-            Func<bool> shown = entry.Shown;
-            return shown == null || shown() ? entry : null;
+            SpecialEntry entry = Filed(street, number);
+            return entry != null && IsShown(entry) ? entry : null;
         }
+
+        // The entry at an address, shown or not.
+        private SpecialEntry Filed(string street, int number)
+        {
+            return _byAddress.Count > 0 && !string.IsNullOrEmpty(street) && _byAddress.TryGetValue(Key(street, number), out SpecialEntry entry) ? entry : null;
+        }
+
+        /// <summary>True while an entry's feature shows it: its own option is on (an entry with none always is).</summary>
+        public static bool IsShown(SpecialEntry entry) => entry != null && (entry.Shown == null || entry.Shown());
 
         /// <summary>True if any feature holds the building at an address, whether or not its name is shown just now.</summary>
         public bool Holds(string street, int number)
@@ -230,7 +236,41 @@ namespace RealLifeOverhaul
         /// </summary>
         public bool Refuses(string street, int number, bool rented, bool owned)
         {
-            return !rented && !owned && At(street, number) != null;
+            return RefusesEntry(Filed(street, number), rented, owned);
+        }
+
+        /// <summary>
+        /// The one rule of the refusal, for an entry in hand (the fronts, looked at once a second, and the city map's look at
+        /// every building; <see cref="Refuses"/> files the address first): a feature holds the building, its own option is
+        /// on, and no player rents or owns it. With the option off the building is the game's again, to rent, buy or take
+        /// over; switched on again, a building a player took meanwhile stays theirs and the feature moves off it.
+        /// </summary>
+        public static bool RefusesEntry(SpecialEntry entry, bool rented, bool owned)
+        {
+            return !rented && !owned && IsShown(entry);
+        }
+
+        /// <summary>Marks whether the id's feature stood a board of its own at its building's door. False if the id holds none.</summary>
+        public bool Boarded(string id, bool board)
+        {
+            SpecialEntry entry = Of(id);
+            if (entry == null || entry.Board == board)
+            {
+                return entry != null;
+            }
+            entry.Board = board;
+            Stamp++;
+            return true;
+        }
+
+        /// <summary>Every entry, shown or not, into a list the caller keeps (cleared first).</summary>
+        public void All(List<SpecialEntry> into)
+        {
+            into.Clear();
+            foreach (SpecialEntry entry in _byId.Values)
+            {
+                into.Add(entry);
+            }
         }
 
         /// <summary>Every entry whose feature shows it just now, into a list the caller keeps (cleared first).</summary>
@@ -239,7 +279,7 @@ namespace RealLifeOverhaul
             into.Clear();
             foreach (SpecialEntry entry in _byId.Values)
             {
-                if (entry.Shown == null || entry.Shown())
+                if (IsShown(entry))
                 {
                     into.Add(entry);
                 }
@@ -260,7 +300,7 @@ namespace RealLifeOverhaul
             {
                 foreach (SpecialEntry entry in _byId.Values)
                 {
-                    if (entry.Shown == null || entry.Shown())
+                    if (IsShown(entry))
                     {
                         sign += entry.Id.GetHashCode() * 31 + 7;   // (a sum: the order of the dictionary does not matter)
                     }

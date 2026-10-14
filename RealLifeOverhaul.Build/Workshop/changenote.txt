@@ -1,4 +1,5 @@
-0.10.4
+0.11.1
 
 Fixed
-- Professional jobs are worked at your own desk, as the game's own job at El Gato Food Market is. Go to work, click your desk and press Start working on the game's work panel, with its fast forward and skip. Where a building has no desk for the job, one is set up, and days from home are worked at your home computer. The Career app's My job page says where your desk is.
+- The mod's companies and institutions no longer have the game's For rent sign outside. Each tech company's headquarters has its own sign and logo in the company's colours, lit after dark like the game's signs. City Utilities, the courthouse and the university keep their boards as their one sign, and police stations and hotels keep their own.
+- The city map's Buildings for rent rows, such as Office, and Buildings for sale no longer list the mod's buildings, so they show only places you can rent or buy.
