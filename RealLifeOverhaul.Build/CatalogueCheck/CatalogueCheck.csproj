@@ -24,6 +24,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\JobSave.cs" Link="Mod\JobSave.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\OptionsTree.cs" Link="Mod\OptionsTree.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\OptionsPlan.cs" Link="Mod\OptionsPlan.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\SettingsRules.cs" Link="Mod\SettingsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\ContactCatalogue.cs" Link="Mod\ContactCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\NoticeKinds.cs" Link="Mod\NoticeKinds.cs" />
   </ItemGroup>

@@ -303,6 +303,7 @@ namespace RealLifeOverhaul.Meta
     public static class OptionsFind
     {
         public const int ShortestQuery = 2;   // one letter begins a word in nearly every row: switching all of them on would be a hitch for nothing
+        private const char Ideographs = (char)0x2E80;   // from here on: the CJK radicals, kana and ideographs, written without spaces
 
         /// <summary>Takes what was typed apart into lower-case words. Returns the query as it is compared, or empty when it is too short to search for.</summary>
         public static string Split(string typed, List<string> into)
@@ -331,17 +332,21 @@ namespace RealLifeOverhaul.Meta
             return query;
         }
 
-        /// <summary>True when a word of <paramref name="text"/> begins with <paramref name="word"/>.</summary>
+        /// <summary>
+        /// True when a word of <paramref name="text"/> begins with <paramref name="word"/>. Chinese is written without
+        /// spaces between words, so a word typed in Chinese characters is found wherever it stands.
+        /// </summary>
         public static bool Has(string text, string word)
         {
             if (string.IsNullOrEmpty(text) || string.IsNullOrEmpty(word))
             {
                 return false;
             }
+            bool anywhere = word[0] >= Ideographs;
             int at = 0;
             while (at < text.Length && (at = text.IndexOf(word, at, StringComparison.Ordinal)) >= 0)
             {
-                if (at == 0 || !char.IsLetterOrDigit(text[at - 1]))
+                if (anywhere || at == 0 || !char.IsLetterOrDigit(text[at - 1]))
                 {
                     return true;
                 }
