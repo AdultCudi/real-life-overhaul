@@ -107,6 +107,8 @@ namespace RealLifeOverhaul
         public const string MarketsBotsId = "markets_bots";
         public const string MarketsDividendNotesId = "markets_dividend_notes";
         public const string MarketsBondsId = "markets_bonds";
+        public const string MarketsLargeId = "markets_large";
+        public const string MarketsReinvestId = "markets_reinvest";
         public const string VenturesLevelId = "ventures_level";
         public const string EconomyCompanyId = "economy_company";
         public const string EconomyCompanyLevelId = "economy_company_level";
@@ -355,6 +357,8 @@ namespace RealLifeOverhaul
         public static bool MarketsBots = true;           // trading bots may be hired in the Stocks app (off: none is hired, and every bot hired is let go, its shares the player's own) (Scripts/Markets/MarketBots)
         public static bool MarketsDividendNotes = true;  // a notification when dividends are paid to the player or their bots, one for all that land at once (off: paid all the same, each still a line of the market news)
         public static bool MarketsBonds = true;          // bonds and bank deposits may be bought in the Stocks app (off: none is bought; those held still pay, end and can be sold) (Scripts/Markets/Bonds)
+        public static bool MarketsLarge = true;          // an order over one order's limit is worked a slice of each step at a time, and one bond purchase may be up to a share of what the player is worth (off: both limits as before; worked orders open are cancelled) (Scripts/Markets/InvestRules)
+        public static bool MarketsReinvest = true;       // the share of each dividend a holding is set to put back is bought into the same company at the next open (off: every dividend is paid in cash) (Scripts/Markets/InvestRules)
         public static int VenturesLevel = 1;             // how demanding investors are: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Ventures/VenturesCatalogue)
         public static bool EconomyCompany = true;        // running a business: staff, insurance, marketing, tax and licences, with the Company app (off: none of it runs and nothing is charged) (Scripts/Economy/Company)
         public static int EconomyCompanyLevel = 1;       // how strict it is: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore (Economy/Company/CompanyCatalogue)
@@ -644,6 +648,8 @@ namespace RealLifeOverhaul
             MarketsBots = Bool(modId, MarketsBotsId, MarketsBots);
             MarketsDividendNotes = Bool(modId, MarketsDividendNotesId, MarketsDividendNotes);
             MarketsBonds = Bool(modId, MarketsBondsId, MarketsBonds);
+            MarketsLarge = Bool(modId, MarketsLargeId, MarketsLarge);
+            MarketsReinvest = Bool(modId, MarketsReinvestId, MarketsReinvest);
             VenturesLevel = Int(modId, VenturesLevelId, VenturesLevel);
             EconomyCompany = Bool(modId, EconomyCompanyId, EconomyCompany);
             EconomyCompanyLevel = Int(modId, EconomyCompanyLevelId, EconomyCompanyLevel);

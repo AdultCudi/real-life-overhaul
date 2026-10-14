@@ -417,39 +417,7 @@ namespace RealLifeOverhaul.Markets
             Notifications.Show(NotificationType.Error, "reallife_mkt_bot_note_refused", new Dictionary<string, string> { { "why", MarketText.T(BotWhyKeys[i]) } }, 8f, null, null, true, false);
         }
 
-        // ---------------------------------------------------------------- the bots' holdings on the Portfolio tab
-
-        private void WriteBotHoldings(MarketState s)
-        {
-            for (int i = 0; i < s.Bots.Count; i++)
-            {
-                Bot b = s.Bots[i];
-                for (int j = 0; j < b.Holdings.Count; j++)
-                {
-                    BotHolding h = b.Holdings[j];
-                    Stock k = s.Stock(h.StockId);
-                    if (k == null)
-                    {
-                        continue;
-                    }
-                    Quote q = MarketTrading.QuoteOf(s, k, s.Phase);
-                    long value = k.Listed ? MarketTrading.Value(h.Shares, q.Bid, false) : 0;
-                    long gain = value - h.Cost;
-                    TableRow row = Row(BotHoldingRow, b.Firm * BotHoldingIds + k.Id);
-                    row.Kind = (int)k.Sector;
-                    row.Set(0, k.Name + "  <size=80%>" + (b.Def != null ? b.Def.Name : string.Empty) + "</size>");
-                    row.Set(1, Count(h.Shares), h.Shares);
-                    double each = h.Shares > 0 ? h.Cost / (double)h.Shares : 0.0;
-                    row.Set(2, MarketText.Price((int)Math.Round(each * 100.0)), each);
-                    row.Set(3, MarketText.Price(k.Last), k.Last / 100.0);
-                    row.Set(4, MarketText.Money(value), value);
-                    row.Set(5, MarketText.Money(gain), gain, Tone(Math.Sign(gain)));
-                    int pct = h.Cost != 0 ? (int)(gain * 10000L / Math.Abs(h.Cost)) : 0;
-                    row.Set(6, MarketText.Change(pct), pct, Tone(pct));
-                    row.Set(7, string.Empty, 0.0);
-                }
-            }
-        }
+        // ---------------------------------------------------------------- the bots' holdings on the Portfolio tab (MarketApp.Portfolio.cs)
 
         // A bot's holding's row picked: its company's page.
         private static int BotHoldingCompany(string id)

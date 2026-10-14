@@ -202,6 +202,7 @@ namespace RealLifeOverhaul.Markets
             _engine.TradesAsEvents = SharedCity.Leading || _engine.Tape.Traded(_engine.State.Day);   // (for the rest of a day that had a shared trade: a replay of it takes every move from the tape)
             OwnSecond();
             BotsSecond();
+            InvestSecond();   // (the options of worked orders, dividends put back and rollovers: MarketDirector.Invest.cs)
             InstallApp();
         }
 
@@ -367,6 +368,7 @@ namespace RealLifeOverhaul.Markets
             _engine = new MarketEngine(state, tape, _world);
             _engine.BotTold = _botTold;
             HookBonds();   // (its bonds' news: MarketDirector.Bonds.cs)
+            HookInvest();  // (its worked orders' news and the options it follows: MarketDirector.Invest.cs)
             _engine.HoldAfterLoad();
             OwnStarted(save);   // (the player's own company: who they are, and their company back if a save made as a guest left it aside)
             _frontierWritten = tape.Frontier;
@@ -565,6 +567,7 @@ namespace RealLifeOverhaul.Markets
             _engine = new MarketEngine(state, tape, _world);
             _engine.BotTold = _botTold;
             HookBonds();   // (its bonds' news: MarketDirector.Bonds.cs)
+            HookInvest();  // (its worked orders' news and the options it follows: MarketDirector.Invest.cs)
             _engine.Follow(frontier);
             _engine.TradeSink = _tradeSink;
             state.Following = true;   // (the player's own company is set aside meanwhile: MarketShare.Adopt)
@@ -869,8 +872,21 @@ namespace RealLifeOverhaul.Markets
         /// <summary>An order filled (or refused at the fill): the player is told once the frame's work is done.</summary>
         internal void OrderFilled(Order order, Stock stock, long qty, int cents)
         {
-            if (order == null || stock == null)
+            if (order == null || stock == null || order.Worked)
             {
+                return;   // (a worked order's slices are told by the day, and its end as it comes: MarketDirector.Invest.cs)
+            }
+            if (order.Back)
+            {
+                // A dividend put back: what it bought, or why it could not (its money stays in the cash).
+                if (qty <= 0)
+                {
+                    Queue(NotificationType.Warning, "reallife_mkt_inv_note_back_refused", "name", stock.Name, "why", MarketText.Why(order.Why));
+                }
+                else
+                {
+                    Queue(NotificationType.Success, "reallife_mkt_inv_note_back", "name", stock.Name, "count", qty.ToString("N0"), "price", MarketText.Price(cents));
+                }
                 return;
             }
             if (qty <= 0)

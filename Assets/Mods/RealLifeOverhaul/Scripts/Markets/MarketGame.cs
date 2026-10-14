@@ -43,6 +43,27 @@ namespace RealLifeOverhaul.Markets
         {
             return new TransactionInfo(why, new Dictionary<string, string>(1) { { "name", name ?? string.Empty } });
         }
+
+        /// <summary>
+        /// What the game counts the player worth, in money (its own figure, as the Persona app shows it: cash, the game's
+        /// investment funds, vehicles, boats and property at their price, less loans); their cash alone if it cannot be read.
+        /// Read when the Bonds tab is written or a bond is bought (the most of one purchase: BondRules.Most), never per frame.
+        /// </summary>
+        public static long Wealth()
+        {
+            if (SaveGameManager.Current == null)
+            {
+                return 0L;
+            }
+            try
+            {
+                return (long)Math.Floor(Helpers.PlayerHelper.GetPersonalWealth().CurrentWealth);
+            }
+            catch (Exception)
+            {
+                return (long)Math.Floor(Math.Max(0.0, SaveGameManager.Current.Money));
+            }
+        }
     }
 
     /// <summary>
