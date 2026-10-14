@@ -95,20 +95,29 @@ namespace RealLifeOverhaul.Economy.Dealership
         /// The visitors an hour shows, in the order they come in: the minute each comes, the cars each looks over, and
         /// who is looked after and who makes an offer. The same hour of the same showroom always gives the same plan.
         /// <paramref name="offerCars"/> holds, for each offer made that hour, the place of its car in the lot's list.
-        /// Returns how many there are.
+        /// <paramref name="away"/>, by the same places, marks the cars that are not on show (in the workshop or out on a test
+        /// drive): no visitor looks one over, as no customer can take one (DealerRules.Customers). Returns how many there are.
         /// </summary>
-        public static int Plan(int seed, int hour, string place, int visitors, int served, IList<int> offerCars, int carCount, List<FloorVisit> into)
+        public static int Plan(int seed, int hour, string place, int visitors, int served, IList<int> offerCars, int carCount, List<FloorVisit> into, IList<bool> away = null)
         {
             into.Clear();
+            OnShow.Clear();
+            for (int c = 0; c < carCount; c++)
+            {
+                if (Shows(c, carCount, away))
+                {
+                    OnShow.Add(c);
+                }
+            }
             int shown = Shown(visitors);
-            if (shown == 0 || carCount <= 0)
+            if (shown == 0 || OnShow.Count == 0)
             {
                 return 0;
             }
             int offers = 0;
             for (int i = 0; offerCars != null && i < offerCars.Count; i++)
             {
-                offers += offerCars[i] >= 0 && offerCars[i] < carCount ? 1 : 0;
+                offers += Shows(offerCars[i], carCount, away) ? 1 : 0;
             }
             int servedShown = ShownServed(visitors, served, offers);
             int offersShown = Math.Min(offers, servedShown);
@@ -128,7 +137,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 v.Offers = k < offersShown;
                 if (v.Offers)
                 {
-                    while (offerCars[offerAt] < 0 || offerCars[offerAt] >= carCount)
+                    while (!Shows(offerCars[offerAt], carCount, away))
                     {
                         offerAt++;
                     }
@@ -136,25 +145,35 @@ namespace RealLifeOverhaul.Economy.Dealership
                 }
                 else
                 {
-                    v.First = dice.Range(0, carCount - 1);
+                    v.First = OnShow[dice.Range(0, OnShow.Count - 1)];
                 }
-                v.Cars = dice.Range(FloorCatalogue.CarsLeast, Math.Min(FloorCatalogue.CarsMost, carCount));
-                v.Second = v.Cars > 1 ? Other(ref dice, carCount, v.First, -1) : -1;
-                v.Third = v.Cars > 2 ? Other(ref dice, carCount, v.First, v.Second) : -1;
+                v.Cars = dice.Range(FloorCatalogue.CarsLeast, Math.Min(FloorCatalogue.CarsMost, OnShow.Count));
+                v.Second = v.Cars > 1 ? Other(ref dice, v.First, -1) : -1;
+                v.Third = v.Cars > 2 ? Other(ref dice, v.First, v.Second) : -1;
                 into[at] = v;
             }
             return shown;
         }
 
-        // A car of the lot that is neither of two others.
-        private static int Other(ref DealerDice dice, int count, int not1, int not2)
+        // The cars on show for the plan being made, by their places in the lot's list (kept, so that a plan allocates nothing).
+        private static readonly List<int> OnShow = new List<int>(16);
+
+        // True for a car of the lot that is on show: neither in the workshop nor out on a test drive.
+        private static bool Shows(int car, int carCount, IList<bool> away)
         {
-            int c = dice.Range(0, count - 1);
-            for (int i = 0; i < count && (c == not1 || c == not2); i++)
+            return car >= 0 && car < carCount && (away == null || car >= away.Count || !away[car]);
+        }
+
+        // A car on show that is neither of two others. With every car on show it draws as the plan always has.
+        private static int Other(ref DealerDice dice, int not1, int not2)
+        {
+            int count = OnShow.Count;
+            int at = dice.Range(0, count - 1);
+            for (int i = 0; i < count && (OnShow[at] == not1 || OnShow[at] == not2); i++)
             {
-                c = (c + 1) % count;
+                at = (at + 1) % count;
             }
-            return c;
+            return OnShow[at];
         }
 
         /// <summary>Where a visit stands at a minute of its hour: 0 still to come, 1 under way (they are on the floor), 2 over.</summary>

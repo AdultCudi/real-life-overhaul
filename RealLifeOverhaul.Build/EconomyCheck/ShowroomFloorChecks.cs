@@ -9,10 +9,53 @@ internal static partial class Program
     private static void ShowroomFloor()
     {
         FloorVisitors();
+        FloorAway();
         FloorBays();
         FloorBayLine();
         FloorCamera();
         FloorWords();
+    }
+
+    // A car in the workshop or out on a test drive is never looked over (the owner, 14 Oct 2026: visitors stopped at a car in the workshop).
+    private static void FloorAway()
+    {
+        var plan = new List<FloorVisit>();
+        var offers = new List<int>();
+        var away = new List<bool> { false, false, true, false, true, false };
+        bool never = true;
+        int seen = 0;
+        for (int hour = 0; hour < 400; hour++)
+        {
+            int n = ShowroomFloorRules.Plan(5, 9000 + hour, "Main%20St~12", 9, 4, offers, 6, plan, away);
+            for (int i = 0; i < n; i++)
+            {
+                FloorVisit v = plan[i];
+                seen++;
+                never &= v.First != 2 && v.First != 4 && v.Second != 2 && v.Second != 4 && v.Third != 2 && v.Third != 4 && v.First >= 0;
+            }
+        }
+        Check(never && seen > 0, "floor: no visitor looks over a car in the workshop or out on a test drive (" + seen + " visits in 400 hours)");
+        offers.Add(2);
+        offers.Add(1);
+        int m = ShowroomFloorRules.Plan(5, 77, "Main%20St~12", 9, 9, offers, 6, plan, away);
+        bool offerOnShow = true;
+        for (int i = 0; i < m; i++)
+        {
+            offerOnShow &= !plan[i].Offers || plan[i].First == 1;
+        }
+        Check(offerOnShow, "floor: an offer on a car that is away is not shown; one on a car on show is");
+        var allAway = new List<bool> { true, true, true };
+        Check(ShowroomFloorRules.Plan(5, 78, "Main%20St~12", 9, 4, new List<int>(), 3, plan, allAway) == 0 && plan.Count == 0, "floor: with every car away nobody is shown looking");
+        var withNull = new List<FloorVisit>();
+        var noneAway = new List<bool> { false, false, false, false };
+        ShowroomFloorRules.Plan(8, 500, "A~1", 6, 3, new List<int>(), 4, withNull);
+        ShowroomFloorRules.Plan(8, 500, "A~1", 6, 3, new List<int>(), 4, plan, noneAway);
+        bool same = withNull.Count == plan.Count;
+        for (int i = 0; same && i < plan.Count; i++)
+        {
+            same = withNull[i].First == plan[i].First && withNull[i].Second == plan[i].Second && withNull[i].Third == plan[i].Third && withNull[i].Minute == plan[i].Minute;
+        }
+        Check(same, "floor: with no car away the plan is the same as it always was");
     }
 
     private static void FloorVisitors()

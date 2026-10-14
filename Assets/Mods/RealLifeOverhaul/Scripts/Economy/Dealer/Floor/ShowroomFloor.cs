@@ -66,6 +66,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         private readonly ActorRole _sales = new ActorRole();
         private readonly List<FloorVisit> _plan = new List<FloorVisit>(FloorCatalogue.ShownMost);
         private readonly List<int> _offerCars = new List<int>(4);
+        private readonly List<bool> _away = new List<bool>(16);   // by the lot's places: in the workshop or out on a test drive, not looked over
 
         private DealerYard _yard;
         private DealerYard _refused;     // a showroom whose floor could not be shown (no door to stand at), until the player leaves it
@@ -206,6 +207,18 @@ namespace RealLifeOverhaul.Economy.Dealership
             enabled = false;
         }
 
+        // The lot's cars that are not on show at an hour, by their places in the lot's list: in the workshop or out on a test
+        // drive (as DealerRules.Customers leaves them out of the hour's buyers). Made into the kept list, nothing allocated.
+        private List<bool> Away(int hour)
+        {
+            _away.Clear();
+            for (int i = 0; _yard != null && i < _yard.Cars.Count; i++)
+            {
+                _away.Add(_yard.Cars[i].ShopUntil > hour || _yard.Cars[i].OutUntil > hour);
+            }
+            return _away;
+        }
+
         // The hour's plan: on walking in, the visits under way are put straight onto the floor; on a new hour, the visitors
         // still in finish what they are doing.
         private void Replan(bool walkingIn)
@@ -224,7 +237,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             _hour = hour;
             _shown = _skipped = 0;
-            ShowroomFloorRules.Plan(director.State.Seed, hour, _yard.Place, visitors, served, _offerCars, _yard.Cars.Count, _plan);
+            ShowroomFloorRules.Plan(director.State.Seed, hour, _yard.Place, visitors, served, _offerCars, _yard.Cars.Count, _plan, Away(hour));
             _next = 0;
             if (walkingIn)
             {
@@ -589,7 +602,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 return y == _refused ? "reallife_showroom_test_no_door" : "reallife_showroom_test_not_inside";
             }
             director.FloorOffers(_yard, _hour, _offerCars);
-            ShowroomFloorRules.Plan(director.State.Seed, _hour + 7919, _yard.Place, FloorCatalogue.ShownMost, FloorCatalogue.ShownMost / 2, _offerCars, _yard.Cars.Count, _plan);
+            ShowroomFloorRules.Plan(director.State.Seed, _hour + 7919, _yard.Place, FloorCatalogue.ShownMost, FloorCatalogue.ShownMost / 2, _offerCars, _yard.Cars.Count, _plan, Away(ShowroomGame.Hour));
             for (int i = 0; i < _plan.Count; i++)
             {
                 FloorVisit v = _plan[i];
