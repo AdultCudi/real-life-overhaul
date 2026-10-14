@@ -318,8 +318,17 @@ internal static partial class Program
                      && pt.TryGetValue("reallife_guide_tech_sector", out string gp) && gp.Contains("<b>" + pt["reallife_tech_button_rivals"] + "</b>")
                      && zh.TryGetValue("reallife_guide_tech_sector", out string gz) && gz.Contains("<b>" + zh["reallife_tech_button_rivals"] + "</b>");
         Check(guide, "competitors: the Guide's tech sector page names the Competitors button as the app does, in each language");
-        bool next = en.TryGetValue("reallife_changes_next", out string n) && n.Contains("Competitors page") && !n.StartsWith("New: ", StringComparison.Ordinal);
-        Check(next, "competitors: What's new's next row has the feature's line, with no prefix");
+        // In the next row until its version is made, and in that version's own row after (the release empties the next row).
+        bool line = false;
+        foreach (KeyValuePair<string, string> row in en)
+        {
+            if (row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && row.Value.Contains("Competitors page"))
+            {
+                line = !row.Value.StartsWith("New: ", StringComparison.Ordinal);
+                break;
+            }
+        }
+        Check(line, "competitors: What's new has the feature's line, with no prefix (in the next row, or its version's row once it is made)");
     }
 
     private static string Holes(Regex holes, string text)
