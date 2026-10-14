@@ -29,6 +29,9 @@ $shared = Join-Path $project 'Assets\Shared'
 if (Test-Path $shared) { Remove-Item -Recurse -Force $shared }
 New-Item -ItemType Directory -Force $shared | Out-Null
 Copy-Item (Join-Path $PSScriptRoot '..\Assets\Mods\RealLifeOverhaul\Scripts\CityLife\Animation\*.cs') $shared
+# And the two game-free parts of the mod's core it calls: the time it takes (HotSpots) and the fault count of its
+# entry points (FeatureGuard). The guard itself needs the game (its log, its notices), so the test project has its own (Assets\Test\GuardStandIn.cs).
+foreach ($core in @('HotSpots.cs', 'FeatureGuard.cs')) { Copy-Item (Join-Path $PSScriptRoot "..\Assets\Mods\RealLifeOverhaul\Scripts\Core\$core") $shared }
 
 function Invoke-Unity([string]$method, [string]$log, [bool]$graphics, [bool]$quit = $true) {
     $arguments = @('-batchmode', '-burst-disable-compilation', '-projectPath', "`"$project`"", '-executeMethod', $method,

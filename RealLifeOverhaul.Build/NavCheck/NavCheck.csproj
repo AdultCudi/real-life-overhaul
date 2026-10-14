@@ -58,6 +58,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\SpecialNameBook.cs" Link="Mod\SpecialNameBook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\FrontSignRules.cs" Link="Mod\FrontSignRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Diagnostics\FrameRules.cs" Link="Mod\FrameRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Leisure\SightseeingRules.cs" Link="Mod\SightseeingRules.cs" />
   </ItemGroup>
 
 </Project>

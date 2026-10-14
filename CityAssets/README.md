@@ -17,7 +17,7 @@ scripts\
   clips_jobs.py           the player's jobs: the gestures of the wish-list, into and out of a car, boxes, flyers, mop, shelf, till, guitar
   clips_life.py           city life: courier, mail, umbrella, painter, gardener, the park, waiting, chess
   clips_<name>.py         the later rounds, a module each (events, duty, everyday, garage, family, site); CLIPS_DEV=name[,name] loads only those
-  check_clips.py          can every hand and foot reach where each clip puts it? (no Blender needed)
+  check_clips.py          can every hand and foot reach where each clip puts it? do the phone clips read (the phone from the eyes, the screen, the elbows, the look)? (no Blender needed)
   build_clips.py          contact sheets, one FBX per clip, clips.json (lengths, loops, how each tool sits in the hand)
   game_rig.json           measurements of the game's street character: T-pose joints, hand-bone turns (numbers only)
   extract_game_skeleton.py, make_game_rig.py     how game_rig.json was measured (needs the game; not part of the build)
@@ -189,7 +189,8 @@ Standing loops shift weight and move a foot once a loop; they do not walk about.
 | `clap` | 2.0 | loop |  |  |  |  | four claps a loop | adequate |
 | `watch_nod` | 6.4 | loop |  |  |  |  | listening to music, arms down | quiet by design: reads as standing |
 | `smoke` | 9.0 | loop |  |  | `cigarette` (right) |  | a drag every nine seconds | the drag reads |
-| `take_photo` | 5.0 | once |  |  | `phone` (right + other hand) |  | phone up in both hands, held, lowered | reads; elbows high |
+| `take_photo` | 5.0 | once |  |  | `phone` (right + other hand) |  | filming or a picture of what is ahead: the phone upright in both hands, up to eye level 0.30 m from the eyes with the screen to them, framed, held, lowered to the chest | reads at once from behind and in front: elbows down in front of the chest, no wider than the shoulders. Until 14 Oct 2026 the phone was held by its ends at the chin, 0.44 m out, which with the game's short arms put both elbows up level with the shoulders and out to the sides; check_clips.py now fails that |
+| `selfie` | 5.0 | once |  |  | `phone` (right) |  | a selfie: the right arm takes the phone up and out to its length (0.42 m from the eyes, 40 degrees round to the right, 15 up), the screen to the face, the head turned up into it and tipped; two pictures, lowered to the chest for a look. Play it with the back to what is to be in the picture (Leisure's sightseeing turns the player first) | reads as a selfie from in front, from the side and from behind (the phone above the head); the left arm hangs. check_clips.py measures the reach, the screen's facing and the look |
 | `counter_reach` | 2.4 | once |  |  | `coffee_cup` (right) | grip 0.90 | the right hand goes to a cup on a counter 0.62 m ahead and 0.975 m up, and back: put the cup in or take it out of the hand half way | good: hinge at the hips, cup lands in the hand |
 | `cup_hold` | 7.0 | loop |  |  | `coffee_cup` (right) |  | a cup held at the chest | fine, quiet |
 | `sip` | 3.4 | once |  |  | `coffee_cup` (right) |  | a drink from the cup, from and back to cup_hold | fixed after review (the cup went to the cheek); now at the mouth, not checked close up |
