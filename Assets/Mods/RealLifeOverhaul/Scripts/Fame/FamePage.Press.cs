@@ -45,8 +45,8 @@ namespace RealLifeOverhaul.Fame
                     return;
                 }
                 box.Title(FameText.InviteName(v.Kind));
+                box.Chip(FameText.InviteState(v.State));
                 box.Section("reallife_look_sec_now");
-                box.Row("reallife_fame_label_state", FameText.InviteState(v.State));
                 if (v.State == FameInviteState.Accepted)
                 {
                     box.Line(FameText.T("reallife_fame_invite_accepted"));
@@ -77,8 +77,8 @@ namespace RealLifeOverhaul.Fame
                     return;
                 }
                 box.Title(FameText.T("reallife_fame_promise_title"));
+                box.Chip(FameText.PromiseState(p.State));
                 box.Section("reallife_look_sec_now");
-                box.Row("reallife_fame_label_state", FameText.PromiseState(p.State));
                 box.Line(FameText.Fill("reallife_fame_promise_made", "promise", FameText.PromiseWords(p.Kind), "day", FameText.N(p.Made), "where", FameText.Cause(p.Source)));
                 box.Line(FameText.Fill(p.Kind == FamePromiseKind.Jobs ? "reallife_fame_promise_goal_jobs" : p.Kind == FamePromiseKind.Charity ? "reallife_fame_promise_goal_charity" : "reallife_fame_promise_goal_rep",
                     "goal", FameText.N(p.Goal), "now", FameText.N(p.Kind == FamePromiseKind.Jobs ? f.Staff : p.Kind == FamePromiseKind.Wages ? f.Rep[1] : f.Rep[0]), "day", FameText.N(p.Due)));

@@ -284,8 +284,12 @@ namespace RealLifeOverhaul.Flare
             box.Section("reallife_look_sec_now");
             box.Row("reallife_flare_me_followers", FlareText.N(file.Followers));
             int next = FlareRules.NextTierAt(file.Followers);
-            box.Line(FlareText.Pair("reallife_flare_me_tier", FlareText.Tier(file.Tier))
-                     + (next > 0 ? " " + FlareText.Fill("reallife_flare_me_next", "tier", FlareText.Tier(FlareRules.TierOf(next)), "followers", FlareText.N(next)) : string.Empty));
+            box.Row("reallife_flare_me_tier", FlareText.Tier(file.Tier));
+            if (next > 0)
+            {
+                box.Meter("reallife_look_next_tier", LookRules.Fill(file.Followers, next),
+                    FlareText.Fill("reallife_flare_me_next", "tier", FlareText.Tier(FlareRules.TierOf(next)), "followers", FlareText.N(next)), CellTone.Plain);
+            }
             box.Row("reallife_flare_me_reputation", FlareText.Reputation(file.Reputation) + " (" + file.Reputation + ")");
             box.Line(FlareText.Fill("reallife_flare_me_week", "list", FlareText.History(file.History)));
             box.Line(FlareText.Fill("reallife_flare_me_totals", "posts", FlareText.N(file.TotalPosts), "likes", FlareText.N(file.TotalLikes),

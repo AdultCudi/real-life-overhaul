@@ -302,9 +302,14 @@ namespace RealLifeOverhaul.Utilities
             {
                 box.Line(UtilitiesText.T(a.State == SupplyState.Temporary ? "reallife_util_box_apply_temporary" : "reallife_util_box_apply_cut", "office", _director.OfficeName()));
             }
-            box.Line(a.Owed > 0
-                ? UtilitiesText.Pair("reallife_util_box_owed_one", UtilitiesText.T("reallife_util_box_owed_value", "amount", UtilitiesText.Money(a.Owed), "day", UtilitiesText.Day(a.DueDay)))
-                : UtilitiesText.T("reallife_util_box_nothing_owed"));
+            if (a.Owed > 0)
+            {
+                box.Row("reallife_util_box_owed_one", UtilitiesText.T("reallife_util_box_owed_value", "amount", UtilitiesText.Money(a.Owed), "day", UtilitiesText.Day(a.DueDay)), CellTone.Yellow);
+            }
+            else
+            {
+                box.Note(UtilitiesText.T("reallife_util_box_nothing_owed"));
+            }
             box.Row("reallife_util_box_provider", UtilitiesText.ProviderOf(a));
             box.Headline("reallife_util_box_this_month");
             if (a.Service != Service.Internet)
