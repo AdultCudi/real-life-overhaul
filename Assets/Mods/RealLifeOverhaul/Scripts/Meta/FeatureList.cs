@@ -1258,9 +1258,9 @@ namespace RealLifeOverhaul.Meta
             // the economy core does. (Cleaned up before the core: order -2.)
             Economy.Dealership.DealerGuide.AddFacts(Features.Add("economy_dealer", "reallife_meta_title_economy_dealer")
                 .About("reallife_guide_economy_dealer_about").Help("reallife_guide_economy_dealer")
-                .Owns(Settings.EconomyDealerId)
-                .Test("reallife_dealer_test_stock", "reallife_dealer_test_customers", "reallife_dealer_test_auction", "reallife_dealer_test_week", "reallife_dealer_test_back")
-                .Data(Economy.Dealership.DealerStore.Key, Economy.Dealership.DealerStore.TestKey)
+                .Owns(Settings.EconomyDealerId, Settings.EconomyDealerFloorId)
+                .Test("reallife_dealer_test_stock", "reallife_dealer_test_customers", "reallife_dealer_test_auction", "reallife_dealer_test_week", "reallife_dealer_test_back", "reallife_showroom_test_floor")
+                .Data(Economy.Dealership.DealerStore.Key, Economy.Dealership.DealerStore.TestKey, Economy.Dealership.ShowroomBayStore.Key)
                 .Cleanup(() => Economy.Dealership.DealerDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Economy.Dealership.DealerDirector.Instance?.Forget()));   // the director opens the feature afresh from the (now empty) save on its next second
             // The cleaning service and selling a business. Their rows stand under the company's header on the options page

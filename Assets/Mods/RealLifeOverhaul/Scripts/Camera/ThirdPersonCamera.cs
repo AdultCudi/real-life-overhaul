@@ -295,6 +295,7 @@ namespace RealLifeOverhaul
                    || GameManager.ShouldBlockKeyboardShortcuts()
 
                    || Meta.MetaUi.AnyOpen        // the options page's messages and questions, worked with the mouse
+                   || Economy.Dealership.ShowroomView.Active   // the Car Showroom's camera, and choosing a bay: the game's own camera, worked with the mouse
                    || JusticePanel.IsOpen        // bail, hearings, the Legal file
                    || GameUi.TravelList.AnyOpen; // the game's own list window, worked with the mouse: bus stops, the cooking list, the custom shop, "My vehicles", a two-wheeler stand
         }

@@ -577,7 +577,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 y.Cars[c].Spot = c < y.Spots.Count ? c : -1;
             }
-            DealerGame.Park(y, _lost);
+            DealerGame.Park(y, _lost, _bays);
             Logger?.Info("Dealership: the lot of '" + y.Name + "' laid out again: " + had + " place(s) before, " + y.Spots.Count + " now.");
             Changed();
             return true;
