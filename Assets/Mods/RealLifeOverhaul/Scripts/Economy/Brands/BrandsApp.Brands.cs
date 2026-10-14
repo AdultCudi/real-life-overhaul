@@ -66,9 +66,11 @@ namespace RealLifeOverhaul.Economy.Brands
             {
                 box.Title(BrandsText.T("reallife_brand_app"));
                 box.Note(BrandsText.T("reallife_brand_intro_what"));
+                box.Section("reallife_look_sec_how");
                 box.Line(BrandsText.T("reallife_brand_intro_effect", "most", BrandCatalogue.RecFootfallMost.ToString(), "cap", BrandCatalogue.FootfallMost.ToString()));
                 box.Line(BrandsText.T("reallife_brand_intro_franchise"));
-                box.Line(BrandsText.T("reallife_brand_intro_start"));
+                box.Section("reallife_look_sec_next");
+                box.Line(BrandsText.T("reallife_brand_intro_start"), CellTone.Green);
             }
             return BrandsTables.Brands;
         }
@@ -86,6 +88,12 @@ namespace RealLifeOverhaul.Economy.Brands
         private void WriteBrand(InfoBox box, BrandsState state, Brand b)
         {
             box.Title(b.Name);
+            box.Subtitle(BrandsText.Type(b.Type));
+            box.Chip(Standards(b.Standards), b.Standards < BrandCatalogue.LowStandards ? CellTone.Red : b.Standards < b.Minimum ? CellTone.Yellow : CellTone.Green);
+            if (b.Offered)
+            {
+                box.Chip(BrandsText.T("reallife_look_chip_on_offer"), CellTone.Green);
+            }
             if (b.Bid > 0)
             {
                 Franchise bidder = state.Franchise(b.BidBy);
@@ -125,8 +133,13 @@ namespace RealLifeOverhaul.Economy.Brands
         private void WriteBrandFigures(InfoBox box, BrandsState state, Brand b)
         {
             int members = BrandRules.Members(state, b, null), franchised = BrandRules.Franchised(state, b, null);
-            box.Line(BrandsText.Fill("reallife_brand_fig_shops", "type", BrandsText.Type(b.Type), "members", members.ToString(), "franchised", franchised.ToString(), "day", b.Founded.ToString()));
-            box.Line(BrandsText.Fill("reallife_brand_fig_rec", "city", BrandsText.Points(b.City), "best", BrandsText.Points(BrandRules.Best(b)), "fade", BrandsText.Bp(BrandCatalogue.DecayBp),
+            box.Section("reallife_brand_col_shops");
+            box.RowPair("reallife_look_members", members.ToString(), "reallife_look_franchised", franchised.ToString());
+            box.Row("reallife_look_founded", FinanceText.Day(b.Founded));
+            box.Section("reallife_brand_col_recognition");
+            box.Meter("reallife_brand_col_city", b.City / 10000f, BrandsText.Points(b.City), CellTone.Plain);
+            box.Meter("reallife_look_best_district", BrandRules.Best(b) / 10000f, BrandsText.Points(BrandRules.Best(b)), CellTone.Plain);
+            box.Note(BrandsText.Fill("reallife_brand_fig_rec", "city", BrandsText.Points(b.City), "best", BrandsText.Points(BrandRules.Best(b)), "fade", BrandsText.Bp(BrandCatalogue.DecayBp),
                 "empty", BrandsText.Bp(BrandCatalogue.DecayEmptyBp)));
             string worst = null;
             int low = 101;
@@ -138,14 +151,18 @@ namespace RealLifeOverhaul.Economy.Brands
                     worst = _director.ShopName(state.Members[i].Place);
                 }
             }
-            box.Line(BrandsText.Fill("reallife_brand_fig_standards", "standards", Standards(b.Standards), "minimum", BrandsText.Minimum(b.Minimum)));
-            box.Line(worst != null
+            box.Section("reallife_brand_col_standards");
+            box.Meter("reallife_brand_col_standards", b.Standards / 100f, Standards(b.Standards), b.Standards < BrandCatalogue.LowStandards ? CellTone.Red : b.Standards < b.Minimum ? CellTone.Yellow : CellTone.Green);
+            box.Row("reallife_look_minimum", BrandsText.Minimum(b.Minimum));
+            box.Note(worst != null
                 ? BrandsText.Fill("reallife_brand_fig_worst", "business", worst, "standards", Standards(low), "mean", BrandsText.Share(BrandCatalogue.BrandMeanShare), "worst", BrandsText.Share(BrandCatalogue.BrandWorstShare))
                 : BrandsText.T("reallife_brand_fig_no_members"));
             box.Line(BrandsText.Fill(b.Standards < BrandCatalogue.LowStandards ? "reallife_brand_fig_effect_low" : "reallife_brand_fig_effect", "most", BrandCatalogue.RecFootfallMost.ToString(),
-                "low", BrandCatalogue.LowStandards.ToString(), "tolerance", BrandRules.Tolerance(b.Standards).ToString(), "cap", BrandCatalogue.FootfallMost.ToString()));
+                "low", BrandCatalogue.LowStandards.ToString(), "tolerance", BrandRules.Tolerance(b.Standards).ToString(), "cap", BrandCatalogue.FootfallMost.ToString()),
+                b.Standards < BrandCatalogue.LowStandards ? CellTone.Red : CellTone.Plain);
             if (franchised > 0 || b.Earned > 0)
             {
+                box.Section("reallife_look_sec_money");
                 box.Line(BrandsText.Fill("reallife_brand_fig_money", "net", BrandsText.Money(b.Net), "earned", BrandsText.Money(b.Earned), "fund", BrandsText.Money(b.Fund), "failed", b.Failed.ToString()));
             }
         }
@@ -155,10 +172,12 @@ namespace RealLifeOverhaul.Economy.Brands
         {
             int id = b.Id;
             int step = Math.Max(0, Array.IndexOf(BrandCatalogue.MinimumSteps, b.Minimum));
-            box.Line(BrandsText.T("reallife_brand_set_minimum"));
+            box.Section("reallife_look_minimum");
+            box.Note(BrandsText.T("reallife_brand_set_minimum"));
             Choose(box, BrandCatalogue.MinimumSteps.Length, step, i => BrandsText.T("reallife_brand_set_minimum_value", "points", BrandsText.Minimum(BrandCatalogue.MinimumSteps[i])), i => _director.SetMinimum(id, i));
             int good;
             bool can = BrandRules.CanOffer(state, b, out good);
+            box.Section("reallife_look_sec_franchise");
             box.Line(BrandsText.Fill(b.Offered ? "reallife_brand_set_offered" : can ? "reallife_brand_set_can_offer" : "reallife_brand_set_cannot_offer", "good", good.ToString(), "shops", BrandCatalogue.OfferShops.ToString(),
                 "standards", BrandCatalogue.OfferStandards.ToString(), "city", BrandsText.Points(BrandCatalogue.OfferCityRec), "district", BrandsText.Points(BrandCatalogue.OfferDistrictRec),
                 "has", BrandsText.Points(b.City), "best", BrandsText.Points(BrandRules.Best(b))));
@@ -172,7 +191,8 @@ namespace RealLifeOverhaul.Economy.Brands
                 InfoBox.Button(box.ButtonRow(), InfoBox.Positive, offered ? "reallife_brand_set_offer_off" : "reallife_brand_set_offer_on", () => _director.Offer(id, !offered));
             }
             string flagship = _director.ShopName(b.Flagship);
-            box.Line(BrandsText.T("reallife_brand_set_shared", "business", flagship));
+            box.Section("reallife_look_sec_shared");
+            box.Note(BrandsText.T("reallife_brand_set_shared", "business", flagship));
             bool keep = b.Keep, local = b.Local;
             box.Line(keep
                 ? BrandsText.Fill(local ? "reallife_brand_set_kept_local" : "reallife_brand_set_kept", "business", flagship, "band", BrandsText.Share(BrandCatalogue.LocalBand))
@@ -222,7 +242,9 @@ namespace RealLifeOverhaul.Economy.Brands
             mainKey = null;
             main = null;
             box.Note(BrandsText.Fill("reallife_brand_push_about", "local", BrandsText.Lost(BrandCatalogue.CampaignLocalGain), "city", BrandsText.Lost(BrandCatalogue.CampaignCityGain)));
+            box.Section("reallife_look_sec_money");
             box.Line(BrandsText.T("reallife_brand_push_fund", "fund", BrandsText.Money(b.Fund), "most", BrandsText.Money(CompanyCatalogue.AtPrices(BrandCatalogue.FundIdleMost, BrandsDirector.Index))));
+            box.Section("reallife_look_sec_campaign");
             if (b.Push >= 0)
             {
                 box.Line(BrandsText.Fill("reallife_brand_push_running", "campaign", BrandsText.Push(b.Push), "where", b.Push == BrandCatalogue.PushCity ? BrandsText.T("reallife_brand_push_everywhere") : BrandsText.District(b.PushDistrict),
@@ -263,17 +285,20 @@ namespace RealLifeOverhaul.Economy.Brands
             int next = BrandRules.Step(d.Rec, gain, shops > 0);
             int effective = BrandRules.Effective(b, d.Name);
             box.Title(BrandsText.T("reallife_brand_dist_title", "brand", b.Name, "district", BrandsText.District(d.Name)));
-            box.Line(BrandsText.Fill("reallife_brand_dist_rec", "points", BrandsText.Lost(d.Rec), "next", BrandsText.Lost(next)));
-            box.Line(shops > 0
+            box.Section("reallife_brand_col_recognition");
+            box.Meter("reallife_look_today", d.Rec / 10000f, BrandsText.Lost(d.Rec), CellTone.Plain);
+            box.Row("reallife_look_tomorrow", BrandsText.Lost(next), next > d.Rec ? CellTone.Green : next < d.Rec ? CellTone.Yellow : CellTone.Plain);
+            box.Note(shops > 0
                 ? BrandsText.Fill("reallife_brand_dist_parts", "shops", shops.ToString(), "presence", BrandsText.Lost(Math.Min(shops, BrandCatalogue.PresenceShopsMost) * BrandCatalogue.PresencePerShop),
                     "customers", customers.ToString(), "footfall", BrandsText.Lost(BrandCatalogue.Clamp(customers, 0, BrandCatalogue.FootfallFull) * BrandCatalogue.FootfallGainMost / BrandCatalogue.FootfallFull),
                     "standards", Standards(b.Standards), "good", BrandsText.Lost((BrandCatalogue.Clamp(b.Standards, 0, 100) - 50) * BrandCatalogue.StandardsGainMost / 50), "campaign", BrandsText.Lost(campaign))
                 : BrandsText.T("reallife_brand_dist_no_shop", "fade", BrandsText.Bp(BrandCatalogue.DecayEmptyBp)));
-            box.Line(BrandsText.Fill("reallife_brand_dist_slow", "gain", BrandsText.Lost(gain), "fade", BrandsText.Bp(shops > 0 ? BrandCatalogue.DecayBp : BrandCatalogue.DecayEmptyBp)));
+            box.Note(BrandsText.Fill("reallife_brand_dist_slow", "gain", BrandsText.Lost(gain), "fade", BrandsText.Bp(shops > 0 ? BrandCatalogue.DecayBp : BrandCatalogue.DecayEmptyBp)));
             if (effective > d.Rec)
             {
-                box.Line(BrandsText.T("reallife_brand_dist_floor", "points", BrandsText.Points(effective), "city", BrandsText.Points(b.City)));
+                box.Note(BrandsText.T("reallife_brand_dist_floor", "points", BrandsText.Points(effective), "city", BrandsText.Points(b.City)));
             }
+            box.Section("reallife_brand_col_worth");
             box.Line(BrandsText.Fill("reallife_brand_dist_worth", "percent", BrandsText.Percent(BrandRules.RecFootfall(effective, b.Standards)), "most", BrandCatalogue.RecFootfallMost.ToString()));
             BackButton(box);
         }
