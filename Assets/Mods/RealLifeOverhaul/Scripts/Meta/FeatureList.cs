@@ -1229,7 +1229,7 @@ namespace RealLifeOverhaul.Meta
             Tech.TechGuide.AddSectorFacts(Features.Add("tech_sector", "reallife_meta_title_tech_sector")
                 .About("reallife_guide_tech_sector_about").Help("reallife_guide_tech_sector")
                 .Owns(Settings.TechSectorId)
-                .Test("reallife_tech_test_offer", "reallife_tech_test_outage", "reallife_tech_test_breach", "reallife_infra_test_down", "reallife_infra_test_price_war")
+                .Test("reallife_tech_test_offer", "reallife_tech_test_tender", "reallife_tech_test_outage", "reallife_tech_test_breach", "reallife_infra_test_down", "reallife_infra_test_price_war")
                 .Data(Tech.FirmsStore.Key, Tech.InfraStore.Key)
                 .Cleanup(() => Tech.TechDirector.Instance?.StopAll(), -2)
                 .ResetData(() => Tech.TechDirector.Instance?.Forget()));

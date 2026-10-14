@@ -23,6 +23,10 @@ namespace RealLifeOverhaul.Tech
 
         private TableSpec WriteFirms(InfoBox box, FirmsFile f, int day)
         {
+            if (Picked(_picked, RivalsRow) != null || Picked(_picked, RivalRow) != null)
+            {
+                return WriteRivals(box, f, day);   // (a firm's Competitors page: TechApp.Rivals)
+            }
             IReadOnlyList<FirmPlace> firms = _director.FirmPlaces;
             FirmPlace picked = null;
             string id = Picked(_picked, FirmRow), newFor = Picked(_picked, NewProductRow);
@@ -123,12 +127,11 @@ namespace RealLifeOverhaul.Tech
             {
                 box.Selector((int)Focus.Count, m.Focus, i => TechText.T("reallife_tech_firm_focus", "focus", TechText.FocusName((Focus)i)), i => Do(() => _director.SetFocus(place, i)));
             }
+            // A row's button of a kind is one button (InfoBox.Button): starting a product and registering, both positive, take a
+            // row each when both are wanted; the Competitors page is the second row's other button.
+            bool makes = FirmsCatalogue.MakesProducts[m.Kind] != 0, register = day >= m.RegisteredUntil - 7;
             Transform buttons = box.ButtonRow();
-            if (day >= m.RegisteredUntil - 7)
-            {
-                InfoBox.Button(buttons, InfoBox.Positive, "reallife_tech_button_register", () => Do(() => _director.Register(place)));
-            }
-            if (FirmsCatalogue.MakesProducts[m.Kind] != 0)
+            if (makes)
             {
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_tech_button_new_product", () =>
                 {
@@ -137,7 +140,17 @@ namespace RealLifeOverhaul.Tech
                     Refresh();
                 });
             }
+            if (register && !makes)
+            {
+                InfoBox.Button(buttons, InfoBox.Positive, "reallife_tech_button_register", () => Do(() => _director.Register(place)));
+            }
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
+            Transform more = box.ButtonRow();
+            if (register && makes)
+            {
+                InfoBox.Button(more, InfoBox.Positive, "reallife_tech_button_register", () => Do(() => _director.Register(place)));
+            }
+            InfoBox.Button(more, InfoBox.Additional, "reallife_tech_button_rivals", () => Set(() => _picked = RivalsRow + place));
             WorkButtons(box, firm, idle, true);
             if (FirmsCatalogue.MakesProducts[m.Kind] != 0)
             {
@@ -214,13 +227,14 @@ namespace RealLifeOverhaul.Tech
             {
                 InfoBox.Button(row, InfoBox.Positive, "reallife_tech_button_internet", () => Do(() => _director.OpenInternet()));
             }
-            if (schedule)
-            {
-                InfoBox.Button(row, InfoBox.Additional, "reallife_tech_button_schedule", () => Do(() => _director.OpenSchedule(firm)));
-            }
+            // (one additional button to a row: the rota, which plans the shifts, where it can be opened; else the game's schedule)
             if (rota)
             {
                 InfoBox.Button(row, InfoBox.Additional, "reallife_tech_button_rota", () => Do(() => _director.OpenRota(firm)));
+            }
+            else if (schedule)
+            {
+                InfoBox.Button(row, InfoBox.Additional, "reallife_tech_button_schedule", () => Do(() => _director.OpenSchedule(firm)));
             }
         }
 
@@ -470,6 +484,24 @@ namespace RealLifeOverhaul.Tech
 
         // ---------------------------------------------------------------- contracts
 
+        // Who bids against the player on a council tender: the companies the competitors' rule names (CompetitorRules.TenderRival).
+        private void TenderRivals(InfoBox box, FirmsFile f, Contract t)
+        {
+            _words.Clear();
+            for (int r = 0; t.Council && r < t.Rivals; r++)
+            {
+                int c = CompetitorRules.TenderRival(f.Seed, t, r);
+                if (c >= 0)
+                {
+                    _words.Append(_words.Length > 0 ? ", " : string.Empty).Append(HiringCatalogue.RivalFirms[c]);
+                }
+            }
+            if (_words.Length > 0)
+            {
+                box.Line(TechText.T("reallife_tech_contract_rivals_named", "names", _words.ToString()));
+            }
+        }
+
         private TableSpec WriteContracts(InfoBox box, FirmsFile f, int day)
         {
             Contract picked = null;
@@ -522,9 +554,11 @@ namespace RealLifeOverhaul.Tech
                     break;
                 case WorkStage.Tender:
                     box.Line(TechText.Fill("reallife_tech_contract_tender", "rivals", w.Rivals.ToString(), "day", w.End.ToString()));
+                    TenderRivals(box, f, w);
                     break;
                 case WorkStage.Bid:
                     box.Line(TechText.T("reallife_tech_contract_bid_in", "amount", TechText.Cents(Level(w.Bid)), "day", w.End.ToString()));
+                    TenderRivals(box, f, w);
                     break;
                 case WorkStage.Active:
                     box.Line(w.Monthly
