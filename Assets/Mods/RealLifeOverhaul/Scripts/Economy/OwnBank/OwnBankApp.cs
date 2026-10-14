@@ -213,7 +213,7 @@ namespace RealLifeOverhaul.Economy
                     if (!bank.Running && _tab != OwnBankDirector.TabBank)
                     {
                         box.Title(OwnBankText.T(TabKeys[_tab]));
-                        box.Line(OwnBankText.T("reallife_ob_box_none_yet"));
+                        box.Note(OwnBankText.T("reallife_ob_box_none_yet"));
                     }
                     else if (_tab == OwnBankDirector.TabSavers)
                     {
@@ -267,6 +267,7 @@ namespace RealLifeOverhaul.Economy
                 box.Title(OwnBankText.T("reallife_ob_box_title"));
                 if (b.State == OwnBankState.Closed)
                 {
+                    box.Chip(OwnBankText.T("reallife_look_chip_closed"), CellTone.Red);
                     box.Line(OwnBankText.Fill("reallife_ob_box_closed", "bank", b.Name, "day", FinanceText.Day(b.EndDay), "why", OwnBankText.T(OwnBankText.WhyKey(b.Why)), "left", OwnBankText.Money(b.EndCents)));
                     int again = OwnBankRules.AgainDay(b, GameCalendar.DaysPerYear);
                     string wait = OwnBankGame.AgainWhy(b);
@@ -275,29 +276,32 @@ namespace RealLifeOverhaul.Economy
                     {
                         // Not yet: the date a licence may be applied for, and the stricter terms the next bank is held to.
                         box.Line(OwnBankText.Fill(wait == OwnBankRules.AgainWaitKey ? "reallife_ob_box_closed_after" : "reallife_ob_box_closed_integrity", "day", FinanceText.Day(again),
-                            "least", OwnBankCatalogue.AgainIntegrity.ToString(CultureInfo.InvariantCulture), "now", OwnBankGame.Integrity.ToString(CultureInfo.InvariantCulture)));
+                            "least", OwnBankCatalogue.AgainIntegrity.ToString(CultureInfo.InvariantCulture), "now", OwnBankGame.Integrity.ToString(CultureInfo.InvariantCulture)), CellTone.Yellow);
                         if (b.Closures > 0)   // (a bank a test founded and closed raises nothing)
                         {
-                            box.Line(OwnBankText.Fill("reallife_ob_box_closed_terms", "capital", OwnBankText.Money(next), "first", OwnBankText.Money(OwnBankRules.CapitalLeast(level))));
+                            box.Note(OwnBankText.Fill("reallife_ob_box_closed_terms", "capital", OwnBankText.Money(next), "first", OwnBankText.Money(OwnBankRules.CapitalLeast(level))));
                         }
                         if (wait == OwnBankRules.AgainWaitKey && OwnBankGame.StandingOn)
                         {
-                            box.Line(OwnBankText.Fill("reallife_ob_box_closed_standing", "least", OwnBankCatalogue.AgainIntegrity.ToString(CultureInfo.InvariantCulture),
+                            box.Note(OwnBankText.Fill("reallife_ob_box_closed_standing", "least", OwnBankCatalogue.AgainIntegrity.ToString(CultureInfo.InvariantCulture),
                                 "now", OwnBankGame.Integrity.ToString(CultureInfo.InvariantCulture)));
                         }
                         Meta.Guide.Point(box, GuideTitle);
                         return;
                     }
-                    box.Line(OwnBankText.Fill("reallife_ob_box_closed_open", "day", FinanceText.Day(again)));
+                    box.Line(OwnBankText.Fill("reallife_ob_box_closed_open", "day", FinanceText.Day(again)), CellTone.Green);
                 }
                 if (b.State == OwnBankState.Sold)
                 {
+                    box.Chip(OwnBankText.T("reallife_look_chip_sold"));
                     box.Line(OwnBankText.Fill("reallife_ob_box_sold", "bank", b.Name, "day", FinanceText.Day(b.EndDay), "price", OwnBankText.Money(b.EndCents)));
                 }
                 long licence = OwnBankRules.Licence(level), capital = OwnBankRules.CapitalLeast(level, b.Closures);
-                box.Line(hq != null ? OwnBankText.T("reallife_ob_box_hq", "name", OwnBankGame.Name(hq)) : OwnBankText.T("reallife_ob_box_need_hq"));
                 box.Note(OwnBankText.Fill("reallife_ob_box_intro", "licence", OwnBankText.Money(licence), "capital", OwnBankText.Money(capital), "ratio", OwnBankText.Ratio(OwnBankCatalogue.MinRatio)));
-                box.Line(OwnBankText.Fill("reallife_ob_box_rivals", "savers", OwnBankText.Rate(OwnBankRules.RivalSaverBp(c, b, 0)), "loans", OwnBankText.Rate(OwnBankRules.RivalLoanBp(c, b, OwnBankCatalogue.Good))));
+                box.Section("reallife_look_sec_next");
+                box.Line(hq != null ? OwnBankText.T("reallife_ob_box_hq", "name", OwnBankGame.Name(hq)) : OwnBankText.T("reallife_ob_box_need_hq"), hq != null ? CellTone.Green : CellTone.Yellow);
+                box.RowPair("reallife_look_licence", OwnBankText.Money(licence), "reallife_look_capital", OwnBankText.Money(capital));
+                box.Note(OwnBankText.Fill("reallife_ob_box_rivals", "savers", OwnBankText.Rate(OwnBankRules.RivalSaverBp(c, b, 0)), "loans", OwnBankText.Rate(OwnBankRules.RivalLoanBp(c, b, OwnBankCatalogue.Good))));
                 if (hq != null)
                 {
                     InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_ob_box_found", () => AskName(hq, licence, capital));
@@ -307,19 +311,20 @@ namespace RealLifeOverhaul.Economy
             }
             int conf = OwnBankRules.Confidence(c, b, ratio), trust = OwnBankRules.Trust(c, b, OwnBankGame.Today, conf);
             box.Title(b.Name);
-            box.Row("reallife_ob_box_regulator", OwnBankText.Stage(b));
+            box.Chip(OwnBankText.Stage(b), b.Stage == Regulator.Breach ? CellTone.Red : b.Stage == Regulator.Watch ? CellTone.Yellow : CellTone.Green);
             if (b.Run)
             {
-                box.Line(OwnBankText.T("reallife_ob_box_run"));
+                box.Line(OwnBankText.T("reallife_ob_box_run"), CellTone.Red);
             }
             if (b.Test)
             {
-                box.Line(OwnBankText.T("reallife_ob_box_test"));
+                box.Note(OwnBankText.T("reallife_ob_box_test"));
             }
             else if (hq == null)
             {
-                box.Line(OwnBankText.T("reallife_ob_box_no_hq"));
+                box.Line(OwnBankText.T("reallife_ob_box_no_hq"), CellTone.Yellow);
             }
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_ob_box_ratio", OwnBankText.Fill("reallife_ob_box_ratio_value", "ratio", OwnBankText.Ratio(ratio), "law", OwnBankText.Ratio(OwnBankCatalogue.MinRatio),
                 "watch", OwnBankText.Ratio(OwnBankCatalogue.WatchRatio)));
             box.Row("reallife_ob_box_trust", OwnBankText.Fill("reallife_ob_box_trust_value", "trust", OwnBankText.Ratio(trust), "confidence", OwnBankText.Ratio(conf)));
@@ -328,7 +333,8 @@ namespace RealLifeOverhaul.Economy
                 box.Row("reallife_ob_box_last", OwnBankText.Fill("reallife_ob_box_last_value", "income", OwnBankText.Money(b.LastIncome), "costs", OwnBankText.Money(b.LastCosts),
                     "profit", OwnBankText.Signed(b.LastIncome - b.LastCosts)));
             }
-            box.Row("reallife_ob_box_year", OwnBankText.Signed(OwnBankRules.YearProfit(b)));
+            long yearProfit = OwnBankRules.YearProfit(b);
+            box.Row("reallife_ob_box_year", OwnBankText.Signed(yearProfit), yearProfit < 0 ? CellTone.Red : yearProfit > 0 ? CellTone.Green : CellTone.Plain);
             long value = OwnBankRules.SaleValue(b), most = OwnBankRules.MostOut(b, level);
             box.Row("reallife_ob_box_value", OwnBankText.Money(value));
             Transform buttons = box.ButtonRow();
@@ -392,10 +398,12 @@ namespace RealLifeOverhaul.Economy
             {
                 _pick = null;
                 box.Title(OwnBankText.T("reallife_ob_tab_savers"));
+                box.Subtitle(b.Name);
                 if (b.Run)
                 {
-                    box.Line(OwnBankText.T("reallife_ob_box_run"));
+                    box.Line(OwnBankText.T("reallife_ob_box_run"), CellTone.Red);
                 }
+                box.Section("reallife_look_sec_now");
                 box.Row("reallife_ob_box_deposits", OwnBankText.Money(b.Savings));
                 box.Row("reallife_ob_box_trust", OwnBankText.Fill("reallife_ob_box_trust_value", "trust", OwnBankText.Ratio(trust), "confidence", OwnBankText.Ratio(conf)));
                 if (!b.Run)
@@ -408,6 +416,8 @@ namespace RealLifeOverhaul.Economy
             }
             int kind = picked;
             box.Title(OwnBankText.Saver(kind));
+            box.Subtitle(b.Name);
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_ob_box_deposits", OwnBankText.Money(b.Deposits[kind]));
             box.Row("reallife_ob_box_wanted", OwnBankText.Money(OwnBankRules.SaversWanted(c, b, kind, trust)));
             box.Row("reallife_ob_box_rival_rate", OwnBankText.Rate(OwnBankRules.RivalSaverBp(c, b, kind)));
@@ -420,7 +430,7 @@ namespace RealLifeOverhaul.Economy
                     Refresh();
                 }));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_ob_box_back", Back);
-            box.Line(OwnBankText.T(kind == OwnBankCatalogue.Firms ? "reallife_ob_box_firms_note" : "reallife_ob_box_people_note"));
+            box.Note(OwnBankText.T(kind == OwnBankCatalogue.Firms ? "reallife_ob_box_firms_note" : "reallife_ob_box_people_note"));
             Meta.Guide.Point(box, GuideTitle);
         }
 
@@ -452,26 +462,32 @@ namespace RealLifeOverhaul.Economy
             {
                 _pick = null;
                 box.Title(OwnBankText.T("reallife_ob_tab_lending"));
+                box.Subtitle(b.Name);
                 bool stopped = b.Run || b.Stage == Regulator.Breach;
                 if (stopped)
                 {
-                    box.Line(OwnBankText.T("reallife_ob_box_no_lending"));
+                    box.Chip(OwnBankText.T("reallife_look_chip_stopped"), CellTone.Red);
+                    box.Line(OwnBankText.T("reallife_ob_box_no_lending"), CellTone.Red);
                 }
+                box.Section("reallife_look_sec_now");
                 box.Row("reallife_ob_box_lent", OwnBankText.Money(b.Lent));
-                box.Row("reallife_ob_box_arrears", OwnBankText.Money(b.InArrears));
+                box.Row("reallife_ob_box_arrears", OwnBankText.Money(b.InArrears), b.InArrears > 0 ? CellTone.Yellow : CellTone.Plain);
                 box.Row("reallife_ob_box_written", OwnBankText.Fill("reallife_ob_box_written_value", "month", OwnBankText.Money(b.LastLost), "all", OwnBankText.Money(b.LostAll),
                     "back", OwnBankText.Money(b.RecoveredAll)));
                 if (!stopped)
                 {
                     box.Note(OwnBankText.T("reallife_ob_box_lending_pick"));
                 }
-                box.Line(OwnBankText.T(c.Courts ? "reallife_ob_box_courts_on" : "reallife_ob_box_courts_off"));
+                box.Note(OwnBankText.T(c.Courts ? "reallife_ob_box_courts_on" : "reallife_ob_box_courts_off"));
                 Meta.Guide.Point(box, GuideTitle);
                 return;
             }
             int seg = picked;
             long recovering = b.Recovering[seg];
             box.Title(OwnBankText.Segment(seg));
+            box.Subtitle(b.Name);
+            box.Chip(OwnBankText.T(b.Lending[seg] ? "reallife_look_chip_lending" : "reallife_look_chip_stopped"), b.Lending[seg] ? CellTone.Green : CellTone.Yellow);
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_ob_box_lent", OwnBankText.Money(b.Loans[seg]));
             box.Row("reallife_ob_box_arrears", OwnBankText.Fill("reallife_ob_box_arrears_value", "arrears", OwnBankText.Money(b.Arrears[seg]), "back", OwnBankText.Money(recovering)));
             box.Row("reallife_ob_box_defaults", OwnBankText.Fill("reallife_ob_box_defaults_value", "rate", OwnBankText.Ratio(OwnBankRules.DefaultPerMille(c, b, seg)),
@@ -492,7 +508,7 @@ namespace RealLifeOverhaul.Economy
                 Refresh();
             }));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_ob_box_back", Back);
-            box.Line(OwnBankText.T(seg == OwnBankCatalogue.Poor ? "reallife_ob_box_poor_note" : OwnBankCatalogue.IsBusiness(seg) ? "reallife_ob_box_firm_note" : "reallife_ob_box_person_note"));
+            box.Note(OwnBankText.T(seg == OwnBankCatalogue.Poor ? "reallife_ob_box_poor_note" : OwnBankCatalogue.IsBusiness(seg) ? "reallife_ob_box_firm_note" : "reallife_ob_box_person_note"));
             Meta.Guide.Point(box, GuideTitle);
         }
 
@@ -517,6 +533,8 @@ namespace RealLifeOverhaul.Economy
                 row.Set(5, OwnBankText.Money(year), year / 100.0);
             }
             box.Title(OwnBankText.T("reallife_ob_tab_fund"));
+            box.Subtitle(b.Name);
+            box.Section("reallife_look_sec_now");
             box.Row("reallife_ob_box_fund_value", OwnBankText.Fill("reallife_ob_box_fund_value_value", "value", OwnBankText.Money(b.FundValue), "gain", OwnBankText.Signed(b.FundValue - b.FundCost)));
             box.Row("reallife_ob_box_fund_room", OwnBankText.Money(OwnBankFund.Room(b)));
             box.Row("reallife_ob_box_fund_dividends", OwnBankText.Money(dividends));
@@ -532,7 +550,7 @@ namespace RealLifeOverhaul.Economy
                 _director.SetFundLimit(i * step);
                 Refresh();
             }));
-            box.Line(OwnBankText.Fill("reallife_ob_box_fund_rules", "companies", OwnBankCatalogue.FundCompanies[Math.Max(1, b.Strategy)].ToString(), "weight", OwnBankText.Ratio(OwnBankCatalogue.FundWeight)));
+            box.Note(OwnBankText.Fill("reallife_ob_box_fund_rules", "companies", OwnBankCatalogue.FundCompanies[Math.Max(1, b.Strategy)].ToString(), "weight", OwnBankText.Ratio(OwnBankCatalogue.FundWeight)));
             Meta.Guide.Point(box, GuideTitle);
         }
 
