@@ -62,6 +62,10 @@ internal static partial class Program
         InvestBackReason();
         InvestSaveTools();
         InvestStandDown();
+        InvestFloatFills();
+        InvestFloatLadders();
+        InvestFloatCharges();
+        InvestWorkedPlacement();
         Console.WriteLine("  a large investor's tools: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
@@ -1951,5 +1955,302 @@ internal static partial class Program
         int settleAt = body.IndexOf("_engine.SettleAll()", StringComparison.Ordinal), saveAt = body.IndexOf("MarketStore.Save(", StringComparison.Ordinal);
         Check(settled && buy.Filled > filled && buy.Parked > 0 && settleAt > 0 && settleAt < saveAt && body.Contains("_guestTrades.Clear()"),
             "market: stopping, every worked order's money with the broker is settled into the cash before the market is saved, the order parks again when it runs, and a guest's unsent trades are dropped");
+    }
+
+    // ---------------------------------------------------------------- the third review: the game's float money, charges in
+    // a row, a worked purchase's placement
+
+    /// <summary>
+    /// The player's cash kept as the game keeps it: a float (the save's Money), moved a piece at a time as MarketWallet.Move
+    /// moves it (InvestRules.Piece: the game's parameter is a float, and so is the sum, GameManager.ChangeMoney), read
+    /// floored as MarketWallet.Cash reads it. Every transaction kept, with whose it was.
+    /// </summary>
+    private sealed class FloatWallet : IMarketWallet
+    {
+        public float Money;
+        public readonly List<(string Why, string Name, long Amount)> Moves = new List<(string Why, string Name, long Amount)>();
+
+        public long Cash => (long)Math.Floor(Math.Max(0.0, Money));
+
+        public bool Take(long amount, string why, string name)
+        {
+            if (amount <= 0)
+            {
+                return true;
+            }
+            if (Cash < amount)
+            {
+                return false;
+            }
+            Move(-1, amount, why, name);
+            return true;
+        }
+
+        public bool Ready(long amount) => amount <= 0 || Cash >= amount;
+
+        public void Force(long amount, string why, string name)
+        {
+            if (amount > 0)
+            {
+                Move(-1, amount, why, name);
+            }
+        }
+
+        public void Give(long amount, string why, string name)
+        {
+            if (amount > 0)
+            {
+                Move(1, amount, why, name);
+            }
+        }
+
+        private void Move(int sign, long amount, string why, string name)
+        {
+            Moves.Add((why, name, sign * amount));
+            for (long left = amount; left > 0;)
+            {
+                float piece = sign * InvestRules.Piece(ref left);   // (the long a float, as the game's call takes it)
+                Money = (float)(Money + piece);                      // (and added as a float: the save's Money += amount)
+            }
+        }
+
+        /// <summary>The most give-backs one worked order made since a point of the list (by its company: one order a company here).</summary>
+        public int MostBacks(int from)
+        {
+            return Moves.Skip(from).Where(x => x.Why == MarketMoney.WorkedBack || x.Why == MarketMoney.WorkedSold).GroupBy(x => x.Name).Select(g => g.Count()).DefaultIfEmpty(0).Max();
+        }
+    }
+
+    /// <summary>The checks' city and secrets with the cash kept as the game keeps it.</summary>
+    private sealed class FloatWorld : IMarketWorld
+    {
+        public readonly MarketWorld Inner;
+        public readonly FloatWallet Purse = new FloatWallet();
+
+        public FloatWorld(ulong seed)
+        {
+            Inner = new MarketWorld(seed);
+        }
+
+        public ulong NewSecret() => Inner.NewSecret();
+        public MarketEnv Env(int day) => Inner.Env(day);
+        public IMarketWallet Wallet => Purse;
+        public int CommissionLeast => Inner.CommissionLeast;
+        public void Said(in MarketNews news) => Inner.Said(news);
+        public void Paid(TradeKind kind, Stock stock, long amount) => Inner.Paid(kind, stock, amount);
+        public void Called(long amount, int byDay) => Inner.Called(amount, byDay);
+        public void Filled(Order order, Stock stock, long qty, int cents) => Inner.Filled(order, stock, qty, cents);
+    }
+
+    // A market on a market day at a step of its session, its cash kept as the game keeps it.
+    private static MarketEngine FloatMarket(ulong seed, out FloatWorld world, int from = 3, int step = 5)
+    {
+        world = new FloatWorld(seed);
+        MarketState state = MarketSetup.Open(seed, 1, 0, 60, world.Env(1), seed, null, null, null);
+        var m = new MarketEngine(state, new MarketTape(seed), world);
+        SessionDay(m, from, step);
+        return m;
+    }
+
+    // The sums the float checks run over: evenly on a log scale (1,000 to 20 billion unless given), every third just under
+    // a power of two, where a float's sum rounds the most.
+    private static long FloatSize(int i, int n, long least = 1000L, long most = 20000000000L)
+    {
+        double at = Math.Exp(Math.Log(least) + (Math.Log(most) - Math.Log(least)) * i / Math.Max(1, n - 1));
+        long a = Math.Max(least, Math.Min(most, (long)at));
+        if (i % 3 == 2)
+        {
+            int e = (int)Math.Floor(Math.Log(a, 2.0));
+            long under = (1L << e) - 1L - a % 977L;
+            a = under >= least ? under : a;
+        }
+        return a;
+    }
+
+    // A case's cash in hand: a part of the sum, never all of it, often with cents (the game's money has them).
+    private static float FloatHand(long sum, Random r)
+    {
+        double share = r.Next(4) == 0 ? r.NextDouble() / 1000.0 : r.NextDouble();
+        double cash = Math.Floor((sum - 1) * share) + (r.Next(2) == 0 ? r.Next(100) / 100.0 : 0.0);
+        float f = (float)cash;
+        return (long)Math.Floor((double)f) >= sum ? 0f : f;
+    }
+
+    // A case's money with the broker: so much on one to three worked orders of different companies (a sale's takings due,
+    // purchases' money parked), the orders of the case before taken out.
+    private static void BrokerMoney(MarketState s, Stock[] on, long total, Random r)
+    {
+        s.Orders.RemoveAll(x => x.Worked);
+        int n = 1 + r.Next(Math.Min(3, on.Length));
+        long left = total;
+        for (int i = 0; i < n; i++)
+        {
+            long part = i == n - 1 ? left : (long)(left * r.NextDouble());
+            left -= part;
+            bool sale = i == 0 && n > 1 && r.Next(2) == 0;
+            s.Orders.Add(new Order
+            {
+                Id = s.NextOrderId++, StockId = on[i].Id, Side = sale ? OrderSide.Sell : OrderSide.Buy, Type = OrderType.Market, Life = OrderLife.UntilDone, Qty = 1000,
+                PlacedDay = s.Day, State = OrderState.Open, Worked = true, Parked = sale ? 0L : part, Due = sale ? part : 0L, ParkedDay = sale ? 0 : s.Day
+            });
+        }
+    }
+
+    // The reviewer's case: the game's money is a float, so a give-back of exactly the shortfall often leaves the cash a few
+    // units short of a purchase over 2^24 (50,000,000 in hand and 10,000,001 back come to 60,000,000), and the purchase was
+    // refused after the money came back. With the margin (BrokerWallet.Margin) a purchase that the cash in hand and the
+    // money with the broker cover with the margin goes through, from 1,000 to 20 billion, as a fill takes it (its price,
+    // then its commission): both taken, one give-back at most from any order, the cash never under nothing after it.
+    private static void InvestFloatFills()
+    {
+        MarketEngine m = FloatMarket(771, out FloatWorld w, 3, 5);
+        Stock buy = Liquid(m, MarketSize.Large);
+        Stock[] on = { Liquid(m, MarketSize.Large, 1), Liquid(m, MarketSize.Mid), Liquid(m, MarketSize.Mid, 1) };
+        var r = new Random(771);
+        float exact = 50000000f;
+        exact = (float)(exact + (float)10000001L);
+        w.Purse.Money = 50000000f;
+        BrokerMoney(m.State, new[] { on[0] }, 10000001L + BrokerWallet.Margin(60000001L), r);
+        bool example = (long)Math.Floor((double)exact) == 60000000L && m.Wallet.Ready(60000001L) && w.Purse.Cash >= 60000001L;
+        const int cents = 10000;   // (a share at 100: sums as fine as a share's price)
+        int least = w.CommissionLeast, n = 240, cases = 0, refused = 0, unpaid = 0, twice = 0, under = 0;
+        for (int i = 0; i < n; i++)
+        {
+            long qty = Math.Max(1L, FloatSize(i, n) / 101L);
+            long value = MarketTrading.Value(qty, cents, true), fee = MarketTrading.Commission(value, least), sum = value + fee;
+            w.Purse.Money = FloatHand(sum, r);
+            long need = sum - w.Purse.Cash;
+            if (need <= 0)
+            {
+                continue;
+            }
+            cases++;
+            long extra = r.Next(3) == 0 ? 0L : (long)(sum * r.NextDouble());
+            BrokerMoney(m.State, on, need + BrokerWallet.Margin(sum) + extra, r);
+            var order = new Order { Id = m.State.NextOrderId++, StockId = buy.Id, Side = OrderSide.Buy, Type = OrderType.Market, Life = OrderLife.Day, Qty = qty, PlacedDay = m.State.Day, State = OrderState.Open };
+            int from = w.Purse.Moves.Count;
+            bool filled = MarketTrading.Fill(m.State, buy, order, qty, cents, least, m.Wallet, m.State.Phase, false, out _);
+            var moves = w.Purse.Moves.Skip(from).ToList();
+            refused += filled ? 0 : 1;
+            unpaid += filled && (moves.Count(x => x.Why == MarketMoney.Bought && x.Amount == -value) != 1 || moves.Count(x => x.Why == MarketMoney.Commission && x.Amount == -fee) != 1) ? 1 : 0;
+            twice += w.Purse.MostBacks(from) > 1 ? 1 : 0;
+            under += w.Purse.Money < 0f ? 1 : 0;
+        }
+        Check(example && cases > 150 && refused == 0 && unpaid == 0 && twice == 0 && under == 0,
+            "worked: in the game's float money, a purchase the cash in hand and the money with the broker cover with the margin goes through, its price and its commission taken with one give-back at most from any order, from 1,000 to 20 billion ("
+            + cases + " cases; refused " + refused + ", unpaid " + unpaid + ", twice " + twice + ", under nothing " + under + ")");
+    }
+
+    // A ladder bought with the money with the broker, from its least to the most its four purchases may be, with the cash
+    // kept as the game keeps it: all four bought, one give-back at most from any order, the cash never under nothing.
+    private static void InvestFloatLadders()
+    {
+        MarketEngine m = FloatMarket(772, out FloatWorld w, 3, 5);
+        Stock[] on = { Liquid(m, MarketSize.Large), Liquid(m, MarketSize.Large, 1), Liquid(m, MarketSize.Mid) };
+        var r = new Random(772);
+        int level = m.State.Env.PriceLevel, n = 90, cases = 0, notAll = 0, twice = 0, under = 0;
+        long least = BondRules.Least(level) * 4L, most = BondRules.Cap(level) * 4L, worth = 1L << 50;
+        for (int i = 0; i < n; i++)
+        {
+            long sum = Math.Max(least, FloatSize(i, n, least, most) / 4L * 4L);
+            m.State.Bonds.Holdings.Clear();
+            w.Purse.Money = FloatHand(sum, r);
+            long need = sum - w.Purse.Cash;
+            if (need <= 0)
+            {
+                continue;
+            }
+            cases++;
+            long extra = r.Next(3) == 0 ? 0L : (long)(sum * r.NextDouble());
+            BrokerMoney(m.State, on, need + BrokerWallet.Margin(sum) + extra, r);
+            int from = w.Purse.Moves.Count;
+            int bought = m.BuyLadder(sum, 0, false, true, true, out BondWhy why, worth);
+            notAll += bought == 4 ? 0 : 1;
+            twice += w.Purse.MostBacks(from) > 1 ? 1 : 0;
+            under += w.Purse.Money < 0f ? 1 : 0;
+        }
+        Check(cases > 60 && notAll == 0 && twice == 0 && under == 0,
+            "bonds: in the game's float money, a ladder bought with the money with the broker buys its four with one give-back at most from any order, from its least to its most ("
+            + cases + " cases; not all bought " + notAll + ", twice " + twice + ", under nothing " + under + ")");
+    }
+
+    // A charge the market forces, alone or with another in a row (a listing's two yearly fees, a bot's monthly fee and its
+    // share), with the cash kept as the game keeps it, from 1,000 to 20 billion: one the cash in hand and the money with the
+    // broker cover with the margin never leaves the cash under nothing; charges in a row covered first (BrokerWallet.Cover)
+    // make one give-back at most from any order, whether or not the money with the broker pays them all. The listing's two
+    // fees and a bot's fee and share are covered so (their source).
+    private static void InvestFloatCharges()
+    {
+        MarketEngine m = FloatMarket(773, out FloatWorld w, 3, 5);
+        Stock[] on = { Liquid(m, MarketSize.Large), Liquid(m, MarketSize.Large, 1), Liquid(m, MarketSize.Mid) };
+        var r = new Random(773);
+        int n = 240, cases = 0, under = 0, twice = 0, shortTwice = 0;
+        for (int i = 0; i < n; i++)
+        {
+            long sum = FloatSize(i, n);
+            w.Purse.Money = FloatHand(sum, r);
+            long need = sum - w.Purse.Cash;
+            if (need <= 0)
+            {
+                continue;
+            }
+            cases++;
+            long extra = r.Next(3) == 0 ? 0L : (long)(sum * r.NextDouble());
+            BrokerMoney(m.State, on, need + BrokerWallet.Margin(sum) + extra, r);
+            int from = w.Purse.Moves.Count;
+            m.Wallet.Force(sum, MarketMoney.BotFee, "a charge");
+            under += w.Purse.Money < 0f ? 1 : 0;
+            twice += w.Purse.MostBacks(from) > 1 ? 1 : 0;
+            long first = 1L + (long)((sum - 1) * r.NextDouble());
+            w.Purse.Money = FloatHand(sum, r);
+            BrokerMoney(m.State, on, Math.Max(0L, sum - w.Purse.Cash) + BrokerWallet.Margin(sum) + extra, r);
+            from = w.Purse.Moves.Count;
+            m.Wallet.Cover(sum);
+            m.Wallet.Force(first, MarketMoney.BotFee, "two charges");
+            m.Wallet.Force(sum - first, MarketMoney.BotShare, "two charges");
+            under += w.Purse.Money < 0f ? 1 : 0;
+            twice += w.Purse.MostBacks(from) > 1 ? 1 : 0;
+            w.Purse.Money = FloatHand(sum, r);
+            BrokerMoney(m.State, on, Math.Max(1L, (sum - w.Purse.Cash) / 2), r);
+            from = w.Purse.Moves.Count;
+            m.Wallet.Cover(sum);
+            m.Wallet.Force(first, MarketMoney.BotFee, "two charges");
+            m.Wallet.Force(sum - first, MarketMoney.BotShare, "two charges");
+            shortTwice += w.Purse.MostBacks(from) > 1 ? 1 : 0;
+        }
+        string own = ModSource(@"Markets\MarketDirector.Own.cs"), bots = ModSource(@"Markets\MarketEngine.Bots.cs");
+        int cover = own.IndexOf("_engine.Wallet.Cover(exchange + audit);", StringComparison.Ordinal), exchange = own.IndexOf("_engine.Wallet.Force(exchange, ListingMoney.Exchange", StringComparison.Ordinal);
+        int coverBot = bots.IndexOf("Wallet.Cover(fee + share);", StringComparison.Ordinal), fee = bots.IndexOf("Wallet.Force(fee, MarketMoney.BotFee", StringComparison.Ordinal);
+        Check(cases > 150 && under == 0 && twice == 0 && shortTwice == 0 && cover > 0 && exchange > cover && exchange - cover < 200 && coverBot > 0 && fee > coverBot && fee - coverBot < 300,
+            "worked: in the game's float money, a charge the market forces that the money with the broker covers never takes the cash under nothing, and charges in a row (a listing's two fees, a bot's fee and share) give back once at most from any order ("
+            + cases + " cases; under nothing " + under + ", twice " + twice + ", twice when short " + shortTwice + ")");
+    }
+
+    // A worked purchase is placed only on what its own day of money is parked from: the cash in hand and worked sales'
+    // takings due, never another worked purchase's parked money (placed on it, it would stop at its first slice). With all
+    // the cash parked by another it is refused for the cash at once; with a worked sale's takings due it is placed, and it
+    // parks from them at its first slice. A ticket purchase still uses the parked money (InvestBrokerStaysYours).
+    private static void InvestWorkedPlacement()
+    {
+        MarketEngine m = LogMarket(751, 0L, out LogWorld w, 3, 5);
+        Stock s = Liquid(m, MarketSize.Large), t = Liquid(m, MarketSize.Large, 1), u = Liquid(m, MarketSize.Mid);
+        long per = MarketTrading.MostPerOrder(s), qt = MarketTrading.MostPerOrder(t) * 2;
+        PutHolding(m, u, MarketTrading.MostPerOrder(u) * 2);
+        w.Purse.Money = MarketTrading.Value(per, MarketTrading.QuoteOf(m.State, s, m.State.Phase).Ask, true);
+        Order first = m.PlaceWorked(s.Id, OrderSide.Buy, per * 3, m.Held, false, out _);
+        RunTo(m, m.State.Day, MarketCatalogue.PhaseOpen + 10);
+        long cash = w.Purse.Money, parked = first != null ? first.Parked : 0L;
+        OrderWhy alone = m.WorkedWhy(t, OrderSide.Buy, qt, m.Held);
+        Order refused = m.PlaceWorked(t.Id, OrderSide.Buy, qt, m.Held, false, out OrderWhy placedWhy);
+        Order sale = m.PlaceWorked(u.Id, OrderSide.Sell, MarketTrading.MostPerOrder(u) * 2, m.Held, false, out _);
+        RunTo(m, m.State.Day, MarketCatalogue.PhaseOpen + 16);
+        long due = sale != null ? sale.Due : 0L;
+        OrderWhy withTakings = m.WorkedWhy(t, OrderSide.Buy, qt, m.Held);
+        Order second = m.PlaceWorked(t.Id, OrderSide.Buy, qt, m.Held, false, out _);
+        RunTo(m, m.State.Day, MarketCatalogue.PhaseOpen + 20);
+        Check(cash == 0 && parked > 0 && alone == OrderWhy.NoMoney && refused == null && placedWhy == OrderWhy.NoMoney && due > 0 && withTakings == OrderWhy.None
+              && second != null && (second.Filled > 0 || second.Parked > 0),
+            "worked: a worked purchase is placed only on what its own day of money parks from: refused for the cash while another has parked it all, placed on a worked sale's takings and parking from them ("
+            + alone + ", " + withTakings + "; cash " + cash + ", parked " + parked + ", due " + due + ")");
     }
 }
